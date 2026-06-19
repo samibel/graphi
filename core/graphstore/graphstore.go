@@ -1,0 +1,116 @@
+// Package graphstore defines graphi's pluggable durable graph backend contract
+// and its reference implementations.
+//
+// Layering: graphstore is a core leaf library. It consumes core/model only and
+// MUST NOT import engine/ or surfaces/. It uses pure-Go/stdlib dependencies plus
+// the CGo-free modernc.org/sqlite driver. There is zero outbound network
+// activity in any operation.
+//
+// Backend model (architecture §7.2): SQLite (WAL journal mode, FTS5 over
+// searchable text fields) is the durable source of truth. An in-memory "memgraph"
+// hot cache sits in front of it; the cache is evictable and rebuilt from SQLite
+// on demand, and is never authoritative — evicting it never loses data because
+// SQLite holds the canonical state. Writes commit to SQLite FIRST, then update
+// the cache. The Graphstore is exposed behind an interface so alternate backends
+// (e.g. the in-memory test double) satisfy the same contract test suite.
+package graphstore
+
+import (
+	"context"
+	"errors"
+
+	"github.com/samibel/graphi/core/model"
+)
+
+// Errors returned by Graphstore implementations. They are typed sentinels so
+// callers and the contract suite can match with errors.Is.
+var (
+	// ErrNotFound is returned by GetNode/GetEdge when no record exists for the
+	// requested ID.
+	ErrNotFound = errors.New("graphstore: not found")
+
+	// ErrClosed is returned by any operation invoked after Close.
+	ErrClosed = errors.New("graphstore: store is closed")
+
+	// ErrUnknownEdgeEndpoint is returned by PutEdge when From or To does not
+	// reference an already-stored node. Edges require their endpoints to exist so
+	// the durable graph stays referentially consistent.
+	ErrUnknownEdgeEndpoint = errors.New("graphstore: edge references unknown node")
+)
+
+// Query constrains a node/edge listing or search. The zero Query matches
+// everything. All filters are ANDed together. Text, when non-empty, runs against
+// the backend's full-text index (SQLite FTS5) or its in-memory equivalent and is
+// always passed as a bound parameter — never string-concatenated into SQL.
+type Query struct {
+	// NodeKind, when non-empty, restricts results to nodes of this kind.
+	NodeKind string
+	// EdgeKind, when non-empty, restricts results to edges of this kind.
+	EdgeKind string
+	// Text, when non-empty, full-text searches the searchable text fields
+	// (node name/qualified name and edge reason).
+	Text string
+}
+
+// Graphstore is graphi's pluggable durable graph backend. Implementations must
+// be safe for concurrent use. The contract test suite in this package exercises
+// every implementation identically via a backend factory, so any conforming
+// backend behaves indistinguishably at the contract boundary.
+//
+// Determinism contract: every listing/search method returns results in a defined
+// canonical order (nodes by NodeId ascending, edges by EdgeId ascending) so that
+// results are byte-for-byte comparable across cache hits, cache rebuilds, and
+// fresh stores.
+type Graphstore interface {
+	// PutNode durably stores (or replaces) a node. It commits to the durable
+	// layer before updating any in-memory cache.
+	PutNode(ctx context.Context, n model.Node) error
+
+	// PutEdge durably stores (or replaces) an edge, preserving its full
+	// provenance (confidence_tier, reason, evidence) verbatim. Both endpoints
+	// must already exist (ErrUnknownEdgeEndpoint otherwise). It commits to the
+	// durable layer before updating any in-memory cache.
+	PutEdge(ctx context.Context, e model.Edge) error
+
+	// GetNode returns the node with the given ID, or ErrNotFound.
+	GetNode(ctx context.Context, id model.NodeId) (model.Node, error)
+
+	// GetEdge returns the edge with the given ID (provenance intact), or
+	// ErrNotFound.
+	GetEdge(ctx context.Context, id model.EdgeId) (model.Edge, error)
+
+	// Nodes returns all nodes matching q, in canonical NodeId order.
+	Nodes(ctx context.Context, q Query) ([]model.Node, error)
+
+	// Edges returns all edges matching q, in canonical EdgeId order, with
+	// provenance preserved exactly.
+	Edges(ctx context.Context, q Query) ([]model.Edge, error)
+
+	// Snapshot serializes the durable state to the given path using the portable,
+	// versioned, deterministic format defined by this package (NOT a raw .db
+	// copy). It is written atomically (temp + rename). Two snapshots of the same
+	// logical state are byte-identical.
+	Snapshot(ctx context.Context, path string) error
+
+	// Load restores a snapshot written by Snapshot into this store. Load is
+	// fail-closed and atomic: on any error (unknown/incompatible version,
+	// malformed content, path-escape, validation failure) the store is left
+	// unmodified. On success the store's contents are exactly the snapshot's
+	// nodes/edges/metadata, and the full-text index is re-derived (not trusted
+	// from the file).
+	Load(ctx context.Context, path string) error
+
+	// EvictCache drops the in-memory hot cache. Subsequent reads transparently
+	// rebuild it from the durable layer and return identical results. For backends
+	// without a cache this is a no-op. It never loses data.
+	EvictCache(ctx context.Context) error
+
+	// Close releases all resources. Subsequent operations return ErrClosed.
+	Close() error
+}
+
+// Factory constructs a fresh, empty Graphstore. The contract test suite is
+// parameterized by Factory so one suite runs unchanged against every backend.
+// dir is a writable temporary directory the backend may use for any on-disk
+// state.
+type Factory func(dir string) (Graphstore, error)
