@@ -1,22 +1,27 @@
 // Command graphi is the single static binary wiring point for the graphi
 // code-intelligence engine. It wires the shared read-only query service
-// (engine/query) to two surfaces — the CLI (`query`) and the MCP stdio server
-// (`mcp`) — both dispatching through the SAME service, plus the original SW-001
+// (engine/query) and search service (engine/search) to two surfaces — the CLI
+// (`query`, `search`) and the MCP stdio server (`mcp`) — through either an
+// in-process client or a hot-index daemon client, plus the original SW-001
 // parser-registry behavior (default / `parse`).
 //
 // Layering: cmd is the top layer; it imports surfaces + engine + core and wires
-// them together. It contains no query logic of its own.
+// them together. It contains no query/search logic of its own.
 package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/cli"
+	"github.com/samibel/graphi/surfaces/client"
+	"github.com/samibel/graphi/surfaces/daemon"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
 
@@ -29,8 +34,12 @@ func main() {
 	switch os.Args[1] {
 	case "query":
 		os.Exit(runQuery(os.Args[2:]))
+	case "search":
+		os.Exit(runSearch(os.Args[2:]))
 	case "mcp":
 		os.Exit(runMCP(os.Args[2:]))
+	case "daemon":
+		os.Exit(runDaemon(os.Args[2:]))
 	case "parse":
 		runParseDefault(os.Args[2:])
 	default:
@@ -49,37 +58,77 @@ func openStore(dbPath string) (graphstore.Graphstore, error) {
 	return graphstore.OpenSQLite(dbPath)
 }
 
+// makeClient returns a surface client. If socket is non-empty, it connects to
+// the daemon; otherwise it builds an in-process client over the store.
+func makeClient(store graphstore.Graphstore, socket string) client.Client {
+	if socket != "" {
+		return daemon.NewClient(socket, "")
+	}
+	return client.NewDirect(query.New(store), search.New(store))
+}
+
+// extractFlags pulls -db and -daemon options off the front of args.
+func extractFlags(args []string) (dbPath, socket string, rest []string) {
+	rest = args
+	for len(rest) > 0 {
+		switch {
+		case rest[0] == "-db" && len(rest) >= 2:
+			dbPath = rest[1]
+			rest = rest[2:]
+		case len(rest[0]) > 4 && rest[0][:4] == "-db=":
+			dbPath = rest[0][4:]
+			rest = rest[1:]
+		case rest[0] == "-daemon" && len(rest) >= 2:
+			socket = rest[1]
+			rest = rest[2:]
+		case len(rest[0]) > 8 && rest[0][:8] == "-daemon=":
+			socket = rest[0][8:]
+			rest = rest[1:]
+		default:
+			return
+		}
+	}
+	return
+}
+
 // runQuery launches the CLI surface. Usage:
 //
-//	graphi query [-db path] <operation> -symbol <id> [-depth N]
+//	graphi query [-db path] [-daemon socket] <operation> -symbol <id> [-depth N]
 func runQuery(args []string) int {
-	dbPath, rest := extractDBFlag(args)
-	store, err := openStore(dbPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+	dbPath, socket, rest := extractFlags(args)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
 		return 1
 	}
-	defer func() { _ = store.Close() }()
-
-	svc := query.New(store)
-	if err := cli.Run(context.Background(), svc, rest, os.Stdout, os.Stderr); err != nil {
+	if err := cli.Run(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
 		return 1
 	}
 	return 0
 }
 
-// runMCP launches the MCP stdio server. Usage: graphi mcp [-db path]
-func runMCP(args []string) int {
-	dbPath, _ := extractDBFlag(args)
-	store, err := openStore(dbPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+// runSearch launches the CLI search surface. Usage:
+//
+//	graphi search [-db path] [-daemon socket] [-limit N] <query>
+func runSearch(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
 		return 1
 	}
-	defer func() { _ = store.Close() }()
+	if err := cli.RunSearch(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		return 1
+	}
+	return 0
+}
 
-	svc := query.New(store)
-	srv := mcp.NewServer(svc)
+// runMCP launches the MCP stdio server. Usage: graphi mcp [-db path] [-daemon socket]
+func runMCP(args []string) int {
+	dbPath, socket, _ := extractFlags(args)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	srv := mcp.NewServerWithClient(c)
 	if err := srv.Serve(context.Background(), os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
 		return 1
@@ -87,20 +136,68 @@ func runMCP(args []string) int {
 	return 0
 }
 
-// extractDBFlag pulls a leading `-db <path>` (or `-db=<path>`) option off args
-// without a full FlagSet, so the remaining args pass through to the surface
-// verbatim. Returns the db path and the remaining args.
-func extractDBFlag(args []string) (string, []string) {
-	if len(args) == 0 {
-		return "", args
+// makeClientOrOpen creates a client, opening an in-process store if needed.
+// It prints errors and returns nil on failure.
+func makeClientOrOpen(dbPath, socket string) client.Client {
+	if socket != "" {
+		return daemon.NewClient(socket, "")
 	}
-	switch {
-	case args[0] == "-db" && len(args) >= 2:
-		return args[1], args[2:]
-	case len(args[0]) > 4 && args[0][:4] == "-db=":
-		return args[0][4:], args[1:]
+	store, err := openStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return nil
+	}
+	defer func() { _ = store.Close() }()
+	return client.NewDirect(query.New(store), search.New(store))
+}
+
+// runDaemon runs the daemon lifecycle commands: start, stop, status.
+func runDaemon(args []string) int {
+	fs := flag.NewFlagSet("daemon", flag.ContinueOnError)
+	socket := fs.String("socket", daemon.DefaultSocketPath(), "Unix socket path")
+	dbPath := fs.String("db", "", "SQLite graphstore path (empty = in-memory)")
+	if err := fs.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: daemon: %v\n", err)
+		return 1
+	}
+	if len(fs.Args()) < 1 {
+		fmt.Fprintln(os.Stderr, "usage: graphi daemon start|stop|status [-socket path] [-db path]")
+		return 1
+	}
+	cmd := fs.Args()[0]
+	switch cmd {
+	case "start":
+		store, err := openStore(*dbPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+			return 1
+		}
+		defer func() { _ = store.Close() }()
+		handler := client.NewDirect(query.New(store), search.New(store))
+		srv := daemon.NewServer(handler)
+		if err := srv.Start(*socket); err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: daemon start: %v\n", err)
+			return 1
+		}
+		fmt.Printf("daemon listening on %s\n", *socket)
+		// Block until stopped via signal or Stop.
+		select {}
+	case "stop":
+		// Best-effort: connect and send a shutdown request is not implemented;
+		// for now rely on process management.
+		fmt.Fprintln(os.Stderr, "daemon stop: not implemented; stop the daemon process directly")
+		return 1
+	case "status":
+		c := daemon.NewClient(*socket, "")
+		if _, err := c.Query(context.Background(), "callers", "", 0); err != nil {
+			fmt.Printf("daemon at %s: not responding (%v)\n", *socket, err)
+			return 1
+		}
+		fmt.Printf("daemon at %s: responding\n", *socket)
+		return 0
 	default:
-		return "", args
+		fmt.Fprintf(os.Stderr, "graphi: unknown daemon command %q\n", cmd)
+		return 1
 	}
 }
 
@@ -109,7 +206,7 @@ func runParseDefault(args []string) {
 	reg := parse.NewDefaultRegistry()
 
 	if len(args) < 1 {
-		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, mcp, parse <file>\n", reg.Languages())
+		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, search, mcp, daemon, parse <file>\n", reg.Languages())
 		return
 	}
 

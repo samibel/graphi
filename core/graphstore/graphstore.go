@@ -86,6 +86,12 @@ type Graphstore interface {
 	// provenance preserved exactly.
 	Edges(ctx context.Context, q Query) ([]model.Edge, error)
 
+	// SearchNodes returns nodes matching the full-text query, ranked by the
+	// backend's full-text engine and tie-broken deterministically. A limit of
+	// zero or negative means unlimited. An empty query returns no results (not
+	// an error).
+	SearchNodes(ctx context.Context, text string, limit int) ([]RankedNode, error)
+
 	// Snapshot serializes the durable state to the given path using the portable,
 	// versioned, deterministic format defined by this package (NOT a raw .db
 	// copy). It is written atomically (temp + rename). Two snapshots of the same
@@ -107,6 +113,14 @@ type Graphstore interface {
 
 	// Close releases all resources. Subsequent operations return ErrClosed.
 	Close() error
+}
+
+// RankedNode pairs a node with its full-text search rank. Lower rank values
+// indicate better matches (SQLite FTS5 bm25 returns negative values for better
+// matches; callers should sort by rank ascending).
+type RankedNode struct {
+	Node model.Node
+	Rank float64
 }
 
 // Factory constructs a fresh, empty Graphstore. The contract test suite is

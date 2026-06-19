@@ -374,6 +374,65 @@ func TestContract_SymlinkEscape(t *testing.T) {
 	}
 }
 
+// TestContract_SearchNodes asserts full-text search returns ranked, ordered,
+// limited results with no error on empty/no-match queries.
+func TestContract_SearchNodes(t *testing.T) {
+	for _, b := range allBackends() {
+		t.Run(b.name, func(t *testing.T) {
+			ctx := context.Background()
+			st := newStore(t, b)
+			seed(t, st)
+
+			// Empty query returns no results and no error.
+			empty, err := st.SearchNodes(ctx, "", 10)
+			if err != nil {
+				t.Fatalf("SearchNodes empty: %v", err)
+			}
+			if len(empty) != 0 {
+				t.Fatalf("expected 0 results for empty query, got %d", len(empty))
+			}
+
+			// No-match query returns no results and no error.
+			none, err := st.SearchNodes(ctx, "DefinitelyMissing", 10)
+			if err != nil {
+				t.Fatalf("SearchNodes none: %v", err)
+			}
+			if len(none) != 0 {
+				t.Fatalf("expected 0 results for no-match query, got %d", len(none))
+			}
+
+			// "Widget" matches exactly one node.
+			hits, err := st.SearchNodes(ctx, "Widget", 10)
+			if err != nil {
+				t.Fatalf("SearchNodes Widget: %v", err)
+			}
+			if len(hits) != 1 || hits[0].Node.QualifiedName() != "pkg/foo.Widget" {
+				t.Fatalf("expected 1 Widget hit, got %+v", hits)
+			}
+
+			// Limit works: "pkg" matches all three nodes, limit=2.
+			limited, err := st.SearchNodes(ctx, "pkg", 2)
+			if err != nil {
+				t.Fatalf("SearchNodes limited: %v", err)
+			}
+			if len(limited) != 2 {
+				t.Fatalf("expected 2 limited results, got %d", len(limited))
+			}
+
+			// Deterministic ordering: re-query yields same order.
+			again, err := st.SearchNodes(ctx, "pkg", 2)
+			if err != nil {
+				t.Fatalf("SearchNodes again: %v", err)
+			}
+			for i := range limited {
+				if limited[i].Node.ID() != again[i].Node.ID() {
+					t.Fatalf("ordering non-deterministic at %d", i)
+				}
+			}
+		})
+	}
+}
+
 // TestContract_EmptySnapshotRoundTrip ensures an empty store snapshots/loads
 // cleanly across backends.
 func TestContract_EmptySnapshotRoundTrip(t *testing.T) {

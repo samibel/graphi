@@ -546,6 +546,57 @@ func (s *SQLiteStore) ftsEdgeIDs(ctx context.Context, text string) (map[model.Ed
 // ftsQuery turns free user text into a safe FTS5 prefix query. The whole value is
 // still passed as a bound parameter; quoting each token as a string protects
 // against FTS5 query-syntax injection while keeping substring/prefix semantics.
+// SearchNodes runs an FTS5 MATCH query over the searchable node text,
+// returning ranked hits joined back to the nodes table. Results are ordered by
+// bm25 rank ascending (better matches first), then by qualified_name and node
+// id for deterministic tie-breaking. The query is parameterized; user input is
+// never concatenated into SQL.
+func (s *SQLiteStore) SearchNodes(ctx context.Context, text string, limit int) ([]RankedNode, error) {
+	if s.closed.Load() {
+		return nil, ErrClosed
+	}
+	if strings.TrimSpace(text) == "" {
+		return nil, nil
+	}
+
+	// rank MATCHes by bm25, then deterministic tie-break.
+	q := `
+SELECT n.kind, n.qualified_name, n.source_path, n.line, n.col, rank
+FROM search s JOIN nodes n ON s.owner_id = n.id
+WHERE s.owner_kind = 'node' AND s.text MATCH ?
+ORDER BY rank ASC, n.qualified_name ASC, n.id ASC`
+	args := []any{ftsQuery(text)}
+	if limit > 0 {
+		q += " LIMIT ?"
+		args = append(args, limit)
+	}
+
+	rows, err := s.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("graphstore: fts5 search nodes: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]RankedNode, 0, 64)
+	for rows.Next() {
+		var kind, qn, sp string
+		var line, col int
+		var rank float64
+		if err := rows.Scan(&kind, &qn, &sp, &line, &col, &rank); err != nil {
+			return nil, fmt.Errorf("graphstore: scan ranked node: %w", err)
+		}
+		n, err := model.NewNode(kind, qn, sp, line, col)
+		if err != nil {
+			return nil, fmt.Errorf("graphstore: reconstruct ranked node: %w", err)
+		}
+		out = append(out, RankedNode{Node: n, Rank: rank})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("graphstore: iterate ranked nodes: %w", err)
+	}
+	return out, nil
+}
+
 func ftsQuery(text string) string {
 	fields := strings.Fields(text)
 	if len(fields) == 0 {

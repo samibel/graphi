@@ -126,6 +126,41 @@ func (m *MemStore) Nodes(ctx context.Context, q Query) ([]model.Node, error) {
 	return out, nil
 }
 
+// SearchNodes performs a simple substring search over qualified names and
+// returns deterministic results. rank is always 0 because MemStore has no
+// full-text engine; ordering is by qualified_name then node id ascending.
+func (m *MemStore) SearchNodes(ctx context.Context, text string, limit int) ([]RankedNode, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.closed {
+		return nil, ErrClosed
+	}
+	t := strings.ToLower(strings.TrimSpace(text))
+	if t == "" {
+		return nil, nil
+	}
+	out := make([]RankedNode, 0, len(m.nodes))
+	for _, n := range m.nodes {
+		if !strings.Contains(strings.ToLower(n.QualifiedName()), t) {
+			continue
+		}
+		out = append(out, RankedNode{Node: n, Rank: 0})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Node.QualifiedName() != out[j].Node.QualifiedName() {
+			return out[i].Node.QualifiedName() < out[j].Node.QualifiedName()
+		}
+		return out[i].Node.ID() < out[j].Node.ID()
+	})
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
 func (m *MemStore) Edges(ctx context.Context, q Query) ([]model.Edge, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

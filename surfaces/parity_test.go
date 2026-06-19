@@ -16,7 +16,9 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/cli"
+	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
 
@@ -56,14 +58,15 @@ func seed(t *testing.T) (*graphstore.MemStore, map[string]model.NodeId) {
 
 // cliOutput runs the CLI surface and returns the printed bytes (trailing newline
 // trimmed so it compares to the MCP text payload).
-func cliOutput(t *testing.T, svc *query.Service, op, symbol string, depth int) []byte {
+func cliOutput(t *testing.T, qsvc *query.Service, ssvc *search.Service, op, symbol string, depth int) []byte {
 	t.Helper()
 	var out, errOut bytes.Buffer
 	args := []string{op, "-symbol", symbol}
 	if op == query.OpNeighborhood {
 		args = append(args, "-depth", fmt.Sprintf("%d", depth))
 	}
-	if err := cli.Run(context.Background(), svc, args, &out, &errOut); err != nil {
+	c := client.NewDirect(qsvc, ssvc)
+	if err := cli.Run(context.Background(), c, args, &out, &errOut); err != nil {
 		t.Fatalf("cli.Run(%s): %v (stderr: %s)", op, err, errOut.String())
 	}
 	return bytes.TrimRight(out.Bytes(), "\n")
@@ -71,9 +74,9 @@ func cliOutput(t *testing.T, svc *query.Service, op, symbol string, depth int) [
 
 // mcpOutput runs one tools/call through the MCP stdio server and extracts the
 // canonical text payload from the JSON-RPC response.
-func mcpOutput(t *testing.T, svc *query.Service, op, symbol string, depth int) []byte {
+func mcpOutput(t *testing.T, qsvc *query.Service, ssvc *search.Service, op, symbol string, depth int) []byte {
 	t.Helper()
-	srv := mcp.NewServer(svc)
+	srv := mcp.NewServer(qsvc, ssvc)
 
 	args := map[string]any{"symbol": symbol}
 	if op == query.OpNeighborhood {
@@ -137,10 +140,96 @@ func TestMCP_CLI_Parity(t *testing.T) {
 		{query.OpCallers, model.NodeId("missing"), 0},                    // not-found parity
 	}
 	for _, c := range cases {
-		cliBytes := cliOutput(t, svc, c.op, string(c.symbol), c.depth)
-		mcpBytes := mcpOutput(t, svc, c.op, string(c.symbol), c.depth)
+		cliBytes := cliOutput(t, svc, nil, c.op, string(c.symbol), c.depth)
+		mcpBytes := mcpOutput(t, svc, nil, c.op, string(c.symbol), c.depth)
 		if !bytes.Equal(cliBytes, mcpBytes) {
 			t.Fatalf("%s parity mismatch:\nCLI: %s\nMCP: %s", c.op, cliBytes, mcpBytes)
+		}
+	}
+}
+
+// searchCLIOutput runs the CLI search surface and returns the printed bytes.
+func searchCLIOutput(t *testing.T, qsvc *query.Service, ssvc *search.Service, q string, limit int) []byte {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	args := []string{q}
+	if limit > 0 {
+		args = append([]string{"-limit", fmt.Sprintf("%d", limit)}, args...)
+	}
+	c := client.NewDirect(qsvc, ssvc)
+	if err := cli.RunSearch(context.Background(), c, args, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunSearch(%q): %v (stderr: %s)", q, err, errOut.String())
+	}
+	return bytes.TrimRight(out.Bytes(), "\n")
+}
+
+// searchMCPOutput runs a search tools/call through the MCP stdio server.
+func searchMCPOutput(t *testing.T, qsvc *query.Service, ssvc *search.Service, q string, limit int) []byte {
+	t.Helper()
+	srv := mcp.NewServer(qsvc, ssvc)
+
+	args := map[string]any{"symbol": q}
+	if limit > 0 {
+		args["depth"] = limit
+	}
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params":  map[string]any{"name": "search", "arguments": args},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve search: %v", err)
+	}
+
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode mcp search response %q: %v", out.String(), err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp search error: %s", resp.Error.Message)
+	}
+	if len(resp.Result.Content) != 1 || resp.Result.Content[0].Type != "text" {
+		t.Fatalf("unexpected mcp search content: %+v", resp.Result.Content)
+	}
+	return []byte(resp.Result.Content[0].Text)
+}
+
+// TestMCP_CLI_SearchParity asserts search returns identical bytes through CLI
+// and MCP surfaces.
+func TestMCP_CLI_SearchParity(t *testing.T) {
+	store, _ := seed(t)
+	qsvc := query.New(store)
+	ssvc := search.New(store)
+
+	cases := []struct {
+		q     string
+		limit int
+	}{
+		{"p.A", 0},
+		{"p", 2},
+		{"missing-token", 0},
+	}
+	for _, c := range cases {
+		cliBytes := searchCLIOutput(t, qsvc, ssvc, c.q, c.limit)
+		mcpBytes := searchMCPOutput(t, qsvc, ssvc, c.q, c.limit)
+		if !bytes.Equal(cliBytes, mcpBytes) {
+			t.Fatalf("search parity mismatch for %q:\nCLI: %s\nMCP: %s", c.q, cliBytes, mcpBytes)
 		}
 	}
 }
@@ -149,7 +238,8 @@ func TestMCP_CLI_Parity(t *testing.T) {
 func TestMCP_ToolsList(t *testing.T) {
 	store, _ := seed(t)
 	svc := query.New(store)
-	srv := mcp.NewServer(svc)
+	ssvc := search.New(store)
+	srv := mcp.NewServer(svc, ssvc)
 
 	req := `{"jsonrpc":"2.0","id":1,"method":"tools/list"}` + "\n"
 	var out bytes.Buffer
@@ -166,7 +256,7 @@ func TestMCP_ToolsList(t *testing.T) {
 	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
 		t.Fatal(err)
 	}
-	if len(resp.Result.Tools) != len(query.Operations) {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations))
+	if len(resp.Result.Tools) != len(query.Operations)+1 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+1)
 	}
 }

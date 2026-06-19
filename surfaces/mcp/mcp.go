@@ -1,14 +1,13 @@
-// Package mcp is the MCP stdio surface over the shared engine/query service.
+// Package mcp is the MCP stdio surface over the shared surface client.
 //
 // It speaks a minimal JSON-RPC 2.0 protocol over stdin/stdout using ONLY the Go
 // standard library (encoding/json + bufio) — no external MCP SDK, no CGo, and
-// zero outbound network activity (local-first contract). It exposes the same
-// structural queries as MCP tools and dispatches every call to the SAME
-// query.Service through query.Dispatch, then returns the bytes produced by the
-// SAME canonical serializer (query.Marshal) as the CLI. The serialized result is
+// zero outbound network activity (local-first contract). It exposes structural
+// queries and search as MCP tools and dispatches every call to the SAME shared
+// client, then returns the canonical serialized bytes. The serialized result is
 // therefore byte-identical to the CLI for identical inputs (MCP↔CLI parity).
 //
-// Layering: mcp is a surface. It imports engine/query + core only and holds no
+// Layering: mcp is a surface. It imports surfaces/client only and holds no
 // query/traversal/ordering/serialization logic of its own.
 package mcp
 
@@ -19,8 +18,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/surfaces/client"
 )
 
 // protocolVersion is the MCP protocol version this stdio handler reports.
@@ -47,13 +47,22 @@ type rpcError struct {
 	Message string `json:"message"`
 }
 
-// Server is the MCP stdio handler bound to the shared query service.
+// Server is the MCP stdio handler bound to a shared surface client.
 type Server struct {
-	svc *query.Service
+	c client.Client
 }
 
-// NewServer constructs an MCP server over the shared read-only query service.
-func NewServer(svc *query.Service) *Server { return &Server{svc: svc} }
+// NewServer constructs an MCP server over an in-process query service.
+// If searchSvc is non-nil, the search tool is also advertised.
+func NewServer(q *query.Service, searchSvc *search.Service) *Server {
+	return &Server{c: client.NewDirect(q, searchSvc)}
+}
+
+// NewServerWithClient constructs an MCP server over an arbitrary client
+// (in-process or daemon).
+func NewServerWithClient(c client.Client) *Server {
+	return &Server{c: c}
+}
 
 // Serve runs the JSON-RPC read/dispatch/write loop until in reaches EOF. Each
 // request line is a single JSON object (line-delimited framing); responses are
@@ -102,7 +111,7 @@ func (s *Server) handle(ctx context.Context, req rpcRequest) (rpcResponse, bool)
 	case "notifications/initialized", "initialized":
 		return resp, true // notification, no reply
 	case "tools/list":
-		resp.Result = map[string]any{"tools": toolDescriptors()}
+		resp.Result = map[string]any{"tools": s.toolDescriptors()}
 	case "tools/call":
 		result, rerr := s.toolsCall(ctx, req.Params)
 		if rerr != nil {
@@ -134,6 +143,11 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, &rpcError{Code: -32602, Message: "invalid params"}
 	}
+
+	if p.Name == "search" {
+		return s.searchCall(ctx, p)
+	}
+
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
@@ -142,28 +156,39 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		depth = *p.Arguments.Depth
 	}
 
-	// The tool name IS the operation name, dispatched through the one shared table.
-	res, err := s.svc.Dispatch(ctx, p.Name, model.NodeId(p.Arguments.Symbol), depth)
+	b, err := s.c.Query(ctx, p.Name, p.Arguments.Symbol, depth)
 	if err != nil {
 		return nil, &rpcError{Code: -32602, Message: err.Error()}
 	}
-	b, err := query.Marshal(res)
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
 
-	// MCP tool result: a single text content block carrying the canonical bytes —
-	// byte-identical to the CLI output for the same query.
 	return map[string]any{
 		"content": []map[string]any{{"type": "text", "text": string(b)}},
 		"isError": false,
 	}, nil
 }
 
-// toolDescriptors advertises one tool per supported operation, derived from the
-// engine's canonical operation list so the surface never re-lists them locally.
-func toolDescriptors() []map[string]any {
-	tools := make([]map[string]any, 0, len(query.Operations))
+func (s *Server) searchCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Symbol == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+	}
+	limit := search.DefaultResultLimit
+	if p.Arguments.Depth != nil && *p.Arguments.Depth > 0 {
+		limit = *p.Arguments.Depth
+	}
+	b, err := s.c.Search(ctx, p.Arguments.Symbol, limit)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// toolDescriptors advertises query tools and, when the client supports it, the
+// search tool. The list is derived from the engine's canonical operation list.
+func (s *Server) toolDescriptors() []map[string]any {
+	tools := make([]map[string]any, 0, len(query.Operations)+1)
 	for _, op := range query.Operations {
 		props := map[string]any{
 			"symbol": map[string]any{"type": "string", "description": "symbol (node) id to query"},
@@ -179,6 +204,21 @@ func toolDescriptors() []map[string]any {
 			"name":        op,
 			"description": "structural query: " + op,
 			"inputSchema": map[string]any{"type": "object", "properties": props, "required": required},
+		})
+	}
+	// Probe whether search is available by attempting a dummy search.
+	if _, err := s.c.Search(context.Background(), "__probe__", 1); err == nil {
+		tools = append(tools, map[string]any{
+			"name":        "search",
+			"description": "lexical and symbol search over the indexed graph",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"symbol": map[string]any{"type": "string", "description": "search query (symbol token or free-text)"},
+					"depth":  map[string]any{"type": "integer", "description": "maximum number of results (default 100)"},
+				},
+				"required": []string{"symbol"},
+			},
 		})
 	}
 	return tools

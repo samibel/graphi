@@ -17,6 +17,8 @@ package parse
 import (
 	"context"
 	"errors"
+
+	"github.com/samibel/graphi/core/model"
 )
 
 // ErrNoParser is the typed sentinel returned when no parser is registered for a
@@ -49,6 +51,14 @@ type ParseResult struct {
 	// Root is the backend-specific AST root/handle. May be nil for parsers that
 	// only expose structural metadata.
 	Root any
+	// Nodes and Edges are optional graph elements produced by parsers that also
+	// perform extraction. When populated, ingest pipelines can commit them
+	// directly without a separate extraction pass.
+	Nodes []model.Node
+	Edges []model.Edge
+	// References lists paths/files this source file depends on (imports, includes,
+	// etc.). Ingest uses this to compute the reverse-dependency cascade.
+	References []string
 }
 
 // Parser is the stable contract every language backend implements. Implementations
