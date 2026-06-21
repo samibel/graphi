@@ -15,6 +15,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -133,8 +134,13 @@ func (s *Server) handle(ctx context.Context, req rpcRequest) (rpcResponse, bool)
 type callParams struct {
 	Name      string `json:"name"`
 	Arguments struct {
-		Symbol string `json:"symbol"`
-		Depth  *int   `json:"depth"`
+		Symbol    string `json:"symbol"`
+		Target    string `json:"target"`
+		Concept   string `json:"concept"`
+		Depth     *int   `json:"depth"`
+		Analyzer  string `json:"analyzer"`
+		Direction string `json:"direction"`
+		MaxNodes  *int   `json:"max_nodes"`
 	} `json:"arguments"`
 }
 
@@ -149,6 +155,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	}
 	if p.Name == "savings" {
 		return s.savingsCall(ctx)
+	}
+	if p.Name == "analyze" {
+		return s.analysisCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -202,6 +211,42 @@ func (s *Server) savingsCall(ctx context.Context) (any, *rpcError) {
 	}, nil
 }
 
+// analysisCall dispatches a named analyzer (SW-022) through the shared client.
+// It holds no analysis logic: it builds AnalyzeParams, calls client.Client.Analyze,
+// and returns the canonical serialized bytes (byte-identical to the CLI for the
+// same inputs, preserving MCP<->CLI parity).
+func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Analyzer == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: analyzer"}
+	}
+	if p.Arguments.Symbol == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
+	}
+	direction := "forward"
+	if p.Arguments.Direction != "" {
+		direction = p.Arguments.Direction
+	}
+	maxNodes := 0
+	if p.Arguments.MaxNodes != nil {
+		maxNodes = *p.Arguments.MaxNodes
+	}
+	b, err := s.c.Analyze(ctx, client.AnalyzeParams{
+		Name:      p.Arguments.Analyzer,
+		Symbol:    p.Arguments.Symbol,
+		Target:    p.Arguments.Target,
+		Concept:   p.Arguments.Concept,
+		Direction: direction,
+		MaxNodes:  maxNodes,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
 // toolDescriptors advertises query tools and, when the client supports it, the
 // search tool. The list is derived from the engine's canonical operation list.
 func (s *Server) toolDescriptors() []map[string]any {
@@ -246,5 +291,33 @@ func (s *Server) toolDescriptors() []map[string]any {
 			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
 		})
 	}
+	// Analyzers (SW-022). Advertised when the client has an analysis service
+	// attached (probed: a capability-missing client returns ErrAnalysisUnavailable;
+	// any other response — including a not-found result for the probe symbol —
+	// means the service is configured).
+	if _, err := s.c.Analyze(context.Background(), client.AnalyzeParams{
+		Name: "impact", Symbol: "__probe__", Direction: "forward",
+	}); err == nil || !isAnalysisUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        "analyze",
+			"description": "run a named graph analyzer (e.g. impact forward/reverse blast-radius reachability) over the indexed graph",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"analyzer":  map[string]any{"type": "string", "description": "analyzer name (e.g. impact)"},
+					"symbol":    map[string]any{"type": "string", "description": "symbol (node) id to analyze"},
+					"direction": map[string]any{"type": "string", "description": "traversal direction for directional analyzers: forward (dependents/blast-radius) | reverse (dependencies)"},
+					"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
+				},
+				"required": []string{"analyzer", "symbol"},
+			},
+		})
+	}
 	return tools
+}
+
+// isAnalysisUnavailable reports whether err is the capability-missing sentinel.
+// Factored out so the probe logic reads intent rather than string-matching.
+func isAnalysisUnavailable(err error) bool {
+	return errors.Is(err, client.ErrAnalysisUnavailable)
 }

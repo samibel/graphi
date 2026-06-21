@@ -18,6 +18,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
@@ -42,6 +43,8 @@ func main() {
 		os.Exit(runSearch(os.Args[2:]))
 	case "savings":
 		os.Exit(runSavings(os.Args[2:]))
+	case "analyze":
+		os.Exit(runAnalyze(os.Args[2:]))
 	case "mcp":
 		os.Exit(runMCP(os.Args[2:]))
 	case "daemon":
@@ -72,7 +75,7 @@ func makeClient(store graphstore.Graphstore, socket string) client.Client {
 	if socket != "" {
 		return daemon.NewClient(socket, "")
 	}
-	return client.NewDirect(query.New(store), search.New(store))
+	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
 }
 
 // extractFlags pulls -db and -daemon options off the front of args.
@@ -129,6 +132,21 @@ func runSearch(args []string) int {
 	return 0
 }
 
+// runAnalyze launches the CLI analyzer surface (SW-022). Usage:
+//
+//	graphi analyze [-db path] [-daemon socket] <analyzer> -symbol <id> [-direction forward|reverse] [-max-nodes N]
+func runAnalyze(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunAnalysis(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		return 1
+	}
+	return 0
+}
+
 // runMCP launches the MCP stdio server. Usage: graphi mcp [-db path] [-daemon socket]
 func runMCP(args []string) int {
 	dbPath, socket, _ := extractFlags(args)
@@ -156,7 +174,7 @@ func makeClientOrOpen(dbPath, socket string) client.Client {
 		return nil
 	}
 	defer func() { _ = store.Close() }()
-	return client.NewDirect(query.New(store), search.New(store))
+	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
 }
 
 // runDaemon runs the daemon lifecycle commands: start, stop, status.

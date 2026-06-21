@@ -124,3 +124,50 @@ func RunSavings(ctx context.Context, c client.Client, out, errOut io.Writer) err
 	}
 	return nil
 }
+
+// RunAnalysis executes one CLI analyzer invocation against the shared client and
+// writes the canonical serialized result to out (SW-022). The CLI holds no
+// analysis logic of its own — it parses arguments, builds AnalyzeParams, calls
+// client.Client.Analyze, and prints the canonical bytes (MCP<->CLI parity).
+//
+// Usage:
+//
+//	<name> -symbol <id> [-direction forward|reverse] [-max-nodes N]
+//
+// where <name> is a registered analyzer (e.g. impact).
+func RunAnalysis(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	if len(args) < 1 {
+		fmt.Fprintf(errOut, "usage: <analyzer> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
+		return fmt.Errorf("cli: missing analyzer name")
+	}
+	name := args[0]
+	fs := flag.NewFlagSet(name, flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	symbol := fs.String("symbol", "", "symbol (node) id to analyze")
+	target := fs.String("target", "", "target symbol (node) id (call-chain endpoint)")
+	concept := fs.String("concept", "", "concept term (concept resolver)")
+	direction := fs.String("direction", "forward", "traversal direction for directional analyzers (forward|reverse)")
+	maxNodes := fs.Int("max-nodes", 0, "output budget on reached nodes (0 = analyzer default)")
+	if err := fs.Parse(args[1:]); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if *symbol == "" {
+		fmt.Fprintln(errOut, "cli: -symbol is required")
+		return fmt.Errorf("cli: -symbol is required")
+	}
+	b, err := c.Analyze(ctx, client.AnalyzeParams{
+		Name:      name,
+		Symbol:    *symbol,
+		Target:    *target,
+		Concept:   *concept,
+		Direction: *direction,
+		MaxNodes:  *maxNodes,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}

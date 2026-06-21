@@ -122,6 +122,17 @@ func (c *DaemonClient) Savings(ctx context.Context) ([]byte, error) {
 	return c.request(ctx, "savings", nil)
 }
 
+// Analyze implements client.Client. The daemon analysis RPC is not yet wired
+// (SW-022 ships the in-process analysis path that both MCP stdio and CLI direct
+// mode use); until it is added, the daemon client reports the capability as
+// unavailable rather than fabricating a result. Query/search/savings are
+// unaffected.
+func (c *DaemonClient) Analyze(ctx context.Context, p client.AnalyzeParams) ([]byte, error) {
+	_ = ctx
+	_ = p
+	return nil, client.ErrAnalysisUnavailable
+}
+
 // SocketPath returns the configured socket path.
 func (c *DaemonClient) SocketPath() string { return c.socketPath }
 

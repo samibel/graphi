@@ -15,6 +15,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/cli"
@@ -258,5 +259,275 @@ func TestMCP_ToolsList(t *testing.T) {
 	}
 	if len(resp.Result.Tools) != len(query.Operations)+1 {
 		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+1)
+	}
+}
+
+// analysisCLIOutput runs the CLI analyzer surface (SW-022) and returns the
+// printed bytes (trailing newline trimmed).
+func analysisCLIOutput(t *testing.T, direct *client.Direct, analyzer, symbol, direction string, maxNodes int) []byte {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	args := []string{analyzer, "-symbol", symbol, "-direction", direction}
+	if maxNodes > 0 {
+		args = append(args, "-max-nodes", fmt.Sprintf("%d", maxNodes))
+	}
+	if err := cli.RunAnalysis(context.Background(), direct, args, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunAnalysis(%s): %v (stderr: %s)", analyzer, err, errOut.String())
+	}
+	return bytes.TrimRight(out.Bytes(), "\n")
+}
+
+// analysisMCPOutput runs an analyze tools/call through the MCP stdio server
+// bound to the same in-process client and extracts the canonical text payload.
+func analysisMCPOutput(t *testing.T, direct *client.Direct, analyzer, symbol, direction string, maxNodes int) []byte {
+	t.Helper()
+	srv := mcp.NewServerWithClient(direct)
+
+	args := map[string]any{"analyzer": analyzer, "symbol": symbol, "direction": direction}
+	if maxNodes > 0 {
+		args["max_nodes"] = maxNodes
+	}
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params":  map[string]any{"name": "analyze", "arguments": args},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve analyze: %v", err)
+	}
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode mcp analyze response %q: %v", out.String(), err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp analyze error: %s", resp.Error.Message)
+	}
+	if len(resp.Result.Content) != 1 || resp.Result.Content[0].Type != "text" {
+		t.Fatalf("unexpected mcp analyze content: %+v", resp.Result.Content)
+	}
+	return []byte(resp.Result.Content[0].Text)
+}
+
+// TestMCP_CLI_AnalysisParity (SW-022): the impact analyzer returns byte-identical
+// output through the CLI and MCP surfaces for identical inputs (parity by
+// construction through the single client.Analyze seam). Also covers the not-found
+// outcome and both directions.
+func TestMCP_CLI_AnalysisParity(t *testing.T) {
+	store, ids := seed(t)
+	direct := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+
+	cases := []struct {
+		name      string
+		analyzer  string
+		symbol    string
+		direction string
+		maxNodes  int
+	}{
+		{"impact-forward-C", "impact", string(ids["C"]), "forward", 0},
+		{"impact-reverse-A", "impact", string(ids["A"]), "reverse", 0},
+		{"impact-bounded", "impact", string(ids["C"]), "forward", 2},
+		{"impact-not-found", "impact", "missing-symbol", "forward", 0},
+	}
+	for _, c := range cases {
+		cliBytes := analysisCLIOutput(t, direct, c.analyzer, c.symbol, c.direction, c.maxNodes)
+		mcpBytes := analysisMCPOutput(t, direct, c.analyzer, c.symbol, c.direction, c.maxNodes)
+		if !bytes.Equal(cliBytes, mcpBytes) {
+			t.Fatalf("%s parity mismatch:\nCLI: %s\nMCP: %s", c.name, cliBytes, mcpBytes)
+		}
+	}
+}
+
+// TestMCP_AnalyzeToolAdvertised (SW-022): the analyze tool is advertised when an
+// analysis service is attached, and NOT advertised when it is absent.
+func TestMCP_AnalyzeToolAdvertised(t *testing.T) {
+	store, _ := seed(t)
+
+	// With analysis attached -> analyze tool advertised.
+	withAnalysis := client.NewDirect(query.New(store), nil).
+		WithAnalysis(analysis.NewDefaultService(store))
+	srv := mcp.NewServerWithClient(withAnalysis)
+	tools := listTools(t, srv)
+	if !containsName(tools, "analyze") {
+		t.Fatal("analyze tool not advertised when analysis service is attached")
+	}
+
+	// Without analysis (the legacy constructor) -> analyze tool NOT advertised.
+	srvNoAnalysis := mcp.NewServer(query.New(store), nil)
+	toolsNo := listTools(t, srvNoAnalysis)
+	if containsName(toolsNo, "analyze") {
+		t.Fatal("analyze tool advertised when analysis service is absent (should probe-hide)")
+	}
+}
+
+func listTools(t *testing.T, srv *mcp.Server) []string {
+	t.Helper()
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/list"}` + "\n"
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(req), &out); err != nil {
+		t.Fatal(err)
+	}
+	var resp struct {
+		Result struct {
+			Tools []struct {
+				Name string `json:"name"`
+			} `json:"tools"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatal(err)
+	}
+	names := make([]string, 0, len(resp.Result.Tools))
+	for _, tk := range resp.Result.Tools {
+		names = append(names, tk.Name)
+	}
+	return names
+}
+
+func containsName(names []string, want string) bool {
+	for _, n := range names {
+		if n == want {
+			return true
+		}
+	}
+	return false
+}
+
+// TestMCP_CLI_BatchedParity (SW-026): the batched orchestrator returns
+// byte-identical output through CLI and MCP for identical symbol+target, and
+// the batched analyzer is advertised alongside its siblings.
+func TestMCP_CLI_BatchedParity(t *testing.T) {
+	store, ids := seed(t)
+	direct := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+
+	// CLI: analyze batched -symbol C -target A
+	var cliOut, cliErr bytes.Buffer
+	if err := cli.RunAnalysis(context.Background(), direct,
+		[]string{"batched", "-symbol", string(ids["C"]), "-target", string(ids["A"])},
+		&cliOut, &cliErr); err != nil {
+		t.Fatalf("cli batched: %v (stderr %s)", err, cliErr.String())
+	}
+	cliBytes := bytes.TrimRight(cliOut.Bytes(), "\n")
+
+	// MCP: tools/call analyze {analyzer:batched, symbol:C, target:A}
+	args := map[string]any{
+		"analyzer": "batched",
+		"symbol":   string(ids["C"]),
+		"target":   string(ids["A"]),
+	}
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params":  map[string]any{"name": "analyze", "arguments": args},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := mcp.NewServerWithClient(direct)
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp batched serve: %v", err)
+	}
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp batched error: %s", resp.Error.Message)
+	}
+	mcpBytes := []byte(resp.Result.Content[0].Text)
+	if !bytes.Equal(cliBytes, mcpBytes) {
+		t.Fatalf("batched parity mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpBytes)
+	}
+}
+
+// TestMCP_CLI_CallChainParity (SW-023): the call-chain analyzer returns
+// byte-identical output through CLI and MCP for identical source+target, and
+// the call-chain analyzer is advertised alongside impact.
+func TestMCP_CLI_CallChainParity(t *testing.T) {
+	store, ids := seed(t)
+	direct := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+
+	// CLI: analyze call-chain -symbol A -target C
+	var cliOut, cliErr bytes.Buffer
+	if err := cli.RunAnalysis(context.Background(), direct,
+		[]string{"call-chain", "-symbol", string(ids["A"]), "-target", string(ids["C"])},
+		&cliOut, &cliErr); err != nil {
+		t.Fatalf("cli call-chain: %v (stderr %s)", err, cliErr.String())
+	}
+	cliBytes := bytes.TrimRight(cliOut.Bytes(), "\n")
+
+	// MCP: tools/call analyze {analyzer:call-chain, symbol:A, target:C}
+	args := map[string]any{
+		"analyzer": "call-chain",
+		"symbol":   string(ids["A"]),
+		"target":   string(ids["C"]),
+	}
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params":  map[string]any{"name": "analyze", "arguments": args},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := mcp.NewServerWithClient(direct)
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp call-chain serve: %v", err)
+	}
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp call-chain error: %s", resp.Error.Message)
+	}
+	mcpBytes := []byte(resp.Result.Content[0].Text)
+	if !bytes.Equal(cliBytes, mcpBytes) {
+		t.Fatalf("call-chain parity mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpBytes)
+	}
+
+	// Both analyzers must be advertised now.
+	names := listTools(t, srv)
+	if !containsName(names, "analyze") {
+		t.Fatal("analyze tool not advertised")
 	}
 }
