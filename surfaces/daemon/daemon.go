@@ -26,6 +26,7 @@ import (
 type Handler interface {
 	Query(ctx context.Context, op, symbol string, depth int) ([]byte, error)
 	Search(ctx context.Context, q string, limit int) ([]byte, error)
+	Savings(ctx context.Context) ([]byte, error)
 }
 
 // request is the JSON envelope sent over the Unix socket.
@@ -179,6 +180,12 @@ func (s *Server) dispatch(ctx context.Context, req request) response {
 			return response{OK: false, Error: "invalid search params"}
 		}
 		b, err := s.handler.Search(ctx, p.Query, p.Limit)
+		if err != nil {
+			return response{OK: false, Error: err.Error()}
+		}
+		return response{OK: true, Body: b}
+	case "savings":
+		b, err := s.handler.Savings(ctx)
 		if err != nil {
 			return response{OK: false, Error: err.Error()}
 		}

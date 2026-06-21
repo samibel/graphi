@@ -116,6 +116,12 @@ func (c *DaemonClient) Search(ctx context.Context, q string, limit int) ([]byte,
 	return c.request(ctx, "search", searchParams{Query: q, Limit: limit})
 }
 
+// Savings implements client.Client. It forwards a savings readout request to
+// the daemon.
+func (c *DaemonClient) Savings(ctx context.Context) ([]byte, error) {
+	return c.request(ctx, "savings", nil)
+}
+
 // SocketPath returns the configured socket path.
 func (c *DaemonClient) SocketPath() string { return c.socketPath }
 

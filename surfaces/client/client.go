@@ -14,8 +14,14 @@ import (
 // ErrSearchUnavailable is returned when a Client has no search service configured.
 var ErrSearchUnavailable = errors.New("client: search service unavailable")
 
-// Client is the thin contract every surface uses to execute structural queries
-// and search. Implementations may be in-process or over a Unix domain socket.
+// ErrSavingsUnavailable is returned when a Client has no savings ledger
+// configured (SW-020). Query/search still work; only the savings readout is
+// unavailable.
+var ErrSavingsUnavailable = errors.New("client: savings ledger unavailable")
+
+// Client is the thin contract every surface uses to execute structural queries,
+// search, and read the savings ledger. Implementations may be in-process or over
+// a Unix domain socket.
 type Client interface {
 	// Query runs a structural query operation and returns the canonical
 	// serialized result bytes.
@@ -23,4 +29,8 @@ type Client interface {
 	// Search runs a lexical/symbol search and returns the canonical serialized
 	// result bytes.
 	Search(ctx context.Context, q string, limit int) ([]byte, error)
+	// Savings returns the canonical serialized savings-ledger readout (per-call,
+	// per-session, cumulative USD + cap flags). It is the single source for the
+	// MCP and CLI readouts so both surfaces stay in parity.
+	Savings(ctx context.Context) ([]byte, error)
 }

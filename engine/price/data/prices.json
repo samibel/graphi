@@ -1,0 +1,9 @@
+{
+  "version": "prices-v1",
+  "models": {
+    "gpt-4o":         { "input_per_token_microusd": 2500, "output_per_token_microusd": 10000 },
+    "gpt-4o-mini":    { "input_per_token_microusd":  150, "output_per_token_microusd":   600 },
+    "claude-sonnet":  { "input_per_token_microusd": 3000, "output_per_token_microusd": 15000 },
+    "claude-haiku":   { "input_per_token_microusd":  250, "output_per_token_microusd":  1250 }
+  }
+}

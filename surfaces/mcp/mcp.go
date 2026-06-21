@@ -147,6 +147,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == "search" {
 		return s.searchCall(ctx, p)
 	}
+	if p.Name == "savings" {
+		return s.savingsCall(ctx)
+	}
 
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
@@ -185,10 +188,24 @@ func (s *Server) searchCall(ctx context.Context, p callParams) (any, *rpcError) 
 	}, nil
 }
 
+// savingsCall dispatches the savings readout tool (SW-020). It returns the
+// canonical structured readout (per-call/session/cumulative USD + cap flags) so
+// the MCP readout stays byte-identical to the CLI for the same ledger state.
+func (s *Server) savingsCall(ctx context.Context) (any, *rpcError) {
+	b, err := s.c.Savings(ctx)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
 // toolDescriptors advertises query tools and, when the client supports it, the
 // search tool. The list is derived from the engine's canonical operation list.
 func (s *Server) toolDescriptors() []map[string]any {
-	tools := make([]map[string]any, 0, len(query.Operations)+1)
+	tools := make([]map[string]any, 0, len(query.Operations)+2)
 	for _, op := range query.Operations {
 		props := map[string]any{
 			"symbol": map[string]any{"type": "string", "description": "symbol (node) id to query"},
@@ -219,6 +236,14 @@ func (s *Server) toolDescriptors() []map[string]any {
 				},
 				"required": []string{"symbol"},
 			},
+		})
+	}
+	// Savings readout (SW-020). Advertised when the client has a ledger attached.
+	if _, err := s.c.Savings(context.Background()); err == nil {
+		tools = append(tools, map[string]any{
+			"name":        "savings",
+			"description": "token-savings ledger readout: per-call / per-session / cumulative USD with anti-gaming cap flags",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
 		})
 	}
 	return tools

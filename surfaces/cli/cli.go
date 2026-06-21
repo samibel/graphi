@@ -7,10 +7,13 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 
+	"github.com/samibel/graphi/engine/ledger"
+	"github.com/samibel/graphi/engine/price"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -85,6 +88,37 @@ func RunSearch(ctx context.Context, c client.Client, args []string, out, errOut 
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunSavings prints the savings-ledger readout (SW-020): the headline
+// "Saved $X this session" line plus per-call and cumulative USD figures,
+// followed by the canonical structured readout JSON (identical to the MCP tool
+// result for the same ledger state, preserving MCP<->CLI parity).
+//
+// Usage:
+//
+//	savings
+func RunSavings(ctx context.Context, c client.Client, out, errOut io.Writer) error {
+	b, err := c.Savings(ctx)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	var r ledger.Readout
+	if err := json.Unmarshal(b, &r); err != nil {
+		return fmt.Errorf("cli: decode readout: %w", err)
+	}
+	// Headline + figures (formatted via the shared micro-USD formatter).
+	fmt.Fprintf(out, "Saved %s this session\n", price.FormatUSD(r.SessionMicroUSD))
+	fmt.Fprintf(out, "per-call: %s\n", price.FormatUSD(r.LastCallMicroUSD))
+	fmt.Fprintf(out, "cumulative: %s\n", price.FormatUSD(r.CumulativeMicroUSD))
+	if r.SessionCapped || r.LastCallCapped {
+		fmt.Fprintln(out, "note: anti-gaming cap applied to one or more contributions")
+	}
+	// Canonical structured readout (parity with the MCP tool result).
 	if _, err := out.Write(append(b, '\n')); err != nil {
 		return fmt.Errorf("cli: write output: %w", err)
 	}

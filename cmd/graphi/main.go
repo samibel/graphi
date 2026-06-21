@@ -18,6 +18,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/internal/version"
@@ -39,6 +40,8 @@ func main() {
 		os.Exit(runQuery(os.Args[2:]))
 	case "search":
 		os.Exit(runSearch(os.Args[2:]))
+	case "savings":
+		os.Exit(runSavings(os.Args[2:]))
 	case "mcp":
 		os.Exit(runMCP(os.Args[2:]))
 	case "daemon":
@@ -204,6 +207,42 @@ func runDaemon(args []string) int {
 		fmt.Fprintf(os.Stderr, "graphi: unknown daemon command %q\n", cmd)
 		return 1
 	}
+}
+
+// runSavings launches the CLI savings readout surface. Usage:
+//
+//	graphi savings [-db path] [-daemon socket] [-ledger path]
+func runSavings(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := ""
+	for len(rest) > 0 {
+		if rest[0] == "-ledger" && len(rest) >= 2 {
+			ledgerPath = rest[1]
+			rest = rest[2:]
+			continue
+		}
+		break
+	}
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	// If an in-process client, attach a local ledger so the readout is available.
+	if socket == "" {
+		if l, err := ledger.Open(ledgerPath); err == nil {
+			defer func() { _ = l.Close() }()
+			if d, ok := c.(*client.Direct); ok {
+				c = d.WithLedger(l)
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "graphi: open ledger: %v\n", err)
+		}
+	}
+	if err := cli.RunSavings(context.Background(), c, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: savings: %v\n", err)
+		return 1
+	}
+	return 0
 }
 
 // runVersion prints the release version + VCS metadata embedded by SW-013's
