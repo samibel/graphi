@@ -1,0 +1,45 @@
+# SW-009: CGo-Free Build Conformance Gate for the Default graphi Binary
+#
+# A single gating job that proves the default graphi graph is and stays CGo-free.
+# The job is split into distinctly-named steps so the conformance result is
+# visible as its own check in the build summary (AC: named distinct check):
+#
+#   build      — CGO_ENABLED=0 build of ./cmd/graphi
+#   unit-tests — CGO_ENABLED=0 go test ./internal/cgoconformance/...
+#   gate       — the named check "cgo-free-conformance" via cmd/cgoconformance,
+#                which builds the default binary, asserts static linkage with
+#                zero dynamic C deps, scans the default import graph for any
+#                cgo-requiring package (naming the offender), explicitly excludes
+#                the opt-in graphi-broad flavor, and runs the default test suite
+#                under CGO_ENABLED=0.
+#
+# The opt-in graphi-broad CGO flavor is deliberately never built here: it has its
+# own separate conformance track and must not affect this gate's verdict.
+name: cgo-conformance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cgo-free-conformance:
+    name: cgo-free-conformance
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: build (default graph, CGO_ENABLED=0)
+        run: go build ./cmd/graphi/
+
+      - name: unit-tests (gate logic, CGO_ENABLED=0)
+        run: go test ./internal/cgoconformance/...
+
+      - name: cgo-free-conformance (named check)
+        run: go run ./cmd/cgoconformance -target ./cmd/graphi/ -test-target ./... -cgo 0

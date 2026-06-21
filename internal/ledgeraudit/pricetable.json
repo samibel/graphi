@@ -1,0 +1,7 @@
+{
+  "version": "2026-06-20-v1",
+  "models": {
+    "default": { "input_per_token_microusd": 5, "output_per_token_microusd": 15 },
+    "premium": { "input_per_token_microusd": 10, "output_per_token_microusd": 30 }
+  }
+}

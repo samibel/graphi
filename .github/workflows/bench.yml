@@ -1,0 +1,36 @@
+# SW-010 — Budget-gated benchmark suite (graphi)
+#
+# Runs the four-metric benchmark harness, gates each metric against its pinned
+# budget in bench/bench-budget.yml, emits a machine-readable report artifact for
+# audit/trend tracking, and fails the build when any metric exceeds its budget
+# (naming the regressed metric + delta). Hermetic: loopback-only, CGo-free,
+# zero-telemetry (reuses SW-008 posture). Re-pinning is a manifest-only edit.
+name: bench
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  bench-budget-gate:
+    name: budget-gated benchmark suite
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: budget-gated benchmark (cold-start P95, full-index, freshness, binary size)
+        run: go run ./cmd/bench -budget bench/bench-budget.yml -samples 15 -binary ./cmd/graphi/ > bench-report.json
+
+      - name: upload benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report
+          path: bench-report.json

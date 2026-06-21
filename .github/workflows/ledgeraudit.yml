@@ -1,0 +1,38 @@
+# SW-011 — Savings-ledger audit, recompute & anti-gaming conformance suite.
+#
+# A single gating job that runs the independent savings-ledger audit hermetically
+# against the pinned frozen workload + embedded local price table, and fails on
+# any recompute / cap / integrity / locality violation. The distinct named check
+# is "savings-ledger-audit".
+name: ledgeraudit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  savings-ledger-audit:
+    name: savings-ledger-audit
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: unit-tests (recompute, cap, integrity, locality)
+        run: go test ./internal/ledgeraudit/...
+
+      - name: savings-ledger-audit (named check)
+        run: go run ./cmd/ledgeraudit > ledgeraudit-report.json
+
+      - name: upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ledgeraudit-report
+          path: ledgeraudit-report.json

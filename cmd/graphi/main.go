@@ -14,11 +14,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/version"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/daemon"
@@ -26,6 +28,7 @@ import (
 )
 
 func main() {
+	_ = version.Version // linked so -ldflags -X can stamp it; see internal/version
 	if len(os.Args) < 2 {
 		runParseDefault(nil)
 		return
@@ -40,6 +43,8 @@ func main() {
 		os.Exit(runMCP(os.Args[2:]))
 	case "daemon":
 		os.Exit(runDaemon(os.Args[2:]))
+	case "version":
+		runVersion()
 	case "parse":
 		runParseDefault(os.Args[2:])
 	default:
@@ -199,6 +204,24 @@ func runDaemon(args []string) int {
 		fmt.Fprintf(os.Stderr, "graphi: unknown daemon command %q\n", cmd)
 		return 1
 	}
+}
+
+// runVersion prints the release version + VCS metadata embedded by SW-013's
+// packaging (ldflags-stamped version.Version + debug.ReadBuildInfo VCS stamps).
+// It is how the release checker verifies the embedded version/commit/date.
+func runVersion() {
+	commit, date := "", ""
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range info.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				commit = s.Value
+			case "vcs.time":
+				date = s.Value
+			}
+		}
+	}
+	fmt.Printf("graphi version=%s commit=%s date=%s\n", version.Version, commit, date)
 }
 
 // runParseDefault preserves the original SW-001 parser-registry behavior.

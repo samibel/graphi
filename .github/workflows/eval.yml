@@ -1,0 +1,39 @@
+# SW-012 — Token-parity eval harness with CI-gated per-capability coverage matrix.
+#
+# Runs the frozen labeled eval set, measures graphi-vs-baseline token ratios with
+# the deterministic offline tokenizer, emits a version-stamped report, enforces
+# the per-capability coverage matrix + drift gate, and gates the public ~50x claim
+# on the measured aggregate (resolving OQ4 with evidence). Hermetic. The distinct
+# named check is "token-parity-eval".
+name: eval
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  token-parity-eval:
+    name: token-parity-eval
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: unit-tests (ratios, claim gate, coverage, drift, determinism)
+        run: go test ./internal/eval/...
+
+      - name: token-parity-eval + claim gate (named check)
+        run: go run ./cmd/eval -claim-validate > eval-report.json
+
+      - name: upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval-report.json

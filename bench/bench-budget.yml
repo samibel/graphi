@@ -1,0 +1,31 @@
+# SW-010 — Budget-gated benchmark manifest.
+#
+# Single source of truth for every benchmark budget. Baselines are version-
+# stamped: an intentional, justified perf change is made by editing the baseline
+# (and budget) here and bumping baseline_version — NO code change is required
+# (AC: reviewer-driven baseline re-pinning). The gate fails when a measured
+# metric EXCEEDS its budget and reports the delta vs the baseline.
+#
+# Units: *_ms in milliseconds; binary_size_bytes in bytes. All metrics use the
+# "<=" comparator (measured must not exceed budget).
+version: 1
+baseline_version: "2026-06-20-v1"
+fixture_digest: "352f2fd0ea28f0652ed4b71f651b737301a20604e40182c83ae1a94f02e847ee"
+
+metrics:
+  cold_start_p95_ms:
+    baseline: 60
+    budget: 100
+    unit: ms
+  full_index_ms:
+    baseline: 120
+    budget: 300
+    unit: ms
+  freshness_lag_ms:
+    baseline: 50
+    budget: 2000
+    unit: ms
+  binary_size_bytes:
+    baseline: 9000000
+    budget: 13000000
+    unit: bytes

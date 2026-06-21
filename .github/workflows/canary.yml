@@ -1,0 +1,52 @@
+# SW-008: Hermetic Egress-Denied Canary + Zero-Telemetry CI Gate
+#
+# Two jobs, both gating (non-zero exit fails the build):
+#   gate    — static zero-telemetry scan over the default CGo-free graph. Runs
+#             anywhere (no isolation needed).
+#   runtime — full-surface egress canary under loopback-only netns. Requires a
+#             Linux runner with network-namespace capability; HARD-FAILS (per
+#             SW-008 AC) if isolation is unavailable rather than silently passing.
+name: canary
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    name: static zero-telemetry gate (default graph)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: workspace/graphi/go.mod
+      - name: Build canary (CGo-free)
+        working-directory: workspace/graphi
+        run: go build -o /tmp/graphi-canary ./cmd/canary
+      - name: Run static zero-telemetry gate
+        working-directory: workspace/graphi
+        run: /tmp/graphi-canary gate
+
+  runtime:
+    name: hermetic egress-denied canary (loopback-only netns)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: workspace/graphi/go.mod
+      - name: Build canary (CGo-free)
+        working-directory: workspace/graphi
+        run: go build -o /tmp/graphi-canary ./cmd/canary
+      # The runtime canary must run with CAP_SYS_ADMIN to unshare a network
+      # namespace. If the runner cannot provide isolation, the canary HARD-FAILS
+      # by design (exit non-zero) — this is the SW-008 anti-masking guarantee.
+      - name: Run runtime egress canary (privileged for netns)
+        working-directory: workspace/graphi
+        run: sudo --preserve-env=CGO_ENABLED /tmp/graphi-canary runtime

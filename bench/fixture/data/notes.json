@@ -1,0 +1,1 @@
+{"project": "graphi-bench-fixture", "frozen": true, "nodes": ["alpha", "beta", "gamma"], "edges": [{"from": "alpha", "to": "beta"}]}

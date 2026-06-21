@@ -1,0 +1,62 @@
+# SW-013 — Workspace CI, layer-direction guard, and reproducible release packaging.
+#
+# Three distinct, named checks:
+#   workspace-build-test — build + test every module discovered from go.work use
+#                          directives as a single gated job (new modules auto-included).
+#   layer-direction      — enforce cmd → surfaces → engine → core, naming any
+#                          upward/sideways import violation.
+#   release              — produce the single static CGo-free, version/commit/date-
+#                          stamped graphi binary and verify a reproducible (byte-
+#                          identical) build.
+name: release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  workspace-build-test:
+    name: workspace build + test (auto-discovered)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      # ./... honors go.work's use directives, so new modules are auto-included.
+      - name: build all modules
+        run: go build ./...
+      - name: test all modules
+        run: go test ./...
+
+  layer-direction:
+    name: layer-direction guard (cmd→surfaces→engine→core)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: layer-direction check
+        run: go run ./cmd/layerguard
+
+  release:
+    name: reproducible static release binary
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: reproducible release build (verify-only)
+        run: go run ./cmd/release -version "${{ github.ref_name }}-${{ github.sha }}" -verify-only
