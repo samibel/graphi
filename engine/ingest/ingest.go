@@ -60,6 +60,10 @@ const (
 	EditOpMove EditOpType = "move"
 	// EditOpSignatureChange mirrors edit.RefactorSignatureChange.
 	EditOpSignatureChange EditOpType = "signature_change"
+	// EditOpUndo is the SW-038 reversal: an undo restores the pre-edit source +
+	// graph snapshot and re-indexes the touched files under this op-type so the
+	// edit_provenance row distinguishes a reversal from a forward edit.
+	EditOpUndo EditOpType = "undo"
 )
 
 // validEditOpTypes is the closed set; unknown values are rejected so the audit
@@ -70,6 +74,7 @@ var validEditOpTypes = map[EditOpType]struct{}{
 	EditOpExtract:         {},
 	EditOpMove:            {},
 	EditOpSignatureChange: {},
+	EditOpUndo:            {},
 }
 
 // Valid reports whether t is a member of the closed op-type enum.
@@ -311,6 +316,16 @@ ORDER BY element_id, edit_id`)
 	}
 	return out, rows.Err()
 }
+
+// MetaDB exposes the ingest-meta SQLite sidecar handle so a sibling engine
+// side-channel (SW-038's change_record audit/undo store in engine/edit) can own
+// its OWN table in the SAME sidecar that already holds edit_provenance,
+// file_content_cache, reverse_deps, and dirty_units — never in core/graphstore
+// (which would poison the AC-1 marshalled-graph digest). The returned handle is
+// read/write but the caller MUST confine itself to its own table(s); the ingest
+// pipeline owns every table declared in initSchema. It is exposed at the engine
+// layer only (engine/edit consumes it); no surface ever touches it.
+func (i *Ingester) MetaDB() *sql.DB { return i.meta }
 
 // Close releases resources.
 func (i *Ingester) Close() error {

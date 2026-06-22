@@ -137,13 +137,38 @@ func (a *Applier) ApplyRefactor(ctx context.Context, op RefactorOp) (RefactorRes
 	if err != nil {
 		return out, err
 	}
-	res, err := a.applyBatch(ctx, ops, opType)
+	res, arts, err := a.applyBatch(ctx, ops, opType)
 	out.Result = res
 	out.Result.TargetNodeID = op.TargetSymbol
 	if err != nil {
 		return out, err
 	}
+	// On success applyBatch hands back the pre-edit snapshot + captured source
+	// bytes (SW-038): they are NOT discarded here so an undo recorder can persist
+	// them. When no recorder consumes them (a bare ApplyRefactor call) we discard
+	// them now, preserving the original SW-036 success behavior (no snapshot leak).
+	arts.discard()
 	return out, nil
+}
+
+// sagaArtifacts carries the pre-edit rollback anchors a successful multi-op saga
+// produces (SW-038): the on-disk graph snapshot and the captured pre-edit source
+// bytes of every touched file, keyed by repo-relative path. They are the inputs
+// an undo recorder persists keyed by an undo token. On rollback the saga itself
+// removes the snapshot dir, so a faulted edit never yields artifacts.
+type sagaArtifacts struct {
+	snapDir   string
+	snapPath  string
+	originals map[string][]byte
+}
+
+// discard removes the snapshot dir. Called when no recorder consumes the
+// artifacts, so a bare (non-recording) successful refactor leaves no orphan
+// snapshot — preserving the pre-SW-038 behavior.
+func (s *sagaArtifacts) discard() {
+	if s != nil && s.snapDir != "" {
+		_ = os.RemoveAll(s.snapDir)
+	}
 }
 
 // planRefactor turns a high-level RefactorOp + its blast-radius files into the
@@ -213,10 +238,10 @@ func (a *Applier) SetBatchFaultHook(k int) {
 // Multiple EditOps may target the same file (e.g. several references in one
 // file); they are grouped per file and applied span-by-span from the END of the
 // file backwards so earlier byte offsets stay valid as later spans are rewritten.
-func (a *Applier) applyBatch(ctx context.Context, ops []EditOp, opType ingest.EditOpType) (Result, error) {
+func (a *Applier) applyBatch(ctx context.Context, ops []EditOp, opType ingest.EditOpType) (Result, *sagaArtifacts, error) {
 	res := Result{Outcome: OutcomeRolledBack}
 	if len(ops) == 0 {
-		return res, fmt.Errorf("%w: empty refactor (no edit ops)", ErrInvalidOp)
+		return res, nil, fmt.Errorf("%w: empty refactor (no edit ops)", ErrInvalidOp)
 	}
 
 	// Step 1: validate every op and group by resolved file. No mutation yet, so a
@@ -231,7 +256,7 @@ func (a *Applier) applyBatch(ctx context.Context, ops []EditOp, opType ingest.Ed
 	for _, op := range ops {
 		rel, abs, err := a.resolvePath(op.FilePath)
 		if err != nil {
-			return res, err
+			return res, nil, err
 		}
 		fe, ok := byFile[rel]
 		if !ok {
@@ -251,31 +276,39 @@ func (a *Applier) applyBatch(ctx context.Context, ops []EditOp, opType ingest.Ed
 		fe := byFile[rel]
 		original, err := os.ReadFile(fe.absPath) //nolint:gosec // abs sanitized within root
 		if err != nil {
-			return res, fmt.Errorf("%w: read target %s: %v", ErrInvalidOp, rel, err)
+			return res, nil, fmt.Errorf("%w: read target %s: %v", ErrInvalidOp, rel, err)
 		}
 		originals[rel] = original
 		newContent, err := applySpans(original, fe.ops)
 		if err != nil {
-			return res, err
+			return res, nil, err
 		}
 		newContents[rel] = newContent
 	}
 
-	// Step 2: snapshot the pre-edit graph once (graph rollback anchor).
+	// Step 2: snapshot the pre-edit graph once (graph rollback anchor). The
+	// snapshot dir is NOT unconditionally removed (SW-038): on rollback compensate
+	// removes it; on success the artifacts are returned to the caller so an undo
+	// recorder can persist the pre-edit snapshot + captured source bytes. A bare
+	// (non-recording) caller discards the artifacts itself (sagaArtifacts.discard),
+	// so the pre-SW-038 "no orphan snapshot on success" behavior is preserved.
 	snapDir, err := os.MkdirTemp("", "graphi-refactor-snap-*")
 	if err != nil {
-		return res, fmt.Errorf("%w: create snapshot dir: %v", ErrWrite, err)
+		return res, nil, fmt.Errorf("%w: create snapshot dir: %v", ErrWrite, err)
 	}
-	defer os.RemoveAll(snapDir)
 	snapPath := snapDir + string(os.PathSeparator) + "pre-refactor.snapshot"
 	if err := a.store.Snapshot(ctx, snapPath); err != nil {
-		return res, fmt.Errorf("%w: snapshot pre-refactor graph: %v", ErrWrite, err)
+		_ = os.RemoveAll(snapDir)
+		return res, nil, fmt.Errorf("%w: snapshot pre-refactor graph: %v", ErrWrite, err)
 	}
 
 	// written tracks files we have already overwritten, so compensation restores
 	// exactly those (and any not-yet-written file is already at its original).
 	written := make([]string, 0, len(relOrder))
-	compensate := func(cause error) (Result, error) {
+	compensate := func(cause error) (Result, *sagaArtifacts, error) {
+		// A faulted edit leaves NO durable undo artifacts: remove the snapshot dir
+		// here so a rolled-back edit never strands an orphan snapshot (AC-2).
+		defer os.RemoveAll(snapDir)
 		var rbErrs []string
 		for _, rel := range written {
 			if rerr := writeFileAtomic(byFile[rel].absPath, originals[rel]); rerr != nil {
@@ -286,9 +319,9 @@ func (a *Applier) applyBatch(ctx context.Context, ops []EditOp, opType ingest.Ed
 			rbErrs = append(rbErrs, fmt.Sprintf("restore graph: %v", rerr))
 		}
 		if len(rbErrs) > 0 {
-			return res, fmt.Errorf("%w: %s (original fault: %v)", ErrRollback, strings.Join(rbErrs, "; "), cause)
+			return res, nil, fmt.Errorf("%w: %s (original fault: %v)", ErrRollback, strings.Join(rbErrs, "; "), cause)
 		}
-		return res, cause
+		return res, nil, cause
 	}
 
 	// Step 4: atomic write of all touched files, in deterministic order. The
@@ -335,9 +368,10 @@ func (a *Applier) applyBatch(ctx context.Context, ops []EditOp, opType ingest.Ed
 		return compensate(fmt.Errorf("%w: %v", ErrInconsistent, err))
 	}
 
-	// Step 7: commit.
+	// Step 7: commit. Hand the pre-edit snapshot + captured originals to the
+	// caller as undo artifacts (SW-038); the caller persists or discards them.
 	res.Outcome = OutcomeApplied
-	return res, nil
+	return res, &sagaArtifacts{snapDir: snapDir, snapPath: snapPath, originals: originals}, nil
 }
 
 // applySpans applies all ops for ONE file. The ops are sorted by descending

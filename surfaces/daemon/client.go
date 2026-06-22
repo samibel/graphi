@@ -133,6 +133,29 @@ func (c *DaemonClient) Analyze(ctx context.Context, p client.AnalyzeParams) ([]b
 	return nil, client.ErrAnalysisUnavailable
 }
 
+// RefactorPreview implements client.Client. The daemon edit RPC is not yet wired
+// (SW-038 ships the in-process edit path that MCP stdio and CLI direct mode use);
+// until it is added, the daemon client reports the capability as unavailable
+// rather than fabricating a mutation. Query/search/savings/analysis are unaffected.
+func (c *DaemonClient) RefactorPreview(ctx context.Context, req client.RefactorRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrEditUnavailable
+}
+
+// Refactor implements client.Client. Not yet wired over the daemon RPC; see
+// RefactorPreview.
+func (c *DaemonClient) Refactor(ctx context.Context, req client.RefactorRequest, actor string) ([]byte, error) {
+	_, _, _ = ctx, req, actor
+	return nil, client.ErrEditUnavailable
+}
+
+// Undo implements client.Client. Not yet wired over the daemon RPC; see
+// RefactorPreview.
+func (c *DaemonClient) Undo(ctx context.Context, undoToken, actor string) ([]byte, error) {
+	_, _, _ = ctx, undoToken, actor
+	return nil, client.ErrEditUnavailable
+}
+
 // SocketPath returns the configured socket path.
 func (c *DaemonClient) SocketPath() string { return c.socketPath }
 
