@@ -159,6 +159,12 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == "analyze" {
 		return s.analysisCall(ctx, p)
 	}
+	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
+	// the generic analysis dispatch by injecting its analyzer name.
+	if deepAnalyzerName, ok := deepAnalyzerTools[p.Name]; ok {
+		p.Arguments.Analyzer = deepAnalyzerName
+		return s.analysisCall(ctx, p)
+	}
 
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
@@ -247,6 +253,85 @@ func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError
 	}, nil
 }
 
+// deepAnalyzerTools maps dedicated EP-005 MCP tool names → their analysis
+// dispatcher name so each tool name routes through analysisCall after injecting
+// the correct analyzer. The map is package-level so both toolsCall routing and
+// toolDescriptors advertising can share a single source of truth.
+var deepAnalyzerTools = map[string]string{
+	"analyze_taint":      "taint",
+	"analyze_pdg":        "pdg",
+	"analyze_interproc":  "interproc",
+	"analyze_contracts":  "contracts",
+	"analyze_githistory": "git-history",
+}
+
+// deepAnalyzerDescriptors defines the MCP tool schema for each EP-005 deep
+// analyzer. Each entry is appended verbatim to the tools/list response when
+// the analysis service is available.
+var deepAnalyzerDescriptors = []map[string]any{
+	{
+		"name":        "analyze_taint",
+		"description": "flow-sensitive taint analysis: finds source-to-sink data-flow paths through the indexed graph",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol":    map[string]any{"type": "string", "description": "symbol (node) id to analyze"},
+				"direction": map[string]any{"type": "string", "description": "traversal direction: forward (default) | reverse"},
+				"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
+			},
+			"required": []string{"symbol"},
+		},
+	},
+	{
+		"name":        "analyze_pdg",
+		"description": "program dependence graph: computes data-dependence and control-dependence edges via reaching-definitions and post-dominance",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol":    map[string]any{"type": "string", "description": "symbol (node) id to analyze"},
+				"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
+			},
+			"required": []string{"symbol"},
+		},
+	},
+	{
+		"name":        "analyze_interproc",
+		"description": "interprocedural analysis: Sharir-Pnueli fixpoint solver that computes procedure summaries over the call graph",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol":    map[string]any{"type": "string", "description": "symbol (node) id to analyze"},
+				"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
+			},
+			"required": []string{"symbol"},
+		},
+	},
+	{
+		"name":        "analyze_contracts",
+		"description": "contract drift detection: finds producer/consumer contracts and detects structural drift between linked API surfaces",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol":    map[string]any{"type": "string", "description": "symbol (node) id to analyze"},
+				"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
+			},
+			"required": []string{"symbol"},
+		},
+	},
+	{
+		"name":        "analyze_githistory",
+		"description": "git-history signal analysis: computes churn scores, bus-factor risks, and co-change groups from commit history",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol":    map[string]any{"type": "string", "description": "symbol (node) id to analyze"},
+				"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
+			},
+			"required": []string{"symbol"},
+		},
+	},
+}
+
 // toolDescriptors advertises query tools and, when the client supports it, the
 // search tool. The list is derived from the engine's canonical operation list.
 func (s *Server) toolDescriptors() []map[string]any {
@@ -312,6 +397,8 @@ func (s *Server) toolDescriptors() []map[string]any {
 				"required": []string{"analyzer", "symbol"},
 			},
 		})
+		// EP-005 (SW-033): advertise one dedicated tool per deep analyzer.
+		tools = append(tools, deepAnalyzerDescriptors...)
 	}
 	return tools
 }

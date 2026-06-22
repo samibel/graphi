@@ -531,3 +531,182 @@ func TestMCP_CLI_CallChainParity(t *testing.T) {
 		t.Fatal("analyze tool not advertised")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// EP-005 deep-analyzer tests (SW-033)
+// ---------------------------------------------------------------------------
+
+// deepAnalyzerMCPOutput runs a dedicated EP-005 MCP tool (e.g. analyze_taint)
+// and extracts the canonical text payload from the JSON-RPC response.
+func deepAnalyzerMCPOutput(t *testing.T, direct *client.Direct, toolName, symbol string) []byte {
+	t.Helper()
+	srv := mcp.NewServerWithClient(direct)
+
+	args := map[string]any{"symbol": symbol}
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params":  map[string]any{"name": toolName, "arguments": args},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve %s: %v", toolName, err)
+	}
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode mcp %s response %q: %v", toolName, out.String(), err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp %s error: %s", toolName, resp.Error.Message)
+	}
+	if len(resp.Result.Content) != 1 || resp.Result.Content[0].Type != "text" {
+		t.Fatalf("unexpected mcp %s content: %+v", toolName, resp.Result.Content)
+	}
+	return []byte(resp.Result.Content[0].Text)
+}
+
+// TestMCP_CLI_EP005_Parity (SW-033): each EP-005 deep analyzer returns
+// byte-identical output through the CLI (via generic analyze) and MCP (via
+// both the generic analyze tool and the dedicated analyze_* tool).
+func TestMCP_CLI_EP005_Parity(t *testing.T) {
+	store, ids := seed(t)
+	direct := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+
+	// Each EP-005 analyzer is tested through:
+	//   1. CLI:  analyze <analyzer> -symbol <id>
+	//   2. MCP:  tools/call analyze {analyzer:<name>, symbol:<id>}
+	//   3. MCP:  tools/call analyze_<name> {symbol:<id>}
+	// All three must produce byte-identical output.
+	cases := []struct {
+		name         string
+		analyzerName string // dispatch name for generic analyze tool
+		mcpToolName  string // dedicated MCP tool name (analyze_*)
+		symbol       string
+	}{
+		{"taint", "taint", "analyze_taint", string(ids["A"])},
+		{"pdg", "pdg", "analyze_pdg", string(ids["A"])},
+		{"interproc", "interproc", "analyze_interproc", string(ids["A"])},
+		{"contracts", "contracts", "analyze_contracts", string(ids["A"])},
+		{"githistory", "git-history", "analyze_githistory", string(ids["A"])},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// CLI path.
+			cliBytes := analysisCLIOutput(t, direct, c.analyzerName, c.symbol, "forward", 0)
+			// MCP generic analyze path.
+			mcpGenericBytes := analysisMCPOutput(t, direct, c.analyzerName, c.symbol, "forward", 0)
+			// MCP dedicated tool path.
+			mcpDedicatedBytes := deepAnalyzerMCPOutput(t, direct, c.mcpToolName, c.symbol)
+
+			if !bytes.Equal(cliBytes, mcpGenericBytes) {
+				t.Fatalf("%s CLI<->MCP-generic parity mismatch:\nCLI: %s\nMCP: %s", c.name, cliBytes, mcpGenericBytes)
+			}
+			if !bytes.Equal(cliBytes, mcpDedicatedBytes) {
+				t.Fatalf("%s CLI<->MCP-dedicated parity mismatch:\nCLI: %s\nMCP-dedicated: %s", c.name, cliBytes, mcpDedicatedBytes)
+			}
+		})
+	}
+}
+
+// TestMCP_EP005_ToolsAdvertised (SW-033): all 5 EP-005 dedicated tools are
+// advertised in tools/list when the analysis service is attached, and NOT
+// advertised when it is absent.
+func TestMCP_EP005_ToolsAdvertised(t *testing.T) {
+	store, _ := seed(t)
+
+	// With analysis service attached: all EP-005 tools should be advertised.
+	withAnalysis := client.NewDirect(query.New(store), nil).
+		WithAnalysis(analysis.NewDefaultService(store))
+	srv := mcp.NewServerWithClient(withAnalysis)
+	names := listTools(t, srv)
+
+	ep005Tools := []string{"analyze_taint", "analyze_pdg", "analyze_interproc", "analyze_contracts", "analyze_githistory"}
+	for _, toolName := range ep005Tools {
+		if !containsName(names, toolName) {
+			t.Errorf("EP-005 tool %q not advertised when analysis service is attached; got tools: %v", toolName, names)
+		}
+	}
+
+	// Without analysis service: EP-005 tools should NOT be advertised.
+	srvNoAnalysis := mcp.NewServer(query.New(store), nil)
+	namesNo := listTools(t, srvNoAnalysis)
+	for _, toolName := range ep005Tools {
+		if containsName(namesNo, toolName) {
+			t.Errorf("EP-005 tool %q advertised when analysis service is absent (should probe-hide)", toolName)
+		}
+	}
+}
+
+// TestMCP_EP005_EmptyResult (SW-033): three-state error model — analyzers return
+// the empty outcome (not an error) when there is no data to report. This ensures
+// the MCP surface passes the empty result through without converting it to an error.
+func TestMCP_EP005_EmptyResult(t *testing.T) {
+	// Use an empty store (no nodes, no edges) so all analyzers return empty.
+	store := graphstore.NewMemStore()
+	direct := client.NewDirect(query.New(store), nil).
+		WithAnalysis(analysis.NewDefaultService(store))
+
+	// Each dedicated MCP tool should return a non-error response with empty output.
+	ep005Tools := []string{"analyze_taint", "analyze_pdg", "analyze_interproc", "analyze_contracts", "analyze_githistory"}
+	for _, toolName := range ep005Tools {
+		t.Run(toolName, func(t *testing.T) {
+			srv := mcp.NewServerWithClient(direct)
+			args := map[string]any{"symbol": "nonexistent"}
+			reqBody, err := json.Marshal(map[string]any{
+				"jsonrpc": "2.0",
+				"id":      1,
+				"method":  "tools/call",
+				"params":  map[string]any{"name": toolName, "arguments": args},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var out bytes.Buffer
+			if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+				t.Fatalf("mcp.Serve %s: %v", toolName, err)
+			}
+			var resp struct {
+				Result struct {
+					Content []struct {
+						Text string `json:"text"`
+					} `json:"content"`
+					IsError bool `json:"isError"`
+				} `json:"result"`
+				Error *struct {
+					Message string `json:"message"`
+				} `json:"error"`
+			}
+			if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if resp.Error != nil {
+				t.Fatalf("%s returned JSON-RPC error for empty result: %s", toolName, resp.Error.Message)
+			}
+			if resp.Result.IsError {
+				t.Fatalf("%s returned isError=true for empty result", toolName)
+			}
+			if len(resp.Result.Content) != 1 {
+				t.Fatalf("%s returned %d content items, want 1", toolName, len(resp.Result.Content))
+			}
+			// The text payload must be valid JSON (canonical serialized output).
+			if !json.Valid([]byte(resp.Result.Content[0].Text)) {
+				t.Fatalf("%s returned invalid JSON: %s", toolName, resp.Result.Content[0].Text)
+			}
+		})
+	}
+}
