@@ -91,7 +91,18 @@ Delivers the headline "It saved me $X this session" — token efficiency as a fi
 - **SW-019** — Cross-restart **ledger persistence** with durable cumulative rollup + torn-write recovery ([`docs/ledger/persistence.md`](docs/ledger/persistence.md)).
 - **SW-020** — **Anti-gaming cap** + honest MCP/CLI ledger readout ("Saved $X this session") ([`docs/savings/cap-readout.md`](docs/savings/cap-readout.md)).
 
-> Epics EP-004 – EP-008 (semantic/impact analysis, taint/PDG, contracts, HTTP/SSE, web/TUI/VS Code) are planned but **not yet delivered** and are intentionally out of this README's scope.
+### EP-004 — Semantic & Impact Analysis (in-flight)
+*Stories SW-022 … SW-026 · status: `draft` — created, not yet refined or built · **not yet delivered***
+
+Five stories have been created to extend the structural graph into semantic and impact analysis. These are **`draft` only** — no implementation has shipped, none have passed any verify/review gate, and nothing here is queryable yet:
+
+- **SW-022** — Impact reachability set (forward/backward reachable symbols from a change).
+- **SW-023** — Call-chain / path reconstruction between two symbols.
+- **SW-024** — Concept-to-location resolution (natural-language concept → graph locations).
+- **SW-025** — Hub / bridge / centrality graph metrics.
+- **SW-026** — One-call batched impact + call-chain + metrics response.
+
+> **EP-004 — Semantic & Impact Analysis** (semantic/impact analysis) is now **in-flight**: its five stories (SW-022…SW-026) have been created and are in `draft` — see the EP-004 coverage note below and the Status table. Epics EP-005 – EP-008 (taint/PDG, contracts, HTTP/SSE, web/TUI/VS Code) are planned but **not yet delivered** and are intentionally out of this README's scope.
 
 ## Build & run
 
@@ -161,8 +172,9 @@ Deeper docs live under [`docs/`](docs/) — the README links rather than duplica
 | EP-001 Foundation Engine | SW-001…SW-007 | `in-progress` — stories at the `approved` human gate |
 | EP-002 Local-First Trust / DevOps / Eval | SW-008…SW-013 | `in-progress` — stories at the `approved` human gate |
 | EP-003 Token-Savings Ledger & Context | SW-016…SW-020 | `delivered` — awaiting `/scrum-approve` → `done` |
+| EP-004 Semantic & Impact Analysis | SW-022…SW-026 | `draft` — stories created, not yet refined or built |
 
-All listed stories have passed their verify + review gates under `CGO_ENABLED=0`; none have been signed off to `done` yet.
+All EP-001…EP-003 stories have passed their verify + review gates under `CGO_ENABLED=0`; none have been signed off to `done` yet. EP-004's stories are still in `draft` and have passed no gates.
 
 ## License
 
