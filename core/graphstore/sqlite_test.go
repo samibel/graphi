@@ -149,6 +149,49 @@ func TestSQLite_FailAfterCommitNoDataLoss(t *testing.T) {
 	}
 }
 
+// TestSQLite_DeleteNodeCrashSafe proves the SW-036 destructive op is crash-safe:
+// a fault injected AFTER the delete transaction commits but BEFORE the cache
+// update leaves SQLite authoritative (node + cascaded edges gone) and merely
+// invalidates the cache — the same no-data-loss ordering PutNode guarantees.
+func TestSQLite_DeleteNodeCrashSafe(t *testing.T) {
+	ctx := context.Background()
+	st := newSQLite(t)
+
+	n1 := mustNode(t, "function", "pkg/x.Y", "pkg/x.go", 1, 1)
+	n2 := mustNode(t, "function", "pkg/x.Z", "pkg/x.go", 2, 1)
+	for _, n := range []model.Node{n1, n2} {
+		if err := st.PutNode(ctx, n); err != nil {
+			t.Fatalf("seed node: %v", err)
+		}
+	}
+	e := mustEdge(t, n1.ID(), n2.ID(), "calls", model.TierDerived, 0.9, "call", []string{"x.go:1"})
+	if err := st.PutEdge(ctx, e); err != nil {
+		t.Fatalf("seed edge: %v", err)
+	}
+
+	injected := errors.New("simulated crash after delete commit")
+	st.SetFailAfterCommitHook(injected)
+
+	err := st.DeleteNode(ctx, n1.ID())
+	if !errors.Is(err, injected) {
+		t.Fatalf("expected injected error, got %v", err)
+	}
+
+	// Force a rebuild from the durable layer; the delete was committed.
+	if err := st.EvictCache(ctx); err != nil {
+		t.Fatalf("EvictCache: %v", err)
+	}
+	if _, err := st.GetNode(ctx, n1.ID()); !errors.Is(err, gs.ErrNotFound) {
+		t.Fatalf("node survived crash-safe delete: %v", err)
+	}
+	if _, err := st.GetEdge(ctx, e.ID()); !errors.Is(err, gs.ErrNotFound) {
+		t.Fatalf("cascaded edge survived crash-safe delete: %v", err)
+	}
+	if _, err := st.GetNode(ctx, n2.ID()); err != nil {
+		t.Fatalf("unrelated node lost: %v", err)
+	}
+}
+
 // TestSQLite_EvidenceDistinctionRoundTrip proves null/empty/populated evidence and
 // tier/reason survive write→evict→snapshot→load exactly (AC 10).
 //

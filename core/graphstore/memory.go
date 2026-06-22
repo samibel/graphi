@@ -71,6 +71,45 @@ func (m *MemStore) PutEdge(ctx context.Context, e model.Edge) error {
 	return nil
 }
 
+// DeleteNode removes the node and every edge incident to it (From or To). It is
+// idempotent: deleting a missing node is a no-op. MemStore has no separate
+// durable layer, so the in-memory maps ARE the source of truth; the deletion is
+// applied atomically under the write lock.
+func (m *MemStore) DeleteNode(ctx context.Context, id model.NodeId) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.closed {
+		return ErrClosed
+	}
+	delete(m.nodes, id)
+	// Cascade: drop every edge touching the removed node so no dangling edge
+	// survives (the PutEdge endpoint invariant in reverse).
+	for eid, e := range m.edges {
+		if e.From() == id || e.To() == id {
+			delete(m.edges, eid)
+		}
+	}
+	return nil
+}
+
+// DeleteEdge removes the edge with the given ID. Idempotent: deleting a missing
+// edge is a no-op.
+func (m *MemStore) DeleteEdge(ctx context.Context, id model.EdgeId) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.closed {
+		return ErrClosed
+	}
+	delete(m.edges, id)
+	return nil
+}
+
 func (m *MemStore) GetNode(ctx context.Context, id model.NodeId) (model.Node, error) {
 	if err := ctx.Err(); err != nil {
 		return model.Node{}, err

@@ -129,6 +129,125 @@ func TestContract_ReadAfterWrite(t *testing.T) {
 	}
 }
 
+// TestContract_DeleteNodeCascadesEdges proves DeleteNode removes the node AND
+// every incident edge (From or To) identically across backends, leaving no
+// dangling edge — the SW-036 destructive operation that closes the SW-035 orphan
+// gap. It also asserts idempotency (deleting a missing node is a no-op).
+func TestContract_DeleteNodeCascadesEdges(t *testing.T) {
+	for _, b := range allBackends() {
+		t.Run(b.name, func(t *testing.T) {
+			ctx := context.Background()
+			st := newStore(t, b)
+			nodes, edges := seed(t, st) // n1->n2 (calls), n1->n3 (uses)
+
+			// Delete n1: both edges are incident to it and must cascade away.
+			if err := st.DeleteNode(ctx, nodes[0].ID()); err != nil {
+				t.Fatalf("DeleteNode: %v", err)
+			}
+			if _, err := st.GetNode(ctx, nodes[0].ID()); !errors.Is(err, gs.ErrNotFound) {
+				t.Fatalf("deleted node still present: %v", err)
+			}
+			for _, e := range edges {
+				if _, err := st.GetEdge(ctx, e.ID()); !errors.Is(err, gs.ErrNotFound) {
+					t.Fatalf("incident edge %s survived node delete: %v", e.ID(), err)
+				}
+			}
+			// n2, n3 untouched.
+			if _, err := st.GetNode(ctx, nodes[1].ID()); err != nil {
+				t.Fatalf("unrelated node n2 lost: %v", err)
+			}
+			es, err := st.Edges(ctx, gs.Query{})
+			if err != nil {
+				t.Fatalf("Edges: %v", err)
+			}
+			if len(es) != 0 {
+				t.Fatalf("expected 0 edges after cascade, got %d", len(es))
+			}
+
+			// Idempotent: re-deleting is a no-op, not an error.
+			if err := st.DeleteNode(ctx, nodes[0].ID()); err != nil {
+				t.Fatalf("idempotent DeleteNode: %v", err)
+			}
+
+			// FTS consistency: searching for the deleted node's text returns nothing.
+			hits, err := st.Nodes(ctx, gs.Query{Text: "Bar"})
+			if err != nil {
+				t.Fatalf("Nodes(text): %v", err)
+			}
+			for _, n := range hits {
+				if n.ID() == nodes[0].ID() {
+					t.Fatalf("deleted node still in search index")
+				}
+			}
+		})
+	}
+}
+
+// TestContract_DeleteEdge proves a single-edge delete removes only that edge,
+// leaving its endpoints and other edges intact, identically across backends.
+func TestContract_DeleteEdge(t *testing.T) {
+	for _, b := range allBackends() {
+		t.Run(b.name, func(t *testing.T) {
+			ctx := context.Background()
+			st := newStore(t, b)
+			nodes, edges := seed(t, st)
+
+			if err := st.DeleteEdge(ctx, edges[0].ID()); err != nil {
+				t.Fatalf("DeleteEdge: %v", err)
+			}
+			if _, err := st.GetEdge(ctx, edges[0].ID()); !errors.Is(err, gs.ErrNotFound) {
+				t.Fatalf("deleted edge still present: %v", err)
+			}
+			// The other edge and all nodes survive.
+			if _, err := st.GetEdge(ctx, edges[1].ID()); err != nil {
+				t.Fatalf("unrelated edge lost: %v", err)
+			}
+			for _, n := range nodes {
+				if _, err := st.GetNode(ctx, n.ID()); err != nil {
+					t.Fatalf("node lost on edge delete: %v", err)
+				}
+			}
+			// Idempotent.
+			if err := st.DeleteEdge(ctx, edges[0].ID()); err != nil {
+				t.Fatalf("idempotent DeleteEdge: %v", err)
+			}
+		})
+	}
+}
+
+// TestContract_DeleteThenReindexByteIdentical proves the SW-036 invariant at the
+// store level: a store that PUTs the full graph then DELETEs a subset is
+// byte-identical (canonical Marshal) to a fresh store seeded with only the
+// surviving subset. This is the property the incremental re-index relies on.
+func TestContract_DeleteThenReindexByteIdentical(t *testing.T) {
+	for _, b := range allBackends() {
+		t.Run(b.name, func(t *testing.T) {
+			ctx := context.Background()
+			st := newStore(t, b)
+			nodes, _ := seed(t, st)
+
+			// Delete n1 (and its cascaded edges) from the populated store.
+			if err := st.DeleteNode(ctx, nodes[0].ID()); err != nil {
+				t.Fatalf("DeleteNode: %v", err)
+			}
+			afterDelete := serializeListing(t, ctx, st)
+
+			// A fresh store containing ONLY the survivors (n2, n3, no edges).
+			fresh := newStore(t, b)
+			for _, n := range []model.Node{nodes[1], nodes[2]} {
+				if err := fresh.PutNode(ctx, n); err != nil {
+					t.Fatalf("PutNode survivor: %v", err)
+				}
+			}
+			freshBytes := serializeListing(t, ctx, fresh)
+
+			if !bytes.Equal(afterDelete, freshBytes) {
+				t.Fatalf("delete-then-state not byte-identical to fresh survivor state:\ndeleted=%s\nfresh  =%s", afterDelete, freshBytes)
+			}
+		})
+	}
+}
+
 // TestContract_CanonicalOrdering asserts listings come back sorted by ID.
 func TestContract_CanonicalOrdering(t *testing.T) {
 	for _, b := range allBackends() {

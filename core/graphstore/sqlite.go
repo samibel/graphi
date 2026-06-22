@@ -262,6 +262,128 @@ func (s *SQLiteStore) PutEdge(ctx context.Context, e model.Edge) error {
 	return nil
 }
 
+// DeleteNode removes the node and every incident edge in a single SQLite
+// transaction (durable FIRST), then updates the cache. The FTS5 rows for the
+// node and the cascaded edges are removed in the same transaction so the search
+// index never references a deleted owner. Idempotent: a missing node deletes
+// zero rows and is not an error. Crash-safe: a fault between commit and cache
+// update leaves SQLite authoritative and only invalidates the cache (mirrors
+// PutNode), so the next read rebuilds correctly.
+func (s *SQLiteStore) DeleteNode(ctx context.Context, id model.NodeId) error {
+	if s.closed.Load() {
+		return ErrClosed
+	}
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	// Collect incident edge IDs first so the cache cascade matches the durable
+	// cascade exactly (FTS rows are keyed by edge id too).
+	incident, err := s.incidentEdgeIDs(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("graphstore: begin tx: %w", err)
+	}
+	// Edges first (they FK-reference the node), then the node; FTS rows alongside.
+	if _, err := tx.ExecContext(ctx,
+		"DELETE FROM search WHERE owner_kind='edge' AND owner_id IN (SELECT id FROM edges WHERE from_id=? OR to_id=?)",
+		string(id), string(id)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("graphstore: delete node fts edges: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM edges WHERE from_id=? OR to_id=?", string(id), string(id)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("graphstore: delete incident edges: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM search WHERE owner_kind='node' AND owner_id=?", string(id)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("graphstore: delete node fts: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM nodes WHERE id=?", string(id)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("graphstore: delete node: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("graphstore: commit delete node: %w", err)
+	}
+
+	// Durable state is now complete. Fault-injection point mirrors PutNode.
+	if hookErr := s.takeFailHook(); hookErr != nil {
+		s.evict()
+		return hookErr
+	}
+
+	s.cacheMu.Lock()
+	if s.cache != nil {
+		delete(s.cache.nodes, id)
+		for _, eid := range incident {
+			delete(s.cache.edges, eid)
+		}
+	}
+	s.cacheMu.Unlock()
+	return nil
+}
+
+// DeleteEdge removes a single edge (durable first, then cache). Idempotent.
+func (s *SQLiteStore) DeleteEdge(ctx context.Context, id model.EdgeId) error {
+	if s.closed.Load() {
+		return ErrClosed
+	}
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("graphstore: begin tx: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM search WHERE owner_kind='edge' AND owner_id=?", string(id)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("graphstore: delete edge fts: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM edges WHERE id=?", string(id)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("graphstore: delete edge: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("graphstore: commit delete edge: %w", err)
+	}
+
+	if hookErr := s.takeFailHook(); hookErr != nil {
+		s.evict()
+		return hookErr
+	}
+
+	s.cacheMu.Lock()
+	if s.cache != nil {
+		delete(s.cache.edges, id)
+	}
+	s.cacheMu.Unlock()
+	return nil
+}
+
+// incidentEdgeIDs returns the IDs of every edge with the given node as From or
+// To endpoint, read directly from the durable layer (so the cache cascade in
+// DeleteNode matches the rows the transaction will remove).
+func (s *SQLiteStore) incidentEdgeIDs(ctx context.Context, id model.NodeId) ([]model.EdgeId, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT id FROM edges WHERE from_id=? OR to_id=?", string(id), string(id))
+	if err != nil {
+		return nil, fmt.Errorf("graphstore: query incident edges: %w", err)
+	}
+	defer rows.Close()
+	var out []model.EdgeId
+	for rows.Next() {
+		var eid string
+		if err := rows.Scan(&eid); err != nil {
+			return nil, fmt.Errorf("graphstore: scan incident edge: %w", err)
+		}
+		out = append(out, model.EdgeId(eid))
+	}
+	return out, rows.Err()
+}
+
 func (s *SQLiteStore) assertNodeExists(ctx context.Context, id model.NodeId) error {
 	var one int
 	err := s.db.QueryRowContext(ctx, "SELECT 1 FROM nodes WHERE id = ?", string(id)).Scan(&one)

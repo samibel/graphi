@@ -141,8 +141,21 @@ type callParams struct {
 		Analyzer  string `json:"analyzer"`
 		Direction string `json:"direction"`
 		MaxNodes  *int   `json:"max_nodes"`
+		// SW-038 edit/refactor + undo arguments.
+		Kind            string `json:"kind"`
+		TargetSymbol    string `json:"target_symbol"`
+		OldName         string `json:"old_name"`
+		NewName         string `json:"new_name"`
+		DestinationFile string `json:"destination_file"`
+		UndoToken       string `json:"undo_token"`
+		Actor           string `json:"actor"`
 	} `json:"arguments"`
 }
+
+// mcpActor is the default actor recorded for edits initiated via the MCP surface
+// when the caller supplies none (Scope decision 6: actor is per-surface,
+// recorded, excluded from the AC-4 parity comparable subset).
+const mcpActor = "mcp"
 
 func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcError) {
 	var p callParams
@@ -158,6 +171,15 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	}
 	if p.Name == "analyze" {
 		return s.analysisCall(ctx, p)
+	}
+	// SW-038 edit/refactor command surface (thin transport over the shared client).
+	switch p.Name {
+	case "refactor_preview":
+		return s.refactorPreviewCall(ctx, p)
+	case "refactor":
+		return s.refactorCall(ctx, p)
+	case "undo":
+		return s.undoCall(ctx, p)
 	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
@@ -251,6 +273,72 @@ func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError
 		"content": []map[string]any{{"type": "text", "text": string(b)}},
 		"isError": false,
 	}, nil
+}
+
+// refactorRequest builds the transport-agnostic request from the MCP arguments.
+// TargetSymbol falls back to Symbol so callers can use either field name.
+func refactorRequest(p callParams) client.RefactorRequest {
+	target := p.Arguments.TargetSymbol
+	if target == "" {
+		target = p.Arguments.Symbol
+	}
+	return client.RefactorRequest{
+		Kind:            p.Arguments.Kind,
+		TargetSymbol:    target,
+		OldName:         p.Arguments.OldName,
+		NewName:         p.Arguments.NewName,
+		DestinationFile: p.Arguments.DestinationFile,
+	}
+}
+
+// refactorPreviewCall (SW-038) returns the EP-004 impact set BEFORE mutation
+// (AC-1) by delegating to the shared client.RefactorPreview. No engine logic.
+func (s *Server) refactorPreviewCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.RefactorPreview(ctx, refactorRequest(p))
+	if err != nil {
+		return nil, &rpcError{Code: -32602, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// refactorCall (SW-038) commits a refactor through the shared client and returns
+// the canonical change record. The actor defaults to "mcp" unless supplied. No
+// engine logic — the surface only marshals inputs into a RefactorRequest.
+func (s *Server) refactorCall(ctx context.Context, p callParams) (any, *rpcError) {
+	actor := p.Arguments.Actor
+	if actor == "" {
+		actor = mcpActor
+	}
+	b, err := s.c.Refactor(ctx, refactorRequest(p), actor)
+	if err != nil {
+		return nil, &rpcError{Code: -32602, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// undoCall (SW-038) reverses an applied edit by its undo token and returns the
+// canonical reversal change record. No engine logic.
+func (s *Server) undoCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.UndoToken == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: undo_token"}
+	}
+	actor := p.Arguments.Actor
+	if actor == "" {
+		actor = mcpActor
+	}
+	b, err := s.c.Undo(ctx, p.Arguments.UndoToken, actor)
+	if err != nil {
+		return nil, &rpcError{Code: -32602, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// textResult wraps canonical serialized bytes in the MCP tool-result envelope.
+func textResult(b []byte) map[string]any {
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}
 }
 
 // deepAnalyzerTools maps dedicated EP-005 MCP tool names → their analysis
@@ -400,7 +488,69 @@ func (s *Server) toolDescriptors() []map[string]any {
 		// EP-005 (SW-033): advertise one dedicated tool per deep analyzer.
 		tools = append(tools, deepAnalyzerDescriptors...)
 	}
+	// SW-038 edit/refactor command surface. Advertised when an edit applier is
+	// attached (probed: a capability-missing client returns ErrEditUnavailable; a
+	// validation error for the probe request still means the service is wired).
+	if _, err := s.c.RefactorPreview(context.Background(), client.RefactorRequest{
+		Kind: "rename", TargetSymbol: "__probe__", OldName: "__probe__", NewName: "__probe2__",
+	}); err == nil || !isEditUnavailable(err) {
+		tools = append(tools, editToolDescriptors...)
+	}
 	return tools
+}
+
+// isEditUnavailable reports whether err is the edit-capability-missing sentinel.
+func isEditUnavailable(err error) bool {
+	return errors.Is(err, client.ErrEditUnavailable)
+}
+
+// editToolDescriptors defines the MCP tool schema for the SW-038 edit/refactor
+// command surface (refactor-preview, refactor, undo). Each routes through the
+// shared client; the surface holds no engine logic.
+var editToolDescriptors = []map[string]any{
+	{
+		"name":        "refactor_preview",
+		"description": "preview a graph-aware refactor: resolve the target via the query layer and return the EP-004 impact set (blast radius + planned edits) WITHOUT mutating",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|extract|move|signature_change"},
+				"target_symbol":    map[string]any{"type": "string", "description": "resolved node id of the symbol to refactor"},
+				"old_name":         map[string]any{"type": "string", "description": "current spelling of the symbol"},
+				"new_name":         map[string]any{"type": "string", "description": "replacement spelling"},
+				"destination_file": map[string]any{"type": "string", "description": "destination file (move only)"},
+			},
+			"required": []string{"kind", "target_symbol", "old_name", "new_name"},
+		},
+	},
+	{
+		"name":        "refactor",
+		"description": "apply a graph-aware refactor through the shared atomic edit saga and return an auditable change record (operation, target, before/after, actor, timestamp, undo token)",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|extract|move|signature_change"},
+				"target_symbol":    map[string]any{"type": "string", "description": "resolved node id of the symbol to refactor"},
+				"old_name":         map[string]any{"type": "string", "description": "current spelling of the symbol"},
+				"new_name":         map[string]any{"type": "string", "description": "replacement spelling"},
+				"destination_file": map[string]any{"type": "string", "description": "destination file (move only)"},
+				"actor":            map[string]any{"type": "string", "description": "request identity recorded on the change record (default \"mcp\")"},
+			},
+			"required": []string{"kind", "target_symbol", "old_name", "new_name"},
+		},
+	},
+	{
+		"name":        "undo",
+		"description": "reverse a previously applied edit by its undo token, restoring the prior graph + source and recording the reversal as its own auditable change record",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"undo_token": map[string]any{"type": "string", "description": "the undo token returned by a prior refactor"},
+				"actor":      map[string]any{"type": "string", "description": "request identity recorded on the reversal record (default \"mcp\")"},
+			},
+			"required": []string{"undo_token"},
+		},
+	},
 }
 
 // isAnalysisUnavailable reports whether err is the capability-missing sentinel.

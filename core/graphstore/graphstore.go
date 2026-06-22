@@ -72,6 +72,27 @@ type Graphstore interface {
 	// durable layer before updating any in-memory cache.
 	PutEdge(ctx context.Context, e model.Edge) error
 
+	// DeleteNode durably removes the node with the given ID and EVERY edge
+	// incident to it (as From or To endpoint), so the graph can never be left with
+	// a dangling edge referencing a deleted node — the same referential invariant
+	// PutEdge enforces on the way in. Deleting a node that does not exist is a
+	// no-op (not an error), making the operation idempotent. Like every write it
+	// commits to the durable layer FIRST, then updates the in-memory cache, so an
+	// interrupted delete leaves the durable store authoritative and the cache
+	// merely invalidated (crash-safe, mirroring PutNode).
+	//
+	// DeleteNode is the destructive counterpart to PutNode introduced for SW-036:
+	// rename/move/signature-change mint a NEW NodeId (NodeId is content-addressed
+	// over Kind+QualifiedName+SourcePath) while the old node survives, so the
+	// incremental re-index MUST delete the old node or it is orphaned and the
+	// byte-identical-to-full-re-index invariant cannot hold.
+	DeleteNode(ctx context.Context, id model.NodeId) error
+
+	// DeleteEdge durably removes the edge with the given ID. Deleting an edge that
+	// does not exist is a no-op (not an error). It commits to the durable layer
+	// before updating any in-memory cache (crash-safe, mirroring PutEdge).
+	DeleteEdge(ctx context.Context, id model.EdgeId) error
+
 	// GetNode returns the node with the given ID, or ErrNotFound.
 	GetNode(ctx context.Context, id model.NodeId) (model.Node, error)
 

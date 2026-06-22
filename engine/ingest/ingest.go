@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
@@ -38,6 +39,77 @@ type Parser interface {
 // whole repository walk.
 type Registry interface {
 	Parse(ctx context.Context, path string, src []byte) (*parse.ParseResult, error)
+}
+
+// EditOpType is the closed enum of edit operations that may originate a
+// provenance record. It mirrors engine/edit's RefactorKind closed-set discipline
+// (rename/extract/move/signature_change) plus the base single-op "apply", and a
+// synthetic "recovery"-class value is intentionally NOT introduced: recovery
+// replays the ORIGINAL edit context (provenance-idempotent recovery), so the
+// recorded op_type after a crash+recover is identical to an uninterrupted edit.
+type EditOpType string
+
+const (
+	// EditOpApply is the base identity-preserving single-op edit (engine/edit.Apply).
+	EditOpApply EditOpType = "apply"
+	// EditOpRename mirrors edit.RefactorRename.
+	EditOpRename EditOpType = "rename"
+	// EditOpExtract mirrors edit.RefactorExtract.
+	EditOpExtract EditOpType = "extract"
+	// EditOpMove mirrors edit.RefactorMove.
+	EditOpMove EditOpType = "move"
+	// EditOpSignatureChange mirrors edit.RefactorSignatureChange.
+	EditOpSignatureChange EditOpType = "signature_change"
+	// EditOpUndo is the SW-038 reversal: an undo restores the pre-edit source +
+	// graph snapshot and re-indexes the touched files under this op-type so the
+	// edit_provenance row distinguishes a reversal from a forward edit.
+	EditOpUndo EditOpType = "undo"
+)
+
+// validEditOpTypes is the closed set; unknown values are rejected so the audit
+// field cannot be poisoned by an arbitrary caller string.
+var validEditOpTypes = map[EditOpType]struct{}{
+	EditOpApply:           {},
+	EditOpRename:          {},
+	EditOpExtract:         {},
+	EditOpMove:            {},
+	EditOpSignatureChange: {},
+	EditOpUndo:            {},
+}
+
+// Valid reports whether t is a member of the closed op-type enum.
+func (t EditOpType) Valid() bool {
+	_, ok := validEditOpTypes[t]
+	return ok
+}
+
+// EditProvenance is the per-edit audit context threaded from the engine/edit
+// saga into a provenance-aware ingest pass. The EditID is minted ONCE and the
+// Timestamp captured ONCE in the saga (a single value shared across the whole
+// touched set), never per-element inside ingest. It is recorded into the
+// edit_provenance side-channel in Phase 2 of the dirty-flag metaTx, keyed by
+// every affected NodeId/EdgeId.
+type EditProvenance struct {
+	// EditID is the saga-minted identifier of the originating edit.
+	EditID string
+	// OpType is the closed-enum operation kind.
+	OpType EditOpType
+	// Timestamp is the Unix-nanosecond wall-clock instant captured once by the saga.
+	Timestamp int64
+}
+
+// Validate enforces the closed op-type enum and a non-empty edit id. A
+// zero-value EditProvenance (no originating edit) is reported as invalid so the
+// zero-provenance ingest paths (full IngestAll, plain recovery) opt out by
+// passing nil rather than an empty struct.
+func (p EditProvenance) Validate() error {
+	if strings.TrimSpace(p.EditID) == "" {
+		return fmt.Errorf("ingest: empty edit id")
+	}
+	if !p.OpType.Valid() {
+		return fmt.Errorf("ingest: unknown op_type %q", p.OpType)
+	}
+	return nil
 }
 
 // Ingester runs incremental and full ingestion.
@@ -75,6 +147,25 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 }
 
 func (i *Ingester) initSchema(ctx context.Context) error {
+	// edit_provenance is the SW-037 side-channel: the per-edit audit record
+	// (source edit id, operation type, timestamp) keyed by the affected
+	// NodeId/EdgeId. It deliberately lives here in the ingest meta sidecar — NOT
+	// in core/model or model.Graph.Marshal — because the edit id and timestamp are
+	// volatile (properties of HOW the graph was last mutated, not of the source
+	// content). Embedding them in the marshalled graph would make the AC-3
+	// incremental-vs-full digest differ for every edit; keeping them out of the
+	// graph is what lets AC-3's structural graphDigest stay byte-identical while
+	// AC-1's edit provenance still distinguishes which edit touched what. The
+	// dirty_units row carries the same edit context (edit_id/op_type/recorded_at)
+	// so RecoverWithRoot reproduces identical side-channel state after a crash
+	// (provenance-idempotent recovery).
+	// Base DDL is CREATE TABLE IF NOT EXISTS only — it must NEVER be relied upon to
+	// add a column to a table that already exists (CREATE TABLE IF NOT EXISTS
+	// silently no-ops on an existing table, leaving new columns unapplied). The
+	// dirty_units table here is declared with ONLY its original SW-036/EP-001
+	// shape (path); the SW-037 edit-context columns are added by the versioned
+	// migration ladder below so that a pre-SW-037 on-disk sidecar is migrated in
+	// place rather than left with a stale schema. See migrate().
 	const ddl = `
 CREATE TABLE IF NOT EXISTS file_content_cache (
 	path TEXT PRIMARY KEY,
@@ -89,12 +180,152 @@ CREATE TABLE IF NOT EXISTS reverse_deps (
 CREATE TABLE IF NOT EXISTS dirty_units (
 	path TEXT PRIMARY KEY
 );
+CREATE TABLE IF NOT EXISTS edit_provenance (
+	element_id TEXT NOT NULL,
+	element_kind TEXT NOT NULL,
+	edit_id TEXT NOT NULL,
+	op_type TEXT NOT NULL,
+	recorded_at INTEGER NOT NULL,
+	PRIMARY KEY(element_id, edit_id)
+);
 `
 	if _, err := i.meta.ExecContext(ctx, ddl); err != nil {
 		return fmt.Errorf("ingest: init schema: %w", err)
 	}
+	return i.migrate(ctx)
+}
+
+// schemaVersion is the current sidecar schema version. Bump it (and add a step
+// to migrate) whenever an additive schema change is introduced.
+//
+//	0 -> 1 : SW-037 — add edit-context columns to dirty_units.
+const schemaVersion = 1
+
+// migrate applies additive schema changes exactly once, gated on PRAGMA
+// user_version, so an existing on-disk ingest-meta.db (e.g. one created by a
+// pre-SW-037 story with dirty_units(path) only) is upgraded deterministically
+// instead of relying on CREATE TABLE IF NOT EXISTS (which cannot add columns to
+// an already-existing table). Each step is itself idempotent and column-presence
+// guarded, so the ladder is safe even on a fresh DB and on a DB whose
+// user_version was never tracked before this story.
+func (i *Ingester) migrate(ctx context.Context) error {
+	var current int
+	if err := i.meta.QueryRowContext(ctx, "PRAGMA user_version").Scan(&current); err != nil {
+		return fmt.Errorf("ingest: read user_version: %w", err)
+	}
+	if current >= schemaVersion {
+		return nil
+	}
+	if current < 1 {
+		if err := i.migrateDirtyUnitsEditContext(ctx); err != nil {
+			return fmt.Errorf("ingest: migrate dirty_units edit context: %w", err)
+		}
+	}
+	// PRAGMA does not accept bound parameters; schemaVersion is a trusted constant.
+	if _, err := i.meta.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", schemaVersion)); err != nil {
+		return fmt.Errorf("ingest: set user_version: %w", err)
+	}
 	return nil
 }
+
+// migrateDirtyUnitsEditContext adds the SW-037 edit-context columns to an
+// existing dirty_units table when they are absent. ADD COLUMN with a NOT NULL
+// DEFAULT is safe on a populated table. Detection via PRAGMA table_info makes the
+// step idempotent regardless of prior user_version tracking.
+func (i *Ingester) migrateDirtyUnitsEditContext(ctx context.Context) error {
+	have, err := i.columnSet(ctx, "dirty_units")
+	if err != nil {
+		return err
+	}
+	adds := []struct {
+		col string
+		ddl string
+	}{
+		{"edit_id", "ALTER TABLE dirty_units ADD COLUMN edit_id TEXT NOT NULL DEFAULT ''"},
+		{"op_type", "ALTER TABLE dirty_units ADD COLUMN op_type TEXT NOT NULL DEFAULT ''"},
+		{"recorded_at", "ALTER TABLE dirty_units ADD COLUMN recorded_at INTEGER NOT NULL DEFAULT 0"},
+	}
+	for _, a := range adds {
+		if _, ok := have[a.col]; ok {
+			continue
+		}
+		if _, err := i.meta.ExecContext(ctx, a.ddl); err != nil {
+			return fmt.Errorf("ingest: add column %s: %w", a.col, err)
+		}
+	}
+	return nil
+}
+
+// columnSet returns the set of column names on a table via PRAGMA table_info.
+// The table name is a trusted in-package literal, never caller-supplied.
+func (i *Ingester) columnSet(ctx context.Context, table string) (map[string]struct{}, error) {
+	rows, err := i.meta.QueryContext(ctx, fmt.Sprintf("PRAGMA table_info(%s)", table))
+	if err != nil {
+		return nil, fmt.Errorf("ingest: table_info(%s): %w", table, err)
+	}
+	defer rows.Close()
+	cols := make(map[string]struct{})
+	for rows.Next() {
+		var (
+			cid        int
+			name, ctyp string
+			notNull    int
+			dfltValue  sql.NullString
+			pk         int
+		)
+		if err := rows.Scan(&cid, &name, &ctyp, &notNull, &dfltValue, &pk); err != nil {
+			return nil, fmt.Errorf("ingest: scan table_info(%s): %w", table, err)
+		}
+		cols[name] = struct{}{}
+	}
+	return cols, rows.Err()
+}
+
+// EditProvenanceRecord is one row of the edit_provenance side-channel: the edit
+// that last touched an element, keyed by NodeId/EdgeId.
+type EditProvenanceRecord struct {
+	ElementID   string
+	ElementKind string
+	EditID      string
+	OpType      EditOpType
+	RecordedAt  int64
+}
+
+// EditProvenance returns every edit_provenance row, sorted by (element_id,
+// edit_id), so callers (and SW-038's audit/undo, and the AC-1 tests) can read
+// the per-edit audit record. It reads the side-channel only — it never touches
+// the graph or the AC-3 structural digest.
+func (i *Ingester) EditProvenance(ctx context.Context) ([]EditProvenanceRecord, error) {
+	rows, err := i.meta.QueryContext(ctx, `
+SELECT element_id, element_kind, edit_id, op_type, recorded_at
+FROM edit_provenance
+ORDER BY element_id, edit_id`)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: query edit provenance: %w", err)
+	}
+	defer rows.Close()
+	var out []EditProvenanceRecord
+	for rows.Next() {
+		var r EditProvenanceRecord
+		var op string
+		if err := rows.Scan(&r.ElementID, &r.ElementKind, &r.EditID, &op, &r.RecordedAt); err != nil {
+			return nil, fmt.Errorf("ingest: scan edit provenance: %w", err)
+		}
+		r.OpType = EditOpType(op)
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// MetaDB exposes the ingest-meta SQLite sidecar handle so a sibling engine
+// side-channel (SW-038's change_record audit/undo store in engine/edit) can own
+// its OWN table in the SAME sidecar that already holds edit_provenance,
+// file_content_cache, reverse_deps, and dirty_units — never in core/graphstore
+// (which would poison the AC-1 marshalled-graph digest). The returned handle is
+// read/write but the caller MUST confine itself to its own table(s); the ingest
+// pipeline owns every table declared in initSchema. It is exposed at the engine
+// layer only (engine/edit consumes it); no surface ever touches it.
+func (i *Ingester) MetaDB() *sql.DB { return i.meta }
 
 // Close releases resources.
 func (i *Ingester) Close() error {
@@ -134,7 +365,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		// Build forward refs for each file, then derive reverse deps.
 		refs := make(map[string][]string, len(units))
 		for _, u := range units {
-			nodeIDs, fwd, err := i.parseAndCommit(ctx, u)
+			nodeIDs, _, fwd, err := i.parseAndCommit(ctx, u)
 			if err != nil {
 				return err
 			}
@@ -152,8 +383,34 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 
 // IngestChanged performs incremental ingestion: it walks root, skips unchanged
 // files via the content cache, re-parses changed files, and re-parses direct
-// dependents affected by import/symbol changes.
+// dependents affected by import/symbol changes. It carries no edit provenance;
+// callers that originate an edit use IngestChangedWithProvenance.
 func (i *Ingester) IngestChanged(ctx context.Context, root string, changed []string) error {
+	return i.ingestChanged(ctx, root, changed, nil)
+}
+
+// IngestChangedWithProvenance is the provenance-aware incremental ingest entry
+// point. It behaves identically to IngestChanged but additionally records the
+// supplied edit provenance against every affected NodeId/EdgeId in the
+// edit_provenance side-channel, atomically with the Phase-2 cache/clear-dirty
+// commit. prov.EditID is minted once and prov.Timestamp captured once by the
+// caller (the engine/edit saga); the same value is shared across the whole
+// touched set. The provenance is also persisted on the dirty_units row in Phase
+// 1 so RecoverWithRoot reproduces identical side-channel state after a crash.
+func (i *Ingester) IngestChangedWithProvenance(ctx context.Context, root string, changed []string, prov EditProvenance) error {
+	if err := prov.Validate(); err != nil {
+		return err
+	}
+	return i.ingestChanged(ctx, root, changed, &prov)
+}
+
+// ingestChanged is the shared core for the zero-provenance and provenance-aware
+// entry points. When prov is non-nil the edit context rides Phase 1 (the dirty
+// row) and Phase 2 (the edit_provenance side-channel) of the existing two-phase
+// dirty-flag protocol, so a crash before Phase-2 commit leaves the file dirty
+// AND no provenance recorded, and a crash after leaves both committed — there is
+// no window where the graph is updated but provenance is missing/stale.
+func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []string, prov *EditProvenance) error {
 	units, err := i.walk(root)
 	if err != nil {
 		return err
@@ -180,14 +437,15 @@ func (i *Ingester) IngestChanged(ctx context.Context, root string, changed []str
 		}
 	}
 
-	// Phase 1: persist dirty flags in their own transaction so a crash after
-	// this point leaves recoverable state.
+	// Phase 1: persist dirty flags (with the edit context, if any) in their own
+	// transaction so a crash after this point leaves recoverable state that also
+	// reproduces the side-channel.
 	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
 		for _, u := range units {
 			if _, ok := toProcess[u.relPath]; !ok {
 				continue
 			}
-			if err := i.markDirtyTx(ctx, tx, u.relPath); err != nil {
+			if err := i.markDirtyTx(ctx, tx, u.relPath, prov); err != nil {
 				return err
 			}
 		}
@@ -202,13 +460,14 @@ func (i *Ingester) IngestChanged(ctx context.Context, root string, changed []str
 		return hookErr
 	}
 
-	// Phase 2: parse, commit to graphstore, update cache/reverse-deps, clear dirty.
+	// Phase 2: parse, commit to graphstore, update cache/reverse-deps, record edit
+	// provenance, clear dirty — all in one meta transaction.
 	return i.metaTx(ctx, func(tx *sql.Tx) error {
 		for _, u := range units {
 			if _, ok := toProcess[u.relPath]; !ok {
 				continue
 			}
-			nodeIDs, fwd, err := i.parseAndCommit(ctx, u)
+			nodeIDs, edgeIDs, fwd, err := i.parseAndCommit(ctx, u)
 			if err != nil {
 				return err
 			}
@@ -217,6 +476,17 @@ func (i *Ingester) IngestChanged(ctx context.Context, root string, changed []str
 			}
 			if err := i.updateReverseDepsTx(ctx, tx, u.relPath, fwd); err != nil {
 				return err
+			}
+			// Record provenance for every node AND edge the incremental pass
+			// touched (including reverse-dep cascade units), atomically with the
+			// cache/clear-dirty commit.
+			if prov != nil {
+				if err := i.recordEditProvenanceTx(ctx, tx, "node", nodeIDs, *prov); err != nil {
+					return err
+				}
+				if err := i.recordEditProvenanceTx(ctx, tx, "edge", edgeIDs, *prov); err != nil {
+					return err
+				}
 			}
 			if err := i.clearDirtyTx(ctx, tx, u.relPath); err != nil {
 				return err
@@ -242,6 +512,28 @@ func (i *Ingester) IngestChanged(ctx context.Context, root string, changed []str
 		}
 		return nil
 	})
+}
+
+// recordEditProvenanceTx writes one edit_provenance row per element id, keyed by
+// (element_id, edit_id), on the supplied transaction. It is O(touched elements)
+// and rides the existing Phase-2 metaTx so the provenance commit is atomic with
+// the cache/clear-dirty commit. Re-running the same edit (e.g. crash recovery
+// replaying the original edit context) upserts identical rows, so the
+// side-channel is idempotent under recovery.
+func (i *Ingester) recordEditProvenanceTx(ctx context.Context, tx *sql.Tx, kind string, ids []string, prov EditProvenance) error {
+	for _, id := range ids {
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO edit_provenance (element_id, element_kind, edit_id, op_type, recorded_at)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT(element_id, edit_id) DO UPDATE SET
+	element_kind=excluded.element_kind,
+	op_type=excluded.op_type,
+	recorded_at=excluded.recorded_at`,
+			id, kind, prov.EditID, string(prov.OpType), prov.Timestamp); err != nil {
+			return fmt.Errorf("ingest: record edit provenance: %w", err)
+		}
+	}
+	return nil
 }
 
 // Recover reprocesses any units that were marked dirty but not cleared (e.g.
@@ -272,28 +564,69 @@ func (i *Ingester) Recover(ctx context.Context) error {
 	return errors.New("ingest: Recover requires root; use RecoverWithRoot")
 }
 
-// RecoverWithRoot reprocesses dirty units relative to root.
+// RecoverWithRoot reprocesses dirty units relative to root. It reads the edit
+// context persisted on each dirty row and replays the SAME provenance, so the
+// edit_provenance side-channel ends in the identical state an uninterrupted edit
+// would have produced (provenance-idempotent recovery). Dirty rows are grouped
+// by their edit context: rows that carry a (edit_id, op_type, recorded_at) are
+// re-ingested through the provenance-aware path; rows with no edit context
+// (full-ingest leftovers) are re-ingested without provenance.
 func (i *Ingester) RecoverWithRoot(ctx context.Context, root string) error {
-	rows, err := i.meta.QueryContext(ctx, "SELECT path FROM dirty_units")
+	rows, err := i.meta.QueryContext(ctx, "SELECT path, edit_id, op_type, recorded_at FROM dirty_units")
 	if err != nil {
 		return fmt.Errorf("ingest: recover query dirty: %w", err)
 	}
 	defer rows.Close()
-	var dirty []string
+
+	type editKey struct {
+		editID     string
+		opType     string
+		recordedAt int64
+	}
+	groups := make(map[editKey][]string)
+	var order []editKey
 	for rows.Next() {
-		var p string
-		if err := rows.Scan(&p); err != nil {
+		var p, editID, opType string
+		var recordedAt int64
+		if err := rows.Scan(&p, &editID, &opType, &recordedAt); err != nil {
 			return fmt.Errorf("ingest: recover scan dirty: %w", err)
 		}
-		dirty = append(dirty, p)
+		k := editKey{editID: editID, opType: opType, recordedAt: recordedAt}
+		if _, seen := groups[k]; !seen {
+			order = append(order, k)
+		}
+		groups[k] = append(groups[k], p)
 	}
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	if len(dirty) == 0 {
+	rows.Close()
+	if len(order) == 0 {
 		return nil
 	}
-	return i.IngestChanged(ctx, root, dirty)
+
+	// Deterministic replay order.
+	sort.Slice(order, func(a, b int) bool {
+		if order[a].editID != order[b].editID {
+			return order[a].editID < order[b].editID
+		}
+		return order[a].recordedAt < order[b].recordedAt
+	})
+
+	for _, k := range order {
+		paths := groups[k]
+		if k.editID == "" {
+			if err := i.IngestChanged(ctx, root, paths); err != nil {
+				return err
+			}
+			continue
+		}
+		prov := EditProvenance{EditID: k.editID, OpType: EditOpType(k.opType), Timestamp: k.recordedAt}
+		if err := i.IngestChangedWithProvenance(ctx, root, paths, prov); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // walk returns all source files under root, sorted deterministically.
@@ -356,42 +689,61 @@ func (i *Ingester) sanitizePath(root, p string) (string, error) {
 }
 
 // parseAndCommit parses one file, writes its nodes/edges to graphstore, and
-// returns the node IDs plus the list of files it references (forward refs).
-func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []string, error) {
+// returns the node IDs, the edge IDs it committed (the side-channel edge key
+// set), plus the list of files it references (forward refs).
+func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []string, []string, error) {
 	res, err := i.parser.Parse(ctx, u.relPath, u.src)
 	if err != nil {
-		return nil, nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
+		return nil, nil, nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
 	}
 
-	// Remove old nodes for this file before inserting new ones.
+	// Remove old nodes for this file before inserting the new parse output. As of
+	// SW-036 the graphstore exposes an explicit delete API, so the orphan debt
+	// SW-035 documented here is closed: any node whose identity changed
+	// (rename/move/signature-change all mint a new NodeId because identity is
+	// xxhash64(Kind,QualifiedName,SourcePath)) is dropped along with its incident
+	// edges, so the incremental re-index converges byte-for-byte with a full
+	// re-index. An identity-PRESERVING edit deletes then re-PutNodes the same ID,
+	// which is harmless; computing the new-id set first lets us skip those.
 	oldIDs, err := i.cachedNodeIDs(ctx, u.relPath)
 	if err != nil {
-		return nil, nil, err
-	}
-	for _, id := range oldIDs {
-		// Best-effort removal; graphstore has no delete API, so we rely on
-		// overwrite semantics for nodes with the same ID and on edges being
-		// replaced by the new parse output. Stale edges with no replacement are
-		// implicitly orphaned; a production system would add explicit deletion.
-		_ = id
+		return nil, nil, nil, err
 	}
 
 	nodeIDs := make([]string, 0, len(res.Nodes))
+	newIDs := make(map[string]struct{}, len(res.Nodes))
+	for _, n := range res.Nodes {
+		newIDs[string(n.ID())] = struct{}{}
+	}
+	// Delete any previously-committed node for this file whose identity is NOT
+	// reproduced by the new parse. DeleteNode cascades incident edges, so stale
+	// edges anchored on a removed node can never be orphaned.
+	for _, id := range oldIDs {
+		if _, kept := newIDs[id]; kept {
+			continue
+		}
+		if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+			return nil, nil, nil, fmt.Errorf("ingest: delete stale node %s: %w", id, err)
+		}
+	}
+
 	for _, n := range res.Nodes {
 		if err := i.store.PutNode(ctx, n); err != nil {
-			return nil, nil, fmt.Errorf("ingest: put node: %w", err)
+			return nil, nil, nil, fmt.Errorf("ingest: put node: %w", err)
 		}
 		nodeIDs = append(nodeIDs, string(n.ID()))
 	}
+	edgeIDs := make([]string, 0, len(res.Edges))
 	for _, e := range res.Edges {
 		if err := i.store.PutEdge(ctx, e); err != nil {
-			return nil, nil, fmt.Errorf("ingest: put edge: %w", err)
+			return nil, nil, nil, fmt.Errorf("ingest: put edge: %w", err)
 		}
+		edgeIDs = append(edgeIDs, string(e.ID()))
 	}
 
 	// Forward refs = paths this file imports/uses. For the stub parser this is
 	// supplied in the parse result; a real parser derives it from imports.
-	return nodeIDs, res.References, nil
+	return nodeIDs, edgeIDs, res.References, nil
 }
 
 // cachedNodeIDs returns the node IDs previously produced for path.
@@ -552,11 +904,26 @@ func (i *Ingester) dependentsOf(ctx context.Context, path string) ([]string, err
 	return out, nil
 }
 
-// markDirtyTx / clearDirtyTx manage the crash-recovery dirty set.
-func (i *Ingester) markDirtyTx(ctx context.Context, tx *sql.Tx, path string) error {
+// markDirtyTx / clearDirtyTx manage the crash-recovery dirty set. When prov is
+// non-nil the originating edit context is persisted on the dirty row, so
+// RecoverWithRoot can replay the SAME provenance after a crash, making recovery
+// provenance-idempotent (the recovered side-channel matches an uninterrupted
+// edit). A nil prov stores empty edit context (full-ingest / plain recovery).
+func (i *Ingester) markDirtyTx(ctx context.Context, tx *sql.Tx, path string, prov *EditProvenance) error {
+	var editID, opType string
+	var recordedAt int64
+	if prov != nil {
+		editID = prov.EditID
+		opType = string(prov.OpType)
+		recordedAt = prov.Timestamp
+	}
 	_, err := tx.ExecContext(ctx, `
-INSERT INTO dirty_units (path) VALUES (?)
-ON CONFLICT(path) DO UPDATE SET path=excluded.path`, path)
+INSERT INTO dirty_units (path, edit_id, op_type, recorded_at) VALUES (?, ?, ?, ?)
+ON CONFLICT(path) DO UPDATE SET
+	edit_id=excluded.edit_id,
+	op_type=excluded.op_type,
+	recorded_at=excluded.recorded_at`,
+		path, editID, opType, recordedAt)
 	return err
 }
 

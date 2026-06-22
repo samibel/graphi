@@ -55,6 +55,110 @@ func Run(ctx context.Context, c client.Client, args []string, out, errOut io.Wri
 	return nil
 }
 
+// cliActor is the default actor recorded for edits initiated via the CLI surface
+// when the caller supplies none (Scope decision 6: actor is per-surface, recorded,
+// excluded from the AC-4 parity comparable subset).
+const cliActor = "cli"
+
+// refactorFlags parses the shared refactor flags into a RefactorRequest. Both the
+// preview and apply subcommands use the SAME parsing so the two surfaces (and the
+// two CLI verbs) construct identical RefactorOps (parity by construction).
+func refactorFlags(name string, args []string, errOut io.Writer) (client.RefactorRequest, string, error) {
+	fs := flag.NewFlagSet(name, flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	kind := fs.String("kind", "", "refactor kind: rename|extract|move|signature_change")
+	target := fs.String("target", "", "resolved node id of the symbol to refactor")
+	oldName := fs.String("old-name", "", "current spelling of the symbol")
+	newName := fs.String("new-name", "", "replacement spelling")
+	dest := fs.String("destination-file", "", "destination file (move only)")
+	actor := fs.String("actor", cliActor, "request identity recorded on the change record")
+	if err := fs.Parse(args); err != nil {
+		return client.RefactorRequest{}, "", fmt.Errorf("cli: %w", err)
+	}
+	if *kind == "" || *target == "" || *oldName == "" || *newName == "" {
+		fmt.Fprintln(errOut, "cli: -kind, -target, -old-name and -new-name are required")
+		return client.RefactorRequest{}, "", fmt.Errorf("cli: missing required refactor flags")
+	}
+	return client.RefactorRequest{
+		Kind:            *kind,
+		TargetSymbol:    *target,
+		OldName:         *oldName,
+		NewName:         *newName,
+		DestinationFile: *dest,
+	}, *actor, nil
+}
+
+// RunRefactorPreview executes a refactor PREVIEW against the shared client and
+// writes the canonical EP-004 impact set (blast radius + planned ops) WITHOUT
+// mutating (AC-1). The CLI holds no engine logic.
+//
+// Usage:
+//
+//	refactor-preview -kind rename -target <id> -old-name X -new-name Y
+func RunRefactorPreview(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	req, _, err := refactorFlags("refactor-preview", args, errOut)
+	if err != nil {
+		return err
+	}
+	b, err := c.RefactorPreview(ctx, req)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunRefactor commits a refactor through the shared client and writes the
+// canonical auditable change record. The actor defaults to "cli".
+//
+// Usage:
+//
+//	refactor -kind rename -target <id> -old-name X -new-name Y [-actor who]
+func RunRefactor(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	req, actor, err := refactorFlags("refactor", args, errOut)
+	if err != nil {
+		return err
+	}
+	b, err := c.Refactor(ctx, req, actor)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunUndo reverses an applied edit by its undo token and writes the canonical
+// reversal change record.
+//
+// Usage:
+//
+//	undo -token <undo-token> [-actor who]
+func RunUndo(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("undo", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	token := fs.String("token", "", "the undo token returned by a prior refactor")
+	actor := fs.String("actor", cliActor, "request identity recorded on the reversal record")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if *token == "" {
+		fmt.Fprintln(errOut, "cli: -token is required")
+		return fmt.Errorf("cli: -token is required")
+	}
+	b, err := c.Undo(ctx, *token, *actor)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunSearch executes one CLI search invocation against the shared client and
 // writes the canonical serialized result to out.
 //
