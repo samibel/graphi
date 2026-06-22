@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
@@ -363,20 +364,36 @@ func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []
 		return nil, nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
 	}
 
-	// Remove old nodes for this file before inserting new ones.
+	// Remove old nodes for this file before inserting the new parse output. As of
+	// SW-036 the graphstore exposes an explicit delete API, so the orphan debt
+	// SW-035 documented here is closed: any node whose identity changed
+	// (rename/move/signature-change all mint a new NodeId because identity is
+	// xxhash64(Kind,QualifiedName,SourcePath)) is dropped along with its incident
+	// edges, so the incremental re-index converges byte-for-byte with a full
+	// re-index. An identity-PRESERVING edit deletes then re-PutNodes the same ID,
+	// which is harmless; computing the new-id set first lets us skip those.
 	oldIDs, err := i.cachedNodeIDs(ctx, u.relPath)
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, id := range oldIDs {
-		// Best-effort removal; graphstore has no delete API, so we rely on
-		// overwrite semantics for nodes with the same ID and on edges being
-		// replaced by the new parse output. Stale edges with no replacement are
-		// implicitly orphaned; a production system would add explicit deletion.
-		_ = id
-	}
 
 	nodeIDs := make([]string, 0, len(res.Nodes))
+	newIDs := make(map[string]struct{}, len(res.Nodes))
+	for _, n := range res.Nodes {
+		newIDs[string(n.ID())] = struct{}{}
+	}
+	// Delete any previously-committed node for this file whose identity is NOT
+	// reproduced by the new parse. DeleteNode cascades incident edges, so stale
+	// edges anchored on a removed node can never be orphaned.
+	for _, id := range oldIDs {
+		if _, kept := newIDs[id]; kept {
+			continue
+		}
+		if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+			return nil, nil, fmt.Errorf("ingest: delete stale node %s: %w", id, err)
+		}
+	}
+
 	for _, n := range res.Nodes {
 		if err := i.store.PutNode(ctx, n); err != nil {
 			return nil, nil, fmt.Errorf("ingest: put node: %w", err)

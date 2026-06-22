@@ -237,6 +237,89 @@ func TestIngest_GoldenIncrementalVsFull(t *testing.T) {
 	}
 }
 
+// renamingParser derives a node's QualifiedName from the FIRST line of the
+// source (a "name:Foo" directive), so editing that line mints a NEW NodeId — the
+// non-identity-preserving shape rename/move/signature-change produce. It is used
+// to prove SW-036's parseAndCommit delete wiring drops the old node instead of
+// orphaning it, so the incremental graph converges with a full re-index.
+type renamingParser struct{}
+
+func (renamingParser) Parse(_ context.Context, path string, src []byte) (*parse.ParseResult, error) {
+	name := "fn" + filepath.Base(path)
+	for _, line := range bytes.Split(src, []byte("\n")) {
+		line = bytes.TrimSpace(line)
+		if bytes.HasPrefix(line, []byte("name:")) {
+			name = string(bytes.TrimSpace(bytes.TrimPrefix(line, []byte("name:"))))
+			break
+		}
+	}
+	n, err := model.NewNode("function", "pkg/"+name, path, 1, 1)
+	if err != nil {
+		return nil, err
+	}
+	return &parse.ParseResult{
+		Meta:       parse.SourceMeta{Path: path, Language: "stub", Size: len(src)},
+		Nodes:      []model.Node{n},
+		References: extractRefs(path, string(src)),
+	}, nil
+}
+
+// TestIngest_IdentityChangeDeletesOldNode is the SW-036 gating-prerequisite test:
+// when a re-index changes a node's identity, the incremental path must DELETE the
+// old node (now possible via the graphstore delete API) rather than orphan it, so
+// the incremental store is byte-identical to a full re-index. Before SW-036 the
+// parseAndCommit oldIDs loop was a no-op and this would leave a stale node.
+func TestIngest_IdentityChangeDeletesOldNode(t *testing.T) {
+	ctx := context.Background()
+
+	storeInc := graphstore.NewMemStore()
+	iInc := newIngester(t, storeInc, renamingParser{})
+	repo := writeRepo(t, map[string]string{"a.go": "name:Old\n"})
+	if err := iInc.IngestAll(ctx, repo); err != nil {
+		t.Fatalf("inc IngestAll: %v", err)
+	}
+
+	// Rename: the node's identity changes from pkg/Old to pkg/New.
+	if err := os.WriteFile(filepath.Join(repo, "a.go"), []byte("name:New\n"), 0o600); err != nil {
+		t.Fatalf("rename edit: %v", err)
+	}
+	if err := iInc.IngestChanged(ctx, repo, []string{"a.go"}); err != nil {
+		t.Fatalf("incremental: %v", err)
+	}
+
+	// The old node must be gone; exactly one node (the renamed one) survives.
+	nodes, err := storeInc.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatalf("Nodes: %v", err)
+	}
+	if len(nodes) != 1 {
+		t.Fatalf("expected 1 node after identity change (old deleted), got %d: %+v", len(nodes), nodes)
+	}
+	if nodes[0].QualifiedName() != "pkg/New" {
+		t.Fatalf("surviving node = %q, want pkg/New", nodes[0].QualifiedName())
+	}
+
+	// Byte-identical to a full re-index of the post-rename repo.
+	storeFull := graphstore.NewMemStore()
+	iFull := newIngester(t, storeFull, renamingParser{})
+	if err := iFull.IngestAll(ctx, repo); err != nil {
+		t.Fatalf("full IngestAll: %v", err)
+	}
+	incSnap := filepath.Join(t.TempDir(), "inc.snapshot")
+	fullSnap := filepath.Join(t.TempDir(), "full.snapshot")
+	if err := storeInc.Snapshot(ctx, incSnap); err != nil {
+		t.Fatalf("inc snapshot: %v", err)
+	}
+	if err := storeFull.Snapshot(ctx, fullSnap); err != nil {
+		t.Fatalf("full snapshot: %v", err)
+	}
+	b1, _ := os.ReadFile(incSnap)
+	b2, _ := os.ReadFile(fullSnap)
+	if !bytes.Equal(b1, b2) {
+		t.Fatalf("incremental != full after identity change:\ninc =%s\nfull=%s", b1, b2)
+	}
+}
+
 func isError(err, target error) bool {
 	if err == nil {
 		return target == nil
