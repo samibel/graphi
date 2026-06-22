@@ -547,3 +547,81 @@ func TestApplyRefactor_RejectsInvalidRequests(t *testing.T) {
 		})
 	}
 }
+
+// SW-037 AC-1: an extract/move refactor applied through the existing incremental
+// route records the saga-minted (edit_id, op_type, timestamp) in the
+// edit_provenance side-channel for the affected nodes AND edges, with a single
+// timestamp shared across the touched set, and surfaces edit_id on the Result.
+func TestApplyRefactor_RecordsEditProvenance(t *testing.T) {
+	cases := []struct {
+		name   string
+		kind   edit.RefactorKind
+		opType ingest.EditOpType
+	}{
+		{"move", edit.RefactorMove, ingest.EditOpMove},
+		{"extract", edit.RefactorExtract, ingest.EditOpExtract},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := context.Background()
+			h := newRefactorHarness(t, map[string]string{
+				"a_def.go": "def:Sym\n",
+				"b_use.go": "def:UseB\nref:a_def.go:Sym\nSym()\n",
+			})
+			fixed := time.Unix(1700001234, 0).UTC()
+			h.applier.SetClock(func() time.Time { return fixed })
+
+			res, err := h.applier.ApplyRefactor(ctx, edit.RefactorOp{
+				Kind:         c.kind,
+				TargetSymbol: h.symbolID("Sym", "a_def.go"),
+				OldName:      "Sym",
+				NewName:      "Sym2",
+			})
+			if err != nil {
+				t.Fatalf("ApplyRefactor: %v", err)
+			}
+			if res.Outcome != edit.OutcomeApplied {
+				t.Fatalf("outcome = %q", res.Outcome)
+			}
+			if res.EditID == "" {
+				t.Fatal("expected surfaced edit id on RefactorResult")
+			}
+			// Byte-identical invariant still holds (side-channel excluded).
+			if h.liveDigest(t) != h.fullReindexDigest(t) {
+				t.Fatalf("%s not byte-identical to full re-index", c.name)
+			}
+
+			recs, err := h.ing.EditProvenance(ctx)
+			if err != nil {
+				t.Fatalf("EditProvenance: %v", err)
+			}
+			if len(recs) == 0 {
+				t.Fatal("expected provenance rows after refactor")
+			}
+			var sawNode, sawEdge bool
+			for _, r := range recs {
+				if r.EditID != res.EditID {
+					t.Fatalf("provenance edit id %q != surfaced %q", r.EditID, res.EditID)
+				}
+				if r.OpType != c.opType {
+					t.Fatalf("op_type = %q, want %q", r.OpType, c.opType)
+				}
+				if r.RecordedAt != fixed.UnixNano() {
+					t.Fatalf("recorded_at = %d, want %d (single pinned timestamp)", r.RecordedAt, fixed.UnixNano())
+				}
+				switch r.ElementKind {
+				case "node":
+					sawNode = true
+				case "edge":
+					sawEdge = true
+				}
+			}
+			if !sawNode {
+				t.Error("expected at least one node provenance row")
+			}
+			if !sawEdge {
+				t.Error("expected at least one edge provenance row (the re-derived reference edge)")
+			}
+		})
+	}
+}

@@ -6,6 +6,8 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/samibel/graphi/engine/ingest"
 )
 
 // RefactorKind is the closed set of graph-aware refactor operations SW-036
@@ -128,7 +130,14 @@ func (a *Applier) ApplyRefactor(ctx context.Context, op RefactorOp) (RefactorRes
 		return out, nil
 	}
 
-	res, err := a.applyBatch(ctx, ops)
+	// Map the refactor kind onto the closed ingest op-type enum; the saga mints
+	// the edit id + timestamp once and threads the provenance through the
+	// incremental ingest pass (SW-037).
+	opType, err := opTypeForRefactorKind(op.Kind)
+	if err != nil {
+		return out, err
+	}
+	res, err := a.applyBatch(ctx, ops, opType)
 	out.Result = res
 	out.Result.TargetNodeID = op.TargetSymbol
 	if err != nil {
@@ -204,7 +213,7 @@ func (a *Applier) SetBatchFaultHook(k int) {
 // Multiple EditOps may target the same file (e.g. several references in one
 // file); they are grouped per file and applied span-by-span from the END of the
 // file backwards so earlier byte offsets stay valid as later spans are rewritten.
-func (a *Applier) applyBatch(ctx context.Context, ops []EditOp) (Result, error) {
+func (a *Applier) applyBatch(ctx context.Context, ops []EditOp, opType ingest.EditOpType) (Result, error) {
 	res := Result{Outcome: OutcomeRolledBack}
 	if len(ops) == 0 {
 		return res, fmt.Errorf("%w: empty refactor (no edit ops)", ErrInvalidOp)
@@ -303,10 +312,15 @@ func (a *Applier) applyBatch(ctx context.Context, ops []EditOp) (Result, error) 
 		a.setFault(faultNone)
 		return compensate(fmt.Errorf("%w: injected re-index fault", ErrReindex))
 	}
-	if err := a.ingester.IngestChanged(ctx, a.root, relOrder); err != nil {
+	prov, err := a.newEditProvenance(opType)
+	if err != nil {
+		return compensate(err)
+	}
+	if err := a.ingester.IngestChangedWithProvenance(ctx, a.root, relOrder, prov); err != nil {
 		return compensate(fmt.Errorf("%w: %v", ErrReindex, err))
 	}
 	res.TouchedFiles = relOrder
+	res.EditID = prov.EditID
 
 	// Step 6: ONE consistency gate at the end of the batch (never per file).
 	if a.fault == faultConsistencyCheck {

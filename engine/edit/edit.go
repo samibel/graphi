@@ -40,6 +40,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/engine/ingest"
@@ -102,6 +103,12 @@ type Result struct {
 	Outcome      Outcome  `json:"outcome"`
 	TargetNodeID string   `json:"target_node_id"`
 	TouchedFiles []string `json:"touched_files"`
+	// EditID is the saga-minted identifier of this edit (SW-037). It is the key
+	// under which the edit_provenance side-channel records every affected
+	// NodeId/EdgeId, and is surfaced here so SW-038's audit/undo can reference the
+	// edit without a breaking contract change. Empty for a rolled-back edit (no
+	// provenance was committed).
+	EditID string `json:"edit_id,omitempty"`
 	// UndoToken is reserved for SW-038. It is empty in SW-035; the field exists
 	// now so adding undo later is not a breaking contract change.
 	UndoToken string `json:"undo_token,omitempty"`
@@ -165,7 +172,15 @@ type Applier struct {
 	// writing the k-th (1-based) touched file, exercising all-or-nothing
 	// multi-file compensation. Consumed by SetBatchFaultHook/applyBatch.
 	batchFailK int
+
+	// clock is the SW-037 provenance clock seam. When nil, time.Now().UTC() is
+	// used; tests inject a deterministic clock to pin recorded timestamps.
+	clock func() time.Time
 }
+
+// SetClock injects a deterministic clock for edit-provenance timestamps.
+// Test-only; when unset the saga uses time.Now().UTC().
+func (a *Applier) SetClock(fn func() time.Time) { a.clock = fn }
 
 // NewApplier constructs an Applier for the repository rooted at root. store is
 // the authoritative graphstore that ingester writes to; both must already be
@@ -299,15 +314,24 @@ func (a *Applier) Apply(ctx context.Context, op EditOp) (Result, error) {
 		return compensate(fmt.Errorf("%w: injected fault after source write", ErrWrite))
 	}
 
-	// Step 5: incremental re-index of the edited file + its reverse-dep cascade.
+	// Step 5: incremental re-index of the edited file + its reverse-dep cascade,
+	// carrying the per-edit provenance. The edit id is minted ONCE and the
+	// timestamp captured ONCE here in the saga (a single value for the whole
+	// touched set); ingest records it against every affected NodeId/EdgeId in the
+	// edit_provenance side-channel, atomically in Phase 2 of the dirty-flag tx.
 	if a.fault == faultDuringReindex {
 		a.setFault(faultNone)
 		return compensate(fmt.Errorf("%w: injected re-index fault", ErrReindex))
 	}
-	if err := a.ingester.IngestChanged(ctx, a.root, []string{relPath}); err != nil {
+	prov, err := a.newEditProvenance(ingest.EditOpApply)
+	if err != nil {
+		return compensate(err)
+	}
+	if err := a.ingester.IngestChangedWithProvenance(ctx, a.root, []string{relPath}, prov); err != nil {
 		return compensate(fmt.Errorf("%w: %v", ErrReindex, err))
 	}
 	res.TouchedFiles = []string{relPath}
+	res.EditID = prov.EditID
 
 	// Step 6: consistency gate — the incrementally-updated graph must be
 	// byte-identical to a full re-index of the post-edit source.
