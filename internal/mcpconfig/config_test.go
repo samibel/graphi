@@ -38,9 +38,9 @@ func TestApply_CreateUpdateUnchanged(t *testing.T) {
 	entry := GraphiEntry("/usr/local/bin/graphi", nil)
 
 	// create
-	act, _, err := Apply(path, "graphi", entry, false)
-	if err != nil || act != ActionCreated {
-		t.Fatalf("create: act=%s err=%v", act, err)
+	res, err := Apply(path, "graphi", entry, false)
+	if err != nil || res.Action != ActionCreated {
+		t.Fatalf("create: act=%s err=%v", res.Action, err)
 	}
 	doc, _ := Load(path)
 	if got := doc["mcpServers"].(map[string]any)["graphi"]; !entryMatches(got, entry) {
@@ -48,16 +48,16 @@ func TestApply_CreateUpdateUnchanged(t *testing.T) {
 	}
 
 	// unchanged (idempotent)
-	act, _, err = Apply(path, "graphi", entry, false)
-	if err != nil || act != ActionUnchanged {
-		t.Fatalf("unchanged: act=%s err=%v", act, err)
+	res, err = Apply(path, "graphi", entry, false)
+	if err != nil || res.Action != ActionUnchanged {
+		t.Fatalf("unchanged: act=%s err=%v", res.Action, err)
 	}
 
 	// update (different binary)
 	entry2 := GraphiEntry("/opt/graphi/bin/graphi", nil)
-	act, _, err = Apply(path, "graphi", entry2, false)
-	if err != nil || act != ActionUpdated {
-		t.Fatalf("update: act=%s err=%v", act, err)
+	res, err = Apply(path, "graphi", entry2, false)
+	if err != nil || res.Action != ActionUpdated {
+		t.Fatalf("update: act=%s err=%v", res.Action, err)
 	}
 	doc, _ = Load(path)
 	if got := doc["mcpServers"].(map[string]any)["graphi"]; !entryMatches(got, entry2) {
@@ -77,7 +77,7 @@ func TestApply_PreservesUnrelatedKeys(t *testing.T) {
 		},
 	})
 	entry := GraphiEntry("/bin/graphi", nil)
-	if _, _, err := Apply(path, "graphi", entry, false); err != nil {
+	if _, err := Apply(path, "graphi", entry, false); err != nil {
 		t.Fatal(err)
 	}
 	doc, _ := Load(path)
@@ -97,11 +97,11 @@ func TestApply_DryRunWritesNothing(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".claude.json")
 	entry := GraphiEntry("/bin/graphi", nil)
-	act, diff, err := Apply(path, "graphi", entry, true)
-	if err != nil || act != ActionCreated {
-		t.Fatalf("dry-run: act=%s err=%v", act, err)
+	res, err := Apply(path, "graphi", entry, true)
+	if err != nil || res.Action != ActionCreated {
+		t.Fatalf("dry-run: act=%s err=%v", res.Action, err)
 	}
-	if diff == "" {
+	if res.Diff == "" {
 		t.Fatal("dry-run diff empty")
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
@@ -116,7 +116,7 @@ func TestApply_CorruptInputLeavesOriginalIntact(t *testing.T) {
 	if err := os.WriteFile(path, orig, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	_, _, err := Apply(path, "graphi", GraphiEntry("/bin/graphi", nil), false)
+	_, err := Apply(path, "graphi", GraphiEntry("/bin/graphi", nil), false)
 	if err == nil {
 		t.Fatal("expected error on corrupt input")
 	}

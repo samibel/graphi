@@ -31,12 +31,17 @@ type Status string
 const (
 	StatusPass Status = "PASS"
 	StatusFail Status = "FAIL"
+	// StatusUnverified means the invariant could NOT be observed on this runner
+	// (e.g. no network-namespace isolation to prove zero egress). It is NEVER a
+	// PASS: it yields a non-zero exit and a distinct posture so a false green is
+	// impossible (SW-049 AC-6 false-green prevention).
+	StatusUnverified Status = "UNVERIFIED"
 )
 
 // Check is one audited invariant with its evidence.
 type Check struct {
 	Name     string   // short invariant name
-	Status   Status   // PASS / FAIL
+	Status   Status   // PASS / FAIL / UNVERIFIED
 	Evidence string   // why (names the real guard/scan, not a hardcoded "OK")
 	Offenders []string // concrete failures (e.g. CGo packages), empty on PASS
 }
@@ -46,17 +51,30 @@ type Report struct {
 	Checks []Check
 }
 
-// AllPass reports whether every check passed.
+// AllPass reports whether every check passed. A FAIL or an UNVERIFIED check both
+// make this false — UNVERIFIED is NEVER treated as a pass (AC-6).
 func (r Report) AllPass() bool {
 	for _, c := range r.Checks {
-		if c.Status == StatusFail {
+		if c.Status != StatusPass {
 			return false
 		}
 	}
 	return true
 }
 
-// ExitCode returns 0 on all-pass, 1 on any failure.
+// hasFail reports whether any check outright FAILED (a verified violation), as
+// distinct from merely UNVERIFIED.
+func (r Report) hasFail() bool {
+	for _, c := range r.Checks {
+		if c.Status == StatusFail {
+			return true
+		}
+	}
+	return false
+}
+
+// ExitCode returns 0 only when every check PASSES. Any FAIL or UNVERIFIED yields
+// a non-zero exit — exit 0 means a true, verified green and nothing less (AC-6).
 func (r Report) ExitCode() int {
 	if r.AllPass() {
 		return 0
@@ -64,36 +82,64 @@ func (r Report) ExitCode() int {
 	return 1
 }
 
-// Render writes a human-readable report to w.
+// Posture is the overall verdict line: CONFIRMED (all pass) / VIOLATED (any
+// outright FAIL) / UNVERIFIED (no FAIL but at least one check unobservable).
+func (r Report) Posture() string {
+	if r.AllPass() {
+		return "CONFIRMED"
+	}
+	if r.hasFail() {
+		return "VIOLATED"
+	}
+	return "UNVERIFIED"
+}
+
+// Render writes a human-readable report to w with a distinct marker per status
+// and an overall posture line that matches the exit code (CONFIRMED / VIOLATED /
+// UNVERIFIED).
 func (r Report) Render(w io.Writer) {
 	fmt.Fprintln(w, "graphi privacy-audit")
 	fmt.Fprintln(w, "===================")
 	for _, c := range r.Checks {
 		mark := "✓"
-		if c.Status == StatusFail {
+		switch c.Status {
+		case StatusFail:
 			mark = "✗"
+		case StatusUnverified:
+			mark = "?"
 		}
-		fmt.Fprintf(w, "%s %s — %s\n", mark, c.Name, c.Evidence)
+		fmt.Fprintf(w, "%s %s [%s] — %s\n", mark, c.Name, c.Status, c.Evidence)
 		for _, off := range c.Offenders {
 			fmt.Fprintf(w, "    · %s\n", off)
 		}
 	}
-	if r.AllPass() {
+	switch r.Posture() {
+	case "CONFIRMED":
 		fmt.Fprintln(w, "\nlocal-first posture: CONFIRMED (all checks pass)")
-	} else {
+	case "VIOLATED":
 		fmt.Fprintln(w, "\nlocal-first posture: VIOLATED (see failed checks above)")
+	default:
+		fmt.Fprintln(w, "\nlocal-first posture: UNVERIFIED (a check could not be observed; not a pass — run under the CI deny-egress harness)")
 	}
 }
 
 // Run executes the audit. target is the build target scanned for CGo imports
-// (default "./..."). It is fully offline.
+// (default "./..."). It is fully offline. The zero-outbound check runs a
+// representative graphi operation under the platform's default network isolator.
 func Run(ctx context.Context, target string) Report {
+	return RunWithIsolator(ctx, target, canary.DefaultIsolator(), nil)
+}
+
+// RunWithIsolator is Run with an injectable isolator + driver, so the live
+// isolated exercise's PASS / FAIL / UNVERIFIED branches are unit-testable
+// without root/netns. A nil driver uses the default in-process surface driver.
+func RunWithIsolator(ctx context.Context, target string, iso canary.Isolator, drv canary.SurfaceDriver) Report {
 	if target == "" {
 		target = "./..."
 	}
 	var checks []Check
 	checks = append(checks, checkCgoFree(ctx, target))
-	checks = append(checks, checkZeroOutbound())
+	checks = append(checks, checkZeroOutbound(ctx, iso, drv))
 	checks = append(checks, checkNoTelemetry())
 	checks = append(checks, checkNoAccounts())
 	checks = append(checks, checkNoExternalServices())
@@ -120,24 +166,65 @@ func checkCgoFree(ctx context.Context, target string) Check {
 	return c
 }
 
-// checkZeroOutbound references the REAL egress contract: internal/canary's
-// dial-attempt guard enforces loopback-only dials on ATTEMPT (not just on-wire).
-// The audit asserts the guard exists and covers the surfaces; the full hermetic
-// runtime run is exercised in CI by `graphi canary` (needs network isolation).
-func checkZeroOutbound() Check {
+// checkZeroOutbound runs a LIVE representative graphi operation under the
+// platform's network isolator and emits a tri-state verdict (SW-049 AC-5/AC-6):
+//
+//   - isolation available + zero non-loopback dials → PASS ("zero outbound
+//     network, verified under loopback-only isolation");
+//   - isolation available + a non-loopback dial attempted → FAIL ("egress
+//     detected") naming the offending tool + destination;
+//   - isolation NOT available (e.g. local macOS, unprivileged runner) →
+//     UNVERIFIED — never a false PASS — directing the operator to the CI
+//     deny-egress harness.
+//
+// The exercise reuses the SAME canary engine (dial-attempt guard + in-process
+// surface driver) that `graphi canary` uses, so a real egress introduced in any
+// surface is observable here too.
+func checkZeroOutbound(ctx context.Context, iso canary.Isolator, drv canary.SurfaceDriver) Check {
 	c := Check{Name: "Zero outbound network"}
+	if iso == nil {
+		iso = canary.DefaultIsolator()
+	}
+	if drv == nil {
+		drv = canary.DefaultDriver(io.Discard)
+	}
+
 	union := canary.NewSurfaceUnion()
-	covered := union.CoveredTools()
-	if len(covered) == 0 {
+	if len(union.CoveredTools()) == 0 {
 		c.Status = StatusFail
 		c.Evidence = "canary surface union is empty — egress guard not wired"
 		return c
 	}
+
+	// No isolation on this runner: we cannot OBSERVE the network layer, so we
+	// must NOT claim a pass. This is the AC-6 false-green safety valve.
+	if !iso.IsAvailable() {
+		c.Status = StatusUnverified
+		c.Evidence = "network layer not observable on this runner (no loopback-only isolation); " +
+			"run `graphi privacy-audit` under the CI deny-egress harness (Linux netns) to verify"
+		return c
+	}
+
+	// Live exercise under loopback-only isolation. A clean run (zero non-loopback
+	// dial attempts) is a verified PASS; any non-loopback dial → FAIL.
+	art, err := canary.Run(ctx, canary.RunConfig{Isolator: iso, Driver: drv, Union: union})
+	if err != nil {
+		c.Status = StatusFail
+		c.Evidence = "egress detected: " + art.FailReason
+		for _, v := range art.Violations {
+			c.Offenders = append(c.Offenders, fmt.Sprintf("%s → %s", v.Tool, v.Address))
+		}
+		if len(c.Offenders) == 0 && art.FailReason != "" {
+			c.Offenders = append(c.Offenders, art.FailReason)
+		}
+		return c
+	}
+
 	c.Status = StatusPass
 	c.Evidence = fmt.Sprintf(
-		"enforced by internal/canary dial-attempt guard (loopback-only, asserted on attempt); "+
-			"surface union covers %d tool(s); full hermetic run via `graphi canary`/CI",
-		len(covered))
+		"zero outbound network, verified live under loopback-only isolation "+
+			"(%s); %d surface tool(s) exercised, %d non-loopback dial attempt(s)",
+		art.Isolation, len(art.CoveredTools), len(art.Violations))
 	return c
 }
 

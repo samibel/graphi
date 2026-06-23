@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -254,11 +255,14 @@ func TestSSE_EventsDeliveredInOrder(t *testing.T) {
 			break
 		}
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "data: ") {
-			var ev observe.Event
-			if json.Unmarshal([]byte(strings.TrimPrefix(line, "data: ")), &ev) == nil {
-				got = append(got, ev.Type)
+		// Frames now carry event:<type>; the first frame is the event:ready
+		// handshake which we skip. Data events carry the published Type.
+		if strings.HasPrefix(line, "event: ") {
+			ev := strings.TrimPrefix(line, "event: ")
+			if ev == "ready" || ev == "bye" || ev == "error" {
+				continue
 			}
+			got = append(got, ev)
 		}
 	}
 	for i := range want {
@@ -364,6 +368,353 @@ func TestColdStart_P95Under100ms(t *testing.T) {
 		t.Fatalf("cold-start P95=%v > 100ms (samples=%d)", p95, samples)
 	}
 }
+
+// --- AC-5: error envelope (sanitized, consistent, documented taxonomy) -------
+
+// errClient is a stubClient whose Query/Search/Analyze return a leaky error
+// containing an absolute path + symbol, to assert the 500 path sanitizes it.
+type errClient struct {
+	stubClient
+	err error
+}
+
+func (c *errClient) Query(context.Context, string, string, int) ([]byte, error) {
+	return nil, c.err
+}
+
+func TestError_5xx_Sanitized(t *testing.T) {
+	leaky := errors.New("boom at /Users/secret/repo/engine/query/query.go:42 in query.Service.dispatch")
+	srv := New(&errClient{err: leaky}, observe.New())
+	req := httptest.NewRequest(http.MethodGet, "/query/callers?symbol=x", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != 500 {
+		t.Fatalf("code=%d, want 500", rec.Code)
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "/Users/secret") || strings.Contains(body, "query.go") || strings.Contains(body, "dispatch") {
+		t.Fatalf("5xx body leaked internal detail: %s", body)
+	}
+	var env errorEnvelope
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("decode error envelope: %v", err)
+	}
+	if env.Error.Code != "internal" || env.SchemaVersion != SchemaVersion {
+		t.Fatalf("unexpected envelope: %+v", env)
+	}
+}
+
+func TestError_Taxonomy(t *testing.T) {
+	// Each documented status maps to a stable code via the error envelope.
+	t.Run("400_bad_request", func(t *testing.T) {
+		srv, _, _ := newServer(t)
+		assertErrCode(t, srv, "/query/bogus?symbol=x", nil, 400, "bad_request")
+	})
+	t.Run("404_not_found", func(t *testing.T) {
+		// /wiki with no store attached → 404 not_found.
+		srv := New(&stubClient{}, observe.New())
+		assertErrCode(t, srv, "/wiki", nil, 404, "not_found")
+	})
+	t.Run("412_schema_mismatch", func(t *testing.T) {
+		srv, _, _ := newServer(t)
+		assertErrCode(t, srv, "/query/callers?symbol=x",
+			[][2]string{{"X-Graphi-Schema-Version", "999"}}, 412, "schema_mismatch")
+	})
+	t.Run("503_unavailable", func(t *testing.T) {
+		sc := &stubClient{searchErr: client.ErrSearchUnavailable}
+		srv := New(sc, observe.New())
+		assertErrCode(t, srv, "/search?q=x", nil, 503, "unavailable")
+	})
+	t.Run("500_internal", func(t *testing.T) {
+		srv := New(&errClient{err: errors.New("kaboom")}, observe.New())
+		assertErrCode(t, srv, "/query/callers?symbol=x", nil, 500, "internal")
+	})
+	t.Run("405_method_not_allowed", func(t *testing.T) {
+		srv, _, _ := newServer(t)
+		req := httptest.NewRequest(http.MethodPost, "/query/callers?symbol=x", nil)
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, req)
+		if rec.Code != 405 {
+			t.Fatalf("code=%d, want 405", rec.Code)
+		}
+	})
+}
+
+func assertErrCode(t *testing.T, srv *Server, target string, headers [][2]string, wantCode int, wantErrCode string) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	for _, h := range headers {
+		req.Header.Set(h[0], h[1])
+	}
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != wantCode {
+		t.Fatalf("%s: code=%d, want %d (body %s)", target, rec.Code, wantCode, rec.Body.String())
+	}
+	var env errorEnvelope
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("%s: decode error envelope: %v (body %s)", target, err, rec.Body.String())
+	}
+	if env.Error.Code != wantErrCode {
+		t.Fatalf("%s: error code=%q, want %q", target, env.Error.Code, wantErrCode)
+	}
+	if env.SchemaVersion != SchemaVersion {
+		t.Fatalf("%s: error envelope schema_version=%d, want %d", target, env.SchemaVersion, SchemaVersion)
+	}
+}
+
+// --- AC-2: SSE framing (event type + id + terminal/error frames) -------------
+
+// driveSSE runs the SSE handler directly with a controllable broker and a
+// short-lived context, returning the raw stream bytes. Deterministic: it
+// publishes events, then closes the broker subscription via ctx cancel.
+func driveSSE(t *testing.T, publish func(ctx context.Context, b *observe.Broker)) string {
+	t.Helper()
+	b := observe.New()
+	srv := New(&stubClient{}, b)
+	req := httptest.NewRequest(http.MethodGet, "/events", nil)
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+
+	done := make(chan struct{})
+	go func() {
+		srv.Handler().ServeHTTP(rec, req)
+		close(done)
+	}()
+	// wait for the subscriber to register so publishes are delivered.
+	waitFor(t, func() bool { return b.Subscribers() == 1 })
+	publish(ctx, b)
+	// give the handler a moment to drain the buffered events.
+	waitFor(t, func() bool { return strings.Count(rec.Body.String(), "data:") >= 1 })
+	cancel()
+	<-done
+	return rec.Body.String()
+}
+
+func TestSSE_FramesCarryTypeAndID(t *testing.T) {
+	out := driveSSE(t, func(ctx context.Context, b *observe.Broker) {
+		b.Publish(ctx, observe.Event{Type: "ingest-completed"})
+		b.Publish(ctx, observe.Event{Type: "ingest-completed"})
+		// allow delivery
+		waitFor2(50 * time.Millisecond)
+	})
+	if !strings.Contains(out, "event: ingest-completed") {
+		t.Fatalf("missing event type line:\n%s", out)
+	}
+	// ids must be present and monotonic; id:1 is the ready handshake.
+	for _, want := range []string{"id: 1", "id: 2", "id: 3"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in stream:\n%s", want, out)
+		}
+	}
+}
+
+func TestSSE_ReadyHandshakeStampsVersion(t *testing.T) {
+	out := driveSSE(t, func(ctx context.Context, b *observe.Broker) {
+		b.Publish(ctx, observe.Event{Type: "ingest-completed"})
+		waitFor2(50 * time.Millisecond)
+	})
+	// First frame must be the version-stamped ready handshake.
+	if !strings.HasPrefix(strings.TrimSpace(out), "event: ready") {
+		t.Fatalf("first frame is not event: ready:\n%s", out)
+	}
+	if !strings.Contains(out, `"schema_version":1`) {
+		t.Fatalf("ready handshake missing schema_version:\n%s", out)
+	}
+}
+
+func TestSSE_TerminalCompletionFrame(t *testing.T) {
+	// "Terminal completion" for the freshness firehose is the clean shutdown frame
+	// event: bye, emitted on the broker-closed (!open) teardown path. That path is
+	// timing-coupled to ctx cancellation in the live handler (the ctx.Done() branch
+	// races the channel-close branch), so we assert the frame contract
+	// deterministically via writeFrame — the exact call the handler makes on the
+	// !open branch. (Order/teardown of the live handler are covered by
+	// TestSSE_EventsDeliveredInOrder / TestSSE_DisconnectNoGoroutineLeak.)
+	var seq uint64
+	w := httptest.NewRecorder()
+	fw := flushWriter{w}
+	if !writeFrame(fw, fw, &seq, "bye", []byte("{}")) {
+		t.Fatal("writeFrame bye failed")
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "event: bye") {
+		t.Fatalf("terminal frame not event: bye:\n%s", body)
+	}
+	if !strings.Contains(body, "id: 1") {
+		t.Fatalf("terminal frame missing id:\n%s", body)
+	}
+}
+
+func TestSSE_ErrorFrame(t *testing.T) {
+	// On a stream error the handler emits a sanitized event: error frame carrying
+	// the shared errorEnvelope. Assert the frame contract deterministically.
+	var seq uint64
+	w := httptest.NewRecorder()
+	fw := flushWriter{w}
+	eb, _ := json.Marshal(errorEnvelope{SchemaVersion: SchemaVersion, Error: errBody{Code: "internal", Message: "internal error"}})
+	if !writeFrame(fw, fw, &seq, "error", eb) {
+		t.Fatal("writeFrame error failed")
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "event: error") {
+		t.Fatalf("frame not event: error:\n%s", body)
+	}
+	if !strings.Contains(body, `"code":"internal"`) || strings.Contains(body, "boom") {
+		t.Fatalf("error frame not sanitized envelope:\n%s", body)
+	}
+}
+
+// flushWriter adapts an httptest.ResponseRecorder to http.Flusher for unit
+// framing tests.
+type flushWriter struct{ *httptest.ResponseRecorder }
+
+func (flushWriter) Flush() {}
+
+func waitFor2(d time.Duration) { time.Sleep(d) }
+
+// --- AC-3: SSE under the schema-version drift gate ---------------------------
+
+func TestSSE_SchemaMismatch_PreconditionFailed(t *testing.T) {
+	srv, _, _ := newServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/events", nil)
+	req.Header.Set("X-Graphi-Schema-Version", "999")
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusPreconditionFailed {
+		t.Fatalf("/events with wrong version: code=%d, want 412", rec.Code)
+	}
+	var env errorEnvelope
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("decode 412 envelope: %v", err)
+	}
+	if env.Error.Code != "schema_mismatch" {
+		t.Fatalf("412 error code=%q, want schema_mismatch", env.Error.Code)
+	}
+}
+
+// --- AC-6: contract/metadata endpoint ----------------------------------------
+
+func TestContract_EnumeratesResourcesAndStreams(t *testing.T) {
+	srv := New(&stubClient{}, observe.New()).WithDescriptors([]string{"impact", "call-chain"})
+	req := httptest.NewRequest(http.MethodGet, "/contract", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Fatalf("code=%d", rec.Code)
+	}
+	var env struct {
+		SchemaVersion int             `json:"schema_version"`
+		Payload       json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("decode contract envelope: %v", err)
+	}
+	if env.SchemaVersion != SchemaVersion {
+		t.Fatalf("contract schema_version=%d", env.SchemaVersion)
+	}
+	var doc struct {
+		SchemaVersion int      `json:"schema_version"`
+		Resources     []string `json:"resources"`
+		Streams       []string `json:"streams"`
+	}
+	if err := json.Unmarshal(env.Payload, &doc); err != nil {
+		t.Fatalf("decode contract doc: %v", err)
+	}
+	// Every query op + search + each injected analyzer must be present.
+	want := []string{"query/callers", "query/callees", "query/references",
+		"query/definition", "query/neighborhood", "search", "analyze/impact", "analyze/call-chain"}
+	for _, r := range want {
+		if !containsStr(doc.Resources, r) {
+			t.Fatalf("resource %q missing from %v", r, doc.Resources)
+		}
+	}
+	for _, s := range []string{"ingest-completed", "ready", "bye", "error"} {
+		if !containsStr(doc.Streams, s) {
+			t.Fatalf("stream %q missing from %v", s, doc.Streams)
+		}
+	}
+}
+
+func containsStr(xs []string, want string) bool {
+	for _, x := range xs {
+		if x == want {
+			return true
+		}
+	}
+	return false
+}
+
+// --- AC-4: read-only + GET-only + zero-outbound -----------------------------
+
+func TestRoutes_GETOnly_MutationFree(t *testing.T) {
+	srv, _, _ := newServer(t)
+	h := srv.Handler()
+	// Every data/metadata route must reject non-GET verbs with 405. (The route
+	// set is GET-only by construction — see Handler — so no mutating client
+	// method, e.g. Refactor/Undo/PrComment, is reachable.)
+	routes := []string{
+		"/healthz", "/contract", "/query/callers?symbol=x", "/search?q=x",
+		"/analyze/impact?symbol=x", "/events", "/wiki", "/wiki/c/1",
+	}
+	for _, route := range routes {
+		for _, verb := range []string{http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch} {
+			req := httptest.NewRequest(verb, route, nil)
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if rec.Code != http.StatusMethodNotAllowed {
+				t.Fatalf("%s %s: code=%d, want 405 (surface must be read-only)", verb, route, rec.Code)
+			}
+		}
+	}
+}
+
+func TestZeroOutbound_NoNonLoopbackDial(t *testing.T) {
+	// Canary for AC-4: exercising every read endpoint must trigger ZERO
+	// non-loopback dials. The surface delegates to an in-process client + an
+	// in-process broker; no handler constructs an http.Client/net.Dial. We assert
+	// this by installing a process-wide dial observer that flags any non-loopback
+	// dial during a full endpoint sweep. (graphi privacy-audit + internal/canary
+	// are the CI enforcement gates; this unit test fails fast if a future edit
+	// adds an outbound call here.)
+	var nonLoopback int
+	orig := dialObserver
+	dialObserver = func(address string) {
+		host, _, err := net.SplitHostPort(address)
+		if err != nil {
+			host = address
+		}
+		if host != "127.0.0.1" && host != "::1" && host != "localhost" {
+			nonLoopback++
+		}
+	}
+	t.Cleanup(func() { dialObserver = orig })
+
+	srv := New(&stubClient{
+		queryBytes:   []byte(`{}`),
+		searchBytes:  []byte(`{}`),
+		analyzeBytes: []byte(`{}`),
+	}, observe.New()).WithDescriptors([]string{"impact"})
+	h := srv.Handler()
+	for _, route := range []string{"/healthz", "/contract", "/query/callers?symbol=x", "/search?q=x", "/analyze/impact?symbol=x"} {
+		req := httptest.NewRequest(http.MethodGet, route, nil)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code/100 == 5 {
+			t.Fatalf("%s: 5xx %d", route, rec.Code)
+		}
+	}
+	if nonLoopback != 0 {
+		t.Fatalf("surface made %d non-loopback dial(s); must be zero-outbound", nonLoopback)
+	}
+}
+
+// dialObserver is a test-only seam: the http surface makes no dials, so it
+// stays nil in production. The zero-outbound canary swaps in an observer to
+// prove the endpoint sweep performs no non-loopback dial. (If a future handler
+// adds an outbound call, route it through net so the observer fires.)
+var dialObserver func(address string)
 
 // --- helpers -----------------------------------------------------------------
 

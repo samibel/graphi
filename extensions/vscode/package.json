@@ -1,13 +1,20 @@
 {
   "name": "graphi",
   "displayName": "graphi — code intelligence",
-  "description": "Read-only code-intelligence (blast-radius, citations, search) + visualization for graphi. Local-first: talks only to the local graphi daemon (127.0.0.1).",
+  "description": "Read-only code-intelligence (hover, references, blast-radius, search) + graph visualization for graphi. Local-first: talks only to the local graphi daemon (127.0.0.1) over HTTP/SSE.",
   "version": "0.1.0",
   "publisher": "graphi",
+  "repository": { "type": "git", "url": "https://github.com/graphi/graphi" },
   "engines": { "vscode": "^1.80.0" },
-  "categories": ["Programming Languages", "Other"],
+  "categories": ["Programming Languages", "Visualization", "Other"],
   "main": "./out/extension.js",
-  "activationEvents": ["onCommand:graphi.blastRadius", "onCommand:graphi.search", "onCommand:graphi.showGraph"],
+  "activationEvents": [
+    "onCommand:graphi.blastRadius",
+    "onCommand:graphi.search",
+    "onCommand:graphi.showGraph",
+    "onCommand:graphi.setAuthToken",
+    "onView:graphiResults"
+  ],
   "contributes": {
     "configuration": {
       "title": "graphi",
@@ -16,32 +23,96 @@
           "type": "string",
           "default": "http://127.0.0.1:8080",
           "description": "URL of the local graphi HTTP daemon. MUST be loopback (127.0.0.1/localhost/::1)."
+        },
+        "graphi.maxDepth": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 3,
+          "description": "Neighborhood depth for graph/code-intelligence queries (hard ceiling 3)."
+        },
+        "graphi.maxNodes": {
+          "type": "number",
+          "default": 1500,
+          "description": "Maximum nodes rendered in the graph webview (host truncates before display)."
+        },
+        "graphi.maxEdges": {
+          "type": "number",
+          "default": 4000,
+          "description": "Maximum edges rendered in the graph webview (host truncates before display)."
+        },
+        "graphi.reconnect.maxAttempts": {
+          "type": "number",
+          "default": 8,
+          "description": "Maximum SSE reconnect attempts before giving up (0 = unlimited)."
+        },
+        "graphi.reconnect.maxIntervalMs": {
+          "type": "number",
+          "default": 30000,
+          "description": "Cap for the exponential SSE-reconnect backoff interval, in milliseconds."
         }
       }
     },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "graphi",
+          "title": "graphi",
+          "icon": "$(graph)"
+        }
+      ]
+    },
+    "views": {
+      "graphi": [
+        {
+          "id": "graphiResults",
+          "name": "Graph Results"
+        }
+      ]
+    },
     "commands": [
-      { "command": "graphi.blastRadius", "title": "graphi: Show blast-radius", "category": "graphi" },
-      { "command": "graphi.search", "title": "graphi: Search symbols", "category": "graphi" },
-      { "command": "graphi.showGraph", "title": "graphi: Show graph (webview)", "category": "graphi" },
-      { "command": "graphi.retry", "title": "graphi: Retry daemon connection", "category": "graphi" }
+      { "command": "graphi.blastRadius", "title": "Show blast-radius", "category": "graphi" },
+      { "command": "graphi.search", "title": "Search symbols", "category": "graphi" },
+      { "command": "graphi.showGraph", "title": "Show graph (webview)", "category": "graphi" },
+      { "command": "graphi.retry", "title": "Retry daemon connection", "category": "graphi" },
+      { "command": "graphi.setAuthToken", "title": "Set daemon auth token", "category": "graphi" }
     ],
     "menus": {
       "commandPalette": [
         { "command": "graphi.blastRadius" },
         { "command": "graphi.search" },
-        { "command": "graphi.showGraph" }
+        { "command": "graphi.showGraph" },
+        { "command": "graphi.retry" },
+        { "command": "graphi.setAuthToken" }
       ]
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "typecheck": "tsc --noEmit -p ./",
-    "test": "vitest run"
+    "build": "node esbuild.mjs",
+    "build:prod": "node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.webview.json",
+    "lint": "eslint src --ext ts,tsx",
+    "test": "vitest run",
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "graphology": "^0.25.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sigma": "^3.0.0"
   },
   "devDependencies": {
-    "@types/vscode": "^1.80.0",
     "@types/node": "^20.14.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.0",
+    "eslint": "^8.57.1",
     "typescript": "^5.6.3",
     "vitest": "^2.1.8"
   }

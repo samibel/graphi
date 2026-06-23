@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://graphi.local/surfaces/http/contract.schema.json",
+  "title": "graphi HTTP surface contract (SW-044)",
+  "description": "Versioned Go<->TS single source of truth for the read-only HTTP REST + SSE surface. SchemaVersion is the ENVELOPE/contract version (versions the wire shape consumed by TS/web/TUI/VS Code clients); the engine EP-002 payload schema embedded verbatim inside `envelope.payload` is versioned independently. R5 drift-gate: the request header X-Graphi-Schema-Version is OPTIONAL; the response version stamp is MANDATORY.",
+  "x-schema-version": 1,
+  "x-status-taxonomy": {
+    "200": "ok",
+    "400": "bad input (code=bad_request)",
+    "404": "unknown route/resource (code=not_found)",
+    "405": "mutating verb on a GET route (Go 1.22 method routing)",
+    "412": "schema-version mismatch (code=schema_mismatch)",
+    "503": "capability unavailable (code=unavailable; ErrSearchUnavailable/ErrAnalysisUnavailable)",
+    "500": "sanitized unexpected (code=internal; raw error logged locally, never returned)"
+  },
+  "definitions": {
+    "envelope": {
+      "type": "object",
+      "description": "Success data response. payload carries the engine canonical bytes verbatim, byte-identical to MCP/CLI output (parity by construction).",
+      "required": ["schema_version", "payload"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {"const": 1},
+        "payload": {"description": "EP-002 engine payload (typed by the engine's own schema)."}
+      }
+    },
+    "errorEnvelope": {
+      "type": "object",
+      "description": "The single error shape shared by every REST error response AND the SSE event:error frame.",
+      "required": ["schema_version", "error"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {"const": 1},
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": ["bad_request", "not_found", "schema_mismatch", "unavailable", "internal"]
+            },
+            "message": {
+              "type": "string",
+              "description": "Sanitized, client-safe message. NEVER a raw engine error string, stack trace, or filesystem path."
+            }
+          }
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "description": "The /contract capability-negotiation document (AC-6).",
+      "required": ["schema_version", "resources", "streams"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {"const": 1},
+        "resources": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Negotiable read resources: query/<op>, search, analyze/<analyzer>."
+        },
+        "streams": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "SSE event types observable on /events (data + framing events)."
+        }
+      }
+    },
+    "sseFrame": {
+      "type": "object",
+      "description": "Logical shape of one SSE frame on /events. On the wire it is encoded as the lines `event: <type>`, `id: <monotonic per-connection seq>`, `data: <json>`, followed by a blank line. The first frame is always event:ready stamping the schema_version; event:bye is the terminal completion frame; event:error carries an errorEnvelope.",
+      "required": ["event", "id", "data"],
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string",
+          "description": "Event type: a data event (e.g. ingest-completed) or a framing event (ready|bye|error)."
+        },
+        "id": {"type": "integer", "minimum": 1, "description": "Monotonic per-connection sequence."},
+        "data": {"description": "event-specific JSON: {schema_version} for ready, {} for bye, errorEnvelope for error, observe.Event for data events."}
+      }
+    }
+  }
+}

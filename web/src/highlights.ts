@@ -1,12 +1,15 @@
 // Highlight reducers are PURE functions over a node/edge attribute map. They
 // are deliberately framework-agnostic (no Sigma/Graphology import) so they are
-// unit-testable without a DOM/WebGL. The GraphView wires them into Graphology
-// node/edge attribute reducers.
+// unit-testable without a DOM/WebGL. GraphView wires them into Sigma node/edge
+// reducers.
 //
-// Two highlight classes, visually distinct (AC-3):
-//   - blast     → nodes/edges in the impact set (red, enlarged)
-//   - citation  → edges carrying provenance into the selected node (dashed amber)
-// Clearing the selection resets every attribute to its default (AC-5).
+// Three visually DISTINCT, color-independent-redundant treatments (AC-3, U1/U5):
+//   - blast     → nodes/edges in the impact set      (red, enlarged / solid weight)
+//   - citation  → edges carrying evidence/provenance  (amber, dashed/secondary)
+//   - dimmed    → everything out of scope             (faded default)
+// Citation is derived from edges that carry EVIDENCE (D4) — NOT a second fetch
+// and NOT merely edges incident to the selection.
+// Clearing the selection resets every attribute to its default (AC clear).
 
 export type Attrs = Record<string, unknown>;
 
@@ -20,11 +23,13 @@ export interface HighlightableEdge extends Attrs {
   id: string;
   from: string;
   to: string;
+  /** True when the source edge carried evidence (provenance) — citation source. */
+  hasEvidence: boolean;
   blast: boolean;
   citation: boolean;
 }
 
-/** Mark the blast-radius node set. Idempotent over repeated calls. */
+/** Mark the blast-radius node set. Idempotent over repeated calls; pure. */
 export function applyBlast(
   nodes: HighlightableNode[],
   impactedIds: Set<string>,
@@ -33,18 +38,26 @@ export function applyBlast(
 }
 
 /**
- * Mark citation edges: edges whose `to` is the selected symbol carry provenance
- * "into" it — these are the citation edges, distinct from blast. Returns edges
- * with `citation` set, and nodes incident to a citation edge flagged so they
- * can be styled too.
+ * Mark citation edges: edges carrying evidence (`hasEvidence`) whose endpoints
+ * are within the in-scope (blast) node set get the citation treatment. These are
+ * the evidence/provenance edges backing the highlighted relationships, distinct
+ * from the blast edges (AC-3). Nodes incident to a citation edge are flagged so
+ * they can be styled. Pure; does not mutate inputs.
  */
 export function applyCitation(
   edges: HighlightableEdge[],
   nodes: HighlightableNode[],
   selected: string,
 ): { edges: HighlightableEdge[]; nodes: HighlightableNode[] } {
+  const inScope = new Set(nodes.filter((n) => n.blast).map((n) => n.id));
+  inScope.add(selected);
   const citedEdges = new Set(
-    edges.filter((e) => e.to === selected).map((e) => e.id),
+    edges
+      .filter(
+        (e) =>
+          e.hasEvidence && (inScope.has(e.from) || inScope.has(e.to)),
+      )
+      .map((e) => e.id),
   );
   const incidentNodes = new Set<string>();
   for (const e of edges) {
@@ -59,7 +72,7 @@ export function applyCitation(
   };
 }
 
-/** Clear ALL highlights (AC-5). */
+/** Clear ALL highlights (reset to neutral full-graph view). Pure. */
 export function clearHighlights(
   nodes: HighlightableNode[],
   edges: HighlightableEdge[],
@@ -71,9 +84,14 @@ export function clearHighlights(
 }
 
 // --- Visual styles (applied by Sigma reducers in GraphView) -----------------
+// Redundant encodings so meaning never relies on color alone (U5):
+//   blast    = red   + enlarged  + solid (z above)
+//   citation = amber + dashed/secondary edge type
+//   dimmed   = gray  + faded (low opacity) when a selection is active
 
 export const COLOR_DEFAULT = "#6b7280"; // gray
 export const COLOR_BLAST = "#dc2626"; // red
 export const COLOR_CITATION = "#d97706"; // amber
+export const COLOR_DIMMED = "#374151"; // faded gray (out of scope)
 export const SIZE_DEFAULT = 8;
 export const SIZE_BLAST = 14;

@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"time"
+
+	"github.com/samibel/graphi/core/graphstore"
 )
 
 // Artifact is the machine-readable canary result (SW-008 AC: "emits a
@@ -105,6 +108,15 @@ func Run(ctx context.Context, cfg RunConfig) (Artifact, error) {
 
 	art.Verdict = "pass"
 	return art, nil
+}
+
+// DefaultDriver returns the canonical in-process surface driver over a fresh
+// in-memory store, exercising the real graphi surfaces (query / search / CLI).
+// It is the representative operation used by both the canary and the
+// privacy-audit live exercise. out receives surface stdout; pass io.Discard
+// unless debugging.
+func DefaultDriver(out io.Writer) SurfaceDriver {
+	return NewInProcessDriver(graphstore.NewMemStore(), out)
 }
 
 // MarshalArtifact serializes a canary artifact to stable JSON for the CI

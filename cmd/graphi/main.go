@@ -443,7 +443,8 @@ func runHTTP(args []string) int {
 	}
 	defer cleanupIngest()
 
-	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	asvc := analysis.NewDefaultService(store)
+	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 	if err := httpsrv.AssertLoopback(*addr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return 1
@@ -454,7 +455,9 @@ func runHTTP(args []string) int {
 		return 1
 	}
 	fmt.Printf("graphi http listening on %s (schema_version=%d)\n", ln.Addr(), httpsrv.SchemaVersion)
-	srv := httpsrv.New(c, broker).WithWiki(store)
+	// Inject the analyzer names so /contract can advertise them for client
+	// capability negotiation without the http package importing engine/analysis.
+	srv := httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names())
 	if err := srv.Serve(ln); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: http serve: %v\n", err)
 		return 1
@@ -575,17 +578,30 @@ func runSetup(args []string) int {
 		path = p
 	}
 	entry := mcpconfig.GraphiEntry(bin, nil)
-	act, diff, err := mcpconfig.Apply(path, "graphi", entry, *dryRun)
+	res, err := mcpconfig.Apply(path, "graphi", entry, *dryRun)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: setup: %v\n", err)
+		// Actionable remediation: name the config path and the most likely fixes.
+		// The original config is byte-identical (atomic write + fail-closed backup),
+		// so this is safe to retry after addressing the cause.
+		fmt.Fprintf(os.Stderr, "graphi: setup failed for %s: %v\n", path, err)
+		fmt.Fprintln(os.Stderr, "  - check the file/directory is writable (permissions), or pass --config <path>")
+		fmt.Fprintln(os.Stderr, "  - if Claude Code is not installed, install it first (the config is created on first setup)")
+		fmt.Fprintln(os.Stderr, "  - your existing config was left unchanged (atomic write + fail-closed backup)")
 		return 1
 	}
 	if *dryRun {
 		fmt.Print("[dry-run] no changes written\n")
 	}
-	fmt.Print(diff)
-	fmt.Printf("graphi MCP server %s in %s (command=%s args=%v)\n", act, path, entry.Command, entry.Args)
-	if act == mcpconfig.ActionCreated || act == mcpconfig.ActionUpdated {
+	fmt.Print(res.Diff)
+	if res.Action == mcpconfig.ActionUnchanged {
+		fmt.Printf("graphi already configured in %s — no changes.\n", path)
+		return 0
+	}
+	fmt.Printf("graphi MCP server %s in %s (command=%s args=%v)\n", res.Action, path, entry.Command, entry.Args)
+	if res.BackupPath != "" {
+		fmt.Printf("backup of the original config written to %s\n", res.BackupPath)
+	}
+	if res.Action == mcpconfig.ActionCreated || res.Action == mcpconfig.ActionUpdated {
 		fmt.Println("restart/reload Claude Code to expose graphi's tools.")
 	}
 	return 0
@@ -608,18 +624,32 @@ func runPrivacyAudit(args []string) int {
 	return rep.ExitCode()
 }
 
-// runTUI launches the interactive terminal surface (SW-042). It builds an
-// in-process or daemon client and drives the shared Engine through the same
-// client.Client seam as CLI/MCP/HTTP (parity). Local-first, zero outbound.
+// runTUI launches the interactive terminal surface (SW-047). It consumes the
+// shared Engine over the SW-044 HTTP/SSE surface via the loopback HTTP/SSE client
+// adapter — NOT an in-process client — so the TUI reuses the single
+// network-facing contract and stays byte-identical to the web/VS Code surfaces
+// (parity by construction). Local-first: -addr is loopback-only (fail closed);
+// the TUI imports no engine/* package.
 //
-//	graphi tui [-db path] [-daemon socket]
+//	graphi tui [-addr http://127.0.0.1:8080]
+//
+// Start the server first with `graphi http -addr 127.0.0.1:PORT -root <repo>`,
+// then point the TUI at the same loopback address.
 func runTUI(args []string) int {
-	dbPath, socket, _ := extractFlags(args)
-	c := makeClientOrOpen(dbPath, socket)
-	if c == nil {
+	fs := flag.NewFlagSet("tui", flag.ContinueOnError)
+	addr := fs.String("addr", "http://127.0.0.1:8080", "loopback HTTP/SSE engine address (host must be 127.0.0.1/localhost/::1)")
+	if err := fs.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: tui: %v\n", err)
 		return 1
 	}
-	if err := tui.New(c).Run(context.Background(), os.Stdin, os.Stdout); err != nil {
+	// NewHTTP fails closed on a non-loopback target (mirrors httpsrv.AssertLoopback),
+	// so the TUI can never be pointed at a remote Engine.
+	eng, err := client.NewHTTP(*addr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: tui: %v\n", err)
+		return 1
+	}
+	if err := tui.Run(context.Background(), eng, os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: tui: %v\n", err)
 		return 1
 	}

@@ -1,0 +1,58 @@
+# SW-049: graphi privacy-audit live deny-egress gate.
+#
+# The AUTHORITATIVE AC-5 green proof is the Linux job below: it runs the
+# privacy-audit's live zero-outbound exercise under a loopback-only network
+# namespace (netns). A non-Linux runner cannot create a netns, so the audit
+# reports UNVERIFIED + non-zero by design — that path must NOT be mistaken for
+# the audit gate. Only this Linux job gates the merge.
+#
+# Two checks, both gating (non-zero exit fails the build):
+#   audit    — `graphi privacy-audit` under netns; CONFIRMED required (exit 0).
+#   tripwire — the audit's egress-tripwire test proves the harness has teeth:
+#              a deliberate non-loopback dial under isolation must turn the
+#              verdict red (FAIL). A silently-passing audit is worse than none.
+name: privacy-audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  audit:
+    name: privacy-audit live deny-egress (loopback-only netns, Linux)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: workspace/graphi/go.mod
+      - name: Build graphi (CGo-free)
+        working-directory: workspace/graphi
+        run: go build -o /tmp/graphi ./cmd/graphi
+      # The live exercise must run with CAP_SYS_ADMIN to unshare a network
+      # namespace. If isolation is unavailable the audit reports UNVERIFIED and
+      # exits non-zero by design — this job then fails (the anti-false-green
+      # guarantee), which is the intended behaviour for the gating runner.
+      - name: Run privacy-audit under network isolation (privileged for netns)
+        working-directory: workspace/graphi
+        run: sudo --preserve-env=CGO_ENABLED /tmp/graphi privacy-audit
+
+  tripwire:
+    name: egress tripwire (a deliberate non-loopback dial must fail the gate)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: workspace/graphi/go.mod
+      # Run the audit's tripwire test under netns. The test asserts that a
+      # deliberate non-loopback dial under real isolation yields a FAIL verdict
+      # (red gate) — proving the deny-egress harness actually denies egress.
+      - name: Run egress tripwire test under network isolation
+        working-directory: workspace/graphi
+        run: sudo --preserve-env=CGO_ENABLED go test -run TestTripwire_RealIsolation_EgressFailsTheGate -count=1 ./internal/audit/...

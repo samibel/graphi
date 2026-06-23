@@ -10,17 +10,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
+	httpsrv "github.com/samibel/graphi/surfaces/http"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
 
@@ -917,5 +921,124 @@ func TestMCP_PrComment_ToolAdvertised(t *testing.T) {
 		WithAnalysis(analysis.NewDefaultService(store))
 	if containsName(listTools(t, mcp.NewServerWithClient(noReview)), "pr_comment") {
 		t.Fatal("pr_comment advertised when review publisher absent (should probe-hide)")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SW-044 (AC-1): cross-surface HTTP parity. The HTTP surface delegates 100% to
+// the shared client.Client seam and embeds the engine bytes verbatim inside the
+// versioned envelope. This test locks "parity by construction": the HTTP
+// envelope payload is byte-identical to the CLI- and MCP-printed bytes for the
+// SAME operation over the SAME Direct client + fixture.
+// ---------------------------------------------------------------------------
+
+// httpQueryOutput drives the read-only HTTP surface over the given Direct client
+// and returns the envelope payload bytes (the provenance/answer subset that must
+// match MCP/CLI).
+func httpQueryOutput(t *testing.T, direct *client.Direct, op, symbol string, depth int) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	target := fmt.Sprintf("/query/%s?symbol=%s", op, symbol)
+	if op == query.OpNeighborhood {
+		target = fmt.Sprintf("%s&depth=%d", target, depth)
+	}
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http %s: code=%d body=%s", target, rec.Code, rec.Body.String())
+	}
+	var env struct {
+		SchemaVersion int             `json:"schema_version"`
+		Payload       json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("http %s: decode envelope: %v", target, err)
+	}
+	return env.Payload
+}
+
+// httpSearchOutput drives the HTTP /search endpoint and returns the payload.
+func httpSearchOutput(t *testing.T, direct *client.Direct, q string, limit int) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	target := fmt.Sprintf("/search?q=%s", q)
+	if limit > 0 {
+		target = fmt.Sprintf("%s&limit=%d", target, limit)
+	}
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http %s: code=%d body=%s", target, rec.Code, rec.Body.String())
+	}
+	var env struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("http %s: decode envelope: %v", target, err)
+	}
+	return env.Payload
+}
+
+// TestHTTP_MCP_CLI_QueryParity (SW-044 AC-1): the HTTP envelope payload is
+// byte-identical to the MCP and CLI output for the same query over the same
+// in-process Direct client + fixture. This is the cross-surface parity lock.
+func TestHTTP_MCP_CLI_QueryParity(t *testing.T) {
+	store, ids := seed(t)
+	svc := query.New(store)
+	direct := client.NewDirect(svc, nil)
+
+	cases := []struct {
+		op     string
+		symbol model.NodeId
+		depth  int
+	}{
+		{query.OpCallers, ids["C"], 0},
+		{query.OpCallees, ids["A"], 0},
+		{query.OpReferences, ids["B"], 0},
+		{query.OpDefinition, ids["A"], 0},
+		{query.OpNeighborhood, ids["A"], 2},
+		{query.OpCallers, model.NodeId("missing"), 0}, // not-found parity
+	}
+	for _, c := range cases {
+		cliBytes := cliOutput(t, svc, nil, c.op, string(c.symbol), c.depth)
+		mcpBytes := mcpOutput(t, svc, nil, c.op, string(c.symbol), c.depth)
+		httpBytes := httpQueryOutput(t, direct, c.op, string(c.symbol), c.depth)
+		if !bytes.Equal(httpBytes, cliBytes) {
+			t.Fatalf("%s HTTP<->CLI parity mismatch:\nHTTP: %s\nCLI: %s", c.op, httpBytes, cliBytes)
+		}
+		if !bytes.Equal(httpBytes, mcpBytes) {
+			t.Fatalf("%s HTTP<->MCP parity mismatch:\nHTTP: %s\nMCP: %s", c.op, httpBytes, mcpBytes)
+		}
+	}
+}
+
+// TestHTTP_MCP_CLI_SearchParity (SW-044 AC-1): the HTTP /search payload is
+// byte-identical to the CLI and MCP search output over the same client.
+func TestHTTP_MCP_CLI_SearchParity(t *testing.T) {
+	store, _ := seed(t)
+	qsvc := query.New(store)
+	ssvc := search.New(store)
+	direct := client.NewDirect(qsvc, ssvc)
+
+	cases := []struct {
+		q     string
+		limit int
+	}{
+		{"p.A", 0},
+		{"p", 2},
+		{"missing-token", 0},
+	}
+	for _, c := range cases {
+		cliBytes := searchCLIOutput(t, qsvc, ssvc, c.q, c.limit)
+		mcpBytes := searchMCPOutput(t, qsvc, ssvc, c.q, c.limit)
+		httpBytes := httpSearchOutput(t, direct, c.q, c.limit)
+		if !bytes.Equal(httpBytes, cliBytes) {
+			t.Fatalf("search %q HTTP<->CLI mismatch:\nHTTP: %s\nCLI: %s", c.q, httpBytes, cliBytes)
+		}
+		if !bytes.Equal(httpBytes, mcpBytes) {
+			t.Fatalf("search %q HTTP<->MCP mismatch:\nHTTP: %s\nMCP: %s", c.q, httpBytes, mcpBytes)
+		}
 	}
 }

@@ -1,0 +1,17 @@
+# Exclude sources, tests, and dev tooling from the VSIX — ship only out/ bundles.
+src/**
+**/*.test.ts
+**/*.map
+out/**/*.map
+.vscode/**
+.eslintrc.cjs
+eslint.config.mjs
+esbuild.mjs
+tsconfig.json
+tsconfig.webview.json
+vitest.config.ts
+node_modules/**
+package-lock.json
+.gitignore
+**/*.ts
+!out/**/*.js
