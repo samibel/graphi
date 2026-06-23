@@ -38,6 +38,20 @@ graphi grows from a structural core into semantic and deep analysis. Each capabi
 - **Incremental indexing** — only changed files are re-parsed; the graph stays fresh as you edit.
 - **Hot daemon** — keep the index in memory and query it over a local Unix socket for instant responses.
 
+#### Language support
+
+The parser registry is open/closed — languages plug in behind a stable seam
+without touching existing code. Current extraction coverage:
+
+| Language | Symbol nodes | Intra-file edges | Cross-file/package edges |
+|---|---|---|---|
+| **Go** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ⏳ linker pass (roadmap) |
+| JSON | structural (AST) | — | — |
+
+Additional CGo-free tier-1 grammars and the opt-in `graphi-broad` CGO build (broad
+grammar set) plug in through the same registry seam; see the roadmap in
+[`epics/index.md`](epics/index.md).
+
 ### Semantic analysis
 
 Run with `graphi analyze <analyzer>`:
