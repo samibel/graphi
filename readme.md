@@ -164,6 +164,9 @@ flowchart TD
 
 ## Documentation
 
+New here? The **[How-To guide](docs/HOWTO.md)** walks through install, indexing a
+repo, and using every surface (CLI, HTTP/SSE, web client, TUI, VS Code, MCP).
+
 Deeper technical documentation lives under [`docs/`](docs/). Start there for parser details, the analysis subsystem, context assembly, and the engineering decisions behind graphi.
 
 ## License
