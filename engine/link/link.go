@@ -1,0 +1,248 @@
+// Package link is graphi's pure, store-free cross-file / cross-package linker
+// pass (SW-050, FU-1). It turns the deferred references the parse leaf RECORDED
+// (parse.PendingRef / parse.ImportSpec) into fully-provenanced model.Edge values,
+// resolving them against a committed node set via a SymbolIndex.
+//
+// Layering & purity: link is an engine package that depends only on core/model
+// and core/parse. It performs NO I/O — no os, net, os/exec, no graphstore, no
+// new module dependency — so ingest owns every PutEdge / transaction concern.
+// This keeps the determinism guarantees exhaustively unit-testable here, left of
+// the high-blast-radius ingest wiring.
+//
+// Determinism contract (mirrors model.NewEdge): every logical (from,to,kind)
+// edge is constructed exactly ONCE via collect-then-construct — evidence for a
+// multi-call-site edge is merged as a sorted union, so the output is identical
+// regardless of PendingRef / node ordering and idempotent across repeated Link
+// calls. Output is sorted by EdgeId.
+//
+// Tier honesty (security): the confidence tier is DERIVED from the resolution
+// class via tierFor, so an over-confident tier is unrepresentable — same-package
+// name-resolved calls are `derived`; every cross-package / selector / recv.Method
+// edge is `heuristic`; a linker edge is NEVER `confirmed`. The linker resolves
+// only against committed NodeIds and never fabricates a target: unresolved /
+// ambiguous references are dropped deterministically and counted.
+package link
+
+import (
+	"sort"
+
+	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/parse"
+)
+
+// Edge kinds the linker emits, matching the canonical query vocabulary.
+const (
+	edgeCalls      = "calls"
+	edgeReferences = "references"
+	edgeImports    = "imports"
+)
+
+// resolutionClass is the closed set of ways the linker can resolve a reference.
+// It is the SOLE input to tierFor, making an over-confident tier unrepresentable.
+type resolutionClass int
+
+const (
+	// classSamePackage — a bare name resolved within the caller's own directory.
+	classSamePackage resolutionClass = iota
+	// classSelector — a cross-package / receiver-method selector resolution.
+	classSelector
+)
+
+// tierFor maps a resolution class to its confidence tier and pinned confidence.
+// The constants are the frozen tier→confidence map (derived=0.9, heuristic=0.6);
+// they are asserted by a unit test. The linker NEVER returns TierConfirmed.
+func tierFor(c resolutionClass) (model.ConfidenceTier, float64) {
+	switch c {
+	case classSamePackage:
+		return model.TierDerived, 0.9
+	default:
+		return model.TierHeuristic, 0.6
+	}
+}
+
+// Stats are the linker's observability counters for one Link pass.
+type Stats struct {
+	// ResolvedDerived counts same-package name-resolved edges.
+	ResolvedDerived int
+	// ResolvedHeuristic counts cross-package/selector/recv.Method edges.
+	ResolvedHeuristic int
+	// Skipped counts references that resolved to nothing (stdlib/3rd-party/local).
+	Skipped int
+	// Ambiguous counts references skipped because resolution was ambiguous.
+	Ambiguous int
+}
+
+// Resolver is the language-neutral registry seam (Open/Closed): FU-2 adds a new
+// language by registering another Resolver, never by editing existing code. A
+// Resolver turns one file's pending refs + imports into resolved edge intents
+// against the shared SymbolIndex. Go is the first (and, for FU-1, only)
+// registration.
+type Resolver interface {
+	// Language is the canonical language identifier this resolver handles.
+	Language() string
+	// Resolve turns the pending refs/imports of one file (whose owning symbols
+	// live at fromDir) into resolved intents against idx. It is pure and
+	// store-free; it never constructs an Edge (the Linker does that once).
+	Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent
+}
+
+// FileRefs is one file's deferred data plus the directory its symbols live in
+// (the same-package resolution scope, Open Q1 directory-keyed).
+type FileRefs struct {
+	// SourcePath is the file's normalized repo-relative POSIX path.
+	SourcePath string
+	// Dir is the file's directory (same-package key); "" for the repo root.
+	Dir string
+	// Pending are the file's deferred references.
+	Pending []parse.PendingRef
+	// Imports are the file's import declarations (alias → path).
+	Imports []parse.ImportSpec
+}
+
+// intent is a resolved-but-not-yet-constructed edge: a logical (from,to,kind)
+// plus its provenance class and one evidence string. The Linker collects all
+// intents, merges evidence per logical edge as a sorted union, and constructs
+// each edge exactly once.
+type intent struct {
+	from     model.NodeId
+	to       model.NodeId
+	kind     string
+	class    resolutionClass
+	reason   string
+	evidence string
+}
+
+// Linker resolves pending references into provenanced edges. It holds the
+// registered resolvers; it is safe for concurrent construction but Link itself
+// is single-threaded and deterministic.
+type Linker struct {
+	resolvers map[string]Resolver
+}
+
+// New constructs a Linker with the default Go resolver registered.
+func New() *Linker {
+	l := &Linker{resolvers: map[string]Resolver{}}
+	l.Register(goResolver{})
+	return l
+}
+
+// Register adds a resolver under its language. Later registrations override an
+// earlier one for the same language (open/closed extension point).
+func (l *Linker) Register(r Resolver) { l.resolvers[r.Language()] = r }
+
+// Link resolves the pending refs of the supplied files against idx and returns
+// the resulting edges, sorted by EdgeId, plus observability stats. It is pure,
+// deterministic, idempotent, and order-independent: shuffling files or their
+// pending refs yields a byte-identical edge set (incl. sorted-union evidence).
+//
+// language selects the resolver; for FU-1 it is always "go". A reference that
+// resolves to nothing (stdlib/3rd-party/local var) is dropped and counted, never
+// turned into a phantom edge.
+func (l *Linker) Link(language string, files []FileRefs, idx *SymbolIndex) ([]model.Edge, Stats, error) {
+	var st Stats
+	r, ok := l.resolvers[language]
+	if !ok {
+		// No resolver ⇒ nothing to link (not an error); FU-2 registers more.
+		return nil, st, nil
+	}
+	if idx == nil {
+		return nil, st, nil
+	}
+
+	// Collect intents from every file. Order does not matter: we group + sort.
+	var intents []intent
+	// Process files in a deterministic order for stable Skipped/Ambiguous counts.
+	ordered := append([]FileRefs(nil), files...)
+	sort.Slice(ordered, func(a, b int) bool { return ordered[a].SourcePath < ordered[b].SourcePath })
+	for _, f := range ordered {
+		intents = append(intents, r.Resolve(f, idx, &st)...)
+	}
+
+	edges, err := construct(intents)
+	if err != nil {
+		return nil, st, err
+	}
+	return edges, st, nil
+}
+
+// edgeKey is the logical identity of an edge for collect-then-construct merging.
+type edgeKey struct {
+	from model.NodeId
+	to   model.NodeId
+	kind string
+}
+
+// construct merges intents by logical (from,to,kind), unions their evidence
+// (sorted, deduped) and reasons, constructs each edge exactly once via
+// model.NewEdge, and returns the edges sorted by EdgeId. Constructing once with a
+// fixed tier→confidence map is what makes the output byte-identical regardless of
+// input order and idempotent across calls.
+func construct(intents []intent) ([]model.Edge, error) {
+	type agg struct {
+		class    resolutionClass
+		reasons  map[string]struct{}
+		evidence map[string]struct{}
+	}
+	groups := map[edgeKey]*agg{}
+	var order []edgeKey
+	for _, in := range intents {
+		k := edgeKey{from: in.from, to: in.to, kind: in.kind}
+		g := groups[k]
+		if g == nil {
+			g = &agg{class: in.class, reasons: map[string]struct{}{}, evidence: map[string]struct{}{}}
+			groups[k] = g
+			order = append(order, k)
+		}
+		// A same-package (derived) resolution is the stronger claim; keep it if
+		// any intent for this logical edge resolved same-package.
+		if in.class == classSamePackage {
+			g.class = classSamePackage
+		}
+		if in.reason != "" {
+			g.reasons[in.reason] = struct{}{}
+		}
+		if in.evidence != "" {
+			g.evidence[in.evidence] = struct{}{}
+		}
+	}
+
+	edges := make([]model.Edge, 0, len(order))
+	for _, k := range order {
+		g := groups[k]
+		tier, conf := tierFor(g.class)
+		evidence := sortedKeys(g.evidence)
+		reason := joinSorted(g.reasons)
+		e, err := model.NewEdge(k.from, k.to, k.kind, tier, conf, reason, evidence)
+		if err != nil {
+			return nil, err
+		}
+		edges = append(edges, e)
+	}
+	sort.Slice(edges, func(a, b int) bool { return edges[a].ID() < edges[b].ID() })
+	return edges, nil
+}
+
+// sortedKeys returns the map keys as a sorted, deduped slice (the sorted-union
+// evidence merge).
+func sortedKeys(m map[string]struct{}) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// joinSorted joins the reason set deterministically; a single reason is returned
+// verbatim so the common case reads naturally.
+func joinSorted(m map[string]struct{}) string {
+	keys := sortedKeys(m)
+	if len(keys) == 0 {
+		return "cross-file reference resolved by the linker"
+	}
+	out := keys[0]
+	for _, k := range keys[1:] {
+		out += "; " + k
+	}
+	return out
+}

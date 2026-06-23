@@ -41,11 +41,12 @@ exceeds its pinned budget.
 | `freshness_lag_ms` | daemon/engine hot-index | hot-index `IngestChanged` + query round-trip latency |
 | `binary_size_bytes` | release artifact | byte size of the `CGO_ENABLED=0` `./cmd/graphi` build (SW-013 will supply the canonical stamped artifact) |
 
-> Note on `freshness_lag_ms`: the current Go/JSON parsers return AST roots but do
-> not yet populate graph nodes, so freshness is measured at the hot-index
-> absorption + query round-trip level — the real propagation path that exists
-> today. Once a future extraction pass populates nodes, the same harness measures
-> end-to-end reflection with no structural change.
+> Note on `freshness_lag_ms`: the Go parser now runs an extraction pass
+> (`core/parse/extract_go.go`) that populates symbol nodes and intra-file
+> `defines`/`calls`/`references` edges, so freshness is measured end-to-end
+> through the real propagation path (parse → extract → hot-index absorption →
+> query round-trip). Cross-file/cross-package edges await the linker pass; once it
+> lands the same harness measures the wider reflection with no structural change.
 
 ### The manifest — single source of truth
 

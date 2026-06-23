@@ -26,6 +26,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/link"
 	"github.com/samibel/graphi/engine/observe"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
@@ -119,6 +120,7 @@ type Ingester struct {
 	store  graphstore.Graphstore
 	parser Parser
 	meta   *sql.DB
+	linker *link.Linker
 
 	// broker, when set, is notified of ingest lifecycle events (e.g.
 	// ingest-completed) so surfaces (HTTP SSE) can stream freshness updates to
@@ -163,7 +165,7 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 	if err != nil {
 		return nil, fmt.Errorf("ingest: open meta db: %w", err)
 	}
-	i := &Ingester{store: store, parser: parser, meta: db}
+	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New()}
 	if err := i.initSchema(context.Background()); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -224,7 +226,8 @@ CREATE TABLE IF NOT EXISTS edit_provenance (
 // to migrate) whenever an additive schema change is introduced.
 //
 //	0 -> 1 : SW-037 — add edit-context columns to dirty_units.
-const schemaVersion = 1
+//	1 -> 2 : SW-050 — add has_links flag to file_content_cache (linker cascade).
+const schemaVersion = 2
 
 // migrate applies additive schema changes exactly once, gated on PRAGMA
 // user_version, so an existing on-disk ingest-meta.db (e.g. one created by a
@@ -244,6 +247,11 @@ func (i *Ingester) migrate(ctx context.Context) error {
 	if current < 1 {
 		if err := i.migrateDirtyUnitsEditContext(ctx); err != nil {
 			return fmt.Errorf("ingest: migrate dirty_units edit context: %w", err)
+		}
+	}
+	if current < 2 {
+		if err := i.migrateCacheHasLinks(ctx); err != nil {
+			return fmt.Errorf("ingest: migrate file_content_cache has_links: %w", err)
 		}
 	}
 	// PRAGMA does not accept bound parameters; schemaVersion is a trusted constant.
@@ -277,6 +285,25 @@ func (i *Ingester) migrateDirtyUnitsEditContext(ctx context.Context) error {
 		if _, err := i.meta.ExecContext(ctx, a.ddl); err != nil {
 			return fmt.Errorf("ingest: add column %s: %w", a.col, err)
 		}
+	}
+	return nil
+}
+
+// migrateCacheHasLinks adds the SW-050 has_links flag to file_content_cache when
+// absent. The flag records whether a file produced deferred linker inputs
+// (PendingRefs/Imports) so the same-package-directory sibling cascade only fires
+// among genuinely linkable files (real Go), never among unrelated stub files
+// that merely share a directory. The step is idempotent (PRAGMA-detected).
+func (i *Ingester) migrateCacheHasLinks(ctx context.Context) error {
+	have, err := i.columnSet(ctx, "file_content_cache")
+	if err != nil {
+		return err
+	}
+	if _, ok := have["has_links"]; ok {
+		return nil
+	}
+	if _, err := i.meta.ExecContext(ctx, "ALTER TABLE file_content_cache ADD COLUMN has_links INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return fmt.Errorf("ingest: add column has_links: %w", err)
 	}
 	return nil
 }
@@ -376,7 +403,17 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		return err
 	}
 
-	return i.metaTx(ctx, func(tx *sql.Tx) error {
+	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
+		// Capture the node IDs of the PREVIOUS full pass (if this store is being
+		// re-indexed) BEFORE clearing the cache, so nodes of files that have since
+		// disappeared can be purged — otherwise a full re-index of a reused store
+		// retains stale nodes and is no longer "full", breaking byte-identity
+		// against a fresh full index AND against the incremental path.
+		priorNodeIDs, err := i.allCachedNodeIDsTx(ctx, tx)
+		if err != nil {
+			return err
+		}
+
 		if _, err := tx.ExecContext(ctx, "DELETE FROM file_content_cache"); err != nil {
 			return err
 		}
@@ -389,22 +426,47 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 
 		// Build forward refs for each file, then derive reverse deps.
 		refs := make(map[string][]string, len(units))
+		var fileRefs []link.FileRefs
+		owned := make(map[string]struct{})
 		for _, u := range units {
-			nodeIDs, _, fwd, err := i.parseAndCommit(ctx, u)
+			nodeIDs, _, fwd, fr, err := i.parseAndCommit(ctx, u)
 			if err != nil {
 				return err
 			}
-			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs); err != nil {
+			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs, fr != nil); err != nil {
 				return err
 			}
 			refs[u.relPath] = fwd
+			for _, id := range nodeIDs {
+				owned[id] = struct{}{}
+			}
+			if fr != nil {
+				fileRefs = append(fileRefs, *fr)
+			}
 		}
+
+		// Purge any prior node no longer produced by this pass (deleted files,
+		// or renamed symbols on a reused store). DeleteNode cascades incident
+		// edges, so no stale cross-file edge can survive.
+		for _, id := range priorNodeIDs {
+			if _, kept := owned[id]; kept {
+				continue
+			}
+			if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+				return fmt.Errorf("ingest: purge stale node %s: %w", id, err)
+			}
+		}
+
 		if err := i.writeReverseDepsTx(ctx, tx, refs); err != nil {
 			return err
 		}
+		// Post-node-commit linker pass (site 1): all nodes are now committed, so
+		// cross-file/cross-package edges can be resolved against the full set.
+		if _, err := i.linkFiles(ctx, fileRefs, owned); err != nil {
+			return err
+		}
 		return nil
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 	i.notifyIngest(ctx, "ingest-completed", len(units))
@@ -497,23 +559,31 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	// Phase 2: parse, commit to graphstore, update cache/reverse-deps, record edit
 	// provenance, clear dirty — all in one meta transaction.
 	return i.metaTx(ctx, func(tx *sql.Tx) error {
+		var fileRefs []link.FileRefs
+		owned := make(map[string]struct{})
 		for _, u := range units {
 			if _, ok := toProcess[u.relPath]; !ok {
 				continue
 			}
-			nodeIDs, edgeIDs, fwd, err := i.parseAndCommit(ctx, u)
+			nodeIDs, edgeIDs, fwd, fr, err := i.parseAndCommit(ctx, u)
 			if err != nil {
 				return err
 			}
-			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs); err != nil {
+			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs, fr != nil); err != nil {
 				return err
 			}
 			if err := i.updateReverseDepsTx(ctx, tx, u.relPath, fwd); err != nil {
 				return err
 			}
-			// Record provenance for every node AND edge the incremental pass
-			// touched (including reverse-dep cascade units), atomically with the
-			// cache/clear-dirty commit.
+			for _, id := range nodeIDs {
+				owned[id] = struct{}{}
+			}
+			if fr != nil {
+				fileRefs = append(fileRefs, *fr)
+			}
+			// Record provenance for every node AND intra-file edge the
+			// incremental pass touched (including reverse-dep cascade units),
+			// atomically with the cache/clear-dirty commit.
 			if prov != nil {
 				if err := i.recordEditProvenanceTx(ctx, tx, "node", nodeIDs, *prov); err != nil {
 					return err
@@ -523,6 +593,23 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 				}
 			}
 			if err := i.clearDirtyTx(ctx, tx, u.relPath); err != nil {
+				return err
+			}
+		}
+
+		// Post-node-commit linker pass (site 2): re-resolve cross-file edges for
+		// the reprocessed files against the full committed node set, removing
+		// stale from-owned cross-file edges first. The cascade closure
+		// (dependentsOf) guarantees every file whose edges could change is in the
+		// reprocessed set, so the incremental result converges with a full pass.
+		linkEdgeIDs, err := i.linkFiles(ctx, fileRefs, owned)
+		if err != nil {
+			return err
+		}
+		// Funnel the linker's cross-file edge IDs into the edit-provenance
+		// side-channel so an incremental edit records provenance for them too.
+		if prov != nil {
+			if err := i.recordEditProvenanceTx(ctx, tx, "edge", linkEdgeIDs, *prov); err != nil {
 				return err
 			}
 		}
@@ -722,13 +809,17 @@ func (i *Ingester) sanitizePath(root, p string) (string, error) {
 	return p, nil
 }
 
-// parseAndCommit parses one file, writes its nodes/edges to graphstore, and
-// returns the node IDs, the edge IDs it committed (the side-channel edge key
-// set), plus the list of files it references (forward refs).
-func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []string, []string, error) {
+// parseAndCommit parses one file, writes its nodes/intra-file edges to
+// graphstore, and returns the node IDs, the edge IDs it committed (the
+// side-channel edge key set), the list of files it references (forward refs),
+// and the deferred link inputs (pending refs + imports) for the post-node-commit
+// linker pass. Cross-file edges are NOT emitted here — they are emitted by
+// linkFiles after every file's nodes are committed (the ordering constraint that
+// motivated SW-050).
+func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []string, []string, *link.FileRefs, error) {
 	res, err := i.parser.Parse(ctx, u.relPath, u.src)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
+		return nil, nil, nil, nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
 	}
 
 	// Remove old nodes for this file before inserting the new parse output. As of
@@ -741,7 +832,7 @@ func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []
 	// which is harmless; computing the new-id set first lets us skip those.
 	oldIDs, err := i.cachedNodeIDs(ctx, u.relPath)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	nodeIDs := make([]string, 0, len(res.Nodes))
@@ -757,27 +848,140 @@ func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []
 			continue
 		}
 		if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
-			return nil, nil, nil, fmt.Errorf("ingest: delete stale node %s: %w", id, err)
+			return nil, nil, nil, nil, fmt.Errorf("ingest: delete stale node %s: %w", id, err)
 		}
 	}
 
 	for _, n := range res.Nodes {
 		if err := i.store.PutNode(ctx, n); err != nil {
-			return nil, nil, nil, fmt.Errorf("ingest: put node: %w", err)
+			return nil, nil, nil, nil, fmt.Errorf("ingest: put node: %w", err)
 		}
 		nodeIDs = append(nodeIDs, string(n.ID()))
 	}
 	edgeIDs := make([]string, 0, len(res.Edges))
 	for _, e := range res.Edges {
 		if err := i.store.PutEdge(ctx, e); err != nil {
-			return nil, nil, nil, fmt.Errorf("ingest: put edge: %w", err)
+			return nil, nil, nil, nil, fmt.Errorf("ingest: put edge: %w", err)
 		}
 		edgeIDs = append(edgeIDs, string(e.ID()))
 	}
 
+	// Capture the linker inputs for the post-node-commit pass. They are non-nil
+	// only when the parser recorded deferred refs/imports (the real Go parser);
+	// the stub parsers leave them empty, so the linker is a no-op for them.
+	var fr *link.FileRefs
+	if len(res.PendingRefs) > 0 || len(res.Imports) > 0 {
+		fr = &link.FileRefs{
+			SourcePath: model.NormalizePath(u.relPath),
+			Dir:        posixDir(model.NormalizePath(u.relPath)),
+			Pending:    res.PendingRefs,
+			Imports:    res.Imports,
+		}
+	}
+
 	// Forward refs = paths this file imports/uses. For the stub parser this is
 	// supplied in the parse result; a real parser derives it from imports.
-	return nodeIDs, edgeIDs, res.References, nil
+	return nodeIDs, edgeIDs, res.References, fr, nil
+}
+
+// posixDir returns the directory portion of a normalized POSIX path; the repo
+// root maps to "" (mirrors engine/link's directory key).
+func posixDir(p string) string {
+	d := filepath.ToSlash(filepath.Dir(p))
+	if d == "." {
+		return ""
+	}
+	return d
+}
+
+// linkFiles is the post-node-commit linker pass (SW-050). It is called once per
+// ingest run AFTER every (re)processed file's nodes are committed, so the
+// ordering constraint that previously dropped cross-file edges no longer applies:
+// the symbol index is built from the FULL committed node set (store.Nodes) and
+// the linker resolves every deferred ref against it.
+//
+// fileRefs are the link inputs of the (re)processed files. ownedNodeIDs is the
+// set of node IDs belonging to those files, used to remove stale from-owned
+// cross-file edges before re-emitting: an edge whose From is owned by a
+// reprocessed file but whose To is NOT in that file (a cross-file edge) is
+// deleted, then the linker re-emits the current set. Intra-file edges (To owned
+// by the same file) are already replaced by parseAndCommit, so they are left
+// untouched. This makes the incremental result converge byte-identically with a
+// full re-index.
+//
+// It returns the committed cross-file edge IDs so the incremental path can record
+// edit provenance for them.
+func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}) ([]string, error) {
+	if len(fileRefs) == 0 {
+		return nil, nil
+	}
+
+	nodes, err := i.store.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		return nil, fmt.Errorf("ingest: link read nodes: %w", err)
+	}
+
+	// Remove stale from-owned cross-file edges before re-linking. A cross-file
+	// edge has From in the reprocessed set and To outside it.
+	allEdges, err := i.store.Edges(ctx, graphstore.Query{})
+	if err != nil {
+		return nil, fmt.Errorf("ingest: link read edges: %w", err)
+	}
+	for _, e := range allEdges {
+		if _, fromOwned := ownedNodeIDs[string(e.From())]; !fromOwned {
+			continue
+		}
+		if _, toOwned := ownedNodeIDs[string(e.To())]; toOwned {
+			continue // intra-(reprocessed-file) edge: replaced by parseAndCommit
+		}
+		// Only the linker's own edge kinds are removed; defines edges are always
+		// intra-file (file node -> symbol) so they never match this predicate.
+		if e.Kind() != "calls" && e.Kind() != "references" && e.Kind() != "imports" {
+			continue
+		}
+		if err := i.store.DeleteEdge(ctx, e.ID()); err != nil {
+			return nil, fmt.Errorf("ingest: delete stale cross-file edge %s: %w", e.ID(), err)
+		}
+	}
+
+	idx := link.BuildIndex(nodes)
+	edges, _, err := i.linker.Link("go", fileRefs, idx)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: link: %w", err)
+	}
+
+	edgeIDs := make([]string, 0, len(edges))
+	for _, e := range edges {
+		if err := i.store.PutEdge(ctx, e); err != nil {
+			return nil, fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
+		}
+		edgeIDs = append(edgeIDs, string(e.ID()))
+	}
+	return edgeIDs, nil
+}
+
+// allCachedNodeIDsTx returns every node ID recorded in the cache (across all
+// files), on the supplied transaction. Used by IngestAll to purge nodes that a
+// re-index no longer produces.
+func (i *Ingester) allCachedNodeIDsTx(ctx context.Context, tx *sql.Tx) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, "SELECT node_ids FROM file_content_cache")
+	if err != nil {
+		return nil, fmt.Errorf("ingest: list cached node ids: %w", err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return nil, err
+		}
+		var ids []string
+		if err := json.Unmarshal([]byte(raw), &ids); err != nil {
+			return nil, fmt.Errorf("ingest: decode cached node ids: %w", err)
+		}
+		out = append(out, ids...)
+	}
+	return out, rows.Err()
 }
 
 // cachedNodeIDs returns the node IDs previously produced for path.
@@ -797,20 +1001,27 @@ func (i *Ingester) cachedNodeIDs(ctx context.Context, path string) ([]string, er
 	return ids, nil
 }
 
-// upsertCacheTx writes/updates the cache entry for a file.
-func (i *Ingester) upsertCacheTx(ctx context.Context, tx *sql.Tx, path, hash string, nodeIDs []string) error {
+// upsertCacheTx writes/updates the cache entry for a file. hasLinks records
+// whether the file produced deferred linker inputs, gating the same-package
+// sibling cascade in dependentsOf.
+func (i *Ingester) upsertCacheTx(ctx context.Context, tx *sql.Tx, path, hash string, nodeIDs []string, hasLinks bool) error {
 	raw, err := json.Marshal(nodeIDs)
 	if err != nil {
 		return fmt.Errorf("ingest: encode node ids: %w", err)
 	}
+	hl := 0
+	if hasLinks {
+		hl = 1
+	}
 	_, err = tx.ExecContext(ctx, `
-INSERT INTO file_content_cache (path, content_hash, node_ids, last_ingested_at)
-VALUES (?, ?, ?, ?)
+INSERT INTO file_content_cache (path, content_hash, node_ids, last_ingested_at, has_links)
+VALUES (?, ?, ?, ?, ?)
 ON CONFLICT(path) DO UPDATE SET
 	content_hash=excluded.content_hash,
 	node_ids=excluded.node_ids,
-	last_ingested_at=excluded.last_ingested_at`,
-		path, hash, string(raw), 1) // timestamp stub
+	last_ingested_at=excluded.last_ingested_at,
+	has_links=excluded.has_links`,
+		path, hash, string(raw), 1, hl) // timestamp stub
 	return err
 }
 
@@ -921,21 +1132,102 @@ ON CONFLICT(path) DO UPDATE SET dependents=excluded.dependents`,
 	return nil
 }
 
-// dependentsOf returns the cached direct dependents of path.
+// dependentsOf returns the FULL reverse-dependency closure for path that a
+// cross-file linker pass requires (SW-050):
+//
+//   - import dependents: files that import the package owning path (cached in
+//     reverse_deps, derived from forward refs); AND
+//   - same-package siblings: every other file in path's own DIRECTORY (Open Q1).
+//     Same-package edges are resolved by bare name within the directory, so a
+//     rename in one file can change a NON-importing sibling's cross-file edges;
+//     making directory siblings mutual dependents guarantees that sibling is
+//     re-linked, closing the cascade so no edge a full pass would emit is missed
+//     and no stale edge survives.
+//
+// The result is sorted and deduped; path itself is excluded.
 func (i *Ingester) dependentsOf(ctx context.Context, path string) ([]string, error) {
-	var raw string
-	err := i.meta.QueryRowContext(ctx, "SELECT dependents FROM reverse_deps WHERE path = ?", path).Scan(&raw)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+	set := map[string]struct{}{}
+
+	// Import dependents (cached reverse deps keyed by package import path AND, for
+	// stub parsers, by file path). We look up both the file path key and the
+	// directory's package keys are handled via the sibling pass below.
+	addImportDeps := func(key string) error {
+		var raw string
+		err := i.meta.QueryRowContext(ctx, "SELECT dependents FROM reverse_deps WHERE path = ?", key).Scan(&raw)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("ingest: read reverse deps: %w", err)
+		}
+		var deps []string
+		if err := json.Unmarshal([]byte(raw), &deps); err != nil {
+			return err
+		}
+		for _, d := range deps {
+			set[d] = struct{}{}
+		}
+		return nil
 	}
-	if err != nil {
-		return nil, fmt.Errorf("ingest: read reverse deps: %w", err)
-	}
-	var out []string
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+	if err := addImportDeps(path); err != nil {
 		return nil, err
 	}
+
+	// Same-package siblings: every other cached LINKABLE file sharing path's
+	// directory. The cascade fires only when path itself is a linkable file
+	// (produced deferred linker inputs); unrelated files that merely share a
+	// directory but produce no cross-file refs (e.g. data files, or distinct
+	// non-Go units) are never dragged in. This keeps the closure exact: it
+	// covers exactly the files whose cross-file edges a full pass could change.
+	dir := posixDir(model.NormalizePath(path))
+	changedHasLinks, err := i.fileHasLinks(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	if changedHasLinks {
+		rows, err := i.meta.QueryContext(ctx, "SELECT path FROM file_content_cache WHERE has_links = 1")
+		if err != nil {
+			return nil, fmt.Errorf("ingest: list cached files: %w", err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var p string
+			if err := rows.Scan(&p); err != nil {
+				return nil, err
+			}
+			if p == path {
+				continue
+			}
+			if posixDir(model.NormalizePath(p)) == dir {
+				set[p] = struct{}{}
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+
+	out := make([]string, 0, len(set))
+	for d := range set {
+		out = append(out, d)
+	}
+	sort.Strings(out)
 	return out, nil
+}
+
+// fileHasLinks reports whether a cached file produced deferred linker inputs.
+// A miss (uncached/new file) reports false: a brand-new file has no committed
+// siblings to cascade to yet, and its own refs are resolved on its first pass.
+func (i *Ingester) fileHasLinks(ctx context.Context, path string) (bool, error) {
+	var hl int
+	err := i.meta.QueryRowContext(ctx, "SELECT has_links FROM file_content_cache WHERE path = ?", path).Scan(&hl)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("ingest: read has_links: %w", err)
+	}
+	return hl == 1, nil
 }
 
 // markDirtyTx / clearDirtyTx manage the crash-recovery dirty set. When prov is
@@ -984,15 +1276,29 @@ func (i *Ingester) cachedPathsTx(ctx context.Context, tx *sql.Tx) ([]string, err
 	return out, rows.Err()
 }
 
-// removeFileTx removes a deleted file's cache entry and dirty flag.
+// removeFileTx removes a deleted file's graph nodes (cascading their incident
+// edges, including cross-file edges that pointed INTO this file's symbols) and
+// its sidecar bookkeeping. Deleting the nodes is what makes an incremental pass
+// over a deleted file converge byte-identically with a full re-index: a full
+// pass simply never re-creates them, so the incremental pass must drop them.
 func (i *Ingester) removeFileTx(ctx context.Context, tx *sql.Tx, path string) error {
+	// Drop the file's graph nodes first (DeleteNode cascades incident edges).
+	ids, err := i.cachedNodeIDs(ctx, path)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+			return fmt.Errorf("ingest: delete node of removed file %s: %w", path, err)
+		}
+	}
 	if _, err := tx.ExecContext(ctx, "DELETE FROM file_content_cache WHERE path = ?", path); err != nil {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx, "DELETE FROM reverse_deps WHERE path = ?", path); err != nil {
 		return err
 	}
-	_, err := tx.ExecContext(ctx, "DELETE FROM dirty_units WHERE path = ?", path)
+	_, err = tx.ExecContext(ctx, "DELETE FROM dirty_units WHERE path = ?", path)
 	return err
 }
 
