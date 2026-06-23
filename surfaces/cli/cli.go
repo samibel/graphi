@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/price"
@@ -252,20 +253,106 @@ func RunAnalysis(ctx context.Context, c client.Client, args []string, out, errOu
 	concept := fs.String("concept", "", "concept term (concept resolver)")
 	direction := fs.String("direction", "forward", "traversal direction for directional analyzers (forward|reverse)")
 	maxNodes := fs.Int("max-nodes", 0, "output budget on reached nodes (0 = analyzer default)")
+	// SW-039 pr-risk: local-first diff input. -diff is an inline unified-diff /
+	// ref string; -diff-path reads a LOCAL file once at the surface (no engine
+	// file I/O on the hot path, no remote fetch).
+	diff := fs.String("diff", "", "pr-risk: inline unified-diff or simple ref string")
+	diffPath := fs.String("diff-path", "", "pr-risk: path to a LOCAL diff file (read once; no remote fetch)")
+	provenance := fs.String("provenance", "", "pr-risk: evidence redaction level (full|summary)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
-	if *symbol == "" {
+
+	diffPayload := *diff
+	if *diffPath != "" {
+		b, rerr := os.ReadFile(*diffPath)
+		if rerr != nil {
+			fmt.Fprintf(errOut, "cli: read diff file: %v\n", rerr)
+			return fmt.Errorf("cli: read diff file: %w", rerr)
+		}
+		diffPayload = string(b)
+	}
+
+	// The pr-risk scorer, the pr-signals detector, and the pr-questions generator
+	// are diff-driven; every other analyzer is symbol-driven.
+	if name == "pr-risk" || name == "pr-signals" || name == "pr-questions" {
+		if diffPayload == "" {
+			fmt.Fprintf(errOut, "cli: -diff or -diff-path is required for %s\n", name)
+			return fmt.Errorf("cli: -diff or -diff-path is required for %s", name)
+		}
+	} else if *symbol == "" {
 		fmt.Fprintln(errOut, "cli: -symbol is required")
 		return fmt.Errorf("cli: -symbol is required")
 	}
 	b, err := c.Analyze(ctx, client.AnalyzeParams{
-		Name:      name,
-		Symbol:    *symbol,
-		Target:    *target,
-		Concept:   *concept,
-		Direction: *direction,
-		MaxNodes:  *maxNodes,
+		Name:       name,
+		Symbol:     *symbol,
+		Target:     *target,
+		Concept:    *concept,
+		Direction:  *direction,
+		MaxNodes:   *maxNodes,
+		Diff:       diffPayload,
+		Provenance: *provenance,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunPrComment executes the SW-042 sticky PR-comment writer + optional
+// risk-threshold merge gate through the shared client and writes the canonical
+// serialized engine/review.PublishResult. Like every CLI surface it holds NO
+// engine logic — it parses flags, reads a LOCAL diff once (no remote fetch), and
+// calls client.Client.PrComment (MCP<->CLI parity).
+//
+// Usage:
+//
+//	pr-comment -diff <unified-diff> | -diff-path <file> [-pr ref]
+//	  [-provenance summary|full] [-gate] [-gate-threshold N] [-publish]
+//
+// The default is an OFFLINE dry-run: it renders the deterministic body and
+// evaluates the gate WITHOUT contacting any PR host. -publish upserts the sticky
+// comment through the (currently mock) host boundary; the real host is wired by
+// SW-043.
+func RunPrComment(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("pr-comment", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	pr := fs.String("pr", "", "PR reference rendered in the comment header (e.g. owner/repo#42)")
+	diff := fs.String("diff", "", "inline unified-diff or simple ref string")
+	diffPath := fs.String("diff-path", "", "path to a LOCAL diff file (read once; no remote fetch)")
+	provenance := fs.String("provenance", "summary", "evidence redaction level (summary|full); summary recommended for public comments")
+	gate := fs.Bool("gate", false, "enable the optional risk-threshold merge gate")
+	gateThreshold := fs.Int("gate-threshold", 700, "risk threshold in fixed-point units (1/1000) the worst region must EXCEED to BLOCK")
+	publish := fs.Bool("publish", false, "upsert the sticky comment through the host (default: offline dry-run)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+
+	diffPayload := *diff
+	if *diffPath != "" {
+		b, rerr := os.ReadFile(*diffPath)
+		if rerr != nil {
+			fmt.Fprintf(errOut, "cli: read diff file: %v\n", rerr)
+			return fmt.Errorf("cli: read diff file: %w", rerr)
+		}
+		diffPayload = string(b)
+	}
+	if diffPayload == "" {
+		fmt.Fprintln(errOut, "cli: -diff or -diff-path is required for pr-comment")
+		return fmt.Errorf("cli: -diff or -diff-path is required for pr-comment")
+	}
+
+	b, err := c.PrComment(ctx, client.PrCommentRequest{
+		PR:            *pr,
+		Diff:          diffPayload,
+		Provenance:    *provenance,
+		GateEnabled:   *gate,
+		GateThreshold: *gateThreshold,
+		Publish:       *publish,
 	})
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)

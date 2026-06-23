@@ -2,12 +2,15 @@ package client
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/edit"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 )
 
@@ -21,6 +24,7 @@ type Direct struct {
 	analysisSvc *analysis.Service
 	applier     *edit.Applier
 	recorder    *edit.ChangeRecorder
+	reviewSvc   *review.Service
 }
 
 // NewDirect constructs an in-process client.
@@ -53,6 +57,17 @@ func (d *Direct) WithAnalysis(svc *analysis.Service) *Direct {
 func (d *Direct) WithEditor(applier *edit.Applier, recorder *edit.ChangeRecorder) *Direct {
 	d.applier = applier
 	d.recorder = recorder
+	return d
+}
+
+// WithReview attaches the SW-042 PR-comment publisher so the PrComment surface
+// is available. It returns the receiver for chaining. This is the SINGLE place
+// the engine/review pipeline is wired into the surface layer; MCP and CLI both
+// reach it through this one implementation (parity by construction). Without it,
+// PrComment returns ErrReviewUnavailable (query/search/savings/analysis/edit are
+// unaffected).
+func (d *Direct) WithReview(svc *review.Service) *Direct {
+	d.reviewSvc = svc
 	return d
 }
 
@@ -99,10 +114,12 @@ func (d *Direct) Analyze(ctx context.Context, p AnalyzeParams) ([]byte, error) {
 		Symbol:    model.NodeId(p.Symbol),
 		Target:    model.NodeId(p.Target),
 		Concept:   p.Concept,
-		Direction: analysis.Direction(p.Direction),
-		Kinds:     p.Kinds,
-		MaxNodes:  p.MaxNodes,
-		MaxPaths:  p.MaxPaths,
+		Direction:  analysis.Direction(p.Direction),
+		Kinds:      p.Kinds,
+		MaxNodes:   p.MaxNodes,
+		MaxPaths:   p.MaxPaths,
+		Diff:       p.Diff,
+		Provenance: p.Provenance,
 	})
 	if err != nil {
 		return nil, err
@@ -166,4 +183,64 @@ func (d *Direct) Undo(ctx context.Context, undoToken, actor string) ([]byte, err
 		return nil, err
 	}
 	return edit.MarshalChangeRecord(rec)
+}
+
+// PrComment implements Client. It runs the SW-042 publisher pipeline through the
+// single review.Service: consume the three sibling reports once (via the
+// service's findings seam over the shared analysis.Service), render the
+// deterministic sticky body, evaluate the optional merge gate, and — when
+// req.Publish is true — upsert through the mockable host boundary. The default
+// (req.Publish=false) is an offline dry-run; the host is never contacted.
+//
+// SW-043 wires the REAL PR host: on a publish request, the host is resolved from
+// the GitHub Actions environment (review.HostFromEnv reads GITHUB_TOKEN from env —
+// never argv). When a token is present the upsert goes through the real GitHub
+// REST API (the single outbound boundary); when it is absent (local dry-run / no
+// CI token) the offline in-memory MockHost keeps the publish path deterministic
+// and zero-egress. Without a review service it returns ErrReviewUnavailable.
+func (d *Direct) PrComment(ctx context.Context, req PrCommentRequest) ([]byte, error) {
+	if d.reviewSvc == nil {
+		return nil, ErrReviewUnavailable
+	}
+	var host review.CommentHost
+	if req.Publish {
+		gh, err := review.HostFromEnv(prIssueNumber(req.PR))
+		if err != nil {
+			return nil, err
+		}
+		if gh != nil {
+			host = gh // real GitHub host: the single permitted egress
+		} else {
+			// No token in the environment: keep the publish path offline and
+			// deterministic (local dry-run / tests).
+			host = review.NewMockHost()
+		}
+	}
+	res, err := d.reviewSvc.Publish(ctx, host, review.PublishOptions{
+		PR:         req.PR,
+		Diff:       req.Diff,
+		Provenance: req.Provenance,
+		Gate:       review.GateConfig{Enabled: req.GateEnabled, BlockThreshold: req.GateThreshold},
+		Publish:    req.Publish,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return review.Marshal(res)
+}
+
+// prIssueNumber extracts the PR/issue number from the PR reference rendered in the
+// comment header (e.g. "owner/repo#42" or a bare "42"). It returns 0 when no
+// number can be parsed, in which case review.HostFromEnv falls back to the
+// GITHUB_PR_NUMBER env var (set by the Action entrypoint from the event payload).
+func prIssueNumber(pr string) int {
+	if i := strings.LastIndexByte(pr, '#'); i >= 0 {
+		pr = pr[i+1:]
+	}
+	pr = strings.TrimSpace(pr)
+	n, err := strconv.Atoi(pr)
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
 }

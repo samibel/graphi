@@ -156,6 +156,16 @@ func (c *DaemonClient) Undo(ctx context.Context, undoToken, actor string) ([]byt
 	return nil, client.ErrEditUnavailable
 }
 
+// PrComment implements client.Client. The daemon review RPC is not yet wired
+// (SW-042 ships the in-process review path that MCP stdio and CLI direct mode
+// use; SW-043 wires the real host + GitHub Action); until it is added, the
+// daemon client reports the capability as unavailable rather than fabricating a
+// publish. Query/search/savings/analysis/edit are unaffected.
+func (c *DaemonClient) PrComment(ctx context.Context, req client.PrCommentRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrReviewUnavailable
+}
+
 // SocketPath returns the configured socket path.
 func (c *DaemonClient) SocketPath() string { return c.socketPath }
 

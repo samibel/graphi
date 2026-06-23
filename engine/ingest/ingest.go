@@ -21,10 +21,12 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/observe"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
 )
@@ -118,9 +120,32 @@ type Ingester struct {
 	parser Parser
 	meta   *sql.DB
 
+	// broker, when set, is notified of ingest lifecycle events (e.g.
+	// ingest-completed) so surfaces (HTTP SSE) can stream freshness updates to
+	// clients. Nil = no-op (default); existing callers are unaffected.
+	broker *observe.Broker
+
 	// test hooks
 	failAfterDirtyMark error
 	hookMu             sync.Mutex
+}
+
+// WithBroker attaches an event broker and returns the receiver for chaining.
+// When attached, IngestAll/IngestChanged publish a lifecycle event on success.
+// Without a broker ingest behaves exactly as before.
+func (i *Ingester) WithBroker(b *observe.Broker) *Ingester {
+	i.broker = b
+	return i
+}
+
+// notifyIngest publishes a loss-tolerant lifecycle event. It is nil-safe and
+// never returns an error — a publish failure must not fail ingestion.
+func (i *Ingester) notifyIngest(ctx context.Context, kind string, files int) {
+	if i.broker == nil {
+		return
+	}
+	payload, _ := json.Marshal(map[string]int{"files": files})
+	i.broker.Publish(ctx, observe.Event{Type: kind, Ts: time.Now(), Payload: payload})
 }
 
 // New constructs an Ingester. metaDir receives a SQLite sidecar for cache,
@@ -379,6 +404,11 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	i.notifyIngest(ctx, "ingest-completed", len(units))
+	return nil
 }
 
 // IngestChanged performs incremental ingestion: it walks root, skips unchanged
@@ -386,7 +416,11 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 // dependents affected by import/symbol changes. It carries no edit provenance;
 // callers that originate an edit use IngestChangedWithProvenance.
 func (i *Ingester) IngestChanged(ctx context.Context, root string, changed []string) error {
-	return i.ingestChanged(ctx, root, changed, nil)
+	if err := i.ingestChanged(ctx, root, changed, nil); err != nil {
+		return err
+	}
+	i.notifyIngest(ctx, "ingest-changed", len(changed))
+	return nil
 }
 
 // IngestChangedWithProvenance is the provenance-aware incremental ingest entry

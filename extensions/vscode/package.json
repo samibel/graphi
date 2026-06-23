@@ -1,0 +1,48 @@
+{
+  "name": "graphi",
+  "displayName": "graphi — code intelligence",
+  "description": "Read-only code-intelligence (blast-radius, citations, search) + visualization for graphi. Local-first: talks only to the local graphi daemon (127.0.0.1).",
+  "version": "0.1.0",
+  "publisher": "graphi",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Programming Languages", "Other"],
+  "main": "./out/extension.js",
+  "activationEvents": ["onCommand:graphi.blastRadius", "onCommand:graphi.search", "onCommand:graphi.showGraph"],
+  "contributes": {
+    "configuration": {
+      "title": "graphi",
+      "properties": {
+        "graphi.daemonUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8080",
+          "description": "URL of the local graphi HTTP daemon. MUST be loopback (127.0.0.1/localhost/::1)."
+        }
+      }
+    },
+    "commands": [
+      { "command": "graphi.blastRadius", "title": "graphi: Show blast-radius", "category": "graphi" },
+      { "command": "graphi.search", "title": "graphi: Search symbols", "category": "graphi" },
+      { "command": "graphi.showGraph", "title": "graphi: Show graph (webview)", "category": "graphi" },
+      { "command": "graphi.retry", "title": "graphi: Retry daemon connection", "category": "graphi" }
+    ],
+    "menus": {
+      "commandPalette": [
+        { "command": "graphi.blastRadius" },
+        { "command": "graphi.search" },
+        { "command": "graphi.showGraph" }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "typecheck": "tsc --noEmit -p ./",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

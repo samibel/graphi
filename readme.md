@@ -118,6 +118,10 @@ The single `graphi` binary dispatches the subcommands below. Most accept `-db <p
 | `graphi analyze <analyzer> -symbol <id> [options]` | Run a semantic or deep analyzer (see below). |
 | `graphi mcp` | Run the MCP **stdio** server (the agent-first surface). |
 | `graphi daemon start\|stop\|status [-socket path] [-db path]` | Manage the hot-index Unix-socket daemon. |
+| `graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo] [-meta dir]` | Read-only HTTP REST + SSE surface (loopback-only). |
+| `graphi tui [-db path] [-daemon socket]` | Interactive terminal surface (select / neighbors / blast / search). |
+| `graphi setup [--dry-run] [--binary path] [--config path]` | Register graphi's MCP stdio server into Claude Code's config (idempotent, atomic, offline). |
+| `graphi privacy-audit [--target ./...]` | Print the local-first proof (real CGo scan + canary egress guard); non-zero on violation. |
 | `graphi savings` | Print the session token-savings readout. |
 | `graphi version` | Print the version / commit / build date stamped into the binary. |
 
@@ -148,13 +152,13 @@ graphi is a layered Go workspace with a single engine serving every surface:
 ```mermaid
 flowchart TD
     CMD["cmd/*  — entry points, wiring"]
-    SURF["surfaces/*  — CLI, daemon, MCP"]
+    SURF["surfaces/*  — CLI, daemon, MCP, HTTP"]
     ENG["engine/*  — query, search, context, analysis"]
     CORE["core/*  — model, parse, graphstore"]
     CMD --> SURF --> ENG --> CORE
 ```
 
-- **One engine, many surfaces.** A single runtime serves the CLI, the Unix-socket daemon, and the MCP stdio server — no surface holds query, search, or analysis logic of its own, so they can never diverge.
+- **One engine, many surfaces.** A single runtime serves the CLI, the Unix-socket daemon, the MCP stdio server, and the loopback HTTP/SSE surface — no surface holds query, search, or analysis logic of its own, so they can never diverge.
 - **Layered by direction.** Lower layers never depend on higher ones; `core/parse` and `core/graphstore` are pure leaves.
 - **Data flow.** source repo → incremental ingest → graphstore (hot in-memory graph + durable SQLite sidecar) → query / search / analysis → surfaces.
 

@@ -69,6 +69,26 @@ func NewDefaultService(reader query.Reader) *Service {
 	// gracefully. The githistory sub-package cannot import analysis (cycle),
 	// so we wrap it with a thin adapter that satisfies analysis.Analyzer.
 	mustRegister(reg, gitHistoryAdapter{inner: githistory.New(nil, githistory.Config{})})
+	// SW-039 (EP-007 1/5): register the pr-risk scorer. It is a composite,
+	// read-only Analyzer that consumes EP-004 impact/metrics and EP-005 taint
+	// RESULTS through an injectable signalProvider seam (never recomputing them)
+	// and emits a versioned per-region RiskReport. Additive: a single
+	// registration line plus one MCP descriptor entry.
+	mustRegister(reg, newPriskAnalyzer())
+	// SW-040 (EP-007 2/5): register the pr-signals detector. It is a composite,
+	// read-only Analyzer that consumes EP-004 metrics (hub/bridge), EP-005 PDG
+	// (cross-module coupling), and git-history churn RESULTS through an injectable
+	// signalSource seam (never recomputing them) and emits a versioned per-region
+	// hub/bridge/surprise SignalReport. Additive: a single registration line plus
+	// one MCP descriptor entry.
+	mustRegister(reg, newPrSignalsAnalyzer())
+	// SW-041 (EP-007 3/5): register the pr-questions generator. It is a composite,
+	// read-only, DETERMINISTIC Analyzer that consumes the SW-039 RiskReport and the
+	// SW-040 SignalReport RESULTS through an injectable questionSource seam (never
+	// recomputing scoring or signal detection, no LLM, no network) and emits a
+	// versioned reviewer-question set. Additive: a single registration line plus
+	// one MCP descriptor entry.
+	mustRegister(reg, newPrQuestionsAnalyzer())
 	return NewService(reader, reg)
 }
 

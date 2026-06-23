@@ -1,0 +1,29 @@
+{
+  "name": "graphi-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "graphi TS/React web client — Sigma.js graph viz with blast-radius & citation highlights (SW-040). Consumes the SW-039 HTTP/SSE surface as its only backend boundary.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "graphology": "^0.25.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sigma": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

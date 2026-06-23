@@ -1,0 +1,143 @@
+# SW-043 — graphi PR-Review Action (local-first, packaged from the EP-007 vertical)
+#
+# This Action COMPOSES the existing graphi PR-review vertical (SW-039 risk,
+# SW-040 signals, SW-041 questions, SW-042 sticky comment + merge gate) into one
+# documented unit. It runs the graphi engine ENTIRELY inside the CI runner with a
+# PINNED runtime, preserving the local-first contract: the only outbound network
+# is the GitHub API call that posts/updates the sticky PR comment. The engine's
+# own analysis performs ZERO outbound network.
+#
+# Pinned runtime (AC1 / supply-chain control): `runs.using: composite` and every
+# referenced `uses:` step is pinned by FULL 40-hex commit SHA (not a floating tag
+# such as @v4 or :latest), and the engine itself is pinned via the `graphi-version`
+# input. The action.yml validator (see ./validate) FAILS CI on any unpinned ref.
+name: "graphi PR Review (local-first)"
+description: >-
+  Run the graphi code-intelligence PR-review vertical inside the CI runner and
+  post a sticky review comment. Local-first: zero outbound network except the
+  GitHub API used to upsert the sticky comment.
+author: "graphi"
+
+branding:
+  icon: "git-pull-request"
+  color: "purple"
+
+# --- Inputs: every input documents type, default, and required -----------------
+inputs:
+  github-token:
+    description: >-
+      GitHub token used ONLY to post/update the sticky PR comment (the single
+      permitted egress). Secret. Passed to the engine via the environment
+      (GITHUB_TOKEN) — never on the command line. Use the least-privilege scope
+      `permissions: pull-requests: write`.
+    type: string
+    required: true
+    # No default: a secret must be supplied explicitly.
+  graphi-version:
+    description: >-
+      PINNED graphi engine version (git ref / release tag) to build in-runner.
+      Pin this to a release tag or commit SHA for a reproducible runtime; do NOT
+      leave it floating.
+    type: string
+    required: false
+    default: "v0.43.0"
+  base-ref:
+    description: "Base git ref of the PR (the diff is computed locally as base..head; no GitHub get-diff API call)."
+    type: string
+    required: false
+    default: ""
+  head-ref:
+    description: "Head git ref of the PR (local diff endpoint; defaults to the checked-out HEAD)."
+    type: string
+    required: false
+    default: ""
+  pr-ref:
+    description: "PR reference rendered in the comment header and used to resolve the issue/PR number (e.g. owner/repo#42)."
+    type: string
+    required: false
+    default: ""
+  merge-gate:
+    description: "Enable the optional risk-threshold merge gate. When true and the worst region exceeds gate-threshold, the step fails so branch protection can block the merge."
+    type: boolean
+    required: false
+    default: false
+  gate-threshold:
+    description: "Risk threshold in fixed-point units (1/1000) the worst region must EXCEED to BLOCK (only used when merge-gate is true)."
+    type: number
+    required: false
+    default: 700
+  comment-marker:
+    description: "Informational sticky-comment marker label. The engine owns the canonical hidden marker that keys the idempotent upsert; this is for documentation/override only."
+    type: string
+    required: false
+    default: "graphi-pr-review"
+  provenance:
+    description: "Evidence redaction level for the public comment: summary (recommended) | full. Defaults to summary so source/sink paths never leak into a world-readable comment."
+    type: string
+    required: false
+    default: "summary"
+  working-directory:
+    description: "Directory containing the checked-out repository to analyze."
+    type: string
+    required: false
+    default: "."
+
+# --- Outputs: every output documents type ------------------------------------
+outputs:
+  risk-score:
+    description: "The worst-region risk score (fixed-point decimal, e.g. 0.730) projected from the pr-risk report."
+    value: ${{ steps.graphi-review.outputs.risk-score }}
+  gate-status:
+    description: "Merge-gate verdict projected from the PublishResult: PASS | BLOCK."
+    value: ${{ steps.graphi-review.outputs.gate-status }}
+  comment-url:
+    description: "Identifier/URL of the upserted sticky comment projected from the PublishResult upsert result."
+    value: ${{ steps.graphi-review.outputs.comment-url }}
+
+# --- Runs: PINNED composite runtime ------------------------------------------
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout (pinned)
+      # actions/checkout v4.2.2 pinned by full commit SHA (supply-chain control).
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        fetch-depth: 0  # full history so the local base..head diff resolves
+
+    - name: Set up Go (pinned)
+      # actions/setup-go v5.2.0 pinned by full commit SHA.
+      uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
+      with:
+        go-version: "1.26"
+
+    - name: Build pinned graphi engine (CGo-free, in-runner)
+      shell: bash
+      env:
+        CGO_ENABLED: "0"
+        GRAPHI_VERSION: ${{ inputs.graphi-version }}
+      run: |
+        set -euo pipefail
+        # Build the pinned engine from the action's vendored source so the runtime
+        # is reproducible and offline after checkout. GRAPHI_VERSION documents the
+        # pinned ref the consumer selected.
+        echo "graphi: building pinned engine ${GRAPHI_VERSION} (CGo-free)"
+        go build -o "${RUNNER_TEMP:-/tmp}/graphi" ./cmd/graphi
+        echo "GRAPHI_BIN=${RUNNER_TEMP:-/tmp}/graphi" >> "$GITHUB_ENV"
+
+    - name: Run graphi PR review (engine in-runner; single GitHub egress)
+      id: graphi-review
+      shell: bash
+      env:
+        # Token via ENV only — never argv (S1). The engine resolves the real
+        # GitHub comment host from these standard Actions env vars.
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_BASE_REF: ${{ inputs.base-ref }}
+        INPUT_HEAD_REF: ${{ inputs.head-ref }}
+        INPUT_PR_REF: ${{ inputs.pr-ref }}
+        INPUT_PROVENANCE: ${{ inputs.provenance }}
+        INPUT_MERGE_GATE: ${{ inputs.merge-gate }}
+        INPUT_GATE_THRESHOLD: ${{ inputs.gate-threshold }}
+        INPUT_COMMENT_MARKER: ${{ inputs.comment-marker }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+      run: |
+        bash "${GITHUB_ACTION_PATH}/entrypoint.sh"

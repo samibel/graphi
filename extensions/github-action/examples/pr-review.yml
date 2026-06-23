@@ -1,0 +1,33 @@
+# Copy-paste minimal example workflow for the graphi PR-Review Action (SW-043).
+#
+# Pin `uses:` to a release tag (shown) or a commit SHA for the strictest
+# supply-chain posture. Replace OWNER/graphi-pr-review with your published Action.
+name: graphi PR review
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write   # least privilege: only to post/update the sticky comment
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: graphi PR review
+        id: graphi
+        uses: OWNER/graphi-pr-review@v0.43.0   # pinned to the action version
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-ref: ${{ github.event.pull_request.base.sha }}
+          head-ref: ${{ github.event.pull_request.head.sha }}
+          pr-ref: ${{ github.repository }}#${{ github.event.pull_request.number }}
+          merge-gate: true
+          gate-threshold: 700
+          provenance: summary
+
+      - name: Surface graphi outputs
+        run: |
+          echo "risk score:  ${{ steps.graphi.outputs.risk-score }}"
+          echo "gate status: ${{ steps.graphi.outputs.gate-status }}"
+          echo "comment:     ${{ steps.graphi.outputs.comment-url }}"
