@@ -403,7 +403,17 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		return err
 	}
 
-	return i.metaTx(ctx, func(tx *sql.Tx) error {
+	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
+		// Capture the node IDs of the PREVIOUS full pass (if this store is being
+		// re-indexed) BEFORE clearing the cache, so nodes of files that have since
+		// disappeared can be purged — otherwise a full re-index of a reused store
+		// retains stale nodes and is no longer "full", breaking byte-identity
+		// against a fresh full index AND against the incremental path.
+		priorNodeIDs, err := i.allCachedNodeIDsTx(ctx, tx)
+		if err != nil {
+			return err
+		}
+
 		if _, err := tx.ExecContext(ctx, "DELETE FROM file_content_cache"); err != nil {
 			return err
 		}
@@ -434,6 +444,19 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 				fileRefs = append(fileRefs, *fr)
 			}
 		}
+
+		// Purge any prior node no longer produced by this pass (deleted files,
+		// or renamed symbols on a reused store). DeleteNode cascades incident
+		// edges, so no stale cross-file edge can survive.
+		for _, id := range priorNodeIDs {
+			if _, kept := owned[id]; kept {
+				continue
+			}
+			if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+				return fmt.Errorf("ingest: purge stale node %s: %w", id, err)
+			}
+		}
+
 		if err := i.writeReverseDepsTx(ctx, tx, refs); err != nil {
 			return err
 		}
@@ -443,8 +466,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			return err
 		}
 		return nil
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 	i.notifyIngest(ctx, "ingest-completed", len(units))
@@ -938,6 +960,30 @@ func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, owne
 	return edgeIDs, nil
 }
 
+// allCachedNodeIDsTx returns every node ID recorded in the cache (across all
+// files), on the supplied transaction. Used by IngestAll to purge nodes that a
+// re-index no longer produces.
+func (i *Ingester) allCachedNodeIDsTx(ctx context.Context, tx *sql.Tx) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, "SELECT node_ids FROM file_content_cache")
+	if err != nil {
+		return nil, fmt.Errorf("ingest: list cached node ids: %w", err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return nil, err
+		}
+		var ids []string
+		if err := json.Unmarshal([]byte(raw), &ids); err != nil {
+			return nil, fmt.Errorf("ingest: decode cached node ids: %w", err)
+		}
+		out = append(out, ids...)
+	}
+	return out, rows.Err()
+}
+
 // cachedNodeIDs returns the node IDs previously produced for path.
 func (i *Ingester) cachedNodeIDs(ctx context.Context, path string) ([]string, error) {
 	var raw string
@@ -1230,15 +1276,29 @@ func (i *Ingester) cachedPathsTx(ctx context.Context, tx *sql.Tx) ([]string, err
 	return out, rows.Err()
 }
 
-// removeFileTx removes a deleted file's cache entry and dirty flag.
+// removeFileTx removes a deleted file's graph nodes (cascading their incident
+// edges, including cross-file edges that pointed INTO this file's symbols) and
+// its sidecar bookkeeping. Deleting the nodes is what makes an incremental pass
+// over a deleted file converge byte-identically with a full re-index: a full
+// pass simply never re-creates them, so the incremental pass must drop them.
 func (i *Ingester) removeFileTx(ctx context.Context, tx *sql.Tx, path string) error {
+	// Drop the file's graph nodes first (DeleteNode cascades incident edges).
+	ids, err := i.cachedNodeIDs(ctx, path)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+			return fmt.Errorf("ingest: delete node of removed file %s: %w", path, err)
+		}
+	}
 	if _, err := tx.ExecContext(ctx, "DELETE FROM file_content_cache WHERE path = ?", path); err != nil {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx, "DELETE FROM reverse_deps WHERE path = ?", path); err != nil {
 		return err
 	}
-	_, err := tx.ExecContext(ctx, "DELETE FROM dirty_units WHERE path = ?", path)
+	_, err = tx.ExecContext(ctx, "DELETE FROM dirty_units WHERE path = ?", path)
 	return err
 }
 
