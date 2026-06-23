@@ -211,7 +211,10 @@ func renderFixed(v int) string {
 // analysis.parseFixed (SW-041). Returns ok=false for a malformed value.
 func parseFixed(s string) (int, bool) {
 	s = strings.TrimSpace(s)
-	if s == "" {
+	// Scores/thresholds are strictly non-negative. Reject any signed value up
+	// front: strconv.Atoi("-0") returns 0, so "-0.123" would otherwise slip past
+	// the per-part whole<0 checks and be accepted as +0.123.
+	if s == "" || strings.HasPrefix(s, "-") {
 		return 0, false
 	}
 	dot := strings.IndexByte(s, '.')

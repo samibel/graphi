@@ -372,6 +372,13 @@ func TestParseFixedRoundTrip(t *testing.T) {
 	if _, ok := parseFixed("0.73"); ok {
 		t.Fatalf("parseFixed should require 3 fractional digits (canonical form)")
 	}
+	// Signed values must be rejected: strconv.Atoi("-0") == 0, so "-0.123" would
+	// otherwise be accepted as +0.123 for a strictly non-negative score.
+	for _, neg := range []string{"-0", "-0.123", "-0.000", "-1.000", "-5"} {
+		if _, ok := parseFixed(neg); ok {
+			t.Fatalf("parseFixed(%q) should be rejected (scores are non-negative)", neg)
+		}
+	}
 }
 
 // TestPrQuestionsNoLLMNoNetwork: structural guarantee that the generator file
