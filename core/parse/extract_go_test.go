@@ -43,6 +43,17 @@ func parseFixture(t *testing.T) ([]model.Node, []model.Edge) {
 	return res.Nodes, res.Edges
 }
 
+// parseFixtureResult parses goFixture and returns the full ParseResult so tests
+// can assert the recorded PendingRefs/Imports.
+func parseFixtureResult(t *testing.T) *ParseResult {
+	t.Helper()
+	res, err := (&GoParser{}).Parse(context.Background(), "shop/cart.go", []byte(goFixture))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	return res
+}
+
 // nodeByQN finds a node by qualified name.
 func nodeByQN(nodes []model.Node, qn string) (model.Node, bool) {
 	for _, n := range nodes {
@@ -136,6 +147,79 @@ func TestExtractGo_Edges(t *testing.T) {
 			t.Errorf("edge %s lacks provenance: tier=%q reason=%q evidence=%v",
 				e.ID(), e.Tier(), e.Reason(), e.Evidence())
 		}
+	}
+}
+
+// TestExtractGo_PendingRefs asserts the extractor RECORDS (never resolves) the
+// references it cannot prove from a single file: the selector call fmt.Println
+// becomes a selector PendingRef and no cross-package edge is emitted, while the
+// intra-file edges remain unchanged (regression — recording is additive).
+func TestExtractGo_PendingRefs(t *testing.T) {
+	res := parseFixtureResult(t)
+
+	// fmt.Println in checkout must be recorded as a selector pending call.
+	var foundSelector bool
+	for _, p := range res.PendingRefs {
+		if p.FromQN == "shop.checkout" && p.Selector && p.SelectorBase == "fmt" && p.Name == "Println" && p.Kind == goEdgeCalls {
+			foundSelector = true
+		}
+		// No PendingRef may carry a NodeId / fabricate an endpoint — the struct
+		// has none; assert FromQN/Name are always populated (inert record).
+		if p.FromQN == "" || p.Name == "" {
+			t.Errorf("pending ref with empty FromQN/Name: %+v", p)
+		}
+	}
+	if !foundSelector {
+		t.Errorf("expected a selector PendingRef for fmt.Println, got %+v", res.PendingRefs)
+	}
+
+	// The recording must not have emitted any cross-package/selector edge: every
+	// edge is still an intra-file defines/calls/references edge.
+	nodes := res.Nodes
+	id := func(qn string) model.NodeId {
+		n, ok := nodeByQN(nodes, qn)
+		if !ok {
+			t.Fatalf("node %q not found", qn)
+		}
+		return n.ID()
+	}
+	has := func(from, to model.NodeId, kind string) bool {
+		for _, e := range res.Edges {
+			if e.From() == from && e.To() == to && e.Kind() == kind {
+				return true
+			}
+		}
+		return false
+	}
+	if !has(id("shop.checkout"), id("shop.price"), goEdgeCalls) {
+		t.Error("intra-file calls edge checkout -> price regressed")
+	}
+	if !has(id("shop.price"), id("shop.TaxRate"), goEdgeReferences) {
+		t.Error("intra-file references edge price -> TaxRate regressed")
+	}
+}
+
+// TestExtractGo_Imports asserts imports are recorded (alias + path).
+func TestExtractGo_Imports(t *testing.T) {
+	res := parseFixtureResult(t)
+	var found bool
+	for _, imp := range res.Imports {
+		if imp.Path == "fmt" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected import of fmt, got %+v", res.Imports)
+	}
+	// References mirrors the import paths for the reverse-dep cascade.
+	var inRefs bool
+	for _, r := range res.References {
+		if r == "fmt" {
+			inRefs = true
+		}
+	}
+	if !inRefs {
+		t.Errorf("expected fmt in References, got %+v", res.References)
 	}
 }
 

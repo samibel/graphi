@@ -59,6 +59,55 @@ type ParseResult struct {
 	// References lists paths/files this source file depends on (imports, includes,
 	// etc.). Ingest uses this to compute the reverse-dependency cascade.
 	References []string
+	// PendingRefs are deferred references this file could NOT resolve on its own
+	// (same-package cross-file names, and cross-package selector calls/refs). The
+	// parse leaf only RECORDS them; the engine/link linker pass resolves them
+	// against the fully-committed node set. Keeping resolution out of parse
+	// preserves the CI-enforced pure-leaf boundary (see purity_test.go).
+	PendingRefs []PendingRef
+	// Imports lists the import declarations of this file (alias + path), used by
+	// the linker to map a selector alias to its package.
+	Imports []ImportSpec
+}
+
+// PendingRef is a single reference (call or non-call use) that the parse leaf
+// recorded but deliberately did NOT resolve. The linker pass turns it into a
+// provenanced cross-file/cross-package edge once every endpoint is committed.
+//
+// It is an inert data record: it holds only the information the resolver needs
+// and carries no NodeIds (those are minted/looked up by the linker against the
+// committed node set), so the parse boundary never fabricates an endpoint.
+type PendingRef struct {
+	// FromQN is the qualified name of the enclosing symbol that owns the
+	// reference (the edge's "from"), e.g. "shop.checkout".
+	FromQN string
+	// Name is the referenced bare name. For a selector (Selector=true) it is the
+	// trailing selector identifier (e.g. "Fn" in "pkg.Fn"); SelectorBase carries
+	// the leading qualifier.
+	Name string
+	// SelectorBase is the leading qualifier of a selector reference (e.g. "pkg"
+	// or a receiver name "x" in "x.Method"); empty for a bare-ident reference.
+	SelectorBase string
+	// Kind is the edge kind to emit on resolution ("calls" or "references").
+	Kind string
+	// Line is the 1-based source line of the reference, used for file:line
+	// evidence.
+	Line int
+	// Selector reports whether the reference was a selector expression
+	// (alias.Name / recv.Method) versus a bare identifier.
+	Selector bool
+}
+
+// ImportSpec is one import declaration: the local alias (empty for the default
+// package-name binding) and the imported path. The linker maps a selector's
+// leading qualifier to a package via these specs.
+type ImportSpec struct {
+	// Alias is the explicit local name ("" when none, "." for a dot-import, "_"
+	// for a blank import). Dot and blank imports never produce a resolvable
+	// selector and are skipped by the linker.
+	Alias string
+	// Path is the imported package import path (e.g. "fmt", "github.com/x/y").
+	Path string
 }
 
 // Parser is the stable contract every language backend implements. Implementations

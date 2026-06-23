@@ -6,6 +6,8 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"strconv"
+	"strings"
 )
 
 // GoParser is the native, high-precision Go parser built entirely on the standard
@@ -60,12 +62,22 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 		return nil, fmt.Errorf("parse: go syntax error in %q: %w", filename, perr)
 	}
 
-	// Derive the in-file graph elements (symbol nodes + intra-file edges). The
-	// extractor is pure and resolves only what a single file proves; cross-file
-	// edges are left to a later linker pass (see extract_go.go).
-	nodes, edges, xerr := extractGo(filename, file.Name.Name, fset, file)
+	// Derive the in-file graph elements (symbol nodes + intra-file edges) plus the
+	// deferred references the linker resolves later. The extractor is pure and
+	// resolves only what a single file proves; cross-file/cross-package edges are
+	// left to the engine/link pass (see extract_go.go).
+	nodes, edges, pending, xerr := extractGo(filename, file.Name.Name, fset, file)
 	if xerr != nil {
 		return nil, fmt.Errorf("parse: go extraction in %q: %w", filename, xerr)
+	}
+
+	// Collect imports (alias + path) for the linker's selector resolution and
+	// populate References so ingest's reverse-dependency cascade can treat
+	// imported packages as forward dependencies.
+	imports := goImports(file)
+	refs := make([]string, 0, len(imports))
+	for _, imp := range imports {
+		refs = append(refs, imp.Path)
 	}
 
 	return &ParseResult{
@@ -75,8 +87,34 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 			ContentHash: contentHash(src),
 			Size:        len(src),
 		},
-		Root:  &goAST{FileSet: fset, File: file},
-		Nodes: nodes,
-		Edges: edges,
+		Root:        &goAST{FileSet: fset, File: file},
+		Nodes:       nodes,
+		Edges:       edges,
+		PendingRefs: pending,
+		Imports:     imports,
+		References:  refs,
 	}, nil
+}
+
+// goImports extracts the import declarations of a Go file as ImportSpecs. The
+// alias is the explicit local name when present ("." for dot-imports, "_" for
+// blank imports, "" for the default package-name binding). Paths are unquoted.
+// Order follows source order; the linker is order-independent regardless.
+func goImports(file *ast.File) []ImportSpec {
+	out := make([]ImportSpec, 0, len(file.Imports))
+	for _, imp := range file.Imports {
+		if imp == nil || imp.Path == nil {
+			continue
+		}
+		path, err := strconv.Unquote(imp.Path.Value)
+		if err != nil {
+			path = strings.Trim(imp.Path.Value, `"`)
+		}
+		alias := ""
+		if imp.Name != nil {
+			alias = imp.Name.Name
+		}
+		out = append(out, ImportSpec{Alias: alias, Path: path})
+	}
+	return out
 }
