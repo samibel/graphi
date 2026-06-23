@@ -60,6 +60,14 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 		return nil, fmt.Errorf("parse: go syntax error in %q: %w", filename, perr)
 	}
 
+	// Derive the in-file graph elements (symbol nodes + intra-file edges). The
+	// extractor is pure and resolves only what a single file proves; cross-file
+	// edges are left to a later linker pass (see extract_go.go).
+	nodes, edges, xerr := extractGo(filename, file.Name.Name, fset, file)
+	if xerr != nil {
+		return nil, fmt.Errorf("parse: go extraction in %q: %w", filename, xerr)
+	}
+
 	return &ParseResult{
 		Meta: SourceMeta{
 			Path:        filename,
@@ -67,6 +75,8 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 			ContentHash: contentHash(src),
 			Size:        len(src),
 		},
-		Root: &goAST{FileSet: fset, File: file},
+		Root:  &goAST{FileSet: fset, File: file},
+		Nodes: nodes,
+		Edges: edges,
 	}, nil
 }
