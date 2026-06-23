@@ -233,6 +233,31 @@ func (idx *SymbolIndex) packageFileNodes(importPath string) []model.NodeId {
 	return out
 }
 
+// DirsForImport returns the source directories that an import path resolves to:
+// every directory whose package clause equals the import path's last segment
+// (the same clause = path.Base(importPath) mapping crossPackage/packageFileNodes
+// use). The result is sorted for determinism and is empty when the package is
+// not present in the repo (stdlib / 3rd-party / a stub file-path "import").
+//
+// Ingest uses this to translate import-path forward refs into the DIRECTORY key
+// space so the incremental reverse-dependency cascade (dependentsOf) — which
+// keys off the changed file's directory — actually finds cross-package
+// importers. Without it, reverse_deps keyed by import-path string is never hit
+// by a file-path/directory lookup and the import-dependent cascade is dead.
+func (idx *SymbolIndex) DirsForImport(importPath string) []string {
+	clause := path.Base(importPath)
+	dirs := idx.byClause[clause]
+	if dirs == nil {
+		return nil
+	}
+	out := make([]string, 0, len(dirs))
+	for dir := range dirs {
+		out = append(out, dir)
+	}
+	sort.Strings(out)
+	return out
+}
+
 // posixDir returns the directory portion of a normalized POSIX path. The root
 // (no separator) maps to "" so files in the repo root share one directory key.
 func posixDir(p string) string {
