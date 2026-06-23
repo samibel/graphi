@@ -428,8 +428,9 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		refs := make(map[string][]string, len(units))
 		var fileRefs []link.FileRefs
 		owned := make(map[string]struct{})
+		parserEdges := make(map[string]struct{})
 		for _, u := range units {
-			nodeIDs, _, fwd, fr, err := i.parseAndCommit(ctx, u)
+			nodeIDs, edgeIDs, fwd, fr, err := i.parseAndCommit(ctx, u)
 			if err != nil {
 				return err
 			}
@@ -439,6 +440,9 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			refs[u.relPath] = fwd
 			for _, id := range nodeIDs {
 				owned[id] = struct{}{}
+			}
+			for _, eid := range edgeIDs {
+				parserEdges[eid] = struct{}{}
 			}
 			if fr != nil {
 				fileRefs = append(fileRefs, *fr)
@@ -457,12 +461,24 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			}
 		}
 
-		if err := i.writeReverseDepsTx(ctx, tx, refs); err != nil {
+		// Translate import-path forward refs into the directory key space so the
+		// incremental cascade can look them up by directory (BLOCK-1). The index
+		// is built from the now-fully-committed node set.
+		nodes, err := i.store.Nodes(ctx, graphstore.Query{})
+		if err != nil {
+			return fmt.Errorf("ingest: read nodes for reverse deps: %w", err)
+		}
+		idx := link.BuildIndex(nodes)
+		dirRefs := make(map[string][]string, len(refs))
+		for file, targets := range refs {
+			dirRefs[file] = reverseDepKeys(idx, targets)
+		}
+		if err := i.writeReverseDepsTx(ctx, tx, dirRefs); err != nil {
 			return err
 		}
 		// Post-node-commit linker pass (site 1): all nodes are now committed, so
 		// cross-file/cross-package edges can be resolved against the full set.
-		if _, err := i.linkFiles(ctx, fileRefs, owned); err != nil {
+		if _, err := i.linkFiles(ctx, fileRefs, owned, parserEdges); err != nil {
 			return err
 		}
 		return nil
@@ -561,6 +577,8 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	return i.metaTx(ctx, func(tx *sql.Tx) error {
 		var fileRefs []link.FileRefs
 		owned := make(map[string]struct{})
+		parserEdges := make(map[string]struct{})
+		fwdByFile := make(map[string][]string)
 		for _, u := range units {
 			if _, ok := toProcess[u.relPath]; !ok {
 				continue
@@ -572,11 +590,12 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs, fr != nil); err != nil {
 				return err
 			}
-			if err := i.updateReverseDepsTx(ctx, tx, u.relPath, fwd); err != nil {
-				return err
-			}
+			fwdByFile[u.relPath] = fwd
 			for _, id := range nodeIDs {
 				owned[id] = struct{}{}
+			}
+			for _, eid := range edgeIDs {
+				parserEdges[eid] = struct{}{}
 			}
 			if fr != nil {
 				fileRefs = append(fileRefs, *fr)
@@ -597,12 +616,33 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			}
 		}
 
+		// Update reverse deps AFTER all reprocessed nodes are committed, so the
+		// import-path → directory translation (BLOCK-1) resolves target packages
+		// against the full committed node set rather than a partial mid-loop view.
+		if len(fwdByFile) > 0 {
+			nodes, err := i.store.Nodes(ctx, graphstore.Query{})
+			if err != nil {
+				return fmt.Errorf("ingest: read nodes for reverse deps: %w", err)
+			}
+			idx := link.BuildIndex(nodes)
+			files := make([]string, 0, len(fwdByFile))
+			for f := range fwdByFile {
+				files = append(files, f)
+			}
+			sort.Strings(files) // deterministic update order
+			for _, f := range files {
+				if err := i.updateReverseDepsTx(ctx, tx, f, reverseDepKeys(idx, fwdByFile[f])); err != nil {
+					return err
+				}
+			}
+		}
+
 		// Post-node-commit linker pass (site 2): re-resolve cross-file edges for
 		// the reprocessed files against the full committed node set, removing
 		// stale from-owned cross-file edges first. The cascade closure
 		// (dependentsOf) guarantees every file whose edges could change is in the
 		// reprocessed set, so the incremental result converges with a full pass.
-		linkEdgeIDs, err := i.linkFiles(ctx, fileRefs, owned)
+		linkEdgeIDs, err := i.linkFiles(ctx, fileRefs, owned, parserEdges)
 		if err != nil {
 			return err
 		}
@@ -901,18 +941,33 @@ func posixDir(p string) string {
 // the linker resolves every deferred ref against it.
 //
 // fileRefs are the link inputs of the (re)processed files. ownedNodeIDs is the
-// set of node IDs belonging to those files, used to remove stale from-owned
-// cross-file edges before re-emitting: an edge whose From is owned by a
-// reprocessed file but whose To is NOT in that file (a cross-file edge) is
-// deleted, then the linker re-emits the current set. Intra-file edges (To owned
-// by the same file) are already replaced by parseAndCommit, so they are left
-// untouched. This makes the incremental result converge byte-identically with a
-// full re-index.
+// set of node IDs belonging to those files. parserEdges is the set of edge IDs
+// parseAndCommit just (re)committed for those files THIS pass (its res.Edges:
+// defines + any edge a parser resolves itself, including cross-file edges some
+// parsers emit directly); they are current-by-construction and must be kept.
+//
+// The sweep removes STALE from-owned linker-kind edges before re-linking: a
+// calls/references/imports edge whose From is owned but which was NOT
+// (re)committed by parseAndCommit this pass is deleted, then the linker re-emits
+// the still-valid ones. Deleting even when To is also owned (BLOCK-2) is required
+// because an identity-preserving caller edit keeps the From NodeId, so
+// DeleteNode's incident-edge cascade never fires and the stale edge would
+// otherwise survive incrementally while being absent from a full pass. Keying the
+// keep-set on the freshly-committed parser edges (rather than on To-ownership)
+// preserves intra-file AND parser-emitted cross-file edges — only the linker's
+// own deferred edges, which the linker re-emits, are swept. This makes the
+// incremental result converge byte-identically with a full re-index.
 //
 // It returns the committed cross-file edge IDs so the incremental path can record
 // edit provenance for them.
-func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}) ([]string, error) {
-	if len(fileRefs) == 0 {
+func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}) ([]string, error) {
+	// Nothing reprocessed: no nodes to sweep stale edges from and nothing to
+	// re-link. (BLOCK-2: gating on ownedNodeIDs, NOT fileRefs — an edit that
+	// removes the LAST cross-file ref leaves fileRefs empty yet still owns
+	// reprocessed nodes whose stale from-owned cross-file edges must be swept.
+	// Returning early on empty fileRefs skipped that sweep and let the stale edge
+	// survive.)
+	if len(ownedNodeIDs) == 0 {
 		return nil, nil
 	}
 
@@ -921,8 +976,7 @@ func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, owne
 		return nil, fmt.Errorf("ingest: link read nodes: %w", err)
 	}
 
-	// Remove stale from-owned cross-file edges before re-linking. A cross-file
-	// edge has From in the reprocessed set and To outside it.
+	// Remove stale from-owned linker edges before re-linking.
 	allEdges, err := i.store.Edges(ctx, graphstore.Query{})
 	if err != nil {
 		return nil, fmt.Errorf("ingest: link read edges: %w", err)
@@ -931,12 +985,15 @@ func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, owne
 		if _, fromOwned := ownedNodeIDs[string(e.From())]; !fromOwned {
 			continue
 		}
-		if _, toOwned := ownedNodeIDs[string(e.To())]; toOwned {
-			continue // intra-(reprocessed-file) edge: replaced by parseAndCommit
-		}
-		// Only the linker's own edge kinds are removed; defines edges are always
-		// intra-file (file node -> symbol) so they never match this predicate.
+		// Only the linker's own edge kinds are swept here.
 		if e.Kind() != "calls" && e.Kind() != "references" && e.Kind() != "imports" {
+			continue
+		}
+		// Keep any edge parseAndCommit just (re)committed for these files this pass
+		// — it is current, not stale. This covers intra-file edges AND any
+		// cross-file edge a parser resolves itself (res.Edges). Everything else
+		// from-owned of a linker kind is a stale linker edge from a prior pass.
+		if _, fresh := parserEdges[string(e.ID())]; fresh {
 			continue
 		}
 		if err := i.store.DeleteEdge(ctx, e.ID()); err != nil {
@@ -1025,7 +1082,41 @@ ON CONFLICT(path) DO UPDATE SET
 	return err
 }
 
+// reverseDepKeys translates a file's forward-ref targets into the key space the
+// incremental cascade (dependentsOf) looks up: directories. A real-Go forward
+// ref is an import-path string (e.g. "example.com/repo/tax"); dependentsOf is
+// called with a repo-relative FILE path and resolves siblings/importers by
+// DIRECTORY, so an import-path key is never hit (BLOCK-1). We translate every
+// import path that resolves into the repo to the importing package's
+// directory(ies) via the committed symbol index. A target that resolves to no
+// directory (a stub-parser file-path "import", or a stdlib/3rd-party package not
+// present in the repo) is kept verbatim, preserving the stub key space and
+// causing no phantom dependents. idx is built once per pass from store.Nodes.
+func reverseDepKeys(idx *link.SymbolIndex, targets []string) []string {
+	out := make([]string, 0, len(targets))
+	seen := make(map[string]struct{}, len(targets))
+	add := func(k string) {
+		if _, ok := seen[k]; ok {
+			return
+		}
+		seen[k] = struct{}{}
+		out = append(out, k)
+	}
+	for _, t := range targets {
+		dirs := idx.DirsForImport(t)
+		if len(dirs) == 0 {
+			add(t) // stub file path / stdlib / 3rd-party: keep as-is
+			continue
+		}
+		for _, d := range dirs {
+			add(d)
+		}
+	}
+	return out
+}
+
 // writeReverseDepsTx rebuilds the reverse dependency index from forward refs.
+// refs is already translated into the directory key space by reverseDepKeys.
 func (i *Ingester) writeReverseDepsTx(ctx context.Context, tx *sql.Tx, refs map[string][]string) error {
 	if _, err := tx.ExecContext(ctx, "DELETE FROM reverse_deps"); err != nil {
 		return err
@@ -1135,8 +1226,14 @@ ON CONFLICT(path) DO UPDATE SET dependents=excluded.dependents`,
 // dependentsOf returns the FULL reverse-dependency closure for path that a
 // cross-file linker pass requires (SW-050):
 //
-//   - import dependents: files that import the package owning path (cached in
-//     reverse_deps, derived from forward refs); AND
+//   - import dependents: files that import the package owning path. reverse_deps
+//     is keyed in the DIRECTORY key space: an importing file's import-path
+//     forward refs are translated to the imported package's directory(ies) at
+//     write time (reverseDepKeys), so a lookup by the changed file's directory
+//     finds every cross-package importer. Stub parsers store file-path keys,
+//     which we also look up directly for back-compat. (BLOCK-1: previously
+//     reverse_deps was keyed by raw import-path string but looked up by file
+//     path, so the import-dependent branch resolved nothing on real Go.)
 //   - same-package siblings: every other file in path's own DIRECTORY (Open Q1).
 //     Same-package edges are resolved by bare name within the directory, so a
 //     rename in one file can change a NON-importing sibling's cross-file edges;
@@ -1148,9 +1245,9 @@ ON CONFLICT(path) DO UPDATE SET dependents=excluded.dependents`,
 func (i *Ingester) dependentsOf(ctx context.Context, path string) ([]string, error) {
 	set := map[string]struct{}{}
 
-	// Import dependents (cached reverse deps keyed by package import path AND, for
-	// stub parsers, by file path). We look up both the file path key and the
-	// directory's package keys are handled via the sibling pass below.
+	// Import dependents. Look up reverse_deps under BOTH the changed file's
+	// directory (real-Go import-path translation) and its raw file path (stub
+	// parsers key by file path). Either may be empty; both are safe to query.
 	addImportDeps := func(key string) error {
 		var raw string
 		err := i.meta.QueryRowContext(ctx, "SELECT dependents FROM reverse_deps WHERE path = ?", key).Scan(&raw)
@@ -1169,8 +1266,14 @@ func (i *Ingester) dependentsOf(ctx context.Context, path string) ([]string, err
 		}
 		return nil
 	}
-	if err := addImportDeps(path); err != nil {
+	dirKey := posixDir(model.NormalizePath(path))
+	if err := addImportDeps(dirKey); err != nil {
 		return nil, err
+	}
+	if dirKey != path {
+		if err := addImportDeps(path); err != nil {
+			return nil, err
+		}
 	}
 
 	// Same-package siblings: every other cached LINKABLE file sharing path's
@@ -1179,7 +1282,7 @@ func (i *Ingester) dependentsOf(ctx context.Context, path string) ([]string, err
 	// directory but produce no cross-file refs (e.g. data files, or distinct
 	// non-Go units) are never dragged in. This keeps the closure exact: it
 	// covers exactly the files whose cross-file edges a full pass could change.
-	dir := posixDir(model.NormalizePath(path))
+	dir := dirKey
 	changedHasLinks, err := i.fileHasLinks(ctx, path)
 	if err != nil {
 		return nil, err
