@@ -31,7 +31,7 @@ as of this story.
 |----|-----------------|------------------------|-------------------------|
 | 1  | Go              | yes (native go/ast)    | shipped (reference)     |
 | 2  | JSON            | yes (stdlib)           | shipped                 |
-| 3  | TypeScript      | yes                    | tier-1 (SW-053..056)    |
+| 3  | TypeScript      | yes (pure-Go ts runtime)| SW-053 impl green; size ⚠ (see Measured deltas) |
 | 4  | JavaScript      | yes                    | tier-1                  |
 | 5  | TSX / JSX       | yes                    | tier-1                  |
 | 6  | Python          | yes                    | tier-1                  |
@@ -86,6 +86,48 @@ pinned gate, which SW-057 re-pins once the real deltas are known):
 - **Measurement:** `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /tmp/graphi
   ./cmd/graphi && ls -l /tmp/graphi`, recording the delta vs the pre-grammar
   baseline. Each worker records its measured delta in its own story.
+
+### Measured deltas (SW-053 — TypeScript, first curated grammar)
+
+The first curated pure-Go grammar is **TypeScript**, provided by the CGo-free
+runtime `github.com/odvcencio/gotreesitter` (v0.20.2) and its `.../grammars`
+sub-package. The runtime re-implements the tree-sitter parser/lexer/query engine in
+Go (no `import "C"`, no `parser.c`); the TS parse table ships as a Go-embedded blob
+(compressed `typescript.bin` ≈ 119 KiB). It builds green under `CGO_ENABLED=0` and
+passes the `internal/cgoconformance` import-graph scan (no offender named).
+
+Measured with `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /tmp/graphi
+./cmd/graphi && ls -l` on go1.26.3 / darwin-arm64:
+
+| Build                                   | Binary size (bytes) | Δ vs baseline       |
+|-----------------------------------------|---------------------|---------------------|
+| Pre-grammar baseline                    | 12,264,546          | —                   |
+| **Default** (`go build ./...`, no tags) | 37,908,226          | **+25,643,680 (~24.5 MiB)** |
+| Subset (`-tags grammar_subset,grammar_subset_typescript`) | 15,516,658 | **+3,252,112 (~3.10 MiB)** |
+
+> ⚠ **Soft-envelope breach — escalated (SW-053).** Both deltas exceed the per-language
+> **≤ 1.0 MB** soft envelope, so per this file's escalation rule the worker did NOT
+> silently consume shared headroom — it recorded and escalated:
+>
+> - The **default** build embeds **all 206 grammars** because the `grammars` package
+>   defaults to whole-registry embedding (its files are gated `!grammar_subset ||
+>   grammar_subset_<lang>`). Adding the grammar to `RegisterDefaults` without a subset
+>   tag therefore adds ~24.5 MB to the default binary — over the ≤ 25 MB *epic-total*
+>   envelope on the very first language, and approaching the < 50 MB ceiling.
+> - Even the **subset** build (TS table only) adds ~3.10 MB, the bulk of which is the
+>   pure-Go runtime (a **one-time, amortized** cost shared by every future tier-1
+>   grammar SW-054..056), not the 119 KiB TS table itself.
+>
+> **Recommendation (human decision required):** before this lands in the default tier,
+> adopt the `grammar_subset` build mechanism (build `./cmd/graphi` with
+> `-tags grammar_subset,grammar_subset_typescript` and one tag per registered tier-1
+> grammar) so only embedded grammars in use are linked. With the subset mechanism the
+> marginal per-language cost is the grammar blob (≈ 0.1–0.2 MB), comfortably under the
+> envelope; the ~2 MB runtime is paid once for the whole epic. SW-057 should re-pin
+> `bench-budget.yml` against the **subset** total (runtime + the actual registered
+> grammars), not the whole-registry default. Until that decision is made the
+> `RegisterDefaults` wiring is functionally green but its **default** binary-size delta
+> is out of envelope.
 
 ### Re-pinning (SW-057)
 

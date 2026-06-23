@@ -14,6 +14,7 @@ package parse
 func RegisterDefaults(r *Registry) *Registry {
 	r.Register(NewGoParser())   // go  — reference SymbolExtractor (go/ast, CGo-free)
 	r.Register(NewJSONParser()) // json — stdlib structural parser (CGo-free)
+	r.Register(NewTSParser())   // typescript — pure-Go tree-sitter grammar (CGo-free)
 	return r
 }
 
