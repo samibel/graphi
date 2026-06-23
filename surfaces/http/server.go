@@ -217,6 +217,18 @@ func AssertLoopback(addr string) error {
 	return nil
 }
 
+// ListenLoopback asserts addr is loopback (AssertLoopback) and then binds a TCP
+// listener on it. The bind lives in this loopback-only surface package — not in
+// cmd — so the local-first contract and the single net.Listen egress surface
+// stay inside the allowlisted surfaces/http boundary (the zero-telemetry canary
+// allowlists this package, like surfaces/daemon and surfaces/client).
+func ListenLoopback(addr string) (net.Listener, error) {
+	if err := AssertLoopback(addr); err != nil {
+		return nil, err
+	}
+	return net.Listen("tcp", addr)
+}
+
 // schemaGuard rejects requests whose X-Graphi-Schema-Version header advertises an
 // unsupported contract version (412 Precondition Failed), mirroring the EP-002
 // schema-version drift gate. Absent header = no negotiation (pass through).

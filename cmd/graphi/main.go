@@ -13,7 +13,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"runtime/debug"
 
@@ -35,7 +34,6 @@ import (
 	"github.com/samibel/graphi/surfaces/daemon"
 	httpsrv "github.com/samibel/graphi/surfaces/http"
 	"github.com/samibel/graphi/surfaces/mcp"
-	"github.com/samibel/graphi/surfaces/tui"
 )
 
 func main() {
@@ -445,13 +443,9 @@ func runHTTP(args []string) int {
 
 	asvc := analysis.NewDefaultService(store)
 	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
-	if err := httpsrv.AssertLoopback(*addr); err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
-		return 1
-	}
-	ln, err := net.Listen("tcp", *addr)
+	ln, err := httpsrv.ListenLoopback(*addr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: listen %s: %v\n", *addr, err)
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return 1
 	}
 	fmt.Printf("graphi http listening on %s (schema_version=%d)\n", ln.Addr(), httpsrv.SchemaVersion)
@@ -624,34 +618,9 @@ func runPrivacyAudit(args []string) int {
 	return rep.ExitCode()
 }
 
-// runTUI launches the interactive terminal surface (SW-047). It consumes the
-// shared Engine over the SW-044 HTTP/SSE surface via the loopback HTTP/SSE client
-// adapter — NOT an in-process client — so the TUI reuses the single
-// network-facing contract and stays byte-identical to the web/VS Code surfaces
-// (parity by construction). Local-first: -addr is loopback-only (fail closed);
-// the TUI imports no engine/* package.
-//
-//	graphi tui [-addr http://127.0.0.1:8080]
-//
-// Start the server first with `graphi http -addr 127.0.0.1:PORT -root <repo>`,
-// then point the TUI at the same loopback address.
-func runTUI(args []string) int {
-	fs := flag.NewFlagSet("tui", flag.ContinueOnError)
-	addr := fs.String("addr", "http://127.0.0.1:8080", "loopback HTTP/SSE engine address (host must be 127.0.0.1/localhost/::1)")
-	if err := fs.Parse(args); err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: tui: %v\n", err)
-		return 1
-	}
-	// NewHTTP fails closed on a non-loopback target (mirrors httpsrv.AssertLoopback),
-	// so the TUI can never be pointed at a remote Engine.
-	eng, err := client.NewHTTP(*addr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: tui: %v\n", err)
-		return 1
-	}
-	if err := tui.Run(context.Background(), eng, os.Stdin, os.Stdout); err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: tui: %v\n", err)
-		return 1
-	}
-	return 0
-}
+// runTUI is provided by tui_enabled.go (//go:build tui) and tui_disabled.go
+// (//go:build !tui). The interactive terminal surface (SW-047) pulls in the
+// Bubble Tea dependency tree, which roughly doubles the binary; keeping it
+// behind the `tui` build tag holds the default, local-first binary lean (the
+// budget-gated benchmark enforces the size ceiling). Build with -tags tui to
+// include it: `go build -tags tui ./cmd/graphi`.
