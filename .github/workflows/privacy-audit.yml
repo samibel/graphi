@@ -28,16 +28,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: workspace/graphi/go.mod
+          go-version-file: go.mod
       - name: Build graphi (CGo-free)
-        working-directory: workspace/graphi
         run: go build -o /tmp/graphi ./cmd/graphi
       # The live exercise must run with CAP_SYS_ADMIN to unshare a network
       # namespace. If isolation is unavailable the audit reports UNVERIFIED and
       # exits non-zero by design — this job then fails (the anti-false-green
       # guarantee), which is the intended behaviour for the gating runner.
       - name: Run privacy-audit under network isolation (privileged for netns)
-        working-directory: workspace/graphi
         run: sudo --preserve-env=CGO_ENABLED /tmp/graphi privacy-audit
 
   tripwire:
@@ -49,10 +47,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: workspace/graphi/go.mod
+          go-version-file: go.mod
       # Run the audit's tripwire test under netns. The test asserts that a
       # deliberate non-loopback dial under real isolation yields a FAIL verdict
       # (red gate) — proving the deny-egress harness actually denies egress.
       - name: Run egress tripwire test under network isolation
-        working-directory: workspace/graphi
         run: sudo --preserve-env=CGO_ENABLED go test -run TestTripwire_RealIsolation_EgressFailsTheGate -count=1 ./internal/audit/...
