@@ -10,16 +10,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
+	httpsrv "github.com/samibel/graphi/surfaces/http"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
 
@@ -623,6 +628,153 @@ func TestMCP_CLI_EP005_Parity(t *testing.T) {
 	}
 }
 
+// TestMCP_CLI_PriskParity (SW-039): the pr-risk scorer returns byte-identical
+// output through the CLI (analyze pr-risk -diff ...) and MCP (analyze
+// {analyzer:pr-risk,diff:...} AND the dedicated analyze_pr_risk tool), proving
+// the versioned risk-record schema is emitted identically over both surfaces.
+func TestMCP_CLI_PriskParity(t *testing.T) {
+	store, ids := seed(t)
+	direct := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+
+	// A diff resolving one real region (p.A) plus an unresolved one (degraded).
+	diff := "p/A.go:A\np/ghost.go:Ghost"
+	_ = ids
+
+	// CLI: analyze pr-risk -diff <diff>
+	var cliOut, cliErr bytes.Buffer
+	if err := cli.RunAnalysis(context.Background(), direct,
+		[]string{"pr-risk", "-diff", diff}, &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli pr-risk: %v (stderr %s)", err, cliErr.String())
+	}
+	cliBytes := bytes.TrimRight(cliOut.Bytes(), "\n")
+
+	// MCP generic analyze tool.
+	mcpGeneric := priskMCPOutput(t, direct, "analyze", map[string]any{"analyzer": "pr-risk", "diff": diff})
+	// MCP dedicated analyze_pr_risk tool.
+	mcpDedicated := priskMCPOutput(t, direct, "analyze_pr_risk", map[string]any{"diff": diff})
+
+	if !bytes.Equal(cliBytes, mcpGeneric) {
+		t.Fatalf("pr-risk CLI<->MCP-generic mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpGeneric)
+	}
+	if !bytes.Equal(cliBytes, mcpDedicated) {
+		t.Fatalf("pr-risk CLI<->MCP-dedicated mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpDedicated)
+	}
+	// Sanity: the output is the versioned risk report with a degraded record.
+	if !bytes.Contains(cliBytes, []byte("\"scorer_version\":\"pr-risk/1\"")) {
+		t.Fatalf("pr-risk output missing scorer_version: %s", cliBytes)
+	}
+	if !bytes.Contains(cliBytes, []byte("\"degraded\":true")) {
+		t.Fatalf("pr-risk output missing degraded record: %s", cliBytes)
+	}
+}
+
+// priskMCPOutput runs a tools/call with arbitrary arguments and returns the
+// canonical text payload.
+func priskMCPOutput(t *testing.T, direct *client.Direct, tool string, args map[string]any) []byte {
+	t.Helper()
+	srv := mcp.NewServerWithClient(direct)
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+		"params": map[string]any{"name": tool, "arguments": args},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve %s: %v", tool, err)
+	}
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode %s: %v", tool, err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp %s error: %s", tool, resp.Error.Message)
+	}
+	if len(resp.Result.Content) != 1 {
+		t.Fatalf("mcp %s: unexpected content", tool)
+	}
+	return []byte(resp.Result.Content[0].Text)
+}
+
+// TestMCP_CLI_PrQuestionsParity (SW-041): the pr-questions generator returns
+// byte-identical output through the CLI (analyze pr-questions -diff ...) and MCP
+// (analyze {analyzer:pr-questions,diff:...} AND the dedicated analyze_pr_questions
+// tool), proving the versioned, deterministic question schema is emitted
+// identically over both surfaces.
+func TestMCP_CLI_PrQuestionsParity(t *testing.T) {
+	store, ids := seed(t)
+	direct := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+
+	// A diff resolving one real region (p.A) plus an unresolved one (degraded).
+	diff := "p/A.go:A\np/ghost.go:Ghost"
+	_ = ids
+
+	// CLI: analyze pr-questions -diff <diff>
+	var cliOut, cliErr bytes.Buffer
+	if err := cli.RunAnalysis(context.Background(), direct,
+		[]string{"pr-questions", "-diff", diff}, &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli pr-questions: %v (stderr %s)", err, cliErr.String())
+	}
+	cliBytes := bytes.TrimRight(cliOut.Bytes(), "\n")
+
+	// MCP generic analyze tool and dedicated analyze_pr_questions tool.
+	mcpGeneric := priskMCPOutput(t, direct, "analyze", map[string]any{"analyzer": "pr-questions", "diff": diff})
+	mcpDedicated := priskMCPOutput(t, direct, "analyze_pr_questions", map[string]any{"diff": diff})
+
+	if !bytes.Equal(cliBytes, mcpGeneric) {
+		t.Fatalf("pr-questions CLI<->MCP-generic mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpGeneric)
+	}
+	if !bytes.Equal(cliBytes, mcpDedicated) {
+		t.Fatalf("pr-questions CLI<->MCP-dedicated mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpDedicated)
+	}
+	// Sanity: the output is the versioned question report.
+	if !bytes.Contains(cliBytes, []byte("\"generator_version\":\"pr-questions/1\"")) {
+		t.Fatalf("pr-questions output missing generator_version: %s", cliBytes)
+	}
+}
+
+// TestMCP_PrQuestions_ToolAdvertised (SW-041): the dedicated analyze_pr_questions
+// tool is advertised when analysis is attached and probe-hidden when absent.
+func TestMCP_PrQuestions_ToolAdvertised(t *testing.T) {
+	store, _ := seed(t)
+	withAnalysis := client.NewDirect(query.New(store), nil).
+		WithAnalysis(analysis.NewDefaultService(store))
+	if !containsName(listTools(t, withAnalysis2srv(withAnalysis)), "analyze_pr_questions") {
+		t.Fatal("analyze_pr_questions not advertised when analysis attached")
+	}
+	if containsName(listTools(t, mcp.NewServer(query.New(store), nil)), "analyze_pr_questions") {
+		t.Fatal("analyze_pr_questions advertised when analysis absent (should probe-hide)")
+	}
+}
+
+// TestMCP_Prisk_ToolAdvertised (SW-039): the dedicated analyze_pr_risk tool is
+// advertised when analysis is attached and probe-hidden when it is absent.
+func TestMCP_Prisk_ToolAdvertised(t *testing.T) {
+	store, _ := seed(t)
+	withAnalysis := client.NewDirect(query.New(store), nil).
+		WithAnalysis(analysis.NewDefaultService(store))
+	if !containsName(listTools(t, withAnalysis2srv(withAnalysis)), "analyze_pr_risk") {
+		t.Fatal("analyze_pr_risk not advertised when analysis attached")
+	}
+	if containsName(listTools(t, mcp.NewServer(query.New(store), nil)), "analyze_pr_risk") {
+		t.Fatal("analyze_pr_risk advertised when analysis absent (should probe-hide)")
+	}
+}
+
+func withAnalysis2srv(c *client.Direct) *mcp.Server { return mcp.NewServerWithClient(c) }
+
 // TestMCP_EP005_ToolsAdvertised (SW-033): all 5 EP-005 dedicated tools are
 // advertised in tools/list when the analysis service is attached, and NOT
 // advertised when it is absent.
@@ -708,5 +860,185 @@ func TestMCP_EP005_EmptyResult(t *testing.T) {
 				t.Fatalf("%s returned invalid JSON: %s", toolName, resp.Result.Content[0].Text)
 			}
 		})
+	}
+}
+
+// reviewDirect builds an in-process Direct client with the SW-042 review
+// publisher wired over the same analysis service the siblings use.
+func reviewDirect(store *graphstore.MemStore) *client.Direct {
+	asvc := analysis.NewDefaultService(store)
+	return client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(asvc).
+		WithReview(review.NewService(asvc))
+}
+
+// TestMCP_CLI_PrCommentParity (SW-042): the sticky PR-comment writer + merge gate
+// returns byte-identical output through the CLI (pr-comment -diff ... -gate) and
+// the MCP pr_comment tool, proving the versioned, deterministic PublishResult is
+// emitted identically over both surfaces (parity by construction).
+func TestMCP_CLI_PrCommentParity(t *testing.T) {
+	store, _ := seed(t)
+	direct := reviewDirect(store)
+
+	diff := "p/A.go:A\np/ghost.go:Ghost"
+
+	// CLI: pr-comment -diff <diff> -pr ref -gate -gate-threshold 100
+	var cliOut, cliErr bytes.Buffer
+	if err := cli.RunPrComment(context.Background(), direct,
+		[]string{"-diff", diff, "-pr", "owner/repo#7", "-gate", "-gate-threshold", "100"},
+		&cliOut, &cliErr); err != nil {
+		t.Fatalf("cli pr-comment: %v (stderr %s)", err, cliErr.String())
+	}
+	cliBytes := bytes.TrimRight(cliOut.Bytes(), "\n")
+
+	// MCP pr_comment tool with the same arguments.
+	mcpBytes := priskMCPOutput(t, direct, "pr_comment", map[string]any{
+		"diff": diff, "pr": "owner/repo#7", "gate_enabled": true, "gate_threshold": 100,
+	})
+
+	if !bytes.Equal(cliBytes, mcpBytes) {
+		t.Fatalf("pr-comment CLI<->MCP mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpBytes)
+	}
+	// Sanity: the versioned writer + the hidden sticky marker are present.
+	if !bytes.Contains(cliBytes, []byte("\"writer_version\":\"pr-comment/1\"")) {
+		t.Fatalf("pr-comment output missing writer_version: %s", cliBytes)
+	}
+	if !bytes.Contains(cliBytes, []byte(review.StickyMarker)) {
+		t.Fatalf("pr-comment output missing sticky marker: %s", cliBytes)
+	}
+}
+
+// TestMCP_PrComment_ToolAdvertised (SW-042): the pr_comment tool is advertised
+// when the review publisher is attached and probe-hidden when it is absent.
+func TestMCP_PrComment_ToolAdvertised(t *testing.T) {
+	store, _ := seed(t)
+	withReview := reviewDirect(store)
+	if !containsName(listTools(t, mcp.NewServerWithClient(withReview)), "pr_comment") {
+		t.Fatal("pr_comment not advertised when review publisher attached")
+	}
+	// A client WITHOUT review wired must probe-hide pr_comment.
+	noReview := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+	if containsName(listTools(t, mcp.NewServerWithClient(noReview)), "pr_comment") {
+		t.Fatal("pr_comment advertised when review publisher absent (should probe-hide)")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SW-044 (AC-1): cross-surface HTTP parity. The HTTP surface delegates 100% to
+// the shared client.Client seam and embeds the engine bytes verbatim inside the
+// versioned envelope. This test locks "parity by construction": the HTTP
+// envelope payload is byte-identical to the CLI- and MCP-printed bytes for the
+// SAME operation over the SAME Direct client + fixture.
+// ---------------------------------------------------------------------------
+
+// httpQueryOutput drives the read-only HTTP surface over the given Direct client
+// and returns the envelope payload bytes (the provenance/answer subset that must
+// match MCP/CLI).
+func httpQueryOutput(t *testing.T, direct *client.Direct, op, symbol string, depth int) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	target := fmt.Sprintf("/query/%s?symbol=%s", op, symbol)
+	if op == query.OpNeighborhood {
+		target = fmt.Sprintf("%s&depth=%d", target, depth)
+	}
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http %s: code=%d body=%s", target, rec.Code, rec.Body.String())
+	}
+	var env struct {
+		SchemaVersion int             `json:"schema_version"`
+		Payload       json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("http %s: decode envelope: %v", target, err)
+	}
+	return env.Payload
+}
+
+// httpSearchOutput drives the HTTP /search endpoint and returns the payload.
+func httpSearchOutput(t *testing.T, direct *client.Direct, q string, limit int) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	target := fmt.Sprintf("/search?q=%s", q)
+	if limit > 0 {
+		target = fmt.Sprintf("%s&limit=%d", target, limit)
+	}
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http %s: code=%d body=%s", target, rec.Code, rec.Body.String())
+	}
+	var env struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("http %s: decode envelope: %v", target, err)
+	}
+	return env.Payload
+}
+
+// TestHTTP_MCP_CLI_QueryParity (SW-044 AC-1): the HTTP envelope payload is
+// byte-identical to the MCP and CLI output for the same query over the same
+// in-process Direct client + fixture. This is the cross-surface parity lock.
+func TestHTTP_MCP_CLI_QueryParity(t *testing.T) {
+	store, ids := seed(t)
+	svc := query.New(store)
+	direct := client.NewDirect(svc, nil)
+
+	cases := []struct {
+		op     string
+		symbol model.NodeId
+		depth  int
+	}{
+		{query.OpCallers, ids["C"], 0},
+		{query.OpCallees, ids["A"], 0},
+		{query.OpReferences, ids["B"], 0},
+		{query.OpDefinition, ids["A"], 0},
+		{query.OpNeighborhood, ids["A"], 2},
+		{query.OpCallers, model.NodeId("missing"), 0}, // not-found parity
+	}
+	for _, c := range cases {
+		cliBytes := cliOutput(t, svc, nil, c.op, string(c.symbol), c.depth)
+		mcpBytes := mcpOutput(t, svc, nil, c.op, string(c.symbol), c.depth)
+		httpBytes := httpQueryOutput(t, direct, c.op, string(c.symbol), c.depth)
+		if !bytes.Equal(httpBytes, cliBytes) {
+			t.Fatalf("%s HTTP<->CLI parity mismatch:\nHTTP: %s\nCLI: %s", c.op, httpBytes, cliBytes)
+		}
+		if !bytes.Equal(httpBytes, mcpBytes) {
+			t.Fatalf("%s HTTP<->MCP parity mismatch:\nHTTP: %s\nMCP: %s", c.op, httpBytes, mcpBytes)
+		}
+	}
+}
+
+// TestHTTP_MCP_CLI_SearchParity (SW-044 AC-1): the HTTP /search payload is
+// byte-identical to the CLI and MCP search output over the same client.
+func TestHTTP_MCP_CLI_SearchParity(t *testing.T) {
+	store, _ := seed(t)
+	qsvc := query.New(store)
+	ssvc := search.New(store)
+	direct := client.NewDirect(qsvc, ssvc)
+
+	cases := []struct {
+		q     string
+		limit int
+	}{
+		{"p.A", 0},
+		{"p", 2},
+		{"missing-token", 0},
+	}
+	for _, c := range cases {
+		cliBytes := searchCLIOutput(t, qsvc, ssvc, c.q, c.limit)
+		mcpBytes := searchMCPOutput(t, qsvc, ssvc, c.q, c.limit)
+		httpBytes := httpSearchOutput(t, direct, c.q, c.limit)
+		if !bytes.Equal(httpBytes, cliBytes) {
+			t.Fatalf("search %q HTTP<->CLI mismatch:\nHTTP: %s\nCLI: %s", c.q, httpBytes, cliBytes)
+		}
+		if !bytes.Equal(httpBytes, mcpBytes) {
+			t.Fatalf("search %q HTTP<->MCP mismatch:\nHTTP: %s\nMCP: %s", c.q, httpBytes, mcpBytes)
+		}
 	}
 }

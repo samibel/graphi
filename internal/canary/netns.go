@@ -45,3 +45,9 @@ func (noIsolation) Run(fn func() error) error {
 func defaultIsolator() Isolator {
 	return newPlatformIsolator()
 }
+
+// DefaultIsolator returns the best available isolator for the current platform
+// (the Linux netns harness, or the hard-failing stub elsewhere). Exported so
+// other packages — e.g. internal/audit's privacy-audit live exercise — can run a
+// representative operation under the same loopback-only isolation as the canary.
+func DefaultIsolator() Isolator { return newPlatformIsolator() }

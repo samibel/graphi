@@ -22,12 +22,17 @@ import (
 	"github.com/samibel/graphi/engine/edit"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/ledger"
+	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/audit"
+	"github.com/samibel/graphi/internal/mcpconfig"
 	"github.com/samibel/graphi/internal/version"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/daemon"
+	httpsrv "github.com/samibel/graphi/surfaces/http"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
 
@@ -47,6 +52,8 @@ func main() {
 		os.Exit(runSavings(os.Args[2:]))
 	case "analyze":
 		os.Exit(runAnalyze(os.Args[2:]))
+	case "pr-comment":
+		os.Exit(runPrComment(os.Args[2:]))
 	case "refactor-preview":
 		os.Exit(runRefactor(os.Args[2:], "refactor-preview"))
 	case "refactor":
@@ -57,6 +64,14 @@ func main() {
 		os.Exit(runMCP(os.Args[2:]))
 	case "daemon":
 		os.Exit(runDaemon(os.Args[2:]))
+	case "http":
+		os.Exit(runHTTP(os.Args[2:]))
+	case "setup":
+		os.Exit(runSetup(os.Args[2:]))
+	case "tui":
+		os.Exit(runTUI(os.Args[2:]))
+	case "privacy-audit":
+		os.Exit(runPrivacyAudit(os.Args[2:]))
 	case "version":
 		runVersion()
 	case "parse":
@@ -155,6 +170,22 @@ func runAnalyze(args []string) int {
 	return 0
 }
 
+// runPrComment launches the SW-042 sticky PR-comment + merge-gate surface. Usage:
+//
+//	graphi pr-comment [-db path] [-daemon socket] -diff <unified-diff> | -diff-path <file>
+//	  [-pr ref] [-provenance summary|full] [-gate] [-gate-threshold N] [-publish]
+func runPrComment(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunPrComment(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		return 1
+	}
+	return 0
+}
+
 // runMCP launches the MCP stdio server. Usage: graphi mcp [-db path] [-daemon socket]
 func runMCP(args []string) int {
 	dbPath, socket, _ := extractFlags(args)
@@ -182,7 +213,10 @@ func makeClientOrOpen(dbPath, socket string) client.Client {
 		return nil
 	}
 	defer func() { _ = store.Close() }()
-	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	analysisSvc := analysis.NewDefaultService(store)
+	return client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysisSvc).
+		WithReview(review.NewService(analysisSvc))
 }
 
 // runRefactor launches the SW-038 edit/refactor command surface (refactor-preview
@@ -353,6 +387,78 @@ func runDaemon(args []string) int {
 	}
 }
 
+// runHTTP runs the read-only HTTP REST + SSE surface (SW-039). It serves the
+// shared query/search/analysis client over loopback HTTP with a versioned
+// envelope, and (optionally) indexes a repo with the broker attached so SSE
+// clients receive ingest-completed freshness events. Local-first: the listen
+// address MUST be loopback; the surface makes zero outbound connections.
+//
+//	graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo]
+func runHTTP(args []string) int {
+	fs := flag.NewFlagSet("http", flag.ContinueOnError)
+	addr := fs.String("addr", "127.0.0.1:0", "loopback listen address (host must be 127.0.0.1/localhost/::1)")
+	dbPath := fs.String("db", "", "SQLite graphstore path (empty = in-memory)")
+	root := fs.String("root", "", "optional repo root to ingest on startup (attaches the ingest-event producer for SSE)")
+	metaDir := fs.String("meta", "", "ingest meta sidecar dir; defaults to an OS temp dir when -root is set")
+	if err := fs.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: http: %v\n", err)
+		return 1
+	}
+
+	store, err := openStore(*dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return 1
+	}
+	defer func() { _ = store.Close() }()
+
+	broker := observe.New()
+	cleanupIngest := func() {}
+	if *root != "" {
+		// ingest meta needs a real dir: the ":memory:" path opens a private DB
+		// per pooled connection (tables vanish), so default to a temp dir.
+		meta := *metaDir
+		if meta == "" {
+			td, err := os.MkdirTemp("", "graphi-http-meta-*")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "graphi: meta temp dir: %v\n", err)
+				return 1
+			}
+			meta = td
+			cleanupIngest = func() { _ = os.RemoveAll(td) }
+		}
+		ing, ierr := ingest.New(store, parse.NewDefaultRegistry(), meta)
+		if ierr != nil {
+			fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", ierr)
+			return 1
+		}
+		ing.WithBroker(broker)
+		cleanupIngest = func() { _ = ing.Close(); _ = os.RemoveAll(meta) }
+		if ierr := ing.IngestAll(context.Background(), *root); ierr != nil {
+			fmt.Fprintf(os.Stderr, "graphi: initial ingest: %v\n", ierr)
+			return 1
+		}
+	}
+	defer cleanupIngest()
+
+	asvc := analysis.NewDefaultService(store)
+	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
+	ln, err := httpsrv.ListenLoopback(*addr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
+		return 1
+	}
+	fmt.Printf("graphi http listening on %s (schema_version=%d)\n", ln.Addr(), httpsrv.SchemaVersion)
+	// Inject the analyzer names so /contract can advertise them for client
+	// capability negotiation without the http package importing engine/analysis.
+	srv := httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names())
+	if err := srv.Serve(ln); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: http serve: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
 // runSavings launches the CLI savings readout surface. Usage:
 //
 //	graphi savings [-db path] [-daemon socket] [-ledger path]
@@ -412,7 +518,7 @@ func runParseDefault(args []string) {
 	reg := parse.NewDefaultRegistry()
 
 	if len(args) < 1 {
-		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, search, mcp, daemon, parse <file>\n", reg.Languages())
+		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, search, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, privacy-audit, version, parse <file>\n", reg.Languages())
 		return
 	}
 
@@ -432,3 +538,89 @@ func runParseDefault(args []string) {
 	fmt.Printf("parsed %s as %s (%d bytes, hash %s)\n",
 		res.Meta.Path, res.Meta.Language, res.Meta.Size, res.Meta.ContentHash)
 }
+
+// runSetup registers graphi's MCP stdio server into the Claude Code client
+// config in one command (SW-044). Idempotent, non-destructive, atomic; --dry-run
+// previews without writing. Offline.
+//
+//	graphi setup [--dry-run] [--binary path] [--config path]
+func runSetup(args []string) int {
+	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
+	dryRun := fs.Bool("dry-run", false, "print the planned config change without writing")
+	binary := fs.String("binary", "", "graphi binary to register (default: this executable)")
+	cfgPath := fs.String("config", "", "config file path (default: ~/.claude.json, or $CLAUDE_CONFIG_PATH)")
+	if err := fs.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: setup: %v\n", err)
+		return 1
+	}
+	bin := *binary
+	if bin == "" {
+		exe, err := os.Executable()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: resolve executable: %v\n", err)
+			return 1
+		}
+		bin = exe
+	}
+	path := *cfgPath
+	if path == "" {
+		p, err := mcpconfig.ConfigPath()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
+			return 1
+		}
+		path = p
+	}
+	entry := mcpconfig.GraphiEntry(bin, nil)
+	res, err := mcpconfig.Apply(path, "graphi", entry, *dryRun)
+	if err != nil {
+		// Actionable remediation: name the config path and the most likely fixes.
+		// The original config is byte-identical (atomic write + fail-closed backup),
+		// so this is safe to retry after addressing the cause.
+		fmt.Fprintf(os.Stderr, "graphi: setup failed for %s: %v\n", path, err)
+		fmt.Fprintln(os.Stderr, "  - check the file/directory is writable (permissions), or pass --config <path>")
+		fmt.Fprintln(os.Stderr, "  - if Claude Code is not installed, install it first (the config is created on first setup)")
+		fmt.Fprintln(os.Stderr, "  - your existing config was left unchanged (atomic write + fail-closed backup)")
+		return 1
+	}
+	if *dryRun {
+		fmt.Print("[dry-run] no changes written\n")
+	}
+	fmt.Print(res.Diff)
+	if res.Action == mcpconfig.ActionUnchanged {
+		fmt.Printf("graphi already configured in %s — no changes.\n", path)
+		return 0
+	}
+	fmt.Printf("graphi MCP server %s in %s (command=%s args=%v)\n", res.Action, path, entry.Command, entry.Args)
+	if res.BackupPath != "" {
+		fmt.Printf("backup of the original config written to %s\n", res.BackupPath)
+	}
+	if res.Action == mcpconfig.ActionCreated || res.Action == mcpconfig.ActionUpdated {
+		fmt.Println("restart/reload Claude Code to expose graphi's tools.")
+	}
+	return 0
+}
+
+// runPrivacyAudit prints the local-first proof from real facts and exits non-zero
+// on any violation (SW-044). Offline; reuses internal/cgoconformance +
+// internal/canary.
+//
+//	graphi privacy-audit [--target ./...]
+func runPrivacyAudit(args []string) int {
+	fs := flag.NewFlagSet("privacy-audit", flag.ContinueOnError)
+	target := fs.String("target", "./...", "build target to scan for CGo imports")
+	if err := fs.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: privacy-audit: %v\n", err)
+		return 1
+	}
+	rep := audit.Run(context.Background(), *target)
+	rep.Render(os.Stdout)
+	return rep.ExitCode()
+}
+
+// runTUI is provided by tui_enabled.go (//go:build tui) and tui_disabled.go
+// (//go:build !tui). The interactive terminal surface (SW-047) pulls in the
+// Bubble Tea dependency tree, which roughly doubles the binary; keeping it
+// behind the `tui` build tag holds the default, local-first binary lean (the
+// budget-gated benchmark enforces the size ceiling). Build with -tags tui to
+// include it: `go build -tags tui ./cmd/graphi`.

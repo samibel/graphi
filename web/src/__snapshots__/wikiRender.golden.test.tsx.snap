@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`preservation — re-render is identical (AC-2, Slice 5) > rendered DOM matches a committed snapshot (golden) 1`] = `
+"<div class="wiki-body"><h1>Community 1</h1>
+<p><em>4 members.</em></p>
+<h2>Members</h2>
+<ul>
+<li><code>pkg/a.Alpha</code> [func] — pkg/a/alpha.go:10</li>
+<li><code>pkg/a.Beta</code> [func] — pkg/a/beta.go:22</li>
+<li><code>pkg/a.Gamma</code> [type] — pkg/a/gamma.go:5</li>
+<li><code>pkg/a.Delta</code> [func] — pkg/a/delta.go:41</li>
+</ul>
+<h2>Representatives (by degree)</h2>
+<ul>
+<li><code>pkg/a.Alpha</code> (degree 5)</li>
+<li><code>pkg/a.Beta</code> (degree 3)</li>
+<li><code>pkg/a.Gamma</code> (degree 2)</li>
+</ul>
+<h2>Internal edges</h2>
+<ul>
+<li><code>pkg/a.Alpha</code> → <code>pkg/a.Beta</code> (calls)</li>
+<li><code>pkg/a.Alpha</code> → <code>pkg/a.Gamma</code> (references)</li>
+</ul>
+<h2>Neighboring communities</h2>
+<ul>
+<li><a class="wiki-xref" href="/wiki/c/2" data-discover="true">→ Community 2</a></li>
+<li><a class="wiki-xref" href="/wiki/c/3" data-discover="true">→ Community 3</a></li>
+</ul>
+<p><a class="wiki-xref" href="/wiki" data-discover="true">← back to index</a></p></div>"
+`;

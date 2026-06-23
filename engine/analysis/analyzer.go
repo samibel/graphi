@@ -62,6 +62,17 @@ type Params struct {
 	// the EP-003-consistent tokenizer; over-budget responses are trimmed and
 	// Analysis.Truncated is set.
 	MaxTokens int `json:"max_tokens,omitempty"`
+	// Diff is the local-first PR-diff payload for the pr-risk scorer (SW-039): a
+	// unified-diff STRING or the simple line-oriented ref form. It is untrusted
+	// input — size-bounded and path-sanitized by the scorer; NO remote fetch /
+	// base..head resolution happens here (callers reading a local path do so
+	// before dispatch). Unused by all other analyzers.
+	Diff string `json:"diff,omitempty"`
+	// Provenance selects the redaction level of pr-risk evidence: "full"
+	// (default; verbatim taint source/sink/steps) or "summary" (redacted so a
+	// downstream publisher can emit a non-sensitive readout). Unused by other
+	// analyzers.
+	Provenance string `json:"provenance,omitempty"`
 }
 
 // ReachedNode is a node reached during a traversal, carrying the provenance of
@@ -122,6 +133,20 @@ type Analysis struct {
 	Paths     [][]query.ResultEdge `json:"paths,omitempty"`
 	Metrics   []NodeScore          `json:"metrics,omitempty"`
 	Locations []Location           `json:"locations,omitempty"`
+	// RiskReport carries the SW-039 pr-risk scorer's versioned per-region risk
+	// payload. Only the pr-risk analyzer populates it; it stays omitted (nil) for
+	// every other analyzer so the generic envelope is unchanged for them.
+	RiskReport *RiskReport `json:"risk_report,omitempty"`
+	// SignalReport carries the SW-040 pr-signals detector's versioned per-region
+	// hub/bridge/surprise annotations. Only the pr-signals analyzer populates it;
+	// it stays omitted (nil) for every other analyzer so the generic envelope is
+	// unchanged for them.
+	SignalReport *SignalReport `json:"signal_report,omitempty"`
+	// QuestionReport carries the SW-041 pr-questions generator's versioned,
+	// deterministic reviewer-question set derived from the consumed SW-039 risk and
+	// SW-040 signal reports. Only the pr-questions analyzer populates it; it stays
+	// omitted (nil) for every other analyzer so the generic envelope is unchanged.
+	QuestionReport *QuestionReport `json:"question_report,omitempty"`
 }
 
 // Analyzer is the plug-in contract every analysis capability implements. It is

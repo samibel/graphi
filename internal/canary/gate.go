@@ -70,7 +70,15 @@ var telemetryImportDenylist = []string{
 var outboundDialAllowlist = []string{
 	"github.com/samibel/graphi/surfaces/daemon", // Unix-socket IPC (local)
 	"github.com/samibel/graphi/surfaces/client",  // in-process + daemon socket client (local)
+	"github.com/samibel/graphi/surfaces/http",    // loopback-only HTTP/SSE surface; ListenLoopback binds only after AssertLoopback (SW-044)
 	"github.com/samibel/graphi/internal/canary",  // the canary itself records/observes dials by design
+	// engine/review is the GitHub PR-review surface (SW-043/EP-007). Its egress is
+	// confined to githubhost.go — the single, documented, intentional outbound
+	// boundary (user-invoked PR comments, not telemetry). engine/review's own
+	// TestGitHubHostIsSoleNetworkUser guards that githubhost.go stays the ONLY
+	// net/http importer in the package, so allowlisting the package cannot mask a
+	// new, unintended egress sneaking in elsewhere.
+	"github.com/samibel/graphi/engine/review",
 }
 
 // outboundDialCallDenylist names the dial constructors the AST scan flags when

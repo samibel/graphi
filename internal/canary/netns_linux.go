@@ -30,17 +30,25 @@ func newPlatformIsolator() Isolator { return linuxNetns{} }
 // runner can actually create an isolated network namespace. On an unprivileged
 // runner this returns false and the canary hard-fails.
 func (linuxNetns) IsAvailable() bool {
-	// Probe: create and immediately discard a netns. If this fails we cannot
-	// isolate, and the canary must hard-fail (never silently pass).
-	fd, err := unix.Unshare(unix.CLONE_NEWNET)
+	// Probe on a locked thread: capture the original namespace, unshare into a
+	// fresh one, then restore. If any step fails we cannot isolate, and the
+	// canary must hard-fail (never silently pass). The original-namespace FD
+	// MUST be captured before the unshare — afterwards /proc/self/ns/net names
+	// the new namespace and can no longer reach the original.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	origFD, err := openNetnsPath("/proc/self/ns/net")
 	if err != nil {
 		return false
 	}
-	// Restore the caller's namespace by re-entering it via /proc/self/ns/net.
-	// The probe fd is the NEW namespace; closing it after re-entering the
-	// original drops the only reference and the kernel reclaims it.
-	_ = unix.Close(fd)
-	return reenterOriginalNetns()
+	defer func() { _ = origFD.Close() }()
+
+	if err := unix.Unshare(unix.CLONE_NEWNET); err != nil {
+		return false
+	}
+	// Restore the caller's namespace on this thread.
+	return unix.Setns(int(origFD.Fd()), unix.CLONE_NEWNET) == nil
 }
 
 // Run executes fn inside a fresh loopback-only network namespace, then restores
@@ -55,7 +63,7 @@ func (n linuxNetns) Run(fn func() error) error {
 	}
 	defer func() { _ = origFD.Close() }()
 
-	if _, err := unix.Unshare(unix.CLONE_NEWNET); err != nil {
+	if err := unix.Unshare(unix.CLONE_NEWNET); err != nil {
 		return &IsolationError{Reason: "unshare(CLONE_NEWNET): " + err.Error()}
 	}
 	// Always restore the original namespace before returning.
@@ -67,8 +75,8 @@ func (n linuxNetns) Run(fn func() error) error {
 	}
 	defer unix.Close(lo)
 	ifreq := struct {
-		Name [16]byte
-		_    [16]byte // ifru_flags lives here for SIOCGIFFLAGS/SIOCSIFFLAGS
+		Name  [16]byte
+		Flags [16]byte // ifru_flags lives here for SIOCGIFFLAGS/SIOCSIFFLAGS
 	}{}
 	copy(ifreq.Name[:], "lo")
 	const IFF_UP = 0x1
@@ -76,7 +84,7 @@ func (n linuxNetns) Run(fn func() error) error {
 	// field is the first 16-bit slot after the name in the ioctl union layout
 	// we built above. We set IFF_UP to bring loopback up.
 	setFlags := ifreq
-	*(*uint16)(unsafe.Pointer(&setFlags._[0])) = IFF_UP
+	*(*uint16)(unsafe.Pointer(&setFlags.Flags[0])) = IFF_UP
 	const SIOCSIFFLAGS = 0x8914
 	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, uintptr(lo), SIOCSIFFLAGS, uintptr(unsafe.Pointer(&setFlags))); errno != 0 {
 		return &IsolationError{Reason: "bring loopback up: " + errno.Error()}
@@ -88,14 +96,4 @@ func (n linuxNetns) Run(fn func() error) error {
 // openNetnsPath opens a network-namespace file (e.g. /proc/self/ns/net).
 func openNetnsPath(path string) (*os.File, error) {
 	return os.Open(path)
-}
-
-// reenterOriginalNetns is a best-effort restore after the availability probe.
-func reenterOriginalNetns() bool {
-	f, err := openNetnsPath("/proc/self/ns/net")
-	if err != nil {
-		return true // already in original namespace conceptually
-	}
-	defer f.Close()
-	return unix.Setns(int(f.Fd()), unix.CLONE_NEWNET) == nil
 }

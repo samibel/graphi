@@ -1,0 +1,40 @@
+{
+  "name": "graphi-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "graphi TS/React web client — Sigma.js graph viz with blast-radius & citation highlights (SW-045). Consumes the SW-044 HTTP/SSE surface as its only backend boundary.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && npm run gen:types:check",
+    "gen:types": "json2ts --unreachableDefinitions ../surfaces/http/contract.schema.json -o src/contract.gen.ts",
+    "gen:types:check": "json2ts --unreachableDefinitions ../surfaces/http/contract.schema.json -o /tmp/graphi-contract.gen.check.ts && diff -u src/contract.gen.ts /tmp/graphi-contract.gen.check.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "graphology": "^0.25.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "react-router-dom": "^7.18.0",
+    "remark-gfm": "^4.0.0",
+    "sigma": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "jsdom": "^25.0.1",
+    "json-schema-to-typescript": "^15.0.4",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.62.0",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

@@ -241,6 +241,27 @@ func notFound(analyzer string, symbol model.NodeId) Analysis {
 // escaping, and trims the trailing newline — byte-for-byte stable across runs
 // and across surfaces (mirrors query.Marshal).
 func Marshal(a Analysis) ([]byte, error) {
+	// SW-039: the pr-risk scorer carries a versioned RiskReport. When present,
+	// the canonical output IS that report (its own byte-stable serializer), so
+	// MCP and CLI emit the identical risk-record shape through this one path.
+	if a.RiskReport != nil {
+		return MarshalRisk(*a.RiskReport)
+	}
+	// SW-040: the pr-signals detector carries a versioned SignalReport. When
+	// present, the canonical output IS that report (its own byte-stable
+	// serializer), so MCP and CLI emit the identical signal-record shape through
+	// this one path.
+	if a.SignalReport != nil {
+		return MarshalSignals(*a.SignalReport)
+	}
+	// SW-041: the pr-questions generator carries a versioned QuestionReport. When
+	// present, the canonical output IS that report (its own byte-stable
+	// serializer), so MCP and CLI emit the identical question shape through this
+	// one path.
+	if a.QuestionReport != nil {
+		return MarshalQuestions(*a.QuestionReport)
+	}
+
 	nodes := make([]ReachedNode, len(a.Nodes))
 	copy(nodes, a.Nodes)
 	sortReached(nodes)

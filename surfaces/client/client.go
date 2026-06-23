@@ -32,6 +32,27 @@ var ErrAnalysisUnavailable = errors.New("client: analysis service unavailable")
 // daemon edit RPC is added.
 var ErrEditUnavailable = errors.New("client: edit/refactor service unavailable")
 
+// ErrReviewUnavailable is returned when a Client has no PR-review publisher
+// service configured (SW-042). Query/search/analysis/edit still work; only the
+// PrComment publish/gate surface is unavailable. The in-process Direct client
+// sets it up via WithReview; the daemon client returns it until a daemon review
+// RPC is added (mirrors the analysis/edit "unavailable until wired" precedent).
+var ErrReviewUnavailable = errors.New("client: PR-review publisher service unavailable")
+
+// PrCommentRequest is the transport-agnostic input for the SW-042 sticky PR
+// comment writer + optional risk-threshold merge gate. It maps onto
+// engine/review.PublishOptions so both surfaces drive the publisher identically
+// (parity by construction). The diff is local-first, untrusted input (bounded
+// and path-sanitized by the consumed analyzers); no remote fetch happens here.
+type PrCommentRequest struct {
+	PR             string `json:"pr"`              // PR reference rendered in the comment header
+	Diff           string `json:"diff"`            // local-first unified-diff / ref string
+	Provenance     string `json:"provenance"`      // evidence redaction: "full" | "summary" (default summary for public comments)
+	GateEnabled    bool   `json:"gate_enabled"`    // turn the optional merge gate on
+	GateThreshold  int    `json:"gate_threshold"`  // risk threshold in fixed-point units (1/1000) the worst region must exceed to BLOCK
+	Publish        bool   `json:"publish"`         // when true, upsert through the host; when false (default) dry-run (render+gate only)
+}
+
 // RefactorRequest is the transport-agnostic input for a graph-aware refactor. It
 // maps 1:1 onto engine/edit.RefactorOp so BOTH surfaces (MCP tool args, CLI
 // flags) construct the SAME operation — the only divergence-risk being input
@@ -58,6 +79,12 @@ type AnalyzeParams struct {
 	Kinds     []string `json:"kinds"`     // edge kinds to traverse (impact)
 	MaxNodes  int      `json:"max_nodes"` // output budget
 	MaxPaths  int      `json:"max_paths"` // path enumeration bound
+	// Diff is the local-first PR-diff payload for the pr-risk scorer (SW-039): a
+	// unified-diff string or the simple ref form. Untrusted input, size-bounded
+	// and path-sanitized by the engine; no remote fetch. Unused by other analyzers.
+	Diff string `json:"diff,omitempty"`
+	// Provenance selects pr-risk evidence redaction: "full" (default) | "summary".
+	Provenance string `json:"provenance,omitempty"`
 }
 
 // Client is the thin contract every surface uses to execute structural queries,
@@ -99,4 +126,13 @@ type Client interface {
 	// auditable change record. Returns the canonical serialized reversal
 	// ChangeRecord. Without an edit service it returns ErrEditUnavailable (SW-038).
 	Undo(ctx context.Context, undoToken, actor string) ([]byte, error)
+
+	// PrComment renders the assembled PR-review findings (SW-039 risk + SW-040
+	// signals + SW-041 questions) into one sticky Markdown comment and evaluates
+	// the optional risk-threshold merge gate, returning the canonical serialized
+	// engine/review.PublishResult (SW-042). When req.Publish is false (default) it
+	// is an offline dry-run (render + gate only; the host is never contacted). The
+	// in-process Direct client wires it via WithReview; the daemon client returns
+	// ErrReviewUnavailable until a daemon review RPC is added.
+	PrComment(ctx context.Context, req PrCommentRequest) ([]byte, error)
 }

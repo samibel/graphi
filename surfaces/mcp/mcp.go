@@ -141,6 +141,14 @@ type callParams struct {
 		Analyzer  string `json:"analyzer"`
 		Direction string `json:"direction"`
 		MaxNodes  *int   `json:"max_nodes"`
+		// SW-039 pr-risk scorer arguments (local-first; no remote fetch).
+		Diff       string `json:"diff"`
+		Provenance string `json:"provenance"`
+		// SW-042 sticky PR-comment + merge-gate arguments (local-first).
+		PR            string `json:"pr"`
+		GateEnabled   bool   `json:"gate_enabled"`
+		GateThreshold *int   `json:"gate_threshold"`
+		Publish       bool   `json:"publish"`
 		// SW-038 edit/refactor + undo arguments.
 		Kind            string `json:"kind"`
 		TargetSymbol    string `json:"target_symbol"`
@@ -180,6 +188,10 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return s.refactorCall(ctx, p)
 	case "undo":
 		return s.undoCall(ctx, p)
+	}
+	// SW-042 sticky PR-comment writer + optional risk-threshold merge gate.
+	if p.Name == "pr_comment" {
+		return s.prCommentCall(ctx, p)
 	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
@@ -247,7 +259,13 @@ func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError
 	if p.Arguments.Analyzer == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: analyzer"}
 	}
-	if p.Arguments.Symbol == "" {
+	// The pr-risk scorer (SW-039) is diff-driven, not symbol-driven: it requires
+	// a diff argument and accepts no symbol. Every other analyzer requires a symbol.
+	if p.Arguments.Analyzer == "pr-risk" || p.Arguments.Analyzer == "pr-signals" || p.Arguments.Analyzer == "pr-questions" {
+		if p.Arguments.Diff == "" {
+			return nil, &rpcError{Code: -32602, Message: "missing required argument: diff"}
+		}
+	} else if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
 	direction := "forward"
@@ -259,12 +277,49 @@ func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError
 		maxNodes = *p.Arguments.MaxNodes
 	}
 	b, err := s.c.Analyze(ctx, client.AnalyzeParams{
-		Name:      p.Arguments.Analyzer,
-		Symbol:    p.Arguments.Symbol,
-		Target:    p.Arguments.Target,
-		Concept:   p.Arguments.Concept,
-		Direction: direction,
-		MaxNodes:  maxNodes,
+		Name:       p.Arguments.Analyzer,
+		Symbol:     p.Arguments.Symbol,
+		Target:     p.Arguments.Target,
+		Concept:    p.Arguments.Concept,
+		Direction:  direction,
+		MaxNodes:   maxNodes,
+		Diff:       p.Arguments.Diff,
+		Provenance: p.Arguments.Provenance,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// prCommentCall (SW-042) renders the assembled PR-review findings into one sticky
+// Markdown comment and evaluates the optional risk-threshold merge gate through
+// the shared client, returning the canonical serialized PublishResult. It holds
+// no engine logic: it builds a PrCommentRequest and calls client.Client.PrComment,
+// so MCP and CLI emit byte-identical output for the same inputs (parity). The
+// diff is diff-driven (required); the default is an offline dry-run.
+func (s *Server) prCommentCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Diff == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: diff"}
+	}
+	threshold := 700
+	if p.Arguments.GateThreshold != nil {
+		threshold = *p.Arguments.GateThreshold
+	}
+	provenance := p.Arguments.Provenance
+	if provenance == "" {
+		provenance = "summary"
+	}
+	b, err := s.c.PrComment(ctx, client.PrCommentRequest{
+		PR:            p.Arguments.PR,
+		Diff:          p.Arguments.Diff,
+		Provenance:    provenance,
+		GateEnabled:   p.Arguments.GateEnabled,
+		GateThreshold: threshold,
+		Publish:       p.Arguments.Publish,
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
@@ -351,6 +406,9 @@ var deepAnalyzerTools = map[string]string{
 	"analyze_interproc":  "interproc",
 	"analyze_contracts":  "contracts",
 	"analyze_githistory": "git-history",
+	"analyze_pr_risk":      "pr-risk",
+	"analyze_pr_signals":   "pr-signals",
+	"analyze_pr_questions": "pr-questions",
 }
 
 // deepAnalyzerDescriptors defines the MCP tool schema for each EP-005 deep
@@ -416,6 +474,42 @@ var deepAnalyzerDescriptors = []map[string]any{
 				"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
 			},
 			"required": []string{"symbol"},
+		},
+	},
+	{
+		"name":        "analyze_pr_risk",
+		"description": "risk-scored PR diff (SW-039): maps changed nodes onto the graph and combines EP-004 impact with EP-005 taint signals into a deterministic, versioned per-region risk record. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"diff":       map[string]any{"type": "string", "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch."},
+				"provenance": map[string]any{"type": "string", "description": "evidence redaction level: full (default) | summary"},
+			},
+			"required": []string{"diff"},
+		},
+	},
+	{
+		"name":        "analyze_pr_signals",
+		"description": "hub/bridge/surprise graph signals on PR-changed code (SW-040): annotates each changed node with hub (high fan-in/out over a configurable threshold), bridge (articulation point / cut-vertex between modules), and surprise (rarely-modified or unexpectedly-coupled region) signals. Consumes EP-004 metrics + EP-005 PDG/git-history; never recomputes centrality. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"diff":       map[string]any{"type": "string", "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch."},
+				"provenance": map[string]any{"type": "string", "description": "evidence redaction level: full (default) | summary"},
+			},
+			"required": []string{"diff"},
+		},
+	},
+	{
+		"name":        "analyze_pr_questions",
+		"description": "deterministic, no-LLM reviewer questions from graph findings on PR-changed code (SW-041): applies a fixed rule/template set to the consumed SW-039 risk scores and SW-040 hub/bridge/surprise signals to emit targeted reviewer questions. Each question carries a non-empty evidence reference to the triggering node/edge/signal; identical input yields byte-identical output. Consumes the two sibling reports; never recomputes scoring or signals. Local-first: diff is a unified-diff string or simple ref form; NO LLM, NO remote fetch.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"diff":       map[string]any{"type": "string", "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch."},
+				"provenance": map[string]any{"type": "string", "description": "evidence redaction level: full (default) | summary"},
+			},
+			"required": []string{"diff"},
 		},
 	},
 }
@@ -496,6 +590,27 @@ func (s *Server) toolDescriptors() []map[string]any {
 	}); err == nil || !isEditUnavailable(err) {
 		tools = append(tools, editToolDescriptors...)
 	}
+	// SW-042 sticky PR-comment + merge-gate surface. Advertised when a review
+	// publisher is attached (probed: a capability-missing client returns
+	// ErrReviewUnavailable; any other response means the service is wired).
+	if _, err := s.c.PrComment(context.Background(), client.PrCommentRequest{Diff: "__probe__"}); err == nil || !isReviewUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        "pr_comment",
+			"description": "render the assembled PR-review findings (risk + hub/bridge/surprise signals + reviewer questions) into one sticky Markdown comment and evaluate the optional risk-threshold merge gate; offline dry-run by default",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"diff":           map[string]any{"type": "string", "description": "local-first unified-diff or simple ref string (required)"},
+					"pr":             map[string]any{"type": "string", "description": "PR reference rendered in the comment header (e.g. owner/repo#42)"},
+					"provenance":     map[string]any{"type": "string", "description": "evidence redaction level: summary (default; safe for public comments) | full"},
+					"gate_enabled":   map[string]any{"type": "boolean", "description": "enable the optional risk-threshold merge gate"},
+					"gate_threshold": map[string]any{"type": "integer", "description": "risk threshold in fixed-point units (1/1000) the worst region must EXCEED to BLOCK (default 700)"},
+					"publish":        map[string]any{"type": "boolean", "description": "upsert the sticky comment through the host (default false: offline dry-run, render+gate only)"},
+				},
+				"required": []string{"diff"},
+			},
+		})
+	}
 	return tools
 }
 
@@ -557,4 +672,12 @@ var editToolDescriptors = []map[string]any{
 // Factored out so the probe logic reads intent rather than string-matching.
 func isAnalysisUnavailable(err error) bool {
 	return errors.Is(err, client.ErrAnalysisUnavailable)
+}
+
+// isReviewUnavailable reports whether err is the SW-042 "PR-review publisher not
+// wired" sentinel, so the descriptor probe can hide the pr_comment tool when the
+// client has no review service attached (mirrors isAnalysisUnavailable /
+// isEditUnavailable).
+func isReviewUnavailable(err error) bool {
+	return errors.Is(err, client.ErrReviewUnavailable)
 }

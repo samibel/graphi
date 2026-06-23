@@ -23,12 +23,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: workspace/graphi/go.mod
+          go-version-file: go.mod
       - name: Build canary (CGo-free)
-        working-directory: workspace/graphi
         run: go build -o /tmp/graphi-canary ./cmd/canary
       - name: Run static zero-telemetry gate
-        working-directory: workspace/graphi
         run: /tmp/graphi-canary gate
 
   runtime:
@@ -40,13 +38,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: workspace/graphi/go.mod
+          go-version-file: go.mod
       - name: Build canary (CGo-free)
-        working-directory: workspace/graphi
         run: go build -o /tmp/graphi-canary ./cmd/canary
       # The runtime canary must run with CAP_SYS_ADMIN to unshare a network
       # namespace. If the runner cannot provide isolation, the canary HARD-FAILS
       # by design (exit non-zero) — this is the SW-008 anti-masking guarantee.
       - name: Run runtime egress canary (privileged for netns)
-        working-directory: workspace/graphi
         run: sudo --preserve-env=CGO_ENABLED /tmp/graphi-canary runtime
