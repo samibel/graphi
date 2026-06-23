@@ -16,11 +16,22 @@ import (
 // It is registered like any other parser (see RegisterDefaults); routing ".go"
 // files to it is ordinary registration, not a special case, which preserves the
 // open/closed property of the Registry.
-type GoParser struct{}
+//
+// Symbol extraction runs through the language-neutral SymbolExtractor seam (SW-052):
+// GoParser produces the normalized *goAST handle, then delegates graph derivation to
+// the Go reference SymbolExtractor. The two concerns — parsing (text→AST) and
+// extraction (AST→graph) — are separated so later language workers reuse the same
+// seam without touching this parser.
+type GoParser struct {
+	// extractor is the SymbolExtractor for the Go path. It is set once at
+	// construction (the reference goSymbolExtractor) and never mutated, keeping
+	// GoParser safe for concurrent use.
+	extractor SymbolExtractor
+}
 
-// NewGoParser returns a ready GoParser. GoParser carries no mutable state and is
-// safe for concurrent use.
-func NewGoParser() *GoParser { return &GoParser{} }
+// NewGoParser returns a ready GoParser wired to the Go reference SymbolExtractor.
+// GoParser carries no mutable state and is safe for concurrent use.
+func NewGoParser() *GoParser { return &GoParser{extractor: goSymbolExtractor{}} }
 
 // Language implements Parser.
 func (*GoParser) Language() string { return "go" }
@@ -62,11 +73,18 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 		return nil, fmt.Errorf("parse: go syntax error in %q: %w", filename, perr)
 	}
 
+	root := &goAST{FileSet: fset, File: file}
+
 	// Derive the in-file graph elements (symbol nodes + intra-file edges) plus the
-	// deferred references the linker resolves later. The extractor is pure and
-	// resolves only what a single file proves; cross-file/cross-package edges are
-	// left to the engine/link pass (see extract_go.go).
-	nodes, edges, pending, xerr := extractGo(filename, file.Name.Name, fset, file)
+	// deferred references the linker resolves later through the language-neutral
+	// SymbolExtractor seam. The extractor is pure and resolves only what a single
+	// file proves; cross-file/cross-package edges are left to the engine/link pass
+	// (see extract_go.go / extractor.go).
+	extractor := g.extractor
+	if extractor == nil {
+		extractor = goSymbolExtractor{}
+	}
+	nodes, edges, pending, xerr := extractor.Extract(filename, root)
 	if xerr != nil {
 		return nil, fmt.Errorf("parse: go extraction in %q: %w", filename, xerr)
 	}
@@ -87,7 +105,7 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 			ContentHash: contentHash(src),
 			Size:        len(src),
 		},
-		Root:        &goAST{FileSet: fset, File: file},
+		Root:        root,
 		Nodes:       nodes,
 		Edges:       edges,
 		PendingRefs: pending,
