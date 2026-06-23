@@ -1,3 +1,4 @@
 
-# SW-013 release build artifact (default -out)
-graphi
+# SW-013 release build artifact (default -out). Anchored to the repo root so it
+# does not also match the cmd/graphi/ source directory.
+/graphi
