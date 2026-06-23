@@ -2,6 +2,7 @@ package link
 
 import (
 	"path"
+	"strconv"
 
 	"github.com/samibel/graphi/core/model"
 )
@@ -146,31 +147,7 @@ func (goResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 // model.NormalizePath upstream, the evidence never reveals an absolute or
 // host-specific path even for a malicious repo.
 func evidenceFor(sourcePath string, line int) string {
-	return model.NormalizePath(sourcePath) + ":" + itoa(line)
-}
-
-// itoa is a tiny, allocation-light integer formatter (avoids importing strconv
-// for one call and keeps the dependency surface minimal).
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	var b [20]byte
-	i := len(b)
-	for n > 0 {
-		i--
-		b[i] = byte('0' + n%10)
-		n /= 10
-	}
-	if neg {
-		i--
-		b[i] = '-'
-	}
-	return string(b[i:])
+	return model.NormalizePath(sourcePath) + ":" + strconv.Itoa(line)
 }
 
 // lastSeg returns the trailing segment of a dotted qualified name (the bare name
