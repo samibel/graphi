@@ -262,6 +262,28 @@ graphi is designed so that nothing leaves your machine:
 
 ## Install & run
 
+### Quick install (one line)
+
+The quickest way to get the prebuilt static binary — downloads the asset for your
+OS/arch, verifies it against the published `SHA256SUMS` (fail-closed), and
+installs it to `~/.local/bin` (no sudo):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh
+```
+
+Pin a release with `GRAPHI_VERSION=<tag>` or change the target dir with
+`GRAPHI_BINDIR=<dir>`. On Windows, use the PowerShell installer:
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex
+```
+
+Once installed, `graphi upgrade` re-runs the installer to fetch the latest
+release. It is the single user-initiated network action and is never automatic —
+the engine itself opens no outbound connections. Use `graphi upgrade -print` to
+see the exact command without running it.
+
 ### Prerequisites
 
 - **Go 1.26+**

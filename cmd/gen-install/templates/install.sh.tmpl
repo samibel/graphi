@@ -1,0 +1,158 @@
+#!/bin/sh
+# {{ .Header }}
+#
+# One-line install:
+#   curl -fsSL {{ .RawInstallURL }} | sh
+#
+# Downloads the matching graphi release asset, verifies it against the published
+# SHA256SUMS (fail-closed), and installs it to ${GRAPHI_BINDIR:-$HOME/.local/bin}.
+# No sudo. Idempotent (re-run overwrites cleanly).
+#
+# Flags / env:
+#   --version <v> | GRAPHI_VERSION   pin a release tag (default: latest)
+#   --bindir <dir> | GRAPHI_BINDIR   install dir (default: $HOME/.local/bin)
+#   -h | --help                      show this help
+
+set -eu
+
+REPO="{{ .Repo }}"
+RELEASES_URL="{{ .ReleasesURL }}"
+
+# Valid asset names — GENERATED from internal/release.ReleaseTargets via
+# release.AssetName. This is the SINGLE SOURCE OF TRUTH for accepted os/arch
+# targets; the os/arch detection below must compose a name in this set.
+VALID_ASSETS="{{ range .Assets }}{{ . }}
+{{ end }}"
+
+VERSION="${GRAPHI_VERSION:-latest}"
+BINDIR="${GRAPHI_BINDIR:-$HOME/.local/bin}"
+
+usage() {
+	cat <<EOF
+graphi installer
+
+Usage: install.sh [--version <v>] [--bindir <dir>] [-h|--help]
+
+  --version <v>   release tag to install (default: latest); or set GRAPHI_VERSION
+  --bindir <dir>  install directory (default: \$HOME/.local/bin); or set GRAPHI_BINDIR
+  -h, --help      show this help
+
+Supported targets:
+{{ range .Assets }}  {{ . }}
+{{ end }}EOF
+}
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--version)
+		if [ $# -lt 2 ]; then echo "install.sh: --version requires a value" >&2; exit 1; fi
+		VERSION="$2"; shift 2 ;;
+	--version=*) VERSION="${1#--version=}"; shift ;;
+	--bindir)
+		if [ $# -lt 2 ]; then echo "install.sh: --bindir requires a value" >&2; exit 1; fi
+		BINDIR="$2"; shift 2 ;;
+	--bindir=*) BINDIR="${1#--bindir=}"; shift ;;
+	-h | --help) usage; exit 0 ;;
+	*) echo "install.sh: unknown argument: $1" >&2; usage >&2; exit 1 ;;
+	esac
+done
+
+# Detect OS.
+os_raw="$(uname -s)"
+case "$os_raw" in
+Linux) os="linux" ;;
+Darwin) os="darwin" ;;
+*) echo "install.sh: unsupported OS: $os_raw" >&2; exit 1 ;;
+esac
+
+# Detect architecture.
+arch_raw="$(uname -m)"
+case "$arch_raw" in
+x86_64 | amd64) arch="amd64" ;;
+aarch64 | arm64) arch="arm64" ;;
+*) echo "install.sh: unsupported architecture: $arch_raw" >&2; exit 1 ;;
+esac
+
+asset="graphi-${os}-${arch}"
+
+# Validate the composed asset against the generated valid set (fail-closed).
+valid=0
+for v in $VALID_ASSETS; do
+	if [ "$v" = "$asset" ]; then valid=1; break; fi
+done
+if [ "$valid" -ne 1 ]; then
+	echo "install.sh: no release asset for ${os}/${arch} (composed: ${asset})" >&2
+	echo "supported targets:" >&2
+	for v in $VALID_ASSETS; do echo "  $v" >&2; done
+	exit 1
+fi
+
+# Detect a downloader.
+if command -v curl >/dev/null 2>&1; then
+	dl() { curl -fsSL "$1" -o "$2"; }
+elif command -v wget >/dev/null 2>&1; then
+	dl() { wget -qO "$2" "$1"; }
+else
+	echo "install.sh: need curl or wget to download" >&2
+	exit 1
+fi
+
+# Build the download base URL.
+if [ "$VERSION" = "latest" ]; then
+	base="${RELEASES_URL}/latest/download"
+else
+	base="${RELEASES_URL}/download/${VERSION}"
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT INT TERM
+
+echo "install.sh: downloading ${asset} (${VERSION})..." >&2
+dl "${base}/${asset}" "${tmp}/${asset}"
+dl "${base}/SHA256SUMS" "${tmp}/SHA256SUMS"
+
+# Verify the checksum (fail-closed). Pull this asset's line out of SHA256SUMS and
+# verify with sha256sum or shasum, whichever exists.
+line="$(grep " ${asset}\$" "${tmp}/SHA256SUMS" || grep "  ${asset}\$" "${tmp}/SHA256SUMS" || true)"
+if [ -z "$line" ]; then
+	echo "install.sh: ${asset} not found in SHA256SUMS; refusing to install" >&2
+	exit 1
+fi
+echo "$line" >"${tmp}/SHA256SUMS.asset"
+
+verified=0
+(
+	cd "$tmp" || exit 1
+	if command -v sha256sum >/dev/null 2>&1; then
+		sha256sum -c SHA256SUMS.asset
+	elif command -v shasum >/dev/null 2>&1; then
+		shasum -a 256 -c SHA256SUMS.asset
+	else
+		echo "install.sh: need sha256sum or shasum to verify checksum" >&2
+		exit 1
+	fi
+) && verified=1
+if [ "$verified" -ne 1 ]; then
+	echo "install.sh: checksum verification FAILED for ${asset}; refusing to install" >&2
+	exit 1
+fi
+
+# Install (no sudo). Idempotent overwrite.
+mkdir -p "$BINDIR"
+if command -v install >/dev/null 2>&1; then
+	install -m 0755 "${tmp}/${asset}" "${BINDIR}/graphi"
+else
+	cp "${tmp}/${asset}" "${BINDIR}/graphi"
+	chmod +x "${BINDIR}/graphi"
+fi
+
+echo "install.sh: installed graphi to ${BINDIR}/graphi" >&2
+
+# PATH hint if bindir is not on PATH.
+case ":${PATH}:" in
+*":${BINDIR}:"*) ;;
+*)
+	echo "install.sh: note: ${BINDIR} is not on your PATH." >&2
+	echo "  add it, e.g.:  export PATH=\"${BINDIR}:\$PATH\"" >&2
+	;;
+esac
