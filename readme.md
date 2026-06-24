@@ -55,7 +55,8 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 | **Go** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) ¹ |
 | JSON | structural (AST) | — | — |
 | TypeScript · TSX/JSX · JavaScript | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| Python · Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| **Python** | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
 | Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
 | C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
 | Bash/Shell · SQL | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
@@ -71,10 +72,13 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 >
 > ² Intra-file extraction ships for every language above. FU-5 rolls out one
 > per-language cross-file resolver (`resolve_<lang>.go`) at a time over the same
-> `engine/link` registry seam (Open/Closed). **Shipped:** Go (`resolve_go.go`) and the
+> `engine/link` registry seam (Open/Closed). **Shipped:** Go (`resolve_go.go`); the
 > TypeScript family (`resolve_typescript.go`: TypeScript · TSX · JavaScript — relative
 > ESM imports, named/namespace bindings; non-relative/aliased specifiers and `tsconfig`
-> paths are treated as external and skipped). Every cross-file edge is `heuristic` tier
+> paths are treated as external and skipped); and Python (`resolve_python.go` —
+> clause-keyed module resolution: `import pkg`/`pkg.fn`, `import m as a`/`a.fn`,
+> `from pkg import name`; dotted module paths key on their last segment). Every
+> cross-file edge is `heuristic` tier
 > with file:line evidence and is **never** `confirmed`; unresolved/ambiguous references
 > are dropped and counted, never fabricated. The remaining ⏳ languages await their
 > resolver slice — see the roadmap in [`epics/index.md`](epics/index.md).

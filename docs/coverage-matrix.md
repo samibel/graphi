@@ -107,4 +107,4 @@ Total capabilities: **70**. See [`architecture-plan.md`](architecture-plan.md) f
 | `FU-2` | ✅ shipped | EP-001 | Curated pure-Go language tier (20 gotreesitter grammars + 2 stdlib) + opt-in graphi-broad CGO flavor. |
 | `FU-3` | ✅ shipped | EP-001 | Optional embedder graceful-skip path + semantic search (SW-059); resolves OQ6. |
 | `FU-4` | ✅ shipped | EP-001 | Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix). |
-| `FU-5` | 🟡 partial | EP-001 | Per-language cross-file/cross-package resolvers over engine/link (SW-063). Shipped: Go (FU-1) + TypeScript family (resolve_typescript.go: typescript/tsx/javascript). Remaining language groups (Python, Java/Kotlin/C#, C/C++, Rust, Ruby/PHP/Lua, Bash/SQL) roll out one slice at a time. |
+| `FU-5` | 🟡 partial | EP-001 | Per-language cross-file/cross-package resolvers over engine/link (SW-063). Shipped: Go (FU-1) + TypeScript family (resolve_typescript.go: typescript/tsx/javascript) + Python (resolve_python.go). Remaining language groups (Java/Kotlin/C#, C/C++, Rust, Ruby/PHP/Lua, Bash/SQL) roll out one slice at a time. |

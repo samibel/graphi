@@ -364,4 +364,4 @@ capabilities:
     category: feature-unit
     status: partial
     epic: EP-001
-    note: "Per-language cross-file/cross-package resolvers over engine/link (SW-063). Shipped: Go (FU-1) + TypeScript family (resolve_typescript.go: typescript/tsx/javascript). Remaining language groups (Python, Java/Kotlin/C#, C/C++, Rust, Ruby/PHP/Lua, Bash/SQL) roll out one slice at a time."
+    note: "Per-language cross-file/cross-package resolvers over engine/link (SW-063). Shipped: Go (FU-1) + TypeScript family (resolve_typescript.go: typescript/tsx/javascript) + Python (resolve_python.go). Remaining language groups (Java/Kotlin/C#, C/C++, Rust, Ruby/PHP/Lua, Bash/SQL) roll out one slice at a time."

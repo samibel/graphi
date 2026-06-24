@@ -95,8 +95,11 @@ leverage. Status is reconciled to the [coverage matrix](../docs/coverage-matrix.
   - **Shipped:** Go (`resolve_go.go`) · TypeScript family (`resolve_typescript.go`
     — TypeScript · TSX · JavaScript; relative ESM imports with named/namespace
     bindings, file→file `imports`; non-relative/aliased specifiers and `tsconfig`
-    paths are treated as external and skip+counted — no `tsconfig` path-mapping).
-  - **Remaining:** Python · Java/Kotlin/C# · C/C++ · Rust · Ruby/PHP/Lua · Bash/SQL.
+    paths are treated as external and skip+counted — no `tsconfig` path-mapping) ·
+    Python (`resolve_python.go` — clause-keyed module resolution: `import pkg`,
+    `import m as a`, `from pkg import name`; dotted module paths key on their last
+    segment).
+  - **Remaining:** Java/Kotlin/C# · C/C++ · Rust · Ruby/PHP/Lua · Bash/SQL.
   Each resolver honours the linker's invariants: tier derived from the resolution
   class (never `confirmed`), unresolved/ambiguous refs dropped + counted
   deterministically, byte-identical full-vs-incremental graph (incl. rename/move

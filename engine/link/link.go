@@ -137,6 +137,8 @@ func New() *Linker {
 	l.Register(tsResolver{"typescript"})
 	l.Register(tsResolver{"tsx"})
 	l.Register(tsResolver{"javascript"})
+	// FU-5 Slice 2 — Python.
+	l.Register(pyResolver{})
 	return l
 }
 
