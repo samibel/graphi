@@ -41,6 +41,28 @@ const VersionVar = "github.com/samibel/graphi/internal/version.Version"
 var DefaultGrammarSubsetTags = []string{
 	"grammar_subset",            // umbrella: switch OFF the all-206 default embed
 	"grammar_subset_typescript", // TypeScript (SW-053) — embeds only typescript.bin
+	"grammar_subset_javascript", // JavaScript (SW-054)
+	"grammar_subset_tsx",        // TSX (SW-054)
+	"grammar_subset_python",     // Python (SW-054)
+	"grammar_subset_java",       // Java (SW-054)
+	"grammar_subset_c",          // C (SW-054)
+	"grammar_subset_ruby",       // Ruby (SW-054)
+	"grammar_subset_rust",       // Rust (SW-054)
+	"grammar_subset_php",        // PHP (SW-054)
+	"grammar_subset_c_sharp",    // C# (SW-054)
+	"grammar_subset_kotlin",     // Kotlin (SW-054)
+	"grammar_subset_cpp",        // C++ (SW-054)
+	"grammar_subset_bash",       // Bash (SW-054)
+	"grammar_subset_sql",        // SQL (SW-054)
+	"grammar_subset_lua",        // Lua (SW-054)
+	// HTML deferred to SW-056 (graphi-broad): see RegisterDefaults — its scanner core
+	// is co-located with grammar_subset_blade upstream, so grammar_subset_html cannot
+	// be built in isolation without embedding an unregistered blade.bin blob.
+	"grammar_subset_css",      // CSS (SW-054)
+	"grammar_subset_yaml",     // YAML (SW-054)
+	"grammar_subset_toml",     // TOML (SW-054)
+	"grammar_subset_markdown", // Markdown (SW-054)
+	"grammar_subset_hcl",      // HCL / Terraform (SW-054)
 }
 
 // BuildConfig parameterizes a release build.

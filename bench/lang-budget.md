@@ -43,29 +43,29 @@ pointers to it were dangling.)
 | 1  | Go              | yes (native go/ast)    | shipped (reference)     |
 | 2  | JSON            | yes (stdlib)           | shipped                 |
 | 3  | TypeScript      | yes (pure-Go gotreesitter)| SW-053 green; subset-tagged default wired (AC#3) |
-| 4  | JavaScript      | yes                    | tier-1                  |
-| 5  | TSX / JSX       | yes                    | tier-1                  |
-| 6  | Python          | yes                    | tier-1                  |
-| 7  | Java            | yes                    | tier-1                  |
-| 8  | C               | yes                    | tier-1                  |
-| 9  | C++             | yes                    | tier-1                  |
-| 10 | C#              | yes                    | tier-1                  |
-| 11 | Rust            | yes                    | tier-1                  |
-| 12 | Ruby            | yes                    | tier-1                  |
-| 13 | PHP             | yes                    | tier-1                  |
-| 14 | Bash / Shell    | yes                    | tier-1                  |
-| 15 | HTML            | yes                    | tier-1                  |
-| 16 | CSS             | yes                    | tier-1                  |
-| 17 | YAML            | yes                    | tier-1                  |
-| 18 | TOML            | yes                    | tier-1                  |
-| 19 | Markdown        | yes                    | tier-1                  |
-| 20 | SQL             | yes                    | tier-1                  |
-| 21 | Kotlin          | yes                    | tier-1                  |
-| 22 | Lua             | yes                    | tier-1                  |
+| 4  | JavaScript      | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 5  | TSX / JSX       | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 6  | Python          | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 7  | Java            | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 8  | C               | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 9  | C++             | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 10 | C#              | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 11 | Rust            | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 12 | Ruby            | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 13 | PHP             | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 14 | Bash / Shell    | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 15 | HTML            | grammar present, NOT subset-isolatable | **DEFERRED → SW-056** (scanner co-located with grammar_subset_blade; see HTML deferral note) |
+| 16 | CSS             | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 17 | YAML            | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 18 | TOML            | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 19 | Markdown        | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 20 | SQL             | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 21 | Kotlin          | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 22 | Lua             | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
 | 23 | Dockerfile      | yes                    | tier-1                  |
 | 24 | Protobuf        | yes                    | tier-1                  |
 | 25 | GraphQL         | yes                    | tier-1                  |
-| 26 | HCL / Terraform | yes                    | tier-1                  |
+| 26 | HCL / Terraform | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
 
 ### Deferred to `graphi-broad` (NOT in the default tier)
 
@@ -154,6 +154,82 @@ runtime + per-blob model, 2026-06-24):
 >
 > SW-057 re-pins `bench-budget.yml` against the **subset-tagged** total (baseline + runtime +
 > registered blobs), not the all-206 default. Until then, `bench-budget.yml` is unchanged here.
+
+### Measured deltas (SW-054 — accumulated curated tier-1 subset)
+
+SW-054 clones the SW-053 recipe over the remaining curated tier-1 languages. The shipped
+default build now embeds the accumulated subset-tag set (umbrella `grammar_subset` + one
+`grammar_subset_<lang>` per registered language). Measured on go1.26.3 / darwin-arm64 with
+`CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags '<accumulated set>' ./cmd/graphi`:
+
+| Build | Binary size (bytes) | Δ vs pre-grammar baseline | grammar blobs embedded |
+|-------|---------------------|---------------------------|------------------------|
+| Pre-grammar baseline (recorded SW-053) | 12,264,546 | — | 0 |
+| Subset SW-053 (`typescript` only) | 15,516,658 | +3,252,112 (~3.10 MiB) | 1 (`typescript.bin`) |
+| **Subset SW-054 (SHIPPED DEFAULT, 20 blobs)** | **18,979,778** | **+6,715,232 (~6.40 MiB)** | **20** (TS + 19 SW-054) |
+| All-206 (no tags) — **PROHIBITED in the shipped default** | 37,908,226 | +25,643,680 (~24.5 MiB) | 207 |
+
+The ~18.1 MB subset total matches the EP-009 re-plan projection (≈ 18.1 MB) and stays far under
+the **< 50 MB** hard whole-binary gate (~31 MB headroom). The marginal cost of the 19 SW-054
+languages over the SW-053 TS-only subset is **+3,463,120 B (~3.30 MiB)** — overwhelmingly the
+per-blob parse tables (the ~3.13 MB one-time runtime was already paid by SW-053). The 20 embedded
+blobs are verified to be **exactly** the registered set (no all-206 embed, no unregistered blob):
+
+`bash, c, c_sharp, cpp, css, hcl, java, javascript, kotlin, lua, markdown, php, python, ruby,
+rust, sql, toml, tsx, typescript, yaml`.
+
+Per-language verified blob sizes (from the story's measured table; the build embeds only these
+plus the SW-053 `typescript.bin`):
+
+| Language | subset tag | blob (bytes) |
+|----------|------------|--------------|
+| TSX | `grammar_subset_tsx` | 123,959 |
+| JavaScript | `grammar_subset_javascript` | 40,559 |
+| Python | `grammar_subset_python` | 60,172 |
+| Java | `grammar_subset_java` | 46,587 |
+| Rust | `grammar_subset_rust` | 113,341 |
+| C | `grammar_subset_c` | 65,929 |
+| C++ | `grammar_subset_cpp` | 415,697 |
+| C# | `grammar_subset_c_sharp` | 290,957 |
+| Ruby | `grammar_subset_ruby` | 148,405 |
+| PHP | `grammar_subset_php` | 95,451 |
+| Bash | `grammar_subset_bash` | 152,830 |
+| CSS | `grammar_subset_css` | 14,325 |
+| YAML | `grammar_subset_yaml` | 25,479 |
+| TOML | `grammar_subset_toml` | 5,317 |
+| Markdown | `grammar_subset_markdown` | 36,259 |
+| SQL | `grammar_subset_sql` | 581,443 |
+| Kotlin | `grammar_subset_kotlin` | 337,236 |
+| Lua | `grammar_subset_lua` | 10,175 |
+| HCL / Terraform | `grammar_subset_hcl` | 20,132 |
+
+> **Subset-build cross-grammar dependency notes (verified during SW-054 dev):**
+> - **TOML and Lua** lexers reference the shared helper `firstNonZeroSymbol`, which upstream
+>   gotreesitter v0.20.2 defines in `java_lexer.go` (gated `grammar_subset_java`). The shipped
+>   default includes `grammar_subset_java`, so both build green in the accumulated set; building
+>   `grammar_subset_toml`/`grammar_subset_lua` in *isolation* (without java) fails to compile.
+>   This is an upstream packaging quirk, not a graphi defect.
+
+### HTML — DEFERRED to `graphi-broad` (SW-056)
+
+**HTML has a pure-Go gotreesitter grammar but is NOT subset-buildable in isolation in
+gotreesitter v0.20.2.** Its external scanner core (`goLexerAdapter`, `htmlDeserializeTagsInto`,
+`htmlScanRawText`, `htmlScanComment`, `htmlScanStartTagName`, … — every helper `html_scanner.go`
+calls) is physically co-located in upstream `blade_scanner.go`, gated `grammar_subset_blade`.
+Consequently:
+
+- `CGO_ENABLED=0 go build -tags 'grammar_subset grammar_subset_html' ./cmd/graphi` **fails to
+  compile** (undefined scanner symbols).
+- Enabling `grammar_subset_blade` to satisfy the compile dependency would embed an
+  **unregistered `blade.bin` blob**, which AC#4 explicitly prohibits ("only those languages'
+  blobs are embedded").
+
+Therefore HTML is **deferred to `graphi-broad` (SW-056)** with this note, per story subtask 2's
+deferral path (reserved for languages that cannot enter the pure-Go subset default tier). The
+HTML extractor (`core/parse/parser_html.go`) is intentionally **not landed** in SW-054 to keep
+the default `CGO_ENABLED=0` subset build green. Re-evaluate when upstream gotreesitter splits the
+shared HTML scanner core out of `blade_scanner.go` into an html-gated file. This deferral is for a
+**build-packaging** reason (subset-isolation), distinct from the SW-056 CGO-only-grammar path.
 
 ### Re-pinning (SW-057)
 
