@@ -142,6 +142,16 @@ func TestDaemon_MCPThroughDaemon(t *testing.T) {
 	}
 }
 
+func TestIsAlive(t *testing.T) {
+	if daemon.IsAlive(filepath.Join(t.TempDir(), "nonexistent.sock")) {
+		t.Fatal("IsAlive on a missing socket must be false")
+	}
+	_, sock := newDaemon(t)
+	if !daemon.IsAlive(sock) {
+		t.Fatalf("IsAlive on a running daemon (%s) must be true", sock)
+	}
+}
+
 var b model.Node
 
 func init() {

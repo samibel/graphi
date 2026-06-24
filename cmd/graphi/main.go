@@ -30,6 +30,7 @@ import (
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/internal/audit"
 	"github.com/samibel/graphi/internal/mcpconfig"
+	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/internal/version"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
@@ -153,6 +154,9 @@ func extractFlagsMeta(args []string) (dbPath, socket, metaDir string, rest []str
 //	graphi query [-db path] [-daemon socket] <operation> -symbol <id> [-depth N]
 func runQuery(args []string) int {
 	dbPath, socket, rest := extractFlags(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
 	c := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
@@ -168,6 +172,9 @@ func runQuery(args []string) int {
 //	graphi search [-db path] [-daemon socket] [-limit N] <query>
 func runSearch(args []string) int {
 	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
 	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
 	if c == nil {
 		return 1
@@ -332,6 +339,42 @@ func runMCP(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// resolveSession is the additive default-discovery seam (SW-068). Given the cwd
+// and any explicit overrides, it derives the per-repo durable store + daemon
+// socket from internal/state. The DB is returned ONLY if a state store already
+// exists for the cwd repo (else ""), so callers fall back to today's in-memory
+// behavior with zero regression. The socket is returned ONLY if a daemon is
+// already listening on it (a UNIX-only liveness probe via daemon.IsAlive); a
+// dead/absent socket yields "" so the default path never auto-starts a daemon
+// or dials TCP. Discovery errors are swallowed → overrides/empty, keeping the
+// default path resilient and offline.
+func resolveSession(cwd, dbOverride, socketOverride string) (db, socket string) {
+	db, err := state.DiscoverDB(cwd, dbOverride)
+	if err != nil {
+		db = dbOverride
+	}
+	socket, err = state.DiscoverSocket(cwd, socketOverride)
+	if err != nil {
+		socket = socketOverride
+	}
+	// Only route to a daemon that is actually alive; otherwise leave socket empty
+	// so makeClientOrOpen builds an in-process client (no auto-start, no dial).
+	if socket != "" && socketOverride == "" && !daemon.IsAlive(socket) {
+		socket = ""
+	}
+	return db, socket
+}
+
+// getwd returns the current working directory, or "." on error, so default
+// discovery degrades gracefully rather than failing.
+func getwd() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "."
+	}
+	return wd
 }
 
 // makeClientOrOpen creates a client, opening an in-process store if needed.
