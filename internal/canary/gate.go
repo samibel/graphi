@@ -33,11 +33,11 @@ import (
 
 // TelemetryFinding names an import path that the gate has rejected.
 type TelemetryFinding struct {
-	Kind      string `json:"kind"`       // "telemetry-import" | "outbound-dial"
-	Import    string `json:"import"`     // offending import path (telemetry) or package containing the call
-	Symbol    string `json:"symbol"`     // offending symbol/call (outbound-dial) or "" 
-	File      string `json:"file"`       // source file, when known
-	Reason    string `json:"reason"`
+	Kind   string `json:"kind"`   // "telemetry-import" | "outbound-dial"
+	Import string `json:"import"` // offending import path (telemetry) or package containing the call
+	Symbol string `json:"symbol"` // offending symbol/call (outbound-dial) or ""
+	File   string `json:"file"`   // source file, when known
+	Reason string `json:"reason"`
 }
 
 // telemetryImportDenylist is the curated set of telemetry/analytics SDK import
@@ -69,9 +69,9 @@ var telemetryImportDenylist = []string{
 // separate track and not in the default graph.
 var outboundDialAllowlist = []string{
 	"github.com/samibel/graphi/surfaces/daemon", // Unix-socket IPC (local)
-	"github.com/samibel/graphi/surfaces/client",  // in-process + daemon socket client (local)
-	"github.com/samibel/graphi/surfaces/http",    // loopback-only HTTP/SSE surface; ListenLoopback binds only after AssertLoopback (SW-044)
-	"github.com/samibel/graphi/internal/canary",  // the canary itself records/observes dials by design
+	"github.com/samibel/graphi/surfaces/client", // in-process + daemon socket client (local)
+	"github.com/samibel/graphi/surfaces/http",   // loopback-only HTTP/SSE surface; ListenLoopback binds only after AssertLoopback (SW-044)
+	"github.com/samibel/graphi/internal/canary", // the canary itself records/observes dials by design
 	// engine/review is the GitHub PR-review surface (SW-043/EP-007). Its egress is
 	// confined to githubhost.go — the single, documented, intentional outbound
 	// boundary (user-invoked PR comments, not telemetry). engine/review's own
@@ -79,6 +79,14 @@ var outboundDialAllowlist = []string{
 	// net/http importer in the package, so allowlisting the package cannot mask a
 	// new, unintended egress sneaking in elsewhere.
 	"github.com/samibel/graphi/engine/review",
+	// engine/embed/ollama is the OPT-IN, LOOPBACK-ONLY embedder (SW-059). It dials
+	// only the local Ollama endpoint and validates the host fail-closed at
+	// construction (assertLoopbackEndpoint rejects any non-loopback host), so its
+	// egress is loopback-by-construction and never reached on the default path
+	// (the GRAPHI_EMBEDDER selector is empty by default, so the embedder is never
+	// constructed). Allowlisting the package is the registration-layer analog of
+	// the surfaces/http loopback-only entry: its own test asserts loopback-only.
+	"github.com/samibel/graphi/engine/embed/ollama",
 }
 
 // outboundDialCallDenylist names the dial constructors the AST scan flags when
@@ -132,7 +140,7 @@ type GateConfig struct {
 
 // GateResult is the static-gate verdict.
 type GateResult struct {
-	Verdict  string            `json:"verdict"` // "pass" | "fail"
+	Verdict  string             `json:"verdict"` // "pass" | "fail"
 	Findings []TelemetryFinding `json:"findings"`
 }
 
@@ -311,7 +319,7 @@ func scanPackageAST(fs *token.FileSet, files []*ast.File, pkgPath string, info *
 				for _, deny := range outboundDialCallDenylist {
 					if qualified == deny {
 						findings = append(findings, egressFinding(pkgPath, filename, qualified))
-				}
+					}
 				}
 			}
 			// (2) http.Client / http.DefaultClient egress (Do/Get/Post/Head/Send).

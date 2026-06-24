@@ -21,7 +21,7 @@ import (
 // query.Operations; CLI commands are listed because Go has no reflection over
 // main()'s switch. NOTE: the AC's `http` surface is an EP-001 dependency and is
 // not yet present — add it here once surfaces/http exists.)
-var cliCommands = []string{"query", "search", "mcp", "daemon", "parse"}
+var cliCommands = []string{"query", "search", "setup-embedder", "mcp", "daemon", "parse"}
 
 // NewSurfaceUnion derives the canonical surface union programmatically: CLI
 // subcommands + the engine's canonical query operation list + search. Adding a
@@ -73,8 +73,8 @@ func NewInProcessDriver(store graphstore.Graphstore, out io.Writer) SurfaceDrive
 // mask a surface that failed to invoke at all — undercutting the 'drive every
 // tool' AC. We now distinguish the two cases.)
 type invokeResult struct {
-	tool     string
-	invoked  bool
+	tool       string
+	invoked    bool
 	surfaceErr error // non-nil only for genuine surface failures
 }
 
@@ -108,6 +108,12 @@ func (d *inProcessDriver) Drive(ctx context.Context, union SurfaceUnion, rec *Di
 	// Exercise search once.
 	_, serr := c.Search(ctx, "Target", 10)
 	results = append(results, invokeResult{tool: "search", invoked: true, surfaceErr: nilIfAcceptable(serr)})
+
+	// Exercise the OPTIONAL semantic search once (SW-059). On the default path no
+	// embedder is configured, so this MUST take the typed graceful-skip path with
+	// zero network — exactly what the zero-egress canary verifies.
+	_, sserr := c.SemanticSearch(ctx, "Target", 10)
+	results = append(results, invokeResult{tool: "search_semantic", invoked: true, surfaceErr: nilIfAcceptable(sserr)})
 
 	// Exercise the CLI surface end-to-end via its public Run entrypoint.
 	if err := cli.Run(ctx, c, []string{"callers", "-symbol", sym}, d.out, io.Discard); err != nil {
