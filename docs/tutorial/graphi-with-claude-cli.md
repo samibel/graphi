@@ -143,7 +143,7 @@ flowchart TD
 
 ### ① "What breaks if I change this?" — blast radius
 > **Prompt to Claude:** *"I want to rework `engine/ingest.IngestAll`. What depends on it?"*
-> Claude calls `callers` + `impact (reverse)` → gets **all** dependent symbols across the repo, with evidence. No guessing, no reading half the repo.
+> Claude calls `callers` + `analyze` (with `analyzer: "impact"` and `direction: "reverse"`) → gets **all** dependent symbols across the repo, with evidence. No guessing, no reading half the repo.
 
 ### ② "Where is X handled?" — understand unfamiliar code
 > **Prompt:** *"Where is the cross-file linker triggered in this repo?"*
