@@ -19,10 +19,11 @@ func findingMatches(f Finding, want expectedFlow) bool {
 	return f.SinkCategory == want.sinkCategory && f.SinkName == want.sinkName
 }
 
-// TestTaintRecall_LabeledSet enforces 100% recall over every positive labeled
-// case and zero findings over every negative case. Any drift — a regressed
-// analyzer that drops a flow, or an over-tainting analyzer that invents one —
-// fails this gate.
+// TestTaintRecall_LabeledSet enforces 100% recall AND exact-match precision over
+// every positive labeled case (the want set is exhaustive, so no extra flow may
+// be reported) and zero findings over every negative case. Any drift — a
+// regressed analyzer that drops a flow, or an over-tainting analyzer that invents
+// one on either a positive or a negative case — fails this gate.
 func TestTaintRecall_LabeledSet(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.ContentHash = "labeled-recall"
@@ -74,6 +75,24 @@ func TestTaintRecall_LabeledSet(t *testing.T) {
 				} else {
 					t.Errorf("recall miss in %q: labeled flow %s→%q not reported (recall < 100%%)",
 						c.name, want.sinkCategory, want.sinkName)
+				}
+			}
+
+			// Precision: the want set is EXHAUSTIVE, so every reported finding
+			// must correspond to a labeled flow. This catches an analyzer that
+			// over-taints on a positive case (extra/invented flows) — a false
+			// positive a recall-only check would silently accept.
+			for _, f := range result.Findings {
+				matched := false
+				for _, want := range c.want {
+					if findingMatches(f, want) {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					t.Errorf("unexpected finding in %q: flow %s→%q reported but not labeled (false positive)",
+						c.name, f.SinkCategory, f.SinkName)
 				}
 			}
 		})
