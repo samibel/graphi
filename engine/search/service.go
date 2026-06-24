@@ -12,6 +12,7 @@ import (
 	"sort"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/engine/embed"
 )
 
 // Match is one ranked search result. It carries the node's identity, provenance,
@@ -41,13 +42,41 @@ type Reader interface {
 
 // Service is the shared search service. It is safe for concurrent use when the
 // underlying Reader is.
+//
+// Lexical search (Search) is always available. Semantic search (SemanticSearch)
+// is OPTIONAL and OFF by default: a Service constructed with New has a nil embed
+// registry, so SemanticSearch returns the typed Unavailable response (graceful
+// skip). WithSemantic opts the service into the configured embedder + vector
+// index.
 type Service struct {
 	reader Reader
+
+	// Optional semantic-search collaborators. All nil on the default path ⇒
+	// SemanticSearch gracefully skips (no embedder, no network).
+	embedReg   *embed.Registry
+	index      *embed.Index
+	nodeReader NodeReader
 }
 
-// New constructs a Service over the given read-only search reader.
+// New constructs a Service over the given read-only search reader. Semantic
+// search is OFF (graceful skip) until WithSemantic is called.
 func New(reader Reader) *Service {
 	return &Service{reader: reader}
+}
+
+// WithSemantic opts the service into OPTIONAL semantic search (SW-059). reg is
+// the embedder registry (zero/unconfigured ⇒ still graceful-skip), index is the
+// brute-force cosine vector index, and nodeReader resolves NodeId → Node for hit
+// provenance (may be nil). It returns the receiver for chaining. Passing a nil or
+// unconfigured registry preserves the graceful-skip behavior.
+func (s *Service) WithSemantic(reg *embed.Registry, index *embed.Index, nodeReader NodeReader) *Service {
+	s.embedReg = reg
+	if index == nil {
+		index = embed.NewIndex()
+	}
+	s.index = index
+	s.nodeReader = nodeReader
+	return s
 }
 
 // DefaultResultLimit is the maximum number of matches returned when the caller
