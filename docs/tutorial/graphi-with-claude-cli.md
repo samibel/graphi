@@ -121,7 +121,7 @@ All tools are read-only by default. Real MCP tool names, grouped:
 
 - **Structure:** `callers`, `callees`, `references`, `definition`, `neighborhood`
 - **Search:** `search`, `search_semantic`
-- **Analysis:** `impact`, `analyze_taint`, `analyze_pdg`, `analyze_interproc`, `analyze_contracts`, `analyze_githistory`
+- **Analysis:** `analyze` (e.g. with `analyzer: "impact"`), `analyze_taint`, `analyze_pdg`, `analyze_interproc`, `analyze_contracts`, `analyze_githistory`
 - **PR review:** `analyze_pr_risk`, `analyze_pr_signals`, `analyze_pr_questions`, `pr_comment`
 - **Edit (opt-in) & readout:** `refactor_preview`, `refactor`, `undo`, `savings`
 
