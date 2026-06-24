@@ -60,8 +60,7 @@ CGO_ENABLED=0 go build -o graphi ./cmd/graphi
 
 # 2) Build a queryable graph of this repo (persistent SQLite db)
 mkdir -p ~/.graphi
-./graphi http -db ~/.graphi/graph.db -root . -addr 127.0.0.1:8080
-#   wait for "listening …", then Ctrl-C — the db is now built.
+./graphi index -root . -db ~/.graphi/graph.db
 
 # 3) Register graphi as an MCP server in the Claude CLI
 ./graphi setup
@@ -121,7 +120,7 @@ All tools are read-only by default. Real MCP tool names, grouped:
 
 - **Structure:** `callers`, `callees`, `references`, `definition`, `neighborhood`
 - **Search:** `search`, `search_semantic`
-- **Analysis:** `impact`, `analyze_taint`, `analyze_pdg`, `analyze_interproc`, `analyze_contracts`, `analyze_githistory`
+- **Analysis:** `analyze` (e.g. with `analyzer: "impact"`), `analyze_taint`, `analyze_pdg`, `analyze_interproc`, `analyze_contracts`, `analyze_githistory`
 - **PR review:** `analyze_pr_risk`, `analyze_pr_signals`, `analyze_pr_questions`, `pr_comment`
 - **Edit (opt-in) & readout:** `refactor_preview`, `refactor`, `undo`, `savings`
 
@@ -143,7 +142,7 @@ flowchart TD
 
 ### ① "What breaks if I change this?" — blast radius
 > **Prompt to Claude:** *"I want to rework `engine/ingest.IngestAll`. What depends on it?"*
-> Claude calls `callers` + `impact (reverse)` → gets **all** dependent symbols across the repo, with evidence. No guessing, no reading half the repo.
+> Claude calls `callers` + `analyze` (with `analyzer: "impact"` and `direction: "reverse"`) → gets **all** dependent symbols across the repo, with evidence. No guessing, no reading half the repo.
 
 ### ② "Where is X handled?" — understand unfamiliar code
 > **Prompt:** *"Where is the cross-file linker triggered in this repo?"*
