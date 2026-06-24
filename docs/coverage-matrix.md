@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **69**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **70**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -99,11 +99,12 @@ Total capabilities: **69**. See [`architecture-plan.md`](architecture-plan.md) f
 | `vscode` | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## Feature-Unit (4)
+## Feature-Unit (5)
 
 | id | status | epic | note |
 |---|---|---|---|
-| `FU-1` | ⏳ planned | EP-001 | Cross-file / cross-package linker pass — resolves selector calls/imports against the committed symbol table. Not yet implemented. |
+| `FU-1` | ✅ shipped | EP-001 | Cross-file / cross-package linker pass (SW-050, engine/link) — resolves selector calls/imports against the committed symbol table; wired into ingest with a Go resolver. |
 | `FU-2` | ✅ shipped | EP-001 | Curated pure-Go language tier (20 gotreesitter grammars + 2 stdlib) + opt-in graphi-broad CGO flavor. |
 | `FU-3` | ✅ shipped | EP-001 | Optional embedder graceful-skip path + semantic search (SW-059); resolves OQ6. |
 | `FU-4` | ✅ shipped | EP-001 | Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix). |
+| `FU-5` | ✅ shipped | EP-001 | Per-language cross-file/cross-package resolvers over engine/link (SW-063), with ingest dispatching the linker per language. Resolvers: Go, TypeScript family (ts/tsx/js), Python, Rust, Java, Kotlin, C#, C, C++, Ruby, PHP, Lua, Bash. SQL is an honest no-op (no provable cross-file refs at this tier → skip+count). Each is heuristic tier, deterministic, byte-identical full-vs-incremental, never confirmed, never fabricates. |

@@ -87,6 +87,35 @@ func ExpectedGrammarBlobs() []string {
 	return out
 }
 
+// Platform names one cross-compile target (GOOS/GOARCH pair).
+type Platform struct {
+	OS   string
+	Arch string
+}
+
+// ReleaseTargets is the single source of truth for the cross-compile release
+// matrix (EP-010 SW-064). It fixes both the set AND the order of shipped
+// platform binaries; SHA256SUMS lines and BuildAll outputs follow this order
+// for determinism. Mirror the DefaultGrammarSubsetTags source-of-truth style:
+// adding a platform is a one-line edit here.
+var ReleaseTargets = []Platform{
+	{"linux", "amd64"},
+	{"linux", "arm64"},
+	{"darwin", "amd64"},
+	{"darwin", "arm64"},
+	{"windows", "amd64"},
+}
+
+// AssetName is the canonical release asset file name for a target:
+// "graphi-<os>-<arch>", with a ".exe" suffix on windows.
+func AssetName(p Platform) string {
+	name := "graphi-" + p.OS + "-" + p.Arch
+	if p.OS == "windows" {
+		name += ".exe"
+	}
+	return name
+}
+
 // BuildConfig parameterizes a release build.
 type BuildConfig struct {
 	Target  string // default ./cmd/graphi/
@@ -96,6 +125,10 @@ type BuildConfig struct {
 	// gotreesitter grammars (SW-053 AC#3). Pass an explicit (possibly empty)
 	// slice only to override the default tier's grammar selection.
 	Tags []string
+	// OS and Arch select the cross-compile target (GOOS/GOARCH). Both empty ⇒
+	// the host platform, preserving the original (host-only) Build behavior.
+	OS   string
+	Arch string
 }
 
 func (c *BuildConfig) defaults() {
@@ -125,6 +158,13 @@ func Build(ctx context.Context, cfg BuildConfig, out string) error {
 	args = append(args, "-ldflags", ldflags, "-o", out, cfg.Target)
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Env = withCgo(os.Environ(), "0")
+	// Cross-compile when a target is set; empty ⇒ host platform (unchanged).
+	if cfg.OS != "" {
+		cmd.Env = append(cmd.Env, "GOOS="+cfg.OS)
+	}
+	if cfg.Arch != "" {
+		cmd.Env = append(cmd.Env, "GOARCH="+cfg.Arch)
+	}
 	cmd.Dir = moduleRootPath()
 	cmd.Stdout = io.Discard
 	cmd.Stderr = os.Stderr

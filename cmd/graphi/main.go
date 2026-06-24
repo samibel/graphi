@@ -78,6 +78,8 @@ func main() {
 		os.Exit(runTUI(os.Args[2:]))
 	case "privacy-audit":
 		os.Exit(runPrivacyAudit(os.Args[2:]))
+	case "upgrade":
+		os.Exit(runUpgrade(os.Args[2:]))
 	case "version":
 		runVersion()
 	case "parse":

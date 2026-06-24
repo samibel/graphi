@@ -54,11 +54,13 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 |---|---|---|---|
 | **Go** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) ¹ |
 | JSON | structural (AST) | — | — |
-| TypeScript · TSX/JSX · JavaScript | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
-| Python · Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
-| Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
-| C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
-| Bash/Shell · SQL | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| TypeScript · TSX/JSX · JavaScript | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Python** | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Bash/Shell | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
+| SQL | ✅ symbol nodes | ✅ intra-file | — (no provable cross-file refs at this tier; resolver skips+counts) ² |
 | CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
 
 > ¹ The cross-file / cross-package **linker pass** ([`engine/link`](engine/link), FU-1) is
@@ -69,10 +71,21 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > and the rename/move cascade. The linker is **never** `confirmed`: unresolved or ambiguous
 > references are dropped deterministically, never fabricated.
 >
-> ² Intra-file extraction ships for every language above, but the linker currently has a
-> **Go-only resolver** ([`engine/link/resolve_go.go`](engine/link/resolve_go.go)). Cross-file
-> edges for the other languages await a per-language resolver (`resolve_<lang>.go`) over the
-> same `engine/link` seam — see the roadmap in [`epics/index.md`](epics/index.md).
+> ² Intra-file extraction ships for every language above. FU-5 adds one per-language
+> cross-file resolver (`resolve_<lang>.go`) over the same `engine/link` registry seam
+> (Open/Closed — a new language is a new `Register` call in `link.New()`, never an edit
+> to an existing resolver). Ingest dispatches the linker per language. **Shipped:**
+> Go; **TypeScript family** (relative ESM imports, named/namespace bindings; non-relative/
+> aliased specifiers and `tsconfig` paths are external → skipped — no path-mapping);
+> **Python · Rust · Java · Kotlin** (clause-keyed module/FQN resolution — Python dotted
+> modules, Rust `::` paths, Java/Kotlin FQNs key on their package segment); **C#**
+> (`using` namespaces as ambient clauses); **C · C++** (`#include` translation units —
+> file→file imports + ambient include-dir calls; **no overload resolution** → ambiguous
+> calls skip+count); **Ruby · PHP · Lua · Bash** (relative `require`/`source` →
+> file→file imports + same-/ambient-dir calls). **SQL** has no provable cross-file
+> references at this tier, so its resolver deliberately resolves nothing (skip+count).
+> Every cross-file edge is `heuristic` tier with file:line evidence and is **never**
+> `confirmed`; unresolved/ambiguous references are dropped and counted, never fabricated.
 
 > **Deferred / not in the default tier.**
 > - **HTML** — has a pure-Go grammar but is **not subset-buildable in isolation** in
@@ -248,6 +261,28 @@ graphi is designed so that nothing leaves your machine:
 | **Single static binary** | One self-contained executable, easy to drop into any environment. |
 
 ## Install & run
+
+### Quick install (one line)
+
+The quickest way to get the prebuilt static binary — downloads the asset for your
+OS/arch, verifies it against the published `SHA256SUMS` (fail-closed), and
+installs it to `~/.local/bin` (no sudo):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh
+```
+
+Pin a release with `GRAPHI_VERSION=<tag>` or change the target dir with
+`GRAPHI_BINDIR=<dir>`. On Windows, use the PowerShell installer:
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex
+```
+
+Once installed, `graphi upgrade` re-runs the installer to fetch the latest
+release. It is the single user-initiated network action and is never automatic —
+the engine itself opens no outbound connections. Use `graphi upgrade -print` to
+see the exact command without running it.
 
 ### Prerequisites
 

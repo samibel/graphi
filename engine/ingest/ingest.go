@@ -1022,6 +1022,7 @@ func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []
 		fr = &link.FileRefs{
 			SourcePath: model.NormalizePath(u.relPath),
 			Dir:        posixDir(model.NormalizePath(u.relPath)),
+			Language:   res.Meta.Language,
 			Pending:    res.PendingRefs,
 			Imports:    res.Imports,
 		}
@@ -1110,17 +1111,40 @@ func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, owne
 	}
 
 	idx := link.BuildIndex(nodes)
-	edges, _, err := i.linker.Link("go", fileRefs, idx)
-	if err != nil {
-		return nil, fmt.Errorf("ingest: link: %w", err)
-	}
 
-	edgeIDs := make([]string, 0, len(edges))
-	for _, e := range edges {
-		if err := i.store.PutEdge(ctx, e); err != nil {
-			return nil, fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
+	// FU-5: dispatch the linker per language. Group the (re)processed files by
+	// their Language and call Link once per language against the SHARED index
+	// (cross-file resolution is intra-language, but the index spans the whole
+	// committed node set). Languages are visited in sorted order and edges are
+	// keyed by content-derived EdgeId in the store, so the result is independent
+	// of grouping/iteration order. A file whose Language has no registered resolver
+	// is a no-op (Link returns no edges), exactly as before for non-Go files.
+	byLang := map[string][]link.FileRefs{}
+	for _, fr := range fileRefs {
+		lang := fr.Language
+		if lang == "" {
+			lang = "go" // FU-1 default: untagged refs are Go (back-compat).
 		}
-		edgeIDs = append(edgeIDs, string(e.ID()))
+		byLang[lang] = append(byLang[lang], fr)
+	}
+	langs := make([]string, 0, len(byLang))
+	for lang := range byLang {
+		langs = append(langs, lang)
+	}
+	sort.Strings(langs)
+
+	edgeIDs := make([]string, 0)
+	for _, lang := range langs {
+		edges, _, err := i.linker.Link(lang, byLang[lang], idx)
+		if err != nil {
+			return nil, fmt.Errorf("ingest: link %s: %w", lang, err)
+		}
+		for _, e := range edges {
+			if err := i.store.PutEdge(ctx, e); err != nil {
+				return nil, fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
+			}
+			edgeIDs = append(edgeIDs, string(e.ID()))
+		}
 	}
 	return edgeIDs, nil
 }
