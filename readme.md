@@ -354,4 +354,6 @@ Deeper technical documentation lives under [`docs/`](docs/). Start there for par
 
 ## License
 
-Apache-2.0.
+Licensed under the [Apache License 2.0](./LICENSE). Third-party attributions are
+listed in [`NOTICE`](./NOTICE) — note that the optional `graphi-broad` flavor links
+the go-sitter-forest grammar set under its own upstream licenses.
