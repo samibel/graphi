@@ -98,9 +98,9 @@ type Server struct {
 	// preserving the surface→engine layering. Empty when not wired.
 	analyzers []string
 
-	wikiOnce sync.Once
-	wikiErr  error
-	wikiGenerated  wiki.Wiki
+	wikiOnce      sync.Once
+	wikiErr       error
+	wikiGenerated wiki.Wiki
 }
 
 // New constructs a Server over the given client and (optionally) an event broker.
@@ -175,6 +175,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /contract", s.handleContract)
 	mux.HandleFunc("GET /query/{op}", s.schemaGuard(s.handleQuery))
 	mux.HandleFunc("GET /search", s.schemaGuard(s.handleSearch))
+	mux.HandleFunc("GET /search/semantic", s.schemaGuard(s.handleSemanticSearch))
 	mux.HandleFunc("GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze))
 	mux.HandleFunc("GET /events", s.schemaGuard(s.handleSSE))
 	mux.HandleFunc("GET /wiki", s.handleWikiIndex)
@@ -332,6 +333,34 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		limit = v
 	}
 	raw, err := s.client.Search(r.Context(), q, limit)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleSemanticSearch serves the OPTIONAL semantic search (SW-059). It embeds
+// the engine's canonical SemanticResponse bytes verbatim, so the graceful-skip
+// "unavailable" payload is byte-identical to the CLI and MCP surfaces. The
+// graceful-skip path returns 200 with Available=false (NOT a 503), because "no
+// embedder configured" is a normal, typed result — not a capability error.
+func (s *Server) handleSemanticSearch(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		writeErr(w, http.StatusBadRequest, "bad_request", "q required")
+		return
+	}
+	limit := 0
+	if l := r.URL.Query().Get("limit"); l != "" {
+		v, err := strconv.Atoi(l)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, "bad_request", "bad limit")
+			return
+		}
+		limit = v
+	}
+	raw, err := s.client.SemanticSearch(r.Context(), q, limit)
 	if err != nil {
 		writeErrSanitized(w, err)
 		return

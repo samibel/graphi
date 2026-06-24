@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -114,6 +115,20 @@ func (c *DaemonClient) Query(ctx context.Context, op, symbol string, depth int) 
 // Search implements client.Client.
 func (c *DaemonClient) Search(ctx context.Context, q string, limit int) ([]byte, error) {
 	return c.request(ctx, "search", searchParams{Query: q, Limit: limit})
+}
+
+// SemanticSearch implements client.Client. The daemon semantic RPC is not yet
+// wired; until it is, the daemon client returns the canonical typed Unavailable
+// graceful-skip response (Available=false) — NOT an error — so the unconfigured
+// bytes stay byte-identical to the in-process and HTTP surfaces (SW-059 parity).
+func (c *DaemonClient) SemanticSearch(ctx context.Context, q string, limit int) ([]byte, error) {
+	_, _ = ctx, limit
+	return search.MarshalSemantic(search.SemanticResponse{
+		Query:     q,
+		Available: false,
+		Reason:    search.UnavailableReason,
+		Hits:      []search.SemanticHit{},
+	})
 }
 
 // Savings implements client.Client. It forwards a savings readout request to

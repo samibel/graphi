@@ -171,26 +171,29 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return nil, &rpcError{Code: -32602, Message: "invalid params"}
 	}
 
-	if p.Name == "search" {
+	if p.Name == ToolSearch {
 		return s.searchCall(ctx, p)
 	}
-	if p.Name == "savings" {
+	if p.Name == ToolSearchSemantic {
+		return s.semanticSearchCall(ctx, p)
+	}
+	if p.Name == ToolSavings {
 		return s.savingsCall(ctx)
 	}
-	if p.Name == "analyze" {
+	if p.Name == ToolAnalyze {
 		return s.analysisCall(ctx, p)
 	}
 	// SW-038 edit/refactor command surface (thin transport over the shared client).
 	switch p.Name {
-	case "refactor_preview":
+	case ToolRefactorPreview:
 		return s.refactorPreviewCall(ctx, p)
-	case "refactor":
+	case ToolRefactor:
 		return s.refactorCall(ctx, p)
-	case "undo":
+	case ToolUndo:
 		return s.undoCall(ctx, p)
 	}
 	// SW-042 sticky PR-comment writer + optional risk-threshold merge gate.
-	if p.Name == "pr_comment" {
+	if p.Name == ToolPrComment {
 		return s.prCommentCall(ctx, p)
 	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
@@ -228,6 +231,30 @@ func (s *Server) searchCall(ctx context.Context, p callParams) (any, *rpcError) 
 		limit = *p.Arguments.Depth
 	}
 	b, err := s.c.Search(ctx, p.Arguments.Symbol, limit)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// semanticSearchCall dispatches the OPTIONAL semantic-search tool (SW-059). It
+// returns the canonical serialized SemanticResponse from the shared client. When
+// no embedder is configured it cleanly reports the typed graceful-skip
+// "unavailable" response (Available=false) WITHOUT an error — byte-identical to
+// the CLI and HTTP surfaces (parity by construction through the single client
+// seam).
+func (s *Server) semanticSearchCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Symbol == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+	}
+	limit := search.DefaultResultLimit
+	if p.Arguments.Depth != nil && *p.Arguments.Depth > 0 {
+		limit = *p.Arguments.Depth
+	}
+	b, err := s.c.SemanticSearch(ctx, p.Arguments.Symbol, limit)
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -401,14 +428,14 @@ func textResult(b []byte) map[string]any {
 // the correct analyzer. The map is package-level so both toolsCall routing and
 // toolDescriptors advertising can share a single source of truth.
 var deepAnalyzerTools = map[string]string{
-	"analyze_taint":      "taint",
-	"analyze_pdg":        "pdg",
-	"analyze_interproc":  "interproc",
-	"analyze_contracts":  "contracts",
-	"analyze_githistory": "git-history",
-	"analyze_pr_risk":      "pr-risk",
-	"analyze_pr_signals":   "pr-signals",
-	"analyze_pr_questions": "pr-questions",
+	ToolAnalyzeTaint:       "taint",
+	ToolAnalyzePDG:         "pdg",
+	ToolAnalyzeInterproc:   "interproc",
+	ToolAnalyzeContracts:   "contracts",
+	ToolAnalyzeGitHistory:  "git-history",
+	ToolAnalyzePrRisk:      "pr-risk",
+	ToolAnalyzePrSignals:   "pr-signals",
+	ToolAnalyzePrQuestions: "pr-questions",
 }
 
 // deepAnalyzerDescriptors defines the MCP tool schema for each EP-005 deep
@@ -416,7 +443,7 @@ var deepAnalyzerTools = map[string]string{
 // the analysis service is available.
 var deepAnalyzerDescriptors = []map[string]any{
 	{
-		"name":        "analyze_taint",
+		"name":        ToolAnalyzeTaint,
 		"description": "flow-sensitive taint analysis: finds source-to-sink data-flow paths through the indexed graph",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -429,7 +456,7 @@ var deepAnalyzerDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "analyze_pdg",
+		"name":        ToolAnalyzePDG,
 		"description": "program dependence graph: computes data-dependence and control-dependence edges via reaching-definitions and post-dominance",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -441,7 +468,7 @@ var deepAnalyzerDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "analyze_interproc",
+		"name":        ToolAnalyzeInterproc,
 		"description": "interprocedural analysis: Sharir-Pnueli fixpoint solver that computes procedure summaries over the call graph",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -453,7 +480,7 @@ var deepAnalyzerDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "analyze_contracts",
+		"name":        ToolAnalyzeContracts,
 		"description": "contract drift detection: finds producer/consumer contracts and detects structural drift between linked API surfaces",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -465,7 +492,7 @@ var deepAnalyzerDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "analyze_githistory",
+		"name":        ToolAnalyzeGitHistory,
 		"description": "git-history signal analysis: computes churn scores, bus-factor risks, and co-change groups from commit history",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -477,7 +504,7 @@ var deepAnalyzerDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "analyze_pr_risk",
+		"name":        ToolAnalyzePrRisk,
 		"description": "risk-scored PR diff (SW-039): maps changed nodes onto the graph and combines EP-004 impact with EP-005 taint signals into a deterministic, versioned per-region risk record. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -489,7 +516,7 @@ var deepAnalyzerDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "analyze_pr_signals",
+		"name":        ToolAnalyzePrSignals,
 		"description": "hub/bridge/surprise graph signals on PR-changed code (SW-040): annotates each changed node with hub (high fan-in/out over a configurable threshold), bridge (articulation point / cut-vertex between modules), and surprise (rarely-modified or unexpectedly-coupled region) signals. Consumes EP-004 metrics + EP-005 PDG/git-history; never recomputes centrality. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -501,7 +528,7 @@ var deepAnalyzerDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "analyze_pr_questions",
+		"name":        ToolAnalyzePrQuestions,
 		"description": "deterministic, no-LLM reviewer questions from graph findings on PR-changed code (SW-041): applies a fixed rule/template set to the consumed SW-039 risk scores and SW-040 hub/bridge/surprise signals to emit targeted reviewer questions. Each question carries a non-empty evidence reference to the triggering node/edge/signal; identical input yields byte-identical output. Consumes the two sibling reports; never recomputes scoring or signals. Local-first: diff is a unified-diff string or simple ref form; NO LLM, NO remote fetch.",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -538,7 +565,7 @@ func (s *Server) toolDescriptors() []map[string]any {
 	// Probe whether search is available by attempting a dummy search.
 	if _, err := s.c.Search(context.Background(), "__probe__", 1); err == nil {
 		tools = append(tools, map[string]any{
-			"name":        "search",
+			"name":        ToolSearch,
 			"description": "lexical and symbol search over the indexed graph",
 			"inputSchema": map[string]any{
 				"type": "object",
@@ -550,10 +577,28 @@ func (s *Server) toolDescriptors() []map[string]any {
 			},
 		})
 	}
+	// Optional semantic search (SW-059). Advertised whenever the search tool is —
+	// it is always callable through the client and cleanly reports "unavailable"
+	// (typed graceful-skip) when no embedder is configured, so there is no
+	// capability to probe-hide.
+	if _, err := s.c.Search(context.Background(), "__probe__", 1); err == nil {
+		tools = append(tools, map[string]any{
+			"name":        ToolSearchSemantic,
+			"description": "optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"symbol": map[string]any{"type": "string", "description": "semantic search query (free-text)"},
+					"depth":  map[string]any{"type": "integer", "description": "maximum number of results (default 100)"},
+				},
+				"required": []string{"symbol"},
+			},
+		})
+	}
 	// Savings readout (SW-020). Advertised when the client has a ledger attached.
 	if _, err := s.c.Savings(context.Background()); err == nil {
 		tools = append(tools, map[string]any{
-			"name":        "savings",
+			"name":        ToolSavings,
 			"description": "token-savings ledger readout: per-call / per-session / cumulative USD with anti-gaming cap flags",
 			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
 		})
@@ -566,7 +611,7 @@ func (s *Server) toolDescriptors() []map[string]any {
 		Name: "impact", Symbol: "__probe__", Direction: "forward",
 	}); err == nil || !isAnalysisUnavailable(err) {
 		tools = append(tools, map[string]any{
-			"name":        "analyze",
+			"name":        ToolAnalyze,
 			"description": "run a named graph analyzer (e.g. impact forward/reverse blast-radius reachability) over the indexed graph",
 			"inputSchema": map[string]any{
 				"type": "object",
@@ -595,7 +640,7 @@ func (s *Server) toolDescriptors() []map[string]any {
 	// ErrReviewUnavailable; any other response means the service is wired).
 	if _, err := s.c.PrComment(context.Background(), client.PrCommentRequest{Diff: "__probe__"}); err == nil || !isReviewUnavailable(err) {
 		tools = append(tools, map[string]any{
-			"name":        "pr_comment",
+			"name":        ToolPrComment,
 			"description": "render the assembled PR-review findings (risk + hub/bridge/surprise signals + reviewer questions) into one sticky Markdown comment and evaluate the optional risk-threshold merge gate; offline dry-run by default",
 			"inputSchema": map[string]any{
 				"type": "object",
@@ -624,7 +669,7 @@ func isEditUnavailable(err error) bool {
 // shared client; the surface holds no engine logic.
 var editToolDescriptors = []map[string]any{
 	{
-		"name":        "refactor_preview",
+		"name":        ToolRefactorPreview,
 		"description": "preview a graph-aware refactor: resolve the target via the query layer and return the EP-004 impact set (blast radius + planned edits) WITHOUT mutating",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -639,7 +684,7 @@ var editToolDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "refactor",
+		"name":        ToolRefactor,
 		"description": "apply a graph-aware refactor through the shared atomic edit saga and return an auditable change record (operation, target, before/after, actor, timestamp, undo token)",
 		"inputSchema": map[string]any{
 			"type": "object",
@@ -655,7 +700,7 @@ var editToolDescriptors = []map[string]any{
 		},
 	},
 	{
-		"name":        "undo",
+		"name":        ToolUndo,
 		"description": "reverse a previously applied edit by its undo token, restoring the prior graph + source and recording the reversal as its own auditable change record",
 		"inputSchema": map[string]any{
 			"type": "object",

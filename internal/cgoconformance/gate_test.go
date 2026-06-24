@@ -33,6 +33,8 @@ func TestIsBroadFlavor(t *testing.T) {
 	}{
 		{"graphi-broad", true},
 		{"github.com/samibel/graphi-broad/cgosqlite", true},
+		{"graphi_broad", true},       // SW-056 DN-2: underscore build-tag form
+		{"-tags=graphi_broad", true}, // build-tag string as it appears in GOFLAGS
 		{"github.com/samibel/graphi/core/parse", false},
 		{"", false},
 		{"cmd/graphi", false},
@@ -68,6 +70,14 @@ func TestSanitizeGoFlags_StripsBroadTag(t *testing.T) {
 		{"-v -tags=graphi-broad -race", "-v -race"},
 		{"", ""},
 		{"-v", "-v"},
+		// SW-056 DN-2: the REAL flag is the underscore build-tag form. Stripping it
+		// is the load-bearing fix — without it the default-graph gate that inherits
+		// `-tags graphi_broad` would silently build the broad flavor.
+		{"-tags=graphi_broad", ""},
+		{"-tags graphi_broad", ""},
+		{"-tags=foo,graphi_broad,bar", "-tags=foo,bar"},
+		{"graphi_broad", ""},
+		{"-v -tags=graphi_broad -race", "-v -race"},
 	}
 	for _, c := range cases {
 		if got := SanitizeGoFlags(c.in); got != c.want {
@@ -100,6 +110,36 @@ func TestCgoUsingPackages_DefaultGraph_NoOffenders(t *testing.T) {
 	}
 	if len(offenders) != 0 {
 		t.Fatalf("default graph has cgo-using packages (regression!): %v", offenders)
+	}
+}
+
+// TestForestReachablePackages_DefaultGraph_None proves go-sitter-forest (the CGO
+// grammar bundle) is NOT reachable from the default build graph — the static,
+// import-graph half of SW-055 AC#2/AC#4 (the registration-level half lives in
+// core/parse.AssertPureGoDefaults). A future graphi-broad import leaking into the
+// default graph would break this.
+func TestForestReachablePackages_DefaultGraph_None(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping live go-list scan in -short mode")
+	}
+	offenders, err := ForestReachablePackages(context.Background(), DefaultBuildTarget, "0")
+	if err != nil {
+		t.Fatalf("ForestReachablePackages: %v", err)
+	}
+	if len(offenders) != 0 {
+		t.Fatalf("go-sitter-forest reachable from default graph (regression!): %v", offenders)
+	}
+}
+
+func TestFormatForestReachableFailure_NamesOffender(t *testing.T) {
+	got := FormatForestReachableFailure([]string{"github.com/alexaandru/go-sitter-forest/fortran"})
+	for _, want := range []string{"go-sitter-forest", CheckName, ExcludedBroadFlavor} {
+		if !strings.Contains(got, want) {
+			t.Errorf("FormatForestReachableFailure missing %q in: %q", want, got)
+		}
+	}
+	if empty := FormatForestReachableFailure(nil); empty != "" {
+		t.Errorf("FormatForestReachableFailure(nil) = %q, want empty", empty)
 	}
 }
 

@@ -240,6 +240,103 @@ func TestMCP_CLI_SearchParity(t *testing.T) {
 	}
 }
 
+// semanticCLIOutput runs the CLI `search -semantic <q>` surface.
+func semanticCLIOutput(t *testing.T, direct *client.Direct, q string) []byte {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	if err := cli.RunSearch(context.Background(), direct, []string{"-semantic", q}, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunSearch -semantic %q: %v (stderr: %s)", q, err, errOut.String())
+	}
+	return bytes.TrimRight(out.Bytes(), "\n")
+}
+
+// semanticMCPOutput runs the MCP search_semantic tool.
+func semanticMCPOutput(t *testing.T, direct *client.Direct, q string) []byte {
+	t.Helper()
+	srv := mcp.NewServerWithClient(direct)
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+		"params": map[string]any{"name": "search_semantic", "arguments": map[string]any{"symbol": q}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve search_semantic: %v", err)
+	}
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode mcp search_semantic %q: %v", out.String(), err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp search_semantic error: %s", resp.Error.Message)
+	}
+	if len(resp.Result.Content) != 1 {
+		t.Fatalf("unexpected search_semantic content: %+v", resp.Result.Content)
+	}
+	return []byte(resp.Result.Content[0].Text)
+}
+
+// semanticHTTPOutput drives the HTTP /search/semantic endpoint and returns the
+// envelope payload bytes.
+func semanticHTTPOutput(t *testing.T, direct *client.Direct, q string) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	req := httptest.NewRequest(http.MethodGet, "/search/semantic?q="+q, nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http /search/semantic: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var env struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("decode envelope: %v", err)
+	}
+	return env.Payload
+}
+
+// TestSemanticSearch_UnavailableParity (SW-059): with NO embedder configured, the
+// typed graceful-skip "unavailable" response is BYTE-IDENTICAL across CLI, MCP,
+// and HTTP (serialized-byte parity, not struct equality). The default client is
+// constructed with no embedder, so all three take the graceful-skip path.
+func TestSemanticSearch_UnavailableParity(t *testing.T) {
+	store, _ := seed(t)
+	// Default Direct: lexical search wired, semantic OFF (graceful skip).
+	direct := client.NewDirect(query.New(store), search.New(store))
+
+	for _, q := range []string{"ParseGraph", "p.A", "missing"} {
+		cliBytes := semanticCLIOutput(t, direct, q)
+		mcpBytes := semanticMCPOutput(t, direct, q)
+		httpBytes := semanticHTTPOutput(t, direct, q)
+
+		if !bytes.Equal(cliBytes, mcpBytes) {
+			t.Fatalf("semantic unavailable CLI<->MCP mismatch for %q:\nCLI:  %s\nMCP:  %s", q, cliBytes, mcpBytes)
+		}
+		if !bytes.Equal(cliBytes, httpBytes) {
+			t.Fatalf("semantic unavailable CLI<->HTTP mismatch for %q:\nCLI:  %s\nHTTP: %s", q, cliBytes, httpBytes)
+		}
+		// Sanity: it really is the typed Unavailable response.
+		if !bytes.Contains(cliBytes, []byte(`"available":false`)) {
+			t.Fatalf("semantic response not the typed Unavailable for %q: %s", q, cliBytes)
+		}
+		if !bytes.Contains(cliBytes, []byte(search.UnavailableReason)) {
+			t.Fatalf("semantic response missing canonical reason for %q: %s", q, cliBytes)
+		}
+	}
+}
+
 // MCP tools/list advertises one tool per canonical operation.
 func TestMCP_ToolsList(t *testing.T) {
 	store, _ := seed(t)
@@ -262,8 +359,9 @@ func TestMCP_ToolsList(t *testing.T) {
 	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
 		t.Fatal(err)
 	}
-	if len(resp.Result.Tools) != len(query.Operations)+1 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+1)
+	// query ops + the "search" tool + the optional "search_semantic" tool (SW-059).
+	if len(resp.Result.Tools) != len(query.Operations)+2 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+2)
 	}
 }
 

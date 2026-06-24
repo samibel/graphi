@@ -122,6 +122,20 @@ type Ingester struct {
 	meta   *sql.DB
 	linker *link.Linker
 
+	// bounds are the fail-closed parse-time resource bounds (SW-055 AC#6) applied
+	// to untrusted inputs: max file size (checked before ReadFile via FileInfo),
+	// parse timeout (context.WithTimeout on the Parse ctx), and recursion depth
+	// (enforced inside core/parse). On any breach the offending file is SKIPPED
+	// with a structured diagnostic and ingestion continues — never parse-anyway,
+	// never silently truncate. Defaulted in New to parse.DefaultResourceBounds().
+	bounds parse.ResourceBounds
+
+	// skipMu guards skipped. skipped accumulates the fail-closed skip diagnostics
+	// of the most recent ingest pass (oversize / timeout / depth breaches). It
+	// carries ONLY structured provenance, never raw source bytes.
+	skipMu  sync.Mutex
+	skipped []SkipDiagnostic
+
 	// broker, when set, is notified of ingest lifecycle events (e.g.
 	// ingest-completed) so surfaces (HTTP SSE) can stream freshness updates to
 	// clients. Nil = no-op (default); existing callers are unaffected.
@@ -165,12 +179,70 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 	if err != nil {
 		return nil, fmt.Errorf("ingest: open meta db: %w", err)
 	}
-	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New()}
+	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), bounds: parse.DefaultResourceBounds()}
+	// Apply the fail-closed recursion-depth bound to the shared parse path
+	// (process-wide; core/parse reads it per Extract). Size + timeout are enforced
+	// at this ingest boundary directly.
+	parse.SetMaxParseDepth(i.bounds.MaxDepth)
 	if err := i.initSchema(context.Background()); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	return i, nil
+}
+
+// SkipReason categorizes why a file was skipped fail-closed.
+type SkipReason string
+
+const (
+	// SkipOversize: file exceeded ResourceBounds.MaxFileSize (checked before read).
+	SkipOversize SkipReason = "oversize"
+	// SkipTimeout: parse exceeded ResourceBounds.ParseTimeout.
+	SkipTimeout SkipReason = "timeout"
+	// SkipMaxDepth: input exceeded ResourceBounds.MaxDepth (nesting/recursion).
+	SkipMaxDepth SkipReason = "max-depth"
+)
+
+// SkipDiagnostic is the structured, source-free record of a fail-closed skip. It
+// carries ONLY provenance (path, reason, the observed size for oversize) — never
+// raw source bytes (SW-055 AC#6 default-deny source sanitization).
+type SkipDiagnostic struct {
+	Path   string     // repo-relative path of the skipped file
+	Reason SkipReason // why it was skipped
+	Size   int64      // observed size in bytes (oversize only; 0 otherwise)
+}
+
+// WithResourceBounds overrides the fail-closed parse-time resource bounds and
+// returns the receiver for chaining. It also applies the depth bound to the
+// process-wide parse path. Passing the zero ResourceBounds disables all bounds.
+func (i *Ingester) WithResourceBounds(b parse.ResourceBounds) *Ingester {
+	i.bounds = b
+	parse.SetMaxParseDepth(b.MaxDepth)
+	return i
+}
+
+// SkippedDiagnostics returns a copy of the fail-closed skip diagnostics recorded
+// during the most recent ingest pass.
+func (i *Ingester) SkippedDiagnostics() []SkipDiagnostic {
+	i.skipMu.Lock()
+	defer i.skipMu.Unlock()
+	out := make([]SkipDiagnostic, len(i.skipped))
+	copy(out, i.skipped)
+	return out
+}
+
+// recordSkip appends a fail-closed skip diagnostic (concurrency-safe).
+func (i *Ingester) recordSkip(d SkipDiagnostic) {
+	i.skipMu.Lock()
+	i.skipped = append(i.skipped, d)
+	i.skipMu.Unlock()
+}
+
+// resetSkips clears skip diagnostics at the start of an ingest pass.
+func (i *Ingester) resetSkips() {
+	i.skipMu.Lock()
+	i.skipped = nil
+	i.skipMu.Unlock()
 }
 
 func (i *Ingester) initSchema(ctx context.Context) error {
@@ -398,6 +470,7 @@ type fileUnit struct {
 // IngestAll performs a full ingestion of root, parsing every file and
 // rebuilding the cache and reverse-dependency index from scratch.
 func (i *Ingester) IngestAll(ctx context.Context, root string) error {
+	i.resetSkips()
 	units, err := i.walk(root)
 	if err != nil {
 		return err
@@ -523,6 +596,7 @@ func (i *Ingester) IngestChangedWithProvenance(ctx context.Context, root string,
 // AND no provenance recorded, and a crash after leaves both committed — there is
 // no window where the graph is updated but provenance is missing/stale.
 func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []string, prov *EditProvenance) error {
+	i.resetSkips()
 	units, err := i.walk(root)
 	if err != nil {
 		return err
@@ -814,6 +888,16 @@ func (i *Ingester) walk(root string) ([]fileUnit, error) {
 		if strings.Contains(rel, "..") {
 			return fmt.Errorf("ingest: escaped path %q", rel)
 		}
+		// SW-055 AC#6: fail-closed max-file-size bound. Check the size from the
+		// directory entry's FileInfo BEFORE reading any bytes into memory, so a
+		// multi-GB adversarial file is never even read. On breach the file is
+		// SKIPPED with a structured, source-free diagnostic and the walk continues.
+		if i.bounds.MaxFileSize > 0 {
+			if info, ierr := d.Info(); ierr == nil && info.Size() > i.bounds.MaxFileSize {
+				i.recordSkip(SkipDiagnostic{Path: rel, Reason: SkipOversize, Size: info.Size()})
+				return nil
+			}
+		}
 		src, err := os.ReadFile(path) //nolint:gosec // path derived from sanitized root
 		if err != nil {
 			return fmt.Errorf("ingest: read %s: %w", rel, err)
@@ -857,8 +941,32 @@ func (i *Ingester) sanitizePath(root, p string) (string, error) {
 // linkFiles after every file's nodes are committed (the ordering constraint that
 // motivated SW-050).
 func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []string, []string, *link.FileRefs, error) {
-	res, err := i.parser.Parse(ctx, u.relPath, u.src)
+	// SW-055 AC#6: fail-closed parse timeout. Bound the wall-clock time a single
+	// Parse may consume on untrusted input; on expiry the parse is abandoned.
+	parseCtx := ctx
+	if i.bounds.ParseTimeout > 0 {
+		var cancel context.CancelFunc
+		parseCtx, cancel = context.WithTimeout(ctx, time.Duration(i.bounds.ParseTimeout))
+		defer cancel()
+	}
+	res, err := i.parser.Parse(parseCtx, u.relPath, u.src)
 	if err != nil {
+		// Fail closed on a resource-bound breach: SKIP the file with a structured,
+		// source-free diagnostic and continue ingestion (never parse-anyway / never
+		// truncate). A genuine parse error (invalid syntax, etc.) still aborts as
+		// before — only the three bound sentinels route to the skip path.
+		switch {
+		case errors.Is(err, parse.ErrMaxDepthExceeded):
+			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipMaxDepth})
+			return nil, nil, nil, nil, nil
+		case errors.Is(err, parse.ErrParseTimeout) ||
+			(i.bounds.ParseTimeout > 0 && parseCtx.Err() == context.DeadlineExceeded && ctx.Err() == nil):
+			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipTimeout})
+			return nil, nil, nil, nil, nil
+		case errors.Is(err, parse.ErrFileTooLarge):
+			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipOversize})
+			return nil, nil, nil, nil, nil
+		}
 		return nil, nil, nil, nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
 	}
 

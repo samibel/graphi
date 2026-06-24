@@ -23,8 +23,20 @@ func main() {
 	version := flag.String("version", "dev", "release version stamped into the binary")
 	out := flag.String("out", "graphi", "output binary path")
 	verifyOnly := flag.Bool("verify-only", false, "only run the reproducibility check, do not write -out")
+	listBlobs := flag.Bool("list-grammar-blobs", false, "print the expected default-build grammar blob set (derived from DefaultGrammarSubsetTags) and exit")
 	timeout := flag.Duration("timeout", 10*time.Minute, "overall timeout")
 	flag.Parse()
+
+	// Source-of-truth readout for CI: the grammar blobs the default build must
+	// embed, derived from internal/release.DefaultGrammarSubsetTags. The release
+	// workflow compares the binary's embedded blobs against this, so the gate
+	// never drifts from a hand-maintained list. No build required.
+	if *listBlobs {
+		for _, blob := range release.ExpectedGrammarBlobs() {
+			fmt.Println(blob)
+		}
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()

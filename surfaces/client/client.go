@@ -45,12 +45,12 @@ var ErrReviewUnavailable = errors.New("client: PR-review publisher service unava
 // (parity by construction). The diff is local-first, untrusted input (bounded
 // and path-sanitized by the consumed analyzers); no remote fetch happens here.
 type PrCommentRequest struct {
-	PR             string `json:"pr"`              // PR reference rendered in the comment header
-	Diff           string `json:"diff"`            // local-first unified-diff / ref string
-	Provenance     string `json:"provenance"`      // evidence redaction: "full" | "summary" (default summary for public comments)
-	GateEnabled    bool   `json:"gate_enabled"`    // turn the optional merge gate on
-	GateThreshold  int    `json:"gate_threshold"`  // risk threshold in fixed-point units (1/1000) the worst region must exceed to BLOCK
-	Publish        bool   `json:"publish"`         // when true, upsert through the host; when false (default) dry-run (render+gate only)
+	PR            string `json:"pr"`             // PR reference rendered in the comment header
+	Diff          string `json:"diff"`           // local-first unified-diff / ref string
+	Provenance    string `json:"provenance"`     // evidence redaction: "full" | "summary" (default summary for public comments)
+	GateEnabled   bool   `json:"gate_enabled"`   // turn the optional merge gate on
+	GateThreshold int    `json:"gate_threshold"` // risk threshold in fixed-point units (1/1000) the worst region must exceed to BLOCK
+	Publish       bool   `json:"publish"`        // when true, upsert through the host; when false (default) dry-run (render+gate only)
 }
 
 // RefactorRequest is the transport-agnostic input for a graph-aware refactor. It
@@ -97,6 +97,13 @@ type Client interface {
 	// Search runs a lexical/symbol search and returns the canonical serialized
 	// result bytes.
 	Search(ctx context.Context, q string, limit int) ([]byte, error)
+	// SemanticSearch runs the OPTIONAL semantic search and returns the canonical
+	// serialized engine/search.SemanticResponse bytes (SW-059). It is the single
+	// engine-owned typed response, so the unconfigured graceful-skip "unavailable"
+	// bytes are byte-identical across CLI/MCP/HTTP. When no embedder is configured
+	// (the default path) it returns the typed Unavailable response with NO error
+	// and ZERO network — never ErrSearchUnavailable.
+	SemanticSearch(ctx context.Context, q string, limit int) ([]byte, error)
 	// Savings returns the canonical serialized savings-ledger readout (per-call,
 	// per-session, cumulative USD + cap flags). It is the single source for the
 	// MCP and CLI readouts so both surfaces stay in parity.

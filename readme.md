@@ -35,22 +35,104 @@ graphi grows from a structural core into semantic and deep analysis. Each capabi
 - **Parse to graph** — turn a repository into a canonical node/edge model with deterministic ids and provenance on every edge.
 - **Structural queries** — callers, callees, references, definition, and neighborhood for any symbol.
 - **Lexical & symbol search** — fast full-text search across symbols and source.
+- **Semantic search (optional, OFF by default)** — embedding-based search that is **off until you explicitly configure an embedder**; the default binary ships **no embedder** and degrades gracefully (see [Semantic search](#semantic-search-optional-off-by-default)).
 - **Incremental indexing** — only changed files are re-parsed; the graph stays fresh as you edit.
 - **Hot daemon** — keep the index in memory and query it over a local Unix socket for instant responses.
 
 #### Language support
 
 The parser registry is open/closed — languages plug in behind a stable seam
-without touching existing code. Current extraction coverage:
+without touching existing code.
+
+**Default tier (CGo-free, shipped binary).** Two stdlib parsers plus **20**
+subset-tagged pure-Go `gotreesitter` grammars. The shipped default is built with
+`-tags 'grammar_subset grammar_subset_<lang> …'`
+([`internal/release.DefaultGrammarSubsetTags`](internal/release/build.go)) so only
+these languages' grammar blobs are embedded — never the all-206 default embed.
 
 | Language | Symbol nodes | Intra-file edges | Cross-file/package edges |
 |---|---|---|---|
 | **Go** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ⏳ linker pass (roadmap) |
 | JSON | structural (AST) | — | — |
+| TypeScript · TSX/JSX · JavaScript | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| Python · Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| Bash/Shell · SQL | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
 
-Additional CGo-free tier-1 grammars and the opt-in `graphi-broad` CGO build (broad
-grammar set) plug in through the same registry seam; see the roadmap in
-[`epics/index.md`](epics/index.md).
+> **Deferred / not in the default tier.**
+> - **HTML** — has a pure-Go grammar but is **not subset-buildable in isolation** in
+>   gotreesitter v0.20.2 (its scanner core is co-located with `grammar_subset_blade`
+>   upstream), so it is **deferred** and **not shipped** in the default tier. Re-evaluate
+>   when upstream splits the HTML scanner out.
+> - **Dockerfile / Protobuf / GraphQL** — **not** in the committed tier-1 set (follow-up).
+> - **`zig` and the broad long tail** — available **only** in the opt-in `graphi-broad`
+>   CGO build (see below), never in the CGo-free default.
+
+The frozen tier-1 list and the corrected (one-time runtime + per-blob) binary-budget
+model live in [`bench/lang-budget.md`](bench/lang-budget.md); the EP-009 resolution and the
+full per-language blob deltas are recorded in the epic.
+
+#### The opt-in `graphi-broad` CGO flavor (broad coverage)
+
+graphi ships in two flavors over the **same** `SymbolExtractor` contract:
+
+- **Default (pure-Go).** The shipped binary is CGo-free: only the pure-Go
+  `gotreesitter` runtime and the curated tier-1 grammars are reachable. No C
+  toolchain is required and the default import graph provably contains no CGO
+  package (CI-enforced — see below).
+- **`graphi-broad` (opt-in CGO).** Built with `-tags graphi_broad` and
+  `CGO_ENABLED=1`, this flavor opens the **257-grammar
+  [`go-sitter-forest`](https://github.com/alexaandru/go-sitter-forest)** CGO *seam*
+  (native C tree-sitter via `go-tree-sitter-bare`) over the *same* contract, so any
+  broad grammar produces the same `file / function / method / type / variable /
+  constant` vocabulary the default tier does. Today the lane wires **one** grammar —
+  `zig` — as the reference; the 257-grammar `forest` meta-module is intentionally **not**
+  imported (it would statically pull in hundreds of MB of generated C). Additional broad
+  grammars are added one subpackage at a time.
+
+**Before / after this slice (SW-056).** *Before:* the default pure-Go tier only —
+broad coverage was not available. *After:* the opt-in `graphi-broad` CGO flavor opens
+the `go-sitter-forest`-backed CGO seam over the same `SymbolExtractor` contract
+(`zig` wired as the reference grammar), **build-tag isolated** so the default tier is
+provably unaffected.
+
+**Why a separate flavor.** `go-sitter-forest` is *wholly CGO*. Keeping it behind
+the `graphi_broad` build tag gives broad language coverage **without compromising
+the CGo-free default build**: every forest-touching file is `//go:build
+graphi_broad`-tagged and never reached by an untagged import, so the default graph
+stays pure-Go. This is enforced on two layers — a registration-level guard
+(`parse.AssertPureGoDefaults`) and a static import-graph scan
+(`internal/cgoconformance`, which proves `go-sitter-forest` is unreachable from
+`./cmd/graphi`).
+
+> [!WARNING]
+> **Residual security limitation — read before enabling `graphi-broad`.**
+> The broad flavor runs **native C** over your source. graphi's Go-side resource
+> bounds (`recover`, the CST depth guard, `context` timeouts) do **NOT** contain a
+> native-C crash, stack overflow, out-of-memory, or remote-code-execution in a C
+> grammar: `recover` cannot catch a C `SIGSEGV`, a synchronous CGO call cannot be
+> interrupted by a context deadline, and the depth guard bounds only the Go-side
+> walk. Only `MaxFileSize` transfers to the C path. `graphi-broad` is therefore
+> **opt-in, NOT memory-safety-isolated, and intended for trusted / CI input only.**
+> Because `SetMaxParseDepth` is process-global and not honored by the C parser, the
+> broad tier MUST NOT run concurrently in-process with a default tier relying on a
+> different depth bound.
+>
+> This residual native-C crash/RCE risk is **explicitly accepted** for the opt-in
+> lane (decision **SW-056-SEC-001**). Out-of-process / sandbox isolation
+> (subprocess-per-parse with rlimit/cgroup + signal trapping and/or seccomp) is the
+> named follow-up **SW-058**. Until SW-058 lands, do not point `graphi-broad` at
+> untrusted source.
+
+The broad lane keeps its supply-chain and runtime controls: `go-sitter-forest`
+(and its grammar subpackages) are version-pinned in `go.sum` and `go mod verify`'d,
+the lane builds **offline** (`GOPROXY=off`) after a one-time pin, and a live
+loopback-only `netns` deny-egress job (with a tripwire) proves the broad smoke
+parse performs zero outbound network at the C level — the static Go-AST canary is
+structurally blind to a C `socket()`/`connect()`, so only the live netns job
+credits the broad lane's zero-egress guarantee.
 
 ### Semantic analysis
 
@@ -71,6 +153,64 @@ Also available through `graphi analyze <analyzer>`:
 - **`interproc`** — interprocedural, fixpoint-based summary analysis across call boundaries.
 - **`contracts`** — detect API/interface contracts and flag drift against them.
 - **`git-history`** — repository-history signals such as code churn, co-change groups, and bus-factor.
+
+## Semantic search (optional, OFF by default)
+
+Semantic (embedding-based) search is an **optional** capability that is **OFF by
+default**. The default binary ships **no embedder**, stays **CGo-free**, and makes
+**zero non-loopback network calls** — semantic search is only ever enabled when
+*you* explicitly opt in. Until then it **degrades gracefully**: it never errors,
+never dials the network, and never blocks the always-available lexical search.
+
+### Before / after
+
+| | Default build (no embedder) | After opting in |
+|---|---|---|
+| `graphi search -semantic <q>` | returns a typed `{"available":false,"reason":"no embedder configured; run \`graphi setup-embedder ...\`"}` response — no error, no network | embeds the query and returns cosine-ranked hits citing `node_id` + `score` |
+| Lexical `graphi search <q>` | always available | unchanged, always available |
+| Binary | CGo-free, no embedder, zero egress | CGo-free unless you build the ONNX flavor; loopback-only if you use Ollama |
+
+The unavailable response is produced by a **single engine-owned type**
+(`engine/search.SemanticResponse`) and is **byte-identical across the CLI, MCP, and
+HTTP surfaces**, so surfaces can never drift.
+
+```mermaid
+flowchart LR
+  Q["graphi search -semantic q"] --> S{embedder configured?}
+  S -- "no (default)" --> U["typed Unavailable\n(no error, no network)"]
+  S -- "yes (opt-in)" --> E["embed q -> brute-force cosine\n-> ranked NodeId+score hits"]
+```
+
+### How to enable it
+
+Run `graphi setup-embedder` for copy-pasteable instructions. You opt in by setting
+the `GRAPHI_EMBEDDER` environment variable, then re-indexing with embeddings:
+
+```sh
+# Option A — Ollama (loopback-only, opt-in). Requires a local Ollama daemon.
+export GRAPHI_EMBEDDER=ollama                 # defaults to 127.0.0.1:11434
+# or pin the loopback endpoint explicitly:
+export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434
+
+# Option B — ONNX (local, CGO). Requires a build with the embed_onnx tag:
+#   go build -tags embed_onnx ./cmd/graphi
+export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx
+
+# Then embed the graph and query:
+graphi index --semantic
+graphi search -semantic "where do we validate auth tokens"
+```
+
+Safety guarantees that hold regardless of configuration:
+
+- **Ollama is loopback-only and fail-closed.** A non-loopback host is **rejected at
+  construction** (in addition to the runtime canary dial interceptor —
+  defense-in-depth). It is never constructed on the default path.
+- **ONNX (CGO) is build-tag-gated** behind `//go:build embed_onnx` and is **provably
+  absent** from the default binary (verified by both the `internal/cgoconformance`
+  import-graph scan and a registration-level no-CGO guard).
+- **Brute-force cosine** over an in-memory index is intentional for this first cut;
+  HNSW / approximate-nearest-neighbour indexing is an explicit follow-up.
 
 ## The local-first contract
 
@@ -101,6 +241,17 @@ CGO_ENABLED=0 go build ./...
 CGO_ENABLED=0 go build -o graphi ./cmd/graphi
 ```
 
+#### Opt-in `graphi-broad` (CGO) build
+
+The broad flavor requires a C toolchain and is **opt-in only** — read the residual
+security limitation above before enabling it on untrusted source.
+
+```bash
+# Broad CGO flavor: 257-grammar go-sitter-forest over the same contract.
+# Requires a C toolchain; intended for trusted / CI input only (SW-056-SEC-001).
+CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
+```
+
 ### Run
 
 ```bash
@@ -128,7 +279,8 @@ The single `graphi` binary dispatches the subcommands below. Most accept `-db <p
 |---|---|
 | `graphi parse <file>` | Parse a single file into the graph (default when no subcommand is given). |
 | `graphi query <op> -symbol <id> [-depth N]` | Structural query. `<op>` is one of `callers`, `callees`, `references`, `definition`, `neighborhood`. |
-| `graphi search [-limit N] <query>` | Lexical / symbol search. |
+| `graphi search [-limit N] [-semantic] <query>` | Lexical / symbol search; `-semantic` runs the optional embedding search (graceful-skip when no embedder is configured). |
+| `graphi setup-embedder [<selector>]` | Print how to opt in to the optional semantic search (offline; semantic search stays OFF until you set `GRAPHI_EMBEDDER`). |
 | `graphi analyze <analyzer> -symbol <id> [options]` | Run a semantic or deep analyzer (see below). |
 | `graphi mcp` | Run the MCP **stdio** server (the agent-first surface). |
 | `graphi daemon start\|stop\|status [-socket path] [-db path]` | Manage the hot-index Unix-socket daemon. |
@@ -180,6 +332,13 @@ flowchart TD
 
 New here? The **[How-To guide](docs/HOWTO.md)** walks through install, indexing a
 repo, and using every surface (CLI, HTTP/SSE, web client, TUI, VS Code, MCP).
+
+The **[Architecture Plan](docs/architecture-plan.md)** is the single design entry
+point — the layered model, data flow, parse/extract pipeline, provenance
+contract, and the CI gates that enforce the local-first guarantees. The
+**[capability coverage matrix](docs/coverage-matrix.md)** is the machine-checked,
+CI-enforced inventory of every parser, analyzer, MCP tool, and surface graphi
+actually ships (docs-vs-code drift breaks the build).
 
 Deeper technical documentation lives under [`docs/`](docs/). Start there for parser details, the analysis subsystem, context assembly, and the engineering decisions behind graphi.
 

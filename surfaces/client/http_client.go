@@ -203,6 +203,19 @@ func (h *HTTP) Search(ctx context.Context, query string, limit int) ([]byte, err
 	return h.doGET(ctx, "/search", q)
 }
 
+// SemanticSearch runs the OPTIONAL semantic search over GET /search/semantic.
+// Read-only. The server returns the canonical typed SemanticResponse (the
+// graceful-skip "unavailable" response when no embedder is configured), so the
+// bytes match the in-process and MCP surfaces (SW-059 parity).
+func (h *HTTP) SemanticSearch(ctx context.Context, query string, limit int) ([]byte, error) {
+	q := url.Values{}
+	q.Set("q", query)
+	if limit != 0 {
+		q.Set("limit", strconv.Itoa(limit))
+	}
+	return h.doGET(ctx, "/search/semantic", q)
+}
+
 // Analyze runs a named analyzer over GET /analyze/{analyzer}. Read-only.
 func (h *HTTP) Analyze(ctx context.Context, p AnalyzeParams) ([]byte, error) {
 	q := url.Values{}

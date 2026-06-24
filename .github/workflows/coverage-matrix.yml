@@ -1,0 +1,40 @@
+# SW-060 (FU-4): CI-enforced capability coverage matrix
+#
+# Proves the checked-in capability matrix (docs/coverage-matrix.yaml +
+# docs/coverage-matrix.md) stays in lockstep with the live registries. A PR that
+# adds or removes a parser, analyzer, MCP tool, or surface — or that edits the
+# docs so they contradict the code — fails this check until the matrix is updated
+# and regenerated.
+#
+# Two named steps make the result legible in the build summary:
+#   unit-tests — internal/coverage guard logic (enumerator, parser, drift diff,
+#                .md freshness, fake-analyzer FAIL->PASS demonstration)
+#   gate       — the named check "coverage-matrix": derive the LIVE capability set
+#                and fail (exit 1) on any drift or a stale docs/coverage-matrix.md
+#
+# CGo-free, zero network — read-only over the registries.
+name: coverage-matrix
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  coverage-matrix:
+    name: coverage-matrix
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: unit-tests (coverage guard logic, CGO_ENABLED=0)
+        run: go test ./internal/coverage/...
+
+      - name: coverage-matrix (named check — drift + freshness gate)
+        run: go run ./cmd/coverage -check

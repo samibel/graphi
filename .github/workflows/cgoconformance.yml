@@ -41,5 +41,12 @@ jobs:
       - name: unit-tests (gate logic, CGO_ENABLED=0)
         run: go test ./internal/cgoconformance/...
 
+      # SW-055 AC#2/AC#4: release-blocking registration-level no-CGO guard +
+      # anti-vacuity negative test over RegisterDefaults. Complements the
+      # import-graph cgo scan below (defense-in-depth, two layers). A failure here
+      # blocks the release.
+      - name: no-cgo registration guard (release-blocking, SW-055)
+        run: go test ./core/parse/ -run 'TestAssertPureGoDefaults'
+
       - name: cgo-free-conformance (named check)
         run: go run ./cmd/cgoconformance -target ./cmd/graphi/ -test-target ./... -cgo 0

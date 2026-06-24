@@ -1,0 +1,362 @@
+# graphi — capability coverage matrix (structured source of truth)
+#
+# This file is the SINGLE SOURCE the FU-4 drift guard (internal/coverage) checks
+# against the live registries on every CI run. A row whose status contradicts the
+# code — a missing live capability, a phantom "shipped" entry, or a live
+# capability marked "planned" — fails the `coverage-matrix` build.
+#
+# Categories parser / analyzer / mcp-tool / surface are machine-checked against
+# registered parsers (core/parse), registered analyzers (engine/analysis),
+# advertised MCP tools (surfaces/mcp.ToolNames), and present surfaces. Other
+# categories (feature-unit) are informational traceability and are NOT live-checked.
+#
+# Edit this file, then run `go run ./cmd/coverage -generate` to refresh
+# docs/coverage-matrix.md (a test asserts the .md equals the regenerated output).
+#
+# status: shipped | partial | planned
+capabilities:
+  - id: bash
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: c
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: c_sharp
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: cpp
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: css
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: go
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "Go AST→graph extractor (reference SymbolExtractor, go/ast, CGo-free)."
+  - id: hcl
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: java
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: javascript
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: json
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "stdlib structural parser (CGo-free)."
+  - id: kotlin
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: lua
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: markdown
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: php
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: python
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: ruby
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: rust
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: sql
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: toml
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: tsx
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: typescript
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: yaml
+    category: parser
+    status: shipped
+    epic: EP-001
+    note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
+  - id: html
+    category: parser
+    status: planned
+    epic: EP-001
+    note: "pure-Go grammar present but not subset-buildable in isolation (gotreesitter scanner co-located with grammar_subset_blade); deferred to graphi-broad."
+  - id: batched
+    category: analyzer
+    status: shipped
+    epic: EP-004
+    note: "batched composite over impact+call-chain+metrics."
+  - id: call-chain
+    category: analyzer
+    status: shipped
+    epic: EP-004
+    note: "caller/callee chain reconstruction."
+  - id: concept
+    category: analyzer
+    status: shipped
+    epic: EP-004
+    note: "lexical-search-backed concept resolution (needs Searcher)."
+  - id: contracts
+    category: analyzer
+    status: shipped
+    epic: EP-005
+    note: "producer/consumer contract drift detection."
+  - id: git-history
+    category: analyzer
+    status: shipped
+    epic: EP-005
+    note: "churn / bus-factor / co-change signals."
+  - id: impact
+    category: analyzer
+    status: shipped
+    epic: EP-004
+    note: "forward/reverse blast-radius reachability."
+  - id: interproc
+    category: analyzer
+    status: shipped
+    epic: EP-005
+    note: "interprocedural Sharir-Pnueli procedure summaries."
+  - id: metrics
+    category: analyzer
+    status: shipped
+    epic: EP-004
+    note: "graph centrality / hub-bridge metrics."
+  - id: pdg
+    category: analyzer
+    status: shipped
+    epic: EP-005
+    note: "program dependence graph (data + control dependence)."
+  - id: pr-questions
+    category: analyzer
+    status: shipped
+    epic: EP-007
+    note: "deterministic, no-LLM reviewer questions from findings."
+  - id: pr-risk
+    category: analyzer
+    status: shipped
+    epic: EP-007
+    note: "deterministic per-region PR risk score (impact+taint)."
+  - id: pr-signals
+    category: analyzer
+    status: shipped
+    epic: EP-007
+    note: "hub/bridge/surprise signals on PR-changed code."
+  - id: taint
+    category: analyzer
+    status: shipped
+    epic: EP-005
+    note: "flow-sensitive source→sink taint analysis."
+  - id: analyze
+    category: mcp-tool
+    status: shipped
+    epic: EP-004
+    note: "run a named graph analyzer over the indexed graph."
+  - id: analyze_contracts
+    category: mcp-tool
+    status: shipped
+    epic: EP-005
+    note: "dedicated tool for the contracts analyzer."
+  - id: analyze_githistory
+    category: mcp-tool
+    status: shipped
+    epic: EP-005
+    note: "dedicated tool for the git-history analyzer."
+  - id: analyze_interproc
+    category: mcp-tool
+    status: shipped
+    epic: EP-005
+    note: "dedicated tool for the interproc analyzer."
+  - id: analyze_pdg
+    category: mcp-tool
+    status: shipped
+    epic: EP-005
+    note: "dedicated tool for the PDG analyzer."
+  - id: analyze_pr_questions
+    category: mcp-tool
+    status: shipped
+    epic: EP-007
+    note: "dedicated tool for the pr-questions generator."
+  - id: analyze_pr_risk
+    category: mcp-tool
+    status: shipped
+    epic: EP-007
+    note: "dedicated tool for the pr-risk scorer."
+  - id: analyze_pr_signals
+    category: mcp-tool
+    status: shipped
+    epic: EP-007
+    note: "dedicated tool for the pr-signals detector."
+  - id: analyze_taint
+    category: mcp-tool
+    status: shipped
+    epic: EP-005
+    note: "dedicated tool for the taint analyzer."
+  - id: callees
+    category: mcp-tool
+    status: shipped
+    epic: EP-001
+    note: "structural query: callees."
+  - id: callers
+    category: mcp-tool
+    status: shipped
+    epic: EP-001
+    note: "structural query: callers."
+  - id: definition
+    category: mcp-tool
+    status: shipped
+    epic: EP-001
+    note: "structural query: definition."
+  - id: neighborhood
+    category: mcp-tool
+    status: shipped
+    epic: EP-001
+    note: "structural query: k-hop neighborhood."
+  - id: pr_comment
+    category: mcp-tool
+    status: shipped
+    epic: EP-007
+    note: "render sticky PR review comment + optional merge gate."
+  - id: refactor
+    category: mcp-tool
+    status: shipped
+    epic: EP-006
+    note: "apply a graph-aware refactor with an auditable change record."
+  - id: refactor_preview
+    category: mcp-tool
+    status: shipped
+    epic: EP-006
+    note: "preview a graph-aware refactor (impact set, no mutation)."
+  - id: references
+    category: mcp-tool
+    status: shipped
+    epic: EP-001
+    note: "structural query: references."
+  - id: savings
+    category: mcp-tool
+    status: shipped
+    epic: EP-003
+    note: "token-savings ledger readout (per-call/session/cumulative USD)."
+  - id: search
+    category: mcp-tool
+    status: shipped
+    epic: EP-001
+    note: "lexical / symbol search over the indexed graph."
+  - id: search_semantic
+    category: mcp-tool
+    status: shipped
+    epic: EP-001
+    note: "optional embedding search; reports 'unavailable' cleanly (OFF by default, FU-3)."
+  - id: undo
+    category: mcp-tool
+    status: shipped
+    epic: EP-006
+    note: "reverse a previously applied edit by undo token."
+  - id: cli
+    category: surface
+    status: shipped
+    epic: EP-008
+    note: "graphi CLI (query/search/analyze/edit/setup/parse)."
+  - id: daemon
+    category: surface
+    status: shipped
+    epic: EP-008
+    note: "Unix-socket daemon serving the shared client."
+  - id: github-action
+    category: surface
+    status: shipped
+    epic: EP-007
+    note: "GitHub Action for the PR-review vertical (extensions/github-action)."
+  - id: http
+    category: surface
+    status: shipped
+    epic: EP-008
+    note: "loopback HTTP/SSE surface."
+  - id: mcp
+    category: surface
+    status: shipped
+    epic: EP-008
+    note: "MCP stdio server (JSON-RPC 2.0, stdlib only)."
+  - id: tui
+    category: surface
+    status: shipped
+    epic: EP-008
+    note: "terminal UI surface."
+  - id: vscode
+    category: surface
+    status: shipped
+    epic: EP-008
+    note: "VS Code extension (extensions/vscode)."
+  - id: web
+    category: surface
+    status: shipped
+    epic: EP-008
+    note: "React + Sigma web client (web/)."
+  - id: FU-1
+    category: feature-unit
+    status: planned
+    epic: EP-001
+    note: "Cross-file / cross-package linker pass — resolves selector calls/imports against the committed symbol table. Not yet implemented."
+  - id: FU-2
+    category: feature-unit
+    status: shipped
+    epic: EP-001
+    note: "Curated pure-Go language tier (20 gotreesitter grammars + 2 stdlib) + opt-in graphi-broad CGO flavor."
+  - id: FU-3
+    category: feature-unit
+    status: shipped
+    epic: EP-001
+    note: "Optional embedder graceful-skip path + semantic search (SW-059); resolves OQ6."
+  - id: FU-4
+    category: feature-unit
+    status: shipped
+    epic: EP-001
+    note: "Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix)."

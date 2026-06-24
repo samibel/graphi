@@ -121,6 +121,13 @@ type Parser interface {
 	// ".go") this parser handles. Used by the registry for selection.
 	Extensions() []string
 
+	// Runtime returns the provenance marker for this parser's parsing backend
+	// (go/ast, stdlib, gotreesitter, …). It is the first-class hook the no-CGO
+	// default-tier guard (AssertPureGoDefaults) inspects to assert purity directly
+	// at the registration layer. Implementations declare a constant — Runtime
+	// carries no per-call state.
+	Runtime() Runtime
+
 	// Parse turns src into a normalized ParseResult. It must honor ctx
 	// cancellation, must never panic out to the caller (recovering from any
 	// backend panic internally), and must be deterministic for identical input.

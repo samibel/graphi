@@ -60,3 +60,25 @@ jobs:
           cache: true
       - name: reproducible release build (verify-only)
         run: go run ./cmd/release -version "${{ github.ref_name }}-${{ github.sha }}" -verify-only
+
+      # SW-053 AC#3: the shipped default binary (cmd/release, subset-tagged via
+      # internal/release.DefaultGrammarSubsetTags) MUST embed ONLY the registered
+      # grammar blobs — never the all-206 default embed (+~24.5 MiB). The expected
+      # blob set is DERIVED from the source of truth (cmd/release -list-grammar-blobs
+      # → release.ExpectedGrammarBlobs()), so adding a tier-1 language updates the
+      # gate automatically and the assertion never drifts (SW-060 fix of a stale
+      # single-grammar expectation left over from SW-053). Any extra OR missing
+      # grammar_blobs/*.bin fails the gate.
+      - name: subset-tag default build embeds exactly the registered grammars (AC#3)
+        run: |
+          go run ./cmd/release -version "${{ github.ref_name }}-${{ github.sha }}" -out ./graphi-default
+          embedded=$(strings ./graphi-default | grep -oE 'grammar_blobs/[a-z_0-9]+\.bin' | sort -u)
+          expected=$(go run ./cmd/release -list-grammar-blobs | sort -u)
+          echo "expected grammar blobs (from DefaultGrammarSubsetTags):"; echo "$expected"
+          echo "embedded grammar blobs:"; echo "${embedded:-<none>}"
+          if [ "$embedded" != "$expected" ]; then
+            echo "::error::default build embeds an unexpected grammar blob set (AC#3 violation)"
+            diff <(echo "$expected") <(echo "${embedded:-<none>}") || true
+            exit 1
+          fi
+          rm -f ./graphi-default
