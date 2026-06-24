@@ -19,17 +19,19 @@ import (
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/release"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
 // HarnessConfig parameterizes a benchmark run.
 type HarnessConfig struct {
-	FixtureDir   string // default: <module root>/bench/fixture
-	Samples      int    // default 15 (plus warmup)
-	Warmup       int    // default 2 (discarded cold samples)
-	BinaryTarget string // default ./cmd/graphi/
-	BinaryPath   string // if set, skip the build and stat this path
-	CGOEnabled   string // default "0"
+	FixtureDir   string   // default: <module root>/bench/fixture
+	Samples      int      // default 15 (plus warmup)
+	Warmup       int      // default 2 (discarded cold samples)
+	BinaryTarget string   // default ./cmd/graphi/
+	BinaryPath   string   // if set, skip the build and stat this path
+	CGOEnabled   string   // default "0"
+	BuildTags    []string // build tags for the measured binary; default release.DefaultGrammarSubsetTags
 }
 
 func (c *HarnessConfig) defaults() {
@@ -44,6 +46,16 @@ func (c *HarnessConfig) defaults() {
 	}
 	if c.CGOEnabled == "" {
 		c.CGOEnabled = "0"
+	}
+	// SW-057: the gated binary_size_bytes metric MUST measure the SHIPPED default
+	// build, which is subset-tagged (internal/release.DefaultGrammarSubsetTags) so
+	// only the registered grammar blobs are embedded — never the all-206 default
+	// embed (+~24.5 MiB). A nil BuildTags defaults to the subset-tag set so the
+	// budget gate enforces the corrected runtime + per-blob size model, not the
+	// prohibited all-206 envelope. Pass an explicit (possibly empty) slice to
+	// override (e.g. to measure the all-206 contrast).
+	if c.BuildTags == nil {
+		c.BuildTags = release.DefaultGrammarSubsetTags
 	}
 }
 
@@ -112,7 +124,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 		}
 		defer os.RemoveAll(tmp)
 		ownedBin = filepath.Join(tmp, "graphi")
-		if out, err := buildBinary(ctx, cfg.BinaryTarget, ownedBin, cfg.CGOEnabled, modRoot); err != nil {
+		if out, err := buildBinary(ctx, cfg.BinaryTarget, ownedBin, cfg.CGOEnabled, modRoot, cfg.BuildTags); err != nil {
 			return Metrics{}, fmt.Errorf("bench: build binary: %w (%s)", err, strings.TrimSpace(string(out)))
 		}
 		binPath = ownedBin
@@ -268,8 +280,16 @@ func copyDir(src, dst string) error {
 	})
 }
 
-func buildBinary(ctx context.Context, target, out, cgo, modRoot string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "go", "build", "-o", out, target)
+func buildBinary(ctx context.Context, target, out, cgo, modRoot string, tags []string) ([]byte, error) {
+	args := []string{"build"}
+	if len(tags) > 0 {
+		// Subset-tag the measured binary so binary_size_bytes reflects the SHIPPED
+		// default build (only the registered grammar blobs embedded), matching the
+		// canonical cmd/release build. Space-joined `-tags 'a b c'` form.
+		args = append(args, "-tags", strings.Join(tags, " "))
+	}
+	args = append(args, "-o", out, target)
+	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Env = withCgo(os.Environ(), cgo)
 	cmd.Dir = modRoot
 	return cmd.CombinedOutput()

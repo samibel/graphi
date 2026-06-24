@@ -62,10 +62,15 @@ pointers to it were dangling.)
 | 20 | SQL             | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
 | 21 | Kotlin          | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
 | 22 | Lua             | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
-| 23 | Dockerfile      | yes                    | tier-1                  |
-| 24 | Protobuf        | yes                    | tier-1                  |
-| 25 | GraphQL         | yes                    | tier-1                  |
-| 26 | HCL / Terraform | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+| 23 | HCL / Terraform | yes (pure-Go gotreesitter)| SW-054 shipped; subset-tagged |
+
+> **Tier-1 list reconciled (SW-057, EP-009 re-plan Human Decision #2).** **Dockerfile,
+> Protobuf, and GraphQL** were dropped from the committed tier-1 set — they are **NOT** in
+> the shipped 20-blob default build and have no `grammar_subset_<lang>` tag in
+> `internal/release.DefaultGrammarSubsetTags`. Revisit them as a follow-up if their pure-Go
+> extractors become worth tier-1 effort. The frozen committed tier-1 set is exactly the **20
+> subset-tagged languages** below (plus the two stdlib parsers Go + JSON, which carry no
+> gotreesitter blob), with **HTML deferred** to `graphi-broad` (subset-isolation blocker).
 
 ### Deferred to `graphi-broad` (NOT in the default tier)
 
@@ -77,15 +82,20 @@ available grammar is **CGO-only** (`go-sitter-forest`). They MUST NOT enter the 
 > **RE-PLANNED note:** the *reason* for deferral is now **extractor scope / CGO-only
 > grammars**, NOT "no maintained pure-Go grammar in `go-sitter-forest`" (that premise was
 > false — `gotreesitter` ships 206 pure-Go grammars, all tier-1 languages present). The
-> deferred long tail is the `go-sitter-forest` 257-grammar CGO bundle consumed by SW-056.
-> Re-evaluate per language if its pure-Go extractor becomes worth tier-1 effort.
+> deferred long tail is reachable through the `go-sitter-forest`-backed CGO seam (SW-056):
+> that lane exposes a **257-grammar** seam, but it wires exactly **one** grammar — `zig` —
+> as the reference (`core/parse/broad.go` `RegisterBroad`); the 257-grammar `forest`
+> meta-module is **intentionally not imported** (it would statically pull in hundreds of MB
+> of generated C). Re-evaluate per language if its pure-Go extractor becomes worth tier-1
+> effort, or wire it on the broad lane one subpackage at a time.
 
 ## Per-worker binary-size envelope
 
 Baseline (CGo-free stdlib build, ADR 0001): the default binary is ~3.4 MiB; with
-the EP-008 HTTP/SSE surface the pinned `binary_size_bytes` baseline is
-`18,500,000`, budget `20,000,000` — i.e. **~1.5 MB of headroom against the pinned
-gate**, and ~30 MB against the hard < 50 MB whole-binary ceiling.
+the EP-008 HTTP/SSE surface plus the curated 20-grammar subset-tagged tier, the
+pinned `binary_size_bytes` baseline is **`28,615,410`**, budget **`30,000,000`**
+(`baseline_version: 2026-06-24-ep009`, SW-057) — i.e. **~1.4 MB of headroom against
+the pinned gate**, and ~21 MB against the hard < 50 MB whole-binary ceiling.
 
 > **RE-PLANNED 2026-06-24 — size model corrected.** The old "≤ 1.0 MB **per language**,
 > ≤ 25 MB **epic-total**" envelope is **superseded** (EP-009-REPLAN-001). It is the **wrong
@@ -101,9 +111,11 @@ embeds only the selected blobs, and the delta decomposes as:
   runtime (parser/lexer/query engine), linked the moment the first grammar registers.
 - **Marginal cost (per registered language):** the parse-table blob only — tens to hundreds of
   KiB (TypeScript `typescript.bin` ≈ 119 KiB).
-- **Governing gate:** the whole-binary **< 50 MB** hard ceiling. The projected subset-tagged
-  tier-1 total is ≈ 18 MB — ~32 MB of headroom. The global `bench-budget.yml` re-pin against
-  the subset total is owned by **SW-057** (untouched here).
+- **Governing gate:** the whole-binary **< 50 MB** hard ceiling. The **measured** subset-tagged
+  tier-1 total (20 grammars, go1.26.3 / darwin-arm64, bench harness) is **28,615,410 B
+  (~27.3 MB)** — ~21 MB of headroom under the hard gate. The global `bench-budget.yml` re-pin
+  against this subset total is owned by **SW-057** and is now applied (baseline `28,615,410`,
+  budget `30,000,000`, `baseline_version: 2026-06-24-ep009`). See "Re-pinning (SW-057)" below.
 
 **Subset-tag default build (SW-053 AC#3 — load-bearing).** The shipped default build MUST be
 built with `-tags 'grammar_subset grammar_subset_<lang> …'` (one `grammar_subset_<lang>` per
@@ -231,12 +243,28 @@ the default `CGO_ENABLED=0` subset build green. Re-evaluate when upstream gotree
 shared HTML scanner core out of `blade_scanner.go` into an html-gated file. This deferral is for a
 **build-packaging** reason (subset-isolation), distinct from the SW-056 CGO-only-grammar path.
 
-### Re-pinning (SW-057)
+### Re-pinning (SW-057) — APPLIED
 
-Once the tier-1 grammars land and real per-language deltas are measured, **SW-057**
-consolidates the measured total into `bench-budget.yml` (`binary_size_bytes`
-baseline/budget) and bumps `baseline_version`. Until then, this file is the
-planning contract; the enforced gate value is unchanged.
+**Done (SW-057, 2026-06-24).** The tier-1 grammars landed; the consolidation slice
+re-pinned `bench-budget.yml` `binary_size_bytes` **once** against the **shipped
+subset-tagged** total and bumped `baseline_version`:
+
+- **baseline:** `28,615,410` B (= measured shipped subset-tagged default)
+- **budget:** `30,000,000` B (~4.8% headroom; ~20 MB under the < 50 MB hard ceiling)
+- **baseline_version:** `2026-06-24-ep009` (with a justification comment block)
+
+**Measurement note (flag reconciliation).** The per-worker SW-053/SW-054 "Measured
+deltas" tables above were recorded with `-trimpath -ldflags="-s -w"` (symbol-stripped),
+giving the smaller historical figures (e.g. 18,979,778 B for the 20-blob subset). The
+**enforced gate** measures the **shipped** binary as built by the canonical `cmd/release`
+path / the `cmd/bench` harness — `-trimpath`, version-stamped, **without** `-s -w`
+stripping — which is **28,615,410 B**. The gate is pinned against that shipped number (the
+one users actually ship), not the stripped-build figure. Both are far under the < 50 MB
+ceiling; the all-206 untagged build (~46 MB) is what the subset tags prevent shipping.
+
+The `cmd/bench` harness now builds its measured binary with
+`internal/release.DefaultGrammarSubsetTags` (SW-057), so the budget gate enforces the
+**subset model** (20 registered blobs), never the all-206 envelope.
 
 ## Hard constraints carried from SW-052 (+ EP-009 re-plan)
 

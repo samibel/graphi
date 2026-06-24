@@ -41,18 +41,37 @@ graphi grows from a structural core into semantic and deep analysis. Each capabi
 #### Language support
 
 The parser registry is open/closed — languages plug in behind a stable seam
-without touching existing code. Current extraction coverage:
+without touching existing code.
+
+**Default tier (CGo-free, shipped binary).** Two stdlib parsers plus **20**
+subset-tagged pure-Go `gotreesitter` grammars. The shipped default is built with
+`-tags 'grammar_subset grammar_subset_<lang> …'`
+([`internal/release.DefaultGrammarSubsetTags`](internal/release/build.go)) so only
+these languages' grammar blobs are embedded — never the all-206 default embed.
 
 | Language | Symbol nodes | Intra-file edges | Cross-file/package edges |
 |---|---|---|---|
 | **Go** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ⏳ linker pass (roadmap) |
 | JSON | structural (AST) | — | — |
+| TypeScript · TSX/JSX · JavaScript | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| Python · Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| Bash/Shell · SQL | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
 
-Additional CGo-free tier-1 grammars (the pure-Go `gotreesitter` runtime + its
-embedded grammar blobs, selected via subset build tags) and the opt-in
-`graphi-broad` CGO build (broad grammar set) plug in through the same registry
-seam; the frozen tier-1 list and binary-budget model live in
-[`bench/lang-budget.md`](bench/lang-budget.md).
+> **Deferred / not in the default tier.**
+> - **HTML** — has a pure-Go grammar but is **not subset-buildable in isolation** in
+>   gotreesitter v0.20.2 (its scanner core is co-located with `grammar_subset_blade`
+>   upstream), so it is **deferred** and **not shipped** in the default tier. Re-evaluate
+>   when upstream splits the HTML scanner out.
+> - **Dockerfile / Protobuf / GraphQL** — **not** in the committed tier-1 set (follow-up).
+> - **`zig` and the broad long tail** — available **only** in the opt-in `graphi-broad`
+>   CGO build (see below), never in the CGo-free default.
+
+The frozen tier-1 list and the corrected (one-time runtime + per-blob) binary-budget
+model live in [`bench/lang-budget.md`](bench/lang-budget.md); the EP-009 resolution and the
+full per-language blob deltas are recorded in the epic.
 
 #### The opt-in `graphi-broad` CGO flavor (broad coverage)
 
@@ -63,16 +82,20 @@ graphi ships in two flavors over the **same** `SymbolExtractor` contract:
   toolchain is required and the default import graph provably contains no CGO
   package (CI-enforced — see below).
 - **`graphi-broad` (opt-in CGO).** Built with `-tags graphi_broad` and
-  `CGO_ENABLED=1`, this flavor wires the **257-grammar
-  [`go-sitter-forest`](https://github.com/alexaandru/go-sitter-forest)** set
-  (native C tree-sitter via `go-tree-sitter-bare`) over the *same* contract, so
-  every broad grammar produces the same `file / function / method / type /
-  variable / constant` vocabulary the default tier does.
+  `CGO_ENABLED=1`, this flavor opens the **257-grammar
+  [`go-sitter-forest`](https://github.com/alexaandru/go-sitter-forest)** CGO *seam*
+  (native C tree-sitter via `go-tree-sitter-bare`) over the *same* contract, so any
+  broad grammar produces the same `file / function / method / type / variable /
+  constant` vocabulary the default tier does. Today the lane wires **one** grammar —
+  `zig` — as the reference; the 257-grammar `forest` meta-module is intentionally **not**
+  imported (it would statically pull in hundreds of MB of generated C). Additional broad
+  grammars are added one subpackage at a time.
 
 **Before / after this slice (SW-056).** *Before:* the default pure-Go tier only —
-broad coverage was not available. *After:* the opt-in `graphi-broad` CGO flavor
-wires the 257-grammar `go-sitter-forest` set over the same `SymbolExtractor`
-contract, **build-tag isolated** so the default tier is provably unaffected.
+broad coverage was not available. *After:* the opt-in `graphi-broad` CGO flavor opens
+the `go-sitter-forest`-backed CGO seam over the same `SymbolExtractor` contract
+(`zig` wired as the reference grammar), **build-tag isolated** so the default tier is
+provably unaffected.
 
 **Why a separate flavor.** `go-sitter-forest` is *wholly CGO*. Keeping it behind
 the `graphi_broad` build tag gives broad language coverage **without compromising

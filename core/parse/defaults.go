@@ -7,10 +7,13 @@ package parse
 // parser is a special case (SW-052 STEP-0 contract).
 //
 // The default tier is strictly CGo-free: only pure-Go parsers are registered here.
-// Additional tier-1 tree-sitter grammars (from the maintained pure-Go subset of
-// go-sitter-forest, frozen in bench/lang-budget.md) and the opt-in CGO graphi-broad
-// bundle (behind a build tag) plug in through this same seam without editing the
-// existing registrations.
+// Additional tier-1 tree-sitter grammars (sourced from the pure-Go gotreesitter
+// runtime + its embedded grammar blobs, selected at build time via subset build
+// tags — see internal/release.DefaultGrammarSubsetTags; frozen list in
+// bench/lang-budget.md) and the opt-in CGO graphi-broad bundle (behind a build
+// tag) plug in through this same seam without editing the existing registrations.
+// (Corrected per EP-009-REPLAN-001: go-sitter-forest is entirely CGO and has no
+// pure-Go subset; the default tier draws from gotreesitter, not go-sitter-forest.)
 func RegisterDefaults(r *Registry) *Registry {
 	r.Register(NewGoParser())         // go  — reference SymbolExtractor (go/ast, CGo-free)
 	r.Register(NewJSONParser())       // json — stdlib structural parser (CGo-free)

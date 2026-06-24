@@ -14,7 +14,27 @@ version: 1
 # binary (~+5.5MB, unavoidable for net/http). The optional Bubble Tea TUI is
 # behind the `tui` build tag and excluded from the default binary. This is an
 # intentional, justified growth, not a regression.
-baseline_version: "2026-06-23-v2"
+#
+# 2026-06-24-ep009: SINGLE consolidation re-pin for EP-009 (SW-057, Slice 6).
+# binary_size_bytes is now measured against the SHIPPED SUBSET-TAGGED default
+# build — the corrected size model: a pre-grammar baseline + the ~3.13 MB one-time
+# pure-Go gotreesitter runtime (paid once) + only the registered tier-1 grammar
+# parse-table blobs (20 languages: TS + 19 SW-054). The shipped default is built
+# with `-tags 'grammar_subset grammar_subset_<lang> …'` via
+# internal/release.DefaultGrammarSubsetTags, so it embeds ONLY the registered
+# blobs — NEVER the all-206 default embed (+~24.5 MiB, ~46 MB total — prohibited
+# in the shipped default). The bench harness (cmd/bench) now builds the measured
+# binary with those same subset tags (internal/bench wires DefaultGrammarSubsetTags),
+# so the gate enforces the subset model, not the all-206 envelope.
+#
+# Measured subset-tagged default (bench harness, go1.26.3 / darwin-arm64,
+# sw-056-graphi-broad cumulative tier): 28,615,410 B (~27.3 MB) — well under the
+# < 50 MB GoReleaser hard ceiling (~21 MB headroom). The previous pinned baseline
+# 18,500,000 / budget 20,000,000 was BELOW this measured subset total, so the gate
+# failed today against the merged tier-1 build — this re-pin is the load-bearing
+# act of the consolidation slice, not cosmetic. baseline = measured; budget gives a
+# small justified headroom (~4.8%) and stays far under the hard < 50 MB gate.
+baseline_version: "2026-06-24-ep009"
 fixture_digest: "352f2fd0ea28f0652ed4b71f651b737301a20604e40182c83ae1a94f02e847ee"
 
 metrics:
@@ -31,6 +51,11 @@ metrics:
     budget: 2000
     unit: ms
   binary_size_bytes:
-    baseline: 18500000
-    budget: 20000000
+    # Subset-tagged shipped default (SW-057, 2026-06-24-ep009). baseline = measured
+    # 28,615,410 B; budget 30,000,000 B (~4.8% headroom, ~20 MB under the < 50 MB
+    # hard ceiling). Measured via the cmd/bench harness, which builds the binary
+    # with internal/release.DefaultGrammarSubsetTags (20 registered grammar blobs,
+    # not all-206).
+    baseline: 28615410
+    budget: 30000000
     unit: bytes
