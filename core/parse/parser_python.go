@@ -240,11 +240,21 @@ func pyImports(t *pyAST) []ImportSpec {
 		}
 		switch c.Type(t.lang) {
 		case "import_statement":
-			// import os  / import os, sys
+			// import os  / import os, sys / import os as my_os
 			for j := 0; j < c.ChildCount(); j++ {
 				d := c.Child(j)
-				if d != nil && d.Type(t.lang) == "dotted_name" {
+				if d == nil {
+					continue
+				}
+				switch d.Type(t.lang) {
+				case "dotted_name":
 					out = append(out, ImportSpec{Alias: d.Text(t.src), Path: d.Text(t.src)})
+				case "aliased_import":
+					name := d.ChildByFieldName("name", t.lang)
+					alias := d.ChildByFieldName("alias", t.lang)
+					if name != nil && alias != nil {
+						out = append(out, ImportSpec{Alias: alias.Text(t.src), Path: name.Text(t.src)})
+					}
 				}
 			}
 		case "import_from_statement":

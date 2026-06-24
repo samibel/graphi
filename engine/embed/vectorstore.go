@@ -115,8 +115,12 @@ func (ix *Index) Put(id model.NodeId, values []float32) {
 	copy(cp, values)
 	ix.mu.Lock()
 	if _, exists := ix.byID[id]; !exists {
-		ix.order = append(ix.order, id)
-		sort.Slice(ix.order, func(i, j int) bool { return ix.order[i] < ix.order[j] })
+		// ix.order is kept sorted, so insert at the binary-search position in
+		// O(N) rather than re-sorting the whole slice on every Put.
+		idx := sort.Search(len(ix.order), func(i int) bool { return ix.order[i] >= id })
+		ix.order = append(ix.order, "")
+		copy(ix.order[idx+1:], ix.order[idx:])
+		ix.order[idx] = id
 	}
 	ix.byID[id] = cp
 	ix.mu.Unlock()

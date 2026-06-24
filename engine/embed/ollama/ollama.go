@@ -117,12 +117,16 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 		if err != nil {
 			return nil, fmt.Errorf("ollama: request to %s failed: %w", e.endpoint, err)
 		}
+		// Check the HTTP status BEFORE decoding: a non-200 (e.g. 404/500 with an
+		// HTML body) must report the actual status, not a misleading JSON decode
+		// error from trying to parse the error page.
+		if resp.StatusCode != http.StatusOK {
+			_ = resp.Body.Close()
+			return nil, fmt.Errorf("ollama: endpoint returned status %d", resp.StatusCode)
+		}
 		var decoded ollamaEmbedResponse
 		decErr := json.NewDecoder(resp.Body).Decode(&decoded)
 		_ = resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("ollama: endpoint returned status %d", resp.StatusCode)
-		}
 		if decErr != nil {
 			return nil, fmt.Errorf("ollama: decode response: %w", decErr)
 		}

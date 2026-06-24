@@ -3,6 +3,7 @@ package parse
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	gts "github.com/odvcencio/gotreesitter"
 	"github.com/odvcencio/gotreesitter/grammars"
@@ -194,13 +195,23 @@ func bashImports(t *bashAST) []ImportSpec {
 				if word := childByType(cn, "word", t.lang); word != nil {
 					name := word.Text(t.src)
 					if name == "source" || name == "." {
-						// First word argument after the command name is the path.
+						// First argument after the command name is the path. It may
+						// be a bare word (source lib.sh) or a quoted string
+						// (source "lib.sh" / 'lib.sh'); trim surrounding quotes.
 						for i := 0; i < n.ChildCount(); i++ {
 							arg := n.Child(i)
-							if arg != nil && arg.Type(t.lang) == "word" {
-								out = append(out, ImportSpec{Path: arg.Text(t.src)})
-								break
+							if arg == nil {
+								continue
 							}
+							switch arg.Type(t.lang) {
+							case "word", "string", "raw_string":
+								if path := strings.Trim(arg.Text(t.src), `"'`); path != "" {
+									out = append(out, ImportSpec{Path: path})
+								}
+							default:
+								continue
+							}
+							break
 						}
 					}
 				}

@@ -285,11 +285,20 @@ func tsxImports(t *tsxAST) []ImportSpec {
 			out = append(out, ImportSpec{Path: path})
 			continue
 		}
+		// A clause may combine a default import with a namespace or named list
+		// (e.g. `import Logger, {warn} from "./log"`), so capture each form
+		// additively rather than with early continues.
+		hasAlias := false
+		// Default import: the clause's direct identifier child is the binding.
+		if id := childByType(clause, "identifier", t.lang); id != nil {
+			out = append(out, ImportSpec{Alias: id.Text(t.src), Path: path})
+			hasAlias = true
+		}
 		if ns := childByType(clause, "namespace_import", t.lang); ns != nil {
 			if id := childByType(ns, "identifier", t.lang); id != nil {
 				out = append(out, ImportSpec{Alias: id.Text(t.src), Path: path})
+				hasAlias = true
 			}
-			continue
 		}
 		if named := childByType(clause, "named_imports", t.lang); named != nil {
 			for j := 0; j < named.ChildCount(); j++ {
@@ -299,11 +308,13 @@ func tsxImports(t *tsxAST) []ImportSpec {
 				}
 				if name := spec.ChildByFieldName("name", t.lang); name != nil {
 					out = append(out, ImportSpec{Alias: name.Text(t.src), Path: path})
+					hasAlias = true
 				}
 			}
-			continue
 		}
-		out = append(out, ImportSpec{Path: path})
+		if !hasAlias {
+			out = append(out, ImportSpec{Path: path})
+		}
 	}
 	return out
 }
