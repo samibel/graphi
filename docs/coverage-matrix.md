@@ -106,4 +106,4 @@ Total capabilities: **69**. See [`architecture-plan.md`](architecture-plan.md) f
 | `FU-1` | ⏳ planned | EP-001 | Cross-file / cross-package linker pass — resolves selector calls/imports against the committed symbol table. Not yet implemented. |
 | `FU-2` | ✅ shipped | EP-001 | Curated pure-Go language tier (20 gotreesitter grammars + 2 stdlib) + opt-in graphi-broad CGO flavor. |
 | `FU-3` | ✅ shipped | EP-001 | Optional embedder graceful-skip path + semantic search (SW-059); resolves OQ6. |
-| `FU-4` | 🟡 partial | EP-001 | This traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix. |
+| `FU-4` | ✅ shipped | EP-001 | Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix). |

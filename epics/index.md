@@ -3,6 +3,12 @@
 > Traceability map for PB-001 → EP-001..EP-008. This is the in-repo answer to
 > "has every point in the concept been worked on?" Status reflects code present
 > on the default branch, verified by tests/CI, not intent.
+>
+> **Single source of truth for capabilities:** the machine-checked
+> [capability coverage matrix](../docs/coverage-matrix.md) (CI-enforced —
+> docs-vs-code drift breaks the build). Design context lives in the
+> [Architecture Plan](../docs/architecture-plan.md). The epic statuses below are
+> reconciled to that matrix.
 
 ## Legend
 
@@ -14,7 +20,7 @@
 
 | Epic | Title | Status | Key packages | Notes |
 |---|---|---|---|---|
-| EP-001 | Core code graph & structural queries | 🟡 partial | `core/parse`, `core/graphstore`, `engine/{query,search,ingest}` | Graph, queries, search, incremental ingest, daemon all shipped. **Go symbol extraction now populates the graph** (intra-file). Cross-file/package linker + more languages outstanding (see FU-1, FU-2). |
+| EP-001 | Core code graph & structural queries | 🟡 partial | `core/parse`, `core/graphstore`, `engine/{query,search,ingest}` | Graph, queries, search, incremental ingest, daemon all shipped. **22 CGo-free parsers** registered (FU-2 ✅) and **optional semantic search** wired (FU-3 ✅, OFF by default). Remaining gap: the **cross-file/cross-package linker (FU-1, ⏳)** — intra-file extraction only today. |
 | EP-002 | Local-first trust, DevOps & eval | ✅ shipped | `internal/{canary,cgoconformance,audit}`, `.github/workflows/*` | Egress canary, CGo-free gate, zero-telemetry, ledger audit, eval, reproducible release, layer-direction guard. |
 | EP-003 | Token-savings ledger & token-efficient context | ✅ shipped | `engine/{meter,price,ledger,cap,context}` | Per-call metering, embedded USD price table, durable JSONL ledger, anti-gaming cap, `graphi savings`. |
 | EP-004 | Impact analysis & semantic queries | ✅ shipped | `engine/analysis/{impact,callchain,concept,metrics,batched}` | Operates on the graph; now exercised by real extracted Go nodes/edges. |
@@ -27,19 +33,19 @@
 
 | # | Topic | Decision | In-repo state |
 |---|---|---|---|
-| OQ1 | Parsing | Hybrid: CGo-free default + opt-in `graphi-broad` | Seam present (`core/parse`); curated tier & broad build are FU-2. |
+| OQ1 | Parsing | Hybrid: CGo-free default + opt-in `graphi-broad` | ✅ Curated 22-language CGo-free tier + opt-in `graphi-broad` CGO flavor shipped (FU-2). |
 | OQ2 | License | Apache-2.0 | ✅ |
 | OQ3 | Name | graphi | ✅ |
 | OQ4 | Headline metric | ~50× fewer tokens, eval-gated | ✅ `internal/eval` claim gate on committed dataset. |
 | OQ5 | Launch hero | Claude Code (`graphi setup`) | ✅ |
-| OQ6 | Default embedder | Graceful-skip until configured | ⏳ embedder/semantic search not yet present (FU-3). |
+| OQ6 | Default embedder | Graceful-skip until configured | ✅ Resolved — optional `engine/embed` + semantic search, OFF by default, graceful-skip until configured (FU-3 / SW-059). |
 
-## Open follow-up stories (the remaining "points")
+## Follow-up stories (the remaining "points")
 
-These are the concrete gaps surfaced by the PB-001 coverage audit. They are
-sequenced by leverage.
+These are the concrete gaps surfaced by the PB-001 coverage audit, sequenced by
+leverage. Status is reconciled to the [coverage matrix](../docs/coverage-matrix.md).
 
-- **FU-1 — Cross-file / cross-package linker pass.** ⏳
+- **FU-1 — Cross-file / cross-package linker pass.** ⏳ **planned (only open gap)**
   `core/parse/extract_go.go` emits only edges provable within one file because
   `graphstore.PutEdge` requires both endpoints to exist and ingest commits one
   file at a time. Add a post-ingest linker that resolves selector calls
@@ -48,20 +54,21 @@ sequenced by leverage.
   full-vs-incremental byte-identical invariant. Highest leverage: unlocks
   whole-repo callers/callees, impact, and taint on real code.
 
-- **FU-2 — Curated pure-Go language tier + `graphi-broad`.** ⏳
-  Beyond Go/JSON, add CGo-free tier-1 grammars (target ~20–40 languages) behind
-  the existing `RegisterDefaults` seam, generalizing the extractor over a
-  language-neutral node/edge mapping, keeping `CGO_ENABLED=0` and the <50 MB
-  budget green. Then add the build-tagged `graphi-broad` CGO flavor wiring the
-  257-grammar set (zero-egress + no-telemetry still enforced; the hard CGo-free
-  gate is exempted for that flavor only). Resolves OQ1 fully.
+- **FU-2 — Curated pure-Go language tier + `graphi-broad`.** ✅ **shipped**
+  22 CGo-free parsers registered behind the `RegisterDefaults` seam (2 stdlib +
+  20 subset-tagged pure-Go `gotreesitter` grammars), `CGO_ENABLED=0` and the
+  <50 MB budget green, plus the build-tagged opt-in `graphi-broad` CGO flavor.
+  Resolves OQ1. (HTML remains deferred — see the coverage matrix `planned` row.)
 
-- **FU-3 — Embedder graceful-skip path.** ⏳
-  Add an `engine/embed` registry with a graceful-skip default (semantic search
-  off until an embedder such as Ollama is configured), build-tag-gated ONNX
+- **FU-3 — Embedder graceful-skip path.** ✅ **shipped (SW-059)**
+  `engine/embed` registry with a graceful-skip default (semantic search OFF until
+  an embedder such as loopback Ollama is configured), build-tag-gated ONNX
   carve-out so the default binary stays CGo-free. Resolves OQ6.
 
-- **FU-4 — Traceability docs.** 🟡
-  This registry + the README language-support matrix are the first installment.
-  A consolidated `docs/architecture-plan.md` and a per-capability feature
-  coverage matrix (CI-failing on drift) remain.
+- **FU-4 — Traceability docs + CI-enforced coverage matrix.** ✅ **shipped (SW-060)**
+  The consolidated [Architecture Plan](../docs/architecture-plan.md) is the single
+  design entry point, and the [capability coverage matrix](../docs/coverage-matrix.md)
+  is **machine-checked against the live registries** — a docs-vs-code drift
+  (`internal/coverage` + the `coverage-matrix` CI gate) breaks the build. This
+  registry, the README language matrix, and the coverage matrix are reconciled to
+  a single source of truth.

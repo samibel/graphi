@@ -357,6 +357,6 @@ capabilities:
     note: "Optional embedder graceful-skip path + semantic search (SW-059); resolves OQ6."
   - id: FU-4
     category: feature-unit
-    status: partial
+    status: shipped
     epic: EP-001
-    note: "This traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix."
+    note: "Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix)."

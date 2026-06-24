@@ -333,6 +333,13 @@ flowchart TD
 New here? The **[How-To guide](docs/HOWTO.md)** walks through install, indexing a
 repo, and using every surface (CLI, HTTP/SSE, web client, TUI, VS Code, MCP).
 
+The **[Architecture Plan](docs/architecture-plan.md)** is the single design entry
+point — the layered model, data flow, parse/extract pipeline, provenance
+contract, and the CI gates that enforce the local-first guarantees. The
+**[capability coverage matrix](docs/coverage-matrix.md)** is the machine-checked,
+CI-enforced inventory of every parser, analyzer, MCP tool, and surface graphi
+actually ships (docs-vs-code drift breaks the build).
+
 Deeper technical documentation lives under [`docs/`](docs/). Start there for parser details, the analysis subsystem, context assembly, and the engineering decisions behind graphi.
 
 ## License
