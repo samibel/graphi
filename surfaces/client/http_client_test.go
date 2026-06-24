@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
@@ -226,14 +227,31 @@ func TestHTTP_SubscribeEvents(t *testing.T) {
 	if !strings.Contains(ev.Data, "schema_version") {
 		t.Fatalf("ready frame missing schema_version: %q", ev.Data)
 	}
+	// The server sends the "ready" frame BEFORE it calls broker.Subscribe (see
+	// surfaces/http/server.go: writeFrame "ready", then broker.Subscribe), so the
+	// ready handshake is NOT a sync point for the broker subscription. Wait for the
+	// subscription to register, otherwise the loss-tolerant Publish below can race
+	// ahead of it and be dropped (the flake this guards against).
+	deadline := time.Now().Add(2 * time.Second)
+	for broker.Subscribers() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("server did not subscribe to broker within 2s after ready handshake")
+		}
+		time.Sleep(time.Millisecond)
+	}
+
 	// Publish a freshness event; the adapter should surface it as a typed Event.
 	broker.Publish(ctx, observe.Event{Type: "ingest-completed"})
 	select {
-	case ev := <-ch:
+	case ev, ok := <-ch:
+		if !ok {
+			t.Fatal("event channel closed before ingest-completed arrived")
+		}
 		if ev.Type != "ingest-completed" {
 			t.Fatalf("got %+v, want ingest-completed", ev)
 		}
-	case <-context.Background().Done():
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for ingest-completed event")
 	}
 }
 

@@ -1,0 +1,14 @@
+graphi
+Copyright 2026 The graphi Authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The default `graphi` binary is built CGo-free and bundles no third-party source
+in this repository. Third-party Go modules pulled in at build time (see go.mod /
+go.sum) remain governed by their own licenses.
+
+The optional, build-tag-gated `graphi-broad` flavor (`-tags graphi_broad`,
+CGO_ENABLED=1) links the go-sitter-forest Tree-sitter grammar set. Those grammars
+and the Tree-sitter runtime are distributed under their respective upstream
+licenses (predominantly MIT/Apache-2.0); consult the corresponding modules in
+go.sum for the authoritative terms. graphi does not relicense them.
