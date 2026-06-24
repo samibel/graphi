@@ -102,6 +102,13 @@ jobs:
           cache: true
       - name: installers match the release source of truth
         run: go run ./cmd/gen-install -check
+      # SW-071 (EP-010 Task H): the committed Homebrew formula + Scoop manifest
+      # (packaging/homebrew/graphi.rb, packaging/scoop/graphi.json) are GENERATED
+      # by cmd/gen-packaging from internal/release.ReleaseTargets (single source of
+      # truth). `-check` re-renders the canonical placeholder structure and fails
+      # if a committed manifest drifts from the release matrix.
+      - name: packaging manifests match the release source of truth
+        run: go run ./cmd/gen-packaging -check
       - name: install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: shellcheck install.sh
