@@ -385,10 +385,7 @@ func clausePackageFileNodes(idx *SymbolIndex, clause string) []model.NodeId {
 	seen := map[model.NodeId]struct{}{}
 	var out []model.NodeId
 	for dir := range dirs {
-		for sp, id := range idx.fileNodeByPath {
-			if posixDir(sp) != dir {
-				continue
-			}
+		for _, id := range idx.fileNodesByDir[dir] {
 			if _, dup := seen[id]; dup {
 				continue
 			}

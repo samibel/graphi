@@ -35,6 +35,12 @@ type SymbolIndex struct {
 	// so the linker can emit file→file imports edges against committed file nodes.
 	fileNodeByPath map[string]model.NodeId
 
+	// fileNodesByDir maps a source directory to the committed "file" node ids
+	// declared in it. Precomputed once in BuildIndex so package-file-node lookups
+	// (packageFileNodes / clausePackageFileNodes) cost O(files-in-dir) instead of
+	// re-scanning every file node in the repo on every package import.
+	fileNodesByDir map[string][]model.NodeId
+
 	// clauseByDir maps a directory to the package clause its symbols declare,
 	// derived from node qualified names (pkg.Symbol). Used to find the directory
 	// a selector base's import path resolves into.
@@ -55,6 +61,7 @@ func BuildIndex(nodes []model.Node) *SymbolIndex {
 		dirAmbiguous:   map[string]map[string]struct{}{},
 		byClause:       map[string]map[string]map[string]model.NodeId{},
 		fileNodeByPath: map[string]model.NodeId{},
+		fileNodesByDir: map[string][]model.NodeId{},
 		clauseByDir:    map[string]string{},
 	}
 	for _, n := range nodes {
@@ -62,6 +69,7 @@ func BuildIndex(nodes []model.Node) *SymbolIndex {
 		dir := posixDir(sp)
 		if n.Kind() == fileKind {
 			idx.fileNodeByPath[sp] = n.ID()
+			idx.fileNodesByDir[dir] = append(idx.fileNodesByDir[dir], n.ID())
 			continue
 		}
 		clause, bare := splitQN(n.QualifiedName())
@@ -218,10 +226,7 @@ func (idx *SymbolIndex) packageFileNodes(importPath string) []model.NodeId {
 	seen := map[model.NodeId]struct{}{}
 	var out []model.NodeId
 	for dir := range dirs {
-		for sp, id := range idx.fileNodeByPath {
-			if posixDir(sp) != dir {
-				continue
-			}
+		for _, id := range idx.fileNodesByDir[dir] {
 			if _, dup := seen[id]; dup {
 				continue
 			}
