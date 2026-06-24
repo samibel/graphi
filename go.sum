@@ -1,3 +1,7 @@
+github.com/alexaandru/go-sitter-forest/zig v1.9.4 h1:RVN/w06TraO2NoALsidInjhLMWwGhlXhWqScqyupPTM=
+github.com/alexaandru/go-sitter-forest/zig v1.9.4/go.mod h1:TPYg0UtYJygZqe7x2LTAXT6ZDtK/nKq7cK3CJ6FxeU0=
+github.com/alexaandru/go-tree-sitter-bare v1.11.0 h1:hRg0R09Kukx2il7ZEec570L/zG4SlM9VwEYR7kkh2nY=
+github.com/alexaandru/go-tree-sitter-bare v1.11.0/go.mod h1:D0p+tpA7QXGADKpNHG9qTc1EXTg/tS/DO4cQdd0cSUg=
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
 github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=

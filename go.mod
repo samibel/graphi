@@ -3,6 +3,8 @@ module github.com/samibel/graphi
 go 1.26
 
 require (
+	github.com/alexaandru/go-sitter-forest/zig v1.9.4
+	github.com/alexaandru/go-tree-sitter-bare v1.11.0
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10

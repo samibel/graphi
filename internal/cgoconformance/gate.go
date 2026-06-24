@@ -43,7 +43,22 @@ const CheckName = "cgo-free-conformance"
 // ExcludedBroadFlavor is the named, documented opt-in CGO flavor that this gate
 // deliberately excludes. It has its own separate conformance track; its presence
 // must never affect this gate's pass/fail result (AC: graphi-broad exclusion).
+//
+// This is the human-facing flavor NAME ("graphi-broad"). Note that the Go BUILD
+// TAG is the underscore form ExcludedBroadBuildTag ("graphi_broad") because `-` is
+// illegal in a Go build constraint (SW-056 DN-2). Import paths that vendor the
+// flavor name use the hyphen form; the build tag uses the underscore form. Both
+// are recognized by IsBroadFlavor / SanitizeGoFlags so the default-graph gate's
+// broad-strip never silently no-ops on the real `-tags graphi_broad` flag.
 const ExcludedBroadFlavor = "graphi-broad"
+
+// ExcludedBroadBuildTag is the Go BUILD TAG identifier for the opt-in graphi-broad
+// CGO flavor (SW-056). It is the underscore spelling of ExcludedBroadFlavor because
+// `-` is illegal in a Go build constraint. The graphi-broad parser bundle is gated
+// `//go:build graphi_broad` and built with `-tags graphi_broad`; SanitizeGoFlags
+// strips exactly this tag from any GOFLAGS the default-graph gate inherits, and
+// IsBroadFlavor recognizes it in an import-path/tag string.
+const ExcludedBroadBuildTag = "graphi_broad"
 
 // ForestModulePath is the CGO tree-sitter grammar bundle (go-sitter-forest) that
 // belongs ONLY to the opt-in graphi-broad flavor (SW-056). It is wholly CGO
@@ -118,12 +133,15 @@ func (c *GateConfig) defaults() {
 
 // IsBroadFlavor reports whether pkg (an import path or build-tag string) belongs
 // to the opt-in graphi-broad CGO flavor that this gate explicitly excludes. This
-// is the named, documented exclusion condition required by the AC.
+// is the named, documented exclusion condition required by the AC. It recognizes
+// BOTH the flavor name ("graphi-broad", as it may appear in an import path) AND the
+// underscore build-tag form ("graphi_broad", SW-056 DN-2) so the exclusion never
+// silently misses the real `-tags graphi_broad` flag.
 func IsBroadFlavor(pkg string) bool {
 	if pkg == "" {
 		return false
 	}
-	return strings.Contains(pkg, ExcludedBroadFlavor)
+	return strings.Contains(pkg, ExcludedBroadFlavor) || strings.Contains(pkg, ExcludedBroadBuildTag)
 }
 
 // EffectiveCgoEnabled reports the value of CGO_ENABLED that `go env` resolves
@@ -461,9 +479,12 @@ func overrideEnv(env []string, key, val string) []string {
 
 // SanitizeGoFlags removes any opt-in graphi-broad build tag from a GOFLAGS-style
 // string so the default-graph gate never sees the broad flavor (AC: graphi-broad
-// exclusion). Recognized forms: `-tags=...graphi-broad...`, the two-token
-// `-tags <value>`, and a bare `graphi-broad`. Other tags sharing a `-tags` with
-// graphi-broad are preserved.
+// exclusion). Recognized forms: `-tags=...graphi_broad...` / `...graphi-broad...`,
+// the two-token `-tags <value>`, and a bare `graphi_broad`/`graphi-broad`. Other
+// tags sharing a `-tags` with the broad tag are preserved. It strips BOTH the
+// underscore build-tag form (the real `-tags graphi_broad`, SW-056 DN-2) and the
+// hyphen flavor name so a default-graph gate that inherits the broad GOFLAGS does
+// not silently no-op.
 func SanitizeGoFlags(goFlags string) string {
 	tokens := strings.Fields(goFlags)
 	var kept []string
@@ -471,7 +492,7 @@ func SanitizeGoFlags(goFlags string) string {
 		f := tokens[i]
 		bare := strings.TrimLeft(f, "-")
 		switch {
-		case bare == ExcludedBroadFlavor:
+		case bare == ExcludedBroadFlavor, bare == ExcludedBroadBuildTag:
 			continue
 		case strings.HasPrefix(bare, "tags="):
 			if cleaned := filterBroadTag(strings.TrimPrefix(bare, "tags=")); cleaned != "" {
@@ -490,11 +511,13 @@ func SanitizeGoFlags(goFlags string) string {
 	return strings.Join(kept, " ")
 }
 
-// filterBroadTag strips the graphi-broad tag from a comma-separated tag list.
+// filterBroadTag strips the graphi-broad tag from a comma-separated tag list. It
+// removes both the underscore build-tag form (graphi_broad) and the hyphen flavor
+// name (graphi-broad) (SW-056 DN-2).
 func filterBroadTag(val string) string {
 	var out []string
 	for _, t := range strings.Split(val, ",") {
-		if t == ExcludedBroadFlavor {
+		if t == ExcludedBroadFlavor || t == ExcludedBroadBuildTag {
 			continue
 		}
 		out = append(out, t)

@@ -35,6 +35,36 @@ var DefaultTierGrammarProvenance = GrammarProvenance{
 	LicenseFile: "LICENSE",
 }
 
+// BroadTierGrammarProvenance records the supply-chain provenance + license for the
+// opt-in graphi-broad CGO lane (SW-056, SEC-C). The broad lane wires a SINGLE
+// go-sitter-forest grammar SUBPACKAGE (zig) over the go-tree-sitter-bare CGO
+// runtime — NOT the top-level `forest` meta-module (which statically imports all
+// ~257 grammars). Both modules are version-pinned in go.mod/go.sum (one online
+// pass), `go mod verify`'d, and built offline under GOPROXY=off thereafter. The
+// forest root LICENSE is MIT; forest re-vendors upstream grammars, so the license
+// is verified at the smoke grammar's PINNED PATH (the zig subpackage carries its
+// own MIT LICENSE — see TestBroadProvenance_*). These records are intentionally
+// absent from the default-tier provenance: the broad lane is a separate track and
+// the CGO bundle must never enter the default graph.
+var BroadTierGrammarProvenance = []GrammarProvenance{
+	{
+		ModulePath:  "github.com/alexaandru/go-tree-sitter-bare",
+		Version:     "v1.11.0",
+		SourceURL:   "https://github.com/alexaandru/go-tree-sitter-bare",
+		LicenseSPDX: "MIT",
+		LicenseFile: "LICENSE",
+	},
+	{
+		// The single CGO-only smoke grammar (DN-1). Pinned as its own module: the
+		// forest repo is a multi-module workspace, one module per grammar.
+		ModulePath:  "github.com/alexaandru/go-sitter-forest/zig",
+		Version:     "v1.9.4",
+		SourceURL:   "https://github.com/alexaandru/go-sitter-forest/tree/master/zig",
+		LicenseSPDX: "MIT",
+		LicenseFile: "LICENSE",
+	},
+}
+
 // PermissiveSPDX is the set of SPDX license identifiers accepted as
 // permissive/compatible for an embedded default-tier grammar. The license read
 // from the pinned module's LICENSE file must be in this set or the supply-chain

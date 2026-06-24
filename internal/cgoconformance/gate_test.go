@@ -33,6 +33,8 @@ func TestIsBroadFlavor(t *testing.T) {
 	}{
 		{"graphi-broad", true},
 		{"github.com/samibel/graphi-broad/cgosqlite", true},
+		{"graphi_broad", true},       // SW-056 DN-2: underscore build-tag form
+		{"-tags=graphi_broad", true}, // build-tag string as it appears in GOFLAGS
 		{"github.com/samibel/graphi/core/parse", false},
 		{"", false},
 		{"cmd/graphi", false},
@@ -68,6 +70,14 @@ func TestSanitizeGoFlags_StripsBroadTag(t *testing.T) {
 		{"-v -tags=graphi-broad -race", "-v -race"},
 		{"", ""},
 		{"-v", "-v"},
+		// SW-056 DN-2: the REAL flag is the underscore build-tag form. Stripping it
+		// is the load-bearing fix — without it the default-graph gate that inherits
+		// `-tags graphi_broad` would silently build the broad flavor.
+		{"-tags=graphi_broad", ""},
+		{"-tags graphi_broad", ""},
+		{"-tags=foo,graphi_broad,bar", "-tags=foo,bar"},
+		{"graphi_broad", ""},
+		{"-v -tags=graphi_broad -race", "-v -race"},
 	}
 	for _, c := range cases {
 		if got := SanitizeGoFlags(c.in); got != c.want {

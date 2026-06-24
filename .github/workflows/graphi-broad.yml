@@ -1,0 +1,106 @@
+# SW-056: graphi-broad opt-in CGO lane gate.
+#
+# This workflow is the CI half of AC1/AC2 for the opt-in graphi-broad flavor:
+# the 257-grammar go-sitter-forest set wired (CGO) over the SAME SymbolExtractor
+# contract, built with `-tags graphi_broad` (CGO_ENABLED=1) and smoke-parsing one
+# CGO-only grammar (zig) — while keeping the supply-chain (SEC-C) and runtime
+# zero-egress (SEC-E) controls on the lane.
+#
+# RESIDUAL RISK (SW-056-SEC-001, HUMAN-ACCEPTED): the broad lane runs native C over
+# source. Go-side bounds do NOT contain a native-C crash/OOM/RCE; out-of-process
+# isolation is follow-up SW-058. The adversarial step below documents the Go-side
+# limit (a C SIGSEGV there would be the accepted residual, not a regression) — it is
+# advisory, not the gate's pass/fail.
+#
+# This lane is SEPARATE from cgo-conformance.yml, which proves the DEFAULT graph is
+# CGo-free and deliberately never builds the broad flavor.
+name: graphi-broad
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-smoke:
+    name: graphi-broad build + smoke-parse (CGO=1, -tags graphi_broad)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # SEC-C: warm the module cache in a network-PERMITTED step (one-time pin
+      # already landed in go.sum), verify the downloaded modules match go.sum, and
+      # NEVER fetch a grammar at build time thereafter.
+      - name: module download (network-permitted, warms cache)
+        run: go mod download
+
+      - name: supply-chain verify (go mod verify)
+        run: go mod verify
+
+      # From here the lane is hermetic: GOPROXY=off + -mod=readonly forbids any
+      # module/grammar fetch. A lazily-fetched grammar subpackage would fail the
+      # build — proving the pin (zig + go-tree-sitter-bare) is complete (SEC-C/DN-3).
+      - name: build broad flavor offline (GOPROXY=off, -mod=readonly)
+        run: GOPROXY=off go build -mod=readonly -tags graphi_broad ./...
+
+      # AC1: smoke-parse ONE CGO-only grammar (zig) over the contract to a FROZEN
+      # expected vocabulary with Runtime()==RuntimeCGOForest, plus the DN-2 tag/gate
+      # reconciliation and the broad supply-chain/offline assertions.
+      - name: smoke-parse + contract + tag-gate (broad unit tests)
+        run: GOPROXY=off go test -mod=readonly -tags graphi_broad -count=1 ./core/parse/ ./internal/release/ ./internal/cgoconformance/
+
+      # SEC-H / DN-4: adversarial deeply-nested input as a CI SIGNAL for the Go-side
+      # depth bound. NOTE: a native-C stack overflow here is the ACCEPTED residual
+      # (SW-056-SEC-001); this step documents the Go-side limit, it does not gate on
+      # containing the C parser.
+      - name: adversarial input (Go-side depth bound is exercised; native-C residual is accepted)
+        run: GOPROXY=off go test -mod=readonly -tags graphi_broad -count=1 -run 'TestBroadParse_AdversarialDepth' ./core/parse/
+
+  # SEC-E / AC2: the broad-lane runtime zero-egress + no-telemetry guarantee. The
+  # static Go-AST canary is blind to C-level egress, so the ONLY valid coverage is a
+  # live CGO_ENABLED=1 -tags graphi_broad run under a loopback-only netns, WITH a
+  # tripwire proving the harness denies egress. Linux-pinned (a non-Linux/unprivileged
+  # runner cannot deny egress → UNVERIFIED, which fails this gating job by design).
+  zero-egress:
+    name: graphi-broad live deny-egress (loopback-only netns, Linux)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: module download (network-permitted, warms cache)
+        run: go mod download
+      # The forest (CGO) parse path must dial NOTHING under real isolation. Run with
+      # CAP_SYS_ADMIN (sudo) to unshare a network namespace; if isolation is
+      # unavailable the test reports UNVERIFIED and the job fails (anti-false-green).
+      - name: broad forest path is zero-egress under netns
+        run: sudo --preserve-env=CGO_ENABLED env "PATH=$PATH" go test -tags graphi_broad -count=1 -run 'TestBroadForestPath_RealIsolation_ZeroEgress' ./internal/audit/...
+
+  egress-tripwire:
+    name: graphi-broad egress tripwire (a deliberate dial must fail the gate)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: module download (network-permitted, warms cache)
+        run: go mod download
+      # The broad-lane tripwire: a deliberate non-loopback dial under real netns must
+      # turn the verdict red (FAIL), proving the CGO-lane deny-egress harness has
+      # teeth (a silently-passing CGO audit is worse than none — DN-3).
+      - name: broad egress tripwire turns the gate red under netns
+        run: sudo --preserve-env=CGO_ENABLED env "PATH=$PATH" go test -tags graphi_broad -count=1 -run 'TestBroadTripwire_RealIsolation_EgressFailsTheGate' ./internal/audit/...

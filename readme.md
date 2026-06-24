@@ -54,6 +54,62 @@ embedded grammar blobs, selected via subset build tags) and the opt-in
 seam; the frozen tier-1 list and binary-budget model live in
 [`bench/lang-budget.md`](bench/lang-budget.md).
 
+#### The opt-in `graphi-broad` CGO flavor (broad coverage)
+
+graphi ships in two flavors over the **same** `SymbolExtractor` contract:
+
+- **Default (pure-Go).** The shipped binary is CGo-free: only the pure-Go
+  `gotreesitter` runtime and the curated tier-1 grammars are reachable. No C
+  toolchain is required and the default import graph provably contains no CGO
+  package (CI-enforced — see below).
+- **`graphi-broad` (opt-in CGO).** Built with `-tags graphi_broad` and
+  `CGO_ENABLED=1`, this flavor wires the **257-grammar
+  [`go-sitter-forest`](https://github.com/alexaandru/go-sitter-forest)** set
+  (native C tree-sitter via `go-tree-sitter-bare`) over the *same* contract, so
+  every broad grammar produces the same `file / function / method / type /
+  variable / constant` vocabulary the default tier does.
+
+**Before / after this slice (SW-056).** *Before:* the default pure-Go tier only —
+broad coverage was not available. *After:* the opt-in `graphi-broad` CGO flavor
+wires the 257-grammar `go-sitter-forest` set over the same `SymbolExtractor`
+contract, **build-tag isolated** so the default tier is provably unaffected.
+
+**Why a separate flavor.** `go-sitter-forest` is *wholly CGO*. Keeping it behind
+the `graphi_broad` build tag gives broad language coverage **without compromising
+the CGo-free default build**: every forest-touching file is `//go:build
+graphi_broad`-tagged and never reached by an untagged import, so the default graph
+stays pure-Go. This is enforced on two layers — a registration-level guard
+(`parse.AssertPureGoDefaults`) and a static import-graph scan
+(`internal/cgoconformance`, which proves `go-sitter-forest` is unreachable from
+`./cmd/graphi`).
+
+> [!WARNING]
+> **Residual security limitation — read before enabling `graphi-broad`.**
+> The broad flavor runs **native C** over your source. graphi's Go-side resource
+> bounds (`recover`, the CST depth guard, `context` timeouts) do **NOT** contain a
+> native-C crash, stack overflow, out-of-memory, or remote-code-execution in a C
+> grammar: `recover` cannot catch a C `SIGSEGV`, a synchronous CGO call cannot be
+> interrupted by a context deadline, and the depth guard bounds only the Go-side
+> walk. Only `MaxFileSize` transfers to the C path. `graphi-broad` is therefore
+> **opt-in, NOT memory-safety-isolated, and intended for trusted / CI input only.**
+> Because `SetMaxParseDepth` is process-global and not honored by the C parser, the
+> broad tier MUST NOT run concurrently in-process with a default tier relying on a
+> different depth bound.
+>
+> This residual native-C crash/RCE risk is **explicitly accepted** for the opt-in
+> lane (decision **SW-056-SEC-001**). Out-of-process / sandbox isolation
+> (subprocess-per-parse with rlimit/cgroup + signal trapping and/or seccomp) is the
+> named follow-up **SW-058**. Until SW-058 lands, do not point `graphi-broad` at
+> untrusted source.
+
+The broad lane keeps its supply-chain and runtime controls: `go-sitter-forest`
+(and its grammar subpackages) are version-pinned in `go.sum` and `go mod verify`'d,
+the lane builds **offline** (`GOPROXY=off`) after a one-time pin, and a live
+loopback-only `netns` deny-egress job (with a tripwire) proves the broad smoke
+parse performs zero outbound network at the C level — the static Go-AST canary is
+structurally blind to a C `socket()`/`connect()`, so only the live netns job
+credits the broad lane's zero-egress guarantee.
+
 ### Semantic analysis
 
 Run with `graphi analyze <analyzer>`:
@@ -101,6 +157,17 @@ CGO_ENABLED=0 go build ./...
 
 # Or build just the CLI binary
 CGO_ENABLED=0 go build -o graphi ./cmd/graphi
+```
+
+#### Opt-in `graphi-broad` (CGO) build
+
+The broad flavor requires a C toolchain and is **opt-in only** — read the residual
+security limitation above before enabling it on untrusted source.
+
+```bash
+# Broad CGO flavor: 257-grammar go-sitter-forest over the same contract.
+# Requires a C toolchain; intended for trusted / CI input only (SW-056-SEC-001).
+CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
 ```
 
 ### Run
