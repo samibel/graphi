@@ -165,12 +165,18 @@ func RunUndo(ctx context.Context, c client.Client, args []string, out, errOut io
 //
 // Usage:
 //
-//	graphi search [-limit N] <query>
+//	graphi search [-limit N] [-semantic] <query>
+//
+// With -semantic it runs the OPTIONAL semantic search (SW-059); when no embedder
+// is configured the engine returns the typed graceful-skip "unavailable" response
+// (no error, no network). Without it, the always-available lexical search runs.
 func RunSearch(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
 	limit := 100
+	semantic := false
 	var queryArgs []string
 	for i := 0; i < len(args); i++ {
-		if args[i] == "-limit" && i+1 < len(args) {
+		switch {
+		case args[i] == "-limit" && i+1 < len(args):
 			// Use fmt.Sscanf to avoid strconv import.
 			var v int
 			if _, err := fmt.Sscanf(args[i+1], "%d", &v); err != nil {
@@ -179,23 +185,66 @@ func RunSearch(ctx context.Context, c client.Client, args []string, out, errOut 
 			}
 			limit = v
 			i++
-			continue
+		case args[i] == "-semantic":
+			semantic = true
+		default:
+			queryArgs = append(queryArgs, args[i])
 		}
-		queryArgs = append(queryArgs, args[i])
 	}
 	if len(queryArgs) == 0 {
-		fmt.Fprintln(errOut, "usage: search [-limit N] <query>")
+		fmt.Fprintln(errOut, "usage: search [-limit N] [-semantic] <query>")
 		return fmt.Errorf("cli: missing query")
 	}
 	query := queryArgs[0]
 
-	b, err := c.Search(ctx, query, limit)
+	var b []byte
+	var err error
+	if semantic {
+		b, err = c.SemanticSearch(ctx, query, limit)
+	} else {
+		b, err = c.Search(ctx, query, limit)
+	}
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
 	if _, err := out.Write(append(b, '\n')); err != nil {
 		return fmt.Errorf("cli: write output: %w", err)
 	}
+	return nil
+}
+
+// RunSetupEmbedder is the opt-in `graphi setup-embedder` command (SW-059). It
+// prints the explicit, copy-pasteable config a user sets to enable the OPTIONAL
+// semantic search — there is NO hidden default: semantic search stays OFF until
+// the user exports GRAPHI_EMBEDDER. It is OFFLINE (prints instructions only;
+// constructs/dials nothing) so it never violates the zero-egress default path.
+//
+// Usage:
+//
+//	graphi setup-embedder [<selector>]
+//
+// where <selector> is e.g. "ollama" or "ollama:127.0.0.1:11434" (loopback-only,
+// opt-in) or "onnx:<model>" (requires the embed_onnx build).
+func RunSetupEmbedder(ctx context.Context, args []string, out, errOut io.Writer) error {
+	_ = ctx
+	selector := ""
+	if len(args) > 0 {
+		selector = args[0]
+	}
+	if selector == "" {
+		fmt.Fprintln(out, "graphi semantic search is OPTIONAL and OFF by default.")
+		fmt.Fprintln(out, "To enable it, choose an embedder and export GRAPHI_EMBEDDER:")
+		fmt.Fprintln(out, "  Ollama (loopback, opt-in):  export GRAPHI_EMBEDDER=ollama")
+		fmt.Fprintln(out, "  Ollama (explicit host):     export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434")
+		fmt.Fprintln(out, "  ONNX (build with -tags embed_onnx): export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx")
+		fmt.Fprintln(out, "Then re-index with embeddings:  graphi index --semantic")
+		fmt.Fprintln(out, "Run a semantic query:           graphi search -semantic \"<query>\"")
+		return nil
+	}
+	fmt.Fprintf(out, "To enable graphi semantic search with %q, export:\n", selector)
+	fmt.Fprintf(out, "  export GRAPHI_EMBEDDER=%s\n", selector)
+	fmt.Fprintln(out, "Then re-index with embeddings:  graphi index --semantic")
+	fmt.Fprintln(out, "Note: network embedders (Ollama) are loopback-only and validated fail-closed at construction.")
 	return nil
 }
 

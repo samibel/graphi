@@ -20,6 +20,8 @@ import (
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/edit"
+	"github.com/samibel/graphi/engine/embed"
+	_ "github.com/samibel/graphi/engine/embed/ollama" // opt-in loopback embedder: registers the "ollama" scheme; never constructed on the default path
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/observe"
@@ -68,6 +70,8 @@ func main() {
 		os.Exit(runHTTP(os.Args[2:]))
 	case "setup":
 		os.Exit(runSetup(os.Args[2:]))
+	case "setup-embedder":
+		os.Exit(runSetupEmbedder(os.Args[2:]))
 	case "tui":
 		os.Exit(runTUI(os.Args[2:]))
 	case "privacy-audit":
@@ -214,10 +218,37 @@ func makeClientOrOpen(dbPath, socket string) client.Client {
 	}
 	defer func() { _ = store.Close() }()
 	analysisSvc := analysis.NewDefaultService(store)
-	return client.NewDirect(query.New(store), search.New(store)).
+	return client.NewDirect(query.New(store), newSearchService(store)).
 		WithAnalysis(analysisSvc).
 		WithReview(review.NewService(analysisSvc))
 }
+
+// newSearchService builds the shared search service. Lexical search is always
+// available. Semantic search is OPTIONAL and OFF by default: it is enabled ONLY
+// when GRAPHI_EMBEDDER explicitly selects a (recognized) embedder, which is
+// constructed here through the embed.Constructor seam. An empty/unknown selector
+// leaves the service in the graceful-skip state (no embedder, no network), so the
+// default binary never constructs or dials an embedder (SW-059 / OQ6).
+func newSearchService(store graphstore.Graphstore) *search.Service {
+	svc := search.New(store)
+	emb, err := embed.Constructor(os.Getenv(embed.EnvSelector), embed.DefaultConstructors())
+	if err != nil {
+		// Fail-closed (e.g. a non-loopback Ollama host): report and keep semantic
+		// search OFF rather than constructing an unsafe embedder.
+		fmt.Fprintf(os.Stderr, "graphi: embedder disabled: %v\n", err)
+		return svc
+	}
+	if emb == nil {
+		return svc // graceful skip: nothing configured
+	}
+	reg := embed.NewRegistry()
+	reg.Register(emb)
+	return svc.WithSemantic(reg, embed.NewIndex(), nodeReader(store))
+}
+
+// nodeReader adapts the graphstore to the narrow search.NodeReader seam used to
+// enrich semantic hits with node provenance.
+func nodeReader(store graphstore.Graphstore) search.NodeReader { return store }
 
 // runRefactor launches the SW-038 edit/refactor command surface (refactor-preview
 // / refactor / undo). It builds an in-process client with a fully-wired edit
@@ -518,7 +549,7 @@ func runParseDefault(args []string) {
 	reg := parse.NewDefaultRegistry()
 
 	if len(args) < 1 {
-		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, search, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, privacy-audit, version, parse <file>\n", reg.Languages())
+		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, search, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, parse <file>\n", reg.Languages())
 		return
 	}
 
@@ -597,6 +628,20 @@ func runSetup(args []string) int {
 	}
 	if res.Action == mcpconfig.ActionCreated || res.Action == mcpconfig.ActionUpdated {
 		fmt.Println("restart/reload Claude Code to expose graphi's tools.")
+	}
+	return 0
+}
+
+// runSetupEmbedder is the opt-in `graphi setup-embedder` command (SW-059). It
+// prints the explicit GRAPHI_EMBEDDER config a user sets to enable the OPTIONAL
+// semantic search. It is OFFLINE (no construction, no dial) and there is no
+// hidden default — semantic search stays OFF until the user opts in.
+//
+//	graphi setup-embedder [<selector>]
+func runSetupEmbedder(args []string) int {
+	if err := cli.RunSetupEmbedder(context.Background(), args, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: setup-embedder: %v\n", err)
+		return 1
 	}
 	return 0
 }

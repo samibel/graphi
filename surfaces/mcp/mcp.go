@@ -174,6 +174,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == "search" {
 		return s.searchCall(ctx, p)
 	}
+	if p.Name == "search_semantic" {
+		return s.semanticSearchCall(ctx, p)
+	}
 	if p.Name == "savings" {
 		return s.savingsCall(ctx)
 	}
@@ -228,6 +231,30 @@ func (s *Server) searchCall(ctx context.Context, p callParams) (any, *rpcError) 
 		limit = *p.Arguments.Depth
 	}
 	b, err := s.c.Search(ctx, p.Arguments.Symbol, limit)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// semanticSearchCall dispatches the OPTIONAL semantic-search tool (SW-059). It
+// returns the canonical serialized SemanticResponse from the shared client. When
+// no embedder is configured it cleanly reports the typed graceful-skip
+// "unavailable" response (Available=false) WITHOUT an error — byte-identical to
+// the CLI and HTTP surfaces (parity by construction through the single client
+// seam).
+func (s *Server) semanticSearchCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Symbol == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+	}
+	limit := search.DefaultResultLimit
+	if p.Arguments.Depth != nil && *p.Arguments.Depth > 0 {
+		limit = *p.Arguments.Depth
+	}
+	b, err := s.c.SemanticSearch(ctx, p.Arguments.Symbol, limit)
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -401,11 +428,11 @@ func textResult(b []byte) map[string]any {
 // the correct analyzer. The map is package-level so both toolsCall routing and
 // toolDescriptors advertising can share a single source of truth.
 var deepAnalyzerTools = map[string]string{
-	"analyze_taint":      "taint",
-	"analyze_pdg":        "pdg",
-	"analyze_interproc":  "interproc",
-	"analyze_contracts":  "contracts",
-	"analyze_githistory": "git-history",
+	"analyze_taint":        "taint",
+	"analyze_pdg":          "pdg",
+	"analyze_interproc":    "interproc",
+	"analyze_contracts":    "contracts",
+	"analyze_githistory":   "git-history",
 	"analyze_pr_risk":      "pr-risk",
 	"analyze_pr_signals":   "pr-signals",
 	"analyze_pr_questions": "pr-questions",
@@ -544,6 +571,24 @@ func (s *Server) toolDescriptors() []map[string]any {
 				"type": "object",
 				"properties": map[string]any{
 					"symbol": map[string]any{"type": "string", "description": "search query (symbol token or free-text)"},
+					"depth":  map[string]any{"type": "integer", "description": "maximum number of results (default 100)"},
+				},
+				"required": []string{"symbol"},
+			},
+		})
+	}
+	// Optional semantic search (SW-059). Advertised whenever the search tool is —
+	// it is always callable through the client and cleanly reports "unavailable"
+	// (typed graceful-skip) when no embedder is configured, so there is no
+	// capability to probe-hide.
+	if _, err := s.c.Search(context.Background(), "__probe__", 1); err == nil {
+		tools = append(tools, map[string]any{
+			"name":        "search_semantic",
+			"description": "optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"symbol": map[string]any{"type": "string", "description": "semantic search query (free-text)"},
 					"depth":  map[string]any{"type": "integer", "description": "maximum number of results (default 100)"},
 				},
 				"required": []string{"symbol"},

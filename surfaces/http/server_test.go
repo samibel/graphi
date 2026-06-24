@@ -27,8 +27,8 @@ import (
 type stubClient struct {
 	mu sync.Mutex
 
-	queryBytes  []byte
-	searchBytes []byte
+	queryBytes   []byte
+	searchBytes  []byte
 	analyzeBytes []byte
 
 	lastQueryOp     string
@@ -60,6 +60,13 @@ func (s *stubClient) Search(_ context.Context, q string, limit int) ([]byte, err
 	_ = limit
 	return s.searchBytes, nil
 }
+func (s *stubClient) SemanticSearch(_ context.Context, q string, limit int) ([]byte, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_ = q
+	_ = limit
+	return s.searchBytes, nil
+}
 func (s *stubClient) Analyze(_ context.Context, p client.AnalyzeParams) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -67,7 +74,7 @@ func (s *stubClient) Analyze(_ context.Context, p client.AnalyzeParams) ([]byte,
 	_ = p
 	return s.analyzeBytes, nil
 }
-func (s *stubClient) Savings(context.Context) ([]byte, error)  { return nil, nil }
+func (s *stubClient) Savings(context.Context) ([]byte, error) { return nil, nil }
 func (s *stubClient) RefactorPreview(context.Context, client.RefactorRequest) ([]byte, error) {
 	return nil, nil
 }

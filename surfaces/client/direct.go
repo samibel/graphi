@@ -92,6 +92,28 @@ func (d *Direct) Search(ctx context.Context, q string, limit int) ([]byte, error
 	return search.Marshal(res)
 }
 
+// SemanticSearch implements Client. It dispatches the OPTIONAL semantic search
+// through the single search.Service and returns the canonical serialized
+// SemanticResponse. When no search service is wired, or no embedder is
+// configured, it returns the typed Unavailable response (graceful skip) — NOT
+// ErrSearchUnavailable — so the unconfigured bytes are byte-identical across
+// every surface (SW-059 parity).
+func (d *Direct) SemanticSearch(ctx context.Context, q string, limit int) ([]byte, error) {
+	if d.searchSvc == nil {
+		return search.MarshalSemantic(search.SemanticResponse{
+			Query:     q,
+			Available: false,
+			Reason:    search.UnavailableReason,
+			Hits:      []search.SemanticHit{},
+		})
+	}
+	res, err := d.searchSvc.SemanticSearch(ctx, q, limit)
+	if err != nil {
+		return nil, err
+	}
+	return search.MarshalSemantic(res)
+}
+
 // Savings implements Client. It returns the canonical savings-ledger readout
 // (per-call/session/cumulative USD + cap flags). Without a ledger it returns
 // ErrSavingsUnavailable.
@@ -111,9 +133,9 @@ func (d *Direct) Analyze(ctx context.Context, p AnalyzeParams) ([]byte, error) {
 		return nil, ErrAnalysisUnavailable
 	}
 	res, err := d.analysisSvc.Dispatch(ctx, p.Name, analysis.Params{
-		Symbol:    model.NodeId(p.Symbol),
-		Target:    model.NodeId(p.Target),
-		Concept:   p.Concept,
+		Symbol:     model.NodeId(p.Symbol),
+		Target:     model.NodeId(p.Target),
+		Concept:    p.Concept,
 		Direction:  analysis.Direction(p.Direction),
 		Kinds:      p.Kinds,
 		MaxNodes:   p.MaxNodes,
