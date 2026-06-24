@@ -48,9 +48,11 @@ without touching existing code. Current extraction coverage:
 | **Go** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ⏳ linker pass (roadmap) |
 | JSON | structural (AST) | — | — |
 
-Additional CGo-free tier-1 grammars and the opt-in `graphi-broad` CGO build (broad
-grammar set) plug in through the same registry seam; see the roadmap in
-[`epics/index.md`](epics/index.md).
+Additional CGo-free tier-1 grammars (the pure-Go `gotreesitter` runtime + its
+embedded grammar blobs, selected via subset build tags) and the opt-in
+`graphi-broad` CGO build (broad grammar set) plug in through the same registry
+seam; the frozen tier-1 list and binary-budget model live in
+[`bench/lang-budget.md`](bench/lang-budget.md).
 
 ### Semantic analysis
 

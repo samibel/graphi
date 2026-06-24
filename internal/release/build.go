@@ -22,10 +22,36 @@ import (
 // VersionVar is the ldflags target for the release version string.
 const VersionVar = "github.com/samibel/graphi/internal/version.Version"
 
+// DefaultGrammarSubsetTags is the build-tag set the shipped default graphi
+// binary is built with (EP-009, SW-053 AC#3). It is the single source of truth
+// for the subset-tag default build and must stay in lock-step with the pure-Go
+// tree-sitter grammars registered in core/parse.RegisterDefaults.
+//
+// The gotreesitter `grammars` package embeds ALL ~206 grammar blobs by default
+// (a +~24.5 MiB bloat), gated `!grammar_subset`. The umbrella `grammar_subset`
+// tag switches that all-grammars embed off; each `grammar_subset_<lang>` tag
+// then opts exactly one blob back in via the upstream
+// z_subset_blob_embed_<lang>.go embed. So the shipped default binary embeds ONLY
+// the registered languages' blobs (TypeScript ≈ 119 KiB), never all 206.
+//
+// Adding a tier-1 language (SW-054) is two coordinated one-liners: the
+// r.Register(NewXxxParser()) in RegisterDefaults and its "grammar_subset_xxx"
+// entry here. Go's stdlib parsers (go/ast, JSON) carry no gotreesitter blob and
+// therefore contribute no tag.
+var DefaultGrammarSubsetTags = []string{
+	"grammar_subset",            // umbrella: switch OFF the all-206 default embed
+	"grammar_subset_typescript", // TypeScript (SW-053) — embeds only typescript.bin
+}
+
 // BuildConfig parameterizes a release build.
 type BuildConfig struct {
 	Target  string // default ./cmd/graphi/
 	Version string // stamped via ldflags; default "dev"
+	// Tags is the build-tag set linked into the binary. When nil it defaults to
+	// DefaultGrammarSubsetTags so the shipped default build NEVER embeds all 206
+	// gotreesitter grammars (SW-053 AC#3). Pass an explicit (possibly empty)
+	// slice only to override the default tier's grammar selection.
+	Tags []string
 }
 
 func (c *BuildConfig) defaults() {
@@ -35,6 +61,9 @@ func (c *BuildConfig) defaults() {
 	if c.Version == "" {
 		c.Version = "dev"
 	}
+	if c.Tags == nil {
+		c.Tags = DefaultGrammarSubsetTags
+	}
 }
 
 // Build produces the static binary at out under CGO_ENABLED=0 with trimpath,
@@ -42,10 +71,15 @@ func (c *BuildConfig) defaults() {
 func Build(ctx context.Context, cfg BuildConfig, out string) error {
 	cfg.defaults()
 	ldflags := fmt.Sprintf("-X %s=%s", VersionVar, cfg.Version)
-	cmd := exec.CommandContext(ctx, "go", "build",
-		"-trimpath", "-buildvcs=true",
-		"-ldflags", ldflags,
-		"-o", out, cfg.Target)
+	args := []string{"build", "-trimpath", "-buildvcs=true"}
+	if len(cfg.Tags) > 0 {
+		// Space-joined tag list (the modern `-tags 'a b c'` form). This is the
+		// load-bearing SW-053 AC#3 wiring: the shipped default build is
+		// subset-tagged so only the registered grammar blobs are embedded.
+		args = append(args, "-tags", strings.Join(cfg.Tags, " "))
+	}
+	args = append(args, "-ldflags", ldflags, "-o", out, cfg.Target)
+	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Env = withCgo(os.Environ(), "0")
 	cmd.Dir = moduleRootPath()
 	cmd.Stdout = io.Discard
@@ -83,10 +117,10 @@ func VerifyReproducible(ctx context.Context, cfg BuildConfig) (sha string, ok bo
 
 // BuildInfo holds the VCS + version metadata read from a built binary.
 type BuildInfo struct {
-	Version    string
+	Version     string
 	VCSRevision string
-	VCSTime    string
-	CGOEnabled string
+	VCSTime     string
+	CGOEnabled  string
 }
 
 // ReadBuildInfo runs the binary's `version` subcommand and parses the embedded

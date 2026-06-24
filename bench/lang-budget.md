@@ -19,19 +19,30 @@ envelope, the first worker to land could consume the shared headroom and silentl
 starve later workers, turning a parallelizable epic into a serialized contention
 point. This file pre-divides the headroom so each worker has a fixed contract.
 
-## Frozen tier-1 list (curated, pure-Go subset of `go-sitter-forest`)
+## Frozen tier-1 list (the pure-Go `gotreesitter` runtime + its embedded grammar blobs)
+
+> **RE-PLANNED 2026-06-24 (EP-009-REPLAN-001).** The original framing — "curated, pure-Go
+> subset of `go-sitter-forest`" — was **falsified** by the SW-053 dev spike: `go-sitter-forest`
+> is entirely CGO (`import "C"` + `parser.c`), so it has **no** pure-Go subset to curate and
+> cannot enter the `CGO_ENABLED=0` default tier at all. The default tier instead draws from the
+> genuinely pure-Go **`github.com/odvcencio/gotreesitter` v0.20.2** runtime and its Go-embedded
+> grammar `.bin` blobs, selected at build time via **subset build tags** (see "Subset-tag
+> default build" below). `go-sitter-forest` is retained for the opt-in CGO `graphi-broad` build
+> (SW-056) only. See `projects/graphi/epics/EP-009/replan-decision.md`.
 
 The default tier ships **pure-Go, CGo-free** parsers only (`CGO_ENABLED=0 go build
-./...` stays green; `internal/cgoconformance` enforces it). The tier-1 set below is
-the curated high-value coverage delivered through the `parse.Parser` /
-`SymbolExtractor` seam. It is derived from ADR 0001 and **frozen** for EP-009 fan-out
-as of this story.
+./...` stays green; `internal/cgoconformance` enforces it — no offender named). The tier-1 set
+below is the curated high-value coverage delivered through the `parse.Parser` /
+`SymbolExtractor` seam. It is derived from ADR 0001, the EP-009 re-plan, and **frozen** for
+EP-009 fan-out. (This is the single frozen-list source; it is **mirrored** in
+`projects/graphi/epics/EP-009/epic.md`. There is **no** `epics/index.md` file — earlier
+pointers to it were dangling.)
 
 | #  | Language        | Default tier (pure-Go) | Status                  |
 |----|-----------------|------------------------|-------------------------|
 | 1  | Go              | yes (native go/ast)    | shipped (reference)     |
 | 2  | JSON            | yes (stdlib)           | shipped                 |
-| 3  | TypeScript      | yes (pure-Go ts runtime)| SW-053 impl green; size ⚠ (see Measured deltas) |
+| 3  | TypeScript      | yes (pure-Go gotreesitter)| SW-053 green; subset-tagged default wired (AC#3) |
 | 4  | JavaScript      | yes                    | tier-1                  |
 | 5  | TSX / JSX       | yes                    | tier-1                  |
 | 6  | Python          | yes                    | tier-1                  |
@@ -58,13 +69,16 @@ as of this story.
 
 ### Deferred to `graphi-broad` (NOT in the default tier)
 
-Languages **without a maintained pure-Go grammar** in `go-sitter-forest` are
-**deferred to the opt-in `graphi-broad` CGO build** (behind an explicit build tag).
-They MUST NOT enter the default `RegisterDefaults`, because a CGO grammar in the
-default tier would break `CGO_ENABLED=0`. Notable deferrals: **Swift**, **Scala**
-(no maintained pure-Go grammar at freeze time), plus the long tail of the
-257-grammar bundle. Re-evaluate per language if/when a maintained pure-Go grammar
-appears.
+Languages are deferred to the opt-in `graphi-broad` CGO build (behind an explicit
+build tag) when their **extractor effort** is out of scope for tier-1, or when the only
+available grammar is **CGO-only** (`go-sitter-forest`). They MUST NOT enter the default
+`RegisterDefaults`, because a CGO grammar in the default tier would break `CGO_ENABLED=0`.
+
+> **RE-PLANNED note:** the *reason* for deferral is now **extractor scope / CGO-only
+> grammars**, NOT "no maintained pure-Go grammar in `go-sitter-forest`" (that premise was
+> false — `gotreesitter` ships 206 pure-Go grammars, all tier-1 languages present). The
+> deferred long tail is the `go-sitter-forest` 257-grammar CGO bundle consumed by SW-056.
+> Re-evaluate per language if its pure-Go extractor becomes worth tier-1 effort.
 
 ## Per-worker binary-size envelope
 
@@ -73,19 +87,36 @@ the EP-008 HTTP/SSE surface the pinned `binary_size_bytes` baseline is
 `18,500,000`, budget `20,000,000` — i.e. **~1.5 MB of headroom against the pinned
 gate**, and ~30 MB against the hard < 50 MB whole-binary ceiling.
 
-Each tier-1 grammar adds a parse table. To keep the epic parallelizable, each
-language worker is allocated a **soft per-language envelope** and the epic a
-**total grammar envelope** measured against the < 50 MB ceiling (not the current
-pinned gate, which SW-057 re-pins once the real deltas are known):
+> **RE-PLANNED 2026-06-24 — size model corrected.** The old "≤ 1.0 MB **per language**,
+> ≤ 25 MB **epic-total**" envelope is **superseded** (EP-009-REPLAN-001). It is the **wrong
+> shape**: the `gotreesitter` `grammars` package embeds **all 206** blobs by default
+> (`//go:embed grammar_blobs/*.bin`, gated `!grammar_subset`), so naively registering one
+> grammar pulls the whole ~24.5 MiB blob directory in regardless of how many languages are
+> wired — the cost is **not** per-language, it is a one-shot all-or-subset switch.
 
-- **Per-language soft envelope:** **≤ 1.0 MB** added to the `CGO_ENABLED=0`
-  default binary per grammar. A worker exceeding this halts and escalates rather
-  than silently consuming shared headroom.
-- **Epic total grammar envelope:** **≤ 25 MB** across all tier-1 grammars,
-  leaving ≥ 5 MB of margin under the 50 MB ceiling for non-parse growth.
-- **Measurement:** `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /tmp/graphi
-  ./cmd/graphi && ls -l /tmp/graphi`, recording the delta vs the pre-grammar
-  baseline. Each worker records its measured delta in its own story.
+**Corrected runtime + per-blob model.** With the **subset build tags** (see below) the binary
+embeds only the selected blobs, and the delta decomposes as:
+
+- **Fixed cost (paid once for the whole epic):** the ~3.13 MB one-time pure-Go `gotreesitter`
+  runtime (parser/lexer/query engine), linked the moment the first grammar registers.
+- **Marginal cost (per registered language):** the parse-table blob only — tens to hundreds of
+  KiB (TypeScript `typescript.bin` ≈ 119 KiB).
+- **Governing gate:** the whole-binary **< 50 MB** hard ceiling. The projected subset-tagged
+  tier-1 total is ≈ 18 MB — ~32 MB of headroom. The global `bench-budget.yml` re-pin against
+  the subset total is owned by **SW-057** (untouched here).
+
+**Subset-tag default build (SW-053 AC#3 — load-bearing).** The shipped default build MUST be
+built with `-tags 'grammar_subset grammar_subset_<lang> …'` (one `grammar_subset_<lang>` per
+language in `RegisterDefaults`), so only the registered blobs are embedded — **the all-206
+default embed (+~24.5 MiB) is prohibited in the shipped default**. This is wired as the
+single source of truth in `internal/release.DefaultGrammarSubsetTags` and applied by the
+canonical `cmd/release` build (`go run ./cmd/release`); SW-054 extends that list one entry per
+new language. The `release` CI job asserts the shipped binary embeds **only** the registered
+blob set (any extra `grammar_blobs/*.bin` fails the gate).
+
+- **Measurement:** `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w"
+  -tags 'grammar_subset grammar_subset_<lang>' -o /tmp/graphi ./cmd/graphi && ls -l /tmp/graphi`,
+  recording the delta vs the pre-grammar baseline. Each worker records its measured delta below.
 
 ### Measured deltas (SW-053 — TypeScript, first curated grammar)
 
@@ -97,37 +128,32 @@ Go (no `import "C"`, no `parser.c`); the TS parse table ships as a Go-embedded b
 passes the `internal/cgoconformance` import-graph scan (no offender named).
 
 Measured with `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /tmp/graphi
-./cmd/graphi && ls -l` on go1.26.3 / darwin-arm64:
+./cmd/graphi && ls -l` on go1.26.3 / darwin-arm64 (re-recorded against the corrected
+runtime + per-blob model, 2026-06-24):
 
-| Build                                   | Binary size (bytes) | Δ vs baseline       |
-|-----------------------------------------|---------------------|---------------------|
-| Pre-grammar baseline                    | 12,264,546          | —                   |
-| **Default** (`go build ./...`, no tags) | 37,908,226          | **+25,643,680 (~24.5 MiB)** |
-| Subset (`-tags grammar_subset,grammar_subset_typescript`) | 15,516,658 | **+3,252,112 (~3.10 MiB)** |
+| Build                                                        | Binary size (bytes) | Δ vs baseline | grammar blobs embedded |
+|--------------------------------------------------------------|---------------------|---------------|------------------------|
+| Pre-grammar baseline                                         | 12,264,546          | —             | 0                      |
+| **Subset (SHIPPED DEFAULT)** `-tags 'grammar_subset grammar_subset_typescript'` | 15,516,658 | **+3,252,112 (~3.10 MiB)** | **1** (`typescript.bin`) |
+| All-206 (no tags) — **PROHIBITED in the shipped default**    | 37,908,226          | +25,643,680 (~24.5 MiB) | 207                    |
 
-> ⚠ **Soft-envelope breach — escalated (SW-053).** Both deltas exceed the per-language
-> **≤ 1.0 MB** soft envelope, so per this file's escalation rule the worker did NOT
-> silently consume shared headroom — it recorded and escalated:
+> ✅ **AC#3 wired (SW-053, RESOLVED).** The earlier soft-envelope escalation is closed by the
+> EP-009 re-plan + this slice's wiring; the old ≤ 1.0 MB per-language envelope is **superseded**
+> by the runtime + per-blob model above.
 >
-> - The **default** build embeds **all 206 grammars** because the `grammars` package
->   defaults to whole-registry embedding (its files are gated `!grammar_subset ||
->   grammar_subset_<lang>`). Adding the grammar to `RegisterDefaults` without a subset
->   tag therefore adds ~24.5 MB to the default binary — over the ≤ 25 MB *epic-total*
->   envelope on the very first language, and approaching the < 50 MB ceiling.
-> - Even the **subset** build (TS table only) adds ~3.10 MB, the bulk of which is the
->   pure-Go runtime (a **one-time, amortized** cost shared by every future tier-1
->   grammar SW-054..056), not the 119 KiB TS table itself.
+> - The **shipped default** build is now subset-tagged. `internal/release.DefaultGrammarSubsetTags`
+>   = `{grammar_subset, grammar_subset_typescript}` is the single source of truth; the canonical
+>   `cmd/release` build applies it, so the shipped binary embeds **only** `typescript.bin`
+>   (verified: 1 blob embedded, not 207). The `release` CI job fails on any unexpected
+>   `grammar_blobs/*.bin`.
+> - The **+3.10 MiB** subset delta is almost entirely the **one-time pure-Go runtime** (≈ 3.13 MB,
+>   amortized across the whole epic); the TS parse-table blob itself is only **121,462 B
+>   (~119 KiB)**.
+> - The **+24.5 MiB all-206** number is recorded **only** as the cautionary "do not ship this"
+>   contrast — it embeds 207 blobs (~200 unused) and is prohibited in the shipped default.
 >
-> **Recommendation (human decision required):** before this lands in the default tier,
-> adopt the `grammar_subset` build mechanism (build `./cmd/graphi` with
-> `-tags grammar_subset,grammar_subset_typescript` and one tag per registered tier-1
-> grammar) so only embedded grammars in use are linked. With the subset mechanism the
-> marginal per-language cost is the grammar blob (≈ 0.1–0.2 MB), comfortably under the
-> envelope; the ~2 MB runtime is paid once for the whole epic. SW-057 should re-pin
-> `bench-budget.yml` against the **subset** total (runtime + the actual registered
-> grammars), not the whole-registry default. Until that decision is made the
-> `RegisterDefaults` wiring is functionally green but its **default** binary-size delta
-> is out of envelope.
+> SW-057 re-pins `bench-budget.yml` against the **subset-tagged** total (baseline + runtime +
+> registered blobs), not the all-206 default. Until then, `bench-budget.yml` is unchanged here.
 
 ### Re-pinning (SW-057)
 
@@ -136,9 +162,14 @@ consolidates the measured total into `bench-budget.yml` (`binary_size_bytes`
 baseline/budget) and bumps `baseline_version`. Until then, this file is the
 planning contract; the enforced gate value is unchanged.
 
-## Hard constraints carried from SW-052
+## Hard constraints carried from SW-052 (+ EP-009 re-plan)
 
-- **CGo-free default tier:** only pure-Go grammars register in `RegisterDefaults`.
-- **Zero outbound network + no telemetry** at runtime.
-- **Determinism:** identical input → identical nodes/edges/IDs.
-- `bench-budget.yml` is **untouched** in this story (deferred to SW-057).
+- **CGo-free default tier:** only pure-Go grammars register in `RegisterDefaults`
+  (`gotreesitter` is genuinely pure-Go; `internal/cgoconformance` enforces it, no offender).
+- **Subset-tag default build (AC#3):** the shipped default build uses
+  `-tags 'grammar_subset grammar_subset_<lang> …'` (one per registered language); the all-206
+  default embed is **prohibited** in the shipped default.
+- **Zero outbound network + no telemetry** at runtime; grammar blobs are Go-embedded at build
+  time (`go.mod` pin + `go mod verify` + committed `go.sum`); nothing fetched at parse time.
+- **Determinism:** identical input → byte-identical nodes/edges/IDs (asserted repeated + concurrent).
+- `bench-budget.yml` is **untouched** in this story (re-pin deferred to SW-057).

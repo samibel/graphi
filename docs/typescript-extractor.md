@@ -104,16 +104,30 @@ Go reference. SW-054..056 then replicate this recipe (one query/walk + one golde
 fixture per language) over disjoint files, in parallel, without re-solving graph
 plumbing, determinism, or the cross-file deferral rules.
 
-## Open item: binary-size envelope (escalated, not silently absorbed)
+### Subset-tag default build (AC#3 — the net-new wiring, RESOLVED)
 
-The measured binary-size deltas exceed the ≤ 1.0 MB per-language soft envelope and are
-**recorded and escalated** in [`bench/lang-budget.md`](../bench/lang-budget.md)
-("Measured deltas (SW-053)"). In short: the `grammars` package embeds **all 206**
-grammars by default (+~24.5 MB), and even a TS-only **subset** build adds ~3.1 MB
-(mostly the one-time pure-Go runtime, not the 119 KiB TS table). The recommendation is
-to adopt the upstream `grammar_subset` build-tag mechanism (link only registered
-grammars) and have SW-057 re-pin `bench-budget.yml` against the subset total. This is a
-size/packaging decision for a human; the extraction code itself is functionally green.
+The `gotreesitter` `grammars` package embeds **all 206** grammar blobs by default
+(`//go:embed grammar_blobs/*.bin`, gated `!grammar_subset`, +~24.5 MiB). SW-053 wires the
+upstream **subset build-tag** mechanism so the **shipped default build embeds only the
+registered language's blob** — the all-206 default embed is **prohibited** in the shipped
+default:
+
+- `internal/release.DefaultGrammarSubsetTags` is the **single source of truth**:
+  `{grammar_subset, grammar_subset_typescript}`. The umbrella `grammar_subset` tag switches
+  OFF the all-grammars embed; each `grammar_subset_<lang>` opts exactly one blob back in via
+  the upstream generated `z_subset_blob_embed_<lang>.go`.
+- The canonical `cmd/release` build (`go run ./cmd/release`) applies these tags, so the
+  shipped binary is subset-tagged by construction. SW-054 extends this list one entry per new
+  language (paired with its `RegisterDefaults` line).
+- The `release` CI job asserts the shipped binary embeds **only** the expected
+  `grammar_blobs/*.bin` set (verified: **1** blob, `typescript.bin`, not 207).
+
+The corrected size model — one ~3.13 MB one-time pure-Go runtime (paid once for the whole
+epic) + a ~119 KiB per-language blob, governed by the whole-binary **< 50 MB** ceiling — and
+both re-recorded size numbers (subset ≈ +3.10 MiB; all-206 ≈ +24.5 MiB, cautionary only) live
+in [`bench/lang-budget.md`](../bench/lang-budget.md) ("Measured deltas (SW-053)"). The old
+≤ 1.0 MB per-language envelope is **superseded** (EP-009-REPLAN-001). SW-057 re-pins
+`bench-budget.yml` against the subset-tagged total.
 
 ```mermaid
 flowchart LR
