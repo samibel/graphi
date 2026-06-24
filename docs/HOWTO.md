@@ -73,17 +73,78 @@ CGO_ENABLED=0 go test ./...
 
 ---
 
-## 4. Quick start (≈ 2 minutes)
+## 4. Three ways to drive graphi (progressive disclosure)
 
-The fastest path: ingest a repo and serve it over the loopback HTTP/SSE API.
+graphi meets you at three levels of detail. Start at level 1; reach for the lower
+levels only when you need the control they add.
+
+### 1. graphi (zero-config)
+
+The shortest path: run the bare command inside any repository.
 
 ```bash
-# Index ./my-repo into an in-memory graph and serve it on 127.0.0.1:8080
-graphi http -addr 127.0.0.1:8080 -root ./my-repo
-# → "graphi http listening on 127.0.0.1:8080 (schema_version=1)"
+cd your-repo && graphi
 ```
 
-Now query it from another terminal:
+graphi detects the repo, indexes it incrementally into an auto-managed state dir,
+serves the UI on a free loopback port, and opens your default browser at the graph.
+It also prints a "Saved $X this session" token-savings readout.
+
+On a headless box or over SSH — or with `--no-browser` / `GRAPHI_NO_BROWSER=1` —
+graphi prints the local URL instead of trying to open a browser:
+
+```bash
+graphi --no-browser        # prints e.g. http://127.0.0.1:54321 instead of opening it
+```
+
+No flags, no database path, no port to pick: auto-discovery hides all of that. On
+first run, graphi also offers (once, interactively) to connect Claude Code; in a
+non-interactive shell it prints a hint instead.
+
+### 2. Short verbs
+
+Once indexed, ask structural and analysis questions with one-word verbs — no
+`query`/`analyze` prefix needed:
+
+```bash
+graphi callers <symbol>        # who calls it
+graphi callees <symbol>        # what it calls
+graphi references <symbol>     # everything that references it
+graphi definition <symbol>     # where it is defined
+graphi neighborhood <symbol>   # local subgraph around it
+graphi impact <symbol>         # what a change to it affects
+graphi taint  <symbol>         # flow-sensitive taint from sources to sinks
+
+graphi ui        # explicitly serve the graph + open the browser
+graphi claude    # wire graphi into Claude Code (MCP setup)
+```
+
+These are aliases over the same engine as the full forms below.
+
+### 3. Full flags (advanced)
+
+The long forms expose every knob — explicit DB / meta sidecar, the daemon, and the
+HTTP surface address. Power-user flags (`-db`, `-daemon`, `-root`, `-meta`,
+`-addr`) all still work; auto-discovery just hides them by default.
+
+```bash
+# Structural query, long form — pin the store and/or talk to a daemon
+graphi query callers -symbol pkg.MyFunc -db ~/.graphi/graph.db
+graphi query neighborhood -symbol pkg.MyFunc -depth 2 -daemon /tmp/graphi.sock
+
+# Analyzers, long form — explicit store + meta sidecar
+graphi analyze impact -symbol pkg.MyFunc -direction reverse -db ~/.graphi/graph.db -meta ~/.graphi/meta
+
+# Serve the read-only HTTP/SSE API on a pinned loopback port
+graphi http -addr 127.0.0.1:8080 -root ./my-repo
+# → "graphi http listening on 127.0.0.1:8080 (schema_version=1)"
+
+# Run the hot-index daemon and query it over a Unix socket
+graphi daemon start  -socket /tmp/graphi.sock -db ~/.graphi/graph.db
+graphi query callers -symbol pkg.MyFunc -daemon /tmp/graphi.sock
+```
+
+Query the HTTP surface from another terminal:
 
 ```bash
 curl -s http://127.0.0.1:8080/healthz
@@ -95,7 +156,9 @@ curl -s 'http://127.0.0.1:8080/query/callers?symbol=pkg.MyFunc'
 [VS Code extension](#65-vs-code-extension) at the same `http://127.0.0.1:8080`.
 
 > `-addr` defaults to `127.0.0.1:0` (a random free port, printed on startup).
-> Pin a port with `-addr 127.0.0.1:8080` so the other surfaces can find it.
+> Pin a port with `-addr 127.0.0.1:8080` so the other surfaces can find it. The
+> sections below ([§5](#5-indexing-a-repository)–[§6](#6-using-each-surface))
+> document each full-flag surface in depth.
 
 ---
 

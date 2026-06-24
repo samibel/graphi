@@ -46,10 +46,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"io/fs"
 	"net"
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -57,6 +59,7 @@ import (
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/wiki"
 	"github.com/samibel/graphi/surfaces/client"
+	"github.com/samibel/graphi/surfaces/http/webui"
 )
 
 // SchemaVersion is the envelope contract version stamped on every response and
@@ -180,7 +183,48 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /events", s.schemaGuard(s.handleSSE))
 	mux.HandleFunc("GET /wiki", s.handleWikiIndex)
 	mux.HandleFunc("GET /wiki/c/{id}", s.handleWikiPage)
+	// SPA catch-all (SW-066). Registered LAST and matched LEAST specifically:
+	// Go 1.22 ServeMux routes the explicit patterns above ahead of "GET /", so
+	// every existing API/SSE/wiki route is byte-identical and the SPA only sees
+	// paths none of them claim. It is served over this same loopback surface.
+	mux.HandleFunc("GET /", s.spaHandler())
 	return mux
+}
+
+// spaHandler serves the embedded single-page web UI at "/" (SW-066).
+//
+//   - If the UI was not embedded (default UI-free build, !webui.Enabled()), it
+//     returns the static NoticeHTML page explaining how to get a bundled binary.
+//   - Otherwise it serves static files from the embedded webui.FS: "/" → index.html,
+//     an existing file path → that file (with FileServerFS content types), and any
+//     other path → index.html (SPA history-mode fallback). All served responses
+//     are 200.
+//
+// It is static-only (no wall-clock/rand) and makes no outbound connection — it
+// reads exclusively from the in-binary embedded FS, preserving the loopback-only,
+// zero-egress contract.
+func (s *Server) spaHandler() http.HandlerFunc {
+	if !webui.Enabled() {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(webui.NoticeHTML))
+		}
+	}
+	fileServer := http.FileServerFS(webui.FS)
+	return func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.Path, "/")
+		if p == "" {
+			http.ServeFileFS(w, r, webui.FS, "index.html")
+			return
+		}
+		if _, err := fs.Stat(webui.FS, p); err == nil {
+			// Existing asset: let FileServerFS set content types / handle ranges.
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+		// SPA history-mode fallback: unknown client-side route → index.html (200).
+		http.ServeFileFS(w, r, webui.FS, "index.html")
+	}
 }
 
 // ListenAndServe serves the HTTP surface on addr. Callers MUST pass a loopback

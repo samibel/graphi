@@ -184,6 +184,24 @@ func (c *DaemonClient) PrComment(ctx context.Context, req client.PrCommentReques
 // SocketPath returns the configured socket path.
 func (c *DaemonClient) SocketPath() string { return c.socketPath }
 
+// IsAlive reports whether a daemon is listening on the given Unix socket. It is
+// a UNIX-ONLY liveness probe: it dials with net.DialTimeout("unix", ...) and
+// NEVER opens a TCP/network connection. A successful dial means a server is
+// accepting on the socket; any error (no socket, refused, timeout) → false. The
+// connection is closed immediately. Used by the cmd default-discovery path to
+// decide whether to route through a running daemon.
+func IsAlive(socket string) bool {
+	if socket == "" {
+		return false
+	}
+	conn, err := net.DialTimeout("unix", socket, 500*time.Millisecond)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
+}
+
 // DefaultSocketPath returns a project-local default socket path in the user's
 // home directory. Production code may override this.
 func DefaultSocketPath() string {

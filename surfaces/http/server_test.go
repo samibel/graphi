@@ -185,10 +185,22 @@ func TestREST_MutatingVerb_MethodNotAllowed(t *testing.T) {
 	}
 }
 
-func TestREST_UnknownRoute_NotFound(t *testing.T) {
+// TestREST_UnknownRoute_SPACatchAll documents the SW-066 behavior change: the
+// "GET /" SPA catch-all now claims any path not matched by a more specific route.
+// In the default UI-free build (no -tags webui_embed) that means an unknown path
+// like "/nope" serves the static webui notice page at 200 (the SPA history
+// fallback equivalent). Specific API routes are unaffected (they win by ServeMux
+// specificity — see TestREST_* and the webui_embed-tagged server_webui_test.go).
+func TestREST_UnknownRoute_SPACatchAll(t *testing.T) {
 	srv, _, _ := newServer(t)
-	if code, _ := get(t, srv, "/nope"); code != 404 {
-		t.Fatalf("code=%d, want 404", code)
+	req := httptest.NewRequest(http.MethodGet, "/nope", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Fatalf("code=%d, want 200 (SPA catch-all notice page)", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Fatalf("Content-Type=%q, want text/html (webui notice page)", ct)
 	}
 }
 

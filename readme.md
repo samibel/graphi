@@ -2,9 +2,70 @@
 
 > Local-first, CGo-free code-intelligence engine. Parse a repository into a deterministic, provenance-backed code graph and answer structural and semantic questions over an agent-first **MCP (stdio)** + **CLI** surface — without a single byte leaving your machine.
 
-[![CGo-free](https://img.shields.io/badge/build-CGo--free-success)](#install--run)
+[![CGo-free](https://img.shields.io/badge/build-CGo--free-success)](#advanced--from-source)
 [![local-first](https://img.shields.io/badge/runtime-zero%20egress-success)](#the-local-first-contract)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](#license)
+
+---
+
+## Quick start (2 steps)
+
+**Step 1 — install.** One line, checksum-verified, no sudo (installs the prebuilt
+CGo-free binary to `~/.local/bin`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh
+```
+
+On Windows, use the PowerShell installer instead:
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex
+```
+
+**Step 2 — run it in your repo.**
+
+```bash
+cd your-repo && graphi
+```
+
+Your browser opens with the interactive code graph, plus a "Saved $X this session"
+savings readout. On a headless box / over SSH (or with `--no-browser` /
+`GRAPHI_NO_BROWSER`), graphi prints the local URL instead of opening a browser.
+
+<!-- TODO: screenshot/GIF of the graph UI -->
+
+### Everyday use
+
+```bash
+# Short verbs over the symbol under your cursor
+graphi callers <symbol>      # who calls it
+graphi impact  <symbol>      # what a change to it affects
+graphi ui                    # explicitly serve the graph + open the browser
+graphi claude                # wire graphi into Claude Code (MCP)
+
+# Update to the latest release (user-initiated; never automatic)
+graphi upgrade
+```
+
+Other ways to install:
+
+```bash
+# Homebrew (macOS / Linux) — from the shipped formula (or a future samibel/homebrew-tap)
+brew install --formula packaging/homebrew/graphi.rb
+
+# Developer fallback (builds from source via the Go toolchain)
+go install github.com/samibel/graphi/cmd/graphi@latest
+```
+
+```powershell
+# Scoop (Windows) — from the shipped manifest (or a future bucket)
+scoop install packaging/scoop/graphi.json
+```
+
+The bundled release embeds the web UI (no Node needed). A plain `go build` from
+source shows a notice page instead of the UI — see
+[Advanced / from source](#advanced--from-source).
 
 ---
 
@@ -260,29 +321,11 @@ graphi is designed so that nothing leaves your machine:
 | **CGo-free default build** | Builds anywhere Go does, with no C toolchain required. |
 | **Single static binary** | One self-contained executable, easy to drop into any environment. |
 
-## Install & run
+## Advanced / from source
 
-### Quick install (one line)
-
-The quickest way to get the prebuilt static binary — downloads the asset for your
-OS/arch, verifies it against the published `SHA256SUMS` (fail-closed), and
-installs it to `~/.local/bin` (no sudo):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh
-```
-
-Pin a release with `GRAPHI_VERSION=<tag>` or change the target dir with
-`GRAPHI_BINDIR=<dir>`. On Windows, use the PowerShell installer:
-
-```powershell
-iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex
-```
-
-Once installed, `graphi upgrade` re-runs the installer to fetch the latest
-release. It is the single user-initiated network action and is never automatic —
-the engine itself opens no outbound connections. Use `graphi upgrade -print` to
-see the exact command without running it.
+> Most users want the [two-step path above](#quick-start-2-steps). This section is
+> for building graphi yourself from the Go toolchain — the opt-in CGO flavor, the
+> embedded web UI, and running the individual surfaces by hand.
 
 ### Prerequisites
 
@@ -308,6 +351,21 @@ security limitation above before enabling it on untrusted source.
 # Broad CGO flavor: 257-grammar go-sitter-forest over the same contract.
 # Requires a C toolchain; intended for trusted / CI input only (SW-056-SEC-001).
 CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
+```
+
+#### Bundled web UI (`webui_embed`)
+
+The default build is **UI-free**: it needs no `web/dist` to compile and serves a
+small notice page at `/`, keeping the binary size budget untouched. The **bundled
+release** embeds the web UI (`go:embed`) behind the `webui_embed` build tag and
+serves the single-page app at `/` over the **same loopback-only HTTP surface**
+(existing API routes win by ServeMux specificity). Build it with the helper:
+
+```bash
+# Builds web/dist, copies it into the gitignored embed dir, and builds with the tag.
+scripts/build-release-webui.sh
+# (equivalent to: cd web && npm ci && npm run build; cp -R web/dist
+#  surfaces/http/webui/dist; CGO_ENABLED=0 go build -tags webui_embed ./cmd/graphi)
 ```
 
 ### Run

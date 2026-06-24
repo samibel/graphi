@@ -1,0 +1,21 @@
+{
+  "version": "0.0.0",
+  "description": "Local-first, CGo-free code-intelligence engine",
+  "homepage": "https://github.com/samibel/graphi",
+  "license": "Apache-2.0",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/samibel/graphi/releases/download/0.0.0/graphi-windows-amd64.exe",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bin": [["graphi-windows-amd64.exe", "graphi"]]
+    }
+  },
+  "checkver": "github",
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/samibel/graphi/releases/download/v$version/graphi-windows-amd64.exe"
+      }
+    }
+  }
+}
