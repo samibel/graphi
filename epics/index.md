@@ -55,6 +55,10 @@ leverage. Status is reconciled to the [coverage matrix](../docs/coverage-matrix.
   (`engine/ingest/ingest.go`) and preserves the full-vs-incremental byte-identical
   invariant (deterministic edge ordering, idempotent across repeated `Link`).
   This unlocks whole-repo callers/callees, impact, and taint on real code.
+  **Scope:** the linker resolver is currently **Go-only**
+  (`engine/link/resolve_go.go`). Intra-file extraction ships for all 22 languages,
+  but cross-file edges for the non-Go grammars await a per-language resolver
+  (`resolve_<lang>.go`) over the same `engine/link` seam — tracked as **FU-5**.
 
 - **FU-2 — Curated pure-Go language tier + `graphi-broad`.** ✅ **shipped**
   22 CGo-free parsers registered behind the `RegisterDefaults` seam (2 stdlib +
@@ -80,3 +84,14 @@ leverage. Status is reconciled to the [coverage matrix](../docs/coverage-matrix.
   (`internal/coverage` + the `coverage-matrix` CI gate) breaks the build. This
   registry, the README language matrix, and the coverage matrix are reconciled to
   a single source of truth.
+
+- **FU-5 — Per-language cross-file resolvers.** ⏳ **planned**
+  The `engine/link` linker pass (FU-1) ships a **Go-only** resolver
+  (`resolve_go.go`). Intra-file extraction ships for all 22 tier-1 languages, but
+  cross-file `calls`/`references`/`imports` edges for the non-Go grammars
+  (TS/JS, Python, Ruby, PHP, Lua, Java, Kotlin, C#, C, C++, Rust, Bash, SQL, …)
+  require a per-language resolver (`resolve_<lang>.go`) over the same store-free
+  `engine/link` seam. Each must honour the linker's invariants: derive the
+  confidence tier from the resolution class (never `confirmed`), drop
+  unresolved/ambiguous refs deterministically, preserve the byte-identical
+  full-vs-incremental graph, and update the README + coverage matrix per language.

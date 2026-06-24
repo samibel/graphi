@@ -52,14 +52,27 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 
 | Language | Symbol nodes | Intra-file edges | Cross-file/package edges |
 |---|---|---|---|
-| **Go** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ⏳ linker pass (roadmap) |
+| **Go** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) ¹ |
 | JSON | structural (AST) | — | — |
-| TypeScript · TSX/JSX · JavaScript | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
-| Python · Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
-| Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
-| C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
-| Bash/Shell · SQL | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
-| CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ linker pass (roadmap) |
+| TypeScript · TSX/JSX · JavaScript | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| Python · Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| Bash/Shell · SQL | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+
+> ¹ The cross-file / cross-package **linker pass** ([`engine/link`](engine/link), FU-1) is
+> wired into ingest and resolves Go references against the fully-committed node set:
+> same-package cross-file bare-ident calls/refs (`derived` tier) and cross-package
+> selector calls (`pkg.Fn`, `recv.Method`) plus file→file `imports` (`heuristic` tier,
+> with file:line evidence). It preserves the byte-identical full-vs-incremental invariant
+> and the rename/move cascade. The linker is **never** `confirmed`: unresolved or ambiguous
+> references are dropped deterministically, never fabricated.
+>
+> ² Intra-file extraction ships for every language above, but the linker currently has a
+> **Go-only resolver** ([`engine/link/resolve_go.go`](engine/link/resolve_go.go)). Cross-file
+> edges for the other languages await a per-language resolver (`resolve_<lang>.go`) over the
+> same `engine/link` seam — see the roadmap in [`epics/index.md`](epics/index.md).
 
 > **Deferred / not in the default tier.**
 > - **HTML** — has a pure-Go grammar but is **not subset-buildable in isolation** in
