@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/samibel/graphi/internal/release"
@@ -24,6 +25,8 @@ func main() {
 	out := flag.String("out", "graphi", "output binary path")
 	verifyOnly := flag.Bool("verify-only", false, "only run the reproducibility check, do not write -out")
 	listBlobs := flag.Bool("list-grammar-blobs", false, "print the expected default-build grammar blob set (derived from DefaultGrammarSubsetTags) and exit")
+	dist := flag.String("dist", "", "when set, cross-compile the full ReleaseTargets matrix into this dir and write SHA256SUMS, then exit")
+	listTargets := flag.Bool("list-targets", false, "print the release asset name for each ReleaseTargets platform and exit")
 	timeout := flag.Duration("timeout", 10*time.Minute, "overall timeout")
 	flag.Parse()
 
@@ -34,6 +37,15 @@ func main() {
 	if *listBlobs {
 		for _, blob := range release.ExpectedGrammarBlobs() {
 			fmt.Println(blob)
+		}
+		return
+	}
+
+	// Source-of-truth readout for CI: the asset name per release target, derived
+	// from internal/release.ReleaseTargets. No build required.
+	if *listTargets {
+		for _, p := range release.ReleaseTargets {
+			fmt.Println(release.AssetName(p))
 		}
 		return
 	}
@@ -52,6 +64,30 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Fprintf(os.Stderr, "release: reproducible build verified (sha256=%s)\n", sha)
+
+	// Cross-compile the full matrix into -dist and write SHA256SUMS. This path
+	// does NOT write the host -out binary; it still ran the reproducibility check
+	// above. -verify-only short-circuits before any matrix build.
+	if *dist != "" && !*verifyOnly {
+		paths, err := release.BuildAll(ctx, release.BuildConfig{Version: *version}, *dist)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "release: build matrix: %v\n", err)
+			os.Exit(2)
+		}
+		names := make([]string, len(paths))
+		for i, p := range paths {
+			names[i] = filepath.Base(p)
+		}
+		if err := release.WriteSHA256SUMS(*dist, names); err != nil {
+			fmt.Fprintf(os.Stderr, "release: write SHA256SUMS: %v\n", err)
+			os.Exit(2)
+		}
+		for _, name := range names {
+			fmt.Fprintln(os.Stderr, "release: asset "+name)
+		}
+		fmt.Fprintln(os.Stderr, "release: "+filepath.Join(*dist, "SHA256SUMS"))
+		return
+	}
 
 	if !*verifyOnly {
 		if err := release.Build(ctx, release.BuildConfig{Version: *version}, *out); err != nil {

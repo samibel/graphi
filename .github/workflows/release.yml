@@ -13,6 +13,7 @@ name: release
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 jobs:
@@ -82,3 +83,27 @@ jobs:
             exit 1
           fi
           rm -f ./graphi-default
+
+  # SW-064 (EP-010 Task A): on a v* tag push, cross-compile the full
+  # ReleaseTargets matrix, generate SHA256SUMS, and upload every asset to the
+  # GitHub Release for that tag. Tag-only — never runs on branch/PR builds.
+  release-assets:
+    name: cross-compile release matrix + upload assets
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: cross-compile matrix + SHA256SUMS
+        run: go run ./cmd/release -dist dist -version "${{ github.ref_name }}"
+      - name: upload assets to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.ref_name }}" dist/* --clobber
