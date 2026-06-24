@@ -95,7 +95,7 @@ func (t *SQLiteVectorTable) Upsert(ctx context.Context, v Vector) error {
 	blob := encodeVector(v.Values)
 	_, err := t.db.ExecContext(ctx, `
 INSERT INTO vectors (node_id, embedder_id, dim, vec) VALUES (?, ?, ?, ?)
-ON CONFLICT(node_id, embedder_id) DO UPDATE SET
+ON CONFLICT(embedder_id, node_id) DO UPDATE SET
 	dim=excluded.dim,
 	vec=excluded.vec`,
 		string(v.NodeID), t.embedderID, len(v.Values), blob)
