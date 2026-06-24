@@ -89,7 +89,23 @@ func main() {
 		printHelp()
 	case "parse":
 		runParseDefault(os.Args[2:])
+	case "ui":
+		// Short verb (SW-069): alias for the zero-config index+serve flow.
+		os.Exit(runZeroConfig())
+	case "claude":
+		// Short verb (SW-069): alias for `setup` (register the MCP server).
+		os.Exit(runSetup(os.Args[2:]))
 	default:
+		// Short verbs (SW-069, EP-010 Task F): thin aliases that rewrite argv
+		// onto the existing query/analyze dispatchers (byte-identical output).
+		// These are checked BEFORE the filename fallback so they never shadow an
+		// existing subcommand and a real filename still parses.
+		if queryVerbSet[os.Args[1]] {
+			os.Exit(runQuery(rewriteVerbArgs(os.Args[1], os.Args[2:])))
+		}
+		if analyzeVerbSet()[os.Args[1]] {
+			os.Exit(runAnalyze(rewriteVerbArgs(os.Args[1], os.Args[2:])))
+		}
 		// Backwards-compatible: treat the first arg as a filename to parse
 		// (preserves the original SW-001 invocation `graphi <file>`).
 		runParseDefault(os.Args[1:])
@@ -753,7 +769,16 @@ func runVersion() {
 // under `graphi help`, prefixed with a line documenting the new default.
 func printHelp() {
 	reg := parse.NewDefaultRegistry()
-	fmt.Printf("graphi: run with no arguments to index the current repo and open the local UI in your browser.\nregistered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, help, parse <file>\n", reg.Languages())
+	fmt.Print("graphi: run with no arguments to index the current repo and open the local UI in your browser.\n")
+	fmt.Print("\nQuick verbs:\n")
+	fmt.Print("  graphi callers <symbol>     who calls a symbol (also: callees, references, definition, neighborhood)\n")
+	fmt.Print("  graphi impact <symbol>      blast radius of a change (also: taint and other analyzers)\n")
+	fmt.Print("  graphi ui                   index this repo and open the local UI\n")
+	fmt.Print("  graphi claude               register graphi's MCP server in Claude Code\n")
+	fmt.Print("\nAdvanced (long forms):\n")
+	fmt.Print("  graphi query <op> -symbol <id> [-depth N]\n")
+	fmt.Print("  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
+	fmt.Printf("registered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, help, parse <file>\n", reg.Languages())
 }
 
 // runParseDefault preserves the original SW-001 parser-registry behavior.
