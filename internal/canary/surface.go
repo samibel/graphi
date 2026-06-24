@@ -21,7 +21,7 @@ import (
 // query.Operations; CLI commands are listed because Go has no reflection over
 // main()'s switch. NOTE: the AC's `http` surface is an EP-001 dependency and is
 // not yet present — add it here once surfaces/http exists.)
-var cliCommands = []string{"query", "search", "setup-embedder", "mcp", "daemon", "parse"}
+var cliCommands = []string{"query", "search", "index", "setup-embedder", "mcp", "daemon", "parse"}
 
 // NewSurfaceUnion derives the canonical surface union programmatically: CLI
 // subcommands + the engine's canonical query operation list + search. Adding a

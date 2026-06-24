@@ -294,7 +294,7 @@ capabilities:
     category: mcp-tool
     status: shipped
     epic: EP-001
-    note: "optional embedding search; reports 'unavailable' cleanly (OFF by default, FU-3)."
+    note: "optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061)."
   - id: undo
     category: mcp-tool
     status: shipped

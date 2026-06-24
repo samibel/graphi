@@ -60,10 +60,16 @@ leverage. Status is reconciled to the [coverage matrix](../docs/coverage-matrix.
   <50 MB budget green, plus the build-tagged opt-in `graphi-broad` CGO flavor.
   Resolves OQ1. (HTML remains deferred — see the coverage matrix `planned` row.)
 
-- **FU-3 — Embedder graceful-skip path.** ✅ **shipped (SW-059)**
+- **FU-3 — Optional semantic search (graceful-skip path + generation).** ✅ **shipped (SW-059 + SW-061)**
   `engine/embed` registry with a graceful-skip default (semantic search OFF until
   an embedder such as loopback Ollama is configured), build-tag-gated ONNX
-  carve-out so the default binary stays CGo-free. Resolves OQ6.
+  carve-out so the default binary stays CGo-free. SW-061 closes the generation gap:
+  `graphi index --semantic` embeds every node (keyed by `node_id`) and persists the
+  vectors to a durable SQLite `vectors` sidecar (tagged with embedder identity +
+  dimension); `graphi search -semantic` reloads them into the in-memory brute-force
+  cosine index on startup — a pure local read, no re-embed, no dial — so the
+  documented enable-flow returns ranked hits. (Brute-force cosine retained; HNSW is
+  an explicit follow-up.) Resolves OQ6.
 
 - **FU-4 — Traceability docs + CI-enforced coverage matrix.** ✅ **shipped (SW-060)**
   The consolidated [Architecture Plan](../docs/architecture-plan.md) is the single
