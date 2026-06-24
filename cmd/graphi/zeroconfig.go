@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -132,8 +133,12 @@ func runZeroConfig() int {
 
 	fmt.Printf("graphi: serving %s\n", url)
 
-	// Savings readout — best-effort; a missing ledger must not break the run.
-	_ = cli.RunSavings(context.Background(), c, os.Stdout, os.Stderr)
+	// Savings readout — best-effort. On a fresh repo with no ledger yet,
+	// RunSavings has nothing to print; surface a friendly baseline so the
+	// headline "savings" line is never silently absent (EP-010 AC#5).
+	if err := cli.RunSavings(context.Background(), c, os.Stdout, io.Discard); err != nil {
+		fmt.Println("Saved $0.00 this session — savings accrue as you query graphi (e.g. via Claude Code).")
+	}
 
 	if shouldOpenBrowser(os.Args[1:]) {
 		name, args := browserOpenCmd(runtime.GOOS)
