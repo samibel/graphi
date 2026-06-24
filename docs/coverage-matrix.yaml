@@ -342,9 +342,9 @@ capabilities:
     note: "React + Sigma web client (web/)."
   - id: FU-1
     category: feature-unit
-    status: planned
+    status: shipped
     epic: EP-001
-    note: "Cross-file / cross-package linker pass — resolves selector calls/imports against the committed symbol table. Not yet implemented."
+    note: "Cross-file / cross-package linker pass (SW-050, engine/link) — resolves selector calls/imports against the committed symbol table; wired into ingest with a Go resolver."
   - id: FU-2
     category: feature-unit
     status: shipped
@@ -360,3 +360,8 @@ capabilities:
     status: shipped
     epic: EP-001
     note: "Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix)."
+  - id: FU-5
+    category: feature-unit
+    status: partial
+    epic: EP-001
+    note: "Per-language cross-file/cross-package resolvers over engine/link (SW-063). Shipped: Go (FU-1) + TypeScript family (resolve_typescript.go: typescript/tsx/javascript). Remaining language groups (Python, Java/Kotlin/C#, C/C++, Rust, Ruby/PHP/Lua, Bash/SQL) roll out one slice at a time."

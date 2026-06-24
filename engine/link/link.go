@@ -93,6 +93,13 @@ type FileRefs struct {
 	SourcePath string
 	// Dir is the file's directory (same-package key); "" for the repo root.
 	Dir string
+	// Language is the file's canonical language identifier (e.g. "go", "python",
+	// "typescript"). FU-5: ingest groups FileRefs by Language and dispatches Link
+	// once per language so each registered Resolver sees only its own files. The
+	// zero value "" is the FU-1 Go-only behaviour (callers passing the language
+	// explicitly to Link are unaffected — Link selects the resolver by its argument,
+	// not by this field).
+	Language string
 	// Pending are the file's deferred references.
 	Pending []parse.PendingRef
 	// Imports are the file's import declarations (alias → path).
@@ -119,10 +126,17 @@ type Linker struct {
 	resolvers map[string]Resolver
 }
 
-// New constructs a Linker with the default Go resolver registered.
+// New constructs a Linker with the default resolvers registered. FU-1 ships Go;
+// FU-5 adds one per-language resolver per tier-1 grammar over the same registry
+// (Open/Closed) — a new language is a new Register call here, never an edit to an
+// existing resolver.
 func New() *Linker {
 	l := &Linker{resolvers: map[string]Resolver{}}
 	l.Register(goResolver{})
+	// FU-5 Slice 1 — TypeScript family (one impl, three language ids).
+	l.Register(tsResolver{"typescript"})
+	l.Register(tsResolver{"tsx"})
+	l.Register(tsResolver{"javascript"})
 	return l
 }
 

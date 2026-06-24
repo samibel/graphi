@@ -85,13 +85,20 @@ leverage. Status is reconciled to the [coverage matrix](../docs/coverage-matrix.
   registry, the README language matrix, and the coverage matrix are reconciled to
   a single source of truth.
 
-- **FU-5 — Per-language cross-file resolvers.** ⏳ **planned**
-  The `engine/link` linker pass (FU-1) ships a **Go-only** resolver
-  (`resolve_go.go`). Intra-file extraction ships for all 22 tier-1 languages, but
-  cross-file `calls`/`references`/`imports` edges for the non-Go grammars
-  (TS/JS, Python, Ruby, PHP, Lua, Java, Kotlin, C#, C, C++, Rust, Bash, SQL, …)
-  require a per-language resolver (`resolve_<lang>.go`) over the same store-free
-  `engine/link` seam. Each must honour the linker's invariants: derive the
-  confidence tier from the resolution class (never `confirmed`), drop
-  unresolved/ambiguous refs deterministically, preserve the byte-identical
-  full-vs-incremental graph, and update the README + coverage matrix per language.
+- **FU-5 — Per-language cross-file resolvers.** 🟡 **partial (SW-063, in progress)**
+  Rolls out one per-language resolver (`resolve_<lang>.go`) at a time over the
+  store-free `engine/link` registry seam (Open/Closed — a new language is a new
+  `Register` call in `link.New()`, never an edit to an existing resolver). Ingest
+  now **dispatches the linker per language** (`FileRefs.Language` + grouped
+  `Link(lang, …)` in `engine/ingest/ingest.go`), so each registered resolver sees
+  only its own files.
+  - **Shipped:** Go (`resolve_go.go`) · TypeScript family (`resolve_typescript.go`
+    — TypeScript · TSX · JavaScript; relative ESM imports with named/namespace
+    bindings, file→file `imports`; non-relative/aliased specifiers and `tsconfig`
+    paths are treated as external and skip+counted — no `tsconfig` path-mapping).
+  - **Remaining:** Python · Java/Kotlin/C# · C/C++ · Rust · Ruby/PHP/Lua · Bash/SQL.
+  Each resolver honours the linker's invariants: tier derived from the resolution
+  class (never `confirmed`), unresolved/ambiguous refs dropped + counted
+  deterministically, byte-identical full-vs-incremental graph (incl. rename/move
+  cascade), and the README + coverage matrix updated per language. Shared,
+  per-language-agnostic resolution machinery lives in `resolve_common.go`.
