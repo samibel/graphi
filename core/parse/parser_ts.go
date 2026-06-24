@@ -50,6 +50,9 @@ func NewTSParser() *TSParser {
 // Language implements Parser.
 func (*TSParser) Language() string { return "typescript" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*TSParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*TSParser) Extensions() []string { return []string{".ts"} }
 
@@ -165,6 +168,13 @@ func (e *tsSymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 		funcs:    map[string]struct{}{},
 		edgeSeen: map[string]struct{}{},
 		pendSeen: map[string]struct{}{},
+	}
+
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input before the
+	// recursive collectors descend (skips the file with structured, source-free
+	// provenance if nesting exceeds the bound).
+	if derr := guardCSTDepth(t.root, t.lang, maxParseDepth(), filename, "typescript"); derr != nil {
+		return nil, nil, nil, derr
 	}
 
 	// Pass 1: discover every top-level definition (so forward references resolve).

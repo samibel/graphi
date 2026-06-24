@@ -28,6 +28,9 @@ func NewRustParser() *RustParser {
 // Language implements Parser.
 func (*RustParser) Language() string { return "rust" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*RustParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*RustParser) Extensions() []string { return []string{".rs"} }
 
@@ -102,6 +105,11 @@ func (e *rustSymbolExtractor) Extract(filename string, root any) ([]model.Node, 
 		return nil, nil, nil, fmt.Errorf("parse: rust extractor: expected non-nil *rustAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "rust"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	rustCollectDefs(w, t.root)
 	rustResolveUses(w, t.root)
 	return w.finishExtract(filename, "rust")

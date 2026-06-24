@@ -32,6 +32,9 @@ func NewYAMLParser() *YAMLParser {
 // Language implements Parser.
 func (*YAMLParser) Language() string { return "yaml" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*YAMLParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*YAMLParser) Extensions() []string { return []string{".yaml", ".yml"} }
 
@@ -99,6 +102,11 @@ func (e *yamlSymbolExtractor) Extract(filename string, root any) ([]model.Node, 
 		return nil, nil, nil, fmt.Errorf("parse: yaml extractor: expected non-nil *yamlAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "yaml"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	if mapping := yamlTopMapping(t.root, w.lang); mapping != nil {
 		for i := 0; i < mapping.ChildCount(); i++ {
 			pair := mapping.Child(i)

@@ -40,9 +40,9 @@ const (
 
 // Check is one audited invariant with its evidence.
 type Check struct {
-	Name     string   // short invariant name
-	Status   Status   // PASS / FAIL / UNVERIFIED
-	Evidence string   // why (names the real guard/scan, not a hardcoded "OK")
+	Name      string   // short invariant name
+	Status    Status   // PASS / FAIL / UNVERIFIED
+	Evidence  string   // why (names the real guard/scan, not a hardcoded "OK")
 	Offenders []string // concrete failures (e.g. CGo packages), empty on PASS
 }
 
@@ -146,6 +146,22 @@ func RunWithIsolator(ctx context.Context, target string, iso canary.Isolator, dr
 	return Report{Checks: checks}
 }
 
+// RunWithGate is RunWithIsolator with an injectable telemetry-gate function so the
+// no-telemetry check's PASS/FAIL branches are unit-testable without shelling out
+// to `go list`. A nil gate uses the real canary.RunGate scan.
+func RunWithGate(ctx context.Context, target string, iso canary.Isolator, drv canary.SurfaceDriver, gate func() (canary.GateResult, error)) Report {
+	if target == "" {
+		target = "./..."
+	}
+	var checks []Check
+	checks = append(checks, checkCgoFree(ctx, target))
+	checks = append(checks, checkZeroOutbound(ctx, iso, drv))
+	checks = append(checks, checkNoTelemetryWithGate(gate))
+	checks = append(checks, checkNoAccounts())
+	checks = append(checks, checkNoExternalServices())
+	return Report{Checks: checks}
+}
+
 // checkCgoFree performs a REAL scan of the build graph for CGo imports. It is
 // the same engine the CI conformance gate uses — not a hardcoded string.
 func checkCgoFree(ctx context.Context, target string) Check {
@@ -228,16 +244,54 @@ func checkZeroOutbound(ctx context.Context, iso canary.Isolator, drv canary.Surf
 	return c
 }
 
-// The three checks below are honest posture statements. They are labeled
+// The two checks below are honest posture statements. They are labeled
 // "declared" rather than "verified" because they are not machine-enforced at
-// runtime in this command — they document the repo's invariant. A future story
-// could tighten them (e.g. a dependency allowlist linter). This honesty is the
-// point of AC-4: do not print a fake "OK".
+// runtime in this command — they document the repo's invariant. (No-telemetry was
+// formerly in this group but is now a REAL canary-backed scan; see
+// checkNoTelemetry above.) This honesty is the point of AC-4: do not print a fake
+// "OK".
 
+// checkNoTelemetry is now backed by a REAL scan (SW-055 AC#5): the
+// internal/canary static gate runs a telemetry/analytics import denylist scan over
+// the default build graph PLUS a type-checked outbound-dial AST scan over graphi's
+// own source. It is no longer a hard-coded declared-PASS string — a telemetry SDK
+// import or an unsanctioned dial introduced anywhere in the default graph (the new
+// default-tier parsers included) FAILS this check.
 func checkNoTelemetry() Check {
-	return Check{Name: "No telemetry",
-		Status:   StatusPass,
-		Evidence: "declared: graphi ships no telemetry SDKs and makes no analytics calls (local-first binary)"}
+	return checkNoTelemetryWithGate(nil)
+}
+
+// checkNoTelemetryWithGate runs the telemetry gate (or the real canary.RunGate
+// when gate is nil) and maps its verdict to a Check. A gate execution error yields
+// UNVERIFIED (never a false PASS); a "fail" verdict yields FAIL naming the
+// offending imports/dials; a clean "pass" yields a VERIFIED pass (backed by the
+// real scan, not a declared string).
+func checkNoTelemetryWithGate(gate func() (canary.GateResult, error)) Check {
+	c := Check{Name: "No telemetry"}
+	if gate == nil {
+		gate = func() (canary.GateResult, error) { return canary.RunGate(canary.GateConfig{}) }
+	}
+	res, err := gate()
+	if err != nil {
+		c.Status = StatusUnverified
+		c.Evidence = "telemetry gate could not run (not a pass): " + err.Error()
+		return c
+	}
+	if res.Verdict != "pass" {
+		c.Status = StatusFail
+		c.Evidence = "telemetry/analytics gate FAILED: telemetry import or unsanctioned outbound dial in the default graph"
+		for _, f := range res.Findings {
+			if f.Import != "" {
+				c.Offenders = append(c.Offenders, f.Kind+": "+f.Import)
+			} else {
+				c.Offenders = append(c.Offenders, f.Kind+": "+f.Reason)
+			}
+		}
+		return c
+	}
+	c.Status = StatusPass
+	c.Evidence = "verified: internal/canary static gate (telemetry-import denylist + type-checked outbound-dial scan) found zero telemetry SDKs and zero unsanctioned dials in the default graph"
+	return c
 }
 
 func checkNoAccounts() Check {

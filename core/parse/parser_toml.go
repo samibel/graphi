@@ -31,6 +31,9 @@ func NewTOMLParser() *TOMLParser {
 // Language implements Parser.
 func (*TOMLParser) Language() string { return "toml" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*TOMLParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*TOMLParser) Extensions() []string { return []string{".toml"} }
 
@@ -99,6 +102,11 @@ func (e *tomlSymbolExtractor) Extract(filename string, root any) ([]model.Node, 
 		return nil, nil, nil, fmt.Errorf("parse: toml extractor: expected non-nil *tomlAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "toml"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	for i := 0; i < t.root.ChildCount(); i++ {
 		c := t.root.Child(i)
 		if c == nil {

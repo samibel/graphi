@@ -29,6 +29,9 @@ func NewRubyParser() *RubyParser {
 // Language implements Parser.
 func (*RubyParser) Language() string { return "ruby" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*RubyParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*RubyParser) Extensions() []string { return []string{".rb"} }
 
@@ -103,6 +106,11 @@ func (e *rubySymbolExtractor) Extract(filename string, root any) ([]model.Node, 
 		return nil, nil, nil, fmt.Errorf("parse: ruby extractor: expected non-nil *rubyAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "ruby"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	rubyCollectDefs(w, t.root, false)
 	rubyResolveUses(w, t.root, false)
 	return w.finishExtract(filename, "ruby")

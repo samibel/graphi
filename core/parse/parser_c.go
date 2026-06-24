@@ -29,6 +29,9 @@ func NewCParser() *CParser {
 // Language implements Parser.
 func (*CParser) Language() string { return "c" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*CParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*CParser) Extensions() []string { return []string{".c", ".h"} }
 
@@ -103,6 +106,11 @@ func (e *cSymbolExtractor) Extract(filename string, root any) ([]model.Node, []m
 		return nil, nil, nil, fmt.Errorf("parse: c extractor: expected non-nil *cAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "c"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	cCollectDefs(w, t.root)
 	cResolveUses(w, t.root)
 	return w.finishExtract(filename, "c")

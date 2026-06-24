@@ -136,6 +136,7 @@ type syntheticParser struct{}
 
 func (*syntheticParser) Language() string     { return "synth" }
 func (*syntheticParser) Extensions() []string { return []string{".synth", ".syn"} }
+func (*syntheticParser) Runtime() Runtime     { return RuntimeStdlib }
 func (*syntheticParser) Parse(ctx context.Context, filename string, src []byte) (*ParseResult, error) {
 	return &ParseResult{
 		Meta: SourceMeta{Path: filename, Language: "synth", ContentHash: contentHash(src), Size: len(src)},
@@ -209,6 +210,7 @@ type extParser struct {
 
 func (e extParser) Language() string     { return e.lang }
 func (e extParser) Extensions() []string { return []string{e.ext} }
+func (e extParser) Runtime() Runtime     { return RuntimeStdlib }
 func (e extParser) Parse(ctx context.Context, filename string, src []byte) (*ParseResult, error) {
 	return &ParseResult{Meta: SourceMeta{Path: filename, Language: e.lang}}, nil
 }
@@ -262,6 +264,7 @@ type emptyParser struct{}
 
 func (emptyParser) Language() string     { return "" }
 func (emptyParser) Extensions() []string { return nil }
+func (emptyParser) Runtime() Runtime     { return RuntimeStdlib }
 func (emptyParser) Parse(ctx context.Context, filename string, src []byte) (*ParseResult, error) {
 	return nil, nil
 }

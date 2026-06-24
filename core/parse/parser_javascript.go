@@ -34,6 +34,9 @@ func NewJavaScriptParser() *JavaScriptParser {
 // Language implements Parser.
 func (*JavaScriptParser) Language() string { return "javascript" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*JavaScriptParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*JavaScriptParser) Extensions() []string { return []string{".js"} }
 
@@ -114,6 +117,11 @@ func (e *jsSymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 		return nil, nil, nil, fmt.Errorf("parse: javascript extractor: expected non-nil *jsAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "javascript"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	jsCollectDefs(w, t.root, false)
 	jsResolveUses(w, t.root, false)
 	return w.finishExtract(filename, "javascript")

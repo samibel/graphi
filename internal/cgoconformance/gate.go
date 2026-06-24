@@ -45,6 +45,14 @@ const CheckName = "cgo-free-conformance"
 // must never affect this gate's pass/fail result (AC: graphi-broad exclusion).
 const ExcludedBroadFlavor = "graphi-broad"
 
+// ForestModulePath is the CGO tree-sitter grammar bundle (go-sitter-forest) that
+// belongs ONLY to the opt-in graphi-broad flavor (SW-056). It is wholly CGO
+// (import "C" + parser.c) and MUST NEVER appear in the default build's import
+// graph. The static "forest unreachable" assertion (SW-055 AC#2/AC#4) is the
+// import-graph complement to core/parse's registration-level no-CGO guard:
+// defense-in-depth across the build layer and the runtime-registration layer.
+const ForestModulePath = "go-sitter-forest"
+
 // DefaultBuildTarget is the canonical default-graph build target, shared with
 // SW-008 (static gate) and SW-013 (packaging). It is the single definition of
 // "default graph" and MUST NOT be redefined elsewhere.
@@ -73,6 +81,7 @@ type Result struct {
 	TestOK         bool      `json:"test_ok"`          // default suite passed under CGO_ENABLED=0
 	StaticLinked   bool      `json:"static_linked"`    // zero cgo-introduced dynamic C deps
 	CgoPackages    []string  `json:"cgo_packages"`     // offenders (should be empty)
+	ForestPackages []string  `json:"forest_packages"`  // go-sitter-forest offenders (should be empty)
 	ExcludedFlavor string    `json:"excluded_flavor"`  // named excluded flavor
 	Reason         string    `json:"reason,omitempty"` // failure cause (if any)
 }
@@ -178,6 +187,54 @@ func CgoUsingPackages(ctx context.Context, target, cgoEnabled string) ([]string,
 		return nil, fmt.Errorf("go list failed: %w (%s)", err, strings.TrimSpace(stderr.String()))
 	}
 	return offenders, nil
+}
+
+// ForestReachablePackages returns the import paths reachable from target whose
+// path contains the go-sitter-forest module (the CGO grammar bundle). For the
+// default build this MUST be empty: go-sitter-forest is wholly CGO and belongs
+// only to the opt-in graphi-broad flavor (SW-056). A non-empty result is a
+// regression that names the offending package(s).
+//
+// This is the static, import-graph half of "go-sitter-forest is never reachable
+// from the default build" (SW-055 AC#2/AC#4); it complements the
+// registration-level no-CGO guard in core/parse (AssertPureGoDefaults). It scans
+// EVERY reachable package, not only cgo-using ones, so it catches a forest import
+// even before its cgo files would surface in the CgoUsingPackages scan.
+func ForestReachablePackages(ctx context.Context, target, cgoEnabled string) ([]string, error) {
+	cmd := exec.CommandContext(ctx, "go", "list", "-deps", target)
+	cmd.Env = withCgoEnv(cgoEnabled)
+	if dir, err := moduleRoot(); err == nil {
+		cmd.Dir = dir
+	}
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("go list -deps: %w (%s)", err, strings.TrimSpace(stderr.String()))
+	}
+	var offenders []string
+	for _, line := range strings.Split(string(out), "\n") {
+		pkg := strings.TrimSpace(line)
+		if pkg == "" {
+			continue
+		}
+		if strings.Contains(pkg, ForestModulePath) {
+			offenders = append(offenders, pkg)
+		}
+	}
+	return offenders, nil
+}
+
+// FormatForestReachableFailure renders a clear failure message naming the
+// go-sitter-forest packages that wrongly entered the default build graph.
+func FormatForestReachableFailure(pkgs []string) string {
+	if len(pkgs) == 0 {
+		return ""
+	}
+	return fmt.Sprintf(
+		"[%s] go-sitter-forest (CGO grammar bundle) reachable from the default build graph: %s — go-sitter-forest belongs only to the opt-in %s flavor and must never reach %s",
+		CheckName, strings.Join(pkgs, ", "), ExcludedBroadFlavor, DefaultBuildTarget,
+	)
 }
 
 // FormatCgoImportFailure renders a clear, machine-and-human-readable message
@@ -309,6 +366,22 @@ func Run(ctx context.Context, cfg GateConfig) Result {
 		return res
 	}
 	fmt.Fprintf(cfg.Stdout, "[%s] cgo-import scan OK (no offenders; %s excluded)\n", CheckName, ExcludedBroadFlavor)
+
+	// (4b) Static "go-sitter-forest unreachable" scan over the default graph
+	// (SW-055 AC#2/AC#4). The CGO grammar bundle must not appear in the default
+	// import graph; this is the build-layer complement to core/parse's
+	// registration-level no-CGO guard. Release-blocking.
+	forest, err := ForestReachablePackages(ctx, cfg.Target, cfg.CGOEnabled)
+	if err != nil {
+		res.Reason = "forest scan failed: " + err.Error()
+		return res
+	}
+	res.ForestPackages = forest
+	if len(forest) > 0 {
+		res.Reason = FormatForestReachableFailure(forest)
+		return res
+	}
+	fmt.Fprintf(cfg.Stdout, "[%s] forest-unreachable scan OK (%s not in default graph)\n", CheckName, ForestModulePath)
 
 	// (5) Default test suite under CGO_ENABLED=0.
 	if out, err := RunTestSuite(ctx, cfg.TestTarget, cfg.CGOEnabled); err != nil {

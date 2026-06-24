@@ -31,6 +31,9 @@ func NewCppParser() *CppParser {
 // Language implements Parser.
 func (*CppParser) Language() string { return "cpp" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*CppParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*CppParser) Extensions() []string { return []string{".cpp", ".cc", ".cxx", ".hpp"} }
 
@@ -106,6 +109,11 @@ func (e *cppSymbolExtractor) Extract(filename string, root any) ([]model.Node, [
 		return nil, nil, nil, fmt.Errorf("parse: cpp extractor: expected non-nil *cppAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "cpp"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	cppCollectDefs(w, t.root)
 	cppResolveUses(w, t.root)
 	return w.finishExtract(filename, "cpp")

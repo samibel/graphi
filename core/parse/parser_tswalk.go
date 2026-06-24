@@ -32,6 +32,11 @@ type cstWalk struct {
 	src  []byte
 	pkg  string
 
+	// maxDepth is the fail-closed recursion/nesting bound applied to the CST of
+	// untrusted inputs (SW-055 AC#6). It is seeded from the package-level
+	// default (configurable via SetMaxParseDepth) at newCSTWalk time. 0 = unbounded.
+	maxDepth int
+
 	defKind  map[string]string   // bareName -> Kind (first binding wins)
 	defPos   map[string]TSPoint  // bareName -> definition position
 	defOrder []string            // discovery order
@@ -44,12 +49,15 @@ type cstWalk struct {
 	pendSeen  map[string]struct{}
 }
 
-// newCSTWalk allocates a cstWalk for one Extract pass.
+// newCSTWalk allocates a cstWalk for one Extract pass. It seeds the fail-closed
+// parse-depth bound from the package-level default so every gotreesitter extractor
+// shares the same untrusted-input nesting guard with no per-parser wiring.
 func newCSTWalk(lang *gts.Language, src []byte, pkg string) *cstWalk {
 	return &cstWalk{
 		lang:     lang,
 		src:      src,
 		pkg:      pkg,
+		maxDepth: maxParseDepth(),
 		defKind:  map[string]string{},
 		defPos:   map[string]TSPoint{},
 		funcs:    map[string]struct{}{},
@@ -78,6 +86,17 @@ func (w *cstWalk) addDef(bare, kind string, pos TSPoint) {
 	if kind == KindType {
 		w.types[bare] = struct{}{}
 	}
+}
+
+// guardDepth fail-closes the extract pass against deeply-nested (billion-laughs /
+// stack-overflow) inputs (SW-055 AC#6). It measures the CST nesting depth of root
+// ITERATIVELY (an explicit work stack — it never recurses, so the guard itself
+// cannot overflow) and returns a SanitizedError wrapping ErrMaxDepthExceeded the
+// moment the configured maxDepth is exceeded, short-circuiting before the
+// recursive per-language collectors descend. It carries ONLY structured provenance
+// (no raw source). A zero maxDepth disables the bound.
+func (w *cstWalk) guardDepth(root *gts.Node, filename, language string) error {
+	return guardCSTDepth(root, w.lang, w.maxDepth, filename, language)
 }
 
 // nodeSpecs builds position-sorted node specs (Row, Column, QualifiedName) for

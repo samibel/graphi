@@ -30,6 +30,9 @@ func NewKotlinParser() *KotlinParser {
 // Language implements Parser.
 func (*KotlinParser) Language() string { return "kotlin" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*KotlinParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*KotlinParser) Extensions() []string { return []string{".kt"} }
 
@@ -103,6 +106,11 @@ func (e *kotlinSymbolExtractor) Extract(filename string, root any) ([]model.Node
 		return nil, nil, nil, fmt.Errorf("parse: kotlin extractor: expected non-nil *kotlinAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "kotlin"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	kotlinCollectDefs(w, t.root, false)
 	kotlinResolveUses(w, t.root, false)
 	return w.finishExtract(filename, "kotlin")

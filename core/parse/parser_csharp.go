@@ -28,6 +28,9 @@ func NewCSharpParser() *CSharpParser {
 // Language implements Parser.
 func (*CSharpParser) Language() string { return "c_sharp" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*CSharpParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*CSharpParser) Extensions() []string { return []string{".cs"} }
 
@@ -101,6 +104,11 @@ func (e *csSymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 		return nil, nil, nil, fmt.Errorf("parse: c_sharp extractor: expected non-nil *csAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "c_sharp"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	csCollectDefs(w, t.root)
 	csResolveUses(w, t.root)
 	return w.finishExtract(filename, "c_sharp")

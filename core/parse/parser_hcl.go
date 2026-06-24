@@ -31,6 +31,9 @@ func NewHCLParser() *HCLParser {
 // Language implements Parser.
 func (*HCLParser) Language() string { return "hcl" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*HCLParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*HCLParser) Extensions() []string { return []string{".hcl", ".tf"} }
 
@@ -99,6 +102,11 @@ func (e *hclSymbolExtractor) Extract(filename string, root any) ([]model.Node, [
 		return nil, nil, nil, fmt.Errorf("parse: hcl extractor: expected non-nil *hclAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "hcl"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	body := childByType(t.root, "body", w.lang)
 	if body != nil {
 		for i := 0; i < body.ChildCount(); i++ {

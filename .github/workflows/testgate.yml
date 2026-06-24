@@ -1,0 +1,37 @@
+# SW-055 AC#3/AC#7: explicit expected-failure allowlist gate.
+#
+# Runs the default suite under CGO_ENABLED=0 and asserts it is green EXCEPT exactly
+# the two known internal/mcpconfig root-perms tests, expressed as a structured,
+# privilege-conditional allowlist (no wildcard, length == 2) consumed via
+# `go test -json`. A third failing test, or an allowlisted test that starts
+# passing, fails this gate — so new regressions cannot hide behind the carve-out.
+#
+# CI runs as a NON-root user, so the two carve-out tests are expected to PASS here
+# (the carve-out is active only under root). The gate is privilege-aware and
+# evaluates correctly in both environments (cmd/testgate reads os.Geteuid()).
+name: test-allowlist-gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-allowlist:
+    name: test-allowlist (CGO_ENABLED=0)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: allowlist + drift-guard unit tests
+        run: go test ./internal/testgate/...
+
+      # Run the full suite as JSON and pipe it into the privilege-aware gate.
+      - name: expected-failure allowlist gate (full suite)
+        run: go test -json ./... | go run ./cmd/testgate -stdin

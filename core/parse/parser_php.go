@@ -28,6 +28,9 @@ func NewPHPParser() *PHPParser {
 // Language implements Parser.
 func (*PHPParser) Language() string { return "php" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*PHPParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*PHPParser) Extensions() []string { return []string{".php"} }
 
@@ -102,6 +105,11 @@ func (e *phpSymbolExtractor) Extract(filename string, root any) ([]model.Node, [
 		return nil, nil, nil, fmt.Errorf("parse: php extractor: expected non-nil *phpAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "php"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	phpCollectDefs(w, t.root)
 	phpResolveUses(w, t.root)
 	return w.finishExtract(filename, "php")

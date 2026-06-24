@@ -30,6 +30,9 @@ func NewBashParser() *BashParser {
 // Language implements Parser.
 func (*BashParser) Language() string { return "bash" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*BashParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*BashParser) Extensions() []string { return []string{".sh", ".bash"} }
 
@@ -103,6 +106,11 @@ func (e *bashSymbolExtractor) Extract(filename string, root any) ([]model.Node, 
 		return nil, nil, nil, fmt.Errorf("parse: bash extractor: expected non-nil *bashAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "bash"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	bashCollectDefs(w, t.root)
 	bashResolveUses(w, t.root)
 	return w.finishExtract(filename, "bash")

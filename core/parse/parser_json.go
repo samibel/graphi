@@ -19,6 +19,9 @@ func NewJSONParser() *JSONParser { return &JSONParser{} }
 // Language implements Parser.
 func (*JSONParser) Language() string { return "json" }
 
+// Runtime implements Parser: JSONParser is a stdlib-only (encoding/json) parser.
+func (*JSONParser) Runtime() Runtime { return RuntimeStdlib }
+
 // Extensions implements Parser.
 func (*JSONParser) Extensions() []string { return []string{".json"} }
 

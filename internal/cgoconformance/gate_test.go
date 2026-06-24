@@ -103,6 +103,36 @@ func TestCgoUsingPackages_DefaultGraph_NoOffenders(t *testing.T) {
 	}
 }
 
+// TestForestReachablePackages_DefaultGraph_None proves go-sitter-forest (the CGO
+// grammar bundle) is NOT reachable from the default build graph — the static,
+// import-graph half of SW-055 AC#2/AC#4 (the registration-level half lives in
+// core/parse.AssertPureGoDefaults). A future graphi-broad import leaking into the
+// default graph would break this.
+func TestForestReachablePackages_DefaultGraph_None(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping live go-list scan in -short mode")
+	}
+	offenders, err := ForestReachablePackages(context.Background(), DefaultBuildTarget, "0")
+	if err != nil {
+		t.Fatalf("ForestReachablePackages: %v", err)
+	}
+	if len(offenders) != 0 {
+		t.Fatalf("go-sitter-forest reachable from default graph (regression!): %v", offenders)
+	}
+}
+
+func TestFormatForestReachableFailure_NamesOffender(t *testing.T) {
+	got := FormatForestReachableFailure([]string{"github.com/alexaandru/go-sitter-forest/fortran"})
+	for _, want := range []string{"go-sitter-forest", CheckName, ExcludedBroadFlavor} {
+		if !strings.Contains(got, want) {
+			t.Errorf("FormatForestReachableFailure missing %q in: %q", want, got)
+		}
+	}
+	if empty := FormatForestReachableFailure(nil); empty != "" {
+		t.Errorf("FormatForestReachableFailure(nil) = %q, want empty", empty)
+	}
+}
+
 // TestAssertStaticLinkage_FreshDefaultBinary builds the default binary under
 // CGO_ENABLED=0 and asserts the linkage guarantee holds on this platform.
 func TestAssertStaticLinkage_FreshDefaultBinary(t *testing.T) {

@@ -28,6 +28,9 @@ func NewJavaParser() *JavaParser {
 // Language implements Parser.
 func (*JavaParser) Language() string { return "java" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*JavaParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*JavaParser) Extensions() []string { return []string{".java"} }
 
@@ -100,6 +103,11 @@ func (e *javaSymbolExtractor) Extract(filename string, root any) ([]model.Node, 
 		return nil, nil, nil, fmt.Errorf("parse: java extractor: expected non-nil *javaAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "java"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	javaCollectDefs(w, t.root)
 	javaResolveUses(w, t.root)
 	return w.finishExtract(filename, "java")

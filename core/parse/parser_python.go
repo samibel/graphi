@@ -29,6 +29,9 @@ func NewPythonParser() *PythonParser {
 // Language implements Parser.
 func (*PythonParser) Language() string { return "python" }
 
+// Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
+func (*PythonParser) Runtime() Runtime { return RuntimeGoTreeSitter }
+
 // Extensions implements Parser.
 func (*PythonParser) Extensions() []string { return []string{".py"} }
 
@@ -103,6 +106,11 @@ func (e *pySymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 		return nil, nil, nil, fmt.Errorf("parse: python extractor: expected non-nil *pyAST root for %q, got %T", filename, root)
 	}
 	w := newCSTWalk(t.lang, t.src, langPackage(filename))
+	// SW-055 AC#6: fail-closed parse-depth guard on untrusted input (skips the
+	// file with structured, source-free provenance if nesting exceeds the bound).
+	if derr := w.guardDepth(t.root, filename, "python"); derr != nil {
+		return nil, nil, nil, derr
+	}
 	pyCollectDefs(w, t.root)
 	pyResolveUses(w, t.root)
 	return w.finishExtract(filename, "python")

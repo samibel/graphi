@@ -36,6 +36,9 @@ func NewGoParser() *GoParser { return &GoParser{extractor: goSymbolExtractor{}} 
 // Language implements Parser.
 func (*GoParser) Language() string { return "go" }
 
+// Runtime implements Parser: GoParser is the native go/ast path (pure Go).
+func (*GoParser) Runtime() Runtime { return RuntimeGoAST }
+
 // Extensions implements Parser.
 func (*GoParser) Extensions() []string { return []string{".go"} }
 
@@ -51,8 +54,11 @@ type goAST struct {
 // Parse implements Parser. It parses src as Go source with comments retained and
 // returns a normalized ParseResult whose Root is a *goAST. It honors ctx
 // cancellation and recovers from any unexpected panic in the parser so a single
-// malformed file can never crash the caller (two-layer guard: this recover plus
-// the engine-side timeout/size guard).
+// malformed file can never crash the caller. This is one layer of a two-layer
+// guard: this recover, plus the engine/ingest fail-closed resource bounds
+// (SW-055: max file size enforced before read, parse timeout via ctx, and — for
+// the gotreesitter parsers — CST nesting depth) that skip an over-bound file with
+// a structured diagnostic rather than parse it.
 func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res *ParseResult, err error) {
 	if err = ctx.Err(); err != nil {
 		return nil, err
