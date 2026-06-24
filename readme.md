@@ -310,6 +310,21 @@ security limitation above before enabling it on untrusted source.
 CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
 ```
 
+#### Bundled web UI (`webui_embed`)
+
+The default build is **UI-free**: it needs no `web/dist` to compile and serves a
+small notice page at `/`, keeping the binary size budget untouched. The **bundled
+release** embeds the web UI (`go:embed`) behind the `webui_embed` build tag and
+serves the single-page app at `/` over the **same loopback-only HTTP surface**
+(existing API routes win by ServeMux specificity). Build it with the helper:
+
+```bash
+# Builds web/dist, copies it into the gitignored embed dir, and builds with the tag.
+scripts/build-release-webui.sh
+# (equivalent to: cd web && npm ci && npm run build; cp -R web/dist
+#  surfaces/http/webui/dist; CGO_ENABLED=0 go build -tags webui_embed ./cmd/graphi)
+```
+
 ### Run
 
 ```bash
