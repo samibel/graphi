@@ -56,10 +56,11 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 | JSON | structural (AST) | — | — |
 | TypeScript · TSX/JSX · JavaScript | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
 | **Python** | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
-| Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
-| C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
-| Bash/Shell · SQL | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| Ruby · PHP · Lua | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Java · Kotlin · C# | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Bash/Shell | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
+| SQL | ✅ symbol nodes | ✅ intra-file | — (no provable cross-file refs at this tier; resolver skips+counts) ² |
 | CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
 
 > ¹ The cross-file / cross-package **linker pass** ([`engine/link`](engine/link), FU-1) is
@@ -70,18 +71,21 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > and the rename/move cascade. The linker is **never** `confirmed`: unresolved or ambiguous
 > references are dropped deterministically, never fabricated.
 >
-> ² Intra-file extraction ships for every language above. FU-5 rolls out one
-> per-language cross-file resolver (`resolve_<lang>.go`) at a time over the same
-> `engine/link` registry seam (Open/Closed). **Shipped:** Go (`resolve_go.go`); the
-> TypeScript family (`resolve_typescript.go`: TypeScript · TSX · JavaScript — relative
-> ESM imports, named/namespace bindings; non-relative/aliased specifiers and `tsconfig`
-> paths are treated as external and skipped); and Python (`resolve_python.go` —
-> clause-keyed module resolution: `import pkg`/`pkg.fn`, `import m as a`/`a.fn`,
-> `from pkg import name`; dotted module paths key on their last segment). Every
-> cross-file edge is `heuristic` tier
-> with file:line evidence and is **never** `confirmed`; unresolved/ambiguous references
-> are dropped and counted, never fabricated. The remaining ⏳ languages await their
-> resolver slice — see the roadmap in [`epics/index.md`](epics/index.md).
+> ² Intra-file extraction ships for every language above. FU-5 adds one per-language
+> cross-file resolver (`resolve_<lang>.go`) over the same `engine/link` registry seam
+> (Open/Closed — a new language is a new `Register` call in `link.New()`, never an edit
+> to an existing resolver). Ingest dispatches the linker per language. **Shipped:**
+> Go; **TypeScript family** (relative ESM imports, named/namespace bindings; non-relative/
+> aliased specifiers and `tsconfig` paths are external → skipped — no path-mapping);
+> **Python · Rust · Java · Kotlin** (clause-keyed module/FQN resolution — Python dotted
+> modules, Rust `::` paths, Java/Kotlin FQNs key on their package segment); **C#**
+> (`using` namespaces as ambient clauses); **C · C++** (`#include` translation units —
+> file→file imports + ambient include-dir calls; **no overload resolution** → ambiguous
+> calls skip+count); **Ruby · PHP · Lua · Bash** (relative `require`/`source` →
+> file→file imports + same-/ambient-dir calls). **SQL** has no provable cross-file
+> references at this tier, so its resolver deliberately resolves nothing (skip+count).
+> Every cross-file edge is `heuristic` tier with file:line evidence and is **never**
+> `confirmed`; unresolved/ambiguous references are dropped and counted, never fabricated.
 
 > **Deferred / not in the default tier.**
 > - **HTML** — has a pure-Go grammar but is **not subset-buildable in isolation** in

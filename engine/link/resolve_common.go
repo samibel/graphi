@@ -3,9 +3,41 @@ package link
 import (
 	"path"
 	"sort"
+	"strings"
 
 	"github.com/samibel/graphi/core/model"
 )
+
+// lastSegment returns the trailing segment of a separator-delimited module path
+// ("crate::shop::price" with "::" → "price"; "com.shop.Price" with "." → "Price").
+func lastSegment(p, sep string) string {
+	if i := strings.LastIndex(p, sep); i >= 0 {
+		return p[i+len(sep):]
+	}
+	return p
+}
+
+// packageSegment returns the SECOND-to-last segment of a separator-delimited path
+// — the package/module a FQN's trailing symbol lives in ("com.shop.Price" with "."
+// → "shop"). With fewer than two segments it returns the whole string.
+func packageSegment(p, sep string) string {
+	segs := strings.Split(p, sep)
+	if len(segs) >= 2 {
+		return segs[len(segs)-2]
+	}
+	return p
+}
+
+// joinRel cleans a repo-relative file path from an importing directory and a
+// relative/local specifier ("app" + "util.h" → "app/util.h"; "a/b" + "../u.sh" →
+// "a/u.sh"). The repo root is "".
+func joinRel(dir, spec string) string {
+	j := path.Clean(path.Join(dir, spec))
+	if j == "." {
+		return ""
+	}
+	return j
+}
 
 // This file is the shared, pure cross-file resolution core the FU-5 per-language
 // resolvers (resolve_typescript.go, resolve_python.go, …) build on. Every non-Go
@@ -69,8 +101,24 @@ type binder struct {
 	// SymbolIndex keys symbols by "<dirBase>.<bare>", so the clause is the import
 	// path's trailing module segment. Languages differ in the separator: Go-style
 	// "/"-paths default to path.Base; Python-style "."-paths set this to the last
-	// dot segment. nil ⇒ path.Base (the Go/filesystem default).
+	// dot segment; FQN languages (Java) to the SECOND-to-last (the package). nil ⇒
+	// path.Base (the Go/filesystem default).
 	clauseOf func(importPath string) string
+
+	// selBaseAsClause, when true, treats an otherwise-unresolved selector base as a
+	// module/clause name itself and tries crossModule(clause(base), name). Used by
+	// languages whose qualifier IS a module path (Rust `mod::fn`).
+	selBaseAsClause bool
+
+	// ambientClauses are package clauses brought into scope by a wildcard/namespace
+	// import (C# `using Shop`); an unresolved bare/selector name is tried against
+	// each (a unique committed hit resolves; >1 distinct → ambiguous).
+	ambientClauses []string
+
+	// ambientDirs are directories brought into scope by a local include/require
+	// (C `#include "h"`, PHP `require`, Bash `source ./x`); an unresolved bare name
+	// is tried in each via byDir (unique hit resolves; >1 distinct → ambiguous).
+	ambientDirs []string
 }
 
 // clause returns the package-clause lookup key for an import path under this binder.
@@ -96,9 +144,9 @@ func resolveRefs(in FileRefs, idx *SymbolIndex, st *Stats, b binder) []intent {
 		}
 		ev := evidenceFor(in.SourcePath, p.Line)
 
+		// Bare name: same-directory (derived) wins first — a name defined in the
+		// caller's own directory is the strongest, same-package claim.
 		if !p.Selector {
-			// Bare name: same-directory (derived) first, then an imported bare
-			// binding (cross-file heuristic).
 			if to, ok := idx.sameDir(in.Dir, p.Name); ok {
 				if to == from && p.Kind == edgeReferences {
 					st.Skipped++ // self-reference by bare name is not a real edge
@@ -112,80 +160,24 @@ func resolveRefs(in FileRefs, idx *SymbolIndex, st *Stats, b binder) []intent {
 				st.ResolvedDerived++
 				continue
 			}
-			if dirs, isBound := b.bareNameDirs[p.Name]; isBound {
-				to, found, ambiguous := lookupInDirs(idx, dirs, p.Name)
-				if found {
-					out = append(out, intent{
-						from: from, to: to, kind: p.Kind, class: classSelector,
-						reason:   "cross-file " + p.Kind + " resolved via imported binding " + p.Name,
-						evidence: ev,
-					})
-					st.ResolvedHeuristic++
-					continue
-				}
-				if ambiguous {
-					st.Ambiguous++
-					continue
-				}
-			}
-			if impPath, isImported := b.bareNameImportPath[p.Name]; isImported {
-				to, found, ambiguous := crossModule(idx, b.clause(impPath), p.Name)
-				if found {
-					out = append(out, intent{
-						from: from, to: to, kind: p.Kind, class: classSelector,
-						reason:   "cross-module " + p.Kind + " resolved via import " + impPath + " (binding " + p.Name + ")",
-						evidence: ev,
-					})
-					st.ResolvedHeuristic++
-					continue
-				}
-				if ambiguous {
-					st.Ambiguous++
-					continue
-				}
-			}
-			st.Skipped++
-			continue
 		}
 
-		// Selector base.name: a module/package alias (clause cross-module) first,
-		// then a namespace/relative-dir alias (cross-file via byDir).
-		if impPath, isPkg := b.selBaseImportPath[p.SelectorBase]; isPkg {
-			to, found, ambiguous := crossModule(idx, b.clause(impPath), p.Name)
-			if found {
-				out = append(out, intent{
-					from: from, to: to, kind: p.Kind, class: classSelector,
-					reason:   "cross-module " + p.Kind + " resolved via import " + impPath + " (qualifier " + p.SelectorBase + ")",
-					evidence: ev,
-				})
-				st.ResolvedHeuristic++
-				continue
-			}
-			if ambiguous {
-				st.Ambiguous++
-				continue
-			}
-			// Known module alias but symbol not in the repo (stdlib/3rd-party): skip.
-			st.Skipped++
+		// Cross-file / cross-module heuristic resolution (imported bare bindings and
+		// selector qualifiers), tried in honest order. Ambiguity short-circuits to a
+		// counted skip rather than guessing a single target.
+		to, found, ambiguous, reason := resolveCrossFile(idx, b, p.SelectorBase, p.Name, p.Selector, p.Kind)
+		if found {
+			out = append(out, intent{
+				from: from, to: to, kind: p.Kind, class: classSelector,
+				reason: reason, evidence: ev,
+			})
+			st.ResolvedHeuristic++
 			continue
 		}
-		if dirs, isNS := b.selBaseDirs[p.SelectorBase]; isNS {
-			to, found, ambiguous := lookupInDirs(idx, dirs, p.Name)
-			if found {
-				out = append(out, intent{
-					from: from, to: to, kind: p.Kind, class: classSelector,
-					reason:   "cross-file " + p.Kind + " resolved via namespace import " + p.SelectorBase,
-					evidence: ev,
-				})
-				st.ResolvedHeuristic++
-				continue
-			}
-			if ambiguous {
-				st.Ambiguous++
-				continue
-			}
+		if ambiguous {
+			st.Ambiguous++
+			continue
 		}
-		// Unresolvable selector (local-variable method, stdlib, unindexed): skip.
 		st.Skipped++
 	}
 
@@ -225,6 +217,125 @@ func resolveRefs(in FileRefs, idx *SymbolIndex, st *Stats, b binder) []intent {
 	}
 
 	return out
+}
+
+// requireBinder builds the binder for script languages that pull in another file by
+// a `require`/`require_relative`/`source` specifier resolved relative to the
+// including file's directory (Ruby, PHP, Lua, Bash). Each specifier contributes a
+// file→file imports edge target (its committed node) and an ambient directory in
+// which bare/selector names are resolved. A specifier without an extension is
+// expanded against exts; an absolute / search-path require that resolves to no
+// committed node is skipped (no phantom).
+func requireBinder(in FileRefs, exts []string) binder {
+	b := binder{}
+	seenDir := map[string]struct{}{}
+	for _, imp := range in.Imports {
+		if imp.Path == "" {
+			continue
+		}
+		base := joinRel(in.Dir, imp.Path)
+		if path.Ext(imp.Path) != "" {
+			b.importFileTargets = append(b.importFileTargets, base)
+		} else {
+			for _, ext := range exts {
+				b.importFileTargets = append(b.importFileTargets, base+ext)
+			}
+		}
+		dir := posixDir(base)
+		if _, dup := seenDir[dir]; !dup {
+			seenDir[dir] = struct{}{}
+			b.ambientDirs = append(b.ambientDirs, dir)
+		}
+	}
+	return b
+}
+
+// resolveCrossFile tries every cross-file / cross-module mechanism the binder
+// declares, in honest priority order, and returns the first UNIQUE committed match
+// (heuristic tier). Ambiguity at any step short-circuits to (_, false, true, _) so
+// the caller counts st.Ambiguous instead of guessing; a definitive miss returns
+// (_, false, false, _). It never fabricates a target and never edits the index.
+func resolveCrossFile(idx *SymbolIndex, b binder, base, name string, selector bool, kind string) (model.NodeId, bool, bool, string) {
+	if !selector {
+		if dirs, ok := b.bareNameDirs[name]; ok {
+			if id, f, a := lookupInDirs(idx, dirs, name); f {
+				return id, true, false, "cross-file " + kind + " resolved via imported binding " + name
+			} else if a {
+				return "", false, true, ""
+			}
+		}
+		if impPath, ok := b.bareNameImportPath[name]; ok {
+			if id, f, a := crossModule(idx, b.clause(impPath), name); f {
+				return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (binding " + name + ")"
+			} else if a {
+				return "", false, true, ""
+			}
+		}
+	} else {
+		if impPath, ok := b.selBaseImportPath[base]; ok {
+			if id, f, a := crossModule(idx, b.clause(impPath), name); f {
+				return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (qualifier " + base + ")"
+			} else if a {
+				return "", false, true, ""
+			}
+		}
+		if dirs, ok := b.selBaseDirs[base]; ok {
+			if id, f, a := lookupInDirs(idx, dirs, name); f {
+				return id, true, false, "cross-file " + kind + " resolved via namespace import " + base
+			} else if a {
+				return "", false, true, ""
+			}
+		}
+		if b.selBaseAsClause {
+			if id, f, a := crossModule(idx, b.clause(base), name); f {
+				return id, true, false, "cross-module " + kind + " resolved via module path " + base
+			} else if a {
+				return "", false, true, ""
+			}
+		}
+	}
+	// Ambient fallbacks apply to both bare and selector references.
+	if len(b.ambientDirs) > 0 {
+		if id, f, a := lookupInDirs(idx, b.ambientDirs, name); f {
+			return id, true, false, "cross-file " + kind + " resolved via a local include/require directory"
+		} else if a {
+			return "", false, true, ""
+		}
+	}
+	if len(b.ambientClauses) > 0 {
+		if id, f, a := lookupAcrossClauses(idx, b.ambientClauses, name); f {
+			return id, true, false, "cross-module " + kind + " resolved via an imported namespace"
+		} else if a {
+			return "", false, true, ""
+		}
+	}
+	return "", false, false, ""
+}
+
+// lookupAcrossClauses resolves a bare name across candidate package clauses via
+// crossModule. A unique committed match across all clauses resolves; zero matches
+// return (_, false, false); ambiguity within one clause OR >1 distinct match across
+// clauses returns (_, false, true) so the caller counts it deterministically.
+func lookupAcrossClauses(idx *SymbolIndex, clauses []string, name string) (model.NodeId, bool, bool) {
+	var found model.NodeId
+	count := 0
+	for _, c := range dedupeSorted(clauses) {
+		id, f, amb := crossModule(idx, c, name)
+		if amb {
+			return "", false, true
+		}
+		if f {
+			if count == 0 {
+				found, count = id, 1
+			} else if id != found {
+				return "", false, true
+			}
+		}
+	}
+	if count == 1 {
+		return found, true, false
+	}
+	return "", false, false
 }
 
 // crossModule resolves a (clause, name) selector against the package-clause table,

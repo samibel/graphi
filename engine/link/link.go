@@ -139,6 +139,22 @@ func New() *Linker {
 	l.Register(tsResolver{"javascript"})
 	// FU-5 Slice 2 — Python.
 	l.Register(pyResolver{})
+	// FU-5 Slice 3 — Rust.
+	l.Register(rustResolver{})
+	// FU-5 Slice 4 — JVM/CLR FQN family.
+	l.Register(javaResolver{})
+	l.Register(kotlinResolver{})
+	l.Register(csharpResolver{})
+	// FU-5 Slice 5 — C / C++ (#include translation units).
+	l.Register(cResolver{})
+	l.Register(cppResolver{})
+	// FU-5 Slice 6 — require/include script family.
+	l.Register(rubyResolver{})
+	l.Register(phpResolver{})
+	l.Register(luaResolver{})
+	// FU-5 Slice 7 — Bash/Shell + SQL.
+	l.Register(bashResolver{})
+	l.Register(sqlResolver{})
 	return l
 }
 

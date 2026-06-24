@@ -362,6 +362,6 @@ capabilities:
     note: "Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix)."
   - id: FU-5
     category: feature-unit
-    status: partial
+    status: shipped
     epic: EP-001
-    note: "Per-language cross-file/cross-package resolvers over engine/link (SW-063). Shipped: Go (FU-1) + TypeScript family (resolve_typescript.go: typescript/tsx/javascript) + Python (resolve_python.go). Remaining language groups (Java/Kotlin/C#, C/C++, Rust, Ruby/PHP/Lua, Bash/SQL) roll out one slice at a time."
+    note: "Per-language cross-file/cross-package resolvers over engine/link (SW-063), with ingest dispatching the linker per language. Resolvers: Go, TypeScript family (ts/tsx/js), Python, Rust, Java, Kotlin, C#, C, C++, Ruby, PHP, Lua, Bash. SQL is an honest no-op (no provable cross-file refs at this tier → skip+count). Each is heuristic tier, deterministic, byte-identical full-vs-incremental, never confirmed, never fabricates."
