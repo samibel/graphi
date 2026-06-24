@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -63,6 +64,27 @@ var DefaultGrammarSubsetTags = []string{
 	"grammar_subset_toml",     // TOML (SW-054)
 	"grammar_subset_markdown", // Markdown (SW-054)
 	"grammar_subset_hcl",      // HCL / Terraform (SW-054)
+}
+
+// ExpectedGrammarBlobs derives, from DefaultGrammarSubsetTags (the single source
+// of truth), the sorted set of gotreesitter grammar blob paths the shipped
+// default binary must embed — one `grammar_blobs/<lang>.bin` per
+// `grammar_subset_<lang>` tag. The umbrella `grammar_subset` tag carries no
+// language and contributes no blob. This lets CI assert the embedded blob set
+// against the source of truth instead of a hand-maintained list, so adding a
+// tier-1 language (a new tag here) never silently drifts the release gate.
+func ExpectedGrammarBlobs() []string {
+	const prefix = "grammar_subset_"
+	out := make([]string, 0, len(DefaultGrammarSubsetTags))
+	for _, tag := range DefaultGrammarSubsetTags {
+		lang := strings.TrimPrefix(tag, prefix)
+		if lang == tag || lang == "" {
+			continue // umbrella "grammar_subset" (no language) — no blob
+		}
+		out = append(out, "grammar_blobs/"+lang+".bin")
+	}
+	sort.Strings(out)
+	return out
 }
 
 // BuildConfig parameterizes a release build.
