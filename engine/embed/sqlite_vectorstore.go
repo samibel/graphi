@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS vectors (
 	embedder_id TEXT NOT NULL,
 	dim         INTEGER NOT NULL,
 	vec         BLOB NOT NULL,
-	PRIMARY KEY (node_id, embedder_id)
+	PRIMARY KEY (embedder_id, node_id)
 );`
 
 // NewSQLiteVectorTableDB constructs a durable vector table over an EXISTING meta
