@@ -35,6 +35,7 @@ graphi grows from a structural core into semantic and deep analysis. Each capabi
 - **Parse to graph** — turn a repository into a canonical node/edge model with deterministic ids and provenance on every edge.
 - **Structural queries** — callers, callees, references, definition, and neighborhood for any symbol.
 - **Lexical & symbol search** — fast full-text search across symbols and source.
+- **Semantic search (optional, OFF by default)** — embedding-based search that is **off until you explicitly configure an embedder**; the default binary ships **no embedder** and degrades gracefully (see [Semantic search](#semantic-search-optional-off-by-default)).
 - **Incremental indexing** — only changed files are re-parsed; the graph stays fresh as you edit.
 - **Hot daemon** — keep the index in memory and query it over a local Unix socket for instant responses.
 
@@ -153,6 +154,64 @@ Also available through `graphi analyze <analyzer>`:
 - **`contracts`** — detect API/interface contracts and flag drift against them.
 - **`git-history`** — repository-history signals such as code churn, co-change groups, and bus-factor.
 
+## Semantic search (optional, OFF by default)
+
+Semantic (embedding-based) search is an **optional** capability that is **OFF by
+default**. The default binary ships **no embedder**, stays **CGo-free**, and makes
+**zero non-loopback network calls** — semantic search is only ever enabled when
+*you* explicitly opt in. Until then it **degrades gracefully**: it never errors,
+never dials the network, and never blocks the always-available lexical search.
+
+### Before / after
+
+| | Default build (no embedder) | After opting in |
+|---|---|---|
+| `graphi search -semantic <q>` | returns a typed `{"available":false,"reason":"no embedder configured; run \`graphi setup-embedder ...\`"}` response — no error, no network | embeds the query and returns cosine-ranked hits citing `node_id` + `score` |
+| Lexical `graphi search <q>` | always available | unchanged, always available |
+| Binary | CGo-free, no embedder, zero egress | CGo-free unless you build the ONNX flavor; loopback-only if you use Ollama |
+
+The unavailable response is produced by a **single engine-owned type**
+(`engine/search.SemanticResponse`) and is **byte-identical across the CLI, MCP, and
+HTTP surfaces**, so surfaces can never drift.
+
+```mermaid
+flowchart LR
+  Q["graphi search -semantic q"] --> S{embedder configured?}
+  S -- "no (default)" --> U["typed Unavailable\n(no error, no network)"]
+  S -- "yes (opt-in)" --> E["embed q -> brute-force cosine\n-> ranked NodeId+score hits"]
+```
+
+### How to enable it
+
+Run `graphi setup-embedder` for copy-pasteable instructions. You opt in by setting
+the `GRAPHI_EMBEDDER` environment variable, then re-indexing with embeddings:
+
+```sh
+# Option A — Ollama (loopback-only, opt-in). Requires a local Ollama daemon.
+export GRAPHI_EMBEDDER=ollama                 # defaults to 127.0.0.1:11434
+# or pin the loopback endpoint explicitly:
+export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434
+
+# Option B — ONNX (local, CGO). Requires a build with the embed_onnx tag:
+#   go build -tags embed_onnx ./cmd/graphi
+export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx
+
+# Then embed the graph and query:
+graphi index --semantic
+graphi search -semantic "where do we validate auth tokens"
+```
+
+Safety guarantees that hold regardless of configuration:
+
+- **Ollama is loopback-only and fail-closed.** A non-loopback host is **rejected at
+  construction** (in addition to the runtime canary dial interceptor —
+  defense-in-depth). It is never constructed on the default path.
+- **ONNX (CGO) is build-tag-gated** behind `//go:build embed_onnx` and is **provably
+  absent** from the default binary (verified by both the `internal/cgoconformance`
+  import-graph scan and a registration-level no-CGO guard).
+- **Brute-force cosine** over an in-memory index is intentional for this first cut;
+  HNSW / approximate-nearest-neighbour indexing is an explicit follow-up.
+
 ## The local-first contract
 
 graphi is designed so that nothing leaves your machine:
@@ -220,7 +279,8 @@ The single `graphi` binary dispatches the subcommands below. Most accept `-db <p
 |---|---|
 | `graphi parse <file>` | Parse a single file into the graph (default when no subcommand is given). |
 | `graphi query <op> -symbol <id> [-depth N]` | Structural query. `<op>` is one of `callers`, `callees`, `references`, `definition`, `neighborhood`. |
-| `graphi search [-limit N] <query>` | Lexical / symbol search. |
+| `graphi search [-limit N] [-semantic] <query>` | Lexical / symbol search; `-semantic` runs the optional embedding search (graceful-skip when no embedder is configured). |
+| `graphi setup-embedder [<selector>]` | Print how to opt in to the optional semantic search (offline; semantic search stays OFF until you set `GRAPHI_EMBEDDER`). |
 | `graphi analyze <analyzer> -symbol <id> [options]` | Run a semantic or deep analyzer (see below). |
 | `graphi mcp` | Run the MCP **stdio** server (the agent-first surface). |
 | `graphi daemon start\|stop\|status [-socket path] [-db path]` | Manage the hot-index Unix-socket daemon. |
