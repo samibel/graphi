@@ -16,7 +16,6 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$Repo = "github.com/samibel/graphi"
 $ReleasesUrl = "https://github.com/samibel/graphi/releases"
 
 # Valid asset names — GENERATED from internal/release.ReleaseTargets via

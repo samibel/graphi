@@ -39,7 +39,6 @@ var installShTmpl string
 var installPs1Tmpl string
 
 const (
-	repo            = "github.com/samibel/graphi"
 	releasesURL     = "https://github.com/samibel/graphi/releases"
 	rawInstallURL   = "https://raw.githubusercontent.com/samibel/graphi/main/install.sh"
 	rawInstallPS1   = "https://raw.githubusercontent.com/samibel/graphi/main/install.ps1"
@@ -50,7 +49,6 @@ const (
 // tmplData is the injected, deterministic template input.
 type tmplData struct {
 	Header          string
-	Repo            string
 	ReleasesURL     string
 	RawInstallURL   string
 	RawInstallPS1URL string
@@ -122,7 +120,6 @@ func render() ([]renderedFile, error) {
 
 	sh, err := exec1("install.sh", installShTmpl, tmplData{
 		Header:        generatedHeader,
-		Repo:          repo,
 		ReleasesURL:   releasesURL,
 		RawInstallURL: rawInstallURL,
 		Assets:        assets,
@@ -132,7 +129,6 @@ func render() ([]renderedFile, error) {
 	}
 	ps1, err := exec1("install.ps1", installPs1Tmpl, tmplData{
 		Header:           generatedHdrPS1,
-		Repo:             repo,
 		ReleasesURL:      releasesURL,
 		RawInstallPS1URL: rawInstallPS1,
 		Assets:           assets,

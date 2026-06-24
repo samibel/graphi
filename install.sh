@@ -15,7 +15,6 @@
 
 set -eu
 
-REPO="github.com/samibel/graphi"
 RELEASES_URL="https://github.com/samibel/graphi/releases"
 
 # Valid asset names — GENERATED from internal/release.ReleaseTargets via
