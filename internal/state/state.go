@@ -54,6 +54,28 @@ func RepoRoot(cwd string) (string, error) {
 	return abs, nil
 }
 
+// DetectRepo resolves the repository root for cwd like RepoRoot, but returns
+// ok=true ONLY when a real repo marker (`.git`, `go.work`, or `go.mod`) was
+// actually found by walking up. Unlike RepoRoot it does NOT fall back to the
+// bare cwd: when no marker is present it returns ("", false), so callers can
+// distinguish "this is a code repository" from "this is just some directory".
+func DetectRepo(cwd string) (root string, ok bool) {
+	abs, err := filepath.Abs(filepath.Clean(cwd))
+	if err != nil {
+		return "", false
+	}
+	if r, found := walkUpFor(abs, ".git"); found {
+		return r, true
+	}
+	if r, found := walkUpFor(abs, "go.work"); found {
+		return r, true
+	}
+	if r, found := walkUpFor(abs, "go.mod"); found {
+		return r, true
+	}
+	return "", false
+}
+
 // walkUpFor walks from start up to the filesystem root looking for an entry
 // named name (file or dir). It returns the directory containing it.
 func walkUpFor(start, name string) (string, bool) {

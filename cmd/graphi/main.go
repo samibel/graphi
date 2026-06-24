@@ -42,8 +42,10 @@ import (
 func main() {
 	_ = version.Version // linked so -ldflags -X can stamp it; see internal/version
 	if len(os.Args) < 2 {
-		runParseDefault(nil)
-		return
+		// Zero-config default (SW-067): bare `graphi` detects the cwd repo,
+		// indexes it, and serves the embedded UI on a loopback port. The old
+		// help blurb now lives under `graphi help`.
+		os.Exit(runZeroConfig())
 	}
 
 	switch os.Args[1] {
@@ -83,6 +85,8 @@ func main() {
 		os.Exit(runUpgrade(os.Args[2:]))
 	case "version":
 		runVersion()
+	case "help":
+		printHelp()
 	case "parse":
 		runParseDefault(os.Args[2:])
 	default:
@@ -744,12 +748,20 @@ func runVersion() {
 	fmt.Printf("graphi version=%s commit=%s date=%s\n", version.Version, commit, date)
 }
 
+// printHelp prints the help blurb. Bare `graphi` now runs the zero-config
+// index+serve flow (SW-067); the original SW-001 help text is preserved here
+// under `graphi help`, prefixed with a line documenting the new default.
+func printHelp() {
+	reg := parse.NewDefaultRegistry()
+	fmt.Printf("graphi: run with no arguments to index the current repo and open the local UI in your browser.\nregistered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, help, parse <file>\n", reg.Languages())
+}
+
 // runParseDefault preserves the original SW-001 parser-registry behavior.
 func runParseDefault(args []string) {
 	reg := parse.NewDefaultRegistry()
 
 	if len(args) < 1 {
-		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, parse <file>\n", reg.Languages())
+		printHelp()
 		return
 	}
 

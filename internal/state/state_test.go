@@ -78,6 +78,54 @@ func TestRepoRoot_GitFileAlsoCounts(t *testing.T) {
 	}
 }
 
+func TestDetectRepo_MarkerVsBareDir(t *testing.T) {
+	// A directory with a real marker → ok, root is the marker dir.
+	base := t.TempDir()
+	repo := filepath.Join(base, "withgit")
+	deep := filepath.Join(repo, "x", "y")
+	if err := os.MkdirAll(deep, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	got, ok := DetectRepo(deep)
+	if !ok {
+		t.Fatal("DetectRepo with .git marker should be ok")
+	}
+	want, _ := filepath.Abs(repo)
+	if got != want {
+		t.Fatalf("DetectRepo root = %q, want %q", got, want)
+	}
+
+	// go.mod also counts as a marker.
+	modRepo := filepath.Join(base, "withmod")
+	if err := os.MkdirAll(modRepo, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(modRepo, "go.mod"), []byte("module x\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if r, ok := DetectRepo(modRepo); !ok || r != mustAbs(t, modRepo) {
+		t.Fatalf("DetectRepo go.mod = (%q,%v), want (%q,true)", r, ok, mustAbs(t, modRepo))
+	}
+
+	// A bare temp dir with NO marker → !ok (no bare-cwd fallback).
+	bare := t.TempDir()
+	if r, ok := DetectRepo(bare); ok {
+		t.Fatalf("DetectRepo on bare dir should be !ok, got root=%q", r)
+	}
+}
+
+func mustAbs(t *testing.T, p string) string {
+	t.Helper()
+	a, err := filepath.Abs(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return a
+}
+
 func TestResolve_LayoutExactness(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", "/tmp/xdgstate")
 	repo := t.TempDir()
