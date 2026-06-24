@@ -50,6 +50,8 @@ func main() {
 		os.Exit(runQuery(os.Args[2:]))
 	case "search":
 		os.Exit(runSearch(os.Args[2:]))
+	case "index":
+		os.Exit(runIndex(os.Args[2:]))
 	case "savings":
 		os.Exit(runSavings(os.Args[2:]))
 	case "analyze":
@@ -105,8 +107,17 @@ func makeClient(store graphstore.Graphstore, socket string) client.Client {
 	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
 }
 
-// extractFlags pulls -db and -daemon options off the front of args.
+// extractFlags pulls -db, -daemon, and -meta options off the front of args. -meta
+// names the ingest sidecar dir; for the search path it is where the durable
+// `vectors` table (SW-061) is reloaded from on startup so `search -semantic`
+// returns hits without re-embedding.
 func extractFlags(args []string) (dbPath, socket string, rest []string) {
+	dbPath, socket, _, rest = extractFlagsMeta(args)
+	return
+}
+
+// extractFlagsMeta is extractFlags plus the -meta sidecar dir.
+func extractFlagsMeta(args []string) (dbPath, socket, metaDir string, rest []string) {
 	rest = args
 	for len(rest) > 0 {
 		switch {
@@ -121,6 +132,12 @@ func extractFlags(args []string) (dbPath, socket string, rest []string) {
 			rest = rest[2:]
 		case len(rest[0]) > 8 && rest[0][:8] == "-daemon=":
 			socket = rest[0][8:]
+			rest = rest[1:]
+		case rest[0] == "-meta" && len(rest) >= 2:
+			metaDir = rest[1]
+			rest = rest[2:]
+		case len(rest[0]) > 6 && rest[0][:6] == "-meta=":
+			metaDir = rest[0][6:]
 			rest = rest[1:]
 		default:
 			return
@@ -148,14 +165,124 @@ func runQuery(args []string) int {
 //
 //	graphi search [-db path] [-daemon socket] [-limit N] <query>
 func runSearch(args []string) int {
-	dbPath, socket, rest := extractFlags(args)
-	c := makeClientOrOpen(dbPath, socket)
+	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
+	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
 	if c == nil {
 		return 1
 	}
 	if err := cli.RunSearch(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
 		return 1
 	}
+	return 0
+}
+
+// runIndex is the `graphi index [--semantic]` subcommand (SW-061). It ingests the
+// repo at -root into the store at -db with its ingest-meta sidecar under -meta,
+// reusing the existing engine/ingest path. With --semantic AND a configured
+// embedder it additionally runs the embedding-GENERATION pass: it embeds every
+// node (keyed by NodeId) and Upserts the vectors into the durable `vectors` sidecar
+// table, so a later `graphi search -semantic` returns ranked hits without
+// re-embedding.
+//
+// Trust posture (story hard constraints):
+//
+//   - The DEFAULT path (`graphi index`, no --semantic) NEVER embeds and NEVER dials.
+//
+//   - With --semantic but NO embedder configured, it GRACEFULLY SKIPS embedding —
+//     reporting the typed "unavailable — no embedder configured" line, no error,
+//     zero network — while lexical indexing completes normally.
+//
+//     graphi index [--semantic] -root <repo> [-db path] [-meta dir]
+func runIndex(args []string) int {
+	// Order-independent flag parsing: --semantic is a bool toggle; -root/-db/-meta
+	// each take a value (space- or =-separated). Unknown tokens are ignored.
+	semantic := false
+	root, dbPath, metaDir := "", "", ""
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		takeVal := func(name string) (string, bool) {
+			if a == name && i+1 < len(args) {
+				i++
+				return args[i], true
+			}
+			if len(a) > len(name)+1 && a[:len(name)+1] == name+"=" {
+				return a[len(name)+1:], true
+			}
+			return "", false
+		}
+		switch {
+		case a == "--semantic" || a == "-semantic":
+			semantic = true
+		default:
+			if v, ok := takeVal("-root"); ok {
+				root = v
+			} else if v, ok := takeVal("-db"); ok {
+				dbPath = v
+			} else if v, ok := takeVal("-meta"); ok {
+				metaDir = v
+			}
+		}
+	}
+	if root == "" {
+		fmt.Fprintln(os.Stderr, "graphi: -root <repo> is required for index")
+		return 1
+	}
+
+	ctx := context.Background()
+	store, err := openStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return 1
+	}
+	defer func() { _ = store.Close() }()
+
+	ing, err := ingest.New(store, parse.NewDefaultRegistry(), metaDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", err)
+		return 1
+	}
+	defer func() { _ = ing.Close() }()
+	if err := ing.IngestAll(ctx, root); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: index: %v\n", err)
+		return 1
+	}
+	fmt.Printf("graphi index: ingested %s\n", root)
+
+	if !semantic {
+		return 0 // default path: no embed, no dial
+	}
+
+	// Semantic generation pass. Construct the configured embedder ONLY here, on the
+	// explicit --semantic opt-in; an empty/unknown selector ⇒ graceful skip.
+	emb, err := embed.Constructor(os.Getenv(embed.EnvSelector), embed.DefaultConstructors())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: embedder disabled: %v\n", err)
+		fmt.Printf("graphi index --semantic: unavailable — %s\n", search.UnavailableReason)
+		return 0 // graceful: lexical index already committed; no error
+	}
+	if emb == nil {
+		fmt.Printf("graphi index --semantic: unavailable — %s\n", search.UnavailableReason)
+		return 0 // graceful skip: no embedder, no network
+	}
+	reg := embed.NewRegistry()
+	reg.Register(emb)
+
+	nodes, err := store.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: index --semantic: read nodes: %v\n", err)
+		return 1
+	}
+	table, err := embed.NewSQLiteVectorTableDB(ctx, ing.MetaDB(), emb.ID(), emb.Dim())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: index --semantic: open vectors table: %v\n", err)
+		return 1
+	}
+	res, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.NewIndex(), table)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: index --semantic: %v\n", err)
+		return 1
+	}
+	fmt.Printf("graphi index --semantic: embedded %d nodes via %s\n", res.Embedded, res.EmbedderID)
 	return 0
 }
 
@@ -208,6 +335,14 @@ func runMCP(args []string) int {
 // makeClientOrOpen creates a client, opening an in-process store if needed.
 // It prints errors and returns nil on failure.
 func makeClientOrOpen(dbPath, socket string) client.Client {
+	return makeClientOrOpenMeta(dbPath, socket, "")
+}
+
+// makeClientOrOpenMeta is makeClientOrOpen plus an optional meta sidecar dir. When
+// a semantic embedder is configured AND metaDir is set, the search service reloads
+// its durable vectors from the meta sidecar so `search -semantic` returns hits
+// without re-embedding (SW-061 reload-on-startup; a pure local read).
+func makeClientOrOpenMeta(dbPath, socket, metaDir string) client.Client {
 	if socket != "" {
 		return daemon.NewClient(socket, "")
 	}
@@ -218,7 +353,7 @@ func makeClientOrOpen(dbPath, socket string) client.Client {
 	}
 	defer func() { _ = store.Close() }()
 	analysisSvc := analysis.NewDefaultService(store)
-	return client.NewDirect(query.New(store), newSearchService(store)).
+	return client.NewDirect(query.New(store), newSearchService(store, metaDir)).
 		WithAnalysis(analysisSvc).
 		WithReview(review.NewService(analysisSvc))
 }
@@ -229,7 +364,7 @@ func makeClientOrOpen(dbPath, socket string) client.Client {
 // constructed here through the embed.Constructor seam. An empty/unknown selector
 // leaves the service in the graceful-skip state (no embedder, no network), so the
 // default binary never constructs or dials an embedder (SW-059 / OQ6).
-func newSearchService(store graphstore.Graphstore) *search.Service {
+func newSearchService(store graphstore.Graphstore, metaDir string) *search.Service {
 	svc := search.New(store)
 	emb, err := embed.Constructor(os.Getenv(embed.EnvSelector), embed.DefaultConstructors())
 	if err != nil {
@@ -243,7 +378,27 @@ func newSearchService(store graphstore.Graphstore) *search.Service {
 	}
 	reg := embed.NewRegistry()
 	reg.Register(emb)
-	return svc.WithSemantic(reg, embed.NewIndex(), nodeReader(store))
+
+	// RELOAD (SW-061): rebuild the in-memory index from the durable `vectors`
+	// sidecar so `search -semantic` returns the vectors a prior `index --semantic`
+	// generated — WITHOUT re-embedding. Rebuild reads only local SQLite rows scoped
+	// to the active embedder's (id, dim), so a changed/absent embedder loads zero
+	// stale vectors. This is a PURE LOCAL READ: zero embedder dials, zero network.
+	// When no metaDir is given (e.g. an in-memory ad-hoc run) the index starts
+	// empty; nothing is dialed.
+	index := embed.NewIndex()
+	if metaDir != "" {
+		table, terr := embed.OpenSQLiteVectorTable(context.Background(), metaDir, emb.ID(), emb.Dim())
+		if terr != nil {
+			fmt.Fprintf(os.Stderr, "graphi: vectors reload disabled: %v\n", terr)
+		} else {
+			if rerr := index.Rebuild(context.Background(), table); rerr != nil {
+				fmt.Fprintf(os.Stderr, "graphi: vectors reload failed: %v\n", rerr)
+			}
+			_ = table.Close()
+		}
+	}
+	return svc.WithSemantic(reg, index, nodeReader(store))
 }
 
 // nodeReader adapts the graphstore to the narrow search.NodeReader seam used to
@@ -549,7 +704,7 @@ func runParseDefault(args []string) {
 	reg := parse.NewDefaultRegistry()
 
 	if len(args) < 1 {
-		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, search, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, parse <file>\n", reg.Languages())
+		fmt.Printf("graphi\nregistered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, parse <file>\n", reg.Languages())
 		return
 	}
 

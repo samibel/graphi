@@ -83,7 +83,7 @@ Total capabilities: **69**. See [`architecture-plan.md`](architecture-plan.md) f
 | `references` | ✅ shipped | EP-001 | structural query: references. |
 | `savings` | ✅ shipped | EP-003 | token-savings ledger readout (per-call/session/cumulative USD). |
 | `search` | ✅ shipped | EP-001 | lexical / symbol search over the indexed graph. |
-| `search_semantic` | ✅ shipped | EP-001 | optional embedding search; reports 'unavailable' cleanly (OFF by default, FU-3). |
+| `search_semantic` | ✅ shipped | EP-001 | optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061). |
 | `undo` | ✅ shipped | EP-006 | reverse a previously applied edit by undo token. |
 
 ## Surfaces (8)

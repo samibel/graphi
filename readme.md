@@ -196,10 +196,20 @@ export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434
 #   go build -tags embed_onnx ./cmd/graphi
 export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx
 
-# Then embed the graph and query:
-graphi index --semantic
-graphi search -semantic "where do we validate auth tokens"
+# Then embed the graph and query (share one durable store + meta sidecar so the
+# generated vectors survive between the index and search invocations):
+mkdir -p ~/.graphi
+graphi index --semantic -root ./my-repo -db ~/.graphi/graph.db -meta ~/.graphi/meta
+graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.db -meta ~/.graphi/meta
 ```
+
+`graphi index --semantic` embeds every node (keyed by `node_id`) and persists the
+vectors to a durable `vectors` table in the `-meta` sidecar, tagged with the
+embedder identity + dimension. `graphi search -semantic` then reloads those vectors
+from that sidecar on startup — a pure local read, **no re-embedding and no embedder
+dial** — and returns cosine-ranked hits. With **no** embedder configured,
+`graphi index --semantic` reports `unavailable — no embedder configured` (no error,
+no network) and lexical indexing/search is unaffected.
 
 Safety guarantees that hold regardless of configuration:
 
