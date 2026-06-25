@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
@@ -807,16 +808,23 @@ func runParseDefault(args []string) {
 		res.Meta.Path, res.Meta.Language, res.Meta.Size, res.Meta.ContentHash)
 }
 
-// runSetup registers graphi's MCP stdio server into the Claude Code client
-// config in one command (SW-044). Idempotent, non-destructive, atomic; --dry-run
-// previews without writing. Offline.
+// runSetup registers graphi's MCP stdio server into one or more local MCP client
+// configs in one command (SW-044, generalized). Idempotent, non-destructive,
+// atomic; --dry-run previews without writing. Offline.
 //
-//	graphi setup [--dry-run] [--binary path] [--config path]
+//	graphi setup [--client claude|copilot|cursor|windsurf|claude-desktop|all]
+//	             [--dry-run] [--binary path] [--config path]
+//
+// Default (--client all): always target Claude Code (created if absent, matching
+// historical behavior) plus every OTHER local client that looks installed. A
+// specific --client targets just that one. --config overrides the file path for a
+// single client (default claude), preserving the original single-file behavior.
 func runSetup(args []string) int {
 	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
 	dryRun := fs.Bool("dry-run", false, "print the planned config change without writing")
 	binary := fs.String("binary", "", "graphi binary to register (default: this executable)")
-	cfgPath := fs.String("config", "", "config file path (default: ~/.claude.json, or $CLAUDE_CONFIG_PATH)")
+	cfgPath := fs.String("config", "", "config file path override (single client; default: that client's path)")
+	client := fs.String("client", "all", "client to wire: "+strings.Join(mcpconfig.ClientIDs(), "|")+"|all")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: setup: %v\n", err)
 		return 1
@@ -830,43 +838,103 @@ func runSetup(args []string) int {
 		}
 		bin = exe
 	}
-	path := *cfgPath
-	if path == "" {
-		p, err := mcpconfig.ConfigPath()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
+
+	// --config pins a single file; it implies a single client (the named one, or
+	// claude by default) and reproduces the original single-file behavior exactly.
+	if *cfgPath != "" {
+		id := *client
+		if id == "all" {
+			id = "claude"
+		}
+		c, ok := mcpconfig.ClientByID(id)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "graphi: setup: unknown --client %q\n", id)
 			return 1
 		}
-		path = p
+		entry := mcpconfig.GraphiEntry(bin, nil)
+		return reportSetup(c.Display, *cfgPath, entry, *dryRun, func() (mcpconfig.Result, error) {
+			return mcpconfig.Apply(*cfgPath, "graphi", entry, *dryRun) // claude key; --config implies the claude shape
+		})
 	}
-	entry := mcpconfig.GraphiEntry(bin, nil)
-	res, err := mcpconfig.Apply(path, "graphi", entry, *dryRun)
+
+	// Resolve the set of target clients.
+	var targets []mcpconfig.Client
+	if *client == "all" {
+		claude, _ := mcpconfig.ClientByID("claude")
+		targets = append(targets, claude) // always, even if absent (created)
+		for _, c := range mcpconfig.Clients() {
+			if c.ID != "claude" && c.Configurable() {
+				targets = append(targets, c)
+			}
+		}
+	} else {
+		c, ok := mcpconfig.ClientByID(*client)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "graphi: setup: unknown --client %q (want one of %s|all)\n",
+				*client, strings.Join(mcpconfig.ClientIDs(), "|"))
+			return 1
+		}
+		targets = []mcpconfig.Client{c}
+	}
+
+	rc := 0
+	for _, c := range targets {
+		path, _ := c.ConfigPath()
+		entry := mcpconfig.GraphiEntry(bin, nil)
+		if reportSetup(c.Display, path, entry, *dryRun, func() (mcpconfig.Result, error) {
+			return c.Apply(bin, nil, *dryRun)
+		}) != 0 {
+			rc = 1
+		}
+	}
+	return rc
+}
+
+// reportSetup runs one client's apply closure and prints a consistent,
+// actionable report. It returns 0 on success (including unchanged/dry-run) and 1
+// on error, having left the target config byte-identical (atomic + fail-closed
+// backup) so a retry is safe.
+func reportSetup(display, path string, entry mcpconfig.ServerEntry, dryRun bool, apply func() (mcpconfig.Result, error)) int {
+	res, err := apply()
 	if err != nil {
-		// Actionable remediation: name the config path and the most likely fixes.
-		// The original config is byte-identical (atomic write + fail-closed backup),
-		// so this is safe to retry after addressing the cause.
-		fmt.Fprintf(os.Stderr, "graphi: setup failed for %s: %v\n", path, err)
+		fmt.Fprintf(os.Stderr, "graphi: setup failed for %s (%s): %v\n", display, path, err)
 		fmt.Fprintln(os.Stderr, "  - check the file/directory is writable (permissions), or pass --config <path>")
-		fmt.Fprintln(os.Stderr, "  - if Claude Code is not installed, install it first (the config is created on first setup)")
 		fmt.Fprintln(os.Stderr, "  - your existing config was left unchanged (atomic write + fail-closed backup)")
 		return 1
 	}
-	if *dryRun {
-		fmt.Print("[dry-run] no changes written\n")
+	if dryRun {
+		fmt.Printf("[dry-run] %s: no changes written\n", display)
 	}
 	fmt.Print(res.Diff)
 	if res.Action == mcpconfig.ActionUnchanged {
-		fmt.Printf("graphi already configured in %s — no changes.\n", path)
+		fmt.Printf("%s: graphi already configured in %s — no changes.\n", display, path)
 		return 0
 	}
-	fmt.Printf("graphi MCP server %s in %s (command=%s args=%v)\n", res.Action, path, entry.Command, entry.Args)
+	fmt.Printf("%s: graphi MCP server %s in %s (command=%s args=%v)\n", display, res.Action, path, entry.Command, entry.Args)
 	if res.BackupPath != "" {
-		fmt.Printf("backup of the original config written to %s\n", res.BackupPath)
+		fmt.Printf("  backup of the original config written to %s\n", res.BackupPath)
 	}
 	if res.Action == mcpconfig.ActionCreated || res.Action == mcpconfig.ActionUpdated {
-		fmt.Println("restart/reload Claude Code to expose graphi's tools.")
+		fmt.Printf("  restart/reload %s to expose graphi's tools.\n", display)
 	}
 	return 0
+}
+
+// applyClients wires graphi into each given client using this executable as the
+// registered binary. Used by the consent-gated first-run offer. Best-effort: it
+// applies every client and returns the first error (if any).
+func applyClients(cs []mcpconfig.Client) error {
+	self, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	var firstErr error
+	for _, c := range cs {
+		if _, err := c.Apply(self, []string{"mcp"}, false); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
 }
 
 // runSetupEmbedder is the opt-in `graphi setup-embedder` command (SW-059). It

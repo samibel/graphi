@@ -340,7 +340,7 @@ code --install-extension graphi-*.vsix
 The status bar shows connected / disconnected; the extension reconnects with
 bounded backoff and never blocks the editor UI thread.
 
-### 6.6 MCP server for Claude Code
+### 6.6 MCP server for local AI agents
 
 graphi exposes its read-only graph to AI agents over **MCP (stdio)**.
 
@@ -348,22 +348,40 @@ graphi exposes its read-only graph to AI agents over **MCP (stdio)**.
 
 ```bash
 graphi setup
-# → registers graphi's stdio MCP server in Claude Code's config (~/.claude.json
-#   or $CLAUDE_CONFIG_PATH) and prints the config path it wrote.
-# Then restart/reload Claude Code to expose graphi's tools.
+# → registers graphi's stdio MCP server into every detected LOCAL MCP client and
+#   prints each config path it wrote. Then restart/reload that client.
 ```
+
+By default (`--client all`) `setup` wires **Claude Code** (created if absent) plus
+every other local client that looks installed:
+
+| Client | Config it writes | Servers key |
+|---|---|---|
+| Claude Code | `~/.claude.json` (or `$CLAUDE_CONFIG_PATH`) | `mcpServers` |
+| GitHub Copilot (VS Code) | `<user-config>/Code/User/mcp.json` | `servers` |
+| Cursor | `~/.cursor/mcp.json` | `mcpServers` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | `mcpServers` |
+| Claude Desktop | `<user-config>/Claude/claude_desktop_config.json` | `mcpServers` |
+
+> **Cloud agents are out of scope.** Devin and the GitHub Copilot *coding agent*
+> run in a remote sandbox and cannot reach a local stdio graphi (that would also
+> break the zero-egress contract). They need graphi installed *inside* their
+> environment via a repo-side setup step — a separate mechanism, not this command.
 
 Useful flags:
 
 ```bash
-graphi setup --dry-run            # show the planned change without writing
+graphi setup --dry-run               # show the planned changes without writing
+graphi setup --client cursor         # wire just one client
 graphi setup --binary /path/graphi   # register a specific binary (default: this one)
-graphi setup --config /path/config   # target a specific config file
+graphi setup --config /path/config   # target a specific config file (single client)
 ```
 
-`setup` is safe to re-run: it converges to exactly one canonical entry, preserves
-unrelated MCP servers, and makes a timestamped backup with atomic write +
-fail-closed rollback (a failed run leaves your config byte-identical).
+`setup` is safe to re-run: per client it converges to exactly one canonical entry,
+preserves unrelated MCP servers, and makes a timestamped backup with atomic write +
+fail-closed rollback (a failed run leaves your config byte-identical). The first
+bare `graphi` run also offers — once, only on a TTY, and never without your consent —
+to connect every detected client.
 
 To run the MCP server directly (e.g. for a non-Claude MCP client), point the
 client at:
@@ -432,7 +450,7 @@ graphi http   [-addr 127.0.0.1:8080] [-db p] [-root r] [-meta d]   Read-only HTT
 graphi tui    [-addr http://127.0.0.1:8080]          Interactive TUI (build with -tags tui)
 graphi mcp    [-db p] [-daemon sock]                 MCP stdio server (agent surface)
 graphi daemon start|stop|status [-socket p] [-db p]  Hot-index Unix-socket daemon
-graphi setup  [--dry-run] [--binary p] [--config p]  Register MCP server in Claude Code
+graphi setup  [--client id|all] [--dry-run] [--binary p] [--config p]  Register MCP server into local clients
 graphi privacy-audit                                 Local-first proof (CONFIRMED/VIOLATED/UNVERIFIED)
 graphi savings                                       Token-savings readout
 graphi version                                       Version / commit / build date

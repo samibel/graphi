@@ -150,9 +150,10 @@ func runZeroConfig() int {
 		fmt.Printf("(open your browser at %s)\n", url)
 	}
 
-	// First-run, consent-gated offer to connect Claude Code (SW-070, EP-010
-	// Task G). The isTTY gate guarantees no read (and no write) in non-TTY runs.
-	maybeOfferClaude(os.Stdin, os.Stdout, isStdinTTY(), claudeMemoPath(), detectClaude, func() error { runSetup(nil); return nil })
+	// First-run, consent-gated offer to connect every detected local MCP client
+	// (SW-070 generalized, EP-010 Task G). The isTTY gate guarantees no read (and
+	// no write) in non-TTY runs.
+	maybeOfferClients(os.Stdin, os.Stdout, isStdinTTY(), clientsMemoPath(), detectClients, applyClients)
 
 	if serr := srv.Serve(ln); serr != nil {
 		fmt.Fprintf(os.Stderr, "graphi: serve: %v\n", serr)

@@ -97,8 +97,17 @@ func Load(path string) (map[string]any, error) {
 // the current document. It performs no I/O. Comparison is semantic
 // (map-normalized) so JSON key-order and nil-vs-empty-map differences do not
 // cause spurious updates.
+//
+// Plan is the Claude-Code-keyed convenience over planKey ("mcpServers").
 func Plan(doc map[string]any, name string, entry ServerEntry) (Action, error) {
-	servers, _ := doc["mcpServers"].(map[string]any)
+	return planKey(doc, "mcpServers", name, entry)
+}
+
+// planKey is Plan generalized over the top-level servers key, so a client whose
+// stdio servers live under a different key (e.g. VS Code's "servers") shares the
+// exact same semantic-compare logic.
+func planKey(doc map[string]any, serversKey, name string, entry ServerEntry) (Action, error) {
+	servers, _ := doc[serversKey].(map[string]any)
 	if servers == nil {
 		servers = map[string]any{}
 	}
@@ -156,11 +165,19 @@ type Result struct {
 //     fails, the original is restored byte-identical from the backup.
 //   - The backup path is surfaced via Result so the caller can report it.
 func Apply(path, name string, entry ServerEntry, dryRun bool) (Result, error) {
+	return applyKey(path, "mcpServers", name, entry, dryRun)
+}
+
+// applyKey is Apply generalized over the top-level servers key. Every safety
+// property (atomic temp+rename, fail-closed timestamped backup, post-write
+// verify+restore, preservation of unrelated keys) is identical regardless of
+// which key the client lists its servers under.
+func applyKey(path, serversKey, name string, entry ServerEntry, dryRun bool) (Result, error) {
 	doc, err := Load(path)
 	if err != nil {
 		return Result{}, err
 	}
-	act, err := Plan(doc, name, entry)
+	act, err := planKey(doc, serversKey, name, entry)
 	if err != nil {
 		return Result{}, err
 	}
@@ -172,12 +189,12 @@ func Apply(path, name string, entry ServerEntry, dryRun bool) (Result, error) {
 		return Result{Action: act, Diff: diff}, nil
 	}
 
-	servers, _ := doc["mcpServers"].(map[string]any)
+	servers, _ := doc[serversKey].(map[string]any)
 	if servers == nil {
 		servers = map[string]any{}
 	}
 	servers[name] = entry
-	doc["mcpServers"] = servers
+	doc[serversKey] = servers
 
 	backupPath, err := writeAtomicWithBackup(path, doc)
 	if err != nil {
@@ -232,7 +249,7 @@ func writeAtomicWithBackup(path string, doc map[string]any) (string, error) {
 		return "", err
 	}
 
-	tmp, err := os.CreateTemp(dir, ".claude.json.tmp-*")
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
 	if err != nil {
 		return "", fmt.Errorf("mcpconfig: temp: %w", err)
 	}
