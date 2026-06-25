@@ -55,6 +55,12 @@ func New(reader Reader) *Service {
 	return &Service{reader: reader}
 }
 
+// Reader returns the read-only Reader the Service traverses. It lets sibling
+// engine packages (e.g. engine/query/compound) reuse the SAME backing store
+// without re-deriving it, and without query.Service importing those packages
+// (which would create an import cycle, since compound imports query).
+func (s *Service) Reader() Reader { return s.reader }
+
 // resolve looks up the symbol node. It returns (node, true, nil) when the symbol
 // exists, (_, false, nil) when it is genuinely absent (so callers can return an
 // explicit NotFound result — NOT an error), and a non-nil error only for real

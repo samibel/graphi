@@ -13,6 +13,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -52,6 +53,8 @@ func main() {
 	switch os.Args[1] {
 	case "query":
 		os.Exit(runQuery(os.Args[2:]))
+	case "compound":
+		os.Exit(runCompound(os.Args[2:]))
 	case "search":
 		os.Exit(runSearch(os.Args[2:]))
 	case "index":
@@ -183,6 +186,49 @@ func runQuery(args []string) int {
 		return 1
 	}
 	if err := cli.Run(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		return 1
+	}
+	return 0
+}
+
+// runCompound launches the CLI surface for a compound / Cypher-style graph query
+// (EP-011 G1). Usage:
+//
+//	graphi compound [-db path] [-daemon socket] -q "SEED ..\nHOP .."
+//	graphi compound [-db path] [-daemon socket] < query.txt   (stdin)
+//
+// The query text is passed to the shared client.Compound seam (byte-identical
+// to the MCP/HTTP/daemon surfaces). Output is the canonical query.Result.
+func runCompound(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	fs := flag.NewFlagSet("compound", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	q := fs.String("q", "", "compound query text (SEED/HOP/WHERE/MAXDEPTH); if empty, read from stdin")
+	if err := fs.Parse(rest); err != nil {
+		return 1
+	}
+	text := *q
+	if text == "" {
+		b, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "compound: read stdin:", err)
+			return 1
+		}
+		text = string(b)
+	}
+	b, err := c.Compound(context.Background(), text)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "compound:", err)
+		return 1
+	}
+	if _, err := os.Stdout.Write(append(b, '\n')); err != nil {
 		return 1
 	}
 	return 0

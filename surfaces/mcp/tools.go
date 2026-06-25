@@ -41,6 +41,11 @@ const (
 
 	// SW-042 sticky PR-comment + merge-gate surface.
 	ToolPrComment = "pr_comment"
+
+	// ToolCompound runs a compound / Cypher-style graph query (EP-011 G1). It is
+	// a singleton (not part of query.Operations) because its input is the query
+	// text, not an op+symbol pair.
+	ToolCompound = "compound"
 )
 
 // singletonToolNames are the non-structural-query tools advertised behind a
@@ -63,6 +68,7 @@ var singletonToolNames = []string{
 	ToolRefactor,
 	ToolUndo,
 	ToolPrComment,
+	ToolCompound,
 }
 
 // ToolNames returns the full, sorted, de-duplicated canonical set of every MCP

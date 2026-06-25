@@ -65,6 +65,7 @@ func (f *fakeEngine) Query(_ context.Context, op, sym string, depth int) ([]byte
 	return f.queryRaw, nil
 }
 func (f *fakeEngine) Search(context.Context, string, int) ([]byte, error) { return f.searchRaw, nil }
+func (f *fakeEngine) Compound(context.Context, string) ([]byte, error) { return f.queryRaw, nil }
 func (f *fakeEngine) SemanticSearch(context.Context, string, int) ([]byte, error) {
 	return f.searchRaw, nil
 }

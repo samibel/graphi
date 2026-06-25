@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **70**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **76**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -60,7 +60,7 @@ Total capabilities: **70**. See [`architecture-plan.md`](architecture-plan.md) f
 | `pr-signals` | ✅ shipped | EP-007 | hub/bridge/surprise signals on PR-changed code. |
 | `taint` | ✅ shipped | EP-005 | flow-sensitive source→sink taint analysis. |
 
-## MCP tools (21)
+## MCP tools (27)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -75,8 +75,12 @@ Total capabilities: **70**. See [`architecture-plan.md`](architecture-plan.md) f
 | `analyze_taint` | ✅ shipped | EP-005 | dedicated tool for the taint analyzer. |
 | `callees` | ✅ shipped | EP-001 | structural query: callees. |
 | `callers` | ✅ shipped | EP-001 | structural query: callers. |
+| `compound` | ✅ shipped | EP-011 | compound / Cypher-style graph query composing traversals+filters (G1). |
 | `definition` | ✅ shipped | EP-001 | structural query: definition. |
+| `implementers` | ✅ shipped | EP-011 | structural query: types that implement/embed a symbol (G2). |
+| `implements` | ✅ shipped | EP-011 | structural query: interfaces/types a symbol implements (G2). |
 | `neighborhood` | ✅ shipped | EP-001 | structural query: k-hop neighborhood. |
+| `overrides` | ✅ shipped | EP-011 | structural query: methods that override a symbol (G2). |
 | `pr_comment` | ✅ shipped | EP-007 | render sticky PR review comment + optional merge gate. |
 | `refactor` | ✅ shipped | EP-006 | apply a graph-aware refactor with an auditable change record. |
 | `refactor_preview` | ✅ shipped | EP-006 | preview a graph-aware refactor (impact set, no mutation). |
@@ -84,6 +88,8 @@ Total capabilities: **70**. See [`architecture-plan.md`](architecture-plan.md) f
 | `savings` | ✅ shipped | EP-003 | token-savings ledger readout (per-call/session/cumulative USD). |
 | `search` | ✅ shipped | EP-001 | lexical / symbol search over the indexed graph. |
 | `search_semantic` | ✅ shipped | EP-001 | optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061). |
+| `subtypes` | ✅ shipped | EP-011 | structural query: subtypes (inherits+implements composed) (G2). |
+| `supertypes` | ✅ shipped | EP-011 | structural query: supertypes (inherits+implements composed) (G2). |
 | `undo` | ✅ shipped | EP-006 | reverse a previously applied edit by undo token. |
 
 ## Surfaces (8)

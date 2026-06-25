@@ -5,6 +5,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/query"
 )
 
 // Short verbs (SW-069, EP-010 Task F) are PURELY ADDITIVE thin aliases over the
@@ -15,14 +16,17 @@ import (
 // long form (the parity contract).
 
 // queryVerbSet is the fixed set of structural-query operations exposed as short
-// verbs, mapping to the `query` dispatcher.
-var queryVerbSet = map[string]bool{
-	"callers":      true,
-	"callees":      true,
-	"references":   true,
-	"definition":   true,
-	"neighborhood": true,
-}
+// verbs, mapping to the `query` dispatcher. It is DERIVED from engine/query.Operations
+// (plus the long-standing structural ops) so the short verbs track the engine's
+// canonical operation set; new ops (e.g. the EP-011 hierarchy ops) are exposed as
+// verbs automatically with byte-identical output to the long form.
+var queryVerbSet = func() map[string]bool {
+	set := make(map[string]bool, len(query.Operations))
+	for _, op := range query.Operations {
+		set[op] = true
+	}
+	return set
+}()
 
 // analyzeVerbSetOnce/value memoize the analyze verb set so it is derived once
 // from the real analyzer registry and stays in lock-step with it.

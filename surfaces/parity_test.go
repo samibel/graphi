@@ -359,9 +359,10 @@ func TestMCP_ToolsList(t *testing.T) {
 	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
 		t.Fatal(err)
 	}
-	// query ops + the "search" tool + the optional "search_semantic" tool (SW-059).
-	if len(resp.Result.Tools) != len(query.Operations)+2 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+2)
+	// query ops + the "search" tool + the optional "search_semantic" tool (SW-059)
+	// + the EP-011 G1 "compound" tool (unconditionally advertised).
+	if len(resp.Result.Tools) != len(query.Operations)+3 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+3)
 	}
 }
 

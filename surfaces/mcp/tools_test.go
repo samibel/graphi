@@ -19,6 +19,9 @@ type allToolsClient struct{}
 func (allToolsClient) Query(context.Context, string, string, int) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) Compound(context.Context, string) ([]byte, error) {
+	return []byte("{}"), nil
+}
 func (allToolsClient) Search(context.Context, string, int) ([]byte, error) {
 	return []byte("{}"), nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/samibel/graphi/engine/edit"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/query/compound"
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 )
@@ -74,6 +75,21 @@ func (d *Direct) WithReview(svc *review.Service) *Direct {
 // Query implements Client.
 func (d *Direct) Query(ctx context.Context, op, symbol string, depth int) ([]byte, error) {
 	res, err := d.querySvc.Dispatch(ctx, op, model.NodeId(symbol), depth)
+	if err != nil {
+		return nil, err
+	}
+	return query.Marshal(res)
+}
+
+// Compound runs a compound / Cypher-style graph query (EP-011 G1). It parses the
+// text form, executes over the SAME read-only Reader the fixed queries use, and
+// returns the canonical query.Result bytes — byte-identical in shape to Query.
+func (d *Direct) Compound(ctx context.Context, queryText string) ([]byte, error) {
+	q, err := compound.Parse(queryText)
+	if err != nil {
+		return nil, err
+	}
+	res, err := compound.Execute(ctx, d.querySvc.Reader(), q)
 	if err != nil {
 		return nil, err
 	}

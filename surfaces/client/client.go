@@ -94,6 +94,11 @@ type Client interface {
 	// Query runs a structural query operation and returns the canonical
 	// serialized result bytes.
 	Query(ctx context.Context, op, symbol string, depth int) ([]byte, error)
+	// Compound runs a compound / Cypher-style graph query (EP-011 G1) and returns
+	// the canonical serialized query.Result bytes — byte-identical to a fixed
+	// Query across every surface. queryText is the SEED/HOP/WHERE/MAXDEPTH text
+	// form parsed by engine/query/compound.Parse.
+	Compound(ctx context.Context, queryText string) ([]byte, error)
 	// Search runs a lexical/symbol search and returns the canonical serialized
 	// result bytes.
 	Search(ctx context.Context, q string, limit int) ([]byte, error)

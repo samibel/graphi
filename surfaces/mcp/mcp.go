@@ -157,6 +157,8 @@ type callParams struct {
 		DestinationFile string `json:"destination_file"`
 		UndoToken       string `json:"undo_token"`
 		Actor           string `json:"actor"`
+		// EP-011 G1 compound query text (SEED/HOP/WHERE/MAXDEPTH).
+		Query           string `json:"query"`
 	} `json:"arguments"`
 }
 
@@ -196,6 +198,10 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolPrComment {
 		return s.prCommentCall(ctx, p)
 	}
+	// EP-011 G1 compound query.
+	if p.Name == ToolCompound {
+		return s.compoundCall(ctx, p)
+	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
 	if deepAnalyzerName, ok := deepAnalyzerTools[p.Name]; ok {
@@ -216,6 +222,23 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return nil, &rpcError{Code: -32602, Message: err.Error()}
 	}
 
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// compoundCall runs a compound / Cypher-style graph query (EP-011 G1). The
+// query text is the single `query` argument; the result bytes are the canonical
+// query.Result, byte-identical to every fixed query across surfaces.
+func (s *Server) compoundCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Query == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+	}
+	b, err := s.c.Compound(ctx, p.Arguments.Query)
+	if err != nil {
+		return nil, &rpcError{Code: -32602, Message: err.Error()}
+	}
 	return map[string]any{
 		"content": []map[string]any{{"type": "text", "text": string(b)}},
 		"isError": false,
@@ -656,6 +679,18 @@ func (s *Server) toolDescriptors() []map[string]any {
 			},
 		})
 	}
+	// EP-011 G1 compound query (singleton descriptor; input is query text).
+	tools = append(tools, map[string]any{
+		"name":        ToolCompound,
+		"description": "compound / Cypher-style graph query composing traversals, filters, and projections in one request (SEED/HOP/WHERE/MAXDEPTH text form)",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"query": map[string]any{"type": "string", "description": "compound query text: SEED <id> then HOP <in|out|both> [<kind>] lines, optional WHERE KIND <kind>"},
+			},
+			"required": []string{"query"},
+		},
+	})
 	return tools
 }
 

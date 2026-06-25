@@ -26,6 +26,8 @@ import (
 type Handler interface {
 	Query(ctx context.Context, op, symbol string, depth int) ([]byte, error)
 	Search(ctx context.Context, q string, limit int) ([]byte, error)
+	// Compound runs a compound / Cypher-style graph query (EP-011 G1).
+	Compound(ctx context.Context, queryText string) ([]byte, error)
 	Savings(ctx context.Context) ([]byte, error)
 }
 
@@ -44,6 +46,11 @@ type queryParams struct {
 type searchParams struct {
 	Query string `json:"query"`
 	Limit int    `json:"limit"`
+}
+
+// compoundParams carries a compound / Cypher-style graph query (EP-011 G1).
+type compoundParams struct {
+	Query string `json:"query"`
 }
 
 // response is the JSON envelope returned over the Unix socket.
@@ -180,6 +187,16 @@ func (s *Server) dispatch(ctx context.Context, req request) response {
 			return response{OK: false, Error: "invalid search params"}
 		}
 		b, err := s.handler.Search(ctx, p.Query, p.Limit)
+		if err != nil {
+			return response{OK: false, Error: err.Error()}
+		}
+		return response{OK: true, Body: b}
+	case "compound":
+		var p compoundParams
+		if err := json.Unmarshal(req.Params, &p); err != nil {
+			return response{OK: false, Error: "invalid compound params"}
+		}
+		b, err := s.handler.Compound(ctx, p.Query)
 		if err != nil {
 			return response{OK: false, Error: err.Error()}
 		}

@@ -45,8 +45,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"io"
 	"io/fs"
+	"log"
 	"net"
 	"net/http"
 	"sort"
@@ -57,6 +58,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/engine/observe"
+	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/wiki"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/http/webui"
@@ -69,15 +71,18 @@ import (
 const SchemaVersion = 1
 
 // queryOps is the allow-list of structural query operations the REST surface
-// accepts. It mirrors engine/query.Service's method set; the HTTP layer never
-// invents new query semantics.
-var queryOps = map[string]struct{}{
-	"callers":      {},
-	"callees":      {},
-	"references":   {},
-	"definition":   {},
-	"neighborhood": {},
-}
+// accepts. It is DERIVED from engine/query.Operations so the HTTP surface can
+// never drift from the engine's canonical operation set: adding an operation to
+// query.Operations (e.g. the EP-011 hierarchy ops) automatically exposes it
+// here with byte-identical semantics. The HTTP layer never invents new query
+// semantics.
+var queryOps = func() map[string]struct{} {
+	m := make(map[string]struct{}, len(query.Operations))
+	for _, op := range query.Operations {
+		m[op] = struct{}{}
+	}
+	return m
+}()
 
 // streamDescriptors enumerates the SSE event types a client may observe on
 // /events, for capability negotiation via /contract. "ingest-completed" is the
@@ -177,6 +182,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /contract", s.handleContract)
 	mux.HandleFunc("GET /query/{op}", s.schemaGuard(s.handleQuery))
+	mux.HandleFunc("POST /compound", s.schemaGuard(s.handleCompound))
 	mux.HandleFunc("GET /search", s.schemaGuard(s.handleSearch))
 	mux.HandleFunc("GET /search/semantic", s.schemaGuard(s.handleSemanticSearch))
 	mux.HandleFunc("GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze))
@@ -354,6 +360,24 @@ func (s *Server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		depth = v
 	}
 	raw, err := s.client.Query(r.Context(), op, symbol, depth)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleCompound runs a compound / Cypher-style graph query (EP-011 G1). The
+// query text is the request body; the canonical query.Result payload is returned
+// in the same envelope as /query, so compound and fixed-query results are
+// byte-identical across CLI/MCP/HTTP/daemon.
+func (s *Server) handleCompound(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read compound body")
+		return
+	}
+	raw, err := s.client.Compound(r.Context(), string(body))
 	if err != nil {
 		writeErrSanitized(w, err)
 		return

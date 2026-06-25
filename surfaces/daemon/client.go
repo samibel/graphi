@@ -112,6 +112,11 @@ func (c *DaemonClient) Query(ctx context.Context, op, symbol string, depth int) 
 	return c.request(ctx, "query", queryParams{Op: op, Symbol: symbol, Depth: depth})
 }
 
+// Compound implements client.Client (EP-011 G1).
+func (c *DaemonClient) Compound(ctx context.Context, queryText string) ([]byte, error) {
+	return c.request(ctx, "compound", compoundParams{Query: queryText})
+}
+
 // Search implements client.Client.
 func (c *DaemonClient) Search(ctx context.Context, q string, limit int) ([]byte, error) {
 	return c.request(ctx, "search", searchParams{Query: q, Limit: limit})

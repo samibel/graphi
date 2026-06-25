@@ -49,6 +49,11 @@ func (s *stubClient) Query(_ context.Context, op, symbol string, depth int) ([]b
 	s.lastQueryOp, s.lastQuerySymbol, s.lastQueryDepth = op, symbol, depth
 	return s.queryBytes, nil
 }
+
+// Compound stubs the EP-011 G1 compound surface for the HTTP test double.
+func (s *stubClient) Compound(_ context.Context, _ string) ([]byte, error) {
+	return s.queryBytes, nil
+}
 func (s *stubClient) Search(_ context.Context, q string, limit int) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

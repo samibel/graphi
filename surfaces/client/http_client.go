@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"bytes"
 	"io"
 	"net"
 	"net/http"
@@ -153,7 +154,48 @@ func (h *HTTP) doGET(ctx context.Context, path string, q url.Values) ([]byte, er
 	return []byte(env.Payload), nil
 }
 
-// envMessage extracts the sanitized error message from a SW-044 errorEnvelope
+// doPOST is the write/transport counterpart of doGET for endpoints whose input
+// does not fit query params (e.g. the multi-line /compound body). It sends the
+// body verbatim, advertises the envelope version, and unwraps the SAME envelope
+// as doGET so the returned payload bytes are byte-identical to doGET's.
+func (h *HTTP) doPOST(ctx context.Context, path string, body []byte) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, h.base+path, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("client: build request: %w", err)
+	}
+	req.Header.Set("X-Graphi-Schema-Version", strconv.Itoa(httpSchemaVersion))
+	req.Header.Set("Content-Type", "text/plain; charset=utf-8")
+	resp, err := h.hc.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrUnreachable, sanitizeDialErr(err))
+	}
+	defer func() { _ = resp.Body.Close() }()
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 32<<20))
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// happy path below
+	case http.StatusBadRequest:
+		return nil, fmt.Errorf("%w: %s", ErrBadInput, envMessage(respBody))
+	case http.StatusPreconditionFailed:
+		return nil, fmt.Errorf("%w: %s", ErrSchemaMismatch, envMessage(respBody))
+	case http.StatusServiceUnavailable:
+		return nil, fmt.Errorf("%w: %s", ErrUnavailable, envMessage(respBody))
+	default:
+		return nil, fmt.Errorf("client: engine error (%d): %s", resp.StatusCode, envMessage(respBody))
+	}
+	var env struct {
+		SchemaVersion int             `json:"schema_version"`
+		Payload       json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(respBody, &env); err != nil {
+		return nil, fmt.Errorf("client: malformed envelope: %w", err)
+	}
+	if env.SchemaVersion != httpSchemaVersion {
+		return nil, fmt.Errorf("%w: server stamped schema_version=%d, want %d",
+			ErrSchemaMismatch, env.SchemaVersion, httpSchemaVersion)
+	}
+	return []byte(env.Payload), nil
+}
 // body, falling back to a generic string when the body is not an error envelope.
 func envMessage(body []byte) string {
 	var e struct {
@@ -191,6 +233,14 @@ func (h *HTTP) Query(ctx context.Context, op, symbol string, depth int) ([]byte,
 		q.Set("depth", strconv.Itoa(depth))
 	}
 	return h.doGET(ctx, "/query/"+url.PathEscape(op), q)
+}
+
+// Compound runs a compound / Cypher-style graph query over POST /compound
+// (EP-011 G1). The query text is sent as the request body so multi-line
+// SEED/HOP/WHERE queries survive transport verbatim; the server returns the
+// canonical query.Result bytes, byte-identical to the in-process surface.
+func (h *HTTP) Compound(ctx context.Context, queryText string) ([]byte, error) {
+	return h.doPOST(ctx, "/compound", []byte(queryText))
 }
 
 // Search runs a lexical search over GET /search. Read-only.

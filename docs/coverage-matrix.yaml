@@ -260,6 +260,36 @@ capabilities:
     status: shipped
     epic: EP-001
     note: "structural query: k-hop neighborhood."
+  - id: implementers
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: types that implement/embed a symbol (G2)."
+  - id: implements
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: interfaces/types a symbol implements (G2)."
+  - id: overrides
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: methods that override a symbol (G2)."
+  - id: subtypes
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: subtypes (inherits+implements composed) (G2)."
+  - id: supertypes
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: supertypes (inherits+implements composed) (G2)."
+  - id: compound
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "compound / Cypher-style graph query composing traversals+filters (G1)."
   - id: pr_comment
     category: mcp-tool
     status: shipped
