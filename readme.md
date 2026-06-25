@@ -43,6 +43,7 @@ graphi callers <symbol>      # who calls it
 graphi impact  <symbol>      # what a change to it affects
 graphi ui                    # explicitly serve the graph + open the browser
 graphi claude                # wire graphi into Claude Code (MCP)
+graphi setup                 # wire every detected local MCP client (Claude Code, Copilot, Cursor, Windsurf, Claude Desktop)
 
 # Update to the latest release (user-initiated; never automatic)
 graphi upgrade
@@ -402,7 +403,7 @@ The single `graphi` binary dispatches the subcommands below. Most accept `-db <p
 | `graphi daemon start\|stop\|status [-socket path] [-db path]` | Manage the hot-index Unix-socket daemon. |
 | `graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo] [-meta dir]` | Read-only HTTP REST + SSE surface (loopback-only). |
 | `graphi tui [-db path] [-daemon socket]` | Interactive terminal surface (select / neighbors / blast / search). |
-| `graphi setup [--dry-run] [--binary path] [--config path]` | Register graphi's MCP stdio server into Claude Code's config (idempotent, atomic, offline). |
+| `graphi setup [--client claude\|copilot\|cursor\|windsurf\|claude-desktop\|all] [--dry-run] [--binary path] [--config path]` | Register graphi's MCP stdio server into local MCP clients' configs (idempotent, atomic, offline). Default `--client all` wires Claude Code plus every other detected local client. Cloud agents (Devin, the Copilot coding agent) run remotely and can't reach a local stdio server, so they are out of scope. |
 | `graphi privacy-audit [--target ./...]` | Print the local-first proof (real CGo scan + canary egress guard); non-zero on violation. |
 | `graphi savings` | Print the session token-savings readout. |
 | `graphi version` | Print the version / commit / build date stamped into the binary. |
