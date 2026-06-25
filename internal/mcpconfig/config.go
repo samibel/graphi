@@ -25,10 +25,10 @@ const DefaultName = ".claude.json"
 // ServerEntry is the mcpServers.<name> shape Claude Code expects for a stdio
 // server. It matches the verified live format in ~/.claude.json.
 type ServerEntry struct {
-	Type    string            `json:"type"`              // "stdio"
-	Command string            `json:"command"`           // absolute path to the binary
-	Args    []string          `json:"args,omitempty"`    // e.g. ["mcp"]
-	Env     map[string]string `json:"env,omitempty"`     // optional env
+	Type    string            `json:"type"`           // "stdio"
+	Command string            `json:"command"`        // absolute path to the binary
+	Args    []string          `json:"args,omitempty"` // e.g. ["mcp"]
+	Env     map[string]string `json:"env,omitempty"`  // optional env
 }
 
 // Action is the outcome of a setup upsert against the current config.
