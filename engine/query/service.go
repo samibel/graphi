@@ -200,6 +200,92 @@ func (s *Service) Definition(ctx context.Context, symbolID model.NodeId) (Result
 	return s.directedLookup(ctx, "definition", symbolID, EdgeKindDefines, false)
 }
 
+// Implementers returns the types that IMPLEMENT/EMBED symbolID (inbound
+// "implements" edges), with provenance attached. Answers "who-implements" over
+// the EP-011 G2 hierarchy graph. An unresolved symbol yields an explicit
+// not-found result. Read-only.
+func (s *Service) Implementers(ctx context.Context, symbolID model.NodeId) (Result, error) {
+	return s.directedLookup(ctx, OpImplementers, symbolID, EdgeKindImplements, true)
+}
+
+// Implements returns the interfaces/types that symbolID IMPLEMENTS (outbound
+// "implements" edges), with provenance attached. Read-only.
+func (s *Service) Implements(ctx context.Context, symbolID model.NodeId) (Result, error) {
+	return s.directedLookup(ctx, OpImplements, symbolID, EdgeKindImplements, false)
+}
+
+// Overrides returns the methods that OVERRIDE symbolID (inbound "overrides"
+// edges), with provenance attached. Answers "what-overrides". Read-only.
+func (s *Service) Overrides(ctx context.Context, symbolID model.NodeId) (Result, error) {
+	return s.directedLookup(ctx, OpOverrides, symbolID, EdgeKindOverrides, true)
+}
+
+// Subtypes returns the subtypes of symbolID: nodes with an inbound "inherits" OR
+// "implements" edge to symbolID (the class-hierarchy subtype relation composed
+// from both edge kinds), with provenance attached. Read-only.
+func (s *Service) Subtypes(ctx context.Context, symbolID model.NodeId) (Result, error) {
+	return s.multiKindLookup(ctx, OpSubtypes, symbolID, []model.EdgeKind{EdgeKindInherits, EdgeKindImplements}, true)
+}
+
+// Supertypes returns the supertypes of symbolID: nodes reachable via outbound
+// "inherits" OR "implements" edges (the composed supertype relation), with
+// provenance attached. Read-only.
+func (s *Service) Supertypes(ctx context.Context, symbolID model.NodeId) (Result, error) {
+	return s.multiKindLookup(ctx, OpSupertypes, symbolID, []model.EdgeKind{EdgeKindInherits, EdgeKindImplements}, false)
+}
+
+// multiKindLookup is the multi-edge-kind generalization of directedLookup: it
+// collects edges of ANY of the given kinds incident to the symbol on the
+// requested side and attaches the matching opposite-endpoint nodes with provenance
+// intact. Used by Subtypes/Supertypes to compose the inherits+implements
+// relation. Ordering and outcome semantics are identical to directedLookup via
+// the shared finalize() comparator.
+func (s *Service) multiKindLookup(ctx context.Context, operation string, id model.NodeId, kinds []model.EdgeKind, inbound bool) (Result, error) {
+	_, ok, err := s.resolve(ctx, id)
+	if err != nil {
+		return Result{}, err
+	}
+	if !ok {
+		return notFound(operation, id), nil
+	}
+	kindSet := make(map[string]struct{}, len(kinds))
+	for _, k := range kinds {
+		kindSet[k] = struct{}{}
+	}
+	edges, err := s.reader.Edges(ctx, graphstore.Query{})
+	if err != nil {
+		return Result{}, err
+	}
+	var (
+		resEdges []ResultEdge
+		nodeIDs  = map[model.NodeId]struct{}{}
+	)
+	for _, e := range edges {
+		if _, want := kindSet[e.Kind()]; !want {
+			continue
+		}
+		var endpoint model.NodeId
+		if inbound {
+			if e.To() != id {
+				continue
+			}
+			endpoint = e.From()
+		} else {
+			if e.From() != id {
+				continue
+			}
+			endpoint = e.To()
+		}
+		resEdges = append(resEdges, edgeToResult(e))
+		nodeIDs[endpoint] = struct{}{}
+	}
+	resNodes, err := s.collectNodes(ctx, nodeIDs)
+	if err != nil {
+		return Result{}, err
+	}
+	return finalize(operation, id, nil, resNodes, resEdges), nil
+}
+
 // Neighborhood returns every node and edge reachable within depthN undirected
 // hops of symbolID. depthN is clamped to [0, MaxNeighborhoodDepth]; the
 // effective (clamped) depth is reported in Result.Depth. Traversal is
