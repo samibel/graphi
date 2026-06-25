@@ -1095,7 +1095,8 @@ func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, owne
 			continue
 		}
 		// Only the linker's own edge kinds are swept here.
-		if e.Kind() != "calls" && e.Kind() != "references" && e.Kind() != "imports" {
+		if e.Kind() != "calls" && e.Kind() != "references" && e.Kind() != "imports" &&
+			e.Kind() != "implements" && e.Kind() != "inherits" && e.Kind() != "overrides" {
 			continue
 		}
 		// Keep any edge parseAndCommit just (re)committed for these files this pass

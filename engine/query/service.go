@@ -18,6 +18,18 @@ const (
 	EdgeKindReferences model.EdgeKind = "references"
 	// EdgeKindDefines — a "X defines/declares Y" relationship (From=definer, To=defined).
 	EdgeKindDefines model.EdgeKind = "defines"
+
+	// EdgeKindImplements — a "X implements/embeds interface Y" relationship
+	// (From=implementer, To=interface). Populated at ingest for the class-hierarchy
+	// model (epic EP-011, gap G2).
+	EdgeKindImplements model.EdgeKind = "implements"
+	// EdgeKindInherits — a "X embeds/extends concrete type Y" relationship
+	// (From=embedder, To=embedded). Populated at ingest (EP-011 G2).
+	EdgeKindInherits model.EdgeKind = "inherits"
+	// EdgeKindOverrides — method M on type X overrides method M declared on a
+	// supertype (From=overriding method, To=overridden method). Derived from the
+	// implements/inherits graph at ingest (EP-011 G2).
+	EdgeKindOverrides model.EdgeKind = "overrides"
 )
 
 // MaxNeighborhoodDepth is the single documented upper bound on neighborhood
