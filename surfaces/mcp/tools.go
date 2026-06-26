@@ -46,6 +46,16 @@ const (
 	// a singleton (not part of query.Operations) because its input is the query
 	// text, not an op+symbol pair.
 	ToolCompound = "compound"
+
+	// SW-082 / SW-083 pattern-query singletons (input is a pattern/config, not an
+	// op+symbol pair). Surface-exposed in SW-085.
+	ToolSearchAST  = "search_ast"
+	ToolFindClones = "find_clones"
+
+	// EP-012 agent memory & skills.
+	ToolMemory   = "memory"
+	ToolDistill  = "distill"
+	ToolSkillGen = "skillgen"
 )
 
 // singletonToolNames are the non-structural-query tools advertised behind a
@@ -69,6 +79,11 @@ var singletonToolNames = []string{
 	ToolUndo,
 	ToolPrComment,
 	ToolCompound,
+	ToolSearchAST,
+	ToolFindClones,
+	ToolMemory,
+	ToolDistill,
+	ToolSkillGen,
 }
 
 // ToolNames returns the full, sorted, de-duplicated canonical set of every MCP
@@ -85,6 +100,20 @@ func ToolNames() []string {
 	out = append(out, singletonToolNames...)
 	sort.Strings(out)
 	return dedupeSorted(out)
+}
+
+// readOnlyToolAnnotations returns the MCP tool-annotation set for a pure
+// read-only, deterministic query tool (SW-085 AC4): it never mutates state
+// (readOnlyHint / !destructiveHint), the same arguments always yield the same
+// bytes (idempotentHint), and it touches no external/open world (!openWorldHint).
+// The three new pattern-query tools all share this set.
+func readOnlyToolAnnotations() map[string]any {
+	return map[string]any{
+		"readOnlyHint":    true,
+		"destructiveHint": false,
+		"idempotentHint":  true,
+		"openWorldHint":   false,
+	}
 }
 
 // dedupeSorted removes adjacent duplicates from a sorted slice in place-ish,

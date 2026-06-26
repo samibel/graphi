@@ -158,7 +158,33 @@ type callParams struct {
 		UndoToken       string `json:"undo_token"`
 		Actor           string `json:"actor"`
 		// EP-011 G1 compound query text (SEED/HOP/WHERE/MAXDEPTH).
-		Query           string `json:"query"`
+		Query string `json:"query"`
+		// SW-085 pattern-query arguments: search_ast JSON pattern + limit, and the
+		// find_clones JSON config.
+		Pattern string `json:"pattern"`
+		Limit   *int   `json:"limit"`
+		Config  string `json:"config"`
+		// EP-012 memory arguments.
+		Op       string   `json:"op"`
+		Scope    string   `json:"scope"`
+		Notebook string   `json:"notebook"`
+		Tags     []string `json:"tags"`
+		Payload  string   `json:"payload"`
+		MemID    string   `json:"mem_id"`
+		// EP-012 distill arguments.
+		SessionID      string        `json:"session_id"`
+		Turns          []client.Turn `json:"turns"`
+		Decisions      []string      `json:"decisions"`
+		Risks          []string      `json:"risks"`
+		OpenQuestions  []string      `json:"open_questions"`
+		FileReferences []string      `json:"file_references"`
+		// EP-012 skillgen arguments.
+		Name         string             `json:"name"`
+		Trigger      string             `json:"trigger"`
+		Description  string             `json:"description"`
+		SkillInputs  []string           `json:"skill_inputs"`
+		SkillOutputs []string           `json:"skill_outputs"`
+		SkillSteps   []client.SkillStep `json:"skill_steps"`
 	} `json:"arguments"`
 }
 
@@ -201,6 +227,22 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	// EP-011 G1 compound query.
 	if p.Name == ToolCompound {
 		return s.compoundCall(ctx, p)
+	}
+	// SW-085 pattern-query singletons.
+	switch p.Name {
+	case ToolSearchAST:
+		return s.searchASTCall(ctx, p)
+	case ToolFindClones:
+		return s.findClonesCall(ctx, p)
+	}
+	// EP-012 agent memory & skills.
+	switch p.Name {
+	case ToolMemory:
+		return s.memoryCall(ctx, p)
+	case ToolDistill:
+		return s.distillCall(ctx, p)
+	case ToolSkillGen:
+		return s.skillGenCall(ctx, p)
 	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
@@ -245,6 +287,66 @@ func (s *Server) compoundCall(ctx context.Context, p callParams) (any, *rpcError
 	}, nil
 }
 
+// memoryCall runs an EP-012 memory operation through the shared client and
+// returns the canonical serialized MemoryResponse.
+func (s *Server) memoryCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Op == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: op"}
+	}
+	b, err := s.c.Memory(ctx, client.MemoryRequest{
+		Op:       p.Arguments.Op,
+		Scope:    p.Arguments.Scope,
+		Notebook: p.Arguments.Notebook,
+		Tags:     p.Arguments.Tags,
+		Payload:  p.Arguments.Payload,
+		ID:       p.Arguments.MemID,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// distillCall runs EP-012 session distillation through the shared client and
+// returns the canonical serialized DistillResponse.
+func (s *Server) distillCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.SessionID == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: session_id"}
+	}
+	b, err := s.c.Distill(ctx, client.DistillRequest{
+		SessionID:      p.Arguments.SessionID,
+		Turns:          p.Arguments.Turns,
+		Decisions:      p.Arguments.Decisions,
+		Risks:          p.Arguments.Risks,
+		OpenQuestions:  p.Arguments.OpenQuestions,
+		FileReferences: p.Arguments.FileReferences,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// skillGenCall runs EP-012 deterministic skill generation through the shared
+// client and returns the canonical serialized SkillGenResponse.
+func (s *Server) skillGenCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Name == "" || p.Arguments.Trigger == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required arguments: name and trigger"}
+	}
+	b, err := s.c.SkillGen(ctx, client.SkillGenRequest{
+		Name:        p.Arguments.Name,
+		Trigger:     p.Arguments.Trigger,
+		Description: p.Arguments.Description,
+		Inputs:      p.Arguments.SkillInputs,
+		Outputs:     p.Arguments.SkillOutputs,
+		Steps:       p.Arguments.SkillSteps,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
 func (s *Server) searchCall(ctx context.Context, p callParams) (any, *rpcError) {
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
@@ -278,6 +380,44 @@ func (s *Server) semanticSearchCall(ctx context.Context, p callParams) (any, *rp
 		limit = *p.Arguments.Depth
 	}
 	b, err := s.c.SemanticSearch(ctx, p.Arguments.Symbol, limit)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// searchASTCall dispatches the structural AST pattern query (SW-082 / SW-085)
+// through the shared client. The JSON pattern rides the `pattern` argument and the
+// optional `limit` bounds results; the returned bytes are the canonical
+// query.Marshal output, byte-identical to the CLI and HTTP surfaces. A malformed
+// pattern surfaces the engine's typed error as a JSON-RPC error (no new shape).
+func (s *Server) searchASTCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Pattern == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: pattern"}
+	}
+	limit := 0
+	if p.Arguments.Limit != nil {
+		limit = *p.Arguments.Limit
+	}
+	b, err := s.c.SearchAST(ctx, p.Arguments.Pattern, limit)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// findClonesCall dispatches the clone-detection query (SW-083 / SW-085) through the
+// shared client. The optional JSON config rides the `config` argument (empty ⇒
+// engine defaults); the returned bytes are the canonical query.MarshalCloneResult
+// output for byte-identical parity.
+func (s *Server) findClonesCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.FindClones(ctx, p.Arguments.Config)
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -618,6 +758,36 @@ func (s *Server) toolDescriptors() []map[string]any {
 			},
 		})
 	}
+	// SW-085 pattern-query tools. Advertised whenever search is — they ride the
+	// same in-process query.Service and reuse the canonical engine serializers, so
+	// there is no separate capability to probe. Per AC4 they carry the explicit
+	// annotation set: read-only, idempotent, non-destructive, closed-world.
+	if _, err := s.c.Search(context.Background(), "__probe__", 1); err == nil {
+		tools = append(tools, map[string]any{
+			"name":        ToolSearchAST,
+			"description": "structural AST pattern search (SW-082): match nodes by kind/name/parent_kind; returns node identity + parent context only, never a file body",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"pattern": map[string]any{"type": "string", "description": "JSON AstPattern, e.g. {\"kind\":\"function\",\"name\":{\"regex\":\"^handle_\"}}"},
+					"limit":   map[string]any{"type": "integer", "description": "maximum number of matches (applied after the canonical sort)"},
+				},
+				"required": []string{"pattern"},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+		tools = append(tools, map[string]any{
+			"name":        ToolFindClones,
+			"description": "clone-group detection (SW-083): reports exact/renamed/structural clone groups derived from the AST edge sets; deterministic and bounded by max_groups",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"config": map[string]any{"type": "string", "description": "optional JSON CloneConfig (threshold, max_groups, clone_kinds, min_edges); empty uses engine defaults"},
+				},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
 	// Savings readout (SW-020). Advertised when the client has a ledger attached.
 	if _, err := s.c.Savings(context.Background()); err == nil {
 		tools = append(tools, map[string]any{
@@ -691,7 +861,75 @@ func (s *Server) toolDescriptors() []map[string]any {
 			"required": []string{"query"},
 		},
 	})
+	// EP-012 agent memory & skills. Advertised when the client has the services
+	// wired (probed by attempting the operation; unavailable clients return the
+	// capability-missing sentinel).
+	if _, err := s.c.Memory(context.Background(), client.MemoryRequest{Op: "recall"}); err == nil || !isMemoryUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolMemory,
+			"description": "scoped agent memory: store, recall, or forget notes in scopes and notebooks",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"op":       map[string]any{"type": "string", "description": "operation: store | recall | forget"},
+					"scope":    map[string]any{"type": "string", "description": "memory scope"},
+					"notebook": map[string]any{"type": "string", "description": "memory notebook"},
+					"tags":     map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
+					"payload":  map[string]any{"type": "string", "description": "payload for store"},
+					"mem_id":   map[string]any{"type": "string", "description": "entry id for forget"},
+				},
+				"required": []string{"op"},
+			},
+		})
+	}
+	if _, err := s.c.Distill(context.Background(), client.DistillRequest{SessionID: "__probe__"}); err == nil || !isDistillUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolDistill,
+			"description": "deterministic, non-LLM session distillation: compress a session trace into a reusable artifact",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"session_id":      map[string]any{"type": "string", "description": "session identifier"},
+					"decisions":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"risks":           map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"open_questions":  map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"file_references": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+				},
+				"required": []string{"session_id"},
+			},
+		})
+	}
+	if _, err := s.c.SkillGen(context.Background(), client.SkillGenRequest{Name: "__probe__", Trigger: "__probe__"}); err == nil || !isSkillGenUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolSkillGen,
+			"description": "deterministic, non-LLM skill generation: turn a repeatable procedure into a Markdown skill artifact",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"name":        map[string]any{"type": "string", "description": "skill name"},
+					"trigger":     map[string]any{"type": "string", "description": "skill trigger phrase"},
+					"description": map[string]any{"type": "string", "description": "skill description"},
+				},
+				"required": []string{"name", "trigger"},
+			},
+		})
+	}
 	return tools
+}
+
+// isMemoryUnavailable reports whether err is the capability-missing sentinel.
+func isMemoryUnavailable(err error) bool {
+	return errors.Is(err, client.ErrMemoryUnavailable)
+}
+
+// isDistillUnavailable reports whether err is the capability-missing sentinel.
+func isDistillUnavailable(err error) bool {
+	return errors.Is(err, client.ErrDistillUnavailable)
+}
+
+// isSkillGenUnavailable reports whether err is the capability-missing sentinel.
+func isSkillGenUnavailable(err error) bool {
+	return errors.Is(err, client.ErrSkillGenUnavailable)
 }
 
 // isEditUnavailable reports whether err is the edit-capability-missing sentinel.

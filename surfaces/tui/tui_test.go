@@ -99,6 +99,21 @@ func (f *fakeEngine) SubscribeEvents(context.Context) (<-chan client.Event, erro
 	}
 	return f.events, nil
 }
+func (f *fakeEngine) Memory(context.Context, client.MemoryRequest) ([]byte, error) {
+	return nil, client.ErrMemoryUnavailable
+}
+func (f *fakeEngine) Distill(context.Context, client.DistillRequest) ([]byte, error) {
+	return nil, client.ErrDistillUnavailable
+}
+func (f *fakeEngine) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
+	return nil, client.ErrSkillGenUnavailable
+}
+func (f *fakeEngine) SearchAST(context.Context, string, int) ([]byte, error) {
+	return nil, client.ErrSearchUnavailable
+}
+func (f *fakeEngine) FindClones(context.Context, string) ([]byte, error) {
+	return nil, client.ErrSearchUnavailable
+}
 func (f *fakeEngine) SchemaVersion() int { return 1 }
 
 var _ Engine = (*fakeEngine)(nil)

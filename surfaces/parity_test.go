@@ -18,10 +18,14 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/distill"
+	"github.com/samibel/graphi/engine/ledger"
+	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/engine/skillgen"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
 	httpsrv "github.com/samibel/graphi/surfaces/http"
@@ -360,9 +364,10 @@ func TestMCP_ToolsList(t *testing.T) {
 		t.Fatal(err)
 	}
 	// query ops + the "search" tool + the optional "search_semantic" tool (SW-059)
-	// + the EP-011 G1 "compound" tool (unconditionally advertised).
-	if len(resp.Result.Tools) != len(query.Operations)+3 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+3)
+	// + the EP-011 G1 "compound" tool + the SW-085 "search_ast" and "find_clones"
+	// pattern-query tools (advertised whenever search is available).
+	if len(resp.Result.Tools) != len(query.Operations)+5 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+5)
 	}
 }
 
@@ -1113,6 +1118,200 @@ func TestHTTP_MCP_CLI_QueryParity(t *testing.T) {
 	}
 }
 
+// agentDirect builds an in-process Direct client with EP-012 memory,
+// distillation, and skill-generation services wired over a temp ledger.
+func agentDirect(t *testing.T) *client.Direct {
+	t.Helper()
+	store := graphstore.NewMemStore()
+	l, err := ledger.Open(t.TempDir() + "/ledger.jsonl")
+	if err != nil {
+		t.Fatalf("open ledger: %v", err)
+	}
+	t.Cleanup(func() { _ = l.Close() })
+	memStore, err := memory.NewMemStore(memory.NewLedgerHook(l, "", true))
+	if err != nil {
+		t.Fatalf("memory store: %v", err)
+	}
+	t.Cleanup(func() { _ = memStore.Close() })
+	return client.NewDirect(query.New(store), search.New(store)).
+		WithLedger(l).
+		WithMemory(memStore).
+		WithDistill(distill.NewDistiller(distill.NewLedgerHook(l, "", true))).
+		WithSkillGen(skillgen.NewGenerator(skillgen.NewLedgerHook(l, "", true)))
+}
+
+func memoryCLIOutput(t *testing.T, direct *client.Direct, op string, args ...string) []byte {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	allArgs := append([]string{op}, args...)
+	if err := cli.RunMemory(context.Background(), direct, allArgs, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunMemory(%s): %v (stderr: %s)", op, err, errOut.String())
+	}
+	return bytes.TrimRight(out.Bytes(), "\n")
+}
+
+func memoryMCPOutput(t *testing.T, direct *client.Direct, op string, args map[string]any) []byte {
+	t.Helper()
+	srv := mcp.NewServerWithClient(direct)
+	args["op"] = op
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+		"params": map[string]any{"name": "memory", "arguments": args},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve memory: %v", err)
+	}
+	return extractMCPText(t, &out)
+}
+
+func memoryHTTPOutput(t *testing.T, direct *client.Direct, op string, body client.MemoryRequest) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/memory", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http /memory: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var env struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("decode envelope: %v", err)
+	}
+	return env.Payload
+}
+
+func extractMCPText(t *testing.T, out *bytes.Buffer) []byte {
+	t.Helper()
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode mcp response %q: %v", out.String(), err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp error: %s", resp.Error.Message)
+	}
+	if len(resp.Result.Content) != 1 {
+		t.Fatalf("unexpected mcp content: %+v", resp.Result.Content)
+	}
+	return []byte(resp.Result.Content[0].Text)
+}
+
+// TestMCP_CLI_MemoryParity (EP-012): memory recall returns byte-identical
+// output through CLI, MCP, and HTTP surfaces when the same entry is stored
+// first. Store is stateful (assigns monotonic IDs), so parity is asserted on
+// the read-side response.
+func TestMCP_CLI_MemoryParity(t *testing.T) {
+	direct := agentDirect(t)
+
+	// Seed one entry directly through the shared client so all surfaces recall
+	// the same state.
+	storeBytes := memoryCLIOutput(t, direct, "store", "-scope", "aria", "-notebook", "notes", "-payload", "hello")
+	var stored client.MemoryResponse
+	if err := json.Unmarshal(storeBytes, &stored); err != nil {
+		t.Fatalf("unmarshal store response: %v", err)
+	}
+
+	recallBytes := memoryCLIOutput(t, direct, "recall", "-scope", "aria")
+	mcpRecallBytes := memoryMCPOutput(t, direct, "recall", map[string]any{"scope": "aria"})
+	httpRecallBytes := memoryHTTPOutput(t, direct, "recall", client.MemoryRequest{Op: "recall", Scope: "aria"})
+	if !bytes.Equal(recallBytes, mcpRecallBytes) {
+		t.Fatalf("memory recall CLI<->MCP mismatch:\nCLI: %s\nMCP: %s", recallBytes, mcpRecallBytes)
+	}
+	if !bytes.Equal(recallBytes, httpRecallBytes) {
+		t.Fatalf("memory recall CLI<->HTTP mismatch:\nCLI: %s\nHTTP: %s", recallBytes, httpRecallBytes)
+	}
+	if !bytes.Contains(recallBytes, []byte(stored.ID)) {
+		t.Fatalf("recall response missing stored id %s: %s", stored.ID, recallBytes)
+	}
+}
+
+func distillCLIOutput(t *testing.T, direct *client.Direct, session string, decisions []string) []byte {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	args := []string{"-session", session, "-decisions", strings.Join(decisions, ",")}
+	if err := cli.RunDistill(context.Background(), direct, args, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunDistill: %v (stderr: %s)", err, errOut.String())
+	}
+	return bytes.TrimRight(out.Bytes(), "\n")
+}
+
+func distillMCPOutput(t *testing.T, direct *client.Direct, session string, decisions []string) []byte {
+	t.Helper()
+	srv := mcp.NewServerWithClient(direct)
+	args := map[string]any{"session_id": session, "decisions": decisions}
+	reqBody, _ := json.Marshal(map[string]any{
+		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+		"params": map[string]any{"name": "distill", "arguments": args},
+	})
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve distill: %v", err)
+	}
+	return extractMCPText(t, &out)
+}
+
+// TestMCP_CLI_DistillParity (EP-012): session distillation returns byte-identical
+// output through CLI and MCP surfaces.
+func TestMCP_CLI_DistillParity(t *testing.T) {
+	direct := agentDirect(t)
+	cliBytes := distillCLIOutput(t, direct, "sess-1", []string{"use JSONL", "no LLM"})
+	mcpBytes := distillMCPOutput(t, direct, "sess-1", []string{"use JSONL", "no LLM"})
+	if !bytes.Equal(cliBytes, mcpBytes) {
+		t.Fatalf("distill parity mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpBytes)
+	}
+}
+
+func skillGenCLIOutput(t *testing.T, direct *client.Direct, name, trigger string) []byte {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	args := []string{"-name", name, "-trigger", trigger}
+	if err := cli.RunSkillGen(context.Background(), direct, args, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunSkillGen: %v (stderr: %s)", err, errOut.String())
+	}
+	return bytes.TrimRight(out.Bytes(), "\n")
+}
+
+func skillGenMCPOutput(t *testing.T, direct *client.Direct, name, trigger string) []byte {
+	t.Helper()
+	srv := mcp.NewServerWithClient(direct)
+	args := map[string]any{"name": name, "trigger": trigger}
+	reqBody, _ := json.Marshal(map[string]any{
+		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+		"params": map[string]any{"name": "skillgen", "arguments": args},
+	})
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve skillgen: %v", err)
+	}
+	return extractMCPText(t, &out)
+}
+
+// TestMCP_CLI_SkillGenParity (EP-012): skill generation returns byte-identical
+// output through CLI and MCP surfaces.
+func TestMCP_CLI_SkillGenParity(t *testing.T) {
+	direct := agentDirect(t)
+	cliBytes := skillGenCLIOutput(t, direct, "Run Refactor", "/refactor")
+	mcpBytes := skillGenMCPOutput(t, direct, "Run Refactor", "/refactor")
+	if !bytes.Equal(cliBytes, mcpBytes) {
+		t.Fatalf("skillgen parity mismatch:\nCLI: %s\nMCP: %s", cliBytes, mcpBytes)
+	}
+}
+
 // TestHTTP_MCP_CLI_SearchParity (SW-044 AC-1): the HTTP /search payload is
 // byte-identical to the CLI and MCP search output over the same client.
 func TestHTTP_MCP_CLI_SearchParity(t *testing.T) {
@@ -1138,6 +1337,175 @@ func TestHTTP_MCP_CLI_SearchParity(t *testing.T) {
 		}
 		if !bytes.Equal(httpBytes, mcpBytes) {
 			t.Fatalf("search %q HTTP<->MCP mismatch:\nHTTP: %s\nMCP: %s", c.q, httpBytes, mcpBytes)
+		}
+	}
+}
+
+// --- SW-085: search_ast / find_clones cross-surface parity --------------------
+
+// callMCPTool runs one tools/call through the MCP stdio server and returns the
+// canonical text payload, mirroring mcpOutput but with arbitrary tool+arguments.
+func callMCPTool(t *testing.T, qsvc *query.Service, ssvc *search.Service, name string, args map[string]any) []byte {
+	t.Helper()
+	srv := mcp.NewServer(qsvc, ssvc)
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+		"params": map[string]any{"name": name, "arguments": args},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve %s: %v", name, err)
+	}
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode mcp %s response %q: %v", name, out.String(), err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp %s error: %s", name, resp.Error.Message)
+	}
+	if len(resp.Result.Content) != 1 || resp.Result.Content[0].Type != "text" {
+		t.Fatalf("unexpected mcp %s content: %+v", name, resp.Result.Content)
+	}
+	return []byte(resp.Result.Content[0].Text)
+}
+
+// httpPostOutput drives one POST through the HTTP handler backed by the same
+// Direct client and returns the unwrapped canonical payload bytes, mirroring the
+// existing HTTP parity helpers (envelope = {"payload": <canonical bytes>}).
+func httpPostOutput(t *testing.T, direct *client.Direct, path, body string) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http POST %s: code=%d body=%s", path, rec.Code, rec.Body.String())
+	}
+	var env struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("http POST %s decode envelope %q: %v", path, rec.Body.String(), err)
+	}
+	return []byte(env.Payload)
+}
+
+// TestParity_SearchAST asserts search_ast returns byte-identical canonical output
+// through CLI, MCP, and HTTP (SW-085 AC1).
+func TestParity_SearchAST(t *testing.T) {
+	store, _ := seed(t)
+	qsvc := query.New(store)
+	ssvc := search.New(store)
+	direct := client.NewDirect(qsvc, ssvc)
+
+	pattern := `{"kind":"function"}`
+
+	// CLI
+	var out, errOut bytes.Buffer
+	if err := cli.RunSearchAST(context.Background(), direct, []string{pattern}, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunSearchAST: %v (stderr: %s)", err, errOut.String())
+	}
+	cliBytes := bytes.TrimRight(out.Bytes(), "\n")
+
+	// MCP
+	mcpBytes := callMCPTool(t, qsvc, ssvc, "search_ast", map[string]any{"pattern": pattern})
+
+	// HTTP
+	httpBytes := httpPostOutput(t, direct, "/query-ast", pattern)
+
+	if !bytes.Equal(cliBytes, mcpBytes) {
+		t.Fatalf("search_ast CLI<->MCP mismatch:\nCLI:  %s\nMCP:  %s", cliBytes, mcpBytes)
+	}
+	if !bytes.Equal(cliBytes, httpBytes) {
+		t.Fatalf("search_ast CLI<->HTTP mismatch:\nCLI:  %s\nHTTP: %s", cliBytes, httpBytes)
+	}
+	// Sanity: the pattern actually matched (non-empty), so parity is meaningful.
+	if !bytes.Contains(cliBytes, []byte("\"nodes\"")) {
+		t.Fatalf("search_ast result missing nodes envelope: %s", cliBytes)
+	}
+}
+
+// TestParity_FindClones asserts find_clones returns byte-identical canonical
+// output through CLI, MCP, and HTTP (SW-085 AC2). The seed produces no clone
+// group, so all three return the identical typed-empty envelope — parity holds
+// for the empty variant exactly as for the populated one.
+func TestParity_FindClones(t *testing.T) {
+	store, _ := seed(t)
+	qsvc := query.New(store)
+	ssvc := search.New(store)
+	direct := client.NewDirect(qsvc, ssvc)
+
+	var out, errOut bytes.Buffer
+	if err := cli.RunFindClones(context.Background(), direct, nil, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunFindClones: %v (stderr: %s)", err, errOut.String())
+	}
+	cliBytes := bytes.TrimRight(out.Bytes(), "\n")
+
+	mcpBytes := callMCPTool(t, qsvc, ssvc, "find_clones", map[string]any{})
+	httpBytes := httpPostOutput(t, direct, "/find-clones", "")
+
+	if !bytes.Equal(cliBytes, mcpBytes) {
+		t.Fatalf("find_clones CLI<->MCP mismatch:\nCLI:  %s\nMCP:  %s", cliBytes, mcpBytes)
+	}
+	if !bytes.Equal(cliBytes, httpBytes) {
+		t.Fatalf("find_clones CLI<->HTTP mismatch:\nCLI:  %s\nHTTP: %s", cliBytes, httpBytes)
+	}
+	if !bytes.Contains(cliBytes, []byte("\"find_clones\"")) {
+		t.Fatalf("find_clones envelope missing operation field: %s", cliBytes)
+	}
+}
+
+// TestMCP_NewToolAnnotations asserts the three new pattern-query tools carry the
+// SW-085 AC4 annotation set (readOnly / idempotent / !destructive / !openWorld).
+func TestMCP_NewToolAnnotations(t *testing.T) {
+	store, _ := seed(t)
+	srv := mcp.NewServer(query.New(store), search.New(store))
+	reqBody, _ := json.Marshal(map[string]any{
+		"jsonrpc": "2.0", "id": 1, "method": "tools/list",
+	})
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve tools/list: %v", err)
+	}
+	var resp struct {
+		Result struct {
+			Tools []struct {
+				Name        string          `json:"name"`
+				Annotations map[string]bool `json:"annotations"`
+			} `json:"tools"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode tools/list %q: %v", out.String(), err)
+	}
+	want := map[string]struct{}{"search_ast": {}, "find_clones": {}}
+	seen := map[string]bool{}
+	for _, tool := range resp.Result.Tools {
+		if _, ok := want[tool.Name]; !ok {
+			continue
+		}
+		seen[tool.Name] = true
+		a := tool.Annotations
+		if !a["readOnlyHint"] || a["destructiveHint"] || !a["idempotentHint"] || a["openWorldHint"] {
+			t.Errorf("%s annotations = %+v, want readOnly+idempotent, !destructive+!openWorld", tool.Name, a)
+		}
+	}
+	for name := range want {
+		if !seen[name] {
+			t.Errorf("tool %q not advertised in tools/list", name)
 		}
 	}
 }

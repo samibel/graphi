@@ -53,6 +53,94 @@ type PrCommentRequest struct {
 	Publish       bool   `json:"publish"`        // when true, upsert through the host; when false (default) dry-run (render+gate only)
 }
 
+// MemoryRequest is the transport-agnostic input for memory operations.
+type MemoryRequest struct {
+	Op       string   `json:"op"` // store | recall | forget
+	Scope    string   `json:"scope"`
+	Notebook string   `json:"notebook"`
+	Tags     []string `json:"tags"`
+	Payload  string   `json:"payload"`
+	ID       string   `json:"id"` // for forget
+}
+
+// MemoryResponse is the canonical serialized output for memory operations.
+type MemoryResponse struct {
+	Entries []MemoryEntry `json:"entries"`
+	ID      string        `json:"id"`
+	Count   int           `json:"count"`
+}
+
+// MemoryEntry is one returned memory item.
+type MemoryEntry struct {
+	ID        string   `json:"id"`
+	Scope     string   `json:"scope"`
+	Notebook  string   `json:"notebook"`
+	Tags      []string `json:"tags"`
+	Payload   string   `json:"payload"`
+	CreatedAt int64    `json:"created_at"`
+}
+
+// DistillRequest is the transport-agnostic input for session distillation.
+type DistillRequest struct {
+	SessionID      string   `json:"session_id"`
+	Turns          []Turn   `json:"turns"`
+	Decisions      []string `json:"decisions"`
+	Risks          []string `json:"risks"`
+	OpenQuestions  []string `json:"open_questions"`
+	FileReferences []string `json:"file_references"`
+}
+
+// Turn captures one agent turn in a session.
+type Turn struct {
+	ID       string   `json:"id"`
+	Prompt   string   `json:"prompt"`
+	FilesIn  []string `json:"files_in"`
+	FilesOut []string `json:"files_out"`
+}
+
+// DistillResponse is the canonical serialized output for session distillation.
+type DistillResponse struct {
+	Version        string   `json:"version"`
+	SessionID      string   `json:"session_id"`
+	Summary        string   `json:"summary"`
+	Decisions      []string `json:"decisions"`
+	Risks          []string `json:"risks"`
+	OpenQuestions  []string `json:"open_questions"`
+	FileReferences []string `json:"file_references"`
+	TouchedFiles   []string `json:"touched_files"`
+}
+
+// SkillGenRequest is the transport-agnostic input for skill generation.
+type SkillGenRequest struct {
+	Name        string      `json:"name"`
+	Trigger     string      `json:"trigger"`
+	Description string      `json:"description"`
+	Inputs      []string    `json:"inputs"`
+	Outputs     []string    `json:"outputs"`
+	Steps       []SkillStep `json:"steps"`
+}
+
+// SkillStep is one step in a generated skill.
+type SkillStep struct {
+	Name        string   `json:"name"`
+	Action      string   `json:"action"`
+	Inputs      []string `json:"inputs"`
+	Outputs     []string `json:"outputs"`
+	Guard       string   `json:"guard"`
+	Description string   `json:"description"`
+}
+
+// SkillGenResponse is the canonical serialized output for skill generation.
+type SkillGenResponse struct {
+	Name        string      `json:"name"`
+	Trigger     string      `json:"trigger"`
+	Description string      `json:"description"`
+	Inputs      []string    `json:"inputs"`
+	Outputs     []string    `json:"outputs"`
+	Steps       []SkillStep `json:"steps"`
+	Markdown    string      `json:"markdown"`
+}
+
 // RefactorRequest is the transport-agnostic input for a graph-aware refactor. It
 // maps 1:1 onto engine/edit.RefactorOp so BOTH surfaces (MCP tool args, CLI
 // flags) construct the SAME operation — the only divergence-risk being input
@@ -109,6 +197,20 @@ type Client interface {
 	// (the default path) it returns the typed Unavailable response with NO error
 	// and ZERO network — never ErrSearchUnavailable.
 	SemanticSearch(ctx context.Context, q string, limit int) ([]byte, error)
+	// SearchAST runs the structural AST pattern query (SW-082) and returns the
+	// canonical serialized engine/query.Result bytes via query.Marshal — the SAME
+	// serializer every symbol query uses, so the bytes are byte-identical across
+	// every surface (SW-085 parity). patternJSON is the JSON AstPattern; an invalid
+	// pattern surfaces the engine's typed *query.InvalidPattern error unchanged (no
+	// new surface error shape). It is a pattern query (no symbol id), so — like
+	// search and compound — it is a singleton, NOT a member of query.Operations.
+	SearchAST(ctx context.Context, patternJSON string, limit int) ([]byte, error)
+	// FindClones runs the clone-group detection query (SW-083) and returns the
+	// canonical serialized engine/query.CloneResult bytes via query.MarshalCloneResult.
+	// configJSON is the JSON CloneConfig; an empty/omitted config uses the engine
+	// defaults (query.DefaultCloneConfig). Like SearchAST it is a singleton pattern
+	// query and rides the single engine serializer for byte-identical parity.
+	FindClones(ctx context.Context, configJSON string) ([]byte, error)
 	// Savings returns the canonical serialized savings-ledger readout (per-call,
 	// per-session, cumulative USD + cap flags). It is the single source for the
 	// MCP and CLI readouts so both surfaces stay in parity.
@@ -147,4 +249,28 @@ type Client interface {
 	// in-process Direct client wires it via WithReview; the daemon client returns
 	// ErrReviewUnavailable until a daemon review RPC is added.
 	PrComment(ctx context.Context, req PrCommentRequest) ([]byte, error)
+
+	// Memory runs a memory operation (store/recall/forget) and returns the
+	// canonical serialized MemoryResponse bytes. The in-process Direct client wires
+	// it via WithMemory; other clients return ErrMemoryUnavailable until wired.
+	Memory(ctx context.Context, req MemoryRequest) ([]byte, error)
+
+	// Distill runs session distillation and returns the canonical serialized
+	// DistillResponse bytes. The in-process Direct client wires it via WithDistill;
+	// other clients return ErrDistillUnavailable until wired.
+	Distill(ctx context.Context, req DistillRequest) ([]byte, error)
+
+	// SkillGen runs deterministic skill generation and returns the canonical
+	// serialized SkillGenResponse bytes. The in-process Direct client wires it via
+	// WithSkillGen; other clients return ErrSkillGenUnavailable until wired.
+	SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, error)
 }
+
+// ErrMemoryUnavailable is returned when a Client has no memory service configured.
+var ErrMemoryUnavailable = errors.New("client: memory service unavailable")
+
+// ErrDistillUnavailable is returned when a Client has no distillation service configured.
+var ErrDistillUnavailable = errors.New("client: distill service unavailable")
+
+// ErrSkillGenUnavailable is returned when a Client has no skill generation service configured.
+var ErrSkillGenUnavailable = errors.New("client: skillgen service unavailable")

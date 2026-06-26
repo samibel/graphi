@@ -167,7 +167,10 @@ type errorEnvelope struct {
 func mapError(err error) (status int, code, message string) {
 	switch {
 	case errors.Is(err, client.ErrSearchUnavailable),
-		errors.Is(err, client.ErrAnalysisUnavailable):
+		errors.Is(err, client.ErrAnalysisUnavailable),
+		errors.Is(err, client.ErrMemoryUnavailable),
+		errors.Is(err, client.ErrDistillUnavailable),
+		errors.Is(err, client.ErrSkillGenUnavailable):
 		return http.StatusServiceUnavailable, "unavailable", "capability unavailable"
 	default:
 		return http.StatusInternalServerError, "internal", "internal error"
@@ -183,9 +186,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /contract", s.handleContract)
 	mux.HandleFunc("GET /query/{op}", s.schemaGuard(s.handleQuery))
 	mux.HandleFunc("POST /compound", s.schemaGuard(s.handleCompound))
+	mux.HandleFunc("POST /query-ast", s.schemaGuard(s.handleSearchAST))
+	mux.HandleFunc("POST /find-clones", s.schemaGuard(s.handleFindClones))
 	mux.HandleFunc("GET /search", s.schemaGuard(s.handleSearch))
 	mux.HandleFunc("GET /search/semantic", s.schemaGuard(s.handleSemanticSearch))
 	mux.HandleFunc("GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze))
+	mux.HandleFunc("POST /memory", s.schemaGuard(s.handleMemory))
+	mux.HandleFunc("POST /distill", s.schemaGuard(s.handleDistill))
+	mux.HandleFunc("POST /skillgen", s.schemaGuard(s.handleSkillGen))
 	mux.HandleFunc("GET /events", s.schemaGuard(s.handleSSE))
 	mux.HandleFunc("GET /wiki", s.handleWikiIndex)
 	mux.HandleFunc("GET /wiki/c/{id}", s.handleWikiPage)
@@ -385,6 +393,53 @@ func (s *Server) handleCompound(w http.ResponseWriter, r *http.Request) {
 	writeEnvelope(w, raw)
 }
 
+// handleSearchAST runs the structural AST pattern query (SW-082 / SW-085). The
+// JSON AstPattern is the request body and limit rides the query string; the
+// canonical query.Result payload is returned in the SAME envelope as /query and
+// /compound, so search_ast results are byte-identical across CLI/MCP/HTTP/daemon.
+// A malformed pattern surfaces the engine's typed error through the shared
+// sanitized-error path (no new surface error shape).
+func (s *Server) handleSearchAST(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read query-ast body")
+		return
+	}
+	limit := 0
+	if l := r.URL.Query().Get("limit"); l != "" {
+		v, err := strconv.Atoi(l)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, "bad_request", "bad limit")
+			return
+		}
+		limit = v
+	}
+	raw, err := s.client.SearchAST(r.Context(), string(body), limit)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleFindClones runs the clone-detection query (SW-083 / SW-085). The JSON
+// CloneConfig is the request body (empty ⇒ engine defaults); the canonical
+// query.CloneResult payload is returned in the same envelope for byte-identical
+// parity across surfaces.
+func (s *Server) handleFindClones(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read find-clones body")
+		return
+	}
+	raw, err := s.client.FindClones(r.Context(), string(body))
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
@@ -456,6 +511,56 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		p.MaxNodes = v
 	}
 	raw, err := s.client.Analyze(r.Context(), p)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleMemory runs an EP-012 memory operation. The request body is a JSON
+// MemoryRequest; the response payload is the canonical MemoryResponse bytes
+// (byte-identical to CLI/MCP output).
+func (s *Server) handleMemory(w http.ResponseWriter, r *http.Request) {
+	var req client.MemoryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "invalid request body")
+		return
+	}
+	raw, err := s.client.Memory(r.Context(), req)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleDistill runs EP-012 session distillation. The request body is a JSON
+// DistillRequest; the response payload is the canonical DistillResponse bytes.
+func (s *Server) handleDistill(w http.ResponseWriter, r *http.Request) {
+	var req client.DistillRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "invalid request body")
+		return
+	}
+	raw, err := s.client.Distill(r.Context(), req)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleSkillGen runs EP-012 deterministic skill generation. The request body
+// is a JSON SkillGenRequest; the response payload is the canonical
+// SkillGenResponse bytes.
+func (s *Server) handleSkillGen(w http.ResponseWriter, r *http.Request) {
+	var req client.SkillGenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "invalid request body")
+		return
+	}
+	raw, err := s.client.SkillGen(r.Context(), req)
 	if err != nil {
 		writeErrSanitized(w, err)
 		return

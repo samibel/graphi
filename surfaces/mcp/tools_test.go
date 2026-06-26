@@ -44,6 +44,21 @@ func (allToolsClient) Undo(context.Context, string, string) ([]byte, error) {
 func (allToolsClient) PrComment(context.Context, client.PrCommentRequest) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) Memory(context.Context, client.MemoryRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) Distill(context.Context, client.DistillRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) SearchAST(context.Context, string, int) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) FindClones(context.Context, string) ([]byte, error) {
+	return []byte("{}"), nil
+}
 
 // TestToolNames_MatchesAdvertisedMaximalSet is the in-package drift guard for the
 // MCP surface: ToolNames() (the single source the FU-4 coverage matrix reads)

@@ -22,6 +22,12 @@ const (
 
 // ResultNode is a node appearing in a result. It carries the canonical node
 // fields verbatim from core/model — never re-derived.
+//
+// ParentKind/ParentName carry the immediate structural parent (resolved from the
+// node's inbound "defines" edge) and are populated ONLY by the search_ast
+// pattern query. They are `omitempty`, so every other (symbol-input) query —
+// which never sets them — serializes byte-identically to before this field
+// existed: the SW-082 addition is invisible on the existing query paths.
 type ResultNode struct {
 	ID            model.NodeId `json:"id"`
 	Kind          string       `json:"kind"`
@@ -29,6 +35,8 @@ type ResultNode struct {
 	SourcePath    string       `json:"source_path"`
 	Line          int          `json:"line"`
 	Column        int          `json:"column"`
+	ParentKind    string       `json:"parent_kind,omitempty"`
+	ParentName    string       `json:"parent_name,omitempty"`
 }
 
 // ResultEdge is an edge appearing in a result. Its provenance fields

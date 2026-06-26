@@ -49,7 +49,7 @@ type GenerateResult struct {
 // nodes is the full node set (e.g. store.Nodes(ctx, Query{})). index and table may
 // be nil to skip the respective sink (e.g. persist-only or in-memory-only), but
 // the normal index pass supplies both.
-func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, index *Index, table VectorTable) (GenerateResult, error) {
+func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, index VectorIndex, table VectorTable) (GenerateResult, error) {
 	if reg == nil || !reg.Configured() {
 		return GenerateResult{Configured: false}, nil // graceful skip: no embed, no dial, no write
 	}

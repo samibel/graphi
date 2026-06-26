@@ -19,11 +19,11 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"bytes"
 	"io"
 	"net"
 	"net/http"
@@ -196,6 +196,7 @@ func (h *HTTP) doPOST(ctx context.Context, path string, body []byte) ([]byte, er
 	}
 	return []byte(env.Payload), nil
 }
+
 // body, falling back to a generic string when the body is not an error envelope.
 func envMessage(body []byte) string {
 	var e struct {
@@ -266,6 +267,25 @@ func (h *HTTP) SemanticSearch(ctx context.Context, query string, limit int) ([]b
 	return h.doGET(ctx, "/search/semantic", q)
 }
 
+// SearchAST runs the structural AST pattern query over POST /query-ast (SW-085).
+// The JSON pattern is sent as the request body so a structured pattern survives
+// transport verbatim; limit rides the query string. The server returns the
+// canonical query.Result bytes, byte-identical to the in-process and MCP surfaces.
+func (h *HTTP) SearchAST(ctx context.Context, patternJSON string, limit int) ([]byte, error) {
+	path := "/query-ast"
+	if limit != 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	return h.doPOST(ctx, path, []byte(patternJSON))
+}
+
+// FindClones runs the clone-detection query over POST /find-clones (SW-085). The
+// JSON CloneConfig is the request body (empty ⇒ engine defaults). The server
+// returns the canonical query.MarshalCloneResult bytes for byte-identical parity.
+func (h *HTTP) FindClones(ctx context.Context, configJSON string) ([]byte, error) {
+	return h.doPOST(ctx, "/find-clones", []byte(configJSON))
+}
+
 // Analyze runs a named analyzer over GET /analyze/{analyzer}. Read-only.
 func (h *HTTP) Analyze(ctx context.Context, p AnalyzeParams) ([]byte, error) {
 	q := url.Values{}
@@ -311,6 +331,21 @@ func (h *HTTP) Undo(ctx context.Context, undoToken, actor string) ([]byte, error
 // PrComment always returns ErrReviewUnavailable (read-only surface).
 func (h *HTTP) PrComment(ctx context.Context, req PrCommentRequest) ([]byte, error) {
 	return nil, ErrReviewUnavailable
+}
+
+// Memory is not exposed by the current HTTP surface; returns ErrMemoryUnavailable.
+func (h *HTTP) Memory(ctx context.Context, req MemoryRequest) ([]byte, error) {
+	return nil, ErrMemoryUnavailable
+}
+
+// Distill is not exposed by the current HTTP surface; returns ErrDistillUnavailable.
+func (h *HTTP) Distill(ctx context.Context, req DistillRequest) ([]byte, error) {
+	return nil, ErrDistillUnavailable
+}
+
+// SkillGen is not exposed by the current HTTP surface; returns ErrSkillGenUnavailable.
+func (h *HTTP) SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, error) {
+	return nil, ErrSkillGenUnavailable
 }
 
 // compile-time proof the adapter satisfies the surface contract.

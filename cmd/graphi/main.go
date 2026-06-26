@@ -21,15 +21,18 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/edit"
 	"github.com/samibel/graphi/engine/embed"
 	_ "github.com/samibel/graphi/engine/embed/ollama" // opt-in loopback embedder: registers the "ollama" scheme; never constructed on the default path
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/ledger"
+	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/engine/skillgen"
 	"github.com/samibel/graphi/internal/audit"
 	"github.com/samibel/graphi/internal/mcpconfig"
 	"github.com/samibel/graphi/internal/state"
@@ -57,10 +60,20 @@ func main() {
 		os.Exit(runCompound(os.Args[2:]))
 	case "search":
 		os.Exit(runSearch(os.Args[2:]))
+	case "search-ast":
+		os.Exit(runSearchAST(os.Args[2:]))
+	case "find-clones":
+		os.Exit(runFindClones(os.Args[2:]))
 	case "index":
 		os.Exit(runIndex(os.Args[2:]))
 	case "savings":
 		os.Exit(runSavings(os.Args[2:]))
+	case "memory":
+		os.Exit(runMemory(os.Args[2:]))
+	case "distill":
+		os.Exit(runDistill(os.Args[2:]))
+	case "skillgen":
+		os.Exit(runSkillGen(os.Args[2:]))
 	case "analyze":
 		os.Exit(runAnalyze(os.Args[2:]))
 	case "pr-comment":
@@ -247,6 +260,43 @@ func runSearch(args []string) int {
 		return 1
 	}
 	if err := cli.RunSearch(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		return 1
+	}
+	return 0
+}
+
+// runSearchAST launches the CLI structural-AST-search surface (SW-082 / SW-085).
+// Usage:
+//
+//	graphi search-ast [-db path] [-daemon socket] [-limit N] <json-pattern>
+func runSearchAST(args []string) int {
+	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
+	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunSearchAST(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		return 1
+	}
+	return 0
+}
+
+// runFindClones launches the CLI clone-detection surface (SW-083 / SW-085). Usage:
+//
+//	graphi find-clones [-db path] [-daemon socket] [<json-config>]
+func runFindClones(args []string) int {
+	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
+	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunFindClones(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
 		return 1
 	}
 	return 0
@@ -791,6 +841,133 @@ func runSavings(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// withLedgerAndAgentServices attaches the EP-012 memory, distillation, and
+// skill-generation services to an in-process Direct client when a ledger path
+// is provided. It returns the possibly-upgraded client and a cleanup function.
+func withLedgerAndAgentServices(c client.Client, ledgerPath string) (client.Client, func(), error) {
+	d, ok := c.(*client.Direct)
+	if !ok {
+		return c, func() {}, nil
+	}
+	var l *ledger.Ledger
+	var cleanup func()
+	cleanup = func() {}
+	if ledgerPath != "" {
+		var err error
+		l, err = ledger.Open(ledgerPath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("open ledger: %w", err)
+		}
+		cleanup = func() { _ = l.Close() }
+		d = d.WithLedger(l)
+	}
+	memStore, err := memory.NewMemStore(memory.NewLedgerHook(l, "", true))
+	if err != nil {
+		cleanup()
+		return nil, nil, fmt.Errorf("memory store: %w", err)
+	}
+	prev := cleanup
+	cleanup = func() { prev(); _ = memStore.Close() }
+	d = d.WithMemory(memStore).
+		WithDistill(distill.NewDistiller(distill.NewLedgerHook(l, "", true))).
+		WithSkillGen(skillgen.NewGenerator(skillgen.NewLedgerHook(l, "", true)))
+	return d, cleanup, nil
+}
+
+// runMemory launches the CLI memory surface (EP-012). Usage:
+//
+//	graphi memory store|recall|forget ... [-ledger path]
+func runMemory(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := extractLedgerFlag(&rest)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if socket != "" {
+		fmt.Fprintln(os.Stderr, "graphi: memory: not available via daemon in this build")
+		return 1
+	}
+	c, cleanup, err := withLedgerAndAgentServices(c, ledgerPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: memory: %v\n", err)
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunMemory(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: memory: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runDistill launches the CLI session-distillation surface (EP-012). Usage:
+//
+//	graphi distill -session <id> ... [-ledger path]
+func runDistill(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := extractLedgerFlag(&rest)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if socket != "" {
+		fmt.Fprintln(os.Stderr, "graphi: distill: not available via daemon in this build")
+		return 1
+	}
+	c, cleanup, err := withLedgerAndAgentServices(c, ledgerPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: distill: %v\n", err)
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunDistill(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: distill: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runSkillGen launches the CLI skill-generation surface (EP-012). Usage:
+//
+//	graphi skillgen -name <name> -trigger <trigger> ... [-ledger path]
+func runSkillGen(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := extractLedgerFlag(&rest)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if socket != "" {
+		fmt.Fprintln(os.Stderr, "graphi: skillgen: not available via daemon in this build")
+		return 1
+	}
+	c, cleanup, err := withLedgerAndAgentServices(c, ledgerPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: skillgen: %v\n", err)
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunSkillGen(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: skillgen: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// extractLedgerFlag pulls -ledger <path> out of args and returns the path.
+func extractLedgerFlag(args *[]string) string {
+	rest := *args
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == "-ledger" && i+1 < len(rest) {
+			path := rest[i+1]
+			*args = append(rest[:i], rest[i+2:]...)
+			return path
+		}
+	}
+	return ""
 }
 
 // runVersion prints the release version + VCS metadata embedded by SW-013's

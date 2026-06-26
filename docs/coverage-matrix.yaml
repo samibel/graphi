@@ -325,6 +325,31 @@ capabilities:
     status: shipped
     epic: EP-001
     note: "optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061)."
+  - id: distill
+    category: mcp-tool
+    status: shipped
+    epic: EP-012
+    note: "session distillation into a compact decision record."
+  - id: find_clones
+    category: mcp-tool
+    status: shipped
+    epic: EP-013
+    note: "structural clone-group detection from a JSON config (G4)."
+  - id: memory
+    category: mcp-tool
+    status: shipped
+    epic: EP-012
+    note: "agent memory store/recall/forget operations."
+  - id: search_ast
+    category: mcp-tool
+    status: shipped
+    epic: EP-013
+    note: "structural AST pattern query over the indexed graph (G3)."
+  - id: skillgen
+    category: mcp-tool
+    status: shipped
+    epic: EP-012
+    note: "deterministic skill generation from a procedure description."
   - id: undo
     category: mcp-tool
     status: shipped

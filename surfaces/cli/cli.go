@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/price"
@@ -213,6 +214,64 @@ func RunSearch(ctx context.Context, c client.Client, args []string, out, errOut 
 	return nil
 }
 
+// RunSearchAST runs the structural AST pattern query (SW-082 / SW-085). It mirrors
+// RunSearch's flag conventions — an optional `-limit N` plus the pattern as the
+// positional argument — and writes the canonical query.Result bytes from the shared
+// client (byte-identical to the MCP and HTTP surfaces). The pattern is a JSON
+// AstPattern, e.g. graphi search-ast '{"kind":"function","name":{"regex":"^handle_"}}'.
+func RunSearchAST(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	limit := 100
+	var rest []string
+	for i := 0; i < len(args); i++ {
+		switch {
+		case args[i] == "-limit" && i+1 < len(args):
+			var v int
+			if _, err := fmt.Sscanf(args[i+1], "%d", &v); err != nil {
+				fmt.Fprintf(errOut, "cli: invalid -limit value %q\n", args[i+1])
+				return fmt.Errorf("cli: invalid -limit")
+			}
+			limit = v
+			i++
+		default:
+			rest = append(rest, args[i])
+		}
+	}
+	if len(rest) == 0 {
+		fmt.Fprintln(errOut, "usage: search-ast [-limit N] <json-pattern>")
+		return fmt.Errorf("cli: missing pattern")
+	}
+	b, err := c.SearchAST(ctx, rest[0], limit)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunFindClones runs the clone-detection query (SW-083 / SW-085). The optional
+// positional argument is a JSON CloneConfig (empty ⇒ engine defaults); it writes
+// the canonical query.CloneResult bytes from the shared client (byte-identical to
+// the MCP and HTTP surfaces). E.g. graphi find-clones '{"threshold":0.9}'.
+func RunFindClones(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	var config string
+	for i := 0; i < len(args); i++ {
+		if args[i] != "" {
+			config = args[i]
+			break
+		}
+	}
+	b, err := c.FindClones(ctx, config)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunSetupEmbedder is the opt-in `graphi setup-embedder` command (SW-059). It
 // prints the explicit, copy-pasteable config a user sets to enable the OPTIONAL
 // semantic search — there is NO hidden default: semantic search stays OFF until
@@ -277,6 +336,136 @@ func RunSavings(ctx context.Context, c client.Client, out, errOut io.Writer) err
 		return fmt.Errorf("cli: write output: %w", err)
 	}
 	return nil
+}
+
+// RunMemory executes a memory operation against the shared client and writes the
+// canonical serialized MemoryResponse.
+//
+// Usage:
+//
+//	memory store -scope <scope> -notebook <nb> -payload <text> [-tags a,b]
+//	memory recall -scope <scope> [-notebook <nb>]
+//	memory forget -id <id>
+func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	if len(args) < 1 {
+		fmt.Fprintln(errOut, "usage: memory store|recall|forget ...")
+		return fmt.Errorf("cli: missing memory subcommand")
+	}
+	op := args[0]
+	fs := flag.NewFlagSet("memory "+op, flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	scope := fs.String("scope", "", "memory scope")
+	notebook := fs.String("notebook", "", "memory notebook")
+	tags := fs.String("tags", "", "comma-separated tags (store only)")
+	payload := fs.String("payload", "", "memory payload (store only)")
+	id := fs.String("id", "", "memory id (forget only)")
+	if err := fs.Parse(args[1:]); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	var tagList []string
+	if *tags != "" {
+		tagList = strings.Split(*tags, ",")
+	}
+	b, err := c.Memory(ctx, client.MemoryRequest{
+		Op:       op,
+		Scope:    *scope,
+		Notebook: *notebook,
+		Tags:     tagList,
+		Payload:  *payload,
+		ID:       *id,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunDistill runs session distillation against the shared client and writes the
+// canonical serialized DistillResponse.
+//
+// Usage:
+//
+//	distill -session <id> -decisions "d1,d2" -risks "r1" -questions "q1" -files "a.go,b.go"
+func RunDistill(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("distill", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	session := fs.String("session", "", "session id")
+	decisions := fs.String("decisions", "", "comma-separated decisions")
+	risks := fs.String("risks", "", "comma-separated risks")
+	questions := fs.String("questions", "", "comma-separated open questions")
+	files := fs.String("files", "", "comma-separated file references")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if *session == "" {
+		fmt.Fprintln(errOut, "cli: -session is required")
+		return fmt.Errorf("cli: -session is required")
+	}
+	b, err := c.Distill(ctx, client.DistillRequest{
+		SessionID:      *session,
+		Decisions:      splitCSV(*decisions),
+		Risks:          splitCSV(*risks),
+		OpenQuestions:  splitCSV(*questions),
+		FileReferences: splitCSV(*files),
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunSkillGen runs deterministic skill generation against the shared client and
+// writes the canonical serialized SkillGenResponse.
+//
+// Usage:
+//
+//	skillgen -name <name> -trigger <trigger> -description <desc>
+func RunSkillGen(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("skillgen", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	name := fs.String("name", "", "skill name")
+	trigger := fs.String("trigger", "", "skill trigger")
+	desc := fs.String("description", "", "skill description")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if *name == "" || *trigger == "" {
+		fmt.Fprintln(errOut, "cli: -name and -trigger are required")
+		return fmt.Errorf("cli: -name and -trigger are required")
+	}
+	b, err := c.SkillGen(ctx, client.SkillGenRequest{
+		Name:        *name,
+		Trigger:     *trigger,
+		Description: *desc,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+func splitCSV(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // RunAnalysis executes one CLI analyzer invocation against the shared client and

@@ -122,6 +122,21 @@ func (c *DaemonClient) Search(ctx context.Context, q string, limit int) ([]byte,
 	return c.request(ctx, "search", searchParams{Query: q, Limit: limit})
 }
 
+// SearchAST implements client.Client (SW-085). It forwards the JSON AstPattern to
+// the daemon's search_ast RPC; the daemon-side handler is the same Direct client,
+// so the returned bytes are the canonical query.Marshal output — byte-identical to
+// the in-process and HTTP surfaces.
+func (c *DaemonClient) SearchAST(ctx context.Context, patternJSON string, limit int) ([]byte, error) {
+	return c.request(ctx, "search_ast", searchASTParams{Pattern: patternJSON, Limit: limit})
+}
+
+// FindClones implements client.Client (SW-085). It forwards the JSON CloneConfig
+// to the daemon's find_clones RPC; the daemon-side handler returns the canonical
+// query.MarshalCloneResult bytes for byte-identical parity.
+func (c *DaemonClient) FindClones(ctx context.Context, configJSON string) ([]byte, error) {
+	return c.request(ctx, "find_clones", findClonesParams{Config: configJSON})
+}
+
 // SemanticSearch implements client.Client. The daemon semantic RPC is not yet
 // wired; until it is, the daemon client returns the canonical typed Unavailable
 // graceful-skip response (Available=false) — NOT an error — so the unconfigured
@@ -184,6 +199,27 @@ func (c *DaemonClient) Undo(ctx context.Context, undoToken, actor string) ([]byt
 func (c *DaemonClient) PrComment(ctx context.Context, req client.PrCommentRequest) ([]byte, error) {
 	_, _ = ctx, req
 	return nil, client.ErrReviewUnavailable
+}
+
+// Memory implements client.Client. The daemon memory RPC is not yet wired;
+// returns ErrMemoryUnavailable.
+func (c *DaemonClient) Memory(ctx context.Context, req client.MemoryRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrMemoryUnavailable
+}
+
+// Distill implements client.Client. The daemon distill RPC is not yet wired;
+// returns ErrDistillUnavailable.
+func (c *DaemonClient) Distill(ctx context.Context, req client.DistillRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrDistillUnavailable
+}
+
+// SkillGen implements client.Client. The daemon skillgen RPC is not yet wired;
+// returns ErrSkillGenUnavailable.
+func (c *DaemonClient) SkillGen(ctx context.Context, req client.SkillGenRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrSkillGenUnavailable
 }
 
 // SocketPath returns the configured socket path.

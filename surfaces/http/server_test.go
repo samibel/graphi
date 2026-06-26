@@ -90,6 +90,21 @@ func (s *stubClient) Undo(context.Context, string, string) ([]byte, error) { ret
 func (s *stubClient) PrComment(context.Context, client.PrCommentRequest) ([]byte, error) {
 	return nil, nil
 }
+func (s *stubClient) Memory(context.Context, client.MemoryRequest) ([]byte, error) {
+	return nil, client.ErrMemoryUnavailable
+}
+func (s *stubClient) Distill(context.Context, client.DistillRequest) ([]byte, error) {
+	return nil, client.ErrDistillUnavailable
+}
+func (s *stubClient) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
+	return nil, client.ErrSkillGenUnavailable
+}
+func (s *stubClient) SearchAST(context.Context, string, int) ([]byte, error) {
+	return nil, client.ErrSearchUnavailable
+}
+func (s *stubClient) FindClones(context.Context, string) ([]byte, error) {
+	return nil, client.ErrSearchUnavailable
+}
 
 func newServer(t *testing.T) (*Server, *stubClient, *observe.Broker) {
 	t.Helper()
