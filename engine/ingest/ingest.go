@@ -63,6 +63,12 @@ const (
 	EditOpMove EditOpType = "move"
 	// EditOpSignatureChange mirrors edit.RefactorSignatureChange.
 	EditOpSignatureChange EditOpType = "signature_change"
+	// EditOpInline mirrors edit.RefactorInline (SW-092): substitute a symbol's
+	// value at every reference site and remove the declaration.
+	EditOpInline EditOpType = "inline"
+	// EditOpSafeDelete mirrors edit.RefactorSafeDelete (SW-093): remove a symbol
+	// only after a reference-safety gate clears.
+	EditOpSafeDelete EditOpType = "safe_delete"
 	// EditOpUndo is the SW-038 reversal: an undo restores the pre-edit source +
 	// graph snapshot and re-indexes the touched files under this op-type so the
 	// edit_provenance row distinguishes a reversal from a forward edit.
@@ -77,6 +83,8 @@ var validEditOpTypes = map[EditOpType]struct{}{
 	EditOpExtract:         {},
 	EditOpMove:            {},
 	EditOpSignatureChange: {},
+	EditOpInline:          {},
+	EditOpSafeDelete:      {},
 	EditOpUndo:            {},
 }
 
