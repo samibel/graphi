@@ -2,10 +2,11 @@ package mcp
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
+
+	"github.com/samibel/graphi/surfaces/guard"
 )
 
 // maxHTTPBody bounds a single streamable-HTTP request body (mirrors the stdio
@@ -58,25 +59,10 @@ func writeRPC(w http.ResponseWriter, resp rpcResponse) {
 }
 
 // ListenLoopbackMCP binds the MCP streamable-HTTP handler to a loopback-only
-// address. It refuses any non-loopback / wildcard bind (zero-egress) before the
-// listener is opened. (SW-099 centralizes this guard across all transports; this
-// keeps the transport self-contained and testable in the meantime.)
+// address, routing through the centralized SW-099 guard so the loopback/zero-
+// egress policy is enforced in exactly one place across every transport. A
+// non-loopback / wildcard bind is refused (guard.ErrNonLoopbackBind) before any
+// socket is opened.
 func ListenLoopbackMCP(addr string) (net.Listener, error) {
-	if err := assertLoopbackAddr(addr); err != nil {
-		return nil, err
-	}
-	return net.Listen("tcp", addr)
-}
-
-func assertLoopbackAddr(addr string) error {
-	host, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		return fmt.Errorf("mcp: invalid address %q: %w", addr, err)
-	}
-	switch host {
-	case "127.0.0.1", "::1", "localhost":
-		return nil
-	default:
-		return fmt.Errorf("mcp: refusing non-loopback bind %q (zero-egress)", addr)
-	}
+	return guard.ListenLoopback("tcp", addr)
 }
