@@ -82,6 +82,21 @@ type memoryParams client.MemoryRequest
 type distillParams client.DistillRequest
 type skillgenParams client.SkillGenRequest
 
+// SW-096 control-plane params.
+type trackParams struct {
+	Root string `json:"root"`
+}
+type untrackParams struct {
+	ID string `json:"id"`
+}
+
+// proxyParams forwards an inner surface request to the warm daemon-resident
+// engine; the response body is byte-identical to what a cold surface would emit.
+type proxyParams struct {
+	Method string          `json:"method"`
+	Params json.RawMessage `json:"params"`
+}
+
 // response is the JSON envelope returned over the Unix socket.
 type response struct {
 	OK    bool   `json:"ok"`
@@ -94,6 +109,7 @@ type Server struct {
 	handler    Handler
 	listener   net.Listener
 	socketPath string
+	ctl        *control // SW-096 control plane (track/untrack/reload/status)
 
 	mu     sync.Mutex
 	closed bool
@@ -101,7 +117,7 @@ type Server struct {
 
 // NewServer constructs a daemon server bound to the given handler.
 func NewServer(handler Handler) *Server {
-	return &Server{handler: handler}
+	return &Server{handler: handler, ctl: newControl(nil)}
 }
 
 // Start validates the socket path, creates a Unix listener with owner-only
@@ -195,6 +211,12 @@ func (s *Server) handleConn(conn net.Conn) {
 		if err := enc.Encode(resp); err != nil {
 			return
 		}
+		// `daemon stop`: the ack has been written; now drain by tearing down the
+		// listener + socket so a subsequent status reports not-running.
+		if req.Method == "stop" {
+			_ = s.Stop()
+			return
+		}
 	}
 }
 
@@ -286,6 +308,46 @@ func (s *Server) dispatch(ctx context.Context, req request) response {
 			return response{OK: false, Error: err.Error()}
 		}
 		return response{OK: true, Body: b}
+	case "track":
+		var p trackParams
+		if err := json.Unmarshal(req.Params, &p); err != nil {
+			return response{OK: false, Error: "invalid track params"}
+		}
+		id, err := s.ctl.track(p.Root)
+		if err != nil {
+			return response{OK: false, Error: err.Error()}
+		}
+		b, _ := json.Marshal(map[string]string{"id": id})
+		return response{OK: true, Body: b}
+	case "untrack":
+		var p untrackParams
+		if err := json.Unmarshal(req.Params, &p); err != nil {
+			return response{OK: false, Error: "invalid untrack params"}
+		}
+		s.ctl.untrack(p.ID)
+		return response{OK: true}
+	case "reload":
+		s.ctl.reload()
+		b, _ := json.Marshal(s.ctl.status(s.Addr()))
+		return response{OK: true, Body: b}
+	case "status":
+		b, _ := json.Marshal(s.ctl.status(s.Addr()))
+		return response{OK: true, Body: b}
+	case "proxy":
+		var p proxyParams
+		if err := json.Unmarshal(req.Params, &p); err != nil {
+			return response{OK: false, Error: "invalid proxy params"}
+		}
+		if p.Method == "proxy" {
+			return response{OK: false, Error: "proxy cannot wrap proxy"}
+		}
+		// Forward to the warm engine via the same dispatch path → byte-identical
+		// body to a cold surface invocation.
+		return s.dispatch(ctx, request{Method: p.Method, Params: p.Params})
+	case "stop":
+		// The actual listener teardown happens in handleConn AFTER this response
+		// is written, so the caller gets a clean ack before the socket closes.
+		return response{OK: true}
 	default:
 		return response{OK: false, Error: "unknown method: " + req.Method}
 	}
