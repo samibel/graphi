@@ -99,6 +99,15 @@ func (s *stubClient) Distill(context.Context, client.DistillRequest) ([]byte, er
 func (s *stubClient) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
 	return nil, client.ErrSkillGenUnavailable
 }
+func (s *stubClient) Diagnose(context.Context, []string) ([]byte, error) {
+	return nil, client.ErrDiagnosticUnavailable
+}
+func (s *stubClient) Inline(context.Context, client.InlineRequest) ([]byte, error) {
+	return nil, client.ErrEditUnavailable
+}
+func (s *stubClient) SafeDelete(context.Context, client.SafeDeleteRequest) ([]byte, error) {
+	return nil, client.ErrEditUnavailable
+}
 func (s *stubClient) SearchAST(context.Context, string, int) ([]byte, error) {
 	return nil, client.ErrSearchUnavailable
 }

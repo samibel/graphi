@@ -9,6 +9,7 @@ import (
 
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/edit"
 	"github.com/samibel/graphi/engine/ledger"
@@ -269,6 +270,48 @@ func (d *Direct) Refactor(ctx context.Context, req RefactorRequest, actor string
 		return nil, err
 	}
 	return edit.MarshalChangeRecord(rec)
+}
+
+// Diagnose implements Client (SW-091/SW-094). It runs the graph-derived
+// diagnostics over the SAME read-only Reader the queries use and serializes the
+// one canonical result through diagnostic.Marshal — the single byte-source every
+// surface consumes.
+func (d *Direct) Diagnose(ctx context.Context, kinds []string) ([]byte, error) {
+	if d.querySvc == nil {
+		return nil, ErrDiagnosticUnavailable
+	}
+	res, err := diagnostic.Diagnose(ctx, d.querySvc.Reader(), kinds)
+	if err != nil {
+		return nil, err
+	}
+	return diagnostic.Marshal(res)
+}
+
+// Inline implements Client (SW-092/SW-094). A blocked/unavailable outcome is a
+// typed result (not an error) and is serialized like any applied result, so every
+// surface sees the same typed marker. Only a genuine apply fault returns an error.
+func (d *Direct) Inline(ctx context.Context, req InlineRequest) ([]byte, error) {
+	if d.applier == nil {
+		return nil, ErrEditUnavailable
+	}
+	res, err := d.applier.ApplyInline(ctx, edit.InlineOp{TargetSymbol: req.TargetSymbol, DryRun: req.DryRun})
+	if err != nil {
+		return nil, err
+	}
+	return edit.MarshalInlineResult(res)
+}
+
+// SafeDelete implements Client (SW-093/SW-094). As with Inline, a blocked report
+// is a typed result, not an error.
+func (d *Direct) SafeDelete(ctx context.Context, req SafeDeleteRequest) ([]byte, error) {
+	if d.applier == nil {
+		return nil, ErrEditUnavailable
+	}
+	res, err := d.applier.ApplySafeDelete(ctx, edit.SafeDeleteOp{TargetSymbol: req.TargetSymbol, DryRun: req.DryRun})
+	if err != nil {
+		return nil, err
+	}
+	return edit.MarshalSafeDeleteResult(res)
 }
 
 // Undo implements Client. It wraps the engine/edit Undo compensating saga

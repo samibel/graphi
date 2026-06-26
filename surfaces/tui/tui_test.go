@@ -108,6 +108,15 @@ func (f *fakeEngine) Distill(context.Context, client.DistillRequest) ([]byte, er
 func (f *fakeEngine) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
 	return nil, client.ErrSkillGenUnavailable
 }
+func (f *fakeEngine) Diagnose(context.Context, []string) ([]byte, error) {
+	return nil, client.ErrDiagnosticUnavailable
+}
+func (f *fakeEngine) Inline(context.Context, client.InlineRequest) ([]byte, error) {
+	return nil, client.ErrEditUnavailable
+}
+func (f *fakeEngine) SafeDelete(context.Context, client.SafeDeleteRequest) ([]byte, error) {
+	return nil, client.ErrEditUnavailable
+}
 func (f *fakeEngine) SearchAST(context.Context, string, int) ([]byte, error) {
 	return nil, client.ErrSearchUnavailable
 }

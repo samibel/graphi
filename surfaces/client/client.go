@@ -154,6 +154,27 @@ type RefactorRequest struct {
 	DestinationFile string `json:"destination_file"` // move destination (optional)
 }
 
+// InlineRequest is the transport-agnostic input for the SW-092 inline refactor.
+// It maps 1:1 onto engine/edit.InlineOp so every surface constructs the same
+// operation; the command lives ONCE in Direct (parity by construction).
+type InlineRequest struct {
+	TargetSymbol string `json:"target_symbol"` // resolved NodeId
+	DryRun       bool   `json:"dry_run"`       // preview without mutating
+}
+
+// SafeDeleteRequest is the transport-agnostic input for the SW-093 safe-delete
+// refactor. It maps 1:1 onto engine/edit.SafeDeleteOp.
+type SafeDeleteRequest struct {
+	TargetSymbol string `json:"target_symbol"` // resolved NodeId
+	DryRun       bool   `json:"dry_run"`       // preview without mutating
+}
+
+// ErrDiagnosticUnavailable is returned when a Client has no diagnostic reader
+// configured. The in-process Direct client always has one; the daemon/HTTP
+// clients return it until a daemon diagnostics RPC is added (mirrors the
+// analysis/edit "unavailable until wired" precedent).
+var ErrDiagnosticUnavailable = errors.New("client: diagnostic service unavailable")
+
 // AnalyzeParams is the transport-agnostic input for an analyzer call. It maps
 // 1:1 onto engine/analysis.Params so both surfaces call every analyzer with the
 // same arguments (parity by construction). Each analyzer reads the fields
@@ -264,6 +285,24 @@ type Client interface {
 	// serialized SkillGenResponse bytes. The in-process Direct client wires it via
 	// WithSkillGen; other clients return ErrSkillGenUnavailable until wired.
 	SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, error)
+
+	// Diagnose runs the engine diagnostics (SW-091) over the graph and returns the
+	// canonical serialized diagnostic.Result bytes via diagnostic.Marshal — the
+	// single serializer every surface uses (byte-identical parity, SW-094). kinds
+	// selects analyzers; an empty slice runs all built-ins. Without a reader it
+	// returns ErrDiagnosticUnavailable.
+	Diagnose(ctx context.Context, kinds []string) ([]byte, error)
+
+	// Inline applies the SW-092 inline refactor through the shared edit applier and
+	// returns the canonical serialized InlineResult via edit.MarshalInlineResult.
+	// Without an edit service it returns ErrEditUnavailable.
+	Inline(ctx context.Context, req InlineRequest) ([]byte, error)
+
+	// SafeDelete applies the SW-093 safe-delete refactor through the shared edit
+	// applier and returns the canonical serialized SafeDeleteResult via
+	// edit.MarshalSafeDeleteResult. Without an edit service it returns
+	// ErrEditUnavailable.
+	SafeDelete(ctx context.Context, req SafeDeleteRequest) ([]byte, error)
 }
 
 // ErrMemoryUnavailable is returned when a Client has no memory service configured.

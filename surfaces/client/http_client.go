@@ -348,5 +348,21 @@ func (h *HTTP) SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, error
 	return nil, ErrSkillGenUnavailable
 }
 
+// Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
+// is added (mirrors the analysis/edit "unavailable until wired" precedent).
+func (h *HTTP) Diagnose(ctx context.Context, kinds []string) ([]byte, error) {
+	return nil, ErrDiagnosticUnavailable
+}
+
+// Inline returns ErrEditUnavailable until a daemon/HTTP edit RPC is added.
+func (h *HTTP) Inline(ctx context.Context, req InlineRequest) ([]byte, error) {
+	return nil, ErrEditUnavailable
+}
+
+// SafeDelete returns ErrEditUnavailable until a daemon/HTTP edit RPC is added.
+func (h *HTTP) SafeDelete(ctx context.Context, req SafeDeleteRequest) ([]byte, error) {
+	return nil, ErrEditUnavailable
+}
+
 // compile-time proof the adapter satisfies the surface contract.
 var _ Client = (*HTTP)(nil)

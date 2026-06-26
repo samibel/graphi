@@ -272,6 +272,94 @@ func RunFindClones(ctx context.Context, c client.Client, args []string, out, err
 	return nil
 }
 
+// RunDiagnose runs the engine diagnostics (SW-091 / SW-094) and writes the
+// canonical diagnostic.Result bytes from the shared client — byte-identical to
+// the MCP/HTTP/daemon surfaces. Positional args select analyzer kinds; none ⇒ all
+// built-ins. E.g. graphi diagnose            (all) / graphi diagnose dead_symbol.
+func RunDiagnose(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	var kinds []string
+	for _, a := range args {
+		if a != "" {
+			kinds = append(kinds, a)
+		}
+	}
+	b, err := c.Diagnose(ctx, kinds)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunInline runs the inline refactor (SW-092 / SW-094): `graphi inline [-dry-run]
+// <target-symbol>`. It writes the canonical InlineResult bytes from the shared
+// client (byte-identical across surfaces). A blocked/unavailable outcome is a
+// typed result, not an error.
+func RunInline(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	req, err := mutatingFlags("inline", args, errOut)
+	if err != nil {
+		return err
+	}
+	b, err := c.Inline(ctx, client.InlineRequest{TargetSymbol: req.target, DryRun: req.dryRun})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunSafeDelete runs the safe-delete refactor (SW-093 / SW-094): `graphi
+// safe-delete [-dry-run] <target-symbol>`. Writes the canonical SafeDeleteResult
+// bytes from the shared client; a blocked report is a typed result, not an error.
+func RunSafeDelete(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	req, err := mutatingFlags("safe-delete", args, errOut)
+	if err != nil {
+		return err
+	}
+	b, err := c.SafeDelete(ctx, client.SafeDeleteRequest{TargetSymbol: req.target, DryRun: req.dryRun})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// mutatingReq is the decoded form of the shared inline/safe-delete flag set.
+type mutatingReq struct {
+	target string
+	dryRun bool
+}
+
+// mutatingFlags decodes `[-dry-run] <target-symbol>` for the inline and
+// safe-delete commands — identical decoding for both so their surface behavior
+// can never diverge. The structured decode error wording is stable for parity.
+func mutatingFlags(cmd string, args []string, errOut io.Writer) (mutatingReq, error) {
+	var r mutatingReq
+	var rest []string
+	for _, a := range args {
+		switch a {
+		case "-dry-run", "--dry-run":
+			r.dryRun = true
+		default:
+			if a != "" {
+				rest = append(rest, a)
+			}
+		}
+	}
+	if len(rest) == 0 {
+		fmt.Fprintf(errOut, "usage: %s [-dry-run] <target-symbol>\n", cmd)
+		return r, fmt.Errorf("cli: %s: missing target symbol", cmd)
+	}
+	r.target = rest[0]
+	return r, nil
+}
+
 // RunSetupEmbedder is the opt-in `graphi setup-embedder` command (SW-059). It
 // prints the explicit, copy-pasteable config a user sets to enable the OPTIONAL
 // semantic search — there is NO hidden default: semantic search stays OFF until

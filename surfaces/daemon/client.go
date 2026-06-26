@@ -222,6 +222,25 @@ func (c *DaemonClient) SkillGen(ctx context.Context, req client.SkillGenRequest)
 	return nil, client.ErrSkillGenUnavailable
 }
 
+// Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
+// added (mirrors the analysis/edit "unavailable until wired" precedent).
+func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string) ([]byte, error) {
+	_, _ = ctx, kinds
+	return nil, client.ErrDiagnosticUnavailable
+}
+
+// Inline returns ErrEditUnavailable until a daemon edit RPC is added.
+func (c *DaemonClient) Inline(ctx context.Context, req client.InlineRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrEditUnavailable
+}
+
+// SafeDelete returns ErrEditUnavailable until a daemon edit RPC is added.
+func (c *DaemonClient) SafeDelete(ctx context.Context, req client.SafeDeleteRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrEditUnavailable
+}
+
 // SocketPath returns the configured socket path.
 func (c *DaemonClient) SocketPath() string { return c.socketPath }
 
