@@ -467,6 +467,9 @@ func (e *goExtractor) recordEmbeds(typeQN string, t ast.Expr, declLine int) {
 // pkg.Name selector it returns (pkg, name, true). Anything more complex returns
 // (_, _, _, false) and is skipped (unresolvable at the leaf).
 func embedName(t ast.Expr) (base, name string, selector, ok bool) {
+	if star, isStar := t.(*ast.StarExpr); isStar {
+		t = star.X
+	}
 	switch x := t.(type) {
 	case *ast.Ident:
 		return "", x.Name, false, true
