@@ -657,7 +657,6 @@ func makeForgeClient(dbPath, socket string) client.Client {
 		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
 		return nil
 	}
-	defer func() { _ = store.Close() }()
 	asvc := analysis.NewDefaultService(store)
 	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 	if gh, ferr := forge.FromEnv(); ferr == nil && gh != nil {
