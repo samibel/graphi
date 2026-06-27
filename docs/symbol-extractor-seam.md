@@ -142,10 +142,10 @@ reference each become an inert selector `PendingRef` with correct `file:line` an
 The curated tier-1 language list (the pure-Go **`gotreesitter`** runtime + its
 embedded grammar blobs, selected via subset build tags) and the per-worker
 binary-budget model are frozen in [`bench/lang-budget.md`](../bench/lang-budget.md)
-(mirrored in `projects/graphi/epics/EP-009/epic.md`; there is **no** `epics/index.md`).
-Languages whose only grammar is CGO-only (`go-sitter-forest`) or whose extractor is out
-of tier-1 scope are deferred to the opt-in `graphi-broad` CGO build (SW-056).
-`bench/bench-budget.yml` is **not** re-pinned in this story (deferred to SW-057).
+(the single source of truth — see also [`epics/index.md`](../epics/index.md) for
+the registry). Languages whose only grammar is CGO-only (`go-sitter-forest`) or
+whose extractor is out of tier-1 scope are deferred to the opt-in `graphi-broad`
+CGO build. `bench/bench-budget.yml` is the data backing for the budget table.
 
 > **RE-PLANNED 2026-06-24 (EP-009-REPLAN-001):** the original "pure-Go subset of
 > `go-sitter-forest`" framing was false — `go-sitter-forest` is entirely CGO. The default

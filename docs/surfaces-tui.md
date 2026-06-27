@@ -37,12 +37,19 @@ Edges render the engine's provenance verbatim: `confidence_tier`, `confidence`,
   renders the client's payload bytes verbatim.
 - **Zero outbound:** in-process client only; no network.
 - **Robust:** Engine errors are caught and rendered; the loop never crashes.
+- **EP-015…EP-018 analyzer coverage:** the TUI's `analyze` command dispatches
+  through the shared client to the full 22-analyzer set — including
+  `pr-risk`, `pr-signals`, `pr-questions`, `communities`, `notebook-ingest`,
+  `taint-query`, `watcher-status`, `triage-prs`, `conflicts-prs`,
+  `suggest-reviewers`, `compare-branches`, `critique-review`. No new TUI
+  commands were needed; the analyzers are reachable from the same `analyze`
+  surface.
 
 ```mermaid
 flowchart LR
     U[user stdin] --> T[surfaces/tui loop]
     T -->|Query/Search/Analyze| C[client.Client]
-    C --> E[engine query/search/analysis]
+    C --> E["engine query/search/analysis<br/>(22 analyzers incl. EP-015/017/018)"]
     E -->|canonical Result + provenance| C
     C -->|bytes| T
     T --> O[rendered text + provenance]

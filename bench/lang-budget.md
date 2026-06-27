@@ -28,15 +28,15 @@ point. This file pre-divides the headroom so each worker has a fixed contract.
 > genuinely pure-Go **`github.com/odvcencio/gotreesitter` v0.20.2** runtime and its Go-embedded
 > grammar `.bin` blobs, selected at build time via **subset build tags** (see "Subset-tag
 > default build" below). `go-sitter-forest` is retained for the opt-in CGO `graphi-broad` build
-> (SW-056) only. See `projects/graphi/epics/EP-009/replan-decision.md`.
+> only.
 
 The default tier ships **pure-Go, CGo-free** parsers only (`CGO_ENABLED=0 go build
 ./...` stays green; `internal/cgoconformance` enforces it — no offender named). The tier-1 set
 below is the curated high-value coverage delivered through the `parse.Parser` /
 `SymbolExtractor` seam. It is derived from ADR 0001, the EP-009 re-plan, and **frozen** for
-EP-009 fan-out. (This is the single frozen-list source; it is **mirrored** in
-`projects/graphi/epics/EP-009/epic.md`. There is **no** `epics/index.md` file — earlier
-pointers to it were dangling.)
+EP-009 fan-out. (This is the single frozen-list source; it is also mirrored in
+[`docs/ep009-consolidation.md`](../docs/ep009-consolidation.md) and the epic registry at
+[`epics/index.md`](../epics/index.md).)
 
 | #  | Language        | Default tier (pure-Go) | Status                  |
 |----|-----------------|------------------------|-------------------------|

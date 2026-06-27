@@ -442,10 +442,35 @@ It runs a real CGo-free scan and a canary egress guard and prints a verdict:
 
 ```text
 graphi parse <file>                                  Parse one file, print metadata
-graphi query <op> -symbol <id> [-depth N]            callers|callees|references|definition|neighborhood
-graphi search [-limit N] <query>                     Lexical / symbol search
+graphi query <op> -symbol <id> [-depth N]            callers|callees|references|definition|neighborhood|
+                                                     implementers|implements|overrides|subtypes|supertypes
+graphi search [-limit N] [-semantic] <query>          Lexical / symbol search
+graphi search-ast [-limit N] <json-pattern>          AST pattern query (SW-082)
+graphi find-clones [<json-config>]                   Clone detection (SW-083)
+graphi diagnose [<kind>...]                          Graph-derived diagnostics + code-actions (EP-015)
+graphi inline [-dry-run] <target>                    Reference-correct inline refactor (EP-015)
+graphi safe-delete [-dry-run] <target>               Reference-safety-gated safe-delete refactor (EP-015)
+graphi refactor-preview -kind <k> -target <id>        Preview refactor blast radius
+graphi refactor -kind <k> -target <id>                Apply refactor (atomic saga)
+graphi undo -token <tok> [-actor who]                Reverse an applied edit
 graphi analyze <analyzer> -symbol <id> [opts]        impact|call-chain|concept|metrics|batched|
-                                                     taint|pdg|interproc|contracts|git-history
+                                                     taint|pdg|interproc|contracts|git-history|
+                                                     pr-risk|pr-signals|pr-questions|
+                                                     communities|notebook-ingest|taint-query|watcher-status|
+                                                     triage-prs|conflicts-prs|suggest-reviewers|
+                                                     compare-branches|critique-review
+graphi list-prs                                      Forge enumeration of open PRs (EP-018)
+graphi triage-prs                                    Graph-derived PR triage ranking (EP-018)
+graphi conflicts-prs                                 Inter-PR conflict detection (EP-018)
+graphi suggest-reviewers [-diff <ref>]               Reviewer recommendation (EP-018)
+graphi compare-branches -base <ref> -head <ref>      Graph-level branch diff (EP-018)
+graphi critique-review -diff <ref> [-pr N] [-review <json>]   Critique of an existing PR review (EP-018)
+graphi pr-comment -diff <ref> [-pr N] [-gate] [-publish]      Sticky PR comment + merge gate
+graphi memory store|recall|forget ...                Agent memory operations (EP-012)
+graphi distill -session <id> -decisions "..." -risks "..." -questions "..." -files "..."
+                                                     Session distillation (EP-012)
+graphi skillgen -name <n> -trigger <t> -description <d>      Skill generation (EP-012)
+graphi setup-embedder [<selector>]                   Print how to opt in to semantic search
 graphi http   [-addr 127.0.0.1:8080] [-db p] [-root r] [-meta d]   Read-only HTTP/SSE (loopback)
 graphi tui    [-addr http://127.0.0.1:8080]          Interactive TUI (build with -tags tui)
 graphi mcp    [-db p] [-daemon sock]                 MCP stdio server (agent surface)
@@ -457,6 +482,8 @@ graphi version                                       Version / commit / build da
 
 Common flags: -db <sqlite path>   -daemon <unix socket>   (most CLI subcommands)
 ```
+
+For the complete feature inventory grouped by epic (with 10 Mermaid diagrams), see **[`docs/FEATURES.md`](FEATURES.md)**.
 
 ---
 

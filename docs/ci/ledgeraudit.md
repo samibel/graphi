@@ -6,21 +6,20 @@
 
 ## Scope note (read first)
 
-EP-003 has not yet shipped the production token-savings ledger. To make this
-audit runnable **now** against a known-clean subject, the suite ships a minimal
-in-package `ReferenceLedger` used **only** as the audited fixture subject — it is
-deliberately NOT the EP-003 production ledger (which meters real engine calls and
-persists across daemon restarts). When EP-003 lands, the same `Audit`/`Ledger`
-contract audits the real implementation unchanged. Independence is preserved: the
-recompute (`recompute.go`) derives savings via its own summation path, separate
-from the reference ledger's (`fixture.go`).
+EP-003 has shipped the production token-savings ledger (`engine/ledger`,
+`engine/meter`, `engine/price`, `engine/cap`, `engine/context`). This audit
+suite runs the same `Audit`/`Ledger` contract against the real EP-003 ledger —
+not a fixture — and the production ledger meters real engine calls and persists
+across daemon restarts. Independence is preserved: the recompute
+(`recompute.go`) derives savings via its own summation path, separate from the
+ledger's.
 
 ## State before this story
 
 Before SW-011, the headline "It saved me $X" claim would have had **no
 independent verification**:
 
-- The savings ledger (when it ships) would be the sole source of its own totals —
+- The savings ledger (EP-003, when it landed after SW-011) would be the sole source of its own totals —
   a bug or tampering could silently inflate savings.
 - There was no frozen baseline method to pin the computation, so a silent formula
   change could drift savings.
@@ -76,5 +75,4 @@ flowchart TD
 
 ## Out of scope
 
-- The production token-savings ledger (EP-003) — this suite only audits it.
 - Egress/telemetry enforcement (SW-008) — reused as posture only.
