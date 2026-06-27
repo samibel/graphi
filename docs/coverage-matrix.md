@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **90**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **94**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -42,13 +42,14 @@ Total capabilities: **90**. See [`architecture-plan.md`](architecture-plan.md) f
 | `typescript` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 | `yaml` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 
-## Analyzers (19)
+## Analyzers (21)
 
 | id | status | epic | note |
 |---|---|---|---|
 | `batched` | ✅ shipped | EP-004 | batched composite over impact+call-chain+metrics. |
 | `call-chain` | ✅ shipped | EP-004 | caller/callee chain reconstruction. |
 | `communities` | ✅ shipped | EP-017 | SW-104: SW-103 Louvain community detection surfaced behind the single dispatch table. |
+| `compare-branches` | ✅ shipped | EP-018 | SW-107: graph-level branch diff over TWO already-built read-only graph states (materialized above the surface boundary) — added/removed/changed/moved entities + edges added/removed, keyed by canonical NodeId (not line ranges); detects signature/contract changes and correlates cross-file moves by path-independent symbol identity; pure local set-diff, zero engine egress (the engine never resolves a git ref). |
 | `concept` | ✅ shipped | EP-004 | lexical-search-backed concept resolution (needs Searcher). |
 | `conflicts-prs` | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over an enumerated PR set — textual overlap + shared file/symbol/high-centrality node + asymmetric contract-dependency edge check; entity→PRs inverted index, byte-stable pairwise report (zero engine egress; forge enumeration stays at the surface). |
 | `contracts` | ✅ shipped | EP-005 | producer/consumer contract drift detection. |
@@ -61,12 +62,13 @@ Total capabilities: **90**. See [`architecture-plan.md`](architecture-plan.md) f
 | `pr-questions` | ✅ shipped | EP-007 | deterministic, no-LLM reviewer questions from findings. |
 | `pr-risk` | ✅ shipped | EP-007 | deterministic per-region PR risk score (impact+taint). |
 | `pr-signals` | ✅ shipped | EP-007 | hub/bridge/surprise signals on PR-changed code. |
+| `suggest-reviewers` | ✅ shipped | EP-018 | SW-107: ranked candidate-reviewer recommender — file-granular ownership + recency-decayed churn over the touched files (fixed decay reference, never now()) plus symbol-granular affected-subgraph proximity (callers/callees/contract neighbors, centrality-weighted), folded into a fixed-integer composite with a transparent per-signal breakdown; deterministic total order (composite DESC, reviewer identity ASC); zero engine egress. |
 | `taint` | ✅ shipped | EP-005 | flow-sensitive source→sink taint analysis. |
 | `taint-query` | ✅ shipped | EP-017 | SW-104: SW-102 interprocedural taint verdict + flows surfaced behind the single dispatch table. |
 | `triage-prs` | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (35)
+## MCP tools (37)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -81,6 +83,7 @@ Total capabilities: **90**. See [`architecture-plan.md`](architecture-plan.md) f
 | `analyze_taint` | ✅ shipped | EP-005 | dedicated tool for the taint analyzer. |
 | `callees` | ✅ shipped | EP-001 | structural query: callees. |
 | `callers` | ✅ shipped | EP-001 | structural query: callers. |
+| `compare_branches` | ✅ shipped | EP-018 | SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary). |
 | `compound` | ✅ shipped | EP-011 | compound / Cypher-style graph query composing traversals+filters (G1). |
 | `conflicts_prs` | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress). |
 | `definition` | ✅ shipped | EP-001 | structural query: definition. |
@@ -102,6 +105,7 @@ Total capabilities: **90**. See [`architecture-plan.md`](architecture-plan.md) f
 | `search_semantic` | ✅ shipped | EP-001 | optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061). |
 | `skillgen` | ✅ shipped | EP-012 | deterministic skill generation from a procedure description. |
 | `subtypes` | ✅ shipped | EP-011 | structural query: subtypes (inherits+implements composed) (G2). |
+| `suggest_reviewers` | ✅ shipped | EP-018 | SW-107: ranked candidate-reviewer recommendation from local graph ownership/churn + affected-subgraph proximity over the touched set, with a transparent per-signal breakdown (zero engine egress). |
 | `supertypes` | ✅ shipped | EP-011 | structural query: supertypes (inherits+implements composed) (G2). |
 | `triage_prs` | ✅ shipped | EP-018 | SW-105: single-pass graph-derived ranked multi-PR triage over the enumerated PR set (zero engine egress). |
 | `undo` | ✅ shipped | EP-006 | reverse a previously applied edit by undo token. |

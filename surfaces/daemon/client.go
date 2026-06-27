@@ -297,3 +297,17 @@ func (c *DaemonClient) TriagePRs(ctx context.Context) ([]byte, error) {
 func (c *DaemonClient) ConflictsPRs(ctx context.Context) ([]byte, error) {
 	return nil, client.ErrForgeUnavailable
 }
+
+// SuggestReviewers returns ErrAnalysisUnavailable until a daemon suggest-reviewers
+// RPC is added (SW-107). The analyzer is wired only on the in-process Direct
+// client today (mirrors the analysis "unavailable until wired" precedent).
+func (c *DaemonClient) SuggestReviewers(ctx context.Context, diff string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
+}
+
+// CompareBranches returns ErrCompareUnavailable until a daemon branch-state
+// materialization RPC is added (SW-107). The materializer is wired only on the
+// in-process Direct client today.
+func (c *DaemonClient) CompareBranches(ctx context.Context, baseRef, headRef string) ([]byte, error) {
+	return nil, client.ErrCompareUnavailable
+}

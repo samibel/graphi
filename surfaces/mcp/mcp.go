@@ -185,6 +185,11 @@ type callParams struct {
 		SkillInputs  []string           `json:"skill_inputs"`
 		SkillOutputs []string           `json:"skill_outputs"`
 		SkillSteps   []client.SkillStep `json:"skill_steps"`
+
+		// SW-107 compare_branches base/head branch refs (suggest_reviewers reuses the
+		// shared `diff` argument above).
+		Base string `json:"base"`
+		Head string `json:"head"`
 	} `json:"arguments"`
 }
 
@@ -254,6 +259,15 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return s.triagePRsCall(ctx)
 	case ToolConflictsPRs:
 		return s.conflictsPRsCall(ctx)
+	}
+	// EP-018 SW-107: suggest_reviewers (ranked candidate reviewers from the touched
+	// set) and compare_branches (graph-level diff of two branch states). Both ride
+	// the shared client seam, so the bytes are byte-identical across surfaces.
+	switch p.Name {
+	case ToolSuggestReviewers:
+		return s.suggestReviewersCall(ctx, p)
+	case ToolCompareBranches:
+		return s.compareBranchesCall(ctx, p)
 	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
@@ -628,6 +642,30 @@ func (s *Server) conflictsPRsCall(ctx context.Context) (any, *rpcError) {
 	return textResult(b), nil
 }
 
+// suggestReviewersCall (SW-107) returns the ranked candidate-reviewer report
+// through the shared client (touched-set resolution → zero-egress engine analyzer →
+// shared encoder), so the ReviewerReport is byte-identical across surfaces. The
+// `diff` argument is the local-first PR diff / line-oriented ref string.
+func (s *Server) suggestReviewersCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.SuggestReviewers(ctx, p.Arguments.Diff)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// compareBranchesCall (SW-107) returns the graph-level branch diff through the
+// shared client (base/head materialized above the surface boundary → zero-egress
+// engine analyzer → shared encoder), so the BranchDiffReport is byte-identical
+// across surfaces. The `base`/`head` arguments are branch refs.
+func (s *Server) compareBranchesCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.CompareBranches(ctx, p.Arguments.Base, p.Arguments.Head)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
 // textResult wraps canonical serialized bytes in the MCP tool-result envelope.
 func textResult(b []byte) map[string]any {
 	return map[string]any{
@@ -986,6 +1024,39 @@ func (s *Server) toolDescriptors() []map[string]any {
 			"annotations": readOnlyToolAnnotations(),
 		})
 	}
+	// EP-018 SW-107: suggest_reviewers is advertised when the analysis service is
+	// wired (probed: a capability-missing client returns ErrAnalysisUnavailable; an
+	// empty-diff probe otherwise completes with an empty report).
+	if _, err := s.c.SuggestReviewers(context.Background(), "__probe__"); err == nil || !isAnalysisUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolSuggestReviewers,
+			"description": "suggest reviewers for a change: resolve the touched symbol/file set from a local-first PR diff (or line-oriented refs), then rank candidate reviewers from graph ownership + recency-decayed churn over the touched files plus affected-subgraph proximity (callers/callees/contract neighbors) of the touched symbols. Each candidate carries a transparent per-signal breakdown (ownership/recency-decayed-churn/subgraph-proximity) with honest file-vs-symbol granularity labels. Deterministic total order (composite DESC, reviewer identity ASC). Zero-egress pass over the local graph + git history.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"diff": map[string]any{"type": "string", "description": "unified diff or line-oriented refs (path:name | path#Lline | node id) of the change"},
+				},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
+	// EP-018 SW-107: compare_branches is advertised when a branch-state materializer
+	// is wired (probed: a capability-missing client returns ErrCompareUnavailable;
+	// otherwise the empty-ref probe materializes empty states and completes).
+	if _, err := s.c.CompareBranches(context.Background(), "__base__", "__head__"); err == nil || !isCompareUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolCompareBranches,
+			"description": "compare two branches at the GRAPH level: given two branch refs (states materialized above the surface boundary), report the structured diff of entities/symbols/contracts added/removed/changed plus edges added/removed and entities moved across files — keyed by stable canonical graph identity (NodeId), not line ranges. Detects signature/contract changes (a contract node whose dependency surface changed) and correlates moves by path-independent symbol identity. Deterministic per-group order. Zero-egress pure local set-diff; the engine never resolves a git ref.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"base": map[string]any{"type": "string", "description": "base branch ref"},
+					"head": map[string]any{"type": "string", "description": "head branch ref"},
+				},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
 	return tools
 }
 
@@ -994,6 +1065,13 @@ func (s *Server) toolDescriptors() []map[string]any {
 // when no forge boundary is attached (mirrors isAnalysisUnavailable).
 func isForgeUnavailable(err error) bool {
 	return errors.Is(err, client.ErrForgeUnavailable)
+}
+
+// isCompareUnavailable reports whether err is the SW-107 "branch-state materializer
+// not wired" sentinel, so the descriptor probe can hide compare_branches when no
+// materializer is attached (mirrors isForgeUnavailable).
+func isCompareUnavailable(err error) bool {
+	return errors.Is(err, client.ErrCompareUnavailable)
 }
 
 // isMemoryUnavailable reports whether err is the capability-missing sentinel.

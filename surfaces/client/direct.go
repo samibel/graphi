@@ -38,6 +38,7 @@ type Direct struct {
 	distiller   *distill.Distiller
 	skillGen    *skillgen.Generator
 	forge       forge.Enumerator
+	branchState BranchStateMaterializer
 }
 
 // NewDirect constructs an in-process client.
@@ -111,6 +112,19 @@ func (d *Direct) WithSkillGen(gen *skillgen.Generator) *Direct {
 // return ErrForgeUnavailable (everything else is unaffected).
 func (d *Direct) WithForge(e forge.Enumerator) *Direct {
 	d.forge = e
+	return d
+}
+
+// WithBranchStates attaches a branch-state materializer so the CompareBranches
+// surface is available (SW-107). It returns the receiver for chaining. This is the
+// SINGLE place the branch-ref → graph-state materialization boundary is wired into
+// the surface layer; every surface reaches it through this one implementation
+// (parity by construction). Materialization (indexer/snapshot reuse) stays ABOVE
+// the surface boundary; the engine compare-branches analyzer it feeds receives the
+// two already-built states as Params and is zero-egress. Without it, CompareBranches
+// returns ErrCompareUnavailable (everything else is unaffected).
+func (d *Direct) WithBranchStates(m BranchStateMaterializer) *Direct {
+	d.branchState = m
 	return d
 }
 
@@ -329,6 +343,55 @@ func (d *Direct) ConflictsPRs(ctx context.Context) ([]byte, error) {
 		})
 	}
 	res, err := d.analysisSvc.Dispatch(ctx, analysis.ConflictsAnalyzerName, analysis.Params{ConflictPRs: inputs})
+	if err != nil {
+		return nil, err
+	}
+	return analysis.Marshal(res)
+}
+
+// SuggestReviewers implements Client. It hands the local-first diff/ref string to
+// the zero-egress engine `suggest-reviewers` analyzer through the SINGLE shared
+// analysis.Service + encoder — so the ranked ReviewerReport is byte-identical
+// across every surface. The diff is untrusted, bounded, path-sanitized input
+// resolved through the reused EP-007 kernel; NO outbound activity happens. Without
+// an analysis service it returns ErrAnalysisUnavailable.
+func (d *Direct) SuggestReviewers(ctx context.Context, diff string) ([]byte, error) {
+	if d.analysisSvc == nil {
+		return nil, ErrAnalysisUnavailable
+	}
+	res, err := d.analysisSvc.Dispatch(ctx, analysis.SuggestReviewersAnalyzerName, analysis.Params{Diff: diff})
+	if err != nil {
+		return nil, err
+	}
+	return analysis.Marshal(res)
+}
+
+// CompareBranches implements Client. It materializes the base and head read-only
+// graph states from the two branch refs through the injected BranchStateMaterializer
+// (indexer/snapshot reuse, ABOVE the surface boundary), then dispatches the
+// zero-egress engine `compare-branches` analyzer with the two states as Params —
+// the engine never resolves a ref or egresses. The serialized BranchDiffReport is
+// byte-identical across every surface. Without a materializer it returns
+// ErrCompareUnavailable; without an analysis service, ErrAnalysisUnavailable.
+func (d *Direct) CompareBranches(ctx context.Context, baseRef, headRef string) ([]byte, error) {
+	if d.branchState == nil {
+		return nil, ErrCompareUnavailable
+	}
+	if d.analysisSvc == nil {
+		return nil, ErrAnalysisUnavailable
+	}
+	base, err := d.branchState.StateForRef(ctx, baseRef)
+	if err != nil {
+		return nil, err
+	}
+	head, err := d.branchState.StateForRef(ctx, headRef)
+	if err != nil {
+		return nil, err
+	}
+	res, err := d.analysisSvc.Dispatch(ctx, analysis.CompareBranchesAnalyzerName, analysis.Params{
+		CompareBase: base,
+		CompareHead: head,
+	})
 	if err != nil {
 		return nil, err
 	}

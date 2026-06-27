@@ -136,6 +136,15 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	// pairs (textual / graph-semantic / asymmetric contract-dependency) as a
 	// byte-stable, totally-ordered ConflictReport over an entity→PRs inverted index.
 	mustRegister(reg, newConflictsAnalyzer())
+	// SW-107 (EP-018 3/4): register the suggest-reviewers recommender and the
+	// compare-branches graph-level comparator. Both are composite, read-only,
+	// DETERMINISTIC, zero-egress analyzers. suggest-reviewers takes the touched set
+	// (Params.Diff) and ranks candidate reviewers from local ownership/churn +
+	// affected-subgraph proximity; compare-branches receives TWO already-built
+	// read-only graph states (Params.CompareBase/CompareHead, materialized above the
+	// surface boundary) and performs a pure local node/edge set-diff keyed by the
+	// canonical NodeId. Neither resolves a git ref or touches the network.
+	mustRegister(reg, newSuggestReviewersAnalyzer(), newCompareBranchesAnalyzer())
 	return NewService(reader, reg)
 }
 

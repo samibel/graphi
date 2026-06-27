@@ -132,6 +132,12 @@ func (f *fakeEngine) TriagePRs(context.Context) ([]byte, error) {
 func (f *fakeEngine) ConflictsPRs(context.Context) ([]byte, error) {
 	return nil, client.ErrForgeUnavailable
 }
+func (f *fakeEngine) SuggestReviewers(context.Context, string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
+}
+func (f *fakeEngine) CompareBranches(context.Context, string, string) ([]byte, error) {
+	return nil, client.ErrCompareUnavailable
+}
 func (f *fakeEngine) SchemaVersion() int { return 1 }
 
 var _ Engine = (*fakeEngine)(nil)

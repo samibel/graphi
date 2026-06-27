@@ -194,6 +194,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /prs", s.schemaGuard(s.handleListPRs))
 	mux.HandleFunc("GET /prs/triage", s.schemaGuard(s.handleTriagePRs))
 	mux.HandleFunc("GET /prs/conflicts", s.schemaGuard(s.handleConflictsPRs))
+	mux.HandleFunc("GET /prs/suggest-reviewers", s.schemaGuard(s.handleSuggestReviewers))
+	mux.HandleFunc("GET /branches/compare", s.schemaGuard(s.handleCompareBranches))
 	mux.HandleFunc("POST /memory", s.schemaGuard(s.handleMemory))
 	mux.HandleFunc("POST /distill", s.schemaGuard(s.handleDistill))
 	mux.HandleFunc("POST /skillgen", s.schemaGuard(s.handleSkillGen))
@@ -553,6 +555,33 @@ func (s *Server) handleTriagePRs(w http.ResponseWriter, r *http.Request) {
 // CLI/MCP surfaces.
 func (s *Server) handleConflictsPRs(w http.ResponseWriter, r *http.Request) {
 	raw, err := s.client.ConflictsPRs(r.Context())
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleSuggestReviewers (SW-107) returns the ranked reviewer report. It delegates
+// to the shared client.SuggestReviewers seam (touched-set resolution → zero-egress
+// engine analyzer → shared encoder), so the payload is byte-identical to the
+// CLI/MCP surfaces. The `diff` query parameter is the local-first PR diff / refs.
+func (s *Server) handleSuggestReviewers(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.SuggestReviewers(r.Context(), r.URL.Query().Get("diff"))
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleCompareBranches (SW-107) returns the graph-level branch diff. It delegates
+// to the shared client.CompareBranches seam (base/head materialized above the
+// surface boundary → zero-egress engine analyzer → shared encoder), so the payload
+// is byte-identical to the CLI/MCP surfaces. The `base`/`head` query parameters are
+// branch refs.
+func (s *Server) handleCompareBranches(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.CompareBranches(r.Context(), r.URL.Query().Get("base"), r.URL.Query().Get("head"))
 	if err != nil {
 		writeErrSanitized(w, err)
 		return

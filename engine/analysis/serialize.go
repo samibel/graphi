@@ -328,6 +328,20 @@ func Marshal(a Analysis) ([]byte, error) {
 	if a.Conflicts != nil {
 		return MarshalConflicts(*a.Conflicts)
 	}
+	// SW-107: the suggest-reviewers recommender carries a versioned ReviewerReport.
+	// When present, the canonical output IS that ranked envelope (its own byte-stable
+	// serializer with the composite-desc → reviewer-identity-asc total order), so
+	// every surface emits the identical reviewer shape through this one path.
+	if a.Reviewers != nil {
+		return MarshalReviewers(*a.Reviewers)
+	}
+	// SW-107: the compare-branches comparator carries a versioned BranchDiffReport.
+	// When present, the canonical output IS that structured diff (its own byte-stable
+	// serializer with the per-group canonical-identity order), so every surface emits
+	// the identical branch-diff shape through this one path.
+	if a.BranchDiff != nil {
+		return MarshalBranchDiff(*a.BranchDiff)
+	}
 
 	nodes := make([]ReachedNode, len(a.Nodes))
 	copy(nodes, a.Nodes)

@@ -64,6 +64,11 @@ const (
 	ToolTriagePRs = "triage_prs"
 	// SW-106 inter-PR conflict detection over the enumerated open-PR set.
 	ToolConflictsPRs = "conflicts_prs"
+	// SW-107 reviewer recommender (ranked candidates from local ownership/churn +
+	// affected-subgraph proximity) and graph-level branch comparator (structured
+	// diff keyed by canonical NodeId). Both are zero-egress engine analyzers.
+	ToolSuggestReviewers = "suggest_reviewers"
+	ToolCompareBranches  = "compare_branches"
 )
 
 // singletonToolNames are the non-structural-query tools advertised behind a
@@ -95,6 +100,8 @@ var singletonToolNames = []string{
 	ToolListPRs,
 	ToolTriagePRs,
 	ToolConflictsPRs,
+	ToolSuggestReviewers,
+	ToolCompareBranches,
 }
 
 // ToolNames returns the full, sorted, de-duplicated canonical set of every MCP

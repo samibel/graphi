@@ -84,6 +84,15 @@ type Params struct {
 	// line-oriented ref string (reused through EP-007 parseDiff) so the analyzer can
 	// resolve precise symbols + line ranges when available. Unused by other analyzers.
 	ConflictPRs []ConflictPRInput `json:"conflict_prs,omitempty"`
+	// CompareBase and CompareHead are the two already-built, read-only graph states
+	// the SW-107 compare-branches analyzer diffs. They are materialized ABOVE the
+	// surface boundary (the existing indexer / core/graphstore snapshot path) from
+	// two branch refs; the engine analyzer performs a pure local node/edge set-diff
+	// keyed by canonical NodeId and NEVER resolves a git ref, reads a git tree, or
+	// opens a socket. They are runtime query.Reader views (not JSON-serializable),
+	// so they carry json:"-". Unused by every other analyzer.
+	CompareBase query.Reader `json:"-"`
+	CompareHead query.Reader `json:"-"`
 }
 
 // ReachedNode is a node reached during a traversal, carrying the provenance of
@@ -185,6 +194,17 @@ type Analysis struct {
 	// conflicts-prs analyzer populates it; nil for every other analyzer so the
 	// generic envelope is unchanged for them.
 	Conflicts *ConflictReport `json:"conflicts,omitempty"`
+	// Reviewers carries the SW-107 `suggest-reviewers` ranked candidate-reviewer
+	// payload with a transparent per-signal breakdown (ownership, recency-decayed
+	// churn, affected-subgraph proximity). Only the suggest-reviewers analyzer
+	// populates it; nil for every other analyzer so the generic envelope is
+	// unchanged for them.
+	Reviewers *ReviewerReport `json:"reviewers,omitempty"`
+	// BranchDiff carries the SW-107 `compare-branches` structured graph-level diff
+	// payload keyed by canonical NodeId (added/removed/changed/moved entities + edge
+	// added/removed). Only the compare-branches analyzer populates it; nil for every
+	// other analyzer so the generic envelope is unchanged for them.
+	BranchDiff *BranchDiffReport `json:"branch_diff,omitempty"`
 }
 
 // InterprocTaintReport is the SW-102 surface payload for the solved, persisted

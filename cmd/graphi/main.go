@@ -86,6 +86,10 @@ func main() {
 		os.Exit(runTriagePRs(os.Args[2:]))
 	case "conflicts-prs":
 		os.Exit(runConflictsPRs(os.Args[2:]))
+	case "suggest-reviewers":
+		os.Exit(runSuggestReviewers(os.Args[2:]))
+	case "compare-branches":
+		os.Exit(runCompareBranches(os.Args[2:]))
 	case "refactor-preview":
 		os.Exit(runRefactor(os.Args[2:], "refactor-preview"))
 	case "refactor":
@@ -502,6 +506,105 @@ func runConflictsPRs(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// runSuggestReviewers launches the SW-107 reviewer recommender. Usage:
+//
+//	graphi suggest-reviewers [-db path] -diff <unified-diff> | -diff-path <file>
+//
+// The ranking is a zero-egress pass over the local graph + git history; the diff
+// is local-first untrusted input resolved through the reused EP-007 kernel.
+func runSuggestReviewers(args []string) int {
+	dbPath, _, rest := extractFlags(args)
+	fs := flag.NewFlagSet("suggest-reviewers", flag.ContinueOnError)
+	diff := fs.String("diff", "", "unified diff or line-oriented refs of the change")
+	diffPath := fs.String("diff-path", "", "read the diff/refs from this local file instead of -diff")
+	if err := fs.Parse(rest); err != nil {
+		return 1
+	}
+	payload := *diff
+	if *diffPath != "" {
+		b, err := os.ReadFile(*diffPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: suggest-reviewers: read diff: %v\n", err)
+			return 1
+		}
+		payload = string(b)
+	}
+	store, err := openStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return 1
+	}
+	defer func() { _ = store.Close() }()
+	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	if err := cli.RunSuggestReviewers(context.Background(), c, payload, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: suggest-reviewers: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runCompareBranches launches the SW-107 graph-level branch comparator. Usage:
+//
+//	graphi compare-branches -base <db-path> -head <db-path>
+//
+// Each ref is a path to an already-built graph state (a graphi SQLite snapshot).
+// Materialization happens HERE, above the surface boundary, by opening each
+// persisted state; the engine compare-branches analyzer receives the two read-only
+// states and performs a pure local set-diff with ZERO egress (it never resolves a
+// git ref). An unknown/empty ref materializes to an empty state (well-defined diff).
+func runCompareBranches(args []string) int {
+	fs := flag.NewFlagSet("compare-branches", flag.ContinueOnError)
+	base := fs.String("base", "", "base branch graph-state path (graphi SQLite snapshot)")
+	head := fs.String("head", "", "head branch graph-state path (graphi SQLite snapshot)")
+	if err := fs.Parse(args); err != nil {
+		return 1
+	}
+	m := newSnapshotMaterializer()
+	defer m.Close()
+	// The compare analyzer ignores the service reader (it diffs the two Params
+	// states), so an empty in-memory store backs the service.
+	store := graphstore.NewMemStore()
+	c := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store)).
+		WithBranchStates(m)
+	if err := cli.RunCompareBranches(context.Background(), c, *base, *head, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: compare-branches: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// snapshotMaterializer is the cmd-side BranchStateMaterializer: it materializes a
+// branch ref → read-only graph state by opening the persisted graphi state at that
+// path (reusing the existing graphstore persistence path). An empty ref yields an
+// empty in-memory state (a degenerate side → well-defined empty diff, no error).
+// Opened stores are tracked and closed together after the single command runs, so
+// both states stay live across the dispatch. This stays ABOVE the surface boundary;
+// the engine never sees a ref.
+type snapshotMaterializer struct {
+	opened []graphstore.Graphstore
+}
+
+func newSnapshotMaterializer() *snapshotMaterializer { return &snapshotMaterializer{} }
+
+func (m *snapshotMaterializer) StateForRef(_ context.Context, ref string) (query.Reader, error) {
+	if strings.TrimSpace(ref) == "" {
+		return graphstore.NewMemStore(), nil // empty/unknown ref → empty state
+	}
+	store, err := graphstore.OpenSQLite(ref)
+	if err != nil {
+		return nil, err
+	}
+	m.opened = append(m.opened, store)
+	return store, nil
+}
+
+func (m *snapshotMaterializer) Close() {
+	for _, s := range m.opened {
+		_ = s.Close()
+	}
 }
 
 // makeForgeClient builds an in-process client wired with the read-only forge

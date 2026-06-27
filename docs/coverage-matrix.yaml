@@ -210,6 +210,16 @@ capabilities:
     status: shipped
     epic: EP-018
     note: "SW-106: inter-PR conflict detection over an enumerated PR set — textual overlap + shared file/symbol/high-centrality node + asymmetric contract-dependency edge check; entity→PRs inverted index, byte-stable pairwise report (zero engine egress; forge enumeration stays at the surface)."
+  - id: suggest-reviewers
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-107: ranked candidate-reviewer recommender — file-granular ownership + recency-decayed churn over the touched files (fixed decay reference, never now()) plus symbol-granular affected-subgraph proximity (callers/callees/contract neighbors, centrality-weighted), folded into a fixed-integer composite with a transparent per-signal breakdown; deterministic total order (composite DESC, reviewer identity ASC); zero engine egress."
+  - id: compare-branches
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-107: graph-level branch diff over TWO already-built read-only graph states (materialized above the surface boundary) — added/removed/changed/moved entities + edges added/removed, keyed by canonical NodeId (not line ranges); detects signature/contract changes and correlates cross-file moves by path-independent symbol identity; pure local set-diff, zero engine egress (the engine never resolves a git ref)."
   - id: notebook-ingest
     category: analyzer
     status: shipped
@@ -340,6 +350,16 @@ capabilities:
     status: shipped
     epic: EP-018
     note: "SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress)."
+  - id: suggest_reviewers
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-107: ranked candidate-reviewer recommendation from local graph ownership/churn + affected-subgraph proximity over the touched set, with a transparent per-signal breakdown (zero engine egress)."
+  - id: compare_branches
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary)."
   - id: refactor
     category: mcp-tool
     status: shipped

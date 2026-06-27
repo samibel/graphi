@@ -9,6 +9,8 @@ package client
 import (
 	"context"
 	"errors"
+
+	"github.com/samibel/graphi/engine/query"
 )
 
 // ErrSearchUnavailable is returned when a Client has no search service configured.
@@ -38,6 +40,27 @@ var ErrEditUnavailable = errors.New("client: edit/refactor service unavailable")
 // sets it up via WithReview; the daemon client returns it until a daemon review
 // RPC is added (mirrors the analysis/edit "unavailable until wired" precedent).
 var ErrReviewUnavailable = errors.New("client: PR-review publisher service unavailable")
+
+// ErrCompareUnavailable is returned when a Client has no branch-state materializer
+// configured (SW-107). compare_branches needs TWO already-built read-only graph
+// states (base, head) materialized ABOVE the surface boundary from two branch
+// refs; without a materializer wired the operation is unavailable. The in-process
+// Direct client sets it up via WithBranchStates; the daemon/HTTP clients return it
+// until a remote materialization RPC is added (mirrors the forge "unavailable until
+// wired" precedent). The engine analyzer it feeds is zero-egress.
+var ErrCompareUnavailable = errors.New("client: branch-state materializer unavailable")
+
+// BranchStateMaterializer materializes a read-only graph state (query.Reader) for
+// a branch ref. It lives ABOVE the surface boundary and reuses the existing
+// indexer / core/graphstore snapshot path; the engine compare-branches analyzer
+// receives the two materialized states as Params and never sees a ref, so the
+// engine stays zero-egress. Tests inject an in-memory double; production wires the
+// indexer/snapshot path. An unknown/unresolvable ref should materialize to an
+// empty state (which the engine diffs to a well-defined empty/stable result),
+// never an error.
+type BranchStateMaterializer interface {
+	StateForRef(ctx context.Context, ref string) (query.Reader, error)
+}
 
 // PrCommentRequest is the transport-agnostic input for the SW-042 sticky PR
 // comment writer + optional risk-threshold merge gate. It maps onto
@@ -348,6 +371,25 @@ type Client interface {
 	// returns ErrForgeUnavailable; without an analysis service it returns
 	// ErrAnalysisUnavailable.
 	ConflictsPRs(ctx context.Context) ([]byte, error)
+
+	// SuggestReviewers resolves the touched set from the local-first diff/ref string
+	// (reused EP-007 parseDiff/resolveRef) and dispatches the zero-egress engine
+	// `suggest-reviewers` analyzer, returning the canonical serialized ReviewerReport
+	// bytes: a ranked candidate-reviewer list (composite DESC, reviewer identity ASC)
+	// with a transparent per-signal breakdown (ownership, recency-decayed churn,
+	// affected-subgraph proximity). Pure local graph + git-history reads, zero engine
+	// egress. Without an analysis service it returns ErrAnalysisUnavailable (SW-107).
+	SuggestReviewers(ctx context.Context, diff string) ([]byte, error)
+
+	// CompareBranches materializes the base and head read-only graph states from two
+	// branch refs ABOVE the surface boundary (via the injected BranchStateMaterializer
+	// reusing the indexer/snapshot path) and dispatches the zero-egress engine
+	// `compare-branches` analyzer, returning the canonical serialized BranchDiffReport
+	// bytes: a structured graph-level diff (added/removed/changed/moved entities + edge
+	// added/removed) keyed by stable canonical NodeId, not line ranges. The engine
+	// never resolves a ref or egresses. Without a materializer it returns
+	// ErrCompareUnavailable; without an analysis service, ErrAnalysisUnavailable (SW-107).
+	CompareBranches(ctx context.Context, baseRef, headRef string) ([]byte, error)
 }
 
 // ErrForgeUnavailable is returned when a Client has no read-only forge

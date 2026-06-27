@@ -452,6 +452,45 @@ func RunConflictsPRs(ctx context.Context, c client.Client, out, errOut io.Writer
 	return nil
 }
 
+// RunSuggestReviewers runs the SW-107 reviewer recommender through the shared
+// client and writes the canonical serialized ReviewerReport bytes (byte-identical
+// across surfaces). diff is the local-first PR diff / line-oriented ref string; the
+// ranking is a zero-egress pass over the local graph + git history.
+//
+// Usage:
+//
+//	suggest-reviewers [-diff <unified-diff|refs>]
+func RunSuggestReviewers(ctx context.Context, c client.Client, diff string, out, errOut io.Writer) error {
+	b, err := c.SuggestReviewers(ctx, diff)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunCompareBranches runs the SW-107 graph-level branch comparator through the
+// shared client and writes the canonical serialized BranchDiffReport bytes
+// (byte-identical across surfaces). The base/head graph states are materialized
+// above the surface boundary; the engine diff is a zero-egress pass keyed by
+// canonical NodeId.
+//
+// Usage:
+//
+//	compare-branches -base <ref> -head <ref>
+func RunCompareBranches(ctx context.Context, c client.Client, baseRef, headRef string, out, errOut io.Writer) error {
+	b, err := c.CompareBranches(ctx, baseRef, headRef)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunSavings prints the savings-ledger readout (SW-020): the headline
 // "Saved $X this session" line plus per-call and cumulative USD figures,
 // followed by the canonical structured readout JSON (identical to the MCP tool
