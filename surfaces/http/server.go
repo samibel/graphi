@@ -582,6 +582,17 @@ func (s *Server) handleSkillGen(w http.ResponseWriter, r *http.Request) {
 // /events is wired behind schemaGuard (see Handler), so a client advertising a
 // wrong X-Graphi-Schema-Version is rejected with 412 BEFORE the stream opens.
 func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
+	// SW-104: when an `analyzer` query param is present, /events serves a one-shot
+	// analysis frame whose payload is derived from the SHARED (*Direct).Analyze
+	// path (canonical analysis.Marshal bytes), NOT re-serialized here. This routes
+	// the four EP-017 operations through the same single dispatch + encoder as
+	// every other surface, so the SSE analysis frame is byte-identical to the
+	// CLI/MCP/HTTP/daemon envelope. Absent the param, /events is the freshness
+	// firehose (unchanged).
+	if analyzer := r.URL.Query().Get("analyzer"); analyzer != "" {
+		s.handleSSEAnalyze(w, r, analyzer)
+		return
+	}
 	if s.broker == nil {
 		writeErr(w, http.StatusServiceUnavailable, "unavailable", "event stream unavailable")
 		return
@@ -639,6 +650,55 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+// handleSSEAnalyze serves a one-shot analysis result over SSE (SW-104). The
+// analysis payload is produced by the SHARED client.Analyze path (the same
+// (*Direct).Analyze -> Service.Dispatch -> analysis.Marshal seam the REST
+// /analyze handler and every other surface use), so the canonical bytes embedded
+// in the `analysis` frame are byte-identical to the other surfaces' envelopes.
+// The SSE adapter only frames those bytes; it holds NO analysis logic and does
+// NOT re-serialize. Frame sequence: ready -> analysis -> bye.
+func (s *Server) handleSSEAnalyze(w http.ResponseWriter, r *http.Request, analyzer string) {
+	p := client.AnalyzeParams{
+		Name:      analyzer,
+		Symbol:    r.URL.Query().Get("symbol"),
+		Direction: r.URL.Query().Get("direction"),
+	}
+	if mn := r.URL.Query().Get("max-nodes"); mn != "" {
+		v, err := strconv.Atoi(mn)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, "bad_request", "bad max-nodes")
+			return
+		}
+		p.MaxNodes = v
+	}
+	raw, err := s.client.Analyze(r.Context(), p)
+	if err != nil {
+		// Emit the shared sanitized error envelope BEFORE switching to the SSE
+		// content type, so an unavailable/failed analysis is a normal REST error.
+		writeErrSanitized(w, err)
+		return
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeErr(w, http.StatusInternalServerError, "internal", "internal error")
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+	flusher.Flush()
+
+	var seq uint64
+	if !writeFrame(w, flusher, &seq, "ready", []byte(fmt.Sprintf(`{"schema_version":%d}`, SchemaVersion))) {
+		return
+	}
+	if !writeFrame(w, flusher, &seq, "analysis", raw) {
+		return
+	}
+	writeFrame(w, flusher, &seq, "bye", []byte("{}"))
 }
 
 // writeFrame writes one SSE frame (event:<type>, id:<*seq incremented>,

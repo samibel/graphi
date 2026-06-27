@@ -450,12 +450,18 @@ func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: analyzer"}
 	}
 	// The pr-risk scorer (SW-039) is diff-driven, not symbol-driven: it requires
-	// a diff argument and accepts no symbol. Every other analyzer requires a symbol.
-	if p.Arguments.Analyzer == "pr-risk" || p.Arguments.Analyzer == "pr-signals" || p.Arguments.Analyzer == "pr-questions" {
+	// a diff argument and accepts no symbol. The SW-104 EP-017 operations
+	// (communities, watcher-status, notebook-ingest, taint-query) are whole-graph /
+	// status operations needing no symbol (shared client.AnalyzerSymbolOptional rule,
+	// identical to the CLI). Every other analyzer requires a symbol.
+	switch {
+	case p.Arguments.Analyzer == "pr-risk" || p.Arguments.Analyzer == "pr-signals" || p.Arguments.Analyzer == "pr-questions":
 		if p.Arguments.Diff == "" {
 			return nil, &rpcError{Code: -32602, Message: "missing required argument: diff"}
 		}
-	} else if p.Arguments.Symbol == "" {
+	case client.AnalyzerSymbolOptional(p.Arguments.Analyzer):
+		// no required symbol argument
+	case p.Arguments.Symbol == "":
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
 	direction := "forward"

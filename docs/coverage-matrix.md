@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **81**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **85**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -42,23 +42,27 @@ Total capabilities: **81**. See [`architecture-plan.md`](architecture-plan.md) f
 | `typescript` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 | `yaml` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 
-## Analyzers (13)
+## Analyzers (17)
 
 | id | status | epic | note |
 |---|---|---|---|
 | `batched` | ✅ shipped | EP-004 | batched composite over impact+call-chain+metrics. |
 | `call-chain` | ✅ shipped | EP-004 | caller/callee chain reconstruction. |
+| `communities` | ✅ shipped | EP-017 | SW-104: SW-103 Louvain community detection surfaced behind the single dispatch table. |
 | `concept` | ✅ shipped | EP-004 | lexical-search-backed concept resolution (needs Searcher). |
 | `contracts` | ✅ shipped | EP-005 | producer/consumer contract drift detection. |
 | `git-history` | ✅ shipped | EP-005 | churn / bus-factor / co-change signals. |
 | `impact` | ✅ shipped | EP-004 | forward/reverse blast-radius reachability. |
 | `interproc` | ✅ shipped | EP-005 | interprocedural Sharir-Pnueli procedure summaries. |
 | `metrics` | ✅ shipped | EP-004 | graph centrality / hub-bridge metrics. |
+| `notebook-ingest` | ✅ shipped | EP-017 | SW-104: SW-100 notebook (.ipynb) cell provenance surfaced behind the single dispatch table. |
 | `pdg` | ✅ shipped | EP-005 | program dependence graph (data + control dependence). |
 | `pr-questions` | ✅ shipped | EP-007 | deterministic, no-LLM reviewer questions from findings. |
 | `pr-risk` | ✅ shipped | EP-007 | deterministic per-region PR risk score (impact+taint). |
 | `pr-signals` | ✅ shipped | EP-007 | hub/bridge/surprise signals on PR-changed code. |
 | `taint` | ✅ shipped | EP-005 | flow-sensitive source→sink taint analysis. |
+| `taint-query` | ✅ shipped | EP-017 | SW-104: SW-102 interprocedural taint verdict + flows surfaced behind the single dispatch table. |
+| `watcher-status` | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
 ## MCP tools (32)
 

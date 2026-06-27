@@ -26,6 +26,7 @@ func (ctlStub) Compound(context.Context, string) ([]byte, error)               {
 func (ctlStub) SearchAST(context.Context, string, int) ([]byte, error)         { return nil, nil }
 func (ctlStub) FindClones(context.Context, string) ([]byte, error)             { return nil, nil }
 func (ctlStub) Savings(context.Context) ([]byte, error)                        { return nil, nil }
+func (ctlStub) Analyze(context.Context, client.AnalyzeParams) ([]byte, error)  { return nil, nil }
 func (ctlStub) Memory(context.Context, client.MemoryRequest) ([]byte, error)   { return nil, nil }
 func (ctlStub) Distill(context.Context, client.DistillRequest) ([]byte, error) { return nil, nil }
 func (ctlStub) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {

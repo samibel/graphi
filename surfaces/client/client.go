@@ -196,6 +196,22 @@ type AnalyzeParams struct {
 	Provenance string `json:"provenance,omitempty"`
 }
 
+// AnalyzerSymbolOptional reports whether an analyzer operation requires NO
+// primary symbol argument (SW-104). The four EP-017 canonical operations are
+// whole-graph (communities, notebook-ingest, taint-query) or runtime-status
+// (watcher-status) operations, so the symbol-required input guard does not apply
+// to them. It is shared by the CLI and MCP adapters so both surfaces apply the
+// SAME input-validation rule (parity by construction) — neither holds analysis
+// logic, only this transport-agnostic argument check.
+func AnalyzerSymbolOptional(name string) bool {
+	switch name {
+	case "communities", "notebook-ingest", "taint-query", "watcher-status":
+		return true
+	default:
+		return false
+	}
+}
+
 // Client is the thin contract every surface uses to execute structural queries,
 // search, and read the savings ledger. Implementations may be in-process or over
 // a Unix domain socket.

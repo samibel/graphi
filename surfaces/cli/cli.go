@@ -600,13 +600,18 @@ func RunAnalysis(ctx context.Context, c client.Client, args []string, out, errOu
 	}
 
 	// The pr-risk scorer, the pr-signals detector, and the pr-questions generator
-	// are diff-driven; every other analyzer is symbol-driven.
-	if name == "pr-risk" || name == "pr-signals" || name == "pr-questions" {
+	// are diff-driven; the SW-104 EP-017 operations (communities, watcher-status,
+	// notebook-ingest, taint-query) are whole-graph / status operations needing no
+	// symbol; every other analyzer is symbol-driven.
+	switch {
+	case name == "pr-risk" || name == "pr-signals" || name == "pr-questions":
 		if diffPayload == "" {
 			fmt.Fprintf(errOut, "cli: -diff or -diff-path is required for %s\n", name)
 			return fmt.Errorf("cli: -diff or -diff-path is required for %s", name)
 		}
-	} else if *symbol == "" {
+	case client.AnalyzerSymbolOptional(name):
+		// no required positional argument
+	case *symbol == "":
 		fmt.Fprintln(errOut, "cli: -symbol is required")
 		return fmt.Errorf("cli: -symbol is required")
 	}

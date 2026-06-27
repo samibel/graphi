@@ -3,6 +3,7 @@ package watch
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -81,6 +82,25 @@ func (m *Manager) StopWatch(id string) {
 	if mg.cleanup != nil {
 		mg.cleanup()
 	}
+}
+
+// Statuses returns the read-only health snapshot of every managed watcher
+// (SW-104), ordered by root path for deterministic reporting. It powers the
+// daemon's `watcher-status` operation, surfacing per-root health (including the
+// SW-101 Reconcile error) honestly.
+func (m *Manager) Statuses() []ServiceStatus {
+	m.mu.Lock()
+	svcs := make([]*Service, 0, len(m.services))
+	for _, mg := range m.services {
+		svcs = append(svcs, mg.svc)
+	}
+	m.mu.Unlock()
+	out := make([]ServiceStatus, 0, len(svcs))
+	for _, svc := range svcs {
+		out = append(out, svc.Status())
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Root < out[j].Root })
+	return out
 }
 
 // StopAll stops every managed watcher (daemon shutdown).

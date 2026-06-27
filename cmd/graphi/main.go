@@ -686,6 +686,33 @@ func makeEditorClient(root, dbPath, metaDir string) (client.Client, func(), erro
 	return c, cleanup, nil
 }
 
+// watchStatusProvider adapts the engine/watch Manager's read-only per-root health
+// to the analysis.WatchStatusProvider seam (SW-104). It lives in cmd (the only
+// layer that may import both engine/watch and engine/analysis), so the
+// `watcher-status` operation surfaces live, honest watcher health — including the
+// SW-101 Reconcile error — over the single dispatch path, with no surface→engine
+// coupling. It is read-only and adds no timestamp/wall-clock field.
+type watchStatusProvider struct {
+	mgr *watch.Manager
+}
+
+func (p watchStatusProvider) WatchStatus(_ context.Context) analysis.WatcherStatusReport {
+	statuses := p.mgr.Statuses()
+	rep := analysis.WatcherStatusReport{
+		Active: len(statuses) > 0,
+		Roots:  make([]analysis.WatchRootStatus, 0, len(statuses)),
+	}
+	for _, st := range statuses {
+		rep.Roots = append(rep.Roots, analysis.WatchRootStatus{
+			Root:      st.Root,
+			Watching:  st.Watching,
+			Healthy:   st.LastError == "",
+			LastError: st.LastError,
+		})
+	}
+	return rep
+}
+
 // runDaemon runs the daemon lifecycle commands: start, stop, status.
 func runDaemon(args []string) int {
 	fs := flag.NewFlagSet("daemon", flag.ContinueOnError)
@@ -708,7 +735,6 @@ func runDaemon(args []string) int {
 			return 1
 		}
 		defer func() { _ = store.Close() }()
-		handler := client.NewDirect(query.New(store), search.New(store))
 		// SW-101: wire a filesystem-watch Manager so `track`ing a workspace starts
 		// a pure-Go watcher + bounded worker-pool that keeps THIS daemon's shared
 		// store fresh (deterministic, canonical-ordered incremental apply) without
@@ -733,6 +759,14 @@ func runDaemon(args []string) int {
 			return ing, cleanup, nil
 		}, watch.DefaultConfig())
 		defer watchMgr.StopAll()
+		// SW-104: give the daemon handler an analysis service so the four EP-017
+		// operations (and every analyzer) route through the SAME single dispatch
+		// path over the daemon RPC, and back `watcher-status` with a read-only
+		// provider over the watch Manager so the daemon reports live, honest per-root
+		// watcher health — including the SW-101 Reconcile error — rather than masking
+		// it.
+		asvc := analysis.NewDefaultServiceWithWatch(store, watchStatusProvider{mgr: watchMgr})
+		handler := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 		srv := daemon.NewServerWithWatch(handler, watchMgr)
 		if err := srv.Start(*socket); err != nil {
 			fmt.Fprintf(os.Stderr, "graphi: daemon start: %v\n", err)

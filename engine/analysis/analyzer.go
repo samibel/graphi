@@ -153,6 +153,18 @@ type Analysis struct {
 	// relation. Only the taint analyzer populates it; it stays omitted (nil) for
 	// every other analyzer so the generic envelope is unchanged for them.
 	InterprocTaint *InterprocTaintReport `json:"interproc_taint,omitempty"`
+	// Communities carries the SW-104 `communities` operation payload (SW-103
+	// detection surfaced behind the single dispatch table). Only the communities
+	// analyzer populates it; nil for every other analyzer.
+	Communities *CommunitiesReport `json:"communities,omitempty"`
+	// Notebook carries the SW-104 `notebook-ingest` operation payload (SW-100
+	// notebook-cell provenance surfaced behind the single dispatch table). Only the
+	// notebook analyzer populates it; nil for every other analyzer.
+	Notebook *NotebookReport `json:"notebook,omitempty"`
+	// WatcherStatus carries the SW-104 `watcher-status` operation payload (SW-101
+	// watcher health surfaced behind the single dispatch table). Only the
+	// watcher-status analyzer populates it; nil for every other analyzer.
+	WatcherStatus *WatcherStatusReport `json:"watcher_status,omitempty"`
 }
 
 // InterprocTaintReport is the SW-102 surface payload for the solved, persisted

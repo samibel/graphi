@@ -56,6 +56,43 @@ type Service struct {
 	// path count. Test seam used to observe graph-refresh completion (AC-1)
 	// without polling wall-clock.
 	onApply func(changed int)
+
+	// statusMu guards the read-only health fields exposed via Status(). It is a
+	// separate, short-held lock so a watcher-status read never contends with the
+	// apply path's applyMu.
+	statusMu sync.Mutex
+	running  bool  // true between a successful Start and Stop
+	lastErr  error // the most recent non-fatal apply/reconcile error (honest health)
+}
+
+// ServiceStatus is the read-only, deterministic health snapshot of one watch
+// Service (SW-104). It carries NO wall-clock field. LastError is the verbatim
+// most-recent non-fatal apply/reconcile error — reported HONESTLY, including the
+// SW-101 Reconcile-on-non-code-files error, never masked behind a green status.
+type ServiceStatus struct {
+	Root      string
+	Watching  bool
+	LastError string
+}
+
+// recordErr stores the most recent non-fatal error for honest status reporting.
+// It runs alongside (not instead of) the onError observability hook.
+func (s *Service) recordErr(err error) {
+	s.statusMu.Lock()
+	s.lastErr = err
+	s.statusMu.Unlock()
+}
+
+// Status returns the current read-only health snapshot for this watched root. It
+// is safe for concurrent use and never mutates state.
+func (s *Service) Status() ServiceStatus {
+	s.statusMu.Lock()
+	defer s.statusMu.Unlock()
+	le := ""
+	if s.lastErr != nil {
+		le = s.lastErr.Error()
+	}
+	return ServiceStatus{Root: s.root, Watching: s.running, LastError: le}
 }
 
 // NewService constructs a Service for root using idx and the (normalized) cfg.
@@ -98,6 +135,10 @@ func (s *Service) Start(parent context.Context) error {
 	}
 	s.w = w
 
+	s.statusMu.Lock()
+	s.running = true
+	s.statusMu.Unlock()
+
 	s.wg.Add(1)
 	go s.reconcileLoop()
 	return nil
@@ -118,6 +159,9 @@ func (s *Service) Stop() error {
 		s.co.Stop()
 	}
 	s.wg.Wait()
+	s.statusMu.Lock()
+	s.running = false
+	s.statusMu.Unlock()
 	return err
 }
 
@@ -129,8 +173,11 @@ func (s *Service) handleBatch(paths []string) {
 	if s.ctx.Err() != nil {
 		return
 	}
-	if err := s.applyPaths(s.ctx, paths); err != nil && s.onError != nil {
-		s.onError(err)
+	if err := s.applyPaths(s.ctx, paths); err != nil {
+		s.recordErr(err)
+		if s.onError != nil {
+			s.onError(err)
+		}
 	}
 }
 
@@ -207,8 +254,11 @@ func (s *Service) reconcileLoop() {
 		case <-s.ctx.Done():
 			return
 		case <-t.C:
-			if err := s.Reconcile(s.ctx); err != nil && s.onError != nil {
-				s.onError(err)
+			if err := s.Reconcile(s.ctx); err != nil {
+				s.recordErr(err)
+				if s.onError != nil {
+					s.onError(err)
+				}
 			}
 		}
 	}

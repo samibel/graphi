@@ -157,15 +157,13 @@ func (c *DaemonClient) Savings(ctx context.Context) ([]byte, error) {
 	return c.request(ctx, "savings", nil)
 }
 
-// Analyze implements client.Client. The daemon analysis RPC is not yet wired
-// (SW-022 ships the in-process analysis path that both MCP stdio and CLI direct
-// mode use); until it is added, the daemon client reports the capability as
-// unavailable rather than fabricating a result. Query/search/savings are
-// unaffected.
+// Analyze implements client.Client. SW-104 wires the daemon analysis RPC: it
+// forwards the transport-agnostic AnalyzeParams to the daemon's "analyze" method,
+// whose handler is the same in-process Direct client used by the cold surfaces,
+// so the returned bytes are the canonical analysis.Marshal output —
+// byte-identical to the CLI/MCP/HTTP/SSE surfaces (parity by construction).
 func (c *DaemonClient) Analyze(ctx context.Context, p client.AnalyzeParams) ([]byte, error) {
-	_ = ctx
-	_ = p
-	return nil, client.ErrAnalysisUnavailable
+	return c.request(ctx, "analyze", analyzeParams(p))
 }
 
 // RefactorPreview implements client.Client. The daemon edit RPC is not yet wired

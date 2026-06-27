@@ -10,6 +10,7 @@ import (
 	"github.com/samibel/graphi/engine/analysis/interproctaint"
 	"github.com/samibel/graphi/engine/analysis/pdg"
 	"github.com/samibel/graphi/engine/analysis/taint"
+	"github.com/samibel/graphi/engine/community"
 	"github.com/samibel/graphi/engine/query"
 )
 
@@ -33,8 +34,23 @@ func NewService(reader query.Reader, reg *Registry) *Service {
 
 // NewDefaultService constructs a Service pre-registered with the built-in
 // analyzers (impact in SW-022; sibling analyzers add themselves in their own
-// stories). It is the convenience constructor surfaces use.
+// stories). It is the convenience constructor surfaces use. The watcher-status
+// operation is registered with no provider, so it reports an honest "not active"
+// status (a one-shot CLI/MCP/HTTP invocation has no running watcher); the daemon
+// wires a real provider via NewDefaultServiceWithWatch.
 func NewDefaultService(reader query.Reader) *Service {
+	return newDefaultService(reader, nil)
+}
+
+// NewDefaultServiceWithWatch is NewDefaultService plus a read-only watcher-status
+// provider (SW-104). The daemon, which owns the engine/watch Manager, injects a
+// provider here so `watcher-status` reports live, honest per-root health over the
+// SAME single dispatch path and shared encoder as every other operation.
+func NewDefaultServiceWithWatch(reader query.Reader, watchProvider WatchStatusProvider) *Service {
+	return newDefaultService(reader, watchProvider)
+}
+
+func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *Service {
 	reg := NewRegistry()
 	// The built-in analyzer registration is best-effort at construction; a
 	// duplicate-name error here would indicate a programming fault, so it panics
@@ -92,6 +108,18 @@ func NewDefaultService(reader query.Reader) *Service {
 	// versioned reviewer-question set. Additive: a single registration line plus
 	// one MCP descriptor entry.
 	mustRegister(reg, newPrQuestionsAnalyzer())
+	// SW-104 (EP-017 capstone): register the four canonical EP-017 operations
+	// EXACTLY ONCE behind this single dispatch table — no parallel per-op path, no
+	// per-surface handler. Each routes to its real engine entry point and serializes
+	// through the one shared analysis.Marshal encoder.
+	//   - taint-query  -> the existing taint/interproc adapter (interproctaint.Solve)
+	//   - communities  -> engine/community.DefaultDetector()/Detector.Detect
+	//   - notebook-ingest -> committed SW-100 notebook_cell provenance edges
+	//   - watcher-status  -> the injected read-only WatchStatusProvider (SW-101)
+	mustRegister(reg, taintQueryAdapter{inner: taintAdapter{cfg: taint.DefaultConfig(), caps: taint.DefaultCaps()}})
+	mustRegister(reg, communitiesAnalyzer{detector: community.DefaultDetector()})
+	mustRegister(reg, notebookAnalyzer{})
+	mustRegister(reg, watchStatusAnalyzer{provider: watchProvider})
 	return NewService(reader, reg)
 }
 
@@ -166,6 +194,34 @@ func (a taintAdapter) Analyze(ctx context.Context, r query.Reader, p Params) (An
 		Truncated:      result.Truncated,
 		InterprocTaint: report,
 	}, nil
+}
+
+// TaintQueryAnalyzerName is the SW-104 canonical dispatch key for the
+// interprocedural taint-query operation.
+const TaintQueryAnalyzerName = "taint-query"
+
+// taintQueryAdapter exposes the EXISTING taint/interproc adapter under the
+// canonical `taint-query` operation key (SW-104). It adds no analysis logic: it
+// delegates to taintAdapter (interproctaint.Solve + the solved-summary provider)
+// and only relabels the envelope's analyzer field to the canonical operation key,
+// so the verdict + cross-procedure flows are produced by exactly the same code
+// path. Byte-parity across surfaces and across the Solved/Loaded verdict paths
+// therefore holds by construction (the flows are canonically sorted by the
+// solver; the Loaded/Solved flags are the intended no-recompute observability
+// signal).
+type taintQueryAdapter struct {
+	inner taintAdapter
+}
+
+func (taintQueryAdapter) Name() string { return TaintQueryAnalyzerName }
+
+func (a taintQueryAdapter) Analyze(ctx context.Context, r query.Reader, p Params) (Analysis, error) {
+	res, err := a.inner.Analyze(ctx, r, p)
+	if err != nil {
+		return Analysis{}, err
+	}
+	res.Analyzer = TaintQueryAnalyzerName
+	return res, nil
 }
 
 // buildInterprocTaintReport maps the engine-layer Solution into the surface

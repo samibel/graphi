@@ -195,6 +195,26 @@ capabilities:
     status: shipped
     epic: EP-005
     note: "flow-sensitive source→sink taint analysis."
+  - id: communities
+    category: analyzer
+    status: shipped
+    epic: EP-017
+    note: "SW-104: SW-103 Louvain community detection surfaced behind the single dispatch table."
+  - id: notebook-ingest
+    category: analyzer
+    status: shipped
+    epic: EP-017
+    note: "SW-104: SW-100 notebook (.ipynb) cell provenance surfaced behind the single dispatch table."
+  - id: taint-query
+    category: analyzer
+    status: shipped
+    epic: EP-017
+    note: "SW-104: SW-102 interprocedural taint verdict + flows surfaced behind the single dispatch table."
+  - id: watcher-status
+    category: analyzer
+    status: shipped
+    epic: EP-017
+    note: "SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table."
   - id: analyze
     category: mcp-tool
     status: shipped

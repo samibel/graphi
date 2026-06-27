@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -28,6 +30,7 @@ import (
 	"github.com/samibel/graphi/engine/skillgen"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
+	"github.com/samibel/graphi/surfaces/daemon"
 	httpsrv "github.com/samibel/graphi/surfaces/http"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
@@ -1507,5 +1510,245 @@ func TestMCP_NewToolAnnotations(t *testing.T) {
 		if !seen[name] {
 			t.Errorf("tool %q not advertised in tools/list", name)
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SW-104 (EP-017 capstone): cross-surface byte-parity for the four canonical
+// EP-017 operations over ALL FIVE surfaces (CLI, MCP stdio, MCP HTTP/REST, SSE,
+// daemon). Each operation is dispatched through the ONE shared path
+// ((*Direct).Analyze -> Service.Dispatch -> analysis.Marshal); every surface must
+// return a byte-identical envelope (AC-2), and each returns a successful
+// non-empty envelope on every surface (AC-1).
+// ---------------------------------------------------------------------------
+
+var ep017Ops = []string{"notebook-ingest", "watcher-status", "taint-query", "communities"}
+
+// seedEP017 builds an in-process Direct client over a graph that carries content
+// for every EP-017 operation: the standard function/call graph (communities +
+// taint-query) plus one SW-100 notebook_cell provenance edge (notebook-ingest).
+func seedEP017(t *testing.T) *client.Direct {
+	t.Helper()
+	store, _ := seed(t)
+	ctx := context.Background()
+	fileNode, err := model.NewNode("file", "nb.ipynb", "nb.ipynb", 1, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PutNode(ctx, fileNode); err != nil {
+		t.Fatal(err)
+	}
+	symNode, err := model.NewNode("function", "nb.nb_func", "nb.ipynb", 2, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PutNode(ctx, symNode); err != nil {
+		t.Fatal(err)
+	}
+	e, err := model.NewEdge(symNode.ID(), fileNode.ID(), "notebook_cell",
+		model.TierConfirmed, 1.0, "notebook cell provenance",
+		[]string{"nb.ipynb#cell=1;id=c1;line=2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PutEdge(ctx, e); err != nil {
+		t.Fatal(err)
+	}
+	return client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+}
+
+// opCLIOutput runs an EP-017 (symbol-optional) operation through the CLI surface.
+func opCLIOutput(t *testing.T, direct *client.Direct, op string) []byte {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	if err := cli.RunAnalysis(context.Background(), direct, []string{op}, &out, &errOut); err != nil {
+		t.Fatalf("cli.RunAnalysis(%s): %v (stderr %s)", op, err, errOut.String())
+	}
+	return bytes.TrimRight(out.Bytes(), "\n")
+}
+
+// opMCPStdioOutput runs an EP-017 operation through the MCP stdio analyze tool.
+func opMCPStdioOutput(t *testing.T, direct *client.Direct, op string) []byte {
+	t.Helper()
+	srv := mcp.NewServerWithClient(direct)
+	reqBody, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params":  map[string]any{"name": "analyze", "arguments": map[string]any{"analyzer": op}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+		t.Fatalf("mcp.Serve analyze %s: %v", op, err)
+	}
+	var resp struct {
+		Result struct {
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"result"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+		t.Fatalf("decode mcp %s response %q: %v", op, out.String(), err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("mcp %s error: %s", op, resp.Error.Message)
+	}
+	if len(resp.Result.Content) != 1 || resp.Result.Content[0].Type != "text" {
+		t.Fatalf("unexpected mcp %s content: %+v", op, resp.Result.Content)
+	}
+	return []byte(resp.Result.Content[0].Text)
+}
+
+// opHTTPOutput runs an EP-017 operation through the HTTP REST /analyze endpoint
+// and returns the unwrapped canonical payload (the envelope wraps the SAME bytes).
+func opHTTPOutput(t *testing.T, direct *client.Direct, op string) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	req := httptest.NewRequest(http.MethodGet, "/analyze/"+op, nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http /analyze/%s: code=%d body=%s", op, rec.Code, rec.Body.String())
+	}
+	var env struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatalf("http /analyze/%s: decode envelope: %v", op, err)
+	}
+	return env.Payload
+}
+
+// opSSEOutput runs an EP-017 operation through the SSE /events?analyzer= one-shot
+// analysis path and extracts the canonical bytes from the `analysis` frame's data
+// line. The SSE adapter routes through the SAME (*Direct).Analyze path, so the
+// data payload is byte-identical to the other surfaces' envelopes.
+func opSSEOutput(t *testing.T, direct *client.Direct, op string) []byte {
+	t.Helper()
+	srv := httpsrv.New(direct, observe.New())
+	req := httptest.NewRequest(http.MethodGet, "/events?analyzer="+op, nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("sse /events?analyzer=%s: code=%d body=%s", op, rec.Code, rec.Body.String())
+	}
+	// Find the data line of the `event: analysis` frame.
+	lines := strings.Split(rec.Body.String(), "\n")
+	for i, ln := range lines {
+		if ln == "event: analysis" {
+			for j := i + 1; j < len(lines); j++ {
+				if strings.HasPrefix(lines[j], "data: ") {
+					return []byte(strings.TrimPrefix(lines[j], "data: "))
+				}
+			}
+		}
+	}
+	t.Fatalf("sse /events?analyzer=%s: no analysis frame in body:\n%s", op, rec.Body.String())
+	return nil
+}
+
+// opDaemonOutput runs an EP-017 operation through the daemon over a real Unix
+// socket (no auto-start: the server is already listening), exercising the SW-104
+// daemon analyze RPC. The handler is the same in-process Direct client.
+func opDaemonOutput(t *testing.T, direct *client.Direct, op string) []byte {
+	t.Helper()
+	srv := daemon.NewServer(direct)
+	dir, err := os.MkdirTemp("", "g*.sock") // short path (macOS socket limit)
+	if err != nil {
+		t.Fatalf("mkdir socket dir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	sock := filepath.Join(dir, "s")
+	if err := srv.Start(sock); err != nil {
+		t.Fatalf("daemon start: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Stop() })
+	c := daemon.NewClient(sock, "")
+	b, err := c.Analyze(context.Background(), client.AnalyzeParams{Name: op})
+	if err != nil {
+		t.Fatalf("daemon analyze %s: %v", op, err)
+	}
+	return b
+}
+
+// TestCrossSurface_EP017_OpParity is the AC-1 + AC-2 cross-surface gate: for each
+// of the four EP-017 operations, all five surfaces return a successful,
+// byte-identical envelope.
+func TestCrossSurface_EP017_OpParity(t *testing.T) {
+	direct := seedEP017(t)
+	for _, op := range ep017Ops {
+		t.Run(op, func(t *testing.T) {
+			cliBytes := opCLIOutput(t, direct, op)
+			if len(cliBytes) == 0 {
+				t.Fatalf("op %q: empty CLI envelope (AC-1 reachability)", op)
+			}
+			surfaces := []struct {
+				name  string
+				bytes []byte
+			}{
+				{"mcp-stdio", opMCPStdioOutput(t, direct, op)},
+				{"mcp-http", opHTTPOutput(t, direct, op)},
+				{"sse", opSSEOutput(t, direct, op)},
+				{"daemon", opDaemonOutput(t, direct, op)},
+			}
+			for _, s := range surfaces {
+				if !bytes.Equal(cliBytes, s.bytes) {
+					t.Fatalf("op %q: CLI<->%s byte-parity mismatch:\n CLI: %s\n %s: %s", op, s.name, cliBytes, s.name, s.bytes)
+				}
+			}
+		})
+	}
+}
+
+// TestCrossSurface_EP017_WatcherStatusHonest asserts the SW-101 honesty
+// obligation: the watcher-status envelope reports a watcher error verbatim (here
+// the SW-101 Reconcile-on-non-code-files error class) rather than masking it
+// behind a green status, and that the honest report is byte-identical across
+// surfaces. It uses a fake provider so the test does not depend on a running
+// watcher (the SW-101 Reconcile bug itself is out of scope here).
+func TestCrossSurface_EP017_WatcherStatusHonest(t *testing.T) {
+	store, _ := seed(t)
+	svc := analysis.NewDefaultServiceWithWatch(store, fakeWatchProvider{})
+	direct := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(svc)
+
+	cliBytes := opCLIOutput(t, direct, "watcher-status")
+	// The error is surfaced, not masked.
+	if !bytes.Contains(cliBytes, []byte(`"healthy":false`)) ||
+		!bytes.Contains(cliBytes, []byte("reconcile: non-code file")) {
+		t.Fatalf("watcher-status did not honestly surface the watcher error: %s", cliBytes)
+	}
+	// And it is byte-identical across surfaces.
+	for _, got := range [][]byte{
+		opMCPStdioOutput(t, direct, "watcher-status"),
+		opHTTPOutput(t, direct, "watcher-status"),
+		opSSEOutput(t, direct, "watcher-status"),
+		opDaemonOutput(t, direct, "watcher-status"),
+	} {
+		if !bytes.Equal(cliBytes, got) {
+			t.Fatalf("watcher-status honest-report parity mismatch:\n CLI: %s\n got: %s", cliBytes, got)
+		}
+	}
+}
+
+// fakeWatchProvider reports an unhealthy watcher (simulating the SW-101
+// Reconcile-on-non-code-files error) so the honesty obligation can be asserted
+// deterministically.
+type fakeWatchProvider struct{}
+
+func (fakeWatchProvider) WatchStatus(_ context.Context) analysis.WatcherStatusReport {
+	return analysis.WatcherStatusReport{
+		Active: true,
+		Roots: []analysis.WatchRootStatus{
+			{Root: "/repo", Watching: true, Healthy: false, LastError: "reconcile: non-code file encountered"},
+		},
 	}
 }

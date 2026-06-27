@@ -35,6 +35,11 @@ type Handler interface {
 	// FindClones runs the clone-detection query (SW-083 / SW-085).
 	FindClones(ctx context.Context, configJSON string) ([]byte, error)
 	Savings(ctx context.Context) ([]byte, error)
+	// Analyze runs a named analyzer operation. SW-104 routes the four EP-017
+	// operations (notebook-ingest, watcher-status, taint-query, communities) and
+	// every other analyzer through this single daemon RPC, returning the canonical
+	// analysis.Marshal bytes — byte-identical to the cold CLI/MCP/HTTP surfaces.
+	Analyze(ctx context.Context, p client.AnalyzeParams) ([]byte, error)
 	// Memory runs an EP-012 memory operation.
 	Memory(ctx context.Context, req client.MemoryRequest) ([]byte, error)
 	// Distill runs EP-012 session distillation.
@@ -81,6 +86,11 @@ type findClonesParams struct {
 type memoryParams client.MemoryRequest
 type distillParams client.DistillRequest
 type skillgenParams client.SkillGenRequest
+
+// analyzeParams carries a named analyzer operation (SW-104). It is the
+// transport-agnostic client.AnalyzeParams forwarded verbatim over the socket so
+// the daemon-side handler dispatches it through the same shared path.
+type analyzeParams client.AnalyzeParams
 
 // SW-096 control-plane params.
 type trackParams struct {
@@ -282,6 +292,16 @@ func (s *Server) dispatch(ctx context.Context, req request) response {
 		return response{OK: true, Body: b}
 	case "savings":
 		b, err := s.handler.Savings(ctx)
+		if err != nil {
+			return response{OK: false, Error: err.Error()}
+		}
+		return response{OK: true, Body: b}
+	case "analyze":
+		var p analyzeParams
+		if err := json.Unmarshal(req.Params, &p); err != nil {
+			return response{OK: false, Error: "invalid analyze params"}
+		}
+		b, err := s.handler.Analyze(ctx, client.AnalyzeParams(p))
 		if err != nil {
 			return response{OK: false, Error: err.Error()}
 		}
