@@ -319,7 +319,33 @@ type Client interface {
 	// edit.MarshalSafeDeleteResult. Without an edit service it returns
 	// ErrEditUnavailable.
 	SafeDelete(ctx context.Context, req SafeDeleteRequest) ([]byte, error)
+
+	// ListPRs enumerates the open PRs of the configured repo via the read-only
+	// forge boundary (SW-105) and returns the canonical serialized forge.PRList
+	// bytes — forge-sourced metadata ONLY (number, title, author, base/head, head
+	// SHA, changed files, add/del, mergeable). It performs NO graph scoring and
+	// posts NO comments. The forge enumeration is the suite's ONLY outbound path;
+	// it lives at the surface boundary so the engine stays zero-egress. Without a
+	// forge client wired it returns ErrForgeUnavailable.
+	ListPRs(ctx context.Context) ([]byte, error)
+
+	// TriagePRs enumerates the open PRs via the read-only forge boundary, then
+	// hands the already-enumerated set to the zero-egress engine `triage-prs`
+	// analyzer, returning the canonical serialized ranked TriageReport bytes
+	// (composite score DESC, PR number ASC). The forge call (enumeration) is the
+	// only egress; scoring is in-memory over the local graph. Without a forge
+	// client wired it returns ErrForgeUnavailable; without an analysis service it
+	// returns ErrAnalysisUnavailable.
+	TriagePRs(ctx context.Context) ([]byte, error)
 }
+
+// ErrForgeUnavailable is returned when a Client has no read-only forge
+// PR-enumeration client configured (SW-105). Query/search/analysis still work;
+// only the list_prs / triage_prs PR-triage surface is unavailable. The in-process
+// Direct client wires it via WithForge; the daemon/HTTP remote clients return it
+// until a remote forge RPC is added (mirrors the analysis/edit/review
+// "unavailable until wired" precedent).
+var ErrForgeUnavailable = errors.New("client: forge PR-enumeration client unavailable")
 
 // ErrMemoryUnavailable is returned when a Client has no memory service configured.
 var ErrMemoryUnavailable = errors.New("client: memory service unavailable")

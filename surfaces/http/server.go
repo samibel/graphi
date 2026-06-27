@@ -191,6 +191,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /search", s.schemaGuard(s.handleSearch))
 	mux.HandleFunc("GET /search/semantic", s.schemaGuard(s.handleSemanticSearch))
 	mux.HandleFunc("GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze))
+	mux.HandleFunc("GET /prs", s.schemaGuard(s.handleListPRs))
+	mux.HandleFunc("GET /prs/triage", s.schemaGuard(s.handleTriagePRs))
 	mux.HandleFunc("POST /memory", s.schemaGuard(s.handleMemory))
 	mux.HandleFunc("POST /distill", s.schemaGuard(s.handleDistill))
 	mux.HandleFunc("POST /skillgen", s.schemaGuard(s.handleSkillGen))
@@ -511,6 +513,32 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		p.MaxNodes = v
 	}
 	raw, err := s.client.Analyze(r.Context(), p)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleListPRs (SW-105) returns the read-only forge PR-enumeration metadata
+// envelope. It delegates 100% to the shared client.ListPRs seam and embeds the
+// canonical forge.PRList bytes verbatim, so the payload is byte-identical to the
+// CLI/MCP surfaces. No graph scoring occurs.
+func (s *Server) handleListPRs(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.ListPRs(r.Context())
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleTriagePRs (SW-105) returns the single-pass graph-derived ranked PR triage.
+// It delegates to the shared client.TriagePRs seam (forge enumeration → zero-egress
+// engine analyzer → shared encoder), so the ranked payload is byte-identical to the
+// CLI/MCP surfaces.
+func (s *Server) handleTriagePRs(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.TriagePRs(r.Context())
 	if err != nil {
 		writeErrSanitized(w, err)
 		return

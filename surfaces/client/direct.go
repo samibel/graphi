@@ -19,6 +19,7 @@ import (
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/skillgen"
+	"github.com/samibel/graphi/surfaces/forge"
 )
 
 // Direct is an in-process Client backed by query.Service and search.Service, and
@@ -36,6 +37,7 @@ type Direct struct {
 	memoryStore *memory.Store
 	distiller   *distill.Distiller
 	skillGen    *skillgen.Generator
+	forge       forge.Enumerator
 }
 
 // NewDirect constructs an in-process client.
@@ -97,6 +99,18 @@ func (d *Direct) WithDistill(dist *distill.Distiller) *Direct {
 // WithSkillGen attaches a skill generator so the SkillGen surface is available (EP-012).
 func (d *Direct) WithSkillGen(gen *skillgen.Generator) *Direct {
 	d.skillGen = gen
+	return d
+}
+
+// WithForge attaches a read-only forge PR-enumeration client so the ListPRs /
+// TriagePRs PR-triage surface is available (SW-105). It returns the receiver for
+// chaining. This is the SINGLE place the forge enumeration boundary is wired into
+// the surface layer; every surface reaches it through this one implementation
+// (parity by construction). The enumeration is the suite's ONLY outbound path; the
+// engine triage analyzer it feeds is zero-egress. Without it, ListPRs/TriagePRs
+// return ErrForgeUnavailable (everything else is unaffected).
+func (d *Direct) WithForge(e forge.Enumerator) *Direct {
+	d.forge = e
 	return d
 }
 
@@ -222,6 +236,64 @@ func (d *Direct) Analyze(ctx context.Context, p AnalyzeParams) ([]byte, error) {
 		Diff:       p.Diff,
 		Provenance: p.Provenance,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return analysis.Marshal(res)
+}
+
+// ListPRs implements Client. It enumerates open PRs through the read-only forge
+// boundary (the suite's ONLY outbound path) and returns the canonical serialized
+// forge.PRList — forge-sourced metadata ONLY. It performs NO graph scoring and
+// NO engine traversal: it never touches the analysis service. Without a forge
+// client wired it returns ErrForgeUnavailable.
+func (d *Direct) ListPRs(ctx context.Context) ([]byte, error) {
+	if d.forge == nil {
+		return nil, ErrForgeUnavailable
+	}
+	prs, err := d.forge.ListOpenPRs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return forge.MarshalPRList(prs)
+}
+
+// TriagePRs implements Client. It enumerates open PRs through the read-only forge
+// boundary (the only egress), maps the forge metadata onto the engine triage
+// input, and dispatches the zero-egress `triage-prs` analyzer through the SINGLE
+// shared analysis.Service + encoder — so the ranked TriageReport is byte-identical
+// across every surface. The forge call is the only outbound activity; the ranking
+// itself is a pure in-memory pass over the local graph. Without a forge client it
+// returns ErrForgeUnavailable; without an analysis service, ErrAnalysisUnavailable.
+func (d *Direct) TriagePRs(ctx context.Context) ([]byte, error) {
+	if d.forge == nil {
+		return nil, ErrForgeUnavailable
+	}
+	if d.analysisSvc == nil {
+		return nil, ErrAnalysisUnavailable
+	}
+	prs, err := d.forge.ListOpenPRs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	inputs := make([]analysis.TriagePRInput, 0, len(prs))
+	for _, p := range prs {
+		files := make([]string, len(p.ChangedFiles))
+		copy(files, p.ChangedFiles)
+		inputs = append(inputs, analysis.TriagePRInput{
+			Number:       p.Number,
+			Title:        p.Title,
+			Author:       p.Author,
+			BaseRef:      p.BaseRef,
+			HeadRef:      p.HeadRef,
+			HeadSHA:      p.HeadSHA,
+			ChangedFiles: files,
+			Additions:    p.Additions,
+			Deletions:    p.Deletions,
+			Mergeable:    p.Mergeable,
+		})
+	}
+	res, err := d.analysisSvc.Dispatch(ctx, analysis.TriageAnalyzerName, analysis.Params{PRs: inputs})
 	if err != nil {
 		return nil, err
 	}

@@ -95,6 +95,16 @@ var outboundDialAllowlist = []string{
 	// constructed). Allowlisting the package is the registration-layer analog of
 	// the surfaces/http loopback-only entry: its own test asserts loopback-only.
 	"github.com/samibel/graphi/engine/embed/ollama",
+	// surfaces/forge is the SW-105/EP-018 read-only PR-enumeration boundary — the
+	// multi-PR triage suite's single, documented, intentional outbound path
+	// (user-invoked PR discovery/metadata over the GitHub REST API, not telemetry).
+	// It is a SURFACE-layer ingestion client: it lists open PRs and fetches their
+	// metadata via GET only; it posts/mutates nothing and performs no scoring.
+	// Confining the enumeration egress here is what keeps the engine `triage-prs`
+	// analyzer it feeds strictly zero-outbound. The Enumerator seam is injectable so
+	// tests drive an in-memory MockForge and do zero network I/O; the real
+	// GitHubForge is the only dialer (mirrors engine/review's single egress).
+	"github.com/samibel/graphi/surfaces/forge",
 }
 
 // outboundDialCallDenylist names the dial constructors the AST scan flags when

@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **85**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **88**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -42,7 +42,7 @@ Total capabilities: **85**. See [`architecture-plan.md`](architecture-plan.md) f
 | `typescript` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 | `yaml` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 
-## Analyzers (17)
+## Analyzers (18)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -62,9 +62,10 @@ Total capabilities: **85**. See [`architecture-plan.md`](architecture-plan.md) f
 | `pr-signals` | ✅ shipped | EP-007 | hub/bridge/surprise signals on PR-changed code. |
 | `taint` | ✅ shipped | EP-005 | flow-sensitive source→sink taint analysis. |
 | `taint-query` | ✅ shipped | EP-017 | SW-104: SW-102 interprocedural taint verdict + flows surfaced behind the single dispatch table. |
+| `triage-prs` | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (32)
+## MCP tools (34)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -85,6 +86,7 @@ Total capabilities: **85**. See [`architecture-plan.md`](architecture-plan.md) f
 | `find_clones` | ✅ shipped | EP-013 | structural clone-group detection from a JSON config (G4). |
 | `implementers` | ✅ shipped | EP-011 | structural query: types that implement/embed a symbol (G2). |
 | `implements` | ✅ shipped | EP-011 | structural query: interfaces/types a symbol implements (G2). |
+| `list_prs` | ✅ shipped | EP-018 | SW-105: read-only forge enumeration of open PRs (metadata only; no scoring, no comment posting). |
 | `memory` | ✅ shipped | EP-012 | agent memory store/recall/forget operations. |
 | `neighborhood` | ✅ shipped | EP-001 | structural query: k-hop neighborhood. |
 | `overrides` | ✅ shipped | EP-011 | structural query: methods that override a symbol (G2). |
@@ -99,6 +101,7 @@ Total capabilities: **85**. See [`architecture-plan.md`](architecture-plan.md) f
 | `skillgen` | ✅ shipped | EP-012 | deterministic skill generation from a procedure description. |
 | `subtypes` | ✅ shipped | EP-011 | structural query: subtypes (inherits+implements composed) (G2). |
 | `supertypes` | ✅ shipped | EP-011 | structural query: supertypes (inherits+implements composed) (G2). |
+| `triage_prs` | ✅ shipped | EP-018 | SW-105: single-pass graph-derived ranked multi-PR triage over the enumerated PR set (zero engine egress). |
 | `undo` | ✅ shipped | EP-006 | reverse a previously applied edit by undo token. |
 
 ## Surfaces (8)

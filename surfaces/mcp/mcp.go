@@ -244,6 +244,15 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	case ToolSkillGen:
 		return s.skillGenCall(ctx, p)
 	}
+	// EP-018 multi-PR triage suite (SW-105): list_prs (read-only forge enumeration)
+	// and triage_prs (single-pass graph-derived ranking). Both ride the shared
+	// client seam, so the bytes are byte-identical across surfaces.
+	switch p.Name {
+	case ToolListPRs:
+		return s.listPRsCall(ctx)
+	case ToolTriagePRs:
+		return s.triagePRsCall(ctx)
+	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
 	if deepAnalyzerName, ok := deepAnalyzerTools[p.Name]; ok {
@@ -584,6 +593,28 @@ func (s *Server) undoCall(ctx context.Context, p callParams) (any, *rpcError) {
 	return textResult(b), nil
 }
 
+// listPRsCall (SW-105) enumerates open PRs through the read-only forge boundary
+// and returns the canonical serialized forge.PRList. It holds no engine logic and
+// performs no scoring — pure metadata enumeration through the shared client.
+func (s *Server) listPRsCall(ctx context.Context) (any, *rpcError) {
+	b, err := s.c.ListPRs(ctx)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// triagePRsCall (SW-105) returns the single-pass graph-derived ranked PR triage
+// through the shared client (forge enumeration → zero-egress engine analyzer →
+// shared encoder), so the ranked TriageReport is byte-identical across surfaces.
+func (s *Server) triagePRsCall(ctx context.Context) (any, *rpcError) {
+	b, err := s.c.TriagePRs(ctx)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
 // textResult wraps canonical serialized bytes in the MCP tool-result envelope.
 func textResult(b []byte) map[string]any {
 	return map[string]any{
@@ -920,7 +951,30 @@ func (s *Server) toolDescriptors() []map[string]any {
 			},
 		})
 	}
+	// EP-018 multi-PR triage suite (SW-105). Advertised when a forge
+	// PR-enumeration client is wired (probed: a capability-missing client returns
+	// ErrForgeUnavailable; any other response means the boundary is configured).
+	if _, err := s.c.ListPRs(context.Background()); err == nil || !isForgeUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolListPRs,
+			"description": "list open pull requests of the configured repo with read-only forge metadata (number, title, author, base/head refs, head SHA, changed files, additions/deletions, mergeable). Discovery/metadata ONLY — no graph scoring, no comment posting. The forge enumeration is the suite's only outbound path.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+		})
+		tools = append(tools, map[string]any{
+			"name":        ToolTriagePRs,
+			"description": "single-pass graph-derived PR triage: enumerate open PRs, then rank them by blast radius, touched high-centrality nodes, ownership concentration, churn, and test-coverage-of-touched-code, folded into a fixed-integer composite. Deterministic total order (composite DESC, PR number ASC). Scoring is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
 	return tools
+}
+
+// isForgeUnavailable reports whether err is the SW-105 "forge PR-enumeration
+// client not wired" sentinel, so the descriptor probe can hide list_prs/triage_prs
+// when no forge boundary is attached (mirrors isAnalysisUnavailable).
+func isForgeUnavailable(err error) bool {
+	return errors.Is(err, client.ErrForgeUnavailable)
 }
 
 // isMemoryUnavailable reports whether err is the capability-missing sentinel.

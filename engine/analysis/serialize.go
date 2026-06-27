@@ -314,6 +314,13 @@ func Marshal(a Analysis) ([]byte, error) {
 	if a.QuestionReport != nil {
 		return MarshalQuestions(*a.QuestionReport)
 	}
+	// SW-105: the triage-prs ranker carries a versioned TriageReport. When
+	// present, the canonical output IS that ranked envelope (its own byte-stable
+	// serializer with the total-order tie-break), so every surface emits the
+	// identical ranked shape through this one path.
+	if a.Triage != nil {
+		return MarshalTriage(*a.Triage)
+	}
 
 	nodes := make([]ReachedNode, len(a.Nodes))
 	copy(nodes, a.Nodes)

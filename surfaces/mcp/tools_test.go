@@ -68,6 +68,8 @@ func (allToolsClient) SearchAST(context.Context, string, int) ([]byte, error) {
 func (allToolsClient) FindClones(context.Context, string) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) ListPRs(context.Context) ([]byte, error)   { return []byte("{}"), nil }
+func (allToolsClient) TriagePRs(context.Context) ([]byte, error) { return []byte("{}"), nil }
 
 // TestToolNames_MatchesAdvertisedMaximalSet is the in-package drift guard for the
 // MCP surface: ToolNames() (the single source the FU-4 coverage matrix reads)

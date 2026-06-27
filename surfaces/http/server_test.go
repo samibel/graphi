@@ -114,6 +114,12 @@ func (s *stubClient) SearchAST(context.Context, string, int) ([]byte, error) {
 func (s *stubClient) FindClones(context.Context, string) ([]byte, error) {
 	return nil, client.ErrSearchUnavailable
 }
+func (s *stubClient) ListPRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+func (s *stubClient) TriagePRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
 
 func newServer(t *testing.T) (*Server, *stubClient, *observe.Broker) {
 	t.Helper()

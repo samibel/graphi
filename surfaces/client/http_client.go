@@ -364,5 +364,18 @@ func (h *HTTP) SafeDelete(ctx context.Context, req SafeDeleteRequest) ([]byte, e
 	return nil, ErrEditUnavailable
 }
 
+// ListPRs returns ErrForgeUnavailable until a remote forge-enumeration RPC is
+// added (SW-105). The forge boundary is wired only on the in-process Direct
+// client today (mirrors the analysis/edit/review "unavailable until wired" rule).
+func (h *HTTP) ListPRs(ctx context.Context) ([]byte, error) {
+	return nil, ErrForgeUnavailable
+}
+
+// TriagePRs returns ErrForgeUnavailable until a remote forge-enumeration RPC is
+// added (SW-105).
+func (h *HTTP) TriagePRs(ctx context.Context) ([]byte, error) {
+	return nil, ErrForgeUnavailable
+}
+
 // compile-time proof the adapter satisfies the surface contract.
 var _ Client = (*HTTP)(nil)

@@ -277,3 +277,17 @@ func mustJSON(v any) json.RawMessage {
 	}
 	return b
 }
+
+// ListPRs returns ErrForgeUnavailable until a daemon forge-enumeration RPC is
+// added (SW-105). The forge PR-enumeration boundary is wired only on the
+// in-process Direct client today (mirrors the analysis/edit/review
+// "unavailable until wired" precedent).
+func (c *DaemonClient) ListPRs(ctx context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+
+// TriagePRs returns ErrForgeUnavailable until a daemon forge-enumeration RPC is
+// added (SW-105).
+func (c *DaemonClient) TriagePRs(ctx context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}

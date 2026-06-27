@@ -120,6 +120,13 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	mustRegister(reg, communitiesAnalyzer{detector: community.DefaultDetector()})
 	mustRegister(reg, notebookAnalyzer{})
 	mustRegister(reg, watchStatusAnalyzer{provider: watchProvider})
+	// SW-105 (EP-018 1/4): register the triage-prs ranker. It is a composite,
+	// read-only, DETERMINISTIC batch driver that consumes an already-enumerated
+	// open-PR set (handed in via Params.PRs by the surface-boundary forge client —
+	// the engine never touches the network) and reuses the EP-007 pr-risk kernel
+	// (scoreRegion) plus the graph primitives (metrics/impact/churn) in a SINGLE
+	// pass to emit a byte-stable, totally-ordered ranked TriageReport.
+	mustRegister(reg, newTriageAnalyzer())
 	return NewService(reader, reg)
 }
 

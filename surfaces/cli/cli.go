@@ -395,6 +395,44 @@ func RunSetupEmbedder(ctx context.Context, args []string, out, errOut io.Writer)
 	return nil
 }
 
+// RunListPRs runs the SW-105 read-only forge PR-enumeration through the shared
+// client and writes the canonical serialized forge.PRList bytes (byte-identical
+// to the MCP/HTTP surfaces). Like every CLI surface it holds NO engine logic — it
+// returns forge-sourced metadata only, performs no scoring.
+//
+// Usage:
+//
+//	list-prs
+func RunListPRs(ctx context.Context, c client.Client, out, errOut io.Writer) error {
+	b, err := c.ListPRs(ctx)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunTriagePRs runs the SW-105 single-pass graph-derived PR triage ranking through
+// the shared client and writes the canonical serialized TriageReport bytes
+// (byte-identical across surfaces). The forge enumeration is the only egress; the
+// ranking is a zero-egress pass over the local graph.
+//
+// Usage:
+//
+//	triage-prs
+func RunTriagePRs(ctx context.Context, c client.Client, out, errOut io.Writer) error {
+	b, err := c.TriagePRs(ctx)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunSavings prints the savings-ledger readout (SW-020): the headline
 // "Saved $X this session" line plus per-call and cumulative USD figures,
 // followed by the canonical structured readout JSON (identical to the MCP tool

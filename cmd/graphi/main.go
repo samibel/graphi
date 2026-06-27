@@ -41,6 +41,7 @@ import (
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/daemon"
+	"github.com/samibel/graphi/surfaces/forge"
 	httpsrv "github.com/samibel/graphi/surfaces/http"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
@@ -79,6 +80,10 @@ func main() {
 		os.Exit(runAnalyze(os.Args[2:]))
 	case "pr-comment":
 		os.Exit(runPrComment(os.Args[2:]))
+	case "list-prs":
+		os.Exit(runListPRs(os.Args[2:]))
+	case "triage-prs":
+		os.Exit(runTriagePRs(os.Args[2:]))
 	case "refactor-preview":
 		os.Exit(runRefactor(os.Args[2:], "refactor-preview"))
 	case "refactor":
@@ -442,6 +447,66 @@ func runPrComment(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// runListPRs launches the SW-105 read-only forge PR-enumeration surface. Usage:
+//
+//	graphi list-prs [-db path] [-daemon socket]
+//
+// The forge client is resolved from the GitHub Actions environment
+// (forge.FromEnv reads GITHUB_TOKEN/GITHUB_REPOSITORY/GITHUB_API_URL — never
+// argv). Absent a token the forge is unwired and the surface reports the typed
+// "forge unavailable" error (local-first: no network without explicit config).
+func runListPRs(args []string) int {
+	dbPath, socket, _ := extractFlags(args)
+	c := makeForgeClient(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunListPRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: list-prs: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runTriagePRs launches the SW-105 single-pass graph-derived PR triage ranking.
+// Usage: graphi triage-prs [-db path] [-daemon socket]. Enumeration is the only
+// egress (forge.FromEnv); ranking is a zero-egress pass over the local graph.
+func runTriagePRs(args []string) int {
+	dbPath, socket, _ := extractFlags(args)
+	c := makeForgeClient(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunTriagePRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: triage-prs: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// makeForgeClient builds an in-process client wired with the read-only forge
+// PR-enumeration boundary (SW-105). The forge is resolved from the environment;
+// when no token is present the forge stays unwired and the triage surface reports
+// the typed unavailable error rather than dialing anything (local-first default).
+func makeForgeClient(dbPath, socket string) client.Client {
+	if socket != "" {
+		// The daemon path has no forge RPC yet; it reports forge-unavailable.
+		return daemon.NewClient(socket, "")
+	}
+	store, err := openStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return nil
+	}
+	defer func() { _ = store.Close() }()
+	asvc := analysis.NewDefaultService(store)
+	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
+	if gh, ferr := forge.FromEnv(); ferr == nil && gh != nil {
+		d = d.WithForge(gh)
+	}
+	return d
 }
 
 // runMCP launches the MCP stdio server. Usage: graphi mcp [-db path] [-daemon socket]

@@ -73,6 +73,10 @@ type Params struct {
 	// downstream publisher can emit a non-sensitive readout). Unused by other
 	// analyzers.
 	Provenance string `json:"provenance,omitempty"`
+	// PRs is the already-enumerated open-PR set the SW-105 triage-prs analyzer
+	// ranks. It is populated by the surface-boundary forge client (the ONLY
+	// outbound path); the engine never fetches it. Unused by all other analyzers.
+	PRs []TriagePRInput `json:"prs,omitempty"`
 }
 
 // ReachedNode is a node reached during a traversal, carrying the provenance of
@@ -165,6 +169,10 @@ type Analysis struct {
 	// watcher health surfaced behind the single dispatch table). Only the
 	// watcher-status analyzer populates it; nil for every other analyzer.
 	WatcherStatus *WatcherStatusReport `json:"watcher_status,omitempty"`
+	// Triage carries the SW-105 `triage-prs` ranked multi-PR triage payload. Only
+	// the triage-prs analyzer populates it; nil for every other analyzer so the
+	// generic envelope is unchanged for them.
+	Triage *TriageReport `json:"triage,omitempty"`
 }
 
 // InterprocTaintReport is the SW-102 surface payload for the solved, persisted

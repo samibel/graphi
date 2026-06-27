@@ -56,6 +56,12 @@ const (
 	ToolMemory   = "memory"
 	ToolDistill  = "distill"
 	ToolSkillGen = "skillgen"
+
+	// EP-018 multi-PR triage suite (SW-105). list_prs is the read-only forge
+	// PR-enumeration tool (metadata only); triage_prs is the single-pass
+	// graph-derived ranked-triage tool over the zero-egress engine analyzer.
+	ToolListPRs   = "list_prs"
+	ToolTriagePRs = "triage_prs"
 )
 
 // singletonToolNames are the non-structural-query tools advertised behind a
@@ -84,6 +90,8 @@ var singletonToolNames = []string{
 	ToolMemory,
 	ToolDistill,
 	ToolSkillGen,
+	ToolListPRs,
+	ToolTriagePRs,
 }
 
 // ToolNames returns the full, sorted, de-duplicated canonical set of every MCP
