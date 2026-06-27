@@ -300,6 +300,41 @@ func (d *Direct) TriagePRs(ctx context.Context) ([]byte, error) {
 	return analysis.Marshal(res)
 }
 
+// ConflictsPRs implements Client. It enumerates open PRs through the read-only
+// forge boundary (the only egress), maps the forge metadata onto the engine
+// conflicts input, and dispatches the zero-egress `conflicts-prs` analyzer through
+// the SINGLE shared analysis.Service + encoder — so the pairwise ConflictReport is
+// byte-identical across every surface. The forge call is the only outbound
+// activity; the conflict detection itself is a pure in-memory pass over the local
+// graph. Without a forge client it returns ErrForgeUnavailable; without an analysis
+// service, ErrAnalysisUnavailable.
+func (d *Direct) ConflictsPRs(ctx context.Context) ([]byte, error) {
+	if d.forge == nil {
+		return nil, ErrForgeUnavailable
+	}
+	if d.analysisSvc == nil {
+		return nil, ErrAnalysisUnavailable
+	}
+	prs, err := d.forge.ListOpenPRs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	inputs := make([]analysis.ConflictPRInput, 0, len(prs))
+	for _, p := range prs {
+		files := make([]string, len(p.ChangedFiles))
+		copy(files, p.ChangedFiles)
+		inputs = append(inputs, analysis.ConflictPRInput{
+			Number:       p.Number,
+			ChangedFiles: files,
+		})
+	}
+	res, err := d.analysisSvc.Dispatch(ctx, analysis.ConflictsAnalyzerName, analysis.Params{ConflictPRs: inputs})
+	if err != nil {
+		return nil, err
+	}
+	return analysis.Marshal(res)
+}
+
 // toRefactorOp maps the transport-agnostic request 1:1 onto engine/edit.RefactorOp.
 // Keeping the mapping trivial and shared eliminates input-decoding divergence
 // between the MCP and CLI surfaces (the only realistic parity risk).

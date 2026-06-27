@@ -291,3 +291,9 @@ func (c *DaemonClient) ListPRs(ctx context.Context) ([]byte, error) {
 func (c *DaemonClient) TriagePRs(ctx context.Context) ([]byte, error) {
 	return nil, client.ErrForgeUnavailable
 }
+
+// ConflictsPRs returns ErrForgeUnavailable until a daemon forge-enumeration RPC is
+// added (SW-106). Mirrors the ListPRs/TriagePRs "unavailable until wired" rule.
+func (c *DaemonClient) ConflictsPRs(ctx context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}

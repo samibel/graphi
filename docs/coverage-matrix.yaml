@@ -205,6 +205,11 @@ capabilities:
     status: shipped
     epic: EP-018
     note: "SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface)."
+  - id: conflicts-prs
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-106: inter-PR conflict detection over an enumerated PR set — textual overlap + shared file/symbol/high-centrality node + asymmetric contract-dependency edge check; entity→PRs inverted index, byte-stable pairwise report (zero engine egress; forge enumeration stays at the surface)."
   - id: notebook-ingest
     category: analyzer
     status: shipped
@@ -330,6 +335,11 @@ capabilities:
     status: shipped
     epic: EP-018
     note: "SW-105: single-pass graph-derived ranked multi-PR triage over the enumerated PR set (zero engine egress)."
+  - id: conflicts_prs
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress)."
   - id: refactor
     category: mcp-tool
     status: shipped

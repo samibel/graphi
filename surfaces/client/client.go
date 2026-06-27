@@ -337,6 +337,17 @@ type Client interface {
 	// client wired it returns ErrForgeUnavailable; without an analysis service it
 	// returns ErrAnalysisUnavailable.
 	TriagePRs(ctx context.Context) ([]byte, error)
+
+	// ConflictsPRs enumerates the open PRs via the read-only forge boundary, then
+	// hands the already-enumerated set to the zero-egress engine `conflicts-prs`
+	// analyzer, returning the canonical serialized ConflictReport bytes: the
+	// deterministic pairwise report of conflicting open-PR pairs (textual overlap,
+	// shared file/symbol/high-centrality node, and the asymmetric contract-dependency
+	// case). The forge call (enumeration) is the only egress; the conflict detection
+	// is an in-memory pass over the local graph. Without a forge client wired it
+	// returns ErrForgeUnavailable; without an analysis service it returns
+	// ErrAnalysisUnavailable.
+	ConflictsPRs(ctx context.Context) ([]byte, error)
 }
 
 // ErrForgeUnavailable is returned when a Client has no read-only forge

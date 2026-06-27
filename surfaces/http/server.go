@@ -193,6 +193,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze))
 	mux.HandleFunc("GET /prs", s.schemaGuard(s.handleListPRs))
 	mux.HandleFunc("GET /prs/triage", s.schemaGuard(s.handleTriagePRs))
+	mux.HandleFunc("GET /prs/conflicts", s.schemaGuard(s.handleConflictsPRs))
 	mux.HandleFunc("POST /memory", s.schemaGuard(s.handleMemory))
 	mux.HandleFunc("POST /distill", s.schemaGuard(s.handleDistill))
 	mux.HandleFunc("POST /skillgen", s.schemaGuard(s.handleSkillGen))
@@ -539,6 +540,19 @@ func (s *Server) handleListPRs(w http.ResponseWriter, r *http.Request) {
 // CLI/MCP surfaces.
 func (s *Server) handleTriagePRs(w http.ResponseWriter, r *http.Request) {
 	raw, err := s.client.TriagePRs(r.Context())
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleConflictsPRs (SW-106) returns the inter-PR conflict report. It delegates
+// to the shared client.ConflictsPRs seam (forge enumeration → zero-egress engine
+// analyzer → shared encoder), so the pairwise payload is byte-identical to the
+// CLI/MCP surfaces.
+func (s *Server) handleConflictsPRs(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.ConflictsPRs(r.Context())
 	if err != nil {
 		writeErrSanitized(w, err)
 		return

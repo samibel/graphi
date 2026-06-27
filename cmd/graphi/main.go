@@ -84,6 +84,8 @@ func main() {
 		os.Exit(runListPRs(os.Args[2:]))
 	case "triage-prs":
 		os.Exit(runTriagePRs(os.Args[2:]))
+	case "conflicts-prs":
+		os.Exit(runConflictsPRs(os.Args[2:]))
 	case "refactor-preview":
 		os.Exit(runRefactor(os.Args[2:], "refactor-preview"))
 	case "refactor":
@@ -481,6 +483,22 @@ func runTriagePRs(args []string) int {
 	}
 	if err := cli.RunTriagePRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: triage-prs: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runConflictsPRs launches the SW-106 inter-PR conflict detection. Usage:
+// graphi conflicts-prs [-db path] [-daemon socket]. Enumeration is the only egress
+// (forge.FromEnv); conflict detection is a zero-egress pass over the local graph.
+func runConflictsPRs(args []string) int {
+	dbPath, socket, _ := extractFlags(args)
+	c := makeForgeClient(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunConflictsPRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: conflicts-prs: %v\n", err)
 		return 1
 	}
 	return 0

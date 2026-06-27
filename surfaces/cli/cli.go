@@ -433,6 +433,25 @@ func RunTriagePRs(ctx context.Context, c client.Client, out, errOut io.Writer) e
 	return nil
 }
 
+// RunConflictsPRs runs the SW-106 inter-PR conflict detection through the shared
+// client and writes the canonical serialized ConflictReport bytes (byte-identical
+// across surfaces). The forge enumeration is the only egress; the conflict
+// detection is a zero-egress pass over the local graph.
+//
+// Usage:
+//
+//	conflicts-prs
+func RunConflictsPRs(ctx context.Context, c client.Client, out, errOut io.Writer) error {
+	b, err := c.ConflictsPRs(ctx)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunSavings prints the savings-ledger readout (SW-020): the headline
 // "Saved $X this session" line plus per-call and cumulative USD figures,
 // followed by the canonical structured readout JSON (identical to the MCP tool

@@ -321,6 +321,13 @@ func Marshal(a Analysis) ([]byte, error) {
 	if a.Triage != nil {
 		return MarshalTriage(*a.Triage)
 	}
+	// SW-106: the conflicts-prs detector carries a versioned ConflictReport. When
+	// present, the canonical output IS that pairwise envelope (its own byte-stable
+	// serializer with the total pair + within-pair entity order), so every surface
+	// emits the identical conflict shape through this one path.
+	if a.Conflicts != nil {
+		return MarshalConflicts(*a.Conflicts)
+	}
 
 	nodes := make([]ReachedNode, len(a.Nodes))
 	copy(nodes, a.Nodes)

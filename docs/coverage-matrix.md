@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **88**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **90**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -42,7 +42,7 @@ Total capabilities: **88**. See [`architecture-plan.md`](architecture-plan.md) f
 | `typescript` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 | `yaml` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 
-## Analyzers (18)
+## Analyzers (19)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -50,6 +50,7 @@ Total capabilities: **88**. See [`architecture-plan.md`](architecture-plan.md) f
 | `call-chain` | ✅ shipped | EP-004 | caller/callee chain reconstruction. |
 | `communities` | ✅ shipped | EP-017 | SW-104: SW-103 Louvain community detection surfaced behind the single dispatch table. |
 | `concept` | ✅ shipped | EP-004 | lexical-search-backed concept resolution (needs Searcher). |
+| `conflicts-prs` | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over an enumerated PR set — textual overlap + shared file/symbol/high-centrality node + asymmetric contract-dependency edge check; entity→PRs inverted index, byte-stable pairwise report (zero engine egress; forge enumeration stays at the surface). |
 | `contracts` | ✅ shipped | EP-005 | producer/consumer contract drift detection. |
 | `git-history` | ✅ shipped | EP-005 | churn / bus-factor / co-change signals. |
 | `impact` | ✅ shipped | EP-004 | forward/reverse blast-radius reachability. |
@@ -65,7 +66,7 @@ Total capabilities: **88**. See [`architecture-plan.md`](architecture-plan.md) f
 | `triage-prs` | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (34)
+## MCP tools (35)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -81,6 +82,7 @@ Total capabilities: **88**. See [`architecture-plan.md`](architecture-plan.md) f
 | `callees` | ✅ shipped | EP-001 | structural query: callees. |
 | `callers` | ✅ shipped | EP-001 | structural query: callers. |
 | `compound` | ✅ shipped | EP-011 | compound / Cypher-style graph query composing traversals+filters (G1). |
+| `conflicts_prs` | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress). |
 | `definition` | ✅ shipped | EP-001 | structural query: definition. |
 | `distill` | ✅ shipped | EP-012 | session distillation into a compact decision record. |
 | `find_clones` | ✅ shipped | EP-013 | structural clone-group detection from a JSON config (G4). |

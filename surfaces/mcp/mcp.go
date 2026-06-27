@@ -252,6 +252,8 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return s.listPRsCall(ctx)
 	case ToolTriagePRs:
 		return s.triagePRsCall(ctx)
+	case ToolConflictsPRs:
+		return s.conflictsPRsCall(ctx)
 	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
@@ -615,6 +617,17 @@ func (s *Server) triagePRsCall(ctx context.Context) (any, *rpcError) {
 	return textResult(b), nil
 }
 
+// conflictsPRsCall (SW-106) returns the inter-PR conflict report through the
+// shared client (forge enumeration → zero-egress engine analyzer → shared
+// encoder), so the pairwise ConflictReport is byte-identical across surfaces.
+func (s *Server) conflictsPRsCall(ctx context.Context) (any, *rpcError) {
+	b, err := s.c.ConflictsPRs(ctx)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
 // textResult wraps canonical serialized bytes in the MCP tool-result envelope.
 func textResult(b []byte) map[string]any {
 	return map[string]any{
@@ -963,6 +976,12 @@ func (s *Server) toolDescriptors() []map[string]any {
 		tools = append(tools, map[string]any{
 			"name":        ToolTriagePRs,
 			"description": "single-pass graph-derived PR triage: enumerate open PRs, then rank them by blast radius, touched high-centrality nodes, ownership concentration, churn, and test-coverage-of-touched-code, folded into a fixed-integer composite. Deterministic total order (composite DESC, PR number ASC). Scoring is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+			"annotations": readOnlyToolAnnotations(),
+		})
+		tools = append(tools, map[string]any{
+			"name":        ToolConflictsPRs,
+			"description": "inter-PR conflict detection: enumerate open PRs, then report which PR PAIRS collide over the local graph — textual overlap (overlapping changed line ranges in the same file), shared file/symbol/high-centrality node, and the asymmetric contract-dependency case (one PR mutates a contract that another PR's changed entities depend on via graph edges, flagged even with NO textual overlap). Deterministic pairwise report (pairs by ascending PR number, canonical within-pair entity order). Detection is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
 			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
 			"annotations": readOnlyToolAnnotations(),
 		})

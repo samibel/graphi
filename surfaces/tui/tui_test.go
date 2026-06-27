@@ -129,6 +129,9 @@ func (f *fakeEngine) ListPRs(context.Context) ([]byte, error) {
 func (f *fakeEngine) TriagePRs(context.Context) ([]byte, error) {
 	return nil, client.ErrForgeUnavailable
 }
+func (f *fakeEngine) ConflictsPRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
 func (f *fakeEngine) SchemaVersion() int { return 1 }
 
 var _ Engine = (*fakeEngine)(nil)

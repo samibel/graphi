@@ -127,6 +127,15 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	// (scoreRegion) plus the graph primitives (metrics/impact/churn) in a SINGLE
 	// pass to emit a byte-stable, totally-ordered ranked TriageReport.
 	mustRegister(reg, newTriageAnalyzer())
+	// SW-106 (EP-018 2/4): register the conflicts-prs detector. It is a composite,
+	// read-only, DETERMINISTIC batch driver that consumes an already-enumerated
+	// open-PR set (handed in via Params.ConflictPRs by the surface-boundary forge
+	// client — the engine never touches the network), reuses the EP-007 change-set
+	// resolution (parseDiff/resolveRef) + the graph primitives (metrics centrality,
+	// the impact.go reverse-dependency adjacency) and reports the conflicting PR
+	// pairs (textual / graph-semantic / asymmetric contract-dependency) as a
+	// byte-stable, totally-ordered ConflictReport over an entity→PRs inverted index.
+	mustRegister(reg, newConflictsAnalyzer())
 	return NewService(reader, reg)
 }
 

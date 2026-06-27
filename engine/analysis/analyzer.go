@@ -77,6 +77,13 @@ type Params struct {
 	// ranks. It is populated by the surface-boundary forge client (the ONLY
 	// outbound path); the engine never fetches it. Unused by all other analyzers.
 	PRs []TriagePRInput `json:"prs,omitempty"`
+	// ConflictPRs is the already-enumerated open-PR set the SW-106 conflicts-prs
+	// analyzer intersects pairwise. Like PRs it is populated by the surface-boundary
+	// forge client (the only outbound path); the engine never fetches it. Each input
+	// carries the forge-sourced changed-file list plus an OPTIONAL unified-diff /
+	// line-oriented ref string (reused through EP-007 parseDiff) so the analyzer can
+	// resolve precise symbols + line ranges when available. Unused by other analyzers.
+	ConflictPRs []ConflictPRInput `json:"conflict_prs,omitempty"`
 }
 
 // ReachedNode is a node reached during a traversal, carrying the provenance of
@@ -173,6 +180,11 @@ type Analysis struct {
 	// the triage-prs analyzer populates it; nil for every other analyzer so the
 	// generic envelope is unchanged for them.
 	Triage *TriageReport `json:"triage,omitempty"`
+	// Conflicts carries the SW-106 `conflicts-prs` inter-PR conflict payload: the
+	// deterministic pairwise report of conflicting open-PR pairs. Only the
+	// conflicts-prs analyzer populates it; nil for every other analyzer so the
+	// generic envelope is unchanged for them.
+	Conflicts *ConflictReport `json:"conflicts,omitempty"`
 }
 
 // InterprocTaintReport is the SW-102 surface payload for the solved, persisted

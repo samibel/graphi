@@ -62,6 +62,8 @@ const (
 	// graph-derived ranked-triage tool over the zero-egress engine analyzer.
 	ToolListPRs   = "list_prs"
 	ToolTriagePRs = "triage_prs"
+	// SW-106 inter-PR conflict detection over the enumerated open-PR set.
+	ToolConflictsPRs = "conflicts_prs"
 )
 
 // singletonToolNames are the non-structural-query tools advertised behind a
@@ -92,6 +94,7 @@ var singletonToolNames = []string{
 	ToolSkillGen,
 	ToolListPRs,
 	ToolTriagePRs,
+	ToolConflictsPRs,
 }
 
 // ToolNames returns the full, sorted, de-duplicated canonical set of every MCP

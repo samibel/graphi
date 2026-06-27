@@ -377,5 +377,11 @@ func (h *HTTP) TriagePRs(ctx context.Context) ([]byte, error) {
 	return nil, ErrForgeUnavailable
 }
 
+// ConflictsPRs returns ErrForgeUnavailable until a remote forge-enumeration RPC is
+// added (SW-106).
+func (h *HTTP) ConflictsPRs(ctx context.Context) ([]byte, error) {
+	return nil, ErrForgeUnavailable
+}
+
 // compile-time proof the adapter satisfies the surface contract.
 var _ Client = (*HTTP)(nil)

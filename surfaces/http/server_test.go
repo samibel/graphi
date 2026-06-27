@@ -120,6 +120,9 @@ func (s *stubClient) ListPRs(context.Context) ([]byte, error) {
 func (s *stubClient) TriagePRs(context.Context) ([]byte, error) {
 	return nil, client.ErrForgeUnavailable
 }
+func (s *stubClient) ConflictsPRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
 
 func newServer(t *testing.T) (*Server, *stubClient, *observe.Broker) {
 	t.Helper()
