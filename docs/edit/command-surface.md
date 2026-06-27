@@ -1,4 +1,4 @@
-# MCP/CLI Graph-Aware Edit & Refactor Command Surface (SW-038)
+# MCP/CLI Graph-Aware Edit & Refactor Command Surface (SW-038, EP-015)
 
 This document explains the state **before** and **after** SW-038, why the changes
 were made, and the load-bearing design decisions: the surface is a **thin
@@ -6,6 +6,17 @@ transport** over one shared `client.Direct` implementation; undo is achieved by
 **persisting the pre-edit snapshot** keyed by a crypto-random undo token; and the
 audit/undo store is an `engine/edit` **side-channel** in the ingest-meta sidecar,
 never in `core/graphstore`.
+
+> **EP-015 additions (SW-091 … SW-094).** EP-015 extended this surface with
+> two new CLI subcommands — `graphi inline` (SW-092) and `graphi safe-delete`
+> (SW-093) — and the `graphi diagnose` diagnostics + code-action flow (SW-091).
+> All three ride the same shared `client.Client` interface through new
+> `Inline` / `SafeDelete` / `Diagnose` methods, with a shared marshaller
+> (`engine/edit/serialize.go`) and a byte-parity harness
+> (`surfaces/ep015_parity_test.go`). `diagnose` is graph-derived (no source
+> mutation), `inline` performs a reference-correct inline refactor with a
+> fail-safe block list, `safe-delete` gates on reference-safety before
+> removing a symbol.
 
 ## Before SW-038
 
@@ -48,18 +59,22 @@ surfaces return identical change records by construction (AC-4).
 ```mermaid
 flowchart TD
     MCP["surfaces/mcp<br/>refactor_preview / refactor / undo tools"]
-    CLI["surfaces/cli + cmd/graphi<br/>refactor-preview / refactor / undo subcommands"]
-    C["surfaces/client.Client<br/>RefactorPreview / Refactor / Undo"]
+    CLI["surfaces/cli + cmd/graphi<br/>refactor-preview / refactor / undo subcommands<br/>+ diagnose / inline / safe-delete (EP-015)"]
+    C["surfaces/client.Client<br/>RefactorPreview / Refactor / Undo<br/>+ Diagnose / Inline / SafeDelete"]
     D["client.Direct<br/>(the ONE shared impl)"]
-    A["engine/edit.Applier<br/>ApplyRefactor / ApplyRefactorRecorded / Undo"]
+    A["engine/edit.Applier<br/>ApplyRefactor / ApplyRefactorRecorded / Undo<br/>+ ApplyInline / ApplySafeDelete"]
     R["engine/edit.ChangeRecorder<br/>change_record + undo store"]
+    DG["engine/diagnostic (SW-091)"]
     G["core/graphstore<br/>Snapshot / Load"]
     MCP -->|RefactorRequest + actor 'mcp'| C
     CLI -->|RefactorRequest + actor 'cli'| C
+    CLI -->|DiagnoseRequest + actor 'cli'| C
     C --> D
     D --> A
+    D --> DG
     A --> R
     A --> G
+    DG --> C
 ```
 
 Layering is preserved (`cmd → surfaces → engine → core`): the surfaces hold **no**

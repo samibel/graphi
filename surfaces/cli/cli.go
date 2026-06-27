@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/price"
@@ -213,6 +214,152 @@ func RunSearch(ctx context.Context, c client.Client, args []string, out, errOut 
 	return nil
 }
 
+// RunSearchAST runs the structural AST pattern query (SW-082 / SW-085). It mirrors
+// RunSearch's flag conventions — an optional `-limit N` plus the pattern as the
+// positional argument — and writes the canonical query.Result bytes from the shared
+// client (byte-identical to the MCP and HTTP surfaces). The pattern is a JSON
+// AstPattern, e.g. graphi search-ast '{"kind":"function","name":{"regex":"^handle_"}}'.
+func RunSearchAST(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	limit := 100
+	var rest []string
+	for i := 0; i < len(args); i++ {
+		switch {
+		case args[i] == "-limit" && i+1 < len(args):
+			var v int
+			if _, err := fmt.Sscanf(args[i+1], "%d", &v); err != nil {
+				fmt.Fprintf(errOut, "cli: invalid -limit value %q\n", args[i+1])
+				return fmt.Errorf("cli: invalid -limit")
+			}
+			limit = v
+			i++
+		default:
+			rest = append(rest, args[i])
+		}
+	}
+	if len(rest) == 0 {
+		fmt.Fprintln(errOut, "usage: search-ast [-limit N] <json-pattern>")
+		return fmt.Errorf("cli: missing pattern")
+	}
+	b, err := c.SearchAST(ctx, rest[0], limit)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunFindClones runs the clone-detection query (SW-083 / SW-085). The optional
+// positional argument is a JSON CloneConfig (empty ⇒ engine defaults); it writes
+// the canonical query.CloneResult bytes from the shared client (byte-identical to
+// the MCP and HTTP surfaces). E.g. graphi find-clones '{"threshold":0.9}'.
+func RunFindClones(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	var config string
+	for i := 0; i < len(args); i++ {
+		if args[i] != "" {
+			config = args[i]
+			break
+		}
+	}
+	b, err := c.FindClones(ctx, config)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunDiagnose runs the engine diagnostics (SW-091 / SW-094) and writes the
+// canonical diagnostic.Result bytes from the shared client — byte-identical to
+// the MCP/HTTP/daemon surfaces. Positional args select analyzer kinds; none ⇒ all
+// built-ins. E.g. graphi diagnose            (all) / graphi diagnose dead_symbol.
+func RunDiagnose(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	var kinds []string
+	for _, a := range args {
+		if a != "" {
+			kinds = append(kinds, a)
+		}
+	}
+	b, err := c.Diagnose(ctx, kinds)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunInline runs the inline refactor (SW-092 / SW-094): `graphi inline [-dry-run]
+// <target-symbol>`. It writes the canonical InlineResult bytes from the shared
+// client (byte-identical across surfaces). A blocked/unavailable outcome is a
+// typed result, not an error.
+func RunInline(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	req, err := mutatingFlags("inline", args, errOut)
+	if err != nil {
+		return err
+	}
+	b, err := c.Inline(ctx, client.InlineRequest{TargetSymbol: req.target, DryRun: req.dryRun})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunSafeDelete runs the safe-delete refactor (SW-093 / SW-094): `graphi
+// safe-delete [-dry-run] <target-symbol>`. Writes the canonical SafeDeleteResult
+// bytes from the shared client; a blocked report is a typed result, not an error.
+func RunSafeDelete(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	req, err := mutatingFlags("safe-delete", args, errOut)
+	if err != nil {
+		return err
+	}
+	b, err := c.SafeDelete(ctx, client.SafeDeleteRequest{TargetSymbol: req.target, DryRun: req.dryRun})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// mutatingReq is the decoded form of the shared inline/safe-delete flag set.
+type mutatingReq struct {
+	target string
+	dryRun bool
+}
+
+// mutatingFlags decodes `[-dry-run] <target-symbol>` for the inline and
+// safe-delete commands — identical decoding for both so their surface behavior
+// can never diverge. The structured decode error wording is stable for parity.
+func mutatingFlags(cmd string, args []string, errOut io.Writer) (mutatingReq, error) {
+	var r mutatingReq
+	var rest []string
+	for _, a := range args {
+		switch a {
+		case "-dry-run", "--dry-run":
+			r.dryRun = true
+		default:
+			if a != "" {
+				rest = append(rest, a)
+			}
+		}
+	}
+	if len(rest) == 0 {
+		fmt.Fprintf(errOut, "usage: %s [-dry-run] <target-symbol>\n", cmd)
+		return r, fmt.Errorf("cli: %s: missing target symbol", cmd)
+	}
+	r.target = rest[0]
+	return r, nil
+}
+
 // RunSetupEmbedder is the opt-in `graphi setup-embedder` command (SW-059). It
 // prints the explicit, copy-pasteable config a user sets to enable the OPTIONAL
 // semantic search — there is NO hidden default: semantic search stays OFF until
@@ -248,6 +395,153 @@ func RunSetupEmbedder(ctx context.Context, args []string, out, errOut io.Writer)
 	return nil
 }
 
+// RunListPRs runs the SW-105 read-only forge PR-enumeration through the shared
+// client and writes the canonical serialized forge.PRList bytes (byte-identical
+// to the MCP/HTTP surfaces). Like every CLI surface it holds NO engine logic — it
+// returns forge-sourced metadata only, performs no scoring.
+//
+// Usage:
+//
+//	list-prs
+func RunListPRs(ctx context.Context, c client.Client, out, errOut io.Writer) error {
+	b, err := c.ListPRs(ctx)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunTriagePRs runs the SW-105 single-pass graph-derived PR triage ranking through
+// the shared client and writes the canonical serialized TriageReport bytes
+// (byte-identical across surfaces). The forge enumeration is the only egress; the
+// ranking is a zero-egress pass over the local graph.
+//
+// Usage:
+//
+//	triage-prs
+func RunTriagePRs(ctx context.Context, c client.Client, out, errOut io.Writer) error {
+	b, err := c.TriagePRs(ctx)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunConflictsPRs runs the SW-106 inter-PR conflict detection through the shared
+// client and writes the canonical serialized ConflictReport bytes (byte-identical
+// across surfaces). The forge enumeration is the only egress; the conflict
+// detection is a zero-egress pass over the local graph.
+//
+// Usage:
+//
+//	conflicts-prs
+func RunConflictsPRs(ctx context.Context, c client.Client, out, errOut io.Writer) error {
+	b, err := c.ConflictsPRs(ctx)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunSuggestReviewers runs the SW-107 reviewer recommender through the shared
+// client and writes the canonical serialized ReviewerReport bytes (byte-identical
+// across surfaces). diff is the local-first PR diff / line-oriented ref string; the
+// ranking is a zero-egress pass over the local graph + git history.
+//
+// Usage:
+//
+//	suggest-reviewers [-diff <unified-diff|refs>]
+func RunSuggestReviewers(ctx context.Context, c client.Client, diff string, out, errOut io.Writer) error {
+	b, err := c.SuggestReviewers(ctx, diff)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunCompareBranches runs the SW-107 graph-level branch comparator through the
+// shared client and writes the canonical serialized BranchDiffReport bytes
+// (byte-identical across surfaces). The base/head graph states are materialized
+// above the surface boundary; the engine diff is a zero-egress pass keyed by
+// canonical NodeId.
+//
+// Usage:
+//
+//	compare-branches -base <ref> -head <ref>
+func RunCompareBranches(ctx context.Context, c client.Client, baseRef, headRef string, out, errOut io.Writer) error {
+	b, err := c.CompareBranches(ctx, baseRef, headRef)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunCritiqueReview runs the SW-108 review critique through the shared client and
+// writes the canonical serialized CritiqueReport bytes (byte-identical across
+// surfaces). The EXISTING review is supplied inline via -review / -review-path (read
+// once at the surface; no engine file I/O) OR fetched from the forge for -pr; the
+// touched set comes from -diff / -diff-path. The critique itself is a zero-egress
+// pass over the local graph; the only permitted egress is the surface review fetch.
+//
+// Usage:
+//
+//	critique-review -diff <unified-diff|refs> [-pr N] [-review <json>|-review-path <file>]
+func RunCritiqueReview(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("critique-review", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	pr := fs.Int("pr", 0, "PR number to fetch the existing review for (when no inline review is supplied)")
+	diff := fs.String("diff", "", "the PR's touched set: inline unified-diff or simple ref string")
+	diffPath := fs.String("diff-path", "", "path to a LOCAL diff file for the touched set (read once; no remote fetch)")
+	review := fs.String("review", "", "inline existing-review JSON ({verdict, comments:[{id,path,line,symbol,claim_targets}]})")
+	reviewPath := fs.String("review-path", "", "path to a LOCAL existing-review JSON file (read once; no remote fetch)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+
+	diffPayload := *diff
+	if *diffPath != "" {
+		b, rerr := os.ReadFile(*diffPath)
+		if rerr != nil {
+			fmt.Fprintf(errOut, "cli: read diff file: %v\n", rerr)
+			return fmt.Errorf("cli: read diff file: %w", rerr)
+		}
+		diffPayload = string(b)
+	}
+	reviewPayload := *review
+	if *reviewPath != "" {
+		b, rerr := os.ReadFile(*reviewPath)
+		if rerr != nil {
+			fmt.Fprintf(errOut, "cli: read review file: %v\n", rerr)
+			return fmt.Errorf("cli: read review file: %w", rerr)
+		}
+		reviewPayload = string(b)
+	}
+
+	b, err := c.CritiqueReview(ctx, *pr, diffPayload, reviewPayload)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunSavings prints the savings-ledger readout (SW-020): the headline
 // "Saved $X this session" line plus per-call and cumulative USD figures,
 // followed by the canonical structured readout JSON (identical to the MCP tool
@@ -277,6 +571,136 @@ func RunSavings(ctx context.Context, c client.Client, out, errOut io.Writer) err
 		return fmt.Errorf("cli: write output: %w", err)
 	}
 	return nil
+}
+
+// RunMemory executes a memory operation against the shared client and writes the
+// canonical serialized MemoryResponse.
+//
+// Usage:
+//
+//	memory store -scope <scope> -notebook <nb> -payload <text> [-tags a,b]
+//	memory recall -scope <scope> [-notebook <nb>]
+//	memory forget -id <id>
+func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	if len(args) < 1 {
+		fmt.Fprintln(errOut, "usage: memory store|recall|forget ...")
+		return fmt.Errorf("cli: missing memory subcommand")
+	}
+	op := args[0]
+	fs := flag.NewFlagSet("memory "+op, flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	scope := fs.String("scope", "", "memory scope")
+	notebook := fs.String("notebook", "", "memory notebook")
+	tags := fs.String("tags", "", "comma-separated tags (store only)")
+	payload := fs.String("payload", "", "memory payload (store only)")
+	id := fs.String("id", "", "memory id (forget only)")
+	if err := fs.Parse(args[1:]); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	var tagList []string
+	if *tags != "" {
+		tagList = strings.Split(*tags, ",")
+	}
+	b, err := c.Memory(ctx, client.MemoryRequest{
+		Op:       op,
+		Scope:    *scope,
+		Notebook: *notebook,
+		Tags:     tagList,
+		Payload:  *payload,
+		ID:       *id,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunDistill runs session distillation against the shared client and writes the
+// canonical serialized DistillResponse.
+//
+// Usage:
+//
+//	distill -session <id> -decisions "d1,d2" -risks "r1" -questions "q1" -files "a.go,b.go"
+func RunDistill(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("distill", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	session := fs.String("session", "", "session id")
+	decisions := fs.String("decisions", "", "comma-separated decisions")
+	risks := fs.String("risks", "", "comma-separated risks")
+	questions := fs.String("questions", "", "comma-separated open questions")
+	files := fs.String("files", "", "comma-separated file references")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if *session == "" {
+		fmt.Fprintln(errOut, "cli: -session is required")
+		return fmt.Errorf("cli: -session is required")
+	}
+	b, err := c.Distill(ctx, client.DistillRequest{
+		SessionID:      *session,
+		Decisions:      splitCSV(*decisions),
+		Risks:          splitCSV(*risks),
+		OpenQuestions:  splitCSV(*questions),
+		FileReferences: splitCSV(*files),
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunSkillGen runs deterministic skill generation against the shared client and
+// writes the canonical serialized SkillGenResponse.
+//
+// Usage:
+//
+//	skillgen -name <name> -trigger <trigger> -description <desc>
+func RunSkillGen(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("skillgen", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	name := fs.String("name", "", "skill name")
+	trigger := fs.String("trigger", "", "skill trigger")
+	desc := fs.String("description", "", "skill description")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if *name == "" || *trigger == "" {
+		fmt.Fprintln(errOut, "cli: -name and -trigger are required")
+		return fmt.Errorf("cli: -name and -trigger are required")
+	}
+	b, err := c.SkillGen(ctx, client.SkillGenRequest{
+		Name:        *name,
+		Trigger:     *trigger,
+		Description: *desc,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+func splitCSV(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // RunAnalysis executes one CLI analyzer invocation against the shared client and
@@ -323,13 +747,18 @@ func RunAnalysis(ctx context.Context, c client.Client, args []string, out, errOu
 	}
 
 	// The pr-risk scorer, the pr-signals detector, and the pr-questions generator
-	// are diff-driven; every other analyzer is symbol-driven.
-	if name == "pr-risk" || name == "pr-signals" || name == "pr-questions" {
+	// are diff-driven; the SW-104 EP-017 operations (communities, watcher-status,
+	// notebook-ingest, taint-query) are whole-graph / status operations needing no
+	// symbol; every other analyzer is symbol-driven.
+	switch {
+	case name == "pr-risk" || name == "pr-signals" || name == "pr-questions":
 		if diffPayload == "" {
 			fmt.Fprintf(errOut, "cli: -diff or -diff-path is required for %s\n", name)
 			return fmt.Errorf("cli: -diff or -diff-path is required for %s", name)
 		}
-	} else if *symbol == "" {
+	case client.AnalyzerSymbolOptional(name):
+		// no required positional argument
+	case *symbol == "":
 		fmt.Fprintln(errOut, "cli: -symbol is required")
 		return fmt.Errorf("cli: -symbol is required")
 	}

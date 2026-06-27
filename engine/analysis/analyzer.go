@@ -73,6 +73,34 @@ type Params struct {
 	// downstream publisher can emit a non-sensitive readout). Unused by other
 	// analyzers.
 	Provenance string `json:"provenance,omitempty"`
+	// PRs is the already-enumerated open-PR set the SW-105 triage-prs analyzer
+	// ranks. It is populated by the surface-boundary forge client (the ONLY
+	// outbound path); the engine never fetches it. Unused by all other analyzers.
+	PRs []TriagePRInput `json:"prs,omitempty"`
+	// ConflictPRs is the already-enumerated open-PR set the SW-106 conflicts-prs
+	// analyzer intersects pairwise. Like PRs it is populated by the surface-boundary
+	// forge client (the only outbound path); the engine never fetches it. Each input
+	// carries the forge-sourced changed-file list plus an OPTIONAL unified-diff /
+	// line-oriented ref string (reused through EP-007 parseDiff) so the analyzer can
+	// resolve precise symbols + line ranges when available. Unused by other analyzers.
+	ConflictPRs []ConflictPRInput `json:"conflict_prs,omitempty"`
+	// CompareBase and CompareHead are the two already-built, read-only graph states
+	// the SW-107 compare-branches analyzer diffs. They are materialized ABOVE the
+	// surface boundary (the existing indexer / core/graphstore snapshot path) from
+	// two branch refs; the engine analyzer performs a pure local node/edge set-diff
+	// keyed by canonical NodeId and NEVER resolves a git ref, reads a git tree, or
+	// opens a socket. They are runtime query.Reader views (not JSON-serializable),
+	// so they carry json:"-". Unused by every other analyzer.
+	CompareBase query.Reader `json:"-"`
+	CompareHead query.Reader `json:"-"`
+	// Review is the already-structured EXISTING PR review (comments with
+	// {path,line,symbol} anchors + claim-target refs + overall verdict) the SW-108
+	// critique-review analyzer critiques. It is produced ABOVE the surface boundary
+	// (fetched from the forge via the net-new surface review-fetch path, or supplied
+	// inline) and handed to the engine as Params; the engine NEVER fetches it. The
+	// PR's touched-entity set is carried in Diff (reused EP-007 parseDiff/resolveRef).
+	// Unused by every other analyzer.
+	Review *ReviewInput `json:"review,omitempty"`
 }
 
 // ReachedNode is a node reached during a traversal, carrying the provenance of
@@ -147,6 +175,71 @@ type Analysis struct {
 	// SW-040 signal reports. Only the pr-questions analyzer populates it; it stays
 	// omitted (nil) for every other analyzer so the generic envelope is unchanged.
 	QuestionReport *QuestionReport `json:"question_report,omitempty"`
+	// InterprocTaint carries the SW-102 persisted interprocedural taint fixpoint
+	// result: the explicit completeness verdict, the no-recompute observability
+	// flags, and the cross-procedure source→sink flows answered from the solved
+	// relation. Only the taint analyzer populates it; it stays omitted (nil) for
+	// every other analyzer so the generic envelope is unchanged for them.
+	InterprocTaint *InterprocTaintReport `json:"interproc_taint,omitempty"`
+	// Communities carries the SW-104 `communities` operation payload (SW-103
+	// detection surfaced behind the single dispatch table). Only the communities
+	// analyzer populates it; nil for every other analyzer.
+	Communities *CommunitiesReport `json:"communities,omitempty"`
+	// Notebook carries the SW-104 `notebook-ingest` operation payload (SW-100
+	// notebook-cell provenance surfaced behind the single dispatch table). Only the
+	// notebook analyzer populates it; nil for every other analyzer.
+	Notebook *NotebookReport `json:"notebook,omitempty"`
+	// WatcherStatus carries the SW-104 `watcher-status` operation payload (SW-101
+	// watcher health surfaced behind the single dispatch table). Only the
+	// watcher-status analyzer populates it; nil for every other analyzer.
+	WatcherStatus *WatcherStatusReport `json:"watcher_status,omitempty"`
+	// Triage carries the SW-105 `triage-prs` ranked multi-PR triage payload. Only
+	// the triage-prs analyzer populates it; nil for every other analyzer so the
+	// generic envelope is unchanged for them.
+	Triage *TriageReport `json:"triage,omitempty"`
+	// Conflicts carries the SW-106 `conflicts-prs` inter-PR conflict payload: the
+	// deterministic pairwise report of conflicting open-PR pairs. Only the
+	// conflicts-prs analyzer populates it; nil for every other analyzer so the
+	// generic envelope is unchanged for them.
+	Conflicts *ConflictReport `json:"conflicts,omitempty"`
+	// Reviewers carries the SW-107 `suggest-reviewers` ranked candidate-reviewer
+	// payload with a transparent per-signal breakdown (ownership, recency-decayed
+	// churn, affected-subgraph proximity). Only the suggest-reviewers analyzer
+	// populates it; nil for every other analyzer so the generic envelope is
+	// unchanged for them.
+	Reviewers *ReviewerReport `json:"reviewers,omitempty"`
+	// BranchDiff carries the SW-107 `compare-branches` structured graph-level diff
+	// payload keyed by canonical NodeId (added/removed/changed/moved entities + edge
+	// added/removed). Only the compare-branches analyzer populates it; nil for every
+	// other analyzer so the generic envelope is unchanged for them.
+	BranchDiff *BranchDiffReport `json:"branch_diff,omitempty"`
+	// Critique carries the SW-108 `critique-review` structured, graph-evidence-grounded
+	// critique of an existing PR review (gap / over_flag / unsupported_claim items +
+	// the unanchored tallies). Only the critique-review analyzer populates it; nil for
+	// every other analyzer so the generic envelope is unchanged for them.
+	Critique *CritiqueReport `json:"critique,omitempty"`
+}
+
+// InterprocTaintReport is the SW-102 surface payload for the solved, persisted
+// interprocedural taint fixpoint. It is byte-stable: the verdict and cap kind are
+// deterministic, the flows are pre-sorted, and the loaded/solved flags are the
+// no-recompute observability signal (loaded=true means the answer was served from
+// the persisted artifact without recomputation).
+type InterprocTaintReport struct {
+	Verdict string               `json:"verdict"`
+	CapKind string               `json:"cap_kind,omitempty"`
+	Loaded  bool                 `json:"loaded"`
+	Solved  bool                 `json:"solved"`
+	Flows   []InterprocTaintFlow `json:"flows"`
+}
+
+// InterprocTaintFlow is one cross-procedure source→sink flow with its call path.
+type InterprocTaintFlow struct {
+	SourceName   string   `json:"source_name"`
+	SinkName     string   `json:"sink_name"`
+	SinkCategory string   `json:"sink_category,omitempty"`
+	Labels       []string `json:"labels"`
+	CallPath     []string `json:"call_path"`
 }
 
 // Analyzer is the plug-in contract every analysis capability implements. It is

@@ -13,6 +13,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -20,15 +21,19 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/edit"
 	"github.com/samibel/graphi/engine/embed"
 	_ "github.com/samibel/graphi/engine/embed/ollama" // opt-in loopback embedder: registers the "ollama" scheme; never constructed on the default path
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/ledger"
+	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/engine/skillgen"
+	"github.com/samibel/graphi/engine/watch"
 	"github.com/samibel/graphi/internal/audit"
 	"github.com/samibel/graphi/internal/mcpconfig"
 	"github.com/samibel/graphi/internal/state"
@@ -36,6 +41,7 @@ import (
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/daemon"
+	"github.com/samibel/graphi/surfaces/forge"
 	httpsrv "github.com/samibel/graphi/surfaces/http"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
@@ -52,16 +58,40 @@ func main() {
 	switch os.Args[1] {
 	case "query":
 		os.Exit(runQuery(os.Args[2:]))
+	case "compound":
+		os.Exit(runCompound(os.Args[2:]))
 	case "search":
 		os.Exit(runSearch(os.Args[2:]))
+	case "search-ast":
+		os.Exit(runSearchAST(os.Args[2:]))
+	case "find-clones":
+		os.Exit(runFindClones(os.Args[2:]))
 	case "index":
 		os.Exit(runIndex(os.Args[2:]))
 	case "savings":
 		os.Exit(runSavings(os.Args[2:]))
+	case "memory":
+		os.Exit(runMemory(os.Args[2:]))
+	case "distill":
+		os.Exit(runDistill(os.Args[2:]))
+	case "skillgen":
+		os.Exit(runSkillGen(os.Args[2:]))
 	case "analyze":
 		os.Exit(runAnalyze(os.Args[2:]))
 	case "pr-comment":
 		os.Exit(runPrComment(os.Args[2:]))
+	case "list-prs":
+		os.Exit(runListPRs(os.Args[2:]))
+	case "triage-prs":
+		os.Exit(runTriagePRs(os.Args[2:]))
+	case "conflicts-prs":
+		os.Exit(runConflictsPRs(os.Args[2:]))
+	case "suggest-reviewers":
+		os.Exit(runSuggestReviewers(os.Args[2:]))
+	case "compare-branches":
+		os.Exit(runCompareBranches(os.Args[2:]))
+	case "critique-review":
+		os.Exit(runCritiqueReview(os.Args[2:]))
 	case "refactor-preview":
 		os.Exit(runRefactor(os.Args[2:], "refactor-preview"))
 	case "refactor":
@@ -188,6 +218,49 @@ func runQuery(args []string) int {
 	return 0
 }
 
+// runCompound launches the CLI surface for a compound / Cypher-style graph query
+// (EP-011 G1). Usage:
+//
+//	graphi compound [-db path] [-daemon socket] -q "SEED ..\nHOP .."
+//	graphi compound [-db path] [-daemon socket] < query.txt   (stdin)
+//
+// The query text is passed to the shared client.Compound seam (byte-identical
+// to the MCP/HTTP/daemon surfaces). Output is the canonical query.Result.
+func runCompound(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	fs := flag.NewFlagSet("compound", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	q := fs.String("q", "", "compound query text (SEED/HOP/WHERE/MAXDEPTH); if empty, read from stdin")
+	if err := fs.Parse(rest); err != nil {
+		return 1
+	}
+	text := *q
+	if text == "" {
+		b, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "compound: read stdin:", err)
+			return 1
+		}
+		text = string(b)
+	}
+	b, err := c.Compound(context.Background(), text)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "compound:", err)
+		return 1
+	}
+	if _, err := os.Stdout.Write(append(b, '\n')); err != nil {
+		return 1
+	}
+	return 0
+}
+
 // runSearch launches the CLI search surface. Usage:
 //
 //	graphi search [-db path] [-daemon socket] [-limit N] <query>
@@ -201,6 +274,43 @@ func runSearch(args []string) int {
 		return 1
 	}
 	if err := cli.RunSearch(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		return 1
+	}
+	return 0
+}
+
+// runSearchAST launches the CLI structural-AST-search surface (SW-082 / SW-085).
+// Usage:
+//
+//	graphi search-ast [-db path] [-daemon socket] [-limit N] <json-pattern>
+func runSearchAST(args []string) int {
+	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
+	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunSearchAST(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		return 1
+	}
+	return 0
+}
+
+// runFindClones launches the CLI clone-detection surface (SW-083 / SW-085). Usage:
+//
+//	graphi find-clones [-db path] [-daemon socket] [<json-config>]
+func runFindClones(args []string) int {
+	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
+	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunFindClones(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
 		return 1
 	}
 	return 0
@@ -266,7 +376,7 @@ func runIndex(args []string) int {
 	}
 	defer func() { _ = store.Close() }()
 
-	ing, err := ingest.New(store, parse.NewDefaultRegistry(), metaDir)
+	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", err)
 		return 1
@@ -345,6 +455,214 @@ func runPrComment(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// runListPRs launches the SW-105 read-only forge PR-enumeration surface. Usage:
+//
+//	graphi list-prs [-db path] [-daemon socket]
+//
+// The forge client is resolved from the GitHub Actions environment
+// (forge.FromEnv reads GITHUB_TOKEN/GITHUB_REPOSITORY/GITHUB_API_URL — never
+// argv). Absent a token the forge is unwired and the surface reports the typed
+// "forge unavailable" error (local-first: no network without explicit config).
+func runListPRs(args []string) int {
+	dbPath, socket, _ := extractFlags(args)
+	c := makeForgeClient(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunListPRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: list-prs: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runTriagePRs launches the SW-105 single-pass graph-derived PR triage ranking.
+// Usage: graphi triage-prs [-db path] [-daemon socket]. Enumeration is the only
+// egress (forge.FromEnv); ranking is a zero-egress pass over the local graph.
+func runTriagePRs(args []string) int {
+	dbPath, socket, _ := extractFlags(args)
+	c := makeForgeClient(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunTriagePRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: triage-prs: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runConflictsPRs launches the SW-106 inter-PR conflict detection. Usage:
+// graphi conflicts-prs [-db path] [-daemon socket]. Enumeration is the only egress
+// (forge.FromEnv); conflict detection is a zero-egress pass over the local graph.
+func runConflictsPRs(args []string) int {
+	dbPath, socket, _ := extractFlags(args)
+	c := makeForgeClient(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if err := cli.RunConflictsPRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: conflicts-prs: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runSuggestReviewers launches the SW-107 reviewer recommender. Usage:
+//
+//	graphi suggest-reviewers [-db path] -diff <unified-diff> | -diff-path <file>
+//
+// The ranking is a zero-egress pass over the local graph + git history; the diff
+// is local-first untrusted input resolved through the reused EP-007 kernel.
+func runSuggestReviewers(args []string) int {
+	dbPath, _, rest := extractFlags(args)
+	fs := flag.NewFlagSet("suggest-reviewers", flag.ContinueOnError)
+	diff := fs.String("diff", "", "unified diff or line-oriented refs of the change")
+	diffPath := fs.String("diff-path", "", "read the diff/refs from this local file instead of -diff")
+	if err := fs.Parse(rest); err != nil {
+		return 1
+	}
+	payload := *diff
+	if *diffPath != "" {
+		b, err := os.ReadFile(*diffPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: suggest-reviewers: read diff: %v\n", err)
+			return 1
+		}
+		payload = string(b)
+	}
+	store, err := openStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return 1
+	}
+	defer func() { _ = store.Close() }()
+	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	if err := cli.RunSuggestReviewers(context.Background(), c, payload, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: suggest-reviewers: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runCompareBranches launches the SW-107 graph-level branch comparator. Usage:
+//
+//	graphi compare-branches -base <db-path> -head <db-path>
+//
+// Each ref is a path to an already-built graph state (a graphi SQLite snapshot).
+// Materialization happens HERE, above the surface boundary, by opening each
+// persisted state; the engine compare-branches analyzer receives the two read-only
+// states and performs a pure local set-diff with ZERO egress (it never resolves a
+// git ref). An unknown/empty ref materializes to an empty state (well-defined diff).
+func runCompareBranches(args []string) int {
+	fs := flag.NewFlagSet("compare-branches", flag.ContinueOnError)
+	base := fs.String("base", "", "base branch graph-state path (graphi SQLite snapshot)")
+	head := fs.String("head", "", "head branch graph-state path (graphi SQLite snapshot)")
+	if err := fs.Parse(args); err != nil {
+		return 1
+	}
+	m := newSnapshotMaterializer()
+	defer m.Close()
+	// The compare analyzer ignores the service reader (it diffs the two Params
+	// states), so an empty in-memory store backs the service.
+	store := graphstore.NewMemStore()
+	c := client.NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store)).
+		WithBranchStates(m)
+	if err := cli.RunCompareBranches(context.Background(), c, *base, *head, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: compare-branches: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runCritiqueReview launches the SW-108 review critique (the EP-018 capstone). Usage:
+//
+//	graphi critique-review [-db path] -diff <unified-diff>|-diff-path <file> \
+//	  [-pr N] [-review <json>|-review-path <file>]
+//
+// The EXISTING review is supplied inline (-review/-review-path, read once HERE at the
+// surface) or fetched from the forge for -pr via the net-new read-only review-fetch
+// egress (resolved from the environment; unwired when no token). The critique itself
+// is a ZERO-egress pass over the local graph: it replays the EP-007 oracle and runs
+// the three-way gap/over_flag/unsupported_claim diff against the review.
+func runCritiqueReview(args []string) int {
+	dbPath, _, rest := extractFlags(args)
+	store, err := openStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return 1
+	}
+	defer func() { _ = store.Close() }()
+	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	// Wire the net-new read-only review-fetch egress from the environment so a -pr
+	// with no inline review can fetch the existing review. When no token is present
+	// the fetcher stays unwired (local-first default) — an inline review still works.
+	if gh, ferr := forge.FromEnv(); ferr == nil && gh != nil {
+		d = d.WithReviewFetcher(gh)
+	}
+	// The CLI surface parses -diff/-diff-path/-pr/-review/-review-path and reads any
+	// local files ONCE at the surface (no engine file I/O / remote fetch on the hot path).
+	if err := cli.RunCritiqueReview(context.Background(), d, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: critique-review: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// snapshotMaterializer is the cmd-side BranchStateMaterializer: it materializes a
+// branch ref → read-only graph state by opening the persisted graphi state at that
+// path (reusing the existing graphstore persistence path). An empty ref yields an
+// empty in-memory state (a degenerate side → well-defined empty diff, no error).
+// Opened stores are tracked and closed together after the single command runs, so
+// both states stay live across the dispatch. This stays ABOVE the surface boundary;
+// the engine never sees a ref.
+type snapshotMaterializer struct {
+	opened []graphstore.Graphstore
+}
+
+func newSnapshotMaterializer() *snapshotMaterializer { return &snapshotMaterializer{} }
+
+func (m *snapshotMaterializer) StateForRef(_ context.Context, ref string) (query.Reader, error) {
+	if strings.TrimSpace(ref) == "" {
+		return graphstore.NewMemStore(), nil // empty/unknown ref → empty state
+	}
+	store, err := graphstore.OpenSQLite(ref)
+	if err != nil {
+		return nil, err
+	}
+	m.opened = append(m.opened, store)
+	return store, nil
+}
+
+func (m *snapshotMaterializer) Close() {
+	for _, s := range m.opened {
+		_ = s.Close()
+	}
+}
+
+// makeForgeClient builds an in-process client wired with the read-only forge
+// PR-enumeration boundary (SW-105). The forge is resolved from the environment;
+// when no token is present the forge stays unwired and the triage surface reports
+// the typed unavailable error rather than dialing anything (local-first default).
+func makeForgeClient(dbPath, socket string) client.Client {
+	if socket != "" {
+		// The daemon path has no forge RPC yet; it reports forge-unavailable.
+		return daemon.NewClient(socket, "")
+	}
+	store, err := openStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return nil
+	}
+	asvc := analysis.NewDefaultService(store)
+	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
+	if gh, ferr := forge.FromEnv(); ferr == nil && gh != nil {
+		d = d.WithForge(gh)
+	}
+	return d
 }
 
 // runMCP launches the MCP stdio server. Usage: graphi mcp [-db path] [-daemon socket]
@@ -552,7 +870,7 @@ func makeEditorClient(root, dbPath, metaDir string) (client.Client, func(), erro
 		return nil, func() {}, fmt.Errorf("open store: %w", err)
 	}
 	reg := parse.NewDefaultRegistry()
-	ing, err := ingest.New(store, reg, metaDir)
+	ing, err := ingest.New(store, ingest.NewNotebookParser(reg), metaDir)
 	if err != nil {
 		_ = store.Close()
 		return nil, func() {}, fmt.Errorf("ingest: %w", err)
@@ -564,7 +882,7 @@ func makeEditorClient(root, dbPath, metaDir string) (client.Client, func(), erro
 	}
 	checker := edit.NewParserConsistencyChecker(func() (graphstore.Graphstore, *ingest.Ingester, func(), error) {
 		fs := graphstore.NewMemStore()
-		fi, ierr := ingest.New(fs, parse.NewDefaultRegistry(), "")
+		fi, ierr := ingest.New(fs, ingest.NewNotebookParser(parse.NewDefaultRegistry()), "")
 		if ierr != nil {
 			return nil, nil, nil, ierr
 		}
@@ -589,6 +907,33 @@ func makeEditorClient(root, dbPath, metaDir string) (client.Client, func(), erro
 	return c, cleanup, nil
 }
 
+// watchStatusProvider adapts the engine/watch Manager's read-only per-root health
+// to the analysis.WatchStatusProvider seam (SW-104). It lives in cmd (the only
+// layer that may import both engine/watch and engine/analysis), so the
+// `watcher-status` operation surfaces live, honest watcher health — including the
+// SW-101 Reconcile error — over the single dispatch path, with no surface→engine
+// coupling. It is read-only and adds no timestamp/wall-clock field.
+type watchStatusProvider struct {
+	mgr *watch.Manager
+}
+
+func (p watchStatusProvider) WatchStatus(_ context.Context) analysis.WatcherStatusReport {
+	statuses := p.mgr.Statuses()
+	rep := analysis.WatcherStatusReport{
+		Active: len(statuses) > 0,
+		Roots:  make([]analysis.WatchRootStatus, 0, len(statuses)),
+	}
+	for _, st := range statuses {
+		rep.Roots = append(rep.Roots, analysis.WatchRootStatus{
+			Root:      st.Root,
+			Watching:  st.Watching,
+			Healthy:   st.LastError == "",
+			LastError: st.LastError,
+		})
+	}
+	return rep
+}
+
 // runDaemon runs the daemon lifecycle commands: start, stop, status.
 func runDaemon(args []string) int {
 	fs := flag.NewFlagSet("daemon", flag.ContinueOnError)
@@ -611,8 +956,39 @@ func runDaemon(args []string) int {
 			return 1
 		}
 		defer func() { _ = store.Close() }()
-		handler := client.NewDirect(query.New(store), search.New(store))
-		srv := daemon.NewServer(handler)
+		// SW-101: wire a filesystem-watch Manager so `track`ing a workspace starts
+		// a pure-Go watcher + bounded worker-pool that keeps THIS daemon's shared
+		// store fresh (deterministic, canonical-ordered incremental apply) without
+		// an explicit re-index. The factory builds a per-root ingester over the
+		// shared store and performs the initial full index.
+		watchMgr := watch.NewManager(func(root string) (watch.Indexer, func(), error) {
+			metaDir, err := os.MkdirTemp("", "graphi-watch-meta-")
+			if err != nil {
+				return nil, nil, err
+			}
+			ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
+			if err != nil {
+				_ = os.RemoveAll(metaDir)
+				return nil, nil, err
+			}
+			if err := ing.IngestAll(context.Background(), root); err != nil {
+				_ = ing.Close()
+				_ = os.RemoveAll(metaDir)
+				return nil, nil, err
+			}
+			cleanup := func() { _ = ing.Close(); _ = os.RemoveAll(metaDir) }
+			return ing, cleanup, nil
+		}, watch.DefaultConfig())
+		defer watchMgr.StopAll()
+		// SW-104: give the daemon handler an analysis service so the four EP-017
+		// operations (and every analyzer) route through the SAME single dispatch
+		// path over the daemon RPC, and back `watcher-status` with a read-only
+		// provider over the watch Manager so the daemon reports live, honest per-root
+		// watcher health — including the SW-101 Reconcile error — rather than masking
+		// it.
+		asvc := analysis.NewDefaultServiceWithWatch(store, watchStatusProvider{mgr: watchMgr})
+		handler := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
+		srv := daemon.NewServerWithWatch(handler, watchMgr)
 		if err := srv.Start(*socket); err != nil {
 			fmt.Fprintf(os.Stderr, "graphi: daemon start: %v\n", err)
 			return 1
@@ -679,7 +1055,7 @@ func runHTTP(args []string) int {
 			meta = td
 			cleanupIngest = func() { _ = os.RemoveAll(td) }
 		}
-		ing, ierr := ingest.New(store, parse.NewDefaultRegistry(), meta)
+		ing, ierr := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), meta)
 		if ierr != nil {
 			fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", ierr)
 			return 1
@@ -745,6 +1121,133 @@ func runSavings(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// withLedgerAndAgentServices attaches the EP-012 memory, distillation, and
+// skill-generation services to an in-process Direct client when a ledger path
+// is provided. It returns the possibly-upgraded client and a cleanup function.
+func withLedgerAndAgentServices(c client.Client, ledgerPath string) (client.Client, func(), error) {
+	d, ok := c.(*client.Direct)
+	if !ok {
+		return c, func() {}, nil
+	}
+	var l *ledger.Ledger
+	var cleanup func()
+	cleanup = func() {}
+	if ledgerPath != "" {
+		var err error
+		l, err = ledger.Open(ledgerPath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("open ledger: %w", err)
+		}
+		cleanup = func() { _ = l.Close() }
+		d = d.WithLedger(l)
+	}
+	memStore, err := memory.NewMemStore(memory.NewLedgerHook(l, "", true))
+	if err != nil {
+		cleanup()
+		return nil, nil, fmt.Errorf("memory store: %w", err)
+	}
+	prev := cleanup
+	cleanup = func() { prev(); _ = memStore.Close() }
+	d = d.WithMemory(memStore).
+		WithDistill(distill.NewDistiller(distill.NewLedgerHook(l, "", true))).
+		WithSkillGen(skillgen.NewGenerator(skillgen.NewLedgerHook(l, "", true)))
+	return d, cleanup, nil
+}
+
+// runMemory launches the CLI memory surface (EP-012). Usage:
+//
+//	graphi memory store|recall|forget ... [-ledger path]
+func runMemory(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := extractLedgerFlag(&rest)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if socket != "" {
+		fmt.Fprintln(os.Stderr, "graphi: memory: not available via daemon in this build")
+		return 1
+	}
+	c, cleanup, err := withLedgerAndAgentServices(c, ledgerPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: memory: %v\n", err)
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunMemory(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: memory: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runDistill launches the CLI session-distillation surface (EP-012). Usage:
+//
+//	graphi distill -session <id> ... [-ledger path]
+func runDistill(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := extractLedgerFlag(&rest)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if socket != "" {
+		fmt.Fprintln(os.Stderr, "graphi: distill: not available via daemon in this build")
+		return 1
+	}
+	c, cleanup, err := withLedgerAndAgentServices(c, ledgerPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: distill: %v\n", err)
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunDistill(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: distill: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runSkillGen launches the CLI skill-generation surface (EP-012). Usage:
+//
+//	graphi skillgen -name <name> -trigger <trigger> ... [-ledger path]
+func runSkillGen(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := extractLedgerFlag(&rest)
+	c := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	if socket != "" {
+		fmt.Fprintln(os.Stderr, "graphi: skillgen: not available via daemon in this build")
+		return 1
+	}
+	c, cleanup, err := withLedgerAndAgentServices(c, ledgerPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: skillgen: %v\n", err)
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunSkillGen(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: skillgen: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// extractLedgerFlag pulls -ledger <path> out of args and returns the path.
+func extractLedgerFlag(args *[]string) string {
+	rest := *args
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == "-ledger" && i+1 < len(rest) {
+			path := rest[i+1]
+			*args = append(rest[:i], rest[i+2:]...)
+			return path
+		}
+	}
+	return ""
 }
 
 // runVersion prints the release version + VCS metadata embedded by SW-013's

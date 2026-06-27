@@ -1,5 +1,5 @@
 {
   "version": "2026-06-20-v1",
   "description": "Committed coverage-matrix baseline. The drift gate fails CI when the current dataset covers fewer capabilities (or drops a previously-covered one) versus this baseline, naming the regressed capabilities in the diff. Add capabilities here only when the dataset grows coverage.",
-  "capabilities": ["callees", "callers", "definition", "neighborhood", "references", "search"]
+  "capabilities": ["callees", "callers", "definition", "implementers", "implements", "neighborhood", "overrides", "references", "search", "subtypes", "supertypes"]
 }

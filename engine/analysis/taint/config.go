@@ -148,6 +148,26 @@ func (c Config) matchSanitizer(kind, qualifiedName string) (SanitizerDef, bool) 
 	return SanitizerDef{}, false
 }
 
+// MatchSource is the exported wrapper over matchSource so sibling engine
+// packages (e.g. the interprocedural taint solver) can classify a node against
+// this config without re-implementing the matching rules. Returns the matching
+// source's label and ID; empty strings mean no match.
+func (c Config) MatchSource(kind, qualifiedName string) (label, sourceID string) {
+	return c.matchSource(kind, qualifiedName)
+}
+
+// MatchSink is the exported wrapper over matchSink. Returns the matching sink's
+// ID and category; empty strings mean no match.
+func (c Config) MatchSink(kind, qualifiedName string) (sinkID, category string) {
+	return c.matchSink(kind, qualifiedName)
+}
+
+// MatchSanitizer is the exported wrapper over matchSanitizer. Returns the
+// matching sanitizer definition and whether it matched.
+func (c Config) MatchSanitizer(kind, qualifiedName string) (SanitizerDef, bool) {
+	return c.matchSanitizer(kind, qualifiedName)
+}
+
 // matchDef is the shared matching logic: a node matches if its kind is in
 // nodeKinds OR its qualified name contains any of the name patterns. Both lists
 // empty means no match.

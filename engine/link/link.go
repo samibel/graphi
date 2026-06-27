@@ -35,6 +35,13 @@ const (
 	edgeCalls      = "calls"
 	edgeReferences = "references"
 	edgeImports    = "imports"
+
+	// Hierarchy edge kinds (epic EP-011 G2). The Go resolver emits these from
+	// embedded interface/struct type PendingRefs; they resolve through the same
+	// bare-name / selector paths as references.
+	edgeImplements = "implements"
+	edgeInherits   = "inherits"
+	edgeOverrides  = "overrides"
 )
 
 // resolutionClass is the closed set of ways the linker can resolve a reference.

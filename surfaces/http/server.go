@@ -45,8 +45,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"io"
 	"io/fs"
+	"log"
 	"net"
 	"net/http"
 	"sort"
@@ -57,6 +58,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/engine/observe"
+	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/wiki"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/http/webui"
@@ -69,15 +71,18 @@ import (
 const SchemaVersion = 1
 
 // queryOps is the allow-list of structural query operations the REST surface
-// accepts. It mirrors engine/query.Service's method set; the HTTP layer never
-// invents new query semantics.
-var queryOps = map[string]struct{}{
-	"callers":      {},
-	"callees":      {},
-	"references":   {},
-	"definition":   {},
-	"neighborhood": {},
-}
+// accepts. It is DERIVED from engine/query.Operations so the HTTP surface can
+// never drift from the engine's canonical operation set: adding an operation to
+// query.Operations (e.g. the EP-011 hierarchy ops) automatically exposes it
+// here with byte-identical semantics. The HTTP layer never invents new query
+// semantics.
+var queryOps = func() map[string]struct{} {
+	m := make(map[string]struct{}, len(query.Operations))
+	for _, op := range query.Operations {
+		m[op] = struct{}{}
+	}
+	return m
+}()
 
 // streamDescriptors enumerates the SSE event types a client may observe on
 // /events, for capability negotiation via /contract. "ingest-completed" is the
@@ -162,7 +167,10 @@ type errorEnvelope struct {
 func mapError(err error) (status int, code, message string) {
 	switch {
 	case errors.Is(err, client.ErrSearchUnavailable),
-		errors.Is(err, client.ErrAnalysisUnavailable):
+		errors.Is(err, client.ErrAnalysisUnavailable),
+		errors.Is(err, client.ErrMemoryUnavailable),
+		errors.Is(err, client.ErrDistillUnavailable),
+		errors.Is(err, client.ErrSkillGenUnavailable):
 		return http.StatusServiceUnavailable, "unavailable", "capability unavailable"
 	default:
 		return http.StatusInternalServerError, "internal", "internal error"
@@ -177,9 +185,21 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /contract", s.handleContract)
 	mux.HandleFunc("GET /query/{op}", s.schemaGuard(s.handleQuery))
+	mux.HandleFunc("POST /compound", s.schemaGuard(s.handleCompound))
+	mux.HandleFunc("POST /query-ast", s.schemaGuard(s.handleSearchAST))
+	mux.HandleFunc("POST /find-clones", s.schemaGuard(s.handleFindClones))
 	mux.HandleFunc("GET /search", s.schemaGuard(s.handleSearch))
 	mux.HandleFunc("GET /search/semantic", s.schemaGuard(s.handleSemanticSearch))
 	mux.HandleFunc("GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze))
+	mux.HandleFunc("GET /prs", s.schemaGuard(s.handleListPRs))
+	mux.HandleFunc("GET /prs/triage", s.schemaGuard(s.handleTriagePRs))
+	mux.HandleFunc("GET /prs/conflicts", s.schemaGuard(s.handleConflictsPRs))
+	mux.HandleFunc("GET /prs/suggest-reviewers", s.schemaGuard(s.handleSuggestReviewers))
+	mux.HandleFunc("GET /branches/compare", s.schemaGuard(s.handleCompareBranches))
+	mux.HandleFunc("GET /reviews/critique", s.schemaGuard(s.handleCritiqueReview))
+	mux.HandleFunc("POST /memory", s.schemaGuard(s.handleMemory))
+	mux.HandleFunc("POST /distill", s.schemaGuard(s.handleDistill))
+	mux.HandleFunc("POST /skillgen", s.schemaGuard(s.handleSkillGen))
 	mux.HandleFunc("GET /events", s.schemaGuard(s.handleSSE))
 	mux.HandleFunc("GET /wiki", s.handleWikiIndex)
 	mux.HandleFunc("GET /wiki/c/{id}", s.handleWikiPage)
@@ -361,6 +381,71 @@ func (s *Server) handleQuery(w http.ResponseWriter, r *http.Request) {
 	writeEnvelope(w, raw)
 }
 
+// handleCompound runs a compound / Cypher-style graph query (EP-011 G1). The
+// query text is the request body; the canonical query.Result payload is returned
+// in the same envelope as /query, so compound and fixed-query results are
+// byte-identical across CLI/MCP/HTTP/daemon.
+func (s *Server) handleCompound(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read compound body")
+		return
+	}
+	raw, err := s.client.Compound(r.Context(), string(body))
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleSearchAST runs the structural AST pattern query (SW-082 / SW-085). The
+// JSON AstPattern is the request body and limit rides the query string; the
+// canonical query.Result payload is returned in the SAME envelope as /query and
+// /compound, so search_ast results are byte-identical across CLI/MCP/HTTP/daemon.
+// A malformed pattern surfaces the engine's typed error through the shared
+// sanitized-error path (no new surface error shape).
+func (s *Server) handleSearchAST(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read query-ast body")
+		return
+	}
+	limit := 0
+	if l := r.URL.Query().Get("limit"); l != "" {
+		v, err := strconv.Atoi(l)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, "bad_request", "bad limit")
+			return
+		}
+		limit = v
+	}
+	raw, err := s.client.SearchAST(r.Context(), string(body), limit)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleFindClones runs the clone-detection query (SW-083 / SW-085). The JSON
+// CloneConfig is the request body (empty ⇒ engine defaults); the canonical
+// query.CloneResult payload is returned in the same envelope for byte-identical
+// parity across surfaces.
+func (s *Server) handleFindClones(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read find-clones body")
+		return
+	}
+	raw, err := s.client.FindClones(r.Context(), string(body))
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
@@ -439,6 +524,147 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 	writeEnvelope(w, raw)
 }
 
+// handleListPRs (SW-105) returns the read-only forge PR-enumeration metadata
+// envelope. It delegates 100% to the shared client.ListPRs seam and embeds the
+// canonical forge.PRList bytes verbatim, so the payload is byte-identical to the
+// CLI/MCP surfaces. No graph scoring occurs.
+func (s *Server) handleListPRs(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.ListPRs(r.Context())
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleTriagePRs (SW-105) returns the single-pass graph-derived ranked PR triage.
+// It delegates to the shared client.TriagePRs seam (forge enumeration → zero-egress
+// engine analyzer → shared encoder), so the ranked payload is byte-identical to the
+// CLI/MCP surfaces.
+func (s *Server) handleTriagePRs(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.TriagePRs(r.Context())
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleConflictsPRs (SW-106) returns the inter-PR conflict report. It delegates
+// to the shared client.ConflictsPRs seam (forge enumeration → zero-egress engine
+// analyzer → shared encoder), so the pairwise payload is byte-identical to the
+// CLI/MCP surfaces.
+func (s *Server) handleConflictsPRs(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.ConflictsPRs(r.Context())
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleSuggestReviewers (SW-107) returns the ranked reviewer report. It delegates
+// to the shared client.SuggestReviewers seam (touched-set resolution → zero-egress
+// engine analyzer → shared encoder), so the payload is byte-identical to the
+// CLI/MCP surfaces. The `diff` query parameter is the local-first PR diff / refs.
+func (s *Server) handleSuggestReviewers(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.SuggestReviewers(r.Context(), r.URL.Query().Get("diff"))
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleCompareBranches (SW-107) returns the graph-level branch diff. It delegates
+// to the shared client.CompareBranches seam (base/head materialized above the
+// surface boundary → zero-egress engine analyzer → shared encoder), so the payload
+// is byte-identical to the CLI/MCP surfaces. The `base`/`head` query parameters are
+// branch refs.
+func (s *Server) handleCompareBranches(w http.ResponseWriter, r *http.Request) {
+	raw, err := s.client.CompareBranches(r.Context(), r.URL.Query().Get("base"), r.URL.Query().Get("head"))
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleCritiqueReview (SW-108, the EP-018 capstone) returns the graph-evidence
+// critique of an existing PR review. It delegates to the shared client.CritiqueReview
+// seam (surface review fetch / inline review → zero-egress engine analyzer → shared
+// encoder), so the payload is byte-identical to the CLI/MCP surfaces. The `pr`
+// parameter selects the review to fetch; `review` supplies an inline review JSON
+// (takes precedence); `diff` is the PR's touched set.
+func (s *Server) handleCritiqueReview(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	prNumber := 0
+	if v := strings.TrimSpace(q.Get("pr")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			writeErrSanitized(w, fmt.Errorf("http: invalid pr %q", v))
+			return
+		}
+		prNumber = n
+	}
+	raw, err := s.client.CritiqueReview(r.Context(), prNumber, q.Get("diff"), q.Get("review"))
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleMemory runs an EP-012 memory operation. The request body is a JSON
+// MemoryRequest; the response payload is the canonical MemoryResponse bytes
+// (byte-identical to CLI/MCP output).
+func (s *Server) handleMemory(w http.ResponseWriter, r *http.Request) {
+	var req client.MemoryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "invalid request body")
+		return
+	}
+	raw, err := s.client.Memory(r.Context(), req)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleDistill runs EP-012 session distillation. The request body is a JSON
+// DistillRequest; the response payload is the canonical DistillResponse bytes.
+func (s *Server) handleDistill(w http.ResponseWriter, r *http.Request) {
+	var req client.DistillRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "invalid request body")
+		return
+	}
+	raw, err := s.client.Distill(r.Context(), req)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleSkillGen runs EP-012 deterministic skill generation. The request body
+// is a JSON SkillGenRequest; the response payload is the canonical
+// SkillGenResponse bytes.
+func (s *Server) handleSkillGen(w http.ResponseWriter, r *http.Request) {
+	var req client.SkillGenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "bad_request", "invalid request body")
+		return
+	}
+	raw, err := s.client.SkillGen(r.Context(), req)
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
 // handleSSE streams broker events to the client as Server-Sent Events with
 // stable framing (AC-2): each frame carries event:<type>, id:<monotonic
 // per-connection seq>, and data:<json>. The first frame is a version-stamped
@@ -453,6 +679,17 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 // /events is wired behind schemaGuard (see Handler), so a client advertising a
 // wrong X-Graphi-Schema-Version is rejected with 412 BEFORE the stream opens.
 func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
+	// SW-104: when an `analyzer` query param is present, /events serves a one-shot
+	// analysis frame whose payload is derived from the SHARED (*Direct).Analyze
+	// path (canonical analysis.Marshal bytes), NOT re-serialized here. This routes
+	// the four EP-017 operations through the same single dispatch + encoder as
+	// every other surface, so the SSE analysis frame is byte-identical to the
+	// CLI/MCP/HTTP/daemon envelope. Absent the param, /events is the freshness
+	// firehose (unchanged).
+	if analyzer := r.URL.Query().Get("analyzer"); analyzer != "" {
+		s.handleSSEAnalyze(w, r, analyzer)
+		return
+	}
 	if s.broker == nil {
 		writeErr(w, http.StatusServiceUnavailable, "unavailable", "event stream unavailable")
 		return
@@ -510,6 +747,55 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+// handleSSEAnalyze serves a one-shot analysis result over SSE (SW-104). The
+// analysis payload is produced by the SHARED client.Analyze path (the same
+// (*Direct).Analyze -> Service.Dispatch -> analysis.Marshal seam the REST
+// /analyze handler and every other surface use), so the canonical bytes embedded
+// in the `analysis` frame are byte-identical to the other surfaces' envelopes.
+// The SSE adapter only frames those bytes; it holds NO analysis logic and does
+// NOT re-serialize. Frame sequence: ready -> analysis -> bye.
+func (s *Server) handleSSEAnalyze(w http.ResponseWriter, r *http.Request, analyzer string) {
+	p := client.AnalyzeParams{
+		Name:      analyzer,
+		Symbol:    r.URL.Query().Get("symbol"),
+		Direction: r.URL.Query().Get("direction"),
+	}
+	if mn := r.URL.Query().Get("max-nodes"); mn != "" {
+		v, err := strconv.Atoi(mn)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, "bad_request", "bad max-nodes")
+			return
+		}
+		p.MaxNodes = v
+	}
+	raw, err := s.client.Analyze(r.Context(), p)
+	if err != nil {
+		// Emit the shared sanitized error envelope BEFORE switching to the SSE
+		// content type, so an unavailable/failed analysis is a normal REST error.
+		writeErrSanitized(w, err)
+		return
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeErr(w, http.StatusInternalServerError, "internal", "internal error")
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+	flusher.Flush()
+
+	var seq uint64
+	if !writeFrame(w, flusher, &seq, "ready", []byte(fmt.Sprintf(`{"schema_version":%d}`, SchemaVersion))) {
+		return
+	}
+	if !writeFrame(w, flusher, &seq, "analysis", raw) {
+		return
+	}
+	writeFrame(w, flusher, &seq, "bye", []byte("{}"))
 }
 
 // writeFrame writes one SSE frame (event:<type>, id:<*seq incremented>,

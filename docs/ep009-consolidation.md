@@ -84,9 +84,8 @@ flowchart TD
 ```
 
 - **Default tier:** Go + JSON (stdlib, no blob) + **20** subset-tagged pure-Go grammars.
-  Full per-language blob deltas are recorded in
-  [`epics/EP-009/epic.md`](../../../projects/graphi/epics/EP-009/epic.md) (artifacts root)
-  and mirrored in [`bench/lang-budget.md`](../bench/lang-budget.md).
+  Full per-language blob deltas are mirrored in
+  [`bench/lang-budget.md`](../bench/lang-budget.md) (the frozen single source of truth).
 - **HTML deferred** — not shipped (subset-isolation blocker; its scanner core is
   co-located with `grammar_subset_blade` upstream).
 - **Dockerfile / Protobuf / GraphQL** — removed from the committed tier-1 set (re-plan

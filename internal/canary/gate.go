@@ -71,6 +71,14 @@ var outboundDialAllowlist = []string{
 	"github.com/samibel/graphi/surfaces/daemon", // Unix-socket IPC (local)
 	"github.com/samibel/graphi/surfaces/client", // in-process + daemon socket client (local)
 	"github.com/samibel/graphi/surfaces/http",   // loopback-only HTTP/SSE surface; ListenLoopback binds only after AssertLoopback (SW-044)
+	// surfaces/guard is the SW-099 zero-egress enforcement chokepoint itself: its
+	// ListenLoopback refuses any non-loopback bind before opening a socket, and its
+	// NoEgressDialer is a DEFAULT-DENY dialer that rejects every non-loopback
+	// outbound dial. The net.Listen/net.Dialer it contains ARE the egress-control
+	// mechanism, loopback-by-construction; its own guard_test asserts non-loopback
+	// binds and external dials are refused. Allowlisting the guard is what lets
+	// every other transport route through one audited policy.
+	"github.com/samibel/graphi/surfaces/guard",
 	"github.com/samibel/graphi/internal/canary", // the canary itself records/observes dials by design
 	// engine/review is the GitHub PR-review surface (SW-043/EP-007). Its egress is
 	// confined to githubhost.go — the single, documented, intentional outbound
@@ -87,6 +95,16 @@ var outboundDialAllowlist = []string{
 	// constructed). Allowlisting the package is the registration-layer analog of
 	// the surfaces/http loopback-only entry: its own test asserts loopback-only.
 	"github.com/samibel/graphi/engine/embed/ollama",
+	// surfaces/forge is the SW-105/EP-018 read-only PR-enumeration boundary — the
+	// multi-PR triage suite's single, documented, intentional outbound path
+	// (user-invoked PR discovery/metadata over the GitHub REST API, not telemetry).
+	// It is a SURFACE-layer ingestion client: it lists open PRs and fetches their
+	// metadata via GET only; it posts/mutates nothing and performs no scoring.
+	// Confining the enumeration egress here is what keeps the engine `triage-prs`
+	// analyzer it feeds strictly zero-outbound. The Enumerator seam is injectable so
+	// tests drive an in-memory MockForge and do zero network I/O; the real
+	// GitHubForge is the only dialer (mirrors engine/review's single egress).
+	"github.com/samibel/graphi/surfaces/forge",
 }
 
 // outboundDialCallDenylist names the dial constructors the AST scan flags when

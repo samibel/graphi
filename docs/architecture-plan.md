@@ -21,11 +21,11 @@ dependency direction is strictly downward:
 ```
 cmd/*        entry points & wiring (graphi, layerguard, coverage, canary, …)
    ↓
-surfaces/*   CLI · daemon · MCP · HTTP/SSE · TUI · web · extensions
+surfaces/*   CLI · daemon · MCP (stdio + streamable-HTTP) · HTTP/SSE · TUI · web · extensions · forge · guard
    ↓
-engine/*     query · search · analysis · edit · review · ingest · ledger · context
+engine/*     query · search · analysis · edit · review · ingest · observe · overlay · watch · community · interproc-taint · conformance · ledger · context · memory · distill · skillgen · wiki
    ↓
-core/*       model · parse · graphstore   (pure leaves)
+core/*       model · parse · graphstore · community   (pure leaves)
 ```
 
 - **One engine, many surfaces.** No surface holds query, search, traversal,
@@ -83,7 +83,9 @@ parser code is edited. See [parse-registry.md](parse-registry.md),
 
 - **Default tier (CGo-free, shipped).** [`RegisterDefaults`](../core/parse/defaults.go)
   wires two stdlib parsers (Go, JSON) plus 20 subset-tagged pure-Go `gotreesitter`
-  grammars — **22 languages, one `r.Register(...)` line each**. The Go path uses
+  grammars — **22 shipped languages, one `r.Register(...)` line each** (23rd,
+  `html`, is in the coverage matrix as ⏳ planned; `graphi-broad` opts into it
+  later). The Go path uses
   the reference AST→graph extractor ([extract_go.go](../core/parse/extract_go.go),
   [typescript-extractor.md](typescript-extractor.md)).
 - **Opt-in `graphi-broad` (CGO).** The broad grammar set plugs into the same seam
@@ -91,12 +93,11 @@ parser code is edited. See [parse-registry.md](parse-registry.md),
   [graphi-broad.md](graphi-broad.md).
 - **Honest current vs. roadmap.** The Go extractor emits symbol nodes and
   **intra-file** `defines`/`calls`/`references` edges today. **Cross-file /
-  cross-package resolution is FU-1 — ⏳ planned, not yet shipped**: `PutEdge`
-  requires both endpoints to exist and ingest commits one file at a time, so a
-  post-ingest linker that resolves selector calls and imports against the
-  fully-committed symbol table is the next step. The coverage matrix marks FU-1
-  `planned` and HTML `planned` (deferred); the guard fails if either silently
-  becomes live without a status flip.
+  cross-package resolution is FU-1 — ✅ shipped** (post-ingest linker in
+  `engine/link` resolves selector calls and imports against the
+  fully-committed symbol table, with byte-identical full-vs-incremental
+  invariant). The coverage matrix marks FU-1 `shipped` and HTML `planned`
+  (deferred to `graphi-broad`); the guard fails if either silently drifts.
 
 ---
 
@@ -169,4 +170,4 @@ it all real?"* — the closing piece of PB-001's traceability story.
   [surfaces-web.md](surfaces-web.md) · [surfaces-vscode.md](surfaces-vscode.md) ·
   [surfaces-wiki.md](surfaces-wiki.md)
 - **Decisions:** [adr/](adr) · [ep009-consolidation.md](ep009-consolidation.md)
-- **Inventory & status:** [coverage-matrix.md](coverage-matrix.md) · [../epics/index.md](../epics/index.md)
+- **Inventory & status:** [coverage-matrix.md](coverage-matrix.md) · [FEATURES.md](FEATURES.md) · [../epics/index.md](../epics/index.md)

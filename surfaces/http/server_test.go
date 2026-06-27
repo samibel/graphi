@@ -49,6 +49,11 @@ func (s *stubClient) Query(_ context.Context, op, symbol string, depth int) ([]b
 	s.lastQueryOp, s.lastQuerySymbol, s.lastQueryDepth = op, symbol, depth
 	return s.queryBytes, nil
 }
+
+// Compound stubs the EP-011 G1 compound surface for the HTTP test double.
+func (s *stubClient) Compound(_ context.Context, _ string) ([]byte, error) {
+	return s.queryBytes, nil
+}
 func (s *stubClient) Search(_ context.Context, q string, limit int) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -84,6 +89,48 @@ func (s *stubClient) Refactor(context.Context, client.RefactorRequest, string) (
 func (s *stubClient) Undo(context.Context, string, string) ([]byte, error) { return nil, nil }
 func (s *stubClient) PrComment(context.Context, client.PrCommentRequest) ([]byte, error) {
 	return nil, nil
+}
+func (s *stubClient) Memory(context.Context, client.MemoryRequest) ([]byte, error) {
+	return nil, client.ErrMemoryUnavailable
+}
+func (s *stubClient) Distill(context.Context, client.DistillRequest) ([]byte, error) {
+	return nil, client.ErrDistillUnavailable
+}
+func (s *stubClient) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
+	return nil, client.ErrSkillGenUnavailable
+}
+func (s *stubClient) Diagnose(context.Context, []string) ([]byte, error) {
+	return nil, client.ErrDiagnosticUnavailable
+}
+func (s *stubClient) Inline(context.Context, client.InlineRequest) ([]byte, error) {
+	return nil, client.ErrEditUnavailable
+}
+func (s *stubClient) SafeDelete(context.Context, client.SafeDeleteRequest) ([]byte, error) {
+	return nil, client.ErrEditUnavailable
+}
+func (s *stubClient) SearchAST(context.Context, string, int) ([]byte, error) {
+	return nil, client.ErrSearchUnavailable
+}
+func (s *stubClient) FindClones(context.Context, string) ([]byte, error) {
+	return nil, client.ErrSearchUnavailable
+}
+func (s *stubClient) ListPRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+func (s *stubClient) TriagePRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+func (s *stubClient) ConflictsPRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+func (s *stubClient) SuggestReviewers(context.Context, string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
+}
+func (s *stubClient) CompareBranches(context.Context, string, string) ([]byte, error) {
+	return nil, client.ErrCompareUnavailable
+}
+func (s *stubClient) CritiqueReview(context.Context, int, string, string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
 }
 
 func newServer(t *testing.T) (*Server, *stubClient, *observe.Broker) {
@@ -780,16 +827,21 @@ func wikiStore(t *testing.T) graphstore.Graphstore {
 		_ = s.PutNode(context.Background(), n)
 		return n.ID()
 	}
+	// Grouping is by coupling (Louvain) since SW-103, so the fixture is two
+	// tightly-coupled clusters joined by a single bridge edge → two communities
+	// with a cross-link between them.
 	a := mk("pkgA.A")
 	b := mk("pkgA.B")
 	c := mk("pkgB.C")
+	d := mk("pkgB.D")
 	me := func(from, to model.NodeId) {
 		e, _ := model.NewEdge(from, to, "calls",
 			model.TierConfirmed, 1.0, "t", []string{"e.go:1"})
 		_ = s.PutEdge(context.Background(), e)
 	}
-	me(a, b)
-	me(a, c) // inter-package edge → cross-link
+	me(a, b) // cluster 1
+	me(c, d) // cluster 2
+	me(a, c) // bridge → inter-community cross-link
 	return s
 }
 
@@ -822,10 +874,14 @@ func TestWiki_CommunityPageServed(t *testing.T) {
 		t.Fatalf("code=%d", rec.Code)
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, "pkgA.A") || !strings.Contains(body, "Community 1") {
+	// Community-ID assignment follows canonical representative ordering, so we
+	// assert structure (a rendered community page with members) rather than a
+	// specific package landing on ID 1.
+	if !strings.Contains(body, "Community 1") || !strings.Contains(body, "## Members") {
 		t.Fatalf("community page body wrong:\n%s", body)
 	}
-	// cross-link to community 2 should be present (inter-package edge exists)
+	// With two communities joined by a bridge edge, community 1's page lists the
+	// other community as a neighbor → cross-link to /wiki/c/2.
 	if !strings.Contains(body, "/wiki/c/2") {
 		t.Fatalf("cross-link missing:\n%s", body)
 	}

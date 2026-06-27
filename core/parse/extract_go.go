@@ -25,6 +25,11 @@ const (
 	goEdgeDefines    = "defines"
 	goEdgeCalls      = "calls"
 	goEdgeReferences = "references"
+
+	// Hierarchy edge kinds (EP-011 G2). Recorded as PendingRefs by recordEmbeds
+	// and resolved by the linker.
+	goEdgeImplements = "implements"
+	goEdgeInherits   = "inherits"
 )
 
 // extractGo walks a parsed Go file and derives the graph elements it can resolve
@@ -178,6 +183,14 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 					return err
 				}
 				e.symbols[s.Name.Name] = id
+				// Class-hierarchy extraction (EP-011 G2): scan the declared type for
+				// embedded interfaces (→ implements) and embedded concrete types in a
+				// struct (→ inherits). These are intra-AST, deterministic facts; they
+				// are RECORDED as PendingRefs and resolved by the linker exactly like
+				// references, so cross-file/cross-package embeds resolve to the
+				// committed type nodes without the parse leaf fabricating endpoints.
+				typeQN := e.pkg + "." + s.Name.Name
+				e.recordEmbeds(typeQN, s.Type, line)
 			case *ast.ValueSpec:
 				kind := goKindVariable
 				if d.Tok == token.CONST {
@@ -385,6 +398,87 @@ func (e *goExtractor) addPending(fromQN, base, name, kind string, line int, sele
 		Line:         line,
 		Selector:     selector,
 	})
+}
+
+// recordEmbeds scans a declared type's AST for embedded types and records
+// hierarchy PendingRefs (EP-011 G2):
+//
+//   - *ast.InterfaceType: every embedded interface expr (a Field with no Names)
+//     → an `implements` pending ref from the declaring type to the embedded
+//     interface. Go's implicit interface satisfaction is NOT inferred here
+//     (only explicit embedding / satisfaction by embedding).
+//   - *ast.StructType: every embedded field (a Field with no Names) → an
+//     `inherits` pending ref from the declaring type to the embedded type.
+//
+// An embedded name that is a bare *ast.Ident is a same-package (directory)
+// candidate (selector=false); a *ast.SelectorExpr is a cross-package candidate
+// (selector=true). Both are resolved by the linker against committed type nodes,
+// exactly like reference pending refs, so no endpoint is ever fabricated at the
+// parse leaf (purity boundary preserved).
+//
+// Determinism: embeds are scanned in source order and recorded via addPending,
+// which dedups by logical identity and keeps the FIRST line — byte-identical for
+// identical input.
+func (e *goExtractor) recordEmbeds(typeQN string, t ast.Expr, declLine int) {
+	switch tt := t.(type) {
+	case *ast.InterfaceType:
+		if tt.Methods == nil {
+			return
+		}
+		for _, f := range tt.Methods.List {
+			if len(f.Names) > 0 {
+				continue // a named method, not an embedded interface
+			}
+			line := declLine
+			if pos := f.Pos(); pos.IsValid() {
+				l, _ := e.pos(pos)
+				line = l
+			}
+			base, name, sel, ok := embedName(f.Type)
+			if !ok {
+				continue
+			}
+			e.addPending(typeQN, base, name, goEdgeImplements, line, sel)
+		}
+	case *ast.StructType:
+		if tt.Fields == nil {
+			return
+		}
+		for _, f := range tt.Fields.List {
+			if len(f.Names) > 0 {
+				continue // a named field, not an embedded type
+			}
+			line := declLine
+			if pos := f.Pos(); pos.IsValid() {
+				l, _ := e.pos(pos)
+				line = l
+			}
+			base, name, sel, ok := embedName(f.Type)
+			if !ok {
+				continue
+			}
+			e.addPending(typeQN, base, name, goEdgeInherits, line, sel)
+		}
+	}
+}
+
+// embedName extracts the (selectorBase, name, isSelector) triple from an
+// embedded-type expression. For a bare ident it returns ("", name, false); for a
+// pkg.Name selector it returns (pkg, name, true). Anything more complex returns
+// (_, _, _, false) and is skipped (unresolvable at the leaf).
+func embedName(t ast.Expr) (base, name string, selector, ok bool) {
+	if star, isStar := t.(*ast.StarExpr); isStar {
+		t = star.X
+	}
+	switch x := t.(type) {
+	case *ast.Ident:
+		return "", x.Name, false, true
+	case *ast.SelectorExpr:
+		if id, isIdent := x.X.(*ast.Ident); isIdent {
+			return id.Name, x.Sel.Name, true, true
+		}
+	}
+	return "", "", false, false
 }
 
 // selectorBase returns the leading qualifier of a selector's X expression when

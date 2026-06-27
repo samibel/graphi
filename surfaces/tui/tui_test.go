@@ -65,6 +65,7 @@ func (f *fakeEngine) Query(_ context.Context, op, sym string, depth int) ([]byte
 	return f.queryRaw, nil
 }
 func (f *fakeEngine) Search(context.Context, string, int) ([]byte, error) { return f.searchRaw, nil }
+func (f *fakeEngine) Compound(context.Context, string) ([]byte, error)    { return f.queryRaw, nil }
 func (f *fakeEngine) SemanticSearch(context.Context, string, int) ([]byte, error) {
 	return f.searchRaw, nil
 }
@@ -97,6 +98,48 @@ func (f *fakeEngine) SubscribeEvents(context.Context) (<-chan client.Event, erro
 		return nil, f.subErr
 	}
 	return f.events, nil
+}
+func (f *fakeEngine) Memory(context.Context, client.MemoryRequest) ([]byte, error) {
+	return nil, client.ErrMemoryUnavailable
+}
+func (f *fakeEngine) Distill(context.Context, client.DistillRequest) ([]byte, error) {
+	return nil, client.ErrDistillUnavailable
+}
+func (f *fakeEngine) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
+	return nil, client.ErrSkillGenUnavailable
+}
+func (f *fakeEngine) Diagnose(context.Context, []string) ([]byte, error) {
+	return nil, client.ErrDiagnosticUnavailable
+}
+func (f *fakeEngine) Inline(context.Context, client.InlineRequest) ([]byte, error) {
+	return nil, client.ErrEditUnavailable
+}
+func (f *fakeEngine) SafeDelete(context.Context, client.SafeDeleteRequest) ([]byte, error) {
+	return nil, client.ErrEditUnavailable
+}
+func (f *fakeEngine) SearchAST(context.Context, string, int) ([]byte, error) {
+	return nil, client.ErrSearchUnavailable
+}
+func (f *fakeEngine) FindClones(context.Context, string) ([]byte, error) {
+	return nil, client.ErrSearchUnavailable
+}
+func (f *fakeEngine) ListPRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+func (f *fakeEngine) TriagePRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+func (f *fakeEngine) ConflictsPRs(context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+func (f *fakeEngine) SuggestReviewers(context.Context, string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
+}
+func (f *fakeEngine) CompareBranches(context.Context, string, string) ([]byte, error) {
+	return nil, client.ErrCompareUnavailable
+}
+func (f *fakeEngine) CritiqueReview(context.Context, int, string, string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
 }
 func (f *fakeEngine) SchemaVersion() int { return 1 }
 

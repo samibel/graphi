@@ -195,6 +195,51 @@ capabilities:
     status: shipped
     epic: EP-005
     note: "flow-sensitive source→sink taint analysis."
+  - id: communities
+    category: analyzer
+    status: shipped
+    epic: EP-017
+    note: "SW-104: SW-103 Louvain community detection surfaced behind the single dispatch table."
+  - id: triage-prs
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface)."
+  - id: conflicts-prs
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-106: inter-PR conflict detection over an enumerated PR set — textual overlap + shared file/symbol/high-centrality node + asymmetric contract-dependency edge check; entity→PRs inverted index, byte-stable pairwise report (zero engine egress; forge enumeration stays at the surface)."
+  - id: suggest-reviewers
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-107: ranked candidate-reviewer recommender — file-granular ownership + recency-decayed churn over the touched files (fixed decay reference, never now()) plus symbol-granular affected-subgraph proximity (callers/callees/contract neighbors, centrality-weighted), folded into a fixed-integer composite with a transparent per-signal breakdown; deterministic total order (composite DESC, reviewer identity ASC); zero engine egress."
+  - id: compare-branches
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-107: graph-level branch diff over TWO already-built read-only graph states (materialized above the surface boundary) — added/removed/changed/moved entities + edges added/removed, keyed by canonical NodeId (not line ranges); detects signature/contract changes and correlates cross-file moves by path-independent symbol identity; pure local set-diff, zero engine egress (the engine never resolves a git ref)."
+  - id: critique-review
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-108 (capstone): deterministic graph-evidence critique of an EXISTING PR review — replays the EP-007 risk/blast/centrality/taint oracle over the touched set and runs a three-way diff (gap / over_flag / unsupported_claim) against the review; deterministic resolveRef anchoring with an honest unanchored tally (never guessed); NO LLM prose; total order type→NodeId→anchor; zero engine egress (the only egress is the surface review fetch)."
+  - id: notebook-ingest
+    category: analyzer
+    status: shipped
+    epic: EP-017
+    note: "SW-104: SW-100 notebook (.ipynb) cell provenance surfaced behind the single dispatch table."
+  - id: taint-query
+    category: analyzer
+    status: shipped
+    epic: EP-017
+    note: "SW-104: SW-102 interprocedural taint verdict + flows surfaced behind the single dispatch table."
+  - id: watcher-status
+    category: analyzer
+    status: shipped
+    epic: EP-017
+    note: "SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table."
   - id: analyze
     category: mcp-tool
     status: shipped
@@ -260,11 +305,71 @@ capabilities:
     status: shipped
     epic: EP-001
     note: "structural query: k-hop neighborhood."
+  - id: implementers
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: types that implement/embed a symbol (G2)."
+  - id: implements
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: interfaces/types a symbol implements (G2)."
+  - id: overrides
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: methods that override a symbol (G2)."
+  - id: subtypes
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: subtypes (inherits+implements composed) (G2)."
+  - id: supertypes
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "structural query: supertypes (inherits+implements composed) (G2)."
+  - id: compound
+    category: mcp-tool
+    status: shipped
+    epic: EP-011
+    note: "compound / Cypher-style graph query composing traversals+filters (G1)."
   - id: pr_comment
     category: mcp-tool
     status: shipped
     epic: EP-007
     note: "render sticky PR review comment + optional merge gate."
+  - id: list_prs
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-105: read-only forge enumeration of open PRs (metadata only; no scoring, no comment posting)."
+  - id: triage_prs
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-105: single-pass graph-derived ranked multi-PR triage over the enumerated PR set (zero engine egress)."
+  - id: conflicts_prs
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress)."
+  - id: suggest_reviewers
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-107: ranked candidate-reviewer recommendation from local graph ownership/churn + affected-subgraph proximity over the touched set, with a transparent per-signal breakdown (zero engine egress)."
+  - id: compare_branches
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary)."
+  - id: critique_review
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress)."
   - id: refactor
     category: mcp-tool
     status: shipped
@@ -295,6 +400,31 @@ capabilities:
     status: shipped
     epic: EP-001
     note: "optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061)."
+  - id: distill
+    category: mcp-tool
+    status: shipped
+    epic: EP-012
+    note: "session distillation into a compact decision record."
+  - id: find_clones
+    category: mcp-tool
+    status: shipped
+    epic: EP-013
+    note: "structural clone-group detection from a JSON config (G4)."
+  - id: memory
+    category: mcp-tool
+    status: shipped
+    epic: EP-012
+    note: "agent memory store/recall/forget operations."
+  - id: search_ast
+    category: mcp-tool
+    status: shipped
+    epic: EP-013
+    note: "structural AST pattern query over the indexed graph (G3)."
+  - id: skillgen
+    category: mcp-tool
+    status: shipped
+    epic: EP-012
+    note: "deterministic skill generation from a procedure description."
   - id: undo
     category: mcp-tool
     status: shipped

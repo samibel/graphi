@@ -41,6 +41,38 @@ const (
 
 	// SW-042 sticky PR-comment + merge-gate surface.
 	ToolPrComment = "pr_comment"
+
+	// ToolCompound runs a compound / Cypher-style graph query (EP-011 G1). It is
+	// a singleton (not part of query.Operations) because its input is the query
+	// text, not an op+symbol pair.
+	ToolCompound = "compound"
+
+	// SW-082 / SW-083 pattern-query singletons (input is a pattern/config, not an
+	// op+symbol pair). Surface-exposed in SW-085.
+	ToolSearchAST  = "search_ast"
+	ToolFindClones = "find_clones"
+
+	// EP-012 agent memory & skills.
+	ToolMemory   = "memory"
+	ToolDistill  = "distill"
+	ToolSkillGen = "skillgen"
+
+	// EP-018 multi-PR triage suite (SW-105). list_prs is the read-only forge
+	// PR-enumeration tool (metadata only); triage_prs is the single-pass
+	// graph-derived ranked-triage tool over the zero-egress engine analyzer.
+	ToolListPRs   = "list_prs"
+	ToolTriagePRs = "triage_prs"
+	// SW-106 inter-PR conflict detection over the enumerated open-PR set.
+	ToolConflictsPRs = "conflicts_prs"
+	// SW-107 reviewer recommender (ranked candidates from local ownership/churn +
+	// affected-subgraph proximity) and graph-level branch comparator (structured
+	// diff keyed by canonical NodeId). Both are zero-egress engine analyzers.
+	ToolSuggestReviewers = "suggest_reviewers"
+	ToolCompareBranches  = "compare_branches"
+	// SW-108 (EP-018 capstone) critique_review: deterministic graph-evidence critique
+	// of an existing PR review (gap / over_flag / unsupported_claim). Zero-egress
+	// engine analyzer; the only permitted egress is the surface review fetch.
+	ToolCritiqueReview = "critique_review"
 )
 
 // singletonToolNames are the non-structural-query tools advertised behind a
@@ -63,6 +95,18 @@ var singletonToolNames = []string{
 	ToolRefactor,
 	ToolUndo,
 	ToolPrComment,
+	ToolCompound,
+	ToolSearchAST,
+	ToolFindClones,
+	ToolMemory,
+	ToolDistill,
+	ToolSkillGen,
+	ToolListPRs,
+	ToolTriagePRs,
+	ToolConflictsPRs,
+	ToolSuggestReviewers,
+	ToolCompareBranches,
+	ToolCritiqueReview,
 }
 
 // ToolNames returns the full, sorted, de-duplicated canonical set of every MCP
@@ -79,6 +123,20 @@ func ToolNames() []string {
 	out = append(out, singletonToolNames...)
 	sort.Strings(out)
 	return dedupeSorted(out)
+}
+
+// readOnlyToolAnnotations returns the MCP tool-annotation set for a pure
+// read-only, deterministic query tool (SW-085 AC4): it never mutates state
+// (readOnlyHint / !destructiveHint), the same arguments always yield the same
+// bytes (idempotentHint), and it touches no external/open world (!openWorldHint).
+// The three new pattern-query tools all share this set.
+func readOnlyToolAnnotations() map[string]any {
+	return map[string]any{
+		"readOnlyHint":    true,
+		"destructiveHint": false,
+		"idempotentHint":  true,
+		"openWorldHint":   false,
+	}
 }
 
 // dedupeSorted removes adjacent duplicates from a sorted slice in place-ish,

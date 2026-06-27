@@ -24,6 +24,11 @@ func tierRank(t string) int {
 // sortNodes applies the single canonical node comparator: by node ID ascending.
 // Node IDs are content-addressed and unique, so ID alone is a total order. This
 // is the ONLY place node ordering is decided, shared by every operation.
+// SortNodes is the exported alias of the canonical node comparator, so sibling
+// engine packages (e.g. engine/query/compound) reuse the SINGLE ordering and
+// cannot drift. Behavior is identical to sortNodes.
+func SortNodes(nodes []ResultNode) { sortNodes(nodes) }
+
 func sortNodes(nodes []ResultNode) {
 	sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
 }
@@ -34,6 +39,11 @@ func sortNodes(nodes []ResultNode) {
 // kind, and finally the content-addressed edge ID, which is a unique total-order
 // backstop. This guarantees byte-stable ordering regardless of insertion or
 // map-iteration order.
+// SortEdges is the exported alias of the canonical edge comparator, so sibling
+// engine packages reuse the SINGLE deterministic ordering and cannot drift.
+// Behavior is identical to sortEdges.
+func SortEdges(edges []ResultEdge) { sortEdges(edges) }
+
 func sortEdges(edges []ResultEdge) {
 	sort.Slice(edges, func(i, j int) bool {
 		a, b := edges[i], edges[j]

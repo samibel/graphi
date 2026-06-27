@@ -15,11 +15,19 @@ const (
 	OpReferences   = "references"
 	OpDefinition   = "definition"
 	OpNeighborhood = "neighborhood"
+
+	// Hierarchy operations (EP-011 G2). They navigate the implements/inherits/
+	// overrides edge vocabulary populated at ingest.
+	OpImplementers = "implementers" // types that implement/embed symbolID (inbound implements)
+	OpImplements   = "implements"   // interfaces/types symbolID implements (outbound implements)
+	OpOverrides    = "overrides"    // methods that override symbolID (inbound overrides)
+	OpSubtypes     = "subtypes"     // subtypes of symbolID (inbound inherits + implements)
+	OpSupertypes   = "supertypes"   // supertypes of symbolID (outbound inherits + implements)
 )
 
 // Operations is the canonical, ordered list of supported operations. Surfaces
 // use it to advertise their commands/tools without re-listing them locally.
-var Operations = []string{OpCallers, OpCallees, OpReferences, OpDefinition, OpNeighborhood}
+var Operations = []string{OpCallers, OpCallees, OpReferences, OpDefinition, OpNeighborhood, OpImplementers, OpImplements, OpOverrides, OpSubtypes, OpSupertypes}
 
 // Dispatch routes a named operation to the corresponding Service method. It is
 // the SINGLE entry point both the CLI and MCP surfaces call, so neither surface
@@ -41,6 +49,16 @@ func (s *Service) Dispatch(ctx context.Context, operation string, symbolID model
 		return s.Definition(ctx, symbolID)
 	case OpNeighborhood:
 		return s.Neighborhood(ctx, symbolID, depth)
+	case OpImplementers:
+		return s.Implementers(ctx, symbolID)
+	case OpImplements:
+		return s.Implements(ctx, symbolID)
+	case OpOverrides:
+		return s.Overrides(ctx, symbolID)
+	case OpSubtypes:
+		return s.Subtypes(ctx, symbolID)
+	case OpSupertypes:
+		return s.Supertypes(ctx, symbolID)
 	default:
 		return Result{}, fmt.Errorf("query: unknown operation %q (want one of %v)", operation, Operations)
 	}

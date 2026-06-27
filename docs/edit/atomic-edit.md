@@ -1,9 +1,20 @@
 # Atomic, graph-consistent source edits (`engine/edit`)
 
-Status: introduced in SW-035 (EP-006, epic 1/4).
+Status: introduced in SW-035 (EP-006, epic 1/4); extended in EP-015 (SW-092
+inline, SW-093 safe-delete) and EP-018 (PR-tool surfaces).
 Scope: identity-preserving span replacement only. Graphstore node/edge delete
 semantics and non-identity-preserving edits are a documented fast-follow for
 SW-036 (rename / extract / move).
+
+> **EP-015 saga branches (SW-092 / SW-093).** `engine/edit/inline.go` adds a
+> reference-correct inline refactor with a fail-safe block list (refuses to
+> inline when references are ambiguous, recursive, or span macros / codegen).
+> `engine/edit/safe_delete.go` adds a reference-safety-gated safe-delete
+> refactor that only removes a symbol when the symbol has zero inbound
+> references (after the linker pass). Both ride the same atomic saga
+> (filesystem + graphstore + ingest-meta) and share `engine/edit/serialize.go`
+> with the existing refactor commands. Surface exposure is parity-tested in
+> `surfaces/ep015_parity_test.go`.
 
 ## State before this story
 
@@ -50,12 +61,14 @@ flowchart LR
         gs1["core/graphstore\n(upsert-only, Snapshot/Load)"]
         fs1["source files\n(no writer)"]
     end
-    subgraph after["After SW-035"]
+    subgraph after["After SW-035 (+ EP-015 inline / safe-delete)"]
         edit["engine/edit.Applier\n(atomic saga)"]
         edit --> ing2["engine/ingest.IngestChanged"]
         edit --> gs2["graphstore Snapshot/Load\n(graph rollback anchor)"]
         edit --> fs2["atomic source write\n(temp+fsync+rename)"]
         edit --> chk["ConsistencyChecker\n(incremental == full)"]
+        edit --> inl["ApplyInline\n(SW-092, fail-safe block list)"]
+        edit --> sdel["ApplySafeDelete\n(SW-093, ref-safety gate)"]
     end
 ```
 

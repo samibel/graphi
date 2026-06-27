@@ -19,6 +19,9 @@ type allToolsClient struct{}
 func (allToolsClient) Query(context.Context, string, string, int) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) Compound(context.Context, string) ([]byte, error) {
+	return []byte("{}"), nil
+}
 func (allToolsClient) Search(context.Context, string, int) ([]byte, error) {
 	return []byte("{}"), nil
 }
@@ -39,6 +42,42 @@ func (allToolsClient) Undo(context.Context, string, string) ([]byte, error) {
 	return []byte("{}"), nil
 }
 func (allToolsClient) PrComment(context.Context, client.PrCommentRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) Memory(context.Context, client.MemoryRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) Distill(context.Context, client.DistillRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) Diagnose(context.Context, []string) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) Inline(context.Context, client.InlineRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) SafeDelete(context.Context, client.SafeDeleteRequest) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) SearchAST(context.Context, string, int) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) FindClones(context.Context, string) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) ListPRs(context.Context) ([]byte, error)      { return []byte("{}"), nil }
+func (allToolsClient) TriagePRs(context.Context) ([]byte, error)    { return []byte("{}"), nil }
+func (allToolsClient) ConflictsPRs(context.Context) ([]byte, error) { return []byte("{}"), nil }
+func (allToolsClient) SuggestReviewers(context.Context, string) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) CompareBranches(context.Context, string, string) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) CritiqueReview(context.Context, int, string, string) ([]byte, error) {
 	return []byte("{}"), nil
 }
 

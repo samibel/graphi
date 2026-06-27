@@ -1,15 +1,18 @@
-# Wiki Surface — SW-041
+# Wiki Surface — SW-041 (+ SW-103 / SW-104)
 
 > Self-generating wiki from code-graph communities. Served over HTTP (SW-039).
+> Extended in **SW-103** (EP-017) with deterministic Louvain community
+> detection behind the grouping seam, surfaced through the analysis
+> dispatcher in **SW-104** (EP-017 capstone) as the `communities` analyzer.
 
 ## Before / After
 
-| | Before SW-041 | After SW-041 |
-|---|---|---|
-| **Browsing the graph** | query/search per question | **self-generated wiki**: one page per package + index |
-| **Community detection** | none | deterministic package-based partition (`engine/community`) |
-| **Cross-links** | none | real inter-package edges → navigable neighbor links |
-| **Determinism** | n/a | byte-for-byte identical output for the same graph |
+| | Before SW-041 | After SW-041 | After SW-103 / SW-104 |
+|---|---|---|---|
+| **Browsing the graph** | query/search per question | **self-generated wiki**: one page per package + index | unchanged; consumers can also request Louvain-grouped pages |
+| **Community detection** | none | deterministic package-based partition (`engine/community`) | + **Louvain** community detection behind a single grouping seam (`core/community/louvain.go`, `engine/community/detector.go`) |
+| **Cross-links** | none | real inter-package edges → navigable neighbor links | unchanged |
+| **Determinism** | n/a | byte-for-byte identical output for the same graph | + Louvain is deterministic (no random seed) and surfaces a canonical community ordering |
 
 ## Why
 A browsable overview of the codebase derived **from graph facts only** — no LLM,
@@ -18,7 +21,7 @@ package becomes a wiki page listing members, internal edges, representatives, an
 cross-links to dependent packages. The same graph always yields the same wiki
 (deterministic), so it is reproducible and diffable.
 
-### Community detection: package-based (design decision)
+### Community detection: package-based (SW-041) + Louvain (SW-103)
 The draft said "reuse the existing community-detection routine", but **none
 existed**. Weakly-connected components (WCC) were evaluated and rejected: WCC
 collapses every connected node into one component, leaving **no inter-community
@@ -26,7 +29,14 @@ edges** — so AC-3's cross-links would be impossible. **Package-based partition
 (the qualified-name prefix before the final `.`) is deterministic, stable, and
 preserves inter-package edges, making neighbor cross-links derivable from real
 graph facts. It is also the natural "community" for a code graph (one wiki page
-per package). Richer clustering (Louvain/modularity) is a documented fast-follow.
+per package).
+
+**SW-103 added Louvain** as a second, structurally-different grouping behind
+the same seam (`engine/community/detector.go` + `core/community/louvain.go`).
+Louvain maximizes modularity over the call/reference edge weight and produces
+communities that are not aligned with the package boundary — useful for spotting
+cross-cutting concerns, hub packages, and hidden coupling. Both groupings are
+deterministic, byte-stable, and exposed through the `communities` analyzer.
 
 ## Contract
 - `GET /wiki` → index (all communities + member counts), `text/markdown`, 200.
@@ -36,10 +46,16 @@ Pages are pure Markdown derived from graph facts; no natural-language synthesis.
 
 ```mermaid
 flowchart LR
-    G[graphstore] --> C[engine/community: package partition]
-    C --> W[engine/wiki: deterministic Markdown]
+    G[graphstore] --> D[engine/community: detector]
+    D --> P[package-based partition<br/>SW-041]
+    D --> L[Louvain modularity<br/>SW-103]
+    P --> W[engine/wiki: deterministic Markdown]
+    L --> W
+    L --> A[communities analyzer<br/>SW-104]
     W --> H[surfaces/http: /wiki, /wiki/c/id]
+    A --> H2[GET /analyze/communities]
     H --> B[web client SW-040]
+    H2 --> AGT[CLI / MCP / HTTP]
 ```
 
 ## Determinism & safety

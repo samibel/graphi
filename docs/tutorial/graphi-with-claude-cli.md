@@ -118,10 +118,14 @@ So the agent (and you) can *trust* the answer instead of believing it.
 
 All tools are read-only by default. Real MCP tool names, grouped:
 
-- **Structure:** `callers`, `callees`, `references`, `definition`, `neighborhood`
-- **Search:** `search`, `search_semantic`
+- **Structure:** `callers`, `callees`, `references`, `definition`, `neighborhood`, `implementers`, `implements`, `overrides`, `subtypes`, `supertypes`
+- **Search:** `search`, `search_semantic`, `compound` (Cypher-style)
+- **Pattern queries:** `search_ast`, `find_clones`
 - **Analysis:** `analyze` (e.g. with `analyzer: "impact"`), `analyze_taint`, `analyze_pdg`, `analyze_interproc`, `analyze_contracts`, `analyze_githistory`
-- **PR review:** `analyze_pr_risk`, `analyze_pr_signals`, `analyze_pr_questions`, `pr_comment`
+- **EP-017 analyzers:** `communities`, `notebook-ingest`, `taint-query`, `watcher-status`
+- **PR review (EP-007 / EP-018):** `analyze_pr_risk`, `analyze_pr_signals`, `analyze_pr_questions`, `pr_comment`, `list_prs`, `triage_prs`, `conflicts_prs`, `suggest_reviewers`, `compare_branches`, `critique_review`
+- **Diagnostics & code actions (EP-015, CLI-only):** `diagnose`, `inline`, `safe_delete`
+- **Memory & skills (EP-012):** `memory`, `distill`, `skillgen`
 - **Edit (opt-in) & readout:** `refactor_preview`, `refactor`, `undo`, `savings`
 
 ---
@@ -132,12 +136,14 @@ Each use case = what you tell Claude → which tool fires → why it helps.
 
 ```mermaid
 flowchart TD
-    Q["Question to the Claude CLI"] --> UC1 & UC2 & UC3 & UC4 & UC5
+    Q["Question to the Claude CLI"] --> UC1 & UC2 & UC3 & UC4 & UC5 & UC6 & UC7
     UC1["①  Blast radius before a change"] --> T1["callers · impact"]
     UC2["②  Understand unfamiliar code"] --> T2["search · neighborhood · analyze(concept)"]
-    UC3["③  Security review"] --> T3["analyze_taint"]
-    UC4["④  Assess a PR"] --> T4["analyze_pr_risk · pr_comment"]
-    UC5["⑤  Refactor safely"] --> T5["refactor_preview · refactor · undo"]
+    UC3["③  Security review"] --> T3["analyze_taint · analyze(interproc)"]
+    UC4["④  Assess a PR"] --> T4["list_prs · triage_prs · analyze_pr_risk · pr_comment"]
+    UC5["⑤  Refactor safely"] --> T5["refactor_preview · refactor · undo · inline · safe_delete"]
+    UC6["⑥  Reviewer pick + branch compare (EP-018)"] --> T6["suggest_reviewers · compare_branches · conflicts_prs"]
+    UC7["⑦  Critique an existing review (EP-018)"] --> T7["critique_review"]
 ```
 
 ### ① "What breaks if I change this?" — blast radius

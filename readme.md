@@ -49,25 +49,6 @@ graphi setup                 # wire every detected local MCP client (Claude Code
 graphi upgrade
 ```
 
-Other ways to install:
-
-```bash
-# Homebrew (macOS / Linux) — from the shipped formula (or a future samibel/homebrew-tap)
-brew install --formula packaging/homebrew/graphi.rb
-
-# Developer fallback (builds from source via the Go toolchain)
-go install github.com/samibel/graphi/cmd/graphi@latest
-```
-
-```powershell
-# Scoop (Windows) — from the shipped manifest (or a future bucket)
-scoop install packaging/scoop/graphi.json
-```
-
-The bundled release embeds the web UI (no Node needed). A plain `go build` from
-source shows a notice page instead of the UI — see
-[Advanced / from source](#advanced--from-source).
-
 ---
 
 ## What is graphi?
@@ -87,6 +68,41 @@ graphi is built for two audiences:
 - **AI coding agents** that need a stable, read-only graph backend to query over MCP — without owning parsing or indexing themselves, and without sending code to a third party.
 
 Everything runs locally. No accounts, no telemetry, no network calls.
+
+## Features (Übersicht)
+
+The full feature inventory — every MCP tool, CLI subcommand, HTTP endpoint, analyzer, and surface — is in **[`docs/FEATURES.md`](docs/FEATURES.md)**. This section is the elevator pitch.
+
+```mermaid
+flowchart LR
+  DEV["Developer"] --> CLI["graphi CLI"]
+  AGT["AI Agent (MCP)"] --> MCPSTD["MCP stdio"]
+  AGT2["AI Agent (HTTP)"] --> MCPHTTP["MCP streamable-HTTP"]
+  USR["Browser / curl"] --> HTTP["loopback HTTP/SSE"]
+  TUI_USER["TUI user"] --> TUI["graphi tui"]
+  VS["VS Code"] --> VSX["graphi-vscode"]
+  CI["CI / GitHub Action"] --> GHA["graphi-github-action"]
+  CLI --> CL["surfaces/client.Client"]
+  MCPSTD --> CL
+  MCPHTTP --> CL
+  HTTP --> CL
+  TUI --> CL
+  VSX --> CL
+  GHA --> CL
+  CL --> ENG["engine/*  (query, search, analysis, edit, observe, overlay, watch, community, taint, …)"]
+  ENG --> CORE["core/*  (model, parse, graphstore)"]
+  CL -. "byte-identical answers by construction" .- ENG
+```
+
+### Highlights
+
+- **One engine, many surfaces.** CLI, MCP stdio, MCP streamable-HTTP, loopback HTTP/SSE, TUI, web UI, VS Code, and the GitHub Action all share the same `surfaces/client.Client` interface. There is no surface-local query or analysis logic — every answer is byte-identical by construction (parity-tested on every PR).
+- **Live IDE transport.** The MCP streamable-HTTP transport keeps stdio envelope parity; per-class SSE subscriptions let an editor subscribe only to the event classes it cares about; the in-memory editor-overlay subsystem tracks unsaved buffers and the zero-egress enforcement guard rejects any non-loopback dial at the surface boundary.
+- **Diagnostics & code actions.** `diagnose` runs graph-derived diagnostics (severity + suggested code-action), `inline` performs reference-correct inline refactor with a fail-safe block list, `safe_delete` gates on reference-safety before removing a symbol.
+- **Notebooks, watcher, interproc taint, communities.** `.ipynb` cell-provenance ingestion, an `fsnotify` watcher with bounded worker-pool and deterministic canonical-ordered apply, an interprocedural taint fixpoint over Sharir–Pnueli procedure summaries, and deterministic Louvain community detection behind a single grouping seam. Full-vs-incremental byte-parity is enforced as a conformance gate.
+- **PR-tool suite.** `list_prs` enumerates open PRs (read-only forge seam), `triage_prs` produces a single-pass graph-derived ranking, `conflicts_prs` detects inter-PR conflicts (textual + graph-semantic + asymmetric contract-dependency), `suggest_reviewers` ranks candidates by ownership/churn + affected-subgraph proximity, `compare_branches` is a graph-level diff keyed by canonical NodeId, and `critique_review` is a deterministic graph-evidence critique of an existing review (no LLM prose; the only egress is the surface review fetch).
+
+For every CLI subcommand, every MCP tool, every HTTP endpoint, and several Mermaid diagrams, see **[`docs/FEATURES.md`](docs/FEATURES.md)**.
 
 ## Capabilities
 
@@ -123,9 +139,9 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 | C · C++ · Rust | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
 | Bash/Shell | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
 | SQL | ✅ symbol nodes | ✅ intra-file | — (no provable cross-file refs at this tier; resolver skips+counts) ² |
-| CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² |
+| CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
 
-> ¹ The cross-file / cross-package **linker pass** ([`engine/link`](engine/link), FU-1) is
+> ¹ The cross-file / cross-package **linker pass** ([`engine/link`](engine/link)) is
 > wired into ingest and resolves Go references against the fully-committed node set:
 > same-package cross-file bare-ident calls/refs (`derived` tier) and cross-package
 > selector calls (`pkg.Fn`, `recv.Method`) plus file→file `imports` (`heuristic` tier,
@@ -133,7 +149,7 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > and the rename/move cascade. The linker is **never** `confirmed`: unresolved or ambiguous
 > references are dropped deterministically, never fabricated.
 >
-> ² Intra-file extraction ships for every language above. FU-5 adds one per-language
+> ² Intra-file extraction ships for every language above. One per-language
 > cross-file resolver (`resolve_<lang>.go`) over the same `engine/link` registry seam
 > (Open/Closed — a new language is a new `Register` call in `link.New()`, never an edit
 > to an existing resolver). Ingest dispatches the linker per language. **Shipped:**
@@ -159,8 +175,8 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 >   CGO build (see below), never in the CGo-free default.
 
 The frozen tier-1 list and the corrected (one-time runtime + per-blob) binary-budget
-model live in [`bench/lang-budget.md`](bench/lang-budget.md); the EP-009 resolution and the
-full per-language blob deltas are recorded in the epic.
+model live in [`bench/lang-budget.md`](bench/lang-budget.md); the curated-tier resolution
+and the full per-language blob deltas are recorded in that file.
 
 #### The opt-in `graphi-broad` CGO flavor (broad coverage)
 
@@ -180,7 +196,7 @@ graphi ships in two flavors over the **same** `SymbolExtractor` contract:
   imported (it would statically pull in hundreds of MB of generated C). Additional broad
   grammars are added one subpackage at a time.
 
-**Before / after this slice (SW-056).** *Before:* the default pure-Go tier only —
+**Before / after this slice.** *Before:* the default pure-Go tier only —
 broad coverage was not available. *After:* the opt-in `graphi-broad` CGO flavor opens
 the `go-sitter-forest`-backed CGO seam over the same `SymbolExtractor` contract
 (`zig` wired as the reference grammar), **build-tag isolated** so the default tier is
@@ -209,9 +225,9 @@ stays pure-Go. This is enforced on two layers — a registration-level guard
 > different depth bound.
 >
 > This residual native-C crash/RCE risk is **explicitly accepted** for the opt-in
-> lane (decision **SW-056-SEC-001**). Out-of-process / sandbox isolation
+> lane. Out-of-process / sandbox isolation
 > (subprocess-per-parse with rlimit/cgroup + signal trapping and/or seccomp) is the
-> named follow-up **SW-058**. Until SW-058 lands, do not point `graphi-broad` at
+> named follow-up. Until then, do not point `graphi-broad` at
 > untrusted source.
 
 The broad lane keeps its supply-chain and runtime controls: `go-sitter-forest`
@@ -241,6 +257,38 @@ Also available through `graphi analyze <analyzer>`:
 - **`interproc`** — interprocedural, fixpoint-based summary analysis across call boundaries.
 - **`contracts`** — detect API/interface contracts and flag drift against them.
 - **`git-history`** — repository-history signals such as code churn, co-change groups, and bus-factor.
+
+### PR review vertical
+
+- **`pr-risk`** — deterministic per-region PR risk score (impact + taint, no LLM).
+- **`pr-signals`** — hub / bridge / surprise signals on PR-changed code.
+- **`pr-questions`** — deterministic reviewer questions derived from the findings.
+- **`pr_comment`** — render a sticky PR review comment + optional risk-threshold merge gate.
+- **`list_prs`** — read-only forge enumeration of open PRs (metadata only).
+- **`triage_prs`** — single-pass graph-derived multi-PR triage ranking.
+- **`conflicts_prs`** — inter-PR conflict detection (textual + graph-semantic + asymmetric contract-dependency).
+- **`suggest_reviewers`** — ranked candidate-reviewer recommender (ownership/churn + affected-subgraph proximity).
+- **`compare_branches`** — graph-level structured diff of two branch states keyed by canonical NodeId.
+- **`critique_review`** — deterministic graph-evidence critique of an EXISTING PR review (gap / over_flag / unsupported_claim, no LLM prose).
+
+### Notebooks, watcher, communities, interproc taint
+
+- **`notebook-ingest`** — `.ipynb` cell-provenance ingestion (cell-as-symbol granularity).
+- **`watcher-status`** — filesystem-watcher health (per-root errors, no synthesis).
+- **`taint-query`** — interprocedural taint verdict + flows over Sharir–Pnueli summaries.
+- **`communities`** — deterministic Louvain community detection behind a single grouping seam.
+
+### Diagnostics & code actions
+
+- **`graphi diagnose [kind]`** — graph-derived diagnostics + suggested code-actions, severity-tagged.
+- **`graphi inline [-dry-run] <target>`** — reference-correct inline refactor with fail-safe block list.
+- **`graphi safe-delete [-dry-run] <target>`** — reference-safety-gated safe-delete refactor.
+
+### Agent memory & skills
+
+- **`graphi memory store|recall|forget …`** — local agent memory (per-scope, per-notebook, per-tag).
+- **`graphi distill -session <id> …`** — distill a session into a compact decision record.
+- **`graphi skillgen -name <n> -trigger <t> -description <d>`** — deterministic skill generation from a procedure description.
 
 ## Semantic search (optional, OFF by default)
 
@@ -350,7 +398,7 @@ security limitation above before enabling it on untrusted source.
 
 ```bash
 # Broad CGO flavor: 257-grammar go-sitter-forest over the same contract.
-# Requires a C toolchain; intended for trusted / CI input only (SW-056-SEC-001).
+# Requires a C toolchain; intended for trusted / CI input only.
 CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
 ```
 
@@ -404,6 +452,21 @@ The single `graphi` binary dispatches the subcommands below. Most accept `-db <p
 | `graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo] [-meta dir]` | Read-only HTTP REST + SSE surface (loopback-only). |
 | `graphi tui [-db path] [-daemon socket]` | Interactive terminal surface (select / neighbors / blast / search). |
 | `graphi setup [--client claude\|copilot\|cursor\|windsurf\|claude-desktop\|all] [--dry-run] [--binary path] [--config path]` | Register graphi's MCP stdio server into local MCP clients' configs (idempotent, atomic, offline). Default `--client all` wires Claude Code plus every other detected local client. Cloud agents (Devin, the Copilot coding agent) run remotely and can't reach a local stdio server, so they are out of scope. |
+| `graphi search-ast [-limit N] <json-pattern>` | Structural AST pattern query. |
+| `graphi find-clones [<json-config>]` | Clone detection. |
+| `graphi diagnose [<kind>...]` | Graph-derived diagnostics + suggested code-actions. |
+| `graphi inline [-dry-run] <target>` | Reference-correct inline refactor with fail-safe block list. |
+| `graphi safe-delete [-dry-run] <target>` | Reference-safety-gated safe-delete refactor. |
+| `graphi list-prs` | Read-only forge enumeration of open PRs. |
+| `graphi triage-prs` | Graph-derived multi-PR triage ranking. |
+| `graphi conflicts-prs` | Inter-PR conflict detection. |
+| `graphi suggest-reviewers [-diff <ref>]` | Ranked candidate-reviewer recommender. |
+| `graphi compare-branches -base <ref> -head <ref>` | Graph-level branch diff. |
+| `graphi critique-review -diff <ref> [-pr N] [-review <json>\|-review-path <file>]` | Deterministic graph-evidence critique of an existing PR review. |
+| `graphi pr-comment -diff <ref> [-pr N] [-gate] [-publish]` | Sticky PR comment + risk-threshold merge gate. |
+| `graphi memory store\|recall\|forget ...` | Agent memory operations. |
+| `graphi distill -session <id> -decisions "..." -risks "..." -questions "..." -files "..."` | Session distillation. |
+| `graphi skillgen -name <n> -trigger <t> -description <d>` | Deterministic skill generation. |
 | `graphi privacy-audit [--target ./...]` | Print the local-first proof (real CGo scan + canary egress guard); non-zero on violation. |
 | `graphi savings` | Print the session token-savings readout. |
 | `graphi version` | Print the version / commit / build date stamped into the binary. |
@@ -415,7 +478,7 @@ graphi analyze [-db path] [-daemon socket] <analyzer> -symbol <id> \
   [-target <id>] [-concept <term>] [-direction forward|reverse] [-max-nodes N]
 ```
 
-Available analyzers: `impact`, `call-chain`, `concept`, `metrics`, `batched`, `taint`, `pdg`, `interproc`, `contracts`, `git-history`.
+Available analyzers: `impact`, `call-chain`, `concept`, `metrics`, `batched`, `taint`, `pdg`, `interproc`, `contracts`, `git-history`, `pr-risk`, `pr-signals`, `pr-questions`, `communities`, `notebook-ingest`, `taint-query`, `watcher-status`, `triage-prs`, `conflicts-prs`, `suggest-reviewers`, `compare-branches`, `critique-review`.
 
 ```bash
 # Reverse impact: what depends on this symbol?
@@ -435,9 +498,9 @@ graphi is a layered Go workspace with a single engine serving every surface:
 ```mermaid
 flowchart TD
     CMD["cmd/*  — entry points, wiring"]
-    SURF["surfaces/*  — CLI, daemon, MCP, HTTP"]
-    ENG["engine/*  — query, search, context, analysis"]
-    CORE["core/*  — model, parse, graphstore"]
+    SURF["surfaces/*  — CLI, daemon, MCP stdio/HTTP, HTTP/SSE, TUI, forge, guard"]
+    ENG["engine/*  — query, search, analysis, edit, observe, overlay, watch, community, interproc-taint, conformance, context, …"]
+    CORE["core/*  — model, parse, graphstore, community"]
     CMD --> SURF --> ENG --> CORE
 ```
 
@@ -449,6 +512,12 @@ flowchart TD
 
 New here? The **[How-To guide](docs/HOWTO.md)** walks through install, indexing a
 repo, and using every surface (CLI, HTTP/SSE, web client, TUI, VS Code, MCP).
+
+The **[Feature Inventory](docs/FEATURES.md)** is the per-epic catalogue of every
+MCP tool, CLI subcommand, HTTP endpoint, and analyzer graphi ships, with 10
+Mermaid diagrams (architecture, MCP taxonomy, surface matrix, PR pipeline, live-IDE
+transport sequence, watcher + conformance, refactor saga, diagnostic flow, epic
+roadmap, counts at a glance).
 
 The **[Architecture Plan](docs/architecture-plan.md)** is the single design entry
 point — the layered model, data flow, parse/extract pipeline, provenance

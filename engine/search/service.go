@@ -54,7 +54,7 @@ type Service struct {
 	// Optional semantic-search collaborators. All nil on the default path ⇒
 	// SemanticSearch gracefully skips (no embedder, no network).
 	embedReg   *embed.Registry
-	index      *embed.Index
+	index      embed.VectorIndex
 	nodeReader NodeReader
 }
 
@@ -66,10 +66,11 @@ func New(reader Reader) *Service {
 
 // WithSemantic opts the service into OPTIONAL semantic search (SW-059). reg is
 // the embedder registry (zero/unconfigured ⇒ still graceful-skip), index is the
-// brute-force cosine vector index, and nodeReader resolves NodeId → Node for hit
-// provenance (may be nil). It returns the receiver for chaining. Passing a nil or
-// unconfigured registry preserves the graceful-skip behavior.
-func (s *Service) WithSemantic(reg *embed.Registry, index *embed.Index, nodeReader NodeReader) *Service {
+// vector index backend (any embed.VectorIndex — brute-force or HNSW; SW-084), and
+// nodeReader resolves NodeId → Node for hit provenance (may be nil). It returns the
+// receiver for chaining. Passing a nil or unconfigured registry preserves the
+// graceful-skip behavior; a nil index defaults to the brute-force backend.
+func (s *Service) WithSemantic(reg *embed.Registry, index embed.VectorIndex, nodeReader NodeReader) *Service {
 	s.embedReg = reg
 	if index == nil {
 		index = embed.NewIndex()

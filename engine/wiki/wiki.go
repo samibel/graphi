@@ -57,7 +57,10 @@ func (w Wiki) PageByID(id string) (Page, bool) {
 // Generate builds the wiki from the graph reachable via reader. It is
 // deterministic, read-only, and offline.
 func Generate(ctx context.Context, reader graphstore.Graphstore) (Wiki, error) {
-	comms, err := community.Detect(ctx, reader)
+	// Resolve grouping through the Detector seam (default = Louvain since
+	// SW-103). Package-prefix is no longer the grouping mechanism; it is retained
+	// behind the seam as a baseline/fallback only.
+	comms, err := community.DefaultDetector().Detect(ctx, reader)
 	if err != nil {
 		return Wiki{}, fmt.Errorf("wiki: community detect: %w", err)
 	}

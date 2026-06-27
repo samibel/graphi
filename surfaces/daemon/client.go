@@ -112,9 +112,29 @@ func (c *DaemonClient) Query(ctx context.Context, op, symbol string, depth int) 
 	return c.request(ctx, "query", queryParams{Op: op, Symbol: symbol, Depth: depth})
 }
 
+// Compound implements client.Client (EP-011 G1).
+func (c *DaemonClient) Compound(ctx context.Context, queryText string) ([]byte, error) {
+	return c.request(ctx, "compound", compoundParams{Query: queryText})
+}
+
 // Search implements client.Client.
 func (c *DaemonClient) Search(ctx context.Context, q string, limit int) ([]byte, error) {
 	return c.request(ctx, "search", searchParams{Query: q, Limit: limit})
+}
+
+// SearchAST implements client.Client (SW-085). It forwards the JSON AstPattern to
+// the daemon's search_ast RPC; the daemon-side handler is the same Direct client,
+// so the returned bytes are the canonical query.Marshal output — byte-identical to
+// the in-process and HTTP surfaces.
+func (c *DaemonClient) SearchAST(ctx context.Context, patternJSON string, limit int) ([]byte, error) {
+	return c.request(ctx, "search_ast", searchASTParams{Pattern: patternJSON, Limit: limit})
+}
+
+// FindClones implements client.Client (SW-085). It forwards the JSON CloneConfig
+// to the daemon's find_clones RPC; the daemon-side handler returns the canonical
+// query.MarshalCloneResult bytes for byte-identical parity.
+func (c *DaemonClient) FindClones(ctx context.Context, configJSON string) ([]byte, error) {
+	return c.request(ctx, "find_clones", findClonesParams{Config: configJSON})
 }
 
 // SemanticSearch implements client.Client. The daemon semantic RPC is not yet
@@ -137,15 +157,13 @@ func (c *DaemonClient) Savings(ctx context.Context) ([]byte, error) {
 	return c.request(ctx, "savings", nil)
 }
 
-// Analyze implements client.Client. The daemon analysis RPC is not yet wired
-// (SW-022 ships the in-process analysis path that both MCP stdio and CLI direct
-// mode use); until it is added, the daemon client reports the capability as
-// unavailable rather than fabricating a result. Query/search/savings are
-// unaffected.
+// Analyze implements client.Client. SW-104 wires the daemon analysis RPC: it
+// forwards the transport-agnostic AnalyzeParams to the daemon's "analyze" method,
+// whose handler is the same in-process Direct client used by the cold surfaces,
+// so the returned bytes are the canonical analysis.Marshal output —
+// byte-identical to the CLI/MCP/HTTP/SSE surfaces (parity by construction).
 func (c *DaemonClient) Analyze(ctx context.Context, p client.AnalyzeParams) ([]byte, error) {
-	_ = ctx
-	_ = p
-	return nil, client.ErrAnalysisUnavailable
+	return c.request(ctx, "analyze", analyzeParams(p))
 }
 
 // RefactorPreview implements client.Client. The daemon edit RPC is not yet wired
@@ -179,6 +197,46 @@ func (c *DaemonClient) Undo(ctx context.Context, undoToken, actor string) ([]byt
 func (c *DaemonClient) PrComment(ctx context.Context, req client.PrCommentRequest) ([]byte, error) {
 	_, _ = ctx, req
 	return nil, client.ErrReviewUnavailable
+}
+
+// Memory implements client.Client. The daemon memory RPC is not yet wired;
+// returns ErrMemoryUnavailable.
+func (c *DaemonClient) Memory(ctx context.Context, req client.MemoryRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrMemoryUnavailable
+}
+
+// Distill implements client.Client. The daemon distill RPC is not yet wired;
+// returns ErrDistillUnavailable.
+func (c *DaemonClient) Distill(ctx context.Context, req client.DistillRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrDistillUnavailable
+}
+
+// SkillGen implements client.Client. The daemon skillgen RPC is not yet wired;
+// returns ErrSkillGenUnavailable.
+func (c *DaemonClient) SkillGen(ctx context.Context, req client.SkillGenRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrSkillGenUnavailable
+}
+
+// Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
+// added (mirrors the analysis/edit "unavailable until wired" precedent).
+func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string) ([]byte, error) {
+	_, _ = ctx, kinds
+	return nil, client.ErrDiagnosticUnavailable
+}
+
+// Inline returns ErrEditUnavailable until a daemon edit RPC is added.
+func (c *DaemonClient) Inline(ctx context.Context, req client.InlineRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrEditUnavailable
+}
+
+// SafeDelete returns ErrEditUnavailable until a daemon edit RPC is added.
+func (c *DaemonClient) SafeDelete(ctx context.Context, req client.SafeDeleteRequest) ([]byte, error) {
+	_, _ = ctx, req
+	return nil, client.ErrEditUnavailable
 }
 
 // SocketPath returns the configured socket path.
@@ -218,4 +276,46 @@ func mustJSON(v any) json.RawMessage {
 		panic(err)
 	}
 	return b
+}
+
+// ListPRs returns ErrForgeUnavailable until a daemon forge-enumeration RPC is
+// added (SW-105). The forge PR-enumeration boundary is wired only on the
+// in-process Direct client today (mirrors the analysis/edit/review
+// "unavailable until wired" precedent).
+func (c *DaemonClient) ListPRs(ctx context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+
+// TriagePRs returns ErrForgeUnavailable until a daemon forge-enumeration RPC is
+// added (SW-105).
+func (c *DaemonClient) TriagePRs(ctx context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+
+// ConflictsPRs returns ErrForgeUnavailable until a daemon forge-enumeration RPC is
+// added (SW-106). Mirrors the ListPRs/TriagePRs "unavailable until wired" rule.
+func (c *DaemonClient) ConflictsPRs(ctx context.Context) ([]byte, error) {
+	return nil, client.ErrForgeUnavailable
+}
+
+// SuggestReviewers returns ErrAnalysisUnavailable until a daemon suggest-reviewers
+// RPC is added (SW-107). The analyzer is wired only on the in-process Direct
+// client today (mirrors the analysis "unavailable until wired" precedent).
+func (c *DaemonClient) SuggestReviewers(ctx context.Context, diff string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
+}
+
+// CompareBranches returns ErrCompareUnavailable until a daemon branch-state
+// materialization RPC is added (SW-107). The materializer is wired only on the
+// in-process Direct client today.
+func (c *DaemonClient) CompareBranches(ctx context.Context, baseRef, headRef string) ([]byte, error) {
+	return nil, client.ErrCompareUnavailable
+}
+
+// CritiqueReview returns ErrAnalysisUnavailable until a daemon critique-review RPC
+// is added (SW-108). The analyzer + review-fetch boundary are wired only on the
+// in-process Direct client today (mirrors the analysis "unavailable until wired"
+// precedent).
+func (c *DaemonClient) CritiqueReview(ctx context.Context, prNumber int, diff, reviewJSON string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
 }

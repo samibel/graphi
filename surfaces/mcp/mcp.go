@@ -157,6 +157,46 @@ type callParams struct {
 		DestinationFile string `json:"destination_file"`
 		UndoToken       string `json:"undo_token"`
 		Actor           string `json:"actor"`
+		// EP-011 G1 compound query text (SEED/HOP/WHERE/MAXDEPTH).
+		Query string `json:"query"`
+		// SW-085 pattern-query arguments: search_ast JSON pattern + limit, and the
+		// find_clones JSON config.
+		Pattern string `json:"pattern"`
+		Limit   *int   `json:"limit"`
+		Config  string `json:"config"`
+		// EP-012 memory arguments.
+		Op       string   `json:"op"`
+		Scope    string   `json:"scope"`
+		Notebook string   `json:"notebook"`
+		Tags     []string `json:"tags"`
+		Payload  string   `json:"payload"`
+		MemID    string   `json:"mem_id"`
+		// EP-012 distill arguments.
+		SessionID      string        `json:"session_id"`
+		Turns          []client.Turn `json:"turns"`
+		Decisions      []string      `json:"decisions"`
+		Risks          []string      `json:"risks"`
+		OpenQuestions  []string      `json:"open_questions"`
+		FileReferences []string      `json:"file_references"`
+		// EP-012 skillgen arguments.
+		Name         string             `json:"name"`
+		Trigger      string             `json:"trigger"`
+		Description  string             `json:"description"`
+		SkillInputs  []string           `json:"skill_inputs"`
+		SkillOutputs []string           `json:"skill_outputs"`
+		SkillSteps   []client.SkillStep `json:"skill_steps"`
+
+		// SW-107 compare_branches base/head branch refs (suggest_reviewers reuses the
+		// shared `diff` argument above).
+		Base string `json:"base"`
+		Head string `json:"head"`
+
+		// SW-108 critique_review: the PR number to fetch the existing review for (when
+		// no inline review is supplied) and an inline existing-review JSON string. The
+		// touched set reuses the shared `diff` argument above. The review is structured
+		// at the surface; the engine never parses a raw blob or fetches.
+		PRNumber int    `json:"pr_number"`
+		Review   string `json:"review"`
 	} `json:"arguments"`
 }
 
@@ -196,6 +236,52 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolPrComment {
 		return s.prCommentCall(ctx, p)
 	}
+	// EP-011 G1 compound query.
+	if p.Name == ToolCompound {
+		return s.compoundCall(ctx, p)
+	}
+	// SW-085 pattern-query singletons.
+	switch p.Name {
+	case ToolSearchAST:
+		return s.searchASTCall(ctx, p)
+	case ToolFindClones:
+		return s.findClonesCall(ctx, p)
+	}
+	// EP-012 agent memory & skills.
+	switch p.Name {
+	case ToolMemory:
+		return s.memoryCall(ctx, p)
+	case ToolDistill:
+		return s.distillCall(ctx, p)
+	case ToolSkillGen:
+		return s.skillGenCall(ctx, p)
+	}
+	// EP-018 multi-PR triage suite (SW-105): list_prs (read-only forge enumeration)
+	// and triage_prs (single-pass graph-derived ranking). Both ride the shared
+	// client seam, so the bytes are byte-identical across surfaces.
+	switch p.Name {
+	case ToolListPRs:
+		return s.listPRsCall(ctx)
+	case ToolTriagePRs:
+		return s.triagePRsCall(ctx)
+	case ToolConflictsPRs:
+		return s.conflictsPRsCall(ctx)
+	}
+	// EP-018 SW-107: suggest_reviewers (ranked candidate reviewers from the touched
+	// set) and compare_branches (graph-level diff of two branch states). Both ride
+	// the shared client seam, so the bytes are byte-identical across surfaces.
+	switch p.Name {
+	case ToolSuggestReviewers:
+		return s.suggestReviewersCall(ctx, p)
+	case ToolCompareBranches:
+		return s.compareBranchesCall(ctx, p)
+	}
+	// EP-018 SW-108 (capstone): critique_review (graph-evidence critique of an existing
+	// review). Rides the shared client seam, so the bytes are byte-identical across
+	// surfaces.
+	if p.Name == ToolCritiqueReview {
+		return s.critiqueReviewCall(ctx, p)
+	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
 	if deepAnalyzerName, ok := deepAnalyzerTools[p.Name]; ok {
@@ -220,6 +306,83 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		"content": []map[string]any{{"type": "text", "text": string(b)}},
 		"isError": false,
 	}, nil
+}
+
+// compoundCall runs a compound / Cypher-style graph query (EP-011 G1). The
+// query text is the single `query` argument; the result bytes are the canonical
+// query.Result, byte-identical to every fixed query across surfaces.
+func (s *Server) compoundCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Query == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+	}
+	b, err := s.c.Compound(ctx, p.Arguments.Query)
+	if err != nil {
+		return nil, &rpcError{Code: -32602, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// memoryCall runs an EP-012 memory operation through the shared client and
+// returns the canonical serialized MemoryResponse.
+func (s *Server) memoryCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Op == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: op"}
+	}
+	b, err := s.c.Memory(ctx, client.MemoryRequest{
+		Op:       p.Arguments.Op,
+		Scope:    p.Arguments.Scope,
+		Notebook: p.Arguments.Notebook,
+		Tags:     p.Arguments.Tags,
+		Payload:  p.Arguments.Payload,
+		ID:       p.Arguments.MemID,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// distillCall runs EP-012 session distillation through the shared client and
+// returns the canonical serialized DistillResponse.
+func (s *Server) distillCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.SessionID == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: session_id"}
+	}
+	b, err := s.c.Distill(ctx, client.DistillRequest{
+		SessionID:      p.Arguments.SessionID,
+		Turns:          p.Arguments.Turns,
+		Decisions:      p.Arguments.Decisions,
+		Risks:          p.Arguments.Risks,
+		OpenQuestions:  p.Arguments.OpenQuestions,
+		FileReferences: p.Arguments.FileReferences,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// skillGenCall runs EP-012 deterministic skill generation through the shared
+// client and returns the canonical serialized SkillGenResponse.
+func (s *Server) skillGenCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Name == "" || p.Arguments.Trigger == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required arguments: name and trigger"}
+	}
+	b, err := s.c.SkillGen(ctx, client.SkillGenRequest{
+		Name:        p.Arguments.Name,
+		Trigger:     p.Arguments.Trigger,
+		Description: p.Arguments.Description,
+		Inputs:      p.Arguments.SkillInputs,
+		Outputs:     p.Arguments.SkillOutputs,
+		Steps:       p.Arguments.SkillSteps,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
 }
 
 func (s *Server) searchCall(ctx context.Context, p callParams) (any, *rpcError) {
@@ -264,6 +427,44 @@ func (s *Server) semanticSearchCall(ctx context.Context, p callParams) (any, *rp
 	}, nil
 }
 
+// searchASTCall dispatches the structural AST pattern query (SW-082 / SW-085)
+// through the shared client. The JSON pattern rides the `pattern` argument and the
+// optional `limit` bounds results; the returned bytes are the canonical
+// query.Marshal output, byte-identical to the CLI and HTTP surfaces. A malformed
+// pattern surfaces the engine's typed error as a JSON-RPC error (no new shape).
+func (s *Server) searchASTCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Pattern == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: pattern"}
+	}
+	limit := 0
+	if p.Arguments.Limit != nil {
+		limit = *p.Arguments.Limit
+	}
+	b, err := s.c.SearchAST(ctx, p.Arguments.Pattern, limit)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
+// findClonesCall dispatches the clone-detection query (SW-083 / SW-085) through the
+// shared client. The optional JSON config rides the `config` argument (empty ⇒
+// engine defaults); the returned bytes are the canonical query.MarshalCloneResult
+// output for byte-identical parity.
+func (s *Server) findClonesCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.FindClones(ctx, p.Arguments.Config)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return map[string]any{
+		"content": []map[string]any{{"type": "text", "text": string(b)}},
+		"isError": false,
+	}, nil
+}
+
 // savingsCall dispatches the savings readout tool (SW-020). It returns the
 // canonical structured readout (per-call/session/cumulative USD + cap flags) so
 // the MCP readout stays byte-identical to the CLI for the same ledger state.
@@ -287,12 +488,18 @@ func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: analyzer"}
 	}
 	// The pr-risk scorer (SW-039) is diff-driven, not symbol-driven: it requires
-	// a diff argument and accepts no symbol. Every other analyzer requires a symbol.
-	if p.Arguments.Analyzer == "pr-risk" || p.Arguments.Analyzer == "pr-signals" || p.Arguments.Analyzer == "pr-questions" {
+	// a diff argument and accepts no symbol. The SW-104 EP-017 operations
+	// (communities, watcher-status, notebook-ingest, taint-query) are whole-graph /
+	// status operations needing no symbol (shared client.AnalyzerSymbolOptional rule,
+	// identical to the CLI). Every other analyzer requires a symbol.
+	switch {
+	case p.Arguments.Analyzer == "pr-risk" || p.Arguments.Analyzer == "pr-signals" || p.Arguments.Analyzer == "pr-questions":
 		if p.Arguments.Diff == "" {
 			return nil, &rpcError{Code: -32602, Message: "missing required argument: diff"}
 		}
-	} else if p.Arguments.Symbol == "" {
+	case client.AnalyzerSymbolOptional(p.Arguments.Analyzer):
+		// no required symbol argument
+	case p.Arguments.Symbol == "":
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
 	direction := "forward"
@@ -411,6 +618,76 @@ func (s *Server) undoCall(ctx context.Context, p callParams) (any, *rpcError) {
 	b, err := s.c.Undo(ctx, p.Arguments.UndoToken, actor)
 	if err != nil {
 		return nil, &rpcError{Code: -32602, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// listPRsCall (SW-105) enumerates open PRs through the read-only forge boundary
+// and returns the canonical serialized forge.PRList. It holds no engine logic and
+// performs no scoring — pure metadata enumeration through the shared client.
+func (s *Server) listPRsCall(ctx context.Context) (any, *rpcError) {
+	b, err := s.c.ListPRs(ctx)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// triagePRsCall (SW-105) returns the single-pass graph-derived ranked PR triage
+// through the shared client (forge enumeration → zero-egress engine analyzer →
+// shared encoder), so the ranked TriageReport is byte-identical across surfaces.
+func (s *Server) triagePRsCall(ctx context.Context) (any, *rpcError) {
+	b, err := s.c.TriagePRs(ctx)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// conflictsPRsCall (SW-106) returns the inter-PR conflict report through the
+// shared client (forge enumeration → zero-egress engine analyzer → shared
+// encoder), so the pairwise ConflictReport is byte-identical across surfaces.
+func (s *Server) conflictsPRsCall(ctx context.Context) (any, *rpcError) {
+	b, err := s.c.ConflictsPRs(ctx)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// suggestReviewersCall (SW-107) returns the ranked candidate-reviewer report
+// through the shared client (touched-set resolution → zero-egress engine analyzer →
+// shared encoder), so the ReviewerReport is byte-identical across surfaces. The
+// `diff` argument is the local-first PR diff / line-oriented ref string.
+func (s *Server) suggestReviewersCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.SuggestReviewers(ctx, p.Arguments.Diff)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// compareBranchesCall (SW-107) returns the graph-level branch diff through the
+// shared client (base/head materialized above the surface boundary → zero-egress
+// engine analyzer → shared encoder), so the BranchDiffReport is byte-identical
+// across surfaces. The `base`/`head` arguments are branch refs.
+func (s *Server) compareBranchesCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.CompareBranches(ctx, p.Arguments.Base, p.Arguments.Head)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// critiqueReviewCall (SW-108) returns the graph-evidence critique of an existing
+// review through the shared client (surface review fetch / inline review → zero-egress
+// engine analyzer → shared encoder), so the CritiqueReport is byte-identical across
+// surfaces. The `pr_number` selects the review to fetch; `review` supplies an inline
+// review JSON (takes precedence); `diff` is the PR's touched set.
+func (s *Server) critiqueReviewCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.CritiqueReview(ctx, p.Arguments.PRNumber, p.Arguments.Diff, p.Arguments.Review)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
 	return textResult(b), nil
 }
@@ -595,6 +872,36 @@ func (s *Server) toolDescriptors() []map[string]any {
 			},
 		})
 	}
+	// SW-085 pattern-query tools. Advertised whenever search is — they ride the
+	// same in-process query.Service and reuse the canonical engine serializers, so
+	// there is no separate capability to probe. Per AC4 they carry the explicit
+	// annotation set: read-only, idempotent, non-destructive, closed-world.
+	if _, err := s.c.Search(context.Background(), "__probe__", 1); err == nil {
+		tools = append(tools, map[string]any{
+			"name":        ToolSearchAST,
+			"description": "structural AST pattern search (SW-082): match nodes by kind/name/parent_kind; returns node identity + parent context only, never a file body",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"pattern": map[string]any{"type": "string", "description": "JSON AstPattern, e.g. {\"kind\":\"function\",\"name\":{\"regex\":\"^handle_\"}}"},
+					"limit":   map[string]any{"type": "integer", "description": "maximum number of matches (applied after the canonical sort)"},
+				},
+				"required": []string{"pattern"},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+		tools = append(tools, map[string]any{
+			"name":        ToolFindClones,
+			"description": "clone-group detection (SW-083): reports exact/renamed/structural clone groups derived from the AST edge sets; deterministic and bounded by max_groups",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"config": map[string]any{"type": "string", "description": "optional JSON CloneConfig (threshold, max_groups, clone_kinds, min_edges); empty uses engine defaults"},
+				},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
 	// Savings readout (SW-020). Advertised when the client has a ledger attached.
 	if _, err := s.c.Savings(context.Background()); err == nil {
 		tools = append(tools, map[string]any{
@@ -656,7 +963,175 @@ func (s *Server) toolDescriptors() []map[string]any {
 			},
 		})
 	}
+	// EP-011 G1 compound query (singleton descriptor; input is query text).
+	tools = append(tools, map[string]any{
+		"name":        ToolCompound,
+		"description": "compound / Cypher-style graph query composing traversals, filters, and projections in one request (SEED/HOP/WHERE/MAXDEPTH text form)",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"query": map[string]any{"type": "string", "description": "compound query text: SEED <id> then HOP <in|out|both> [<kind>] lines, optional WHERE KIND <kind>"},
+			},
+			"required": []string{"query"},
+		},
+	})
+	// EP-012 agent memory & skills. Advertised when the client has the services
+	// wired (probed by attempting the operation; unavailable clients return the
+	// capability-missing sentinel).
+	if _, err := s.c.Memory(context.Background(), client.MemoryRequest{Op: "recall"}); err == nil || !isMemoryUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolMemory,
+			"description": "scoped agent memory: store, recall, or forget notes in scopes and notebooks",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"op":       map[string]any{"type": "string", "description": "operation: store | recall | forget"},
+					"scope":    map[string]any{"type": "string", "description": "memory scope"},
+					"notebook": map[string]any{"type": "string", "description": "memory notebook"},
+					"tags":     map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
+					"payload":  map[string]any{"type": "string", "description": "payload for store"},
+					"mem_id":   map[string]any{"type": "string", "description": "entry id for forget"},
+				},
+				"required": []string{"op"},
+			},
+		})
+	}
+	if _, err := s.c.Distill(context.Background(), client.DistillRequest{SessionID: "__probe__"}); err == nil || !isDistillUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolDistill,
+			"description": "deterministic, non-LLM session distillation: compress a session trace into a reusable artifact",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"session_id":      map[string]any{"type": "string", "description": "session identifier"},
+					"decisions":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"risks":           map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"open_questions":  map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"file_references": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+				},
+				"required": []string{"session_id"},
+			},
+		})
+	}
+	if _, err := s.c.SkillGen(context.Background(), client.SkillGenRequest{Name: "__probe__", Trigger: "__probe__"}); err == nil || !isSkillGenUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolSkillGen,
+			"description": "deterministic, non-LLM skill generation: turn a repeatable procedure into a Markdown skill artifact",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"name":        map[string]any{"type": "string", "description": "skill name"},
+					"trigger":     map[string]any{"type": "string", "description": "skill trigger phrase"},
+					"description": map[string]any{"type": "string", "description": "skill description"},
+				},
+				"required": []string{"name", "trigger"},
+			},
+		})
+	}
+	// EP-018 multi-PR triage suite (SW-105). Advertised when a forge
+	// PR-enumeration client is wired (probed: a capability-missing client returns
+	// ErrForgeUnavailable; any other response means the boundary is configured).
+	if _, err := s.c.ListPRs(context.Background()); err == nil || !isForgeUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolListPRs,
+			"description": "list open pull requests of the configured repo with read-only forge metadata (number, title, author, base/head refs, head SHA, changed files, additions/deletions, mergeable). Discovery/metadata ONLY — no graph scoring, no comment posting. The forge enumeration is the suite's only outbound path.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+		})
+		tools = append(tools, map[string]any{
+			"name":        ToolTriagePRs,
+			"description": "single-pass graph-derived PR triage: enumerate open PRs, then rank them by blast radius, touched high-centrality nodes, ownership concentration, churn, and test-coverage-of-touched-code, folded into a fixed-integer composite. Deterministic total order (composite DESC, PR number ASC). Scoring is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+			"annotations": readOnlyToolAnnotations(),
+		})
+		tools = append(tools, map[string]any{
+			"name":        ToolConflictsPRs,
+			"description": "inter-PR conflict detection: enumerate open PRs, then report which PR PAIRS collide over the local graph — textual overlap (overlapping changed line ranges in the same file), shared file/symbol/high-centrality node, and the asymmetric contract-dependency case (one PR mutates a contract that another PR's changed entities depend on via graph edges, flagged even with NO textual overlap). Deterministic pairwise report (pairs by ascending PR number, canonical within-pair entity order). Detection is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
+	// EP-018 SW-107: suggest_reviewers is advertised when the analysis service is
+	// wired (probed: a capability-missing client returns ErrAnalysisUnavailable; an
+	// empty-diff probe otherwise completes with an empty report).
+	if _, err := s.c.SuggestReviewers(context.Background(), "__probe__"); err == nil || !isAnalysisUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolSuggestReviewers,
+			"description": "suggest reviewers for a change: resolve the touched symbol/file set from a local-first PR diff (or line-oriented refs), then rank candidate reviewers from graph ownership + recency-decayed churn over the touched files plus affected-subgraph proximity (callers/callees/contract neighbors) of the touched symbols. Each candidate carries a transparent per-signal breakdown (ownership/recency-decayed-churn/subgraph-proximity) with honest file-vs-symbol granularity labels. Deterministic total order (composite DESC, reviewer identity ASC). Zero-egress pass over the local graph + git history.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"diff": map[string]any{"type": "string", "description": "unified diff or line-oriented refs (path:name | path#Lline | node id) of the change"},
+				},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
+	// EP-018 SW-107: compare_branches is advertised when a branch-state materializer
+	// is wired (probed: a capability-missing client returns ErrCompareUnavailable;
+	// otherwise the empty-ref probe materializes empty states and completes).
+	if _, err := s.c.CompareBranches(context.Background(), "__base__", "__head__"); err == nil || !isCompareUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolCompareBranches,
+			"description": "compare two branches at the GRAPH level: given two branch refs (states materialized above the surface boundary), report the structured diff of entities/symbols/contracts added/removed/changed plus edges added/removed and entities moved across files — keyed by stable canonical graph identity (NodeId), not line ranges. Detects signature/contract changes (a contract node whose dependency surface changed) and correlates moves by path-independent symbol identity. Deterministic per-group order. Zero-egress pure local set-diff; the engine never resolves a git ref.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"base": map[string]any{"type": "string", "description": "base branch ref"},
+					"head": map[string]any{"type": "string", "description": "head branch ref"},
+				},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
+	// EP-018 SW-108 (capstone): critique_review is advertised when the analysis
+	// service is wired (probed with an inline empty review so the probe never triggers
+	// the surface review-fetch egress; a capability-missing client returns
+	// ErrAnalysisUnavailable).
+	if _, err := s.c.CritiqueReview(context.Background(), 0, "__probe__", "{}"); err == nil || !isAnalysisUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolCritiqueReview,
+			"description": "critique an EXISTING PR review against the knowledge graph: replay the single-PR risk/blast-radius/centrality/taint signals as a ground-truth oracle over the PR's touched set, then emit a structured, graph-evidence-grounded critique with three item types — gap (a high-risk touched entity the review never mentioned: blast-radius count + centrality + contributing edge kinds + taint provenance), over_flag (a review-flagged entity the graph shows is a low-centrality leaf below the risk threshold), and unsupported_claim (a review comment asserting impact to an anchorable target with NO connecting graph edge). Comment→entity matching is DETERMINISTIC anchoring (file:line/symbol → NodeId); unanchorable comments/claims are counted in an honest unanchored tally, never guessed. NO LLM prose. Deterministic total order (type → entity NodeId → review-anchor). The review is fetched at the surface boundary (or supplied inline); the critique itself is a zero-egress pass over the local graph.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"pr_number": map[string]any{"type": "integer", "description": "PR number to fetch the existing review for (when no inline review is supplied)"},
+					"diff":      map[string]any{"type": "string", "description": "the PR's touched set: unified diff or line-oriented refs (path:name | path#Lline | node id)"},
+					"review":    map[string]any{"type": "string", "description": "inline existing-review JSON ({verdict, comments:[{id,path,line,symbol,claim_targets}]}); takes precedence over the surface fetch"},
+				},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
 	return tools
+}
+
+// isForgeUnavailable reports whether err is the SW-105 "forge PR-enumeration
+// client not wired" sentinel, so the descriptor probe can hide list_prs/triage_prs
+// when no forge boundary is attached (mirrors isAnalysisUnavailable).
+func isForgeUnavailable(err error) bool {
+	return errors.Is(err, client.ErrForgeUnavailable)
+}
+
+// isCompareUnavailable reports whether err is the SW-107 "branch-state materializer
+// not wired" sentinel, so the descriptor probe can hide compare_branches when no
+// materializer is attached (mirrors isForgeUnavailable).
+func isCompareUnavailable(err error) bool {
+	return errors.Is(err, client.ErrCompareUnavailable)
+}
+
+// isMemoryUnavailable reports whether err is the capability-missing sentinel.
+func isMemoryUnavailable(err error) bool {
+	return errors.Is(err, client.ErrMemoryUnavailable)
+}
+
+// isDistillUnavailable reports whether err is the capability-missing sentinel.
+func isDistillUnavailable(err error) bool {
+	return errors.Is(err, client.ErrDistillUnavailable)
+}
+
+// isSkillGenUnavailable reports whether err is the capability-missing sentinel.
+func isSkillGenUnavailable(err error) bool {
+	return errors.Is(err, client.ErrSkillGenUnavailable)
 }
 
 // isEditUnavailable reports whether err is the edit-capability-missing sentinel.

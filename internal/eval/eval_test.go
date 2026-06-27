@@ -7,7 +7,7 @@ import (
 
 func TestCapabilities_CanonicalSet(t *testing.T) {
 	caps := Capabilities()
-	want := []string{"callees", "callers", "definition", "neighborhood", "references", "search"}
+	want := []string{"callees", "callers", "definition", "implementers", "implements", "neighborhood", "overrides", "references", "search", "subtypes", "supertypes"}
 	if len(caps) != len(want) {
 		t.Fatalf("Capabilities() = %v, want %v", caps, want)
 	}

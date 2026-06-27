@@ -194,6 +194,59 @@ func sortMetrics(scores []NodeScore) {
 	})
 }
 
+// sortCommunities enforces the SW-104 `communities` envelope total order at the
+// encoder boundary: communities by deterministic id (then key as a backstop), and
+// members within a community by node id. This is the ONLY place community output
+// ordering is decided, so the serialized bytes are identical regardless of
+// detector/map-discovery order or the path (full vs incremental) taken to reach
+// the graph state.
+func sortCommunities(r *CommunitiesReport) {
+	if r == nil {
+		return
+	}
+	sort.Slice(r.Communities, func(i, j int) bool {
+		if r.Communities[i].ID != r.Communities[j].ID {
+			return r.Communities[i].ID < r.Communities[j].ID
+		}
+		return r.Communities[i].Key < r.Communities[j].Key
+	})
+	for k := range r.Communities {
+		sort.Strings(r.Communities[k].Members)
+	}
+}
+
+// sortNotebookCells enforces the SW-104 `notebook-ingest` envelope total order:
+// cells by source path, then cell index (nbformat array order), then symbol id,
+// then line. Deterministic regardless of graph edge enumeration order.
+func sortNotebookCells(r *NotebookReport) {
+	if r == nil {
+		return
+	}
+	sort.Slice(r.Cells, func(i, j int) bool {
+		a, b := r.Cells[i], r.Cells[j]
+		if a.SourcePath != b.SourcePath {
+			return a.SourcePath < b.SourcePath
+		}
+		if a.CellIndex != b.CellIndex {
+			return a.CellIndex < b.CellIndex
+		}
+		if a.Symbol != b.Symbol {
+			return a.Symbol < b.Symbol
+		}
+		return a.Line < b.Line
+	})
+}
+
+// sortWatchRoots enforces the SW-104 `watcher-status` envelope total order: roots
+// by path. The report carries no wall-clock field, so ordering is the only
+// determinism concern.
+func sortWatchRoots(r *WatcherStatusReport) {
+	if r == nil {
+		return
+	}
+	sort.Slice(r.Roots, func(i, j int) bool { return r.Roots[i].Root < r.Roots[j].Root })
+}
+
 // nodeToResult copies the canonical node fields verbatim into the query result
 // primitive (never re-derived). Mirrors the unexported converter in query so the
 // analysis result carries the identical node shape surfaces already serialize.
@@ -261,6 +314,41 @@ func Marshal(a Analysis) ([]byte, error) {
 	if a.QuestionReport != nil {
 		return MarshalQuestions(*a.QuestionReport)
 	}
+	// SW-105: the triage-prs ranker carries a versioned TriageReport. When
+	// present, the canonical output IS that ranked envelope (its own byte-stable
+	// serializer with the total-order tie-break), so every surface emits the
+	// identical ranked shape through this one path.
+	if a.Triage != nil {
+		return MarshalTriage(*a.Triage)
+	}
+	// SW-106: the conflicts-prs detector carries a versioned ConflictReport. When
+	// present, the canonical output IS that pairwise envelope (its own byte-stable
+	// serializer with the total pair + within-pair entity order), so every surface
+	// emits the identical conflict shape through this one path.
+	if a.Conflicts != nil {
+		return MarshalConflicts(*a.Conflicts)
+	}
+	// SW-107: the suggest-reviewers recommender carries a versioned ReviewerReport.
+	// When present, the canonical output IS that ranked envelope (its own byte-stable
+	// serializer with the composite-desc → reviewer-identity-asc total order), so
+	// every surface emits the identical reviewer shape through this one path.
+	if a.Reviewers != nil {
+		return MarshalReviewers(*a.Reviewers)
+	}
+	// SW-107: the compare-branches comparator carries a versioned BranchDiffReport.
+	// When present, the canonical output IS that structured diff (its own byte-stable
+	// serializer with the per-group canonical-identity order), so every surface emits
+	// the identical branch-diff shape through this one path.
+	if a.BranchDiff != nil {
+		return MarshalBranchDiff(*a.BranchDiff)
+	}
+	// SW-108: the critique-review analyzer carries a versioned CritiqueReport. When
+	// present, the canonical output IS that structured critique (its own byte-stable
+	// serializer with the type→entity→anchor total order), so every surface emits the
+	// identical critique shape through this one path.
+	if a.Critique != nil {
+		return MarshalCritique(*a.Critique)
+	}
 
 	nodes := make([]ReachedNode, len(a.Nodes))
 	copy(nodes, a.Nodes)
@@ -281,15 +369,27 @@ func Marshal(a Analysis) ([]byte, error) {
 	copy(metrics, a.Metrics)
 	sortMetrics(metrics)
 
+	// SW-104: defensively enforce the four new envelopes' stable sort keys at the
+	// encoder boundary (the analyzers already emit sorted output; this is the
+	// single ordering authority, mirroring the sortReached/sortPaths discipline).
+	// The reports are freshly built per dispatch, so in-place sorting is safe.
+	sortCommunities(a.Communities)
+	sortNotebookCells(a.Notebook)
+	sortWatchRoots(a.WatcherStatus)
+
 	out := Analysis{
-		Analyzer:  a.Analyzer,
-		Outcome:   a.Outcome,
-		Symbol:    a.Symbol,
-		Truncated: a.Truncated,
-		Nodes:     nodes,
-		Paths:     paths,
-		Metrics:   metrics,
-		Locations: locs,
+		Analyzer:       a.Analyzer,
+		Outcome:        a.Outcome,
+		Symbol:         a.Symbol,
+		Truncated:      a.Truncated,
+		Nodes:          nodes,
+		Paths:          paths,
+		Metrics:        metrics,
+		Locations:      locs,
+		InterprocTaint: a.InterprocTaint,
+		Communities:    a.Communities,
+		Notebook:       a.Notebook,
+		WatcherStatus:  a.WatcherStatus,
 	}
 	if out.Nodes == nil {
 		out.Nodes = []ReachedNode{}

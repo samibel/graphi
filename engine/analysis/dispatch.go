@@ -7,8 +7,10 @@ import (
 	"github.com/samibel/graphi/engine/analysis/contracts"
 	"github.com/samibel/graphi/engine/analysis/githistory"
 	"github.com/samibel/graphi/engine/analysis/interproc"
+	"github.com/samibel/graphi/engine/analysis/interproctaint"
 	"github.com/samibel/graphi/engine/analysis/pdg"
 	"github.com/samibel/graphi/engine/analysis/taint"
+	"github.com/samibel/graphi/engine/community"
 	"github.com/samibel/graphi/engine/query"
 )
 
@@ -32,8 +34,23 @@ func NewService(reader query.Reader, reg *Registry) *Service {
 
 // NewDefaultService constructs a Service pre-registered with the built-in
 // analyzers (impact in SW-022; sibling analyzers add themselves in their own
-// stories). It is the convenience constructor surfaces use.
+// stories). It is the convenience constructor surfaces use. The watcher-status
+// operation is registered with no provider, so it reports an honest "not active"
+// status (a one-shot CLI/MCP/HTTP invocation has no running watcher); the daemon
+// wires a real provider via NewDefaultServiceWithWatch.
 func NewDefaultService(reader query.Reader) *Service {
+	return newDefaultService(reader, nil)
+}
+
+// NewDefaultServiceWithWatch is NewDefaultService plus a read-only watcher-status
+// provider (SW-104). The daemon, which owns the engine/watch Manager, injects a
+// provider here so `watcher-status` reports live, honest per-root health over the
+// SAME single dispatch path and shared encoder as every other operation.
+func NewDefaultServiceWithWatch(reader query.Reader, watchProvider WatchStatusProvider) *Service {
+	return newDefaultService(reader, watchProvider)
+}
+
+func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *Service {
 	reg := NewRegistry()
 	// The built-in analyzer registration is best-effort at construction; a
 	// duplicate-name error here would indicate a programming fault, so it panics
@@ -48,9 +65,11 @@ func NewDefaultService(reader query.Reader) *Service {
 		metrics:   metricsAnalyzer{},
 	})
 	// SW-028: register flow-sensitive taint analyzer with default Go config.
-	// The taint sub-package cannot import analysis (cycle), so we wrap it with
-	// a thin adapter that satisfies the analysis.Analyzer interface.
-	mustRegister(reg, taintAdapter{inner: taint.New(taint.DefaultConfig(), taint.DefaultCaps(), nil)})
+	// SW-102: the adapter now solves the interprocedural taint fixpoint and
+	// injects the real solved-summary provider (replacing NoOpSummaryProvider) so
+	// cross-procedure source→sink flows resolve from the solved relation. It holds
+	// the config + caps and constructs the inner analyzer per call (stateless).
+	mustRegister(reg, taintAdapter{cfg: taint.DefaultConfig(), caps: taint.DefaultCaps()})
 	// SW-029: register PDG (Program Dependence Graph) analyzer with default
 	// config. Like taint, the pdg sub-package cannot import analysis (cycle),
 	// so we wrap it with a thin adapter that satisfies analysis.Analyzer.
@@ -89,6 +108,53 @@ func NewDefaultService(reader query.Reader) *Service {
 	// versioned reviewer-question set. Additive: a single registration line plus
 	// one MCP descriptor entry.
 	mustRegister(reg, newPrQuestionsAnalyzer())
+	// SW-104 (EP-017 capstone): register the four canonical EP-017 operations
+	// EXACTLY ONCE behind this single dispatch table — no parallel per-op path, no
+	// per-surface handler. Each routes to its real engine entry point and serializes
+	// through the one shared analysis.Marshal encoder.
+	//   - taint-query  -> the existing taint/interproc adapter (interproctaint.Solve)
+	//   - communities  -> engine/community.DefaultDetector()/Detector.Detect
+	//   - notebook-ingest -> committed SW-100 notebook_cell provenance edges
+	//   - watcher-status  -> the injected read-only WatchStatusProvider (SW-101)
+	mustRegister(reg, taintQueryAdapter{inner: taintAdapter{cfg: taint.DefaultConfig(), caps: taint.DefaultCaps()}})
+	mustRegister(reg, communitiesAnalyzer{detector: community.DefaultDetector()})
+	mustRegister(reg, notebookAnalyzer{})
+	mustRegister(reg, watchStatusAnalyzer{provider: watchProvider})
+	// SW-105 (EP-018 1/4): register the triage-prs ranker. It is a composite,
+	// read-only, DETERMINISTIC batch driver that consumes an already-enumerated
+	// open-PR set (handed in via Params.PRs by the surface-boundary forge client —
+	// the engine never touches the network) and reuses the EP-007 pr-risk kernel
+	// (scoreRegion) plus the graph primitives (metrics/impact/churn) in a SINGLE
+	// pass to emit a byte-stable, totally-ordered ranked TriageReport.
+	mustRegister(reg, newTriageAnalyzer())
+	// SW-106 (EP-018 2/4): register the conflicts-prs detector. It is a composite,
+	// read-only, DETERMINISTIC batch driver that consumes an already-enumerated
+	// open-PR set (handed in via Params.ConflictPRs by the surface-boundary forge
+	// client — the engine never touches the network), reuses the EP-007 change-set
+	// resolution (parseDiff/resolveRef) + the graph primitives (metrics centrality,
+	// the impact.go reverse-dependency adjacency) and reports the conflicting PR
+	// pairs (textual / graph-semantic / asymmetric contract-dependency) as a
+	// byte-stable, totally-ordered ConflictReport over an entity→PRs inverted index.
+	mustRegister(reg, newConflictsAnalyzer())
+	// SW-107 (EP-018 3/4): register the suggest-reviewers recommender and the
+	// compare-branches graph-level comparator. Both are composite, read-only,
+	// DETERMINISTIC, zero-egress analyzers. suggest-reviewers takes the touched set
+	// (Params.Diff) and ranks candidate reviewers from local ownership/churn +
+	// affected-subgraph proximity; compare-branches receives TWO already-built
+	// read-only graph states (Params.CompareBase/CompareHead, materialized above the
+	// surface boundary) and performs a pure local node/edge set-diff keyed by the
+	// canonical NodeId. Neither resolves a git ref or touches the network.
+	mustRegister(reg, newSuggestReviewersAnalyzer(), newCompareBranchesAnalyzer())
+	// SW-108 (EP-018 4/4, capstone): register the critique-review analyzer. It is a
+	// composite, read-only, DETERMINISTIC, zero-egress analyzer that REPLAYS the
+	// EP-007 single-PR risk/blast/centrality/taint oracle (scoreRegion + the graph
+	// primitives) as ground truth and runs a three-way diff (gap / over_flag /
+	// unsupported_claim) against an EXISTING review supplied as Params.Review (fetched
+	// at the surface boundary or inline) + the touched set (Params.Diff). Comment→entity
+	// anchoring is deterministic (resolveRef only); unresolvable refs degrade to an
+	// unanchored tally, never guessed. The engine never resolves a remote ref or
+	// opens a socket.
+	mustRegister(reg, newCritiqueReviewAnalyzer())
 	return NewService(reader, reg)
 }
 
@@ -126,26 +192,101 @@ func (s *Service) Reader() query.Reader { return s.reader }
 // not analysis). The adapter delegates Name() and maps Run() into the standard
 // Analysis envelope.
 type taintAdapter struct {
-	inner *taint.Analyzer
+	cfg  taint.Config
+	caps taint.Caps
 }
 
-func (a taintAdapter) Name() string { return a.inner.Name() }
+func (a taintAdapter) Name() string { return taint.AnalyzerName }
 
 func (a taintAdapter) Analyze(ctx context.Context, r query.Reader, p Params) (Analysis, error) {
-	result, err := a.inner.Run(ctx, r)
+	// SW-102: solve the interprocedural taint fixpoint over the same graph, then
+	// run the intraprocedural taint analyzer with the solved-summary provider
+	// (replacing NoOpSummaryProvider). The single Service.Dispatch path makes the
+	// envelope (including the verdict and cross-procedure flows) byte-identical
+	// across CLI/MCP/HTTP/daemon.
+	sol, err := interproctaint.Solve(ctx, r, a.cfg, interproc.DefaultCaps(), interproc.DefaultWideningThreshold)
 	if err != nil {
 		return Analysis{}, err
 	}
+	provider := interproctaint.NewSolvedProvider(sol)
+
+	inner := taint.New(a.cfg, a.caps, provider)
+	result, err := inner.Run(ctx, r)
+	if err != nil {
+		return Analysis{}, err
+	}
+
+	report := buildInterprocTaintReport(sol)
+
 	outcome := query.OutcomeFound
-	if len(result.Findings) == 0 {
+	if len(result.Findings) == 0 && len(report.Flows) == 0 {
 		outcome = query.OutcomeEmpty
 	}
 	return Analysis{
-		Analyzer:  taint.AnalyzerName,
-		Outcome:   outcome,
-		Symbol:    p.Symbol,
-		Truncated: result.Truncated,
+		Analyzer:       taint.AnalyzerName,
+		Outcome:        outcome,
+		Symbol:         p.Symbol,
+		Truncated:      result.Truncated,
+		InterprocTaint: report,
 	}, nil
+}
+
+// TaintQueryAnalyzerName is the SW-104 canonical dispatch key for the
+// interprocedural taint-query operation.
+const TaintQueryAnalyzerName = "taint-query"
+
+// taintQueryAdapter exposes the EXISTING taint/interproc adapter under the
+// canonical `taint-query` operation key (SW-104). It adds no analysis logic: it
+// delegates to taintAdapter (interproctaint.Solve + the solved-summary provider)
+// and only relabels the envelope's analyzer field to the canonical operation key,
+// so the verdict + cross-procedure flows are produced by exactly the same code
+// path. Byte-parity across surfaces and across the Solved/Loaded verdict paths
+// therefore holds by construction (the flows are canonically sorted by the
+// solver; the Loaded/Solved flags are the intended no-recompute observability
+// signal).
+type taintQueryAdapter struct {
+	inner taintAdapter
+}
+
+func (taintQueryAdapter) Name() string { return TaintQueryAnalyzerName }
+
+func (a taintQueryAdapter) Analyze(ctx context.Context, r query.Reader, p Params) (Analysis, error) {
+	res, err := a.inner.Analyze(ctx, r, p)
+	if err != nil {
+		return Analysis{}, err
+	}
+	res.Analyzer = TaintQueryAnalyzerName
+	return res, nil
+}
+
+// buildInterprocTaintReport maps the engine-layer Solution into the surface
+// envelope payload. The flows are already canonically sorted by the solver.
+func buildInterprocTaintReport(sol interproctaint.Solution) *InterprocTaintReport {
+	flows := make([]InterprocTaintFlow, 0, len(sol.Flows))
+	for _, f := range sol.Flows {
+		labels := f.Labels
+		if labels == nil {
+			labels = []string{}
+		}
+		path := f.CallPath
+		if path == nil {
+			path = []string{}
+		}
+		flows = append(flows, InterprocTaintFlow{
+			SourceName:   f.SourceName,
+			SinkName:     f.SinkName,
+			SinkCategory: f.SinkCategory,
+			Labels:       labels,
+			CallPath:     path,
+		})
+	}
+	return &InterprocTaintReport{
+		Verdict: string(sol.Verdict),
+		CapKind: sol.CapKind,
+		Loaded:  sol.Loaded,
+		Solved:  sol.Solved,
+		Flows:   flows,
+	}
 }
 
 // pdgAdapter wraps pdg.Analyzer to satisfy the analysis.Analyzer interface
