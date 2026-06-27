@@ -81,7 +81,7 @@ func setupZeroConfig(cwd string) (srv *httpsrv.Server, ln net.Listener, url stri
 		return nil, nil, "", nil, nil, cleanup, false, err
 	}
 
-	ing, ierr := ingest.New(store, parse.NewDefaultRegistry(), p.Meta)
+	ing, ierr := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), p.Meta)
 	if ierr != nil {
 		_ = store.Close()
 		return nil, nil, "", nil, nil, cleanup, false, ierr

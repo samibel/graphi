@@ -362,7 +362,7 @@ func runIndex(args []string) int {
 	}
 	defer func() { _ = store.Close() }()
 
-	ing, err := ingest.New(store, parse.NewDefaultRegistry(), metaDir)
+	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", err)
 		return 1
@@ -648,7 +648,7 @@ func makeEditorClient(root, dbPath, metaDir string) (client.Client, func(), erro
 		return nil, func() {}, fmt.Errorf("open store: %w", err)
 	}
 	reg := parse.NewDefaultRegistry()
-	ing, err := ingest.New(store, reg, metaDir)
+	ing, err := ingest.New(store, ingest.NewNotebookParser(reg), metaDir)
 	if err != nil {
 		_ = store.Close()
 		return nil, func() {}, fmt.Errorf("ingest: %w", err)
@@ -660,7 +660,7 @@ func makeEditorClient(root, dbPath, metaDir string) (client.Client, func(), erro
 	}
 	checker := edit.NewParserConsistencyChecker(func() (graphstore.Graphstore, *ingest.Ingester, func(), error) {
 		fs := graphstore.NewMemStore()
-		fi, ierr := ingest.New(fs, parse.NewDefaultRegistry(), "")
+		fi, ierr := ingest.New(fs, ingest.NewNotebookParser(parse.NewDefaultRegistry()), "")
 		if ierr != nil {
 			return nil, nil, nil, ierr
 		}
@@ -775,7 +775,7 @@ func runHTTP(args []string) int {
 			meta = td
 			cleanupIngest = func() { _ = os.RemoveAll(td) }
 		}
-		ing, ierr := ingest.New(store, parse.NewDefaultRegistry(), meta)
+		ing, ierr := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), meta)
 		if ierr != nil {
 			fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", ierr)
 			return 1
