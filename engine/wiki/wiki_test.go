@@ -65,13 +65,26 @@ func TestGenerate_IndexListsMemberCounts(t *testing.T) {
 }
 
 func TestGenerate_CommunityPageListsMembers(t *testing.T) {
+	// Grouping is now by coupling (Louvain), so community IDs follow canonical
+	// representative ordering rather than package name. Assert the real
+	// invariant: the two tightly-coupled pkgA symbols land on the same page, and
+	// that page does not also contain the disconnected pkgB component.
 	w, _ := Generate(context.Background(), twoComponentGraph(t))
-	p, ok := w.PageByID("1")
-	if !ok {
-		t.Fatal("missing community 1")
+	var pageWithA *Page
+	for i := range w.Pages {
+		if strings.Contains(w.Pages[i].Body, "pkgA.A") {
+			pageWithA = &w.Pages[i]
+			break
+		}
 	}
-	if !strings.Contains(p.Body, "pkgA.A") || !strings.Contains(p.Body, "pkgA.B") {
-		t.Fatalf("community 1 missing members:\n%s", p.Body)
+	if pageWithA == nil {
+		t.Fatal("no community page contains pkgA.A")
+	}
+	if !strings.Contains(pageWithA.Body, "pkgA.B") {
+		t.Fatalf("pkgA.A and pkgA.B not grouped together:\n%s", pageWithA.Body)
+	}
+	if strings.Contains(pageWithA.Body, "pkgB.D") {
+		t.Fatalf("disconnected pkgB symbol grouped with pkgA:\n%s", pageWithA.Body)
 	}
 }
 

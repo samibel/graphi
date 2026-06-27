@@ -809,16 +809,21 @@ func wikiStore(t *testing.T) graphstore.Graphstore {
 		_ = s.PutNode(context.Background(), n)
 		return n.ID()
 	}
+	// Grouping is by coupling (Louvain) since SW-103, so the fixture is two
+	// tightly-coupled clusters joined by a single bridge edge → two communities
+	// with a cross-link between them.
 	a := mk("pkgA.A")
 	b := mk("pkgA.B")
 	c := mk("pkgB.C")
+	d := mk("pkgB.D")
 	me := func(from, to model.NodeId) {
 		e, _ := model.NewEdge(from, to, "calls",
 			model.TierConfirmed, 1.0, "t", []string{"e.go:1"})
 		_ = s.PutEdge(context.Background(), e)
 	}
-	me(a, b)
-	me(a, c) // inter-package edge → cross-link
+	me(a, b) // cluster 1
+	me(c, d) // cluster 2
+	me(a, c) // bridge → inter-community cross-link
 	return s
 }
 
@@ -851,10 +856,14 @@ func TestWiki_CommunityPageServed(t *testing.T) {
 		t.Fatalf("code=%d", rec.Code)
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, "pkgA.A") || !strings.Contains(body, "Community 1") {
+	// Community-ID assignment follows canonical representative ordering, so we
+	// assert structure (a rendered community page with members) rather than a
+	// specific package landing on ID 1.
+	if !strings.Contains(body, "Community 1") || !strings.Contains(body, "## Members") {
 		t.Fatalf("community page body wrong:\n%s", body)
 	}
-	// cross-link to community 2 should be present (inter-package edge exists)
+	// With two communities joined by a bridge edge, community 1's page lists the
+	// other community as a neighbor → cross-link to /wiki/c/2.
 	if !strings.Contains(body, "/wiki/c/2") {
 		t.Fatalf("cross-link missing:\n%s", body)
 	}
