@@ -575,11 +575,81 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 // dependents affected by import/symbol changes. It carries no edit provenance;
 // callers that originate an edit use IngestChangedWithProvenance.
 func (i *Ingester) IngestChanged(ctx context.Context, root string, changed []string) error {
-	if err := i.ingestChanged(ctx, root, changed, nil); err != nil {
+	if err := i.ingestChanged(ctx, root, changed, nil, nil); err != nil {
 		return err
 	}
 	i.notifyIngest(ctx, "ingest-changed", len(changed))
 	return nil
+}
+
+// ApplyChangedParsed is the SW-101 serialized merge/apply entry point for the
+// parallel parse path. The caller (engine/watch's bounded worker-pool) has
+// already PURELY parsed the changed files into isolated ParsedFile results;
+// this method applies them through the exact same canonical-path-sorted,
+// transactional incremental path as IngestChanged, so the resulting graph is
+// byte-identical to a full single-threaded parse regardless of the order the
+// pool produced the results in. A precomputed result is only trusted when it
+// parsed successfully AND its content hash still matches the bytes re-read from
+// disk; otherwise the file is re-parsed serially (so a mid-flight edit or a
+// nondeterministic timeout can never leak stale output into the graph).
+func (i *Ingester) ApplyChangedParsed(ctx context.Context, root string, changed []string, parsed []*ParsedFile) error {
+	pre := make(map[string]*ParsedFile, len(parsed))
+	for _, pf := range parsed {
+		if pf != nil {
+			pre[pf.RelPath] = pf
+		}
+	}
+	if err := i.ingestChanged(ctx, root, changed, nil, pre); err != nil {
+		return err
+	}
+	i.notifyIngest(ctx, "ingest-changed", len(changed))
+	return nil
+}
+
+// DriftSet walks root and compares each file's on-disk content hash against the
+// cached hash, returning the repo-relative paths whose content differs or are
+// new (changed) and the cached paths that no longer exist on disk (deleted).
+// It is read-only — it mutates neither the graph nor the cache — and is the
+// reconcile primitive for the SW-101 watcher's lost-event safety net: feeding
+// (changed, deleted) back through ApplyChangedParsed repairs any drift caused by
+// a missed filesystem notification. Both slices are returned sorted.
+func (i *Ingester) DriftSet(ctx context.Context, root string) (changed, deleted []string, err error) {
+	units, err := i.walk(root)
+	if err != nil {
+		return nil, nil, err
+	}
+	cached := make(map[string]string)
+	rows, err := i.meta.QueryContext(ctx, "SELECT path, content_hash FROM file_content_cache")
+	if err != nil {
+		return nil, nil, fmt.Errorf("ingest: drift query cache: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p, h string
+		if err := rows.Scan(&p, &h); err != nil {
+			return nil, nil, fmt.Errorf("ingest: drift scan cache: %w", err)
+		}
+		cached[p] = h
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	present := make(map[string]struct{}, len(units))
+	for _, u := range units {
+		present[u.relPath] = struct{}{}
+		if h, ok := cached[u.relPath]; !ok || h != u.hash {
+			changed = append(changed, u.relPath)
+		}
+	}
+	for p := range cached {
+		if _, ok := present[p]; !ok {
+			deleted = append(deleted, p)
+		}
+	}
+	sort.Strings(changed)
+	sort.Strings(deleted)
+	return changed, deleted, nil
 }
 
 // IngestChangedWithProvenance is the provenance-aware incremental ingest entry
@@ -594,7 +664,7 @@ func (i *Ingester) IngestChangedWithProvenance(ctx context.Context, root string,
 	if err := prov.Validate(); err != nil {
 		return err
 	}
-	return i.ingestChanged(ctx, root, changed, &prov)
+	return i.ingestChanged(ctx, root, changed, &prov, nil)
 }
 
 // ingestChanged is the shared core for the zero-provenance and provenance-aware
@@ -603,7 +673,13 @@ func (i *Ingester) IngestChangedWithProvenance(ctx context.Context, root string,
 // dirty-flag protocol, so a crash before Phase-2 commit leaves the file dirty
 // AND no provenance recorded, and a crash after leaves both committed — there is
 // no window where the graph is updated but provenance is missing/stale.
-func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []string, prov *EditProvenance) error {
+//
+// precomputed, when non-nil, supplies SW-101 pure-parse results keyed by
+// canonical relPath. A result is consumed in place of a serial re-parse only
+// when it is a trusted success (not skipped, non-nil, and content-hash-matched
+// to the freshly walked bytes); the canonical sorted iteration over walked
+// units is unchanged, so the parallel path inherits byte-identical determinism.
+func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []string, prov *EditProvenance, precomputed map[string]*ParsedFile) error {
 	i.resetSkips()
 	units, err := i.walk(root)
 	if err != nil {
@@ -665,7 +741,19 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if _, ok := toProcess[u.relPath]; !ok {
 				continue
 			}
-			nodeIDs, edgeIDs, fwd, fr, err := i.parseAndCommit(ctx, u)
+			// SW-101: consume a precomputed pure-parse result only when it is a
+			// trusted success whose content hash still matches the bytes walk just
+			// re-read; otherwise fall back to a serial parse+commit. Either way the
+			// commit runs here in this single serialized goroutine, in canonical
+			// relPath-sorted order (units is sorted by walk).
+			var nodeIDs, edgeIDs, fwd []string
+			var fr *link.FileRefs
+			var err error
+			if pf, ok := precomputed[u.relPath]; ok && pf != nil && !pf.skipped && pf.result != nil && pf.Hash == u.hash {
+				nodeIDs, edgeIDs, fwd, fr, err = i.commitParsed(ctx, u, pf)
+			} else {
+				nodeIDs, edgeIDs, fwd, fr, err = i.parseAndCommit(ctx, u)
+			}
 			if err != nil {
 				return err
 			}
@@ -948,7 +1036,75 @@ func (i *Ingester) sanitizePath(root, p string) (string, error) {
 // linker pass. Cross-file edges are NOT emitted here — they are emitted by
 // linkFiles after every file's nodes are committed (the ordering constraint that
 // motivated SW-050).
-func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []string, []string, *link.FileRefs, error) {
+// ParsedFile is the isolated, immutable output of the SW-101 PURE parse phase
+// for one file: the canonical repo-relative path, the deterministic content hash
+// of the bytes that were parsed, and the parse result (nil when the file was
+// skipped fail-closed). It carries NO graphstore handle and shares no mutable
+// state, so a bounded worker-pool may compute many ParsedFiles in parallel
+// (parse.Parser is contractually concurrency-safe and deterministic for
+// identical input). The serialized merge/apply phase (ApplyChangedParsed) then
+// consumes these in canonical path-sorted order, confining all scheduling
+// nondeterminism to the parse phase where it cannot reach the graph.
+type ParsedFile struct {
+	// RelPath is the canonical repo-relative POSIX path of the parsed file.
+	RelPath string
+	// Hash is hashBytes() of the source the worker parsed. The serialized apply
+	// only trusts a precomputed result when this matches the bytes it re-reads
+	// from disk, so a mid-flight edit can never commit stale parse output.
+	Hash string
+	// result is the pure parse output. nil when skipped is true.
+	result *parse.ParseResult
+	// skipped reports a fail-closed resource-bound breach (oversize/timeout/depth).
+	// A precomputed skip is NEVER trusted by the apply (timeout is wall-clock
+	// nondeterministic); it forces a serial re-parse so output stays
+	// byte-identical to a full single-threaded parse.
+	skipped bool
+}
+
+// ParseFile reads and PURELY parses the file at repo-relative relPath under root
+// and returns an isolated ParsedFile. It mutates no graph state, so it is safe
+// to call concurrently from the SW-101 bounded worker-pool. It honors the same
+// path sanitization and fail-closed resource bounds as the serial path, so the
+// parallel parse set is faithful to the ingestable set.
+func (i *Ingester) ParseFile(ctx context.Context, root, relPath string) (*ParsedFile, error) {
+	rel, err := i.sanitizePath(root, relPath)
+	if err != nil {
+		return nil, err
+	}
+	abs := filepath.Join(root, filepath.FromSlash(rel))
+	// Fail-closed max-file-size bound (mirrors walk): stat before reading bytes.
+	if i.bounds.MaxFileSize > 0 {
+		if info, ierr := os.Stat(abs); ierr == nil && info.Size() > i.bounds.MaxFileSize {
+			i.recordSkip(SkipDiagnostic{Path: rel, Reason: SkipOversize, Size: info.Size()})
+			return &ParsedFile{RelPath: rel, skipped: true}, nil
+		}
+	}
+	src, err := os.ReadFile(abs) //nolint:gosec // path derived from sanitized root
+	if err != nil {
+		return nil, fmt.Errorf("ingest: read %s: %w", rel, err)
+	}
+	u := fileUnit{path: abs, relPath: rel, src: src, hash: hashBytes(src)}
+	pf, err := i.parseUnit(ctx, u)
+	if err != nil {
+		// A file type with no registered parser is simply NOT tracked: the
+		// watcher must ignore it rather than abort the whole batch. (The serial
+		// IngestAll path deliberately keeps treating ErrNoParser as a hard error;
+		// only this parallel watch entry point is tolerant, and an untracked file
+		// is never placed in the apply's changed set, so byte-identity is
+		// unaffected.) Return (nil, nil) to signal "ignore".
+		if errors.Is(err, parse.ErrNoParser) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return pf, nil
+}
+
+// parseUnit is the PURE parse phase for one already-read file unit: it calls the
+// language parser and applies the fail-closed resource-bound skip policy, but
+// performs NO graphstore mutation. It is safe for concurrent use. commitParsed
+// is its serialized counterpart.
+func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, error) {
 	// SW-055 AC#6: fail-closed parse timeout. Bound the wall-clock time a single
 	// Parse may consume on untrusted input; on expiry the parse is abandoned.
 	parseCtx := ctx
@@ -966,17 +1122,43 @@ func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []
 		switch {
 		case errors.Is(err, parse.ErrMaxDepthExceeded):
 			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipMaxDepth})
-			return nil, nil, nil, nil, nil
+			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 		case errors.Is(err, parse.ErrParseTimeout) ||
 			(i.bounds.ParseTimeout > 0 && parseCtx.Err() == context.DeadlineExceeded && ctx.Err() == nil):
 			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipTimeout})
-			return nil, nil, nil, nil, nil
+			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 		case errors.Is(err, parse.ErrFileTooLarge):
 			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipOversize})
-			return nil, nil, nil, nil, nil
+			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 		}
-		return nil, nil, nil, nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
+		return nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
 	}
+	return &ParsedFile{RelPath: u.relPath, Hash: u.hash, result: res}, nil
+}
+
+// parseAndCommit parses one file and commits it serially (parse + apply fused),
+// preserving the original IngestAll / ingestChanged behavior. The SW-101 parallel
+// path instead splits these: parseUnit/ParseFile (pure, poolable) then
+// commitParsed (serialized, canonical order).
+func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []string, []string, *link.FileRefs, error) {
+	pf, err := i.parseUnit(ctx, u)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	return i.commitParsed(ctx, u, pf)
+}
+
+// commitParsed is the SERIALIZED apply phase: it writes the (pre)computed parse
+// result for u into the graphstore. It is the sole authority that mutates the
+// graph and is only ever called from the single serialized merge goroutine, so
+// node/edge insertion order is governed by the caller's canonical path-sorted
+// walk — never by worker scheduling. A nil/skipped ParsedFile commits nothing
+// (matching the original early-return skip behavior).
+func (i *Ingester) commitParsed(ctx context.Context, u fileUnit, pf *ParsedFile) ([]string, []string, []string, *link.FileRefs, error) {
+	if pf == nil || pf.skipped || pf.result == nil {
+		return nil, nil, nil, nil, nil
+	}
+	res := pf.result
 
 	// Remove old nodes for this file before inserting the new parse output. As of
 	// SW-036 the graphstore exposes an explicit delete API, so the orphan debt

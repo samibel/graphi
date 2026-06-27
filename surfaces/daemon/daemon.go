@@ -120,6 +120,14 @@ func NewServer(handler Handler) *Server {
 	return &Server{handler: handler, ctl: newControl(nil)}
 }
 
+// NewServerWithWatch constructs a daemon server whose control plane drives the
+// supplied WatchManager: tracking a workspace starts a filesystem watcher that
+// refreshes the graph without an explicit re-index (SW-101 AC-1). Passing a nil
+// WatchManager is equivalent to NewServer.
+func NewServerWithWatch(handler Handler, wm WatchManager) *Server {
+	return &Server{handler: handler, ctl: newControlWithWatch(nil, wm)}
+}
+
 // Start validates the socket path, creates a Unix listener with owner-only
 // permissions, and begins serving requests.
 func (s *Server) Start(socketPath string) error {

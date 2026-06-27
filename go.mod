@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20260622092256-25656177ba8e
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/odvcencio/gotreesitter v0.20.2
 	golang.org/x/sys v0.42.0
 	modernc.org/sqlite v1.52.0

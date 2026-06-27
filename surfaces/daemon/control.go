@@ -11,6 +11,20 @@ import (
 	"time"
 )
 
+// WatchManager is the optional SW-101 seam that starts/stops a filesystem
+// watcher for a tracked workspace so the running daemon refreshes its graph
+// without an explicit re-index command. It is defined as an interface here (not
+// imported from engine/watch) so the layering stays cmd → surfaces → engine:
+// engine/watch's manager satisfies it structurally and is injected by cmd. When
+// nil, the control plane is watch-inert — default daemon behavior, no regression.
+type WatchManager interface {
+	// StartWatch begins watching root under the given workspace id. Re-tracking
+	// the same id is idempotent.
+	StartWatch(id, root string) error
+	// StopWatch stops watching the given workspace id (no-op if absent).
+	StopWatch(id string)
+}
+
 // control holds the daemon's control-plane state (SW-096): the registry of
 // tracked workspaces and a monotonic generation/epoch bumped on reload. It is
 // safe for concurrent use.
@@ -20,6 +34,7 @@ type control struct {
 	generation uint64
 	startTime  time.Time
 	nowFn      func() time.Time // injectable clock; defaults to time.Now
+	watch      WatchManager     // SW-101: optional filesystem-watch wiring (nil = inert)
 }
 
 func newControl(now func() time.Time) *control {
@@ -27,6 +42,14 @@ func newControl(now func() time.Time) *control {
 		now = time.Now
 	}
 	return &control{tracked: map[string]string{}, startTime: now(), nowFn: now}
+}
+
+// newControlWithWatch is like newControl but wires an optional WatchManager so
+// tracking a workspace also starts a filesystem watcher (SW-101 AC-1).
+func newControlWithWatch(now func() time.Time, wm WatchManager) *control {
+	c := newControl(now)
+	c.watch = wm
+	return c
 }
 
 // TrackedWorkspace is one entry in the daemon's tracked-workspace registry.
@@ -54,16 +77,30 @@ func (c *control) track(root string) (string, error) {
 	}
 	id := workspaceID(root)
 	c.mu.Lock()
+	_, already := c.tracked[id]
 	c.tracked[id] = root
+	wm := c.watch
 	c.mu.Unlock()
+	// SW-101: start a filesystem watcher so the daemon refreshes the graph for
+	// this workspace without an explicit re-index. Idempotent on re-track.
+	if wm != nil && !already {
+		if err := wm.StartWatch(id, root); err != nil {
+			return id, fmt.Errorf("daemon: start watch: %w", err)
+		}
+	}
 	return id, nil
 }
 
 // untrack deregisters a workspace id. Removing a missing id is a no-op.
 func (c *control) untrack(id string) {
 	c.mu.Lock()
+	_, existed := c.tracked[id]
 	delete(c.tracked, id)
+	wm := c.watch
 	c.mu.Unlock()
+	if wm != nil && existed {
+		wm.StopWatch(id)
+	}
 }
 
 // reload bumps the generation/epoch (a hot reconfigure re-scan in the real

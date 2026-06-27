@@ -33,6 +33,7 @@ import (
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/skillgen"
+	"github.com/samibel/graphi/engine/watch"
 	"github.com/samibel/graphi/internal/audit"
 	"github.com/samibel/graphi/internal/mcpconfig"
 	"github.com/samibel/graphi/internal/state"
@@ -708,7 +709,31 @@ func runDaemon(args []string) int {
 		}
 		defer func() { _ = store.Close() }()
 		handler := client.NewDirect(query.New(store), search.New(store))
-		srv := daemon.NewServer(handler)
+		// SW-101: wire a filesystem-watch Manager so `track`ing a workspace starts
+		// a pure-Go watcher + bounded worker-pool that keeps THIS daemon's shared
+		// store fresh (deterministic, canonical-ordered incremental apply) without
+		// an explicit re-index. The factory builds a per-root ingester over the
+		// shared store and performs the initial full index.
+		watchMgr := watch.NewManager(func(root string) (watch.Indexer, func(), error) {
+			metaDir, err := os.MkdirTemp("", "graphi-watch-meta-")
+			if err != nil {
+				return nil, nil, err
+			}
+			ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
+			if err != nil {
+				_ = os.RemoveAll(metaDir)
+				return nil, nil, err
+			}
+			if err := ing.IngestAll(context.Background(), root); err != nil {
+				_ = ing.Close()
+				_ = os.RemoveAll(metaDir)
+				return nil, nil, err
+			}
+			cleanup := func() { _ = ing.Close(); _ = os.RemoveAll(metaDir) }
+			return ing, cleanup, nil
+		}, watch.DefaultConfig())
+		defer watchMgr.StopAll()
+		srv := daemon.NewServerWithWatch(handler, watchMgr)
 		if err := srv.Start(*socket); err != nil {
 			fmt.Fprintf(os.Stderr, "graphi: daemon start: %v\n", err)
 			return 1
