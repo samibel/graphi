@@ -38,6 +38,24 @@ const notebookExt = ".ipynb"
 // not a real source language, so the linker treats such a result as non-linkable.
 const notebookLanguageTag = "notebook"
 
+// NotebookCellEdgeKind is the edge kind that carries per-symbol notebook cell
+// provenance into the COMMITTED graph. For every symbol extracted from a code
+// cell, the adapter emits exactly one edge from the symbol node to the owning
+// notebook file node tagged with this kind; its evidence encodes the source cell
+// index, the nbformat >=4.5 cell id (when present), and the 1-based intra-cell
+// line. The kind is deliberately distinct from the call/reference/define/import
+// vocabulary, so the query-layer graph traversals (which each filter by their own
+// kind) never observe it and surfaces stay notebook-agnostic (AC6). This is the
+// layer-legal channel that delivers AC1's "(cell index, cell id)" pair into the
+// graph without editing the pure-leaf core/parse or the core/model Node (which
+// has no metadata slot): provenance rides an Edge, the only graph element with a
+// free-form, fully-provenanced evidence carrier.
+const NotebookCellEdgeKind = "notebook_cell"
+
+// cellProvenanceReason is the fixed provenance reason on every cell-provenance
+// edge (kept constant so equal provenance serializes to identical bytes).
+const cellProvenanceReason = "notebook cell provenance"
+
 // NotebookParser is the engine-layer decorator that adds `.ipynb` support over a
 // core/parse Registry without editing the pure-leaf parse package. It is safe for
 // concurrent use: it holds only the (concurrency-safe) Registry and no mutable
@@ -64,38 +82,31 @@ func (p *NotebookParser) Parse(ctx context.Context, path string, src []byte) (*p
 		}
 		return p.reg.Parse(ctx, path, src)
 	}
-	res, _ := p.parseNotebook(ctx, path, src)
-	return res, nil
+	return p.parseNotebook(ctx, path, src), nil
 }
 
-// CellTag is the per-symbol cell provenance the core model.Node intentionally
-// does NOT carry (Node identity is Kind+QualifiedName+SourcePath; it has no
-// metadata slot, and core/model is a pure leaf this story must not edit). It is
-// exposed at the engine layer via ParseNotebookTagged for callers/tests that need
-// to recover which nbformat cell produced a symbol.
-type CellTag struct {
-	// Index is the 0-based position of the owning cell in the nbformat cells[]
-	// array (stable across markdown/raw interleaving — every cell advances it).
-	Index int
-	// ID is the nbformat >=4.5 per-cell id when present, else "".
-	ID string
-}
-
-// ParseNotebookTagged decodes a `.ipynb` exactly as Parse does and additionally
-// returns, for every produced SYMBOL node, the nbformat cell that produced it
-// (array index + stable id). The notebook file node is not tagged (it represents
-// the whole notebook, not a cell). The returned result is identical to what
-// Parse returns for the same input; the tag map is the engine-layer realization
-// of "each symbol associated to the notebook file node and tagged with its source
-// cell index/id". For a non-`.ipynb` path it returns the delegated result and a
-// nil map.
-func (p *NotebookParser) ParseNotebookTagged(ctx context.Context, path string, src []byte) (*parse.ParseResult, map[model.NodeId]CellTag, error) {
-	if !strings.EqualFold(filepath.Ext(path), notebookExt) {
-		res, err := p.Parse(ctx, path, src)
-		return res, nil, err
+// cellProvenanceEvidence renders the single canonical evidence string for a
+// notebook-cell provenance edge:
+//
+//	"<path>#cell=<index>[;id=<id>];line=<intraLine>"
+//
+// The 0-based cell array index is always present; the id segment is included only
+// for nbformat >=4.5 cells that carry one. The pair (cell index, cell id) plus the
+// 1-based intra-cell line is exactly AC1's "tagged with its source cell index (and
+// cell id when present)" — now persisted on the committed edge rather than thrown
+// away. The format is pure-string and deterministic.
+func cellProvenanceEvidence(path string, index int, id string, intraLine int) string {
+	var b strings.Builder
+	b.WriteString(path)
+	b.WriteString("#cell=")
+	b.WriteString(strconv.Itoa(index))
+	if id != "" {
+		b.WriteString(";id=")
+		b.WriteString(id)
 	}
-	res, tags := p.parseNotebook(ctx, path, src)
-	return res, tags, nil
+	b.WriteString(";line=")
+	b.WriteString(strconv.Itoa(intraLine))
+	return b.String()
 }
 
 // --- nbformat decoding (stdlib encoding/json; defensive against missing fields) ---
@@ -225,11 +236,16 @@ func buildCellPlan(nb *nbNotebook, nbLang string) map[string]*langBuf {
 			bufs[lang] = lb
 		}
 		startLine := lb.lineCount + 1
+		added := strings.Count(text, "\n")
 		lb.b.WriteString(text)
 		if !strings.HasSuffix(text, "\n") {
 			lb.b.WriteByte('\n')
+			added++ // count the synthesized boundary newline
 		}
-		lb.lineCount = strings.Count(lb.b.String(), "\n")
+		// Track the line count incrementally (F3): each cell contributes only the
+		// newlines it (or the boundary) adds, avoiding an O(n^2) rescan of the whole
+		// growing buffer once per cell.
+		lb.lineCount += added
 		lb.segs = append(lb.segs, cellSeg{startLine: startLine, index: idx, id: cell.ID})
 	}
 	return bufs
@@ -279,7 +295,7 @@ func remapLine(segs []cellSeg, synthLine int) (index int, id string, intraLine i
 // input (invalid JSON, no contributing cells, a language with no registered
 // parser, a sub-parse failure) it falls back to a file-node-only result so the
 // notebook file node is still registered and ingestion never aborts.
-func (p *NotebookParser) parseNotebook(ctx context.Context, path string, src []byte) (*parse.ParseResult, map[model.NodeId]CellTag) {
+func (p *NotebookParser) parseNotebook(ctx context.Context, path string, src []byte) *parse.ParseResult {
 	meta := parse.SourceMeta{
 		Path:        path,
 		Language:    notebookLanguageTag,
@@ -289,7 +305,7 @@ func (p *NotebookParser) parseNotebook(ctx context.Context, path string, src []b
 
 	nb, err := decodeNotebook(src)
 	if err != nil || nb == nil {
-		return fileNodeResult(meta, path), nil
+		return fileNodeResult(meta, path)
 	}
 
 	nbLang := resolveNotebookLanguage(nb)
@@ -299,7 +315,7 @@ func (p *NotebookParser) parseNotebook(ctx context.Context, path string, src []b
 
 	bufs := buildCellPlan(nb, nbLang)
 	if len(bufs) == 0 {
-		return fileNodeResult(meta, path), nil
+		return fileNodeResult(meta, path)
 	}
 
 	langs := make([]string, 0, len(bufs))
@@ -309,9 +325,16 @@ func (p *NotebookParser) parseNotebook(ctx context.Context, path string, src []b
 	sort.Strings(langs) // deterministic language processing order
 
 	out := &parse.ParseResult{Meta: meta}
-	tags := make(map[model.NodeId]CellTag)
 	nodeSeen := make(map[model.NodeId]struct{})
 	edgeSeen := make(map[model.EdgeId]struct{})
+
+	// fileID is the identity of the notebook file node every sub-parse emits
+	// (Kind=file, QN=SourcePath=path). It is the deterministic anchor each
+	// cell-provenance edge points at. Computed independently here so the edge
+	// endpoint is known before the (deduped) file node is appended below; the file
+	// node IS committed (graphstore PutEdge requires both endpoints to exist).
+	fileNode, _ := model.NewNode(parse.KindFile, path, path, 1, 1)
+	fileID := fileNode.ID()
 
 	for _, lang := range langs {
 		if p.reg == nil {
@@ -333,10 +356,27 @@ func (p *NotebookParser) parseNotebook(ctx context.Context, path string, src []b
 			}
 			nodeSeen[rn.ID()] = struct{}{}
 			out.Nodes = append(out.Nodes, rn)
-			if n.Kind() != parse.KindFile {
-				ci, cid, _ := remapLine(lb.segs, n.Line())
-				tags[rn.ID()] = CellTag{Index: ci, ID: cid}
+			if n.Kind() == parse.KindFile {
+				continue // the notebook file node represents the whole notebook, not a cell
 			}
+			// Deliver AC1 cell provenance into the committed graph: one edge from
+			// the symbol to the notebook file node, tagged with the (cell index,
+			// cell id) pair and the intra-cell line. n.Line() is still the synthetic
+			// buffer line here, so remapLine recovers the owning cell + intra line.
+			ci, cid, intra := remapLine(lb.segs, n.Line())
+			pe, eerr := model.NewEdge(
+				rn.ID(), fileID, NotebookCellEdgeKind,
+				model.TierConfirmed, 1.0, cellProvenanceReason,
+				[]string{cellProvenanceEvidence(path, ci, cid, intra)},
+			)
+			if eerr != nil {
+				continue // never fatal: provenance is best-effort, extraction still ships
+			}
+			if _, dup := edgeSeen[pe.ID()]; dup {
+				continue
+			}
+			edgeSeen[pe.ID()] = struct{}{}
+			out.Edges = append(out.Edges, pe)
 		}
 		for _, e := range sub.Edges {
 			re := remapEdge(e, path, lb.segs)
@@ -356,9 +396,9 @@ func (p *NotebookParser) parseNotebook(ctx context.Context, path string, src []b
 	}
 
 	if len(out.Nodes) == 0 {
-		return fileNodeResult(meta, path), nil
+		return fileNodeResult(meta, path)
 	}
-	return out, tags
+	return out
 }
 
 // fileNodeResult returns an empty-but-valid result carrying only the notebook

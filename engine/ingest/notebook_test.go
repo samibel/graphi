@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -104,7 +106,95 @@ func nbSnapshotBytes(t *testing.T, files map[string]string) []byte {
 	return b
 }
 
-// --- AC1: python-equivalence + cell tagging -----------------------------------
+// cellProv is the parsed (cell index, cell id, intra-cell line) provenance
+// recovered from a notebook-cell provenance edge's evidence string.
+type cellProv struct {
+	index int
+	id    string
+	line  int
+	found bool
+}
+
+// parseCellProv decodes the canonical evidence string
+// "<path>#cell=<index>[;id=<id>];line=<intraLine>" emitted by the adapter.
+func parseCellProv(t *testing.T, ev string) cellProv {
+	t.Helper()
+	hash := strings.LastIndex(ev, "#cell=")
+	if hash < 0 {
+		t.Fatalf("evidence %q missing #cell= segment", ev)
+	}
+	cp := cellProv{found: true, index: -1, line: -1}
+	for _, kv := range strings.Split(ev[hash+1:], ";") {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok {
+			continue
+		}
+		switch k {
+		case "cell":
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				t.Fatalf("bad cell index in %q: %v", ev, err)
+			}
+			cp.index = n
+		case "id":
+			cp.id = v
+		case "line":
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				t.Fatalf("bad line in %q: %v", ev, err)
+			}
+			cp.line = n
+		}
+	}
+	return cp
+}
+
+// nbCommitProvenance ingests files (full) through the notebook-aware parser into a
+// fresh store and returns, per symbol qualified name, its committed node plus the
+// cell provenance recovered from the committed notebook-cell edge anchored on the
+// notebook file node. This exercises the SAME production Parse/IngestAll path the
+// product runs — provenance is asserted on the committed graph, not a test-only
+// return value.
+func nbCommitProvenance(t *testing.T, files map[string]string) (map[string]model.Node, map[string]cellProv) {
+	t.Helper()
+	ctx := context.Background()
+	repo := writeRepo(t, files)
+	store := graphstore.NewMemStore()
+	t.Cleanup(func() { _ = store.Close() })
+	ing := newIngester(t, store, nbParser())
+	if err := ing.IngestAll(ctx, repo); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	nodes, err := store.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatalf("Nodes: %v", err)
+	}
+	byID := map[model.NodeId]model.Node{}
+	byQN := map[string]model.Node{}
+	for _, n := range nodes {
+		byID[n.ID()] = n
+		byQN[n.QualifiedName()] = n
+	}
+	edges, err := store.Edges(ctx, graphstore.Query{EdgeKind: ingest.NotebookCellEdgeKind})
+	if err != nil {
+		t.Fatalf("Edges: %v", err)
+	}
+	provByQN := map[string]cellProv{}
+	for _, e := range edges {
+		ev := e.Evidence()
+		if len(ev) != 1 {
+			t.Fatalf("cell-provenance edge wants exactly 1 evidence, got %v", ev)
+		}
+		from, ok := byID[e.From()]
+		if !ok {
+			t.Fatalf("provenance edge from unknown node %s", e.From())
+		}
+		provByQN[from.QualifiedName()] = parseCellProv(t, ev[0])
+	}
+	return byQN, provByQN
+}
+
+// --- AC1: python-equivalence + cell tagging on the COMMITTED graph ------------
 
 func TestNotebook_PythonEquivalence(t *testing.T) {
 	ctx := context.Background()
@@ -120,20 +210,17 @@ func TestNotebook_PythonEquivalence(t *testing.T) {
 		{Type: "code", Source: cell1, ID: "c1"},
 	})
 
+	// Symbol-set equivalence vs the equivalent .py (production Parse path).
 	p := ingest.NewNotebookParser(parse.NewDefaultRegistry())
-	res, tags, err := p.ParseNotebookTagged(ctx, "pkg/analysis.ipynb", nb)
+	res, err := p.Parse(ctx, "pkg/analysis.ipynb", nb)
 	if err != nil {
-		t.Fatalf("ParseNotebookTagged: %v", err)
+		t.Fatalf("Parse: %v", err)
 	}
-
-	// Equivalent .py placed in the SAME directory so langPackage (parent dir base)
-	// yields an identical symbol-namespace prefix ("pkg").
 	reg := parse.NewDefaultRegistry()
 	pyRes, err := reg.Parse(ctx, "pkg/equiv.py", []byte(cell0+cell1))
 	if err != nil {
 		t.Fatalf("py parse: %v", err)
 	}
-
 	got := symbolSet(res.Nodes)
 	want := symbolSet(pyRes.Nodes)
 	if len(want) == 0 {
@@ -149,8 +236,6 @@ func TestNotebook_PythonEquivalence(t *testing.T) {
 			t.Errorf("notebook produced extra symbol %q not in .py equivalent", qn)
 		}
 	}
-
-	// Notebook file node anchors on the notebook path.
 	var fileNodes int
 	for _, n := range res.Nodes {
 		if n.Kind() == parse.KindFile {
@@ -164,71 +249,62 @@ func TestNotebook_PythonEquivalence(t *testing.T) {
 		t.Errorf("want exactly 1 notebook file node, got %d", fileNodes)
 	}
 
-	// Every produced symbol is tagged with its owning cell; checkout came from
-	// cell index 0 (id c0), price from cell index 2 (id c1) — indices are stable
-	// across the interleaved markdown cell.
-	byQN := map[string]ingest.CellTag{}
-	for id, tag := range tags {
-		n, ok := nodeByID(res.Nodes, id)
+	// AC1 core: every symbol is tagged in the COMMITTED graph with its owning cell
+	// (index AND id) plus the intra-cell line. checkout came from cell index 0
+	// (id c0, intra line 4), price from cell index 2 (id c1, intra line 3) — indices
+	// are stable across the interleaved markdown cell.
+	byQN, prov := nbCommitProvenance(t, map[string]string{"pkg/analysis.ipynb": string(nb)})
+
+	checkProv := func(qn string, wantIdx int, wantID string, wantLine int) {
+		t.Helper()
+		cp, ok := prov[qn]
 		if !ok {
-			t.Fatalf("tag for unknown node %s", id)
+			t.Fatalf("symbol %q has no committed cell-provenance edge", qn)
 		}
-		byQN[n.QualifiedName()] = tag
-	}
-	if tag := byQN["pkg.checkout"]; tag.Index != 0 || tag.ID != "c0" {
-		t.Errorf("checkout tag = %+v, want {Index:0 ID:c0}", tag)
-	}
-	if tag := byQN["pkg.price"]; tag.Index != 2 || tag.ID != "c1" {
-		t.Errorf("price tag = %+v, want {Index:2 ID:c1}", tag)
-	}
-}
-
-func nodeByID(nodes []model.Node, id model.NodeId) (model.Node, bool) {
-	for _, n := range nodes {
-		if n.ID() == id {
-			return n, true
+		if cp.index != wantIdx || cp.id != wantID {
+			t.Errorf("%s provenance = (index %d, id %q), want (index %d, id %q)", qn, cp.index, cp.id, wantIdx, wantID)
+		}
+		if cp.line != wantLine {
+			t.Errorf("%s provenance intra-cell line = %d, want %d", qn, cp.line, wantLine)
+		}
+		// The committed symbol node's Line is the same intra-cell line (not the
+		// synthetic-buffer line) — the (cell id, intra-cell line) pair is coherent.
+		if n, ok := byQN[qn]; ok && n.Line() != wantLine {
+			t.Errorf("%s committed node line = %d, want intra-cell %d", qn, n.Line(), wantLine)
 		}
 	}
-	return model.Node{}, false
+	checkProv("pkg.checkout", 0, "c0", 4)
+	checkProv("pkg.price", 2, "c1", 3)
 }
 
-// --- AC2: markdown/raw interleave, no symbols, stable indices -----------------
+// --- AC2: markdown/raw interleave, no symbols, stable indices in the graph ----
 
 func TestNotebook_NonCodeCellsInterleave(t *testing.T) {
-	ctx := context.Background()
 	nb := buildNotebook(t, "python", []nbCellIn{
 		{Type: "markdown", Source: "# title\n"},
 		{Type: "code", Source: "def a():\n    return 1\n", ID: "a"},
 		{Type: "raw", Source: "raw text\n"},
 		{Type: "code", Source: "def b():\n    return 2\n", ID: "b"},
 	})
-	p := ingest.NewNotebookParser(parse.NewDefaultRegistry())
-	res, tags, err := p.ParseNotebookTagged(ctx, "pkg/nb.ipynb", nb)
-	if err != nil {
-		t.Fatalf("parse: %v", err)
+	byQN, prov := nbCommitProvenance(t, map[string]string{"pkg/nb.ipynb": string(nb)})
+
+	if _, ok := byQN["pkg.a"]; !ok {
+		t.Errorf("missing symbol pkg.a; got %v", byQN)
 	}
-	syms := symbolSet(res.Nodes)
-	if _, ok := syms["pkg.a"]; !ok {
-		t.Errorf("missing symbol pkg.a; got %v", syms)
+	if _, ok := byQN["pkg.b"]; !ok {
+		t.Errorf("missing symbol pkg.b; got %v", byQN)
 	}
-	if _, ok := syms["pkg.b"]; !ok {
-		t.Errorf("missing symbol pkg.b; got %v", syms)
-	}
-	// markdown/raw contribute no symbols.
-	if len(syms) != 2 {
-		t.Errorf("non-code cells leaked symbols: %v", syms)
+	// markdown/raw contribute no symbols: exactly the two functions carry cell
+	// provenance in the committed graph.
+	if len(prov) != 2 {
+		t.Errorf("want 2 cell-tagged symbols (markdown/raw leak none), got %d: %v", len(prov), prov)
 	}
 	// Code-cell indices remain stable despite interleaving (1 and 3).
-	idxByQN := map[string]int{}
-	for id, tag := range tags {
-		n, _ := nodeByID(res.Nodes, id)
-		idxByQN[n.QualifiedName()] = tag.Index
+	if cp := prov["pkg.a"]; cp.index != 1 || cp.id != "a" {
+		t.Errorf("pkg.a provenance = (index %d, id %q), want (1, a)", cp.index, cp.id)
 	}
-	if idxByQN["pkg.a"] != 1 {
-		t.Errorf("cell index of a = %d, want 1", idxByQN["pkg.a"])
-	}
-	if idxByQN["pkg.b"] != 3 {
-		t.Errorf("cell index of b = %d, want 3", idxByQN["pkg.b"])
+	if cp := prov["pkg.b"]; cp.index != 3 || cp.id != "b" {
+		t.Errorf("pkg.b provenance = (index %d, id %q), want (3, b)", cp.index, cp.id)
 	}
 }
 
