@@ -196,6 +196,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /prs/conflicts", s.schemaGuard(s.handleConflictsPRs))
 	mux.HandleFunc("GET /prs/suggest-reviewers", s.schemaGuard(s.handleSuggestReviewers))
 	mux.HandleFunc("GET /branches/compare", s.schemaGuard(s.handleCompareBranches))
+	mux.HandleFunc("GET /reviews/critique", s.schemaGuard(s.handleCritiqueReview))
 	mux.HandleFunc("POST /memory", s.schemaGuard(s.handleMemory))
 	mux.HandleFunc("POST /distill", s.schemaGuard(s.handleDistill))
 	mux.HandleFunc("POST /skillgen", s.schemaGuard(s.handleSkillGen))
@@ -582,6 +583,31 @@ func (s *Server) handleSuggestReviewers(w http.ResponseWriter, r *http.Request) 
 // branch refs.
 func (s *Server) handleCompareBranches(w http.ResponseWriter, r *http.Request) {
 	raw, err := s.client.CompareBranches(r.Context(), r.URL.Query().Get("base"), r.URL.Query().Get("head"))
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	writeEnvelope(w, raw)
+}
+
+// handleCritiqueReview (SW-108, the EP-018 capstone) returns the graph-evidence
+// critique of an existing PR review. It delegates to the shared client.CritiqueReview
+// seam (surface review fetch / inline review → zero-egress engine analyzer → shared
+// encoder), so the payload is byte-identical to the CLI/MCP surfaces. The `pr`
+// parameter selects the review to fetch; `review` supplies an inline review JSON
+// (takes precedence); `diff` is the PR's touched set.
+func (s *Server) handleCritiqueReview(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	prNumber := 0
+	if v := strings.TrimSpace(q.Get("pr")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			writeErrSanitized(w, fmt.Errorf("http: invalid pr %q", v))
+			return
+		}
+		prNumber = n
+	}
+	raw, err := s.client.CritiqueReview(r.Context(), prNumber, q.Get("diff"), q.Get("review"))
 	if err != nil {
 		writeErrSanitized(w, err)
 		return

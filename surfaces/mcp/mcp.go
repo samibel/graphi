@@ -190,6 +190,13 @@ type callParams struct {
 		// shared `diff` argument above).
 		Base string `json:"base"`
 		Head string `json:"head"`
+
+		// SW-108 critique_review: the PR number to fetch the existing review for (when
+		// no inline review is supplied) and an inline existing-review JSON string. The
+		// touched set reuses the shared `diff` argument above. The review is structured
+		// at the surface; the engine never parses a raw blob or fetches.
+		PRNumber int    `json:"pr_number"`
+		Review   string `json:"review"`
 	} `json:"arguments"`
 }
 
@@ -268,6 +275,12 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return s.suggestReviewersCall(ctx, p)
 	case ToolCompareBranches:
 		return s.compareBranchesCall(ctx, p)
+	}
+	// EP-018 SW-108 (capstone): critique_review (graph-evidence critique of an existing
+	// review). Rides the shared client seam, so the bytes are byte-identical across
+	// surfaces.
+	if p.Name == ToolCritiqueReview {
+		return s.critiqueReviewCall(ctx, p)
 	}
 	// EP-005 deep-analysis tools (SW-033): each dedicated tool routes through
 	// the generic analysis dispatch by injecting its analyzer name.
@@ -666,6 +679,19 @@ func (s *Server) compareBranchesCall(ctx context.Context, p callParams) (any, *r
 	return textResult(b), nil
 }
 
+// critiqueReviewCall (SW-108) returns the graph-evidence critique of an existing
+// review through the shared client (surface review fetch / inline review → zero-egress
+// engine analyzer → shared encoder), so the CritiqueReport is byte-identical across
+// surfaces. The `pr_number` selects the review to fetch; `review` supplies an inline
+// review JSON (takes precedence); `diff` is the PR's touched set.
+func (s *Server) critiqueReviewCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.c.CritiqueReview(ctx, p.Arguments.PRNumber, p.Arguments.Diff, p.Arguments.Review)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
 // textResult wraps canonical serialized bytes in the MCP tool-result envelope.
 func textResult(b []byte) map[string]any {
 	return map[string]any{
@@ -1052,6 +1078,25 @@ func (s *Server) toolDescriptors() []map[string]any {
 				"properties": map[string]any{
 					"base": map[string]any{"type": "string", "description": "base branch ref"},
 					"head": map[string]any{"type": "string", "description": "head branch ref"},
+				},
+			},
+			"annotations": readOnlyToolAnnotations(),
+		})
+	}
+	// EP-018 SW-108 (capstone): critique_review is advertised when the analysis
+	// service is wired (probed with an inline empty review so the probe never triggers
+	// the surface review-fetch egress; a capability-missing client returns
+	// ErrAnalysisUnavailable).
+	if _, err := s.c.CritiqueReview(context.Background(), 0, "__probe__", "{}"); err == nil || !isAnalysisUnavailable(err) {
+		tools = append(tools, map[string]any{
+			"name":        ToolCritiqueReview,
+			"description": "critique an EXISTING PR review against the knowledge graph: replay the single-PR risk/blast-radius/centrality/taint signals as a ground-truth oracle over the PR's touched set, then emit a structured, graph-evidence-grounded critique with three item types — gap (a high-risk touched entity the review never mentioned: blast-radius count + centrality + contributing edge kinds + taint provenance), over_flag (a review-flagged entity the graph shows is a low-centrality leaf below the risk threshold), and unsupported_claim (a review comment asserting impact to an anchorable target with NO connecting graph edge). Comment→entity matching is DETERMINISTIC anchoring (file:line/symbol → NodeId); unanchorable comments/claims are counted in an honest unanchored tally, never guessed. NO LLM prose. Deterministic total order (type → entity NodeId → review-anchor). The review is fetched at the surface boundary (or supplied inline); the critique itself is a zero-egress pass over the local graph.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"pr_number": map[string]any{"type": "integer", "description": "PR number to fetch the existing review for (when no inline review is supplied)"},
+					"diff":      map[string]any{"type": "string", "description": "the PR's touched set: unified diff or line-oriented refs (path:name | path#Lline | node id)"},
+					"review":    map[string]any{"type": "string", "description": "inline existing-review JSON ({verdict, comments:[{id,path,line,symbol,claim_targets}]}); takes precedence over the surface fetch"},
 				},
 			},
 			"annotations": readOnlyToolAnnotations(),

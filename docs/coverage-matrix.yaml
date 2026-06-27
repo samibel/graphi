@@ -220,6 +220,11 @@ capabilities:
     status: shipped
     epic: EP-018
     note: "SW-107: graph-level branch diff over TWO already-built read-only graph states (materialized above the surface boundary) — added/removed/changed/moved entities + edges added/removed, keyed by canonical NodeId (not line ranges); detects signature/contract changes and correlates cross-file moves by path-independent symbol identity; pure local set-diff, zero engine egress (the engine never resolves a git ref)."
+  - id: critique-review
+    category: analyzer
+    status: shipped
+    epic: EP-018
+    note: "SW-108 (capstone): deterministic graph-evidence critique of an EXISTING PR review — replays the EP-007 risk/blast/centrality/taint oracle over the touched set and runs a three-way diff (gap / over_flag / unsupported_claim) against the review; deterministic resolveRef anchoring with an honest unanchored tally (never guessed); NO LLM prose; total order type→NodeId→anchor; zero engine egress (the only egress is the surface review fetch)."
   - id: notebook-ingest
     category: analyzer
     status: shipped
@@ -360,6 +365,11 @@ capabilities:
     status: shipped
     epic: EP-018
     note: "SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary)."
+  - id: critique_review
+    category: mcp-tool
+    status: shipped
+    epic: EP-018
+    note: "SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress)."
   - id: refactor
     category: mcp-tool
     status: shipped

@@ -491,6 +491,57 @@ func RunCompareBranches(ctx context.Context, c client.Client, baseRef, headRef s
 	return nil
 }
 
+// RunCritiqueReview runs the SW-108 review critique through the shared client and
+// writes the canonical serialized CritiqueReport bytes (byte-identical across
+// surfaces). The EXISTING review is supplied inline via -review / -review-path (read
+// once at the surface; no engine file I/O) OR fetched from the forge for -pr; the
+// touched set comes from -diff / -diff-path. The critique itself is a zero-egress
+// pass over the local graph; the only permitted egress is the surface review fetch.
+//
+// Usage:
+//
+//	critique-review -diff <unified-diff|refs> [-pr N] [-review <json>|-review-path <file>]
+func RunCritiqueReview(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("critique-review", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	pr := fs.Int("pr", 0, "PR number to fetch the existing review for (when no inline review is supplied)")
+	diff := fs.String("diff", "", "the PR's touched set: inline unified-diff or simple ref string")
+	diffPath := fs.String("diff-path", "", "path to a LOCAL diff file for the touched set (read once; no remote fetch)")
+	review := fs.String("review", "", "inline existing-review JSON ({verdict, comments:[{id,path,line,symbol,claim_targets}]})")
+	reviewPath := fs.String("review-path", "", "path to a LOCAL existing-review JSON file (read once; no remote fetch)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+
+	diffPayload := *diff
+	if *diffPath != "" {
+		b, rerr := os.ReadFile(*diffPath)
+		if rerr != nil {
+			fmt.Fprintf(errOut, "cli: read diff file: %v\n", rerr)
+			return fmt.Errorf("cli: read diff file: %w", rerr)
+		}
+		diffPayload = string(b)
+	}
+	reviewPayload := *review
+	if *reviewPath != "" {
+		b, rerr := os.ReadFile(*reviewPath)
+		if rerr != nil {
+			fmt.Fprintf(errOut, "cli: read review file: %v\n", rerr)
+			return fmt.Errorf("cli: read review file: %w", rerr)
+		}
+		reviewPayload = string(b)
+	}
+
+	b, err := c.CritiqueReview(ctx, *pr, diffPayload, reviewPayload)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunSavings prints the savings-ledger readout (SW-020): the headline
 // "Saved $X this session" line plus per-call and cumulative USD figures,
 // followed by the canonical structured readout JSON (identical to the MCP tool

@@ -311,3 +311,11 @@ func (c *DaemonClient) SuggestReviewers(ctx context.Context, diff string) ([]byt
 func (c *DaemonClient) CompareBranches(ctx context.Context, baseRef, headRef string) ([]byte, error) {
 	return nil, client.ErrCompareUnavailable
 }
+
+// CritiqueReview returns ErrAnalysisUnavailable until a daemon critique-review RPC
+// is added (SW-108). The analyzer + review-fetch boundary are wired only on the
+// in-process Direct client today (mirrors the analysis "unavailable until wired"
+// precedent).
+func (c *DaemonClient) CritiqueReview(ctx context.Context, prNumber int, diff, reviewJSON string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
+}

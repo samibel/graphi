@@ -342,6 +342,13 @@ func Marshal(a Analysis) ([]byte, error) {
 	if a.BranchDiff != nil {
 		return MarshalBranchDiff(*a.BranchDiff)
 	}
+	// SW-108: the critique-review analyzer carries a versioned CritiqueReport. When
+	// present, the canonical output IS that structured critique (its own byte-stable
+	// serializer with the type→entity→anchor total order), so every surface emits the
+	// identical critique shape through this one path.
+	if a.Critique != nil {
+		return MarshalCritique(*a.Critique)
+	}
 
 	nodes := make([]ReachedNode, len(a.Nodes))
 	copy(nodes, a.Nodes)

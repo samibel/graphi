@@ -390,7 +390,29 @@ type Client interface {
 	// never resolves a ref or egresses. Without a materializer it returns
 	// ErrCompareUnavailable; without an analysis service, ErrAnalysisUnavailable (SW-107).
 	CompareBranches(ctx context.Context, baseRef, headRef string) ([]byte, error)
+
+	// CritiqueReview critiques an EXISTING PR review against the local graph (SW-108,
+	// the EP-018 capstone). The review is obtained at the surface boundary — an inline
+	// reviewJSON (decoded into the structured ReviewInput at the surface) takes
+	// precedence; otherwise it is fetched from the forge for prNumber via the net-new
+	// review-fetch egress. The structured review + the touched set (diff, reused EP-007
+	// parseDiff/resolveRef) are handed to the zero-egress engine `critique-review`
+	// analyzer, returning the canonical serialized CritiqueReport bytes: a structured,
+	// graph-evidence-grounded critique (gap / over_flag / unsupported_claim items keyed
+	// on entity NodeId + review-anchor, plus the unanchored tallies) — NEVER LLM prose.
+	// The engine never resolves a remote ref or egresses. Without an analysis service it
+	// returns ErrAnalysisUnavailable; with neither an inline review nor a wired fetcher
+	// it returns ErrReviewFetchUnavailable.
+	CritiqueReview(ctx context.Context, prNumber int, diff, reviewJSON string) ([]byte, error)
 }
+
+// ErrReviewFetchUnavailable is returned when CritiqueReview is asked to fetch an
+// existing review but no inline review was supplied AND no review-fetch boundary is
+// wired (SW-108). The in-process Direct client wires the fetch via WithReviewFetcher;
+// the daemon/HTTP remote clients return it until a remote review-fetch RPC is added
+// (mirrors the forge/compare "unavailable until wired" precedent). The engine
+// analyzer it feeds is zero-egress; this sentinel is purely a surface-wiring signal.
+var ErrReviewFetchUnavailable = errors.New("client: review-fetch boundary unavailable")
 
 // ErrForgeUnavailable is returned when a Client has no read-only forge
 // PR-enumeration client configured (SW-105). Query/search/analysis still work;

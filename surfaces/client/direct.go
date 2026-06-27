@@ -27,18 +27,19 @@ import (
 // edit/refactor applier + change recorder (SW-038), and memory/distill/skillgen
 // services (EP-012).
 type Direct struct {
-	querySvc    *query.Service
-	searchSvc   *search.Service
-	ledger      *ledger.Ledger
-	analysisSvc *analysis.Service
-	applier     *edit.Applier
-	recorder    *edit.ChangeRecorder
-	reviewSvc   *review.Service
-	memoryStore *memory.Store
-	distiller   *distill.Distiller
-	skillGen    *skillgen.Generator
-	forge       forge.Enumerator
-	branchState BranchStateMaterializer
+	querySvc      *query.Service
+	searchSvc     *search.Service
+	ledger        *ledger.Ledger
+	analysisSvc   *analysis.Service
+	applier       *edit.Applier
+	recorder      *edit.ChangeRecorder
+	reviewSvc     *review.Service
+	memoryStore   *memory.Store
+	distiller     *distill.Distiller
+	skillGen      *skillgen.Generator
+	forge         forge.Enumerator
+	branchState   BranchStateMaterializer
+	reviewFetcher forge.ReviewFetcher
 }
 
 // NewDirect constructs an in-process client.
@@ -125,6 +126,19 @@ func (d *Direct) WithForge(e forge.Enumerator) *Direct {
 // returns ErrCompareUnavailable (everything else is unaffected).
 func (d *Direct) WithBranchStates(m BranchStateMaterializer) *Direct {
 	d.branchState = m
+	return d
+}
+
+// WithReviewFetcher attaches the NET-NEW surface-boundary existing-review fetch
+// seam so the CritiqueReview surface can fetch a prior review from the forge when no
+// inline review is supplied (SW-108). It returns the receiver for chaining. The
+// fetch (GitHub pulls/{n}/reviews + comments) is the ONLY egress in the critique
+// path and stays STRICTLY at this surface boundary; the engine critique-review
+// analyzer it feeds receives the structured ReviewInput as Params and is zero-egress.
+// Without it (and without an inline review) CritiqueReview returns
+// ErrReviewFetchUnavailable (everything else is unaffected).
+func (d *Direct) WithReviewFetcher(f forge.ReviewFetcher) *Direct {
+	d.reviewFetcher = f
 	return d
 }
 
@@ -391,6 +405,46 @@ func (d *Direct) CompareBranches(ctx context.Context, baseRef, headRef string) (
 	res, err := d.analysisSvc.Dispatch(ctx, analysis.CompareBranchesAnalyzerName, analysis.Params{
 		CompareBase: base,
 		CompareHead: head,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return analysis.Marshal(res)
+}
+
+// CritiqueReview implements Client (SW-108, the EP-018 capstone). The EXISTING
+// review is obtained at the SURFACE boundary: an inline reviewJSON (decoded into the
+// structured analysis.ReviewInput here, NEVER inside the engine) takes precedence;
+// otherwise it is fetched from the forge for prNumber via the net-new ReviewFetcher
+// egress. The structured review + the touched set (diff, reused EP-007
+// parseDiff/resolveRef) are handed to the zero-egress engine `critique-review`
+// analyzer through the SINGLE shared analysis.Service + encoder, so the
+// CritiqueReport is byte-identical across every surface. The engine never resolves a
+// remote ref or opens a socket. Without an analysis service it returns
+// ErrAnalysisUnavailable; with neither an inline review nor a wired fetcher it
+// returns ErrReviewFetchUnavailable.
+func (d *Direct) CritiqueReview(ctx context.Context, prNumber int, diff, reviewJSON string) ([]byte, error) {
+	if d.analysisSvc == nil {
+		return nil, ErrAnalysisUnavailable
+	}
+	var review analysis.ReviewInput
+	switch {
+	case strings.TrimSpace(reviewJSON) != "":
+		if err := json.Unmarshal([]byte(reviewJSON), &review); err != nil {
+			return nil, fmt.Errorf("client: decode inline review: %w", err)
+		}
+	case d.reviewFetcher != nil:
+		ri, err := d.reviewFetcher.FetchReview(ctx, prNumber)
+		if err != nil {
+			return nil, err
+		}
+		review = ri
+	default:
+		return nil, ErrReviewFetchUnavailable
+	}
+	res, err := d.analysisSvc.Dispatch(ctx, analysis.CritiqueReviewAnalyzerName, analysis.Params{
+		Diff:   diff,
+		Review: &review,
 	})
 	if err != nil {
 		return nil, err

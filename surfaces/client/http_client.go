@@ -397,5 +397,13 @@ func (h *HTTP) CompareBranches(ctx context.Context, baseRef, headRef string) ([]
 	return nil, ErrCompareUnavailable
 }
 
+// CritiqueReview returns ErrAnalysisUnavailable until a remote critique-review RPC
+// is added (SW-108). The analyzer + review-fetch boundary are wired only on the
+// in-process Direct client today (mirrors the analysis "unavailable until wired"
+// precedent).
+func (h *HTTP) CritiqueReview(ctx context.Context, prNumber int, diff, reviewJSON string) ([]byte, error) {
+	return nil, ErrAnalysisUnavailable
+}
+
 // compile-time proof the adapter satisfies the surface contract.
 var _ Client = (*HTTP)(nil)

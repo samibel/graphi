@@ -129,6 +129,9 @@ func (s *stubClient) SuggestReviewers(context.Context, string) ([]byte, error) {
 func (s *stubClient) CompareBranches(context.Context, string, string) ([]byte, error) {
 	return nil, client.ErrCompareUnavailable
 }
+func (s *stubClient) CritiqueReview(context.Context, int, string, string) ([]byte, error) {
+	return nil, client.ErrAnalysisUnavailable
+}
 
 func newServer(t *testing.T) (*Server, *stubClient, *observe.Broker) {
 	t.Helper()

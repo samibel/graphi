@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **94**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **96**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -42,7 +42,7 @@ Total capabilities: **94**. See [`architecture-plan.md`](architecture-plan.md) f
 | `typescript` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 | `yaml` | ✅ shipped | EP-001 | pure-Go gotreesitter grammar (CGo-free, subset-tagged). |
 
-## Analyzers (21)
+## Analyzers (22)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -53,6 +53,7 @@ Total capabilities: **94**. See [`architecture-plan.md`](architecture-plan.md) f
 | `concept` | ✅ shipped | EP-004 | lexical-search-backed concept resolution (needs Searcher). |
 | `conflicts-prs` | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over an enumerated PR set — textual overlap + shared file/symbol/high-centrality node + asymmetric contract-dependency edge check; entity→PRs inverted index, byte-stable pairwise report (zero engine egress; forge enumeration stays at the surface). |
 | `contracts` | ✅ shipped | EP-005 | producer/consumer contract drift detection. |
+| `critique-review` | ✅ shipped | EP-018 | SW-108 (capstone): deterministic graph-evidence critique of an EXISTING PR review — replays the EP-007 risk/blast/centrality/taint oracle over the touched set and runs a three-way diff (gap / over_flag / unsupported_claim) against the review; deterministic resolveRef anchoring with an honest unanchored tally (never guessed); NO LLM prose; total order type→NodeId→anchor; zero engine egress (the only egress is the surface review fetch). |
 | `git-history` | ✅ shipped | EP-005 | churn / bus-factor / co-change signals. |
 | `impact` | ✅ shipped | EP-004 | forward/reverse blast-radius reachability. |
 | `interproc` | ✅ shipped | EP-005 | interprocedural Sharir-Pnueli procedure summaries. |
@@ -68,7 +69,7 @@ Total capabilities: **94**. See [`architecture-plan.md`](architecture-plan.md) f
 | `triage-prs` | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (37)
+## MCP tools (38)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -86,6 +87,7 @@ Total capabilities: **94**. See [`architecture-plan.md`](architecture-plan.md) f
 | `compare_branches` | ✅ shipped | EP-018 | SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary). |
 | `compound` | ✅ shipped | EP-011 | compound / Cypher-style graph query composing traversals+filters (G1). |
 | `conflicts_prs` | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress). |
+| `critique_review` | ✅ shipped | EP-018 | SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress). |
 | `definition` | ✅ shipped | EP-001 | structural query: definition. |
 | `distill` | ✅ shipped | EP-012 | session distillation into a compact decision record. |
 | `find_clones` | ✅ shipped | EP-013 | structural clone-group detection from a JSON config (G4). |

@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/analysis"
 )
 
 // PR is the read-only, lightweight metadata for one open pull request. It carries
@@ -340,8 +341,129 @@ func (m *MockForge) ListOpenPRs(_ context.Context) ([]PR, error) {
 	return out, nil
 }
 
+// ReviewFetcher is the injectable, mockable EXISTING-review fetch seam (SW-108,
+// the EP-018 capstone). It is the NET-NEW surface-boundary egress added by this
+// story: the FIRST EP-018 forge FETCH (prior slices only enumerated PR metadata or
+// posted comments). The real GitHubForge dials the forge (GET pulls/{n}/reviews +
+// GET pulls/{n}/comments); tests inject an in-memory implementation so the suite
+// does ZERO network I/O. The fetch returns a STRUCTURED analysis.ReviewInput
+// (comments with {path,line} anchors + the overall verdict) that the surface hands
+// to the zero-egress engine critique-review analyzer as Params — the engine never
+// fetches it. The egress lives STRICTLY at this surface boundary.
+type ReviewFetcher interface {
+	FetchReview(ctx context.Context, number int) (analysis.ReviewInput, error)
+}
+
+// ghReview is the subset of the GitHub pull-reviews JSON the fetcher reads.
+type ghReview struct {
+	ID    int64  `json:"id"`
+	State string `json:"state"`
+	Body  string `json:"body"`
+	// SubmittedAt orders reviews so the latest verdict wins (string-comparable
+	// RFC3339 timestamps; only used for ordering, never serialized).
+	SubmittedAt string `json:"submitted_at"`
+}
+
+// ghReviewComment is the subset of the GitHub pull review-comments JSON the fetcher
+// reads. Review comments carry a path and a line (or the legacy position) anchor.
+type ghReviewComment struct {
+	ID       int64  `json:"id"`
+	Path     string `json:"path"`
+	Line     int    `json:"line"`
+	Position int    `json:"position"`
+}
+
+// FetchReview implements ReviewFetcher. It pages the PR's reviews (for the overall
+// verdict) and its review comments (for the structured {path,line} anchors),
+// returning a normalized analysis.ReviewInput. It is read-only: every request is a
+// GET; it posts/mutates nothing. The asserted impact targets (ClaimTargets) are not
+// inferred from prose here — GitHub review comments carry no structured target, so
+// they are left empty (a prose-only claim degrades to the engine's unanchored tally,
+// never a guessed entity).
+func (g *GitHubForge) FetchReview(ctx context.Context, number int) (analysis.ReviewInput, error) {
+	var reviews []ghReview
+	page := 1
+	for {
+		url := fmt.Sprintf("%s/repos/%s/%s/pulls/%d/reviews?per_page=100&page=%d", g.apiBase, g.owner, g.repo, number, page)
+		var got []ghReview
+		if err := g.get(ctx, url, &got); err != nil {
+			return analysis.ReviewInput{}, fmt.Errorf("forge: fetch pr reviews: %w", err)
+		}
+		reviews = append(reviews, got...)
+		if len(got) < 100 {
+			break
+		}
+		page++
+	}
+
+	var comments []ghReviewComment
+	page = 1
+	for {
+		url := fmt.Sprintf("%s/repos/%s/%s/pulls/%d/comments?per_page=100&page=%d", g.apiBase, g.owner, g.repo, number, page)
+		var got []ghReviewComment
+		if err := g.get(ctx, url, &got); err != nil {
+			return analysis.ReviewInput{}, fmt.Errorf("forge: fetch pr review comments: %w", err)
+		}
+		comments = append(comments, got...)
+		if len(got) < 100 {
+			break
+		}
+		page++
+	}
+
+	// Overall verdict: the state of the latest submitted review (deterministic on the
+	// fetched set). Reviews without a state are ignored for the verdict.
+	verdict := ""
+	latest := ""
+	for _, rv := range reviews {
+		if rv.State == "" {
+			continue
+		}
+		if verdict == "" || rv.SubmittedAt >= latest {
+			verdict = rv.State
+			latest = rv.SubmittedAt
+		}
+	}
+
+	out := analysis.ReviewInput{Verdict: verdict}
+	for _, c := range comments {
+		line := c.Line
+		if line == 0 {
+			line = c.Position
+		}
+		out.Comments = append(out.Comments, analysis.ReviewComment{
+			ID:   fmt.Sprintf("%d", c.ID),
+			Path: model.NormalizePath(c.Path),
+			Line: line,
+		})
+	}
+	return out, nil
+}
+
+// MockReviewFetcher is the in-memory ReviewFetcher used by tests and offline/local
+// runs. It performs ZERO network I/O — it returns the fixed review it was
+// constructed with for the matching PR number.
+type MockReviewFetcher struct {
+	Reviews map[int]analysis.ReviewInput
+}
+
+// NewMockReviewFetcher builds an offline review fetcher over a fixed per-PR map.
+func NewMockReviewFetcher(reviews map[int]analysis.ReviewInput) *MockReviewFetcher {
+	return &MockReviewFetcher{Reviews: reviews}
+}
+
+// FetchReview implements ReviewFetcher with no network I/O.
+func (m *MockReviewFetcher) FetchReview(_ context.Context, number int) (analysis.ReviewInput, error) {
+	if ri, ok := m.Reviews[number]; ok {
+		return ri, nil
+	}
+	return analysis.ReviewInput{}, nil
+}
+
 // static interface checks.
 var (
-	_ Enumerator = (*GitHubForge)(nil)
-	_ Enumerator = (*MockForge)(nil)
+	_ Enumerator    = (*GitHubForge)(nil)
+	_ Enumerator    = (*MockForge)(nil)
+	_ ReviewFetcher = (*GitHubForge)(nil)
+	_ ReviewFetcher = (*MockReviewFetcher)(nil)
 )

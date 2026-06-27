@@ -77,6 +77,9 @@ func (allToolsClient) SuggestReviewers(context.Context, string) ([]byte, error) 
 func (allToolsClient) CompareBranches(context.Context, string, string) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) CritiqueReview(context.Context, int, string, string) ([]byte, error) {
+	return []byte("{}"), nil
+}
 
 // TestToolNames_MatchesAdvertisedMaximalSet is the in-package drift guard for the
 // MCP surface: ToolNames() (the single source the FU-4 coverage matrix reads)

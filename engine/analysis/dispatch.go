@@ -145,6 +145,16 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	// surface boundary) and performs a pure local node/edge set-diff keyed by the
 	// canonical NodeId. Neither resolves a git ref or touches the network.
 	mustRegister(reg, newSuggestReviewersAnalyzer(), newCompareBranchesAnalyzer())
+	// SW-108 (EP-018 4/4, capstone): register the critique-review analyzer. It is a
+	// composite, read-only, DETERMINISTIC, zero-egress analyzer that REPLAYS the
+	// EP-007 single-PR risk/blast/centrality/taint oracle (scoreRegion + the graph
+	// primitives) as ground truth and runs a three-way diff (gap / over_flag /
+	// unsupported_claim) against an EXISTING review supplied as Params.Review (fetched
+	// at the surface boundary or inline) + the touched set (Params.Diff). Comment→entity
+	// anchoring is deterministic (resolveRef only); unresolvable refs degrade to an
+	// unanchored tally, never guessed. The engine never resolves a remote ref or
+	// opens a socket.
+	mustRegister(reg, newCritiqueReviewAnalyzer())
 	return NewService(reader, reg)
 }
 

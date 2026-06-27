@@ -90,6 +90,8 @@ func main() {
 		os.Exit(runSuggestReviewers(os.Args[2:]))
 	case "compare-branches":
 		os.Exit(runCompareBranches(os.Args[2:]))
+	case "critique-review":
+		os.Exit(runCritiqueReview(os.Args[2:]))
 	case "refactor-preview":
 		os.Exit(runRefactor(os.Args[2:], "refactor-preview"))
 	case "refactor":
@@ -571,6 +573,40 @@ func runCompareBranches(args []string) int {
 		WithBranchStates(m)
 	if err := cli.RunCompareBranches(context.Background(), c, *base, *head, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: compare-branches: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runCritiqueReview launches the SW-108 review critique (the EP-018 capstone). Usage:
+//
+//	graphi critique-review [-db path] -diff <unified-diff>|-diff-path <file> \
+//	  [-pr N] [-review <json>|-review-path <file>]
+//
+// The EXISTING review is supplied inline (-review/-review-path, read once HERE at the
+// surface) or fetched from the forge for -pr via the net-new read-only review-fetch
+// egress (resolved from the environment; unwired when no token). The critique itself
+// is a ZERO-egress pass over the local graph: it replays the EP-007 oracle and runs
+// the three-way gap/over_flag/unsupported_claim diff against the review.
+func runCritiqueReview(args []string) int {
+	dbPath, _, rest := extractFlags(args)
+	store, err := openStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		return 1
+	}
+	defer func() { _ = store.Close() }()
+	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	// Wire the net-new read-only review-fetch egress from the environment so a -pr
+	// with no inline review can fetch the existing review. When no token is present
+	// the fetcher stays unwired (local-first default) — an inline review still works.
+	if gh, ferr := forge.FromEnv(); ferr == nil && gh != nil {
+		d = d.WithReviewFetcher(gh)
+	}
+	// The CLI surface parses -diff/-diff-path/-pr/-review/-review-path and reads any
+	// local files ONCE at the surface (no engine file I/O / remote fetch on the hot path).
+	if err := cli.RunCritiqueReview(context.Background(), d, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: critique-review: %v\n", err)
 		return 1
 	}
 	return 0

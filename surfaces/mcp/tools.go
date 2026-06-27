@@ -69,6 +69,10 @@ const (
 	// diff keyed by canonical NodeId). Both are zero-egress engine analyzers.
 	ToolSuggestReviewers = "suggest_reviewers"
 	ToolCompareBranches  = "compare_branches"
+	// SW-108 (EP-018 capstone) critique_review: deterministic graph-evidence critique
+	// of an existing PR review (gap / over_flag / unsupported_claim). Zero-egress
+	// engine analyzer; the only permitted egress is the surface review fetch.
+	ToolCritiqueReview = "critique_review"
 )
 
 // singletonToolNames are the non-structural-query tools advertised behind a
@@ -102,6 +106,7 @@ var singletonToolNames = []string{
 	ToolConflictsPRs,
 	ToolSuggestReviewers,
 	ToolCompareBranches,
+	ToolCritiqueReview,
 }
 
 // ToolNames returns the full, sorted, de-duplicated canonical set of every MCP

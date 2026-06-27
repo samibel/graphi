@@ -93,6 +93,14 @@ type Params struct {
 	// so they carry json:"-". Unused by every other analyzer.
 	CompareBase query.Reader `json:"-"`
 	CompareHead query.Reader `json:"-"`
+	// Review is the already-structured EXISTING PR review (comments with
+	// {path,line,symbol} anchors + claim-target refs + overall verdict) the SW-108
+	// critique-review analyzer critiques. It is produced ABOVE the surface boundary
+	// (fetched from the forge via the net-new surface review-fetch path, or supplied
+	// inline) and handed to the engine as Params; the engine NEVER fetches it. The
+	// PR's touched-entity set is carried in Diff (reused EP-007 parseDiff/resolveRef).
+	// Unused by every other analyzer.
+	Review *ReviewInput `json:"review,omitempty"`
 }
 
 // ReachedNode is a node reached during a traversal, carrying the provenance of
@@ -205,6 +213,11 @@ type Analysis struct {
 	// added/removed). Only the compare-branches analyzer populates it; nil for every
 	// other analyzer so the generic envelope is unchanged for them.
 	BranchDiff *BranchDiffReport `json:"branch_diff,omitempty"`
+	// Critique carries the SW-108 `critique-review` structured, graph-evidence-grounded
+	// critique of an existing PR review (gap / over_flag / unsupported_claim items +
+	// the unanchored tallies). Only the critique-review analyzer populates it; nil for
+	// every other analyzer so the generic envelope is unchanged for them.
+	Critique *CritiqueReport `json:"critique,omitempty"`
 }
 
 // InterprocTaintReport is the SW-102 surface payload for the solved, persisted
