@@ -147,6 +147,34 @@ type Analysis struct {
 	// SW-040 signal reports. Only the pr-questions analyzer populates it; it stays
 	// omitted (nil) for every other analyzer so the generic envelope is unchanged.
 	QuestionReport *QuestionReport `json:"question_report,omitempty"`
+	// InterprocTaint carries the SW-102 persisted interprocedural taint fixpoint
+	// result: the explicit completeness verdict, the no-recompute observability
+	// flags, and the cross-procedure source→sink flows answered from the solved
+	// relation. Only the taint analyzer populates it; it stays omitted (nil) for
+	// every other analyzer so the generic envelope is unchanged for them.
+	InterprocTaint *InterprocTaintReport `json:"interproc_taint,omitempty"`
+}
+
+// InterprocTaintReport is the SW-102 surface payload for the solved, persisted
+// interprocedural taint fixpoint. It is byte-stable: the verdict and cap kind are
+// deterministic, the flows are pre-sorted, and the loaded/solved flags are the
+// no-recompute observability signal (loaded=true means the answer was served from
+// the persisted artifact without recomputation).
+type InterprocTaintReport struct {
+	Verdict string               `json:"verdict"`
+	CapKind string               `json:"cap_kind,omitempty"`
+	Loaded  bool                 `json:"loaded"`
+	Solved  bool                 `json:"solved"`
+	Flows   []InterprocTaintFlow `json:"flows"`
+}
+
+// InterprocTaintFlow is one cross-procedure source→sink flow with its call path.
+type InterprocTaintFlow struct {
+	SourceName   string   `json:"source_name"`
+	SinkName     string   `json:"sink_name"`
+	SinkCategory string   `json:"sink_category,omitempty"`
+	Labels       []string `json:"labels"`
+	CallPath     []string `json:"call_path"`
 }
 
 // Analyzer is the plug-in contract every analysis capability implements. It is

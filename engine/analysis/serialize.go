@@ -282,14 +282,15 @@ func Marshal(a Analysis) ([]byte, error) {
 	sortMetrics(metrics)
 
 	out := Analysis{
-		Analyzer:  a.Analyzer,
-		Outcome:   a.Outcome,
-		Symbol:    a.Symbol,
-		Truncated: a.Truncated,
-		Nodes:     nodes,
-		Paths:     paths,
-		Metrics:   metrics,
-		Locations: locs,
+		Analyzer:       a.Analyzer,
+		Outcome:        a.Outcome,
+		Symbol:         a.Symbol,
+		Truncated:      a.Truncated,
+		Nodes:          nodes,
+		Paths:          paths,
+		Metrics:        metrics,
+		Locations:      locs,
+		InterprocTaint: a.InterprocTaint,
 	}
 	if out.Nodes == nil {
 		out.Nodes = []ReachedNode{}

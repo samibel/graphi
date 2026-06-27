@@ -7,6 +7,7 @@ import (
 	"github.com/samibel/graphi/engine/analysis/contracts"
 	"github.com/samibel/graphi/engine/analysis/githistory"
 	"github.com/samibel/graphi/engine/analysis/interproc"
+	"github.com/samibel/graphi/engine/analysis/interproctaint"
 	"github.com/samibel/graphi/engine/analysis/pdg"
 	"github.com/samibel/graphi/engine/analysis/taint"
 	"github.com/samibel/graphi/engine/query"
@@ -48,9 +49,11 @@ func NewDefaultService(reader query.Reader) *Service {
 		metrics:   metricsAnalyzer{},
 	})
 	// SW-028: register flow-sensitive taint analyzer with default Go config.
-	// The taint sub-package cannot import analysis (cycle), so we wrap it with
-	// a thin adapter that satisfies the analysis.Analyzer interface.
-	mustRegister(reg, taintAdapter{inner: taint.New(taint.DefaultConfig(), taint.DefaultCaps(), nil)})
+	// SW-102: the adapter now solves the interprocedural taint fixpoint and
+	// injects the real solved-summary provider (replacing NoOpSummaryProvider) so
+	// cross-procedure source→sink flows resolve from the solved relation. It holds
+	// the config + caps and constructs the inner analyzer per call (stateless).
+	mustRegister(reg, taintAdapter{cfg: taint.DefaultConfig(), caps: taint.DefaultCaps()})
 	// SW-029: register PDG (Program Dependence Graph) analyzer with default
 	// config. Like taint, the pdg sub-package cannot import analysis (cycle),
 	// so we wrap it with a thin adapter that satisfies analysis.Analyzer.
@@ -126,26 +129,73 @@ func (s *Service) Reader() query.Reader { return s.reader }
 // not analysis). The adapter delegates Name() and maps Run() into the standard
 // Analysis envelope.
 type taintAdapter struct {
-	inner *taint.Analyzer
+	cfg  taint.Config
+	caps taint.Caps
 }
 
-func (a taintAdapter) Name() string { return a.inner.Name() }
+func (a taintAdapter) Name() string { return taint.AnalyzerName }
 
 func (a taintAdapter) Analyze(ctx context.Context, r query.Reader, p Params) (Analysis, error) {
-	result, err := a.inner.Run(ctx, r)
+	// SW-102: solve the interprocedural taint fixpoint over the same graph, then
+	// run the intraprocedural taint analyzer with the solved-summary provider
+	// (replacing NoOpSummaryProvider). The single Service.Dispatch path makes the
+	// envelope (including the verdict and cross-procedure flows) byte-identical
+	// across CLI/MCP/HTTP/daemon.
+	sol, err := interproctaint.Solve(ctx, r, a.cfg, interproc.DefaultCaps(), interproc.DefaultWideningThreshold)
 	if err != nil {
 		return Analysis{}, err
 	}
+	provider := interproctaint.NewSolvedProvider(sol)
+
+	inner := taint.New(a.cfg, a.caps, provider)
+	result, err := inner.Run(ctx, r)
+	if err != nil {
+		return Analysis{}, err
+	}
+
+	report := buildInterprocTaintReport(sol)
+
 	outcome := query.OutcomeFound
-	if len(result.Findings) == 0 {
+	if len(result.Findings) == 0 && len(report.Flows) == 0 {
 		outcome = query.OutcomeEmpty
 	}
 	return Analysis{
-		Analyzer:  taint.AnalyzerName,
-		Outcome:   outcome,
-		Symbol:    p.Symbol,
-		Truncated: result.Truncated,
+		Analyzer:       taint.AnalyzerName,
+		Outcome:        outcome,
+		Symbol:         p.Symbol,
+		Truncated:      result.Truncated,
+		InterprocTaint: report,
 	}, nil
+}
+
+// buildInterprocTaintReport maps the engine-layer Solution into the surface
+// envelope payload. The flows are already canonically sorted by the solver.
+func buildInterprocTaintReport(sol interproctaint.Solution) *InterprocTaintReport {
+	flows := make([]InterprocTaintFlow, 0, len(sol.Flows))
+	for _, f := range sol.Flows {
+		labels := f.Labels
+		if labels == nil {
+			labels = []string{}
+		}
+		path := f.CallPath
+		if path == nil {
+			path = []string{}
+		}
+		flows = append(flows, InterprocTaintFlow{
+			SourceName:   f.SourceName,
+			SinkName:     f.SinkName,
+			SinkCategory: f.SinkCategory,
+			Labels:       labels,
+			CallPath:     path,
+		})
+	}
+	return &InterprocTaintReport{
+		Verdict: string(sol.Verdict),
+		CapKind: sol.CapKind,
+		Loaded:  sol.Loaded,
+		Solved:  sol.Solved,
+		Flows:   flows,
+	}
 }
 
 // pdgAdapter wraps pdg.Analyzer to satisfy the analysis.Analyzer interface
