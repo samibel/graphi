@@ -34,7 +34,25 @@ version: 1
 # failed today against the merged tier-1 build — this re-pin is the load-bearing
 # act of the consolidation slice, not cosmetic. baseline = measured; budget gives a
 # small justified headroom (~4.8%) and stays far under the hard < 50 MB gate.
-baseline_version: "2026-06-24-ep009"
+#
+# 2026-06-28-ep017: re-pin binary_size_bytes to the platform the gate ACTUALLY
+# measures. The bench job (.github/workflows/bench.yml) runs on ubuntu-latest =
+# linux/amd64, but the ep009 baseline (28,615,410) was recorded on darwin-arm64 —
+# a latent platform mismatch: the same source builds ~0.85 MB larger on
+# linux/amd64 than on darwin/arm64, so the gate compared a linux/amd64 measurement
+# against a darwin/arm64 baseline. On top of that, the default binary grew
+# legitimately since ep009 — primarily SW-101 (EP-017, fsnotify watcher + bounded
+# worker-pool incremental apply), which links fsnotify into the default build.
+# Cross-platform measured today (subset-tagged default, go 1.26, 20 registered
+# grammar blobs — the exact ExpectedGrammarBlobs set, no accidental embed):
+#   linux/amd64  30,861,562 B  (the gate's platform)
+#   darwin/arm64 30,015,554 B  (the old baseline platform, itself +1.4 MB vs ep009)
+#   darwin/amd64 31,497,472 B
+#   linux/arm64  29,159,393 B
+# This is justified feature growth, not bloat (grammar-blob set unchanged). baseline
+# = the linux/amd64 measurement the gate sees; budget gives ~5.3% headroom and still
+# leaves ~17.5 MB under the < 50 MB hard ceiling.
+baseline_version: "2026-06-28-ep017"
 fixture_digest: "352f2fd0ea28f0652ed4b71f651b737301a20604e40182c83ae1a94f02e847ee"
 
 metrics:
@@ -51,11 +69,13 @@ metrics:
     budget: 2000
     unit: ms
   binary_size_bytes:
-    # Subset-tagged shipped default (SW-057, 2026-06-24-ep009). baseline = measured
-    # 28,615,410 B; budget 30,000,000 B (~4.8% headroom, ~20 MB under the < 50 MB
-    # hard ceiling). Measured via the cmd/bench harness, which builds the binary
-    # with internal/release.DefaultGrammarSubsetTags (20 registered grammar blobs,
-    # not all-206).
-    baseline: 28615410
-    budget: 30000000
+    # Subset-tagged shipped default, re-pinned to the gate's platform (linux/amd64,
+    # 2026-06-28-ep017). baseline = measured 30,861,562 B on ubuntu-latest;
+    # budget 32,500,000 B (~5.3% headroom, ~17.5 MB under the < 50 MB hard ceiling).
+    # Measured via the cmd/bench harness, which builds the binary with
+    # internal/release.DefaultGrammarSubsetTags (20 registered grammar blobs, not
+    # all-206). See the baseline_version note above for the platform-mismatch +
+    # SW-101 growth rationale.
+    baseline: 30861562
+    budget: 32500000
     unit: bytes
