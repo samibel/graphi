@@ -69,7 +69,7 @@ graphi is built for two audiences:
 
 Everything runs locally. No accounts, no telemetry, no network calls.
 
-## Features (Übersicht)
+## Features
 
 The full feature inventory — every MCP tool, CLI subcommand, HTTP endpoint, analyzer, and surface — is in **[`docs/FEATURES.md`](docs/FEATURES.md)**. This section is the elevator pitch.
 
