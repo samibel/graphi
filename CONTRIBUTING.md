@@ -32,7 +32,7 @@ By participating you agree to abide by our [Code of Conduct](./CODE_OF_CONDUCT.m
 CGO_ENABLED=0 go build ./...
 
 # Optional opt-in flavors
-go build -tags graphi_broad ./...    # broad Tree-sitter coverage (CGO_ENABLED=1)
+CGO_ENABLED=1 go build -tags graphi_broad ./...    # broad Tree-sitter coverage (CGO_ENABLED=1)
 go build -tags webui_embed ./...     # bundle the web UI into the binary
 ```
 
