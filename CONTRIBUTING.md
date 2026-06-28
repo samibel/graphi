@@ -21,7 +21,7 @@ By participating you agree to abide by our [Code of Conduct](./CODE_OF_CONDUCT.m
 
 ## Prerequisites
 
-- Go (see the version pinned in [`go.mod`](./go.mod)).
+- Go (see the version pinned in [`go.work`](./go.work)).
 - The repository is a Go workspace (`go.work`); `./...` honors the `use`
   directives, so all modules are included automatically.
 
