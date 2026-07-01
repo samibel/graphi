@@ -1,5 +1,10 @@
 # HNSW vector index — OFF-by-default build contract (SW-084)
 
+This document describes graphi's optional HNSW (approximate nearest-neighbor)
+vector index: how it's selected, why it's excluded from the default binary, and
+how that exclusion is verified. It's for contributors touching semantic search
+or the vector-index build configuration.
+
 graphi's semantic search can rank vectors two ways behind one seam
 (`embed.VectorIndex`):
 
@@ -8,9 +13,10 @@ graphi's semantic search can rank vectors two ways behind one seam
 | **Brute-force cosine** | `vector.index: bruteforce` (default) | always available; exact ranking; the recall oracle |
 | **HNSW (approximate NN)** | `vector.index: hnsw` | explicit opt-in; sub-linear query at ≥0.95 recall@10 |
 
-Both are pure Go and CGo-free. HNSW is an **upgrade** of the FU-3 / SW-059 brute-force
-store, never a replacement: the typed `Unavailable` graceful-skip response (no embedder
-configured) and the `WithSemantic(...)` seam are byte-for-byte unchanged.
+Both are pure Go and CGo-free. HNSW is an **upgrade** of the earlier brute-force
+store (FU-3 / SW-059), never a replacement: the typed `Unavailable` graceful-skip
+response (no embedder configured) and the `WithSemantic(...)` seam are
+byte-for-byte unchanged.
 
 ## Before / after (SW-084)
 

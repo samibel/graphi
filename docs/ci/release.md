@@ -7,8 +7,8 @@ or touching the release build.
 
 > Distinct CI checks: **`workspace-build-test`**, **`layer-direction`**, **`release`**.
 > Workflow: [`.github/workflows/release.yml`](../../.github/workflows/release.yml)
-- Layer guard: [`internal/layerguard`](../../internal/layerguard) · CLI: [`cmd/layerguard`](../../cmd/layerguard)
-- Release: [`internal/release`](../../internal/release) · CLI: [`cmd/release`](../../cmd/release) · workspace discovery: [`internal/workspace`](../../internal/workspace)
+> Layer guard: [`internal/layerguard`](../../internal/layerguard) · CLI: [`cmd/layerguard`](../../cmd/layerguard)
+> Release: [`internal/release`](../../internal/release) · CLI: [`cmd/release`](../../cmd/release) · workspace discovery: [`internal/workspace`](../../internal/workspace)
 
 ## State before this story
 

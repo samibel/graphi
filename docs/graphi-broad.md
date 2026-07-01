@@ -1,15 +1,17 @@
-# The opt-in `graphi-broad` CGO flavor (SW-056)
+# The opt-in `graphi-broad` CGO flavor
 
-This document records the **opt-in `graphi-broad` CGO flavor** added in **SW-056**:
-broad 257-grammar coverage over the *same* `SymbolExtractor` contract the pure-Go
-default tier uses, **build-tag isolated** so the default build stays provably
-unaffected. It is the companion to [`default-tier-security.md`](default-tier-security.md)
-(SW-055), which owns the default-tier firewall this flavor must never cross.
+This document covers the opt-in `graphi-broad` CGO flavor: broad 257-grammar
+coverage over the *same* `SymbolExtractor` contract the pure-Go default tier
+uses, build-tag isolated so the default build stays provably unaffected. It is
+intended for contributors or operators deciding whether to enable the broad
+flavor, and it is the companion to
+[`default-tier-security.md`](default-tier-security.md), which owns the
+default-tier firewall this flavor must never cross.
 
-> **Scope.** SW-056 ships the lane and its in-slice transferable controls
+> **Scope.** This work ships the lane and its in-slice transferable controls
 > (supply-chain pin, C-level egress tripwire, `MaxFileSize`) plus the recorded
-> human acceptance of the residual native-C risk. **Out-of-process / sandbox C-parser
-> isolation is NOT in this slice — it is the named follow-up [SW-058].**
+> human acceptance of the residual native-C risk. Out-of-process / sandbox
+> C-parser isolation is **not** in scope here — it is a named follow-up.
 
 ## Before → After
 
@@ -38,15 +40,15 @@ is broad coverage **without compromising the CGo-free default build**:
   meta-module — which statically imports all ~257 grammars (hundreds of MB of
   generated C).
 
-### Build-tag spelling (DN-2)
+### Build-tag spelling
 
-The flavor **name** is `graphi-broad`, but the Go **build tag** is `graphi_broad`
-(underscore) because `-` is illegal in a Go build constraint. `internal/cgoconformance`
-recognizes **both** spellings in `IsBroadFlavor` / `SanitizeGoFlags`, so the
+The flavor's **name** is `graphi-broad`, but its Go **build tag** is `graphi_broad`
+(underscore), because `-` is illegal in a Go build constraint. `internal/cgoconformance`
+recognizes both spellings in `IsBroadFlavor` / `SanitizeGoFlags`, so the
 default-graph gate's broad-strip never silently no-ops on the real
 `-tags graphi_broad` flag.
 
-## Residual security limitation (read before enabling — DN-5 / SW-056-SEC-001)
+## Residual security limitation (read before enabling)
 
 The `graphi-broad` flavor runs **native C** over source. graphi's Go-side resource
 bounds do **NOT** contain a native-C fault:

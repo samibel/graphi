@@ -93,11 +93,12 @@ parser code is edited. See [parse-registry.md](parse-registry.md),
   [graphi-broad.md](graphi-broad.md).
 - **Honest current vs. roadmap.** The Go extractor emits symbol nodes and
   **intra-file** `defines`/`calls`/`references` edges today. **Cross-file /
-  cross-package resolution is FU-1 — ✅ shipped** (post-ingest linker in
+  cross-package resolution (FU-1) is ✅ shipped**: a post-ingest linker in
   `engine/link` resolves selector calls and imports against the
-  fully-committed symbol table, with byte-identical full-vs-incremental
-  invariant). The coverage matrix marks FU-1 `shipped` and HTML `planned`
-  (deferred to `graphi-broad`); the guard fails if either silently drifts.
+  fully-committed symbol table, preserving the byte-identical
+  full-vs-incremental invariant. The coverage matrix marks FU-1 `shipped` and
+  HTML `planned` (deferred to `graphi-broad`); the guard fails if either
+  silently drifts.
 
 ---
 
@@ -139,11 +140,11 @@ README claim:
 
 [`internal/coverage`](../internal/coverage) derives the **live** capability set
 straight from the registries the product runs on — registered parsers
-(`parse.NewDefaultRegistry().Languages()`), registered analyzers
-(`analysis` default registry `Names()`), advertised MCP tools (`mcp.ToolNames()`),
-and present surfaces — and diffs it against [`coverage-matrix.yaml`](coverage-matrix.yaml).
-A docs-only change that omits a real capability, claims a phantom `shipped` one,
-or marks a live capability `planned` **fails the build**. Update flow:
+(`parse.NewDefaultRegistry().Languages()`), registered analyzers (`analysis`
+default registry `Names()`), advertised MCP tools (`mcp.ToolNames()`), and
+present surfaces — and diffs it against [`coverage-matrix.yaml`](coverage-matrix.yaml).
+A docs-only change that omits a real capability, claims a phantom `shipped`
+one, or marks a live capability `planned` **fails the build**. Update flow:
 
 ```
 # edit docs/coverage-matrix.yaml, then:

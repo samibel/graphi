@@ -1,17 +1,21 @@
-# Default-Tier Security & Isolation Controls (SW-055)
+# Default-Tier Security & Isolation Controls
 
-This document records the security controls added in **SW-055** that make the
-CGo-free / zero-egress guarantees of graphi's **default tier** *provable and
-regression-proof*. These are security controls, not packaging conveniences: the
-CGo-free default build is the architectural firewall against the native-code
-surface that the opt-in `graphi-broad` flavor (SW-056) introduces.
+This document records the security controls that make the CGo-free /
+zero-egress guarantees of graphi's **default tier** *provable and
+regression-proof*. It's for contributors and security reviewers who need to
+verify those guarantees rather than take them on faith.
 
-> **Scope split (default-tier-NOW vs SW-056-owned).** SW-055 owns the
-> **default-tier firewall** and builds the shared, reusable guard/bounds/harness
-> that SW-056 later wires into the broad lane. The `graphi-broad` smoke lane,
-> `go-sitter-forest` license verification, and broad-flavor offline build /
-> resource bounds are **SW-056-owned**. The default-tier firewall is provably safe
-> **independently of SW-056's state**.
+These are security controls, not packaging conveniences: the CGo-free default
+build is the architectural firewall against the native-code surface that the
+opt-in `graphi-broad` flavor introduces.
+
+> **Scope split: default tier vs. the broad flavor.** This work builds the
+> default-tier firewall, along with the shared, reusable guard/bounds/harness
+> that the broad flavor later wires into its own lane. The `graphi-broad` smoke
+> lane, `go-sitter-forest` license verification, and the broad flavor's offline
+> build and resource bounds belong to that later, separate effort. The
+> default-tier firewall described here is provably safe independently of the
+> broad flavor's state.
 
 ## Why these are security controls
 
@@ -31,7 +35,7 @@ moment the guarantee silently regresses.
 
 ## Before → After
 
-| Control | Before SW-055 | After SW-055 |
+| Control | Before | After |
 |---|---|---|
 | **No-CGO default tier** | Build-graph cgo scan only (`internal/cgoconformance`); the CGo-free guarantee could silently regress at the *registration* layer. | Release-blocking **registration-level guard** (`parse.AssertPureGoDefaults`) over `RegisterDefaults` output asserts every parser declares a pure-Go `Runtime`, **plus** a static `go-sitter-forest`-unreachable scan in the import graph. Paired with an **anti-vacuity negative test** that registers a synthetic CGO-marked parser and proves the guard rejects it. |
 | **Zero egress / no telemetry** | `internal/audit.checkNoTelemetry()` returned a **hard-coded declared PASS**. | Backed by the **real `internal/canary` static gate** (telemetry-import denylist + type-checked outbound-dial AST scan over the default graph) + a **runtime zero-egress test** that exercises every default-tier parser under an **injected failing dialer** (no live sockets). |

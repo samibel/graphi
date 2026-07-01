@@ -1,14 +1,19 @@
-# Provenance-Tracked Edits & Crash-Idempotent Recovery (SW-037)
+# Provenance-Tracked Edits & Crash-Idempotent Recovery
 
-This document explains the state **before** and **after** SW-037, why the changes
-were made, and the one load-bearing design decision: edit provenance is a
-**side-channel** that is deliberately **excluded** from the byte-identical
-re-index digest.
+This document covers how graphi records per-edit audit provenance and recovers
+that record cleanly after a crash. It's written for contributors working on
+the edit/ingest engine who need to understand the provenance model or the
+crash-recovery guarantees around it.
 
-## Before SW-037
+It explains the state **before** and **after** this capability was added, why
+the changes were made, and the one load-bearing design decision: edit
+provenance is a **side-channel** that is deliberately **excluded** from the
+byte-identical re-index digest.
+
+## Before this capability existed
 
 `engine/edit`'s `Apply` (single-op) and `ApplyRefactor` → `applyBatch` (multi-op)
-already routed every edit through the EP-001 incremental ingest path
+already routed every edit through the incremental ingest path
 (`(*ingest.Ingester).IngestChanged`). Only affected nodes/edges were re-derived,
 the two-phase **dirty-flag** protocol made a mid-ingest crash recoverable via
 `RecoverWithRoot`, and the shipped `ConsistencyChecker`/`graphDigest`
@@ -17,11 +22,11 @@ byte-identical to a full re-index.
 
 What was **missing**: a per-edit audit record. After an edit landed, nothing
 recorded *which edit* (its id, operation type, and timestamp) last touched each
-node/edge. SW-036 re-derived the structural **parse provenance**
+node/edge. An earlier pass re-derived the structural **parse provenance**
 `(tier, confidence, reason, evidence)` on every affected edge but explicitly
-**deferred per-edit-id provenance to SW-037**.
+deferred per-edit-id provenance to this work.
 
-## After SW-037
+## After this capability landed
 
 Each edit now mints an **edit id once** and captures a **timestamp once** in the
 saga, and that bundle (`EditProvenance{EditID, OpType, Timestamp}`) is threaded
@@ -30,7 +35,8 @@ into a provenance-aware ingest entry point,
 per affected **NodeId and EdgeId** (including reverse-dependency cascade
 elements) in a new `edit_provenance` table in the ingest meta sidecar
 (`ingest-meta.db`). The minted `edit_id` is surfaced on `Result.EditID` /
-`RefactorResult` for SW-038's audit/undo.
+`RefactorResult` for the audit/undo surface described in
+[command-surface.md](command-surface.md).
 
 - `op_type` is a **closed enum** (`apply` / `rename` / `extract` / `move` /
   `signature_change`); unknown values and empty edit ids are rejected so the

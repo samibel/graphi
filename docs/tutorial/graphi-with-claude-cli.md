@@ -10,7 +10,7 @@ A companion, detailed visualization lives next to this file as an Excalidraw dia
 
 ## 1. The problem (why an agent is slow without graphi)
 
-When the Claude CLI has to answer a question like *"Who calls `checkout`, and what breaks if I change it?"*, without graphi it must **grep and read whole files**. That is slow, expensive (many tokens), and unreliable — it *guesses* from whatever it happened to read.
+Without graphi, when the Claude CLI has to answer a question like *"Who calls `checkout`, and what breaks if I change it?"*, it must **grep and read whole files**. That approach is slow, expensive in tokens, and unreliable — it *guesses* from whatever it happened to read.
 
 ```mermaid
 flowchart LR
