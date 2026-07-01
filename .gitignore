@@ -16,3 +16,23 @@
 # `-tags webui_embed` build is a build artifact (the source lives in web/dist).
 # Anchored to the package path so it never matches the webui *.go sources.
 /surfaces/http/webui/dist/
+
+# Secrets / credentials — preventive guard for a public repository.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+credentials*
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

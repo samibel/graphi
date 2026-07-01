@@ -1,4 +1,8 @@
-# graphi
+<p align="center">
+  <img src="docs/assets/logo.png" alt="graphi logo" width="280" />
+</p>
+
+<h1 align="center">graphi</h1>
 
 > Local-first, CGo-free code-intelligence engine. Parse a repository into a deterministic, provenance-backed code graph and answer structural and semantic questions over an agent-first **MCP (stdio)** + **CLI** surface — without a single byte leaving your machine.
 
