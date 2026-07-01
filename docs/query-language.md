@@ -86,11 +86,12 @@ flowchart LR
   S --> R["query.Result envelope (no file body)"]
 ```
 
-Surface exposure (the `format=ast` selector and the `graphi search-ast`
-subcommand / MCP tool / HTTP `kind`) lands in **SW-085**; SW-082 delivers the
-engine capability and the typed contract.
+This section covers the engine capability and its typed contract; wiring it into
+every surface (the `format=ast` selector, the `graphi search-ast` subcommand,
+the MCP tool, and the HTTP `kind` parameter) is covered under
+[Surface exposure](#surface-exposure) below.
 
-## `find_clones` — clone-group detection (SW-083)
+## `find_clones` — clone-group detection
 
 `find_clones` reports groups of structurally similar fragments. Because the AST
 node table is **identity-only** (no body, tokens, subtree, or line span), the
@@ -118,7 +119,8 @@ structural fingerprint of a fragment is derived from its **outbound edge set**
 
 Config follows the in-engine `engine/analysis/pdg.DefaultConfig()` value-struct
 pattern (graphi has no `graphi.yaml` yet); the surface-level `clones.*` keys and
-the `format=clones` selector land in **SW-085**.
+the `format=clones` selector are covered under
+[Surface exposure](#surface-exposure) below.
 
 ### Envelope
 
@@ -147,17 +149,18 @@ runs and across full vs caught-up-incremental indexes.
 > of reusing the thin AST table rather than re-parsing bodies.
 
 
-## Surface exposure (SW-085)
+## Surface exposure
 
-SW-082/083 delivered `search_ast` and `find_clones` as engine capabilities; SW-085
-wires them — plus the SW-084 HNSW-gated semantic path — through **every** surface
-without growing the surface area or inventing per-surface formatting.
+`search_ast` and `find_clones` (above) ship as engine capabilities first; this
+section covers wiring them — plus the HNSW-gated semantic search path — through
+**every** surface without growing the surface area or inventing per-surface
+formatting.
 
 ### Before / after
 
 - **Before:** `search_ast` and `find_clones` existed only on `engine/query.Service`;
-  no CLI subcommand, MCP tool, HTTP route, or daemon RPC reached them. Semantic search
-  (SW-059) was already surfaced but only over the brute-force index.
+  no CLI subcommand, MCP tool, HTTP route, or daemon RPC reached them. Semantic
+  search was already surfaced but only over the brute-force index.
 - **After:** both pattern queries are reachable from CLI, MCP, HTTP, and the daemon,
   and every surface returns **byte-identical** canonical bytes because each one routes
   through the single `surfaces/client.Client` seam to the same engine serializer
