@@ -1,5 +1,10 @@
 # Workspace CI, Layer-Direction Guard & Release Packaging (SW-013)
 
+This document describes three related CI mechanisms: auto-discovered workspace
+build/test, the architectural layer-direction guard, and reproducible release
+packaging. It's for contributors adding modules, working across package layers,
+or touching the release build.
+
 > Distinct CI checks: **`workspace-build-test`**, **`layer-direction`**, **`release`**.
 > Workflow: [`.github/workflows/release.yml`](../../.github/workflows/release.yml)
 - Layer guard: [`internal/layerguard`](../../internal/layerguard) · CLI: [`cmd/layerguard`](../../cmd/layerguard)
@@ -19,8 +24,8 @@ Before SW-013:
 
 ## State after this story
 
-SW-013 makes the workspace **auto-built**, the architecture **mechanically
-enforced**, and the release **reproducible**.
+The workspace is now **auto-built**, the architecture is **mechanically
+enforced**, and the release is **reproducible**.
 
 ### Workspace CI (auto-discovered)
 
@@ -95,7 +100,7 @@ across builds.
 
 ## Out of scope
 
-- Runtime egress/telemetry (SW-008), CGo-free gate (SW-009), benchmarks (SW-010),
-  ledger audit (SW-011), token-parity eval (SW-012) — these *consume* this
-  story's binary.
+- Runtime egress/telemetry, the CGo-free gate, benchmarks, ledger audit, and
+  token-parity eval (see the other docs in `docs/ci/`) — these *consume* this
+  release binary rather than build it.
 - The opt-in `graphi-broad` CGO flavor packaging (separate track).

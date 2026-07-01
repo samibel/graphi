@@ -24,4 +24,4 @@ verified_at: "2026-06-19T18:30:00Z"
 
 ## Result
 
-Verification passed. Story transitions to `review`.
+Verification passed; the story transitions to `review`.

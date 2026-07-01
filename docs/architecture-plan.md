@@ -41,10 +41,10 @@ core/*       model · parse · graphstore · community   (pure leaves)
 [`internal/layerguard`](../internal/layerguard) parses the import graph of the
 ranked packages (`go list -json`), classifies each package into its layer
 (`core`=1 … `cmd`=4), and fails on any upward/sideways edge. `internal/*` and
-`bench/*` are unranked tooling (rank 0) and intentionally unconstrained — they may
-read any layer's registries. The rule is declared once, in code, and run in CI via
-`go run ./cmd/layerguard` (release gate). The FU-4 coverage guard
-(`internal/coverage`) is a sibling of this same pattern.
+`bench/*` are unranked tooling (rank 0) and intentionally unconstrained — they
+may read any layer's registries. The rule is declared once, in code, and run
+in CI via `go run ./cmd/layerguard` (release gate). The FU-4 coverage guard
+(`internal/coverage`) follows the same pattern.
 
 ---
 
@@ -82,11 +82,11 @@ parser code is edited. See [parse-registry.md](parse-registry.md),
 [symbol-extractor-seam.md](symbol-extractor-seam.md).
 
 - **Default tier (CGo-free, shipped).** [`RegisterDefaults`](../core/parse/defaults.go)
-  wires two stdlib parsers (Go, JSON) plus 20 subset-tagged pure-Go `gotreesitter`
-  grammars — **22 shipped languages, one `r.Register(...)` line each** (23rd,
-  `html`, is in the coverage matrix as ⏳ planned; `graphi-broad` opts into it
-  later). The Go path uses
-  the reference AST→graph extractor ([extract_go.go](../core/parse/extract_go.go),
+  wires two stdlib parsers (Go, JSON) plus 20 subset-tagged pure-Go
+  `gotreesitter` grammars — **22 shipped languages, one `r.Register(...)` line
+  each** (the 23rd, `html`, is in the coverage matrix as ⏳ planned;
+  `graphi-broad` opts into it later). The Go path uses the reference
+  AST→graph extractor ([extract_go.go](../core/parse/extract_go.go),
   [typescript-extractor.md](typescript-extractor.md)).
 - **Opt-in `graphi-broad` (CGO).** The broad grammar set plugs into the same seam
   behind a build tag; the hard CGo-free gate is exempted for that flavor only. See
@@ -152,7 +152,7 @@ go run ./cmd/coverage -check      # same check CI runs (exit 1 on drift)
 ```
 
 This is the in-repo, drift-proof answer to *"what does graphi actually do, and is
-it all real?"* — the closing piece of PB-001's traceability story.
+it all real?"* — the closing piece of the project's end-to-end traceability story.
 
 ---
 

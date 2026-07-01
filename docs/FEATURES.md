@@ -117,7 +117,7 @@ flowchart LR
 ## Per-epic feature tables
 
 > Notation: a tool is listed under the surface(s) that currently expose it.
-> The MCP, HTTP, and CLI surfaces share the shared `surfaces/client.Client`
+> The MCP, HTTP, and CLI surfaces all share the `surfaces/client.Client`
 > interface, so the engine-side implementation is identical — only the
 > transport differs.
 
@@ -243,7 +243,13 @@ graphi safe-delete p/LegacyThing
 
 - **Status:** ✅ shipped (SW-100 … SW-104, capstone SW-104)
 - **Key packages:** `engine/ingest/notebook.go`, `engine/watch/{watch,manager,pool,service,debounce,config}.go`, `engine/analysis/interproctaint/`, `core/community/louvain.go`, `engine/community/detector.go`, `engine/analysis/communities.go`, `engine/analysis/notebookingest.go`, `engine/analysis/watcherstatus.go` (the `taint-query` analyzer is registered in `engine/analysis/dispatch.go` and the implementation lives in `engine/analysis/interproctaint/solve.go`), `engine/conformance/`
-- **What it is:** `.ipynb` cell-provenance ingestion (cell-as-symbol granularity), an `fsnotify` watcher with bounded worker-pool and deterministic canonical-ordered apply, an interprocedural taint fixpoint over Sharir–Pnueli procedure summaries, deterministic Louvain community detection behind a single grouping seam, single-dispatch surfacing through the analysis pipeline, and a full-vs-incremental byte-parity conformance gate.
+- **What it is:**
+  - `.ipynb` cell-provenance ingestion (cell-as-symbol granularity).
+  - An `fsnotify` watcher with a bounded worker pool and deterministic canonical-ordered apply.
+  - An interprocedural taint fixpoint over Sharir–Pnueli procedure summaries.
+  - Deterministic Louvain community detection behind a single grouping seam.
+  - Single-dispatch surfacing through the analysis pipeline.
+  - A full-vs-incremental byte-parity conformance gate.
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
@@ -253,7 +259,15 @@ graphi safe-delete p/LegacyThing
 
 - **Status:** ✅ shipped (SW-105 … SW-108, capstone SW-108)
 - **Key packages:** `surfaces/forge/forge.go`, `engine/analysis/{triage,conflicts,suggest_reviewers,compare_branches,critique_review}.go`
-- **What it is:** read-only forge PR enumeration (`list_prs`), single-pass graph-derived PR triage (`triage_prs`), inter-PR conflict detection (`conflicts_prs` — textual + graph-semantic + asymmetric contract-dependency), reviewer recommendation (`suggest_reviewers` — ownership/churn + affected-subgraph proximity), graph-level branch diff (`compare_branches` — keyed by canonical NodeId), and deterministic graph-evidence critique of an EXISTING PR review (`critique_review` — gap / over_flag / unsupported_claim, no LLM prose). The engine never resolves a git ref and never fetches a review — the only egress is at the surface boundary, and it's optional/inline.
+- **What it is:**
+  - Read-only forge PR enumeration (`list_prs`).
+  - Single-pass graph-derived PR triage (`triage_prs`).
+  - Inter-PR conflict detection (`conflicts_prs` — textual + graph-semantic + asymmetric contract-dependency).
+  - Reviewer recommendation (`suggest_reviewers` — ownership/churn + affected-subgraph proximity).
+  - Graph-level branch diff (`compare_branches` — keyed by canonical NodeId).
+  - Deterministic graph-evidence critique of an existing PR review (`critique_review` — gap / over_flag / unsupported_claim, no LLM prose).
+
+  The engine never resolves a git ref and never fetches a review — the only egress is at the surface boundary, and it's optional/inline.
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
@@ -281,9 +295,9 @@ graphi critique-review -diff origin/main..HEAD -pr 42 -review-path review.json
 
 ## PR-tool pipeline
 
-The six EP-018 tools form a left-to-right pipeline: enumerate → rank →
-conflict-check → reviewer-pick → branch-compare → review-critique. Every
-step is zero-egress on the engine; the only egress is at the surface
+The six PR-tool suite tools (EP-018) form a left-to-right pipeline: enumerate →
+rank → conflict-check → reviewer-pick → branch-compare → review-critique.
+Every step is zero-egress on the engine; the only egress is at the surface
 boundary (forge PR list fetch, review fetch — both optional and inline).
 
 ```mermaid
@@ -333,8 +347,9 @@ sequenceDiagram
 
 ## Watcher + conformance
 
-EP-017 ships an `fsnotify`-backed watcher with a bounded worker-pool and
-deterministic canonical-ordered apply. The conformance gate
+The notebooks/watcher/taint/communities work (EP-017) ships an
+`fsnotify`-backed watcher with a bounded worker-pool and deterministic
+canonical-ordered apply. The conformance gate
 (`engine/conformance`) proves that an incremental re-index produces the
 **byte-identical** graph as a full re-index — same NodeId set, same edge
 provenance ordering, same tier assignments.
@@ -356,9 +371,9 @@ flowchart TD
 
 The atomic saga coordinates writes across filesystem + graphstore +
 ingest-meta in dependency order; failure in any domain triggers
-compensating actions. EP-015 adds two new saga branches (`inline`,
-`safe_delete`) on top of the SW-035 `refactor` (rename / extract / move /
-signature) family.
+compensating actions. The diagnostics & code actions work (EP-015) adds two
+new saga branches (`inline`, `safe_delete`) on top of the SW-035 `refactor`
+(rename / extract / move / signature) family.
 
 ```mermaid
 sequenceDiagram
@@ -386,8 +401,8 @@ sequenceDiagram
 
 ## Diagnostic → code-action flow
 
-EP-015's `diagnose` produces severity-tagged diagnostics, each with a
-suggested code-action. The editor overlay tracks unsaved buffers so
+The `diagnose` command (EP-015) produces severity-tagged diagnostics, each
+with a suggested code-action. The editor overlay tracks unsaved buffers so
 diagnostics are anchored to the live editor state, not the on-disk file.
 
 ```mermaid

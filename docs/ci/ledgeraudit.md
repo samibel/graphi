@@ -1,5 +1,9 @@
 # Savings-Ledger Audit, Recompute & Anti-Gaming Suite (SW-011)
 
+This document describes the CI suite that independently verifies graphi's
+token-savings ledger. It's for contributors touching the ledger, pricing, or
+metering code, and for anyone auditing the "It saved me $X" claim.
+
 > Distinct CI check: **`savings-ledger-audit`**.
 > Workflow: [`.github/workflows/ledgeraudit.yml`](../../.github/workflows/ledgeraudit.yml)
 > Suite: [`internal/ledgeraudit`](../../internal/ledgeraudit) · CLI: [`cmd/ledgeraudit`](../../cmd/ledgeraudit) · price table: [`internal/ledgeraudit/pricetable.json`](../../internal/ledgeraudit/pricetable.json)
@@ -19,8 +23,8 @@ ledger's.
 Before SW-011, the headline "It saved me $X" claim would have had **no
 independent verification**:
 
-- The savings ledger (EP-003, when it landed after SW-011) would be the sole source of its own totals —
-  a bug or tampering could silently inflate savings.
+- The savings ledger (which shipped later, in EP-003) would be the sole source of
+  its own totals — a bug or tampering could silently inflate savings.
 - There was no frozen baseline method to pin the computation, so a silent formula
   change could drift savings.
 - There was no anti-gaming cap, so a single oversized op or a repeated session
@@ -31,9 +35,8 @@ independent verification**:
 
 ## State after this story
 
-SW-011 makes savings **verifiable and un-gameable**. A distinct CI check runs
-five independent check groups against the ledger and fails loudly on any
-violation:
+Savings are now **verifiable and un-gameable**. A distinct CI check runs five
+independent check groups against the ledger and fails loudly on any violation:
 
 | Check group | What it proves |
 |---|---|
@@ -75,4 +78,5 @@ flowchart TD
 
 ## Out of scope
 
-- Egress/telemetry enforcement (SW-008) — reused as posture only.
+- Egress/telemetry enforcement — reused here as posture only (see
+  `docs/ci/egress-canary.md`).

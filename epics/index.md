@@ -95,15 +95,15 @@ leverage. Status is reconciled to the [coverage matrix](../docs/coverage-matrix.
   all reconciled to a single source of truth.
 
 - **FU-5 — Per-language cross-file resolvers.** ✅ **shipped (SW-063)**
-  One per-language resolver (`resolve_<lang>.go`) over the store-free `engine/link`
-  registry seam (Open/Closed — a new language is a new `Register` call in
-  `link.New()`, never an edit to an existing resolver). Ingest **dispatches the
-  linker per language** (`FileRefs.Language` + grouped `Link(lang, …)` in
-  `engine/ingest/ingest.go`), so each registered resolver sees only its own files.
-  Shared, language-agnostic resolution machinery (same-dir derived, relative-dir /
-  clause / ambient cross-file heuristic, file→file imports, deterministic
-  skip+count) lives in `resolve_common.go`; each resolver only models its language's
-  import binding.
+  Each language gets its own resolver (`resolve_<lang>.go`) over the store-free
+  `engine/link` registry seam (Open/Closed — a new language is a new `Register`
+  call in `link.New()`, never an edit to an existing resolver). Ingest
+  **dispatches the linker per language** (`FileRefs.Language` plus grouped
+  `Link(lang, …)` in `engine/ingest/ingest.go`), so each registered resolver sees
+  only its own files. Shared, language-agnostic resolution machinery (same-dir
+  derived, relative-dir/clause/ambient cross-file heuristic, file-to-file imports,
+  deterministic skip+count) lives in `resolve_common.go`; each resolver only
+  models its own language's import binding.
   - **Resolvers:** Go · TypeScript family (ts/tsx/js — relative ESM, named/namespace;
     non-relative/aliased + `tsconfig` paths external → skip, no path-mapping) ·
     Python (dotted modules) · Rust (`::` paths + `mod`) · Java · Kotlin (FQN, clause =
@@ -112,7 +112,8 @@ leverage. Status is reconciled to the [coverage matrix](../docs/coverage-matrix.
     Ruby · PHP · Lua · Bash (relative `require`/`source`). **SQL** is an honest no-op
     (no provable cross-file refs at this tier → skip+count).
   - Every resolver honours the linker's invariants: tier derived from the resolution
-    class (never `confirmed`), unresolved/ambiguous refs dropped + counted, no
-    fabrication, byte-identical full-vs-incremental graph (incl. rename/move cascade),
-    `engine/link` store-free/I/O-free + no `SymbolIndex` edit, and CGO-free default
-    build. README + coverage matrix kept in sync per language.
+    class (never `confirmed`), unresolved/ambiguous refs dropped and counted, no
+    fabrication, a byte-identical full-vs-incremental graph (including
+    rename/move cascades), `engine/link` staying store-free/I/O-free with no
+    `SymbolIndex` edits, and a CGO-free default build. The README and coverage
+    matrix are kept in sync per language.

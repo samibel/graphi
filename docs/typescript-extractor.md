@@ -59,17 +59,20 @@ New/changed files:
 
 ### Pure-Go grammar (the one real risk, resolved)
 
-The maintained CGO go-sitter-forest grammars **cannot** enter the default tier: they
-use `import "C"` and an 8.8 MB `parser.c`, so under `CGO_ENABLED=0` all their Go files
-are build-constraint-excluded. Instead SW-053 uses **`github.com/odvcencio/gotreesitter`**,
-which re-implements the tree-sitter parser/lexer/query engine **in Go** (no `import
-"C"`, no C toolchain) and ships grammar parse tables as Go-embedded blobs. This keeps:
+The maintained CGO go-sitter-forest grammars cannot enter the default tier: they
+use `import "C"` and an 8.8 MB `parser.c`, so under `CGO_ENABLED=0` all their Go
+files are build-constraint-excluded. Instead, this slice uses
+**`github.com/odvcencio/gotreesitter`**, which re-implements the tree-sitter
+parser, lexer, and query engine in Go (no `import "C"`, no C toolchain) and ships
+grammar parse tables as Go-embedded blobs. This keeps:
 
-- `CGO_ENABLED=0 go build ./...` green, and the `internal/cgoconformance` import-graph
-  scan passing with **no offender named** (the AC's real definition of "CGo-free");
-- zero outbound network at runtime — the grammar is module-pinned and embedded at
-  build time; nothing is fetched at parse time;
-- byte-identical determinism — `Extract` is a pure transform over the parsed CST.
+- `CGO_ENABLED=0 go build ./...` green, with the `internal/cgoconformance`
+  import-graph scan passing and naming no offender — the real definition of
+  "CGo-free" here;
+- zero outbound network at runtime, since the grammar is module-pinned and
+  embedded at build time, so nothing is fetched at parse time;
+- byte-identical determinism, since `Extract` is a pure transform over the parsed
+  CST.
 
 ### TypeScript kind mapping
 
@@ -127,9 +130,10 @@ The corrected size model — one ~3.13 MB one-time pure-Go runtime (paid once, f
 all languages) plus a ~119 KiB per-language blob, governed by the whole-binary
 **< 50 MB** ceiling — and both re-recorded size numbers (subset ≈ +3.10 MiB;
 all-206 ≈ +24.5 MiB, cautionary only) live in
-[`bench/lang-budget.md`](../bench/lang-budget.md) ("Measured deltas"). The old
-≤ 1.0 MB per-language envelope is superseded; a later story re-pins
-`bench-budget.yml` against the subset-tagged total.
+[`bench/lang-budget.md`](../bench/lang-budget.md) ("Measured deltas (SW-053 —
+TypeScript, first curated grammar)"). The old ≤ 1.0 MB per-language envelope is
+superseded; a later story re-pins `bench-budget.yml` against the subset-tagged
+total.
 
 ```mermaid
 flowchart LR

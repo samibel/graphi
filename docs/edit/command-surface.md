@@ -173,9 +173,10 @@ first, so a fault anywhere in the restore compensates back to the post-edit stat
 The `change_record` table lives in the **ingest-meta SQLite sidecar**
 (`ingest-meta.db`), a sibling of `edit_provenance` / `file_content_cache` /
 `reverse_deps` / `dirty_units`. It is **never** in `core/graphstore`: the AC-1
-byte-identical invariant compares the marshalled **graph** (`model.Graph.Marshal`),
-and an audit table in the graph store would poison that digest — the same reason
-SW-037 kept `edit_provenance` out. `engine/edit.ChangeRecorder` owns its table via
+byte-identical invariant compares the marshalled **graph**
+(`model.Graph.Marshal`), and an audit table in the graph store would poison
+that digest — the same reason `edit_provenance` was kept out of the graph
+store. `engine/edit.ChangeRecorder` owns its table via
 `(*ingest.Ingester).MetaDB()`, keeping the audit logic in `engine/edit` while
 reusing the one sidecar.
 
@@ -218,9 +219,9 @@ available via `edit_provenance` joined on `edit_id`.
 ## Undo-store bounding (documented limitation)
 
 The undo store currently retains every successful edit's snapshot + source bytes
-under `<meta>/undo/`. SW-038 does **not** ship a retention/pruning policy; an
+under `<meta>/undo/`. There is **no** retention/pruning policy yet; an
 unbounded store is a disk-growth consideration for long-lived repos. This is a
-**documented bounded limitation**, not a silent gap — a future story can add
+**documented limitation**, not a silent gap — a future change can add
 size/age-based pruning of `change_record` rows + their `<meta>/undo/<token>/` dirs.
 
 ## Tests (where each AC is proven)
