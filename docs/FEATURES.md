@@ -205,7 +205,7 @@ graphi analyze concept   -symbol p.Root -concept "rate limiting"
 
 - **Status:** ✅ shipped (SW-091 … SW-094)
 - **Key packages:** `engine/diagnostic/`, `engine/edit/inline.go`, `engine/edit/safe_delete.go`, `engine/edit/serialize.go`, `surfaces/client/` (marshaller extensions), `surfaces/ep015_parity_test.go`
-- **What it is:** graph-derived diagnostics with severity + suggested code-action, reference-correct inline refactor with a fail-safe block list, reference-safety-gated safe-delete refactor. Surface exposure rides the shared marshaller and is byte-parity-tested.
+- **What it is:** graph-derived diagnostics with severity and a suggested code-action, a reference-correct inline refactor with a fail-safe block list, and a reference-safety-gated safe-delete refactor. Surface exposure rides the shared marshaller and is byte-parity-tested.
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
@@ -228,7 +228,12 @@ graphi safe-delete p/LegacyThing
 
 - **Status:** ✅ shipped (SW-095 … SW-099)
 - **Key packages:** `engine/overlay/`, `surfaces/daemon/{control,service}`, `surfaces/mcp/http.go`, `engine/observe/class.go`, `surfaces/guard/`, `internal/canary/gate.go`
-- **What it is:** the in-memory editor-overlay subsystem tracks unsaved buffers; the daemon control plane adds RPCs (DaemonStop, WatchStatus, IngestNotebook, AnalyzeCommunities/TaintQuery/WatcherStatus); the MCP streamable-HTTP transport keeps stdio envelope parity; per-class SSE subscriptions let an editor subscribe to only the event classes it cares about; the **zero-egress enforcement guard** rejects any non-loopback dial at the surface boundary and the central loopback/egress chokepoint is fail-closed.
+- **What it is:**
+  - The in-memory editor-overlay subsystem tracks unsaved buffers.
+  - The daemon control plane adds RPCs (`DaemonStop`, `WatchStatus`, `IngestNotebook`, `AnalyzeCommunities`/`TaintQuery`/`WatcherStatus`).
+  - The MCP streamable-HTTP transport keeps stdio envelope parity.
+  - Per-class SSE subscriptions let an editor subscribe to only the event classes it cares about.
+  - The **zero-egress enforcement guard** rejects any non-loopback dial at the surface boundary, and the central loopback/egress chokepoint is fail-closed.
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|

@@ -1,26 +1,29 @@
 # Atomic, graph-consistent source edits (`engine/edit`)
 
-Status: introduced in SW-035 (EP-006, epic 1/4); extended in EP-015 (SW-092
-inline, SW-093 safe-delete) and EP-018 (PR-tool surfaces).
-Scope: identity-preserving span replacement only. Graphstore node/edge delete
-semantics and non-identity-preserving edits are a documented fast-follow for
-SW-036 (rename / extract / move).
+This document covers `engine/edit`, the package that lets graphi mutate source
+files while keeping the code graph consistent. It's written for contributors
+working on the edit/refactor engine or building a surface (CLI/MCP) on top of
+it.
 
-> **EP-015 saga branches (SW-092 / SW-093).** `engine/edit/inline.go` adds a
-> reference-correct inline refactor with a fail-safe block list (refuses to
-> inline when references are ambiguous, recursive, or span macros / codegen).
-> `engine/edit/safe_delete.go` adds a reference-safety-gated safe-delete
-> refactor that only removes a symbol when the symbol has zero inbound
+Scope: identity-preserving span replacement only. Graphstore node/edge delete
+semantics and non-identity-preserving edits were a documented fast-follow,
+later closed (see [graph-aware-refactor.md](graph-aware-refactor.md)).
+
+> **Later additions: inline and safe-delete refactors.** `engine/edit/inline.go`
+> adds a reference-correct inline refactor with a fail-safe block list (it
+> refuses to inline when references are ambiguous, recursive, or span macros /
+> codegen). `engine/edit/safe_delete.go` adds a reference-safety-gated
+> safe-delete refactor that only removes a symbol once it has zero inbound
 > references (after the linker pass). Both ride the same atomic saga
 > (filesystem + graphstore + ingest-meta) and share `engine/edit/serialize.go`
 > with the existing refactor commands. Surface exposure is parity-tested in
 > `surfaces/ep015_parity_test.go`.
 
-## State before this story
+## State before this capability existed
 
-Before SW-035, graphi could **read** a code graph and **ingest** source into
-it, but it had no authoritative way to **mutate user source files** and keep the
-graph consistent:
+Before this package existed, graphi could **read** a code graph and **ingest**
+source into it, but it had no authoritative way to **mutate user source files**
+and keep the graph consistent:
 
 - `engine/ingest` owned the incremental path (`IngestChanged`, the two-phase
   dirty-flag protocol, `RecoverWithRoot`) and the full path (`IngestAll`), but
@@ -38,9 +41,9 @@ Consequently every higher-level refactor (rename, extract, move) had nothing
 safe to build on, and there was no place to enforce the atomic / rollback
 guarantee that a source mutation demands.
 
-## State after this story
+## State after this capability landed
 
-A new engine package `engine/edit` provides the **atomic edit primitive**:
+The `engine/edit` package provides the **atomic edit primitive**:
 
 - `EditOp{TargetNodeID, FilePath, ByteSpan, Replacement}` — the validated input
   contract. It carries its own byte span because `core/model.Node` exposes only
@@ -119,8 +122,8 @@ before the write and rewritten via the same atomic writer on failure.
 
 ### Three rollback fault modes (AC-2)
 
-`Apply` defends against the three failure modes the story names, each with a
-typed sentinel error so callers and tests can distinguish them:
+`Apply` defends against three failure modes, each with a typed sentinel error
+so callers and tests can distinguish them:
 
 | Fault mode          | Sentinel          | What is restored                          |
 |---------------------|-------------------|-------------------------------------------|
@@ -153,13 +156,13 @@ canonical marshal renders byte-stably.
 `PutNode`/`PutEdge` are upsert-only and the graphstore has no delete API. After
 an edit that changed a node's **identity** (Kind + QualifiedName + normalized
 SourcePath), a full re-index would drop the old node while the incremental path
-would leave it orphaned — breaking AC-3. SW-035 is therefore scoped to
+would leave it orphaned — breaking AC-3. This primitive is therefore scoped to
 **identity-preserving** edits: the replacement bytes do not change the targeted
 node's identity, so no orphan can arise and incremental == full holds honestly.
-Adding graphstore delete semantics (needed for rename/move anyway) is deferred to
-SW-036.
+Adding graphstore delete semantics (needed for rename/move anyway) was deferred
+to a follow-up.
 
-> **Update (SW-036):** that deferral is now closed. `core/graphstore` gained
+> **Update:** that deferral is now closed. `core/graphstore` gained
 > `DeleteNode`/`DeleteEdge` and `ingest.parseAndCommit` deletes identity-changed
 > nodes, so non-identity-preserving refactors (rename/extract/move/signature
 > change) are supported via `engine/edit.ApplyRefactor` — see

@@ -1,5 +1,9 @@
 # Budget-Gated Benchmark Suite (SW-010)
 
+This document describes graphi's performance benchmark gate: what it measures, how
+budgets are pinned and re-pinned, and why the gate exists. It's for contributors
+touching performance-sensitive code or the benchmark harness itself.
+
 > Distinct CI check: **`bench-budget-gate`**.
 > Workflow: [`.github/workflows/bench.yml`](../../.github/workflows/bench.yml)
 > Suite: [`internal/bench`](../../internal/bench) · CLI: [`cmd/bench`](../../cmd/bench) · manifest: [`bench/bench-budget.yml`](../../bench/bench-budget.yml) · fixture: [`bench/fixture`](../../bench/fixture)
@@ -27,10 +31,10 @@ flowchart LR
 
 ## State after this story
 
-SW-010 makes performance **provable and gated**. A distinct CI check runs the
-four-metric harness against a frozen workload fixture and fails loudly — naming
-the regressed metric and its delta versus baseline — the moment any metric
-exceeds its pinned budget.
+Performance is now **provable and gated**. A distinct CI check runs a
+four-metric harness against a frozen workload fixture. The moment any metric
+exceeds its pinned budget, the check fails loudly, naming the regressed metric
+and its delta versus baseline.
 
 ### The four metrics (measured at their owning-layer boundaries)
 
@@ -50,11 +54,12 @@ exceeds its pinned budget.
 
 ### The manifest — single source of truth
 
-[`bench/bench-budget.yml`](../../bench/bench-budget.yml) pins every budget AND a
-`fixture_digest` + `baseline_version`. Re-pinning an intentional, justified
-performance change is a **manifest-only edit**: update the `baseline`/`budget`,
-re-pin `fixture_digest` if the fixture changed, and bump `baseline_version`. No
-code change is required (AC: reviewer-driven baseline re-pinning).
+[`bench/bench-budget.yml`](../../bench/bench-budget.yml) pins every budget along
+with a `fixture_digest` and `baseline_version`. Re-pinning an intentional,
+justified performance change is a **manifest-only edit**: update the
+`baseline`/`budget`, re-pin `fixture_digest` if the fixture changed, and bump
+`baseline_version`. No code change is required — reviewers can bless a change
+through the manifest alone.
 
 The gate fails when any metric exceeds its budget and reports the delta vs the
 pinned baseline:
@@ -72,10 +77,12 @@ flowchart TD
 
 ### Hermeticity
 
-The suite reuses the SW-008 posture: loopback/local only (temp files + the
-pure-Go modernc SQLite backend), `CGO_ENABLED=0`, zero network I/O / telemetry.
-It adds no module dependencies (a constrained YAML reader avoids pulling a YAML
-library, keeping the default module hermetic for SW-013 packaging).
+The suite reuses the egress/telemetry posture established for the CI gates
+described in `docs/ci/egress-canary.md`: loopback/local only (temp files plus
+the pure-Go modernc SQLite backend), `CGO_ENABLED=0`, and zero network I/O or
+telemetry. It also adds no module dependencies — a constrained YAML reader
+avoids pulling in a full YAML library, keeping the default module hermetic for
+the release packaging described in `docs/ci/release.md`.
 
 ## Why these changes were made
 
@@ -92,6 +99,8 @@ library, keeping the default module hermetic for SW-013 packaging).
 
 ## Out of scope
 
-- The static binary packaging itself (SW-013) — the harness measures the default
-  build today and will target SW-013's canonical artifact when available.
-- Egress/telemetry enforcement (SW-008) — reused as posture only.
+- The static binary packaging itself — the harness measures the default build
+  today and will target the canonical release artifact once that packaging work
+  lands (see `docs/ci/release.md`).
+- Egress/telemetry enforcement — reused here as posture only (see
+  `docs/ci/egress-canary.md`).

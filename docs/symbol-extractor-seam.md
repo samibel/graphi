@@ -1,13 +1,14 @@
-# SymbolExtractor Seam + Tree-Sitter Mapping Helper + PendingRef Contract (SW-052)
+# SymbolExtractor Seam + Tree-Sitter Mapping Helper + PendingRef Contract
 
-This document satisfies the `[DOC]` acceptance criterion for SW-052: it records the
-state **before** and **after** the STEP-0 foundation slice and explains **why** the
-change was made. It is also the **declared-owner contract document** for `PendingRef`
-(AC `[ARCH]`): SW-052 owns `PendingRef`; the FU-1 cross-file linker (`engine/link`)
-consumes it.
+This document covers the language-neutral `SymbolExtractor` seam, the tree-sitter
+mapping helper, and the `PendingRef` contract — the state before and after this
+foundation slice, and why the change was made. It is intended for contributors
+adding a new language extractor or working on the cross-file linker. It also
+serves as the contract reference for `PendingRef`: this slice owns the type, and
+the cross-file linker (`engine/link`) consumes it.
 
-SW-052 is the **EP-009 STEP-0 hard gate** — no language worker (SW-053..056) may
-start until this merges green.
+This foundation slice is a hard gate: no per-language extraction work may start
+until it merges green.
 
 ## Before
 
@@ -84,19 +85,20 @@ type SymbolExtractor interface {
   grammar query and an `Extract` mapping — never graph-derivation internals,
   provenance rules, or determinism guarantees. The mapping helper centralizes those
   once.
-- **Gate fan-out behind a frozen foundation.** EP-009 fans out across parallel
-  workers. Landing the seam, the mapping helper, the `PendingRef` contract, and the
-  frozen tier-1 list **first** (as one self-contained merge) means workers build
-  against a fixed contract instead of a moving target.
+- **Gate fan-out behind a frozen foundation.** Tier-1 language work fans out across
+  parallel workers. Landing the seam, the mapping helper, the `PendingRef` contract,
+  and the frozen tier-1 list **first** (as one self-contained merge) means workers
+  build against a fixed contract instead of a moving target.
 - **Lock in the CGo-free firewall.** The default tier stays pure-Go
   (`CGO_ENABLED=0 go build ./...` green; `internal/cgoconformance` enforces it); the
   mapping helper is a pure leaf (`purity_test.go`); provenance is limited to
   `file:line` spans (no raw-source dumping). Later grammar-bearing slices inherit a
   provable default.
-- **One owned contract, not two speculative interfaces.** SW-052 owns `PendingRef`;
-  FU-1 consumes it. No FU-1 code is required to merge.
+- **One owned contract, not two speculative interfaces.** This slice owns
+  `PendingRef`; the cross-file linker consumes it. No linker code is required to
+  merge alongside it.
 
-## The `PendingRef` contract (declared owner: SW-052)
+## The `PendingRef` contract
 
 `PendingRef` (`core/parse/parse.go`) is the **inert** record of a reference the parse
 leaf saw but deliberately did **not** resolve. The parse boundary fabricates no
@@ -127,7 +129,7 @@ fully-committed node set.
    (`FromQN, SelectorBase, Name, Kind, Selector`); the first line wins. Identical
    input yields the identical `PendingRef` set.
 
-**Consumer (FU-1).** The `engine/link` linker maps a selector's `SelectorBase`
+**Consumer.** The `engine/link` linker maps a selector's `SelectorBase`
 through the file's `ImportSpec`s to a package, looks up the target in the committed
 node set, and only then mints a provenanced cross-file/cross-package edge. An
 unresolvable reference is skipped and counted — never turned into a fabricated edge.
@@ -139,19 +141,20 @@ reference each become an inert selector `PendingRef` with correct `file:line` an
 
 ## Frozen tier-1 list & binary budget
 
-The curated tier-1 language list (the pure-Go **`gotreesitter`** runtime + its
+The curated tier-1 language list (the pure-Go **`gotreesitter`** runtime plus its
 embedded grammar blobs, selected via subset build tags) and the per-worker
-binary-budget model are frozen in [`bench/lang-budget.md`](../bench/lang-budget.md)
-(the single source of truth — see also [`epics/index.md`](../epics/index.md) for
-the registry). Languages whose only grammar is CGO-only (`go-sitter-forest`) or
-whose extractor is out of tier-1 scope are deferred to the opt-in `graphi-broad`
-CGO build. `bench/bench-budget.yml` is the data backing for the budget table.
+binary-budget model are frozen in [`bench/lang-budget.md`](../bench/lang-budget.md),
+the single source of truth (see also [`epics/index.md`](../epics/index.md) for the
+registry). Languages whose only grammar is CGO-only (`go-sitter-forest`), or whose
+extractor is out of tier-1 scope, are deferred to the opt-in `graphi-broad` CGO
+build. `bench/bench-budget.yml` backs the budget table with data.
 
-> **RE-PLANNED 2026-06-24 (EP-009-REPLAN-001):** the original "pure-Go subset of
-> `go-sitter-forest`" framing was false — `go-sitter-forest` is entirely CGO. The default
-> tier uses the genuinely pure-Go `github.com/odvcencio/gotreesitter` runtime instead.
+> **Re-planned 2026-06-24:** the original framing — "a pure-Go subset of
+> `go-sitter-forest`" — turned out to be false, since `go-sitter-forest` is entirely
+> CGO. The default tier uses the genuinely pure-Go `github.com/odvcencio/gotreesitter`
+> runtime instead.
 
-## Tests proving STEP-0
+## Tests proving the foundation slice
 
 - `core/parse/extract_go_test.go` — all `TestExtractGo_*` (incl. `_Deterministic`,
   `_PendingRefs`) pass **unchanged** after the refactor (regression guard).

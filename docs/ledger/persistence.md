@@ -1,15 +1,19 @@
-# Savings Ledger Persistence (SW-019)
+# Savings Ledger Persistence
 
-> Epic EP-003 · Token-Savings Ledger & Token-Efficient Context
+> Part of the Token-Savings Ledger & Token-Efficient Context work.
 > Package: `engine/ledger`
+
+This document describes how graphi durably persists per-call USD savings
+across restarts. It's for contributors working on `engine/ledger` or anyone
+who wants to understand the durability guarantees behind the "Saved $X" claim.
 
 ## Before
 
-graphi can compute a per-call USD savings figure (SW-018), but nothing **persisted**
-it. Every daemon restart would reset the "Saved $X this session" and lifetime
-totals, and there was no protection against a crash mid-write corrupting the
-number or a replay double-counting it. The headline ledger claim had no
-durability behind it.
+graphi can compute a per-call USD savings figure, but nothing **persisted**
+it. Every daemon restart would reset the "Saved $X this session" figure and
+the lifetime total, and there was no protection against a crash mid-write
+corrupting the number or a replay double-counting it. The headline ledger
+claim had no durability behind it.
 
 ## After
 
@@ -54,11 +58,11 @@ flowchart TD
 
 ## Why these decisions
 
-- **Append-only JSONL + fsync over SQLite** — a single-writer append-only journal
-  with per-append fsync is the simplest durable store that satisfies the
-  torn-write recovery AC, and it is byte-deterministic (no SQL, no page
-  structure). SQLite is available as a future sidecar but is unnecessary here and
-  would add nondeterminism risk.
+- **Append-only JSONL + fsync over SQLite** — a single-writer append-only
+  journal with per-append fsync is the simplest durable store that satisfies
+  the torn-write recovery requirement, and it is byte-deterministic (no SQL, no
+  page structure). SQLite is available as a future sidecar but is unnecessary
+  here and would add nondeterminism risk.
 - **Recompute-from-journal every Open** — a cached cumulative total could drift
   from the on-disk truth after a crash. Recomputing from the surviving entries on
   every open makes the rollup self-evidently correct (the test proves
@@ -72,6 +76,6 @@ flowchart TD
 
 ## Scope boundary
 
-This story persists entries and rolls up totals. The **anti-gaming cap + MCP/CLI
-readout** ("Saved $X this session" over both surfaces) is SW-020, which composes
-on this ledger.
+This capability persists entries and rolls up totals. The **anti-gaming cap
+and MCP/CLI readout** ("Saved $X this session" over both surfaces) is a
+separate capability that composes on top of this ledger.

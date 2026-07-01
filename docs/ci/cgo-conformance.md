@@ -1,5 +1,9 @@
 # CGo-Free Build Conformance Gate (SW-009)
 
+This document describes the CI gate that enforces graphi's CGo-free default
+build. It's for contributors adding dependencies or touching the default build
+graph, and for anyone auditing the "fully static, dependency-free" claim.
+
 > Distinct, named CI check: **`cgo-free-conformance`**.
 > Workflow: [`.github/workflows/cgoconformance.yml`](../../.github/workflows/cgoconformance.yml)
 > Gate implementation: [`internal/cgoconformance`](../../internal/cgoconformance) · gate binary: [`cmd/cgoconformance`](../../cmd/cgoconformance)
@@ -32,10 +36,10 @@ flowchart LR
 
 ## State after this story
 
-SW-009 makes the CGo-free property **enforceable rather than asserted**. A
-distinct, named CI check (`cgo-free-conformance`) gates every push/PR and
-fails loudly, naming the offending package, the moment a cgo dependency enters
-the default graph.
+The CGo-free property is now **enforceable rather than asserted**. A
+distinct, named CI check (`cgo-free-conformance`) gates every push and PR. The
+moment a cgo dependency enters the default graph, it fails loudly and names
+the offending package.
 
 The gate (`internal/cgoconformance`) asserts, in order:
 
@@ -74,15 +78,15 @@ flowchart TD
 
 ## Why these changes were made
 
-- **Make the brief's promise enforceable.** A guarantee that is not checked in CI
-  is a hope, not a property. The gate turns "CGo-free from day one" into a
+- **Make the promise enforceable.** A guarantee that is not checked in CI is a
+  hope, not a property. The gate turns "CGo-free from day one" into a
   machine-checked invariant.
 - **Name the offender.** A gate that fails with "cgo detected somewhere" is
   expensive to debug. The regression detector returns the exact import paths, so
   a failing build points straight at the offending package.
-- **Single definition of "default graph".** `DefaultBuildTarget = "./cmd/graphi/"`
-  is defined once here and shared with SW-008 (static gate) and SW-013
-  (packaging). It is never redefined.
+- **One definition of "default graph".** `DefaultBuildTarget = "./cmd/graphi/"`
+  is defined once here and shared with the static gate (`docs/ci/egress-canary.md`)
+  and the release packaging (`docs/ci/release.md`). It is never redefined.
 - **Bound the broad flavor.** `graphi-broad` is intentionally CGo-capable for its
   separate grammar-conformance track. Giving it a named exclusion keeps its
   scope explicit and prevents it from contaminating the default gate.
@@ -90,4 +94,5 @@ flowchart TD
 ## Out of scope
 
 - `graphi-broad`'s own CGo conformance (a separate future gate on its own track).
-- Runtime egress/telemetry enforcement — that is SW-008 (the egress canary).
+- Runtime egress/telemetry enforcement — that is covered by the egress canary
+  (see `docs/ci/egress-canary.md`).

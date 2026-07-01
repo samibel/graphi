@@ -1,22 +1,27 @@
-# TUI Surface (`surfaces/tui`) — SW-042
+# TUI Surface (`surfaces/tui`)
 
-> Interactive terminal surface over the shared engine. stdlib-only (no terminal-framework dependency).
+> An interactive terminal surface over the shared engine, for exploring the
+> code graph from a shell session. stdlib-only (no terminal-framework
+> dependency).
 
-## Before / After
+## Before / after
 
-| | Before SW-042 | After SW-042 |
+| | Before | After |
 |---|---|---|
 | **Terminal surface** | CLI is one-shot (one query per invocation) | **interactive** TUI session: select, explore, blast, search |
 | **Explore loop** | re-run `graphi query` per question | live `select` → `neighbors` → `blast` without re-launching |
 | **Parity** | CLI/MCP/HTTP/daemon | + **TUI** — same `client.Client` seam, byte-identical answers + provenance |
 
 ## Why
-A terminal-native explore loop (select a symbol, walk its neighborhood, run
-blast-radius, search) without re-invoking the binary per query. It uses pi's
-`tui` as a structural reference (read/eval/print loop, command dispatch) while
-keeping graphi's Engine as the single source of truth. It adds **no new
-dependency** (no `tcell`/`bubbletea`/`tview`) — preserving the CGo-free, static,
-minimal-dependency build — and holds **zero** query/analysis logic of its own.
+
+The TUI gives you a terminal-native explore loop — select a symbol, walk its
+neighborhood, run blast-radius, search — without re-invoking the binary per
+query. It uses pi's `tui` as a structural reference (read/eval/print loop,
+command dispatch) while keeping graphi's Engine as the single source of truth.
+
+It adds **no new dependency** (no `tcell`/`bubbletea`/`tview`), preserving the
+CGo-free, static, minimal-dependency build, and holds **zero**
+query/analysis logic of its own.
 
 ## Commands
 ```
@@ -37,7 +42,7 @@ Edges render the engine's provenance verbatim: `confidence_tier`, `confidence`,
   renders the client's payload bytes verbatim.
 - **Zero outbound:** in-process client only; no network.
 - **Robust:** Engine errors are caught and rendered; the loop never crashes.
-- **EP-015…EP-018 analyzer coverage:** the TUI's `analyze` command dispatches
+- **Full analyzer coverage:** the TUI's `analyze` command dispatches
   through the shared client to the full 22-analyzer set — including
   `pr-risk`, `pr-signals`, `pr-questions`, `communities`, `notebook-ingest`,
   `taint-query`, `watcher-status`, `triage-prs`, `conflicts-prs`,

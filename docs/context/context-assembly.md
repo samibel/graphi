@@ -1,27 +1,34 @@
-# Context Assembly (SW-016)
+# Context Assembly
 
-> Epic EP-003 · Token-Savings Ledger & Token-Efficient Context
+> Part of the Token-Savings Ledger & Token-Efficient Context work.
 > Package: `engine/context`
+
+This document explains how graphi turns raw search results into compact,
+citation-backed context bundles. It's for contributors working on the
+`engine/context` package or anyone trying to understand how graphi keeps
+token usage low when serving an AI agent.
 
 ## Before
 
-graphi's EP-001 query/search layer (`engine/query`, `engine/search`) returns
-matched symbols with their source location, but an AI agent answering a question
-about the repo still had to **read whole files** to get usable code context. The
-`Match` / `ResultNode` carried a point location (file + line + column) and a
-rank, but nothing shaped the raw file bytes into a minimal, citation-backed
-bundle. Agents therefore consumed far more tokens than the answer required.
+graphi's query/search layer (`engine/query`, `engine/search`) returns matched
+symbols with their source location, but an AI agent answering a question
+about the repo still had to **read whole files** to get usable code context.
+
+The `Match` / `ResultNode` types carried a point location (file, line, column)
+and a rank, but nothing shaped the raw file bytes into a minimal,
+citation-backed bundle. As a result, agents consumed far more tokens than the
+answer required.
 
 ## After
 
 `engine/context` adds a **context-shaping transform** that sits between the
-EP-001 results and the agent. Given a query plus candidates, it produces a
-compact, deterministic bundle of **winnowed, citation-backed evidence snippets**,
-ranked and budget-bounded:
+search/query results and the agent. Given a query plus candidates, it produces
+a compact, deterministic bundle of **winnowed, citation-backed evidence
+snippets**, ranked and budget-bounded:
 
 ```mermaid
 flowchart LR
-  A["EP-001 results\n(search.Match / query.ResultNode)"] --> B["Intake adapters\nFromSearchMatches / FromQueryResult"]
+  A["Search/query results\n(search.Match / query.ResultNode)"] --> B["Intake adapters\nFromSearchMatches / FromQueryResult"]
   B --> C["Candidates\n(path, span, rank)"]
   C --> D["Rank\ndeterministic total order"]
   D --> E["Winnow\nspan + bounded padding\n(LocalReader, disk-only)"]
@@ -50,27 +57,32 @@ flowchart LR
 
 ## Why these decisions
 
-- **Layer placement `engine/context`** — context shaping is an engine-level
-  transform; placing it in `engine` keeps the `cmd → surfaces → engine → core`
-  chain intact. It imports its engine siblings `engine/query` and `engine/search`
-  only for the intake adapters. The SW-013 layer guard fires only on
-  strictly-upward edges, so same-layer `engine→engine` is allowed and now appears
-  as a verified allowed edge.
-- **Local tokenizer (mirrors `eval.CountTokens`)** — the engine deliberately does
-  not import `internal/eval`; runtime must not depend on tooling, and an
-  `engine → internal` edge would fall outside the ranked chain. The tokenizer is
-  a one-line stdlib call, duplicated intentionally for layer integrity.
-- **Greedy rank-order inclusion** — the acceptance criterion says "include in
-  rank order until the budget is reached and drop the remainder"; greedy
-  prefix-filling is the faithful, deterministic reading (a knapsack fill would be
-  neither rank-ordered nor trivially deterministic).
-- **Citation = expanded span** — the citation labels the bytes actually carried,
-  including context padding, so it always round-trips. The raw match line is
-  preserved separately only if the caller supplies it.
+- **Layer placement in `engine/context`** — context shaping is an engine-level
+  transform, so it lives in `engine` to keep the `cmd → surfaces → engine →
+  core` chain intact. It imports its engine siblings `engine/query` and
+  `engine/search` only for the intake adapters. The layer guard fires only on
+  strictly-upward edges, so a same-layer `engine → engine` import is allowed
+  and shows up as a verified allowed edge.
+- **Local tokenizer (mirrors `eval.CountTokens`)** — the engine deliberately
+  does not import `internal/eval`, since runtime must not depend on tooling and
+  an `engine → internal` edge would fall outside the ranked chain. The
+  tokenizer itself is a one-line stdlib call, duplicated intentionally to
+  preserve layer integrity.
+- **Greedy rank-order inclusion** — the acceptance criterion is to include
+  snippets in rank order until the budget is reached, then drop the remainder.
+  Greedy prefix-filling is the faithful, deterministic way to implement that; a
+  knapsack-style fill would be neither rank-ordered nor trivially
+  deterministic.
+- **Citation = expanded span** — the citation labels the bytes actually
+  carried, including context padding, so it always round-trips. The raw match
+  line is preserved separately only if the caller supplies it.
 
 ## Scope boundary
 
-This story emits the bundle only. **Metering** the bundle's tokens against a
-baseline (SW-017), pricing the savings in USD (SW-018), persisting them (SW-019),
-and the anti-gaming cap + readout (SW-020) are separate capabilities that compose
-on this output.
+This capability emits the bundle only. Related work that builds on this
+output — but lives elsewhere — includes:
+
+- **Metering** the bundle's tokens against a baseline
+- **Pricing** the savings in USD
+- **Persisting** those savings
+- The **anti-gaming cap and readout**

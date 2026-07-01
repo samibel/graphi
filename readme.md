@@ -6,7 +6,33 @@
 [![local-first](https://img.shields.io/badge/runtime-zero%20egress-success)](#the-local-first-contract)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](#license)
 
+An AI coding agent that greps and re-reads your whole codebase on every question
+is slow, expensive, and still guessing. graphi indexes the repo once into a
+graph — symbols as nodes, calls/references/imports as edges — and answers
+"who calls this," "what breaks if I change it," and "how are these two
+functions connected" in one round-trip, entirely on your machine.
+
 ---
+
+<details>
+<summary><strong>Contents</strong></summary>
+
+- [Quick start (2 steps)](#quick-start-2-steps)
+- [What is graphi?](#what-is-graphi)
+- [Features](#features)
+- [Capabilities](#capabilities)
+  - [Core code graph](#core-code-graph) · [Language support](#language-support)
+  - [Semantic analysis](#semantic-analysis) · [Deep analysis](#deep-analysis)
+  - [PR review vertical](#pr-review-vertical)
+- [Semantic search (optional, off by default)](#semantic-search-optional-off-by-default)
+- [The local-first contract](#the-local-first-contract)
+- [Advanced / from source](#advanced--from-source)
+- [Subcommands](#subcommands)
+- [Architecture](#architecture)
+- [Documentation](#documentation)
+- [License](#license)
+
+</details>
 
 ## Quick start (2 steps)
 
@@ -53,7 +79,12 @@ graphi upgrade
 
 ## What is graphi?
 
-`graphi` is a code-intelligence engine you run entirely on your own machine. Point it at a repository and it parses the source into a canonical **code graph** — nodes are symbols (functions, types, files), edges are the relationships between them (calls, references, definitions). It keeps that graph hot in a background daemon and answers questions about your codebase in a single round-trip instead of grepping and reading whole files:
+`graphi` is a code-intelligence engine you run entirely on your own machine.
+Point it at a repository and it parses the source into a canonical **code
+graph** — nodes are symbols (functions, types, files), edges are the
+relationships between them (calls, references, definitions). It keeps that
+graph hot in a background daemon and answers questions about your codebase in
+a single round-trip instead of grepping and reading whole files:
 
 - *Who calls this function? What does it call?*
 - *Where is this symbol defined? What references it?*
@@ -141,6 +172,9 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 | SQL | ✅ symbol nodes | ✅ intra-file | — (no provable cross-file refs at this tier; resolver skips+counts) ² |
 | CSS · YAML · TOML · Markdown · HCL/Terraform | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
 
+<details>
+<summary>¹ ² How cross-file resolution actually works, language by language</summary>
+
 > ¹ The cross-file / cross-package **linker pass** ([`engine/link`](engine/link)) is
 > wired into ingest and resolves Go references against the fully-committed node set:
 > same-package cross-file bare-ident calls/refs (`derived` tier) and cross-package
@@ -164,6 +198,8 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > references at this tier, so its resolver deliberately resolves nothing (skip+count).
 > Every cross-file edge is `heuristic` tier with file:line evidence and is **never**
 > `confirmed`; unresolved/ambiguous references are dropped and counted, never fabricated.
+
+</details>
 
 > **Deferred / not in the default tier.**
 > - **HTML** — has a pure-Go grammar but is **not subset-buildable in isolation** in
@@ -196,13 +232,16 @@ graphi ships in two flavors over the **same** `SymbolExtractor` contract:
   imported (it would statically pull in hundreds of MB of generated C). Additional broad
   grammars are added one subpackage at a time.
 
-**Before / after this slice.** *Before:* the default pure-Go tier only —
+<details>
+<summary>Why a separate flavor, and what changed to add it</summary>
+
+**Before / after.** *Before:* the default pure-Go tier only —
 broad coverage was not available. *After:* the opt-in `graphi-broad` CGO flavor opens
 the `go-sitter-forest`-backed CGO seam over the same `SymbolExtractor` contract
 (`zig` wired as the reference grammar), **build-tag isolated** so the default tier is
 provably unaffected.
 
-**Why a separate flavor.** `go-sitter-forest` is *wholly CGO*. Keeping it behind
+`go-sitter-forest` is *wholly CGO*. Keeping it behind
 the `graphi_broad` build tag gives broad language coverage **without compromising
 the CGo-free default build**: every forest-touching file is `//go:build
 graphi_broad`-tagged and never reached by an untagged import, so the default graph
@@ -210,6 +249,8 @@ stays pure-Go. This is enforced on two layers — a registration-level guard
 (`parse.AssertPureGoDefaults`) and a static import-graph scan
 (`internal/cgoconformance`, which proves `go-sitter-forest` is unreachable from
 `./cmd/graphi`).
+
+</details>
 
 > [!WARNING]
 > **Residual security limitation — read before enabling `graphi-broad`.**
@@ -230,6 +271,9 @@ stays pure-Go. This is enforced on two layers — a registration-level guard
 > named follow-up. Until then, do not point `graphi-broad` at
 > untrusted source.
 
+<details>
+<summary>Supply-chain and runtime controls on the broad lane</summary>
+
 The broad lane keeps its supply-chain and runtime controls: `go-sitter-forest`
 (and its grammar subpackages) are version-pinned in `go.sum` and `go mod verify`'d,
 the lane builds **offline** (`GOPROXY=off`) after a one-time pin, and a live
@@ -237,6 +281,8 @@ loopback-only `netns` deny-egress job (with a tripwire) proves the broad smoke
 parse performs zero outbound network at the C level — the static Go-AST canary is
 structurally blind to a C `socket()`/`connect()`, so only the live netns job
 credits the broad lane's zero-egress guarantee.
+
+</details>
 
 ### Semantic analysis
 
@@ -513,11 +559,11 @@ flowchart TD
 New here? The **[How-To guide](docs/HOWTO.md)** walks through install, indexing a
 repo, and using every surface (CLI, HTTP/SSE, web client, TUI, VS Code, MCP).
 
-The **[Feature Inventory](docs/FEATURES.md)** is the per-epic catalogue of every
+The **[Feature Inventory](docs/FEATURES.md)** is the complete catalogue of every
 MCP tool, CLI subcommand, HTTP endpoint, and analyzer graphi ships, with 10
 Mermaid diagrams (architecture, MCP taxonomy, surface matrix, PR pipeline, live-IDE
-transport sequence, watcher + conformance, refactor saga, diagnostic flow, epic
-roadmap, counts at a glance).
+transport sequence, watcher + conformance, refactor saga, diagnostic flow, roadmap,
+counts at a glance).
 
 The **[Architecture Plan](docs/architecture-plan.md)** is the single design entry
 point — the layered model, data flow, parse/extract pipeline, provenance

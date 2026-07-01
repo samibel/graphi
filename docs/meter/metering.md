@@ -1,13 +1,17 @@
-# Per-Call Token Metering (SW-017)
+# Per-Call Token Metering
 
-> Epic EP-003 · Token-Savings Ledger & Token-Efficient Context
+> Part of the Token-Savings Ledger & Token-Efficient Context work.
 > Package: `engine/meter`
+
+This document explains how graphi measures token savings on a per-call basis.
+It's for contributors working on `engine/meter` or anyone tracing where the
+"saved $X" figure ultimately comes from.
 
 ## Before
 
-graphi can now assemble a winnowed, token-efficient context bundle (SW-016), but
-it had **no per-call record** of the tokens a call actually consumed versus what
-a file-reading agent would have spent. There was no honest, structured
+graphi can assemble a winnowed, token-efficient context bundle, but it had
+**no per-call record** of the tokens a call actually consumed versus what a
+file-reading agent would have spent. There was no honest, structured
 token-savings signal to price, persist, or report — the headline "saved $X"
 claim had no provenance behind it.
 
