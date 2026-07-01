@@ -1,0 +1,99 @@
+package ingest_test
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"runtime"
+	"testing"
+
+	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/engine/ingest"
+)
+
+// TestIngest_FailsClosed_OnSymlinkToDirectory is a regression test: a repo
+// containing a symlink whose target is a directory (the pnpm node_modules/.pnpm
+// layout links whole package directories, not individual files) used to abort
+// the entire ingest with "read <path>: is a directory" — fs.DirEntry.IsDir()
+// reflects a symlink's OWN type (never "directory"), so the symlink reached
+// os.ReadFile instead of being recognized and skipped as a directory. It must
+// now be recorded as a SkipUnreadable diagnostic and ingestion of the rest of
+// the repo must proceed normally.
+func TestIngest_FailsClosed_OnSymlinkToDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privileges on windows")
+	}
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	defer store.Close()
+
+	parser := &stubParser{}
+	i := newIngester(t, store, parser)
+
+	root := writeRepo(t, map[string]string{
+		"real.go":          "package a\n",
+		"target/nested.go": "package b\n",
+	})
+	if err := os.Symlink(filepath.Join(root, "target"), filepath.Join(root, "linked")); err != nil {
+		t.Fatalf("Symlink: %v", err)
+	}
+
+	if err := i.IngestAll(ctx, root); err != nil {
+		t.Fatalf("IngestAll should not abort on a symlink-to-directory (fail-closed skip): %v", err)
+	}
+
+	// real.go and target/nested.go are real files and must have been parsed;
+	// "linked" (the symlink) must not have been read as a file.
+	if parser.parseCount != 2 {
+		t.Fatalf("expected 2 real files parsed, got %d", parser.parseCount)
+	}
+
+	var found bool
+	for _, s := range i.SkippedDiagnostics() {
+		if s.Path == "linked" {
+			found = true
+			if s.Reason != ingest.SkipUnreadable {
+				t.Fatalf("expected SkipUnreadable for the symlink, got %q", s.Reason)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected a SkipUnreadable diagnostic for %q, got %v", "linked", i.SkippedDiagnostics())
+	}
+}
+
+// TestIngest_PrunesIgnoredDirectories proves node_modules, .git, vendor, and
+// friends are never descended into or read — not skipped-with-diagnostic (that
+// would still cost a stat/read attempt per entry), but pruned via
+// filepath.SkipDir before the walk ever enters them. This is the actual fix for
+// why indexing a JS/TS repo used to crash: pnpm's node_modules/.pnpm tree is
+// exactly the kind of symlink-heavy layout TestIngest_FailsClosed_OnSymlinkToDirectory
+// guards against, and it's also just noise no code-intelligence query wants.
+func TestIngest_PrunesIgnoredDirectories(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	defer store.Close()
+
+	parser := &stubParser{}
+	i := newIngester(t, store, parser)
+
+	root := writeRepo(t, map[string]string{
+		"real.go":                          "package a\n",
+		"node_modules/pkg/index.js":        "// not real code\n",
+		".git/config":                      "[core]\n",
+		"vendor/github.com/x/y/lib.go":     "package lib\n",
+		".venv/lib/site-packages/mod.py":   "# not real code\n",
+		"__pycache__/real.cpython-312.pyc": "\x00\x00",
+	})
+
+	if err := i.IngestAll(ctx, root); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+
+	if parser.parseCount != 1 {
+		t.Fatalf("expected only real.go parsed (ignored dirs pruned), got %d parses", parser.parseCount)
+	}
+	if skips := i.SkippedDiagnostics(); len(skips) != 0 {
+		t.Fatalf("expected zero skip diagnostics (pruned dirs are never visited, not skipped), got %v", skips)
+	}
+}
