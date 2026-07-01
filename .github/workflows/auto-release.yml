@@ -10,11 +10,22 @@
 # from a commit that failed the build/test/layer-direction/install-script-drift
 # gates. It then reads the newest "## [X.Y.Z]" header from CHANGELOG.md (skipping
 # "## [Unreleased]") and, if no "vX.Y.Z" tag exists yet, creates and pushes one.
-# Pushing that tag is what triggers release.yml's tag-gated `release-assets` job,
-# which cross-compiles the binaries and uploads them to the GitHub Release.
+#
+# Pushing that tag does NOT, by itself, trigger release.yml's tag-gated
+# `release-assets` job: GitHub suppresses workflow runs that would otherwise be
+# triggered by a push authenticated with the built-in GITHUB_TOKEN (an
+# anti-recursion guard), and this job pushes using exactly that token. So after
+# pushing the tag, this workflow explicitly dispatches release.yml instead of
+# relying on the push event — an explicit workflow_dispatch API call IS
+# allowed to use GITHUB_TOKEN. The dispatch targets `main` (not the tag: the
+# tag's own commit may predate this workflow gaining the workflow_dispatch
+# trigger, in which case GitHub has nothing to dispatch there) and passes the
+# tag as the `tag` input, which release.yml's release-assets job uses in place
+# of github.ref_name. The same `tag` input lets a maintainer manually re-run
+# release-assets for any already-pushed, release-less tag.
 #
 # Idempotent and safe to run on every main push: if the latest CHANGELOG version
-# is already tagged, this is a no-op.
+# is already tagged, this is a no-op (and the dispatch step is skipped too).
 name: auto-release
 
 on:
@@ -24,6 +35,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # needed to dispatch release.yml via `gh workflow run`
 
 concurrency:
   group: auto-release
@@ -55,16 +67,28 @@ jobs:
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: create and push the tag if it doesn't exist yet
+        id: push_tag
         if: steps.ver.outputs.tag != ''
         env:
           TAG: ${{ steps.ver.outputs.tag }}
         run: |
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "::notice::$TAG already exists; nothing to do"
+            echo "created=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "Release $TAG (auto-tagged from CHANGELOG.md)"
           git push origin "$TAG"
-          echo "::notice::pushed $TAG — this triggers release.yml's release-assets job"
+          echo "::notice::pushed $TAG"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      - name: dispatch release.yml for the new tag (bypasses the GITHUB_TOKEN no-recursive-trigger rule)
+        if: steps.push_tag.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          gh workflow run release.yml --ref main -f tag="$TAG"
+          echo "::notice::dispatched release.yml for $TAG — its release-assets job cross-compiles and uploads to the GitHub Release"
