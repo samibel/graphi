@@ -9,10 +9,10 @@
 ## Context
 
 graphi turns source files into ASTs through a single deterministic parse boundary
-(`core/parse`). The blocking sub-decision under the already-resolved hybrid
-parsing decision (PB-001/OQ1) is: how many languages can ship via **pure-Go,
-CGo-free** parsing, and at what binary-size cost, while preserving graphi's
-local-first, single-static-binary, zero-CGo posture.
+(`core/parse`). The hybrid parsing decision (PB-001/OQ1) is already resolved at
+the portfolio level; the sub-decision this ADR resolves is how many languages can
+ship via **pure-Go, CGo-free** parsing, and at what binary-size cost, while
+preserving graphi's local-first, single-static-binary, zero-CGo posture.
 
 Constraints (from `context/architecture.md`):
 - Default `graphi` binary MUST build with `CGO_ENABLED=0` (CI-enforced gate).

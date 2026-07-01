@@ -59,7 +59,7 @@ Go standard library (`container/heap`, `math`, `sort`, `hash/fnv`). Rationale:
 - We own ~400 lines of ANN code (graph build + beam search), covered by determinism,
   recall@10, put-order-independence, and seam tests in `engine/embed/hnsw_test.go`.
 - Recall is probabilistic and tunable via `ef_search`; brute-force remains the default
-  and the recall oracle. Measured recall@10 is 1.00 on the 1,200-vector synthetic
+  and the recall oracle. Measured recall@10 is 1.00 on the 1 200-vector synthetic
   fixture at `ef_search=128` (bar: ≥0.95).
 - If a future need (e.g. billion-scale corpora, SIMD distance) outgrows this
   implementation, a vendored library can be reconsidered — but only behind the same
