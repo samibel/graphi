@@ -262,6 +262,16 @@ const (
 	// there. A broken symlink or a permission-denied file land here too. Either
 	// way this is fail-closed: skip and record, never abort the whole ingest.
 	SkipUnreadable SkipReason = "unreadable"
+	// SkipParseError: the file's content did not parse as its recognized
+	// language — invalid syntax, malformed encoding, or anything else a parser
+	// rejects. Unlike SkipUnreadable/oversize/timeout/max-depth, this is a
+	// GENUINE content problem the file's own author may want to know about
+	// (a real syntax error, or content that only LOOKS like the language —
+	// e.g. a WireMock stub's `.json` file using Handlebars templating, which
+	// is not valid JSON), so it's always recorded, never silent. Still
+	// fail-closed either way: one malformed file must never abort indexing of
+	// the rest of the repo.
+	SkipParseError SkipReason = "parse-error"
 )
 
 // SkipDiagnostic is the structured, source-free record of a fail-closed skip. It
@@ -1226,8 +1236,14 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 	if err != nil {
 		// Fail closed on a resource-bound breach: SKIP the file with a structured,
 		// source-free diagnostic and continue ingestion (never parse-anyway / never
-		// truncate). A genuine parse error (invalid syntax, etc.) still aborts as
-		// before — only the four sentinels below route to the skip path.
+		// truncate). A genuine parse error (invalid syntax, etc.) is now ALSO
+		// fail-closed, plus every other parse error below — nothing routes to a
+		// hard error anymore. Untrusted repo content dictates what a "genuine
+		// parse error" even is: a WireMock stub's `.json` file using Handlebars
+		// templating, a corrupted binary asset misnamed with a source extension,
+		// or a real syntax error someone committed are all indistinguishable
+		// from the engine's point of view, and none of them should be able to
+		// abort indexing of an entire repository over one file.
 		switch {
 		case errors.Is(err, parse.ErrMaxDepthExceeded):
 			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipMaxDepth})
@@ -1245,13 +1261,27 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 			// overwhelming majority of non-source files in a typical repo) is
 			// simply not source code, not a resource-bound breach. This is the
 			// expected, common case, not a diagnostic-worthy event: no
-			// recordSkip, just silently untracked. Previously this fell through
-			// to the hard-error return below and aborted indexing of the ENTIRE
-			// repo the moment it hit a single such file — which is effectively
-			// guaranteed on any real-world repo.
+			// recordSkip, just silently untracked.
+			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
+		case ctx.Err() != nil:
+			// The CALLER's context is done (cancelled, or an outer deadline
+			// expired) — not a per-file resource bound (those use parseCtx,
+			// checked above with ctx.Err() == nil to tell the two apart) and
+			// not a content problem. This must still propagate and abort
+			// promptly: swallowing it as a skip would keep grinding through
+			// the rest of a possibly huge repo after the caller already asked
+			// to stop.
+			return nil, err
+		default:
+			// Anything else a parser rejects — invalid syntax, an encoding
+			// error, a panic-recovered malformed input — unlike SkipNoParser
+			// above, this file WAS recognized as a language we understand, so
+			// (unlike "not source code at all") it's worth recording: a real
+			// syntax error is something the file's author would want to know
+			// about, and this is the only signal that surfaces it.
+			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipParseError})
 			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 		}
-		return nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
 	}
 	return &ParsedFile{RelPath: u.relPath, Hash: u.hash, result: res}, nil
 }

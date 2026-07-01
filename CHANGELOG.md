@@ -7,6 +7,19 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-01
+
+### Fixed
+- `graphi` (zero-config indexing) no longer aborts the entire ingest on a
+  genuine parse error in a recognized file type (e.g. `parse: json syntax
+  error in "...": invalid character '{' looking for beginning of object key
+  string`) — reported via a WireMock stub `.json` file using Handlebars
+  templating (`{{...}}`), which is not valid JSON. Unlike a file with no
+  registered parser at all (silently skipped), a genuine syntax error is
+  recorded as a `SkipParseError` diagnostic — worth surfacing, since it may
+  point to a real problem — but still never aborts indexing of the rest of
+  the repository.
+
 ## [0.1.2] - 2026-07-01
 
 ### Fixed
