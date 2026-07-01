@@ -253,6 +253,15 @@ const (
 	SkipTimeout SkipReason = "timeout"
 	// SkipMaxDepth: input exceeded ResourceBounds.MaxDepth (nesting/recursion).
 	SkipMaxDepth SkipReason = "max-depth"
+	// SkipUnreadable: the path could not be read as a regular file. The usual
+	// cause is a symlink whose target is a directory: fs.DirEntry.IsDir() (the
+	// walk's earlier directory check) reports a symlink's OWN type, which is
+	// never "directory", regardless of what it points to — so a symlink into a
+	// directory (e.g. a pnpm-style node_modules/.pnpm layout, which links whole
+	// package directories) reaches the read step instead of being skipped
+	// there. A broken symlink or a permission-denied file land here too. Either
+	// way this is fail-closed: skip and record, never abort the whole ingest.
+	SkipUnreadable SkipReason = "unreadable"
 )
 
 // SkipDiagnostic is the structured, source-free record of a fail-closed skip. It
@@ -1004,6 +1013,50 @@ func (i *Ingester) RecoverWithRoot(ctx context.Context, root string) error {
 	return nil
 }
 
+// ignoredDirNames are directory basenames pruned from every walk (never
+// descended into, regardless of depth). These hold dependency trees or VCS
+// metadata, not a repo's own code: indexing them is slow, drowns query
+// results in third-party noise, and — for pnpm's node_modules/.pnpm layout in
+// particular — walks through symlinked package directories that used to abort
+// the whole ingest (see SkipUnreadable). The set is deliberately small and
+// unambiguous; anything with a plausible legitimate use as real source (e.g.
+// "dist", "build", "target") is left alone rather than guessed at.
+var ignoredDirNames = map[string]bool{
+	"node_modules":     true,
+	".git":             true,
+	"vendor":           true,
+	".venv":            true,
+	"venv":             true,
+	"__pycache__":      true,
+	"bower_components": true,
+}
+
+// isIgnoredDirName reports whether name matches ignoredDirNames, case-insensitively
+// — node_modules et al. are created by well-known tooling in a fixed case, but
+// case-insensitive-but-preserving filesystems (macOS/Windows defaults) don't
+// guarantee a checkout can't surface a different casing.
+func isIgnoredDirName(name string) bool {
+	return ignoredDirNames[strings.ToLower(name)]
+}
+
+// pathHasIgnoredDir reports whether any path segment of the slash-separated,
+// repo-relative rel is an ignored directory name. walk() prunes ignoredDirNames
+// at the directory level via filepath.SkipDir and never descends into them in
+// the first place, so a full index never reaches this; ParseFile has no walk to
+// prune, so it must check the whole path instead — otherwise the filesystem
+// watcher would still read, parse, and record skip diagnostics for every
+// changed file under node_modules/.git/vendor/... (which churns constantly
+// during a package-manager install), reintroducing exactly the noise and cost
+// the walk-time pruning exists to avoid.
+func pathHasIgnoredDir(rel string) bool {
+	for _, comp := range strings.Split(rel, "/") {
+		if isIgnoredDirName(comp) {
+			return true
+		}
+	}
+	return false
+}
+
 // walk returns all source files under root, sorted deterministically.
 func (i *Ingester) walk(root string) ([]fileUnit, error) {
 	root, err := filepath.Abs(root)
@@ -1018,6 +1071,9 @@ func (i *Ingester) walk(root string) ([]fileUnit, error) {
 			return err
 		}
 		if d.IsDir() {
+			if path != root && isIgnoredDirName(d.Name()) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		rel, err := filepath.Rel(root, path)
@@ -1040,7 +1096,11 @@ func (i *Ingester) walk(root string) ([]fileUnit, error) {
 		}
 		src, err := os.ReadFile(path) //nolint:gosec // path derived from sanitized root
 		if err != nil {
-			return fmt.Errorf("ingest: read %s: %w", rel, err)
+			// Fail-closed, not fail-stop: a symlink resolving to a directory (see
+			// SkipUnreadable), a broken symlink, a permission-denied file, or a file
+			// removed mid-walk must never abort indexing of the rest of the repo.
+			i.recordSkip(SkipDiagnostic{Path: rel, Reason: SkipUnreadable})
+			return nil
 		}
 		units = append(units, fileUnit{
 			path:    path,
@@ -1115,6 +1175,16 @@ func (i *Ingester) ParseFile(ctx context.Context, root, relPath string) (*Parsed
 	if err != nil {
 		return nil, err
 	}
+	// walk() prunes ignoredDirNames via filepath.SkipDir and never descends into
+	// them, so a full index never reaches here for a node_modules/.git/vendor/...
+	// path. The watcher has no walk to prune, though — an fsnotify event for a
+	// changed file under one of those directories (which churns constantly during
+	// a package-manager install) would otherwise still be read, parsed, and
+	// tracked, reintroducing the exact noise/cost the pruning exists to avoid.
+	// Mirrors the untracked-file-type contract just below: (nil, nil) = ignore.
+	if pathHasIgnoredDir(rel) {
+		return nil, nil
+	}
 	abs := filepath.Join(root, filepath.FromSlash(rel))
 	// Fail-closed max-file-size bound (mirrors walk): stat before reading bytes.
 	if i.bounds.MaxFileSize > 0 {
@@ -1125,7 +1195,11 @@ func (i *Ingester) ParseFile(ctx context.Context, root, relPath string) (*Parsed
 	}
 	src, err := os.ReadFile(abs) //nolint:gosec // path derived from sanitized root
 	if err != nil {
-		return nil, fmt.Errorf("ingest: read %s: %w", rel, err)
+		// Mirrors the walk()'s SkipUnreadable handling: a symlink resolving to a
+		// directory, a broken symlink, or a permission-denied file must not abort
+		// the watcher's whole reconcile batch (see pool.go's firstErr/cancel).
+		i.recordSkip(SkipDiagnostic{Path: rel, Reason: SkipUnreadable})
+		return &ParsedFile{RelPath: rel, skipped: true}, nil
 	}
 	u := fileUnit{path: abs, relPath: rel, src: src, hash: hashBytes(src)}
 	pf, err := i.parseUnit(ctx, u)
