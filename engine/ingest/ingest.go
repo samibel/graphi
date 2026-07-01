@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -172,18 +173,61 @@ func (i *Ingester) notifyIngest(ctx context.Context, kind string, files int) {
 	i.broker.Publish(ctx, observe.Event{Type: kind, Ts: time.Now(), Payload: payload})
 }
 
+// memDBSeq gives each in-memory meta sidecar a process-unique database name so
+// shared-cache in-memory Ingesters stay isolated from one another (see New).
+var memDBSeq uint64
+
 // New constructs an Ingester. metaDir receives a SQLite sidecar for cache,
 // reverse-deps, and dirty flags. If metaDir is empty, an in-memory sidecar is
 // used (testing only).
 func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester, error) {
-	dbPath := ":memory:"
+	// Plain ":memory:" opens a private, independent database PER pooled
+	// connection (SQLite in-memory databases are not shared across connections
+	// by default). With the default (unbounded) connection pool, a schema
+	// created by initSchema on one connection is invisible to a later query
+	// issued on a different connection, surfacing as a nondeterministic "no such
+	// table" error. The "file::memory:?cache=shared" URI form shares one
+	// in-memory database across every connection opened from this *sql.DB
+	// instead.
+	//
+	// Sharing the cache alone isn't enough, though: metaTx opens a write *sql.Tx
+	// on one connection, and helpers invoked from inside it (e.g.
+	// cachedNodeIDs) query i.meta directly, i.e. on a SECOND connection, while
+	// that write transaction is still open. On disk this is harmless — WAL
+	// readers never block on a writer — but WAL is not available for
+	// ":memory:" (SQLite silently keeps the default rollback-journal locking
+	// there), under which any reader blocks until the writer commits. Since
+	// both connections are driven by the same goroutine, the writer never gets
+	// a chance to commit and the process deadlocks. read_uncommitted lets a
+	// shared-cache connection read another connection's in-flight (even
+	// uncommitted) writes instead of blocking on the writer's lock, which is
+	// exactly what's needed here — everything routes through this single
+	// process/goroutine anyway, so there is no other writer whose isolation
+	// could be violated.
+	//
+	// The shared cache MUST be scoped per-Ingester, not process-global. An
+	// unnamed "file::memory:?cache=shared" resolves to ONE database shared by
+	// every such connection in the whole process, so two in-memory Ingesters
+	// alive at once (e.g. makeEditorClient's primary ingester plus the
+	// parser-consistency checker's throwaway ingester) would silently share one
+	// meta sidecar and cross-contaminate each other's content cache / reverse
+	// deps / dirty flags. Giving each Ingester a unique database name keeps the
+	// cache shared across THIS Ingester's pooled connections while staying
+	// isolated from every other in-memory Ingester.
+	dbPath := fmt.Sprintf("file:ingest-meta-%d?mode=memory&cache=shared", atomic.AddUint64(&memDBSeq, 1))
+	extraPragma := "&_pragma=read_uncommitted(1)"
 	if metaDir != "" {
 		if err := os.MkdirAll(metaDir, 0o700); err != nil {
 			return nil, fmt.Errorf("ingest: create meta dir: %w", err)
 		}
 		dbPath = filepath.Join(metaDir, "ingest-meta.db")
+		extraPragma = ""
 	}
-	db, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)")
+	sep := "?"
+	if strings.Contains(dbPath, "?") {
+		sep = "&"
+	}
+	db, err := sql.Open("sqlite", dbPath+sep+"_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)"+extraPragma)
 	if err != nil {
 		return nil, fmt.Errorf("ingest: open meta db: %w", err)
 	}

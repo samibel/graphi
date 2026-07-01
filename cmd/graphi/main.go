@@ -936,18 +936,24 @@ func (p watchStatusProvider) WatchStatus(_ context.Context) analysis.WatcherStat
 
 // runDaemon runs the daemon lifecycle commands: start, stop, status.
 func runDaemon(args []string) int {
-	fs := flag.NewFlagSet("daemon", flag.ContinueOnError)
-	socket := fs.String("socket", daemon.DefaultSocketPath(), "Unix socket path")
-	dbPath := fs.String("db", "", "SQLite graphstore path (empty = in-memory)")
-	if err := fs.Parse(args); err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: daemon: %v\n", err)
-		return 1
-	}
-	if len(fs.Args()) < 1 {
+	// The documented invocation is `graphi daemon start|stop|status [-socket
+	// path] [-db path]` — the subcommand comes BEFORE the flags. flag.FlagSet.Parse
+	// stops at the first non-flag argument, so parsing args as-is would silently
+	// never see -socket/-db (cmd would be consumed as fs.Args()[0], but the flags
+	// after it would never reach Parse). Split the leading subcommand off first,
+	// then parse only the remainder as flags.
+	if len(args) < 1 {
 		fmt.Fprintln(os.Stderr, "usage: graphi daemon start|stop|status [-socket path] [-db path]")
 		return 1
 	}
-	cmd := fs.Args()[0]
+	cmd := args[0]
+	fs := flag.NewFlagSet("daemon", flag.ContinueOnError)
+	socket := fs.String("socket", daemon.DefaultSocketPath(), "Unix socket path")
+	dbPath := fs.String("db", "", "SQLite graphstore path (empty = in-memory)")
+	if err := fs.Parse(args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: daemon: %v\n", err)
+		return 1
+	}
 	switch cmd {
 	case "start":
 		store, err := openStore(*dbPath)
@@ -997,10 +1003,15 @@ func runDaemon(args []string) int {
 		// Block until stopped via signal or Stop.
 		select {}
 	case "stop":
-		// Best-effort: connect and send a shutdown request is not implemented;
-		// for now rely on process management.
-		fmt.Fprintln(os.Stderr, "daemon stop: not implemented; stop the daemon process directly")
-		return 1
+		// The daemon's "stop" RPC already exists server-side (surfaces/daemon.
+		// Server.dispatch acks, then handleConn tears down the listener + socket
+		// file) — send it here instead of requiring the caller to kill the process.
+		if err := daemon.NewClient(*socket, "").Stop(context.Background()); err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: daemon stop: %v\n", err)
+			return 1
+		}
+		fmt.Printf("daemon at %s: stopped\n", *socket)
+		return 0
 	case "status":
 		c := daemon.NewClient(*socket, "")
 		if _, err := c.Query(context.Background(), "callers", "", 0); err != nil {
