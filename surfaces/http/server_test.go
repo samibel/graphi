@@ -531,6 +531,41 @@ func assertErrCode(t *testing.T, srv *Server, target string, headers [][2]string
 
 // --- AC-2: SSE framing (event type + id + terminal/error frames) -------------
 
+// syncRecorder wraps httptest.ResponseRecorder so the test can poll the body
+// while the handler goroutine is still writing — the bare recorder's
+// bytes.Buffer is not safe for concurrent read/write (caught by -race).
+type syncRecorder struct {
+	mu  sync.Mutex
+	rec *httptest.ResponseRecorder
+}
+
+func (s *syncRecorder) Header() http.Header { return s.rec.Header() }
+
+func (s *syncRecorder) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.rec.Write(p)
+}
+
+func (s *syncRecorder) WriteHeader(code int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.rec.WriteHeader(code)
+}
+
+// Flush satisfies http.Flusher, which the SSE handler requires.
+func (s *syncRecorder) Flush() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.rec.Flush()
+}
+
+func (s *syncRecorder) body() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.rec.Body.String()
+}
+
 // driveSSE runs the SSE handler directly with a controllable broker and a
 // short-lived context, returning the raw stream bytes. Deterministic: it
 // publishes events, then closes the broker subscription via ctx cancel.
@@ -541,7 +576,7 @@ func driveSSE(t *testing.T, publish func(ctx context.Context, b *observe.Broker)
 	req := httptest.NewRequest(http.MethodGet, "/events", nil)
 	ctx, cancel := context.WithCancel(req.Context())
 	req = req.WithContext(ctx)
-	rec := httptest.NewRecorder()
+	rec := &syncRecorder{rec: httptest.NewRecorder()}
 
 	done := make(chan struct{})
 	go func() {
@@ -552,10 +587,10 @@ func driveSSE(t *testing.T, publish func(ctx context.Context, b *observe.Broker)
 	waitFor(t, func() bool { return b.Subscribers() == 1 })
 	publish(ctx, b)
 	// give the handler a moment to drain the buffered events.
-	waitFor(t, func() bool { return strings.Count(rec.Body.String(), "data:") >= 1 })
+	waitFor(t, func() bool { return strings.Count(rec.body(), "data:") >= 1 })
 	cancel()
 	<-done
-	return rec.Body.String()
+	return rec.body()
 }
 
 func TestSSE_FramesCarryTypeAndID(t *testing.T) {
