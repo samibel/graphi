@@ -4,7 +4,7 @@ A practical, end-to-end guide: build graphi, index a repository, and use every
 surface — CLI, HTTP/SSE API, web client, TUI, VS Code extension, and the MCP
 server for Claude Code. Everything runs **locally**; no code leaves your machine.
 
-> New to graphi? Read the [README](../README.md) for the “what & why”. This guide
+> New to graphi? Read the [README](../readme.md) for the “what & why”. This guide
 > is the “how”.
 
 ---
