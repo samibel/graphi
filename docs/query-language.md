@@ -1,5 +1,11 @@
 # graphi query language
 
+This doc covers the shapes of query graphi's engine understands, and how
+`search_ast` (structural AST search) and `find_clones` (clone detection) work
+under the hood. It's aimed at contributors extending the query surface, and at
+anyone curious how a query stays byte-identical across the CLI, MCP, HTTP, and
+daemon surfaces.
+
 graphi answers two shapes of query, kept deliberately separate so each surface
 (CLI / MCP / HTTP / daemon) routes them through exactly one engine path:
 
@@ -12,10 +18,10 @@ Symbol queries are enumerated in `engine/query.Operations`. Pattern queries are
 **not** members of `Operations` (they take no symbol id); the surfaces advertise
 them alongside the symbol queries as singletons.
 
-## `search_ast` — AST structural search (SW-082)
+## `search_ast` — AST structural search
 
 `search_ast` matches a deterministic, JSON-serialisable structural pattern
-against the parsed AST node table (built in EP-001) and returns only the
+against the parsed AST node table and returns only the
 structural matches — never a file body or line-window blob. Each match carries:
 
 - `id`, `kind`, `qualified_name`, `source_path`, `line`, `column` (verbatim node identity)

@@ -176,10 +176,11 @@ runtime + per-blob model, 2026-06-24):
 
 ### Measured deltas (SW-054 — accumulated curated tier-1 subset)
 
-SW-054 clones the SW-053 recipe over the remaining curated tier-1 languages. The shipped
-default build now embeds the accumulated subset-tag set (umbrella `grammar_subset` + one
-`grammar_subset_<lang>` per registered language). Measured on go1.26.3 / darwin-arm64 with
-`CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags '<accumulated set>' ./cmd/graphi`:
+SW-054 applies the same recipe as SW-053 over the remaining curated tier-1 languages. The
+shipped default build now embeds the accumulated subset-tag set (umbrella `grammar_subset`
+plus one `grammar_subset_<lang>` per registered language). Measured on go1.26.3 /
+darwin-arm64 with `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags '<accumulated
+set>' ./cmd/graphi`:
 
 | Build | Binary size (bytes) | Δ vs pre-grammar baseline | grammar blobs embedded |
 |-------|---------------------|---------------------------|------------------------|
