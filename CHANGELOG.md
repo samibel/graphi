@@ -7,6 +7,24 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-01
+
+### Fixed
+- `graphi` (zero-config indexing) no longer aborts the entire ingest when a
+  repository contains a symlink whose target is a directory — the pnpm
+  `node_modules/.pnpm` layout links whole package directories this way, and
+  hit this on a real-world JS/TS repo (`EISDIR` while reading the symlink as
+  if it were a regular file). Any unreadable path (symlink-to-directory,
+  broken symlink, permission denied) is now a recorded `SkipUnreadable`
+  diagnostic instead of a hard error, matching the existing
+  oversize/timeout/max-depth fail-closed skip pattern.
+- `node_modules`, `.git`, `vendor`, `.venv`/`venv`, `__pycache__`, and
+  `bower_components` are now pruned from indexing entirely (never
+  descended into), on both the initial full index and the live filesystem
+  watcher. These hold dependency trees or VCS metadata, not a repository's
+  own code — besides being where the pnpm symlink layout above lives,
+  indexing them was slow and drowned query results in third-party noise.
+
 ## [0.1.0] - 2026-06-28
 
 ### Added
