@@ -7,6 +7,21 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Fixed
+- `graphi` (zero-config indexing) no longer aborts the entire ingest on the
+  first `.json` file that is not valid strict JSON (`parse: json syntax error
+  in "...": invalid character '{' looking for beginning of object key
+  string`) — reported on a WireMock `__files` response body that uses
+  Handlebars response-templating (`{{...}}` at a structural position), which
+  WireMock renders at runtime but is not valid strict JSON. More generally,
+  any genuine parse/syntax error in a file that DOES have a registered parser
+  is now a recorded `SkipParseError` diagnostic (fail-closed skip) instead of
+  a hard error, matching the existing oversize/timeout/max-depth/unreadable
+  pattern. A single malformed file can no longer sink indexing of the rest of
+  the repository. Applying an edit still rolls back if the edit itself
+  produces source the parser rejects (the edited file is elevated from skip to
+  a re-index failure); only PRE-EXISTING malformed files are tolerated.
+
 ## [0.1.2] - 2026-07-01
 
 ### Fixed

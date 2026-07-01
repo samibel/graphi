@@ -262,6 +262,17 @@ const (
 	// there. A broken symlink or a permission-denied file land here too. Either
 	// way this is fail-closed: skip and record, never abort the whole ingest.
 	SkipUnreadable SkipReason = "unreadable"
+	// SkipParseError: the file has a registered parser but is not valid source
+	// for it — a genuine syntax error. This is a property of the FILE, not a
+	// failure of the ingester, so (like the resource-bound reasons above) it is
+	// fail-closed: skip and record, never abort the whole ingest. A single such
+	// file must not sink indexing of the rest of the repo. The canonical trigger
+	// is a WireMock __files response body that uses Handlebars response-templating
+	// (e.g. `{{...}}` at a structural position) and is therefore not valid strict
+	// JSON. Unlike SkipNoParser (a non-source asset, silently untracked), a
+	// malformed source file IS diagnostic-worthy: the user asked to index it, so
+	// we record why it was skipped.
+	SkipParseError SkipReason = "parse-error"
 )
 
 // SkipDiagnostic is the structured, source-free record of a fail-closed skip. It
@@ -1226,8 +1237,9 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 	if err != nil {
 		// Fail closed on a resource-bound breach: SKIP the file with a structured,
 		// source-free diagnostic and continue ingestion (never parse-anyway / never
-		// truncate). A genuine parse error (invalid syntax, etc.) still aborts as
-		// before — only the four sentinels below route to the skip path.
+		// truncate). The four sentinels below route to that skip path; a genuine
+		// parse/syntax error routes to SkipParseError further down (also a skip).
+		// Only a parent-context cancellation/deadline aborts the whole pass.
 		switch {
 		case errors.Is(err, parse.ErrMaxDepthExceeded):
 			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipMaxDepth})
@@ -1251,7 +1263,23 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 			// guaranteed on any real-world repo.
 			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 		}
-		return nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
+		// Context cancellation / deadline on the PARENT ctx is a real abort signal
+		// (a user interrupt, or an overall ingest deadline) — not a per-file
+		// defect. It must stop the whole pass, never be swallowed as a per-file
+		// skip. (The parse-scoped timeout, whose parent ctx is still live, is
+		// already routed to SkipTimeout by the case above.)
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
+		}
+		// Any remaining error is a genuine parse/syntax error: the file has a
+		// registered parser but is not valid source for it (e.g. a WireMock
+		// __files response body using Handlebars templating, which is not valid
+		// strict JSON). Fail closed exactly like the resource-bound sentinels
+		// above — SKIP this one file with a structured, source-free diagnostic and
+		// continue indexing the rest of the repo. Previously this aborted the
+		// ENTIRE ingest the moment it hit a single malformed file.
+		i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipParseError})
+		return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 	}
 	return &ParsedFile{RelPath: u.relPath, Hash: u.hash, result: res}, nil
 }
