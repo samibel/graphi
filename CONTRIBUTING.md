@@ -16,8 +16,8 @@ By participating you agree to abide by our [Code of Conduct](./CODE_OF_CONDUCT.m
   Lower layers never depend on higher ones (`core/parse`, `core/graphstore` are
   pure leaves). The `layer-direction` CI guard fails any upward/sideways import.
 - **Docs-vs-code parity.** The [capability coverage matrix](./docs/coverage-matrix.md)
-  is CI-enforced — if you add or remove a parser, analyzer, MCP tool, or surface,
-  update the matrix or the build breaks.
+  is CI-enforced. If you add or remove a parser, analyzer, MCP tool, or surface,
+  update the matrix, or the build breaks.
 
 ## Prerequisites
 

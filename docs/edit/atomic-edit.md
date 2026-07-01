@@ -182,4 +182,3 @@ to a follow-up.
 - **Concurrency:** single-writer-per-repo (config `writing.default_mode:
   single_writer`). The saga is not atomic against a concurrent edit or ingest;
   callers must serialize edits per repository.
-```

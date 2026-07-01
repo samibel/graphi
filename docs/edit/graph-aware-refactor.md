@@ -175,4 +175,3 @@ the resulting source changes (and therefore which old node the re-index deletes)
 - **No eval/exec/shell, no outbound network** — unchanged local-first guarantees.
 - **Concurrency:** single-writer-per-repo (config `writing.default_mode:
   single_writer`); the saga is not atomic against a concurrent edit/ingest.
-```
