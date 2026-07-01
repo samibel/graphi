@@ -21,7 +21,7 @@ Please include:
 - any suggested remediation if you have one.
 
 We aim to acknowledge reports within a few business days and will keep you
-updated on remediation progress. Coordinated disclosure is appreciated — please
+updated on remediation progress. Coordinated disclosure is appreciated: please
 give us reasonable time to ship a fix before any public disclosure.
 
 ## Supported versions

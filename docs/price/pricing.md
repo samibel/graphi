@@ -1,14 +1,18 @@
-# USD Pricing (SW-018)
+# USD Pricing
 
-> Epic EP-003 · Token-Savings Ledger & Token-Efficient Context
+> Part of the Token-Savings Ledger & Token-Efficient Context work.
 > Package: `engine/price`
+
+This document explains how graphi converts metered token savings into a USD
+figure. It's for contributors working on `engine/price` or anyone auditing
+where the displayed dollar amount comes from.
 
 ## Before
 
-graphi can meter per-call token savings against a frozen baseline (SW-017), but
-the savings were still in **tokens**, not dollars. The brief's headline first-run
-wow — "It saved me $X this session" — had no concrete, reproducible USD figure
-behind it, and no pricing source that could be audited.
+graphi can meter per-call token savings against a frozen baseline, but the
+savings were still in **tokens**, not dollars. The intended first-run
+highlight — "It saved me $X this session" — had no concrete, reproducible USD
+figure behind it, and no pricing source that could be audited.
 
 ## After
 
@@ -18,7 +22,7 @@ embedded in the binary:
 
 ```mermaid
 flowchart LR
-  D["meter delta\n(SW-017 SavingsTokens)"] --> S["Savings(table, model, delta)"]
+  D["meter delta\n(SavingsTokens)"] --> S["Savings(table, model, delta)"]
   T["checked-in prices.json\n//go:embed\nversion=prices-v1"] --> S
   S --> R["USDResult\nMicroUSD (int64)\nTableVersion\nPriced\nModel"]
   R -->|unknown model| U["unpriced: Priced=false\nMicroUSD=0 (no fabrication)"]
@@ -40,33 +44,34 @@ flowchart LR
 - **Fail-fast on malformed tables** — missing version, empty models, negative
   rates, or bad JSON yield an explicit error at load (`ErrMalformedTable`); the
   package never silently uses stale or partial rates.
-- **Negative deltas stay negative** — an overrun (SW-017 negative savings)
-  produces negative USD honestly; no clamping here (the anti-gaming cap is
-  SW-020).
+- **Negative deltas stay negative** — an overrun (negative savings from the
+  meter) produces negative USD honestly; there's no clamping here (the
+  anti-gaming cap lives elsewhere).
 - **Per-session accumulation** — a `Session` helper sums per-call `USDResult`
-  figures into a deterministic per-session total (integer add, model-attributable).
+  figures into a deterministic per-session total (integer add,
+  model-attributable).
 - **Local-first / hermetic** — `LoadFromPath` rejects remote sources; a static
   test guards against any `"net"` import.
 
 ## Why these decisions
 
 - **Integer fixed-point over float** — per-token rates are tiny (fractions of a
-  cent); `float64` can drift or round favorably. Micro-USD integers keep every
-  figure exact and byte-comparable.
+  cent), and `float64` can drift or round favorably. Micro-USD integers keep
+  every figure exact and byte-comparable.
 - **No implicit default for unknown models** — silently substituting a default
   rate would fabricate a favorable figure for any model name. The honest answer
-  for an unpriced model is "unpriced", flagged.
-- **Exact multiply, no rounding** — at micro-USD resolution, `delta × rate` needs
-  no rounding; adding a rounding step would only create an inflation risk.
-  `FormatUSD` (display only) rounds **toward zero** so a displayed figure never
-  exceeds the exact value.
+  for an unpriced model is "unpriced," flagged as such.
+- **Exact multiply, no rounding** — at micro-USD resolution, `delta × rate`
+  needs no rounding; adding a rounding step would only create an inflation
+  risk. `FormatUSD` (display only) rounds **toward zero**, so a displayed
+  figure never exceeds the exact value.
 - **Embedded over file path** — embedding makes the table part of the binary
-  (reproducible builds, SW-013), so there's no runtime file lookup and no path
-  to tamper with. `LoadFromPath` exists for tests/custom deployments.
+  (supporting reproducible builds), so there's no runtime file lookup and no
+  path to tamper with. `LoadFromPath` exists for tests and custom deployments.
 
 ## Scope boundary
 
-This story computes per-call USD and a per-session running sum. **Cross-restart
-cumulative** persistence with full integrity is SW-019; the **anti-gaming cap +
-MCP/CLI readout** is SW-020. Network price feeds are explicitly out — local-only
-forever.
+This capability computes per-call USD and a per-session running sum.
+Cross-restart cumulative persistence with full integrity, and the anti-gaming
+cap plus MCP/CLI readout, are separate capabilities built on top of this one.
+Network price feeds are explicitly out of scope — pricing stays local-only.

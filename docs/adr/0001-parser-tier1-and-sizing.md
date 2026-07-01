@@ -9,10 +9,10 @@
 ## Context
 
 graphi turns source files into ASTs through a single deterministic parse boundary
-(`core/parse`). The blocking sub-decision under the already-resolved hybrid
-parsing decision (PB-001/OQ1) is: how many languages can ship via **pure-Go,
-CGo-free** parsing, and at what binary-size cost, while preserving graphi's
-local-first, single-static-binary, zero-CGo posture.
+(`core/parse`). The hybrid parsing decision (PB-001/OQ1) is already resolved at
+the portfolio level; the sub-decision this ADR resolves is how many languages can
+ship via **pure-Go, CGo-free** parsing, and at what binary-size cost, while
+preserving graphi's local-first, single-static-binary, zero-CGo posture.
 
 Constraints (from `context/architecture.md`):
 - Default `graphi` binary MUST build with `CGO_ENABLED=0` (CI-enforced gate).
@@ -38,30 +38,30 @@ Constraints (from `context/architecture.md`):
 2. **Curated tier-1 candidate list (target ~20–40 langs, CGo-free).** The
    curated tier-1 set is the high-value language coverage to be delivered through
    pure-Go tree-sitter bindings behind the `parse.Parser` seam in follow-up
-   stories. Candidate list (to be finalized as grammars are integrated):
+   stories. Candidate list, to be finalized as grammars are integrated:
 
    Go (native AST — shipped), JSON (stdlib — shipped), TypeScript, JavaScript,
    TSX/JSX, Python, Java, C, C++, C#, Rust, Ruby, PHP, Bash/Shell, HTML, CSS,
    YAML, TOML, Markdown, SQL, Kotlin, Swift, Scala, Lua, Dockerfile, Protobuf,
    GraphQL, HCL/Terraform.
 
-   Rationale: this band covers the dominant languages in the four source projects'
-   feature corpus while keeping the trusted dependency base minimal and each
-   grammar version-pinned in `go.sum` under the supply-chain gates.
+   Rationale: this band covers the dominant languages across the four source
+   projects' feature corpus while keeping the trusted dependency base minimal,
+   with each grammar version-pinned in `go.sum` under the supply-chain gates.
 
-3. **Defer full grammar-laden integration behind the stable interface.** We do
-   **NOT** vendor the full 257-grammar go-sitter-forest bundle in SW-001. Reasons:
+3. **Defer full grammar-laden integration behind the stable interface.** SW-001
+   does **not** vendor the full 257-grammar go-sitter-forest bundle. Reasons:
    network fetch risk, binary-size blow-up, and CGo exposure for the broad set —
    all of which conflict with the default-build contract. Grammar integration is
    deferred to follow-up stories and lands incrementally behind the already-stable
    `parse.Parser` seam; `graphi-broad` (CGO, 257 grammars) is reachable only via an
    explicit opt-in build tag.
 
-## Measured sizing (this build — TRANSPARENCY NOTE)
+## Measured sizing (this build — transparency note)
 
-The numbers below are for the **current stdlib-only build** (Go-AST + JSON
-backends). They are **NOT** a grammar-laden build — they establish the CGo-free
-baseline and headroom against the budget. Per-grammar size deltas will be
+The numbers below are for the current stdlib-only build (Go-AST + JSON
+backends). They are **not** a grammar-laden build — they establish the CGo-free
+baseline and the headroom against budget. Per-grammar size deltas will be
 recorded as each tier-1 grammar is integrated.
 
 - Toolchain: Go 1.26.3 (darwin/arm64), `CGO_ENABLED=0`.

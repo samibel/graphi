@@ -1,12 +1,17 @@
 # Per-Language Binary-Budget Sub-Allocation (SW-052, EP-009 STEP-0)
 
+This file defines the per-worker binary-size budget for graphi's tier-1 language
+grammars: which languages are in scope, how the size cost is modeled, and the
+measured deltas each worker recorded. It's for contributors adding or auditing
+a language grammar in the default build.
+
 > **Owner:** SW-052 (STEP-0 foundation seam — hard gate). This file defines the
 > per-worker binary-budget sub-allocation that the tier-1 language workers
 > (SW-053..056) build against. It **freezes** the curated tier-1 list and assigns
 > each worker a binary-size envelope.
 >
-> **Scope boundary (do NOT cross in this story):** this file is ADDED here.
-> `bench/bench-budget.yml` (the gate's single source of truth) is **NOT** re-pinned
+> **Scope boundary (do not cross in this story):** this file is added here.
+> `bench/bench-budget.yml` (the gate's single source of truth) is **not** re-pinned
 > in SW-052 — consolidation into `bench-budget.yml` is deferred to **SW-057**. The
 > numbers below are a planning envelope, not the enforced gate value yet.
 
@@ -16,19 +21,20 @@ The whole-binary budget is **< 50 MB** (GoReleaser), pinned in `bench-budget.yml
 as `binary_size_bytes` (current baseline `18,500,000`, budget `20,000,000`). EP-009
 fans grammar work out across parallel language workers. Without a per-worker
 envelope, the first worker to land could consume the shared headroom and silently
-starve later workers, turning a parallelizable epic into a serialized contention
-point. This file pre-divides the headroom so each worker has a fixed contract.
+starve later workers — turning a parallelizable epic into a serialized contention
+point. This file pre-divides the headroom so each worker gets a fixed contract.
 
 ## Frozen tier-1 list (the pure-Go `gotreesitter` runtime + its embedded grammar blobs)
 
 > **RE-PLANNED 2026-06-24 (EP-009-REPLAN-001).** The original framing — "curated, pure-Go
-> subset of `go-sitter-forest`" — was **falsified** by the SW-053 dev spike: `go-sitter-forest`
+> subset of `go-sitter-forest`" — was **falsified** by the SW-053 dev spike. `go-sitter-forest`
 > is entirely CGO (`import "C"` + `parser.c`), so it has **no** pure-Go subset to curate and
-> cannot enter the `CGO_ENABLED=0` default tier at all. The default tier instead draws from the
-> genuinely pure-Go **`github.com/odvcencio/gotreesitter` v0.20.2** runtime and its Go-embedded
-> grammar `.bin` blobs, selected at build time via **subset build tags** (see "Subset-tag
-> default build" below). `go-sitter-forest` is retained for the opt-in CGO `graphi-broad` build
-> only.
+> cannot enter the `CGO_ENABLED=0` default tier at all.
+>
+> The default tier instead draws from the genuinely pure-Go
+> **`github.com/odvcencio/gotreesitter` v0.20.2** runtime and its Go-embedded grammar `.bin`
+> blobs, selected at build time via **subset build tags** (see "Subset-tag default build"
+> below). `go-sitter-forest` is retained for the opt-in CGO `graphi-broad` build only.
 
 The default tier ships **pure-Go, CGo-free** parsers only (`CGO_ENABLED=0 go build
 ./...` stays green; `internal/cgoconformance` enforces it — no offender named). The tier-1 set
@@ -80,14 +86,15 @@ available grammar is **CGO-only** (`go-sitter-forest`). They MUST NOT enter the 
 `RegisterDefaults`, because a CGO grammar in the default tier would break `CGO_ENABLED=0`.
 
 > **RE-PLANNED note:** the *reason* for deferral is now **extractor scope / CGO-only
-> grammars**, NOT "no maintained pure-Go grammar in `go-sitter-forest`" (that premise was
-> false — `gotreesitter` ships 206 pure-Go grammars, all tier-1 languages present). The
-> deferred long tail is reachable through the `go-sitter-forest`-backed CGO seam (SW-056):
-> that lane exposes a **257-grammar** seam, but it wires exactly **one** grammar — `zig` —
-> as the reference (`core/parse/broad.go` `RegisterBroad`); the 257-grammar `forest`
-> meta-module is **intentionally not imported** (it would statically pull in hundreds of MB
-> of generated C). Re-evaluate per language if its pure-Go extractor becomes worth tier-1
-> effort, or wire it on the broad lane one subpackage at a time.
+> grammars**, not "no maintained pure-Go grammar in `go-sitter-forest`" (that premise was
+> false — `gotreesitter` ships 206 pure-Go grammars, all tier-1 languages present).
+>
+> The deferred long tail is reachable through the `go-sitter-forest`-backed CGO seam
+> (SW-056): that lane exposes a **257-grammar** seam, but it wires exactly **one** grammar
+> — `zig` — as the reference (`core/parse/broad.go` `RegisterBroad`). The 257-grammar
+> `forest` meta-module is **intentionally not imported** (it would statically pull in
+> hundreds of MB of generated C). Re-evaluate per language if its pure-Go extractor becomes
+> worth tier-1 effort, or wire it on the broad lane one subpackage at a time.
 
 ## Per-worker binary-size envelope
 
@@ -169,10 +176,11 @@ runtime + per-blob model, 2026-06-24):
 
 ### Measured deltas (SW-054 — accumulated curated tier-1 subset)
 
-SW-054 clones the SW-053 recipe over the remaining curated tier-1 languages. The shipped
-default build now embeds the accumulated subset-tag set (umbrella `grammar_subset` + one
-`grammar_subset_<lang>` per registered language). Measured on go1.26.3 / darwin-arm64 with
-`CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags '<accumulated set>' ./cmd/graphi`:
+SW-054 applies the same recipe as SW-053 over the remaining curated tier-1 languages. The
+shipped default build now embeds the accumulated subset-tag set (umbrella `grammar_subset`
+plus one `grammar_subset_<lang>` per registered language). Measured on go1.26.3 /
+darwin-arm64 with `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags '<accumulated
+set>' ./cmd/graphi`:
 
 | Build | Binary size (bytes) | Δ vs pre-grammar baseline | grammar blobs embedded |
 |-------|---------------------|---------------------------|------------------------|

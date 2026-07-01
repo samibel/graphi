@@ -1,5 +1,9 @@
 # Token-Parity Eval Harness & Coverage Matrix (SW-012)
 
+This document describes the CI harness that measures graphi's token-efficiency
+claim and guards eval coverage against silent erosion. It's for contributors
+touching the eval dataset, the MCP tool registry, or CLI command set.
+
 > Distinct CI check: **`token-parity-eval`**.
 > Workflow: [`.github/workflows/eval.yml`](../../.github/workflows/eval.yml)
 > Harness: [`internal/eval`](../../internal/eval) · CLI: [`cmd/eval`](../../cmd/eval) · dataset: [`internal/eval/cases.json`](../../internal/eval/cases.json) · coverage baseline: [`internal/eval/coverage-baseline.json`](../../internal/eval/coverage-baseline.json)
@@ -18,7 +22,7 @@ Before SW-012, graphi's headline "~50× fewer tokens" claim was an **assertion**
 
 ## State after this story
 
-SW-012 makes the claim **evidence-gated** and the eval surface **coverage-gated**.
+The claim is now **evidence-gated**, and the eval surface is **coverage-gated**.
 
 ### The measurement
 
@@ -61,9 +65,12 @@ flowchart TD
 
 ### Hermeticity & determinism
 
-Reused SW-008 posture: zero non-loopback network, no telemetry, CGo-disabled
-(enforced by the SW-009 gate), embedded dataset (no filesystem/net at runtime).
-Two runs on unchanged inputs produce **byte-identical** reports (`TestDeterministic_ByteIdenticalReport`).
+The harness reuses the egress/telemetry posture described in
+`docs/ci/egress-canary.md`: zero non-loopback network, no telemetry, and
+CGo-disabled (enforced by the gate in `docs/ci/cgo-conformance.md`). The dataset
+is embedded, so there's no filesystem or network access at runtime. Two runs on
+unchanged inputs produce **byte-identical** reports
+(`TestDeterministic_ByteIdenticalReport`).
 
 ## Why these changes were made
 
@@ -78,7 +85,8 @@ Two runs on unchanged inputs produce **byte-identical** reports (`TestDeterminis
 
 ## Out of scope
 
-- The token-shaping/savings-ledger implementation (EP-003) — this story only
-  evaluates it. When EP-003 ships, its live winnowed output is captured into the
+- The token-shaping/savings-ledger implementation (EP-003) — this harness only
+  evaluates it. Once EP-003 ships, its live winnowed output is captured into the
   frozen eval set and re-measured by this same harness.
-- Egress/telemetry enforcement (SW-008) — reused as posture only.
+- Egress/telemetry enforcement — reused here as posture only (see
+  `docs/ci/egress-canary.md`).

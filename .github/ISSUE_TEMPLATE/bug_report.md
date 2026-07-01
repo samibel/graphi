@@ -33,4 +33,4 @@ What you expected to happen instead.
 
 ## Logs / output
 
-<!-- Paste relevant output. graphi makes no network calls, so logs are local. -->
+<!-- Paste relevant output here. graphi makes no network calls, so logs stay local. -->

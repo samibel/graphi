@@ -1,31 +1,35 @@
-# MCP/CLI Graph-Aware Edit & Refactor Command Surface (SW-038, EP-015)
+# MCP/CLI Graph-Aware Edit & Refactor Command Surface
 
-This document explains the state **before** and **after** SW-038, why the changes
-were made, and the load-bearing design decisions: the surface is a **thin
-transport** over one shared `client.Direct` implementation; undo is achieved by
-**persisting the pre-edit snapshot** keyed by a crypto-random undo token; and the
-audit/undo store is an `engine/edit` **side-channel** in the ingest-meta sidecar,
-never in `core/graphstore`.
+This document covers how graph-aware edit and refactor operations are exposed
+to callers over the MCP server and the CLI. It's written for contributors
+working on either surface, or on the shared `client.Direct` implementation
+underneath them.
 
-> **EP-015 additions (SW-091 … SW-094).** EP-015 extended this surface with
-> two new CLI subcommands — `graphi inline` (SW-092) and `graphi safe-delete`
-> (SW-093) — and the `graphi diagnose` diagnostics + code-action flow (SW-091).
-> All three ride the same shared `client.Client` interface through new
+It explains the state **before** and **after** this surface was introduced,
+why the changes were made, and the load-bearing design decisions: the surface
+is a **thin transport** over one shared `client.Direct` implementation; undo is
+achieved by **persisting the pre-edit snapshot** keyed by a crypto-random undo
+token; and the audit/undo store is an `engine/edit` **side-channel** in the
+ingest-meta sidecar, never in `core/graphstore`.
+
+> **Later additions: diagnose, inline, safe-delete.** This surface was later
+> extended with two new CLI subcommands — `graphi inline` and
+> `graphi safe-delete` — and the `graphi diagnose` diagnostics + code-action
+> flow. All three ride the same shared `client.Client` interface through new
 > `Inline` / `SafeDelete` / `Diagnose` methods, with a shared marshaller
 > (`engine/edit/serialize.go`) and a byte-parity harness
 > (`surfaces/ep015_parity_test.go`). `diagnose` is graph-derived (no source
 > mutation), `inline` performs a reference-correct inline refactor with a
-> fail-safe block list, `safe-delete` gates on reference-safety before
+> fail-safe block list, and `safe-delete` gates on reference-safety before
 > removing a symbol.
 
-## Before SW-038
+## Before this surface existed
 
-The atomic edit primitive (SW-035), the graph-aware refactor saga + EP-004
-`DryRun` preview (SW-036), and per-edit `edit_provenance` (SW-037) all shipped in
-`engine/edit`, but **none of it was reachable from a surface**. The MCP server
-(`surfaces/mcp`) and CLI (`surfaces/cli` + `cmd/graphi`) exposed only
-query/search/savings/analysis through the shared `surfaces/client.Client` seam.
-There was:
+The atomic edit primitive, the graph-aware refactor saga with dry-run preview,
+and per-edit `edit_provenance` tracking all shipped in `engine/edit`, but
+**none of it was reachable from a surface**. The MCP server (`surfaces/mcp`)
+and CLI (`surfaces/cli` + `cmd/graphi`) exposed only query/search/savings/
+analysis through the shared `surfaces/client.Client` seam. There was:
 
 - **No** way for an MCP agent or a CLI user to trigger a refactor.
 - **No** auditable change record (operation, target, before/after, actor,
@@ -35,13 +39,13 @@ There was:
   `defer os.RemoveAll`'d, so it was discarded on success **and** failure, and
   `Result.UndoToken` was always empty.
 
-## After SW-038
+## After this surface landed
 
 A unified edit/refactor command surface is exposed over **both** the MCP server
 and the CLI, sharing **one** implementation in `client.Direct`:
 
-- `RefactorPreview` resolves the target via the EP-001 query layer and returns the
-  EP-004 impact set + planned ops via SW-036's `ApplyRefactor(DryRun:true)`
+- `RefactorPreview` resolves the target via the query layer and returns the
+  impact set + planned ops via `ApplyRefactor(DryRun:true)`
   **before any mutation** (AC-1).
 - `Refactor` commits through the same `*edit.Applier` saga and persists an
   auditable `ChangeRecord` (operation, target, before/after, actor, timestamp,
@@ -133,9 +137,9 @@ change to the saga: `applyBatch` no longer unconditionally `os.RemoveAll`s the
 snapshot dir — on **rollback** `compensate` removes it (so a faulted edit leaves
 no orphan), and on **success** it hands the snapshot + captured originals back to
 the caller as `sagaArtifacts`. A bare (non-recording) `ApplyRefactor` discards
-them itself, preserving the pre-SW-038 "no orphan on success" behavior; the
+them itself, preserving the original "no orphan on success" behavior; the
 recording path (`ApplyRefactorRecorded`) persists them into the durable undo
-store. **SW-035/036 failure-rollback semantics are unchanged**: every rollback
+store. **The existing failure-rollback semantics are unchanged**: every rollback
 path still restores source bytes + `Load`s the snapshot, and now also removes the
 snapshot dir.
 
@@ -169,9 +173,10 @@ first, so a fault anywhere in the restore compensates back to the post-edit stat
 The `change_record` table lives in the **ingest-meta SQLite sidecar**
 (`ingest-meta.db`), a sibling of `edit_provenance` / `file_content_cache` /
 `reverse_deps` / `dirty_units`. It is **never** in `core/graphstore`: the AC-1
-byte-identical invariant compares the marshalled **graph** (`model.Graph.Marshal`),
-and an audit table in the graph store would poison that digest — the same reason
-SW-037 kept `edit_provenance` out. `engine/edit.ChangeRecorder` owns its table via
+byte-identical invariant compares the marshalled **graph**
+(`model.Graph.Marshal`), and an audit table in the graph store would poison
+that digest — the same reason `edit_provenance` was kept out of the graph
+store. `engine/edit.ChangeRecorder` owns its table via
 `(*ingest.Ingester).MetaDB()`, keeping the audit logic in `engine/edit` while
 reusing the one sidecar.
 
@@ -214,9 +219,9 @@ available via `edit_provenance` joined on `edit_id`.
 ## Undo-store bounding (documented limitation)
 
 The undo store currently retains every successful edit's snapshot + source bytes
-under `<meta>/undo/`. SW-038 does **not** ship a retention/pruning policy; an
+under `<meta>/undo/`. There is **no** retention/pruning policy yet; an
 unbounded store is a disk-growth consideration for long-lived repos. This is a
-**documented bounded limitation**, not a silent gap — a future story can add
+**documented limitation**, not a silent gap — a future change can add
 size/age-based pruning of `change_record` rows + their `<meta>/undo/<token>/` dirs.
 
 ## Tests (where each AC is proven)

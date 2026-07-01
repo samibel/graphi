@@ -1,24 +1,31 @@
 # Graph-aware refactors (`engine/edit.ApplyRefactor`)
 
-Status: introduced in SW-036 (EP-006, epic 2/4).
+This document covers `ApplyRefactor`, the multi-op saga that powers rename,
+extract, move, and signature-change refactors. It's written for contributors
+working on the refactor engine or a surface built on top of it.
+
 Scope: rename, extract, move, and signature-change refactors that resolve their
-blast radius through EP-004 impact resolution and apply every edit in ONE atomic
+blast radius through impact resolution and apply every edit in ONE atomic
 multi-op saga, staying byte-identical to a full re-index within a ≤2s freshness
-budget. Built on the SW-035 atomic edit primitive (`Applier.Apply`).
+budget. Built on the atomic edit primitive (`Applier.Apply`) described in
+[atomic-edit.md](atomic-edit.md).
 
 Built-on / deferred-to:
-- **Reuses** SW-035: `writeFileAtomic`, `Snapshot`/`Load`, `ConsistencyChecker`
-  (`NewParserConsistencyChecker` + `graphDigest`), `resolvePath`, `applySpan`,
-  the `Result`/`Outcome` shape, and the inherited fault seams.
-- **Closes** the SW-035 deferral: the `core/graphstore` node/edge **delete API**.
-- **Defers** to SW-037: per-edit-id / operation-type provenance (SW-036 records
-  re-derived *parse* provenance, see below). Defers to SW-038: the MCP/CLI surface
-  and the `UndoToken` (reserved on `Result`, still empty here).
+- **Reuses** the atomic edit primitive: `writeFileAtomic`, `Snapshot`/`Load`,
+  `ConsistencyChecker` (`NewParserConsistencyChecker` + `graphDigest`),
+  `resolvePath`, `applySpan`, the `Result`/`Outcome` shape, and the inherited
+  fault seams.
+- **Closes** an earlier deferral: the `core/graphstore` node/edge **delete API**.
+- **Defers** per-edit-id / operation-type provenance to a follow-up (this
+  document's refactors record re-derived *parse* provenance, see below), and
+  defers the MCP/CLI surface and the `UndoToken` (reserved on `Result`, still
+  empty here) to a later surface — see
+  [command-surface.md](command-surface.md).
 
-## State before this story
+## State before this capability existed
 
-After SW-035, graphi had an atomic edit primitive — but it was deliberately
-scoped to **single-file, identity-preserving span replacement**:
+Graphi had an atomic edit primitive — but it was deliberately scoped to
+**single-file, identity-preserving span replacement**:
 
 - `core/graphstore` was **upsert-only** (`PutNode`/`PutEdge`): there was **no
   delete API**. `ingest.parseAndCommit` documented the consequence verbatim — its
@@ -27,16 +34,17 @@ scoped to **single-file, identity-preserving span replacement**:
   file. A multi-file refactor could only be a *loop* of `Apply` calls, which (a)
   leaves files 1..K-1 committed on a failure at file K (partial state), and (b)
   runs N full-graph consistency checks (O(N) full re-indexes — wrecks ≤2s).
-- EP-004 `impactAnalyzer.Analyze` could compute a blast radius as **nodes**, but
-  nothing turned that into the concrete `(FilePath, ByteSpan)` edits a refactor
-  needs (`model.Node` exposes only `Line()`/`Column()`, no byte span).
+- The impact analyzer (`impactAnalyzer.Analyze`) could compute a blast radius as
+  **nodes**, but nothing turned that into the concrete `(FilePath, ByteSpan)`
+  edits a refactor needs (`model.Node` exposes only `Line()`/`Column()`, no byte
+  span).
 
 Because `NodeId = xxhash64(Kind, QualifiedName, SourcePath)`, **rename** (changes
 QualifiedName), **move** (changes SourcePath) and **signature change** (changes
-QualifiedName) are all *non-identity-preserving* — exactly the class SW-035
-excluded. They were unbuildable on `Apply` alone.
+QualifiedName) are all *non-identity-preserving* — exactly the class the atomic
+edit primitive excluded. They were unbuildable on `Apply` alone.
 
-## State after this story
+## State after this capability landed
 
 ```mermaid
 flowchart LR
@@ -60,19 +68,19 @@ Three things landed:
    re-index drops the old node instead of orphaning it.
 
 2. **Multi-op refactor saga `ApplyRefactor` / `applyBatch`.** It generalizes the
-   SW-035 single-file saga to N files / N ops with the whole batch as the unit of
+   single-file saga to N files / N ops with the whole batch as the unit of
    atomicity (see the diagram below).
 
-3. **EP-004 consumption + span-resolution planner.** `blastRadius` calls the
-   impact analyzer (`Direction:Forward`, kinds `{calls,references,defines}`) to
-   find the impacted files, and `planNameRewrite` resolves each file down to
+3. **Impact-analysis consumption + span-resolution planner.** `blastRadius` calls
+   the impact analyzer (`Direction:Forward`, kinds `{calls,references,defines}`)
+   to find the impacted files, and `planNameRewrite` resolves each file down to
    identifier-boundary-matched `(FilePath, ByteSpan, Replacement)` `EditOp`s — the
    net-new layer that bridges "which nodes" to "which bytes". An optional
    `DryRun` returns the impact set + planned ops without mutating.
 
 ## Why it is built this way
 
-### The delete API is the gating prerequisite (closes the SW-035 deferral)
+### The delete API is the gating prerequisite (closes an earlier deferral)
 
 A rename mints a *new* `NodeId` while the old node still exists. A full re-index
 drops the old node; the incremental path, without delete, would keep it. So the
@@ -118,11 +126,12 @@ sequenceDiagram
 A failure at file K of N restores **all** already-written files and `Load`s the
 pre-edit graph — a half-applied multi-file refactor is impossible by
 construction. This is exercised by the new **fail-on-file-K** fault seam
-(`SetBatchFaultHook`) alongside SW-035's three inherited seams, and a retried
-refactor then succeeds (idempotency). The single end-of-batch consistency check
-(never per file) is what keeps the ≤2s freshness budget feasible.
+(`SetBatchFaultHook`) alongside the three fault seams inherited from the atomic
+edit primitive, and a retried refactor then succeeds (idempotency). The single
+end-of-batch consistency check (never per file) is what keeps the ≤2s freshness
+budget feasible.
 
-### EP-004 gives nodes; the span-resolution layer gives bytes
+### The impact analyzer gives nodes; the span-resolution layer gives bytes
 
 `impactAnalyzer.Analyze(Forward)` returns the blast radius as reached *nodes*
 (capped at 1024, with `Truncated` surfaced). `model.Node` has no byte offset, so
@@ -138,7 +147,9 @@ the parser at ingest — there is no per-edit-operation field. Per the refinemen
 scope clarification, AC-2's "provenance recording the originating operation" is
 read as: affected nodes/edges are re-derived with correct **parse** provenance via
 the incremental path. Dedicated per-edit-id / operation-type provenance is
-**SW-037's** charter and is explicitly deferred. No model field was added here.
+explicitly deferred to a follow-up (see
+[provenance-and-recovery.md](provenance-and-recovery.md)); no model field was
+added here.
 
 ### The four operations
 
@@ -164,4 +175,3 @@ the resulting source changes (and therefore which old node the re-index deletes)
 - **No eval/exec/shell, no outbound network** — unchanged local-first guarantees.
 - **Concurrency:** single-writer-per-repo (config `writing.default_mode:
   single_writer`); the saga is not atomic against a concurrent edit/ingest.
-```

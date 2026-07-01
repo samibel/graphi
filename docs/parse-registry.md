@@ -1,7 +1,8 @@
-# Parse Registry — Before / After (SW-001)
+# Parse Registry — Before / After
 
-This document satisfies the `[DOC]` acceptance criterion for SW-001: it records the
-state **before** and **after** this story and explains **why** the changes were made.
+This document covers the introduction of graphi's pluggable parse registry: the
+state before and after the change, and why it was made. It is intended for
+contributors working on `core/parse` or adding a new language parser.
 
 ## Before
 
@@ -40,9 +41,9 @@ A Go 1.26 module (`github.com/samibel/graphi`, `CGO_ENABLED=0`) with a pure-leaf
   only the Go standard library, honoring the strict `cmd → surfaces → engine →
   core` direction and the local-first contract (CGo-free, zero outbound network,
   no eval/exec/shell). The default build is `CGO_ENABLED=0`.
-- **Determinism.** A single `contentHash` helper anchors provenance: same input →
-  same hash. (FNV-1a 64-bit stdlib placeholder for the canonical xxhash64, swappable
-  behind that one helper.)
+- **Determinism.** A single `contentHash` helper anchors provenance: same input
+  always yields the same hash. (Currently an FNV-1a 64-bit stdlib placeholder for
+  the canonical xxhash64, swappable behind that one helper.)
 - **Safety.** Each parser recovers from backend panics and honors context
   cancellation, so one malformed file cannot crash the caller — the `core/parse`
   half of the planned two-layer guard (the engine-side timeout/size guard lands

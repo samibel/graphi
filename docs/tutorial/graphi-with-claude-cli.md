@@ -10,7 +10,7 @@ A companion, detailed visualization lives next to this file as an Excalidraw dia
 
 ## 1. The problem (why an agent is slow without graphi)
 
-When the Claude CLI has to answer a question like *"Who calls `checkout`, and what breaks if I change it?"*, without graphi it must **grep and read whole files**. That is slow, expensive (many tokens), and unreliable — it *guesses* from whatever it happened to read.
+Without graphi, when the Claude CLI has to answer a question like *"Who calls `checkout`, and what breaks if I change it?"*, it must **grep and read whole files**. That approach is slow, expensive in tokens, and unreliable — it *guesses* from whatever it happened to read.
 
 ```mermaid
 flowchart LR
@@ -30,7 +30,7 @@ flowchart LR
     end
 ```
 
-**The core idea:** graphi parses the repo **once** into a deterministic **code graph** — nodes are symbols (functions, types, files), edges are relationships (`calls`, `references`, `defines`, `imports`). Every agent question becomes **one** targeted graph lookup instead of a reading tour through half the repo.
+**The core idea:** graphi parses the repo **once** into a deterministic **code graph** — nodes are symbols (functions, types, files) and edges are relationships (`calls`, `references`, `defines`, `imports`). Every agent question then becomes **one** targeted graph lookup instead of a reading tour through half the repo.
 
 ---
 
@@ -122,7 +122,7 @@ All tools are read-only by default. Real MCP tool names, grouped:
 - **Search:** `search`, `search_semantic`, `compound` (Cypher-style)
 - **Pattern queries:** `search_ast`, `find_clones`
 - **Analysis:** `analyze` (e.g. with `analyzer: "impact"`), `analyze_taint`, `analyze_pdg`, `analyze_interproc`, `analyze_contracts`, `analyze_githistory`
-- **EP-017 analyzers:** `communities`, `notebook-ingest`, `taint-query`, `watcher-status`
+- **Notebooks, watcher & communities (EP-017):** `communities`, `notebook-ingest`, `taint-query`, `watcher-status`
 - **PR review (EP-007 / EP-018):** `analyze_pr_risk`, `analyze_pr_signals`, `analyze_pr_questions`, `pr_comment`, `list_prs`, `triage_prs`, `conflicts_prs`, `suggest_reviewers`, `compare_branches`, `critique_review`
 - **Diagnostics & code actions (EP-015, CLI-only):** `diagnose`, `inline`, `safe_delete`
 - **Memory & skills (EP-012):** `memory`, `distill`, `skillgen`
@@ -170,7 +170,7 @@ flowchart TD
 
 ## 7. The "wow" moment: the USD savings ledger
 
-graphi measures, per call, how many tokens it saved versus the "read whole files" baseline, prices it with an **embedded** price table (no network), and keeps a durable ledger — even across daemon restarts:
+graphi measures, per call, how many tokens it saved versus the "read whole files" baseline. It prices that with an **embedded** price table (no network) and keeps a durable ledger — even across daemon restarts:
 
 ```bash
 ./graphi savings

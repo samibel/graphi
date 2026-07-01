@@ -1,8 +1,13 @@
 # Egress-Denied Canary & Zero-Telemetry CI Gate (SW-008)
 
+This document describes the CI mechanisms that enforce graphi's local-first
+network posture: the runtime egress canary and the static zero-telemetry gate.
+It's for contributors touching network code or the surface stack, and for
+anyone auditing the "zero outbound network" claim.
+
 > Part of EP-002 (Local-First Trust, DevOps & Eval Harness). This document
-> satisfies the `[DOC]` acceptance criterion of SW-008: it describes the state
-> before and after this story and the reasoning behind the design.
+> describes the state before and after this story and the reasoning behind the
+> design.
 
 ## Before
 
@@ -22,7 +27,7 @@ In short: the trust property could regress undetected.
 
 ## After
 
-SW-008 makes the local-first contract **mechanically enforceable** through two
+The local-first contract is now **mechanically enforceable** through two
 independent mechanisms behind one acceptance contract:
 
 1. **Runtime egress canary** (`internal/canary`, `cmd/canary runtime`)
@@ -63,23 +68,23 @@ flowchart LR
   J -- no --> L[PASS]
 ```
 
-- **Two mechanisms, kept separate** (refinement A2): the runtime canary catches
-  *behavioral* egress; the static gate catches *structural* introduction. A
-  failure points at the right thing.
-- **Dial-attempt, not packet-seen** (refinement D2/S1): the assertion fires when
-  code *tries* to reach a non-loopback destination, so telemetry that opens a
-  socket which netns then blocks is still caught. This avoids a libpcap/cgo
-  dependency and keeps the canary itself CGo-free.
-- **Loopback scoped, not blanket** (refinement S3): only `127.0.0.0/8`, `::1`,
-  `localhost`, and Unix sockets are permitted — the legitimate local IPC users
-  (daemon Unix socket, local HTTP/SSE).
-- **Surface union derived, not hand-maintained** (refinement A4): coverage comes
-  from `engine/query.Operations` + the CLI command set + search, so a new
+- **Two mechanisms, kept separate.** The runtime canary catches *behavioral*
+  egress; the static gate catches *structural* introduction. A failure points at
+  the right thing.
+- **Dial-attempt, not packet-seen.** The assertion fires when code *tries* to
+  reach a non-loopback destination, so telemetry that opens a socket which netns
+  then blocks is still caught. This avoids a libpcap/cgo dependency and keeps the
+  canary itself CGo-free.
+- **Loopback scoped, not blanket.** Only `127.0.0.0/8`, `::1`, `localhost`, and
+  Unix sockets are permitted — the legitimate local IPC users (daemon Unix
+  socket, local HTTP/SSE).
+- **Surface union derived, not hand-maintained.** Coverage comes from
+  `engine/query.Operations`, the CLI command set, and search, so a new
   capability cannot slip past the canary.
-- **Lives outside production surfaces** (refinement A1): the canary is a
-  CI/test concern under `internal/canary` + `cmd/canary`; it does not import
-  `surfaces/*` or `engine/*` runtime code, so it cannot become part of the
-  attack surface it asserts about.
+- **Lives outside production surfaces.** The canary is a CI/test concern under
+  `internal/canary` and `cmd/canary`; it does not import `surfaces/*` or
+  `engine/*` runtime code, so it cannot become part of the attack surface it
+  asserts about.
 
 ## CI
 
@@ -89,7 +94,7 @@ Both gate the build (non-zero exit on any fail/hard-fail).
 
 ## Relationship to sibling stories
 
-- Builds on **EP-001** (the surface stack it exercises) and **SW-009** (the
-  default-graph notion the static gate scans).
+- Builds on the surface stack it exercises (EP-001) and the default-graph
+  notion the static gate scans (SW-009, see `docs/ci/cgo-conformance.md`).
 - The canonical static binary the canary eventually drives is produced by
   **SW-013**.

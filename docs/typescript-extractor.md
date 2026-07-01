@@ -1,21 +1,21 @@
-# First Curated Pure-Go Language: TypeScript over the SymbolExtractor Seam (SW-053)
+# First Curated Pure-Go Language: TypeScript over the SymbolExtractor Seam
 
-This document satisfies the `[DOC]` acceptance criterion for SW-053. It records the
-state **before** and **after** the first-curated-language slice and explains **why**
-the change was made. SW-053 is child 2/6 of EP-009; it is the **first real consumer**
-of the SW-052 `SymbolExtractor` seam and establishes the **repeatable worker recipe**
-every other tier-1 grammar (SW-054..056) then follows.
+This document covers TypeScript support: the first real language wired over the
+`SymbolExtractor` seam. It records the state before and after this slice, explains
+why the change was made, and establishes the repeatable recipe every other tier-1
+grammar then follows. It is intended for contributors adding the next tier-1
+language.
 
-See also: [`symbol-extractor-seam.md`](symbol-extractor-seam.md) (the SW-052 STEP-0
+See also: [`symbol-extractor-seam.md`](symbol-extractor-seam.md) (the seam's
 foundation) and [`parse-registry.md`](parse-registry.md).
 
 ## Before
 
-After SW-052, the language-neutral extraction seam existed and was proven, but the
-**only** real consumer was Go, which uses `go/ast` (not tree-sitter). The
-tree-sitter→graph mapping helper (`MapTreeSitter`) and the `PendingRef` contract were
-written test-first against fixture captures, with **no real grammar driving them**.
-JSON shipped as a structural-only parser (no symbol extraction).
+The language-neutral extraction seam existed and was proven, but its only real
+consumer was Go, which uses `go/ast` rather than tree-sitter. The tree-sitter→graph
+mapping helper (`MapTreeSitter`) and the `PendingRef` contract were written
+test-first against fixture captures, with no real grammar driving them yet. JSON
+shipped as a structural-only parser, with no symbol extraction.
 
 ```text
 GoParser.Parse  ──▶ goSymbolExtractor.Extract (go/ast)   ──▶ nodes / edges / PendingRefs
@@ -59,17 +59,20 @@ New/changed files:
 
 ### Pure-Go grammar (the one real risk, resolved)
 
-The maintained CGO go-sitter-forest grammars **cannot** enter the default tier: they
-use `import "C"` and an 8.8 MB `parser.c`, so under `CGO_ENABLED=0` all their Go files
-are build-constraint-excluded. Instead SW-053 uses **`github.com/odvcencio/gotreesitter`**,
-which re-implements the tree-sitter parser/lexer/query engine **in Go** (no `import
-"C"`, no C toolchain) and ships grammar parse tables as Go-embedded blobs. This keeps:
+The maintained CGO go-sitter-forest grammars cannot enter the default tier: they
+use `import "C"` and an 8.8 MB `parser.c`, so under `CGO_ENABLED=0` all their Go
+files are build-constraint-excluded. Instead, this slice uses
+**`github.com/odvcencio/gotreesitter`**, which re-implements the tree-sitter
+parser, lexer, and query engine in Go (no `import "C"`, no C toolchain) and ships
+grammar parse tables as Go-embedded blobs. This keeps:
 
-- `CGO_ENABLED=0 go build ./...` green, and the `internal/cgoconformance` import-graph
-  scan passing with **no offender named** (the AC's real definition of "CGo-free");
-- zero outbound network at runtime — the grammar is module-pinned and embedded at
-  build time; nothing is fetched at parse time;
-- byte-identical determinism — `Extract` is a pure transform over the parsed CST.
+- `CGO_ENABLED=0 go build ./...` green, with the `internal/cgoconformance`
+  import-graph scan passing and naming no offender — the real definition of
+  "CGo-free" here;
+- zero outbound network at runtime, since the grammar is module-pinned and
+  embedded at build time, so nothing is fetched at parse time;
+- byte-identical determinism, since `Extract` is a pure transform over the parsed
+  CST.
 
 ### TypeScript kind mapping
 
@@ -93,41 +96,44 @@ Following the Go reference, imports are recorded as `ImportSpec`s (alias + path)
 surfaced in `References` for the reverse-dependency cascade; **no `EdgeImports` graph
 edge** is emitted this slice. Cross-module / selector uses (`util.log(...)`) are
 recorded as inert `PendingRef`s (no fabricated `NodeId`), exactly as Go records
-`fmt.Println`. The FU-1 cross-file linker resolves them later.
+`fmt.Println`. The cross-file linker resolves them later.
 
 ## Why
 
-Establish the **repeatable worker recipe** on ONE real pure-Go grammar before fanning
-out. SW-053 proves end-to-end that a tree-sitter grammar can drive the SW-052 seam
-deterministically and CGo-free, producing the same node/edge/provenance contract as the
-Go reference. SW-054..056 then replicate this recipe (one query/walk + one golden
-fixture per language) over disjoint files, in parallel, without re-solving graph
-plumbing, determinism, or the cross-file deferral rules.
+The goal is to establish a repeatable recipe on one real pure-Go grammar before
+fanning out to the rest of tier-1. This slice proves end-to-end that a tree-sitter
+grammar can drive the seam deterministically and CGo-free, producing the same
+node/edge/provenance contract as the Go reference. Later languages then replicate
+this recipe — one query/walk plus one golden fixture per language — over disjoint
+files, in parallel, without re-solving graph plumbing, determinism, or the
+cross-file deferral rules.
 
-### Subset-tag default build (AC#3 — the net-new wiring, RESOLVED)
+### Subset-tag default build
 
 The `gotreesitter` `grammars` package embeds **all 206** grammar blobs by default
-(`//go:embed grammar_blobs/*.bin`, gated `!grammar_subset`, +~24.5 MiB). SW-053 wires the
-upstream **subset build-tag** mechanism so the **shipped default build embeds only the
-registered language's blob** — the all-206 default embed is **prohibited** in the shipped
-default:
+(`//go:embed grammar_blobs/*.bin`, gated `!grammar_subset`, +~24.5 MiB). This slice
+wires the upstream **subset build-tag** mechanism so the shipped default build
+embeds only the registered language's blob — the all-206 default embed is
+prohibited in the shipped default:
 
-- `internal/release.DefaultGrammarSubsetTags` is the **single source of truth**:
-  `{grammar_subset, grammar_subset_typescript}`. The umbrella `grammar_subset` tag switches
-  OFF the all-grammars embed; each `grammar_subset_<lang>` opts exactly one blob back in via
-  the upstream generated `z_subset_blob_embed_<lang>.go`.
-- The canonical `cmd/release` build (`go run ./cmd/release`) applies these tags, so the
-  shipped binary is subset-tagged by construction. SW-054 extends this list one entry per new
-  language (paired with its `RegisterDefaults` line).
-- The `release` CI job asserts the shipped binary embeds **only** the expected
+- `internal/release.DefaultGrammarSubsetTags` is the single source of truth:
+  `{grammar_subset, grammar_subset_typescript}`. The umbrella `grammar_subset` tag
+  switches OFF the all-grammars embed; each `grammar_subset_<lang>` opts exactly one
+  blob back in via the upstream generated `z_subset_blob_embed_<lang>.go`.
+- The canonical `cmd/release` build (`go run ./cmd/release`) applies these tags, so
+  the shipped binary is subset-tagged by construction. Later languages extend this
+  list one entry per new language, paired with its `RegisterDefaults` line.
+- The `release` CI job asserts the shipped binary embeds only the expected
   `grammar_blobs/*.bin` set (verified: **1** blob, `typescript.bin`, not 207).
 
-The corrected size model — one ~3.13 MB one-time pure-Go runtime (paid once for the whole
-epic) + a ~119 KiB per-language blob, governed by the whole-binary **< 50 MB** ceiling — and
-both re-recorded size numbers (subset ≈ +3.10 MiB; all-206 ≈ +24.5 MiB, cautionary only) live
-in [`bench/lang-budget.md`](../bench/lang-budget.md) ("Measured deltas (SW-053)"). The old
-≤ 1.0 MB per-language envelope is **superseded** (EP-009-REPLAN-001). SW-057 re-pins
-`bench-budget.yml` against the subset-tagged total.
+The corrected size model — one ~3.13 MB one-time pure-Go runtime (paid once, for
+all languages) plus a ~119 KiB per-language blob, governed by the whole-binary
+**< 50 MB** ceiling — and both re-recorded size numbers (subset ≈ +3.10 MiB;
+all-206 ≈ +24.5 MiB, cautionary only) live in
+[`bench/lang-budget.md`](../bench/lang-budget.md) ("Measured deltas (SW-053 —
+TypeScript, first curated grammar)"). The old ≤ 1.0 MB per-language envelope is
+superseded; a later story re-pins `bench-budget.yml` against the subset-tagged
+total.
 
 ```mermaid
 flowchart LR

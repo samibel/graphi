@@ -1,18 +1,19 @@
 # EP-009 Consolidation — Curated language tier, single budget re-pin (SW-057)
 
-> **[DOC] for SW-057 (EP-009 Slice 6, convergence).** This is the before/after record
-> for the consolidation slice: the single `bench-budget.yml` re-pin against the corrected
-> (subset-tagged) size model, the OQ1/FU-2 status flip, and the absorbed doc corrections
-> from SW-053..056 reviews. AC4.
+This is the before/after record for the EP-009 consolidation slice (SW-057, EP-009
+Slice 6, convergence): the single `bench-budget.yml` re-pin against the corrected
+(subset-tagged) size model, the OQ1/FU-2 status flip, and the doc corrections absorbed
+from the SW-053..056 reviews. It's for contributors reconciling the language-tier
+binary budget or tracing how the current numbers were derived.
 
 ## Why this slice exists
 
 EP-009 (FU-2) fanned grammar work out across parallel language workers (SW-053..056),
 each measuring its own per-language binary delta against a planning envelope in
 [`bench/lang-budget.md`](../bench/lang-budget.md). SW-057 is the **closing convergence
-slice** that runs after all workers merge: it sums the real shipped total **once**,
-re-pins the enforced budget gate against it, flips the OQ1/FU-2 status, and reconciles
-the docs that drifted during the fan-out.
+slice** that runs after all workers merge. It sums the real shipped total **once**,
+re-pins the enforced budget gate against that total, flips the OQ1/FU-2 status, and
+reconciles the docs that drifted during the fan-out.
 
 ## Before / after
 

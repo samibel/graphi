@@ -4,7 +4,7 @@ A practical, end-to-end guide: build graphi, index a repository, and use every
 surface — CLI, HTTP/SSE API, web client, TUI, VS Code extension, and the MCP
 server for Claude Code. Everything runs **locally**; no code leaves your machine.
 
-> New to graphi? Read the [README](../README.md) for the “what & why”. This guide
+> New to graphi? Read the [README](../readme.md) for the “what & why”. This guide
 > is the “how”.
 
 ---
@@ -86,9 +86,9 @@ The shortest path: run the bare command inside any repository.
 cd your-repo && graphi
 ```
 
-graphi detects the repo, indexes it incrementally into an auto-managed state dir,
-serves the UI on a free loopback port, and opens your default browser at the graph.
-It also prints a "Saved $X this session" token-savings readout.
+graphi detects the repo, indexes it incrementally into an auto-managed state
+dir, serves the UI on a free loopback port, and opens your default browser at
+the graph. It also prints a "Saved $X this session" token-savings readout.
 
 On a headless box or over SSH — or with `--no-browser` / `GRAPHI_NO_BROWSER=1` —
 graphi prints the local URL instead of trying to open a browser:
@@ -97,9 +97,9 @@ graphi prints the local URL instead of trying to open a browser:
 graphi --no-browser        # prints e.g. http://127.0.0.1:54321 instead of opening it
 ```
 
-No flags, no database path, no port to pick: auto-discovery hides all of that. On
-first run, graphi also offers (once, interactively) to connect Claude Code; in a
-non-interactive shell it prints a hint instead.
+No flags, no database path, no port to pick — auto-discovery hides all of that.
+On first run, graphi also offers (once, interactively) to connect Claude Code;
+in a non-interactive shell it prints a hint instead.
 
 ### 2. Short verbs
 
@@ -123,9 +123,9 @@ These are aliases over the same engine as the full forms below.
 
 ### 3. Full flags (advanced)
 
-The long forms expose every knob — explicit DB / meta sidecar, the daemon, and the
-HTTP surface address. Power-user flags (`-db`, `-daemon`, `-root`, `-meta`,
-`-addr`) all still work; auto-discovery just hides them by default.
+The long forms expose every knob: explicit DB / meta sidecar, the daemon, and
+the HTTP surface address. Power-user flags (`-db`, `-daemon`, `-root`, `-meta`,
+`-addr`) all still work — auto-discovery just hides them by default.
 
 ```bash
 # Structural query, long form — pin the store and/or talk to a daemon
@@ -164,7 +164,8 @@ curl -s 'http://127.0.0.1:8080/query/callers?symbol=pkg.MyFunc'
 
 ## 5. Indexing a repository
 
-There are two ways to build the graph, depending on whether you want it to persist.
+There are two ways to build the graph, depending on whether you want it to
+persist.
 
 ### 5.1 In-memory (ephemeral, simplest)
 
@@ -179,7 +180,7 @@ graphi http -addr 127.0.0.1:8080 -root ./my-repo
 ### 5.2 Persistent (SQLite, reusable by CLI / MCP / daemon)
 
 Pass `-db <path>` to persist the graph into a CGo-free SQLite store. Build it
-once, then reuse it from any surface without re-ingesting:
+once, then reuse it from any surface without re-ingesting.
 
 ```bash
 mkdir -p ~/.graphi
@@ -352,8 +353,8 @@ graphi setup
 #   prints each config path it wrote. Then restart/reload that client.
 ```
 
-By default (`--client all`) `setup` wires **Claude Code** (created if absent) plus
-every other local client that looks installed:
+By default (`--client all`), `setup` wires **Claude Code** (created if absent)
+plus every other local client that looks installed:
 
 | Client | Config it writes | Servers key |
 |---|---|---|
@@ -364,9 +365,10 @@ every other local client that looks installed:
 | Claude Desktop | `<user-config>/Claude/claude_desktop_config.json` | `mcpServers` |
 
 > **Cloud agents are out of scope.** Devin and the GitHub Copilot *coding agent*
-> run in a remote sandbox and cannot reach a local stdio graphi (that would also
-> break the zero-egress contract). They need graphi installed *inside* their
-> environment via a repo-side setup step — a separate mechanism, not this command.
+> run in a remote sandbox and cannot reach a local stdio graphi — reaching it
+> would also break the zero-egress contract. They need graphi installed
+> *inside* their environment via a separate, repo-side setup step, not this
+> command.
 
 Useful flags:
 
@@ -377,11 +379,11 @@ graphi setup --binary /path/graphi   # register a specific binary (default: this
 graphi setup --config /path/config   # target a specific config file (single client)
 ```
 
-`setup` is safe to re-run: per client it converges to exactly one canonical entry,
-preserves unrelated MCP servers, and makes a timestamped backup with atomic write +
-fail-closed rollback (a failed run leaves your config byte-identical). The first
-bare `graphi` run also offers — once, only on a TTY, and never without your consent —
-to connect every detected client.
+`setup` is safe to re-run. Per client it converges to exactly one canonical
+entry, preserves unrelated MCP servers, and makes a timestamped backup with an
+atomic write plus fail-closed rollback (a failed run leaves your config
+byte-identical). The first bare `graphi` run also offers — once, only on a
+TTY, and never without your consent — to connect every detected client.
 
 To run the MCP server directly (e.g. for a non-Claude MCP client), point the
 client at:
