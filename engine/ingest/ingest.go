@@ -1204,15 +1204,6 @@ func (i *Ingester) ParseFile(ctx context.Context, root, relPath string) (*Parsed
 	u := fileUnit{path: abs, relPath: rel, src: src, hash: hashBytes(src)}
 	pf, err := i.parseUnit(ctx, u)
 	if err != nil {
-		// A file type with no registered parser is simply NOT tracked: the
-		// watcher must ignore it rather than abort the whole batch. (The serial
-		// IngestAll path deliberately keeps treating ErrNoParser as a hard error;
-		// only this parallel watch entry point is tolerant, and an untracked file
-		// is never placed in the apply's changed set, so byte-identity is
-		// unaffected.) Return (nil, nil) to signal "ignore".
-		if errors.Is(err, parse.ErrNoParser) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	return pf, nil
@@ -1236,7 +1227,7 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 		// Fail closed on a resource-bound breach: SKIP the file with a structured,
 		// source-free diagnostic and continue ingestion (never parse-anyway / never
 		// truncate). A genuine parse error (invalid syntax, etc.) still aborts as
-		// before — only the three bound sentinels route to the skip path.
+		// before — only the four sentinels below route to the skip path.
 		switch {
 		case errors.Is(err, parse.ErrMaxDepthExceeded):
 			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipMaxDepth})
@@ -1247,6 +1238,17 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 		case errors.Is(err, parse.ErrFileTooLarge):
 			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: SkipOversize})
+			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
+		case errors.Is(err, parse.ErrNoParser):
+			// A file with no registered parser (a macOS .DS_Store, an image, a
+			// font, a lockfile, any binary or unrecognized-extension asset — the
+			// overwhelming majority of non-source files in a typical repo) is
+			// simply not source code, not a resource-bound breach. This is the
+			// expected, common case, not a diagnostic-worthy event: no
+			// recordSkip, just silently untracked. Previously this fell through
+			// to the hard-error return below and aborted indexing of the ENTIRE
+			// repo the moment it hit a single such file — which is effectively
+			// guaranteed on any real-world repo.
 			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 		}
 		return nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)

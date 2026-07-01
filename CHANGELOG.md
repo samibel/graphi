@@ -7,6 +7,19 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-01
+
+### Fixed
+- `graphi` (zero-config indexing) no longer aborts the entire ingest on the
+  first file with no registered parser (`parse: no parser registered for
+  file type`) — reported via a macOS `.DS_Store` file, but the same crash
+  applied to any image, font, PDF, lockfile, or other unrecognized-extension
+  asset, which is the overwhelming majority of non-source files in a
+  typical repository. This is now a silent, expected skip (not a recorded
+  diagnostic — finding a non-source file isn't noteworthy), matching the
+  existing fail-closed pattern already used for oversize/timeout/max-depth/
+  unreadable files.
+
 ## [0.1.1] - 2026-07-01
 
 ### Fixed
