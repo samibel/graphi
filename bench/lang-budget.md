@@ -42,7 +42,7 @@ below is the curated high-value coverage delivered through the `parse.Parser` /
 `SymbolExtractor` seam. It is derived from ADR 0001, the EP-009 re-plan, and **frozen** for
 EP-009 fan-out. (This is the single frozen-list source; it is also mirrored in
 [`docs/ep009-consolidation.md`](../docs/ep009-consolidation.md) and the epic registry at
-[`epics/index.md`](../epics/index.md).)
+[`docs/coverage-matrix.md`](../docs/coverage-matrix.md).)
 
 | #  | Language        | Default tier (pure-Go) | Status                  |
 |----|-----------------|------------------------|-------------------------|

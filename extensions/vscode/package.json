@@ -4,7 +4,7 @@
   "description": "Read-only code-intelligence (hover, references, blast-radius, search) + graph visualization for graphi. Local-first: talks only to the local graphi daemon (127.0.0.1) over HTTP/SSE.",
   "version": "0.1.0",
   "publisher": "graphi",
-  "repository": { "type": "git", "url": "https://github.com/graphi/graphi" },
+  "repository": { "type": "git", "url": "https://github.com/samibel/graphi" },
   "engines": { "vscode": "^1.80.0" },
   "categories": ["Programming Languages", "Visualization", "Other"],
   "main": "./out/extension.js",

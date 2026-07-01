@@ -8,6 +8,38 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 ## [Unreleased]
 
 ### Fixed
+- **The documented CLI query path works against a persistent store again.**
+  `makeClientOrOpenMeta` closed the SQLite store via `defer` before returning
+  the client wrapping it, so every `graphi query|search|analyze ... -db <path>`
+  ran against a closed store and failed — and the failure was swallowed
+  (exit 1 with no output). The store now lives until the command finishes
+  (caller-owned cleanup), and every CLI dispatcher prints the underlying error
+  to stderr instead of exiting silently.
+- Global `-db` / `-daemon` / `-meta` flags are now accepted anywhere in the
+  argument list. They were only extracted from the FRONT of argv while every
+  documented example places them after the operation
+  (`graphi query callers -symbol X -db graph.db`), so the documented form
+  silently ignored them.
+- `graphi analyze` now runs the same per-repo session discovery as
+  `query`/`search`; previously a bare `analyze` after a zero-config index
+  silently ran against an empty in-memory store.
+- `graphi diagnose`, `graphi inline`, and `graphi safe-delete` are now actually
+  wired into the CLI dispatch. They were documented in the README, HOWTO, and
+  FEATURES but fell through to the parse-a-file fallback
+  (`cannot read "diagnose": no such file or directory`). The coverage matrix
+  gains a machine-checked `cli-subcommand` category (statically enumerated from
+  the dispatch switch in `cmd/graphi/main.go`) so this class of
+  documented-but-unwired drift now fails CI.
+- `inline` parenthesizes compound right-hand sides when splicing: inlining
+  `Foo = a + b` into `x * Foo` previously produced `x * a + b`, silently
+  changing semantics; it now produces `x * (a + b)`.
+- `graphi savings` without `-ledger` prints a clear "pass -ledger <path>"
+  message instead of a cryptic `open ledger: ledger: open : ...` error.
+- Data race in the SSE test harness (`surfaces/http`), and the compound-path
+  purity guard now pins `CGO_ENABLED=0` in its `go list` subprocess so it
+  checks the shipped default build rather than inheriting the test process's
+  environment — together these make the suite `-race`-clean.
+
 - `graphi` (zero-config indexing) no longer aborts the entire ingest on the
   first `.json` file that is not valid strict JSON (`parse: json syntax error
   in "...": invalid character '{' looking for beginning of object key
@@ -25,6 +57,30 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   graphstore, and letting the edit saga compensate (roll back) an edit that
   produces source the parser rejects. Only PRE-EXISTING malformed files (seen
   by the full index) are tolerated.
+
+### Added
+- Release binaries now embed the web UI (`-tags webui_embed`, built via a new
+  `cmd/release -webui` flag + node step in the release workflow), so the quick
+  start's "your browser opens with the interactive code graph" is true for the
+  binaries users install. Previously releases served the "UI not bundled"
+  notice page at `/`.
+- New `lint` CI workflow: `go vet ./...` and a `go test -race ./...` job — the
+  standard Go hygiene gates the suite previously lacked.
+
+### Changed
+- `cold_start_p95_ms` bench budget re-pinned from 100 ms (a fast-local pin the
+  shared CI runners repeatedly failed at 261–294 ms, leading to retrigger
+  roulette) to 400 ms with the CI runner class as the measured baseline.
+- Documentation honesty pass: taint/PDG doc comments and README/FEATURES no
+  longer claim statement-level dataflow the symbol graph cannot support
+  (Sharir–Pnueli / "flow-sensitive" / statement-node phrasing corrected);
+  `compare-branches` is documented as diffing graphi SQLite snapshot paths
+  (never git refs); `refactor -kind extract|move` marked as currently
+  performing a rename-style rewrite; the token-parity eval doc states the gate
+  measures frozen hand-authored fixtures, not live engine output; the
+  safe-delete one-line-removal limitation is documented. Internal sprint/epic
+  planning artifacts (`sprints/`, `epics/`) removed from the public tree; the
+  VS Code extension's `repository` URL corrected to `samibel/graphi`.
 
 ## [0.1.2] - 2026-07-01
 
