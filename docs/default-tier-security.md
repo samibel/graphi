@@ -65,10 +65,10 @@ flowchart TD
     V -->|any fail| BLOCK["Release blocked"]
 ```
 
-The build layer proves `go-sitter-forest` (wholly CGO) can never enter the default
-graph. The registration layer proves every *registered* default parser is pure-Go
-and that the guard is **non-vacuous** (it rejects a planted CGO offender). Neither
-layer subsumes the other.
+The build layer proves `go-sitter-forest` (wholly CGO) can never enter the
+default graph. The registration layer proves every *registered* default
+parser is pure Go, and that the guard itself is **non-vacuous** — it rejects a
+planted CGO offender. Neither layer subsumes the other.
 
 ## Fail-closed resource bounds & default-deny sanitization
 

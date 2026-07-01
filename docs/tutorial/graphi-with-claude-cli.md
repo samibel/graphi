@@ -30,7 +30,7 @@ flowchart LR
     end
 ```
 
-**The core idea:** graphi parses the repo **once** into a deterministic **code graph** — nodes are symbols (functions, types, files), edges are relationships (`calls`, `references`, `defines`, `imports`). Every agent question becomes **one** targeted graph lookup instead of a reading tour through half the repo.
+**The core idea:** graphi parses the repo **once** into a deterministic **code graph** — nodes are symbols (functions, types, files) and edges are relationships (`calls`, `references`, `defines`, `imports`). Every agent question then becomes **one** targeted graph lookup instead of a reading tour through half the repo.
 
 ---
 

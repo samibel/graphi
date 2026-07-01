@@ -48,7 +48,7 @@ elements) in a new `edit_provenance` table in the ingest meta sidecar
 
 ## The two provenances (why the side-channel is excluded from the AC-3 digest)
 
-This story has an apparent contradiction:
+The two acceptance criteria behind this design appear to contradict each other:
 
 - **AC-1** says each updated node/edge must record `(source edit id, operation
   type, timestamp)`.
@@ -137,15 +137,15 @@ sequenceDiagram
 
 The Phase-1 edit context lives in **three new columns** on the `dirty_units`
 table (`edit_id`, `op_type`, `recorded_at`). A repository indexed by an earlier
-story (SW-036 / EP-001) already has an on-disk `ingest-meta.db` whose
-`dirty_units` table has **only** the original `path` column.
+version of graphi already has an on-disk `ingest-meta.db` whose `dirty_units`
+table has **only** the original `path` column.
 
 `CREATE TABLE IF NOT EXISTS` **cannot** retrofit columns onto a table that
-already exists — it silently no-ops — so relying on it would leave a pre-SW-037
-sidecar with the old shape, and the first provenance-bearing edit's `markDirtyTx`
-INSERT would fail with `no such column: edit_id`, breaking incremental ingest
-until the DB was deleted by hand (i.e. AC-2's "without manual intervention" would
-not hold for already-indexed repos).
+already exists — it silently no-ops — so relying on it would leave an older
+sidecar with the old shape, and the first provenance-bearing edit's
+`markDirtyTx` INSERT would fail with `no such column: edit_id`, breaking
+incremental ingest until the DB was deleted by hand (i.e. AC-2's "without
+manual intervention" would not hold for already-indexed repos).
 
 To migrate deterministically, the sidecar now carries a `PRAGMA user_version`
 schema version and an idempotent migration ladder run at `New`:
@@ -154,7 +154,7 @@ schema version and an idempotent migration ladder run at `New`:
 - `migrate` reads `PRAGMA user_version`; if it is below the current
   `schemaVersion` (1), it runs the additive steps and then stamps the new
   version, so each step runs **exactly once** per database.
-- The SW-037 step (`migrateDirtyUnitsEditContext`) checks `PRAGMA
+- The migration step (`migrateDirtyUnitsEditContext`) checks `PRAGMA
   table_info(dirty_units)` and `ALTER TABLE … ADD COLUMN … NOT NULL DEFAULT …`
   for any of `edit_id` / `op_type` / `recorded_at` that are absent. `ADD COLUMN`
   with a `NOT NULL DEFAULT` is safe on a populated table, and the

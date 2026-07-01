@@ -36,7 +36,7 @@ flowchart LR
   always O(N) brute-force cosine. Fine for correctness, linear in corpus size.
 - **After:** `index` is the `embed.VectorIndex` interface. `*embed.Index` (brute-force)
   still satisfies it unchanged, and a new deterministic `*embed.HNSWIndex` is selectable
-  via config. All existing call sites compile unchanged (seam invariant, AC6).
+  via config. All existing call sites compile unchanged, preserving the seam invariant.
 
 ## OFF-by-default contract
 
@@ -51,9 +51,9 @@ $ go tool nm ./graphi | grep -ci hnsw
 ```
 
 HNSW is only constructed when a caller passes `vector.index: hnsw` through
-`embed.NewVectorIndex(cfg)`. (The literal `graphi.yaml` key parsing and the CLI/MCP/HTTP
-exposure land in SW-085; SW-084 delivers the engine capability and the typed config
-contract.)
+`embed.NewVectorIndex(cfg)`. This story delivers the engine capability and the typed
+config contract; the literal `graphi.yaml` key parsing and the CLI/MCP/HTTP exposure
+land in a follow-up (SW-085).
 
 ## CGo-free verification
 
@@ -72,21 +72,22 @@ none originate from the vector index. The SQLite store uses the pure-Go
 
 Because the HNSW path is dead-code-eliminated from the default binary, the **default**
 binary-size delta is **0 bytes** (the symbol count above is the proof). To measure the
-delta of the *active* HNSW path (once SW-085 wires the selector), build a small probe
-that references `embed.NewVectorIndex(VectorIndexConfig{Index:"hnsw"})` and diff:
+delta of the *active* HNSW path (once a follow-up story wires the selector), build a
+small probe that references `embed.NewVectorIndex(VectorIndexConfig{Index:"hnsw"})`
+and diff:
 
 ```
 # default (HNSW stripped)
 go build -o /tmp/graphi-bf ./cmd/graphi
-# with HNSW referenced (probe or SW-085 config wiring)
+# with HNSW referenced (probe or follow-up config wiring)
 go build -tags hnsw_probe -o /tmp/graphi-hnsw ./cmd/graphi
 ls -l /tmp/graphi-bf /tmp/graphi-hnsw   # delta = HNSW code size (~tens of KB, pure Go)
 ```
 
 The HNSW implementation is ~400 lines of pure Go with no new dependencies, so the
 active-path size delta is bounded by that translated code — well within the size-budget
-invariant. No `go.mod` entry, no `LICENSES.md` change (AC7/AC8 satisfied with zero new
-deps).
+invariant. It requires no `go.mod` entry and no `LICENSES.md` change, since it adds zero
+new dependencies.
 
 ## Determinism
 
