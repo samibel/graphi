@@ -24,8 +24,13 @@
 # of github.ref_name. The same `tag` input lets a maintainer manually re-run
 # release-assets for any already-pushed, release-less tag.
 #
-# Idempotent and safe to run on every main push: if the latest CHANGELOG version
-# is already tagged, this is a no-op (and the dispatch step is skipped too).
+# The dispatch step checks for an actual GitHub Release, not merely for the
+# tag existing: a tag with no release (e.g. one created before this workflow
+# gained its dispatch step, or a run where the dispatch itself failed) gets
+# retried on every subsequent main push until the release actually appears,
+# instead of being treated as "already handled" forever just because the tag
+# is there. Fully idempotent otherwise: nothing runs at all once the latest
+# CHANGELOG version has both its tag and its release.
 name: auto-release
 
 on:
@@ -67,14 +72,13 @@ jobs:
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: create and push the tag if it doesn't exist yet
-        id: push_tag
         if: steps.ver.outputs.tag != ''
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.ver.outputs.tag }}
         run: |
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "::notice::$TAG already exists; nothing to do"
-            echo "created=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$TAG already exists"
             exit 0
           fi
           git config user.name "github-actions[bot]"
@@ -82,13 +86,16 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG (auto-tagged from CHANGELOG.md)"
           git push origin "$TAG"
           echo "::notice::pushed $TAG"
-          echo "created=true" >> "$GITHUB_OUTPUT"
 
-      - name: dispatch release.yml for the new tag (bypasses the GITHUB_TOKEN no-recursive-trigger rule)
-        if: steps.push_tag.outputs.created == 'true'
+      - name: dispatch release.yml if this tag has no release yet
+        if: steps.ver.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.ver.outputs.tag }}
         run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::$TAG already has a release; nothing to do"
+            exit 0
+          fi
           gh workflow run release.yml --ref main -f tag="$TAG"
           echo "::notice::dispatched release.yml for $TAG — its release-assets job cross-compiles and uploads to the GitHub Release"
