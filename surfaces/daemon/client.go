@@ -157,6 +157,40 @@ func (c *DaemonClient) Savings(ctx context.Context) ([]byte, error) {
 	return c.request(ctx, "savings", nil)
 }
 
+// Stop sends a shutdown request to a running daemon and waits for its ack.
+// Unlike request, it dials directly instead of going through connect's
+// auto-start path: a daemon that isn't listening should report "not running",
+// not be spun up just to be killed immediately.
+func (c *DaemonClient) Stop(ctx context.Context) error {
+	conn, err := c.dial()
+	if err != nil {
+		return fmt.Errorf("daemon not running at %s", c.socketPath)
+	}
+	defer conn.Close()
+
+	if dl, ok := ctx.Deadline(); ok {
+		_ = conn.SetDeadline(dl)
+	}
+
+	enc := json.NewEncoder(conn)
+	if err := enc.Encode(request{Method: "stop", Params: mustJSON(nil)}); err != nil {
+		return fmt.Errorf("daemon: send stop: %w", err)
+	}
+
+	scanner := bufio.NewScanner(conn)
+	if !scanner.Scan() {
+		return fmt.Errorf("daemon: no response")
+	}
+	var resp response
+	if err := json.Unmarshal(scanner.Bytes(), &resp); err != nil {
+		return fmt.Errorf("daemon: decode response: %w", err)
+	}
+	if !resp.OK {
+		return fmt.Errorf("daemon: %s", resp.Error)
+	}
+	return nil
+}
+
 // Analyze implements client.Client. SW-104 wires the daemon analysis RPC: it
 // forwards the transport-agnostic AnalyzeParams to the daemon's "analyze" method,
 // whose handler is the same in-process Direct client used by the cold surfaces,
