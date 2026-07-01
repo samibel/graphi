@@ -905,6 +905,32 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 				return err
 			}
 		}
+
+		// A parse/syntax error makes parseUnit fail closed with a SkipParseError
+		// diagnostic and continue — correct for a FULL index (IngestAll), where a
+		// single malformed PRE-EXISTING file must not sink the whole repo. But the
+		// incremental path only ever (re)parses files it was explicitly asked to
+		// process (the changed set + its reverse-dep cascade, toProcess). If one of
+		// THOSE is now unparseable, silently committing this transaction would leave
+		// the meta cache (0 nodes / clean) out of sync with the graphstore (the
+		// skipped commit deletes no stale nodes) — and, in the edit saga, the
+		// post-commit compensate restores the graphstore snapshot but NOT the meta
+		// DB, permanently poisoning it. So elevate a SkipParseError of any processed
+		// file to a hard error HERE, inside the Phase-2 metaTx, so the transaction
+		// rolls back atomically and the meta DB is left untouched (exactly the
+		// pre-tolerance behavior). The edit applier's existing re-index-error path
+		// then compensates disk + graphstore; the file stays dirty for later retry.
+		i.skipMu.Lock()
+		for _, s := range i.skipped {
+			if s.Reason != SkipParseError {
+				continue
+			}
+			if _, ok := toProcess[s.Path]; ok {
+				i.skipMu.Unlock()
+				return fmt.Errorf("ingest: reprocessed file %s failed to parse (%s)", s.Path, s.Reason)
+			}
+		}
+		i.skipMu.Unlock()
 		return nil
 	})
 }

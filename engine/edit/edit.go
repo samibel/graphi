@@ -327,21 +327,14 @@ func (a *Applier) Apply(ctx context.Context, op EditOp) (Result, error) {
 	if err != nil {
 		return compensate(err)
 	}
+	// A tolerant ingest no longer aborts a FULL index on a parse/syntax error, but
+	// the incremental IngestChanged path still returns a hard error when a file it
+	// was asked to reprocess is unparseable (see ingestChanged's SkipParseError
+	// elevation). So an edit that produces source the parser rejects surfaces here
+	// as a re-index error and rolls back atomically — the meta DB transaction is
+	// rolled back too, keeping it consistent with the compensated graphstore.
 	if err := a.ingester.IngestChangedWithProvenance(ctx, a.root, []string{relPath}, prov); err != nil {
 		return compensate(fmt.Errorf("%w: %v", ErrReindex, err))
-	}
-	// A tolerant ingest no longer aborts on a parse/syntax error — it records a
-	// fail-closed skip and continues, so one malformed PRE-EXISTING file can't
-	// sink a bulk index or the filesystem watcher. But for an EDIT, a skip of the
-	// very file we just wrote means our own edit produced source the parser
-	// rejects: the graph does NOT reflect the edit, so the atomic saga must roll
-	// back exactly as if re-index had returned an error. Check ONLY the edited
-	// file itself — a pre-existing unparseable reverse-dep in the cascade must
-	// not block an otherwise-valid, unrelated edit.
-	for _, s := range a.ingester.SkippedDiagnostics() {
-		if s.Path == relPath {
-			return compensate(fmt.Errorf("%w: %s not indexed after edit (%s)", ErrReindex, relPath, s.Reason))
-		}
 	}
 	res.TouchedFiles = []string{relPath}
 	res.EditID = prov.EditID

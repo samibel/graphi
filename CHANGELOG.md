@@ -17,10 +17,14 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   any genuine parse/syntax error in a file that DOES have a registered parser
   is now a recorded `SkipParseError` diagnostic (fail-closed skip) instead of
   a hard error, matching the existing oversize/timeout/max-depth/unreadable
-  pattern. A single malformed file can no longer sink indexing of the rest of
-  the repository. Applying an edit still rolls back if the edit itself
-  produces source the parser rejects (the edited file is elevated from skip to
-  a re-index failure); only PRE-EXISTING malformed files are tolerated.
+  pattern. A single malformed file can no longer sink a FULL index of the rest
+  of the repository. The INCREMENTAL path (`IngestChanged`, used by the edit
+  applier and the filesystem watcher) stays strict: if a file it was asked to
+  reparse no longer parses, it returns a hard error so its metadata transaction
+  rolls back atomically — keeping the metadata sidecar consistent with the
+  graphstore, and letting the edit saga compensate (roll back) an edit that
+  produces source the parser rejects. Only PRE-EXISTING malformed files (seen
+  by the full index) are tolerated.
 
 ## [0.1.2] - 2026-07-01
 
