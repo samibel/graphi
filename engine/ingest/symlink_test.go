@@ -97,3 +97,68 @@ func TestIngest_PrunesIgnoredDirectories(t *testing.T) {
 		t.Fatalf("expected zero skip diagnostics (pruned dirs are never visited, not skipped), got %v", skips)
 	}
 }
+
+// TestIngest_PrunesIgnoredDirectories_CaseInsensitive proves the pruning check
+// matches ignored directory names regardless of case, since case-insensitive
+// (but case-preserving) filesystems — the macOS and Windows defaults — don't
+// guarantee node_modules/.git/vendor/... survive a checkout in their
+// conventional all-lowercase casing.
+func TestIngest_PrunesIgnoredDirectories_CaseInsensitive(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	defer store.Close()
+
+	parser := &stubParser{}
+	i := newIngester(t, store, parser)
+
+	root := writeRepo(t, map[string]string{
+		"real.go":                "package a\n",
+		"NODE_MODULES/pkg/a.js":  "// not real code\n",
+		"Vendor/github.com/x.go": "package x\n",
+	})
+
+	if err := i.IngestAll(ctx, root); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	if parser.parseCount != 1 {
+		t.Fatalf("expected only real.go parsed (case-insensitive prune), got %d parses", parser.parseCount)
+	}
+}
+
+// TestIngest_ParseFile_IgnoresPathUnderIgnoredDir proves the watcher's per-file
+// entry point (ParseFile, which has no walk to prune) also ignores a path under
+// node_modules/.git/vendor/... — silently, returning (nil, nil), the same
+// contract used for an untracked file type. Without this check, an fsnotify
+// event for a file changed inside node_modules (which churns constantly during
+// a package-manager install) would still be read, parsed, and tracked by the
+// live watcher, reintroducing exactly the noise walk()'s pruning exists to
+// avoid, and — for an unreadable path like a pnpm symlink — would flood
+// SkippedDiagnostics with routine node_modules churn instead of surfacing
+// diagnostics a user would actually act on.
+func TestIngest_ParseFile_IgnoresPathUnderIgnoredDir(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	defer store.Close()
+
+	parser := &stubParser{}
+	i := newIngester(t, store, parser)
+
+	root := writeRepo(t, map[string]string{
+		"real.go": "package a\n",
+		"node_modules/.pnpm/pkg@1.0.0/node_modules/pkg/index.js": "// not real code\n",
+	})
+
+	pf, err := i.ParseFile(ctx, root, "node_modules/.pnpm/pkg@1.0.0/node_modules/pkg/index.js")
+	if err != nil {
+		t.Fatalf("ParseFile: expected (nil, nil) for an ignored-dir path, got err %v", err)
+	}
+	if pf != nil {
+		t.Fatalf("ParseFile: expected nil ParsedFile for an ignored-dir path, got %+v", pf)
+	}
+	if parser.parseCount != 0 {
+		t.Fatalf("expected the file under node_modules to never reach the parser, got %d parses", parser.parseCount)
+	}
+	if skips := i.SkippedDiagnostics(); len(skips) != 0 {
+		t.Fatalf("expected zero skip diagnostics (ignored silently, not recorded), got %v", skips)
+	}
+}
