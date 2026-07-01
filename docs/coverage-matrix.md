@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **96**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **133**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -56,7 +56,7 @@ Total capabilities: **96**. See [`architecture-plan.md`](architecture-plan.md) f
 | `critique-review` | ✅ shipped | EP-018 | SW-108 (capstone): deterministic graph-evidence critique of an EXISTING PR review — replays the EP-007 risk/blast/centrality/taint oracle over the touched set and runs a three-way diff (gap / over_flag / unsupported_claim) against the review; deterministic resolveRef anchoring with an honest unanchored tally (never guessed); NO LLM prose; total order type→NodeId→anchor; zero engine egress (the only egress is the surface review fetch). |
 | `git-history` | ✅ shipped | EP-005 | churn / bus-factor / co-change signals. |
 | `impact` | ✅ shipped | EP-004 | forward/reverse blast-radius reachability. |
-| `interproc` | ✅ shipped | EP-005 | interprocedural Sharir-Pnueli procedure summaries. |
+| `interproc` | ✅ shipped | EP-005 | interprocedural fixpoint over per-procedure gen/kill summaries. |
 | `metrics` | ✅ shipped | EP-004 | graph centrality / hub-bridge metrics. |
 | `notebook-ingest` | ✅ shipped | EP-017 | SW-104: SW-100 notebook (.ipynb) cell provenance surfaced behind the single dispatch table. |
 | `pdg` | ✅ shipped | EP-005 | program dependence graph (data + control dependence). |
@@ -124,6 +124,48 @@ Total capabilities: **96**. See [`architecture-plan.md`](architecture-plan.md) f
 | `tui` | ✅ shipped | EP-008 | terminal UI surface. |
 | `vscode` | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | ✅ shipped | EP-008 | React + Sigma web client (web/). |
+
+## CLI subcommands (37)
+
+| id | status | epic | note |
+|---|---|---|---|
+| `analyze` | ✅ shipped | - | run a registered analyzer over the graph |
+| `claude` | ✅ shipped | - | short-verb alias for `setup` (register the MCP server) |
+| `compare-branches` | ✅ shipped | - | graph-level diff of two graphi SQLite snapshots (paths, not git refs) |
+| `compound` | ✅ shipped | - | compound / Cypher-style graph query |
+| `conflicts-prs` | ✅ shipped | - | inter-PR conflict detection |
+| `critique-review` | ✅ shipped | - | graph-evidence critique of an existing PR review |
+| `daemon` | ✅ shipped | - | hot-index Unix-socket daemon lifecycle (start\|stop\|status) |
+| `diagnose` | ✅ shipped | - | graph-derived diagnostics + suggested code-actions |
+| `distill` | ✅ shipped | - | session distillation |
+| `find-clones` | ✅ shipped | - | edge-profile clone detection |
+| `help` | ✅ shipped | - | print the help blurb |
+| `http` | ✅ shipped | - | loopback-only HTTP REST + SSE surface |
+| `index` | ✅ shipped | - | ingest a repo into a durable store (optional --semantic embed pass) |
+| `inline` | ✅ shipped | - | inline refactor over the edit saga (requires -root) |
+| `list-prs` | ✅ shipped | - | read-only forge enumeration of open PRs |
+| `mcp` | ✅ shipped | - | MCP stdio server (the agent-first surface) |
+| `memory` | ✅ shipped | - | agent memory store\|recall\|forget |
+| `parse` | ✅ shipped | - | parse a single file (the original SW-001 default) |
+| `pr-comment` | ✅ shipped | - | sticky PR comment + optional risk-threshold merge gate |
+| `privacy-audit` | ✅ shipped | - | local-first proof (CGo scan + canary egress guard) |
+| `query` | ✅ shipped | - | structural query (callers\|callees\|references\|definition\|neighborhood) |
+| `refactor` | ✅ shipped | - | commit a rename refactor through the edit saga |
+| `refactor-preview` | ✅ shipped | - | impact-set preview of a refactor, no mutation |
+| `safe-delete` | ✅ shipped | - | reference-safety-gated delete over the edit saga (requires -root) |
+| `savings` | ✅ shipped | - | session token-savings readout (requires -ledger) |
+| `search` | ✅ shipped | - | lexical search; -semantic runs the optional embedding search |
+| `search-ast` | ✅ shipped | - | structural AST pattern query |
+| `setup` | ✅ shipped | - | register the MCP stdio server into local MCP clients' configs |
+| `setup-embedder` | ✅ shipped | - | print the opt-in semantic-search instructions (offline) |
+| `skillgen` | ✅ shipped | - | deterministic skill generation |
+| `suggest-reviewers` | ✅ shipped | - | ranked candidate-reviewer recommender |
+| `triage-prs` | ✅ shipped | - | graph-derived multi-PR triage ranking |
+| `tui` | ✅ shipped | - | interactive terminal surface |
+| `ui` | ✅ shipped | - | short-verb alias for the zero-config index+serve flow |
+| `undo` | ✅ shipped | - | reverse an applied edit by its undo token |
+| `upgrade` | ✅ shipped | - | user-initiated self-update via the pinned install script |
+| `version` | ✅ shipped | - | print version / commit / build date |
 
 ## Feature-Unit (5)
 

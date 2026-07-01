@@ -34,6 +34,7 @@ var codeDerivedCategories = map[string]bool{
 	CategoryAnalyzer: true,
 	CategoryMCPTool:  true,
 	CategorySurface:  true,
+	CategoryCLI:      true,
 }
 
 // Key returns the unique "category/id" key for a capability row.

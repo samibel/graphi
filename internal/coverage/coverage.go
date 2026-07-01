@@ -39,16 +39,18 @@ const (
 	CategoryAnalyzer = "analyzer"
 	CategoryMCPTool  = "mcp-tool"
 	CategorySurface  = "surface"
+	CategoryCLI      = "cli-subcommand"
 )
 
 // LiveSet is the deterministic, sorted snapshot of every live capability across
 // the four code-derived categories. It is derived purely from the running
 // registries; nothing here is hand-maintained.
 type LiveSet struct {
-	Parsers   []string // registered parser languages (parse.NewDefaultRegistry().Languages())
-	Analyzers []string // registered analyzer names (analysis default registry .Names())
-	MCPTools  []string // advertisable MCP tool names (mcp.ToolNames())
-	Surfaces  []string // present surfaces (fixed dir→id map, existence-checked)
+	Parsers        []string // registered parser languages (parse.NewDefaultRegistry().Languages())
+	Analyzers      []string // registered analyzer names (analysis default registry .Names())
+	MCPTools       []string // advertisable MCP tool names (mcp.ToolNames())
+	Surfaces       []string // present surfaces (fixed dir→id map, existence-checked)
+	CLISubcommands []string // dispatch case labels statically scanned from cmd/graphi/main.go
 }
 
 // IDs returns every live capability id paired with its category, sorted by
@@ -64,6 +66,7 @@ func (l LiveSet) IDs() []Capability {
 	add(CategoryAnalyzer, l.Analyzers)
 	add(CategoryMCPTool, l.MCPTools)
 	add(CategorySurface, l.Surfaces)
+	add(CategoryCLI, l.CLISubcommands)
 	sortCapabilities(out)
 	return out
 }
@@ -103,11 +106,17 @@ func Enumerate() (LiveSet, error) {
 		return LiveSet{}, err
 	}
 
+	subcommands, err := enumerateCLISubcommands()
+	if err != nil {
+		return LiveSet{}, err
+	}
+
 	return LiveSet{
-		Parsers:   parsers,
-		Analyzers: analyzers,
-		MCPTools:  tools,
-		Surfaces:  surfaces,
+		Parsers:        parsers,
+		Analyzers:      analyzers,
+		MCPTools:       tools,
+		Surfaces:       surfaces,
+		CLISubcommands: subcommands,
 	}, nil
 }
 

@@ -98,6 +98,12 @@ func main() {
 		os.Exit(runRefactor(os.Args[2:], "refactor"))
 	case "undo":
 		os.Exit(runRefactor(os.Args[2:], "undo"))
+	case "diagnose":
+		os.Exit(runDiagnose(os.Args[2:]))
+	case "inline":
+		os.Exit(runRefactor(os.Args[2:], "inline"))
+	case "safe-delete":
+		os.Exit(runRefactor(os.Args[2:], "safe-delete"))
 	case "mcp":
 		os.Exit(runMCP(os.Args[2:]))
 	case "daemon":
@@ -161,41 +167,45 @@ func makeClient(store graphstore.Graphstore, socket string) client.Client {
 	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
 }
 
-// extractFlags pulls -db, -daemon, and -meta options off the front of args. -meta
-// names the ingest sidecar dir; for the search path it is where the durable
-// `vectors` table (SW-061) is reloaded from on startup so `search -semantic`
-// returns hits without re-embedding.
+// extractFlags pulls the global -db and -daemon options out of args (any
+// position, space- or =-separated). -meta names the ingest sidecar dir; for the
+// search path it is where the durable `vectors` table (SW-061) is reloaded from
+// on startup so `search -semantic` returns hits without re-embedding.
 func extractFlags(args []string) (dbPath, socket string, rest []string) {
 	dbPath, socket, _, rest = extractFlagsMeta(args)
 	return
 }
 
-// extractFlagsMeta is extractFlags plus the -meta sidecar dir.
+// extractFlagsMeta is extractFlags plus the -meta sidecar dir. The global flags
+// are accepted anywhere in the argument list — every documented example places
+// them after the operation (`graphi query callers -symbol X -db graph.db`), so
+// front-only extraction would silently ignore them.
 func extractFlagsMeta(args []string) (dbPath, socket, metaDir string, rest []string) {
-	rest = args
-	for len(rest) > 0 {
-		switch {
-		case rest[0] == "-db" && len(rest) >= 2:
-			dbPath = rest[1]
-			rest = rest[2:]
-		case len(rest[0]) > 4 && rest[0][:4] == "-db=":
-			dbPath = rest[0][4:]
-			rest = rest[1:]
-		case rest[0] == "-daemon" && len(rest) >= 2:
-			socket = rest[1]
-			rest = rest[2:]
-		case len(rest[0]) > 8 && rest[0][:8] == "-daemon=":
-			socket = rest[0][8:]
-			rest = rest[1:]
-		case rest[0] == "-meta" && len(rest) >= 2:
-			metaDir = rest[1]
-			rest = rest[2:]
-		case len(rest[0]) > 6 && rest[0][:6] == "-meta=":
-			metaDir = rest[0][6:]
-			rest = rest[1:]
-		default:
-			return
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		take := func(name string) (string, bool) {
+			if a == name && i+1 < len(args) {
+				i++
+				return args[i], true
+			}
+			if strings.HasPrefix(a, name+"=") {
+				return a[len(name)+1:], true
+			}
+			return "", false
 		}
+		if v, ok := take("-db"); ok {
+			dbPath = v
+			continue
+		}
+		if v, ok := take("-daemon"); ok {
+			socket = v
+			continue
+		}
+		if v, ok := take("-meta"); ok {
+			metaDir = v
+			continue
+		}
+		rest = append(rest, a)
 	}
 	return
 }
@@ -208,11 +218,13 @@ func runQuery(args []string) int {
 	if dbPath == "" && socket == "" {
 		dbPath, socket = resolveSession(getwd(), "", "")
 	}
-	c := makeClientOrOpen(dbPath, socket)
+	c, cleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.Run(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: query: %v\n", err)
 		return 1
 	}
 	return 0
@@ -231,10 +243,11 @@ func runCompound(args []string) int {
 	if dbPath == "" && socket == "" {
 		dbPath, socket = resolveSession(getwd(), "", "")
 	}
-	c := makeClientOrOpen(dbPath, socket)
+	c, cleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	fs := flag.NewFlagSet("compound", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	q := fs.String("q", "", "compound query text (SEED/HOP/WHERE/MAXDEPTH); if empty, read from stdin")
@@ -269,11 +282,13 @@ func runSearch(args []string) int {
 	if dbPath == "" && socket == "" {
 		dbPath, socket = resolveSession(getwd(), "", "")
 	}
-	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
+	c, cleanup := makeClientOrOpenMeta(dbPath, socket, metaDir)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.RunSearch(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: search: %v\n", err)
 		return 1
 	}
 	return 0
@@ -288,11 +303,13 @@ func runSearchAST(args []string) int {
 	if dbPath == "" && socket == "" {
 		dbPath, socket = resolveSession(getwd(), "", "")
 	}
-	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
+	c, cleanup := makeClientOrOpenMeta(dbPath, socket, metaDir)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.RunSearchAST(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: search-ast: %v\n", err)
 		return 1
 	}
 	return 0
@@ -306,11 +323,13 @@ func runFindClones(args []string) int {
 	if dbPath == "" && socket == "" {
 		dbPath, socket = resolveSession(getwd(), "", "")
 	}
-	c := makeClientOrOpenMeta(dbPath, socket, metaDir)
+	c, cleanup := makeClientOrOpenMeta(dbPath, socket, metaDir)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.RunFindClones(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: find-clones: %v\n", err)
 		return 1
 	}
 	return 0
@@ -431,11 +450,42 @@ func runIndex(args []string) int {
 //	graphi analyze [-db path] [-daemon socket] <analyzer> -symbol <id> [-direction forward|reverse] [-max-nodes N]
 func runAnalyze(args []string) int {
 	dbPath, socket, rest := extractFlags(args)
-	c := makeClientOrOpen(dbPath, socket)
+	if dbPath == "" && socket == "" {
+		// Same default discovery as `query`/`search`: without it, a bare
+		// `graphi analyze` after a zero-config index would silently run
+		// against an empty in-memory store.
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
+	c, cleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.RunAnalysis(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: analyze: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runDiagnose launches the CLI diagnostics surface (SW-091/SW-094). Usage:
+//
+//	graphi diagnose [-db path] [-daemon socket] [<kind>...]
+//
+// Positional args select analyzer kinds; none ⇒ all built-ins. Read-only: it
+// runs over the same Reader the queries use and mutates nothing.
+func runDiagnose(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
+	c, cleanup := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunDiagnose(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: diagnose: %v\n", err)
 		return 1
 	}
 	return 0
@@ -447,11 +497,13 @@ func runAnalyze(args []string) int {
 //	  [-pr ref] [-provenance summary|full] [-gate] [-gate-threshold N] [-publish]
 func runPrComment(args []string) int {
 	dbPath, socket, rest := extractFlags(args)
-	c := makeClientOrOpen(dbPath, socket)
+	c, cleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.RunPrComment(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: pr-comment: %v\n", err)
 		return 1
 	}
 	return 0
@@ -668,10 +720,11 @@ func makeForgeClient(dbPath, socket string) client.Client {
 // runMCP launches the MCP stdio server. Usage: graphi mcp [-db path] [-daemon socket]
 func runMCP(args []string) int {
 	dbPath, socket, _ := extractFlags(args)
-	c := makeClientOrOpen(dbPath, socket)
+	c, cleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	srv := mcp.NewServerWithClient(c)
 	if err := srv.Serve(context.Background(), os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
@@ -717,8 +770,11 @@ func getwd() string {
 }
 
 // makeClientOrOpen creates a client, opening an in-process store if needed.
-// It prints errors and returns nil on failure.
-func makeClientOrOpen(dbPath, socket string) client.Client {
+// It prints errors and returns a nil client on failure. The returned cleanup
+// closes the underlying store and must be deferred by the caller AFTER the
+// command has run — closing earlier hands the caller a client over a closed
+// store (every query then fails).
+func makeClientOrOpen(dbPath, socket string) (client.Client, func()) {
 	return makeClientOrOpenMeta(dbPath, socket, "")
 }
 
@@ -726,20 +782,20 @@ func makeClientOrOpen(dbPath, socket string) client.Client {
 // a semantic embedder is configured AND metaDir is set, the search service reloads
 // its durable vectors from the meta sidecar so `search -semantic` returns hits
 // without re-embedding (SW-061 reload-on-startup; a pure local read).
-func makeClientOrOpenMeta(dbPath, socket, metaDir string) client.Client {
+func makeClientOrOpenMeta(dbPath, socket, metaDir string) (client.Client, func()) {
 	if socket != "" {
-		return daemon.NewClient(socket, "")
+		return daemon.NewClient(socket, ""), func() {}
 	}
 	store, err := openStore(dbPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
-		return nil
+		return nil, func() {}
 	}
-	defer func() { _ = store.Close() }()
 	analysisSvc := analysis.NewDefaultService(store)
-	return client.NewDirect(query.New(store), newSearchService(store, metaDir)).
+	c := client.NewDirect(query.New(store), newSearchService(store, metaDir)).
 		WithAnalysis(analysisSvc).
 		WithReview(review.NewService(analysisSvc))
+	return c, func() { _ = store.Close() }
 }
 
 // newSearchService builds the shared search service. Lexical search is always
@@ -816,8 +872,13 @@ func runRefactor(args []string, verb string) int {
 		err = cli.RunRefactor(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "undo":
 		err = cli.RunUndo(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "inline":
+		err = cli.RunInline(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "safe-delete":
+		err = cli.RunSafeDelete(context.Background(), c, rest, os.Stdout, os.Stderr)
 	}
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %s: %v\n", verb, err)
 		return 1
 	}
 	return 0
@@ -1112,12 +1173,17 @@ func runSavings(args []string) int {
 		}
 		break
 	}
-	c := makeClientOrOpen(dbPath, socket)
+	c, storeCleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer storeCleanup()
 	// If an in-process client, attach a local ledger so the readout is available.
 	if socket == "" {
+		if ledgerPath == "" {
+			fmt.Fprintln(os.Stderr, "graphi: savings: no ledger to read — pass -ledger <path> (the ledger a prior MCP/daemon session wrote)")
+			return 1
+		}
 		if l, err := ledger.Open(ledgerPath); err == nil {
 			defer func() { _ = l.Close() }()
 			if d, ok := c.(*client.Direct); ok {
@@ -1173,10 +1239,11 @@ func withLedgerAndAgentServices(c client.Client, ledgerPath string) (client.Clie
 func runMemory(args []string) int {
 	dbPath, socket, rest := extractFlags(args)
 	ledgerPath := extractLedgerFlag(&rest)
-	c := makeClientOrOpen(dbPath, socket)
+	c, storeCleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer storeCleanup()
 	if socket != "" {
 		fmt.Fprintln(os.Stderr, "graphi: memory: not available via daemon in this build")
 		return 1
@@ -1200,10 +1267,11 @@ func runMemory(args []string) int {
 func runDistill(args []string) int {
 	dbPath, socket, rest := extractFlags(args)
 	ledgerPath := extractLedgerFlag(&rest)
-	c := makeClientOrOpen(dbPath, socket)
+	c, storeCleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer storeCleanup()
 	if socket != "" {
 		fmt.Fprintln(os.Stderr, "graphi: distill: not available via daemon in this build")
 		return 1
@@ -1227,10 +1295,11 @@ func runDistill(args []string) int {
 func runSkillGen(args []string) int {
 	dbPath, socket, rest := extractFlags(args)
 	ledgerPath := extractLedgerFlag(&rest)
-	c := makeClientOrOpen(dbPath, socket)
+	c, storeCleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer storeCleanup()
 	if socket != "" {
 		fmt.Fprintln(os.Stderr, "graphi: skillgen: not available via daemon in this build")
 		return 1

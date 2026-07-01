@@ -12,7 +12,7 @@ const (
 	MatrixMDPath   = "docs/coverage-matrix.md"
 )
 
-// statusBadge maps a status to its legend glyph, matching epics/index.md.
+// statusBadge maps a status to its legend glyph.
 func statusBadge(status string) string {
 	switch status {
 	case StatusShipped:
@@ -28,7 +28,7 @@ func statusBadge(status string) string {
 
 // categoryOrder fixes the section order in the rendered table; categories not
 // listed are appended alphabetically after these.
-var categoryOrder = []string{CategoryParser, CategoryAnalyzer, CategoryMCPTool, CategorySurface}
+var categoryOrder = []string{CategoryParser, CategoryAnalyzer, CategoryMCPTool, CategorySurface, CategoryCLI}
 
 // categoryTitle is the human heading for a category section.
 func categoryTitle(cat string) string {
@@ -41,6 +41,8 @@ func categoryTitle(cat string) string {
 		return "MCP tools"
 	case CategorySurface:
 		return "Surfaces"
+	case CategoryCLI:
+		return "CLI subcommands"
 	default:
 		return strings.Title(cat) //nolint:staticcheck // simple ASCII heading
 	}
