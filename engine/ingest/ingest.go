@@ -1245,11 +1245,10 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 			// overwhelming majority of non-source files in a typical repo) is
 			// simply not source code, not a resource-bound breach. This is the
 			// expected, common case, not a diagnostic-worthy event: no
-			// recordSkip, just silently untracked, matching ParseFile's existing
-			// (nil, nil) "ignore" contract for the same sentinel on the watcher
-			// path. Previously this fell through to the hard-error return below
-			// and aborted indexing of the ENTIRE repo the moment it hit a single
-			// such file — which is effectively guaranteed on any real-world repo.
+			// recordSkip, just silently untracked. Previously this fell through
+			// to the hard-error return below and aborted indexing of the ENTIRE
+			// repo the moment it hit a single such file — which is effectively
+			// guaranteed on any real-world repo.
 			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
 		}
 		return nil, fmt.Errorf("ingest: parse %s: %w", u.relPath, err)
