@@ -731,7 +731,7 @@ func TestContract_EnumeratesResourcesAndStreams(t *testing.T) {
 			t.Fatalf("resource %q missing from %v", r, doc.Resources)
 		}
 	}
-	for _, s := range []string{"ingest-completed", "ready", "bye", "error"} {
+	for _, s := range []string{"ingest-completed", "ingest-progress", "ready", "bye", "error"} {
 		if !containsStr(doc.Streams, s) {
 			t.Fatalf("stream %q missing from %v", s, doc.Streams)
 		}

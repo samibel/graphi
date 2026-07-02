@@ -150,6 +150,14 @@ type Ingester struct {
 	// clients. Nil = no-op (default); existing callers are unaffected.
 	broker *observe.Broker
 
+	// progress, when set, receives full-ingest phase/per-file events (see
+	// progress.go). lastProgressPub/lastProgressPh throttle the mirrored
+	// "ingest-progress" broker publishes; both are touched only from the
+	// single ingesting goroutine, so they need no lock.
+	progress        func(ProgressEvent)
+	lastProgressPub time.Time
+	lastProgressPh  Phase
+
 	// test hooks
 	failAfterDirtyMark error
 	hookMu             sync.Mutex
@@ -543,10 +551,16 @@ type fileUnit struct {
 // rebuilding the cache and reverse-dependency index from scratch.
 func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	i.resetSkips()
-	units, err := i.walk(root)
+	i.notifyProgress(ctx, ProgressEvent{Phase: PhaseWalk})
+	units, err := i.walk(root, func(discovered int) {
+		if discovered%64 == 0 {
+			i.notifyProgress(ctx, ProgressEvent{Phase: PhaseWalk, Done: discovered})
+		}
+	})
 	if err != nil {
 		return err
 	}
+	i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Total: len(units)})
 
 	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
 		// Capture the node IDs of the PREVIOUS full pass (if this store is being
@@ -574,7 +588,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		var fileRefs []link.FileRefs
 		owned := make(map[string]struct{})
 		parserEdges := make(map[string]struct{})
-		for _, u := range units {
+		for k, u := range units {
 			nodeIDs, edgeIDs, fwd, fr, err := i.parseAndCommit(ctx, u)
 			if err != nil {
 				return err
@@ -592,7 +606,9 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			if fr != nil {
 				fileRefs = append(fileRefs, *fr)
 			}
+			i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: k + 1, Total: len(units), Path: u.relPath})
 		}
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseLink, Done: len(units), Total: len(units)})
 
 		// Purge any prior node no longer produced by this pass (deleted files,
 		// or renamed symbols on a reused store). DeleteNode cascades incident
@@ -629,6 +645,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		// Third phase (site 1): whole-repo go/types confirmed-tier pass. Runs
 		// AFTER the linker so its confirmed edges upsert over the heuristic
 		// tier for the same logical edges (see typeresolvePass).
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseResolve, Done: len(units), Total: len(units)})
 		if _, err := i.typeresolvePass(ctx, units); err != nil {
 			return err
 		}
@@ -636,6 +653,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	}); err != nil {
 		return err
 	}
+	i.notifyProgress(ctx, ProgressEvent{Phase: PhaseDone, Done: len(units), Total: len(units)})
 	i.notifyIngest(ctx, "ingest-completed", len(units))
 	return nil
 }
@@ -684,7 +702,7 @@ func (i *Ingester) ApplyChangedParsed(ctx context.Context, root string, changed 
 // (changed, deleted) back through ApplyChangedParsed repairs any drift caused by
 // a missed filesystem notification. Both slices are returned sorted.
 func (i *Ingester) DriftSet(ctx context.Context, root string) (changed, deleted []string, err error) {
-	units, err := i.walk(root)
+	units, err := i.walk(root, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -751,7 +769,7 @@ func (i *Ingester) IngestChangedWithProvenance(ctx context.Context, root string,
 // units is unchanged, so the parallel path inherits byte-identical determinism.
 func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []string, prov *EditProvenance, precomputed map[string]*ParsedFile) error {
 	i.resetSkips()
-	units, err := i.walk(root)
+	units, err := i.walk(root, nil)
 	if err != nil {
 		return err
 	}
@@ -1139,7 +1157,10 @@ func pathHasIgnoredDir(rel string) bool {
 }
 
 // walk returns all source files under root, sorted deterministically.
-func (i *Ingester) walk(root string) ([]fileUnit, error) {
+// onFile, when non-nil, is invoked with the running count after each file is
+// read into the unit list (progress reporting for the full-ingest path only;
+// other callers pass nil).
+func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, error) {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return nil, fmt.Errorf("ingest: abs root: %w", err)
@@ -1189,6 +1210,9 @@ func (i *Ingester) walk(root string) ([]fileUnit, error) {
 			src:     src,
 			hash:    hashBytes(src),
 		})
+		if onFile != nil {
+			onFile(len(units))
+		}
 		return nil
 	})
 	if err != nil {
