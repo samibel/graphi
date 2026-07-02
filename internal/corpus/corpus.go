@@ -46,9 +46,11 @@ type Entry struct {
 	// Ref is the tag (preferred) or branch to shallow-clone. Tags of released
 	// versions are the pin; SHA tightens it further.
 	Ref string `json:"ref,omitempty"`
-	// SHA, when non-empty, must equal the checkout's HEAD (fail-closed pin).
-	// Leave empty on first onboarding; copy the recorded head_sha from the
-	// report artifact of the first green run to tighten the pin.
+	// SHA, when non-empty, must be a case-insensitive PREFIX of the checkout's
+	// HEAD (fail-closed pin; >=12 hex chars enforced, standard git short-sha
+	// practice). Leave empty on first onboarding; copy the recorded head_sha
+	// from the report artifact (or the run log's HEAD column) of the first
+	// green run to tighten the pin.
 	SHA string `json:"sha,omitempty"`
 	// Path is a local checkout used instead of cloning (hermetic tests).
 	Path string `json:"path,omitempty"`
@@ -88,6 +90,9 @@ func LoadManifest(path string) (Manifest, error) {
 		if e.URL != "" && e.Ref == "" {
 			return Manifest{}, fmt.Errorf("corpus: entry %q has a url but no ref (pin a release tag)", e.Name)
 		}
+		if e.SHA != "" && !validShortSHA(e.SHA) {
+			return Manifest{}, fmt.Errorf("corpus: entry %q sha %q must be >=12 hex chars (a git sha prefix)", e.Name, e.SHA)
+		}
 		nonEmpty := false
 		for _, s := range e.Searches {
 			if s.Query == "" {
@@ -100,6 +105,23 @@ func LoadManifest(path string) (Manifest, error) {
 		}
 	}
 	return m, nil
+}
+
+// validShortSHA reports whether s is a plausible git sha prefix: >=12 and
+// <=40 hex characters. 12 is git's conventional unambiguous short length;
+// anything shorter would make the prefix pin vacuous.
+func validShortSHA(s string) bool {
+	if len(s) < 12 || len(s) > 40 {
+		return false
+	}
+	for _, c := range s {
+		switch {
+		case c >= '0' && c <= '9', c >= 'a' && c <= 'f', c >= 'A' && c <= 'F':
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 // StepResult is one executed step of an entry run.

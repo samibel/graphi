@@ -7,6 +7,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Changed
+- Corpus manifest entries now pin the checkout HEAD sha (case-insensitive
+  prefix, >=12 hex chars, fail-closed) in addition to the release tag —
+  recorded from the first green corpus run. A re-pointed upstream tag now
+  fails the pin step instead of silently changing the corpus.
+
 ### Added
 - Real-repository smoke corpus (`cmd/corpus` + `internal/corpus` +
   `.github/workflows/corpus.yml`): CI now drives the built binary end-to-end

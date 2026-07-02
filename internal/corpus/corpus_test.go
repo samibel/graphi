@@ -173,10 +173,32 @@ func TestLoadManifest_Validation(t *testing.T) {
 		{"neither url nor path", `{"entries":[{"name":"x","searches":[{"query":"q","expect_nonempty":true}]}]}`, "exactly one"},
 		{"url without ref", `{"entries":[{"name":"x","url":"u","searches":[{"query":"q","expect_nonempty":true}]}]}`, "no ref"},
 		{"no nonempty search", `{"entries":[{"name":"x","path":"p","searches":[{"query":"q"}]}]}`, "expect_nonempty"},
+		{"sha too short", `{"entries":[{"name":"x","url":"u","ref":"r","sha":"abc123","searches":[{"query":"q","expect_nonempty":true}]}]}`, "12 hex"},
+		{"sha not hex", `{"entries":[{"name":"x","url":"u","ref":"r","sha":"zzzzzzzzzzzz","searches":[{"query":"q","expect_nonempty":true}]}]}`, "12 hex"},
 	}
 	for _, c := range cases {
 		if _, err := LoadManifest(write(c.body)); err == nil || !strings.Contains(err.Error(), c.wantErr) {
 			t.Errorf("%s: err = %v, want contains %q", c.name, err, c.wantErr)
+		}
+	}
+}
+
+// TestShaMatchesPrefix pins the prefix-pin semantics.
+func TestShaMatchesPrefix(t *testing.T) {
+	head := "a0a6ae020bb35d7dd6fe670cd06b83349e6b6c90"
+	cases := []struct {
+		pinned string
+		want   bool
+	}{
+		{"a0a6ae020bb3", true},
+		{"A0A6AE020BB3", true}, // case-insensitive
+		{head, true},           // full sha
+		{"a0a6ae020bb4", false},
+		{head + "00", false}, // longer than head
+	}
+	for _, c := range cases {
+		if got := shaMatches(c.pinned, head); got != c.want {
+			t.Errorf("shaMatches(%q) = %v, want %v", c.pinned, got, c.want)
 		}
 	}
 }
@@ -199,6 +221,9 @@ func TestCheckedInManifestParses(t *testing.T) {
 	for _, e := range m.Entries {
 		if e.URL != "" && e.Ref == "" {
 			t.Errorf("entry %q lost its ref pin", e.Name)
+		}
+		if e.URL != "" && e.SHA == "" {
+			t.Errorf("entry %q lost its sha pin (recorded from the first green run)", e.Name)
 		}
 	}
 }
