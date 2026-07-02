@@ -33,6 +33,10 @@ type ProgressEvent struct {
 	Phase Phase
 	Done  int // files processed so far (walk: files discovered so far)
 	Total int // total files; 0 while unknown (walk/link/resolve)
+	// Path is the repo-relative file the parse loop just finished; empty for
+	// the phases that are not per-file. Renderers use it to show WHICH file
+	// the pass is on — the diagnostic that identifies a pathological file.
+	Path string
 }
 
 // progressPublishMinGap throttles same-phase "ingest-progress" broker
@@ -65,10 +69,14 @@ func (i *Ingester) notifyProgress(ctx context.Context, ev ProgressEvent) {
 	}
 	i.lastProgressPh = ev.Phase
 	i.lastProgressPub = now
-	payload, _ := json.Marshal(map[string]any{
+	body := map[string]any{
 		"phase": string(ev.Phase),
 		"done":  ev.Done,
 		"total": ev.Total,
-	})
+	}
+	if ev.Path != "" {
+		body["path"] = ev.Path
+	}
+	payload, _ := json.Marshal(body)
 	i.broker.Publish(ctx, observe.Event{Type: "ingest-progress", Ts: now, Payload: payload})
 }

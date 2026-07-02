@@ -46,7 +46,8 @@ type ingestProgress struct {
 	frame         int
 	lastDraw      time.Time
 	start         time.Time
-	lastMilestone int // non-TTY: last 25%-bucket already logged
+	parseStart    time.Time // first parse event; anchors the ETA rate
+	lastMilestone int       // non-TTY: last 25%-bucket already logged
 	stop          chan struct{}
 	finished      bool
 }
@@ -86,6 +87,9 @@ func (p *ingestProgress) Handle(ev ingest.ProgressEvent) {
 		return
 	}
 	phaseChanged := !p.seen || ev.Phase != p.last.Phase
+	if phaseChanged && ev.Phase == ingest.PhaseParse {
+		p.parseStart = p.now() // anchor for the ETA rate
+	}
 	p.last = ev
 	p.seen = true
 	if ev.Phase == ingest.PhaseDone {
@@ -150,7 +154,14 @@ func (p *ingestProgress) statusLine(ev ingest.ProgressEvent) string {
 		return "graphi: scanning repo…"
 	case ingest.PhaseParse:
 		if ev.Total > 0 {
-			return fmt.Sprintf("graphi: indexing %d/%d files (%d%%)", ev.Done, ev.Total, ev.Done*100/ev.Total)
+			line := fmt.Sprintf("graphi: indexing %d/%d files (%d%%)", ev.Done, ev.Total, ev.Done*100/ev.Total)
+			if eta := p.eta(ev); eta != "" {
+				line += " " + eta
+			}
+			if ev.Path != "" {
+				line += " — " + truncatePathLeft(ev.Path, 44)
+			}
+			return line
 		}
 		return "graphi: indexing…"
 	case ingest.PhaseLink:
@@ -176,6 +187,37 @@ func (p *ingestProgress) plainPhaseLine(ev ingest.ProgressEvent) string {
 	default:
 		return "graphi: finishing up…"
 	}
+}
+
+// etaWarmupDone / etaWarmupElapsed gate the ETA display: the average rate is
+// meaningless over the first handful of files or the first moments (a single
+// slow README would predict hours), so the estimate only appears once enough
+// signal exists — exactly the runs long enough that the user is asking
+// "how much longer?".
+const (
+	etaWarmupDone    = 8
+	etaWarmupElapsed = 1 * time.Second
+)
+
+// eta renders "~1m40s left" from the average parse rate since the phase
+// started, or "" while the estimate would still be noise. Callers hold p.mu.
+func (p *ingestProgress) eta(ev ingest.ProgressEvent) string {
+	elapsed := p.now().Sub(p.parseStart)
+	if ev.Done < etaWarmupDone || ev.Done >= ev.Total || elapsed < etaWarmupElapsed {
+		return ""
+	}
+	remaining := time.Duration(float64(elapsed) / float64(ev.Done) * float64(ev.Total-ev.Done))
+	return fmt.Sprintf("~%s left", remaining.Truncate(time.Second))
+}
+
+// truncatePathLeft shortens a repo-relative path from the LEFT (the tail is
+// the informative part) to at most max runes, prefixing an ellipsis.
+func truncatePathLeft(path string, max int) string {
+	r := []rune(path)
+	if len(r) <= max {
+		return path
+	}
+	return "…" + string(r[len(r)-max+1:])
 }
 
 // elapsed formats the wall time since construction with one decimal.

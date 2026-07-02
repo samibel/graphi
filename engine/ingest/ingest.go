@@ -606,7 +606,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			if fr != nil {
 				fileRefs = append(fileRefs, *fr)
 			}
-			i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: k + 1, Total: len(units)})
+			i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: k + 1, Total: len(units), Path: u.relPath})
 		}
 		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseLink, Done: len(units), Total: len(units)})
 

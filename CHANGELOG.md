@@ -7,6 +7,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-02
+
 ### Added
 - Live indexing progress in the terminal. Bare `graphi` (and `graphi index` /
   `graphi http`) now render an in-place status line on stderr while the repo

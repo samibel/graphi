@@ -70,6 +70,67 @@ func TestIngestProgress_TTYRendering(t *testing.T) {
 	}
 }
 
+// TestIngestProgress_TTYPathAndETA pins the parse-line extras: once the
+// warmup gate passes, the line carries an average-rate ETA and the current
+// file's repo-relative path (left-truncated so the informative tail wins).
+func TestIngestProgress_TTYPathAndETA(t *testing.T) {
+	var buf bytes.Buffer
+	p, clk := newTestProgress(&buf, true)
+
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseParse, Total: 100})
+	clk.advance(10 * time.Second)
+	longPath := "engine/analysis/interproctaint/very/deep/directory/tree/file_with_a_long_name.go"
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseParse, Done: 50, Total: 100, Path: longPath})
+
+	out := buf.String()
+	// 50 files in 10s → 50 remaining ≈ 10s.
+	if !strings.Contains(out, "~10s left") {
+		t.Fatalf("parse line missing the ETA:\n%q", out)
+	}
+	if !strings.Contains(out, "— …") || !strings.Contains(out, "file_with_a_long_name.go") {
+		t.Fatalf("parse line missing the left-truncated current path:\n%q", out)
+	}
+	if strings.Contains(out, longPath) {
+		t.Fatalf("long path was not truncated:\n%q", out)
+	}
+}
+
+// TestIngestProgress_ETAWarmup pins the gate: too few files or too little
+// elapsed time must render NO estimate (an early average is noise, not
+// information), and a finished phase (Done==Total) never shows one.
+func TestIngestProgress_ETAWarmup(t *testing.T) {
+	cases := []struct {
+		name    string
+		elapsed time.Duration
+		done    int
+	}{
+		{"too early", 100 * time.Millisecond, 50},
+		{"too few files", 5 * time.Second, 5},
+		{"complete", 5 * time.Second, 100},
+	}
+	for _, c := range cases {
+		var buf bytes.Buffer
+		p, clk := newTestProgress(&buf, true)
+		p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseParse, Total: 100})
+		clk.advance(c.elapsed)
+		p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseParse, Done: c.done, Total: 100})
+		if strings.Contains(buf.String(), "left") {
+			t.Errorf("%s: ETA rendered although the estimate is not meaningful:\n%q", c.name, buf.String())
+		}
+	}
+}
+
+func TestTruncatePathLeft(t *testing.T) {
+	if got := truncatePathLeft("short/path.go", 44); got != "short/path.go" {
+		t.Errorf("short path modified: %q", got)
+	}
+	long := strings.Repeat("d/", 40) + "file.go"
+	got := truncatePathLeft(long, 20)
+	if len([]rune(got)) != 20 || !strings.HasPrefix(got, "…") || !strings.HasSuffix(got, "file.go") {
+		t.Errorf("truncatePathLeft = %q, want 20 runes, ellipsis prefix, tail preserved", got)
+	}
+}
+
 func TestIngestProgress_TTYRedrawThrottle(t *testing.T) {
 	var buf bytes.Buffer
 	p, clk := newTestProgress(&buf, true)

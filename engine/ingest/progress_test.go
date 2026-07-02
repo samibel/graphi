@@ -64,6 +64,9 @@ func TestIngestAll_ProgressEvents(t *testing.T) {
 			}
 			if ev.Done > 0 {
 				parseDones = append(parseDones, ev.Done)
+				if ev.Path == "" {
+					t.Fatalf("per-file parse event carries no Path: %+v", ev)
+				}
 			}
 		}
 	}
