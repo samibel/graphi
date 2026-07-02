@@ -130,7 +130,7 @@ func warmOrFullIngest(ctx context.Context, ing *ingest.Ingester, root string, pr
 			progress(ev)
 		}
 	}
-	if _, ok, err := ing.CanWarmStart(ctx); err == nil && ok {
+	if _, ok, err := ing.CanWarmStart(ctx, root); err == nil && ok {
 		emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift})
 		var totalChecked int
 		changed, deleted, derr := ing.DriftSetWithProgress(ctx, root, func(checked int) {

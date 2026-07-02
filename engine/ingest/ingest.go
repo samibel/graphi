@@ -162,6 +162,9 @@ type Ingester struct {
 	// (see parseUnitsParallel).
 	parseWorkers int
 
+	// ignore caches the opt-in index-scope config per root (see ignore.go).
+	ignore ignoreState
+
 	// test hooks
 	failAfterDirtyMark error
 	scheduleHook       func(relPath string)
@@ -724,7 +727,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		}
 		// A completed full pass certifies the store for warm starts under the
 		// current ingest semantics (see warmstart.go).
-		return i.stampSemanticsTx(ctx, tx)
+		return i.stampSemanticsTx(ctx, tx, root)
 	}); err != nil {
 		return err
 	}
@@ -1328,6 +1331,10 @@ func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, e
 		return nil, fmt.Errorf("ingest: abs root: %w", err)
 	}
 	root = filepath.Clean(root)
+	// Opt-in index scope (GRAPHI_RESPECT_GITIGNORE / GRAPHI_IGNORE): pruned
+	// silently, exactly like the built-in ignoredDirNames — scope hygiene is
+	// configuration, not a diagnostic.
+	scope := i.ignoreConfigFor(root)
 
 	var units []fileUnit
 	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
@@ -1335,8 +1342,17 @@ func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, e
 			return err
 		}
 		if d.IsDir() {
-			if path != root && isIgnoredDirName(d.Name()) {
+			if path == root {
+				return nil
+			}
+			if isIgnoredDirName(d.Name()) {
 				return filepath.SkipDir
+			}
+			if scope.active() {
+				rel, rerr := filepath.Rel(root, path)
+				if rerr == nil && scope.ignoreDir(d.Name(), filepath.ToSlash(rel)) {
+					return filepath.SkipDir
+				}
 			}
 			return nil
 		}
@@ -1347,6 +1363,9 @@ func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, e
 		rel = filepath.ToSlash(rel)
 		if strings.Contains(rel, "..") {
 			return fmt.Errorf("ingest: escaped path %q", rel)
+		}
+		if scope.active() && scope.ignoreFile(rel) {
+			return nil
 		}
 		// SW-055 AC#6: fail-closed max-file-size bound. Check the size from the
 		// directory entry's FileInfo BEFORE reading any bytes into memory, so a
@@ -1450,6 +1469,11 @@ func (i *Ingester) ParseFile(ctx context.Context, root, relPath string) (*Parsed
 	// tracked, reintroducing the exact noise/cost the pruning exists to avoid.
 	// Mirrors the untracked-file-type contract just below: (nil, nil) = ignore.
 	if pathHasIgnoredDir(rel) {
+		return nil, nil
+	}
+	// Opt-in index scope: the watcher must agree with the walk or a watched
+	// edit would re-introduce a file the full pass excludes (parity break).
+	if scope := i.ignoreConfigFor(root); scope.active() && scope.ignoreFile(rel) {
 		return nil, nil
 	}
 	abs := filepath.Join(root, filepath.FromSlash(rel))
