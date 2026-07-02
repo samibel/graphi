@@ -7,6 +7,17 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Changed
+- **`graphi index` now warm-starts like bare `graphi`.** On an unchanged
+  repository the command is a drift scan (milliseconds), and a small edit
+  re-ingests only the changed files plus their cascade (seconds, including
+  the go/types confirmed-tier recompute). `--full` forces the cold pass —
+  e.g. to re-certify a store. Measured on this repository: cold 37.5s,
+  unchanged re-run 21ms, one-file Go edit ~2s.
+- Endpoint indexes on `edges(from_id)` / `edges(to_id)`: node-delete cascades
+  and incident-edge lookups no longer full-scan the edge table. Content-
+  neutral — listings stay id-ordered, graph bytes are unchanged.
+
 ## [0.2.2] - 2026-07-02
 
 ### Added

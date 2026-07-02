@@ -388,6 +388,7 @@ func runIndex(args []string) int {
 	// Order-independent flag parsing: --semantic is a bool toggle; -root/-db/-meta
 	// each take a value (space- or =-separated). Unknown tokens are ignored.
 	semantic := false
+	full := false
 	root, dbPath, metaDir := "", "", ""
 	cpuProfile := os.Getenv("GRAPHI_CPUPROFILE")
 	for i := 0; i < len(args); i++ {
@@ -405,6 +406,8 @@ func runIndex(args []string) int {
 		switch {
 		case a == "--semantic" || a == "-semantic":
 			semantic = true
+		case a == "--full" || a == "-full":
+			full = true
 		default:
 			if v, ok := takeVal("-root"); ok {
 				root = v
@@ -440,7 +443,16 @@ func runIndex(args []string) int {
 	defer func() { _ = ing.Close() }()
 	prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
 	ing.WithProgress(prog.Handle)
-	ierr := ing.IngestAll(ctx, root)
+	// Warm start by default (same cheap drift-check path bare `graphi` uses):
+	// on an unchanged repo the second `graphi index` is a hash walk, not a full
+	// re-parse. --full forces the cold pass (e.g. after a graphi upgrade whose
+	// semantics stamp did not change, or to re-certify a store).
+	var ierr error
+	if full {
+		ierr = ing.IngestAll(ctx, root)
+	} else {
+		ierr = warmOrFullIngest(ctx, ing, root, prog.Handle)
+	}
 	prog.Finish(ierr)
 	if ierr != nil {
 		fmt.Fprintf(os.Stderr, "graphi: index: %v\n", ierr)

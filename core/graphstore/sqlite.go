@@ -135,6 +135,12 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(
 	owner_id   UNINDEXED,
 	text
 );
+-- Endpoint indexes: DeleteNode's incident-edge cascade and incidentEdgeIDs
+-- filter on from_id/to_id; without these every node delete full-scans the
+-- edge table (and the FK enforcement lacks its child index). Content-neutral:
+-- listings stay ordered by id, so graph bytes are unaffected.
+CREATE INDEX IF NOT EXISTS edges_from_id ON edges(from_id);
+CREATE INDEX IF NOT EXISTS edges_to_id   ON edges(to_id);
 `
 	if _, err := s.db.ExecContext(ctx, ddl); err != nil {
 		return fmt.Errorf("graphstore: init schema (FTS5 may be unavailable): %w", err)
