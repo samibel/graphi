@@ -4,18 +4,21 @@
 // and import resolution — the depth the name-based engine/link heuristics
 // cannot reach.
 //
-// This package is currently DARK: nothing in engine/ingest calls it yet. It
-// ships in four reviewable slices; three have landed. Slice 1 is the
-// object→node identity mapping (qn.go) plus the golden cross-test that pins it
-// byte-exactly against the real core/parse extractor — the load-bearing
-// artifact of the whole phase: a confirmed edge can only ever be attached to a
-// node the extractor actually created, and any drift between the two naming
-// schemes silently drops edges. Slice 2 is the package-graph plumbing
-// (pkggraph.go): go.mod parsing, directory=package grouping, import
+// This package is LIVE: engine/ingest runs Resolve as its third phase (after
+// parse-commit and the heuristic linker) at both the full and the incremental
+// site — see engine/ingest's typeresolvePass for the reconciliation contract
+// (confirmed wins on success, heuristic survives degradation) and the
+// GRAPHI_NO_TYPERESOLVE kill switch. It shipped in four reviewable slices.
+// Slice 1 is the object→node identity mapping (qn.go) plus the golden
+// cross-test that pins it byte-exactly against the real core/parse extractor —
+// the load-bearing artifact of the whole phase: a confirmed edge can only ever
+// be attached to a node the extractor actually created, and any drift between
+// the two naming schemes silently drops edges. Slice 2 is the package-graph
+// plumbing (pkggraph.go): go.mod parsing, directory=package grouping, import
 // resolution, and the deterministic check order. Slice 3 is the type-check and
 // edge emission itself (check.go): Resolve turns a repository snapshot into
-// confirmed-tier calls/references/implements edges. Slice 4 (ingest wiring +
-// kill switch) is what turns the lights on.
+// confirmed-tier calls/references/implements edges. Slice 4 is the ingest
+// wiring.
 //
 // Hard constraints (mirrored from the roadmap and enforced by tests/CI):
 //   - stdlib go/types ONLY — no golang.org/x/tools, no go/packages (which

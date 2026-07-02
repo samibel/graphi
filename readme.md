@@ -194,7 +194,13 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > selector calls (`pkg.Fn`, `recv.Method`) plus file→file `imports` (`heuristic` tier,
 > with file:line evidence). It preserves the byte-identical full-vs-incremental invariant
 > and the rename/move cascade. The linker is **never** `confirmed`: unresolved or ambiguous
-> references are dropped deterministically, never fabricated.
+> references are dropped deterministically, never fabricated. Since v0.2.0 a third
+> ingest phase ([`engine/typeresolve`](engine/typeresolve)) runs the stdlib go/types
+> checker over the whole repository and upserts type-checker-**proven** Go
+> `calls`/`references`/`implements` edges at the `confirmed` tier (confidence 1.0) on
+> top of the linker's output — correct receiver-type method dispatch, shadowing, and
+> import resolution. A package the checker cannot prove (parse error, import cycle)
+> keeps its heuristic edges; kill switch: `GRAPHI_NO_TYPERESOLVE=1`.
 >
 > ² Intra-file extraction ships for every language above. One per-language
 > cross-file resolver (`resolve_<lang>.go`) over the same `engine/link` registry seam
