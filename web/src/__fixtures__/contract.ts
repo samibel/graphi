@@ -9,6 +9,7 @@ import type {
   ErrorEnvelope,
   ImpactResult,
   QueryResult,
+  SearchResult,
 } from "../types";
 
 export const queryPayload: QueryResult = {
@@ -32,6 +33,14 @@ export const impactPayload: ImpactResult = {
   analyzer: "impact",
   impacted: ["n1", "n2"],
   provenance: { tier: "confirmed" },
+};
+
+export const searchPayload: SearchResult = {
+  query: "release",
+  matches: [
+    { node_id: "s1", kind: "function", qualified_name: "main.release", source_path: "cmd/release/main.go", line: 12, column: 1, rank: -1.5 },
+    { node_id: "s2", kind: "file", qualified_name: "cmd/release/main.go", source_path: "cmd/release/main.go", line: 1, column: 1, rank: -1.0 },
+  ],
 };
 
 export const contractDoc: Contract = {

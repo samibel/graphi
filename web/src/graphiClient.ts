@@ -10,6 +10,8 @@ import type {
   ErrorEnvelope,
   ImpactResult,
   QueryResult,
+  SearchMatch,
+  SearchResult,
   StreamEvent,
 } from "./types";
 import { SCHEMA_VERSION } from "./types";
@@ -130,25 +132,15 @@ async function getEnvelope<T>(path: string): Promise<T> {
  * GET). Returns negotiated resources[] + streams[].
  */
 export async function getContract(): Promise<Contract> {
-  const res = await fetch(`${BASE}/contract`, {
-    headers: { "X-Graphi-Schema-Version": String(SCHEMA_VERSION) },
-  });
-  if (res.status === 412) throw new SchemaMismatchError(SCHEMA_VERSION);
-  let body: unknown;
-  try {
-    body = await res.json();
-  } catch {
-    throw new ApiError("internal", `HTTP ${res.status}`);
+  // The server wraps /contract in the standard success envelope
+  // ({schema_version, payload:{schema_version, resources, streams}}), so it
+  // rides the same decode path as every other GET. getEnvelope validates the
+  // OUTER stamp; the contract document's OWN stamp is validated here.
+  const contract = await getEnvelope<Contract>("/contract");
+  if (contract.schema_version !== SCHEMA_VERSION) {
+    throw new SchemaMismatchError(SCHEMA_VERSION, contract.schema_version);
   }
-  if (isErrorEnvelope(body)) {
-    const { code, message } = body.error;
-    if (code === "schema_mismatch") throw new SchemaMismatchError(SCHEMA_VERSION);
-    throw new ApiError(code, message);
-  }
-  if (envelopeVersion(body) !== SCHEMA_VERSION) {
-    throw new SchemaMismatchError(SCHEMA_VERSION, envelopeVersion(body));
-  }
-  return body as Contract;
+  return contract;
 }
 
 /** Resolve the impact/blast-radius analyzer route from negotiated resources. */
@@ -159,6 +151,21 @@ export function resolveAnalyzerRoute(contract: Contract): string | null {
   // Prefer an analyzer whose name suggests impact/blast-radius; else first.
   const impact = analyzers.find((r) => /impact|blast/i.test(r));
   return impact ?? analyzers[0];
+}
+
+/**
+ * Lexical symbol search (FTS, case-insensitive per-token prefix match over
+ * qualified names). Resolves a free-text seed into candidate node ids before
+ * the neighborhood load — /query/neighborhood itself is an exact-id lookup.
+ */
+export async function searchSymbols(
+  q: string,
+  limit = 20,
+): Promise<SearchMatch[]> {
+  const res = await getEnvelope<SearchResult>(
+    `/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+  );
+  return res.matches;
 }
 
 /** Fetch the neighborhood of a seed symbol — the bounded graph endpoint (AC-1). */

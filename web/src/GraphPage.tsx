@@ -18,7 +18,7 @@ function readSeedFromUrl(): string {
 export function GraphPage() {
   const [seedInput, setSeedInput] = useState(readSeedFromUrl);
   const [activeSeed, setActiveSeed] = useState(readSeedFromUrl);
-  const { state, select, clear } = useGraph(activeSeed, 2);
+  const { state, select, clear, pick } = useGraph(activeSeed, 2);
 
   // BLOCKING, fail-closed schema-mismatch state: render no graph data (AC-4).
   if (state.schemaMismatch) {
@@ -34,7 +34,11 @@ export function GraphPage() {
     );
   }
 
-  const empty = !state.loading && state.nodes.length === 0 && activeSeed !== "";
+  const empty =
+    !state.loading &&
+    state.nodes.length === 0 &&
+    activeSeed !== "" &&
+    !state.candidates;
 
   const submitSeed = (seed: string) => {
     setActiveSeed(seed);
@@ -81,6 +85,27 @@ export function GraphPage() {
         <div className="notice">live updates disconnected — retrying…</div>
       )}
       {state.error && <div className="error">⚠ {state.error}</div>}
+
+      {state.candidates && (
+        <div className="candidates">
+          <p className="hint-inline">
+            {state.candidates.length} matches for “{activeSeed}” — pick one:
+          </p>
+          <ul>
+            {state.candidates.map((m) => (
+              <li key={m.node_id}>
+                <button type="button" onClick={() => pick(m.node_id)}>
+                  <code>{m.qualified_name}</code>
+                  <span className="hint-inline">
+                    {" "}
+                    {m.kind} · {m.source_path}:{m.line}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="viewport">
         {state.loading && <p className="hint">Loading graph…</p>}

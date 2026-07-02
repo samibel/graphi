@@ -20,6 +20,8 @@ export type {
   ResultEdge,
   QueryResult,
   ImpactResult,
+  SearchMatch,
+  SearchResult,
   StreamEvent,
 } from "./payload";
 
