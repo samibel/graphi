@@ -97,7 +97,10 @@ export function chooseMatch(q: string, matches: SearchMatch[]): SearchMatch | nu
   if (exact.length === 1) return exact[0];
   const byName = matches.filter((m) => {
     const qn = m.qualified_name.toLowerCase();
-    const seg = qn.split("/").pop()?.split(".").pop() ?? qn;
+    const base = qn.split("/").pop() ?? qn;
+    // File nodes are qualified by their path — the name is the basename WITH
+    // its extension ("main.go"), so only symbol QNs split on ".".
+    const seg = m.kind === "file" ? base : (base.split(".").pop() ?? base);
     return seg === needle;
   });
   if (byName.length === 1) return byName[0];

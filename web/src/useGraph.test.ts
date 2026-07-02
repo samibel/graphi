@@ -15,10 +15,10 @@ vi.mock("./graphiClient", () => ({
 }));
 const { chooseMatch } = await import("./useGraph");
 
-function m(id: string, qn: string): SearchMatch {
+function m(id: string, qn: string, kind = "function"): SearchMatch {
   return {
     node_id: id,
-    kind: "function",
+    kind,
     qualified_name: qn,
     source_path: "a.go",
     line: 1,
@@ -56,5 +56,13 @@ describe("chooseMatch", () => {
     expect(
       chooseMatch("release", [m("s1", "main.release"), m("s2", "pkg.release")]),
     ).toBeNull();
+  });
+
+  it("matches file nodes by basename WITH extension ('main.go')", () => {
+    const got = chooseMatch("main.go", [
+      m("s1", "cmd/release/main.go", "file"),
+      m("s2", "main.run"),
+    ]);
+    expect(got?.node_id).toBe("s1");
   });
 });
