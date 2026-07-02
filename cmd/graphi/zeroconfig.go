@@ -138,12 +138,15 @@ func warmOrFullIngest(ctx context.Context, ing *ingest.Ingester, root string, pr
 			if checked%64 == 0 {
 				emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: checked})
 			}
+		var totalChecked int
+		changed, deleted, derr := ing.DriftSetWithProgress(ctx, root, func(checked int) {
+			totalChecked = checked
+			if checked%64 == 0 {
+				emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: checked})
+			}
 		})
 		if derr == nil {
-			// Final drift event with the TRUE count: the throttled walk callback
-			// only fired on multiples of 64, and the renderer's up-to-date
-			// summary reports the last Done it saw.
-			emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: checkedTotal})
+			emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: totalChecked})
 			delta := append(changed, deleted...)
 			if len(delta) == 0 {
 				return nil // up to date — the summary comes from the renderer
