@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/samibel/graphi/internal/corpus"
@@ -55,7 +56,7 @@ func run() int {
 
 	bin := *binary
 	if bin == "" {
-		bin = filepath.Join(wd, "graphi")
+		bin = filepath.Join(wd, exeName("graphi"))
 		build := exec.Command("go", "build", "-o", bin, "./cmd/graphi")
 		build.Env = append(os.Environ(), "CGO_ENABLED=0")
 		if out, err := build.CombinedOutput(); err != nil {
@@ -105,6 +106,15 @@ func run() int {
 	}
 	fmt.Println("corpus: PASS — every repository ran the full flow cleanly")
 	return 0
+}
+
+// exeName appends the platform executable suffix (Windows needs .exe for
+// CreateProcess to resolve the built binary).
+func exeName(name string) string {
+	if runtime.GOOS == "windows" {
+		return name + ".exe"
+	}
+	return name
 }
 
 func short(sha string) string {

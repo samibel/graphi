@@ -97,10 +97,14 @@ func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 
 	// 2. Full index. This is the step the historical first-contact crashes
 	// (.DS_Store, pnpm symlinks, malformed JSON) would have tripped.
-	if out, err := r.graphi(ctx, "index", "-root", repoDir, "-db", db, "-meta", meta); err != nil {
-		return fail("index", err.Error()+"\n"+tail(out))
-	} else if p := panicMarker(out); p != "" {
+	// Panic marker first: a panicking binary also exits non-zero, so checking
+	// err first would bury the panic line in the generic exit-status detail.
+	out, err := r.graphi(ctx, "index", "-root", repoDir, "-db", db, "-meta", meta)
+	if p := panicMarker(out); p != "" {
 		return fail("index", "panic in output: "+p)
+	}
+	if err != nil {
+		return fail("index", err.Error()+"\n"+tail(out))
 	}
 	ok("index", "")
 
@@ -116,7 +120,11 @@ func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 				NodeID string `json:"node_id"`
 			} `json:"matches"`
 		}
-		if err := json.Unmarshal(lastJSONLine(out), &res); err != nil {
+		lastLine := lastJSONLine(out)
+		if len(lastLine) == 0 {
+			return fail("search:"+s.Query, "search produced no output at all")
+		}
+		if err := json.Unmarshal(lastLine, &res); err != nil {
 			return fail("search:"+s.Query, "output is not the canonical search JSON: "+err.Error()+"\n"+tail(out))
 		}
 		if s.ExpectNonEmpty && len(res.Matches) == 0 {
@@ -138,11 +146,11 @@ func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 		} {
 			out, err := r.graphi(ctx, step...)
 			name := step[0] + ":" + step[1]
-			if err != nil {
-				return fail(name, err.Error()+"\n"+tail(out))
-			}
 			if p := panicMarker(out); p != "" {
 				return fail(name, "panic in output: "+p)
+			}
+			if err != nil {
+				return fail(name, err.Error()+"\n"+tail(out))
 			}
 			if !json.Valid(lastJSONLine(out)) {
 				return fail(name, "output is not valid JSON\n"+tail(out))

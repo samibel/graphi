@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,9 @@ func buildGraphi(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "graphi")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
 	cmd := exec.Command("go", "build", "-o", bin, "github.com/samibel/graphi/cmd/graphi")
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -121,10 +125,20 @@ func TestRunner_EmptyExpectationFails(t *testing.T) {
 func TestRunner_BrokenBinaryFails(t *testing.T) {
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "graphi")
-	// A stand-in "binary" that panics on any invocation.
-	script := "#!/bin/sh\necho 'panic: runtime error: fixture crash' >&2\nexit 2\n"
-	if err := os.WriteFile(bin, []byte(script), 0o700); err != nil {
-		t.Fatalf("write stub: %v", err)
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
+	// A stand-in "binary" that prints a panic marker and exits non-zero on any
+	// invocation — compiled Go so the bite-proof runs on every platform.
+	src := filepath.Join(dir, "crash.go")
+	code := "package main\n\nimport (\n\t\"fmt\"\n\t\"os\"\n)\n\nfunc main() {\n\tfmt.Fprintln(os.Stderr, \"panic: runtime error: fixture crash\")\n\tos.Exit(2)\n}\n"
+	if err := os.WriteFile(src, []byte(code), 0o600); err != nil {
+		t.Fatalf("write stub source: %v", err)
+	}
+	build := exec.Command("go", "build", "-o", bin, src)
+	build.Env = append(os.Environ(), "CGO_ENABLED=0")
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build stub: %v\n%s", err, out)
 	}
 	repo := writeFixtureRepo(t)
 	r := &Runner{Binary: bin, WorkDir: t.TempDir(), PerEntryTimeout: time.Minute}
