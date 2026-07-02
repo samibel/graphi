@@ -230,6 +230,10 @@ func (m *Model) runSelected() tea.Cmd {
 		return runSearchCmd(m.ctx, m.eng, sym)
 	case strings.HasPrefix(name, "analyze/"):
 		an := strings.TrimPrefix(name, "analyze/")
+		// "reverse" = dependents / blast radius (the rdeps convention) — correct
+		// since the v0.1.3 direction fix. Before the fix the engine had the two
+		// names swapped and this panel silently showed dependencies; do NOT
+		// "fix" this back to forward.
 		return runAnalyzeCmd(m.ctx, m.eng, an, sym, "reverse")
 	}
 	m.inFlight = false

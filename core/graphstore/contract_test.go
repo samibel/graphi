@@ -419,11 +419,11 @@ func TestContract_LoadFailClosed(t *testing.T) {
 
 			dir := t.TempDir()
 			cases := map[string][]byte{
-				"garbage":        []byte("not json at all"),
-				"truncated":      []byte(`{"magic":"graphi.graphstore.snapshot","format_versi`),
-				"bad-magic":      []byte(`{"magic":"nope","format_version":1,"model_schema_version":1,"graph":{}}`),
-				"bad-version":    []byte(`{"magic":"graphi.graphstore.snapshot","format_version":999,"model_schema_version":1,"graph":{}}`),
-				"bad-modelver":   []byte(`{"magic":"graphi.graphstore.snapshot","format_version":1,"model_schema_version":999,"graph":{}}`),
+				"garbage":      []byte("not json at all"),
+				"truncated":    []byte(`{"magic":"graphi.graphstore.snapshot","format_versi`),
+				"bad-magic":    []byte(`{"magic":"nope","format_version":1,"model_schema_version":1,"graph":{}}`),
+				"bad-version":  []byte(`{"magic":"graphi.graphstore.snapshot","format_version":999,"model_schema_version":1,"graph":{}}`),
+				"bad-modelver": []byte(`{"magic":"graphi.graphstore.snapshot","format_version":1,"model_schema_version":999,"graph":{}}`),
 			}
 			for name, content := range cases {
 				p := filepath.Join(dir, name+".snapshot")

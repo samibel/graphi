@@ -15,6 +15,24 @@ on:
   pull_request:
 
 jobs:
+  gofmt:
+    name: gofmt (no drift)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: gofmt -l is empty
+        run: |
+          drift=$(gofmt -l . | grep -v node_modules || true)
+          if [ -n "$drift" ]; then
+            echo "::error::unformatted files (run gofmt -w):"
+            echo "$drift"
+            exit 1
+          fi
+
   vet:
     name: go vet ./...
     runs-on: ubuntu-latest

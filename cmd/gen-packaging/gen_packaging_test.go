@@ -100,7 +100,7 @@ func TestRenderDeterministic(t *testing.T) {
 // manifests for the matching asset (and the placeholder is used otherwise).
 func TestSumsInjection(t *testing.T) {
 	hashes := map[string]string{
-		"graphi-darwin-arm64":    "1111111111111111111111111111111111111111111111111111111111111111",
+		"graphi-darwin-arm64":      "1111111111111111111111111111111111111111111111111111111111111111",
 		"graphi-windows-amd64.exe": "2222222222222222222222222222222222222222222222222222222222222222",
 	}
 	files, err := render("v9.9.9", hashes)

@@ -62,8 +62,8 @@ type PDGNode struct {
 
 // PDGResult is the complete output of a PDG analysis run.
 type PDGResult struct {
-	DataDepEdges    []DepEdge  `json:"data_dep_edges"`
-	ControlDepEdges []DepEdge  `json:"control_dep_edges"`
-	Nodes           []PDGNode  `json:"nodes"`
-	Diagnostics     []string   `json:"diagnostics,omitempty"`
+	DataDepEdges    []DepEdge `json:"data_dep_edges"`
+	ControlDepEdges []DepEdge `json:"control_dep_edges"`
+	Nodes           []PDGNode `json:"nodes"`
+	Diagnostics     []string  `json:"diagnostics,omitempty"`
 }

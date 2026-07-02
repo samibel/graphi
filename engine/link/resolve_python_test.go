@@ -42,10 +42,10 @@ func pyScene(t *testing.T) ([]model.Node, []FileRefs) {
 		Dir:        "app",
 		Language:   "python",
 		Imports: []parse.ImportSpec{
-			{Alias: "rates", Path: "tax.rates"},  // import tax.rates as rates
-			{Alias: "build", Path: "shop.cart"},  // from shop.cart import build
-			{Alias: "json", Path: "json"},        // import json (stdlib)
-			{Alias: "dup", Path: "pkg"},          // from pkg import dup (ambiguous)
+			{Alias: "rates", Path: "tax.rates"}, // import tax.rates as rates
+			{Alias: "build", Path: "shop.cart"}, // from shop.cart import build
+			{Alias: "json", Path: "json"},       // import json (stdlib)
+			{Alias: "dup", Path: "pkg"},         // from pkg import dup (ambiguous)
 		},
 		Pending: []parse.PendingRef{
 			{FromQN: "app.checkout", SelectorBase: "rates", Name: "compute", Kind: "calls", Line: 5, Selector: true},

@@ -502,10 +502,11 @@ func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError
 	case p.Arguments.Symbol == "":
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
-	direction := "forward"
-	if p.Arguments.Direction != "" {
-		direction = p.Arguments.Direction
-	}
+	// Direction passes through verbatim; the ENGINE owns the default (empty →
+	// reverse = dependents/blast radius since the v0.1.3 direction fix). A
+	// surface-side fallback here would silently shadow that single source of
+	// truth.
+	direction := p.Arguments.Direction
 	maxNodes := 0
 	if p.Arguments.MaxNodes != nil {
 		maxNodes = *p.Arguments.MaxNodes
@@ -726,7 +727,7 @@ var deepAnalyzerDescriptors = []map[string]any{
 			"type": "object",
 			"properties": map[string]any{
 				"symbol":    map[string]any{"type": "string", "description": "symbol (node) id to analyze"},
-				"direction": map[string]any{"type": "string", "description": "traversal direction: forward (default) | reverse"},
+				"direction": map[string]any{"type": "string", "description": "traversal direction: reverse (dependents/blast radius — the default) | forward (dependencies)"},
 				"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
 			},
 			"required": []string{"symbol"},
@@ -925,7 +926,7 @@ func (s *Server) toolDescriptors() []map[string]any {
 				"properties": map[string]any{
 					"analyzer":  map[string]any{"type": "string", "description": "analyzer name (e.g. impact)"},
 					"symbol":    map[string]any{"type": "string", "description": "symbol (node) id to analyze"},
-					"direction": map[string]any{"type": "string", "description": "traversal direction for directional analyzers: forward (dependents/blast-radius) | reverse (dependencies)"},
+					"direction": map[string]any{"type": "string", "description": "traversal direction for directional analyzers: reverse (dependents/blast radius — the default) | forward (dependencies)"},
 					"max_nodes": map[string]any{"type": "integer", "description": "output budget on reached nodes (0 = analyzer default)"},
 				},
 				"required": []string{"analyzer", "symbol"},

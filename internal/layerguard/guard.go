@@ -73,10 +73,10 @@ func LayerName(rank int) string {
 
 // Violation is one upward/sideways import edge.
 type Violation struct {
-	Importer       string
-	Imported       string
-	ImporterLayer  int
-	ImportedLayer  int
+	Importer      string
+	Imported      string
+	ImporterLayer int
+	ImportedLayer int
 }
 
 // Error makes a Violation descriptive.
@@ -87,8 +87,8 @@ func (v Violation) String() string {
 
 // Report is the layer-guard outcome.
 type Report struct {
-	Pass        bool
-	Violations  []Violation
+	Pass         bool
+	Violations   []Violation
 	AllowedEdges []string // verified allowed edges observed, e.g. "cmd→surfaces"
 }
 

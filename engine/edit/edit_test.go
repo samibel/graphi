@@ -335,9 +335,12 @@ func TestApply_SpanEdgeCases(t *testing.T) {
 		want        string
 	}{
 		{
-			name:        "deletion_empty_replacement",
-			initial:     "package a\nconst X = 1\n",
-			mkSpan:      func(b []byte) edit.Span { i := bytesIndex(b, "const X = 1\n"); return edit.Span{Start: i, End: i + len("const X = 1\n")} },
+			name:    "deletion_empty_replacement",
+			initial: "package a\nconst X = 1\n",
+			mkSpan: func(b []byte) edit.Span {
+				i := bytesIndex(b, "const X = 1\n")
+				return edit.Span{Start: i, End: i + len("const X = 1\n")}
+			},
 			replacement: "",
 			want:        "package a\n",
 		},
@@ -356,9 +359,12 @@ func TestApply_SpanEdgeCases(t *testing.T) {
 			want:        "package a\nconst Y = 2\n",
 		},
 		{
-			name:        "multibyte_utf8",
-			initial:     "package a\n// δοκιμή\n",
-			mkSpan:      func(b []byte) edit.Span { i := bytesIndex(b, "δοκιμή"); return edit.Span{Start: i, End: i + len("δοκιμή")} },
+			name:    "multibyte_utf8",
+			initial: "package a\n// δοκιμή\n",
+			mkSpan: func(b []byte) edit.Span {
+				i := bytesIndex(b, "δοκιμή")
+				return edit.Span{Start: i, End: i + len("δοκιμή")}
+			},
 			replacement: "тест",
 			want:        "package a\n// тест\n",
 		},

@@ -30,17 +30,17 @@ func TestFormatIDFixedWidth(t *testing.T) {
 
 func TestNormalizePath(t *testing.T) {
 	cases := map[string]string{
-		"":                          "",
-		"pkg/foo.go":                "pkg/foo.go",
-		"/abs/pkg/foo.go":           "abs/pkg/foo.go",
-		"./pkg/foo.go":              "pkg/foo.go",
-		"pkg/../pkg/foo.go":         "pkg/foo.go",
-		"../../escape/foo.go":       "escape/foo.go", // .. traversal removed
-		"a/b/../c/foo.go":           "a/c/foo.go",
-		`C:\Users\x\repo\foo.go`:    "Users/x/repo/foo.go",
-		`pkg\sub\foo.go`:            "pkg/sub/foo.go",
-		"/":                         "",
-		".":                         "",
+		"":                       "",
+		"pkg/foo.go":             "pkg/foo.go",
+		"/abs/pkg/foo.go":        "abs/pkg/foo.go",
+		"./pkg/foo.go":           "pkg/foo.go",
+		"pkg/../pkg/foo.go":      "pkg/foo.go",
+		"../../escape/foo.go":    "escape/foo.go", // .. traversal removed
+		"a/b/../c/foo.go":        "a/c/foo.go",
+		`C:\Users\x\repo\foo.go`: "Users/x/repo/foo.go",
+		`pkg\sub\foo.go`:         "pkg/sub/foo.go",
+		"/":                      "",
+		".":                      "",
 	}
 	for in, want := range cases {
 		if got := NormalizePath(in); got != want {

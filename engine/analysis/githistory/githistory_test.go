@@ -340,8 +340,8 @@ func TestDualConstraintWindow(t *testing.T) {
 			commit("a", "alice", 1, "f1.go"),
 			commit("b", "bob", 3, "f2.go"),
 			commit("c", "carol", 5, "f3.go"),
-			commit("d", "dave", 8, "f4.go"),  // older than 7 days
-			commit("e", "eve", 10, "f5.go"),  // older than 7 days
+			commit("d", "dave", 8, "f4.go"), // older than 7 days
+			commit("e", "eve", 10, "f5.go"), // older than 7 days
 		},
 	}
 	a := New(provider, Config{

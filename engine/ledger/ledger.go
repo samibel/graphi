@@ -18,13 +18,13 @@ import (
 // A Ledger is safe for use by a single writer (the daemon). It performs no
 // network I/O.
 type Ledger struct {
-	path     string
-	f        *os.File
-	entries  []Entry // valid, in-order entries (Seq strictly increasing)
-	lastSeq  int64
-	session  string // fresh per Open
-	cumulative MicroUSD
-	sessionSum MicroUSD
+	path          string
+	f             *os.File
+	entries       []Entry // valid, in-order entries (Seq strictly increasing)
+	lastSeq       int64
+	session       string // fresh per Open
+	cumulative    MicroUSD
+	sessionSum    MicroUSD
 	sessionCapped bool // true if any contribution in THIS session was capped
 }
 
@@ -84,11 +84,11 @@ func (l *Ledger) reload() error {
 	// marks the torn tail. validThrough is the byte offset of the end of the last
 	// valid line's newline (i.e. the length to keep).
 	var (
-		valid     []Entry
-		lastSeq   int64 = 0
-		validThrough int64 = 0
-		sessions  = map[string]struct{}{}
-		cumulative MicroUSD = 0
+		valid        []Entry
+		lastSeq      int64    = 0
+		validThrough int64    = 0
+		sessions              = map[string]struct{}{}
+		cumulative   MicroUSD = 0
 	)
 	for _, ln := range lines {
 		t := strings.TrimSpace(ln.text)
@@ -128,7 +128,7 @@ func (l *Ledger) reload() error {
 	l.entries = valid
 	l.lastSeq = lastSeq
 	l.cumulative = cumulative
-	l.sessionSum = 0     // fresh session starts at 0
+	l.sessionSum = 0        // fresh session starts at 0
 	l.sessionCapped = false // fresh session: no caps yet
 	l.session = nextSessionID(sessions)
 	return nil

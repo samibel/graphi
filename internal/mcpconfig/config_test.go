@@ -70,8 +70,8 @@ func TestApply_PreservesUnrelatedKeys(t *testing.T) {
 	path := filepath.Join(dir, ".claude.json")
 	// pre-existing config with unrelated keys + a sibling server
 	writeJSON(t, path, map[string]any{
-		"userID":   "u-123",
-		"theme":    "dark",
+		"userID": "u-123",
+		"theme":  "dark",
 		"mcpServers": map[string]any{
 			"chrome-devtools": map[string]any{"type": "stdio", "command": "npx"},
 		},

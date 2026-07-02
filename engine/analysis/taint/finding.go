@@ -9,44 +9,44 @@ import (
 
 // PathStep is one step in a taint propagation path, carrying full provenance.
 type PathStep struct {
-	NodeID        model.NodeId         `json:"node_id"`
-	Kind          string               `json:"kind"`
-	QualifiedName string               `json:"qualified_name"`
-	SourcePath    string               `json:"source_path"`
-	Line          int                  `json:"line"`
-	Column        int                  `json:"column"`
-	Labels        LabelSet             `json:"labels"`
-	EdgeKind      string               `json:"edge_kind,omitempty"`
-	Tier          model.ConfidenceTier `json:"confidence_tier,omitempty"`
-	Confidence    float64              `json:"confidence,omitempty"`
-	Reason        string               `json:"reason,omitempty"`
-	DerivationRule string              `json:"derivation_rule,omitempty"`
+	NodeID         model.NodeId         `json:"node_id"`
+	Kind           string               `json:"kind"`
+	QualifiedName  string               `json:"qualified_name"`
+	SourcePath     string               `json:"source_path"`
+	Line           int                  `json:"line"`
+	Column         int                  `json:"column"`
+	Labels         LabelSet             `json:"labels"`
+	EdgeKind       string               `json:"edge_kind,omitempty"`
+	Tier           model.ConfidenceTier `json:"confidence_tier,omitempty"`
+	Confidence     float64              `json:"confidence,omitempty"`
+	Reason         string               `json:"reason,omitempty"`
+	DerivationRule string               `json:"derivation_rule,omitempty"`
 }
 
 // Finding is a single source→sink taint flow with full provenance on every
 // propagation step. The path is ordered from source to sink.
 type Finding struct {
-	SourceID      model.NodeId `json:"source_id"`
-	SourceName    string       `json:"source_name"`
-	SourceDefID   string       `json:"source_def_id"`
-	SinkID        model.NodeId `json:"sink_id"`
-	SinkName      string       `json:"sink_name"`
-	SinkDefID     string       `json:"sink_def_id"`
-	SinkCategory  string       `json:"sink_category"`
-	Labels        LabelSet     `json:"labels"`
-	Path          []PathStep   `json:"path"`
-	PathLength    int          `json:"path_length"`
-	Incomplete    bool         `json:"incomplete,omitempty"`
-	CapHit        *capHit      `json:"cap_hit,omitempty"`
-	ConfigHash    string       `json:"config_hash"`
+	SourceID     model.NodeId `json:"source_id"`
+	SourceName   string       `json:"source_name"`
+	SourceDefID  string       `json:"source_def_id"`
+	SinkID       model.NodeId `json:"sink_id"`
+	SinkName     string       `json:"sink_name"`
+	SinkDefID    string       `json:"sink_def_id"`
+	SinkCategory string       `json:"sink_category"`
+	Labels       LabelSet     `json:"labels"`
+	Path         []PathStep   `json:"path"`
+	PathLength   int          `json:"path_length"`
+	Incomplete   bool         `json:"incomplete,omitempty"`
+	CapHit       *capHit      `json:"cap_hit,omitempty"`
+	ConfigHash   string       `json:"config_hash"`
 }
 
 // TaintResult is the complete output of a taint analysis run.
 type TaintResult struct {
-	Findings   []Finding    `json:"findings"`
-	Truncated  bool         `json:"truncated,omitempty"`
-	Diagnostics []string    `json:"diagnostics,omitempty"`
-	ConfigHash string       `json:"config_hash"`
+	Findings    []Finding `json:"findings"`
+	Truncated   bool      `json:"truncated,omitempty"`
+	Diagnostics []string  `json:"diagnostics,omitempty"`
+	ConfigHash  string    `json:"config_hash"`
 }
 
 // sortFindings sorts findings in canonical order for deterministic output:

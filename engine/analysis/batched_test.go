@@ -83,8 +83,9 @@ func TestBatchedProvenancePreserved(t *testing.T) {
 	if err != nil {
 		t.Fatalf("batched: %v", err)
 	}
-	// Standalone impact (forward).
-	imp, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: ids["S"], Direction: analysis.Forward})
+	// Standalone impact with the direction batched uses internally (Reverse =
+	// dependents/blast radius since the v0.1.3 direction fix).
+	imp, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: ids["S"], Direction: analysis.Reverse})
 	if err != nil {
 		t.Fatalf("impact: %v", err)
 	}

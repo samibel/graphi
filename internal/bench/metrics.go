@@ -8,10 +8,10 @@ import (
 // Metrics are the four measured benchmark values plus provenance. Durations are
 // expressed as float milliseconds; binary size as bytes.
 type Metrics struct {
-	ColdStartP95MS  float64 `json:"cold_start_p95_ms"`  // daemon/engine cold-start to first served query, P95
-	FullIndexMS     float64 `json:"full_index_ms"`      // engine/ingest IngestAll over the frozen fixture, median
-	FreshnessLagMS  float64 `json:"freshness_lag_ms"`   // hot-index IngestChanged + query round-trip
-	BinarySizeBytes int64   `json:"binary_size_bytes"`  // size of the static default binary
+	ColdStartP95MS  float64 `json:"cold_start_p95_ms"` // daemon/engine cold-start to first served query, P95
+	FullIndexMS     float64 `json:"full_index_ms"`     // engine/ingest IngestAll over the frozen fixture, median
+	FreshnessLagMS  float64 `json:"freshness_lag_ms"`  // hot-index IngestChanged + query round-trip
+	BinarySizeBytes int64   `json:"binary_size_bytes"` // size of the static default binary
 	FixtureDigest   string  `json:"fixture_digest"`
 	BaselineVersion string  `json:"baseline_version"`
 	Samples         int     `json:"samples"`
@@ -20,10 +20,10 @@ type Metrics struct {
 // Map returns the metric-name → value mapping consumed by Gate.
 func (m Metrics) Map() map[string]float64 {
 	return map[string]float64{
-		"cold_start_p95_ms":  m.ColdStartP95MS,
-		"full_index_ms":      m.FullIndexMS,
-		"freshness_lag_ms":   m.FreshnessLagMS,
-		"binary_size_bytes":  float64(m.BinarySizeBytes),
+		"cold_start_p95_ms": m.ColdStartP95MS,
+		"full_index_ms":     m.FullIndexMS,
+		"freshness_lag_ms":  m.FreshnessLagMS,
+		"binary_size_bytes": float64(m.BinarySizeBytes),
 	}
 }
 

@@ -27,8 +27,8 @@ func (m memReader) ReadFile(path string) ([]byte, error) {
 // AC: per-call record with actual + baseline + savings + version stamp.
 func TestRecord_EmitsStampedRecord(t *testing.T) {
 	r := memReader{
-		"a.go": []byte("alpha beta gamma\n"),  // 3 tokens
-		"b.go": []byte("delta epsilon\n"),      // 2 tokens
+		"a.go": []byte("alpha beta gamma\n"), // 3 tokens
+		"b.go": []byte("delta epsilon\n"),    // 2 tokens
 	}
 	m := New(r)
 	rec, err := m.Record("call-1", "gpt-x", 1, []string{"a.go", "b.go"})

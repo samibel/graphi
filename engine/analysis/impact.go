@@ -19,17 +19,18 @@ import (
 const DefaultMaxNodes = 1024
 
 // dependencyKinds are the edge kinds traversed for impact when Params.Kinds is
-// empty. They are exactly the canonical relationship vocabulary fixed by
-// engine/query (calls, references, defines), so "dependency" means the same
-// thing across the structural query layer and the analysis layer.
+// empty: the canonical calls/references vocabulary fixed by engine/query.
+// `defines` is deliberately NOT a default kind — a file "defining" a symbol is
+// containment, not dependency, and including it put a file node in every
+// symbol's blast radius as depth-1 noise. Pass Kinds explicitly (e.g.
+// -kinds calls,references,defines) to opt back in.
 var dependencyKinds = []string{
 	string(query.EdgeKindCalls),
 	string(query.EdgeKindReferences),
-	string(query.EdgeKindDefines),
 }
 
-// impactAnalyzer computes forward (downstream dependents / blast radius) and
-// reverse (upstream dependencies) transitive reachability over the read-only
+// impactAnalyzer computes reverse (downstream dependents / blast radius) and
+// forward (upstream dependencies) transitive reachability over the read-only
 // graph. It is the reference analyzer that established the engine/analysis
 // package and registry (SW-022); sibling EP-004 analyzers (call-chain SW-023,
 // concept SW-024, metrics SW-025) are registered against the same contract.
@@ -52,9 +53,13 @@ func (a impactAnalyzer) Analyze(ctx context.Context, r query.Reader, p Params) (
 		return Analysis{}, err
 	}
 
+	// Default direction is Reverse (dependents / blast radius): "impact of X"
+	// colloquially means "who is affected if X changes", and it is what the TUI
+	// blast panel and the edit planner need. The engine owns this default;
+	// surfaces pass the direction through verbatim (empty = this default).
 	direction := p.Direction
 	if direction == "" {
-		direction = Forward
+		direction = Reverse
 	}
 
 	max := p.MaxNodes
@@ -77,10 +82,12 @@ func (a impactAnalyzer) Analyze(ctx context.Context, r query.Reader, p Params) (
 	}
 
 	// Build directed adjacency once. For each kept edge e (From -> To):
-	//   Forward (dependents / blast radius)   : a node's neighbors are the FROM
-	//     endpoints of its INCOMING edges (everything pointing AT it).
-	//   Reverse (dependencies)                : a node's neighbors are the TO
-	//     endpoints of its OUTGOING edges (everything it points at).
+	//   Reverse (dependents / blast radius)   : a node's neighbors are the FROM
+	//     endpoints of its INCOMING edges (everything pointing AT it) — the
+	//     reverse-dependency (rdeps) convention.
+	//   Forward (dependencies)                : a node's neighbors are the TO
+	//     endpoints of its OUTGOING edges (everything it points at) — traversal
+	//     ALONG edge direction.
 	type nbr struct {
 		id  model.NodeId
 		via query.ResultEdge
@@ -92,9 +99,9 @@ func (a impactAnalyzer) Analyze(ctx context.Context, r query.Reader, p Params) (
 		}
 		re := edgeToResult(e)
 		switch direction {
-		case Reverse:
+		case Forward:
 			adj[e.From()] = append(adj[e.From()], nbr{id: e.To(), via: re})
-		default: // Forward
+		default: // Reverse (dependents / blast radius)
 			adj[e.To()] = append(adj[e.To()], nbr{id: e.From(), via: re})
 		}
 	}

@@ -43,9 +43,9 @@ func (a batchedAnalyzer) Analyze(ctx context.Context, r query.Reader, p Params) 
 	var metrics []NodeScore
 	outcome := query.OutcomeEmpty
 
-	// Impact (forward dependents/blast-radius).
+	// Impact (dependents / blast radius — Reverse since the v0.1.3 direction fix).
 	if a.impact != nil {
-		imp, err := a.impact.Analyze(ctx, r, Params{Symbol: p.Symbol, Direction: Forward, MaxNodes: p.MaxNodes})
+		imp, err := a.impact.Analyze(ctx, r, Params{Symbol: p.Symbol, Direction: Reverse, MaxNodes: p.MaxNodes})
 		if err != nil {
 			return Analysis{}, err
 		}

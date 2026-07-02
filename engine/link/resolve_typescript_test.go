@@ -40,10 +40,10 @@ func tsScene(t *testing.T) ([]model.Node, []FileRefs) {
 		Dir:        "app",
 		Language:   "typescript",
 		Imports: []parse.ImportSpec{
-			{Alias: "greet", Path: "../lib/util"},   // named import
-			{Alias: "mathx", Path: "../lib/calc"},   // namespace import
-			{Alias: "useState", Path: "react"},      // non-relative → external (D1)
-			{Alias: "Cfg", Path: "../x/shared"},     // ambiguous twin dirs
+			{Alias: "greet", Path: "../lib/util"}, // named import
+			{Alias: "mathx", Path: "../lib/calc"}, // namespace import
+			{Alias: "useState", Path: "react"},    // non-relative → external (D1)
+			{Alias: "Cfg", Path: "../x/shared"},   // ambiguous twin dirs
 		},
 		Pending: []parse.PendingRef{
 			{FromQN: "app.run", Name: "greet", Kind: "calls", Line: 5, Selector: false},

@@ -724,7 +724,7 @@ func RunAnalysis(ctx context.Context, c client.Client, args []string, out, errOu
 	symbol := fs.String("symbol", "", "symbol (node) id to analyze")
 	target := fs.String("target", "", "target symbol (node) id (call-chain endpoint)")
 	concept := fs.String("concept", "", "concept term (concept resolver)")
-	direction := fs.String("direction", "forward", "traversal direction for directional analyzers (forward|reverse)")
+	direction := fs.String("direction", "", "traversal direction for directional analyzers: reverse = dependents/blast radius (default), forward = dependencies")
 	maxNodes := fs.Int("max-nodes", 0, "output budget on reached nodes (0 = analyzer default)")
 	// SW-039 pr-risk: local-first diff input. -diff is an inline unified-diff /
 	// ref string; -diff-path reads a LOCAL file once at the surface (no engine

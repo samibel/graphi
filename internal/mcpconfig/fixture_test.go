@@ -13,10 +13,10 @@ import (
 type machineState string
 
 const (
-	stateVirgin           machineState = "virgin"            // no config file at all
-	stateForeignBlock     machineState = "foreign-block"     // valid config, only a foreign mcpServers entry
+	stateVirgin            machineState = "virgin"             // no config file at all
+	stateForeignBlock      machineState = "foreign-block"      // valid config, only a foreign mcpServers entry
 	stateAlreadyConfigured machineState = "already-configured" // identical graphi entry already present
-	stateUnwritable       machineState = "unwritable"        // read-only dir → write must fail
+	stateUnwritable        machineState = "unwritable"         // read-only dir → write must fail
 )
 
 // newFixture builds a named clean-machine fixture under a per-test tmpdir, driven
@@ -283,4 +283,3 @@ func TestRestore_ByteIdentical(t *testing.T) {
 		t.Fatal("restore was not byte-identical")
 	}
 }
-

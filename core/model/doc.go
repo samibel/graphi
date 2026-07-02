@@ -19,18 +19,18 @@
 // length-prefixed UTF-8 encoding so that no field value can be confused with a
 // field boundary. The exact byte layout is:
 //
-//	pre-image := domainTag '\x1f' u32be(identitySchemaVersion)
-//	             field(kind) field(qualifiedName) field(normalizedPath)
-//	field(s)  := u32be(len(utf8Bytes(s))) utf8Bytes(s)
+//		pre-image := domainTag '\x1f' u32be(identitySchemaVersion)
+//		             field(kind) field(qualifiedName) field(normalizedPath)
+//		field(s)  := u32be(len(utf8Bytes(s))) utf8Bytes(s)
 //
-//   - domainTag is the ASCII literal "graphi/node-id" for Node identity and
-//     "graphi/edge-id" for Edge identity (a domain separator so a Node and an
-//     Edge built from coincidentally-equal strings never collide).
-//   - '\x1f' is the ASCII Unit Separator, used once after the domain tag.
-//   - u32be is a 4-byte big-endian (fixed-endianness) unsigned length/version,
-//     so identical inputs hash identically across architectures.
-//   - Strings are UTF-8 with NO normalization beyond what NormalizePath performs
-//     for the source path; content is preserved verbatim otherwise.
+//	  - domainTag is the ASCII literal "graphi/node-id" for Node identity and
+//	    "graphi/edge-id" for Edge identity (a domain separator so a Node and an
+//	    Edge built from coincidentally-equal strings never collide).
+//	  - '\x1f' is the ASCII Unit Separator, used once after the domain tag.
+//	  - u32be is a 4-byte big-endian (fixed-endianness) unsigned length/version,
+//	    so identical inputs hash identically across architectures.
+//	  - Strings are UTF-8 with NO normalization beyond what NormalizePath performs
+//	    for the source path; content is preserved verbatim otherwise.
 //
 // For a Node the ordered identity tuple is (Kind, QualifiedName, normalized
 // SourcePath). Line/column are NON-identity attributes and are NOT part of the

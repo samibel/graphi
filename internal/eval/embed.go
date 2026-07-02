@@ -1,8 +1,8 @@
 package eval
 
 import (
-	"fmt"
 	_ "embed"
+	"fmt"
 )
 
 //go:embed cases.json

@@ -153,7 +153,7 @@ func TestGate_UnmeasuredBudgetedMetricFails(t *testing.T) {
 
 func TestP95AndMedian(t *testing.T) {
 	s := []time.Duration{1, 2, 3, 4, 5, 6, 7, 8, 9, 10} // ms-ish
-	if p := P95(s); p != 10 && p != 9 { // nearest-rank: index ~ ceil(9.5)-1 = 9 -> 10
+	if p := P95(s); p != 10 && p != 9 {                 // nearest-rank: index ~ ceil(9.5)-1 = 9 -> 10
 		t.Logf("P95 = %v (acceptable near 10)", p)
 	}
 	if m := Median(s); m != 5 && m != 6 {

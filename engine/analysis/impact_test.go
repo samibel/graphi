@@ -24,8 +24,9 @@ import (
 //	pkg.D --calls--> pkg.B            (cycle B <-> D)
 //	pkg.X                            (isolated)
 //
-// Forward (dependents, incoming edges) and Reverse (dependencies, outgoing
-// edges) sets derived from this topology are the correctness oracle below.
+// Reverse (dependents, incoming edges) and Forward (dependencies, outgoing
+// edges) sets derived from this topology are the correctness oracle below
+// (the rdeps convention, fixed in v0.1.3 — the two names were swapped before).
 func seedImpactGraph(t *testing.T) (*graphstore.MemStore, map[string]model.NodeId) {
 	t.Helper()
 	ctx := context.Background()
@@ -75,18 +76,18 @@ func reachedNames(res analysis.Analysis) []string {
 	return out
 }
 
-func TestImpactForwardDependents(t *testing.T) {
+func TestImpactReverseDependents(t *testing.T) {
 	store, ids := seedImpactGraph(t)
 	svc := analysis.NewDefaultService(store)
 
-	// forward(C): everyone who transitively depends on C (incoming-edge closure)
+	// reverse(C): everyone who transitively depends on C (incoming-edge closure)
 	// = {A (A->C, A->B->C), B (B->C), D (D->B->C)}.
 	res, err := svc.Dispatch(context.Background(), "impact", analysis.Params{
 		Symbol:    ids["pkg.C"],
-		Direction: analysis.Forward,
+		Direction: analysis.Reverse,
 	})
 	if err != nil {
-		t.Fatalf("Dispatch impact forward: %v", err)
+		t.Fatalf("Dispatch impact reverse: %v", err)
 	}
 	if res.Outcome != query.OutcomeFound {
 		t.Fatalf("outcome = %s, want found", res.Outcome)
@@ -94,7 +95,7 @@ func TestImpactForwardDependents(t *testing.T) {
 	got := reachedNames(res)
 	want := []string{"pkg.A", "pkg.B", "pkg.D"}
 	if !equalStrings(got, want) {
-		t.Fatalf("forward(C) = %v, want %v (no false/missing members)", got, want)
+		t.Fatalf("reverse(C) = %v, want %v (no false/missing members)", got, want)
 	}
 	// X must never appear (isolated, not a dependent of anything).
 	for _, rn := range res.Nodes {
@@ -104,23 +105,23 @@ func TestImpactForwardDependents(t *testing.T) {
 	}
 }
 
-func TestImpactReverseDependencies(t *testing.T) {
+func TestImpactForwardDependencies(t *testing.T) {
 	store, ids := seedImpactGraph(t)
 	svc := analysis.NewDefaultService(store)
 
-	// reverse(A): what A transitively depends on (outgoing-edge closure)
+	// forward(A): what A transitively depends on (outgoing-edge closure)
 	// = {B (A->B), C (A->C, A->B->C), D (A->B->D, D<->B cycle)}.
 	res, err := svc.Dispatch(context.Background(), "impact", analysis.Params{
 		Symbol:    ids["pkg.A"],
-		Direction: analysis.Reverse,
+		Direction: analysis.Forward,
 	})
 	if err != nil {
-		t.Fatalf("Dispatch impact reverse: %v", err)
+		t.Fatalf("Dispatch impact forward: %v", err)
 	}
 	got := reachedNames(res)
 	want := []string{"pkg.B", "pkg.C", "pkg.D"}
 	if !equalStrings(got, want) {
-		t.Fatalf("reverse(A) = %v, want %v", got, want)
+		t.Fatalf("forward(A) = %v, want %v", got, want)
 	}
 }
 
@@ -131,7 +132,7 @@ func TestImpactCycleSafeEachNodeOnce(t *testing.T) {
 	// The B<->D cycle must terminate and list each node exactly once.
 	res, err := svc.Dispatch(context.Background(), "impact", analysis.Params{
 		Symbol:    ids["pkg.C"],
-		Direction: analysis.Forward,
+		Direction: analysis.Reverse,
 	})
 	if err != nil {
 		t.Fatalf("Dispatch: %v", err)
@@ -153,7 +154,7 @@ func TestImpactProvenanceOnEveryNode(t *testing.T) {
 
 	res, err := svc.Dispatch(context.Background(), "impact", analysis.Params{
 		Symbol:    ids["pkg.C"],
-		Direction: analysis.Forward,
+		Direction: analysis.Reverse,
 	})
 	if err != nil {
 		t.Fatalf("Dispatch: %v", err)
@@ -183,10 +184,10 @@ func TestImpactBoundTruncatedRanked(t *testing.T) {
 	store, ids := seedImpactGraph(t)
 	svc := analysis.NewDefaultService(store)
 
-	// forward(C) has 3 dependents; cap at 2 -> bounded, ranked, truncated flag set.
+	// reverse(C) has 3 dependents; cap at 2 -> bounded, ranked, truncated flag set.
 	res, err := svc.Dispatch(context.Background(), "impact", analysis.Params{
 		Symbol:    ids["pkg.C"],
-		Direction: analysis.Forward,
+		Direction: analysis.Reverse,
 		MaxNodes:  2,
 	})
 	if err != nil {
@@ -213,7 +214,7 @@ func TestImpactOutcomesTriState(t *testing.T) {
 	// not_found: unknown seed -> typed not-found result, never an error.
 	res, err := svc.Dispatch(ctx, "impact", analysis.Params{
 		Symbol:    model.NodeId("zzzzzzzzzzzzzzzz"),
-		Direction: analysis.Forward,
+		Direction: analysis.Reverse,
 	})
 	if err != nil {
 		t.Fatalf("unknown seed should not error, got: %v", err)
@@ -225,7 +226,7 @@ func TestImpactOutcomesTriState(t *testing.T) {
 	// empty: isolated X resolves but has no dependents.
 	res, err = svc.Dispatch(ctx, "impact", analysis.Params{
 		Symbol:    ids["pkg.X"],
-		Direction: analysis.Forward,
+		Direction: analysis.Reverse,
 	})
 	if err != nil {
 		t.Fatalf("isolated seed: %v", err)
@@ -237,7 +238,7 @@ func TestImpactOutcomesTriState(t *testing.T) {
 	// found: C has dependents.
 	res, err = svc.Dispatch(ctx, "impact", analysis.Params{
 		Symbol:    ids["pkg.C"],
-		Direction: analysis.Forward,
+		Direction: analysis.Reverse,
 	})
 	if err != nil {
 		t.Fatalf("C: %v", err)
@@ -247,12 +248,13 @@ func TestImpactOutcomesTriState(t *testing.T) {
 	}
 }
 
-func TestImpactDefaultDirectionForward(t *testing.T) {
+func TestImpactDefaultDirectionReverse(t *testing.T) {
 	store, ids := seedImpactGraph(t)
 	svc := analysis.NewDefaultService(store)
 	ctx := context.Background()
 
-	// Empty direction defaults to Forward.
+	// Empty direction defaults to Reverse (dependents / blast radius): bare
+	// "impact of C" must answer "who is affected if C changes".
 	res, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: ids["pkg.C"]})
 	if err != nil {
 		t.Fatalf("Dispatch: %v", err)
@@ -260,8 +262,8 @@ func TestImpactDefaultDirectionForward(t *testing.T) {
 	if res.Outcome != query.OutcomeFound {
 		t.Fatalf("default-direction outcome = %s, want found", res.Outcome)
 	}
-	if len(res.Nodes) != 3 {
-		t.Fatalf("default direction forward(C) = %d nodes, want 3", len(res.Nodes))
+	if got, want := reachedNames(res), []string{"pkg.A", "pkg.B", "pkg.D"}; !equalStrings(got, want) {
+		t.Fatalf("default direction impact(C) = %v, want dependents %v", got, want)
 	}
 }
 
@@ -270,7 +272,7 @@ func TestImpactDeterminismRepeated(t *testing.T) {
 	svc := analysis.NewDefaultService(store)
 	ctx := context.Background()
 
-	first, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: ids["pkg.C"], Direction: analysis.Forward})
+	first, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: ids["pkg.C"], Direction: analysis.Reverse})
 	if err != nil {
 		t.Fatalf("Dispatch: %v", err)
 	}
@@ -281,7 +283,7 @@ func TestImpactDeterminismRepeated(t *testing.T) {
 	// Re-run many times: map-iteration nondeterminism is the real failure mode,
 	// and the materialize-then-sort contract must absorb it every run.
 	for i := 0; i < 30; i++ {
-		res, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: ids["pkg.C"], Direction: analysis.Forward})
+		res, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: ids["pkg.C"], Direction: analysis.Reverse})
 		if err != nil {
 			t.Fatalf("iter %d: %v", i, err)
 		}
@@ -306,11 +308,11 @@ func TestImpactDeterminismTwoServices(t *testing.T) {
 	svc2 := analysis.NewDefaultService(s2)
 	ctx := context.Background()
 
-	r1, err := svc1.Dispatch(ctx, "impact", analysis.Params{Symbol: ids1["pkg.A"], Direction: analysis.Reverse})
+	r1, err := svc1.Dispatch(ctx, "impact", analysis.Params{Symbol: ids1["pkg.A"], Direction: analysis.Forward})
 	if err != nil {
 		t.Fatalf("svc1: %v", err)
 	}
-	r2, err := svc2.Dispatch(ctx, "impact", analysis.Params{Symbol: ids2["pkg.A"], Direction: analysis.Reverse})
+	r2, err := svc2.Dispatch(ctx, "impact", analysis.Params{Symbol: ids2["pkg.A"], Direction: analysis.Forward})
 	if err != nil {
 		t.Fatalf("svc2: %v", err)
 	}
@@ -363,6 +365,121 @@ func TestImpactNoNetworkSourceScan(t *testing.T) {
 		for _, b := range banned {
 			if strings.Contains(s, b) {
 				t.Fatalf("package source contains banned network symbol %q in %s (local-first violation)", b, f)
+			}
+		}
+	}
+}
+
+// TestImpactReverseFindsCallerRepro is the regression pin for the pre-v0.1.3
+// direction inversion, in the exact shape it was reported: a repo where
+// main --calls--> hello. "Reverse impact of hello" (who depends on hello) must
+// contain main, and "forward impact of main" (what main depends on) must
+// contain hello. Before the fix, reverse(hello) was empty and the TUI blast
+// panel silently showed dependencies.
+func TestImpactReverseFindsCallerRepro(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+
+	file, err := model.NewNode("file", "main.go", "main.go", 1, 1)
+	if err != nil {
+		t.Fatalf("NewNode file: %v", err)
+	}
+	mainFn, err := model.NewNode("function", "main.main", "main.go", 5, 6)
+	if err != nil {
+		t.Fatalf("NewNode main: %v", err)
+	}
+	hello, err := model.NewNode("function", "main.hello", "main.go", 3, 6)
+	if err != nil {
+		t.Fatalf("NewNode hello: %v", err)
+	}
+	for _, n := range []model.Node{file, mainFn, hello} {
+		if err := store.PutNode(ctx, n); err != nil {
+			t.Fatalf("PutNode: %v", err)
+		}
+	}
+	putEdge := func(from, to model.NodeId, kind string) {
+		e, err := model.NewEdge(from, to, kind, model.TierDerived, 0.9, "test", []string{"main.go:1"})
+		if err != nil {
+			t.Fatalf("NewEdge: %v", err)
+		}
+		if err := store.PutEdge(ctx, e); err != nil {
+			t.Fatalf("PutEdge: %v", err)
+		}
+	}
+	putEdge(mainFn.ID(), hello.ID(), string(query.EdgeKindCalls))
+	putEdge(file.ID(), mainFn.ID(), string(query.EdgeKindDefines))
+	putEdge(file.ID(), hello.ID(), string(query.EdgeKindDefines))
+
+	svc := analysis.NewDefaultService(store)
+
+	rev, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: hello.ID(), Direction: analysis.Reverse})
+	if err != nil {
+		t.Fatalf("reverse(hello): %v", err)
+	}
+	if got, want := reachedNames(rev), []string{"main.main"}; !equalStrings(got, want) {
+		t.Fatalf("reverse(hello) = %v, want %v (the caller, and ONLY the caller)", got, want)
+	}
+	// The defining file node must NOT pollute the default result: `defines` is
+	// containment, not dependency, and is excluded from the default kinds.
+	for _, rn := range rev.Nodes {
+		if rn.Node.Kind == "file" {
+			t.Fatalf("file node %s in default reverse impact (defines must be opt-in)", rn.Node.QualifiedName)
+		}
+	}
+
+	fwd, err := svc.Dispatch(ctx, "impact", analysis.Params{Symbol: mainFn.ID(), Direction: analysis.Forward})
+	if err != nil {
+		t.Fatalf("forward(main): %v", err)
+	}
+	if got, want := reachedNames(fwd), []string{"main.hello"}; !equalStrings(got, want) {
+		t.Fatalf("forward(main) = %v, want %v (the callee)", got, want)
+	}
+
+	// Opting back in via explicit kinds surfaces the containment edge.
+	withDefines, err := svc.Dispatch(ctx, "impact", analysis.Params{
+		Symbol:    hello.ID(),
+		Direction: analysis.Reverse,
+		Kinds:     []string{string(query.EdgeKindCalls), string(query.EdgeKindDefines)},
+	})
+	if err != nil {
+		t.Fatalf("reverse(hello) with defines: %v", err)
+	}
+	if got, want := reachedNames(withDefines), []string{"main.go", "main.main"}; !equalStrings(got, want) {
+		t.Fatalf("reverse(hello) with explicit defines = %v, want %v", got, want)
+	}
+}
+
+// TestImpactReverseSupersetOfQueryCallers pins the cross-layer invariant a user
+// reasonably assumes and nothing previously checked: for calls-only kinds,
+// every DIRECT caller reported by the structural query layer must appear in
+// the analysis layer's reverse impact (which is its transitive closure). This
+// is the test that would have caught the direction inversion.
+func TestImpactReverseSupersetOfQueryCallers(t *testing.T) {
+	store, ids := seedImpactGraph(t)
+	ctx := context.Background()
+	qsvc := query.New(store)
+	asvc := analysis.NewDefaultService(store)
+
+	for _, seed := range []string{"pkg.A", "pkg.B", "pkg.C", "pkg.D", "pkg.X"} {
+		callers, err := qsvc.Callers(ctx, ids[seed])
+		if err != nil {
+			t.Fatalf("Callers(%s): %v", seed, err)
+		}
+		imp, err := asvc.Dispatch(ctx, "impact", analysis.Params{
+			Symbol:    ids[seed],
+			Direction: analysis.Reverse,
+			Kinds:     []string{string(query.EdgeKindCalls)},
+		})
+		if err != nil {
+			t.Fatalf("impact reverse(%s): %v", seed, err)
+		}
+		reached := map[string]bool{}
+		for _, rn := range imp.Nodes {
+			reached[rn.Node.QualifiedName] = true
+		}
+		for _, c := range callers.Nodes {
+			if !reached[c.QualifiedName] {
+				t.Fatalf("caller %s of %s missing from reverse impact %v — direction semantics broken", c.QualifiedName, seed, reachedNames(imp))
 			}
 		}
 	}

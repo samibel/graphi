@@ -79,7 +79,7 @@ func TestAssemble_BudgetNeverExceeded(t *testing.T) {
 		{"fits all", 100},
 	}
 	cands := []Candidate{
-		{Path: "a.go", StartLine: 1, EndLine: 1, Rank: 1}, // "one two" = 2 tokens
+		{Path: "a.go", StartLine: 1, EndLine: 1, Rank: 1},   // "one two" = 2 tokens
 		{Path: "a.go", StartLine: 2, EndLine: 2, Rank: 2.0}, // "three four" = 2 tokens
 		{Path: "a.go", StartLine: 3, EndLine: 3, Rank: 3.0}, // "five six" = 2 tokens
 	}
@@ -208,7 +208,7 @@ func TestLocalReader_RejectsRemoteSources(t *testing.T) {
 func TestFromSearchMatches_Intake(t *testing.T) {
 	resp := search.Response{Query: "A", Matches: []search.Match{
 		{NodeID: "n1", QualifiedName: "A", Kind: "func", SourcePath: "a.go", Line: 5, Column: 1, Rank: 0.1},
-		{SourcePath: "", Line: 9, Rank: 0.2}, // dropped: no path
+		{SourcePath: "", Line: 9, Rank: 0.2},     // dropped: no path
 		{SourcePath: "b.go", Line: 0, Rank: 0.3}, // dropped: line < 1
 	}}
 	cands := FromSearchMatches(resp)

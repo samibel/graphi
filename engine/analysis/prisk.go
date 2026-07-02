@@ -75,13 +75,13 @@ const (
 // weightTable is the DOCUMENTED, fixed scoring weight model. It is hashed into
 // weights_hash so any change is auditable and reproducible.
 //
-//	score = impactFloor(bucket) + taintTerm(exposed)
+//		score = impactFloor(bucket) + taintTerm(exposed)
 //
-//   - impactFloor maps the discrete impact bucket to a base score; it is the
-//     impact-only FLOOR — a missing taint signal never drops a region below it
-//     (taint absence != safe).
-//   - taintTerm is strictly positive only when the region is taint-exposed, so
-//     at EQUAL impact bucket a taint-exposed region scores STRICTLY higher.
+//	  - impactFloor maps the discrete impact bucket to a base score; it is the
+//	    impact-only FLOOR — a missing taint signal never drops a region below it
+//	    (taint absence != safe).
+//	  - taintTerm is strictly positive only when the region is taint-exposed, so
+//	    at EQUAL impact bucket a taint-exposed region scores STRICTLY higher.
 type weightTable struct {
 	// BucketStep is the fixed-point score awarded per impact bucket.
 	BucketStep int `json:"bucket_step"`
@@ -133,13 +133,13 @@ type EvidenceItem struct {
 // evidence that produced it. The degraded/unresolved case is the SAME shape with
 // Degraded=true and UnresolvedID set (a documented variant, not an error shape).
 type RiskRecord struct {
-	Region          model.NodeId   `json:"region"`            // EP-001 identity key (empty when degraded)
-	Score           string         `json:"score"`             // canonical fixed-point decimal string
-	Confidence      string         `json:"confidence"`        // high | medium (reduced on truncation)
-	Degraded        bool           `json:"degraded"`          // true when the region is unresolved
+	Region          model.NodeId   `json:"region"`                  // EP-001 identity key (empty when degraded)
+	Score           string         `json:"score"`                   // canonical fixed-point decimal string
+	Confidence      string         `json:"confidence"`              // high | medium (reduced on truncation)
+	Degraded        bool           `json:"degraded"`                // true when the region is unresolved
 	UnresolvedID    string         `json:"unresolved_id,omitempty"` // raw changed-node ref when degraded
-	ProvenanceLevel string         `json:"provenance_level"`  // full | summary (redaction gate)
-	Evidence        []EvidenceItem `json:"evidence"`          // enumerated, provenance-verbatim
+	ProvenanceLevel string         `json:"provenance_level"`        // full | summary (redaction gate)
+	Evidence        []EvidenceItem `json:"evidence"`                // enumerated, provenance-verbatim
 }
 
 // RiskReport is the full versioned payload emitted over MCP(stdio) and CLI.
@@ -184,7 +184,9 @@ func newDefaultSignalProvider() defaultSignalProvider {
 }
 
 func (p defaultSignalProvider) Impact(ctx context.Context, r query.Reader, region model.NodeId) (Analysis, error) {
-	return p.impact.Analyze(ctx, r, Params{Symbol: region, Direction: Forward})
+	// PR risk scores the region's blast radius (dependents) — Reverse since
+	// the v0.1.3 direction fix.
+	return p.impact.Analyze(ctx, r, Params{Symbol: region, Direction: Reverse})
 }
 
 func (p defaultSignalProvider) Taint(ctx context.Context, r query.Reader) (taint.TaintResult, error) {

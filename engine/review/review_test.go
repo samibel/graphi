@@ -230,10 +230,10 @@ func TestGateTableDriven(t *testing.T) {
 	bundle := fixedBundle()
 
 	cases := []struct {
-		name      string
-		cfg       GateConfig
-		want      string
-		wantEvid  bool
+		name     string
+		cfg      GateConfig
+		want     string
+		wantEvid bool
 	}{
 		{"disabled any score", GateConfig{Enabled: false, BlockThreshold: 100}, VerdictPass, false},
 		{"below threshold", GateConfig{Enabled: true, BlockThreshold: 900}, VerdictPass, false},

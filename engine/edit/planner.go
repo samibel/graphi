@@ -31,8 +31,10 @@ func (a *Applier) blastRadius(ctx context.Context, targetSymbol string) (paths [
 
 	svc := analysis.NewDefaultService(a.store)
 	res, err := svc.Dispatch(ctx, "impact", analysis.Params{
-		Symbol:    model.NodeId(targetSymbol),
-		Direction: analysis.Forward,
+		Symbol: model.NodeId(targetSymbol),
+		// Blast radius = dependents = Reverse since the v0.1.3 direction fix
+		// (rdeps convention; this was spelled Forward before the swap).
+		Direction: analysis.Reverse,
 	})
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: impact analysis: %v", ErrReindex, err)

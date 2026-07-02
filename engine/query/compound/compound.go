@@ -443,4 +443,3 @@ func (l *lineScanner) Next() bool {
 }
 
 func (l *lineScanner) Line() string { return strings.TrimRight(l.lines[l.i-1], "\r") }
-

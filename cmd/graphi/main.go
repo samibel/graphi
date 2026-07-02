@@ -55,6 +55,13 @@ func main() {
 		os.Exit(runZeroConfig())
 	}
 
+	// Uniform per-subcommand help: `graphi <sub> -h|-help|--help` (help flag as
+	// the FIRST argument) prints the subcommand's usage + example and exits 0.
+	// Unknown names fall through to normal dispatch (a real filename still parses).
+	if len(os.Args) > 2 && isHelpFlag(os.Args[2]) && printSubcommandHelp(os.Args[1], os.Stdout) {
+		os.Exit(0)
+	}
+
 	switch os.Args[1] {
 	case "query":
 		os.Exit(runQuery(os.Args[2:]))
@@ -123,7 +130,7 @@ func main() {
 	case "version":
 		runVersion()
 	case "help":
-		printHelp()
+		os.Exit(runHelp(os.Args[2:], os.Stdout))
 	case "parse":
 		runParseDefault(os.Args[2:])
 	case "ui":
@@ -1362,6 +1369,7 @@ func printHelp() {
 	fmt.Print("\nAdvanced (long forms):\n")
 	fmt.Print("  graphi query <op> -symbol <id> [-depth N]\n")
 	fmt.Print("  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
+	fmt.Print("\nDetails on any subcommand:  graphi help <subcommand>   (or: graphi <subcommand> --help)\n")
 	fmt.Printf("registered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, help, parse <file>\n", reg.Languages())
 }
 
