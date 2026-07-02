@@ -7,6 +7,23 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Added
+- Homebrew/Scoop publishing automation: the `release-assets` job now renders
+  the Homebrew formula and Scoop manifest from the release's real `SHA256SUMS`
+  and pushes them to `samibel/homebrew-graphi` (`Formula/graphi.rb`) and
+  `samibel/scoop-graphi` (`bucket/graphi.json`). The step is gated on the
+  `PACKAGING_PUSH_TOKEN` secret (fine-grained PAT, contents:write on only
+  those two repos) and skips cleanly until the maintainer configures it.
+
+### Fixed
+- `gen-packaging` version-prefix quirk: the Homebrew `version` field and the
+  Scoop `version` (which feeds the `v$version` autoupdate URL) are now stamped
+  with the BARE semver (`0.2.0`) while download URLs use the tag path
+  (`/releases/download/v0.2.0/`) — previously one string served both, so a
+  release render was wrong on one side no matter which form was passed. Both
+  input forms now render byte-identically (unit-tested); the committed
+  placeholder manifests were regenerated accordingly.
+
 ## [0.2.0] - 2026-07-02
 
 ### Changed

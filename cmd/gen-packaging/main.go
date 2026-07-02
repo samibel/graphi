@@ -61,9 +61,13 @@ type asset struct {
 	SHA  string
 }
 
-// tmplData is the injected, deterministic template input. ByKey maps an
-// "<os>/<arch>" key to its resolved asset so the templates can address each
-// platform explicitly (e.g. {{ (index .ByKey "darwin/arm64").URL }}).
+// tmplData is the injected, deterministic template input. Version is the BARE
+// semver ("0.2.0") — the form Homebrew's `version` field and Scoop's
+// `version`/`autoupdate` math expect; download URLs are built from the TAG
+// form ("v0.2.0") inside render, because that is the path the release assets
+// actually live under. ByKey maps an "<os>/<arch>" key to its resolved asset
+// so the templates can address each platform explicitly (e.g.
+// {{ (index .ByKey "darwin/arm64").URL }}).
 type tmplData struct {
 	Version string
 	ByKey   map[string]asset
@@ -143,10 +147,16 @@ func main() {
 }
 
 // render produces both manifests from the embedded templates + the release
-// source of truth. version is stamped verbatim; hashes (keyed by asset name)
-// supplies the sha256 per asset, defaulting to zeroSHA when absent. It is pure
-// and deterministic.
+// source of truth. version is accepted in either the tag form ("v0.2.0") or
+// the bare form ("0.2.0") and split into both: the manifests stamp the BARE
+// semver (Homebrew's `version` field and Scoop's `v$version` autoupdate both
+// require it), while download URLs use the TAG (release assets live under
+// releases/download/vX.Y.Z/). Passing either form yields byte-identical
+// output. hashes (keyed by asset name) supplies the sha256 per asset,
+// defaulting to zeroSHA when absent. It is pure and deterministic.
 func render(version string, hashes map[string]string) ([]renderedFile, error) {
+	bare := strings.TrimPrefix(version, "v")
+	tag := "v" + bare
 	byKey := make(map[string]asset, len(release.ReleaseTargets))
 	for _, p := range release.ReleaseTargets {
 		name := release.AssetName(p)
@@ -158,11 +168,11 @@ func render(version string, hashes map[string]string) ([]renderedFile, error) {
 		}
 		byKey[p.OS+"/"+p.Arch] = asset{
 			Name: name,
-			URL:  releaseDownloadBase + "/" + version + "/" + name,
+			URL:  releaseDownloadBase + "/" + tag + "/" + name,
 			SHA:  sha,
 		}
 	}
-	data := tmplData{Version: version, ByKey: byKey}
+	data := tmplData{Version: bare, ByKey: byKey}
 
 	rb, err := exec1("graphi.rb", formulaTmpl, data)
 	if err != nil {
