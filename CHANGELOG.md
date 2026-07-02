@@ -7,6 +7,24 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-02
+
+### Added
+- **Warm start: bare `graphi` no longer re-indexes an unchanged repository.**
+  When the per-repo state already holds a full index written under the
+  current ingest semantics, startup runs only an animated drift scan
+  (`graphi: checking for changes… N files`) and re-ingests just the
+  changed/deleted files plus their dependency cascade through the incremental
+  path — whose graph is byte-identical to a full pass (invariant-tested,
+  including the confirmed tier). An unchanged repo starts in seconds with
+  `graphi: index up to date (N files, checked in Xs)`; a small edit reports
+  `graphi: updated M files in Xs`. Safety valves: a semantics stamp in the
+  meta sidecar forces one full re-index after a graphi upgrade (content
+  hashes cannot see binary changes), and ANY warm-path failure falls back to
+  the tolerant full pass. Background ingests (watcher, edit applier) are
+  unchanged and stay silent — the delta progress is scoped to the interactive
+  start via `IngestChangedWithProgress`.
+
 ## [0.2.1] - 2026-07-02
 
 ### Added

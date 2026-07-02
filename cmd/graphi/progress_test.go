@@ -120,6 +120,41 @@ func TestIngestProgress_ETAWarmup(t *testing.T) {
 	}
 }
 
+// TestIngestProgress_WarmStartSummaries pins the drift-aware summaries: a run
+// that never left the drift scan reports "up to date" with the checked count,
+// a drift followed by a delta ingest reports "updated N files".
+func TestIngestProgress_WarmStartSummaries(t *testing.T) {
+	t.Run("up to date", func(t *testing.T) {
+		var buf bytes.Buffer
+		p, clk := newTestProgress(&buf, true)
+		p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseDrift})
+		clk.advance(3200 * time.Millisecond)
+		p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: 1234})
+		p.Finish(nil)
+		out := buf.String()
+		if !strings.Contains(out, "checking for changes… 1234 files") {
+			t.Errorf("drift status line missing:\n%q", out)
+		}
+		if !strings.Contains(out, "graphi: index up to date (1234 files, checked in 3.2s)") {
+			t.Errorf("up-to-date summary missing:\n%q", out)
+		}
+	})
+
+	t.Run("updated delta", func(t *testing.T) {
+		var buf bytes.Buffer
+		p, clk := newTestProgress(&buf, true)
+		p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: 500})
+		clk.advance(time.Second)
+		p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseParse, Total: 3})
+		p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseParse, Done: 3, Total: 3, Path: "a.go"})
+		p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseDone, Done: 3, Total: 3})
+		p.Finish(nil)
+		if !strings.Contains(buf.String(), "graphi: updated 3 files in 1s") {
+			t.Errorf("delta summary missing:\n%q", buf.String())
+		}
+	})
+}
+
 func TestTruncatePathLeft(t *testing.T) {
 	if got := truncatePathLeft("short/path.go", 44); got != "short/path.go" {
 		t.Errorf("short path modified: %q", got)

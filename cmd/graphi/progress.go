@@ -43,6 +43,7 @@ type ingestProgress struct {
 	mu            sync.Mutex
 	last          ingest.ProgressEvent
 	seen          bool // at least one event handled (gates the final summary)
+	sawDrift      bool // warm start: a drift scan preceded any ingest phases
 	frame         int
 	lastDraw      time.Time
 	start         time.Time
@@ -87,6 +88,9 @@ func (p *ingestProgress) Handle(ev ingest.ProgressEvent) {
 		return
 	}
 	phaseChanged := !p.seen || ev.Phase != p.last.Phase
+	if ev.Phase == ingest.PhaseDrift {
+		p.sawDrift = true
+	}
 	if phaseChanged && ev.Phase == ingest.PhaseParse {
 		p.parseStart = p.now() // anchor for the ETA rate
 	}
@@ -132,8 +136,30 @@ func (p *ingestProgress) Finish(err error) {
 		fmt.Fprint(p.w, "\r\x1b[2K")
 	}
 	if err == nil {
-		fmt.Fprintf(p.w, "graphi: indexed %d files in %s\n", p.last.Total, p.elapsed())
+		fmt.Fprint(p.w, p.summaryLine())
 	}
+}
+
+// summaryLine picks the durable success line by how the run ended: a warm
+// start that never left the drift scan found nothing to do; a warm start
+// that re-ingested a delta "updated" it; a cold run "indexed" the repo.
+func (p *ingestProgress) summaryLine() string {
+	switch {
+	case p.last.Phase == ingest.PhaseDrift:
+		return fmt.Sprintf("graphi: index up to date (%d files, checked in %s)\n", p.last.Done, p.elapsed())
+	case p.sawDrift:
+		return fmt.Sprintf("graphi: updated %s in %s\n", filesWord(p.last.Total), p.elapsed())
+	default:
+		return fmt.Sprintf("graphi: indexed %s in %s\n", filesWord(p.last.Total), p.elapsed())
+	}
+}
+
+// filesWord renders "N file(s)" with correct pluralization.
+func filesWord(n int) string {
+	if n == 1 {
+		return "1 file"
+	}
+	return fmt.Sprintf("%d files", n)
 }
 
 // draw rewrites the status line in place. Callers hold p.mu and have already
@@ -147,6 +173,11 @@ func (p *ingestProgress) draw() {
 // statusLine renders the phase-specific TTY status text.
 func (p *ingestProgress) statusLine(ev ingest.ProgressEvent) string {
 	switch ev.Phase {
+	case ingest.PhaseDrift:
+		if ev.Done > 0 {
+			return fmt.Sprintf("graphi: checking for changes… %d files", ev.Done)
+		}
+		return "graphi: checking for changes…"
 	case ingest.PhaseWalk:
 		if ev.Done > 0 {
 			return fmt.Sprintf("graphi: scanning repo… %d files", ev.Done)
@@ -176,10 +207,12 @@ func (p *ingestProgress) statusLine(ev ingest.ProgressEvent) string {
 // plainPhaseLine renders the non-TTY phase-entry log line.
 func (p *ingestProgress) plainPhaseLine(ev ingest.ProgressEvent) string {
 	switch ev.Phase {
+	case ingest.PhaseDrift:
+		return "graphi: checking for changes…"
 	case ingest.PhaseWalk:
 		return "graphi: scanning repo…"
 	case ingest.PhaseParse:
-		return fmt.Sprintf("graphi: indexing %d files…", ev.Total)
+		return fmt.Sprintf("graphi: indexing %s…", filesWord(ev.Total))
 	case ingest.PhaseLink:
 		return "graphi: linking cross-file references…"
 	case ingest.PhaseResolve:

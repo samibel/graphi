@@ -15,6 +15,11 @@ const (
 	// PhaseWalk is the tree scan; Total is unknown (0) and Done counts files
 	// discovered so far.
 	PhaseWalk Phase = "walk"
+	// PhaseDrift is the warm-start change scan (DriftSetWithProgress): the
+	// walk that compares on-disk hashes against the cached index. Done counts
+	// files checked; Total is unknown. The engine itself never emits it — the
+	// CLI warm-start path synthesizes it from the drift walk callback.
+	PhaseDrift Phase = "drift"
 	// PhaseParse is the per-file parse+commit loop; Total is known.
 	PhaseParse Phase = "parse"
 	// PhaseLink covers the stale purge, reverse-dep index, and cross-file
@@ -64,7 +69,12 @@ func (i *Ingester) notifyProgress(ctx context.Context, ev ProgressEvent) {
 		return
 	}
 	now := time.Now()
-	if ev.Phase == i.lastProgressPh && ev.Phase != PhaseDone && now.Sub(i.lastProgressPub) < progressPublishMinGap {
+	// The throttle never swallows a terminal observation: phase transitions,
+	// PhaseDone, and the 100% event of a bounded phase (Done == Total) always
+	// publish — otherwise an SSE client whose last update landed <150ms before
+	// completion would never see the phase finish.
+	atCompletion := ev.Total > 0 && ev.Done == ev.Total
+	if ev.Phase == i.lastProgressPh && ev.Phase != PhaseDone && !atCompletion && now.Sub(i.lastProgressPub) < progressPublishMinGap {
 		return
 	}
 	i.lastProgressPh = ev.Phase
