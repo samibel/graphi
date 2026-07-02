@@ -61,8 +61,13 @@ version: 1
 # gives ~36% headroom for runner noise while still catching a real cold-start
 # regression (a 4x slowdown vs the local baseline still trips it). If CI
 # measurements later stabilize well below this, ratchet the budget back DOWN.
-baseline_version: "2026-07-01-coldstart"
-fixture_digest: "352f2fd0ea28f0652ed4b71f651b737301a20604e40182c83ae1a94f02e847ee"
+# 2026-07-02-gofmt-fixture: re-pin fixture_digest only. The repo-wide
+# `gofmt -w` sweep (commit 3a84907, merged in PR #16) reformatted three
+# bench/fixture/src files — whitespace-only, the workload is semantically
+# identical — which invalidated the pinned digest and turned the bench gate
+# red on every run since. No budget or baseline number changed in this re-pin.
+baseline_version: "2026-07-02-gofmt-fixture"
+fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
   cold_start_p95_ms:
