@@ -14,6 +14,13 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   fails the pin step instead of silently changing the corpus.
 
 ### Added
+- `engine/typeresolve` package-graph plumbing (dark, slice 2 of 4): a pure
+  go.mod `module`-directive parser (no exec, no network), directory=package
+  grouping over the ingest walk's file bytes (test files excluded in v1,
+  multi-clause directories degraded), intra-module import→directory
+  resolution, and a deterministic Tarjan-SCC check order where import cycles
+  degrade to heuristic-only instead of aborting. All pure functions,
+  table-tested, including a 50-iteration determinism pin.
 - `engine/typeresolve` (dark — not yet wired into ingest): first slice of the
   go/types confirmed-tier resolution pass for Go (v0.2.0 milestone). Contains
   the types.Object → NodeId identity mapping that mirrors the core/parse
