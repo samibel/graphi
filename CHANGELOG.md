@@ -7,6 +7,20 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Added
+- Live indexing progress in the terminal. Bare `graphi` (and `graphi index` /
+  `graphi http`) now render an in-place status line on stderr while the repo
+  is indexed — spinner, phase (scanning / indexing / linking / resolving
+  types), and a percentage once the file total is known, e.g.
+  `⠙ graphi: indexing 342/1200 files (28%)` — ending in a durable
+  `graphi: indexed N files in Xs` summary. Non-TTY runs (pipes, CI,
+  `TERM=dumb`) degrade to plain phase lines plus 25% milestones with no
+  escape bytes. Under the hood `Ingester.WithProgress` reports full-ingest
+  phase/per-file events (incremental/watcher paths stay silent), and the
+  same events are mirrored to the observe broker as a throttled
+  `ingest-progress` SSE event, advertised in the `/contract` stream
+  descriptors.
+
 ## [0.2.0] - 2026-07-02
 
 ### Changed
