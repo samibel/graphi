@@ -43,8 +43,8 @@ var subcommandHelp = map[string]subHelp{
 		`graphi find-clones -db graph.db '{"threshold":0.9}'`,
 	},
 	"index": {
-		"ingest a repo into a durable store (optional --semantic embedding pass)",
-		"graphi index -root <repo> [-db path] [-meta dir] [--semantic]",
+		"ingest a repo into a durable store (warm-starts on an unchanged repo; --full forces a cold pass; optional --semantic embedding pass)",
+		"graphi index -root <repo> [-db path] [-meta dir] [--full] [--semantic]",
 		"graphi index -root . -db ~/.graphi/graph.db -meta ~/.graphi/meta",
 	},
 	"savings": {
