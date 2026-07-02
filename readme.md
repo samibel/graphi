@@ -65,7 +65,9 @@ and the terminal prints a "Saved $X this session" savings readout. On a headless
 box / over SSH (or with `--no-browser` / `GRAPHI_NO_BROWSER`), graphi prints the
 local URL instead of opening a browser.
 
-<!-- TODO: screenshot/GIF of the graph UI -->
+<p align="center">
+  <img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search" width="900" />
+</p>
 
 ### Everyday use
 
