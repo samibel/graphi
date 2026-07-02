@@ -14,6 +14,19 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   fails the pin step instead of silently changing the corpus.
 
 ### Added
+- `engine/typeresolve` type-check + edge emission (dark, slice 3 of 4): a
+  `Resolve` pass that runs stdlib `types.Config.Check` over the package units
+  in dependency order with a tolerant importer (intra-repo imports served from
+  already-checked units, stdlib/third-party as empty stubs, per-unit errors
+  swallowed and counted — a broken package degrades itself, never the pass)
+  and derives the first **confirmed-tier (1.0)** `calls`/`references`/
+  `implements` edges from `types.Info` and `types.Implements`. Never
+  fabricates: an endpoint must reconstruct to a NodeId in the committed node
+  set or the intent is dropped and counted. The test fixtures pin the cases
+  where the name heuristic is provably wrong and the type-checker is right —
+  shadowed locals, same-named methods on two receiver types, same-named
+  functions in two packages — each asserted against the REAL extractor+linker
+  output over the same source. Still dark: ingest wiring is slice 4.
 - `engine/typeresolve` package-graph plumbing (dark, slice 2 of 4): a pure
   go.mod `module`-directive parser (no exec, no network), directory=package
   grouping over the ingest walk's file bytes (test files excluded in v1,

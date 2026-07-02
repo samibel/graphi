@@ -5,13 +5,17 @@
 // cannot reach.
 //
 // This package is currently DARK: nothing in engine/ingest calls it yet. It
-// ships in four reviewable slices; this first slice contains only the
+// ships in four reviewable slices; three have landed. Slice 1 is the
 // object→node identity mapping (qn.go) plus the golden cross-test that pins it
-// byte-exactly against the real core/parse extractor. That mapping is the
-// load-bearing artifact of the whole phase: a confirmed edge can only ever be
-// attached to a node the extractor actually created, and any drift between the
-// two naming schemes silently drops edges. The cross-test makes that drift a
-// test failure instead.
+// byte-exactly against the real core/parse extractor — the load-bearing
+// artifact of the whole phase: a confirmed edge can only ever be attached to a
+// node the extractor actually created, and any drift between the two naming
+// schemes silently drops edges. Slice 2 is the package-graph plumbing
+// (pkggraph.go): go.mod parsing, directory=package grouping, import
+// resolution, and the deterministic check order. Slice 3 is the type-check and
+// edge emission itself (check.go): Resolve turns a repository snapshot into
+// confirmed-tier calls/references/implements edges. Slice 4 (ingest wiring +
+// kill switch) is what turns the lights on.
 //
 // Hard constraints (mirrored from the roadmap and enforced by tests/CI):
 //   - stdlib go/types ONLY — no golang.org/x/tools, no go/packages (which
