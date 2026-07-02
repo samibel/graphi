@@ -408,8 +408,12 @@ func runIndex(args []string) int {
 		return 1
 	}
 	defer func() { _ = ing.Close() }()
-	if err := ing.IngestAll(ctx, root); err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: index: %v\n", err)
+	prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
+	ing.WithProgress(prog.Handle)
+	ierr := ing.IngestAll(ctx, root)
+	prog.Finish(ierr)
+	if ierr != nil {
+		fmt.Fprintf(os.Stderr, "graphi: index: %v\n", ierr)
 		return 1
 	}
 	fmt.Printf("graphi index: ingested %s\n", root)
@@ -1141,7 +1145,11 @@ func runHTTP(args []string) int {
 		}
 		ing.WithBroker(broker)
 		cleanupIngest = func() { _ = ing.Close(); _ = os.RemoveAll(meta) }
-		if ierr := ing.IngestAll(context.Background(), *root); ierr != nil {
+		prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
+		ing.WithProgress(prog.Handle)
+		ierr = ing.IngestAll(context.Background(), *root)
+		prog.Finish(ierr)
+		if ierr != nil {
 			fmt.Fprintf(os.Stderr, "graphi: initial ingest: %v\n", ierr)
 			return 1
 		}

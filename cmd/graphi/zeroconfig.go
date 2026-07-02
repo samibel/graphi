@@ -61,7 +61,9 @@ func isHeadless(goos string, getenv func(string) string) bool {
 // full-vs-incremental golden holds), and constructs the same loopback HTTP
 // surface runHTTP builds. The caller is responsible for srv.Serve(ln) and for
 // invoking cleanup. The construction shape mirrors runHTTP exactly.
-func setupZeroConfig(cwd string) (srv *httpsrv.Server, ln net.Listener, url string, c client.Client, store graphstore.Graphstore, cleanup func(), notRepo bool, err error) {
+// progress, when non-nil, receives ingest progress events (rendered by the
+// caller; see cmd/graphi/progress.go).
+func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent)) (srv *httpsrv.Server, ln net.Listener, url string, c client.Client, store graphstore.Graphstore, cleanup func(), notRepo bool, err error) {
 	cleanup = func() {}
 	root, ok := state.DetectRepo(cwd)
 	if !ok {
@@ -88,6 +90,7 @@ func setupZeroConfig(cwd string) (srv *httpsrv.Server, ln net.Listener, url stri
 	}
 	broker := observe.New()
 	ing.WithBroker(broker)
+	ing.WithProgress(progress)
 	cleanup = func() { _ = ing.Close(); _ = store.Close() }
 
 	if err = ing.IngestAll(context.Background(), root); err != nil {
@@ -117,7 +120,9 @@ func setupZeroConfig(cwd string) (srv *httpsrv.Server, ln net.Listener, url stri
 // Serve. Returns a process exit code.
 func runZeroConfig() int {
 	cwd, _ := os.Getwd()
-	srv, ln, url, c, _, cleanup, notRepo, err := setupZeroConfig(cwd)
+	prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
+	srv, ln, url, c, _, cleanup, notRepo, err := setupZeroConfig(cwd, prog.Handle)
+	prog.Finish(err)
 	defer cleanup()
 	if notRepo {
 		fmt.Fprintln(os.Stderr, "graphi: this directory doesn't look like a code repository.")

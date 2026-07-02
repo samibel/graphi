@@ -75,7 +75,7 @@ func TestSetupZeroConfig_RepoServesLoopbackAndIndexes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv, ln, url, c, store, cleanup, notRepo, err := setupZeroConfig(repo)
+	srv, ln, url, c, store, cleanup, notRepo, err := setupZeroConfig(repo, nil)
 	if err != nil {
 		t.Fatalf("setupZeroConfig: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestSetupZeroConfig_RepoServesLoopbackAndIndexes(t *testing.T) {
 func TestSetupZeroConfig_NotARepo(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	bare := t.TempDir() // no .git/go.work/go.mod marker
-	srv, ln, url, c, store, cleanup, notRepo, err := setupZeroConfig(bare)
+	srv, ln, url, c, store, cleanup, notRepo, err := setupZeroConfig(bare, nil)
 	defer cleanup()
 	if err != nil {
 		t.Fatalf("setupZeroConfig (not a repo) returned error: %v", err)
