@@ -253,3 +253,50 @@ func TestIngestProgress_FinishIdempotentAndSilentWithoutEvents(t *testing.T) {
 		t.Fatalf("Finish without events must print nothing, got %q", buf.String())
 	}
 }
+
+func TestIngestProgress_TimingsSummary(t *testing.T) {
+	t.Setenv("GRAPHI_TIMINGS", "1")
+	var buf bytes.Buffer
+	p, clk := newTestProgress(&buf, false)
+
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseWalk})
+	clk.advance(2 * time.Second)
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseParse, Total: 10})
+	clk.advance(30 * time.Second)
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseLink, Done: 10, Total: 10})
+	clk.advance(3 * time.Second)
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseResolve, Done: 10, Total: 10})
+	clk.advance(65 * time.Second)
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseDone, Done: 10, Total: 10})
+	p.Finish(nil)
+
+	out := buf.String()
+	for _, want := range []string{
+		"graphi timings:",
+		"walk 2s",
+		"parse 30s",
+		"link 3s",
+		"resolve 1m5s",
+		"total 1m40s",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("timings summary missing %q:\n%q", want, out)
+		}
+	}
+	if strings.Contains(out, "done 0s") || strings.Contains(out, " done ") {
+		t.Fatalf("terminal done pseudo-phase must not appear:\n%q", out)
+	}
+}
+
+func TestIngestProgress_NoTimingsWithoutEnv(t *testing.T) {
+	t.Setenv("GRAPHI_TIMINGS", "")
+	var buf bytes.Buffer
+	p, clk := newTestProgress(&buf, false)
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseWalk})
+	clk.advance(time.Second)
+	p.Handle(ingest.ProgressEvent{Phase: ingest.PhaseDone, Done: 1, Total: 1})
+	p.Finish(nil)
+	if strings.Contains(buf.String(), "graphi timings:") {
+		t.Fatalf("timings printed without GRAPHI_TIMINGS:\n%q", buf.String())
+	}
+}

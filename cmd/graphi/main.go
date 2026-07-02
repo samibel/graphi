@@ -16,6 +16,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -359,11 +360,36 @@ func runFindClones(args []string) int {
 //     zero network — while lexical indexing completes normally.
 //
 //     graphi index [--semantic] -root <repo> [-db path] [-meta dir]
+//
+// startCPUProfile begins a CPU profile into path (empty = no-op) and returns
+// the stop function. Best-effort: a profile that cannot start must never fail
+// the command it is measuring. Local file write only — no egress.
+func startCPUProfile(path string) func() {
+	if path == "" {
+		return func() {}
+	}
+	f, err := os.Create(path) //nolint:gosec // operator-supplied local profile path
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: cpuprofile: %v\n", err)
+		return func() {}
+	}
+	if err := pprof.StartCPUProfile(f); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: cpuprofile: %v\n", err)
+		_ = f.Close()
+		return func() {}
+	}
+	return func() {
+		pprof.StopCPUProfile()
+		_ = f.Close()
+	}
+}
+
 func runIndex(args []string) int {
 	// Order-independent flag parsing: --semantic is a bool toggle; -root/-db/-meta
 	// each take a value (space- or =-separated). Unknown tokens are ignored.
 	semantic := false
 	root, dbPath, metaDir := "", "", ""
+	cpuProfile := os.Getenv("GRAPHI_CPUPROFILE")
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		takeVal := func(name string) (string, bool) {
@@ -386,6 +412,8 @@ func runIndex(args []string) int {
 				dbPath = v
 			} else if v, ok := takeVal("-meta"); ok {
 				metaDir = v
+			} else if v, ok := takeVal("-cpuprofile"); ok {
+				cpuProfile = v
 			}
 		}
 	}
@@ -393,6 +421,8 @@ func runIndex(args []string) int {
 		fmt.Fprintln(os.Stderr, "graphi: -root <repo> is required for index")
 		return 1
 	}
+	stopProfile := startCPUProfile(cpuProfile)
+	defer stopProfile()
 
 	ctx := context.Background()
 	store, err := openStore(dbPath)

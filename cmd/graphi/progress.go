@@ -51,6 +51,15 @@ type ingestProgress struct {
 	lastMilestone int       // non-TTY: last 25%-bucket already logged
 	stop          chan struct{}
 	finished      bool
+
+	// Per-phase wall-clock accounting for the GRAPHI_TIMINGS=1 summary. A
+	// phase's duration closes when the next phase's first event arrives (or at
+	// Finish), so the numbers attribute the gaps BETWEEN events to the phase
+	// that was running through them. Note: until the parse phase is split from
+	// the store commit, "parse" includes the graph writes.
+	phaseStart time.Time
+	phaseSeq   []ingest.Phase
+	phaseDur   map[ingest.Phase]time.Duration
 }
 
 func newIngestProgress(w io.Writer, tty bool) *ingestProgress {
@@ -90,6 +99,11 @@ func (p *ingestProgress) Handle(ev ingest.ProgressEvent) {
 	phaseChanged := !p.seen || ev.Phase != p.last.Phase
 	if ev.Phase == ingest.PhaseDrift {
 		p.sawDrift = true
+	}
+	if phaseChanged {
+		p.closePhase()
+		p.phaseStart = p.now()
+		p.phaseSeq = append(p.phaseSeq, ev.Phase)
 	}
 	if phaseChanged && ev.Phase == ingest.PhaseParse {
 		p.parseStart = p.now() // anchor for the ETA rate
@@ -132,12 +146,44 @@ func (p *ingestProgress) Finish(err error) {
 	if !p.seen {
 		return
 	}
+	p.closePhase()
 	if p.tty {
 		fmt.Fprint(p.w, "\r\x1b[2K")
 	}
 	if err == nil {
 		fmt.Fprint(p.w, p.summaryLine())
 	}
+	if os.Getenv("GRAPHI_TIMINGS") != "" {
+		fmt.Fprint(p.w, p.timingsSummary())
+	}
+}
+
+// closePhase folds the elapsed time of the currently open phase into the
+// per-phase totals. Callers hold p.mu.
+func (p *ingestProgress) closePhase() {
+	if len(p.phaseSeq) == 0 {
+		return
+	}
+	if p.phaseDur == nil {
+		p.phaseDur = make(map[ingest.Phase]time.Duration)
+	}
+	p.phaseDur[p.phaseSeq[len(p.phaseSeq)-1]] += p.now().Sub(p.phaseStart)
+	p.phaseStart = p.now()
+}
+
+// timingsSummary renders the GRAPHI_TIMINGS=1 per-phase breakdown, phases in
+// first-seen order plus the wall total. Callers hold p.mu.
+func (p *ingestProgress) timingsSummary() string {
+	line := "graphi timings:"
+	printed := make(map[ingest.Phase]bool)
+	for _, ph := range p.phaseSeq {
+		if printed[ph] || ph == ingest.PhaseDone {
+			continue
+		}
+		printed[ph] = true
+		line += fmt.Sprintf("  %s %s", ph, p.phaseDur[ph].Truncate(time.Millisecond))
+	}
+	return line + fmt.Sprintf("  |  total %s\n", p.now().Sub(p.start).Truncate(time.Millisecond))
 }
 
 // summaryLine picks the durable success line by how the run ended: a warm
