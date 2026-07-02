@@ -55,8 +55,7 @@ func (p *SQLParser) Parse(ctx context.Context, filename string, src []byte) (res
 		}
 	}()
 
-	parser := gts.NewParser(p.lang)
-	tree, perr := parser.Parse(src)
+	tree, perr := parseTreeSitter(ctx, p.lang, src)
 	if perr != nil {
 		return nil, fmt.Errorf("parse: sql error in %q: %w", filename, perr)
 	}

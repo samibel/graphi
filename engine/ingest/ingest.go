@@ -158,8 +158,13 @@ type Ingester struct {
 	lastProgressPub time.Time
 	lastProgressPh  Phase
 
+	// parseWorkers overrides the full-ingest parse-pool width; 0 = GOMAXPROCS
+	// (see parseUnitsParallel).
+	parseWorkers int
+
 	// test hooks
 	failAfterDirtyMark error
+	scheduleHook       func(relPath string)
 	hookMu             sync.Mutex
 }
 
@@ -308,6 +313,15 @@ func (i *Ingester) SkippedDiagnostics() []SkipDiagnostic {
 	defer i.skipMu.Unlock()
 	out := make([]SkipDiagnostic, len(i.skipped))
 	copy(out, i.skipped)
+	// Canonical order: skips accumulate in completion order, which under the
+	// parallel parse pool is scheduling-dependent — sort so the API stays
+	// deterministic regardless of worker interleaving.
+	sort.Slice(out, func(a, b int) bool {
+		if out[a].Path != out[b].Path {
+			return out[a].Path < out[b].Path
+		}
+		return out[a].Reason < out[b].Reason
+	})
 	return out
 }
 
@@ -566,6 +580,19 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	}
 	i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Total: len(units)})
 
+	// Pure parallel parse BEFORE the meta transaction: parseUnit mutates no
+	// state, so the pool only changes wall-clock, never bytes — the commit
+	// below applies results serially in the walked (relPath-sorted) order,
+	// exactly the SW-101 discipline the watcher path already relies on.
+	// Per-file progress is emitted from the pool drain (calling goroutine,
+	// completion order), so Done stays monotonic and Path names real files.
+	parsed, err := i.parseUnitsParallel(ctx, units, func(done int, path string) {
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: done, Total: len(units), Path: path})
+	})
+	if err != nil {
+		return err
+	}
+
 	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
 		// Capture the node IDs of the PREVIOUS full pass (if this store is being
 		// re-indexed) BEFORE clearing the cache, so nodes of files that have since
@@ -605,13 +632,15 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		}
 		open = batch
 
-		// Build forward refs for each file, then derive reverse deps.
+		// Build forward refs for each file, then derive reverse deps. The
+		// SERIAL apply loop over the sorted units is what pins the committed
+		// byte order; the parallel phase above only produced the ParsedFiles.
 		refs := make(map[string][]string, len(units))
 		var fileRefs []link.FileRefs
 		owned := make(map[string]struct{})
 		parserEdges := make(map[string]struct{})
 		for k, u := range units {
-			nodeIDs, edgeIDs, fwd, fr, err := i.parseAndCommit(ctx, batch, u)
+			nodeIDs, edgeIDs, fwd, fr, err := i.commitParsed(ctx, batch, u, parsed[k])
 			if err != nil {
 				return err
 			}
@@ -628,7 +657,6 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			if fr != nil {
 				fileRefs = append(fileRefs, *fr)
 			}
-			i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: k + 1, Total: len(units), Path: u.relPath})
 		}
 		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseLink, Done: len(units), Total: len(units)})
 

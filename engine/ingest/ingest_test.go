@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -15,11 +16,13 @@ import (
 )
 
 type stubParser struct {
-	parseCount int
+	// parseCount is atomic: parse.Parser implementations must be safe for
+	// concurrent use, and the full-ingest pool exercises the stub in parallel.
+	parseCount atomic.Int64
 }
 
 func (p *stubParser) Parse(ctx context.Context, path string, src []byte) (*parse.ParseResult, error) {
-	p.parseCount++
+	p.parseCount.Add(1)
 	name := "fn" + filepath.Base(path)
 	n, err := model.NewNode("function", "pkg/"+name, path, 1, 1)
 	if err != nil {
@@ -91,13 +94,13 @@ func TestIngest_FullThenUnchangedIsNoOp(t *testing.T) {
 	if err := i.IngestAll(ctx, repo); err != nil {
 		t.Fatalf("IngestAll: %v", err)
 	}
-	firstCount := parser.parseCount
+	firstCount := parser.parseCount.Load()
 
 	if err := i.IngestChanged(ctx, repo, nil); err != nil {
 		t.Fatalf("IngestChanged no-op: %v", err)
 	}
-	if parser.parseCount != firstCount {
-		t.Fatalf("expected no parse calls, got %d more", parser.parseCount-firstCount)
+	if parser.parseCount.Load() != firstCount {
+		t.Fatalf("expected no parse calls, got %d more", parser.parseCount.Load()-firstCount)
 	}
 }
 
@@ -117,7 +120,7 @@ func TestIngest_SingleFileChange(t *testing.T) {
 	if err := i.IngestAll(ctx, repo); err != nil {
 		t.Fatalf("IngestAll: %v", err)
 	}
-	parser.parseCount = 0
+	parser.parseCount.Store(0)
 
 	// Change a.go -> b.go depends on a.go and must be re-parsed.
 	if err := os.WriteFile(filepath.Join(repo, "a.go"), []byte("package a\n//changed\n"), 0o600); err != nil {
@@ -126,8 +129,8 @@ func TestIngest_SingleFileChange(t *testing.T) {
 	if err := i.IngestChanged(ctx, repo, []string{"a.go"}); err != nil {
 		t.Fatalf("IngestChanged: %v", err)
 	}
-	if parser.parseCount != 2 {
-		t.Fatalf("expected 2 re-parses (a.go + b.go), got %d", parser.parseCount)
+	if parser.parseCount.Load() != 2 {
+		t.Fatalf("expected 2 re-parses (a.go + b.go), got %d", parser.parseCount.Load())
 	}
 }
 
@@ -145,7 +148,7 @@ func TestIngest_CrashRecovery(t *testing.T) {
 	if err := i.IngestAll(ctx, repo); err != nil {
 		t.Fatalf("IngestAll: %v", err)
 	}
-	parser.parseCount = 0
+	parser.parseCount.Store(0)
 
 	// Rewrite a.go and inject a fault after dirty-mark.
 	if err := os.WriteFile(filepath.Join(repo, "a.go"), []byte("package a\n//changed\n"), 0o600); err != nil {
@@ -158,12 +161,12 @@ func TestIngest_CrashRecovery(t *testing.T) {
 	}
 
 	// Recover should reprocess a.go exactly and clear the dirty set.
-	parser.parseCount = 0
+	parser.parseCount.Store(0)
 	if err := i.RecoverWithRoot(ctx, repo); err != nil {
 		t.Fatalf("RecoverWithRoot: %v", err)
 	}
-	if parser.parseCount != 1 {
-		t.Fatalf("expected 1 re-parse during recovery, got %d", parser.parseCount)
+	if parser.parseCount.Load() != 1 {
+		t.Fatalf("expected 1 re-parse during recovery, got %d", parser.parseCount.Load())
 	}
 }
 

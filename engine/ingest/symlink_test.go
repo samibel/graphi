@@ -44,8 +44,8 @@ func TestIngest_FailsClosed_OnSymlinkToDirectory(t *testing.T) {
 
 	// real.go and target/nested.go are real files and must have been parsed;
 	// "linked" (the symlink) must not have been read as a file.
-	if parser.parseCount != 2 {
-		t.Fatalf("expected 2 real files parsed, got %d", parser.parseCount)
+	if parser.parseCount.Load() != 2 {
+		t.Fatalf("expected 2 real files parsed, got %d", parser.parseCount.Load())
 	}
 
 	var found bool
@@ -90,8 +90,8 @@ func TestIngest_PrunesIgnoredDirectories(t *testing.T) {
 		t.Fatalf("IngestAll: %v", err)
 	}
 
-	if parser.parseCount != 1 {
-		t.Fatalf("expected only real.go parsed (ignored dirs pruned), got %d parses", parser.parseCount)
+	if parser.parseCount.Load() != 1 {
+		t.Fatalf("expected only real.go parsed (ignored dirs pruned), got %d parses", parser.parseCount.Load())
 	}
 	if skips := i.SkippedDiagnostics(); len(skips) != 0 {
 		t.Fatalf("expected zero skip diagnostics (pruned dirs are never visited, not skipped), got %v", skips)
@@ -120,8 +120,8 @@ func TestIngest_PrunesIgnoredDirectories_CaseInsensitive(t *testing.T) {
 	if err := i.IngestAll(ctx, root); err != nil {
 		t.Fatalf("IngestAll: %v", err)
 	}
-	if parser.parseCount != 1 {
-		t.Fatalf("expected only real.go parsed (case-insensitive prune), got %d parses", parser.parseCount)
+	if parser.parseCount.Load() != 1 {
+		t.Fatalf("expected only real.go parsed (case-insensitive prune), got %d parses", parser.parseCount.Load())
 	}
 }
 
@@ -155,8 +155,8 @@ func TestIngest_ParseFile_IgnoresPathUnderIgnoredDir(t *testing.T) {
 	if pf != nil {
 		t.Fatalf("ParseFile: expected nil ParsedFile for an ignored-dir path, got %+v", pf)
 	}
-	if parser.parseCount != 0 {
-		t.Fatalf("expected the file under node_modules to never reach the parser, got %d parses", parser.parseCount)
+	if parser.parseCount.Load() != 0 {
+		t.Fatalf("expected the file under node_modules to never reach the parser, got %d parses", parser.parseCount.Load())
 	}
 	if skips := i.SkippedDiagnostics(); len(skips) != 0 {
 		t.Fatalf("expected zero skip diagnostics (ignored silently, not recorded), got %v", skips)

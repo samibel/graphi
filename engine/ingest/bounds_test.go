@@ -53,8 +53,8 @@ func TestIngest_FailsClosed_OnOversizeFile(t *testing.T) {
 		t.Fatal("skip diagnostic leaked raw source")
 	}
 	// small.go still ingested → parser was invoked for exactly one file.
-	if parser.parseCount != 1 {
-		t.Fatalf("expected the under-bound file to still be parsed (count=1), got %d", parser.parseCount)
+	if parser.parseCount.Load() != 1 {
+		t.Fatalf("expected the under-bound file to still be parsed (count=1), got %d", parser.parseCount.Load())
 	}
 
 	nodes, err := store.Nodes(ctx, graphstore.Query{})
