@@ -7,7 +7,17 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-02
+
 ### Changed
+- The PR-triage vertical (`list_prs`, `triage_prs`, `conflicts_prs`,
+  `suggest_reviewers`, `compare_branches`, `critique_review`) and the agent
+  memory/distill/skillgen suite are now marked **experimental**: their MCP
+  descriptions carry an `[experimental]` prefix (single source
+  `surfaces/mcp/tools.go`, CI-tested) and the README splits capabilities into
+  Core vs. Experimental. Tool names are unchanged (frozen wire identifiers);
+  these surfaces are unproven against real-world use and may change shape or
+  be removed before 1.0.
 - **BREAKING: `impact` direction semantics corrected (and the default is now
   `reverse`).** The engine had the two direction names swapped relative to the
   README, the tutorial, the HOWTO, and the reverse-dependency (rdeps)

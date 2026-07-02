@@ -109,6 +109,45 @@ var singletonToolNames = []string{
 	ToolCritiqueReview,
 }
 
+// experimentalPrefix marks a tool description as experimental. Tool NAMES are
+// frozen wire identifiers and never change; the prefix lives in the
+// human/agent-facing description only.
+const experimentalPrefix = "[experimental] "
+
+// experimentalTools is the single place a tool is declared experimental: the
+// PR-triage vertical and the agent memory/distill/skillgen suite are unproven
+// against real-world use and may change shape or be removed before 1.0. The
+// descriptor assembly prefixes their descriptions centrally (markExperimental),
+// so individual descriptor literals never carry the tag by hand; README's
+// "Experimental" section mirrors this set.
+var experimentalTools = map[string]bool{
+	ToolMemory:           true,
+	ToolDistill:          true,
+	ToolSkillGen:         true,
+	ToolListPRs:          true,
+	ToolTriagePRs:        true,
+	ToolConflictsPRs:     true,
+	ToolSuggestReviewers: true,
+	ToolCompareBranches:  true,
+	ToolCritiqueReview:   true,
+}
+
+// markExperimental prefixes the description of every experimental tool in
+// tools (in place) and returns the slice. Idempotent: an already-prefixed
+// description is left alone.
+func markExperimental(tools []map[string]any) []map[string]any {
+	for _, t := range tools {
+		name, _ := t["name"].(string)
+		if !experimentalTools[name] {
+			continue
+		}
+		if d, ok := t["description"].(string); ok && len(d) >= len(experimentalPrefix) && d[:len(experimentalPrefix)] != experimentalPrefix {
+			t["description"] = experimentalPrefix + d
+		}
+	}
+	return tools
+}
+
 // ToolNames returns the full, sorted, de-duplicated canonical set of every MCP
 // tool the stdio surface can advertise across all wired capabilities: the
 // structural query operations (query.Operations) plus the search/readout,
