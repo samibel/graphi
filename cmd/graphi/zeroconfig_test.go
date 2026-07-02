@@ -141,10 +141,15 @@ func TestSetupZeroConfig_WarmStart(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	var lastDriftDone int
 	run := func() (phases map[ingest.Phase]bool, store graphstore.Graphstore, done func()) {
 		phases = map[ingest.Phase]bool{}
+		lastDriftDone = -1
 		srv, ln, _, _, st, cleanup, notRepo, err := setupZeroConfig(repo, func(ev ingest.ProgressEvent) {
 			phases[ev.Phase] = true
+			if ev.Phase == ingest.PhaseDrift {
+				lastDriftDone = ev.Done
+			}
 		})
 		if err != nil || notRepo || srv == nil {
 			t.Fatalf("setupZeroConfig: err=%v notRepo=%v", err, notRepo)
@@ -168,6 +173,12 @@ func TestSetupZeroConfig_WarmStart(t *testing.T) {
 		if phases[p] {
 			t.Fatalf("unchanged repo re-ingested (saw phase %q): %v", p, phases)
 		}
+	}
+	// The final drift event carries the EXACT checked count (the throttled
+	// walk callback alone only fires on multiples of 64 — the summary would
+	// otherwise report a truncated count).
+	if lastDriftDone != 1 {
+		t.Fatalf("final drift Done = %d, want the exact checked count 1", lastDriftDone)
 	}
 	done()
 

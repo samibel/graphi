@@ -69,7 +69,12 @@ func (i *Ingester) notifyProgress(ctx context.Context, ev ProgressEvent) {
 		return
 	}
 	now := time.Now()
-	if ev.Phase == i.lastProgressPh && ev.Phase != PhaseDone && now.Sub(i.lastProgressPub) < progressPublishMinGap {
+	// The throttle never swallows a terminal observation: phase transitions,
+	// PhaseDone, and the 100% event of a bounded phase (Done == Total) always
+	// publish — otherwise an SSE client whose last update landed <150ms before
+	// completion would never see the phase finish.
+	atCompletion := ev.Total > 0 && ev.Done == ev.Total
+	if ev.Phase == i.lastProgressPh && ev.Phase != PhaseDone && !atCompletion && now.Sub(i.lastProgressPub) < progressPublishMinGap {
 		return
 	}
 	i.lastProgressPh = ev.Phase
