@@ -36,6 +36,18 @@ type Search struct {
 	ExpectNonEmpty bool   `json:"expect_nonempty"`
 }
 
+// ConfirmedEdge is one confirmed-tier assertion (the v0.2.0 typeresolve
+// acceptance shape): resolve SymbolQuery to an anchor node — the first search
+// match whose exact symbol name equals the query — run the structural query
+// Operation over it, and require at least Min of the returned edges to carry
+// the confirmed tier. This is how the corpus proves the go/types pass derives
+// real proven edges on real repositories, not just on fixtures.
+type ConfirmedEdge struct {
+	SymbolQuery string `json:"symbol_query"`
+	Operation   string `json:"operation"` // callers | callees | references
+	Min         int    `json:"min"`
+}
+
 // Entry is one corpus repository. Exactly one of URL or Path must be set:
 // URL entries are shallow-cloned at Ref (a tag or branch) by the runner —
 // the workflow context; Path entries point at an already-materialized local
@@ -57,6 +69,8 @@ type Entry struct {
 	// Searches are the per-repo assertions; at least one with ExpectNonEmpty
 	// is required so the smoke run proves the index actually contains symbols.
 	Searches []Search `json:"searches"`
+	// ConfirmedEdges are optional confirmed-tier assertions (see ConfirmedEdge).
+	ConfirmedEdges []ConfirmedEdge `json:"confirmed_edges,omitempty"`
 	// Notes is free-form documentation (why this repo is in the corpus).
 	Notes string `json:"notes,omitempty"`
 }
@@ -102,6 +116,19 @@ func LoadManifest(path string) (Manifest, error) {
 		}
 		if !nonEmpty {
 			return Manifest{}, fmt.Errorf("corpus: entry %q needs at least one expect_nonempty search (a smoke run must prove the index is non-trivial)", e.Name)
+		}
+		for _, ce := range e.ConfirmedEdges {
+			if ce.SymbolQuery == "" {
+				return Manifest{}, fmt.Errorf("corpus: entry %q has a confirmed_edges assertion with an empty symbol_query", e.Name)
+			}
+			switch ce.Operation {
+			case "callers", "callees", "references":
+			default:
+				return Manifest{}, fmt.Errorf("corpus: entry %q confirmed_edges operation %q must be callers, callees, or references", e.Name, ce.Operation)
+			}
+			if ce.Min < 1 {
+				return Manifest{}, fmt.Errorf("corpus: entry %q confirmed_edges min %d must be >= 1 (a zero-minimum assertion is vacuous)", e.Name, ce.Min)
+			}
 		}
 	}
 	return m, nil

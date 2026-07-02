@@ -159,7 +159,46 @@ func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 		}
 	}
 
-	// 5. Diagnostics over the whole graph.
+	// 5. Confirmed-tier assertions (v0.2.0 typeresolve acceptance): the graph
+	// must contain type-checker-proven edges where the manifest promises them.
+	for _, ce := range e.ConfirmedEdges {
+		name := "confirmed:" + ce.Operation + ":" + ce.SymbolQuery
+		anchor, detail := r.findAnchor(ctx, db, ce.SymbolQuery)
+		if anchor == "" {
+			return fail(name, detail)
+		}
+		out, err := r.graphi(ctx, "query", ce.Operation, "-symbol", anchor, "-db", db)
+		if p := panicMarker(out); p != "" {
+			return fail(name, "panic in output: "+p)
+		}
+		if err != nil {
+			return fail(name, err.Error()+"\n"+tail(out))
+		}
+		var qr struct {
+			Edges []struct {
+				Tier string `json:"confidence_tier"`
+			} `json:"edges"`
+		}
+		line := lastJSONLine(out)
+		if len(line) == 0 {
+			return fail(name, "query produced no output at all")
+		}
+		if err := json.Unmarshal(line, &qr); err != nil {
+			return fail(name, "output is not the canonical query JSON: "+err.Error()+"\n"+tail(out))
+		}
+		confirmed := 0
+		for _, ed := range qr.Edges {
+			if ed.Tier == "confirmed" {
+				confirmed++
+			}
+		}
+		if confirmed < ce.Min {
+			return fail(name, fmt.Sprintf("%d confirmed edge(s) of %d total, want >= %d — the typeresolve pass did not prove this relation", confirmed, len(qr.Edges), ce.Min))
+		}
+		ok(name, fmt.Sprintf("%d confirmed edge(s)", confirmed))
+	}
+
+	// 6. Diagnostics over the whole graph.
 	if out, err := r.graphi(ctx, "diagnose", "-db", db); err != nil {
 		return fail("diagnose", err.Error()+"\n"+tail(out))
 	} else if !json.Valid(lastJSONLine(out)) {
@@ -171,6 +210,41 @@ func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 	er.DurationMS = time.Since(start).Milliseconds()
 	r.logf("corpus: %s: PASS (%.1fs)", e.Name, time.Since(start).Seconds())
 	return er
+}
+
+// findAnchor resolves a symbol query to a node id: the first search match
+// whose qualified name's LAST dotted segment equals the query exactly. The
+// exactness matters — a query like "ExecuteC" must not silently anchor on
+// "ExecuteContext" just because fuzzy ranking put it first. Returns ("",
+// detail) when no exact match exists.
+func (r *Runner) findAnchor(ctx context.Context, db, symbolQuery string) (anchor, detail string) {
+	out, err := r.graphi(ctx, "search", "-db", db, "-limit", "25", symbolQuery)
+	if err != nil {
+		return "", err.Error() + "\n" + tail(out)
+	}
+	var res struct {
+		Matches []struct {
+			NodeID        string `json:"node_id"`
+			QualifiedName string `json:"qualified_name"`
+		} `json:"matches"`
+	}
+	line := lastJSONLine(out)
+	if len(line) == 0 {
+		return "", "search produced no output at all"
+	}
+	if err := json.Unmarshal(line, &res); err != nil {
+		return "", "output is not the canonical search JSON: " + err.Error() + "\n" + tail(out)
+	}
+	for _, m := range res.Matches {
+		bare := m.QualifiedName
+		if i := strings.LastIndexByte(bare, '.'); i >= 0 {
+			bare = bare[i+1:]
+		}
+		if bare == symbolQuery {
+			return m.NodeID, ""
+		}
+	}
+	return "", fmt.Sprintf("no search match with exact symbol name %q among %d match(es)", symbolQuery, len(res.Matches))
 }
 
 // clone shallow-clones the entry's ref into dir. Fresh every run: a stale

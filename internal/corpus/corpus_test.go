@@ -66,9 +66,15 @@ func TestRunner_LocalFixtureFullFlow(t *testing.T) {
 	repo := writeFixtureRepo(t)
 	r := &Runner{Binary: bin, WorkDir: t.TempDir(), PerEntryTimeout: 2 * time.Minute}
 
-	rep, err := r.Run(context.Background(), localManifest(repo, []Search{
+	m := localManifest(repo, []Search{
 		{Query: "hello", ExpectNonEmpty: true},
-	}))
+	})
+	// The fixture's cross-file call helper() -> hello() is type-checkable, so
+	// the wired typeresolve pass must prove at least one confirmed caller.
+	m.Entries[0].ConfirmedEdges = []ConfirmedEdge{
+		{SymbolQuery: "hello", Operation: "callers", Min: 1},
+	}
+	rep, err := r.Run(context.Background(), m)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -76,7 +82,7 @@ func TestRunner_LocalFixtureFullFlow(t *testing.T) {
 		t.Fatalf("fixture run failed:\n%+v", rep.Entries)
 	}
 	e := rep.Entries[0]
-	wantSteps := []string{"materialize", "index", "search:hello", "query:callers", "analyze:impact", "diagnose"}
+	wantSteps := []string{"materialize", "index", "search:hello", "query:callers", "analyze:impact", "confirmed:callers:hello", "diagnose"}
 	var got []string
 	for _, s := range e.Steps {
 		got = append(got, s.Name)
@@ -118,6 +124,43 @@ func TestRunner_EmptyExpectationFails(t *testing.T) {
 	if failed == nil || !strings.HasPrefix(failed.Name, "search:") {
 		t.Fatalf("expected the search step to be the failing one, got %+v", rep.Entries[0].Steps)
 	}
+}
+
+// TestRunner_ConfirmedAssertionBites proves the confirmed-tier assertion is
+// not vacuous: an impossible minimum turns the run red, and a symbol query
+// with no EXACT name match fails instead of silently anchoring on a fuzzy
+// neighbor.
+func TestRunner_ConfirmedAssertionBites(t *testing.T) {
+	bin := buildGraphi(t)
+	repo := writeFixtureRepo(t)
+
+	t.Run("impossible minimum", func(t *testing.T) {
+		r := &Runner{Binary: bin, WorkDir: t.TempDir(), PerEntryTimeout: 2 * time.Minute}
+		m := localManifest(repo, []Search{{Query: "hello", ExpectNonEmpty: true}})
+		m.Entries[0].ConfirmedEdges = []ConfirmedEdge{{SymbolQuery: "hello", Operation: "callers", Min: 99}}
+		rep, err := r.Run(context.Background(), m)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if rep.Pass {
+			t.Fatal("run passed although 99 confirmed callers cannot exist (assertion is vacuous)")
+		}
+	})
+
+	t.Run("no exact anchor match", func(t *testing.T) {
+		r := &Runner{Binary: bin, WorkDir: t.TempDir(), PerEntryTimeout: 2 * time.Minute}
+		m := localManifest(repo, []Search{{Query: "hello", ExpectNonEmpty: true}})
+		// "hell" fuzzy-matches hello/helper but names no exact symbol; the
+		// anchor resolution must refuse rather than pick a lookalike.
+		m.Entries[0].ConfirmedEdges = []ConfirmedEdge{{SymbolQuery: "hell", Operation: "callers", Min: 1}}
+		rep, err := r.Run(context.Background(), m)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if rep.Pass {
+			t.Fatal("run passed although the anchor symbol does not exist by exact name")
+		}
+	})
 }
 
 // TestRunner_BrokenBinaryFails proves a crashing binary turns the run red
@@ -175,6 +218,9 @@ func TestLoadManifest_Validation(t *testing.T) {
 		{"no nonempty search", `{"entries":[{"name":"x","path":"p","searches":[{"query":"q"}]}]}`, "expect_nonempty"},
 		{"sha too short", `{"entries":[{"name":"x","url":"u","ref":"r","sha":"abc123","searches":[{"query":"q","expect_nonempty":true}]}]}`, "12 hex"},
 		{"sha not hex", `{"entries":[{"name":"x","url":"u","ref":"r","sha":"zzzzzzzzzzzz","searches":[{"query":"q","expect_nonempty":true}]}]}`, "12 hex"},
+		{"confirmed empty query", `{"entries":[{"name":"x","path":"p","searches":[{"query":"q","expect_nonempty":true}],"confirmed_edges":[{"operation":"callers","min":1}]}]}`, "empty symbol_query"},
+		{"confirmed bad operation", `{"entries":[{"name":"x","path":"p","searches":[{"query":"q","expect_nonempty":true}],"confirmed_edges":[{"symbol_query":"s","operation":"impact","min":1}]}]}`, "must be callers"},
+		{"confirmed zero min", `{"entries":[{"name":"x","path":"p","searches":[{"query":"q","expect_nonempty":true}],"confirmed_edges":[{"symbol_query":"s","operation":"callers","min":0}]}]}`, "vacuous"},
 	}
 	for _, c := range cases {
 		if _, err := LoadManifest(write(c.body)); err == nil || !strings.Contains(err.Error(), c.wantErr) {

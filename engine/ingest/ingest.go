@@ -626,6 +626,12 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		if _, err := i.linkFiles(ctx, fileRefs, owned, parserEdges); err != nil {
 			return err
 		}
+		// Third phase (site 1): whole-repo go/types confirmed-tier pass. Runs
+		// AFTER the linker so its confirmed edges upsert over the heuristic
+		// tier for the same logical edges (see typeresolvePass).
+		if _, err := i.typeresolvePass(ctx, units); err != nil {
+			return err
+		}
 		return nil
 	}); err != nil {
 		return err
@@ -768,6 +774,26 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		}
 		for _, d := range deps {
 			toProcess[d] = struct{}{}
+		}
+	}
+
+	// A go.mod change (edit/add/delete) re-links every linkable file. The
+	// module path steers ONLY the typeresolve pass (the heuristic linker
+	// resolves via per-file import paths and never reads go.mod), but a
+	// confirmed edge that loses its type-check proof must fall back to the
+	// heuristic edge for the same logical relation — and that fallback only
+	// exists if linkFiles re-put it this pass. Without this expansion the
+	// typeresolve sweep would delete the stale confirmed edge outright,
+	// diverging from a fresh full index (which would hold the heuristic
+	// edge). go.mod edits are rare; the full re-link is the cheap side of
+	// that trade.
+	if _, ok := toProcess["go.mod"]; ok {
+		linkable, err := i.linkableCachedPaths(ctx)
+		if err != nil {
+			return err
+		}
+		for _, p := range linkable {
+			toProcess[p] = struct{}{}
 		}
 	}
 
@@ -931,6 +957,24 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			}
 		}
 		i.skipMu.Unlock()
+
+		// Third phase (site 2): whole-repo go/types confirmed-tier pass, after
+		// the linker and after the stale-file cleanup so it sees the final
+		// committed node set. Runs only when the change set can affect Go
+		// resolution — a pure asset/doc edit skips the whole-repo recompute.
+		// Placed after the parse-error elevation above so a doomed transaction
+		// never pays for (or half-applies) the pass.
+		if touchesGoResolution(toProcess) {
+			trIDs, err := i.typeresolvePass(ctx, units)
+			if err != nil {
+				return err
+			}
+			if prov != nil {
+				if err := i.recordEditProvenanceTx(ctx, tx, "edge", trIDs, *prov); err != nil {
+					return err
+				}
+			}
+		}
 		return nil
 	})
 }
@@ -1828,6 +1872,27 @@ func (i *Ingester) fileHasLinks(ctx context.Context, path string) (bool, error) 
 		return false, fmt.Errorf("ingest: read has_links: %w", err)
 	}
 	return hl == 1, nil
+}
+
+// linkableCachedPaths returns every cached file that produced deferred linker
+// inputs (has_links = 1) — the set a go.mod change must re-link so confirmed
+// edges that lose their type-check proof degrade to heuristic instead of
+// disappearing (see the expansion in ingestChanged).
+func (i *Ingester) linkableCachedPaths(ctx context.Context) ([]string, error) {
+	rows, err := i.meta.QueryContext(ctx, "SELECT path FROM file_content_cache WHERE has_links = 1")
+	if err != nil {
+		return nil, fmt.Errorf("ingest: list linkable files: %w", err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }
 
 // markDirtyTx / clearDirtyTx manage the crash-recovery dirty set. When prov is

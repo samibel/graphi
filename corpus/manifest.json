@@ -16,7 +16,14 @@
           "expect_nonempty": true
         }
       ],
-      "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target."
+      "confirmed_edges": [
+        {
+          "symbol_query": "ExecuteC",
+          "operation": "callers",
+          "min": 1
+        }
+      ],
+      "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() — a receiver-method dispatch the name heuristic cannot prove — and the go/types pass must carry it at the confirmed tier."
     },
     {
       "name": "flask",

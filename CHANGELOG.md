@@ -7,6 +7,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-02
+
 ### Changed
 - Corpus manifest entries now pin the checkout HEAD sha (case-insensitive
   prefix, >=12 hex chars, fail-closed) in addition to the release tag —
@@ -14,6 +16,29 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   fails the pin step instead of silently changing the corpus.
 
 ### Added
+- **The v0.2.0 milestone: type-checked (confirmed-tier) `calls`/`references`/
+  `implements` edges for Go.** `engine/ingest` now runs the `engine/typeresolve`
+  go/types pass as a third phase after the heuristic linker, at both the full
+  and the incremental site. The whole repository is re-checked from the
+  already-walked bytes, so the confirmed edge set is a pure function of the
+  final source state and full-vs-incremental **byte parity holds by
+  construction** (pinned by a dedicated invariant test). Every relation the
+  type-checker proves is upserted at `confirmed`/1.0 over the heuristic edge
+  with the same (from,to,kind) identity — correct receiver-type method
+  dispatch, shadowing, and import resolution now come from the compiler's own
+  answer, not from name matching. Degradation is honest and non-destructive: a
+  package the checker cannot prove (parse error, import cycle, checker panic)
+  keeps its heuristic edges — the proof is withdrawn, the knowledge is not
+  (invariant-tested, including the round-trip back to confirmed once the cycle
+  is fixed). Operational controls: `GRAPHI_NO_TYPERESOLVE=1` restores the
+  heuristic-only behavior; non-Go edits skip the recompute; a go.mod edit
+  re-links every linkable file so a confirmed edge that loses its proof
+  degrades instead of disappearing (parity-tested against a fresh index).
+  Acceptance is enforced in CI: the corpus harness gained `confirmed_edges`
+  assertions (anchored on exact symbol-name matches, with hermetic bite-proof
+  tests) and pins `Command.Execute → Command.ExecuteC` in spf13/cobra — a
+  receiver-method dispatch the name heuristic cannot prove — at the confirmed
+  tier.
 - `engine/typeresolve` type-check + edge emission (dark, slice 3 of 4): a
   `Resolve` pass that runs stdlib `types.Config.Check` over the package units
   in dependency order with a tolerant importer (intra-repo imports served from
