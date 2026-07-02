@@ -142,7 +142,7 @@ flowchart LR
 | `analyze` (generic dispatcher) | `graphi analyze <analyzer>` | `GET /analyze/{analyzer}` | `impact`, `call-chain`, `concept`, `metrics`, `batched` |
 
 ```bash
-graphi analyze impact    -symbol p.MyFunc -direction forward
+graphi analyze impact    -symbol p.MyFunc -direction reverse
 graphi analyze call-chain -symbol p.Caller -target p.Callee
 graphi analyze concept   -symbol p.Root -concept "rate limiting"
 ```

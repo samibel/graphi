@@ -184,7 +184,9 @@ func newDefaultSignalProvider() defaultSignalProvider {
 }
 
 func (p defaultSignalProvider) Impact(ctx context.Context, r query.Reader, region model.NodeId) (Analysis, error) {
-	return p.impact.Analyze(ctx, r, Params{Symbol: region, Direction: Forward})
+	// PR risk scores the region's blast radius (dependents) — Reverse since
+	// the v0.1.3 direction fix.
+	return p.impact.Analyze(ctx, r, Params{Symbol: region, Direction: Reverse})
 }
 
 func (p defaultSignalProvider) Taint(ctx context.Context, r query.Reader) (taint.TaintResult, error) {

@@ -9,22 +9,27 @@ import (
 )
 
 // Direction selects the traversal direction for directional analyzers. For the
-// impact analyzer it fixes the blast-radius semantics:
+// impact analyzer it fixes the semantics, following the reverse-dependency
+// (rdeps) convention used by build/dependency tooling:
 //
-//   - Forward — downstream DEPENDENTS (the blast radius: who is affected if this
-//     symbol changes). Traverses INCOMING edges (everything that points AT the
-//     seed), because a dependent is a node with an edge into the seed.
-//   - Reverse — upstream DEPENDENCIES (what this symbol ultimately relies on).
-//     Traverses OUTGOING edges (everything the seed points at).
+//   - Forward — DEPENDENCIES (what this symbol relies on). Traverses OUTGOING
+//     edges, i.e. ALONG edge direction (a call edge points caller → callee).
+//   - Reverse — DEPENDENTS / blast radius (who is affected if this symbol
+//     changes). Traverses INCOMING edges, i.e. AGAINST edge direction — a
+//     dependent is a node with an edge into the seed. This is the DEFAULT for
+//     impact when no direction is given.
 //
-// The naming follows the blast-radius convention ("forward impact" = the radius
-// of change propagation) and is documented here once so every surface agrees.
+// History: before v0.1.3 the two names were swapped relative to this (and to
+// half the documentation), so `-direction reverse` returned dependencies. The
+// v0.1.3 breaking change fixed the vocabulary once; it is documented here so
+// every surface agrees.
 type Direction string
 
 const (
-	// Forward — downstream dependents / blast radius (incoming-edge traversal).
+	// Forward — dependencies (outgoing-edge traversal, along edge direction).
 	Forward Direction = "forward"
-	// Reverse — upstream dependencies (outgoing-edge traversal).
+	// Reverse — dependents / blast radius (incoming-edge traversal). Default
+	// for impact.
 	Reverse Direction = "reverse"
 )
 
@@ -44,7 +49,7 @@ type Params struct {
 	// handled"). Unused by impact/metrics.
 	Concept string `json:"concept,omitempty"`
 	// Direction selects traversal direction for directional analyzers (impact).
-	// Empty defaults to Forward.
+	// Empty defaults to Reverse (dependents / blast radius).
 	Direction Direction `json:"direction,omitempty"`
 	// Kinds constrains the edge kinds traversed (impact). Empty = the default
 	// dependency kinds {calls, references, defines}.

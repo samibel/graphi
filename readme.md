@@ -294,7 +294,7 @@ credits the broad lane's zero-egress guarantee.
 
 Run with `graphi analyze <analyzer>`:
 
-- **`impact`** — the set of symbols reachable from a change, forward (what it affects) or reverse (what affects it).
+- **`impact`** — blast-radius reachability. Default direction `reverse` = dependents (who is affected if this symbol changes — the rdeps convention); `forward` = dependencies (what this symbol relies on).
 - **`call-chain`** — reconstruct the call path(s) connecting two symbols.
 - **`concept`** — resolve a natural-language concept term to the graph locations that implement it.
 - **`metrics`** — graph metrics that surface hubs, bridges, and high-centrality symbols.
@@ -481,8 +481,8 @@ graphi daemon start -socket /tmp/graphi.sock
 # Ask "who calls this symbol?" over the daemon
 graphi query callers -symbol p.MyFunc -daemon /tmp/graphi.sock
 
-# Run impact analysis on a symbol
-graphi analyze impact -symbol p.MyFunc -direction forward
+# Run impact analysis on a symbol (default direction: reverse = dependents/blast radius)
+graphi analyze impact -symbol p.MyFunc
 
 # Run the MCP stdio server (point your MCP client at this binary)
 graphi mcp -db ~/.graphi/graph.db

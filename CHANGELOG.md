@@ -7,6 +7,47 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING: `impact` direction semantics corrected (and the default is now
+  `reverse`).** The engine had the two direction names swapped relative to the
+  README, the tutorial, the HOWTO, and the reverse-dependency (rdeps)
+  convention: `-direction reverse` silently returned *dependencies* (callees)
+  and `forward` returned *dependents*. Every documented "reverse impact = what
+  depends on this symbol" example therefore returned the wrong set, and the
+  TUI blast-radius panel (which hardcodes `reverse`) showed dependencies
+  instead of the blast radius. The vocabulary is now:
+
+  | direction | before (wrong) | now |
+  |---|---|---|
+  | `reverse` | dependencies (outgoing edges) | **dependents / blast radius (incoming edges) — the default** |
+  | `forward` | dependents (incoming edges) | dependencies (outgoing edges) |
+
+  The engine owns the default (empty direction → `reverse`); the CLI and MCP
+  surfaces pass the direction through verbatim. Internal blast-radius callers
+  (edit planner, pr-risk, batched) were flipped with the swap, so their
+  behavior is unchanged. A new cross-layer invariant test pins
+  `impact reverse(X) ⊇ query callers(X)` so this class of inversion can never
+  ship silently again. If you scripted `-direction forward` to mean "who is
+  affected", change it to `reverse` (or drop the flag — it is the default now).
+- `defines` is no longer a default impact edge kind: a file "defining" a
+  symbol is containment, not dependency, and it put a file node into every
+  symbol's blast radius as depth-1 noise. Pass
+  `-kinds calls,references,defines` to opt back in.
+
+- `cold_start_p95_ms` bench budget re-pinned from 100 ms (a fast-local pin the
+  shared CI runners repeatedly failed at 261–294 ms, leading to retrigger
+  roulette) to 400 ms with the CI runner class as the measured baseline.
+- Documentation honesty pass: taint/PDG doc comments and README/FEATURES no
+  longer claim statement-level dataflow the symbol graph cannot support
+  (Sharir–Pnueli / "flow-sensitive" / statement-node phrasing corrected);
+  `compare-branches` is documented as diffing graphi SQLite snapshot paths
+  (never git refs); `refactor -kind extract|move` marked as currently
+  performing a rename-style rewrite; the token-parity eval doc states the gate
+  measures frozen hand-authored fixtures, not live engine output; the
+  safe-delete one-line-removal limitation is documented. Internal sprint/epic
+  planning artifacts (`sprints/`, `epics/`) removed from the public tree; the
+  VS Code extension's `repository` URL corrected to `samibel/graphi`.
+
 ### Fixed
 - **The documented CLI query path works against a persistent store again.**
   `makeClientOrOpenMeta` closed the SQLite store via `defer` before returning
@@ -65,22 +106,15 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   binaries users install. Previously releases served the "UI not bundled"
   notice page at `/`.
 - New `lint` CI workflow: `go vet ./...` and a `go test -race ./...` job — the
-  standard Go hygiene gates the suite previously lacked.
+  standard Go hygiene gates the suite previously lacked. A `gofmt` job was
+  added alongside them (after a one-time mechanical `gofmt -w` sweep of 47
+  drifted files) so formatting drift cannot re-accumulate.
+- Per-subcommand CLI help: `graphi help <subcommand>` and
+  `graphi <subcommand> --help` print a synopsis, usage line, and a
+  copy-pasteable example. The help map is completeness-tested against the same
+  static dispatch-switch scan the coverage matrix uses, so a new subcommand
+  cannot ship help-less.
 
-### Changed
-- `cold_start_p95_ms` bench budget re-pinned from 100 ms (a fast-local pin the
-  shared CI runners repeatedly failed at 261–294 ms, leading to retrigger
-  roulette) to 400 ms with the CI runner class as the measured baseline.
-- Documentation honesty pass: taint/PDG doc comments and README/FEATURES no
-  longer claim statement-level dataflow the symbol graph cannot support
-  (Sharir–Pnueli / "flow-sensitive" / statement-node phrasing corrected);
-  `compare-branches` is documented as diffing graphi SQLite snapshot paths
-  (never git refs); `refactor -kind extract|move` marked as currently
-  performing a rename-style rewrite; the token-parity eval doc states the gate
-  measures frozen hand-authored fixtures, not live engine output; the
-  safe-delete one-line-removal limitation is documented. Internal sprint/epic
-  planning artifacts (`sprints/`, `epics/`) removed from the public tree; the
-  VS Code extension's `repository` URL corrected to `samibel/graphi`.
 
 ## [0.1.2] - 2026-07-01
 
