@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/engine/ingest"
 )
 
 func TestBrowserOpenCmd(t *testing.T) {
@@ -121,6 +122,77 @@ func TestSetupZeroConfig_RepoServesLoopbackAndIndexes(t *testing.T) {
 	// Do NOT call srv.Serve — the test only verifies wiring. Close the listener
 	// so cleanup leaves nothing bound.
 	_ = ln.Close()
+}
+
+// TestSetupZeroConfig_WarmStart is the warm-start end-to-end contract over
+// three consecutive starts sharing one per-repo state:
+//  1. cold — full index (parse phase, no drift scan);
+//  2. unchanged repo — drift scan ONLY, no re-ingest at all;
+//  3. one edited file — drift scan plus a delta ingest, and the new symbol is
+//     actually queryable afterwards (the warm path must update the graph, not
+//     just skip work).
+func TestSetupZeroConfig_WarmStart(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "x.go"), []byte("package x\n\nfunc F() {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	run := func() (phases map[ingest.Phase]bool, store graphstore.Graphstore, done func()) {
+		phases = map[ingest.Phase]bool{}
+		srv, ln, _, _, st, cleanup, notRepo, err := setupZeroConfig(repo, func(ev ingest.ProgressEvent) {
+			phases[ev.Phase] = true
+		})
+		if err != nil || notRepo || srv == nil {
+			t.Fatalf("setupZeroConfig: err=%v notRepo=%v", err, notRepo)
+		}
+		return phases, st, func() { _ = ln.Close(); cleanup() }
+	}
+
+	// 1. Cold start: a full pass.
+	phases, _, done := run()
+	if !phases[ingest.PhaseParse] || phases[ingest.PhaseDrift] {
+		t.Fatalf("cold start phases = %v, want a parse phase and no drift scan", phases)
+	}
+	done()
+
+	// 2. Unchanged repo: drift scan only — no parse, no link, no resolve.
+	phases, _, done = run()
+	if !phases[ingest.PhaseDrift] {
+		t.Fatalf("warm start phases = %v, want a drift scan", phases)
+	}
+	for _, p := range []ingest.Phase{ingest.PhaseParse, ingest.PhaseLink, ingest.PhaseResolve, ingest.PhaseWalk} {
+		if phases[p] {
+			t.Fatalf("unchanged repo re-ingested (saw phase %q): %v", p, phases)
+		}
+	}
+	done()
+
+	// 3. Edit a file: drift scan + delta ingest, and the new symbol exists.
+	if err := os.WriteFile(filepath.Join(repo, "x.go"), []byte("package x\n\nfunc F() {}\n\nfunc Fresh() { F() }\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	phases, store, done := run()
+	defer done()
+	if !phases[ingest.PhaseDrift] || !phases[ingest.PhaseParse] || !phases[ingest.PhaseDone] {
+		t.Fatalf("edited repo phases = %v, want drift + parse + done", phases)
+	}
+	nodes, err := store.Nodes(context.Background(), graphstore.Query{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, n := range nodes {
+		if n.QualifiedName() == "x.Fresh" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("warm delta did not index the newly added symbol x.Fresh")
+	}
 }
 
 func TestSetupZeroConfig_NotARepo(t *testing.T) {

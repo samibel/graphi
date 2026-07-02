@@ -15,6 +15,11 @@ const (
 	// PhaseWalk is the tree scan; Total is unknown (0) and Done counts files
 	// discovered so far.
 	PhaseWalk Phase = "walk"
+	// PhaseDrift is the warm-start change scan (DriftSetWithProgress): the
+	// walk that compares on-disk hashes against the cached index. Done counts
+	// files checked; Total is unknown. The engine itself never emits it — the
+	// CLI warm-start path synthesizes it from the drift walk callback.
+	PhaseDrift Phase = "drift"
 	// PhaseParse is the per-file parse+commit loop; Total is known.
 	PhaseParse Phase = "parse"
 	// PhaseLink covers the stale purge, reverse-dep index, and cross-file
