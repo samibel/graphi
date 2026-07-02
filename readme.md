@@ -27,7 +27,7 @@ functions connected" in one round-trip, entirely on your machine.
 - [Capabilities](#capabilities)
   - [Core code graph](#core-code-graph) · [Language support](#language-support)
   - [Semantic analysis](#semantic-analysis) · [Deep analysis](#deep-analysis)
-  - [PR review vertical](#pr-review-vertical)
+  - [PR review vertical (experimental)](#pr-review-vertical-experimental)
 - [Semantic search (optional, off by default)](#semantic-search-optional-off-by-default)
 - [The local-first contract](#the-local-first-contract)
 - [Advanced / from source](#advanced--from-source)
@@ -144,6 +144,13 @@ For every CLI subcommand, every MCP tool, every HTTP endpoint, and several Merma
 ## Capabilities
 
 graphi grows from a structural core into semantic and deep analysis. Each capability is queryable today through the CLI and the MCP server.
+
+> **Core vs. experimental.** Sections marked *(experimental)* below — the PR
+> review vertical and agent memory & skills — are unproven against real-world
+> use and may change shape or be removed before 1.0. Their MCP tool
+> descriptions carry an `[experimental]` prefix (single source:
+> `surfaces/mcp/tools.go`, CI-tested). Everything else is the core surface we
+> stabilize first.
 
 ### Core code graph
 
@@ -310,7 +317,7 @@ Also available through `graphi analyze <analyzer>`:
 - **`contracts`** — detect API/interface contracts and flag drift against them.
 - **`git-history`** — repository-history signals such as code churn, co-change groups, and bus-factor.
 
-### PR review vertical
+### PR review vertical (experimental)
 
 - **`pr-risk`** — deterministic per-region PR risk score (impact + taint, no LLM).
 - **`pr-signals`** — hub / bridge / surprise signals on PR-changed code.
@@ -336,7 +343,7 @@ Also available through `graphi analyze <analyzer>`:
 - **`graphi inline [-dry-run] <target>`** — reference-correct inline refactor with fail-safe block list.
 - **`graphi safe-delete [-dry-run] <target>`** — reference-safety-gated safe-delete refactor.
 
-### Agent memory & skills
+### Agent memory & skills (experimental)
 
 - **`graphi memory store|recall|forget …`** — local agent memory (per-scope, per-notebook, per-tag).
 - **`graphi distill -session <id> …`** — distill a session into a compact decision record.

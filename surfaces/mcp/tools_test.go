@@ -106,6 +106,44 @@ func TestToolNames_MatchesAdvertisedMaximalSet(t *testing.T) {
 	}
 }
 
+// TestExperimentalMarking asserts the central experimental set is reflected in
+// the advertised descriptors — every experimental tool's description carries
+// the prefix, and no core tool's does — and that every set member is a real
+// canonical tool name (no stale entries).
+func TestExperimentalMarking(t *testing.T) {
+	s := NewServerWithClient(allToolsClient{})
+	descriptors := s.toolDescriptors()
+
+	known := map[string]bool{}
+	for _, n := range ToolNames() {
+		known[n] = true
+	}
+	for name := range experimentalTools {
+		if !known[name] {
+			t.Errorf("experimentalTools entry %q is not a canonical tool name (stale entry)", name)
+		}
+	}
+
+	seen := map[string]bool{}
+	for _, d := range descriptors {
+		name, _ := d["name"].(string)
+		desc, _ := d["description"].(string)
+		seen[name] = true
+		hasPrefix := len(desc) >= len(experimentalPrefix) && desc[:len(experimentalPrefix)] == experimentalPrefix
+		switch {
+		case experimentalTools[name] && !hasPrefix:
+			t.Errorf("experimental tool %q advertised without the %q description prefix", name, experimentalPrefix)
+		case !experimentalTools[name] && hasPrefix:
+			t.Errorf("core tool %q advertised WITH the experimental prefix", name)
+		}
+	}
+	for name := range experimentalTools {
+		if !seen[name] {
+			t.Errorf("experimental tool %q not advertised by the maximal server (probe wiring changed?)", name)
+		}
+	}
+}
+
 // TestToolNames_SortedAndDeduped asserts the canonical list is deterministic.
 func TestToolNames_SortedAndDeduped(t *testing.T) {
 	names := ToolNames()
