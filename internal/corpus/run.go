@@ -79,7 +79,7 @@ func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 	}
 	if head, err := gitHead(ctx, repoDir); err == nil {
 		er.HeadSHA = head
-		if e.SHA != "" && !strings.EqualFold(e.SHA, head) {
+		if e.SHA != "" && !shaMatches(e.SHA, head) {
 			return fail("pin", fmt.Sprintf("HEAD %s does not match pinned sha %s (ref %q moved?)", head, e.SHA, e.Ref))
 		}
 	} else if e.SHA != "" {
@@ -189,6 +189,16 @@ func (r *Runner) clone(ctx context.Context, e Entry, dir string) error {
 		return fmt.Errorf("git clone %s @ %s: %v\n%s", e.URL, e.Ref, err, tail(out))
 	}
 	return nil
+}
+
+// shaMatches reports whether head has the pinned sha as a case-insensitive
+// prefix. Short pins are standard git practice; LoadManifest enforces a
+// minimum pin length so a short prefix cannot be vacuously ambiguous.
+func shaMatches(pinned, head string) bool {
+	if len(pinned) > len(head) {
+		return false
+	}
+	return strings.EqualFold(pinned, head[:len(pinned)])
 }
 
 func gitHead(ctx context.Context, dir string) (string, error) {
