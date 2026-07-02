@@ -2,6 +2,7 @@ package compound_test
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -180,6 +181,11 @@ func TestCoverage_NoEgressNoCgoInCompoundPath(t *testing.T) {
 // entry; tests skip gracefully when the toolchain is unavailable.
 func execGoListDeps(pkg string) (string, error) {
 	cmd := exec.Command("go", "list", "-deps", pkg)
+	// The invariant under test is about the SHIPPED default build, which is
+	// CGO_ENABLED=0. Pin it: inheriting CGO_ENABLED=1 from the test process
+	// (e.g. a `go test -race` run, which requires cgo) would pull runtime/cgo
+	// into the scanned graph and fail the guard for the wrong build.
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err

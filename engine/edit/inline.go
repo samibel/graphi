@@ -132,6 +132,12 @@ func (a *Applier) ApplyInline(ctx context.Context, op InlineOp) (InlineResult, e
 		out.BlockDetail = "definition is not a single-line extractable value (function body, block, or multi-line initializer)"
 		return out, nil
 	}
+	// Precedence safety: a compound RHS (e.g. `a + b`) spliced into an arbitrary
+	// expression context (e.g. `x * Foo`) would silently change semantics, so
+	// anything that is not a single atom is wrapped in parentheses.
+	if needsParens(value) {
+		value = "(" + value + ")"
+	}
 
 	// EP-004 blast radius: the files that may reference the target.
 	files, truncated, err := a.blastRadius(ctx, op.TargetSymbol)
@@ -332,6 +338,36 @@ func assignmentIndex(s string) int {
 // containsCall reports whether v looks like it contains a function/method call —
 // an open parenthesis. Used to gate side-effecting multi-eval.
 func containsCall(v string) bool { return strings.Contains(v, "(") }
+
+// needsParens reports whether an inlined value must be parenthesized to keep
+// operator precedence at the splice site. Single atoms bind maximally and need
+// no wrapping: an identifier / selector path (`pkg.Foo`), a numeric literal
+// (`42`, `1.5`), or a fully-quoted string/char/backtick literal. Anything else
+// (binary expressions, unary operators, calls, composite shapes) gets
+// defensive parentheses — over-wrapping is harmless, under-wrapping silently
+// changes semantics (`x * a+b`).
+func needsParens(v string) bool {
+	if v == "" {
+		return false
+	}
+	if q := v[0]; (q == '"' || q == '\'' || q == '`') && len(v) >= 2 && v[len(v)-1] == q {
+		// One quoted literal is an atom — unless the same quote also closes
+		// early inside (e.g. `"a" + "b"`), which the interior scan catches.
+		if !strings.ContainsRune(v[1:len(v)-1], rune(q)) {
+			return false
+		}
+		return true
+	}
+	for i := 0; i < len(v); i++ {
+		c := v[i]
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', c == '_', c == '.':
+		default:
+			return true
+		}
+	}
+	return false
+}
 
 // lineByteSpan returns the [Start,End) byte span of the 1-based line in content,
 // including its trailing newline. ok=false if the line is out of range.

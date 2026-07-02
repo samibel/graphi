@@ -221,8 +221,8 @@ graphi analyze impact     -symbol pkg.MyFunc -direction reverse -db ~/.graphi/gr
 graphi analyze call-chain -symbol pkg.Caller -target pkg.Callee -db ~/.graphi/graph.db
 graphi analyze concept    -symbol pkg.Root   -concept "rate limiting" -db ~/.graphi/graph.db
 
-# Session token-savings readout, and version
-graphi savings
+# Session token-savings readout (from a ledger a prior MCP/daemon session wrote), and version
+graphi savings -ledger <path>
 graphi version
 ```
 
@@ -449,9 +449,9 @@ graphi query <op> -symbol <id> [-depth N]            callers|callees|references|
 graphi search [-limit N] [-semantic] <query>          Lexical / symbol search
 graphi search-ast [-limit N] <json-pattern>          AST pattern query (SW-082)
 graphi find-clones [<json-config>]                   Clone detection (SW-083)
-graphi diagnose [<kind>...]                          Graph-derived diagnostics + code-actions (EP-015)
-graphi inline [-dry-run] <target>                    Reference-correct inline refactor (EP-015)
-graphi safe-delete [-dry-run] <target>               Reference-safety-gated safe-delete refactor (EP-015)
+graphi diagnose [-db p] [<kind>...]                  Graph-derived diagnostics + code-actions (EP-015)
+graphi inline -root <repo> [-dry-run] <target>       Inline refactor over the edit saga (EP-015)
+graphi safe-delete -root <repo> [-dry-run] <target>  Reference-safety-gated delete; removes the declaration line only (EP-015)
 graphi refactor-preview -kind <k> -target <id>        Preview refactor blast radius
 graphi refactor -kind <k> -target <id>                Apply refactor (atomic saga)
 graphi undo -token <tok> [-actor who]                Reverse an applied edit
@@ -465,7 +465,7 @@ graphi list-prs                                      Forge enumeration of open P
 graphi triage-prs                                    Graph-derived PR triage ranking (EP-018)
 graphi conflicts-prs                                 Inter-PR conflict detection (EP-018)
 graphi suggest-reviewers [-diff <ref>]               Reviewer recommendation (EP-018)
-graphi compare-branches -base <ref> -head <ref>      Graph-level branch diff (EP-018)
+graphi compare-branches -base <db> -head <db>        Graph-level diff of two graphi SQLite snapshots (EP-018)
 graphi critique-review -diff <ref> [-pr N] [-review <json>]   Critique of an existing PR review (EP-018)
 graphi pr-comment -diff <ref> [-pr N] [-gate] [-publish]      Sticky PR comment + merge gate
 graphi memory store|recall|forget ...                Agent memory operations (EP-012)
@@ -479,7 +479,7 @@ graphi mcp    [-db p] [-daemon sock]                 MCP stdio server (agent sur
 graphi daemon start|stop|status [-socket p] [-db p]  Hot-index Unix-socket daemon
 graphi setup  [--client id|all] [--dry-run] [--binary p] [--config p]  Register MCP server into local clients
 graphi privacy-audit                                 Local-first proof (CONFIRMED/VIOLATED/UNVERIFIED)
-graphi savings                                       Token-savings readout
+graphi savings -ledger <path>                        Token-savings readout from a session ledger
 graphi version                                       Version / commit / build date
 
 Common flags: -db <sqlite path>   -daemon <unix socket>   (most CLI subcommands)

@@ -157,8 +157,22 @@ jobs:
       - name: resolve the tag name for this run
         id: tag
         run: echo "name=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
-      - name: cross-compile matrix + SHA256SUMS
-        run: go run ./cmd/release -dist dist -version "${{ steps.tag.outputs.name }}"
+      # Released binaries embed the web UI (-tags webui_embed) so the quick-start
+      # promise — "your browser opens with the interactive code graph" — is true
+      # for the binaries users actually install. Without this, released binaries
+      # served the "UI not bundled" notice page at "/".
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: build web UI for embedding
+        run: |
+          (cd web && npm ci && npm run build)
+          rm -rf surfaces/http/webui/dist
+          cp -R web/dist surfaces/http/webui/dist
+      - name: cross-compile matrix + SHA256SUMS (web UI embedded)
+        run: go run ./cmd/release -dist dist -webui -version "${{ steps.tag.outputs.name }}"
       - name: upload assets to the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

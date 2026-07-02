@@ -5,10 +5,11 @@
 # code — a missing live capability, a phantom "shipped" entry, or a live
 # capability marked "planned" — fails the `coverage-matrix` build.
 #
-# Categories parser / analyzer / mcp-tool / surface are machine-checked against
-# registered parsers (core/parse), registered analyzers (engine/analysis),
-# advertised MCP tools (surfaces/mcp.ToolNames), and present surfaces. Other
-# categories (feature-unit) are informational traceability and are NOT live-checked.
+# Categories parser / analyzer / mcp-tool / surface / cli-subcommand are
+# machine-checked against registered parsers (core/parse), registered analyzers
+# (engine/analysis), advertised MCP tools (surfaces/mcp.ToolNames), present
+# surfaces, and the dispatch switch in cmd/graphi/main.go. Other categories
+# (feature-unit) are informational traceability and are NOT live-checked.
 #
 # Edit this file, then run `go run ./cmd/coverage -generate` to refresh
 # docs/coverage-matrix.md (a test asserts the .md equals the regenerated output).
@@ -164,7 +165,7 @@ capabilities:
     category: analyzer
     status: shipped
     epic: EP-005
-    note: "interprocedural Sharir-Pnueli procedure summaries."
+    note: "interprocedural fixpoint over per-procedure gen/kill summaries."
   - id: metrics
     category: analyzer
     status: shipped
@@ -495,3 +496,191 @@ capabilities:
     status: shipped
     epic: EP-001
     note: "Per-language cross-file/cross-package resolvers over engine/link (SW-063), with ingest dispatching the linker per language. Resolvers: Go, TypeScript family (ts/tsx/js), Python, Rust, Java, Kotlin, C#, C, C++, Ruby, PHP, Lua, Bash. SQL is an honest no-op (no provable cross-file refs at this tier → skip+count). Each is heuristic tier, deterministic, byte-identical full-vs-incremental, never confirmed, never fabricates."
+  # CLI subcommands are machine-checked against the dispatch switch in
+  # cmd/graphi/main.go (statically enumerated by internal/coverage/cli.go),
+  # so a documented-but-unwired subcommand fails this gate.
+  - id: analyze
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "run a registered analyzer over the graph"
+  - id: claude
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "short-verb alias for `setup` (register the MCP server)"
+  - id: compare-branches
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "graph-level diff of two graphi SQLite snapshots (paths, not git refs)"
+  - id: compound
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "compound / Cypher-style graph query"
+  - id: conflicts-prs
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "inter-PR conflict detection"
+  - id: critique-review
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "graph-evidence critique of an existing PR review"
+  - id: daemon
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "hot-index Unix-socket daemon lifecycle (start|stop|status)"
+  - id: diagnose
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "graph-derived diagnostics + suggested code-actions"
+  - id: distill
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "session distillation"
+  - id: find-clones
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "edge-profile clone detection"
+  - id: help
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "print the help blurb"
+  - id: http
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "loopback-only HTTP REST + SSE surface"
+  - id: index
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "ingest a repo into a durable store (optional --semantic embed pass)"
+  - id: inline
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "inline refactor over the edit saga (requires -root)"
+  - id: list-prs
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "read-only forge enumeration of open PRs"
+  - id: mcp
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "MCP stdio server (the agent-first surface)"
+  - id: memory
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "agent memory store|recall|forget"
+  - id: parse
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "parse a single file (the original SW-001 default)"
+  - id: pr-comment
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "sticky PR comment + optional risk-threshold merge gate"
+  - id: privacy-audit
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "local-first proof (CGo scan + canary egress guard)"
+  - id: query
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "structural query (callers|callees|references|definition|neighborhood)"
+  - id: refactor
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "commit a rename refactor through the edit saga"
+  - id: refactor-preview
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "impact-set preview of a refactor, no mutation"
+  - id: safe-delete
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "reference-safety-gated delete over the edit saga (requires -root)"
+  - id: savings
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "session token-savings readout (requires -ledger)"
+  - id: search
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "lexical search; -semantic runs the optional embedding search"
+  - id: search-ast
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "structural AST pattern query"
+  - id: setup
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "register the MCP stdio server into local MCP clients' configs"
+  - id: setup-embedder
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "print the opt-in semantic-search instructions (offline)"
+  - id: skillgen
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "deterministic skill generation"
+  - id: suggest-reviewers
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "ranked candidate-reviewer recommender"
+  - id: triage-prs
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "graph-derived multi-PR triage ranking"
+  - id: tui
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "interactive terminal surface"
+  - id: ui
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "short-verb alias for the zero-config index+serve flow"
+  - id: undo
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "reverse an applied edit by its undo token"
+  - id: upgrade
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "user-initiated self-update via the pinned install script"
+  - id: version
+    category: cli-subcommand
+    status: shipped
+    epic: "-"
+    note: "print version / commit / build date"

@@ -6,9 +6,9 @@
 > `surfaces/mcp.ToolNames()` set. The companion source of truth for the
 > `analyze` subcommand set is `engine/analysis/dispatch.go`.
 >
-> Generated 2026-06-27 against branch `ep-016-live-ide-transport` (HEAD `a6628e6`).
-> See [`readme.md` § Diff vs. main](../readme.md#diff-vs-main) for the
-> 19-commit, +17,437-line diff against `main`.
+> Historical snapshot generated 2026-06-27; the machine-checked inventory is
+> [`coverage-matrix.md`](coverage-matrix.md) — where the two disagree, trust the
+> matrix (it is CI-enforced, this file is not).
 
 ## Contents
 
@@ -246,7 +246,7 @@ graphi safe-delete p/LegacyThing
 - **What it is:**
   - `.ipynb` cell-provenance ingestion (cell-as-symbol granularity).
   - An `fsnotify` watcher with a bounded worker pool and deterministic canonical-ordered apply.
-  - An interprocedural taint fixpoint over Sharir–Pnueli procedure summaries.
+  - An interprocedural taint fixpoint over per-procedure gen/kill summaries (procedure-level label sets, not statement-level dataflow).
   - Deterministic Louvain community detection behind a single grouping seam.
   - Single-dispatch surfacing through the analysis pipeline.
   - A full-vs-incremental byte-parity conformance gate.
@@ -286,8 +286,9 @@ graphi conflicts-prs
 # Reviewer recommendation for a touched set.
 graphi suggest-reviewers -diff origin/main..HEAD
 
-# Graph-level branch diff.
-graphi compare-branches -base origin/main -head feature/EP-018
+# Graph-level diff of two graphi SQLite snapshots (paths to `graphi index`
+# outputs — compare-branches never resolves a git ref; build one db per branch).
+graphi compare-branches -base base-graph.db -head head-graph.db
 
 # Critique an existing review (no LLM prose; graph evidence only).
 graphi critique-review -diff origin/main..HEAD -pr 42 -review-path review.json

@@ -68,7 +68,7 @@ const cliActor = "cli"
 func refactorFlags(name string, args []string, errOut io.Writer) (client.RefactorRequest, string, error) {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(errOut)
-	kind := fs.String("kind", "", "refactor kind: rename|extract|move|signature_change")
+	kind := fs.String("kind", "", "refactor kind: rename|signature_change (extract|move are accepted but currently perform the same OldName→NewName rewrite as rename; -destination-file is not yet honored)")
 	target := fs.String("target", "", "resolved node id of the symbol to refactor")
 	oldName := fs.String("old-name", "", "current spelling of the symbol")
 	newName := fs.String("new-name", "", "replacement spelling")

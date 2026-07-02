@@ -8,7 +8,7 @@
 > [capability coverage matrix](coverage-matrix.md) is the authoritative,
 > CI-enforced inventory of what is real.
 
-Related: [epics & status registry](../epics/index.md) ·
+Related:
 [capability coverage matrix](coverage-matrix.md) · [How-To guide](HOWTO.md).
 
 ---
@@ -171,4 +171,4 @@ it all real?"* — the closing piece of the project's end-to-end traceability st
   [surfaces-web.md](surfaces-web.md) · [surfaces-vscode.md](surfaces-vscode.md) ·
   [surfaces-wiki.md](surfaces-wiki.md)
 - **Decisions:** [adr/](adr) · [ep009-consolidation.md](ep009-consolidation.md)
-- **Inventory & status:** [coverage-matrix.md](coverage-matrix.md) · [FEATURES.md](FEATURES.md) · [../epics/index.md](../epics/index.md)
+- **Inventory & status:** [coverage-matrix.md](coverage-matrix.md) · [FEATURES.md](FEATURES.md)

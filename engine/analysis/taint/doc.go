@@ -1,7 +1,11 @@
-// Package taint implements graphi's flow-sensitive taint analyzer (SW-028,
-// EP-005). It propagates labels from configured sources to sinks along def-use
-// order using a worklist algorithm with canonical ordering, emitting one finding
-// per realized source→sink flow with full per-step provenance.
+// Package taint implements graphi's taint analyzer (SW-028, EP-005). It
+// propagates labels from configured sources to sinks over the SYMBOL graph
+// (calls/references/defines edges) using a worklist algorithm with canonical
+// ordering, emitting one finding per realized source→sink flow with per-step
+// provenance. Honest scope note: graphi's graph has no statement or CFG nodes,
+// so this is symbol-level reachability with gen/kill label sets — NOT
+// statement-level flow-sensitive dataflow. Sources/sinks match by (substring)
+// name patterns; treat findings as triage leads, not proofs.
 //
 // Scope (v1): intraprocedural-only with a pluggable SummaryProvider interface
 // for interprocedural support when SW-030 ships. Go goroutines/channels are

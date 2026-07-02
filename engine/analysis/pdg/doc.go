@@ -3,10 +3,14 @@
 // and control-dependence edges via post-dominance tree construction (Cooper-
 // Harvey-Kennedy algorithm), merging both into a single PDG result.
 //
-// Scope (v1): intraprocedural-only. The analyzer consumes the canonical EP-001
-// graph (nodes for statements/expressions/defs/uses plus CFG/call structure)
-// and produces typed edge sets with stable edge kinds ("data_dep",
-// "control_dep") and provenance on every edge.
+// Scope (v1): intraprocedural-only. Honest scope note: the analyzer consumes
+// the canonical EP-001 SYMBOL graph (function/type/variable nodes with
+// calls/references/defines edges) — graphi's parsers produce no statement,
+// expression, or CFG nodes — so "data dependence" here means symbol-level
+// def-use reachability and "control dependence" is post-dominance over the
+// call/reference structure, a coarse approximation of a classical PDG. It
+// produces typed edge sets with stable edge kinds ("data_dep", "control_dep")
+// and provenance on every edge.
 //
 // Layering: pdg is a sub-package of engine/analysis. It imports core/model,
 // core/graphstore, and engine/query (read-only). It MUST NOT import the parent

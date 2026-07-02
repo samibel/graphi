@@ -337,6 +337,13 @@ func indexOf(s, sub string) int {
 // relation. For each sink procedure whose solved output is non-empty, it finds
 // the source procedures reachable along call edges whose generated labels survive
 // to the sink, and records the canonical (shortest, lexicographic) call path.
+//
+// Caveat: label survival is established by the fixpoint's join over ALL paths,
+// but the recorded call path is the BFS-shortest one — it is illustrative and
+// is NOT re-verified against per-procedure kill sets, so it may route through
+// a procedure that kills the label even though some other (longer) path
+// carries it. Treat the path as "one way these procedures connect", not as the
+// witness trace of the taint.
 func computeFlows(
 	procIDs []string,
 	callGraph interproc.CallGraph,

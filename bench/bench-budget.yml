@@ -52,13 +52,25 @@ version: 1
 # This is justified feature growth, not bloat (grammar-blob set unchanged). baseline
 # = the linux/amd64 measurement the gate sees; budget gives ~5.3% headroom and still
 # leaves ~17.5 MB under the < 50 MB hard ceiling.
-baseline_version: "2026-06-28-ep017"
+# 2026-07-01-coldstart: re-pin cold_start_p95_ms to the runner class the gate
+# ACTUALLY runs on. The 60/100 ms pin was recorded on a fast local machine;
+# shared ubuntu-latest runners have repeatedly measured 261–294 ms on unrelated
+# PRs (see the "Retrigger CI" commits 1234b02 / e4a7c1e), and the gate was being
+# passed by re-rolling until a fast runner landed — a dice-roll, not a budget.
+# baseline = the worst honest CI measurement observed (294 ms); budget 400 ms
+# gives ~36% headroom for runner noise while still catching a real cold-start
+# regression (a 4x slowdown vs the local baseline still trips it). If CI
+# measurements later stabilize well below this, ratchet the budget back DOWN.
+baseline_version: "2026-07-01-coldstart"
 fixture_digest: "352f2fd0ea28f0652ed4b71f651b737301a20604e40182c83ae1a94f02e847ee"
 
 metrics:
   cold_start_p95_ms:
-    baseline: 60
-    budget: 100
+    # Re-pinned 2026-07-01 to the gate's runner class (shared ubuntu-latest);
+    # see the baseline_version note. Previous 60/100 was a fast-local pin the
+    # CI runners never met (261–294 ms measured), making the gate retry-roulette.
+    baseline: 294
+    budget: 400
     unit: ms
   full_index_ms:
     baseline: 120

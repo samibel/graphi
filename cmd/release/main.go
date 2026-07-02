@@ -26,6 +26,7 @@ func main() {
 	verifyOnly := flag.Bool("verify-only", false, "only run the reproducibility check, do not write -out")
 	listBlobs := flag.Bool("list-grammar-blobs", false, "print the expected default-build grammar blob set (derived from DefaultGrammarSubsetTags) and exit")
 	dist := flag.String("dist", "", "when set, cross-compile the full ReleaseTargets matrix into this dir and write SHA256SUMS, then exit")
+	webui := flag.Bool("webui", false, "additionally embed the web UI (-tags webui_embed); surfaces/http/webui/dist must already contain a built web app")
 	listTargets := flag.Bool("list-targets", false, "print the release asset name for each ReleaseTargets platform and exit")
 	timeout := flag.Duration("timeout", 10*time.Minute, "overall timeout")
 	flag.Parse()
@@ -69,7 +70,16 @@ func main() {
 	// does NOT write the host -out binary; it still ran the reproducibility check
 	// above. -verify-only short-circuits before any matrix build.
 	if *dist != "" && !*verifyOnly {
-		paths, err := release.BuildAll(ctx, release.BuildConfig{Version: *version}, *dist)
+		cfg := release.BuildConfig{Version: *version}
+		if *webui {
+			// The bundled release flavor: same grammar subset as the default
+			// build, plus the go:embed'd web UI served at "/" over the
+			// loopback-only HTTP surface. The web app must have been built and
+			// copied into surfaces/http/webui/dist beforehand (the release
+			// workflow does this; locally use scripts/build-release-webui.sh).
+			cfg.Tags = append(append([]string{}, release.DefaultGrammarSubsetTags...), "webui_embed")
+		}
+		paths, err := release.BuildAll(ctx, cfg, *dist)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "release: build matrix: %v\n", err)
 			os.Exit(2)

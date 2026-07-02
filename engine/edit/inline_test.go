@@ -24,16 +24,40 @@ func TestExtractSingleLineValue(t *testing.T) {
 		{"y := compute(a, b) // note\n", "y", "compute(a, b)", true},
 		{"type Alias = Underlying\n", "Alias", "Underlying", true},
 		{"const Foo = 7;\n", "Foo", "7", true},
-		{"func Foo() {\n", "Foo", "", false},        // brace → unsupported
-		{"if Foo == Bar {\n", "Foo", "", false},     // brace + equality
-		{"a == b\n", "a", "", false},                // equality, no assignment
-		{"const Other = 5\n", "Foo", "", false},     // lhs lacks name
-		{"return\n", "Foo", "", false},              // no assignment
+		{"func Foo() {\n", "Foo", "", false},    // brace → unsupported
+		{"if Foo == Bar {\n", "Foo", "", false}, // brace + equality
+		{"a == b\n", "a", "", false},            // equality, no assignment
+		{"const Other = 5\n", "Foo", "", false}, // lhs lacks name
+		{"return\n", "Foo", "", false},          // no assignment
 	}
 	for _, c := range cases {
 		got, ok := extractSingleLineValue([]byte(c.line), c.name)
 		if ok != c.ok || got != c.want {
 			t.Errorf("extractSingleLineValue(%q,%q) = (%q,%v), want (%q,%v)", c.line, c.name, got, ok, c.want, c.ok)
+		}
+	}
+}
+
+func TestNeedsParens(t *testing.T) {
+	cases := []struct {
+		value string
+		want  bool
+	}{
+		{"42", false},
+		{"1.5", false},
+		{"Foo", false},
+		{"pkg.Foo", false},
+		{`"hello"`, false},
+		{"`raw`", false},
+		{"a + b", true},     // binary expression: `x * a + b` ≠ `x * (a + b)`
+		{"-1", true},        // unary minus: `x - -1` needs the wrap to stay readable/safe
+		{"bar()", true},     // call
+		{`"a" + "b"`, true}, // quote closes early — compound, not one literal
+		{"a<<2", true},
+	}
+	for _, c := range cases {
+		if got := needsParens(c.value); got != c.want {
+			t.Errorf("needsParens(%q) = %v, want %v", c.value, got, c.want)
 		}
 	}
 }

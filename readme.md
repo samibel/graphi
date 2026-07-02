@@ -59,9 +59,11 @@ iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | ie
 cd your-repo && graphi
 ```
 
-Your browser opens with the interactive code graph, plus a "Saved $X this session"
-savings readout. On a headless box / over SSH (or with `--no-browser` /
-`GRAPHI_NO_BROWSER`), graphi prints the local URL instead of opening a browser.
+Your browser opens with the interactive code graph (embedded in release binaries
+from the next release after v0.1.2; source builds need `scripts/build-release-webui.sh`),
+and the terminal prints a "Saved $X this session" savings readout. On a headless
+box / over SSH (or with `--no-browser` / `GRAPHI_NO_BROWSER`), graphi prints the
+local URL instead of opening a browser.
 
 <!-- TODO: screenshot/GIF of the graph UI -->
 
@@ -134,7 +136,7 @@ flowchart LR
 - **One engine, many surfaces.** CLI, MCP stdio, MCP streamable-HTTP, loopback HTTP/SSE, TUI, web UI, VS Code, and the GitHub Action all share the same `surfaces/client.Client` interface. There is no surface-local query or analysis logic — every answer is byte-identical by construction (parity-tested on every PR).
 - **Live IDE transport.** The MCP streamable-HTTP transport keeps stdio envelope parity; per-class SSE subscriptions let an editor subscribe only to the event classes it cares about; the in-memory editor-overlay subsystem tracks unsaved buffers and the zero-egress enforcement guard rejects any non-loopback dial at the surface boundary.
 - **Diagnostics & code actions.** `diagnose` runs graph-derived diagnostics (severity + suggested code-action), `inline` performs reference-correct inline refactor with a fail-safe block list, `safe_delete` gates on reference-safety before removing a symbol.
-- **Notebooks, watcher, interproc taint, communities.** `.ipynb` cell-provenance ingestion, an `fsnotify` watcher with bounded worker-pool and deterministic canonical-ordered apply, an interprocedural taint fixpoint over Sharir–Pnueli procedure summaries, and deterministic Louvain community detection behind a single grouping seam. Full-vs-incremental byte-parity is enforced as a conformance gate.
+- **Notebooks, watcher, interproc taint, communities.** `.ipynb` cell-provenance ingestion, an `fsnotify` watcher with bounded worker-pool and deterministic canonical-ordered apply, an interprocedural taint fixpoint over per-procedure gen/kill summaries (procedure-level label sets — not statement-level dataflow), and deterministic Louvain community detection behind a single grouping seam. Full-vs-incremental byte-parity is enforced as a conformance gate.
 - **PR-tool suite.** `list_prs` enumerates open PRs (read-only forge seam), `triage_prs` produces a single-pass graph-derived ranking, `conflicts_prs` detects inter-PR conflicts (textual + graph-semantic + asymmetric contract-dependency), `suggest_reviewers` ranks candidates by ownership/churn + affected-subgraph proximity, `compare_branches` is a graph-level diff keyed by canonical NodeId, and `critique_review` is a deterministic graph-evidence critique of an existing review (no LLM prose; the only egress is the surface review fetch).
 
 For every CLI subcommand, every MCP tool, every HTTP endpoint, and several Mermaid diagrams, see **[`docs/FEATURES.md`](docs/FEATURES.md)**.
@@ -302,8 +304,8 @@ Run with `graphi analyze <analyzer>`:
 
 Also available through `graphi analyze <analyzer>`:
 
-- **`taint`** — flow-sensitive taint tracking from sources to sinks.
-- **`pdg`** — program dependence graph: data- and control-dependence edges within a function.
+- **`taint`** — symbol-graph taint propagation from sources to sinks (name-pattern sources/sinks; reachability-based — statement-level dataflow is out of scope).
+- **`pdg`** — dependence edges over the symbol graph (def-use reachability + post-dominance; a coarse approximation of a classical statement-level PDG).
 - **`interproc`** — interprocedural, fixpoint-based summary analysis across call boundaries.
 - **`contracts`** — detect API/interface contracts and flag drift against them.
 - **`git-history`** — repository-history signals such as code churn, co-change groups, and bus-factor.
@@ -325,7 +327,7 @@ Also available through `graphi analyze <analyzer>`:
 
 - **`notebook-ingest`** — `.ipynb` cell-provenance ingestion (cell-as-symbol granularity).
 - **`watcher-status`** — filesystem-watcher health (per-root errors, no synthesis).
-- **`taint-query`** — interprocedural taint verdict + flows over Sharir–Pnueli summaries.
+- **`taint-query`** — interprocedural taint verdict + flows over per-procedure gen/kill summaries (procedure-level reachability).
 - **`communities`** — deterministic Louvain community detection behind a single grouping seam.
 
 ### Diagnostics & code actions
@@ -504,21 +506,21 @@ The single `graphi` binary dispatches the subcommands below. Most accept `-db <p
 | `graphi setup [--client claude\|copilot\|cursor\|windsurf\|claude-desktop\|all] [--dry-run] [--binary path] [--config path]` | Register graphi's MCP stdio server into local MCP clients' configs (idempotent, atomic, offline). Default `--client all` wires Claude Code plus every other detected local client. Cloud agents (Devin, the Copilot coding agent) run remotely and can't reach a local stdio server, so they are out of scope. |
 | `graphi search-ast [-limit N] <json-pattern>` | Structural AST pattern query. |
 | `graphi find-clones [<json-config>]` | Clone detection. |
-| `graphi diagnose [<kind>...]` | Graph-derived diagnostics + suggested code-actions. |
-| `graphi inline [-dry-run] <target>` | Reference-correct inline refactor with fail-safe block list. |
-| `graphi safe-delete [-dry-run] <target>` | Reference-safety-gated safe-delete refactor. |
+| `graphi diagnose [-db path] [<kind>...]` | Graph-derived diagnostics + suggested code-actions. |
+| `graphi inline -root <repo> [-db path] [-meta dir] [-dry-run] <target>` | Inline refactor over the edit saga (single-initializer targets; fail-safe block list). |
+| `graphi safe-delete -root <repo> [-db path] [-meta dir] [-dry-run] <target>` | Reference-safety-gated delete. Current limitation: removes the symbol's declaration line only — review the diff for multi-line bodies. |
 | `graphi list-prs` | Read-only forge enumeration of open PRs. |
 | `graphi triage-prs` | Graph-derived multi-PR triage ranking. |
 | `graphi conflicts-prs` | Inter-PR conflict detection. |
 | `graphi suggest-reviewers [-diff <ref>]` | Ranked candidate-reviewer recommender. |
-| `graphi compare-branches -base <ref> -head <ref>` | Graph-level branch diff. |
+| `graphi compare-branches -base <db-path> -head <db-path>` | Graph-level diff of two graphi SQLite snapshots (paths to `graphi index` outputs — it never resolves a git ref). |
 | `graphi critique-review -diff <ref> [-pr N] [-review <json>\|-review-path <file>]` | Deterministic graph-evidence critique of an existing PR review. |
 | `graphi pr-comment -diff <ref> [-pr N] [-gate] [-publish]` | Sticky PR comment + risk-threshold merge gate. |
 | `graphi memory store\|recall\|forget ...` | Agent memory operations. |
 | `graphi distill -session <id> -decisions "..." -risks "..." -questions "..." -files "..."` | Session distillation. |
 | `graphi skillgen -name <n> -trigger <t> -description <d>` | Deterministic skill generation. |
 | `graphi privacy-audit [--target ./...]` | Print the local-first proof (real CGo scan + canary egress guard); non-zero on violation. |
-| `graphi savings` | Print the session token-savings readout. |
+| `graphi savings -ledger <path>` | Print the session token-savings readout from a ledger a prior MCP/daemon session wrote. |
 | `graphi version` | Print the version / commit / build date stamped into the binary. |
 
 ### `graphi analyze`

@@ -1,0 +1,42 @@
+# Static analysis + race detection. The specialized gates (testgate, layerguard,
+# cgoconformance, canary, coverage-matrix, bench) each enforce one bespoke
+# invariant; this workflow adds the STANDARD Go hygiene the suite previously
+# lacked entirely: `go vet` on every package and a `-race` test run.
+#
+# The race job builds with CGO_ENABLED=1 (the race detector requires cgo on
+# linux) — that is a property of the TEST binary only and does not weaken the
+# CGo-free claim about the shipped default binary, which cgoconformance.yml
+# continues to enforce on the CGO_ENABLED=0 build.
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  vet:
+    name: go vet ./...
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: go vet
+        run: go vet ./...
+
+  race:
+    name: go test -race ./...
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: race-detector test run
+        run: go test -race ./...

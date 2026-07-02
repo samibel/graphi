@@ -33,10 +33,20 @@ The harness tokenizes both with a **fixed offline tokenizer** (`strings.Fields` 
 deterministic, no model calls) and computes per-case and aggregate ratios.
 
 On the committed frozen set, the harness measures an **aggregate of ~57×**
-(sum of baseline tokens ÷ sum of graphi tokens), so the public ~50× claim is
-currently **supported by evidence**. The claim gate (`-claim-validate`) exits
-non-zero the moment the measured aggregate drops below the configured threshold
-(default 50×), resolving OQ4 with evidence rather than assertion.
+(sum of baseline tokens ÷ sum of graphi tokens). The claim gate
+(`-claim-validate`) exits non-zero the moment the measured aggregate drops below
+the configured threshold (default 50×).
+
+> **Honest scope of this gate.** Both sides of every case are **hand-authored,
+> frozen string fixtures** — the `graphi_context` is what the author says graphi
+> returns, not output regenerated from the live engine, and the baseline assumes
+> an agent would otherwise read each whole file exactly once. The tokenizer is
+> whitespace splitting, which undercounts BPE tokens for code. This gate is
+> therefore a **regression pin on the fixture set** (it catches someone editing
+> the dataset until the ratio collapses), NOT an empirical measurement of live
+> engine output. Do not cite the ratio as a measured product property; wiring
+> the harness to regenerate `graphi_context` from the engine is the open
+> follow-up that would make it one.
 
 ### The coverage matrix
 
