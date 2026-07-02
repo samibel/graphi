@@ -195,13 +195,20 @@ func CheckOrder(modulePath string, pkgs []Package) []Package {
 	}
 
 	// adj[i] = indexes of units i imports (intra-repo only), sorted.
+	// hasSelfLoop tracks a unit importing its own directory — illegal Go that
+	// go/types would reject anyway, but degrading it here keeps the ordering
+	// pass self-consistent instead of leaning on the checker's error path.
 	adj := make([][]int, n)
+	hasSelfLoop := make([]bool, n)
 	for i, p := range out {
 		seen := map[int]struct{}{}
 		for _, imp := range p.Imports {
 			dir, ok := ResolveImport(modulePath, imp)
 			if !ok {
 				continue
+			}
+			if dir == p.Dir {
+				hasSelfLoop[i] = true
 			}
 			for _, j := range byDir[dir] {
 				if j == i {
@@ -271,7 +278,7 @@ func CheckOrder(modulePath string, pkgs []Package) []Package {
 	// A unit on a multi-member SCC (or importing itself through its own dir)
 	// is on an import cycle: degrade it, keep it in the order.
 	for i := range out {
-		if sccSize[sccOf[i]] > 1 && out[i].Degraded == "" {
+		if (sccSize[sccOf[i]] > 1 || hasSelfLoop[i]) && out[i].Degraded == "" {
 			out[i].Degraded = "import cycle"
 		}
 	}

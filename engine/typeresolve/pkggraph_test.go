@@ -117,6 +117,7 @@ func TestCheckOrder_DependenciesFirst(t *testing.T) {
 		"b/b.go":       []byte("package b\n\nimport \"fmt\"\n\nvar Y = 1\n\nfunc init() { fmt.Println() }\n"),
 		"loop1/x.go":   []byte("package loop1\n\nimport \"example.com/m/loop2\"\n\nvar X = loop2.Y\n"),
 		"loop2/y.go":   []byte("package loop2\n\nimport \"example.com/m/loop1\"\n\nvar Y = loop1.X\n"),
+		"self/self.go": []byte("package self\n\nimport \"example.com/m/self\"\n"),
 		"leaf/leaf.go": []byte("package leaf\n\nvar L = 1\n"),
 	}
 	pkgs, _ := GroupPackages(files)
@@ -137,6 +138,7 @@ func TestCheckOrder_DependenciesFirst(t *testing.T) {
 	for dir, want := range map[string]string{
 		"loop1": "import cycle",
 		"loop2": "import cycle",
+		"self":  "import cycle",
 		"b":     "",
 		"a":     "",
 		".":     "",
