@@ -149,3 +149,68 @@ type RankedNode struct {
 // dir is a writable temporary directory the backend may use for any on-disk
 // state.
 type Factory func(dir string) (Graphstore, error)
+
+// Writer is the mutation subset of Graphstore. Both a Graphstore and a Batch
+// satisfy it, so write-heavy passes (engine/ingest) can run unchanged over
+// either the one-transaction-per-call methods or a batched session.
+type Writer interface {
+	PutNode(ctx context.Context, n model.Node) error
+	PutEdge(ctx context.Context, e model.Edge) error
+	DeleteNode(ctx context.Context, id model.NodeId) error
+	DeleteEdge(ctx context.Context, id model.EdgeId) error
+}
+
+// Batch is a single-writer batched write session: many puts/deletes amortized
+// into ONE durable transaction with prepared statements. Writes become durable
+// only at Commit; Rollback discards them. Reads on the parent store do NOT see
+// uncommitted batch writes. Endpoint checking (ErrUnknownEdgeEndpoint) is
+// preserved exactly, evaluated against committed state ∪ batch-local puts.
+// A Batch is NOT safe for concurrent use; it holds the store's single-writer
+// discipline for its lifetime, so sessions must be short-lived (one per ingest
+// phase) and MUST end in exactly one Commit or Rollback — a non-batch write
+// issued while a batch is open blocks until the batch ends.
+type Batch interface {
+	Writer
+	// Commit makes every buffered write durable atomically and ends the session.
+	Commit(ctx context.Context) error
+	// Rollback discards the session. Calling it after Commit is a no-op, so
+	// `defer b.Rollback()` is safe.
+	Rollback() error
+}
+
+// Batcher is an optional capability interface: a store that natively supports
+// batched write sessions.
+type Batcher interface {
+	BeginBatch(ctx context.Context) (Batch, error)
+}
+
+// BeginBatch returns s's native batch when supported, else a pass-through
+// fallback that forwards each call to the store's one-transaction-per-call
+// methods (Commit and Rollback are then no-ops). Callers get batching where
+// the backend can provide it without excluding backends that cannot.
+func BeginBatch(ctx context.Context, s Graphstore) (Batch, error) {
+	if b, ok := s.(Batcher); ok {
+		return b.BeginBatch(ctx)
+	}
+	return passthroughBatch{s: s}, nil
+}
+
+// passthroughBatch adapts a non-Batcher store to the Batch shape. Every write
+// is immediately durable via the store's own methods; Commit/Rollback are
+// no-ops (there is nothing buffered to end).
+type passthroughBatch struct{ s Graphstore }
+
+func (p passthroughBatch) PutNode(ctx context.Context, n model.Node) error {
+	return p.s.PutNode(ctx, n)
+}
+func (p passthroughBatch) PutEdge(ctx context.Context, e model.Edge) error {
+	return p.s.PutEdge(ctx, e)
+}
+func (p passthroughBatch) DeleteNode(ctx context.Context, id model.NodeId) error {
+	return p.s.DeleteNode(ctx, id)
+}
+func (p passthroughBatch) DeleteEdge(ctx context.Context, id model.EdgeId) error {
+	return p.s.DeleteEdge(ctx, id)
+}
+func (p passthroughBatch) Commit(context.Context) error { return nil }
+func (p passthroughBatch) Rollback() error              { return nil }

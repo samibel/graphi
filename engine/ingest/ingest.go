@@ -587,13 +587,31 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			return err
 		}
 
+		// All graph writes of this pass run in batched sessions (one durable
+		// transaction per phase instead of one per node/edge). The pass reads
+		// its own writes at three seams (reverse-dep index, the linker's edge
+		// sweep, typeresolve's committed set), so each batch commits BEFORE the
+		// next read. `open` tracks the live batch so any error path rolls it
+		// back — leaving it open would hold the store's single-writer lock.
+		var open graphstore.Batch
+		defer func() {
+			if open != nil {
+				_ = open.Rollback()
+			}
+		}()
+		batch, err := graphstore.BeginBatch(ctx, i.store)
+		if err != nil {
+			return err
+		}
+		open = batch
+
 		// Build forward refs for each file, then derive reverse deps.
 		refs := make(map[string][]string, len(units))
 		var fileRefs []link.FileRefs
 		owned := make(map[string]struct{})
 		parserEdges := make(map[string]struct{})
 		for k, u := range units {
-			nodeIDs, edgeIDs, fwd, fr, err := i.parseAndCommit(ctx, u)
+			nodeIDs, edgeIDs, fwd, fr, err := i.parseAndCommit(ctx, batch, u)
 			if err != nil {
 				return err
 			}
@@ -621,9 +639,13 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			if _, kept := owned[id]; kept {
 				continue
 			}
-			if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+			if err := batch.DeleteNode(ctx, model.NodeId(id)); err != nil {
 				return fmt.Errorf("ingest: purge stale node %s: %w", id, err)
 			}
+		}
+		open = nil
+		if err := batch.Commit(ctx); err != nil {
+			return err
 		}
 
 		// Translate import-path forward refs into the directory key space so the
@@ -643,14 +665,33 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		}
 		// Post-node-commit linker pass (site 1): all nodes are now committed, so
 		// cross-file/cross-package edges can be resolved against the full set.
-		if _, err := i.linkFiles(ctx, fileRefs, owned, parserEdges); err != nil {
+		// linkFiles reads committed state first, then writes through the batch.
+		linkBatch, err := graphstore.BeginBatch(ctx, i.store)
+		if err != nil {
+			return err
+		}
+		open = linkBatch
+		if _, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges); err != nil {
+			return err
+		}
+		open = nil
+		if err := linkBatch.Commit(ctx); err != nil {
 			return err
 		}
 		// Third phase (site 1): whole-repo go/types confirmed-tier pass. Runs
 		// AFTER the linker so its confirmed edges upsert over the heuristic
 		// tier for the same logical edges (see typeresolvePass).
 		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseResolve, Done: len(units), Total: len(units)})
-		if _, err := i.typeresolvePass(ctx, units); err != nil {
+		trBatch, err := graphstore.BeginBatch(ctx, i.store)
+		if err != nil {
+			return err
+		}
+		open = trBatch
+		if _, err := i.typeresolvePass(ctx, trBatch, units); err != nil {
+			return err
+		}
+		open = nil
+		if err := trBatch.Commit(ctx); err != nil {
 			return err
 		}
 		// A completed full pass certifies the store for warm starts under the
@@ -881,6 +922,21 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	}
 	progDone := 0
 	return i.metaTx(ctx, func(tx *sql.Tx) error {
+		// Mirror IngestAll's batched write sessions: one durable graph
+		// transaction per phase, committed before each seam where the pass
+		// reads its own writes back. `open` guards the error paths.
+		var open graphstore.Batch
+		defer func() {
+			if open != nil {
+				_ = open.Rollback()
+			}
+		}()
+		batch, err := graphstore.BeginBatch(ctx, i.store)
+		if err != nil {
+			return err
+		}
+		open = batch
+
 		var fileRefs []link.FileRefs
 		owned := make(map[string]struct{})
 		parserEdges := make(map[string]struct{})
@@ -898,9 +954,9 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			var fr *link.FileRefs
 			var err error
 			if pf, ok := precomputed[u.relPath]; ok && pf != nil && !pf.skipped && pf.result != nil && pf.Hash == u.hash {
-				nodeIDs, edgeIDs, fwd, fr, err = i.commitParsed(ctx, u, pf)
+				nodeIDs, edgeIDs, fwd, fr, err = i.commitParsed(ctx, batch, u, pf)
 			} else {
-				nodeIDs, edgeIDs, fwd, fr, err = i.parseAndCommit(ctx, u)
+				nodeIDs, edgeIDs, fwd, fr, err = i.parseAndCommit(ctx, batch, u)
 			}
 			if err != nil {
 				return err
@@ -938,6 +994,11 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			}
 		}
 
+		open = nil
+		if err := batch.Commit(ctx); err != nil {
+			return err
+		}
+
 		// Update reverse deps AFTER all reprocessed nodes are committed, so the
 		// import-path → directory translation (BLOCK-1) resolves target packages
 		// against the full committed node set rather than a partial mid-loop view.
@@ -967,7 +1028,12 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		if prog != nil {
 			prog(ProgressEvent{Phase: PhaseLink, Done: progDone, Total: progTotal})
 		}
-		linkEdgeIDs, err := i.linkFiles(ctx, fileRefs, owned, parserEdges)
+		linkBatch, err := graphstore.BeginBatch(ctx, i.store)
+		if err != nil {
+			return err
+		}
+		open = linkBatch
+		linkEdgeIDs, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges)
 		if err != nil {
 			return err
 		}
@@ -992,9 +1058,13 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if _, ok := present[p]; ok {
 				continue
 			}
-			if err := i.removeFileTx(ctx, tx, p); err != nil {
+			if err := i.removeFileTx(ctx, tx, linkBatch, p); err != nil {
 				return err
 			}
+		}
+		open = nil
+		if err := linkBatch.Commit(ctx); err != nil {
+			return err
 		}
 
 		// A parse/syntax error makes parseUnit fail closed with a SkipParseError
@@ -1033,8 +1103,17 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if prog != nil {
 				prog(ProgressEvent{Phase: PhaseResolve, Done: progDone, Total: progTotal})
 			}
-			trIDs, err := i.typeresolvePass(ctx, units)
+			trBatch, err := graphstore.BeginBatch(ctx, i.store)
 			if err != nil {
+				return err
+			}
+			open = trBatch
+			trIDs, err := i.typeresolvePass(ctx, trBatch, units)
+			if err != nil {
+				return err
+			}
+			open = nil
+			if err := trBatch.Commit(ctx); err != nil {
 				return err
 			}
 			if prov != nil {
@@ -1437,12 +1516,12 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 // preserving the original IngestAll / ingestChanged behavior. The SW-101 parallel
 // path instead splits these: parseUnit/ParseFile (pure, poolable) then
 // commitParsed (serialized, canonical order).
-func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []string, []string, *link.FileRefs, error) {
+func (i *Ingester) parseAndCommit(ctx context.Context, w graphstore.Writer, u fileUnit) ([]string, []string, []string, *link.FileRefs, error) {
 	pf, err := i.parseUnit(ctx, u)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	return i.commitParsed(ctx, u, pf)
+	return i.commitParsed(ctx, w, u, pf)
 }
 
 // commitParsed is the SERIALIZED apply phase: it writes the (pre)computed parse
@@ -1451,7 +1530,7 @@ func (i *Ingester) parseAndCommit(ctx context.Context, u fileUnit) ([]string, []
 // node/edge insertion order is governed by the caller's canonical path-sorted
 // walk — never by worker scheduling. A nil/skipped ParsedFile commits nothing
 // (matching the original early-return skip behavior).
-func (i *Ingester) commitParsed(ctx context.Context, u fileUnit, pf *ParsedFile) ([]string, []string, []string, *link.FileRefs, error) {
+func (i *Ingester) commitParsed(ctx context.Context, w graphstore.Writer, u fileUnit, pf *ParsedFile) ([]string, []string, []string, *link.FileRefs, error) {
 	if pf == nil || pf.skipped || pf.result == nil {
 		return nil, nil, nil, nil, nil
 	}
@@ -1482,20 +1561,20 @@ func (i *Ingester) commitParsed(ctx context.Context, u fileUnit, pf *ParsedFile)
 		if _, kept := newIDs[id]; kept {
 			continue
 		}
-		if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+		if err := w.DeleteNode(ctx, model.NodeId(id)); err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("ingest: delete stale node %s: %w", id, err)
 		}
 	}
 
 	for _, n := range res.Nodes {
-		if err := i.store.PutNode(ctx, n); err != nil {
+		if err := w.PutNode(ctx, n); err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("ingest: put node: %w", err)
 		}
 		nodeIDs = append(nodeIDs, string(n.ID()))
 	}
 	edgeIDs := make([]string, 0, len(res.Edges))
 	for _, e := range res.Edges {
-		if err := i.store.PutEdge(ctx, e); err != nil {
+		if err := w.PutEdge(ctx, e); err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("ingest: put edge: %w", err)
 		}
 		edgeIDs = append(edgeIDs, string(e.ID()))
@@ -1556,7 +1635,7 @@ func posixDir(p string) string {
 //
 // It returns the committed cross-file edge IDs so the incremental path can record
 // edit provenance for them.
-func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}) ([]string, error) {
+func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}) ([]string, error) {
 	// Nothing reprocessed: no nodes to sweep stale edges from and nothing to
 	// re-link. (BLOCK-2: gating on ownedNodeIDs, NOT fileRefs — an edit that
 	// removes the LAST cross-file ref leaves fileRefs empty yet still owns
@@ -1593,7 +1672,7 @@ func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, owne
 		if _, fresh := parserEdges[string(e.ID())]; fresh {
 			continue
 		}
-		if err := i.store.DeleteEdge(ctx, e.ID()); err != nil {
+		if err := w.DeleteEdge(ctx, e.ID()); err != nil {
 			return nil, fmt.Errorf("ingest: delete stale cross-file edge %s: %w", e.ID(), err)
 		}
 	}
@@ -1628,7 +1707,7 @@ func (i *Ingester) linkFiles(ctx context.Context, fileRefs []link.FileRefs, owne
 			return nil, fmt.Errorf("ingest: link %s: %w", lang, err)
 		}
 		for _, e := range edges {
-			if err := i.store.PutEdge(ctx, e); err != nil {
+			if err := w.PutEdge(ctx, e); err != nil {
 				return nil, fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
 			}
 			edgeIDs = append(edgeIDs, string(e.ID()))
@@ -2025,14 +2104,14 @@ func (i *Ingester) cachedPathsTx(ctx context.Context, tx *sql.Tx) ([]string, err
 // its sidecar bookkeeping. Deleting the nodes is what makes an incremental pass
 // over a deleted file converge byte-identically with a full re-index: a full
 // pass simply never re-creates them, so the incremental pass must drop them.
-func (i *Ingester) removeFileTx(ctx context.Context, tx *sql.Tx, path string) error {
+func (i *Ingester) removeFileTx(ctx context.Context, tx *sql.Tx, w graphstore.Writer, path string) error {
 	// Drop the file's graph nodes first (DeleteNode cascades incident edges).
 	ids, err := i.cachedNodeIDs(ctx, path)
 	if err != nil {
 		return err
 	}
 	for _, id := range ids {
-		if err := i.store.DeleteNode(ctx, model.NodeId(id)); err != nil {
+		if err := w.DeleteNode(ctx, model.NodeId(id)); err != nil {
 			return fmt.Errorf("ingest: delete node of removed file %s: %w", path, err)
 		}
 	}

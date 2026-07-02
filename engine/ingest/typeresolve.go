@@ -59,7 +59,7 @@ func typeresolveKind(kind string) bool {
 //
 // Returns the ids of the edges it put, so the incremental site can funnel
 // them into the edit-provenance side-channel like the linker's edges.
-func (i *Ingester) typeresolvePass(ctx context.Context, units []fileUnit) ([]string, error) {
+func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, units []fileUnit) ([]string, error) {
 	if typeresolveDisabled() {
 		return nil, nil
 	}
@@ -117,14 +117,14 @@ func (i *Ingester) typeresolvePass(ctx context.Context, units []fileUnit) ([]str
 		if _, checked := checkedDirs[dirOf[e.From()]]; !checked {
 			continue // degraded or unknown unit: degradation never deletes knowledge
 		}
-		if err := i.store.DeleteEdge(ctx, e.ID()); err != nil {
+		if err := w.DeleteEdge(ctx, e.ID()); err != nil {
 			return nil, fmt.Errorf("ingest: typeresolve delete stale confirmed edge %s: %w", e.ID(), err)
 		}
 	}
 
 	ids := make([]string, 0, len(res.Edges))
 	for _, e := range res.Edges {
-		if err := i.store.PutEdge(ctx, e); err != nil {
+		if err := w.PutEdge(ctx, e); err != nil {
 			return nil, fmt.Errorf("ingest: typeresolve put edge %s: %w", e.ID(), err)
 		}
 		ids = append(ids, string(e.ID()))
