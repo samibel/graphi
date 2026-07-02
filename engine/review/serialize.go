@@ -18,10 +18,10 @@ import (
 // occurred — the upsert result. When the run is a dry-run (offline, default),
 // Upsert is nil and only render + gate are reported.
 type PublishResult struct {
-	SchemaVersion         int           `json:"schema_version"`
-	WriterVersion         string        `json:"writer_version"`
-	ConfigHash            string        `json:"config_hash"`
-	IdentitySchemaVersion uint32        `json:"identity_schema_version"`
+	SchemaVersion         int    `json:"schema_version"`
+	WriterVersion         string `json:"writer_version"`
+	ConfigHash            string `json:"config_hash"`
+	IdentitySchemaVersion uint32 `json:"identity_schema_version"`
 	// Outcome mirrors the sibling reports' status field: "found" when at least one
 	// resolved finding (risk region / signal / question) was rendered, else
 	// "empty" (the comment still renders a valid "no findings" body). Lets SW-043

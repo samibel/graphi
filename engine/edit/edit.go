@@ -249,14 +249,14 @@ func (a *Applier) SetFaultHook(stage string) {
 //
 // Saga order (each step is reversible by the one before it):
 //
-//	1. validate op            (no side effects)
-//	2. Snapshot pre-edit graph to a temp file       — graph rollback anchor
-//	3. capture original source bytes                — source rollback anchor
-//	4. atomic source write (temp + fsync + rename)  — the source mutation
-//	5. IngestChanged over the edited file + cascade — the graph mutation
-//	6. consistency check (incremental == full)      — the invariant gate
-//	7. success: discard snapshot
-//	   failure of 4/5/6: compensate in reverse (restore source, Load snapshot)
+//  1. validate op            (no side effects)
+//  2. Snapshot pre-edit graph to a temp file       — graph rollback anchor
+//  3. capture original source bytes                — source rollback anchor
+//  4. atomic source write (temp + fsync + rename)  — the source mutation
+//  5. IngestChanged over the edited file + cascade — the graph mutation
+//  6. consistency check (incremental == full)      — the invariant gate
+//  7. success: discard snapshot
+//     failure of 4/5/6: compensate in reverse (restore source, Load snapshot)
 func (a *Applier) Apply(ctx context.Context, op EditOp) (Result, error) {
 	res := Result{TargetNodeID: op.TargetNodeID, Outcome: OutcomeRolledBack}
 

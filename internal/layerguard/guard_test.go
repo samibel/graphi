@@ -16,8 +16,8 @@ func TestLayerOf(t *testing.T) {
 		{"github.com/samibel/graphi/engine/query", LayerEngine, true},
 		{"github.com/samibel/graphi/core/parse", LayerCore, true},
 		{"github.com/samibel/graphi/internal/bench", 0, false}, // unranked tooling
-		{"fmt", 0, false},                                       // stdlib
-		{"github.com/cespare/xxhash/v2", 0, false},              // external
+		{"fmt", 0, false},                          // stdlib
+		{"github.com/cespare/xxhash/v2", 0, false}, // external
 	}
 	for _, c := range cases {
 		rank, ok := LayerOf(c.pkg)

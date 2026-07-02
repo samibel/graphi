@@ -40,13 +40,13 @@ func (m *Meter) Record(callID, model string, actualTokens int, artifacts []strin
 	}
 
 	rec := MeterRecord{
-		CallID:          callID,
-		Model:           model,
-		ActualTokens:    actualTokens,
-		BaselineTokens:  base.tokens,
-		BaselineVersion: BaselineMethodVersion, // captured at emit time
+		CallID:            callID,
+		Model:             model,
+		ActualTokens:      actualTokens,
+		BaselineTokens:    base.tokens,
+		BaselineVersion:   BaselineMethodVersion, // captured at emit time
 		BaselineAvailable: base.available,
-		Artifacts:       dedupArtifacts(artifacts),
+		Artifacts:         dedupArtifacts(artifacts),
 	}
 	if base.available {
 		rec.SavingsTokens = base.tokens - actualTokens // raw; may be negative; NOT clamped

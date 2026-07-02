@@ -33,8 +33,8 @@ type PriceTable struct {
 // stamp of the table that produced (or declined) the figure, so the result is
 // reproducible/auditable.
 type USDResult struct {
-	MicroUSD    MicroUSD `json:"micro_usd"`
-	TableVersion string  `json:"table_version"`
-	Priced      bool     `json:"priced"`
-	Model       string   `json:"model"`
+	MicroUSD     MicroUSD `json:"micro_usd"`
+	TableVersion string   `json:"table_version"`
+	Priced       bool     `json:"priced"`
+	Model        string   `json:"model"`
 }

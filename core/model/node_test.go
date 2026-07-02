@@ -54,9 +54,9 @@ func TestNewNode_IdentityFieldsDriveID(t *testing.T) {
 
 func TestNewNode_Validation(t *testing.T) {
 	cases := []struct {
-		name                              string
-		kind, qname, path                 string
-		line, col                         int
+		name              string
+		kind, qname, path string
+		line, col         int
 	}{
 		{"empty kind", "", "q", "p", 1, 1},
 		{"whitespace kind", "  ", "q", "p", 1, 1},

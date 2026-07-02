@@ -60,20 +60,20 @@ func (c GateConfig) hash() string {
 // offending region: its identity, its verbatim risk score, and the signal kinds
 // detected on it (copied verbatim from the consumed reports — never re-derived).
 type GateEvidence struct {
-	Region    model.NodeId `json:"region"`               // EP-001 identity of the offending region
-	RiskScore string       `json:"risk_score"`           // verbatim fixed-point risk score
-	Signals   []string     `json:"signals,omitempty"`    // SW-040 signal kinds on the region
+	Region    model.NodeId `json:"region"`            // EP-001 identity of the offending region
+	RiskScore string       `json:"risk_score"`        // verbatim fixed-point risk score
+	Signals   []string     `json:"signals,omitempty"` // SW-040 signal kinds on the region
 }
 
 // GateDecision is the merge-gate result: the verdict, a human-readable reason
 // (evidence-linked on BLOCK), and the structured evidence. On PASS the Evidence
 // slice is empty and Reason explains why (disabled / at-or-below threshold).
 type GateDecision struct {
-	Verdict   string         `json:"verdict"`            // PASS | BLOCK
-	Reason    string         `json:"reason"`             // human-readable, evidence-linked on BLOCK
-	Threshold string         `json:"threshold"`          // rendered fixed-point threshold (for audit)
-	Enabled   bool           `json:"enabled"`            // whether gating was enabled
-	Evidence  []GateEvidence `json:"evidence"`           // offending regions (empty on PASS)
+	Verdict   string         `json:"verdict"`   // PASS | BLOCK
+	Reason    string         `json:"reason"`    // human-readable, evidence-linked on BLOCK
+	Threshold string         `json:"threshold"` // rendered fixed-point threshold (for audit)
+	Enabled   bool           `json:"enabled"`   // whether gating was enabled
+	Evidence  []GateEvidence `json:"evidence"`  // offending regions (empty on PASS)
 }
 
 // Evaluate runs the optional merge gate over the consumed bundle. It NEVER calls

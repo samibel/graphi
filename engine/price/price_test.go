@@ -137,10 +137,10 @@ func TestLoadFromPath_RejectsRemote(t *testing.T) {
 func TestSession_PerSessionTotal(t *testing.T) {
 	pt := mkTable(t, "v1", map[string]Rate{"m": {InputPerTokenMicroUSD: 1000}})
 	s := NewSession()
-	s.Add(Savings(pt, "m", 100)) // 100_000
-	s.Add(Savings(pt, "m", 50))  // 50_000
+	s.Add(Savings(pt, "m", 100))     // 100_000
+	s.Add(Savings(pt, "m", 50))      // 50_000
 	s.Add(Savings(pt, "nope", 9999)) // unpriced -> contributes 0
-	s.Add(Savings(pt, "m", -10)) // -10_000
+	s.Add(Savings(pt, "m", -10))     // -10_000
 	if tot := s.Total(); tot != 140_000 {
 		t.Errorf("session total: want 140000 got %d", tot)
 	}

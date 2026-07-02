@@ -187,9 +187,9 @@ func TestExecute_NotFound(t *testing.T) {
 // ErrInvalidQuery and never panic.
 func TestValidate_MalformedNeverPanics(t *testing.T) {
 	cases := []compound.Query{
-		{Steps: []compound.Step{{Direction: compound.DirOutbound}}},                     // empty seed
-		{Seed: "pkg.A"},                                                                 // no steps
-		{Seed: "pkg.A", Steps: []compound.Step{{Direction: "sideways"}}},                // bad direction
+		{Steps: []compound.Step{{Direction: compound.DirOutbound}}}, // empty seed
+		{Seed: "pkg.A"}, // no steps
+		{Seed: "pkg.A", Steps: []compound.Step{{Direction: "sideways"}}},                                // bad direction
 		{Seed: "pkg.A", Steps: []compound.Step{{Direction: compound.DirOutbound, Kinds: []string{""}}}}, // empty kind
 	}
 	for i, c := range cases {
@@ -204,12 +204,12 @@ func TestValidate_MalformedNeverPanics(t *testing.T) {
 // errors and parses a well-formed query identically to the AST form.
 func TestParse_TypedErrors(t *testing.T) {
 	bad := []string{
-		"",                       // missing seed
-		"SEED\n",                 // seed empty
-		"HOP out calls\n",        // no seed
-		"SEED pkg.A\nBOGUS x\n",  // unknown keyword
+		"",                           // missing seed
+		"SEED\n",                     // seed empty
+		"HOP out calls\n",            // no seed
+		"SEED pkg.A\nBOGUS x\n",      // unknown keyword
 		"SEED pkg.A\nHOP sideways\n", // bad direction
-		"SEED pkg.A\nHOP\n",      // hop missing direction
+		"SEED pkg.A\nHOP\n",          // hop missing direction
 	}
 	for i, b := range bad {
 		if _, err := compound.Parse(b); !errors.Is(err, compound.ErrInvalidQuery) {

@@ -14,20 +14,20 @@ type CaseResult struct {
 
 // Report is the version-stamped, machine-readable eval report.
 type Report struct {
-	Name            string            `json:"name"`
-	Pass            bool              `json:"pass"` // overall gate (coverage + drift +, in claim mode, claim)
-	MethodVersion   string            `json:"method_version"`
-	DatasetVersion  string            `json:"dataset_version"`
-	AggregateRatio  float64           `json:"aggregate_ratio"` // sum(baseline)/sum(graphi)
-	ClaimThreshold  float64           `json:"claim_threshold"`
-	ClaimSupported  bool              `json:"claim_supported"` // aggregate >= threshold
-	ClaimHeldBack   bool              `json:"claim_held_back"`
-	ClaimMode       bool              `json:"claim_mode"`
-	Cases           []CaseResult      `json:"cases"`
-	Coverage        map[string][]string `json:"coverage"`   // capability -> case ids
-	Uncovered       []string          `json:"uncovered,omitempty"`
-	CoverageDrift   *DriftResult      `json:"coverage_drift,omitempty"`
-	Violations      []string          `json:"violations,omitempty"`
+	Name           string              `json:"name"`
+	Pass           bool                `json:"pass"` // overall gate (coverage + drift +, in claim mode, claim)
+	MethodVersion  string              `json:"method_version"`
+	DatasetVersion string              `json:"dataset_version"`
+	AggregateRatio float64             `json:"aggregate_ratio"` // sum(baseline)/sum(graphi)
+	ClaimThreshold float64             `json:"claim_threshold"`
+	ClaimSupported bool                `json:"claim_supported"` // aggregate >= threshold
+	ClaimHeldBack  bool                `json:"claim_held_back"`
+	ClaimMode      bool                `json:"claim_mode"`
+	Cases          []CaseResult        `json:"cases"`
+	Coverage       map[string][]string `json:"coverage"` // capability -> case ids
+	Uncovered      []string            `json:"uncovered,omitempty"`
+	CoverageDrift  *DriftResult        `json:"coverage_drift,omitempty"`
+	Violations     []string            `json:"violations,omitempty"`
 }
 
 // DefaultClaimThreshold is the default "~50×" threshold gating the public claim.

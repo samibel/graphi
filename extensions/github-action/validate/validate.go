@@ -63,11 +63,11 @@ type OutputSpec struct {
 // Result is the parsed-and-validated view of an action.yml. A non-empty Errors
 // slice means the contract is violated.
 type Result struct {
-	Using       string
-	Inputs      map[string]InputSpec
-	Outputs     map[string]OutputSpec
-	UsesRefs    []string // every `uses:` value found under runs.steps
-	Errors      []string
+	Using    string
+	Inputs   map[string]InputSpec
+	Outputs  map[string]OutputSpec
+	UsesRefs []string // every `uses:` value found under runs.steps
+	Errors   []string
 }
 
 // ValidateActionYML parses the action.yml text and checks every contract rule.

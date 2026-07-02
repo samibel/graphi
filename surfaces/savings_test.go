@@ -55,7 +55,9 @@ func readoutOverMCP(t *testing.T, c client.Client) []byte {
 				Text string `json:"text"`
 			} `json:"content"`
 		} `json:"result"`
-		Error *struct{ Message string `json:"message"` } `json:"error"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
 	}
 	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
 		t.Fatalf("decode mcp savings response %q: %v", out.String(), err)

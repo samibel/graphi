@@ -9,7 +9,7 @@
 // injectable findingsSource seam (consume, never recompute) — exactly as
 // pr-questions consumes pr-risk + pr-signals via its questionSource seam.
 //
-// The single outbound boundary
+// # The single outbound boundary
 //
 // graphi is a local-first, CI-enforced ZERO-OUTBOUND engine. The PR-host comment
 // API is the ONLY outbound network this engine performs, and it is isolated
@@ -20,7 +20,7 @@
 // the only place a host token is held — full real-host wiring + GitHub Action
 // packaging is SW-043's scope.
 //
-// Determinism is a contract property
+// # Determinism is a contract property
 //
 // The rendered body and the serialized PublishResult are byte-stable for
 // byte-identical input (versioned schema + hashed config + canonical ordering +

@@ -43,11 +43,11 @@ type Entry struct {
 
 // Query constrains a memory recall. The zero Query matches everything.
 type Query struct {
-	Scope       string
-	Notebook    string
-	TagPrefix   string
-	CreatedMin  int64 // inclusive, UnixNano UTC; 0 disables
-	CreatedMax  int64 // inclusive, UnixNano UTC; 0 disables
+	Scope      string
+	Notebook   string
+	TagPrefix  string
+	CreatedMin int64 // inclusive, UnixNano UTC; 0 disables
+	CreatedMax int64 // inclusive, UnixNano UTC; 0 disables
 }
 
 // Ledger records avoided token spend when memory is recalled.
@@ -58,7 +58,9 @@ type Ledger interface {
 // noopLedger satisfies Ledger without doing anything.
 type noopLedger struct{}
 
-func (noopLedger) RecordRecall(ctx context.Context, entryCount int, savedTokens int64) error { return nil }
+func (noopLedger) RecordRecall(ctx context.Context, entryCount int, savedTokens int64) error {
+	return nil
+}
 
 // Store is the memory store. It is safe for concurrent use.
 type Store struct {

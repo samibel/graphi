@@ -464,7 +464,7 @@ func relModuleFileCandidates(fromDir, spec string, exts []string) []string {
 	}
 	var out []string
 	for _, ext := range exts {
-		out = append(out, joined+ext)                    // "<dir>/m.ts"
+		out = append(out, joined+ext)                     // "<dir>/m.ts"
 		out = append(out, path.Join(joined, "index")+ext) // "<dir>/m/index.ts"
 	}
 	return out

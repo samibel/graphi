@@ -60,21 +60,21 @@ func ContentKey(procID string, inputLabels []string) string {
 
 // CacheStats tracks content-addressed summary cache performance.
 type CacheStats struct {
-	Hits   int `json:"hits"`
-	Misses int `json:"misses"`
+	Hits      int `json:"hits"`
+	Misses    int `json:"misses"`
 	Evictions int `json:"evictions"`
-	Size   int `json:"size"`
+	Size      int `json:"size"`
 }
 
 // SummaryCache is a concurrency-safe, content-addressed cache of procedure
 // summaries keyed by SHA-256 of (procID, inputLabels). It enforces a maximum
 // entry count; when the cap is exceeded, the oldest entry is evicted (FIFO).
 type SummaryCache struct {
-	mu       sync.RWMutex
-	entries  map[string]Summary // key → summary
-	order    []string           // insertion order for FIFO eviction
-	maxSize  int
-	stats    CacheStats
+	mu      sync.RWMutex
+	entries map[string]Summary // key → summary
+	order   []string           // insertion order for FIFO eviction
+	maxSize int
+	stats   CacheStats
 }
 
 // NewSummaryCache creates a cache with the given maximum entry count. If

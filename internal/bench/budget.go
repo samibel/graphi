@@ -14,10 +14,10 @@ const CmpLE Comparator = "<="
 
 // MetricBudget is a single pinned metric definition in bench-budget.yml.
 type MetricBudget struct {
-	Baseline int64       // pinned reference value (delta = measured - baseline)
-	Budget   int64       // fail threshold (measured must not exceed for CmpLE)
-	Unit     string      // "ms" or "bytes"
-	Op       Comparator  // comparator, defaults to CmpLE
+	Baseline int64      // pinned reference value (delta = measured - baseline)
+	Budget   int64      // fail threshold (measured must not exceed for CmpLE)
+	Unit     string     // "ms" or "bytes"
+	Op       Comparator // comparator, defaults to CmpLE
 }
 
 // Manifest is the parsed, validated bench-budget.yml.
@@ -131,9 +131,9 @@ type MetricResult struct {
 
 // GateReport is the full budget-gate outcome.
 type GateReport struct {
-	Pass     bool           `json:"pass"`
-	Results  []MetricResult `json:"results"`
-	Failed   []string       `json:"failed,omitempty"`
+	Pass    bool           `json:"pass"`
+	Results []MetricResult `json:"results"`
+	Failed  []string       `json:"failed,omitempty"`
 }
 
 // Gate compares measured metrics against the manifest budgets. A metric fails

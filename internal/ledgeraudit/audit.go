@@ -10,7 +10,7 @@ const AuditName = "savings-ledger-audit"
 
 // Delta records a recompute-vs-ledger disagreement for one entry.
 type Delta struct {
-	EntryIndex int     `json:"entry_index"`
+	EntryIndex int      `json:"entry_index"`
 	Ledger     MicroUSD `json:"ledger_micro_usd"`
 	Recompute  MicroUSD `json:"recompute_micro_usd"`
 	Diff       MicroUSD `json:"diff_micro_usd"`
@@ -32,7 +32,7 @@ type AuditReport struct {
 // AuditInput bundles the inputs to Audit.
 type AuditInput struct {
 	Ledger              Ledger
-	Ops                 []Op        // raw inputs the ledger was built from
+	Ops                 []Op // raw inputs the ledger was built from
 	Prices              *PriceTable
 	Policy              Policy
 	State               LedgerState // persisted/canonical state for restart check

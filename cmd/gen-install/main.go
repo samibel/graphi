@@ -48,11 +48,11 @@ const (
 
 // tmplData is the injected, deterministic template input.
 type tmplData struct {
-	Header          string
-	ReleasesURL     string
-	RawInstallURL   string
+	Header           string
+	ReleasesURL      string
+	RawInstallURL    string
 	RawInstallPS1URL string
-	Assets          []string // release.AssetName for each release.ReleaseTargets entry, in matrix order
+	Assets           []string // release.AssetName for each release.ReleaseTargets entry, in matrix order
 }
 
 // renderedFile pairs a committed file name with its freshly-rendered content.

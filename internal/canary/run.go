@@ -16,14 +16,14 @@ import (
 // the whole surface was exercised under denial"). Stable JSON schema for CI
 // consumers and audit.
 type Artifact struct {
-	Verdict        string       `json:"verdict"` // "pass" | "fail" | "no-isolation"
-	CoveredTools   []string     `json:"covered_tools"`
-	DialAttempts   []DialAttempt `json:"dial_attempts"`
-	Violations     []DialAttempt `json:"violations"` // non-loopback subset
-	Isolation      string       `json:"isolation"` // isolator kind / "unavailable"
-	StartedAt      time.Time    `json:"started_at"`
-	DurationMS     int64        `json:"duration_ms"`
-	FailReason     string       `json:"fail_reason,omitempty"`
+	Verdict      string        `json:"verdict"` // "pass" | "fail" | "no-isolation"
+	CoveredTools []string      `json:"covered_tools"`
+	DialAttempts []DialAttempt `json:"dial_attempts"`
+	Violations   []DialAttempt `json:"violations"` // non-loopback subset
+	Isolation    string        `json:"isolation"`  // isolator kind / "unavailable"
+	StartedAt    time.Time     `json:"started_at"`
+	DurationMS   int64         `json:"duration_ms"`
+	FailReason   string        `json:"fail_reason,omitempty"`
 }
 
 // RunConfig parameterizes a canary run. Fields are injectable so the preflight,

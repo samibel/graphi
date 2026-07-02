@@ -101,7 +101,7 @@ func newTamperedLedger(inner Ledger, entryIdx int, delta MicroUSD) (*tamperedLed
 	}, nil
 }
 
-func (t *tamperedLedger) Entries() []LedgerEntry                  { return t.tampered }
-func (t *tamperedLedger) Total() MicroUSD                         { return t.newTotal }
-func (t *tamperedLedger) SessionTotal(id string) MicroUSD         { return t.newSessions[id] }
-func (t *tamperedLedger) SessionIDs() []string                    { return t.inner.SessionIDs() }
+func (t *tamperedLedger) Entries() []LedgerEntry          { return t.tampered }
+func (t *tamperedLedger) Total() MicroUSD                 { return t.newTotal }
+func (t *tamperedLedger) SessionTotal(id string) MicroUSD { return t.newSessions[id] }
+func (t *tamperedLedger) SessionIDs() []string            { return t.inner.SessionIDs() }

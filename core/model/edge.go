@@ -52,14 +52,14 @@ var ErrInvalidEdge = errors.New("model: invalid edge")
 // unexported with accessors, so a constructed Edge is immutable and an
 // under-provenanced Edge is unrepresentable.
 type Edge struct {
-	id        EdgeId
-	from      NodeId
-	to        NodeId
-	kind      string
-	tier      ConfidenceTier
+	id         EdgeId
+	from       NodeId
+	to         NodeId
+	kind       string
+	tier       ConfidenceTier
 	confidence float64
-	reason    string
-	evidence  []string // canonically sorted, defensively copied
+	reason     string
+	evidence   []string // canonically sorted, defensively copied
 }
 
 // EdgeKind identifies the relationship category (e.g. "calls", "imports").
