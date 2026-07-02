@@ -21,11 +21,14 @@ import (
 const ingestSemanticsVersion = "1"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
-// a non-empty file cache written under the CURRENT ingest semantics. files is
-// the cached file count (0 ⇒ cold). Callers use this to replace a full
-// re-index with a drift pass (DriftSet + IngestChangedWithProgress); any
-// error or mismatch means "start cold", never "trust the store".
-func (i *Ingester) CanWarmStart(ctx context.Context) (files int, ok bool, err error) {
+// a non-empty file cache written under the CURRENT ingest semantics AND the
+// current index scope (see semanticsStamp — an opt-in ignore configuration is
+// part of what the graph means, so flipping it re-certifies with a cold
+// pass). files is the cached file count (0 ⇒ cold). Callers use this to
+// replace a full re-index with a drift pass (DriftSet +
+// IngestChangedWithProgress); any error or mismatch means "start cold",
+// never "trust the store".
+func (i *Ingester) CanWarmStart(ctx context.Context, root string) (files int, ok bool, err error) {
 	if err := i.meta.QueryRowContext(ctx, "SELECT COUNT(*) FROM file_content_cache").Scan(&files); err != nil {
 		return 0, false, fmt.Errorf("ingest: warm-start probe: %w", err)
 	}
@@ -40,17 +43,18 @@ func (i *Ingester) CanWarmStart(ctx context.Context) (files int, ok bool, err er
 	if err != nil {
 		return files, false, fmt.Errorf("ingest: warm-start stamp: %w", err)
 	}
-	return files, v == ingestSemanticsVersion, nil
+	return files, v == i.semanticsStamp(root), nil
 }
 
-// stampSemanticsTx records the current ingest semantics on the supplied
-// transaction. Called at the end of a successful FULL pass only — an
-// incremental pass never changes semantics, and a store without the stamp
-// must stay cold until a full pass under the current binary has run.
-func (i *Ingester) stampSemanticsTx(ctx context.Context, tx *sql.Tx) error {
+// stampSemanticsTx records the current ingest semantics (including the
+// active index-scope fingerprint) on the supplied transaction. Called at the
+// end of a successful FULL pass only — an incremental pass never changes
+// semantics, and a store without the stamp must stay cold until a full pass
+// under the current binary has run.
+func (i *Ingester) stampSemanticsTx(ctx context.Context, tx *sql.Tx, root string) error {
 	_, err := tx.ExecContext(ctx,
 		"INSERT INTO ingest_semantics(key, value) VALUES('semantics_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-		ingestSemanticsVersion)
+		i.semanticsStamp(root))
 	if err != nil {
 		return fmt.Errorf("ingest: stamp semantics: %w", err)
 	}

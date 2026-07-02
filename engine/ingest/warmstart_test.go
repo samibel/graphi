@@ -21,14 +21,14 @@ func TestCanWarmStart_Lifecycle(t *testing.T) {
 	ing := newIngester(t, store, parse.NewDefaultRegistry())
 	root := writeRepo(t, typeresolveFixture())
 
-	if files, ok, err := ing.CanWarmStart(ctx); err != nil || ok || files != 0 {
+	if files, ok, err := ing.CanWarmStart(ctx, root); err != nil || ok || files != 0 {
 		t.Fatalf("fresh store: CanWarmStart = (%d, %v, %v), want (0, false, nil)", files, ok, err)
 	}
 
 	if err := ing.IngestAll(ctx, root); err != nil {
 		t.Fatalf("IngestAll: %v", err)
 	}
-	files, ok, err := ing.CanWarmStart(ctx)
+	files, ok, err := ing.CanWarmStart(ctx, root)
 	if err != nil || !ok || files == 0 {
 		t.Fatalf("after full pass: CanWarmStart = (%d, %v, %v), want (>0, true, nil)", files, ok, err)
 	}
@@ -37,7 +37,7 @@ func TestCanWarmStart_Lifecycle(t *testing.T) {
 	if _, err := ing.MetaDB().ExecContext(ctx, "UPDATE ingest_semantics SET value = '0' WHERE key = 'semantics_version'"); err != nil {
 		t.Fatalf("tamper stamp: %v", err)
 	}
-	if _, ok, err := ing.CanWarmStart(ctx); err != nil || ok {
+	if _, ok, err := ing.CanWarmStart(ctx, root); err != nil || ok {
 		t.Fatalf("stale semantics stamp: CanWarmStart ok = %v (err %v), want false — an upgraded binary must re-index", ok, err)
 	}
 
@@ -45,7 +45,7 @@ func TestCanWarmStart_Lifecycle(t *testing.T) {
 	if err := ing.IngestAll(ctx, root); err != nil {
 		t.Fatalf("re-IngestAll: %v", err)
 	}
-	if _, ok, err := ing.CanWarmStart(ctx); err != nil || !ok {
+	if _, ok, err := ing.CanWarmStart(ctx, root); err != nil || !ok {
 		t.Fatalf("after re-index: CanWarmStart ok = %v (err %v), want true", ok, err)
 	}
 }

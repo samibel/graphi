@@ -7,6 +7,16 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Added
+- **Opt-in index scope:** `GRAPHI_RESPECT_GITIGNORE=1` honors the repository
+  ROOT `.gitignore` (documented subset incl. `!` negation, anchoring,
+  `dir/`-only patterns, `*`/`?`/`[...]`/`**`; nested .gitignore files are not
+  consulted), and `GRAPHI_IGNORE=name,name` prunes extra directory basenames
+  at any depth. Both change graph CONTENT, so both are off by default, the
+  filesystem watcher agrees with the walk, and the warm-start stamp carries an
+  ignore fingerprint — a store certified under one scope never warm-starts
+  under another (one full re-index re-certifies).
+
 ### Changed
 - **`graphi index` now warm-starts like bare `graphi`.** On an unchanged
   repository the command is a drift scan (milliseconds), and a small edit
