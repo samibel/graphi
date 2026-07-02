@@ -7,6 +7,20 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Added
+- Real-repository smoke corpus (`cmd/corpus` + `internal/corpus` +
+  `.github/workflows/corpus.yml`): CI now drives the built binary end-to-end
+  (index → search → query → analyze → diagnose) against five pinned real-world
+  repositories (cobra, flask, sinatra, ky, express — chosen to cover the
+  historical first-contact bug classes and language spread), failing on any
+  crash, panic marker, non-zero exit, or empty result where the manifest
+  promises one. Assertions live in `corpus/manifest.json` (adding a repo is a
+  data change); the harness's own tests are hermetic (local fixture repo,
+  including a `.DS_Store` and a malformed-JSON file) and prove the harness
+  bites — a crashing binary and a vacuous index both turn the run red. The
+  workflow is deliberately separate from the zero-egress canary posture
+  (shallow clones need the network). Runs on PR, push to main, and nightly.
+
 ## [0.1.3] - 2026-07-02
 
 ### Changed

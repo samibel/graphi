@@ -1,0 +1,56 @@
+{
+  "notes": "Real-repository smoke corpus (internal/corpus). Five repos chosen to cover the historical first-contact bug classes (non-source assets, symlinked layouts, JSON fixtures) plus language spread: Go (also the future typeresolve proving ground), Python, Ruby, TypeScript, JavaScript+JSON. Refs pin RELEASE TAGS; sha is empty on onboarding — after the first green CI run, copy each recorded head_sha from the corpus-report artifact into the matching sha field to tighten the pin. Adding a repository is a data change here, never a code change.",
+  "entries": [
+    {
+      "name": "cobra",
+      "url": "https://github.com/spf13/cobra",
+      "ref": "v1.8.0",
+      "sha": "",
+      "searches": [
+        { "query": "Execute", "expect_nonempty": true },
+        { "query": "Command", "expect_nonempty": true }
+      ],
+      "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target."
+    },
+    {
+      "name": "flask",
+      "url": "https://github.com/pallets/flask",
+      "ref": "3.0.0",
+      "sha": "",
+      "searches": [
+        { "query": "Flask", "expect_nonempty": true }
+      ],
+      "notes": "Python package; docs, JSON, and mixed non-source assets."
+    },
+    {
+      "name": "sinatra",
+      "url": "https://github.com/sinatra/sinatra",
+      "ref": "v4.0.0",
+      "sha": "",
+      "searches": [
+        { "query": "Base", "expect_nonempty": true }
+      ],
+      "notes": "Ruby gem; multi-gem repo layout."
+    },
+    {
+      "name": "ky",
+      "url": "https://github.com/sindresorhus/ky",
+      "ref": "v1.2.0",
+      "sha": "",
+      "searches": [
+        { "query": "request", "expect_nonempty": true }
+      ],
+      "notes": "TypeScript library; tsconfig/ESM import shapes."
+    },
+    {
+      "name": "express",
+      "url": "https://github.com/expressjs/express",
+      "ref": "4.18.2",
+      "sha": "",
+      "searches": [
+        { "query": "Router", "expect_nonempty": true }
+      ],
+      "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class."
+    }
+  ]
+}

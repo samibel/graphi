@@ -1,0 +1,45 @@
+# Real-repository smoke corpus (roadmap Phase 3, internal/corpus).
+#
+# Drives the BUILT graphi binary end-to-end (index → search → query → analyze
+# → diagnose) against the pinned real-world repositories in
+# corpus/manifest.json, failing on any crash, non-zero exit, panic marker, or
+# empty result where the manifest promises one. Every historical post-release
+# bug (.DS_Store, pnpm symlinks, malformed JSON fixtures) was a real-repo
+# first-contact crash — this job turns that bug class into CI red.
+#
+# DELIBERATELY a separate workflow: it shallow-clones public repositories, so
+# it needs the network and must never be folded into the zero-egress canary
+# posture (canary.yml / privacy-audit.yml stay hermetic). The harness's own
+# unit tests (go test ./internal/corpus) are hermetic and run in testgate.
+name: corpus
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Nightly: catches breakage from the environment side (runner image, git,
+    # upstream tag deletion) even when no PR is in flight.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  corpus-smoke:
+    name: full-flow smoke over pinned real repositories
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: run the corpus harness
+        run: go run ./cmd/corpus -manifest corpus/manifest.json -report corpus-report.json
+      - name: upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-report
+          path: corpus-report.json
