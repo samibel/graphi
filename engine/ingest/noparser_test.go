@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -15,14 +16,14 @@ import (
 // ErrNoParser for any file whose extension isn't registered — unlike
 // stubParser, which "parses" every file it's handed regardless of name.
 type goOnlyParser struct {
-	parseCount int
+	parseCount atomic.Int64 // parsers must be concurrency-safe (parallel pool)
 }
 
 func (p *goOnlyParser) Parse(ctx context.Context, path string, src []byte) (*parse.ParseResult, error) {
 	if !strings.HasSuffix(path, ".go") {
 		return nil, parse.ErrNoParser
 	}
-	p.parseCount++
+	p.parseCount.Add(1)
 	n, err := model.NewNode("function", "pkg/fn"+filepath.Base(path), path, 1, 1)
 	if err != nil {
 		return nil, err
@@ -60,8 +61,8 @@ func TestIngest_FailsClosed_OnUnsupportedFileType(t *testing.T) {
 	if err := i.IngestAll(ctx, root); err != nil {
 		t.Fatalf("IngestAll should not abort on a file type with no registered parser: %v", err)
 	}
-	if parser.parseCount != 1 {
-		t.Fatalf("expected only real.go to reach the parser, got %d parses", parser.parseCount)
+	if parser.parseCount.Load() != 1 {
+		t.Fatalf("expected only real.go to reach the parser, got %d parses", parser.parseCount.Load())
 	}
 	if skips := i.SkippedDiagnostics(); len(skips) != 0 {
 		t.Fatalf("expected zero skip diagnostics (no-parser is silent, not diagnostic-worthy), got %v", skips)

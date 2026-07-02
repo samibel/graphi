@@ -56,8 +56,7 @@ func (p *MarkdownParser) Parse(ctx context.Context, filename string, src []byte)
 		}
 	}()
 
-	parser := gts.NewParser(p.lang)
-	tree, perr := parser.Parse(src)
+	tree, perr := parseTreeSitter(ctx, p.lang, src)
 	if perr != nil {
 		return nil, fmt.Errorf("parse: markdown error in %q: %w", filename, perr)
 	}
