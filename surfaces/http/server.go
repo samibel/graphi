@@ -86,9 +86,10 @@ var queryOps = func() map[string]struct{} {
 
 // streamDescriptors enumerates the SSE event types a client may observe on
 // /events, for capability negotiation via /contract. "ingest-completed" is the
-// freshness event published by the ingest producer; ready/bye/error are the
-// framing events this surface emits (handshake, terminal, stream error).
-var streamDescriptors = []string{"ingest-completed", "ready", "bye", "error"}
+// freshness event published by the ingest producer; "ingest-progress" is the
+// throttled per-phase progress event of a running full ingest; ready/bye/error
+// are the framing events this surface emits (handshake, terminal, stream error).
+var streamDescriptors = []string{"ingest-completed", "ingest-progress", "ready", "bye", "error"}
 
 // Server is the read-only HTTP REST + SSE surface. Construct with New and serve
 // via ListenAndServe (loopback) or Serve (custom listener, for tests).

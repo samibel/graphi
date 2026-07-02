@@ -61,7 +61,9 @@ func isHeadless(goos string, getenv func(string) string) bool {
 // full-vs-incremental golden holds), and constructs the same loopback HTTP
 // surface runHTTP builds. The caller is responsible for srv.Serve(ln) and for
 // invoking cleanup. The construction shape mirrors runHTTP exactly.
-func setupZeroConfig(cwd string) (srv *httpsrv.Server, ln net.Listener, url string, c client.Client, store graphstore.Graphstore, cleanup func(), notRepo bool, err error) {
+// progress, when non-nil, receives ingest progress events (rendered by the
+// caller; see cmd/graphi/progress.go).
+func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent)) (srv *httpsrv.Server, ln net.Listener, url string, c client.Client, store graphstore.Graphstore, cleanup func(), notRepo bool, err error) {
 	cleanup = func() {}
 	root, ok := state.DetectRepo(cwd)
 	if !ok {
@@ -88,9 +90,10 @@ func setupZeroConfig(cwd string) (srv *httpsrv.Server, ln net.Listener, url stri
 	}
 	broker := observe.New()
 	ing.WithBroker(broker)
+	ing.WithProgress(progress)
 	cleanup = func() { _ = ing.Close(); _ = store.Close() }
 
-	if err = ing.IngestAll(context.Background(), root); err != nil {
+	if err = warmOrFullIngest(context.Background(), ing, root, progress); err != nil {
 		cleanup()
 		cleanup = func() {}
 		return nil, nil, "", nil, nil, cleanup, false, err
@@ -110,6 +113,48 @@ func setupZeroConfig(cwd string) (srv *httpsrv.Server, ln net.Listener, url stri
 	return srv, ln, url, c, store, cleanup, false, nil
 }
 
+// warmOrFullIngest brings the per-repo state up to date the cheap way when it
+// can: a store already filled under the CURRENT ingest semantics is only
+// drift-checked (hash walk), and just the changed/deleted files — plus their
+// cascade — are re-ingested through the incremental path, whose result is
+// byte-identical to a full pass by the SW-101 invariant. An empty drift means
+// no ingest at all: bare `graphi` on an unchanged repo starts in seconds
+// instead of re-parsing everything. Any warm-path failure (probe, drift walk,
+// incremental error such as a file that no longer parses) falls back to the
+// tolerant full pass — the warm start is an optimization, never a new failure
+// mode. Cold stores and stores stamped by an older binary take the full pass,
+// which re-certifies them.
+func warmOrFullIngest(ctx context.Context, ing *ingest.Ingester, root string, progress func(ingest.ProgressEvent)) error {
+	emit := func(ev ingest.ProgressEvent) {
+		if progress != nil {
+			progress(ev)
+		}
+	}
+	if _, ok, err := ing.CanWarmStart(ctx); err == nil && ok {
+		emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift})
+		var totalChecked int
+		changed, deleted, derr := ing.DriftSetWithProgress(ctx, root, func(checked int) {
+			totalChecked = checked
+			if checked%64 == 0 {
+				emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: checked})
+			}
+		})
+		if derr == nil {
+			emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: totalChecked})
+			delta := append(changed, deleted...)
+			if len(delta) == 0 {
+				return nil // up to date — the summary comes from the renderer
+			}
+			uerr := ing.IngestChangedWithProgress(ctx, root, delta, progress)
+			if uerr == nil {
+				return nil
+			}
+			fmt.Fprintf(os.Stderr, "graphi: warm start failed (%v) — re-indexing from scratch\n", uerr)
+		}
+	}
+	return ing.IngestAll(ctx, root)
+}
+
 // runZeroConfig is the bare-`graphi` entrypoint (SW-067, EP-010 Task D). It
 // indexes the cwd repo into its auto-managed state DB, serves the embedded UI
 // on a free loopback port, opens the browser (or prints the URL when headless /
@@ -117,7 +162,9 @@ func setupZeroConfig(cwd string) (srv *httpsrv.Server, ln net.Listener, url stri
 // Serve. Returns a process exit code.
 func runZeroConfig() int {
 	cwd, _ := os.Getwd()
-	srv, ln, url, c, _, cleanup, notRepo, err := setupZeroConfig(cwd)
+	prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
+	srv, ln, url, c, _, cleanup, notRepo, err := setupZeroConfig(cwd, prog.Handle)
+	prog.Finish(err)
 	defer cleanup()
 	if notRepo {
 		fmt.Fprintln(os.Stderr, "graphi: this directory doesn't look like a code repository.")
