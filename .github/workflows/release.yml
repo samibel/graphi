@@ -184,3 +184,44 @@ jobs:
           gh release view "$TAG" >/dev/null 2>&1 \
             || gh release create "$TAG" --title "$TAG" --generate-notes
           gh release upload "$TAG" dist/* --clobber
+      # Publish the Homebrew formula and Scoop manifest to the tap/bucket repos
+      # (samibel/homebrew-graphi → Formula/graphi.rb, samibel/scoop-graphi →
+      # bucket/graphi.json), rendered from the REAL SHA256SUMS of this release.
+      # Gated on the PACKAGING_PUSH_TOKEN secret — a fine-grained PAT with
+      # contents:write on ONLY those two repos. Until the maintainer creates
+      # the repos and adds the secret, this step logs and skips cleanly so the
+      # release stays green; once the token exists, a missing/unwritable repo
+      # is a hard failure (a half-configured pipeline must be visible, and the
+      # job is idempotent to re-run). The committed packaging/ placeholders
+      # (version 0.0.0) are never pushed anywhere and stay untouched in git —
+      # the release render happens only in this job's workspace.
+      - name: publish Homebrew tap + Scoop bucket
+        env:
+          PACKAGING_PUSH_TOKEN: ${{ secrets.PACKAGING_PUSH_TOKEN }}
+        run: |
+          if [ -z "$PACKAGING_PUSH_TOKEN" ]; then
+            echo "PACKAGING_PUSH_TOKEN not configured — skipping tap/bucket publish."
+            echo "To enable: create samibel/homebrew-graphi and samibel/scoop-graphi, then add a fine-grained PAT (contents:write, only those two repos) as the PACKAGING_PUSH_TOKEN secret."
+            exit 0
+          fi
+          TAG="${{ steps.tag.outputs.name }}"
+          go run ./cmd/gen-packaging -version "$TAG" -sums dist/SHA256SUMS
+          publish() {
+            repo="$1"; src="$2"; dest="$3"
+            dir="$(mktemp -d)"
+            git clone --depth 1 "https://x-access-token:${PACKAGING_PUSH_TOKEN}@github.com/${repo}.git" "$dir"
+            mkdir -p "$dir/$(dirname "$dest")"
+            cp "$src" "$dir/$dest"
+            git -C "$dir" config user.name "github-actions[bot]"
+            git -C "$dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git -C "$dir" add "$dest"
+            if git -C "$dir" diff --cached --quiet; then
+              echo "${repo}: ${dest} already up to date for ${TAG}"
+            else
+              git -C "$dir" commit -m "graphi ${TAG}"
+              git -C "$dir" push origin HEAD
+            fi
+          }
+          publish "samibel/homebrew-graphi" packaging/homebrew/graphi.rb Formula/graphi.rb
+          publish "samibel/scoop-graphi" packaging/scoop/graphi.json bucket/graphi.json
+          git checkout -- packaging/

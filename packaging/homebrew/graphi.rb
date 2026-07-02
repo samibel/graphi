@@ -6,21 +6,21 @@ class Graphi < Formula
   version "0.0.0"
   on_macos do
     on_arm do
-      url "https://github.com/samibel/graphi/releases/download/0.0.0/graphi-darwin-arm64"
+      url "https://github.com/samibel/graphi/releases/download/v0.0.0/graphi-darwin-arm64"
       sha256 "0000000000000000000000000000000000000000000000000000000000000000"
     end
     on_intel do
-      url "https://github.com/samibel/graphi/releases/download/0.0.0/graphi-darwin-amd64"
+      url "https://github.com/samibel/graphi/releases/download/v0.0.0/graphi-darwin-amd64"
       sha256 "0000000000000000000000000000000000000000000000000000000000000000"
     end
   end
   on_linux do
     on_arm do
-      url "https://github.com/samibel/graphi/releases/download/0.0.0/graphi-linux-arm64"
+      url "https://github.com/samibel/graphi/releases/download/v0.0.0/graphi-linux-arm64"
       sha256 "0000000000000000000000000000000000000000000000000000000000000000"
     end
     on_intel do
-      url "https://github.com/samibel/graphi/releases/download/0.0.0/graphi-linux-amd64"
+      url "https://github.com/samibel/graphi/releases/download/v0.0.0/graphi-linux-amd64"
       sha256 "0000000000000000000000000000000000000000000000000000000000000000"
     end
   end

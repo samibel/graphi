@@ -76,6 +76,60 @@ func TestScoopReferencesWindowsAsset(t *testing.T) {
 	}
 }
 
+// TestVersionTagSplit pins the version-prefix quirk fix: Homebrew's `version`
+// field and Scoop's `version` want the BARE semver, download URLs want the
+// TAG — and both input forms ("v0.2.0" / "0.2.0") must render byte-identically
+// so the workflow can pass the git tag verbatim.
+func TestVersionTagSplit(t *testing.T) {
+	fromTag, err := render("v0.2.0", nil)
+	if err != nil {
+		t.Fatalf("render(v0.2.0): %v", err)
+	}
+	fromBare, err := render("0.2.0", nil)
+	if err != nil {
+		t.Fatalf("render(0.2.0): %v", err)
+	}
+	fromUpper, err := render("V0.2.0", nil)
+	if err != nil {
+		t.Fatalf("render(V0.2.0): %v", err)
+	}
+	for i := range fromUpper {
+		if fromUpper[i].content != fromBare[i].content {
+			t.Errorf("%s: uppercase-V input renders differently from the bare form", fromUpper[i].name)
+		}
+	}
+	if len(fromTag) != len(fromBare) {
+		t.Fatalf("different number of files rendered: tag-form has %d, bare-form has %d", len(fromTag), len(fromBare))
+	}
+	bareByName := make(map[string]string, len(fromBare))
+	for _, f := range fromBare {
+		bareByName[f.name] = f.content
+	}
+	byName := map[string]string{}
+	for _, f := range fromTag {
+		byName[f.name] = f.content
+		if got, ok := bareByName[f.name]; !ok || got != f.content {
+			t.Errorf("%s: tag-form and bare-form inputs render differently", f.name)
+		}
+	}
+	rb, js := byName[formulaPath], byName[scoopPath]
+	if !strings.Contains(rb, `version "0.2.0"`) {
+		t.Errorf("formula version field must be the bare semver")
+	}
+	if strings.Contains(rb, `version "v0.2.0"`) {
+		t.Errorf("formula version field carries the tag prefix")
+	}
+	if !strings.Contains(rb, "/releases/download/v0.2.0/") {
+		t.Errorf("formula URLs must use the TAG path (/download/v0.2.0/)")
+	}
+	if !strings.Contains(js, `"version": "0.2.0"`) {
+		t.Errorf("scoop version field must be the bare semver")
+	}
+	if !strings.Contains(js, "/releases/download/v0.2.0/") {
+		t.Errorf("scoop URL must use the TAG path (/download/v0.2.0/)")
+	}
+}
+
 // TestRenderDeterministic proves two renders are byte-identical.
 func TestRenderDeterministic(t *testing.T) {
 	a, err := render("v1.2.3", map[string]string{"graphi-linux-amd64": "abc"})

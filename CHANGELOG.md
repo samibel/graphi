@@ -11,15 +11,30 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Live indexing progress in the terminal. Bare `graphi` (and `graphi index` /
   `graphi http`) now render an in-place status line on stderr while the repo
   is indexed — spinner, phase (scanning / indexing / linking / resolving
-  types), and a percentage once the file total is known, e.g.
-  `⠙ graphi: indexing 342/1200 files (28%)` — ending in a durable
-  `graphi: indexed N files in Xs` summary. Non-TTY runs (pipes, CI,
-  `TERM=dumb`) degrade to plain phase lines plus 25% milestones with no
-  escape bytes. Under the hood `Ingester.WithProgress` reports full-ingest
-  phase/per-file events (incremental/watcher paths stay silent), and the
-  same events are mirrored to the observe broker as a throttled
-  `ingest-progress` SSE event, advertised in the `/contract` stream
-  descriptors.
+  types), and once the file total is known a percentage, the current file,
+  and an ETA, e.g. `⠙ graphi: indexing 342/1200 files (28%) ~1m40s left —
+  engine/ingest/ingest.go` — ending in a durable `graphi: indexed N files in
+  Xs` summary. Non-TTY runs (pipes, CI, `TERM=dumb`) degrade to plain phase
+  lines plus 25% milestones with no escape bytes. Under the hood
+  `Ingester.WithProgress` reports full-ingest phase/per-file events
+  (incremental/watcher paths stay silent), and the same events are mirrored
+  to the observe broker as a throttled `ingest-progress` SSE event,
+  advertised in the `/contract` stream descriptors.
+- Homebrew/Scoop publishing automation: the `release-assets` job now renders
+  the Homebrew formula and Scoop manifest from the release's real `SHA256SUMS`
+  and pushes them to `samibel/homebrew-graphi` (`Formula/graphi.rb`) and
+  `samibel/scoop-graphi` (`bucket/graphi.json`). The step is gated on the
+  `PACKAGING_PUSH_TOKEN` secret (fine-grained PAT, contents:write on only
+  those two repos) and skips cleanly until the maintainer configures it.
+
+### Fixed
+- `gen-packaging` version-prefix quirk: the Homebrew `version` field and the
+  Scoop `version` (which feeds the `v$version` autoupdate URL) are now stamped
+  with the BARE semver (`0.2.0`) while download URLs use the tag path
+  (`/releases/download/v0.2.0/`) — previously one string served both, so a
+  release render was wrong on one side no matter which form was passed. Both
+  input forms now render byte-identically (unit-tested); the committed
+  placeholder manifests were regenerated accordingly.
 
 ## [0.2.0] - 2026-07-02
 
