@@ -24,6 +24,13 @@ const cliMainPath = "cmd/graphi/main.go"
 // excluded: they rewrite onto `query`/`analyze` and are covered by the analyzer
 // category.
 func enumerateCLISubcommands() ([]string, error) {
+	return EnumerateCLISubcommands()
+}
+
+// EnumerateCLISubcommands is the exported form of the dispatch-switch scan, so
+// cmd/graphi's help-coverage test can assert every dispatched subcommand has a
+// help entry without duplicating the AST scan.
+func EnumerateCLISubcommands() ([]string, error) {
 	root, err := moduleRoot()
 	if err != nil {
 		return nil, err
