@@ -155,7 +155,12 @@ func main() {
 // output. hashes (keyed by asset name) supplies the sha256 per asset,
 // defaulting to zeroSHA when absent. It is pure and deterministic.
 func render(version string, hashes map[string]string) ([]renderedFile, error) {
-	bare := strings.TrimPrefix(version, "v")
+	// Case-insensitive prefix strip: the auto-release tags are always
+	// lowercase, but a manual workflow_dispatch input may arrive as "V0.2.0".
+	bare := version
+	if len(bare) > 0 && (bare[0] == 'v' || bare[0] == 'V') {
+		bare = bare[1:]
+	}
 	tag := "v" + bare
 	byKey := make(map[string]asset, len(release.ReleaseTargets))
 	for _, p := range release.ReleaseTargets {

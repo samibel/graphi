@@ -89,14 +89,28 @@ func TestVersionTagSplit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("render(0.2.0): %v", err)
 	}
-	for i := range fromTag {
-		if fromTag[i].content != fromBare[i].content {
-			t.Errorf("%s: tag-form and bare-form inputs render differently", fromTag[i].name)
+	fromUpper, err := render("V0.2.0", nil)
+	if err != nil {
+		t.Fatalf("render(V0.2.0): %v", err)
+	}
+	for i := range fromUpper {
+		if fromUpper[i].content != fromBare[i].content {
+			t.Errorf("%s: uppercase-V input renders differently from the bare form", fromUpper[i].name)
 		}
+	}
+	if len(fromTag) != len(fromBare) {
+		t.Fatalf("different number of files rendered: tag-form has %d, bare-form has %d", len(fromTag), len(fromBare))
+	}
+	bareByName := make(map[string]string, len(fromBare))
+	for _, f := range fromBare {
+		bareByName[f.name] = f.content
 	}
 	byName := map[string]string{}
 	for _, f := range fromTag {
 		byName[f.name] = f.content
+		if got, ok := bareByName[f.name]; !ok || got != f.content {
+			t.Errorf("%s: tag-form and bare-form inputs render differently", f.name)
+		}
 	}
 	rb, js := byName[formulaPath], byName[scoopPath]
 	if !strings.Contains(rb, `version "0.2.0"`) {
