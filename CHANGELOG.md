@@ -8,6 +8,15 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 ## [Unreleased]
 
 ### Added
+- `engine/typeresolve` (dark — not yet wired into ingest): first slice of the
+  go/types confirmed-tier resolution pass for Go (v0.2.0 milestone). Contains
+  the types.Object → NodeId identity mapping that mirrors the core/parse
+  extractor's naming rules byte-exactly (receiver star/generics stripping,
+  init and blank funcs, package-scope-only values), plus the golden cross-test
+  that pins the real extractor's emitted NodeIds against the reconstruction in
+  both directions — fabrication and drift each fail a test instead of silently
+  dropping confirmed edges later. stdlib go/types only; no x/tools, no new
+  dependencies.
 - Real-repository smoke corpus (`cmd/corpus` + `internal/corpus` +
   `.github/workflows/corpus.yml`): CI now drives the built binary end-to-end
   (index → search → query → analyze → diagnose) against five pinned real-world
