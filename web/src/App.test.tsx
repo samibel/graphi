@@ -17,6 +17,7 @@ vi.mock("./graphiClient", () => ({
   resolveAnalyzerRoute: () => null,
   fetchNeighborhood: vi.fn(),
   fetchImpact: vi.fn(),
+  searchSymbols: vi.fn(async () => []),
   subscribeSSE: vi.fn(() => () => {}),
   SchemaMismatchError: class extends Error {},
 }));

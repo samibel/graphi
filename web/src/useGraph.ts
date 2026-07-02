@@ -12,9 +12,10 @@ import {
   getContract,
   resolveAnalyzerRoute,
   SchemaMismatchError,
+  searchSymbols,
   subscribeSSE,
 } from "./graphiClient";
-import type { Contract, QueryResult, ResultEdge, ResultNode } from "./types";
+import type { Contract, QueryResult, ResultEdge, ResultNode, SearchMatch } from "./types";
 import {
   applyBlast,
   applyCitation,
@@ -40,6 +41,10 @@ export interface GraphState {
   contract: Contract | null;
   /** Resolved blast-radius analyzer route, or null when no analyzer is injected. */
   analyzerRoute: string | null;
+  /** Ambiguous seed → ranked candidates awaiting a user pick; null otherwise. */
+  candidates: SearchMatch[] | null;
+  /** The node id the current graph was loaded from (SSE refreshes re-use it). */
+  resolvedSeed: string | null;
 }
 
 const EMPTY: GraphState = {
@@ -53,6 +58,8 @@ const EMPTY: GraphState = {
   sseDisconnected: false,
   contract: null,
   analyzerRoute: null,
+  candidates: null,
+  resolvedSeed: null,
 };
 
 function toHL(result: QueryResult): {
@@ -74,6 +81,27 @@ function toHL(result: QueryResult): {
     citation: false,
   }));
   return { nodes, edges };
+}
+
+/**
+ * Pick the unambiguous best hit for a typed seed, or null when the user must
+ * choose. Preference order: unique case-insensitive exact qualified-name match,
+ * then unique last-segment name match (`release` ⇒ `pkg.Release`), then a
+ * single-result list. Pure — exported for tests.
+ */
+export function chooseMatch(q: string, matches: SearchMatch[]): SearchMatch | null {
+  if (matches.length === 0) return null;
+  if (matches.length === 1) return matches[0];
+  const needle = q.toLowerCase();
+  const exact = matches.filter((m) => m.qualified_name.toLowerCase() === needle);
+  if (exact.length === 1) return exact[0];
+  const byName = matches.filter((m) => {
+    const qn = m.qualified_name.toLowerCase();
+    const seg = qn.split("/").pop()?.split(".").pop() ?? qn;
+    return seg === needle;
+  });
+  if (byName.length === 1) return byName[0];
+  return null;
 }
 
 export function useGraph(seed: string, depth: number) {
@@ -107,16 +135,18 @@ export function useGraph(seed: string, depth: number) {
     };
   }, []);
 
-  // Load the neighborhood of the seed (AC-1).
-  const load = useCallback(async (s: string, d: number) => {
-    if (!s) {
-      setState((st) => ({ ...EMPTY, contract: st.contract, analyzerRoute: st.analyzerRoute }));
-      return;
-    }
+  // The node id the graph is currently loaded from; SSE refreshes MUST re-use
+  // this (not the raw typed seed) or every ingest event would re-run the
+  // exact-id lookup with free text and wipe the graph.
+  const resolvedRef = useRef<string | null>(null);
+
+  // Load the neighborhood of a RESOLVED node id (AC-1).
+  const loadNode = useCallback(async (id: string, d: number) => {
     setState((st) => ({ ...st, loading: true, error: null }));
     try {
-      const res = await fetchNeighborhood(s, d);
+      const res = await fetchNeighborhood(id, d);
       const { nodes, edges } = toHL(res);
+      resolvedRef.current = id;
       setState((st) => ({
         ...st,
         nodes,
@@ -125,6 +155,8 @@ export function useGraph(seed: string, depth: number) {
         selecting: false,
         loading: false,
         error: null,
+        candidates: null,
+        resolvedSeed: id,
       }));
     } catch (e) {
       if (e instanceof SchemaMismatchError) {
@@ -135,6 +167,72 @@ export function useGraph(seed: string, depth: number) {
       }
     }
   }, []);
+
+  // Resolve the typed seed, then load. The neighborhood endpoint is an exact
+  // node-id lookup, so free text (e.g. "release") goes through /search first:
+  // exact-id hit → load directly; unambiguous match → auto-load; several
+  // plausible hits → surface them as candidates; nothing → empty ("No symbols
+  // found"). A pasted node id / deep-linked ?symbol= keeps working via the
+  // exact-first attempt.
+  const load = useCallback(async (s: string, d: number) => {
+    if (!s) {
+      resolvedRef.current = null;
+      setState((st) => ({ ...EMPTY, contract: st.contract, analyzerRoute: st.analyzerRoute }));
+      return;
+    }
+    setState((st) => ({ ...st, loading: true, error: null, candidates: null }));
+    try {
+      const direct = await fetchNeighborhood(s, d);
+      if (direct.nodes.length > 0) {
+        const { nodes, edges } = toHL(direct);
+        resolvedRef.current = s;
+        setState((st) => ({
+          ...st,
+          nodes,
+          edges,
+          selected: null,
+          selecting: false,
+          loading: false,
+          error: null,
+          candidates: null,
+          resolvedSeed: s,
+        }));
+        return;
+      }
+      const matches = await searchSymbols(s);
+      const best = chooseMatch(s, matches);
+      if (best) {
+        await loadNode(best.node_id, d);
+        return;
+      }
+      resolvedRef.current = null;
+      setState((st) => ({
+        ...st,
+        nodes: [],
+        edges: [],
+        selected: null,
+        selecting: false,
+        loading: false,
+        error: null,
+        candidates: matches.length > 0 ? matches : null,
+        resolvedSeed: null,
+      }));
+    } catch (e) {
+      if (e instanceof SchemaMismatchError) {
+        setState((st) => ({ ...EMPTY, contract: st.contract, analyzerRoute: st.analyzerRoute, schemaMismatch: e.message }));
+      } else {
+        setState((st) => ({ ...st, loading: false, error: String((e as Error).message ?? e) }));
+      }
+    }
+  }, [loadNode]);
+
+  // Candidate click → load that node without re-resolving.
+  const pick = useCallback(
+    (nodeId: string) => {
+      void loadNode(nodeId, seedRef.current.depth);
+    },
+    [loadNode],
+  );
 
   useEffect(() => {
     void load(seed, depth);
@@ -185,7 +283,10 @@ export function useGraph(seed: string, depth: number) {
     const unsub = subscribeSSE(dataStreams, {
       onReady: () => setState((st) => ({ ...st, sseDisconnected: false })),
       onData: () => {
-        const { seed: s, depth: d } = seedRef.current;
+        // Refresh from the RESOLVED node id — the raw seed may be free text
+        // that the exact-id endpoint cannot serve.
+        const s = resolvedRef.current;
+        const { depth: d } = seedRef.current;
         if (!s) return;
         void (async () => {
           try {
@@ -225,5 +326,5 @@ export function useGraph(seed: string, depth: number) {
     return unsub;
   }, [state.contract]);
 
-  return { state, load, select, clear };
+  return { state, load, select, clear, pick };
 }

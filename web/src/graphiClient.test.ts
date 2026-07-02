@@ -5,6 +5,7 @@ import {
   getContract,
   resolveAnalyzerRoute,
   SchemaMismatchError,
+  searchSymbols,
   subscribeSSE,
 } from "./graphiClient";
 import { SCHEMA_VERSION } from "./types";
@@ -14,6 +15,7 @@ import {
   errorEnvelope,
   mismatchedSuccessEnvelope,
   queryPayload,
+  searchPayload,
   sseByeFrame,
   sseDataFrame,
   sseErrorFrame,
@@ -89,9 +91,14 @@ describe("decodeEnvelope — fail-closed schema guard (AC-4)", () => {
 
 // --- /contract negotiation -------------------------------------------------
 describe("getContract + resolveAnalyzerRoute", () => {
-  it("decodes a contract-derived fixture and resolves the analyzer route", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => mkRes(contractDoc)));
+  it("unwraps the envelope the server actually sends (regression: the raw envelope leaked as the contract, so resources was undefined)", async () => {
+    // The server wraps /contract in the standard success envelope — the
+    // fixture MUST be envelope-shaped or this test cannot catch the bug.
+    vi.stubGlobal("fetch", vi.fn(async () => mkRes(successEnvelope(contractDoc))));
     const c = await getContract();
+    expect(c).not.toHaveProperty("payload");
+    expect(Array.isArray(c.resources)).toBe(true);
+    expect(Array.isArray(c.streams)).toBe(true);
     expect(c.resources).toContain("analyze/impact");
     expect(resolveAnalyzerRoute(c)).toBe("analyze/impact");
   });
@@ -100,12 +107,52 @@ describe("getContract + resolveAnalyzerRoute", () => {
     expect(resolveAnalyzerRoute(contractNoAnalyzer)).toBeNull();
   });
 
-  it("throws SchemaMismatchError on a mismatched contract version", async () => {
+  it("throws SchemaMismatchError on a mismatched OUTER envelope version", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => mkRes({ ...contractDoc, schema_version: 999 })),
+      vi.fn(async () => mkRes(mismatchedSuccessEnvelope(contractDoc))),
     );
     await expect(getContract()).rejects.toBeInstanceOf(SchemaMismatchError);
+  });
+
+  it("throws SchemaMismatchError on a mismatched INNER contract version", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        mkRes(successEnvelope({ ...contractDoc, schema_version: 999 })),
+      ),
+    );
+    await expect(getContract()).rejects.toBeInstanceOf(SchemaMismatchError);
+  });
+});
+
+// --- /search seed resolution ------------------------------------------------
+describe("searchSymbols", () => {
+  it("unwraps matches from the search envelope", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mkRes(successEnvelope(searchPayload))),
+    );
+    const matches = await searchSymbols("release");
+    expect(matches).toHaveLength(2);
+    expect(matches[0].node_id).toBe("s1");
+    expect(matches[0].qualified_name).toBe("main.release");
+  });
+
+  it("propagates the fail-closed guard on a mismatched envelope", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mkRes(mismatchedSuccessEnvelope(searchPayload))),
+    );
+    await expect(searchSymbols("x")).rejects.toBeInstanceOf(SchemaMismatchError);
+  });
+
+  it("surfaces sanitized error envelopes as ApiError", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mkRes(errorEnvelope("bad_request", "q required"), 400)),
+    );
+    await expect(searchSymbols("x")).rejects.toBeInstanceOf(ApiError);
   });
 });
 

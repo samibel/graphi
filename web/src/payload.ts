@@ -43,6 +43,23 @@ export interface ImpactResult {
   provenance?: { tier?: string };
 }
 
+/** One ranked lexical search hit (engine/search.Match). */
+export interface SearchMatch {
+  node_id: string;
+  kind: string;
+  qualified_name: string;
+  source_path: string;
+  line: number;
+  column: number;
+  rank: number;
+}
+
+/** Canonical search response (engine/search.Response). */
+export interface SearchResult {
+  query: string;
+  matches: SearchMatch[];
+}
+
 /** SSE data-event payload (engine/observe.Event). */
 export interface StreamEvent {
   type: string; // e.g. ingest-completed

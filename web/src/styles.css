@@ -51,6 +51,18 @@ html, body, #root { height: 100%; margin: 0; }
 .blocking-banner .hint { position: static; transform: none; color: #fecaca; }
 /* Non-absolute inline hint (used inside flex bars / banners / states). */
 .hint-inline { color: #9ca3af; font-size: 12px; }
+/* Ambiguous-seed candidate picker (rendered under the bar). */
+.candidates { padding: 8px 12px; background: #0d1424; border-bottom: 1px solid #1f2937; }
+.candidates p { margin: 0 0 6px; }
+.candidates ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 40vh; overflow-y: auto; }
+.candidates button {
+  width: 100%; text-align: left; padding: 6px 8px; cursor: pointer;
+  background: #111827; color: #e5e7eb; border: 1px solid #1f2937; border-radius: 4px;
+}
+.candidates button:hover { background: #1f2937; }
+.candidates code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; color: #93c5fd;
+}
 
 /* --- Wiki surface (SW-046) ------------------------------------------------ */
 .wiki-page { flex: 1; overflow: auto; padding: 24px 32px; }
