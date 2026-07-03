@@ -235,6 +235,16 @@ func AnalyzerSymbolOptional(name string) bool {
 	}
 }
 
+// DiagnoseOptions carries the per-surface flag configuration for the
+// diagnose engine boundary. It is the surface-layer contract; the in-process
+// Direct client translates it to engine/diagnostic.DiagnoseOptions.
+type DiagnoseOptions struct {
+	All                 bool
+	ConfidenceThreshold string
+	SeverityThreshold   string
+	JSON                bool
+}
+
 // Client is the thin contract every surface uses to execute structural queries,
 // search, and read the savings ledger. Implementations may be in-process or over
 // a Unix domain socket.
@@ -328,9 +338,10 @@ type Client interface {
 	// Diagnose runs the engine diagnostics (SW-091) over the graph and returns the
 	// canonical serialized diagnostic.Result bytes via diagnostic.Marshal — the
 	// single serializer every surface uses (byte-identical parity, SW-094). kinds
-	// selects analyzers; an empty slice runs all built-ins. Without a reader it
-	// returns ErrDiagnosticUnavailable.
-	Diagnose(ctx context.Context, kinds []string) ([]byte, error)
+	// selects analyzers; an empty slice runs all built-ins. opts carries the
+	// flag surface configuration (--all, --confidence, --severity, --json). Without
+	// a reader it returns ErrDiagnosticUnavailable.
+	Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error)
 
 	// Inline applies the SW-092 inline refactor through the shared edit applier and
 	// returns the canonical serialized InlineResult via edit.MarshalInlineResult.

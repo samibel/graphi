@@ -277,13 +277,28 @@ func RunFindClones(ctx context.Context, c client.Client, args []string, out, err
 // the MCP/HTTP/daemon surfaces. Positional args select analyzer kinds; none ⇒ all
 // built-ins. E.g. graphi diagnose            (all) / graphi diagnose dead_symbol.
 func RunDiagnose(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("diagnose", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	all := fs.Bool("all", false, "disable default confidence gate and severity floor")
+	confidence := fs.String("confidence", "", "confidence threshold (heuristic|exact)")
+	severity := fs.String("severity", "", "severity floor (error|warning|info)")
+	jsonFlag := fs.Bool("json", false, "emit structured JSON output")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: diagnose: %w", err)
+	}
 	var kinds []string
-	for _, a := range args {
+	for _, a := range fs.Args() {
 		if a != "" {
 			kinds = append(kinds, a)
 		}
 	}
-	b, err := c.Diagnose(ctx, kinds)
+	opts := client.DiagnoseOptions{
+		All:                 *all,
+		ConfidenceThreshold: *confidence,
+		SeverityThreshold:   *severity,
+		JSON:                *jsonFlag,
+	}
+	b, err := c.Diagnose(ctx, kinds, opts)
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}

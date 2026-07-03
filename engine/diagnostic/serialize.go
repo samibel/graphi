@@ -30,6 +30,7 @@ func Marshal(r Result) ([]byte, error) {
 		Outcome:     r.Outcome,
 		Diagnostics: diags,
 		Unavailable: unavailable,
+		Summary:     r.Summary,
 	}
 
 	var buf bytes.Buffer

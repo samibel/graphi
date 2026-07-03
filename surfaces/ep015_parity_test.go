@@ -20,7 +20,7 @@ func TestEP015_DiagnoseCLISurfaceEqualsCanonicalBytes(t *testing.T) {
 	c := client.NewDirect(query.New(store), nil)
 	ctx := context.Background()
 
-	want, err := c.Diagnose(ctx, nil)
+	want, err := c.Diagnose(ctx, nil, client.DiagnoseOptions{})
 	if err != nil {
 		t.Fatalf("client.Diagnose: %v", err)
 	}
@@ -48,12 +48,12 @@ func TestEP015_DiagnoseDeterministic(t *testing.T) {
 	store, _ := seed(t)
 	c := client.NewDirect(query.New(store), nil)
 	ctx := context.Background()
-	a, err := c.Diagnose(ctx, nil)
+	a, err := c.Diagnose(ctx, nil, client.DiagnoseOptions{})
 	if err != nil {
 		t.Fatalf("Diagnose: %v", err)
 	}
 	for i := 0; i < 5; i++ {
-		b, _ := c.Diagnose(ctx, nil)
+		b, _ := c.Diagnose(ctx, nil, client.DiagnoseOptions{})
 		if !bytes.Equal(a, b) {
 			t.Fatalf("diagnose run %d not byte-identical:\n a=%s\n b=%s", i, a, b)
 		}
@@ -76,7 +76,7 @@ func TestEP015_HTTPEditOpsUnavailableUntilWired(t *testing.T) {
 	if _, err := h.SafeDelete(ctx, client.SafeDeleteRequest{TargetSymbol: "x"}); err != client.ErrEditUnavailable {
 		t.Fatalf("HTTP SafeDelete err = %v, want ErrEditUnavailable", err)
 	}
-	if _, err := h.Diagnose(ctx, nil); err != client.ErrDiagnosticUnavailable {
+	if _, err := h.Diagnose(ctx, nil, client.DiagnoseOptions{}); err != client.ErrDiagnosticUnavailable {
 		t.Fatalf("HTTP Diagnose err = %v, want ErrDiagnosticUnavailable", err)
 	}
 }

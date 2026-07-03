@@ -500,11 +500,16 @@ func (d *Direct) Refactor(ctx context.Context, req RefactorRequest, actor string
 // diagnostics over the SAME read-only Reader the queries use and serializes the
 // one canonical result through diagnostic.Marshal — the single byte-source every
 // surface consumes.
-func (d *Direct) Diagnose(ctx context.Context, kinds []string) ([]byte, error) {
+func (d *Direct) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {
 	if d.querySvc == nil {
 		return nil, ErrDiagnosticUnavailable
 	}
-	res, err := diagnostic.Diagnose(ctx, d.querySvc.Reader(), kinds)
+	res, err := diagnostic.DiagnoseWithOptions(ctx, d.querySvc.Reader(), kinds, diagnostic.DiagnoseOptions{
+		All:                 opts.All,
+		ConfidenceThreshold: opts.ConfidenceThreshold,
+		SeverityThreshold:     opts.SeverityThreshold,
+		JSON:                opts.JSON,
+	})
 	if err != nil {
 		return nil, err
 	}

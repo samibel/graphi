@@ -350,7 +350,7 @@ func (h *HTTP) SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, error
 
 // Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
 // is added (mirrors the analysis/edit "unavailable until wired" precedent).
-func (h *HTTP) Diagnose(ctx context.Context, kinds []string) ([]byte, error) {
+func (h *HTTP) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {
 	return nil, ErrDiagnosticUnavailable
 }
 

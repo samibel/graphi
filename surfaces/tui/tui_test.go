@@ -108,7 +108,7 @@ func (f *fakeEngine) Distill(context.Context, client.DistillRequest) ([]byte, er
 func (f *fakeEngine) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
 	return nil, client.ErrSkillGenUnavailable
 }
-func (f *fakeEngine) Diagnose(context.Context, []string) ([]byte, error) {
+func (f *fakeEngine) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }
 func (f *fakeEngine) Inline(context.Context, client.InlineRequest) ([]byte, error) {
