@@ -110,6 +110,12 @@ Package→Datei-Zuordnung ist über `defines`-Kanten bzw. `source_path` rekonstr
   Fortschritt statt statischem Spinner.
 - Die eine Riesen-Transaktion in Chunks schneiden (z. B. 50k Edges/Commit): macht
   Fortschritt real sichtbar, deckelt die WAL-Größe und macht Abbrüche resumierbar.
+  **Konsistenz-Bedingung:** Chunking muss mit der Ingest-Meta-Transaktion
+  koordiniert sein — kein Graph-Store-Write, während eine Meta-Transaktion noch
+  zurückrollen kann. Konkret: pro Chunk ein Meta-Checkpoint (Graph und Meta-Cache
+  committen im Lockstep), und Link-Edge-Writes bleiben idempotent/replaybar, sodass
+  ein abgebrochener Pass beim nächsten Link-Lauf selbstheilend nachgezogen wird
+  statt zu divergieren.
 - Stale-Edge-Sweep entkoppeln: statt Full-Read aller Edges pro Pass
   (`ingest.go:1701,1707`) from-owned Edges über den vorhandenen
   `edges_from_id`-Index gezielt löschen.
@@ -181,7 +187,10 @@ Default-Sinks (`config.go:205-206`) zeigen dann auf existierende Knoten.
 - vuln-go-artiges Fixture (HTTP-Handler → eigener Wrapper → `exec.Command`/
   `db.Query`, 2× SQLi, 1× RCE, 1× LFI) als **echte .go-Quellen** ins Corpus,
   E2E-Test: ingest → link → `analyze taint` → 4/4 Flows asserted (Muster:
-  `engine/ingest/*_e2e_test.go`). Der bestehende synthetische Korpus bleibt als
+  `engine/ingest/*_e2e_test.go`). Das Fixture assertet **Recall und Präzision**:
+  neben den 4 erwarteten Flows enthält es sanitisierte/harmlose Pfade
+  (parametrisierte Query, `strconv.Atoi`-validierter Input), auf denen **kein**
+  Finding gemeldet werden darf — sonst würde Over-Tainting unbemerkt durchgehen. Der bestehende synthetische Korpus bleibt als
   Unit-Ebene, verliert aber seine Gate-Funktion an das E2E-Fixture. Das ist der
   Test, der diese Lücke von Anfang an gefangen hätte.
 
