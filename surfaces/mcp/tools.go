@@ -73,6 +73,11 @@ const (
 	// of an existing PR review (gap / over_flag / unsupported_claim). Zero-egress
 	// engine analyzer; the only permitted egress is the surface review fetch.
 	ToolCritiqueReview = "critique_review"
+
+	// EP-020 agent-first task tools (SW-115 / SW-116 / SW-117).
+	ToolExplainSymbol = "explain_symbol"
+	ToolRelatedFiles  = "related_files"
+	ToolChangeRisk    = "change_risk"
 )
 
 // singletonToolNames are the non-structural-query tools advertised behind a
@@ -107,6 +112,9 @@ var singletonToolNames = []string{
 	ToolSuggestReviewers,
 	ToolCompareBranches,
 	ToolCritiqueReview,
+	ToolExplainSymbol,
+	ToolRelatedFiles,
+	ToolChangeRisk,
 }
 
 // experimentalPrefix marks a tool description as experimental. Tool NAMES are

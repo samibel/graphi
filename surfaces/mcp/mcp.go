@@ -19,6 +19,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/related"
+	"github.com/samibel/graphi/engine/agenttools/risk"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
@@ -287,6 +291,17 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if deepAnalyzerName, ok := deepAnalyzerTools[p.Name]; ok {
 		p.Arguments.Analyzer = deepAnalyzerName
 		return s.analysisCall(ctx, p)
+	}
+
+	// EP-020 agent-first task tools (SW-115 / SW-116 / SW-117). These are
+	// advertised unconditionally because they require no extra capability probe.
+	switch p.Name {
+	case ToolExplainSymbol:
+		return s.explainSymbolCall(ctx, p)
+	case ToolRelatedFiles:
+		return s.relatedFilesCall(ctx, p)
+	case ToolChangeRisk:
+		return s.changeRiskCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -701,6 +716,58 @@ func textResult(b []byte) map[string]any {
 	}
 }
 
+// explainSymbolCall (SW-115) returns a compact symbol-identity summary in the C1
+// contract shape. It rides the shared engine/agenttools/explain package so MCP
+// and future CLI surfaces emit the same canonical bytes.
+func (s *Server) explainSymbolCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Symbol == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
+	}
+	res, err := explain.Explain(p.Arguments.Symbol)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	b, err := contract.Serialize(res)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// relatedFilesCall (SW-116) returns a deterministically ranked read-first file
+// list in the C1 contract shape.
+func (s *Server) relatedFilesCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Target == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: target"}
+	}
+	res, err := related.Files(p.Arguments.Target, p.Arguments.Direction)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	b, err := contract.Serialize(res)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// changeRiskCall (SW-117) returns a change-risk evaluation in the C1 contract
+// shape.
+func (s *Server) changeRiskCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Target == "" && p.Arguments.Diff == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: target or diff"}
+	}
+	res, err := risk.Assess(p.Arguments.Target, p.Arguments.Diff)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	b, err := contract.Serialize(res)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
 // deepAnalyzerTools maps dedicated EP-005 MCP tool names → their analysis
 // dispatcher name so each tool name routes through analysisCall after injecting
 // the correct analyzer. The map is package-level so both toolsCall routing and
@@ -1103,6 +1170,48 @@ func (s *Server) toolDescriptors() []map[string]any {
 			"annotations": readOnlyToolAnnotations(),
 		})
 	}
+	// EP-020 agent-first task tools (SW-115 / SW-116 / SW-117). Advertised
+	// unconditionally: they require only the engine/agenttools packages, not a
+	// separate capability probe. Each descriptor uses the hardened six-facet
+	// template (purpose, when-to-use, when-not-to-use, input shape, read-only,
+	// partial-possible) and carries explicit read-only annotations.
+	tools = append(tools, map[string]any{
+		"name": ToolExplainSymbol,
+		"description": "explain_symbol: return a compact, cited symbol-identity summary (qualified name, kind, declaring file:line, direct callers/callees). Purpose: answer 'what is this symbol?' in one call. When to use: the agent has a symbol reference and needs identity + immediate neighborhood without reading source. When NOT to use: for broad 'what should I read first?' questions (use related_files) or risk scoring (use change_risk). Input shape: a single symbol reference (qualified id, file:line, or bare name). Read-only: true. Partial results possible: neighbor lists may truncate.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol": map[string]any{"type": "string", "description": "symbol reference: qualified id, file:line anchor, or bare name"},
+			},
+			"required": []string{"symbol"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	tools = append(tools, map[string]any{
+		"name": ToolRelatedFiles,
+		"description": "related_files: return a deterministically ranked 'read these first' file list for a symbol, file, or diff anchor. Purpose: answer 'what should I read first?' in one call. When to use: the agent needs a scoped, evidence-backed file list before editing or reviewing. When NOT to use: for a single symbol's identity (use explain_symbol) or for risk scoring (use change_risk). Input shape: a single anchor plus optional direction (dependencies | dependents | both). Read-only: true. Partial results possible: ranked file list may truncate.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"target":    map[string]any{"type": "string", "description": "anchor: symbol id, file path, or diff line-oriented refs"},
+				"direction": map[string]any{"type": "string", "description": "dependencies | dependents | both (default)"},
+			},
+			"required": []string{"target"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	tools = append(tools, map[string]any{
+		"name": ToolChangeRisk,
+		"description": "change_risk: return an evidence-based low/medium/high/unknown risk assessment for a symbol, file, or diff target. Purpose: answer 'how risky is it to touch this?' in one call. When to use: before proposing or reviewing a change, to gauge blast radius and coverage. When NOT to use: when you only need a file list (use related_files) or a symbol summary (use explain_symbol). Input shape: a target symbol/file or a local-first diff. Read-only: true. Partial results possible: evidence may be truncated, and the tool returns unknown rather than guessing.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"target": map[string]any{"type": "string", "description": "symbol id or file path to evaluate"},
+				"diff":   map[string]any{"type": "string", "description": "local-first unified diff or line-oriented refs (alternative to target)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central experimental marking (single source: experimentalTools in
 	// tools.go) — descriptor literals never carry the tag by hand.
 	return markExperimental(tools)

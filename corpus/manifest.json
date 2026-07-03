@@ -76,6 +76,20 @@
         }
       ],
       "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class."
+    },
+    {
+      "name": "tier1-fixture-go",
+      "path": "corpus/fixtures/go",
+      "tier": 1,
+      "budget_ms": 5000,
+      "scenario_ref": "go-sample",
+      "searches": [
+        {
+          "query": "Hello",
+          "expect_nonempty": true
+        }
+      ],
+      "notes": "Tier-1 pinned local fixture for the PR-gate path. No network required."
     }
   ]
 }

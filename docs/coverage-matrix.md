@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **133**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **136**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -69,7 +69,7 @@ Total capabilities: **133**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage-prs` | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (38)
+## MCP tools (41)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -84,12 +84,14 @@ Total capabilities: **133**. See [`architecture-plan.md`](architecture-plan.md) 
 | `analyze_taint` | ✅ shipped | EP-005 | dedicated tool for the taint analyzer. |
 | `callees` | ✅ shipped | EP-001 | structural query: callees. |
 | `callers` | ✅ shipped | EP-001 | structural query: callers. |
+| `change_risk` | 🟡 partial | EP-020 | SW-117: evidence-based change risk assessment; scaffold: contract shape and surface wiring present. |
 | `compare_branches` | ✅ shipped | EP-018 | SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary). |
 | `compound` | ✅ shipped | EP-011 | compound / Cypher-style graph query composing traversals+filters (G1). |
 | `conflicts_prs` | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress). |
 | `critique_review` | ✅ shipped | EP-018 | SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress). |
 | `definition` | ✅ shipped | EP-001 | structural query: definition. |
 | `distill` | ✅ shipped | EP-012 | session distillation into a compact decision record. |
+| `explain_symbol` | 🟡 partial | EP-020 | SW-115: compact symbol-identity summary; scaffold: contract shape and surface wiring present. |
 | `find_clones` | ✅ shipped | EP-013 | structural clone-group detection from a JSON config (G4). |
 | `implementers` | ✅ shipped | EP-011 | structural query: types that implement/embed a symbol (G2). |
 | `implements` | ✅ shipped | EP-011 | structural query: interfaces/types a symbol implements (G2). |
@@ -101,6 +103,7 @@ Total capabilities: **133**. See [`architecture-plan.md`](architecture-plan.md) 
 | `refactor` | ✅ shipped | EP-006 | apply a graph-aware refactor with an auditable change record. |
 | `refactor_preview` | ✅ shipped | EP-006 | preview a graph-aware refactor (impact set, no mutation). |
 | `references` | ✅ shipped | EP-001 | structural query: references. |
+| `related_files` | 🟡 partial | EP-020 | SW-116: deterministic ranked read-first file list; scaffold: contract shape and surface wiring present. |
 | `savings` | ✅ shipped | EP-003 | token-savings ledger readout (per-call/session/cumulative USD). |
 | `search` | ✅ shipped | EP-001 | lexical / symbol search over the indexed graph. |
 | `search_ast` | ✅ shipped | EP-013 | structural AST pattern query over the indexed graph (G3). |

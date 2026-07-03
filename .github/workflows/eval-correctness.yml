@@ -1,0 +1,41 @@
+name: eval-tier1-correctness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  eval-tier1-correctness:
+    name: eval-tier1-correctness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run Tier-1 eval
+        id: eval
+        run: |
+          CGO_ENABLED=0 go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -out report.json \
+            -format markdown
+        env:
+          CGO_ENABLED: 0
+
+      - name: Upload eval report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-report
+          path: |
+            report.json
+            report.md
+
+      - name: Fail on Tier-1 regression
+        if: steps.eval.outcome == 'failure'
+        run: exit 1

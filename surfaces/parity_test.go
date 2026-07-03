@@ -368,9 +368,10 @@ func TestMCP_ToolsList(t *testing.T) {
 	}
 	// query ops + the "search" tool + the optional "search_semantic" tool (SW-059)
 	// + the EP-011 G1 "compound" tool + the SW-085 "search_ast" and "find_clones"
-	// pattern-query tools (advertised whenever search is available).
-	if len(resp.Result.Tools) != len(query.Operations)+5 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+5)
+	// pattern-query tools + the EP-020 "explain_symbol", "related_files", and
+	// "change_risk" tools (advertised unconditionally).
+	if len(resp.Result.Tools) != len(query.Operations)+8 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+8)
 	}
 }
 

@@ -1,0 +1,10 @@
+id: anchor-absent
+fixture_ref: tier1-fixture-go
+operation:
+  name: search
+  args:
+    query: Hello
+expect:
+  - kind: symbol
+    value: DoesNotExist
+    match: exact

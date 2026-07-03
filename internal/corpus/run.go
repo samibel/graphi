@@ -22,12 +22,26 @@ type Runner struct {
 	PerEntryTimeout time.Duration
 	// Log receives human-readable progress lines (nil = silent).
 	Log func(format string, args ...any)
+	// Tier, when > 0, runs only entries with this exact tier.
+	Tier int
+	// MaxTier, when > 0, runs only entries with tier <= MaxTier.
+	MaxTier int
 }
 
 func (r *Runner) logf(format string, args ...any) {
 	if r.Log != nil {
 		r.Log(format, args...)
 	}
+}
+
+func (r *Runner) includes(e Entry) bool {
+	if r.Tier > 0 && e.Tier != r.Tier {
+		return false
+	}
+	if r.MaxTier > 0 && e.Tier > r.MaxTier {
+		return false
+	}
+	return true
 }
 
 // Run executes every manifest entry and returns the aggregate report. It never
@@ -42,6 +56,13 @@ func (r *Runner) Run(ctx context.Context, m Manifest) (Report, error) {
 	}
 	rep := Report{Pass: true}
 	for _, e := range m.Entries {
+		if e.Tier == 0 {
+			e.Tier = 1
+		}
+		if !r.includes(e) {
+			r.logf("corpus: %s: skipped (tier %d)", e.Name, e.Tier)
+			continue
+		}
 		er := r.runEntry(ctx, e)
 		rep.Pass = rep.Pass && er.Pass
 		rep.Entries = append(rep.Entries, er)
@@ -54,7 +75,7 @@ func (r *Runner) Run(ctx context.Context, m Manifest) (Report, error) {
 // steps would only cascade noise), but never panics the harness.
 func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 	start := time.Now()
-	er := EntryReport{Name: e.Name, URL: e.URL, Ref: e.Ref}
+	er := EntryReport{Name: e.Name, URL: e.URL, Ref: e.Ref, Tier: e.Tier, BudgetMS: e.BudgetMS}
 	ctx, cancel := context.WithTimeout(ctx, r.PerEntryTimeout)
 	defer cancel()
 

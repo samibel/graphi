@@ -431,6 +431,21 @@ capabilities:
     status: shipped
     epic: EP-006
     note: "reverse a previously applied edit by undo token."
+  - id: explain_symbol
+    category: mcp-tool
+    status: partial
+    epic: EP-020
+    note: "SW-115: compact symbol-identity summary; scaffold: contract shape and surface wiring present."
+  - id: related_files
+    category: mcp-tool
+    status: partial
+    epic: EP-020
+    note: "SW-116: deterministic ranked read-first file list; scaffold: contract shape and surface wiring present."
+  - id: change_risk
+    category: mcp-tool
+    status: partial
+    epic: EP-020
+    note: "SW-117: evidence-based change risk assessment; scaffold: contract shape and surface wiring present."
   - id: cli
     category: surface
     status: shipped
