@@ -298,7 +298,7 @@ func runScenarios(dir, root string, fixturePaths map[string]fixtureInfo, tier in
 			Confidence:    res.Confidence,
 			LatencyMS:     res.LatencyMS,
 			AnchorPresent: res.AnchorPresent,
-			Tier1:         true,
+			Tier1:         fx.Tier == 1,
 		})
 	}
 	return results, nil

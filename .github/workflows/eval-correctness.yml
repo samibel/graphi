@@ -22,6 +22,7 @@ jobs:
         run: |
           CGO_ENABLED=0 go run ./cmd/eval \
             -manifest corpus/manifest.json \
+            -tier 1 \
             -out report.json \
             -format markdown
         env:

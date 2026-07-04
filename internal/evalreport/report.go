@@ -148,8 +148,8 @@ func WriteMarkdown(r Report, path string) error {
 
 ## Scorecard
 
-**Overall:** {{printf "%.1f" .Scorecard.Overall}}  
-**Pass:** {{.Scorecard.Pass}}  
+**Overall:** {{printf "%.1f" .Scorecard.Overall}}
+**Pass:** {{.Scorecard.Pass}}
 **Baseline → Target:** {{printf "%.1f" .Baseline}} → {{printf "%.1f" .Target}}
 
 ### Breakdown
