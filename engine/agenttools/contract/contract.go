@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 )
 
 // Outcome is the result classification.
@@ -157,9 +158,19 @@ func NormalizeConfidence(c *Confidence) error {
 	if sum == 0 {
 		return errors.New("distribution sum is zero")
 	}
+	labels := make([]string, 0, len(c.Distribution))
+	for label := range c.Distribution {
+		labels = append(labels, label)
+	}
+	// Deterministic top selection: ties break on ascending label order (which
+	// for the tier vocabulary happens to be strength order: confirmed <
+	// derived < heuristic < unknown). Map iteration order must never leak
+	// into the serialized output.
+	sort.Strings(labels)
 	topLabel := ""
 	topWeight := -1.0
-	for label, w := range c.Distribution {
+	for _, label := range labels {
+		w := c.Distribution[label]
 		c.Distribution[label] = w / sum
 		if w > topWeight {
 			topWeight = w

@@ -62,6 +62,21 @@ var subcommandHelp = map[string]subHelp{
 		"graphi agent-brief [-topic <topic>] [-ledger path]",
 		"graphi agent-brief -topic \"engine/agenttools/brief\"",
 	},
+	"explain-symbol": {
+		"compact, cited symbol identity summary (definition, callers, callees, references)",
+		"graphi explain-symbol [-db path] [-max-items n] <symbol|path|node-id>",
+		"graphi explain-symbol -db graph.db util.Format",
+	},
+	"related-files": {
+		"ranked, cited read-first file list around a symbol, path, or task",
+		"graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>",
+		"graphi related-files -db graph.db -direction dependents util.Format",
+	},
+	"change-risk": {
+		"evidence-based local blast-radius estimate (low/medium/high/unknown)",
+		"graphi change-risk [-db path] [-max-items n] (<target> | -diff <file|->)",
+		"git diff | graphi change-risk -db graph.db -diff -",
+	},
 	"distill": {
 		"distill a session into a compact decision record",
 		"graphi distill -session <id> [-decisions d1,d2] [-risks r1] [-questions q1] [-files a.go,b.go] [-ledger path]",

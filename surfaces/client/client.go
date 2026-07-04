@@ -354,6 +354,26 @@ type Client interface {
 	// ErrBriefUnavailable until wired.
 	Brief(ctx context.Context, topic string) ([]byte, []byte, error)
 
+	// ExplainSymbol runs the explain_symbol agent tool (EP-020) and returns the
+	// canonical serialized contract.Result bytes: a compact, cited symbol
+	// identity summary (definition, callers/callees/references) with a
+	// tier-derived confidence distribution. Ambiguous references yield
+	// candidates instead of a guess; unresolved ones yield the "empty" outcome
+	// with hints. Read-only. Clients without graph services return the
+	// contract's "unavailable" outcome.
+	ExplainSymbol(ctx context.Context, symbol string, maxItems int) ([]byte, error)
+
+	// RelatedFiles runs the related_files agent tool (EP-020): a deterministic,
+	// evidence-cited read-first file ranking around the resolved anchor.
+	// direction is "dependencies", "dependents", or "both"/"" (default both).
+	// Read-only.
+	RelatedFiles(ctx context.Context, target, direction string, maxFiles int) ([]byte, error)
+
+	// ChangeRisk runs the change_risk agent tool (EP-020): an evidence-based
+	// local blast-radius estimate (low/medium/high/unknown) for a symbol, file,
+	// or unified diff. At least one of target/diff must be non-empty. Read-only.
+	ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error)
+
 	// Diagnose runs the engine diagnostics (SW-091) over the graph and returns the
 	// canonical serialized diagnostic.Result bytes via diagnostic.Marshal — the
 	// single serializer every surface uses (byte-identical parity, SW-094). kinds
@@ -463,3 +483,10 @@ var ErrSkillGenUnavailable = errors.New("client: skillgen service unavailable")
 
 // ErrBriefUnavailable is returned when a Client has no agent_brief assembler configured.
 var ErrBriefUnavailable = errors.New("client: agent_brief service unavailable")
+
+// ErrAgentToolsUnavailable is returned when a Client cannot reach the EP-020
+// agent tools (explain_symbol / related_files / change_risk) on its transport.
+// The in-process Direct client always serves them (degrading to the contract's
+// "unavailable" outcome when no graph services are wired); remote clients
+// return this sentinel until an RPC is added.
+var ErrAgentToolsUnavailable = errors.New("client: agent tools unavailable")

@@ -338,6 +338,11 @@ func (s *Server) handleContract(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(resources)
 	resources = append(resources, "search")
+	// EP-020 agent tools are always served (the client seam degrades to the
+	// contract "unavailable" outcome when no graph services are wired).
+	for _, t := range agentToolNames {
+		resources = append(resources, "analyze/"+t)
+	}
 	for _, a := range s.analyzers {
 		resources = append(resources, "analyze/"+a)
 	}
@@ -504,6 +509,12 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad_request", "analyzer required")
 		return
 	}
+	// EP-020 agent tools ride the same read-only /analyze/{name} route but
+	// dispatch through their dedicated client seams (shared engine logic, same
+	// canonical bytes as CLI/MCP) instead of the generic analysis service.
+	if handled := s.handleAgentTool(w, r, analyzer); handled {
+		return
+	}
 	p := client.AnalyzeParams{
 		Name:      analyzer,
 		Symbol:    r.URL.Query().Get("symbol"),
@@ -523,6 +534,74 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeEnvelope(w, raw)
+}
+
+// agentToolNames are the EP-020 agent tools served on the /analyze/{name}
+// route and advertised in /contract. They dispatch through the dedicated
+// client seams, not the generic analysis service.
+var agentToolNames = []string{"agent_brief", "change_risk", "explain_symbol", "related_files"}
+
+// handleAgentTool serves the EP-020 agent tools on the shared /analyze route.
+// It returns false when name is not an agent tool so the generic analyzer
+// dispatch proceeds. Read-only: every seam it calls is a GET-safe query.
+func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name string) bool {
+	q := r.URL.Query()
+	maxItems := 0
+	if mi := q.Get("max-items"); mi != "" {
+		v, err := strconv.Atoi(mi)
+		if err != nil || v < 0 {
+			writeErr(w, http.StatusBadRequest, "bad_request", "bad max-items")
+			return true
+		}
+		maxItems = v
+	}
+	var (
+		raw []byte
+		err error
+	)
+	switch name {
+	case "explain_symbol":
+		symbol := q.Get("symbol")
+		if symbol == "" {
+			writeErr(w, http.StatusBadRequest, "bad_request", "symbol required")
+			return true
+		}
+		raw, err = s.client.ExplainSymbol(r.Context(), symbol, maxItems)
+	case "related_files":
+		target := q.Get("target")
+		if target == "" {
+			target = q.Get("symbol") // IDE convenience alias
+		}
+		if target == "" {
+			writeErr(w, http.StatusBadRequest, "bad_request", "target required")
+			return true
+		}
+		raw, err = s.client.RelatedFiles(r.Context(), target, q.Get("direction"), maxItems)
+	case "change_risk":
+		target := q.Get("target")
+		if target == "" {
+			target = q.Get("symbol")
+		}
+		if target == "" {
+			writeErr(w, http.StatusBadRequest, "bad_request", "target required")
+			return true
+		}
+		raw, err = s.client.ChangeRisk(r.Context(), target, "", maxItems)
+	case "agent_brief":
+		topic := q.Get("topic")
+		if topic == "" {
+			topic = q.Get("symbol")
+		}
+		raw, _, err = s.client.Brief(r.Context(), topic)
+	default:
+		return false
+	}
+	if err != nil {
+		writeErrSanitized(w, err)
+		return true
+	}
+	writeEnvelope(w, raw)
+	return true
 }
 
 // handleListPRs (SW-105) returns the read-only forge PR-enumeration metadata

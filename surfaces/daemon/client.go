@@ -261,6 +261,27 @@ func (c *DaemonClient) Brief(ctx context.Context, topic string) ([]byte, []byte,
 	return nil, nil, client.ErrBriefUnavailable
 }
 
+// ExplainSymbol implements client.Client. The daemon agent-tool RPCs are not
+// yet wired; returns ErrAgentToolsUnavailable.
+func (c *DaemonClient) ExplainSymbol(ctx context.Context, symbol string, maxItems int) ([]byte, error) {
+	_, _, _ = ctx, symbol, maxItems
+	return nil, client.ErrAgentToolsUnavailable
+}
+
+// RelatedFiles implements client.Client. Returns ErrAgentToolsUnavailable until
+// a daemon RPC is added.
+func (c *DaemonClient) RelatedFiles(ctx context.Context, target, direction string, maxFiles int) ([]byte, error) {
+	_, _, _, _ = ctx, target, direction, maxFiles
+	return nil, client.ErrAgentToolsUnavailable
+}
+
+// ChangeRisk implements client.Client. Returns ErrAgentToolsUnavailable until a
+// daemon RPC is added.
+func (c *DaemonClient) ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error) {
+	_, _, _, _ = ctx, target, diff, maxItems
+	return nil, client.ErrAgentToolsUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {

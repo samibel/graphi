@@ -83,6 +83,12 @@ func main() {
 		os.Exit(runMemory(os.Args[2:]))
 	case "agent-brief":
 		os.Exit(runAgentBrief(os.Args[2:]))
+	case "explain-symbol":
+		os.Exit(runAgentTool(os.Args[2:], "explain-symbol"))
+	case "related-files":
+		os.Exit(runAgentTool(os.Args[2:], "related-files"))
+	case "change-risk":
+		os.Exit(runAgentTool(os.Args[2:], "change-risk"))
 	case "distill":
 		os.Exit(runDistill(os.Args[2:]))
 	case "skillgen":
@@ -1371,6 +1377,40 @@ func runAgentBrief(args []string) int {
 	defer cleanup()
 	if err := cli.RunAgentBrief(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: agent-brief: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runAgentTool launches one of the EP-020 CLI agent-tool surfaces
+// (explain-symbol, related-files, change-risk). All three ride the shared
+// client seam, so their bytes match MCP tools/call exactly. Usage:
+//
+//	graphi explain-symbol [-db path] [-max-items n] <symbol|path|node-id>
+//	graphi related-files  [-db path] [-direction d] [-max-files n] <target>
+//	graphi change-risk    [-db path] [-max-items n] (<target> | -diff <file|->)
+func runAgentTool(args []string, verb string) int {
+	dbPath, socket, rest := extractFlags(args)
+	c, storeCleanup := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	defer storeCleanup()
+	if socket != "" {
+		fmt.Fprintf(os.Stderr, "graphi: %s: not available via daemon in this build\n", verb)
+		return 1
+	}
+	var err error
+	switch verb {
+	case "explain-symbol":
+		err = cli.RunExplainSymbol(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "related-files":
+		err = cli.RunRelatedFiles(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "change-risk":
+		err = cli.RunChangeRisk(context.Background(), c, rest, os.Stdin, os.Stdout, os.Stderr)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %s: %v\n", verb, err)
 		return 1
 	}
 	return 0

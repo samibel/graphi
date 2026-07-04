@@ -611,6 +611,109 @@ func RunAgentBrief(ctx context.Context, c client.Client, args []string, out, err
 	return nil
 }
 
+// RunExplainSymbol runs the explain_symbol agent tool (EP-020) and prints the
+// canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	explain-symbol [-max-items n] <symbol|path|node-id>
+func RunExplainSymbol(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("explain-symbol", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 1 {
+		return fmt.Errorf("cli: explain-symbol needs exactly one symbol/path/node-id argument")
+	}
+	b, err := c.ExplainSymbol(ctx, fs.Arg(0), *maxItems)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunRelatedFiles runs the related_files agent tool (EP-020) and prints the
+// canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	related-files [-direction dependencies|dependents|both] [-max-files n] <target>
+func RunRelatedFiles(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("related-files", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	direction := fs.String("direction", "both", "dependencies, dependents, or both")
+	maxFiles := fs.Int("max-files", 0, "maximum ranked files (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 1 {
+		return fmt.Errorf("cli: related-files needs exactly one target argument (symbol, path, node id, or task text)")
+	}
+	b, err := c.RelatedFiles(ctx, fs.Arg(0), *direction, *maxFiles)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunChangeRisk runs the change_risk agent tool (EP-020) and prints the
+// canonical contract JSON (parity with MCP tools/call). The diff flag reads a
+// unified diff from a file, or from stdin when "-".
+//
+// Usage:
+//
+//	change-risk [-max-items n] (<target> | -diff <file|->)
+func RunChangeRisk(ctx context.Context, c client.Client, args []string, in io.Reader, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("change-risk", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	diffPath := fs.String("diff", "", "path to a unified diff, or - for stdin")
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	var target, diff string
+	switch {
+	case fs.NArg() == 1:
+		target = fs.Arg(0)
+	case fs.NArg() > 1:
+		return fmt.Errorf("cli: change-risk takes at most one target argument")
+	}
+	if *diffPath != "" {
+		var (
+			raw []byte
+			err error
+		)
+		if *diffPath == "-" {
+			raw, err = io.ReadAll(in)
+		} else {
+			raw, err = os.ReadFile(*diffPath)
+		}
+		if err != nil {
+			return fmt.Errorf("cli: read diff: %w", err)
+		}
+		diff = string(raw)
+	}
+	if target == "" && diff == "" {
+		return fmt.Errorf("cli: change-risk needs a target argument or -diff")
+	}
+	b, err := c.ChangeRisk(ctx, target, diff, *maxItems)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunMemory executes a memory operation against the shared client and writes the
 // canonical serialized MemoryResponse.
 //

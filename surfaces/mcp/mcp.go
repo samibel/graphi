@@ -21,9 +21,6 @@ import (
 
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/contract"
-	"github.com/samibel/graphi/engine/agenttools/explain"
-	"github.com/samibel/graphi/engine/agenttools/related"
-	"github.com/samibel/graphi/engine/agenttools/risk"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
@@ -757,17 +754,13 @@ func (s *Server) agentBriefCall(ctx context.Context, p callParams) (any, *rpcErr
 }
 
 // explainSymbolCall (SW-115) returns a compact symbol-identity summary in the C1
-// contract shape. It rides the shared engine/agenttools/explain package so MCP
-// and future CLI surfaces emit the same canonical bytes.
+// contract shape. It rides the shared client seam (engine/agenttools/explain
+// behind it) so MCP and CLI emit the same canonical bytes.
 func (s *Server) explainSymbolCall(ctx context.Context, p callParams) (any, *rpcError) {
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
-	res, err := explain.Explain(p.Arguments.Symbol)
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	b, err := contract.Serialize(res)
+	b, err := s.c.ExplainSymbol(ctx, p.Arguments.Symbol, derefInt(p.Arguments.Limit))
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -780,11 +773,7 @@ func (s *Server) relatedFilesCall(ctx context.Context, p callParams) (any, *rpcE
 	if p.Arguments.Target == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: target"}
 	}
-	res, err := related.Files(p.Arguments.Target, p.Arguments.Direction)
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	b, err := contract.Serialize(res)
+	b, err := s.c.RelatedFiles(ctx, p.Arguments.Target, p.Arguments.Direction, derefInt(p.Arguments.Limit))
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -797,11 +786,7 @@ func (s *Server) changeRiskCall(ctx context.Context, p callParams) (any, *rpcErr
 	if p.Arguments.Target == "" && p.Arguments.Diff == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: target or diff"}
 	}
-	res, err := risk.Assess(p.Arguments.Target, p.Arguments.Diff)
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	b, err := contract.Serialize(res)
+	b, err := s.c.ChangeRisk(ctx, p.Arguments.Target, p.Arguments.Diff, derefInt(p.Arguments.Limit))
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}

@@ -12,6 +12,10 @@ import (
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/related"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/agenttools/risk"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/distill"
@@ -759,6 +763,41 @@ func (d *Direct) Brief(ctx context.Context, topic string) ([]byte, []byte, error
 		return nil, nil, err
 	}
 	return jsonBytes, []byte(md), nil
+}
+
+// agentDeps assembles the shared EP-020 agent-tool dependency set from the
+// wired services. Missing services degrade to the contract's "unavailable"
+// outcome inside the tools rather than erroring here.
+func (d *Direct) agentDeps() resolve.Deps {
+	return resolve.Deps{Query: d.querySvc, Search: d.searchSvc}
+}
+
+// ExplainSymbol implements Client via the shared engine/agenttools/explain
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) ExplainSymbol(ctx context.Context, symbol string, maxItems int) ([]byte, error) {
+	res, err := explain.Explain(ctx, d.agentDeps(), symbol, maxItems)
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// RelatedFiles implements Client via the shared engine/agenttools/related package.
+func (d *Direct) RelatedFiles(ctx context.Context, target, direction string, maxFiles int) ([]byte, error) {
+	res, err := related.Files(ctx, d.agentDeps(), target, direction, maxFiles)
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// ChangeRisk implements Client via the shared engine/agenttools/risk package.
+func (d *Direct) ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error) {
+	res, err := risk.Assess(ctx, d.agentDeps(), target, diff, maxItems)
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
 }
 
 func marshalJSON(v any) ([]byte, error) {

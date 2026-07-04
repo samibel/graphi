@@ -353,6 +353,43 @@ func (h *HTTP) Brief(ctx context.Context, topic string) ([]byte, []byte, error) 
 	return nil, nil, ErrBriefUnavailable
 }
 
+// ExplainSymbol rides the read-only /analyze/explain_symbol endpoint (EP-020).
+func (h *HTTP) ExplainSymbol(ctx context.Context, symbol string, maxItems int) ([]byte, error) {
+	q := url.Values{}
+	q.Set("symbol", symbol)
+	if maxItems > 0 {
+		q.Set("max-items", strconv.Itoa(maxItems))
+	}
+	return h.doGET(ctx, "/analyze/explain_symbol", q)
+}
+
+// RelatedFiles rides the read-only /analyze/related_files endpoint (EP-020).
+func (h *HTTP) RelatedFiles(ctx context.Context, target, direction string, maxFiles int) ([]byte, error) {
+	q := url.Values{}
+	q.Set("target", target)
+	if direction != "" {
+		q.Set("direction", direction)
+	}
+	if maxFiles > 0 {
+		q.Set("max-items", strconv.Itoa(maxFiles))
+	}
+	return h.doGET(ctx, "/analyze/related_files", q)
+}
+
+// ChangeRisk rides the read-only /analyze/change_risk endpoint (EP-020). Diff
+// targeting is not offered over HTTP (GET-only surface); pass a symbol/path target.
+func (h *HTTP) ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error) {
+	if diff != "" {
+		return nil, fmt.Errorf("%w: diff targeting is not available over the read-only HTTP surface", ErrBadInput)
+	}
+	q := url.Values{}
+	q.Set("target", target)
+	if maxItems > 0 {
+		q.Set("max-items", strconv.Itoa(maxItems))
+	}
+	return h.doGET(ctx, "/analyze/change_risk", q)
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
 // is added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (h *HTTP) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {
