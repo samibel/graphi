@@ -1,0 +1,22 @@
+id: signal-external-imports-aggregated
+description: >
+  Repeated unresolved external imports collapse to one representative with an
+  occurrence count; the rest are tagged aggregated (visible under --all).
+fixture_ref: synthetic-signal
+area: signal
+operation:
+  name: diagnose
+  args:
+    all: "true"
+expect:
+  outcome: reported
+  anchors:
+    - kind: symbol
+      value: "diag unresolved_reference"
+      match: contains
+    - kind: symbol
+      value: "occ=2"
+      match: contains
+    - kind: symbol
+      value: "suppressed aggregated_external_import=1"
+      match: contains

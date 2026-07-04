@@ -1,0 +1,25 @@
+id: signal-safe-delete-gated
+description: >
+  No suppressed or public-API finding carries a mutating safe-delete action,
+  even in full --all output.
+fixture_ref: synthetic-signal
+area: signal
+operation:
+  name: diagnose
+  args:
+    all: "true"
+expect:
+  outcome: reported
+  absent:
+    - kind: symbol
+      value: "suppression=test_code occ=1 actions=safe_delete_symbol"
+      match: contains
+    - kind: symbol
+      value: "suppression=generated occ=1 actions=safe_delete_symbol"
+      match: contains
+    - kind: symbol
+      value: "suppression=public_api_no_evidence occ=1 actions=safe_delete_symbol"
+      match: contains
+    - kind: symbol
+      value: "suppression=framework_entrypoint occ=1 actions=safe_delete_symbol"
+      match: contains

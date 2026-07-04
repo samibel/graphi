@@ -34,9 +34,12 @@ type PerRepoMetric struct {
 
 // PerScenarioResult is one scenario outcome.
 type PerScenarioResult struct {
-	ID            string   `json:"id"`
-	FixtureRef    string   `json:"fixture_ref"`
-	Operation     string   `json:"operation"`
+	ID         string `json:"id"`
+	FixtureRef string `json:"fixture_ref"`
+	Operation  string `json:"operation"`
+	// Area is the scorecard area the scenario declares it measures ("" = infer
+	// from the operation).
+	Area          string   `json:"area,omitempty"`
 	Outcome       string   `json:"outcome"`
 	ResultSize    int      `json:"result_size"`
 	Evidence      []string `json:"evidence"`
@@ -68,6 +71,62 @@ type Report struct {
 	Target                float64           `json:"target"`
 	RegressionsVsBaseline []Regression      `json:"regressions_vs_baseline"`
 	PerfWarnings          []string          `json:"perf_warnings,omitempty"`
+	// SignalMetrics carries the measured diagnostic-quality inputs behind the
+	// signal area score (ground-truth fixture; see cmd/eval).
+	SignalMetrics *SignalMetrics `json:"signal_metrics,omitempty"`
+	// PerfMetrics carries the measured performance inputs behind the
+	// performance area score (tier-1 fixture budgets; see cmd/eval).
+	PerfMetrics *PerfMetrics `json:"perf_metrics,omitempty"`
+	// SetupTrustMetrics carries the measured doctor-behavior assertions behind
+	// the setup_trust area score (controlled fixtures; see cmd/eval).
+	SetupTrustMetrics *SetupTrustMetrics `json:"setup_trust_metrics,omitempty"`
+}
+
+// SetupTrustMetrics is the measured evidence behind the setup/trust score:
+// doctor behavior over controlled fixtures. Score = passed assertions /
+// total * 100.
+type SetupTrustMetrics struct {
+	Assertions []SetupAssertion `json:"assertions"`
+	Score      float64          `json:"score"`
+}
+
+// SetupAssertion is one doctor-behavior assertion with its observed detail.
+type SetupAssertion struct {
+	Name   string `json:"name"`
+	Pass   bool   `json:"pass"`
+	Detail string `json:"detail,omitempty"`
+}
+
+// SignalMetrics is the measured evidence behind the signal-quality score.
+// Score = mean of precision, recall, scaled noise reduction, and action
+// safety (each 0-100) over the ground-truth diagnostics fixture.
+type SignalMetrics struct {
+	DefaultCount         int      `json:"default_count"`
+	AllCount             int      `json:"all_count"`
+	Analyzed             int      `json:"analyzed"`
+	SuppressedTotal      int      `json:"suppressed_total"`
+	SuppressedByCategory []string `json:"suppressed_by_category,omitempty"`
+	FalsePositives       int      `json:"false_positives"`
+	FalsePositiveRate    float64  `json:"false_positive_rate"`
+	UnsafeActions        int      `json:"unsafe_actions"`
+	Score                float64  `json:"score"`
+}
+
+// PerfMetrics is the measured evidence behind the performance score: each
+// budget check carries its measured value, its budget, and pass/fail. Score =
+// passed checks / total checks * 100.
+type PerfMetrics struct {
+	Checks []PerfCheck `json:"checks"`
+	Score  float64     `json:"score"`
+}
+
+// PerfCheck is one measured performance budget check.
+type PerfCheck struct {
+	Name     string  `json:"name"`
+	Measured float64 `json:"measured"`
+	Budget   float64 `json:"budget"`
+	Unit     string  `json:"unit"`
+	Pass     bool    `json:"pass"`
 }
 
 // NewHeader builds a header from runtime info.
@@ -253,27 +312,47 @@ func DeriveAreaScores(scenarios []PerScenarioResult, repos []PerRepoMetric) (map
 	agentToolOps := map[string]bool{
 		"explain_symbol": true, "related_files": true, "change_risk": true, "agent_brief": true,
 	}
-	var total, passed, agentTotal, agentPassed int
+	type counter struct{ total, passed int }
+	perArea := map[string]*counter{}
+	count := func(area string, pass bool) {
+		c, ok := perArea[area]
+		if !ok {
+			c = &counter{}
+			perArea[area] = c
+		}
+		c.total++
+		if pass {
+			c.passed++
+		}
+	}
+	var total, passed int
 	for _, s := range scenarios {
 		total++
 		pass := s.Outcome == "pass"
 		if pass {
 			passed++
 		}
-		if agentToolOps[s.Operation] {
-			agentTotal++
-			if pass {
-				agentPassed++
-			}
+		area := s.Area
+		if area == "" && agentToolOps[s.Operation] {
+			area = scorecard.AreaAgentMCP
+		}
+		if area != "" {
+			count(area, pass)
 		}
 	}
 	if total > 0 {
 		scores[scorecard.AreaEvaluation] = float64(passed) / float64(total) * 100
 		provenance[scorecard.AreaEvaluation] = "measured"
 	}
-	if agentTotal > 0 {
-		scores[scorecard.AreaAgentMCP] = float64(agentPassed) / float64(agentTotal) * 100
-		provenance[scorecard.AreaAgentMCP] = "measured"
+	// Every area with tagged scenarios gets its pass fraction as the measured
+	// baseline; richer per-area measurements (signal formula, perf budgets)
+	// may override the value afterwards — provenance stays "measured".
+	for area, c := range perArea {
+		if c.total == 0 {
+			continue
+		}
+		scores[area] = float64(c.passed) / float64(c.total) * 100
+		provenance[area] = "measured"
 	}
 	if len(repos) > 0 {
 		repoPassed := 0

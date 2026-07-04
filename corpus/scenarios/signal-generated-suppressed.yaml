@@ -1,0 +1,16 @@
+id: signal-generated-suppressed
+description: Generated-code dead symbols are hidden by default and counted by category.
+fixture_ref: synthetic-signal
+area: signal
+operation:
+  name: diagnose
+expect:
+  outcome: reported
+  anchors:
+    - kind: symbol
+      value: "suppressed generated=1"
+      match: contains
+  absent:
+    - kind: symbol
+      value: "sig/api.gen.go"
+      match: contains
