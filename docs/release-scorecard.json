@@ -1,0 +1,449 @@
+{
+  "header": {
+    "timestamp": "2026-07-04T16:06:16Z",
+    "version": "dev",
+    "commit": "a456881bc2bdc94ea79ce996f4ca0a0ea0980ce1",
+    "os": "linux",
+    "arch": "amd64",
+    "corpus_version": 1
+  },
+  "per_repo_metrics": [],
+  "per_scenario_results": [
+    {
+      "id": "agent-brief-fixture",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "agent_brief",
+      "outcome": "pass",
+      "result_size": 2675,
+      "evidence": [
+        "evidence PARITY.md:1 [source]",
+        "evidence sample.go:23 [source]",
+        "evidence sample.go:24 [source]",
+        "evidence sample.go:32 [source]",
+        "evidence sample.go:4 [source]",
+        "evidence sample.go:9 [source]",
+        "item brief-0-1: Project identity: name — sample.go (heuristic)",
+        "item brief-1-2: Start Here: sample.go — defines topic symbol fixture.Hello (derived)",
+        "item brief-1-3: Start Here: PARITY.md — 2 symbols, 2 edge endpoints (derived)",
+        "item brief-2-4: Relevant Symbols: fixture.Hello — topic symbol (function, 3 inbound edges) (derived)",
+        "item brief-2-5: Relevant Symbols: fixture.Greeter — type with 3 inbound edges (derived)",
+        "item brief-2-6: Relevant Symbols: fixture.Sink — function with 2 inbound edges (derived)",
+        "item brief-2-7: Relevant Symbols: fixture.ChainC — function with 2 inbound edges (derived)",
+        "item brief-2-8: Relevant Symbols: fixture.ChainB — function with 2 inbound edges (derived)",
+        "item brief-4-9: Risks and Unknowns: no memory — no memory store wired; stored project facts unavailable (heuristic)",
+        "item brief-5-10: Suggested Next Calls: related_files — {\"target\": \"Hello\"} (heuristic)",
+        "item brief-5-11: Suggested Next Calls: explain_symbol — {\"symbol\": \"fixture.Greeter\"} (heuristic)",
+        "item brief-5-12: Suggested Next Calls: change_risk — {\"target\": \"fixture.Greeter\"} before editing (heuristic)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "anchor-absent",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "search",
+      "outcome": "pass",
+      "result_size": 35,
+      "evidence": [
+        "function fixture.Hello sample.go:4"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "change-risk-known-symbol",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "change_risk",
+      "outcome": "pass",
+      "result_size": 1167,
+      "evidence": [
+        "evidence sample.go:15 [inbound]",
+        "evidence sample.go:24 [inbound]",
+        "evidence sample.go:4 [inbound]",
+        "evidence sample.go:4 [target]",
+        "item 2d6c7cb8dacc1bfa: affected calls: method fixture.EnglishGreeter.Greet (sample.go:15) [confirmed]",
+        "item 36748a838a6f84db: affected calls: function fixture.ChainC (sample.go:24) [confirmed]",
+        "item 388cdcec97f4aaab: affected defines: file sample.go (sample.go:1) [confirmed]",
+        "item 853d67f187f74714: target: function fixture.Hello (sample.go:4)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "empty-result",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "search",
+      "outcome": "pass",
+      "result_size": 0,
+      "evidence": [],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "explain-ambiguous-symbol",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "explain_symbol",
+      "outcome": "pass",
+      "result_size": 1295,
+      "evidence": [
+        "evidence sample.go:13 [candidate]",
+        "evidence sample.go:15 [candidate]",
+        "evidence sample.go:17 [candidate]",
+        "evidence sample.go:19 [candidate]",
+        "evidence sample.go:9 [candidate]",
+        "item 2b06d5aeeb59c833: candidate: method fixture.SpanishGreeter.Greet (sample.go:19)",
+        "item 2d6c7cb8dacc1bfa: candidate: method fixture.EnglishGreeter.Greet (sample.go:15)",
+        "item 6b2648f00e0510b0: candidate: type fixture.SpanishGreeter (sample.go:17)",
+        "item d0a7538dfac84f39: candidate: type fixture.Greeter (sample.go:9)",
+        "item d3f291370ce2c8dc: candidate: type fixture.EnglishGreeter (sample.go:13)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "explain-known-symbol",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "explain_symbol",
+      "outcome": "pass",
+      "result_size": 940,
+      "evidence": [
+        "evidence sample.go:15 [caller]",
+        "evidence sample.go:24 [caller]",
+        "evidence sample.go:4 [definition]",
+        "item 2d6c7cb8dacc1bfa: caller: method fixture.EnglishGreeter.Greet (sample.go:15) [confirmed]",
+        "item 36748a838a6f84db: caller: function fixture.ChainC (sample.go:24) [confirmed]",
+        "item 853d67f187f74714: definition: function fixture.Hello (sample.go:4)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "go-symbol",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "search",
+      "outcome": "pass",
+      "result_size": 35,
+      "evidence": [
+        "function fixture.Hello sample.go:4"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "related-files-single-file",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "related_files",
+      "outcome": "pass",
+      "result_size": 298,
+      "evidence": [],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "signal-default-high-confidence",
+      "fixture_ref": "synthetic-signal",
+      "operation": "diagnose",
+      "area": "signal",
+      "outcome": "pass",
+      "result_size": 247,
+      "evidence": [
+        "diag dead_symbol sig/helper.go:5 confidence=exact suppression= occ=1 actions=safe_delete_symbol",
+        "summary shown=1 analyzed=8 dedup=0",
+        "suppressed framework_entrypoint=2",
+        "suppressed generated=1",
+        "suppressed public_api_no_evidence=1",
+        "suppressed test_code=1"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "signal-external-imports-aggregated",
+      "fixture_ref": "synthetic-signal",
+      "operation": "diagnose",
+      "area": "signal",
+      "outcome": "pass",
+      "result_size": 1106,
+      "evidence": [
+        "diag dead_symbol sig/api.gen.go:3 confidence=exact suppression=generated occ=1 actions=inspect_reference",
+        "diag dead_symbol sig/helper.go:5 confidence=exact suppression= occ=1 actions=safe_delete_symbol",
+        "diag dead_symbol sig/helper_test.go:7 confidence=exact suppression=test_code occ=1 actions=inspect_reference",
+        "diag dead_symbol sig/http.go:12 confidence=exact suppression=framework_entrypoint occ=1 actions=inspect_reference",
+        "diag dead_symbol sig/main.go:8 confidence=exact suppression=framework_entrypoint occ=1 actions=inspect_reference",
+        "diag dead_symbol sig/pub.go:4 confidence=exact suppression=public_api_no_evidence occ=1 actions=inspect_reference",
+        "diag unresolved_reference sig/a.go:2 confidence=heuristic suppression= occ=2 actions=add_suppression,inspect_reference",
+        "diag unresolved_reference sig/b.go:2 confidence=heuristic suppression=aggregated_external_import occ=1 actions=add_suppression,inspect_reference",
+        "summary shown=9 analyzed=8 dedup=0",
+        "suppressed aggregated_external_import=1",
+        "suppressed framework_entrypoint=2",
+        "suppressed generated=1",
+        "suppressed public_api_no_evidence=1",
+        "suppressed test_code=1"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "signal-generated-suppressed",
+      "fixture_ref": "synthetic-signal",
+      "operation": "diagnose",
+      "area": "signal",
+      "outcome": "pass",
+      "result_size": 247,
+      "evidence": [
+        "diag dead_symbol sig/helper.go:5 confidence=exact suppression= occ=1 actions=safe_delete_symbol",
+        "summary shown=1 analyzed=8 dedup=0",
+        "suppressed framework_entrypoint=2",
+        "suppressed generated=1",
+        "suppressed public_api_no_evidence=1",
+        "suppressed test_code=1"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "signal-safe-delete-gated",
+      "fixture_ref": "synthetic-signal",
+      "operation": "diagnose",
+      "area": "signal",
+      "outcome": "pass",
+      "result_size": 1106,
+      "evidence": [
+        "diag dead_symbol sig/api.gen.go:3 confidence=exact suppression=generated occ=1 actions=inspect_reference",
+        "diag dead_symbol sig/helper.go:5 confidence=exact suppression= occ=1 actions=safe_delete_symbol",
+        "diag dead_symbol sig/helper_test.go:7 confidence=exact suppression=test_code occ=1 actions=inspect_reference",
+        "diag dead_symbol sig/http.go:12 confidence=exact suppression=framework_entrypoint occ=1 actions=inspect_reference",
+        "diag dead_symbol sig/main.go:8 confidence=exact suppression=framework_entrypoint occ=1 actions=inspect_reference",
+        "diag dead_symbol sig/pub.go:4 confidence=exact suppression=public_api_no_evidence occ=1 actions=inspect_reference",
+        "diag unresolved_reference sig/a.go:2 confidence=heuristic suppression= occ=2 actions=add_suppression,inspect_reference",
+        "diag unresolved_reference sig/b.go:2 confidence=heuristic suppression=aggregated_external_import occ=1 actions=add_suppression,inspect_reference",
+        "summary shown=9 analyzed=8 dedup=0",
+        "suppressed aggregated_external_import=1",
+        "suppressed framework_entrypoint=2",
+        "suppressed generated=1",
+        "suppressed public_api_no_evidence=1",
+        "suppressed test_code=1"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "signal-testcode-suppressed",
+      "fixture_ref": "synthetic-signal",
+      "operation": "diagnose",
+      "area": "signal",
+      "outcome": "pass",
+      "result_size": 247,
+      "evidence": [
+        "diag dead_symbol sig/helper.go:5 confidence=exact suppression= occ=1 actions=safe_delete_symbol",
+        "summary shown=1 analyzed=8 dedup=0",
+        "suppressed framework_entrypoint=2",
+        "suppressed generated=1",
+        "suppressed public_api_no_evidence=1",
+        "suppressed test_code=1"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    }
+  ],
+  "scorecard": {
+    "overall": 100,
+    "pass": true,
+    "floored_areas": null,
+    "breakdown": {
+      "agent_mcp": {
+        "score": 100,
+        "weight": 25,
+        "contribution": 25,
+        "below_floor": false
+      },
+      "evaluation": {
+        "score": 100,
+        "weight": 10,
+        "contribution": 10,
+        "below_floor": false
+      },
+      "performance": {
+        "score": 100,
+        "weight": 20,
+        "contribution": 20,
+        "below_floor": false
+      },
+      "setup_trust": {
+        "score": 100,
+        "weight": 15,
+        "contribution": 15,
+        "below_floor": false
+      },
+      "signal": {
+        "score": 100,
+        "weight": 20,
+        "contribution": 20,
+        "below_floor": false
+      },
+      "ux": {
+        "score": 100,
+        "weight": 10,
+        "contribution": 10,
+        "below_floor": false
+      }
+    }
+  },
+  "area_provenance": {
+    "agent_mcp": "measured",
+    "evaluation": "measured",
+    "performance": "measured",
+    "setup_trust": "measured",
+    "signal": "measured",
+    "ux": "measured"
+  },
+  "baseline": 65,
+  "target": 90,
+  "regressions_vs_baseline": null,
+  "perf_warnings": [
+    "area ux carried from baseline (62), not measured by this run"
+  ],
+  "signal_metrics": {
+    "default_count": 1,
+    "all_count": 8,
+    "analyzed": 8,
+    "suppressed_total": 5,
+    "suppressed_by_category": [
+      "framework_entrypoint=2",
+      "generated=1",
+      "public_api_no_evidence=1",
+      "test_code=1"
+    ],
+    "false_positives": 0,
+    "false_positive_rate": 0,
+    "unsafe_actions": 0,
+    "score": 100
+  },
+  "perf_metrics": {
+    "checks": [
+      {
+        "name": "index_time",
+        "measured": 13,
+        "budget": 10000,
+        "unit": "ms",
+        "pass": true
+      },
+      {
+        "name": "db_size",
+        "measured": 77824,
+        "budget": 5242880,
+        "unit": "bytes",
+        "pass": true
+      },
+      {
+        "name": "query_latency_median",
+        "measured": 0.142,
+        "budget": 100,
+        "unit": "ms",
+        "pass": true
+      },
+      {
+        "name": "mcp_tool_latency_median",
+        "measured": 0.179,
+        "budget": 500,
+        "unit": "ms",
+        "pass": true
+      },
+      {
+        "name": "incremental_update",
+        "measured": 7,
+        "budget": 5000,
+        "unit": "ms",
+        "pass": true
+      }
+    ],
+    "score": 100
+  },
+  "setup_trust_metrics": {
+    "assertions": [
+      {
+        "name": "mcp_valid_registration_passes",
+        "pass": true,
+        "detail": "status=pass action=\"re-run `graphi setup` to update registrations\""
+      },
+      {
+        "name": "mcp_stale_command_path_warns",
+        "pass": true,
+        "detail": "status=warn action=\"re-run `graphi setup` to update registrations\""
+      },
+      {
+        "name": "mcp_missing_registration_fails",
+        "pass": true,
+        "detail": "status=fail action=\"re-run `graphi setup` to update registrations\""
+      },
+      {
+        "name": "db_readable_passes",
+        "pass": true,
+        "detail": "status=pass msg=\"DB /tmp/graphi-eval-doctor-2510121574/readable.db readable, 1 nodes, profile: unknown, FTS present, schema: user_version=0\""
+      },
+      {
+        "name": "db_empty_warns_with_action",
+        "pass": true,
+        "detail": "status=warn action=\"run `graphi index` to populate the database\""
+      },
+      {
+        "name": "db_missing_fails_and_stays_absent",
+        "pass": true,
+        "detail": "status=fail created=false"
+      },
+      {
+        "name": "path-graphi_contract",
+        "pass": true,
+        "detail": "status=fail msg=\"graphi is not on PATH\" action=\"add graphi to your PATH or run the installer\""
+      },
+      {
+        "name": "privacy_contract",
+        "pass": true,
+        "detail": "status=pass msg=\"egress guard is present and machine-verifiable (no dial performed)\" action=\"\""
+      },
+      {
+        "name": "local-first_contract",
+        "pass": true,
+        "detail": "status=pass msg=\"no account/credential file required; local checks need no background service\" action=\"\""
+      },
+      {
+        "name": "non_pass_results_carry_actions",
+        "pass": true
+      },
+      {
+        "name": "doctor_json_stable_and_contract_shaped",
+        "pass": true
+      },
+      {
+        "name": "doctor_writes_nothing",
+        "pass": true
+      }
+    ],
+    "score": 100
+  },
+  "ux_metrics": {
+    "total_tests": 114,
+    "passed_tests": 114,
+    "required_found": [
+      "AgentToolsPanel.test.tsx",
+      "CompareConnectionPanel.test.tsx",
+      "ExportAgentContext.test.tsx",
+      "SymbolSearchPanel.test.tsx",
+      "WhyConnectedPanel.test.tsx"
+    ],
+    "score": 100
+  }
+}
