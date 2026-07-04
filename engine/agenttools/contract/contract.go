@@ -14,16 +14,24 @@ type Outcome string
 
 const (
 	OutcomeOK        Outcome = "ok"
+	OutcomeFound     Outcome = "found"
+	OutcomePartial   Outcome = "partial"
 	OutcomeAmbiguous Outcome = "ambiguous"
 	OutcomeEmpty     Outcome = "empty"
-	OutcomeError     Outcome = "error"
+	// OutcomeUnavailable — the tool cannot run on this surface/build (e.g. no
+	// graph services wired). Distinct from empty: nothing was searched.
+	OutcomeUnavailable Outcome = "unavailable"
+	OutcomeError       Outcome = "error"
 )
 
 var validOutcomes = map[Outcome]bool{
-	OutcomeOK:        true,
-	OutcomeAmbiguous: true,
-	OutcomeEmpty:     true,
-	OutcomeError:     true,
+	OutcomeOK:          true,
+	OutcomeFound:       true,
+	OutcomePartial:     true,
+	OutcomeAmbiguous:   true,
+	OutcomeEmpty:       true,
+	OutcomeUnavailable: true,
+	OutcomeError:       true,
 }
 
 // Valid reports whether o is a known outcome value.
