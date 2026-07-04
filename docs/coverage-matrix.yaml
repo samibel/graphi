@@ -433,24 +433,24 @@ capabilities:
     note: "reverse a previously applied edit by undo token."
   - id: explain_symbol
     category: mcp-tool
-    status: partial
+    status: shipped
     epic: EP-020
-    note: "SW-115: compact symbol-identity summary; scaffold: contract shape and surface wiring present."
+    note: "SW-115: compact, cited symbol-identity summary (definition + callers/callees/references) over the live graph; ambiguous references return candidates; CLI parity via `graphi explain-symbol`."
   - id: related_files
     category: mcp-tool
-    status: partial
+    status: shipped
     epic: EP-020
-    note: "SW-116: deterministic ranked read-first file list; scaffold: contract shape and surface wiring present."
+    note: "SW-116: deterministic, evidence-cited read-first file ranking by graph proximity with direction filtering; CLI parity via `graphi related-files`."
   - id: change_risk
     category: mcp-tool
-    status: partial
+    status: shipped
     epic: EP-020
-    note: "SW-117: evidence-based change risk assessment; scaffold: contract shape and surface wiring present."
+    note: "SW-117: evidence-based low/medium/high/unknown blast-radius estimate from fan-in and dependent files, with diff targeting; CLI parity via `graphi change-risk`."
   - id: agent_brief
     category: mcp-tool
-    status: partial
+    status: shipped
     epic: EP-024
-    note: "SW-134: bounded, cited task-start context packet; scaffold: contract shape and surface wiring present."
+    note: "SW-134: bounded, cited task-start context packet derived from the live graph and local memory store (start-here files, key symbols, known facts, risks)."
   - id: cli
     category: surface
     status: shipped
@@ -524,11 +524,26 @@ capabilities:
     status: shipped
     epic: "-"
     note: "run a registered analyzer over the graph"
+  - id: change-risk
+    category: cli-subcommand
+    status: shipped
+    epic: EP-020
+    note: "evidence-based local blast-radius estimate (low/medium/high/unknown) for a symbol, path, or unified diff; byte-parity with the change_risk MCP tool"
   - id: claude
     category: cli-subcommand
     status: shipped
     epic: "-"
     note: "short-verb alias for `setup` (register the MCP server)"
+  - id: explain-symbol
+    category: cli-subcommand
+    status: shipped
+    epic: EP-020
+    note: "compact, cited symbol identity summary; byte-parity with the explain_symbol MCP tool"
+  - id: related-files
+    category: cli-subcommand
+    status: shipped
+    epic: EP-020
+    note: "ranked, cited read-first file list; byte-parity with the related_files MCP tool"
   - id: compare-branches
     category: cli-subcommand
     status: shipped

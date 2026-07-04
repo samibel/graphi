@@ -18,14 +18,23 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
+	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/scenario"
 	"github.com/samibel/graphi/engine/scorecard"
+	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/internal/eval"
 	"github.com/samibel/graphi/internal/evalreport"
 )
@@ -78,44 +87,62 @@ func main() {
 		rep.Name, rep.AggregateRatio, verdict, rep.ClaimThreshold)
 }
 
+// resolveCommit reads .git/HEAD and, when it is a symbolic ref, follows it to
+// the actual SHA. Falls back to the raw HEAD content, then "unknown".
+func resolveCommit() string {
+	b, err := os.ReadFile(".git/HEAD")
+	if err != nil {
+		return "unknown"
+	}
+	head := strings.TrimSpace(string(b))
+	if ref, ok := strings.CutPrefix(head, "ref: "); ok {
+		if sha, err := os.ReadFile(filepath.Join(".git", filepath.FromSlash(ref))); err == nil {
+			return strings.TrimSpace(string(sha))
+		}
+		return head
+	}
+	return head
+}
+
 func runScorecardReport(manifestPath, outPath, format string, updateBaseline bool) int {
 	version := "0.0.0-dev"
-	commit := "unknown"
-	if b, err := os.ReadFile(".git/HEAD"); err == nil {
-		commit = string(b)
-	}
+	commit := resolveCommit()
 
-	// Load scenarios from manifest path. For this minimal integration, the
-	// manifest is a JSON file with "scenarios" array; fallback to a default set.
-	scenarios, err := loadScenarios(manifestPath)
+	corpusVersion, fixturePaths, err := loadCorpusManifest(manifestPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "eval: load scenarios: %v\n", err)
+		fmt.Fprintf(os.Stderr, "eval: load manifest: %v\n", err)
 		return 2
 	}
 
-	score := evalreport.DefaultScorecard()
-	// Recompute with whatever we have, if we have area scores; otherwise keep default.
-	areaScores := map[string]float64{
-		scorecard.AreaAgentMCP:    70,
-		scorecard.AreaSignal:      68,
-		scorecard.AreaPerformance: 66,
-		scorecard.AreaSetupTrust:  65,
-		scorecard.AreaEvaluation:  60,
-		scorecard.AreaUX:          62,
+	// Execute every scenario in the manifest's sibling scenarios directory
+	// against its fixture graph (real runs, not placeholders).
+	scenarioDir := filepath.Join(filepath.Dir(manifestPath), "scenarios")
+	scenarios, err := runScenarios(scenarioDir, filepath.Dir(filepath.Dir(manifestPath)), fixturePaths)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: run scenarios: %v\n", err)
+		return 2
 	}
-	computed, err := scorecard.Calculate(areaScores)
-	if err == nil {
+
+	// Derive measured area scores from the run; carry unmeasured areas from
+	// the baseline and say so.
+	areaScores, provenance, carryWarnings := evalreport.DeriveAreaScores(scenarios, nil)
+	score := evalreport.DefaultScorecard()
+	if computed, err := scorecard.Calculate(areaScores); err == nil {
 		score = computed
 	}
 
+	header := evalreport.NewHeader(version, commit)
+	header.CorpusVersion = corpusVersion
 	report := evalreport.Report{
-		Header:             evalreport.NewHeader(version, commit),
+		Header:             header,
 		PerRepoMetrics:     []evalreport.PerRepoMetric{},
 		PerScenarioResults: scenarios,
 		Scorecard:          score,
+		AreaProvenance:     provenance,
 		Baseline:           65.0,
 		Target:             90.0,
 	}
+	report.PerfWarnings = append(report.PerfWarnings, carryWarnings...)
 
 	baseline := evalreport.DefaultBaseline()
 	if raw, err := os.ReadFile("docs/eval-baseline.json"); err == nil {
@@ -126,7 +153,7 @@ func runScorecardReport(manifestPath, outPath, format string, updateBaseline boo
 	}
 	regs, warnings := evalreport.DiffAgainstBaseline(report, baseline)
 	report.RegressionsVsBaseline = regs
-	report.PerfWarnings = warnings
+	report.PerfWarnings = append(report.PerfWarnings, warnings...)
 
 	if updateBaseline {
 		b := evalreport.BaselineRecord{
@@ -183,39 +210,100 @@ func runScorecardReport(manifestPath, outPath, format string, updateBaseline boo
 	return 0
 }
 
-func loadScenarios(path string) ([]evalreport.PerScenarioResult, error) {
+// loadCorpusManifest reads the corpus manifest and returns its version stamp
+// plus the fixture_ref → fixture path index for Tier-1 local fixtures.
+func loadCorpusManifest(path string) (int, map[string]string, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return defaultScenarios(), nil
+		return 0, nil, err
 	}
-	var wrapper struct {
-		Scenarios []scenario.Scenario `json:"scenarios"`
+	var m struct {
+		Version int `json:"version"`
+		Entries []struct {
+			Name string `json:"name"`
+			Path string `json:"path"`
+		} `json:"entries"`
 	}
-	if err := json.Unmarshal(raw, &wrapper); err != nil {
-		return defaultScenarios(), nil
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return 0, nil, fmt.Errorf("parse %s: %w", path, err)
 	}
+	fixtures := map[string]string{}
+	for _, e := range m.Entries {
+		if e.Path != "" {
+			fixtures[e.Name] = e.Path
+		}
+	}
+	return m.Version, fixtures, nil
+}
+
+// runScenarios loads every scenario file in dir and executes it against its
+// fixture graph via the shared scenario runner. Fixture paths in the manifest
+// are repo-root-relative; root anchors them.
+func runScenarios(dir, root string, fixturePaths map[string]string) ([]evalreport.PerScenarioResult, error) {
+	files, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	jsonFiles, err := filepath.Glob(filepath.Join(dir, "*.json"))
+	if err != nil {
+		return nil, err
+	}
+	files = append(files, jsonFiles...)
+	sort.Strings(files)
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no scenario files in %s", dir)
+	}
+
+	engines := map[string]*scenario.FixtureEngine{}
 	var results []evalreport.PerScenarioResult
-	for _, s := range wrapper.Scenarios {
+	for _, f := range files {
+		s, err := scenario.LoadScenario(f)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", f, err)
+		}
+		fixturePath, ok := fixturePaths[s.FixtureRef]
+		if !ok {
+			return nil, fmt.Errorf("%s: fixture_ref %q not in manifest", f, s.FixtureRef)
+		}
+		eng, ok := engines[fixturePath]
+		if !ok {
+			eng, err = buildFixtureEngine(filepath.Join(root, filepath.FromSlash(fixturePath)))
+			if err != nil {
+				return nil, fmt.Errorf("%s: fixture %s: %w", f, fixturePath, err)
+			}
+			engines[fixturePath] = eng
+		}
+		runner := scenario.Runner{Engine: eng}
+		res := runner.Run(s)
 		results = append(results, evalreport.PerScenarioResult{
-			ID:         s.ID,
-			FixtureRef: s.FixtureRef,
-			Operation:  s.Operation.Name,
-			Outcome:    "skipped",
-			Tier1:      true,
+			ID:            s.ID,
+			FixtureRef:    s.FixtureRef,
+			Operation:     s.Operation.Name,
+			Outcome:       res.Outcome,
+			ResultSize:    res.AnswerSize,
+			Evidence:      res.Evidence,
+			Confidence:    res.Confidence,
+			LatencyMS:     res.LatencyMS,
+			AnchorPresent: res.AnchorPresent,
+			Tier1:         true,
 		})
-	}
-	if len(results) == 0 {
-		return defaultScenarios(), nil
 	}
 	return results, nil
 }
 
-func defaultScenarios() []evalreport.PerScenarioResult {
-	return []evalreport.PerScenarioResult{
-		{ID: "go-symbol", FixtureRef: "go", Operation: "search", Outcome: "pass", Tier1: true},
-		{ID: "ts-symbol", FixtureRef: "ts", Operation: "search", Outcome: "pass", Tier1: true},
-		{ID: "python-symbol", FixtureRef: "python", Operation: "search", Outcome: "pass", Tier1: true},
-		{ID: "empty-result", FixtureRef: "go", Operation: "search", Outcome: "pass", Tier1: true},
-		{ID: "anchor-absent", FixtureRef: "go", Operation: "search", Outcome: "pass", Tier1: true},
+// buildFixtureEngine ingests the fixture directory into an in-memory graph
+// and wraps the shared engine services around it.
+func buildFixtureEngine(fixtureDir string) (*scenario.FixtureEngine, error) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	ing, err := ingest.New(store, parse.NewDefaultRegistry(), "")
+	if err != nil {
+		return nil, err
 	}
+	defer ing.Close()
+	if err := ing.IngestAll(ctx, fixtureDir); err != nil {
+		return nil, err
+	}
+	deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
+	return scenario.NewFixtureEngine(deps), nil
 }

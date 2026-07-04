@@ -84,3 +84,57 @@ func TestWriteMarkdown(t *testing.T) {
 		t.Fatalf("markdown file missing: %v", err)
 	}
 }
+
+func TestDeriveAreaScores(t *testing.T) {
+	scenarios := []PerScenarioResult{
+		{ID: "a", Operation: "explain_symbol", Outcome: "pass"},
+		{ID: "b", Operation: "change_risk", Outcome: "fail"},
+		{ID: "c", Operation: "search", Outcome: "pass"},
+		{ID: "d", Operation: "search", Outcome: "pass"},
+	}
+	repos := []PerRepoMetric{{Name: "r1", Pass: true}, {Name: "r2", Pass: false}}
+
+	scores, provenance, warnings := DeriveAreaScores(scenarios, repos)
+	if got := scores[scorecard.AreaAgentMCP]; got != 50 {
+		t.Fatalf("agent_mcp = %v, want 50 (1/2 agent-tool scenarios pass)", got)
+	}
+	if got := scores[scorecard.AreaEvaluation]; got != 75 {
+		t.Fatalf("evaluation = %v, want 75 (3/4 scenarios pass)", got)
+	}
+	if got := scores[scorecard.AreaPerformance]; got != 50 {
+		t.Fatalf("performance = %v, want 50 (1/2 repos pass)", got)
+	}
+	for _, area := range []string{scorecard.AreaAgentMCP, scorecard.AreaEvaluation, scorecard.AreaPerformance} {
+		if provenance[area] != "measured" {
+			t.Fatalf("area %s provenance = %q, want measured", area, provenance[area])
+		}
+	}
+	baseline := BaselineAreaScores()
+	for _, area := range []string{scorecard.AreaSignal, scorecard.AreaSetupTrust, scorecard.AreaUX} {
+		if provenance[area] != "carried" {
+			t.Fatalf("area %s provenance = %q, want carried", area, provenance[area])
+		}
+		if scores[area] != baseline[area] {
+			t.Fatalf("carried area %s must keep baseline score", area)
+		}
+	}
+	if len(warnings) != 3 {
+		t.Fatalf("expected 3 carried-area warnings, got %v", warnings)
+	}
+}
+
+func TestDeriveAreaScores_NoData(t *testing.T) {
+	scores, provenance, warnings := DeriveAreaScores(nil, nil)
+	baseline := BaselineAreaScores()
+	for area, want := range baseline {
+		if scores[area] != want {
+			t.Fatalf("area %s = %v, want baseline %v", area, scores[area], want)
+		}
+		if provenance[area] != "carried" {
+			t.Fatalf("area %s provenance = %q, want carried", area, provenance[area])
+		}
+	}
+	if len(warnings) != len(baseline) {
+		t.Fatalf("every area must be flagged carried, got %v", warnings)
+	}
+}

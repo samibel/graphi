@@ -1,10 +1,19 @@
 id: anchor-absent
+description: >
+  Searching the fixture surfaces the real symbol but never a nonexistent
+  one — the negative anchor guards against evidence over-matching.
 fixture_ref: tier1-fixture-go
 operation:
   name: search
   args:
     query: Hello
 expect:
-  - kind: symbol
-    value: DoesNotExist
-    match: exact
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: Hello
+      match: exact
+  absent:
+    - kind: symbol
+      value: DoesNotExist
+      match: exact

@@ -1,12 +1,47 @@
 {
-  "version": 1,
-  "baseline": 65.0,
-  "target": 90.0,
+  "version": 2,
+  "baseline": 77.75,
+  "target": 90,
   "scenarios": [
-    { "id": "go-symbol", "outcome": "pass", "tier1": true },
-    { "id": "ts-symbol", "outcome": "pass", "tier1": true },
-    { "id": "python-symbol", "outcome": "pass", "tier1": true },
-    { "id": "empty-result", "outcome": "pass", "tier1": true },
-    { "id": "anchor-absent", "outcome": "pass", "tier1": true }
+    {
+      "id": "agent-brief-fixture",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "anchor-absent",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "change-risk-known-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "empty-result",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "explain-ambiguous-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "explain-known-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "go-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "related-files-single-file",
+      "outcome": "pass",
+      "tier1": true
+    }
   ]
 }

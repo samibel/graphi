@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **139**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **142**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -73,7 +73,7 @@ Total capabilities: **139**. See [`architecture-plan.md`](architecture-plan.md) 
 
 | id | status | epic | note |
 |---|---|---|---|
-| `agent_brief` | 🟡 partial | EP-024 | SW-134: bounded, cited task-start context packet; scaffold: contract shape and surface wiring present. |
+| `agent_brief` | ✅ shipped | EP-024 | SW-134: bounded, cited task-start context packet derived from the live graph and local memory store (start-here files, key symbols, known facts, risks). |
 | `analyze` | ✅ shipped | EP-004 | run a named graph analyzer over the indexed graph. |
 | `analyze_contracts` | ✅ shipped | EP-005 | dedicated tool for the contracts analyzer. |
 | `analyze_githistory` | ✅ shipped | EP-005 | dedicated tool for the git-history analyzer. |
@@ -85,14 +85,14 @@ Total capabilities: **139**. See [`architecture-plan.md`](architecture-plan.md) 
 | `analyze_taint` | ✅ shipped | EP-005 | dedicated tool for the taint analyzer. |
 | `callees` | ✅ shipped | EP-001 | structural query: callees. |
 | `callers` | ✅ shipped | EP-001 | structural query: callers. |
-| `change_risk` | 🟡 partial | EP-020 | SW-117: evidence-based change risk assessment; scaffold: contract shape and surface wiring present. |
+| `change_risk` | ✅ shipped | EP-020 | SW-117: evidence-based low/medium/high/unknown blast-radius estimate from fan-in and dependent files, with diff targeting; CLI parity via `graphi change-risk`. |
 | `compare_branches` | ✅ shipped | EP-018 | SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary). |
 | `compound` | ✅ shipped | EP-011 | compound / Cypher-style graph query composing traversals+filters (G1). |
 | `conflicts_prs` | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress). |
 | `critique_review` | ✅ shipped | EP-018 | SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress). |
 | `definition` | ✅ shipped | EP-001 | structural query: definition. |
 | `distill` | ✅ shipped | EP-012 | session distillation into a compact decision record. |
-| `explain_symbol` | 🟡 partial | EP-020 | SW-115: compact symbol-identity summary; scaffold: contract shape and surface wiring present. |
+| `explain_symbol` | ✅ shipped | EP-020 | SW-115: compact, cited symbol-identity summary (definition + callers/callees/references) over the live graph; ambiguous references return candidates; CLI parity via `graphi explain-symbol`. |
 | `find_clones` | ✅ shipped | EP-013 | structural clone-group detection from a JSON config (G4). |
 | `implementers` | ✅ shipped | EP-011 | structural query: types that implement/embed a symbol (G2). |
 | `implements` | ✅ shipped | EP-011 | structural query: interfaces/types a symbol implements (G2). |
@@ -104,7 +104,7 @@ Total capabilities: **139**. See [`architecture-plan.md`](architecture-plan.md) 
 | `refactor` | ✅ shipped | EP-006 | apply a graph-aware refactor with an auditable change record. |
 | `refactor_preview` | ✅ shipped | EP-006 | preview a graph-aware refactor (impact set, no mutation). |
 | `references` | ✅ shipped | EP-001 | structural query: references. |
-| `related_files` | 🟡 partial | EP-020 | SW-116: deterministic ranked read-first file list; scaffold: contract shape and surface wiring present. |
+| `related_files` | ✅ shipped | EP-020 | SW-116: deterministic, evidence-cited read-first file ranking by graph proximity with direction filtering; CLI parity via `graphi related-files`. |
 | `savings` | ✅ shipped | EP-003 | token-savings ledger readout (per-call/session/cumulative USD). |
 | `search` | ✅ shipped | EP-001 | lexical / symbol search over the indexed graph. |
 | `search_ast` | ✅ shipped | EP-013 | structural AST pattern query over the indexed graph (G3). |
@@ -129,12 +129,13 @@ Total capabilities: **139**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (39)
+## CLI subcommands (42)
 
 | id | status | epic | note |
 |---|---|---|---|
 | `agent-brief` | 🟡 partial | - | bounded, cited task-start context packet for agents |
 | `analyze` | ✅ shipped | - | run a registered analyzer over the graph |
+| `change-risk` | ✅ shipped | EP-020 | evidence-based local blast-radius estimate (low/medium/high/unknown) for a symbol, path, or unified diff; byte-parity with the change_risk MCP tool |
 | `claude` | ✅ shipped | - | short-verb alias for `setup` (register the MCP server) |
 | `compare-branches` | ✅ shipped | - | graph-level diff of two graphi SQLite snapshots (paths, not git refs) |
 | `compound` | ✅ shipped | - | compound / Cypher-style graph query |
@@ -144,6 +145,7 @@ Total capabilities: **139**. See [`architecture-plan.md`](architecture-plan.md) 
 | `diagnose` | ✅ shipped | - | graph-derived diagnostics + suggested code-actions |
 | `distill` | ✅ shipped | - | session distillation |
 | `doctor` | ✅ shipped | EP-023 | read-only diagnostic checkup (binary, PATH, MCP clients, DB, privacy, local-first) |
+| `explain-symbol` | ✅ shipped | EP-020 | compact, cited symbol identity summary; byte-parity with the explain_symbol MCP tool |
 | `find-clones` | ✅ shipped | - | edge-profile clone detection |
 | `help` | ✅ shipped | - | print the help blurb |
 | `http` | ✅ shipped | - | loopback-only HTTP REST + SSE surface |
@@ -158,6 +160,7 @@ Total capabilities: **139**. See [`architecture-plan.md`](architecture-plan.md) 
 | `query` | ✅ shipped | - | structural query (callers\|callees\|references\|definition\|neighborhood) |
 | `refactor` | ✅ shipped | - | commit a rename refactor through the edit saga |
 | `refactor-preview` | ✅ shipped | - | impact-set preview of a refactor, no mutation |
+| `related-files` | ✅ shipped | EP-020 | ranked, cited read-first file list; byte-parity with the related_files MCP tool |
 | `safe-delete` | ✅ shipped | - | reference-safety-gated delete over the edit saga (requires -root) |
 | `savings` | ✅ shipped | - | session token-savings readout (requires -ledger) |
 | `search` | ✅ shipped | - | lexical search; -semantic runs the optional embedding search |

@@ -1,0 +1,12 @@
+id: change-risk-known-symbol
+description: change_risk states an explicit evidence-based level for a fixture symbol.
+fixture_ref: tier1-fixture-go
+operation:
+  name: change_risk
+  args:
+    target: Hello
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  max_latency_ms: 2000

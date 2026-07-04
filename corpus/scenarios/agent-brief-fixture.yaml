@@ -1,0 +1,12 @@
+id: agent-brief-fixture
+description: agent_brief produces a bounded, cited context packet from a fresh indexed fixture.
+fixture_ref: tier1-fixture-go
+operation:
+  name: agent_brief
+  args:
+    topic: Hello
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  max_latency_ms: 2000

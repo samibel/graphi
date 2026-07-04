@@ -1,0 +1,13 @@
+id: related-files-single-file
+description: >
+  related_files resolves the anchor and honestly reports empty when every
+  edge stays inside the anchor's own file (single-file fixture).
+fixture_ref: tier1-fixture-go
+operation:
+  name: related_files
+  args:
+    anchor: Hello
+    direction: both
+expect:
+  outcome: empty
+  max_latency_ms: 2000

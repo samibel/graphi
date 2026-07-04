@@ -20,6 +20,8 @@ type Header struct {
 	Commit    string `json:"commit"`
 	OS        string `json:"os"`
 	Arch      string `json:"arch"`
+	// CorpusVersion is the version stamp of the corpus manifest the run used.
+	CorpusVersion int `json:"corpus_version,omitempty"`
 }
 
 // PerRepoMetric is a lightweight metric per corpus fixture.
@@ -53,14 +55,19 @@ type Regression struct {
 
 // Report is the union of provenance, results, scorecard, and regressions.
 type Report struct {
-	Header               Header             `json:"header"`
-	PerRepoMetrics       []PerRepoMetric    `json:"per_repo_metrics"`
-	PerScenarioResults   []PerScenarioResult `json:"per_scenario_results"`
-	Scorecard            scorecard.Result    `json:"scorecard"`
-	Baseline             float64             `json:"baseline"`
-	Target               float64             `json:"target"`
-	RegressionsVsBaseline []Regression       `json:"regressions_vs_baseline"`
-	PerfWarnings         []string            `json:"perf_warnings,omitempty"`
+	Header             Header              `json:"header"`
+	PerRepoMetrics     []PerRepoMetric     `json:"per_repo_metrics"`
+	PerScenarioResults []PerScenarioResult `json:"per_scenario_results"`
+	Scorecard          scorecard.Result    `json:"scorecard"`
+	// AreaProvenance records, per scorecard area, whether its input score was
+	// "measured" by this run or "carried" from the baseline (not yet measured
+	// by the harness). Carried areas are also listed in PerfWarnings so the
+	// report never silently presents a baseline number as a measurement.
+	AreaProvenance        map[string]string `json:"area_provenance,omitempty"`
+	Baseline              float64           `json:"baseline"`
+	Target                float64           `json:"target"`
+	RegressionsVsBaseline []Regression      `json:"regressions_vs_baseline"`
+	PerfWarnings          []string          `json:"perf_warnings,omitempty"`
 }
 
 // NewHeader builds a header from runtime info.
@@ -81,10 +88,10 @@ func (r Report) HasTier1Regression() bool {
 
 // BaselineRecord is the persisted baseline artifact.
 type BaselineRecord struct {
-	Version    float64             `json:"version"`
-	Baseline   float64             `json:"baseline"`
-	Target     float64             `json:"target"`
-	Scenarios  []BaselineScenario  `json:"scenarios"`
+	Version   float64            `json:"version"`
+	Baseline  float64            `json:"baseline"`
+	Target    float64            `json:"target"`
+	Scenarios []BaselineScenario `json:"scenarios"`
 }
 
 // BaselineScenario records the expected outcome for a scenario.
@@ -133,10 +140,11 @@ func WriteJSON(r Report, path string) error {
 func WriteMarkdown(r Report, path string) error {
 	const tmpl = `# Eval Report
 
-**Timestamp:** {{.Header.Timestamp}}  
-**Version:** {{.Header.Version}}  
-**Commit:** {{.Header.Commit}}  
+**Timestamp:** {{.Header.Timestamp}}
+**Version:** {{.Header.Version}}
+**Commit:** {{.Header.Commit}}
 **OS/Arch:** {{.Header.OS}}/{{.Header.Arch}}
+**Corpus version:** {{.Header.CorpusVersion}}
 
 ## Scorecard
 
@@ -146,9 +154,9 @@ func WriteMarkdown(r Report, path string) error {
 
 ### Breakdown
 
-| Area | Score | Weight | Contribution | Below Floor |
-|------|-------|--------|--------------|-------------|
-{{range $k, $v := .Scorecard.Breakdown}}| {{$k}} | {{printf "%.1f" $v.Score}} | {{$v.Weight}} | {{printf "%.2f" $v.Contribution}} | {{$v.BelowFloor}} |
+| Area | Score | Weight | Contribution | Below Floor | Provenance |
+|------|-------|--------|--------------|-------------|------------|
+{{range $k, $v := .Scorecard.Breakdown}}| {{$k}} | {{printf "%.1f" $v.Score}} | {{$v.Weight}} | {{printf "%.2f" $v.Contribution}} | {{$v.BelowFloor}} | {{index $.AreaProvenance $k}} |
 {{end}}
 
 ## Per-Repo Metrics
@@ -206,13 +214,88 @@ func DefaultBaseline() BaselineRecord {
 
 // DefaultScorecard returns a valid scorecard for testing/reporting.
 func DefaultScorecard() scorecard.Result {
-	res, _ := scorecard.Calculate(map[string]float64{
+	res, _ := scorecard.Calculate(BaselineAreaScores())
+	return res
+}
+
+// BaselineAreaScores is the checked-in ~6.5/10 baseline per area. It is the
+// carry-forward source for areas the harness cannot measure yet.
+func BaselineAreaScores() map[string]float64 {
+	return map[string]float64{
 		scorecard.AreaAgentMCP:    70,
 		scorecard.AreaSignal:      68,
 		scorecard.AreaPerformance: 66,
 		scorecard.AreaSetupTrust:  65,
 		scorecard.AreaEvaluation:  60,
 		scorecard.AreaUX:          62,
-	})
-	return res
+	}
+}
+
+// DeriveAreaScores computes scorecard area inputs from the run's actual data,
+// carrying baseline values for areas the harness does not measure yet.
+//
+// Measured areas:
+//   - agent_mcp: pass fraction of the EP-020 agent-tool scenarios × 100
+//   - eval:      pass fraction of ALL scenarios × 100
+//   - perf:      fraction of per-repo/tier runs that passed × 100 (only when
+//     repo metrics exist)
+//
+// Everything else (signal, setup_trust, ux) is carried from baseline. The
+// returned provenance map records "measured" or "carried" per area, and the
+// warnings list names every carried area explicitly.
+func DeriveAreaScores(scenarios []PerScenarioResult, repos []PerRepoMetric) (map[string]float64, map[string]string, []string) {
+	scores := BaselineAreaScores()
+	provenance := map[string]string{}
+	for area := range scores {
+		provenance[area] = "carried"
+	}
+
+	agentToolOps := map[string]bool{
+		"explain_symbol": true, "related_files": true, "change_risk": true, "agent_brief": true,
+	}
+	var total, passed, agentTotal, agentPassed int
+	for _, s := range scenarios {
+		total++
+		pass := s.Outcome == "pass"
+		if pass {
+			passed++
+		}
+		if agentToolOps[s.Operation] {
+			agentTotal++
+			if pass {
+				agentPassed++
+			}
+		}
+	}
+	if total > 0 {
+		scores[scorecard.AreaEvaluation] = float64(passed) / float64(total) * 100
+		provenance[scorecard.AreaEvaluation] = "measured"
+	}
+	if agentTotal > 0 {
+		scores[scorecard.AreaAgentMCP] = float64(agentPassed) / float64(agentTotal) * 100
+		provenance[scorecard.AreaAgentMCP] = "measured"
+	}
+	if len(repos) > 0 {
+		repoPassed := 0
+		for _, r := range repos {
+			if r.Pass {
+				repoPassed++
+			}
+		}
+		scores[scorecard.AreaPerformance] = float64(repoPassed) / float64(len(repos)) * 100
+		provenance[scorecard.AreaPerformance] = "measured"
+	}
+
+	var warnings []string
+	areas := make([]string, 0, len(provenance))
+	for area := range provenance {
+		areas = append(areas, area)
+	}
+	sort.Strings(areas)
+	for _, area := range areas {
+		if provenance[area] == "carried" {
+			warnings = append(warnings, fmt.Sprintf("area %s carried from baseline (%.0f), not measured by this run", area, scores[area]))
+		}
+	}
+	return scores, provenance, warnings
 }
