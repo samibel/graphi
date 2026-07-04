@@ -123,17 +123,21 @@ type CodeAction struct {
 // Suppression records why a finding was withheld from default output; it is
 // empty for findings that are shown by default.
 type Diagnostic struct {
-	Severity        Severity            `json:"severity"`
-	Code            string              `json:"code"`
-	Reason          ReasonCode          `json:"reason"`
-	Message         string              `json:"message"`
-	Symbol          model.NodeId        `json:"symbol_id"`
-	TargetSymbol    model.NodeId        `json:"target_symbol_id,omitempty"`
-	File            string              `json:"file"`
-	Line            int                 `json:"line"`
-	Column          int                 `json:"column"`
-	Actions         []CodeAction        `json:"actions"`
-	Confidence      Confidence          `json:"confidence"`
+	Severity     Severity     `json:"severity"`
+	Code         string       `json:"code"`
+	Reason       ReasonCode   `json:"reason"`
+	Message      string       `json:"message"`
+	Symbol       model.NodeId `json:"symbol_id"`
+	TargetSymbol model.NodeId `json:"target_symbol_id,omitempty"`
+	File         string       `json:"file"`
+	Line         int          `json:"line"`
+	Column       int          `json:"column"`
+	Actions      []CodeAction `json:"actions"`
+	Confidence   Confidence   `json:"confidence"`
+	// Evidence carries "path:line" citations backing the finding: the edge
+	// evidence for unresolved references, the definition site for dead symbols.
+	// Every default-visible diagnostic has at least one entry.
+	Evidence        []string            `json:"evidence,omitempty"`
 	Suppression     SuppressionCategory `json:"suppression,omitempty"`
 	OccurrenceCount int                 `json:"occurrence_count,omitempty"`
 }
@@ -172,7 +176,9 @@ type DiagnoseOptions struct {
 	// suppression taxonomy.
 	All bool
 	// ConfidenceThreshold overrides the default ConfidenceExact threshold.
-	// Valid values are "heuristic" or "exact"; empty means default (exact).
+	// Valid values are the product tiers "confirmed", "derived", "heuristic"
+	// (confirmed/derived map onto the exact gate) or the internal "exact";
+	// empty means default (exact).
 	ConfidenceThreshold string
 	// SeverityThreshold sets a severity floor. Valid values are "error",
 	// "warning", "info"; empty means no floor (show all that pass confidence gate).
@@ -180,17 +186,25 @@ type DiagnoseOptions struct {
 	// JSON is a rendering hint for surfaces; the engine result is typed, so
 	// surfaces decide encoding. It is recorded here for transparency.
 	JSON bool
+	// ExplainSuppressed keeps suppressed findings visible in otherwise-default
+	// output, each tagged with its suppression category, so callers can audit
+	// WHY findings were withheld without disabling the confidence gate the way
+	// --all does. Counts remain in Summary.SuppressedByCategory either way.
+	ExplainSuppressed bool
 	// SuppressionConfig overrides the default built-in suppression patterns.
 	SuppressionConfig SuppressionConfig
 }
 
-// ConfidenceThresholdOf resolves the option string to a Confidence value. An
-// empty or unknown value returns the default ConfidenceExact.
+// ConfidenceThresholdOf resolves the option string to a Confidence value. The
+// product-level tier names are accepted: "heuristic" opens the gate to
+// heuristic findings; "confirmed" and "derived" (like the internal "exact")
+// keep the default exact gate. An empty or unknown value returns the default
+// ConfidenceExact.
 func ConfidenceThresholdOf(s string) Confidence {
 	switch s {
 	case string(ConfidenceHeuristic):
 		return ConfidenceHeuristic
-	case string(ConfidenceExact):
+	case string(ConfidenceExact), "confirmed", "derived":
 		return ConfidenceExact
 	default:
 		return ConfidenceExact

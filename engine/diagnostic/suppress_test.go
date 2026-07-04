@@ -219,3 +219,126 @@ func TestSuppression_NonExternalUntouched(t *testing.T) {
 		t.Fatalf("expected occurrence count 1 for single finding, got %d", res.Diagnostics[0].OccurrenceCount)
 	}
 }
+
+func TestSuppression_GeneratedContentMarker(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	n := makeNode(t, "function", "pkg.fromGenerator", "pkg/output.go", 10)
+	_ = store.PutNode(ctx, n)
+
+	detector := func(file string) bool { return file == "pkg/output.go" }
+	res, err := DiagnoseWithOptions(ctx, store, []string{KindDeadSymbol}, DiagnoseOptions{
+		SuppressionConfig: SuppressionConfig{GeneratedMarkerDetector: detector},
+	})
+	if err != nil {
+		t.Fatalf("DiagnoseWithOptions: %v", err)
+	}
+	if len(res.Diagnostics) != 0 {
+		t.Fatalf("marker-detected generated file should be suppressed, got %+v", res.Diagnostics)
+	}
+	if res.Summary.SuppressedByCategory["generated"] != 1 {
+		t.Fatalf("expected one generated suppression, got %+v", res.Summary)
+	}
+}
+
+func TestSuppression_FrameworkOnlyAppliesToDeadSymbols(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	// An unresolved (heuristic) edge FROM a framework-named symbol must NOT be
+	// framework-suppressed: that category exists for dead-symbol findings only.
+	from := makeNode(t, "function", "pkg.ServeHTTP", "pkg/handler.go", 10)
+	to := makeNode(t, "function", "ext.Dep", "ext/dep.go", 1)
+	_ = store.PutNode(ctx, from)
+	_ = store.PutNode(ctx, to)
+	e, err := model.NewEdge(from.ID(), to.ID(), "calls", model.TierHeuristic, 0.3, "best-effort", []string{"pkg/handler.go:11"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = store.PutEdge(ctx, e)
+
+	res, err := DiagnoseWithOptions(ctx, store, []string{KindUnresolvedRef}, DiagnoseOptions{All: true})
+	if err != nil {
+		t.Fatalf("DiagnoseWithOptions: %v", err)
+	}
+	for _, d := range res.Diagnostics {
+		if d.Suppression == SuppressionFrameworkEntrypoint {
+			t.Fatalf("framework suppression must not apply to %s findings: %+v", d.Code, d)
+		}
+	}
+}
+
+func TestExplainSuppressedKeepsTaggedFindings(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	n := makeNode(t, "function", "pkg.helper", "pkg/a_test.go", 10)
+	_ = store.PutNode(ctx, n)
+
+	// Default: suppressed finding is hidden.
+	def, err := DiagnoseWithOptions(ctx, store, []string{KindDeadSymbol}, DiagnoseOptions{})
+	if err != nil {
+		t.Fatalf("DiagnoseWithOptions: %v", err)
+	}
+	if len(def.Diagnostics) != 0 {
+		t.Fatalf("test-code finding should be hidden by default, got %+v", def.Diagnostics)
+	}
+
+	// --explain-suppressed: finding stays visible WITH its category tag.
+	exp, err := DiagnoseWithOptions(ctx, store, []string{KindDeadSymbol}, DiagnoseOptions{ExplainSuppressed: true})
+	if err != nil {
+		t.Fatalf("DiagnoseWithOptions: %v", err)
+	}
+	if len(exp.Diagnostics) != 1 {
+		t.Fatalf("expected the suppressed finding to be visible, got %+v", exp.Diagnostics)
+	}
+	if exp.Diagnostics[0].Suppression != SuppressionTestCode {
+		t.Fatalf("expected test_code suppression tag, got %q", exp.Diagnostics[0].Suppression)
+	}
+	if exp.Summary.SuppressedByCategory["test_code"] != 1 {
+		t.Fatalf("suppression counts must remain in summary, got %+v", exp.Summary)
+	}
+}
+
+func TestConfidenceThresholdAcceptsProductTiers(t *testing.T) {
+	for _, s := range []string{"confirmed", "derived", "exact", ""} {
+		if got := ConfidenceThresholdOf(s); got != ConfidenceExact {
+			t.Fatalf("ConfidenceThresholdOf(%q) = %q, want exact", s, got)
+		}
+	}
+	if got := ConfidenceThresholdOf("heuristic"); got != ConfidenceHeuristic {
+		t.Fatalf("ConfidenceThresholdOf(heuristic) = %q, want heuristic", got)
+	}
+}
+
+func TestDiagnosticsCarryEvidence(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	dead := makeNode(t, "function", "pkg.dead", "pkg/dead.go", 42)
+	from := makeNode(t, "function", "pkg.caller", "pkg/caller.go", 5)
+	to := makeNode(t, "function", "ext.Dep", "ext/dep.go", 1)
+	_ = store.PutNode(ctx, dead)
+	_ = store.PutNode(ctx, from)
+	_ = store.PutNode(ctx, to)
+	e, err := model.NewEdge(from.ID(), to.ID(), "calls", model.TierHeuristic, 0.3, "best-effort", []string{"pkg/caller.go:6"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = store.PutEdge(ctx, e)
+
+	res, err := DiagnoseWithOptions(ctx, store, nil, DiagnoseOptions{All: true})
+	if err != nil {
+		t.Fatalf("DiagnoseWithOptions: %v", err)
+	}
+	for _, d := range res.Diagnostics {
+		if len(d.Evidence) == 0 {
+			t.Fatalf("diagnostic %s at %s:%d has no evidence", d.Code, d.File, d.Line)
+		}
+	}
+}
+
+func TestMetricsExposeDedupCollapsed(t *testing.T) {
+	r := Result{Summary: Summary{DedupCollapsed: 3, Shown: 1, TotalAnalyzed: 4, TotalWithheld: 3}}
+	m := r.Metrics()
+	if m.DedupCollapsed != 3 {
+		t.Fatalf("Metrics.DedupCollapsed = %d, want 3", m.DedupCollapsed)
+	}
+}

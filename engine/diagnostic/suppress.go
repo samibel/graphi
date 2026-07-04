@@ -18,6 +18,12 @@ type SuppressionConfig struct {
 	ConfiguredPathPatterns []string
 	// FrameworkSignatures match well-known framework entry points by name or path.
 	FrameworkSignatures []string
+	// GeneratedMarkerDetector, when set, reports whether the file at the given
+	// repo-relative path carries an in-content generated-code marker ("Code
+	// generated … DO NOT EDIT", "@generated"). The engine performs no I/O of
+	// its own, so the detector is injected by the surface layer (see
+	// surfaces/client.GeneratedMarkerDetector). Nil disables content sniffing.
+	GeneratedMarkerDetector func(file string) bool
 }
 
 // DefaultSuppressionConfig returns the built-in conservative pattern sets.
@@ -32,6 +38,10 @@ func DefaultSuppressionConfig() SuppressionConfig {
 		ConfiguredPathPatterns: []string{},
 		FrameworkSignatures: []string{
 			"http.Handler", "http.HandleFunc", "ServeHTTP", "main.main", "HandlerFunc",
+			// Lifecycle hooks and plugin-registration surfaces the graph cannot
+			// prove calls into (reflection/annotation-driven).
+			"TestMain", "OnStart", "OnStop", "OnStartup", "OnShutdown",
+			"RegisterPlugin", "PluginRegister", "Lifecycle",
 		},
 	}
 }
@@ -75,7 +85,9 @@ func suppressionStage(cfg SuppressionConfig, isExternalImport func(Diagnostic) b
 }
 
 // classify returns the suppression category for a diagnostic, or empty if it
-// should remain shown by default.
+// should remain shown by default. Framework-entrypoint and public-API
+// suppression apply only to dead-symbol findings (per the signal-quality PRD);
+// test/generated/configured-path suppression applies to every code.
 func classify(d Diagnostic, cfg SuppressionConfig) SuppressionCategory {
 	file := d.File
 	name := nodeNameFromMessage(d.Message)
@@ -86,10 +98,13 @@ func classify(d Diagnostic, cfg SuppressionConfig) SuppressionCategory {
 	if matchAnyPattern(file, cfg.GeneratedPathPatterns) {
 		return SuppressionGenerated
 	}
+	if cfg.GeneratedMarkerDetector != nil && cfg.GeneratedMarkerDetector(file) {
+		return SuppressionGenerated
+	}
 	if matchAnyPattern(file, cfg.ConfiguredPathPatterns) {
 		return SuppressionConfiguredPath
 	}
-	if matchAnySignature(name, d.File, cfg.FrameworkSignatures) {
+	if d.Code == "dead_symbol" && matchAnySignature(name, d.File, cfg.FrameworkSignatures) {
 		return SuppressionFrameworkEntrypoint
 	}
 	if d.Code == "dead_symbol" && looksExported(name) {

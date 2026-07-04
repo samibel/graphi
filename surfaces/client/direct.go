@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -512,16 +513,47 @@ func (d *Direct) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOpti
 	if d.querySvc == nil {
 		return nil, ErrDiagnosticUnavailable
 	}
-	res, err := diagnostic.DiagnoseWithOptions(ctx, d.querySvc.Reader(), kinds, diagnostic.DiagnoseOptions{
+	engineOpts := diagnostic.DiagnoseOptions{
 		All:                 opts.All,
 		ConfidenceThreshold: opts.ConfidenceThreshold,
 		SeverityThreshold:   opts.SeverityThreshold,
 		JSON:                opts.JSON,
-	})
+		ExplainSuppressed:   opts.ExplainSuppressed,
+	}
+	if opts.Root != "" {
+		engineOpts.SuppressionConfig.GeneratedMarkerDetector = GeneratedMarkerDetector(opts.Root)
+	}
+	res, err := diagnostic.DiagnoseWithOptions(ctx, d.querySvc.Reader(), kinds, engineOpts)
 	if err != nil {
 		return nil, err
 	}
 	return diagnostic.Marshal(res)
+}
+
+// generatedMarkerWindow bounds how much of a file the marker detector reads.
+const generatedMarkerWindow = 4096
+
+// GeneratedMarkerDetector returns a detector for in-content generated-code
+// markers ("Code generated ... DO NOT EDIT", "@generated") in the head of
+// files under root. It is the surface-side I/O companion to the I/O-free
+// engine suppression config: paths are repo-relative as recorded in the graph.
+// Unreadable files report false (never an error).
+func GeneratedMarkerDetector(root string) func(file string) bool {
+	return func(file string) bool {
+		if file == "" {
+			return false
+		}
+		f, err := os.Open(filepath.Join(root, filepath.FromSlash(file)))
+		if err != nil {
+			return false
+		}
+		defer f.Close()
+		buf := make([]byte, generatedMarkerWindow)
+		n, _ := io.ReadFull(f, buf)
+		head := string(buf[:n])
+		return (strings.Contains(head, "Code generated") && strings.Contains(head, "DO NOT EDIT")) ||
+			strings.Contains(head, "@generated")
+	}
 }
 
 // Inline implements Client (SW-092/SW-094). A blocked/unavailable outcome is a

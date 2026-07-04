@@ -99,15 +99,18 @@ func DiagnoseWithOptions(ctx context.Context, r query.Reader, kinds []string, op
 	}
 	cfg := opts.SuppressionConfig
 	if cfg.GeneratedPathPatterns == nil && cfg.TestPathPatterns == nil && cfg.ConfiguredPathPatterns == nil && cfg.FrameworkSignatures == nil {
+		detector := cfg.GeneratedMarkerDetector
 		cfg = DefaultSuppressionConfig()
+		cfg.GeneratedMarkerDetector = detector
 	}
 	stages = append(stages, suppressionStage(cfg, isExternalImport))
 	stages = append(stages, actionGate())
 	stages = append(stages, dedupStage())
 	if !opts.All {
-		stages = append(stages, showStage(false))
+		// --explain-suppressed keeps the tagged suppressed findings visible so
+		// callers can audit the withholding; counts stay in the summary either way.
+		stages = append(stages, showStage(opts.ExplainSuppressed))
 	}
-	// C3 dedup will be inserted after suppression in SW-122.
 
 	for _, stage := range stages {
 		diags = stage(diags, t)

@@ -143,9 +143,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi undo -root . -token 01HXYZ...",
 	},
 	"diagnose": {
-		"graph-derived diagnostics + suggested code-actions",
-		"graphi diagnose [-db path] [-daemon socket] [<kind>...]",
-		"graphi diagnose -db graph.db dead_symbol",
+		"graph-derived diagnostics + suggested code-actions (high-confidence by default)",
+		"graphi diagnose [-db path] [-daemon socket] [-all] [-confidence confirmed|derived|heuristic] [-severity error|warning|info] [-explain-suppressed] [-json] [-root dir] [<kind>...]",
+		"graphi diagnose -db graph.db -severity warning dead_symbol",
 	},
 	"inline": {
 		"inline refactor over the edit saga (single-line initializer targets)",

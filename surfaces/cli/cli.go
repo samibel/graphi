@@ -280,9 +280,11 @@ func RunDiagnose(ctx context.Context, c client.Client, args []string, out, errOu
 	fs := flag.NewFlagSet("diagnose", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	all := fs.Bool("all", false, "disable default confidence gate and severity floor")
-	confidence := fs.String("confidence", "", "confidence threshold (heuristic|exact)")
+	confidence := fs.String("confidence", "", "confidence threshold (confirmed|derived|heuristic)")
 	severity := fs.String("severity", "", "severity floor (error|warning|info)")
 	jsonFlag := fs.Bool("json", false, "emit structured JSON output")
+	explainSuppressed := fs.Bool("explain-suppressed", false, "keep suppressed findings visible with their suppression category")
+	root := fs.String("root", ".", "repository root for generated-code marker detection (empty disables)")
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("cli: diagnose: %w", err)
 	}
@@ -297,6 +299,8 @@ func RunDiagnose(ctx context.Context, c client.Client, args []string, out, errOu
 		ConfidenceThreshold: *confidence,
 		SeverityThreshold:   *severity,
 		JSON:                *jsonFlag,
+		ExplainSuppressed:   *explainSuppressed,
+		Root:                *root,
 	}
 	b, err := c.Diagnose(ctx, kinds, opts)
 	if err != nil {

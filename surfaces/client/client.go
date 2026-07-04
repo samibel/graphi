@@ -256,6 +256,13 @@ type DiagnoseOptions struct {
 	ConfidenceThreshold string
 	SeverityThreshold   string
 	JSON                bool
+	// ExplainSuppressed keeps suppressed findings visible (tagged with their
+	// suppression category) in otherwise-default output.
+	ExplainSuppressed bool
+	// Root, when non-empty, enables in-content generated-code marker detection
+	// for files resolved relative to this directory (surface-side I/O; the
+	// engine stays I/O-free).
+	Root string
 }
 
 // Client is the thin contract every surface uses to execute structural queries,

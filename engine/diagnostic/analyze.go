@@ -113,6 +113,7 @@ func analyzeUnresolvedRefs(ctx context.Context, r query.Reader) ([]Diagnostic, e
 			Column:          from.Column(),
 			Actions:         []CodeAction{},
 			Confidence:      ConfidenceHeuristic,
+			Evidence:        e.Evidence(),
 			OccurrenceCount: 1,
 		})
 	}
@@ -161,6 +162,7 @@ func analyzeDeadSymbols(ctx context.Context, r query.Reader) ([]Diagnostic, erro
 				TargetSymbol: n.ID(),
 			}},
 			Confidence:      ConfidenceExact,
+			Evidence:        []string{fmt.Sprintf("%s:%d", n.SourcePath(), n.Line())},
 			OccurrenceCount: 1,
 		})
 	}
