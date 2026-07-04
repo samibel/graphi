@@ -267,7 +267,10 @@ func WriteMarkdown(r Report, path string) error {
 	if err := t.Execute(&b, r); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(b.String()), 0o644)
+	// Conditional template blocks leave trailing blank lines; normalize the
+	// file to end with exactly one newline.
+	out := strings.TrimRight(b.String(), "\n") + "\n"
+	return os.WriteFile(path, []byte(out), 0o644)
 }
 
 // DefaultBaseline returns the checked-in ~6.5/10 baseline.

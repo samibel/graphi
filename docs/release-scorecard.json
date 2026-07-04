@@ -1,8 +1,8 @@
 {
   "header": {
-    "timestamp": "2026-07-04T16:06:16Z",
+    "timestamp": "2026-07-04T17:18:21Z",
     "version": "dev",
-    "commit": "a456881bc2bdc94ea79ce996f4ca0a0ea0980ce1",
+    "commit": "fd2be7c899de689d470ed2891971c7508b4c465d",
     "os": "linux",
     "arch": "amd64",
     "corpus_version": 1
@@ -313,9 +313,6 @@
   "baseline": 65,
   "target": 90,
   "regressions_vs_baseline": null,
-  "perf_warnings": [
-    "area ux carried from baseline (62), not measured by this run"
-  ],
   "signal_metrics": {
     "default_count": 1,
     "all_count": 8,
@@ -336,7 +333,7 @@
     "checks": [
       {
         "name": "index_time",
-        "measured": 13,
+        "measured": 27,
         "budget": 10000,
         "unit": "ms",
         "pass": true
@@ -350,21 +347,21 @@
       },
       {
         "name": "query_latency_median",
-        "measured": 0.142,
+        "measured": 0.107,
         "budget": 100,
         "unit": "ms",
         "pass": true
       },
       {
         "name": "mcp_tool_latency_median",
-        "measured": 0.179,
+        "measured": 0.125,
         "budget": 500,
         "unit": "ms",
         "pass": true
       },
       {
         "name": "incremental_update",
-        "measured": 7,
+        "measured": 6,
         "budget": 5000,
         "unit": "ms",
         "pass": true
@@ -392,7 +389,7 @@
       {
         "name": "db_readable_passes",
         "pass": true,
-        "detail": "status=pass msg=\"DB /tmp/graphi-eval-doctor-2510121574/readable.db readable, 1 nodes, profile: unknown, FTS present, schema: user_version=0\""
+        "detail": "status=pass msg=\"DB /tmp/graphi-eval-doctor-1641068222/readable.db readable, 1 nodes, profile: unknown, FTS present, schema: user_version=0\""
       },
       {
         "name": "db_empty_warns_with_action",

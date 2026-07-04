@@ -1,8 +1,8 @@
 # Eval Report
 
-**Timestamp:** 2026-07-04T16:06:16Z
+**Timestamp:** 2026-07-04T17:18:21Z
 **Version:** dev
-**Commit:** a456881bc2bdc94ea79ce996f4ca0a0ea0980ce1
+**Commit:** fd2be7c899de689d470ed2891971c7508b4c465d
 **OS/Arch:** linux/amd64
 **Corpus version:** 1
 
@@ -52,11 +52,3 @@
 ## Regressions vs Baseline
 
 No regressions detected.
-
-
-
-## Performance Warnings
-
-- area ux carried from baseline (62), not measured by this run
-
-

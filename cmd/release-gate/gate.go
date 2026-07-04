@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/samibel/graphi/engine/scorecard"
 	"github.com/samibel/graphi/internal/evalreport"
@@ -95,6 +96,24 @@ func Run(gates map[string]Runner, evalFn EvalReportFn, uxFn UXFn, baselinePath s
 		report.AreaProvenance[scorecard.AreaUX] = "measured"
 		res.Report.AreaProvenance = report.AreaProvenance
 	}
+
+	// The eval report warned about every area it had to carry; the gate has
+	// since measured some of them (ux). Drop the now-stale carry warnings so
+	// the published document never contradicts its own breakdown.
+	kept := res.Report.PerfWarnings[:0:0]
+	for _, w := range res.Report.PerfWarnings {
+		stale := false
+		for area, prov := range res.Report.AreaProvenance {
+			if prov == "measured" && strings.HasPrefix(w, "area "+area+" carried") {
+				stale = true
+				break
+			}
+		}
+		if !stale {
+			kept = append(kept, w)
+		}
+	}
+	res.Report.PerfWarnings = kept
 
 	removed, err := checkToolBaseline(baselinePath)
 	if err != nil {

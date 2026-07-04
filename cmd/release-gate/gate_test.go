@@ -257,3 +257,29 @@ func TestReleaseGateUnverifiedPrivacyIsAWarning(t *testing.T) {
 		t.Fatalf("expected one warning, got %v", result.Warnings)
 	}
 }
+
+// TestGateDropsStaleCarryWarnings pins the consistency contract: the eval
+// report's "area ux carried" warning must not survive into the gate result
+// once the gate has measured ux — the published document must never
+// contradict its own breakdown.
+func TestGateDropsStaleCarryWarnings(t *testing.T) {
+	dir := t.TempDir()
+	baseline := filepath.Join(dir, "baseline.json")
+	writeBaseline(t, baseline, []string{"search", "analyze"})
+
+	evalFn := func() (evalreport.Report, error) {
+		r := fakeReport(t, nil)
+		r.PerfWarnings = []string{
+			"area ux carried from baseline (62), not measured by this run",
+			"unrelated warning stays",
+		}
+		return r, nil
+	}
+	result, err := Run(allPassGates(), evalFn, passUX(), baseline)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(result.Report.PerfWarnings) != 1 || result.Report.PerfWarnings[0] != "unrelated warning stays" {
+		t.Fatalf("stale ux carry warning must be dropped, got %v", result.Report.PerfWarnings)
+	}
+}
