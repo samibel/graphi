@@ -81,6 +81,8 @@ func main() {
 		os.Exit(runSavings(os.Args[2:]))
 	case "memory":
 		os.Exit(runMemory(os.Args[2:]))
+	case "agent-brief":
+		os.Exit(runAgentBrief(os.Args[2:]))
 	case "distill":
 		os.Exit(runDistill(os.Args[2:]))
 	case "skillgen":
@@ -1341,6 +1343,34 @@ func runMemory(args []string) int {
 	defer cleanup()
 	if err := cli.RunMemory(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: memory: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runAgentBrief launches the CLI agent_brief surface (EP-024 SW-134). Usage:
+//
+//	graphi agent-brief [-topic <topic>] [-ledger path]
+func runAgentBrief(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := extractLedgerFlag(&rest)
+	c, storeCleanup := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	defer storeCleanup()
+	if socket != "" {
+		fmt.Fprintln(os.Stderr, "graphi: agent-brief: not available via daemon in this build")
+		return 1
+	}
+	c, cleanup, err := withLedgerAndAgentServices(c, ledgerPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: agent-brief: %v\n", err)
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunAgentBrief(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: agent-brief: %v\n", err)
 		return 1
 	}
 	return 0

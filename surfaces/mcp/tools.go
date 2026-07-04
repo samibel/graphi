@@ -74,7 +74,10 @@ const (
 	// engine analyzer; the only permitted egress is the surface review fetch.
 	ToolCritiqueReview = "critique_review"
 
-	// EP-020 agent-first task tools (SW-115 / SW-116 / SW-117).
+	// EP-024 agent-first task tool (SW-134).
+	ToolAgentBrief = "agent_brief"
+
+	// EP-020 agent-first task tools (SW-115 / SW-116 / SW-117) plus EP-024 (SW-134).
 	ToolExplainSymbol = "explain_symbol"
 	ToolRelatedFiles  = "related_files"
 	ToolChangeRisk    = "change_risk"
@@ -115,6 +118,7 @@ var singletonToolNames = []string{
 	ToolExplainSymbol,
 	ToolRelatedFiles,
 	ToolChangeRisk,
+	ToolAgentBrief,
 }
 
 // experimentalPrefix marks a tool description as experimental. Tool NAMES are
@@ -132,6 +136,7 @@ var experimentalTools = map[string]bool{
 	ToolMemory:           true,
 	ToolDistill:          true,
 	ToolSkillGen:         true,
+	ToolAgentBrief:       true,
 	ToolListPRs:          true,
 	ToolTriagePRs:        true,
 	ToolConflictsPRs:     true,

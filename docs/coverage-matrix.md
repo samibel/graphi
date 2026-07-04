@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **137**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **139**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -69,10 +69,11 @@ Total capabilities: **137**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage-prs` | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (41)
+## MCP tools (42)
 
 | id | status | epic | note |
 |---|---|---|---|
+| `agent_brief` | 🟡 partial | EP-024 | SW-134: bounded, cited task-start context packet; scaffold: contract shape and surface wiring present. |
 | `analyze` | ✅ shipped | EP-004 | run a named graph analyzer over the indexed graph. |
 | `analyze_contracts` | ✅ shipped | EP-005 | dedicated tool for the contracts analyzer. |
 | `analyze_githistory` | ✅ shipped | EP-005 | dedicated tool for the git-history analyzer. |
@@ -128,10 +129,11 @@ Total capabilities: **137**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (38)
+## CLI subcommands (39)
 
 | id | status | epic | note |
 |---|---|---|---|
+| `agent-brief` | 🟡 partial | - | bounded, cited task-start context packet for agents |
 | `analyze` | ✅ shipped | - | run a registered analyzer over the graph |
 | `claude` | ✅ shipped | - | short-verb alias for `setup` (register the MCP server) |
 | `compare-branches` | ✅ shipped | - | graph-level diff of two graphi SQLite snapshots (paths, not git refs) |

@@ -370,8 +370,8 @@ func TestMCP_ToolsList(t *testing.T) {
 	// + the EP-011 G1 "compound" tool + the SW-085 "search_ast" and "find_clones"
 	// pattern-query tools + the EP-020 "explain_symbol", "related_files", and
 	// "change_risk" tools (advertised unconditionally).
-	if len(resp.Result.Tools) != len(query.Operations)+8 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+8)
+	if len(resp.Result.Tools) != len(query.Operations)+9 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+9)
 	}
 }
 

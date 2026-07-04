@@ -348,6 +348,11 @@ func (h *HTTP) SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, error
 	return nil, ErrSkillGenUnavailable
 }
 
+// Brief is not exposed by the current HTTP surface; returns ErrBriefUnavailable.
+func (h *HTTP) Brief(ctx context.Context, topic string) ([]byte, []byte, error) {
+	return nil, nil, ErrBriefUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
 // is added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (h *HTTP) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {

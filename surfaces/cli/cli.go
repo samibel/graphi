@@ -588,6 +588,29 @@ func RunSavings(ctx context.Context, c client.Client, out, errOut io.Writer) err
 	return nil
 }
 
+// RunAgentBrief runs the agent_brief assembler and prints the canonical JSON
+// output (parity with MCP). The Markdown rendering is also available.
+//
+// Usage:
+//
+//	agent-brief [-topic <topic>]
+func RunAgentBrief(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("agent-brief", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	topic := fs.String("topic", "", "optional topic: symbol, path, or subsystem")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	jsonBytes, _, err := c.Brief(ctx, *topic)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(jsonBytes, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunMemory executes a memory operation against the shared client and writes the
 // canonical serialized MemoryResponse.
 //

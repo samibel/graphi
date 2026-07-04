@@ -53,6 +53,9 @@ func (allToolsClient) Distill(context.Context, client.DistillRequest) ([]byte, e
 func (allToolsClient) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) Brief(context.Context, string) ([]byte, []byte, error) {
+	return []byte("{}"), []byte("# Agent Brief\n"), nil
+}
 func (allToolsClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return []byte("{}"), nil
 }

@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/agenttools/brief"
+	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/distill"
@@ -685,6 +687,25 @@ func (d *Direct) SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, err
 		Steps:       req.Steps,
 		Markdown:    string(md),
 	})
+}
+
+// Brief implements Client. It assembles the agent_brief context packet and returns
+// the canonical JSON bytes plus a Markdown rendering.
+func (d *Direct) Brief(ctx context.Context, topic string) ([]byte, []byte, error) {
+	_ = ctx
+	res, err := brief.Assemble(brief.Params{Topic: topic})
+	if err != nil {
+		return nil, nil, err
+	}
+	jsonBytes, err := contract.Serialize(res)
+	if err != nil {
+		return nil, nil, err
+	}
+	md, err := brief.Markdown(res)
+	if err != nil {
+		return nil, nil, err
+	}
+	return jsonBytes, []byte(md), nil
 }
 
 func marshalJSON(v any) ([]byte, error) {

@@ -57,6 +57,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi memory store|recall|forget [-scope s] [-notebook n] [-payload text] [-tags a,b] [-id id] [-ledger path]",
 		"graphi memory store -scope repo -notebook decisions -payload \"we chose sqlite\"",
 	},
+	"agent-brief": {
+		"bounded, cited task-start context packet for agents",
+		"graphi agent-brief [-topic <topic>] [-ledger path]",
+		"graphi agent-brief -topic \"engine/agenttools/brief\"",
+	},
 	"distill": {
 		"distill a session into a compact decision record",
 		"graphi distill -session <id> [-decisions d1,d2] [-risks r1] [-questions q1] [-files a.go,b.go] [-ledger path]",

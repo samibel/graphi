@@ -254,6 +254,13 @@ func (c *DaemonClient) SkillGen(ctx context.Context, req client.SkillGenRequest)
 	return nil, client.ErrSkillGenUnavailable
 }
 
+// Brief implements client.Client. The daemon agent_brief RPC is not yet wired;
+// returns ErrBriefUnavailable.
+func (c *DaemonClient) Brief(ctx context.Context, topic string) ([]byte, []byte, error) {
+	_, _ = ctx, topic
+	return nil, nil, client.ErrBriefUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {

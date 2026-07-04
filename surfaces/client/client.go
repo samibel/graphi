@@ -335,6 +335,12 @@ type Client interface {
 	// WithSkillGen; other clients return ErrSkillGenUnavailable until wired.
 	SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, error)
 
+	// Brief runs the agent_brief assembler and returns the canonical serialized
+	// Result bytes plus a Markdown rendering in the response (EP-024 SW-134).
+	// The in-process Direct client wires it directly; other clients return
+	// ErrBriefUnavailable until wired.
+	Brief(ctx context.Context, topic string) ([]byte, []byte, error)
+
 	// Diagnose runs the engine diagnostics (SW-091) over the graph and returns the
 	// canonical serialized diagnostic.Result bytes via diagnostic.Marshal — the
 	// single serializer every surface uses (byte-identical parity, SW-094). kinds
@@ -441,3 +447,6 @@ var ErrDistillUnavailable = errors.New("client: distill service unavailable")
 
 // ErrSkillGenUnavailable is returned when a Client has no skill generation service configured.
 var ErrSkillGenUnavailable = errors.New("client: skillgen service unavailable")
+
+// ErrBriefUnavailable is returned when a Client has no agent_brief assembler configured.
+var ErrBriefUnavailable = errors.New("client: agent_brief service unavailable")

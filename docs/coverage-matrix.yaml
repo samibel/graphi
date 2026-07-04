@@ -446,6 +446,11 @@ capabilities:
     status: partial
     epic: EP-020
     note: "SW-117: evidence-based change risk assessment; scaffold: contract shape and surface wiring present."
+  - id: agent_brief
+    category: mcp-tool
+    status: partial
+    epic: EP-024
+    note: "SW-134: bounded, cited task-start context packet; scaffold: contract shape and surface wiring present."
   - id: cli
     category: surface
     status: shipped
@@ -604,6 +609,11 @@ capabilities:
     status: shipped
     epic: "-"
     note: "agent memory store|recall|forget"
+  - id: agent-brief
+    category: cli-subcommand
+    status: partial
+    epic: "-"
+    note: "bounded, cited task-start context packet for agents"
   - id: parse
     category: cli-subcommand
     status: shipped
