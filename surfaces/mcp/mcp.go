@@ -167,16 +167,16 @@ type callParams struct {
 		Limit   *int   `json:"limit"`
 		Config  string `json:"config"`
 		// EP-012 memory arguments.
-		Op       string   `json:"op"`
-		Scope    string   `json:"scope"`
-		Notebook string   `json:"notebook"`
-		Tags     []string `json:"tags"`
-		Payload  string   `json:"payload"`
-		MemID    string   `json:"mem_id"`
-		Source   string   `json:"source"`
-		Confidence string `json:"confidence"`
-		Evidence   string `json:"evidence"`
-		ExportToPath string `json:"export_to_path"`
+		Op           string   `json:"op"`
+		Scope        string   `json:"scope"`
+		Notebook     string   `json:"notebook"`
+		Tags         []string `json:"tags"`
+		Payload      string   `json:"payload"`
+		MemID        string   `json:"mem_id"`
+		Source       string   `json:"source"`
+		Confidence   string   `json:"confidence"`
+		Evidence     string   `json:"evidence"`
+		ExportToPath string   `json:"export_to_path"`
 		// EP-012 distill arguments.
 		SessionID      string        `json:"session_id"`
 		Turns          []client.Turn `json:"turns"`
@@ -1078,17 +1078,17 @@ func (s *Server) toolDescriptors() []map[string]any {
 			"inputSchema": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"op":         map[string]any{"type": "string", "description": "operation: store | recall | forget | list | export"},
-					"scope":      map[string]any{"type": "string", "description": "memory scope"},
-					"notebook":   map[string]any{"type": "string", "description": "memory notebook"},
-					"tags":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
-					"payload":    map[string]any{"type": "string", "description": "payload for store"},
-					"mem_id":     map[string]any{"type": "string", "description": "entry id for forget or overwrite"},
-					"kind":       map[string]any{"type": "string", "description": "entry kind for store (e.g. note, decision, convention)"},
-					"source":     map[string]any{"type": "string", "description": "provenance source for store"},
-					"confidence": map[string]any{"type": "string", "description": "confirmed | derived | heuristic"},
-					"evidence":   map[string]any{"type": "string", "description": "optional file:line citation"},
-					"limit":      map[string]any{"type": "integer", "description": "max entries for list"},
+					"op":             map[string]any{"type": "string", "description": "operation: store | recall | forget | list | export"},
+					"scope":          map[string]any{"type": "string", "description": "memory scope"},
+					"notebook":       map[string]any{"type": "string", "description": "memory notebook"},
+					"tags":           map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
+					"payload":        map[string]any{"type": "string", "description": "payload for store"},
+					"mem_id":         map[string]any{"type": "string", "description": "entry id for forget or overwrite"},
+					"kind":           map[string]any{"type": "string", "description": "entry kind for store (e.g. note, decision, convention)"},
+					"source":         map[string]any{"type": "string", "description": "provenance source for store"},
+					"confidence":     map[string]any{"type": "string", "description": "confirmed | derived | heuristic"},
+					"evidence":       map[string]any{"type": "string", "description": "optional file:line citation"},
+					"limit":          map[string]any{"type": "integer", "description": "max entries for list"},
 					"export_to_path": map[string]any{"type": "string", "description": "destination file for export"},
 				},
 				"required": []string{"op"},

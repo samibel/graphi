@@ -515,7 +515,7 @@ func (d *Direct) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOpti
 	res, err := diagnostic.DiagnoseWithOptions(ctx, d.querySvc.Reader(), kinds, diagnostic.DiagnoseOptions{
 		All:                 opts.All,
 		ConfidenceThreshold: opts.ConfidenceThreshold,
-		SeverityThreshold:     opts.SeverityThreshold,
+		SeverityThreshold:   opts.SeverityThreshold,
 		JSON:                opts.JSON,
 	})
 	if err != nil {

@@ -751,18 +751,18 @@ func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut 
 		tagList = strings.Split(*tags, ",")
 	}
 	b, err := c.Memory(ctx, client.MemoryRequest{
-		Op:            op,
-		Scope:         *scope,
-		Notebook:      *notebook,
-		Tags:          tagList,
-		Payload:       *payload,
-		ID:            *id,
-		Kind:          *kind,
-		Source:        *source,
-		Confidence:    *confidence,
-		Evidence:      *evidence,
-		Limit:         *limit,
-		ExportToPath:  *exportPath,
+		Op:           op,
+		Scope:        *scope,
+		Notebook:     *notebook,
+		Tags:         tagList,
+		Payload:      *payload,
+		ID:           *id,
+		Kind:         *kind,
+		Source:       *source,
+		Confidence:   *confidence,
+		Evidence:     *evidence,
+		Limit:        *limit,
+		ExportToPath: *exportPath,
 	})
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)

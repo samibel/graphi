@@ -95,9 +95,9 @@ func Assemble(p Params) (*contract.Result, error) {
 	}
 
 	return &contract.Result{
-		Outcome: contract.OutcomeOK,
-		Summary: summary,
-		Items:   items,
+		Outcome:  contract.OutcomeOK,
+		Summary:  summary,
+		Items:    items,
 		Evidence: evidence,
 		Confidence: contract.Confidence{
 			Distribution: map[string]float64{"ok": 1.0},

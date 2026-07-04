@@ -78,26 +78,26 @@ type PrCommentRequest struct {
 
 // MemoryRequest is the transport-agnostic input for memory operations.
 type MemoryRequest struct {
-	Op            string   `json:"op"` // store | recall | forget | list | export
-	Scope         string   `json:"scope"`
-	Notebook      string   `json:"notebook"`
-	Tags          []string `json:"tags"`
-	Payload       string   `json:"payload"`
-	ID            string   `json:"id"`             // for forget or overwrite
-	Kind          string   `json:"kind"`           // for store
-	Source        string   `json:"source"`         // for store
-	Confidence    string   `json:"confidence"`     // for store
-	Evidence      string   `json:"evidence"`       // for store
-	Limit         int      `json:"limit"`          // for list
-	ExportToPath  string   `json:"export_to_path"` // for export
+	Op           string   `json:"op"` // store | recall | forget | list | export
+	Scope        string   `json:"scope"`
+	Notebook     string   `json:"notebook"`
+	Tags         []string `json:"tags"`
+	Payload      string   `json:"payload"`
+	ID           string   `json:"id"`             // for forget or overwrite
+	Kind         string   `json:"kind"`           // for store
+	Source       string   `json:"source"`         // for store
+	Confidence   string   `json:"confidence"`     // for store
+	Evidence     string   `json:"evidence"`       // for store
+	Limit        int      `json:"limit"`          // for list
+	ExportToPath string   `json:"export_to_path"` // for export
 }
 
 // MemoryResponse is the canonical serialized output for memory operations.
 type MemoryResponse struct {
-	Entries        []MemoryEntry `json:"entries"`
-	ID             string        `json:"id"`
-	Count          int           `json:"count"`
-	SecretSuspect  bool          `json:"secret_suspected"`
+	Entries       []MemoryEntry `json:"entries"`
+	ID            string        `json:"id"`
+	Count         int           `json:"count"`
+	SecretSuspect bool          `json:"secret_suspected"`
 }
 
 // MemoryEntry is one returned memory item.
