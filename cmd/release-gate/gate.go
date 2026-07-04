@@ -12,71 +12,108 @@ import (
 	"github.com/samibel/graphi/surfaces/mcp"
 )
 
-// AreaScore is a simple pass/fail score for a single area.
-type AreaScore struct {
-	Area  string
-	Score float64
-	Error string
-}
-
-// GateResult captures the scorecard plus any failures.
+// GateResult captures the measured scorecard plus every blocking condition.
 type GateResult struct {
-	Scorecard scorecard.Result
-	Removed   []string
-	Errors    []string
-	Pass      bool
+	Scorecard   scorecard.Result
+	Report      evalreport.Report // the eval scorecard report the gate consumed
+	UX          *evalreport.UXMetrics
+	Removed     []string // MCP tools present in the baseline but missing live
+	Regressions []evalreport.Regression
+	Errors      []string
+	Pass        bool
 }
 
-// Run executes the full release gate and returns the result.
-func Run(runners map[string]Runner, baselinePath string) (GateResult, error) {
-	var scores = map[string]float64{}
-	var errors []string
+// Runner executes one hard constituent gate. A non-nil error blocks the
+// release; the returned score is informational only — the 9/10 verdict comes
+// from the MEASURED eval scorecard report, never from runner pass/fail
+// averaging.
+type Runner interface {
+	Run() (float64, error)
+}
 
-	areaMapping := []struct {
-		name   string
-		area   string
-		weight int
-	}{
-		{"testgate", scorecard.AreaEvaluation, scorecard.WeightEvaluation},
-		{"eval", scorecard.AreaSignal, scorecard.WeightSignal},
-		{"coverage", scorecard.AreaAgentMCP, scorecard.WeightAgentMCP},
-		{"privacy", scorecard.AreaSetupTrust, scorecard.WeightSetupTrust},
-		{"perf", scorecard.AreaPerformance, scorecard.WeightPerformance},
-		{"web", scorecard.AreaUX, scorecard.WeightUX},
+// EvalReportFn produces the measured eval scorecard report (cmd/eval
+// -manifest ... -tier 1). Injectable for tests.
+type EvalReportFn func() (evalreport.Report, error)
+
+// UXFn produces the measured web-suite UX metrics. Injectable for tests.
+type UXFn func() (evalreport.UXMetrics, error)
+
+// Run executes the release gate:
+//
+//  1. every hard gate (testgate, coverage, privacy) must succeed;
+//  2. the eval scorecard report supplies the MEASURED area scores;
+//  3. the web suite supplies the measured ux score;
+//  4. the final scorecard is recomputed from those inputs.
+//
+// The release is blocked when any hard gate fails, an MCP tool was removed
+// against the baseline, the report carries a Tier-1 regression, any area is
+// below the 80 floor, or the overall score is below 90.
+func Run(gates map[string]Runner, evalFn EvalReportFn, uxFn UXFn, baselinePath string) (GateResult, error) {
+	var res GateResult
+
+	gateNames := make([]string, 0, len(gates))
+	for name := range gates {
+		gateNames = append(gateNames, name)
+	}
+	sort.Strings(gateNames)
+	for _, name := range gateNames {
+		if _, err := gates[name].Run(); err != nil {
+			res.Errors = append(res.Errors, fmt.Sprintf("%s failed: %v", name, err))
+		}
 	}
 
-	for _, m := range areaMapping {
-		r, ok := runners[m.name]
-		if !ok {
-			scores[m.area] = 0
-			errors = append(errors, fmt.Sprintf("runner %s missing", m.name))
-			continue
+	report, err := evalFn()
+	if err != nil {
+		res.Errors = append(res.Errors, fmt.Sprintf("eval report: %v", err))
+	}
+	res.Report = report
+	res.Regressions = report.RegressionsVsBaseline
+
+	scores := map[string]float64{}
+	for area, ar := range report.Scorecard.Breakdown {
+		scores[area] = ar.Score
+	}
+
+	ux, err := uxFn()
+	if err != nil {
+		res.Errors = append(res.Errors, fmt.Sprintf("ux measurement: %v", err))
+	} else {
+		res.UX = &ux
+		scores[scorecard.AreaUX] = ux.Score
+		if report.AreaProvenance == nil {
+			report.AreaProvenance = map[string]string{}
 		}
-		s, err := r.Run()
-		if err != nil {
-			scores[m.area] = 0
-			errors = append(errors, fmt.Sprintf("%s failed: %v", m.name, err))
-			continue
-		}
-		scores[m.area] = s
+		report.AreaProvenance[scorecard.AreaUX] = "measured"
+		res.Report.AreaProvenance = report.AreaProvenance
 	}
 
 	removed, err := checkToolBaseline(baselinePath)
 	if err != nil {
-		errors = append(errors, fmt.Sprintf("tool baseline check: %v", err))
+		res.Errors = append(res.Errors, fmt.Sprintf("tool baseline check: %v", err))
 	}
+	res.Removed = removed
 
-	res, err := scorecard.Calculate(scores)
+	// An incomplete score set (failed eval run) must not panic the gate; fill
+	// missing areas with zero so the calculation names them as floored.
+	for _, area := range []string{
+		scorecard.AreaAgentMCP, scorecard.AreaSignal, scorecard.AreaPerformance,
+		scorecard.AreaSetupTrust, scorecard.AreaEvaluation, scorecard.AreaUX,
+	} {
+		if _, ok := scores[area]; !ok {
+			scores[area] = 0
+		}
+	}
+	final, err := scorecard.Calculate(scores)
 	if err != nil {
 		return GateResult{}, fmt.Errorf("scorecard calculation: %w", err)
 	}
+	res.Scorecard = final
 
-	return GateResult{
-		Scorecard: res,
-		Removed:   removed,
-		Errors:    errors,
-		Pass:      res.Pass && len(removed) == 0 && len(errors) == 0,
-	}, nil
+	res.Pass = final.Pass &&
+		len(res.Errors) == 0 &&
+		len(res.Removed) == 0 &&
+		len(res.Regressions) == 0
+	return res, nil
 }
 
 func checkToolBaseline(path string) ([]string, error) {
@@ -102,20 +139,14 @@ func checkToolBaseline(path string) ([]string, error) {
 	return removed, nil
 }
 
-// Runner executes a single constituent gate and returns a 0-100 score.
-type Runner interface {
-	Run() (float64, error)
-}
-
-// Publish writes the scorecard evidence to docs/.
+// Publish writes the scorecard evidence to docs/: the full measured eval
+// report with the gate's recomputed scorecard and ux metrics embedded.
 func Publish(result GateResult, docsDir, version, commit string) error {
-	header := evalreport.NewHeader(version, commit)
-	report := evalreport.Report{
-		Header:    header,
-		Scorecard: result.Scorecard,
-		Baseline:  90.0,
-		Target:    90.0,
-	}
+	report := result.Report
+	report.Header = evalreport.NewHeader(version, commit)
+	report.Scorecard = result.Scorecard
+	report.UXMetrics = result.UX
+	report.Target = 90.0
 	if err := evalreport.WriteJSON(report, filepath.Join(docsDir, "release-scorecard.json")); err != nil {
 		return err
 	}
@@ -126,7 +157,7 @@ func Publish(result GateResult, docsDir, version, commit string) error {
 func FormatVerdict(result GateResult) string {
 	var b string
 	b += fmt.Sprintf("Release gate: %s\n", map[bool]string{true: "PASS", false: "FAIL"}[result.Pass])
-	b += fmt.Sprintf("Overall: %.1f/100\n", result.Scorecard.Overall)
+	b += fmt.Sprintf("Overall: %.1f/100 (pass needs >= 90 overall, every area >= 80)\n", result.Scorecard.Overall)
 	var keys []string
 	for k := range result.Scorecard.Breakdown {
 		keys = append(keys, k)
@@ -134,7 +165,14 @@ func FormatVerdict(result GateResult) string {
 	sort.Strings(keys)
 	for _, k := range keys {
 		v := result.Scorecard.Breakdown[k]
-		b += fmt.Sprintf("  %s: %.1f/100 (weight %d, below_floor=%v)\n", k, v.Score, v.Weight, v.BelowFloor)
+		prov := result.Report.AreaProvenance[k]
+		if prov == "" {
+			prov = "unknown"
+		}
+		b += fmt.Sprintf("  %s: %.1f/100 (weight %d, below_floor=%v, %s)\n", k, v.Score, v.Weight, v.BelowFloor, prov)
+	}
+	for _, r := range result.Regressions {
+		b += fmt.Sprintf("  tier-1 regression: %s (%s → %s)\n", r.ScenarioID, r.Before, r.After)
 	}
 	for _, r := range result.Removed {
 		b += fmt.Sprintf("  removed tool: %s\n", r)

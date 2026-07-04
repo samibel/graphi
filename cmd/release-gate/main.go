@@ -28,7 +28,7 @@ func main() {
 		}
 	}
 
-	result, err := Run(DefaultRunners(), *baselinePath)
+	result, err := Run(DefaultGates(), DefaultEvalReport, DefaultUX, *baselinePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "release-gate: %v\n", err)
 		os.Exit(2)

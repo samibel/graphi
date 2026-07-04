@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/samibel/graphi/engine/scorecard"
+	"github.com/samibel/graphi/internal/evalreport"
 )
 
 type staticRunner struct {
@@ -17,14 +18,50 @@ type staticRunner struct {
 
 func (r staticRunner) Run() (float64, error) { return r.score, r.err }
 
-func allPassRunners() map[string]Runner {
+func allPassGates() map[string]Runner {
 	return map[string]Runner{
-		"testgate": staticRunner{score: 100},
-		"eval":     staticRunner{score: 100},
-		"coverage": staticRunner{score: 100},
-		"privacy":  staticRunner{score: 100},
-		"perf":     staticRunner{score: 100},
-		"web":      staticRunner{score: 100},
+		"testgate":     staticRunner{score: 100},
+		"coverage":     staticRunner{score: 100},
+		"privacy":      staticRunner{score: 100},
+		"bench-budget": staticRunner{score: 100},
+	}
+}
+
+// fakeReport builds a measured eval report with the given area scores (ux is
+// supplied separately by the ux measurement).
+func fakeReport(t *testing.T, areas map[string]float64) evalreport.Report {
+	t.Helper()
+	full := map[string]float64{
+		scorecard.AreaAgentMCP:    100,
+		scorecard.AreaSignal:      100,
+		scorecard.AreaPerformance: 100,
+		scorecard.AreaSetupTrust:  100,
+		scorecard.AreaEvaluation:  100,
+		scorecard.AreaUX:          0, // ux comes from the web measurement
+	}
+	for a, s := range areas {
+		full[a] = s
+	}
+	res, err := scorecard.Calculate(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	provenance := map[string]string{}
+	for a := range full {
+		provenance[a] = "measured"
+	}
+	return evalreport.Report{Scorecard: res, AreaProvenance: provenance}
+}
+
+func passEval(t *testing.T) EvalReportFn {
+	return func() (evalreport.Report, error) { return fakeReport(t, nil), nil }
+}
+
+func passUX() UXFn {
+	return func() (evalreport.UXMetrics, error) {
+		files := make([]string, len(requiredUXSuites))
+		copy(files, requiredUXSuites)
+		return DeriveUX(100, 100, files), nil
 	}
 }
 
@@ -33,35 +70,57 @@ func TestReleaseGatePasses(t *testing.T) {
 	baseline := filepath.Join(dir, "baseline.json")
 	writeBaseline(t, baseline, []string{"search", "analyze"})
 
-	result, err := Run(allPassRunners(), baseline)
+	result, err := Run(allPassGates(), passEval(t), passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if !result.Pass {
-		t.Fatalf("expected gate to pass; got overall %.1f, floored %v", result.Scorecard.Overall, result.Scorecard.FlooredAreas)
+		t.Fatalf("expected gate to pass; got overall %.1f, errors %v", result.Scorecard.Overall, result.Errors)
 	}
-	if len(result.Removed) != 0 {
-		t.Fatalf("expected no removed tools, got %v", result.Removed)
+	if result.Scorecard.Overall < 90 {
+		t.Fatalf("expected overall >= 90, got %.1f", result.Scorecard.Overall)
 	}
 }
 
-func TestReleaseGateFailsSubEightArea(t *testing.T) {
+func TestReleaseGateFailsSubEightyArea(t *testing.T) {
 	dir := t.TempDir()
 	baseline := filepath.Join(dir, "baseline.json")
 	writeBaseline(t, baseline, []string{"search", "analyze"})
 
-	runners := allPassRunners()
-	runners["privacy"] = staticRunner{score: 70} // below 80 floor
-
-	result, err := Run(runners, baseline)
+	evalFn := func() (evalreport.Report, error) {
+		return fakeReport(t, map[string]float64{scorecard.AreaSignal: 70}), nil
+	}
+	result, err := Run(allPassGates(), evalFn, passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if result.Pass {
-		t.Fatalf("expected gate to fail on sub-8 area")
+		t.Fatal("expected gate to fail on sub-80 area")
 	}
-	if result.Scorecard.Breakdown[scorecard.AreaSetupTrust].Score != 70 {
-		t.Fatalf("expected setup_trust score 70, got %v", result.Scorecard.Breakdown[scorecard.AreaSetupTrust])
+	if got := result.Scorecard.Breakdown[scorecard.AreaSignal].Score; got != 70 {
+		t.Fatalf("expected signal score 70 from the report, got %v", got)
+	}
+}
+
+func TestReleaseGateFailsTier1Regression(t *testing.T) {
+	dir := t.TempDir()
+	baseline := filepath.Join(dir, "baseline.json")
+	writeBaseline(t, baseline, []string{"search", "analyze"})
+
+	evalFn := func() (evalreport.Report, error) {
+		r := fakeReport(t, nil)
+		r.RegressionsVsBaseline = []evalreport.Regression{{ScenarioID: "go-symbol", Before: "pass", After: "fail"}}
+		return r, nil
+	}
+	result, err := Run(allPassGates(), evalFn, passUX(), baseline)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if result.Pass {
+		t.Fatal("expected gate to fail on a Tier-1 regression")
+	}
+	if len(result.Regressions) != 1 {
+		t.Fatalf("expected the regression to surface, got %v", result.Regressions)
 	}
 }
 
@@ -70,16 +129,15 @@ func TestReleaseGateFailsRemovedTool(t *testing.T) {
 	baseline := filepath.Join(dir, "baseline.json")
 	writeBaseline(t, baseline, []string{"search", "analyze", "removed_tool"})
 
-	result, err := Run(allPassRunners(), baseline)
+	result, err := Run(allPassGates(), passEval(t), passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if result.Pass {
-		t.Fatalf("expected gate to fail on removed tool")
+		t.Fatal("expected gate to fail on removed tool")
 	}
-	want := []string{"removed_tool"}
-	if len(result.Removed) != 1 || result.Removed[0] != want[0] {
-		t.Fatalf("expected removed tools %v, got %v", want, result.Removed)
+	if len(result.Removed) != 1 || result.Removed[0] != "removed_tool" {
+		t.Fatalf("expected removed_tool, got %v", result.Removed)
 	}
 }
 
@@ -88,40 +146,79 @@ func TestReleaseGateFailsRedConstituentGate(t *testing.T) {
 	baseline := filepath.Join(dir, "baseline.json")
 	writeBaseline(t, baseline, []string{"search", "analyze"})
 
-	runners := allPassRunners()
-	runners["coverage"] = staticRunner{err: errors.New("coverage red")}
+	gates := allPassGates()
+	gates["coverage"] = staticRunner{err: errors.New("coverage red")}
 
-	result, err := Run(runners, baseline)
+	result, err := Run(gates, passEval(t), passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if result.Pass {
-		t.Fatalf("expected gate to fail on red constituent gate")
+		t.Fatal("expected gate to fail on red constituent gate")
 	}
-	if result.Scorecard.Breakdown[scorecard.AreaAgentMCP].Score != 0 {
-		t.Fatalf("expected agent_mcp score 0 after failure, got %v", result.Scorecard.Breakdown[scorecard.AreaAgentMCP])
+	if len(result.Errors) != 1 {
+		t.Fatalf("expected one error, got %v", result.Errors)
+	}
+}
+
+func TestReleaseGateUXFromWebSuite(t *testing.T) {
+	dir := t.TempDir()
+	baseline := filepath.Join(dir, "baseline.json")
+	writeBaseline(t, baseline, []string{"search", "analyze"})
+
+	// 90% pass fraction with every required suite present → ux 90; the ux
+	// floor holds but a sub-80 fraction must floor the area.
+	uxFn := func() (evalreport.UXMetrics, error) {
+		files := make([]string, len(requiredUXSuites))
+		copy(files, requiredUXSuites)
+		return DeriveUX(100, 90, files), nil
+	}
+	result, err := Run(allPassGates(), passEval(t), uxFn, baseline)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := result.Scorecard.Breakdown[scorecard.AreaUX].Score; got != 90 {
+		t.Fatalf("expected ux score 90 from the web measurement, got %v", got)
+	}
+	if !result.Pass {
+		t.Fatalf("expected pass at ux=90, got errors %v", result.Errors)
+	}
+}
+
+func TestDeriveUXPenalizesMissingRequiredSuite(t *testing.T) {
+	files := []string{"web/src/SymbolSearchPanel.test.tsx"} // 1 of 5 required
+	m := DeriveUX(50, 50, files)
+	if len(m.RequiredMissing) != 4 {
+		t.Fatalf("expected 4 missing suites, got %v", m.RequiredMissing)
+	}
+	if m.Score != 20 {
+		t.Fatalf("expected score 20 (100%% pass × 1/5 presence), got %v", m.Score)
 	}
 }
 
 func TestPublish(t *testing.T) {
 	dir := t.TempDir()
-	scores := map[string]float64{}
-	for _, a := range []string{
-		scorecard.AreaAgentMCP, scorecard.AreaSignal, scorecard.AreaPerformance,
-		scorecard.AreaSetupTrust, scorecard.AreaEvaluation, scorecard.AreaUX,
-	} {
-		scores[a] = 100
-	}
-	res, _ := scorecard.Calculate(scores)
-	result := GateResult{Scorecard: res, Pass: true}
+	report := fakeReport(t, nil)
+	ux := DeriveUX(10, 10, requiredUXSuites)
+	result := GateResult{Scorecard: report.Scorecard, Report: report, UX: &ux, Pass: true}
 	if err := Publish(result, dir, "0.1.0", "abc123"); err != nil {
 		t.Fatalf("Publish: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "release-scorecard.json")); err != nil {
-		t.Fatalf("missing json: %v", err)
+	for _, f := range []string{"release-scorecard.json", "release-scorecard.md"} {
+		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
+			t.Fatalf("missing %s: %v", f, err)
+		}
 	}
-	if _, err := os.Stat(filepath.Join(dir, "release-scorecard.md")); err != nil {
-		t.Fatalf("missing md: %v", err)
+	raw, err := os.ReadFile(filepath.Join(dir, "release-scorecard.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parsed evalreport.Report
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		t.Fatal(err)
+	}
+	if parsed.UXMetrics == nil || parsed.UXMetrics.Score != 100 {
+		t.Fatalf("published report must embed ux metrics, got %+v", parsed.UXMetrics)
 	}
 }
 

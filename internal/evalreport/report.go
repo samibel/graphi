@@ -80,6 +80,21 @@ type Report struct {
 	// SetupTrustMetrics carries the measured doctor-behavior assertions behind
 	// the setup_trust area score (controlled fixtures; see cmd/eval).
 	SetupTrustMetrics *SetupTrustMetrics `json:"setup_trust_metrics,omitempty"`
+	// UXMetrics carries the measured web-suite inputs behind the ux area score
+	// (vitest run; see cmd/release-gate).
+	UXMetrics *UXMetrics `json:"ux_metrics,omitempty"`
+}
+
+// UXMetrics is the measured evidence behind the ux score: the web test suite
+// result plus presence of the required UX scenario suites (symbol search,
+// why-connected incl. two-node compare, agent-context export, agent-tool
+// panel states). Score = pass fraction × required-suite presence fraction.
+type UXMetrics struct {
+	TotalTests      int      `json:"total_tests"`
+	PassedTests     int      `json:"passed_tests"`
+	RequiredFound   []string `json:"required_found,omitempty"`
+	RequiredMissing []string `json:"required_missing,omitempty"`
+	Score           float64  `json:"score"`
 }
 
 // SetupTrustMetrics is the measured evidence behind the setup/trust score:
