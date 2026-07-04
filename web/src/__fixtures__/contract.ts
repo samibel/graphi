@@ -5,6 +5,7 @@
 // cannot drift from the built-against version.
 import { SCHEMA_VERSION } from "../types";
 import type {
+  AgentToolResult,
   Contract,
   ErrorEnvelope,
   ImpactResult,
@@ -41,6 +42,39 @@ export const searchPayload: SearchResult = {
     { node_id: "s1", kind: "function", qualified_name: "main.release", source_path: "cmd/release/main.go", line: 12, column: 1, rank: -1.5 },
     { node_id: "s2", kind: "file", qualified_name: "cmd/release/main.go", source_path: "cmd/release/main.go", line: 1, column: 1, rank: -1.0 },
   ],
+};
+
+// EP-020 agent-tool envelopes (engine/agenttools/contract.Result JSON shape).
+export const agentToolPayload: AgentToolResult = {
+  outcome: "ok",
+  summary: "2 related files for pkg.Func",
+  items: [
+    { ref_id: "pkg/a.go", rank: 1, reason: "co-changed 12 times", evidence_ref_ids: ["ev1"] },
+    { ref_id: "pkg/b.go", rank: 2, reason: "imports the target package", evidence_ref_ids: [] },
+  ],
+  evidence: [{ ref_id: "ev1", path: "pkg/a.go", line: 10, role: "definition" }],
+  confidence: { distribution: { high: 0.7, medium: 0.3 }, top: "high", method: "normalized" },
+  limits: { cap_applied: 20, total_available: 2, dropped: 0, truncated: false, next: "" },
+};
+
+export const agentToolPayloadHeuristic: AgentToolResult = {
+  outcome: "ok",
+  summary: "risk estimate from co-change heuristics",
+  items: [
+    { ref_id: "pkg/risky.go", rank: 1, reason: "high fan-in", evidence_ref_ids: ["ev1"] },
+  ],
+  evidence: [{ ref_id: "ev1", path: "pkg/risky.go", line: 42, role: "caller" }],
+  confidence: { distribution: { medium: 1 }, top: "medium", method: "heuristic" },
+  limits: { cap_applied: 1, total_available: 9, dropped: 8, truncated: true, next: "offset=1" },
+};
+
+export const agentToolPayloadEmpty: AgentToolResult = {
+  outcome: "empty",
+  summary: "no related files found",
+  items: [],
+  evidence: [],
+  confidence: { distribution: {}, top: "", method: "empty" },
+  limits: { cap_applied: 20, total_available: 0, dropped: 0, truncated: false, next: "" },
 };
 
 export const contractDoc: Contract = {

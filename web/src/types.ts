@@ -23,6 +23,12 @@ export type {
   SearchMatch,
   SearchResult,
   StreamEvent,
+  AgentOutcome,
+  AgentEvidence,
+  AgentItem,
+  AgentConfidence,
+  AgentLimits,
+  AgentToolResult,
 } from "./payload";
 
 /**

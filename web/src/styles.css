@@ -64,6 +64,43 @@ html, body, #root { height: 100%; margin: 0; }
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; color: #93c5fd;
 }
 
+/* --- Web/IDE Polish panels (agent tools, compare, export) ------------------ */
+.agent-tools-panel, .compare-panel, .why-connected-panel,
+.symbol-search-panel, .export-agent-context {
+  padding: 8px 12px; background: #0d1424; border-top: 1px solid #1f2937;
+  font-size: 13px;
+}
+.agent-tools-panel h3, .compare-panel h3, .why-connected-panel h3,
+.symbol-search-panel h3, .export-agent-context h3 {
+  margin: 0 0 6px; font-size: 13px; color: #93c5fd;
+}
+.tool-buttons { display: flex; gap: 8px; margin: 4px 0; }
+.tool-buttons button, .compare-clear, .copy-button, .export-tabs button {
+  padding: 4px 10px; background: #1f2937; color: #e5e7eb;
+  border: 1px solid #374151; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.tool-buttons button:disabled, .export-tabs button:disabled { opacity: 0.4; cursor: default; }
+.tool-result, .tool-unavailable { margin-top: 6px; }
+.tool-unavailable { padding: 6px 8px; background: #3a2f0d; color: #fde68a; border: 1px solid #a16207; border-radius: 4px; }
+.tool-items { margin: 4px 0; padding-left: 24px; }
+.tool-items .reason, .edge-explanations .reason { margin: 2px 0; color: #cbd5e1; }
+.tool-items .evidence, .edge-explanations .evidence {
+  list-style: none; margin: 2px 0; padding-left: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #9ca3af;
+}
+.rank { color: #60a5fa; font-weight: 600; }
+.tier { color: #9ca3af; margin-left: 4px; }
+.confidence { margin-left: 6px; color: #9ca3af; }
+/* Heuristic provenance is visibly marked (never color-only): amber badge. */
+[data-tier="heuristic"] .tier, .heuristic-badge { color: #fbbf24; font-style: italic; }
+.truncated { color: #fbbf24; }
+.no-direct-edge { color: #fca5a5; }
+.export-tabs { display: flex; gap: 6px; margin-bottom: 6px; }
+.export-agent-context pre {
+  margin: 0; padding: 8px; background: #0b0f17; border: 1px solid #1f2937;
+  border-radius: 4px; overflow-x: auto; font-size: 12px;
+}
+
 /* --- Wiki surface (SW-046) ------------------------------------------------ */
 .wiki-page { flex: 1; overflow: auto; padding: 24px 32px; }
 .wiki-body { max-width: 820px; line-height: 1.55; }

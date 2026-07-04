@@ -15,9 +15,13 @@ vi.mock("./GraphView", () => ({
 vi.mock("./graphiClient", () => ({
   getContract: vi.fn(async () => ({ schema_version: 1, resources: [], streams: [] })),
   resolveAnalyzerRoute: () => null,
+  hasResource: (c: { resources: string[] }, r: string) => c.resources.includes(r),
   fetchNeighborhood: vi.fn(),
   fetchImpact: vi.fn(),
   searchSymbols: vi.fn(async () => []),
+  relatedFiles: vi.fn(),
+  changeRisk: vi.fn(),
+  agentBrief: vi.fn(),
   subscribeSSE: vi.fn(() => () => {}),
   SchemaMismatchError: class extends Error {},
 }));

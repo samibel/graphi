@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ExportAgentContext > markdown export matches the snapshot 1`] = `
+"# Agent Context
+## Focus
+- **pkg.Foo** (function) at pkg/foo.go:10
+## Relationships
+- calls (confirmed, 0.95): static call
+  - evidence: pkg/foo.go:12
+  - evidence: pkg/bar.go:7"
+`;

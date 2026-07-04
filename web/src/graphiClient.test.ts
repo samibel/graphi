@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  agentBrief,
   ApiError,
+  changeRisk,
   decodeEnvelope,
   getContract,
+  hasResource,
+  relatedFiles,
   resolveAnalyzerRoute,
   SchemaMismatchError,
   searchSymbols,
@@ -10,6 +14,7 @@ import {
 } from "./graphiClient";
 import { SCHEMA_VERSION } from "./types";
 import {
+  agentToolPayload,
   contractDoc,
   contractNoAnalyzer,
   errorEnvelope,
@@ -153,6 +158,109 @@ describe("searchSymbols", () => {
       vi.fn(async () => mkRes(errorEnvelope("bad_request", "q required"), 400)),
     );
     await expect(searchSymbols("x")).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+// --- EP-020 agent tools (related_files / change_risk / agent_brief) ---------
+describe("agent tools — relatedFiles / changeRisk / agentBrief", () => {
+  it("relatedFiles: unwraps the agent-tool envelope on the found path", async () => {
+    const fetchMock = vi.fn<(url: string) => Promise<Response>>(async () =>
+      mkRes(successEnvelope(agentToolPayload)),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await relatedFiles("pkg.Func");
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/analyze/related_files?target=pkg.Func",
+    );
+    if (!res.available) throw new Error("expected available");
+    expect(res.result.outcome).toBe("ok");
+    expect(res.result.items).toHaveLength(2);
+    expect(res.result.items[0]).toMatchObject({
+      ref_id: "pkg/a.go",
+      rank: 1,
+      evidence_ref_ids: ["ev1"],
+    });
+    expect(res.result.evidence[0]).toMatchObject({ path: "pkg/a.go", line: 10 });
+    expect(res.result.confidence.top).toBe("high");
+  });
+
+  it("relatedFiles: forwards an explicit direction", async () => {
+    const fetchMock = vi.fn<(url: string) => Promise<Response>>(async () =>
+      mkRes(successEnvelope(agentToolPayload)),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await relatedFiles("pkg.Func", "reverse");
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/analyze/related_files?target=pkg.Func&direction=reverse",
+    );
+  });
+
+  it("changeRisk: hits /analyze/change_risk with the target", async () => {
+    const fetchMock = vi.fn<(url: string) => Promise<Response>>(async () =>
+      mkRes(successEnvelope(agentToolPayload)),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await changeRisk("pkg.Func");
+    expect(fetchMock.mock.calls[0][0]).toBe("/analyze/change_risk?target=pkg.Func");
+    expect(res.available).toBe(true);
+  });
+
+  it("agentBrief: no topic → bare route; topic → symbol query", async () => {
+    const fetchMock = vi.fn<(url: string) => Promise<Response>>(async () =>
+      mkRes(successEnvelope(agentToolPayload)),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await agentBrief();
+    await agentBrief("release flow");
+    expect(fetchMock.mock.calls[0][0]).toBe("/analyze/agent_brief");
+    expect(fetchMock.mock.calls[1][0]).toBe("/analyze/agent_brief?symbol=release%20flow");
+  });
+
+  it("503 unavailable → typed unavailable, no throw (degraded capability)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mkRes(errorEnvelope("unavailable", "capability unavailable"), 503)),
+    );
+    for (const call of [
+      () => relatedFiles("x"),
+      () => changeRisk("x"),
+      () => agentBrief("x"),
+    ]) {
+      const res = await call();
+      expect(res).toEqual({ available: false, reason: "capability unavailable" });
+    }
+  });
+
+  it("absent analyzer (404 not_found) → typed unavailable, no throw", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mkRes(errorEnvelope("not_found", "no such analyzer"), 404)),
+    );
+    const res = await relatedFiles("x");
+    expect(res).toEqual({ available: false, reason: "no such analyzer" });
+  });
+
+  it("schema mismatch still propagates fail-closed (never a typed result)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mkRes(mismatchedSuccessEnvelope(agentToolPayload))),
+    );
+    await expect(relatedFiles("x")).rejects.toBeInstanceOf(SchemaMismatchError);
+    await expect(changeRisk("x")).rejects.toBeInstanceOf(SchemaMismatchError);
+    await expect(agentBrief()).rejects.toBeInstanceOf(SchemaMismatchError);
+  });
+
+  it("other error envelopes (bad_request/internal) still throw ApiError", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mkRes(errorEnvelope("bad_request", "target required"), 400)),
+    );
+    await expect(relatedFiles("")).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("hasResource gates on the /contract advertisement", () => {
+    expect(hasResource(contractDoc, "analyze/impact")).toBe(true);
+    expect(hasResource(contractDoc, "analyze/agent_brief")).toBe(false);
   });
 });
 

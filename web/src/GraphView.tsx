@@ -18,7 +18,8 @@ import type { GraphState } from "./useGraph";
 
 interface Props {
   state: GraphState;
-  onSelect: (id: string) => void;
+  /** Node click. `shiftKey` is true for shift-clicks (two-node compare mode). */
+  onSelect: (id: string, shiftKey?: boolean) => void;
   onClear: () => void;
   onEdgeSelect?: (edge: ResultEdge) => void;
 }
@@ -29,6 +30,14 @@ export function GraphView({ state, onSelect, onClear, onEdgeSelect }: Props) {
   const graphRef = useRef<Graph | null>(null);
   const selectedRef = useRef<string | null>(state.selected);
   selectedRef.current = state.selected;
+  // The Sigma click listeners are registered ONCE (instance creation), so they
+  // must read the latest callbacks/payload through refs, not stale closures.
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const onEdgeSelectRef = useRef(onEdgeSelect);
+  onEdgeSelectRef.current = onEdgeSelect;
+  const resultEdgesRef = useRef(state.resultEdges);
+  resultEdgesRef.current = state.resultEdges;
 
   // (Re)build the Graphology graph whenever nodes/edges change. SSE refresh
   // rebuilds the graph but Sigma's camera (pan/zoom) is preserved across
@@ -51,10 +60,22 @@ export function GraphView({ state, onSelect, onClear, onEdgeSelect }: Props) {
         labelDensity: 0.3,
         renderEdgeLabels: true,
       });
-      sigmaRef.current.on("clickNode", ({ node }) => onSelect(String(node)));
+      sigmaRef.current.on("clickNode", ({ node, event }) => {
+        // Shift-click routes into two-node compare mode; Sigma exposes the
+        // originating DOM event on `event.original`.
+        const original = (event as { original?: unknown }).original;
+        const shift =
+          typeof original === "object" &&
+          original !== null &&
+          "shiftKey" in original &&
+          Boolean((original as { shiftKey?: boolean }).shiftKey);
+        onSelectRef.current(String(node), shift);
+      });
       sigmaRef.current.on("clickEdge", ({ edge }) => {
-        const e = state.edges.find((x) => x.id === edge);
-        if (e && onEdgeSelect) onEdgeSelect(e);
+        // Look up the RAW payload edge (kind/confidence/reason/evidence) — the
+        // highlightable edge only carries render attributes.
+        const e = resultEdgesRef.current.find((x) => x.id === edge);
+        if (e) onEdgeSelectRef.current?.(e);
       });
     } else {
       sigmaRef.current.setGraph(g); // camera/viewport retained

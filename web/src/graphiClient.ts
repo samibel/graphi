@@ -5,6 +5,7 @@
 // exactly one place on every response path: 200 bodies, error envelopes, and
 // the SSE `ready` frame.
 import type {
+  AgentToolResult,
   Contract,
   Envelope,
   ErrorEnvelope,
@@ -151,6 +152,65 @@ export function resolveAnalyzerRoute(contract: Contract): string | null {
   // Prefer an analyzer whose name suggests impact/blast-radius; else first.
   const impact = analyzers.find((r) => /impact|blast/i.test(r));
   return impact ?? analyzers[0];
+}
+
+/** True when /contract advertises the given resource (per-feature degradation). */
+export function hasResource(contract: Contract, resource: string): boolean {
+  return contract.resources.includes(resource);
+}
+
+/**
+ * Typed availability wrapper for the EP-020 agent tools. A 503 / absent
+ * analyzer is a NORMAL degraded state (the daemon simply was not built/wired
+ * with that analyzer), so it must render as "unavailable" — never crash and
+ * never blank the UI. Schema mismatches still propagate (fail-closed, AC-4).
+ */
+export type AgentToolResponse =
+  | { available: true; result: AgentToolResult }
+  | { available: false; reason: string };
+
+async function getAgentTool(path: string): Promise<AgentToolResponse> {
+  try {
+    const result = await getEnvelope<AgentToolResult>(path);
+    return { available: true, result };
+  } catch (e) {
+    // 503 "unavailable" (no analysis service) and 404 "not_found" (analyzer
+    // absent from this build) are typed degradations, same as fetchImpact's
+    // gating; anything else — SchemaMismatchError above all — stays thrown.
+    if (e instanceof ApiError && (e.code === "unavailable" || e.code === "not_found")) {
+      return { available: false, reason: e.message };
+    }
+    throw e;
+  }
+}
+
+/**
+ * Related-files agent tool (EP-020). Same target/direction query shape as the
+ * VS Code extension client so the shared HTTP surface sees identical requests.
+ */
+export async function relatedFiles(
+  target: string,
+  direction?: string,
+): Promise<AgentToolResponse> {
+  const dir = direction ? `&direction=${encodeURIComponent(direction)}` : "";
+  return getAgentTool(
+    `/analyze/related_files?target=${encodeURIComponent(target)}${dir}`,
+  );
+}
+
+/** Change-risk agent tool (EP-020). */
+export async function changeRisk(target: string): Promise<AgentToolResponse> {
+  return getAgentTool(`/analyze/change_risk?target=${encodeURIComponent(target)}`);
+}
+
+/**
+ * Agent-brief tool (EP-020). Callers should gate this on the /contract
+ * advertisement (`hasResource(contract, "analyze/agent_brief")`); the typed
+ * unavailable response is the backstop when the gate is skipped or stale.
+ */
+export async function agentBrief(topic?: string): Promise<AgentToolResponse> {
+  const q = topic ? `?symbol=${encodeURIComponent(topic)}` : "";
+  return getAgentTool(`/analyze/agent_brief${q}`);
 }
 
 /**
