@@ -116,5 +116,5 @@ type readOnlyEnv struct{}
 func (readOnlyEnv) RepoRoot() string           { return "" }
 func (readOnlyEnv) DBPath() string             { return "" }
 func (readOnlyEnv) MCPConfig() MCPConfigReader { return nil }
-func (readOnlyEnv) Release() ReleaseInfo        { return nil }
-func (readOnlyEnv) State() StateReader          { return nil }
+func (readOnlyEnv) Release() ReleaseInfo       { return nil }
+func (readOnlyEnv) State() StateReader         { return nil }

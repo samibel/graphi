@@ -40,11 +40,11 @@ func runDoctor(args []string) int {
 	}
 
 	env := &realEnv{
-		repoRoot: getwd(),
-		dbPath:   dbPath,
-		release:  releaseinfo.New(),
+		repoRoot:    getwd(),
+		dbPath:      dbPath,
+		release:     releaseinfo.New(),
 		stateReader: stateReader{},
-		mcpReader: mcpConfigReader{clients: mcpconfig.Clients(), binary: exe},
+		mcpReader:   mcpConfigReader{clients: mcpconfig.Clients(), binary: exe},
 	}
 
 	reg := doctor.NewRegistry()
@@ -82,11 +82,11 @@ type realEnv struct {
 	mcpReader   mcpConfigReader
 }
 
-func (e *realEnv) RepoRoot() string               { return e.repoRoot }
-func (e *realEnv) DBPath() string                 { return e.dbPath }
+func (e *realEnv) RepoRoot() string                  { return e.repoRoot }
+func (e *realEnv) DBPath() string                    { return e.dbPath }
 func (e *realEnv) MCPConfig() doctor.MCPConfigReader { return e.mcpReader }
-func (e *realEnv) Release() doctor.ReleaseInfo        { return e.release }
-func (e *realEnv) State() doctor.StateReader          { return e.stateReader }
+func (e *realEnv) Release() doctor.ReleaseInfo       { return e.release }
+func (e *realEnv) State() doctor.StateReader         { return e.stateReader }
 
 // stateReader adapts state.DiscoverDB to the doctor.StateReader interface.
 type stateReader struct{}

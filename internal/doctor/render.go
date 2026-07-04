@@ -11,18 +11,22 @@ import (
 
 // JSONSchemaVersion is the current stable version of the doctor JSON output.
 // Bump only on breaking changes to the schema shape or value domain.
-const JSONSchemaVersion = "1.0.0"
+// Version 2 renamed the top-level `overall` object to `outcome` and the
+// per-check `next_step` field to `action`.
+const JSONSchemaVersion = 2
 
 // JSONReport is the stable top-level JSON output document.
-// It is the contract of record for agents and CI.
+// It is the contract of record for agents and CI:
+//
+//	{"schema_version": 2, "outcome": {...}, "checks": [{id, category, status, message, action}]}
 type JSONReport struct {
-	SchemaVersion string             `json:"schema_version"`
-	Overall       JSONOverall        `json:"overall"`
-	Checks        []JSONCheckResult  `json:"checks"`
+	SchemaVersion int               `json:"schema_version"`
+	Outcome       JSONOutcome       `json:"outcome"`
+	Checks        []JSONCheckResult `json:"checks"`
 }
 
-// JSONOverall captures the aggregate verdict.
-type JSONOverall struct {
+// JSONOutcome captures the aggregate verdict.
+type JSONOutcome struct {
 	Status   Status `json:"status"`
 	ExitCode int    `json:"exit_code"`
 }
@@ -34,18 +38,19 @@ type JSONCheckResult struct {
 	Category string `json:"category"`
 	Status   Status `json:"status"`
 	Message  string `json:"message"`
-	NextStep string `json:"next_step"`
+	Action   string `json:"action"`
 }
 
 // RenderHuman writes a concise human-readable report to w.
-// It emits one line per check plus a single summary line.
+// It emits one line per check (plus "→ action: ..." for non-pass results that
+// carry a remediation) and a single summary line.
 func RenderHuman(w io.Writer, report Report) error {
 	results := SortedResults(report.Results)
 	for _, r := range results {
 		marker := statusMarker(r.Status)
 		line := fmt.Sprintf("%s [%s] %s", marker, r.ID, r.Message)
-		if r.Status != StatusPass && r.Status != StatusInfo && r.NextStep != "" {
-			line += fmt.Sprintf(" → next step: %s", r.NextStep)
+		if r.Status != StatusPass && r.Status != StatusInfo && r.Action != "" {
+			line += fmt.Sprintf(" → action: %s", r.Action)
 		}
 		if _, err := fmt.Fprintln(w, line); err != nil {
 			return err
@@ -69,12 +74,12 @@ func RenderJSON(w io.Writer, report Report) error {
 			Category: r.Category,
 			Status:   r.Status,
 			Message:  r.Message,
-			NextStep: r.NextStep,
+			Action:   r.Action,
 		})
 	}
 	out := JSONReport{
 		SchemaVersion: JSONSchemaVersion,
-		Overall: JSONOverall{
+		Outcome: JSONOutcome{
 			Status:   report.WorstStatus(),
 			ExitCode: ExitCodeFromReport(report),
 		},

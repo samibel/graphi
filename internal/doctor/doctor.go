@@ -16,10 +16,10 @@ import (
 type Status string
 
 const (
-	StatusPass      Status = "pass"
-	StatusWarn      Status = "warn"
-	StatusFail      Status = "fail"
-	StatusInfo      Status = "info"
+	StatusPass       Status = "pass"
+	StatusWarn       Status = "warn"
+	StatusFail       Status = "fail"
+	StatusInfo       Status = "info"
 	StatusUnverified Status = "unverified"
 )
 
@@ -44,9 +44,9 @@ type CheckResult struct {
 	Status Status `json:"status"`
 	// Message is a concise human-readable summary of the finding.
 	Message string `json:"message"`
-	// NextStep is the actionable remediation when Status is not pass/info.
-	// It is an empty string (never omitted) when there is no next step.
-	NextStep string `json:"next_step"`
+	// Action is the actionable remediation when Status is not pass/info.
+	// It is an empty string (never omitted) when there is no action.
+	Action string `json:"action"`
 	// Detail carries optional structured or multi-line context.
 	Detail string `json:"detail,omitempty"`
 }
@@ -83,8 +83,8 @@ type MCPConfigReader interface {
 
 // MCPClient is a minimal read-only description of an MCP client.
 type MCPClient struct {
-	ID       string
-	Display  string
+	ID         string
+	Display    string
 	ConfigPath string
 }
 
@@ -217,9 +217,9 @@ func StringResult(id, category, message string, status Status) CheckResult {
 	return CheckResult{ID: id, Category: category, Message: message, Status: status}
 }
 
-// ResultWithNextStep is a helper to create a CheckResult with a next step.
-func ResultWithNextStep(id, category, message string, status Status, nextStep string) CheckResult {
-	return CheckResult{ID: id, Category: category, Message: message, Status: status, NextStep: nextStep}
+// ResultWithAction is a helper to create a CheckResult with a remediation action.
+func ResultWithAction(id, category, message string, status Status, action string) CheckResult {
+	return CheckResult{ID: id, Category: category, Message: message, Status: status, Action: action}
 }
 
 // FormatSummary returns a compact summary line for a report.
