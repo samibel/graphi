@@ -152,6 +152,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo] [-meta dir]",
 		"graphi http -db graph.db -addr 127.0.0.1:8080",
 	},
+	"doctor": {
+		"read-only diagnostic checkup for binary, PATH, MCP clients, DB, privacy, and local-first invariants",
+		"graphi doctor [-db path] [--json]",
+		"graphi doctor --json",
+	},
 	"setup": {
 		"register graphi's MCP stdio server into local MCP clients' configs",
 		"graphi setup [--client claude|copilot|cursor|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path]",

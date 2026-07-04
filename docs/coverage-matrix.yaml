@@ -554,6 +554,11 @@ capabilities:
     status: shipped
     epic: "-"
     note: "graph-derived diagnostics + suggested code-actions"
+  - id: doctor
+    category: cli-subcommand
+    status: shipped
+    epic: EP-023
+    note: "read-only diagnostic checkup (binary, PATH, MCP clients, DB, privacy, local-first)"
   - id: distill
     category: cli-subcommand
     status: shipped

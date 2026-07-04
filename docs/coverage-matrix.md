@@ -12,7 +12,7 @@ CI gate (`internal/coverage`). A docs-only change that contradicts the code — 
 missing capability, a phantom "shipped" entry, or a live capability marked
 "planned" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.
 
-Total capabilities: **136**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **137**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -128,7 +128,7 @@ Total capabilities: **136**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (37)
+## CLI subcommands (38)
 
 | id | status | epic | note |
 |---|---|---|---|
@@ -141,6 +141,7 @@ Total capabilities: **136**. See [`architecture-plan.md`](architecture-plan.md) 
 | `daemon` | ✅ shipped | - | hot-index Unix-socket daemon lifecycle (start\|stop\|status) |
 | `diagnose` | ✅ shipped | - | graph-derived diagnostics + suggested code-actions |
 | `distill` | ✅ shipped | - | session distillation |
+| `doctor` | ✅ shipped | EP-023 | read-only diagnostic checkup (binary, PATH, MCP clients, DB, privacy, local-first) |
 | `find-clones` | ✅ shipped | - | edge-profile clone detection |
 | `help` | ✅ shipped | - | print the help blurb |
 | `http` | ✅ shipped | - | loopback-only HTTP REST + SSE surface |

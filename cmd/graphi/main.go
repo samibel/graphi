@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime/debug"
 	"runtime/pprof"
 	"strings"
 
@@ -38,6 +37,7 @@ import (
 	"github.com/samibel/graphi/engine/watch"
 	"github.com/samibel/graphi/internal/audit"
 	"github.com/samibel/graphi/internal/mcpconfig"
+	"github.com/samibel/graphi/internal/releaseinfo"
 	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/internal/version"
 	"github.com/samibel/graphi/surfaces/cli"
@@ -121,6 +121,8 @@ func main() {
 		os.Exit(runHTTP(os.Args[2:]))
 	case "setup":
 		os.Exit(runSetup(os.Args[2:]))
+	case "doctor":
+		os.Exit(runDoctor(os.Args[2:]))
 	case "setup-embedder":
 		os.Exit(runSetupEmbedder(os.Args[2:]))
 	case "tui":
@@ -131,6 +133,7 @@ func main() {
 		os.Exit(runUpgrade(os.Args[2:]))
 	case "version":
 		runVersion()
+		os.Exit(0)
 	case "help":
 		os.Exit(runHelp(os.Args[2:], os.Stdout))
 	case "parse":
@@ -1416,18 +1419,7 @@ func extractLedgerFlag(args *[]string) string {
 // packaging (ldflags-stamped version.Version + debug.ReadBuildInfo VCS stamps).
 // It is how the release checker verifies the embedded version/commit/date.
 func runVersion() {
-	commit, date := "", ""
-	if info, ok := debug.ReadBuildInfo(); ok {
-		for _, s := range info.Settings {
-			switch s.Key {
-			case "vcs.revision":
-				commit = s.Value
-			case "vcs.time":
-				date = s.Value
-			}
-		}
-	}
-	fmt.Printf("graphi version=%s commit=%s date=%s\n", version.Version, commit, date)
+	fmt.Println(releaseinfo.New().VersionString())
 }
 
 // printHelp prints the help blurb. Bare `graphi` now runs the zero-config
@@ -1437,6 +1429,10 @@ func printHelp() {
 	reg := parse.NewDefaultRegistry()
 	fmt.Print("graphi: run with no arguments to index the current repo and open the local UI in your browser.\n")
 	fmt.Print("\nQuick verbs:\n")
+	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")
+	fmt.Print("  graphi setup                register graphi's MCP server in local MCP clients\n")
+	fmt.Print("  graphi setup --check        run diagnostic checks (alias for graphi doctor)\n")
+	fmt.Print("  graphi upgrade -print       print the upgrade command without running it\n")
 	fmt.Print("  graphi callers <symbol>     who calls a symbol (also: callees, references, definition, neighborhood)\n")
 	fmt.Print("  graphi impact <symbol>      blast radius of a change (also: taint and other analyzers)\n")
 	fmt.Print("  graphi ui                   index this repo and open the local UI\n")
@@ -1445,7 +1441,7 @@ func printHelp() {
 	fmt.Print("  graphi query <op> -symbol <id> [-depth N]\n")
 	fmt.Print("  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
 	fmt.Print("\nDetails on any subcommand:  graphi help <subcommand>   (or: graphi <subcommand> --help)\n")
-	fmt.Printf("registered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, help, parse <file>\n", reg.Languages())
+	fmt.Printf("registered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
 }
 
 // runParseDefault preserves the original SW-001 parser-registry behavior.
@@ -1486,6 +1482,12 @@ func runParseDefault(args []string) {
 // specific --client targets just that one. --config overrides the file path for a
 // single client (default claude), preserving the original single-file behavior.
 func runSetup(args []string) int {
+	// setup --check is a diagnostic alias for `graphi doctor`.
+	for _, a := range args {
+		if a == "--check" || a == "-check" {
+			return runDoctor(nil)
+		}
+	}
 	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
 	dryRun := fs.Bool("dry-run", false, "print the planned config change without writing")
 	binary := fs.String("binary", "", "graphi binary to register (default: this executable)")
