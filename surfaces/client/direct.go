@@ -746,11 +746,16 @@ func (d *Direct) SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, err
 	})
 }
 
-// Brief implements Client. It assembles the agent_brief context packet and returns
-// the canonical JSON bytes plus a Markdown rendering.
+// Brief implements Client. It assembles the agent_brief context packet from
+// the wired graph services and memory store (each optional; the brief states
+// what is unavailable) and returns the canonical JSON bytes plus a Markdown
+// rendering.
 func (d *Direct) Brief(ctx context.Context, topic string) ([]byte, []byte, error) {
-	_ = ctx
-	res, err := brief.Assemble(brief.Params{Topic: topic})
+	res, err := brief.Assemble(ctx, brief.Params{
+		Topic:  topic,
+		Deps:   d.agentDeps(),
+		Memory: d.memoryStore,
+	})
 	if err != nil {
 		return nil, nil, err
 	}

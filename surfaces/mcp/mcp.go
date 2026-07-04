@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/samibel/graphi/engine/agenttools/brief"
-	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
@@ -735,21 +733,15 @@ func derefInt(p *int) int {
 
 // agentBriefCall (SW-134) returns a bounded, cited task-start context packet
 // in the C1 contract shape, plus a Markdown rendering in a fenced JSON block.
+// It rides the shared client seam so MCP and CLI emit the same canonical bytes
+// (and both see the graph/memory-backed content when those services are wired).
 func (s *Server) agentBriefCall(ctx context.Context, p callParams) (any, *rpcError) {
-	res, err := brief.Assemble(brief.Params{Topic: p.Arguments.Symbol})
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	b, err := contract.Serialize(res)
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	md, err := brief.Markdown(res)
+	b, md, err := s.c.Brief(ctx, p.Arguments.Symbol)
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
 	// Dual-format delivery: human-readable Markdown with fenced canonical JSON.
-	text := md + "\n\n```json\n" + string(b) + "\n```\n"
+	text := string(md) + "\n\n```json\n" + string(b) + "\n```\n"
 	return textResult([]byte(text)), nil
 }
 
