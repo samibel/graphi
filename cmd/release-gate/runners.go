@@ -38,10 +38,12 @@ func DefaultRunners() map[string]Runner {
 			score:   100,
 		},
 		"privacy": &shellRunner{
-			name:    "privacy",
-			cmd:     filepath.Join(".", "cmd", "graphi", "graphi"),
-			args:    []string{"privacy-audit"},
-			timeout: 2 * time.Minute,
+			name: "privacy",
+			// go run avoids depending on a pre-built binary in the checkout
+			// (nothing in the gate workflow builds cmd/graphi/graphi).
+			cmd:     "go",
+			args:    []string{"run", "./cmd/graphi", "privacy-audit"},
+			timeout: 5 * time.Minute,
 			score:   100,
 		},
 		"perf": &shellRunner{

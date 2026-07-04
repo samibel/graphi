@@ -8,32 +8,32 @@ import (
 
 // Area keys map 1:1 to the program's six milestone areas.
 const (
-	AreaAgentMCP   = "agent_mcp"
-	AreaSignal     = "signal"
+	AreaAgentMCP    = "agent_mcp"
+	AreaSignal      = "signal"
 	AreaPerformance = "performance"
-	AreaSetupTrust = "setup_trust"
-	AreaEvaluation = "evaluation"
-	AreaUX         = "ux"
+	AreaSetupTrust  = "setup_trust"
+	AreaEvaluation  = "evaluation"
+	AreaUX          = "ux"
 )
 
 // Weights are named constants and must sum to exactly 100.
 const (
-	WeightAgentMCP   = 25
-	WeightSignal     = 20
+	WeightAgentMCP    = 25
+	WeightSignal      = 20
 	WeightPerformance = 20
-	WeightSetupTrust = 15
-	WeightEvaluation = 10
-	WeightUX         = 10
+	WeightSetupTrust  = 15
+	WeightEvaluation  = 10
+	WeightUX          = 10
 )
 
 var (
 	areaWeights = map[string]int{
-		AreaAgentMCP:   WeightAgentMCP,
-		AreaSignal:     WeightSignal,
+		AreaAgentMCP:    WeightAgentMCP,
+		AreaSignal:      WeightSignal,
 		AreaPerformance: WeightPerformance,
-		AreaSetupTrust: WeightSetupTrust,
-		AreaEvaluation: WeightEvaluation,
-		AreaUX:         WeightUX,
+		AreaSetupTrust:  WeightSetupTrust,
+		AreaEvaluation:  WeightEvaluation,
+		AreaUX:          WeightUX,
 	}
 	areaKeys = []string{
 		AreaAgentMCP,
@@ -47,10 +47,10 @@ var (
 
 // AreaResult is the per-area breakdown.
 type AreaResult struct {
-	Score      float64 `json:"score"`
-	Weight     int     `json:"weight"`
+	Score        float64 `json:"score"`
+	Weight       int     `json:"weight"`
 	Contribution float64 `json:"contribution"`
-	BelowFloor bool    `json:"below_floor"`
+	BelowFloor   bool    `json:"below_floor"`
 }
 
 // Result is the overall scorecard result.
@@ -91,10 +91,10 @@ func Calculate(scores map[string]float64) (Result, error) {
 			floored = append(floored, k)
 		}
 		breakdown[k] = AreaResult{
-			Score:      s,
-			Weight:     w,
+			Score:        s,
+			Weight:       w,
 			Contribution: contrib,
-			BelowFloor: below,
+			BelowFloor:   below,
 		}
 		overall += contrib
 	}

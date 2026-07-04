@@ -5,16 +5,16 @@ package diagnostic
 type ReasonCode string
 
 const (
-	ReasonDeadInternalSymbol    ReasonCode = "dead_internal_symbol"
-	ReasonUnresolvedInternalRef ReasonCode = "unresolved_internal_ref"
+	ReasonDeadInternalSymbol       ReasonCode = "dead_internal_symbol"
+	ReasonUnresolvedInternalRef    ReasonCode = "unresolved_internal_ref"
 	ReasonUnresolvedExternalImport ReasonCode = "unresolved_external_import"
 )
 
 // reasonCatalog maps each code to its documented meaning. This is the single
 // source of truth for the catalog.
 var reasonCatalog = map[ReasonCode]string{
-	ReasonDeadInternalSymbol:     "A symbol with no live inbound references that is internal to the analyzed module.",
-	ReasonUnresolvedInternalRef:  "A reference to an internal symbol the resolver could not confirm.",
+	ReasonDeadInternalSymbol:       "A symbol with no live inbound references that is internal to the analyzed module.",
+	ReasonUnresolvedInternalRef:    "A reference to an internal symbol the resolver could not confirm.",
 	ReasonUnresolvedExternalImport: "A reference to an external symbol the resolver could not confirm, aggregated by target.",
 }
 

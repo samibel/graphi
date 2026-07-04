@@ -26,7 +26,7 @@ func TestRunScenarios_AllCorpusScenariosPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
-	results, err := runScenarios(filepath.Join(root, "corpus", "scenarios"), root, fixtures)
+	results, err := runScenarios(filepath.Join(root, "corpus", "scenarios"), root, fixtures, 1)
 	if err != nil {
 		t.Fatalf("run scenarios: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestLoadCorpusManifest(t *testing.T) {
 	if version < 1 {
 		t.Fatalf("expected corpus version >= 1, got %d", version)
 	}
-	if fixtures["tier1-fixture-go"] != "corpus/fixtures/go" {
+	if fx := fixtures["tier1-fixture-go"]; fx.Path != "corpus/fixtures/go" || fx.Tier != 1 {
 		t.Fatalf("unexpected fixture index: %v", fixtures)
 	}
 }
@@ -65,7 +65,7 @@ func TestLoadCorpusManifest_Missing(t *testing.T) {
 }
 
 func TestRunScenarios_MissingDir(t *testing.T) {
-	if _, err := runScenarios(filepath.Join(t.TempDir(), "none"), t.TempDir(), map[string]string{}); err == nil {
+	if _, err := runScenarios(filepath.Join(t.TempDir(), "none"), t.TempDir(), map[string]fixtureInfo{}, 0); err == nil {
 		t.Fatal("expected error for empty scenario dir")
 	}
 }
@@ -76,7 +76,7 @@ func TestRunScenarios_UnknownFixtureRef(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "x.yaml"), []byte(scenarioYAML), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runScenarios(dir, t.TempDir(), map[string]string{}); err == nil {
+	if _, err := runScenarios(dir, t.TempDir(), map[string]fixtureInfo{}, 0); err == nil {
 		t.Fatal("expected error for unknown fixture_ref")
 	}
 }

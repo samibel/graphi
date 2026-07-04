@@ -43,7 +43,7 @@ type Entry struct {
 	Confidence    string   `json:"confidence,omitempty"`
 	Evidence      string   `json:"evidence,omitempty"`
 	SecretSuspect bool     `json:"secret_suspected,omitempty"`
-	CreatedAt     int64    `json:"created_at"`     // UnixNano UTC
+	CreatedAt     int64    `json:"created_at"`           // UnixNano UTC
 	UpdatedAt     int64    `json:"updated_at,omitempty"` // UnixNano UTC
 }
 
@@ -225,15 +225,15 @@ var ErrInvalidKind = errors.New("memory: invalid kind")
 
 // ProvenanceInput carries the optional provenance fields for a memory entry.
 type ProvenanceInput struct {
-	Scope         string
-	Notebook      string
-	Tags          []string
-	Payload       string
-	Kind          string
-	Source        string
-	Confidence    string
-	Evidence      string
-	OverwriteID   ID // empty -> create new entry
+	Scope       string
+	Notebook    string
+	Tags        []string
+	Payload     string
+	Kind        string
+	Source      string
+	Confidence  string
+	Evidence    string
+	OverwriteID ID // empty -> create new entry
 }
 
 // StoreMemoryWithProvenance persists a memory entry with provenance metadata.

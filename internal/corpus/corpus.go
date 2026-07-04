@@ -90,11 +90,10 @@ type TierBudget struct {
 
 // Manifest is the checked-in corpus definition (corpus/manifest.json).
 type Manifest struct {
-	Notes      string      `json:"notes,omitempty"`
-	Entries    []Entry     `json:"entries"`
+	Notes       string       `json:"notes,omitempty"`
+	Entries     []Entry      `json:"entries"`
 	TierBudgets []TierBudget `json:"tier_budgets,omitempty"`
 }
-
 
 // LoadManifest reads and validates the manifest at path.
 func LoadManifest(path string) (Manifest, error) {

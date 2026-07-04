@@ -47,12 +47,13 @@ func main() {
 	manifest := flag.String("manifest", "", "corpus/scenario manifest path (scorecard-report mode)")
 	out := flag.String("out", "", "write the JSON scorecard report here")
 	format := flag.String("format", "json", "report format: json or markdown")
+	tier := flag.Int("tier", 0, "run only scenarios whose fixture is in this corpus tier (0 = all)")
 	updateBaseline := flag.Bool("update-baseline", false, "write the current report to docs/eval-baseline.json (human-approved PR only)")
 
 	flag.Parse()
 
 	if *manifest != "" {
-		os.Exit(runScorecardReport(*manifest, *out, *format, *updateBaseline))
+		os.Exit(runScorecardReport(*manifest, *out, *format, *tier, *updateBaseline))
 	}
 
 	// Original token-parity eval mode.
@@ -104,7 +105,7 @@ func resolveCommit() string {
 	return head
 }
 
-func runScorecardReport(manifestPath, outPath, format string, updateBaseline bool) int {
+func runScorecardReport(manifestPath, outPath, format string, tier int, updateBaseline bool) int {
 	version := "0.0.0-dev"
 	commit := resolveCommit()
 
@@ -117,7 +118,7 @@ func runScorecardReport(manifestPath, outPath, format string, updateBaseline boo
 	// Execute every scenario in the manifest's sibling scenarios directory
 	// against its fixture graph (real runs, not placeholders).
 	scenarioDir := filepath.Join(filepath.Dir(manifestPath), "scenarios")
-	scenarios, err := runScenarios(scenarioDir, filepath.Dir(filepath.Dir(manifestPath)), fixturePaths)
+	scenarios, err := runScenarios(scenarioDir, filepath.Dir(filepath.Dir(manifestPath)), fixturePaths, tier)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "eval: run scenarios: %v\n", err)
 		return 2
@@ -210,9 +211,15 @@ func runScorecardReport(manifestPath, outPath, format string, updateBaseline boo
 	return 0
 }
 
+// fixtureInfo is one local-fixture manifest entry the scenario runner can use.
+type fixtureInfo struct {
+	Path string
+	Tier int
+}
+
 // loadCorpusManifest reads the corpus manifest and returns its version stamp
-// plus the fixture_ref → fixture path index for Tier-1 local fixtures.
-func loadCorpusManifest(path string) (int, map[string]string, error) {
+// plus the fixture_ref → fixture index for local fixtures.
+func loadCorpusManifest(path string) (int, map[string]fixtureInfo, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return 0, nil, err
@@ -222,15 +229,16 @@ func loadCorpusManifest(path string) (int, map[string]string, error) {
 		Entries []struct {
 			Name string `json:"name"`
 			Path string `json:"path"`
+			Tier int    `json:"tier"`
 		} `json:"entries"`
 	}
 	if err := json.Unmarshal(raw, &m); err != nil {
 		return 0, nil, fmt.Errorf("parse %s: %w", path, err)
 	}
-	fixtures := map[string]string{}
+	fixtures := map[string]fixtureInfo{}
 	for _, e := range m.Entries {
 		if e.Path != "" {
-			fixtures[e.Name] = e.Path
+			fixtures[e.Name] = fixtureInfo{Path: e.Path, Tier: e.Tier}
 		}
 	}
 	return m.Version, fixtures, nil
@@ -238,8 +246,10 @@ func loadCorpusManifest(path string) (int, map[string]string, error) {
 
 // runScenarios loads every scenario file in dir and executes it against its
 // fixture graph via the shared scenario runner. Fixture paths in the manifest
-// are repo-root-relative; root anchors them.
-func runScenarios(dir, root string, fixturePaths map[string]string) ([]evalreport.PerScenarioResult, error) {
+// are repo-root-relative; root anchors them. When tier > 0, scenarios whose
+// fixture belongs to another corpus tier are omitted from the results (they
+// were not run); a fixture_ref that never existed in the manifest is an error.
+func runScenarios(dir, root string, fixturePaths map[string]fixtureInfo, tier int) ([]evalreport.PerScenarioResult, error) {
 	files, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
 	if err != nil {
 		return nil, err
@@ -261,17 +271,20 @@ func runScenarios(dir, root string, fixturePaths map[string]string) ([]evalrepor
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", f, err)
 		}
-		fixturePath, ok := fixturePaths[s.FixtureRef]
+		fx, ok := fixturePaths[s.FixtureRef]
 		if !ok {
 			return nil, fmt.Errorf("%s: fixture_ref %q not in manifest", f, s.FixtureRef)
 		}
-		eng, ok := engines[fixturePath]
+		if tier > 0 && fx.Tier != tier {
+			continue
+		}
+		eng, ok := engines[fx.Path]
 		if !ok {
-			eng, err = buildFixtureEngine(filepath.Join(root, filepath.FromSlash(fixturePath)))
+			eng, err = buildFixtureEngine(filepath.Join(root, filepath.FromSlash(fx.Path)))
 			if err != nil {
-				return nil, fmt.Errorf("%s: fixture %s: %w", f, fixturePath, err)
+				return nil, fmt.Errorf("%s: fixture %s: %w", f, fx.Path, err)
 			}
-			engines[fixturePath] = eng
+			engines[fx.Path] = eng
 		}
 		runner := scenario.Runner{Engine: eng}
 		res := runner.Run(s)

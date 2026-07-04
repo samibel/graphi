@@ -32,7 +32,7 @@ type fakeClock struct {
 	t time.Time
 }
 
-func (c *fakeClock) Now() time.Time { return c.t }
+func (c *fakeClock) Now() time.Time      { return c.t }
 func (c *fakeClock) Add(d time.Duration) { c.t = c.t.Add(d) }
 
 // TestHeartbeat_PhasesInOrder asserts that a full ingest emits the complete

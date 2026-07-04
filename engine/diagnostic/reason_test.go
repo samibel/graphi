@@ -24,7 +24,7 @@ func TestReasonCodeCatalog_Coverage(t *testing.T) {
 	// Every diagnostic produced by the analyzers on a representative fixture
 	// must carry a catalogued reason code.
 	codes := map[ReasonCode]bool{
-		ReasonDeadInternalSymbol:         true,
+		ReasonDeadInternalSymbol:       true,
 		ReasonUnresolvedExternalImport: true,
 	}
 	for c := range codes {

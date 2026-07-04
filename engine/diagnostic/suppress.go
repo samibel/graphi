@@ -49,7 +49,7 @@ func DefaultSuppressionConfig() SuppressionConfig {
 // suppressResult carries the survivors and the suppressed findings produced by
 // the suppression stage.
 type suppressResult struct {
-	Survivors []Diagnostic
+	Survivors  []Diagnostic
 	Suppressed []Diagnostic
 }
 

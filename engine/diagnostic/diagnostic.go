@@ -98,12 +98,12 @@ func confidenceRank(c Confidence) int {
 type SuppressionCategory string
 
 const (
-	SuppressionTestCode             SuppressionCategory = "test_code"
-	SuppressionGenerated            SuppressionCategory = "generated"
-	SuppressionFrameworkEntrypoint  SuppressionCategory = "framework_entrypoint"
-	SuppressionPublicAPINoEvidence  SuppressionCategory = "public_api_no_evidence"
+	SuppressionTestCode                 SuppressionCategory = "test_code"
+	SuppressionGenerated                SuppressionCategory = "generated"
+	SuppressionFrameworkEntrypoint      SuppressionCategory = "framework_entrypoint"
+	SuppressionPublicAPINoEvidence      SuppressionCategory = "public_api_no_evidence"
 	SuppressionAggregatedExternalImport SuppressionCategory = "aggregated_external_import"
-	SuppressionConfiguredPath       SuppressionCategory = "configured_path"
+	SuppressionConfiguredPath           SuppressionCategory = "configured_path"
 )
 
 // CodeAction is a typed, structured remediation attached to a diagnostic. It

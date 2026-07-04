@@ -148,15 +148,15 @@ func analyzeDeadSymbols(ctx context.Context, r query.Reader) ([]Diagnostic, erro
 			continue
 		}
 		out = append(out, Diagnostic{
-			Severity:        SeverityWarning,
-			Code:            "dead_symbol",
-			Reason:          ReasonDeadInternalSymbol,
-			Message:         fmt.Sprintf("%s %q has no live inbound references", n.Kind(), n.QualifiedName()),
-			Symbol:          n.ID(),
-			TargetSymbol:    n.ID(),
-			File:            n.SourcePath(),
-			Line:            n.Line(),
-			Column:          n.Column(),
+			Severity:     SeverityWarning,
+			Code:         "dead_symbol",
+			Reason:       ReasonDeadInternalSymbol,
+			Message:      fmt.Sprintf("%s %q has no live inbound references", n.Kind(), n.QualifiedName()),
+			Symbol:       n.ID(),
+			TargetSymbol: n.ID(),
+			File:         n.SourcePath(),
+			Line:         n.Line(),
+			Column:       n.Column(),
 			Actions: []CodeAction{{
 				Kind:         ActionSafeDeleteSymbol,
 				TargetSymbol: n.ID(),

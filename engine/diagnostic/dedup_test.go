@@ -19,7 +19,7 @@ func TestDedup_CollapsesIdenticalDeadSymbols(t *testing.T) {
 		Severity: SeverityWarning, Code: "dead_symbol", Reason: ReasonDeadInternalSymbol,
 		Message: "dead", Symbol: a.ID(), TargetSymbol: a.ID(),
 		File: "pkg/a.go", Line: 10, Column: 1,
-		Actions: []CodeAction{{Kind: ActionSafeDeleteSymbol, TargetSymbol: a.ID()}},
+		Actions:    []CodeAction{{Kind: ActionSafeDeleteSymbol, TargetSymbol: a.ID()}},
 		Confidence: ConfidenceExact, OccurrenceCount: 1,
 	}
 	d2 := d1

@@ -158,9 +158,9 @@ type Ingester struct {
 	// progress.go). lastProgressPub/lastProgressPh throttle the mirrored
 	// "ingest-progress" broker publishes; both are touched only from the
 	// single ingesting goroutine, so they need no lock.
-	progress        func(ProgressEvent)
-	lastProgressPub time.Time
-	lastProgressPh  Phase
+	progress         func(ProgressEvent)
+	lastProgressPub  time.Time
+	lastProgressPh   Phase
 	lastProgressTime time.Time
 
 	// heartbeatMode selects the heartbeat cadence (TTY vs non-TTY).

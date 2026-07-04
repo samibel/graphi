@@ -50,9 +50,9 @@ func New() Info {
 
 // Version returns the stamped release version (e.g. "1.2.3"), or "dev".
 func (i Info) Version() string { return i.version }
-func (i Info) Commit() string   { return i.commit }
-func (i Info) Date() string     { return i.date }
-func (i Info) Arch() string     { return i.arch }
+func (i Info) Commit() string  { return i.commit }
+func (i Info) Date() string    { return i.date }
+func (i Info) Arch() string    { return i.arch }
 func (i Info) IsRelease() bool { return i.version != "dev" && i.version != "" }
 func (i Info) ReleaseMarker() string {
 	if i.IsRelease() {

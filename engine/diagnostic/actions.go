@@ -4,12 +4,12 @@ import "sort"
 
 // actionGate returns a stage that attaches only safe suggested actions.
 // safe_delete_symbol is attached only when all four conjuncts hold:
-//   1. Confidence == Exact
-//   2. Not public-API / framework entry point (reuses C2 classification:
-//      not suppressed and internal name)
-//   3. No live inbound references (proxy: analyzer already attached
-//      safe_delete_symbol, meaning it saw no live refs)
-//   4. Not suppressed (Suppression == "")
+//  1. Confidence == Exact
+//  2. Not public-API / framework entry point (reuses C2 classification:
+//     not suppressed and internal name)
+//  3. No live inbound references (proxy: analyzer already attached
+//     safe_delete_symbol, meaning it saw no live refs)
+//  4. Not suppressed (Suppression == "")
 //
 // Heuristic unresolved_reference findings receive no mutating action; instead
 // they get an inspect_reference preview (and optionally add_suppression) so the

@@ -90,8 +90,16 @@ func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 		er.Steps = append(er.Steps, StepResult{Name: step, OK: true, Detail: detail})
 	}
 
-	// 1. Materialize the checkout.
+	// 1. Materialize the checkout. Local fixture paths are manifest-relative
+	// (i.e. repo-root-relative); absolutize them against the runner's own cwd
+	// so the graphi subprocess — which runs with WorkDir as its base — still
+	// finds them.
 	repoDir := e.Path
+	if repoDir != "" && !filepath.IsAbs(repoDir) {
+		if abs, err := filepath.Abs(repoDir); err == nil {
+			repoDir = abs
+		}
+	}
 	if e.URL != "" {
 		repoDir = filepath.Join(r.WorkDir, "repos", e.Name)
 		if err := r.clone(ctx, e, repoDir); err != nil {

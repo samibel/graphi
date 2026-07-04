@@ -619,4 +619,3 @@ func TestContractMetadata(t *testing.T) {
 		})
 	}
 }
-

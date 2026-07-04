@@ -13,12 +13,12 @@ func TestTotalWeight(t *testing.T) {
 
 func TestCalculateGoldenInput(t *testing.T) {
 	scores := map[string]float64{
-		AreaAgentMCP:   95,
-		AreaSignal:     92,
+		AreaAgentMCP:    95,
+		AreaSignal:      92,
 		AreaPerformance: 88,
-		AreaSetupTrust: 85,
-		AreaEvaluation: 90,
-		AreaUX:         87,
+		AreaSetupTrust:  85,
+		AreaEvaluation:  90,
+		AreaUX:          87,
 	}
 	res, err := Calculate(scores)
 	if err != nil {

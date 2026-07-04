@@ -22,9 +22,9 @@ type Metrics struct {
 
 // ProfileMetric is the measured data for a single index profile.
 type ProfileMetric struct {
-	IndexMS       float64 `json:"index_ms"`
-	DBSizeBytes   int64   `json:"db_size_bytes"`
-	EdgeCount     int64   `json:"edge_count"`
+	IndexMS        float64 `json:"index_ms"`
+	DBSizeBytes    int64   `json:"db_size_bytes"`
+	EdgeCount      int64   `json:"edge_count"`
 	QueryLatencyMS float64 `json:"query_latency_ms"`
 }
 
