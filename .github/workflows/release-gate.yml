@@ -1,0 +1,35 @@
+name: release-gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install web dependencies
+        run: cd web && npm ci
+
+      - name: Run release gate
+        run: go run ./cmd/release-gate -publish
+
+      - name: Assert published scorecard exists
+        run: |
+          test -f docs/release-scorecard.json
+          test -f docs/release-scorecard.md

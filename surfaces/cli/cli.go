@@ -616,12 +616,14 @@ func RunAgentBrief(ctx context.Context, c client.Client, args []string, out, err
 //
 // Usage:
 //
-//	memory store -scope <scope> -notebook <nb> -payload <text> [-tags a,b]
+//	memory store -scope <scope> -notebook <nb> -payload <text> [-tags a,b] [-kind <k>] [-source <s>] [-confidence <c>] [-evidence <e>] [-id <id>]
 //	memory recall -scope <scope> [-notebook <nb>]
 //	memory forget -id <id>
+//	memory list -scope <scope> [-limit N]
+//	memory export -scope <scope> [-path <file>]
 func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
 	if len(args) < 1 {
-		fmt.Fprintln(errOut, "usage: memory store|recall|forget ...")
+		fmt.Fprintln(errOut, "usage: memory store|recall|forget|list|export ...")
 		return fmt.Errorf("cli: missing memory subcommand")
 	}
 	op := args[0]
@@ -631,7 +633,13 @@ func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut 
 	notebook := fs.String("notebook", "", "memory notebook")
 	tags := fs.String("tags", "", "comma-separated tags (store only)")
 	payload := fs.String("payload", "", "memory payload (store only)")
-	id := fs.String("id", "", "memory id (forget only)")
+	id := fs.String("id", "", "memory id (forget or overwrite)")
+	kind := fs.String("kind", "", "entry kind (store only)")
+	source := fs.String("source", "", "provenance source (store only)")
+	confidence := fs.String("confidence", "", "confirmed|derived|heuristic (store only)")
+	evidence := fs.String("evidence", "", "optional citation (store only)")
+	limit := fs.Int("limit", 0, "max entries for list")
+	exportPath := fs.String("path", "", "destination file for export")
 	if err := fs.Parse(args[1:]); err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
@@ -640,12 +648,18 @@ func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut 
 		tagList = strings.Split(*tags, ",")
 	}
 	b, err := c.Memory(ctx, client.MemoryRequest{
-		Op:       op,
-		Scope:    *scope,
-		Notebook: *notebook,
-		Tags:     tagList,
-		Payload:  *payload,
-		ID:       *id,
+		Op:            op,
+		Scope:         *scope,
+		Notebook:      *notebook,
+		Tags:          tagList,
+		Payload:       *payload,
+		ID:            *id,
+		Kind:          *kind,
+		Source:        *source,
+		Confidence:    *confidence,
+		Evidence:      *evidence,
+		Limit:         *limit,
+		ExportToPath:  *exportPath,
 	})
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)

@@ -33,15 +33,21 @@ type ID string
 
 // Entry is one durable memory item.
 type Entry struct {
-	ID        ID       `json:"id"`
-	Scope     string   `json:"scope"`
-	Notebook  string   `json:"notebook"`
-	Tags      []string `json:"tags"`
-	Payload   string   `json:"payload"`
-	CreatedAt int64    `json:"created_at"` // UnixNano UTC
+	ID            ID       `json:"id"`
+	Scope         string   `json:"scope"`
+	Notebook      string   `json:"notebook"`
+	Tags          []string `json:"tags"`
+	Payload       string   `json:"payload"`
+	Kind          string   `json:"kind,omitempty"`
+	Source        string   `json:"source,omitempty"`
+	Confidence    string   `json:"confidence,omitempty"`
+	Evidence      string   `json:"evidence,omitempty"`
+	SecretSuspect bool     `json:"secret_suspected,omitempty"`
+	CreatedAt     int64    `json:"created_at"`     // UnixNano UTC
+	UpdatedAt     int64    `json:"updated_at,omitempty"` // UnixNano UTC
 }
 
-// Query constrains a memory recall. The zero Query matches everything.
+// Query constrains a memory recall/list. The zero Query matches everything.
 type Query struct {
 	Scope      string
 	Notebook   string
@@ -175,19 +181,70 @@ func (s *Store) sortEntries() {
 
 // StoreMemory persists a new memory entry and returns its assigned ID.
 func (s *Store) StoreMemory(ctx context.Context, scope, notebook string, tags []string, payload string) (ID, error) {
+	return s.StoreMemoryWithProvenance(ctx, ProvenanceInput{
+		Scope:    scope,
+		Notebook: notebook,
+		Tags:     tags,
+		Payload:  payload,
+	})
+}
+
+// ProvenanceInput carries the optional provenance fields for a memory entry.
+type ProvenanceInput struct {
+	Scope         string
+	Notebook      string
+	Tags          []string
+	Payload       string
+	Kind          string
+	Source        string
+	Confidence    string
+	Evidence      string
+	OverwriteID   ID // empty -> create new entry
+}
+
+// StoreMemoryWithProvenance persists a memory entry with provenance metadata.
+// If OverwriteID is set and exists, the old entry is replaced preserving CreatedAt.
+func (s *Store) StoreMemoryWithProvenance(ctx context.Context, p ProvenanceInput) (ID, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
 		return "", ErrClosed
 	}
-	id := s.nextID()
+	now := time.Now().UTC().UnixNano()
+	secretSuspect := detectSecret(p.Payload)
+	var id ID
+	var createdAt int64
+	if p.OverwriteID != "" {
+		if old, ok := s.byID[p.OverwriteID]; ok {
+			id = p.OverwriteID
+			createdAt = old.CreatedAt
+			delete(s.byID, p.OverwriteID)
+			filtered := make([]*Entry, 0, len(s.byID))
+			for _, e := range s.entries {
+				if e.ID != id {
+					filtered = append(filtered, e)
+				}
+			}
+			s.entries = filtered
+		}
+	}
+	if id == "" {
+		id = s.nextID()
+		createdAt = now
+	}
 	e := Entry{
-		ID:        id,
-		Scope:     scope,
-		Notebook:  notebook,
-		Tags:      canonicalTags(tags),
-		Payload:   payload,
-		CreatedAt: time.Now().UTC().UnixNano(),
+		ID:            id,
+		Scope:         p.Scope,
+		Notebook:      p.Notebook,
+		Tags:          canonicalTags(p.Tags),
+		Payload:       p.Payload,
+		Kind:          p.Kind,
+		Source:        p.Source,
+		Confidence:    p.Confidence,
+		Evidence:      p.Evidence,
+		SecretSuspect: secretSuspect,
+		CreatedAt:     createdAt,
+		UpdatedAt:     now,
 	}
 	if err := s.appendEntry(&e); err != nil {
 		return "", err
@@ -197,6 +254,62 @@ func (s *Store) StoreMemory(ctx context.Context, scope, notebook string, tags []
 	s.entries = append(s.entries, &cp)
 	s.sortEntries()
 	return id, nil
+}
+
+// detectSecret applies a local heuristic to flag secret-like payloads.
+func detectSecret(payload string) bool {
+	p := strings.TrimSpace(payload)
+	if len(p) < 8 {
+		return false
+	}
+	patterns := []string{
+		"AKIA", "-----BEGIN", "bearer ", "token=", "password=", "secret=",
+		"api_key", "apikey", "private_key",
+	}
+	lower := strings.ToLower(p)
+	for _, pat := range patterns {
+		if strings.Contains(lower, strings.ToLower(pat)) {
+			return true
+		}
+	}
+	return false
+}
+
+// ListMemory returns entries matching q, bounded by limit (0 = unlimited).
+func (s *Store) ListMemory(ctx context.Context, q Query, limit int) ([]Entry, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.closed {
+		return nil, ErrClosed
+	}
+	out := make([]Entry, 0, len(s.entries))
+	for _, e := range s.entries {
+		if matches(e, q) {
+			out = append(out, *e)
+			if limit > 0 && len(out) >= limit {
+				break
+			}
+		}
+	}
+	return out, nil
+}
+
+// ExportMemory serializes all matching entries to the provided writer as JSONL.
+func (s *Store) ExportMemory(ctx context.Context, q Query, w io.Writer) error {
+	entries, err := s.ListMemory(ctx, q, 0)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		line, err := marshalEntry(&e)
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(append(line, '\n')); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // nextID returns a fresh ID. IDs are "mem-<N>" where N is monotonically
@@ -262,7 +375,25 @@ func marshalEntry(e *Entry) ([]byte, error) {
 	}
 	fmt.Fprintf(&buf, `"tags":%s,`, tagsJSON)
 	fmt.Fprintf(&buf, `"payload":%q,`, e.Payload)
+	if e.Kind != "" {
+		fmt.Fprintf(&buf, `"kind":%q,`, e.Kind)
+	}
+	if e.Source != "" {
+		fmt.Fprintf(&buf, `"source":%q,`, e.Source)
+	}
+	if e.Confidence != "" {
+		fmt.Fprintf(&buf, `"confidence":%q,`, e.Confidence)
+	}
+	if e.Evidence != "" {
+		fmt.Fprintf(&buf, `"evidence":%q,`, e.Evidence)
+	}
+	if e.SecretSuspect {
+		fmt.Fprintf(&buf, `"secret_suspected":true,`)
+	}
 	fmt.Fprintf(&buf, `"created_at":%d`, e.CreatedAt)
+	if e.UpdatedAt != 0 {
+		fmt.Fprintf(&buf, `,"updated_at":%d`, e.UpdatedAt)
+	}
 	buf.WriteByte('}')
 	return buf.Bytes(), nil
 }

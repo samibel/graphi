@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 
@@ -559,7 +561,7 @@ func (d *Direct) Undo(ctx context.Context, undoToken, actor string) ([]byte, err
 	return edit.MarshalChangeRecord(rec)
 }
 
-// Memory implements Client. It runs memory store/recall/forget operations and
+// Memory implements Client. It runs memory store/recall/forget/list/export operations and
 // returns the canonical serialized MemoryResponse.
 func (d *Direct) Memory(ctx context.Context, req MemoryRequest) ([]byte, error) {
 	if d.memoryStore == nil {
@@ -567,7 +569,17 @@ func (d *Direct) Memory(ctx context.Context, req MemoryRequest) ([]byte, error) 
 	}
 	switch req.Op {
 	case "store":
-		id, err := d.memoryStore.StoreMemory(ctx, req.Scope, req.Notebook, req.Tags, req.Payload)
+		id, err := d.memoryStore.StoreMemoryWithProvenance(ctx, memory.ProvenanceInput{
+			Scope:       req.Scope,
+			Notebook:    req.Notebook,
+			Tags:        req.Tags,
+			Payload:     req.Payload,
+			Kind:        req.Kind,
+			Source:      req.Source,
+			Confidence:  req.Confidence,
+			Evidence:    req.Evidence,
+			OverwriteID: memory.ID(req.ID),
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -592,6 +604,41 @@ func (d *Direct) Memory(ctx context.Context, req MemoryRequest) ([]byte, error) 
 			return nil, err
 		}
 		return marshalJSON(MemoryResponse{ID: req.ID, Count: 0})
+	case "list":
+		entries, err := d.memoryStore.ListMemory(ctx, memory.Query{
+			Scope:      req.Scope,
+			Notebook:   req.Notebook,
+			TagPrefix:  "",
+			CreatedMin: 0,
+			CreatedMax: 0,
+		}, req.Limit)
+		if err != nil {
+			return nil, err
+		}
+		return marshalJSON(MemoryResponse{
+			Entries: toMemoryEntries(entries),
+			Count:   len(entries),
+		})
+	case "export":
+		var w io.Writer = os.Stdout
+		if req.ExportToPath != "" {
+			f, err := os.Create(req.ExportToPath)
+			if err != nil {
+				return nil, err
+			}
+			defer f.Close()
+			w = f
+		}
+		if err := d.memoryStore.ExportMemory(ctx, memory.Query{
+			Scope:      req.Scope,
+			Notebook:   req.Notebook,
+			TagPrefix:  "",
+			CreatedMin: 0,
+			CreatedMax: 0,
+		}, w); err != nil {
+			return nil, err
+		}
+		return marshalJSON(MemoryResponse{Count: 0})
 	default:
 		return nil, fmt.Errorf("client: unsupported memory op %q", req.Op)
 	}
@@ -601,12 +648,18 @@ func toMemoryEntries(entries []memory.Entry) []MemoryEntry {
 	out := make([]MemoryEntry, len(entries))
 	for i, e := range entries {
 		out[i] = MemoryEntry{
-			ID:        string(e.ID),
-			Scope:     e.Scope,
-			Notebook:  e.Notebook,
-			Tags:      e.Tags,
-			Payload:   e.Payload,
-			CreatedAt: e.CreatedAt,
+			ID:            string(e.ID),
+			Scope:         e.Scope,
+			Notebook:      e.Notebook,
+			Tags:          e.Tags,
+			Payload:       e.Payload,
+			Kind:          e.Kind,
+			Source:        e.Source,
+			Confidence:    e.Confidence,
+			Evidence:      e.Evidence,
+			SecretSuspect: e.SecretSuspect,
+			CreatedAt:     e.CreatedAt,
+			UpdatedAt:     e.UpdatedAt,
 		}
 	}
 	return out

@@ -176,6 +176,10 @@ type callParams struct {
 		Tags     []string `json:"tags"`
 		Payload  string   `json:"payload"`
 		MemID    string   `json:"mem_id"`
+		Source   string   `json:"source"`
+		Confidence string `json:"confidence"`
+		Evidence   string `json:"evidence"`
+		ExportToPath string `json:"export_to_path"`
 		// EP-012 distill arguments.
 		SessionID      string        `json:"session_id"`
 		Turns          []client.Turn `json:"turns"`
@@ -350,12 +354,18 @@ func (s *Server) memoryCall(ctx context.Context, p callParams) (any, *rpcError) 
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: op"}
 	}
 	b, err := s.c.Memory(ctx, client.MemoryRequest{
-		Op:       p.Arguments.Op,
-		Scope:    p.Arguments.Scope,
-		Notebook: p.Arguments.Notebook,
-		Tags:     p.Arguments.Tags,
-		Payload:  p.Arguments.Payload,
-		ID:       p.Arguments.MemID,
+		Op:           p.Arguments.Op,
+		Scope:        p.Arguments.Scope,
+		Notebook:     p.Arguments.Notebook,
+		Tags:         p.Arguments.Tags,
+		Payload:      p.Arguments.Payload,
+		ID:           p.Arguments.MemID,
+		Kind:         p.Arguments.Kind,
+		Source:       p.Arguments.Source,
+		Confidence:   p.Arguments.Confidence,
+		Evidence:     p.Arguments.Evidence,
+		Limit:        derefInt(p.Arguments.Limit),
+		ExportToPath: p.Arguments.ExportToPath,
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
@@ -719,6 +729,13 @@ func textResult(b []byte) map[string]any {
 	}
 }
 
+func derefInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
 // agentBriefCall (SW-134) returns a bounded, cited task-start context packet
 // in the C1 contract shape, plus a Markdown rendering in a fenced JSON block.
 func (s *Server) agentBriefCall(ctx context.Context, p callParams) (any, *rpcError) {
@@ -1072,16 +1089,22 @@ func (s *Server) toolDescriptors() []map[string]any {
 	if _, err := s.c.Memory(context.Background(), client.MemoryRequest{Op: "recall"}); err == nil || !isMemoryUnavailable(err) {
 		tools = append(tools, map[string]any{
 			"name":        ToolMemory,
-			"description": "scoped agent memory: store, recall, or forget notes in scopes and notebooks",
+			"description": "scoped agent memory: store, recall, forget, list, or export notes in scopes and notebooks with provenance",
 			"inputSchema": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"op":       map[string]any{"type": "string", "description": "operation: store | recall | forget"},
-					"scope":    map[string]any{"type": "string", "description": "memory scope"},
-					"notebook": map[string]any{"type": "string", "description": "memory notebook"},
-					"tags":     map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
-					"payload":  map[string]any{"type": "string", "description": "payload for store"},
-					"mem_id":   map[string]any{"type": "string", "description": "entry id for forget"},
+					"op":         map[string]any{"type": "string", "description": "operation: store | recall | forget | list | export"},
+					"scope":      map[string]any{"type": "string", "description": "memory scope"},
+					"notebook":   map[string]any{"type": "string", "description": "memory notebook"},
+					"tags":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
+					"payload":    map[string]any{"type": "string", "description": "payload for store"},
+					"mem_id":     map[string]any{"type": "string", "description": "entry id for forget or overwrite"},
+					"kind":       map[string]any{"type": "string", "description": "entry kind for store (e.g. note, decision, convention)"},
+					"source":     map[string]any{"type": "string", "description": "provenance source for store"},
+					"confidence": map[string]any{"type": "string", "description": "confirmed | derived | heuristic"},
+					"evidence":   map[string]any{"type": "string", "description": "optional file:line citation"},
+					"limit":      map[string]any{"type": "integer", "description": "max entries for list"},
+					"export_to_path": map[string]any{"type": "string", "description": "destination file for export"},
 				},
 				"required": []string{"op"},
 			},

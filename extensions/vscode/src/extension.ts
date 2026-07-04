@@ -17,6 +17,7 @@ import {
   ResultsTreeProvider,
   registerRevealNodeCommand,
 } from "./providers/resultsTree";
+import { hasResource } from "./graphiClient";
 
 export function activate(context: vscode.ExtensionContext): void {
   const conn = new Connection(context.secrets, context.subscriptions);
@@ -68,6 +69,80 @@ export function activate(context: vscode.ExtensionContext): void {
       );
     }),
 
+    // SW-138 / SW-137: IDE affordances as thin clients over the shared HTTP surface.
+    vscode.commands.registerCommand("graphi.relatedFiles", async () => {
+      const client = conn.client();
+      if (!client) {
+        void vscode.window.showInformationMessage("graphi: daemon not connected.");
+        return;
+      }
+      const symbol = await pickSymbol("Related files");
+      if (!symbol) return;
+      const result = await client.relatedFiles(symbol);
+      void vscode.window.showInformationMessage(`graphi related_files: ${JSON.stringify(result)}`);
+    }),
+    vscode.commands.registerCommand("graphi.explainSymbol", async () => {
+      const client = conn.client();
+      if (!client) {
+        void vscode.window.showInformationMessage("graphi: daemon not connected.");
+        return;
+      }
+      const symbol = await pickSymbol("Explain symbol");
+      if (!symbol) return;
+      const result = await client.explainSymbol(symbol);
+      void vscode.window.showInformationMessage(`graphi explain_symbol: ${JSON.stringify(result)}`);
+    }),
+    vscode.commands.registerCommand("graphi.changeRisk", async () => {
+      const client = conn.client();
+      if (!client) {
+        void vscode.window.showInformationMessage("graphi: daemon not connected.");
+        return;
+      }
+      const symbol = await pickSymbol("Change risk");
+      if (!symbol) return;
+      const result = await client.changeRisk(symbol);
+      void vscode.window.showInformationMessage(`graphi change_risk: ${JSON.stringify(result)}`);
+    }),
+    vscode.commands.registerCommand("graphi.openBrief", async () => {
+      const client = conn.client();
+      if (!client) {
+        void vscode.window.showInformationMessage("graphi: daemon not connected.");
+        return;
+      }
+      const contract = await client.getContract().catch(() => null);
+      if (!contract || !hasResource(contract, "analyze/agent_brief")) {
+        void vscode.window.showInformationMessage("graphi: agent_brief not advertised by daemon.");
+        return;
+      }
+      const topic = await vscode.window.showInputBox({ prompt: "Optional agent_brief topic" });
+      const result = await client.agentBrief(topic ?? undefined);
+      void vscode.window.showInformationMessage(`graphi agent_brief: ${JSON.stringify(result)}`);
+    }),
+    vscode.commands.registerCommand("graphi.exportAgentContext", async () => {
+      const client = conn.client();
+      if (!client) {
+        void vscode.window.showInformationMessage("graphi: daemon not connected.");
+        return;
+      }
+      const topic = await vscode.window.showInputBox({ prompt: "Optional export topic" });
+      const contract = await client.getContract().catch(() => null);
+      if (contract && hasResource(contract, "analyze/agent_brief")) {
+        const result = await client.agentBrief(topic ?? undefined);
+        void vscode.window.showInformationMessage(`graphi export: ${JSON.stringify(result)}`);
+      } else {
+        void vscode.window.showInformationMessage(`graphi export: agent_brief not available; topic=${topic ?? ""}`);
+      }
+    }),
+    vscode.commands.registerCommand("graphi.watchIndexStatus", async () => {
+      const client = conn.client();
+      if (!client) {
+        void vscode.window.showInformationMessage("graphi: daemon not connected.");
+        return;
+      }
+      const result = await client.health();
+      void vscode.window.showInformationMessage(`graphi: daemon status ${result.status}, schema v${result.schema_version}`);
+    }),
+
     // Re-check connection when the configured daemon URL changes.
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (
@@ -81,6 +156,16 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Connect on activation (off the UI thread; never blocks).
   void conn.refresh().then(() => tree.scheduleRefresh());
+}
+
+async function pickSymbol(title: string): Promise<string | undefined> {
+  const editor = vscode.window.activeTextEditor;
+  const selected = editor?.document.getText(editor.selection);
+  const input = await vscode.window.showInputBox({
+    prompt: `${title}: symbol reference`,
+    value: selected,
+  });
+  return input?.trim() || undefined;
 }
 
 export function deactivate(): void {

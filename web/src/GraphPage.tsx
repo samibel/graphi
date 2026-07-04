@@ -9,7 +9,12 @@
 import { useState } from "react";
 import { GraphView } from "./GraphView";
 import { Legend } from "./Legend";
+import { SymbolSearchPanel } from "./SymbolSearchPanel";
+import { WhyConnectedPanel } from "./WhyConnectedPanel";
+import { ExportAgentContext } from "./ExportAgentContext";
 import { useGraph } from "./useGraph";
+import { searchSymbols } from "./graphiClient";
+import type { SearchMatch, ResultEdge, ResultNode } from "./types";
 
 function readSeedFromUrl(): string {
   return new URLSearchParams(window.location.search).get("symbol") ?? "";
@@ -19,6 +24,10 @@ export function GraphPage() {
   const [seedInput, setSeedInput] = useState(readSeedFromUrl);
   const [activeSeed, setActiveSeed] = useState(readSeedFromUrl);
   const { state, select, clear, pick } = useGraph(activeSeed, 2);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchMatch[] | null>(null);
+  const [selectedEdges, setSelectedEdges] = useState<ResultEdge[]>([]);
 
   // BLOCKING, fail-closed schema-mismatch state: render no graph data (AC-4).
   if (state.schemaMismatch) {
@@ -39,6 +48,24 @@ export function GraphPage() {
     state.nodes.length === 0 &&
     activeSeed !== "" &&
     !state.candidates;
+
+  const handleSearch = async (q: string) => {
+    setSearchQuery(q);
+    if (!q.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    try {
+      const matches = await searchSymbols(q.trim());
+      setSearchResults(matches);
+    } catch (e) {
+      setSearchResults([]);
+    }
+  };
+
+  const handleEdgeSelect = (edge: ResultEdge) => {
+    setSelectedEdges([edge]);
+  };
 
   const submitSeed = (seed: string) => {
     setActiveSeed(seed);
@@ -70,6 +97,13 @@ export function GraphPage() {
           />
           <button type="submit">load</button>
         </form>
+        <button
+          type="button"
+          onClick={() => handleSearch(seedInput)}
+          disabled={!seedInput.trim()}
+        >
+          search
+        </button>
         <button onClick={clear} disabled={!state.selected}>
           clear selection
         </button>
@@ -113,8 +147,19 @@ export function GraphPage() {
         {!state.loading && state.nodes.length === 0 && activeSeed === "" && (
           <p className="hint">Enter a seed symbol and click “load”.</p>
         )}
-        <GraphView state={state} onSelect={select} onClear={clear} />
+        <GraphView state={state} onSelect={select} onClear={clear} onEdgeSelect={handleEdgeSelect} />
       </div>
+
+      <SymbolSearchPanel
+        query={searchQuery}
+        results={searchResults ?? []}
+        onSelect={(id) => {
+          submitSeed(id);
+          setSearchResults(null);
+        }}
+      />
+      <WhyConnectedPanel edges={selectedEdges} />
+      <ExportAgentContext edges={selectedEdges} />
 
       <footer className="status">
         {state.nodes.length} nodes · {state.edges.length} edges ·{" "}

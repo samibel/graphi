@@ -20,7 +20,7 @@ export interface ResultEdge {
   from: string;
   to: string;
   kind: string;
-  confidence_tier: string; // confirmed | inferred | heuristic | ...
+  confidence_tier: string; // confirmed | derived | heuristic | ...
   confidence: number; // [0,1]
   reason: string;
   evidence: string[];

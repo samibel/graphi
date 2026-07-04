@@ -54,8 +54,8 @@ var subcommandHelp = map[string]subHelp{
 	},
 	"memory": {
 		"agent memory operations",
-		"graphi memory store|recall|forget [-scope s] [-notebook n] [-payload text] [-tags a,b] [-id id] [-ledger path]",
-		"graphi memory store -scope repo -notebook decisions -payload \"we chose sqlite\"",
+		"graphi memory store|recall|forget|list|export [-scope s] [-notebook n] [-payload text] [-tags a,b] [-id id] [-kind k] [-source s] [-confidence c] [-evidence e] [-limit N] [-path file] [-ledger path]",
+		"graphi memory store -scope repo -notebook decisions -payload \"we chose sqlite\" -source architect -confidence confirmed",
 	},
 	"agent-brief": {
 		"bounded, cited task-start context packet for agents",

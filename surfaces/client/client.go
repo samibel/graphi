@@ -78,29 +78,42 @@ type PrCommentRequest struct {
 
 // MemoryRequest is the transport-agnostic input for memory operations.
 type MemoryRequest struct {
-	Op       string   `json:"op"` // store | recall | forget
-	Scope    string   `json:"scope"`
-	Notebook string   `json:"notebook"`
-	Tags     []string `json:"tags"`
-	Payload  string   `json:"payload"`
-	ID       string   `json:"id"` // for forget
+	Op            string   `json:"op"` // store | recall | forget | list | export
+	Scope         string   `json:"scope"`
+	Notebook      string   `json:"notebook"`
+	Tags          []string `json:"tags"`
+	Payload       string   `json:"payload"`
+	ID            string   `json:"id"`             // for forget or overwrite
+	Kind          string   `json:"kind"`           // for store
+	Source        string   `json:"source"`         // for store
+	Confidence    string   `json:"confidence"`     // for store
+	Evidence      string   `json:"evidence"`       // for store
+	Limit         int      `json:"limit"`          // for list
+	ExportToPath  string   `json:"export_to_path"` // for export
 }
 
 // MemoryResponse is the canonical serialized output for memory operations.
 type MemoryResponse struct {
-	Entries []MemoryEntry `json:"entries"`
-	ID      string        `json:"id"`
-	Count   int           `json:"count"`
+	Entries        []MemoryEntry `json:"entries"`
+	ID             string        `json:"id"`
+	Count          int           `json:"count"`
+	SecretSuspect  bool          `json:"secret_suspected"`
 }
 
 // MemoryEntry is one returned memory item.
 type MemoryEntry struct {
-	ID        string   `json:"id"`
-	Scope     string   `json:"scope"`
-	Notebook  string   `json:"notebook"`
-	Tags      []string `json:"tags"`
-	Payload   string   `json:"payload"`
-	CreatedAt int64    `json:"created_at"`
+	ID            string   `json:"id"`
+	Scope         string   `json:"scope"`
+	Notebook      string   `json:"notebook"`
+	Tags          []string `json:"tags"`
+	Payload       string   `json:"payload"`
+	Kind          string   `json:"kind,omitempty"`
+	Source        string   `json:"source,omitempty"`
+	Confidence    string   `json:"confidence,omitempty"`
+	Evidence      string   `json:"evidence,omitempty"`
+	SecretSuspect bool     `json:"secret_suspected,omitempty"`
+	CreatedAt     int64    `json:"created_at"`
+	UpdatedAt     int64    `json:"updated_at,omitempty"`
 }
 
 // DistillRequest is the transport-agnostic input for session distillation.

@@ -22,6 +22,13 @@ export function Legend() {
         citation / evidence (dashed)
       </span>
       <span className="legend-item">
+        <i
+          className="swatch swatch-heuristic"
+          style={{ borderColor: "#ff6b6b", borderStyle: "dotted" }}
+        />
+        heuristic (dotted)
+      </span>
+      <span className="legend-item">
         <i className="swatch swatch-dimmed" style={{ background: COLOR_DIMMED }} />
         out of scope (dimmed)
       </span>

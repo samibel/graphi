@@ -5,6 +5,7 @@
 import { useEffect, useRef } from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
+import type { ResultEdge } from "./types";
 import {
   COLOR_BLAST,
   COLOR_CITATION,
@@ -19,9 +20,10 @@ interface Props {
   state: GraphState;
   onSelect: (id: string) => void;
   onClear: () => void;
+  onEdgeSelect?: (edge: ResultEdge) => void;
 }
 
-export function GraphView({ state, onSelect, onClear }: Props) {
+export function GraphView({ state, onSelect, onClear, onEdgeSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaRef = useRef<Sigma | null>(null);
   const graphRef = useRef<Graph | null>(null);
@@ -50,6 +52,10 @@ export function GraphView({ state, onSelect, onClear }: Props) {
         renderEdgeLabels: true,
       });
       sigmaRef.current.on("clickNode", ({ node }) => onSelect(String(node)));
+      sigmaRef.current.on("clickEdge", ({ edge }) => {
+        const e = state.edges.find((x) => x.id === edge);
+        if (e && onEdgeSelect) onEdgeSelect(e);
+      });
     } else {
       sigmaRef.current.setGraph(g); // camera/viewport retained
     }

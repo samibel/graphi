@@ -210,6 +210,27 @@ export class GraphiClient {
     );
   }
 
+  /** Read-only: explain symbol analyzer. */
+  async explainSymbol(symbol: string): Promise<unknown> {
+    return this.getEnvelope<unknown>(`/analyze/explain_symbol?symbol=${encodeURIComponent(symbol)}`);
+  }
+
+  /** Read-only: related files analyzer. */
+  async relatedFiles(symbol: string): Promise<unknown> {
+    return this.getEnvelope<unknown>(`/analyze/related_files?target=${encodeURIComponent(symbol)}`);
+  }
+
+  /** Read-only: change risk analyzer. */
+  async changeRisk(target: string): Promise<unknown> {
+    return this.getEnvelope<unknown>(`/analyze/change_risk?target=${encodeURIComponent(target)}`);
+  }
+
+  /** Read-only: agent brief (degrades if not advertised). */
+  async agentBrief(topic?: string): Promise<unknown> {
+    const q = topic ? `?symbol=${encodeURIComponent(topic)}` : "";
+    return this.getEnvelope<unknown>(`/analyze/agent_brief${q}`);
+  }
+
   /** Read-only: health check (used by the connection status). Guarded. */
   async health(): Promise<{ status: string; schema_version: number }> {
     const res = await fetch(`${this.baseUrl}/healthz`, {
