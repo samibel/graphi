@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "baseline": 77.75,
+  "version": 3,
+  "baseline": 96.2,
   "target": 90,
   "scenarios": [
     {
@@ -40,6 +40,31 @@
     },
     {
       "id": "related-files-single-file",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "signal-default-high-confidence",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "signal-external-imports-aggregated",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "signal-generated-suppressed",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "signal-safe-delete-gated",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "signal-testcode-suppressed",
       "outcome": "pass",
       "tier1": true
     }
