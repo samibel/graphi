@@ -252,18 +252,22 @@ func (s *Store) StoreMemoryWithProvenance(ctx context.Context, p ProvenanceInput
 	var id ID
 	var createdAt int64
 	if p.OverwriteID != "" {
-		if old, ok := s.byID[p.OverwriteID]; ok {
-			id = p.OverwriteID
-			createdAt = old.CreatedAt
-			delete(s.byID, p.OverwriteID)
-			filtered := make([]*Entry, 0, len(s.byID))
-			for _, e := range s.entries {
-				if e.ID != id {
-					filtered = append(filtered, e)
-				}
-			}
-			s.entries = filtered
+		old, ok := s.byID[p.OverwriteID]
+		if !ok {
+			// An explicit overwrite target that does not exist is a caller
+			// error — silently creating a new entry would hide typos.
+			return "", fmt.Errorf("%w: overwrite target %q", ErrNotFound, p.OverwriteID)
 		}
+		id = p.OverwriteID
+		createdAt = old.CreatedAt
+		delete(s.byID, p.OverwriteID)
+		filtered := make([]*Entry, 0, len(s.byID))
+		for _, e := range s.entries {
+			if e.ID != id {
+				filtered = append(filtered, e)
+			}
+		}
+		s.entries = filtered
 	}
 	if id == "" {
 		id = s.nextID()

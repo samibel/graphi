@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -101,7 +102,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		{Title: "Start Here", Items: startHere(p, view)},
 		{Title: "Relevant Symbols", Items: relevantSymbols(view)},
 		{Title: "Known Facts", Items: knownFacts(ctx, p)},
-		{Title: "Risks and Unknowns", Items: risksAndUnknowns(p, view)},
+		{Title: "Risks and Unknowns", Items: risksAndUnknowns(ctx, p, view)},
 		{Title: "Suggested Next Calls", Items: suggestedCalls(p, view)},
 	}
 
@@ -257,15 +258,25 @@ func projectIdentity(p Params, v *graphView) []SectionItem {
 		name = "unknown"
 		tier = TierHeuristic
 		if v.available {
-			// Heuristic: the most common top-level directory names the project.
-			topCount := 0
+			// Heuristic: the top-level directory holding the most symbols
+			// (aggregated across its files) names the project.
+			dirCounts := map[string]int{}
 			for path, n := range v.fileSymbols {
 				root := path
 				if i := strings.Index(path, "/"); i > 0 {
 					root = path[:i]
 				}
-				if n > topCount {
-					topCount = n
+				dirCounts[root] += n
+			}
+			roots := make([]string, 0, len(dirCounts))
+			for root := range dirCounts {
+				roots = append(roots, root)
+			}
+			sort.Strings(roots) // deterministic tie-break
+			topCount := 0
+			for _, root := range roots {
+				if dirCounts[root] > topCount {
+					topCount = dirCounts[root]
 					name = root
 				}
 			}
@@ -413,7 +424,7 @@ func factTier(confidence string) Tier {
 
 // risksAndUnknowns states what the brief could NOT establish, plus structural
 // risk signals (heuristic edge share).
-func risksAndUnknowns(p Params, v *graphView) []SectionItem {
+func risksAndUnknowns(ctx context.Context, p Params, v *graphView) []SectionItem {
 	var out []SectionItem
 	if !v.available {
 		reason := "no graph services wired; run `graphi index` and pass -db"
@@ -442,7 +453,7 @@ func risksAndUnknowns(p Params, v *graphView) []SectionItem {
 	if p.Memory == nil {
 		out = append(out, SectionItem{Label: "no memory", Value: "no memory store wired; stored project facts unavailable", Tier: TierHeuristic})
 	} else {
-		if withheld := countSecretFacts(p); withheld > 0 {
+		if withheld := countSecretFacts(ctx, p); withheld > 0 {
 			out = append(out, SectionItem{
 				Label: "sensitive facts withheld",
 				Value: fmt.Sprintf("%d secret-suspect memory entrie(s) omitted from this brief", withheld),
@@ -453,8 +464,8 @@ func risksAndUnknowns(p Params, v *graphView) []SectionItem {
 	return out
 }
 
-func countSecretFacts(p Params) int {
-	entries, err := p.Memory.ListMemory(context.Background(), memory.Query{}, 0)
+func countSecretFacts(ctx context.Context, p Params) int {
+	entries, err := p.Memory.ListMemory(ctx, memory.Query{}, 0)
 	if err != nil {
 		return 0
 	}
@@ -561,8 +572,7 @@ func splitSection(s string) (string, string) {
 // splitRef splits a "path:line" citation; a bare path yields line 1.
 func splitRef(ref string) (string, int) {
 	if i := strings.LastIndex(ref, ":"); i > 0 {
-		var line int
-		if _, err := fmt.Sscanf(ref[i+1:], "%d", &line); err == nil && line > 0 {
+		if line, err := strconv.Atoi(ref[i+1:]); err == nil && line > 0 {
 			return ref[:i], line
 		}
 	}

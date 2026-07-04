@@ -914,13 +914,22 @@ func (s *SQLiteStore) Metadata(ctx context.Context, key string) (string, error) 
 }
 
 // WALCheckpoint runs a SQLite WAL checkpoint. mode is passed to PRAGMA
-// wal_checkpoint(mode). Use "TRUNCATE" to fold the WAL back into the main DB.
+// wal_checkpoint(mode) and must be one of the SQLite checkpoint modes
+// (PASSIVE, FULL, RESTART, TRUNCATE); anything else is rejected so no
+// unvalidated string ever reaches the pragma. Use "TRUNCATE" to fold the WAL
+// back into the main DB.
 func (s *SQLiteStore) WALCheckpoint(ctx context.Context, mode string) error {
 	if s.closed.Load() {
 		return ErrClosed
 	}
 	if mode == "" {
 		mode = "TRUNCATE"
+	}
+	mode = strings.ToUpper(mode)
+	switch mode {
+	case "PASSIVE", "FULL", "RESTART", "TRUNCATE":
+	default:
+		return fmt.Errorf("graphstore: invalid wal_checkpoint mode %q", mode)
 	}
 	_, err := s.db.ExecContext(ctx, fmt.Sprintf("PRAGMA wal_checkpoint(%s)", mode))
 	if err != nil {

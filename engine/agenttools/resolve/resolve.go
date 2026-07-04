@@ -140,6 +140,11 @@ func resolveExact(ctx context.Context, d Deps, ref string) (Resolution, bool, er
 	if ref == "" {
 		return Resolution{}, true, errors.New("empty reference")
 	}
+	if d.Query == nil {
+		// Callers gate on Deps.Available(); this guard keeps a direct misuse
+		// from dereferencing nil.
+		return Resolution{}, true, errors.New("resolve: query service is nil")
+	}
 	reader := d.Query.Reader()
 
 	if nodeIDPattern.MatchString(ref) {

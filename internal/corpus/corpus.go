@@ -122,7 +122,9 @@ func LoadManifest(path string) (Manifest, error) {
 			return Manifest{}, fmt.Errorf("corpus: entry %q has invalid tier %d (must be 1, 2, or 3)", e.Name, e.Tier)
 		}
 		if e.Tier == 0 {
-			// Default to tier 1 for backward compatibility.
+			// Default to tier 1 for backward compatibility. Mutate by index:
+			// e is a copy, so writing e.Tier would not normalize the manifest.
+			m.Entries[i].Tier = 1
 		}
 		if e.URL != "" && e.Tier >= 2 && e.SHA == "" {
 			return Manifest{}, fmt.Errorf("corpus: entry %q tier %d URL entry requires an exact SHA pin", e.Name, e.Tier)
