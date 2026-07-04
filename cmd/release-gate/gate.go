@@ -143,7 +143,14 @@ func checkToolBaseline(path string) ([]string, error) {
 // report with the gate's recomputed scorecard and ux metrics embedded.
 func Publish(result GateResult, docsDir, version, commit string) error {
 	report := result.Report
-	report.Header = evalreport.NewHeader(version, commit)
+	header := evalreport.NewHeader(version, commit)
+	// The eval report carries the richer provenance (resolved SHA, corpus
+	// version); keep it when the gate's own build info is weaker.
+	header.CorpusVersion = result.Report.Header.CorpusVersion
+	if (commit == "" || commit == "unknown") && result.Report.Header.Commit != "" {
+		header.Commit = result.Report.Header.Commit
+	}
+	report.Header = header
 	report.Scorecard = result.Scorecard
 	report.UXMetrics = result.UX
 	report.Target = 90.0
