@@ -584,3 +584,38 @@ func readFile(t *testing.T, p string) []byte {
 	}
 	return data
 }
+
+func TestContractMetadata(t *testing.T) {
+	ctx := context.Background()
+	for _, b := range allBackends() {
+		b := b
+		t.Run(b.name, func(t *testing.T) {
+			st := newStore(t, b)
+			const key = "index.profile"
+			_, err := st.Metadata(ctx, key)
+			if !errors.Is(err, gs.ErrNotFound) {
+				t.Fatalf("[%s] missing metadata: got err %v, want ErrNotFound", b.name, err)
+			}
+			if err := st.SetMetadata(ctx, key, "fast"); err != nil {
+				t.Fatalf("[%s] set metadata: %v", b.name, err)
+			}
+			got, err := st.Metadata(ctx, key)
+			if err != nil {
+				t.Fatalf("[%s] get metadata: %v", b.name, err)
+			}
+			if got != "fast" {
+				t.Fatalf("[%s] metadata = %q, want %q", b.name, got, "fast")
+			}
+			if err := st.SetMetadata(ctx, key, "deep"); err != nil {
+				t.Fatalf("[%s] update metadata: %v", b.name, err)
+			}
+			got, err = st.Metadata(ctx, key)
+			if err != nil {
+				t.Fatalf("[%s] get updated metadata: %v", b.name, err)
+			}
+			if got != "deep" {
+				t.Fatalf("[%s] updated metadata = %q, want %q", b.name, got, "deep")
+			}
+		})
+	}
+}

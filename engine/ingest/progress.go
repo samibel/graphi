@@ -8,6 +8,57 @@ import (
 	"github.com/samibel/graphi/engine/observe"
 )
 
+// HeartbeatMode selects the cadence for clock-driven progress heartbeats.
+type HeartbeatMode string
+
+const (
+	// HeartbeatTTY is for human-facing terminals; heartbeats are frequent.
+	HeartbeatTTY HeartbeatMode = "tty"
+	// HeartbeatNonTTY is for JSON/HTTP/SSE consumers; heartbeats are less frequent
+	// but still keep any indeterminate phase alive.
+	HeartbeatNonTTY HeartbeatMode = "non-tty"
+)
+
+// Default heartbeat intervals. The contract is that no phase may be silent
+// longer than the configured threshold (the story AC requires < 15s).
+const (
+	heartbeatIntervalTTY    = 2 * time.Second
+	heartbeatIntervalNonTTY = 10 * time.Second
+	heartbeatMaxInterval    = 15 * time.Second
+)
+
+// Clock abstracts time for deterministic heartbeat testing.
+type Clock interface {
+	Now() time.Time
+}
+
+type realClock struct{}
+
+func (realClock) Now() time.Time { return time.Now() }
+
+// heartbeatModeInterval returns the heartbeat interval for mode.
+func heartbeatModeInterval(mode HeartbeatMode) time.Duration {
+	switch mode {
+	case HeartbeatTTY:
+		return heartbeatIntervalTTY
+	default:
+		return heartbeatIntervalNonTTY
+	}
+}
+
+// WithHeartbeatMode selects the heartbeat cadence and returns the receiver.
+func (i *Ingester) WithHeartbeatMode(m HeartbeatMode) *Ingester {
+	i.heartbeatMode = m
+	i.heartbeatInterval = heartbeatModeInterval(m)
+	return i
+}
+
+// WithClock injects a clock for deterministic heartbeat tests.
+func (i *Ingester) WithClock(c Clock) *Ingester {
+	i.clock = c
+	return i
+}
+
 // Phase identifies a stage of a full ingest pass.
 type Phase string
 
@@ -22,11 +73,17 @@ const (
 	PhaseDrift Phase = "drift"
 	// PhaseParse is the per-file parse+commit loop; Total is known.
 	PhaseParse Phase = "parse"
+	// PhaseWrite covers the durable node/edge commit inside the meta transaction.
+	PhaseWrite Phase = "write"
 	// PhaseLink covers the stale purge, reverse-dep index, and cross-file
 	// linker pass; indeterminate.
 	PhaseLink Phase = "link"
 	// PhaseResolve is the whole-repo go/types confirmed-tier pass; indeterminate.
 	PhaseResolve Phase = "resolve"
+	// PhaseFTS covers the full-text index updates that happen alongside commits.
+	PhaseFTS Phase = "fts"
+	// PhaseCheckpoint covers the final meta-transaction commit and durability.
+	PhaseCheckpoint Phase = "checkpoint"
 	// PhaseDone means the pass committed successfully.
 	PhaseDone Phase = "done"
 )
@@ -68,7 +125,7 @@ func (i *Ingester) notifyProgress(ctx context.Context, ev ProgressEvent) {
 	if i.broker == nil {
 		return
 	}
-	now := time.Now()
+	now := i.clock.Now()
 	// The throttle never swallows a terminal observation: phase transitions,
 	// PhaseDone, and the 100% event of a bounded phase (Done == Total) always
 	// publish — otherwise an SSE client whose last update landed <150ms before
@@ -79,6 +136,7 @@ func (i *Ingester) notifyProgress(ctx context.Context, ev ProgressEvent) {
 	}
 	i.lastProgressPh = ev.Phase
 	i.lastProgressPub = now
+	i.lastProgressTime = now
 	body := map[string]any{
 		"phase": string(ev.Phase),
 		"done":  ev.Done,
@@ -89,4 +147,15 @@ func (i *Ingester) notifyProgress(ctx context.Context, ev ProgressEvent) {
 	}
 	payload, _ := json.Marshal(body)
 	i.broker.Publish(ctx, observe.Event{Type: "ingest-progress", Ts: now, Payload: payload})
+}
+
+func (i *Ingester) heartbeat(ctx context.Context, ph Phase) {
+	if i.progress == nil && i.broker == nil {
+		return
+	}
+	now := i.clock.Now()
+	if now.Sub(i.lastProgressTime) < i.heartbeatInterval {
+		return
+	}
+	i.notifyProgress(ctx, ProgressEvent{Phase: ph})
 }

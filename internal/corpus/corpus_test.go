@@ -273,3 +273,123 @@ func TestCheckedInManifestParses(t *testing.T) {
 		}
 	}
 }
+
+// TestLoadManifest_TierValidation pins tier and SHA-pin rules.
+func TestLoadManifest_TierValidation(t *testing.T) {
+	write := func(content string) string {
+		t.Helper()
+		p := filepath.Join(t.TempDir(), "m.json")
+		if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+		return p
+	}
+	cases := []struct {
+		name, body, wantErr string
+	}{
+		{"tier invalid", `{"entries":[{"name":"x","path":"p","tier":4,"searches":[{"query":"q","expect_nonempty":true}]}]}`, "invalid tier"},
+		{"tier2 url no sha", `{"entries":[{"name":"x","url":"u","ref":"r","tier":2,"searches":[{"query":"q","expect_nonempty":true}]}]}`, "requires an exact SHA pin"},
+		{"tier3 url no sha", `{"entries":[{"name":"x","url":"u","ref":"r","tier":3,"searches":[{"query":"q","expect_nonempty":true}]}]}`, "requires an exact SHA pin"},
+		{"tier1 url no sha ok", `{"entries":[{"name":"x","url":"u","ref":"r","tier":1,"searches":[{"query":"q","expect_nonempty":true}]}]}`, ""},
+		{"tier2 url with sha ok", `{"entries":[{"name":"x","url":"u","ref":"r","tier":2,"sha":"a0a6ae020bb3","searches":[{"query":"q","expect_nonempty":true}]}]}`, ""},
+	}
+	for _, c := range cases {
+		_, err := LoadManifest(write(c.body))
+		if c.wantErr == "" {
+			if err != nil {
+				t.Errorf("%s: unexpected error: %v", c.name, err)
+			}
+			continue
+		}
+		if err == nil || !strings.Contains(err.Error(), c.wantErr) {
+			t.Errorf("%s: err = %v, want contains %q", c.name, err, c.wantErr)
+		}
+	}
+}
+
+// TestRunner_TierFilter proves tier and max-tier filtering work and that
+// omitting the flags runs all entries.
+func TestRunner_TierFilter(t *testing.T) {
+	m := Manifest{
+		Entries: []Entry{
+			{Name: "one", Path: "/dev/null", Tier: 1, Searches: []Search{{Query: "q", ExpectNonEmpty: true}}},
+			{Name: "two", Path: "/dev/null", Tier: 2, Searches: []Search{{Query: "q", ExpectNonEmpty: true}}},
+			{Name: "three", Path: "/dev/null", Tier: 3, Searches: []Search{{Query: "q", ExpectNonEmpty: true}}},
+		},
+	}
+
+	r := &Runner{Binary: "ignored", Tier: 2, WorkDir: t.TempDir()}
+	rep, err := r.Run(context.Background(), m)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(rep.Entries) != 1 || rep.Entries[0].Name != "two" {
+		t.Fatalf("expected exactly tier 2 entry, got %v", rep.Entries)
+	}
+
+	r2 := &Runner{Binary: "ignored", MaxTier: 2, WorkDir: t.TempDir()}
+	rep2, err := r2.Run(context.Background(), m)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(rep2.Entries) != 2 {
+		t.Fatalf("expected 2 entries with max-tier 2, got %d", len(rep2.Entries))
+	}
+
+	r3 := &Runner{Binary: "ignored", WorkDir: t.TempDir()}
+	rep3, err := r3.Run(context.Background(), m)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(rep3.Entries) != 3 {
+		t.Fatalf("expected all 3 entries when no filter set, got %d", len(rep3.Entries))
+	}
+}
+
+// TestRunner_TierDefaultBackwardCompat proves entries without a tier default
+// to tier 1 and are included in tier-1/max-tier-1 runs.
+func TestRunner_TierDefaultBackwardCompat(t *testing.T) {
+	m := Manifest{
+		Entries: []Entry{
+			{Name: "legacy", Path: "/dev/null", Searches: []Search{{Query: "q", ExpectNonEmpty: true}}},
+		},
+	}
+	r := &Runner{Binary: "ignored", Tier: 1, WorkDir: t.TempDir()}
+	rep, err := r.Run(context.Background(), m)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(rep.Entries) != 1 {
+		t.Fatalf("expected legacy entry to default to tier 1, got %d entries", len(rep.Entries))
+	}
+}
+
+// TestRunner_BudgetPreserved proves the budget field survives filtering.
+func TestRunner_BudgetPreserved(t *testing.T) {
+	m := Manifest{
+		Entries: []Entry{
+			{Name: "budgeted", Path: "/dev/null", Tier: 1, BudgetMS: 5000, Searches: []Search{{Query: "q", ExpectNonEmpty: true}}},
+		},
+	}
+	r := &Runner{Binary: "ignored", WorkDir: t.TempDir()}
+	rep, err := r.Run(context.Background(), m)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(rep.Entries) != 1 || rep.Entries[0].Name != "budgeted" {
+		t.Fatalf("expected budgeted entry to survive filter")
+	}
+}
+
+// TestRunner_ScenarioRefReserved proves the scenario_ref field is accepted
+// by the loader and does not break validation.
+func TestRunner_ScenarioRefReserved(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "m.json")
+	body := `{"entries":[{"name":"x","path":"p","tier":1,"scenario_ref":"c3-anchor-1","searches":[{"query":"q","expect_nonempty":true}]}]}`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if _, err := LoadManifest(p); err != nil {
+		t.Fatalf("scenario_ref should not break validation: %v", err)
+	}
+}

@@ -27,6 +27,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/link"
 	"github.com/samibel/graphi/engine/observe"
 
@@ -131,6 +132,9 @@ type Ingester struct {
 	meta   *sql.DB
 	linker *link.Linker
 
+	// profile selects the speed/depth trade-off for this ingest pass.
+	profile profile.Profile
+
 	// bounds are the fail-closed parse-time resource bounds (SW-055 AC#6) applied
 	// to untrusted inputs: max file size (checked before ReadFile via FileInfo),
 	// parse timeout (context.WithTimeout on the Parse ctx), and recursion depth
@@ -154,9 +158,18 @@ type Ingester struct {
 	// progress.go). lastProgressPub/lastProgressPh throttle the mirrored
 	// "ingest-progress" broker publishes; both are touched only from the
 	// single ingesting goroutine, so they need no lock.
-	progress        func(ProgressEvent)
-	lastProgressPub time.Time
-	lastProgressPh  Phase
+	progress         func(ProgressEvent)
+	lastProgressPub  time.Time
+	lastProgressPh   Phase
+	lastProgressTime time.Time
+
+	// heartbeatMode selects the heartbeat cadence (TTY vs non-TTY).
+	heartbeatMode HeartbeatMode
+	// heartbeatInterval is the maximum silence between progress events for the
+	// currently active phase.
+	heartbeatInterval time.Duration
+	// clock provides time for deterministic heartbeat tests.
+	clock Clock
 
 	// parseWorkers overrides the full-ingest parse-pool width; 0 = GOMAXPROCS
 	// (see parseUnitsParallel).
@@ -176,6 +189,14 @@ type Ingester struct {
 // Without a broker ingest behaves exactly as before.
 func (i *Ingester) WithBroker(b *observe.Broker) *Ingester {
 	i.broker = b
+	return i
+}
+
+// WithProfile selects the index profile for this ingest pass and returns the
+// receiver for chaining. The profile is persisted to store metadata on a
+// successful full ingest.
+func (i *Ingester) WithProfile(p profile.Profile) *Ingester {
+	i.profile = p
 	return i
 }
 
@@ -247,7 +268,7 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 	if err != nil {
 		return nil, fmt.Errorf("ingest: open meta db: %w", err)
 	}
-	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), bounds: parse.DefaultResourceBounds()}
+	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now()}
 	// Apply the fail-closed recursion-depth bound to the shared parse path
 	// (process-wide; core/parse reads it per Extract). Size + timeout are enforced
 	// at this ingest boundary directly.
@@ -629,6 +650,8 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 				_ = open.Rollback()
 			}
 		}()
+
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseWrite, Total: len(units)})
 		batch, err := graphstore.BeginBatch(ctx, i.store)
 		if err != nil {
 			return err
@@ -678,6 +701,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		if err := batch.Commit(ctx); err != nil {
 			return err
 		}
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseFTS, Done: len(units), Total: len(units)})
 
 		// Translate import-path forward refs into the directory key space so the
 		// incremental cascade can look them up by directory (BLOCK-1). The index
@@ -697,6 +721,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		// Post-node-commit linker pass (site 1): all nodes are now committed, so
 		// cross-file/cross-package edges can be resolved against the full set.
 		// linkFiles reads committed state first, then writes through the batch.
+		i.heartbeat(ctx, PhaseLink)
 		linkBatch, err := graphstore.BeginBatch(ctx, i.store)
 		if err != nil {
 			return err
@@ -713,6 +738,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		// AFTER the linker so its confirmed edges upsert over the heuristic
 		// tier for the same logical edges (see typeresolvePass).
 		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseResolve, Done: len(units), Total: len(units)})
+		i.heartbeat(ctx, PhaseResolve)
 		trBatch, err := graphstore.BeginBatch(ctx, i.store)
 		if err != nil {
 			return err
@@ -725,11 +751,27 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		if err := trBatch.Commit(ctx); err != nil {
 			return err
 		}
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseCheckpoint, Done: len(units), Total: len(units)})
 		// A completed full pass certifies the store for warm starts under the
 		// current ingest semantics (see warmstart.go).
 		return i.stampSemanticsTx(ctx, tx, root)
 	}); err != nil {
 		return err
+	}
+	// Persist the active profile to durable store metadata after the full pass
+	// commits. A zero/empty profile defaults to "balanced" for forward
+	// compatibility and is never treated as an error.
+	prof := i.profile
+	if prof == "" {
+		prof = profile.Balanced
+	}
+	if err := i.store.SetMetadata(ctx, "index.profile", string(prof)); err != nil {
+		return fmt.Errorf("ingest: persist profile metadata: %w", err)
+	}
+	if sqlStore, ok := i.store.(*graphstore.SQLiteStore); ok {
+		if err := sqlStore.WALCheckpoint(ctx, "TRUNCATE"); err != nil {
+			return fmt.Errorf("ingest: final checkpoint: %w", err)
+		}
 	}
 	i.notifyProgress(ctx, ProgressEvent{Phase: PhaseDone, Done: len(units), Total: len(units)})
 	i.notifyIngest(ctx, "ingest-completed", len(units))
@@ -1753,14 +1795,38 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	sort.Strings(langs)
 
 	edgeIDs := make([]string, 0)
+	var importEdges []model.Edge
 	for _, lang := range langs {
 		edges, _, err := i.linker.Link(lang, byLang[lang], idx)
 		if err != nil {
 			return nil, fmt.Errorf("ingest: link %s: %w", lang, err)
 		}
 		for _, e := range edges {
+			// Fast mode drops low-value import-fanout edges while preserving
+			// core navigable edges (calls, references, hierarchy edges).
+			if i.profile == profile.Fast && e.Kind() == "imports" {
+				continue
+			}
+			// Balanced mode aggregates external imports by target package.
+			if i.profile == profile.Balanced && e.Kind() == "imports" {
+				if path, ok := importPathFromReason(e.Reason()); ok && isExternalImport(path) {
+					importEdges = append(importEdges, e)
+					continue
+				}
+			}
 			if err := w.PutEdge(ctx, e); err != nil {
 				return nil, fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
+			}
+			edgeIDs = append(edgeIDs, string(e.ID()))
+		}
+	}
+
+	// Aggregate external imports in balanced mode by target package.
+	if i.profile == profile.Balanced && len(importEdges) > 0 {
+		groups := aggregateImportsByTarget(importEdges)
+		for _, e := range groups {
+			if err := w.PutEdge(ctx, e); err != nil {
+				return nil, fmt.Errorf("ingest: link put aggregated edge %s: %w", e.ID(), err)
 			}
 			edgeIDs = append(edgeIDs, string(e.ID()))
 		}
@@ -1768,9 +1834,66 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	return edgeIDs, nil
 }
 
-// allCachedNodeIDsTx returns every node ID recorded in the cache (across all
-// files), on the supplied transaction. Used by IngestAll to purge nodes that a
-// re-index no longer produces.
+// importPathFromReason extracts the import path from a linker import edge reason.
+func importPathFromReason(reason string) (string, bool) {
+	const prefix = "file imports package "
+	if idx := strings.LastIndex(reason, prefix); idx >= 0 {
+		return reason[idx+len(prefix):], true
+	}
+	return "", false
+}
+
+// isExternalImport reports whether path looks like an external (vendored or
+// third-party) import path rather than a same-repo module path. The heuristic
+// is: any import path containing a dot in its first segment is treated as
+// external (e.g. github.com/..., example.com/..., golang.org/...).
+func isExternalImport(path string) bool {
+	if path == "" {
+		return false
+	}
+	first := path
+	if i := strings.Index(first, "/"); i >= 0 {
+		first = first[:i]
+	}
+	return strings.Contains(first, ".")
+}
+
+// aggregateImportsByTarget groups external import edges by their target node and
+// returns one aggregated edge per target, preserving the target and the first
+// source while summarizing the count in the reason. The returned slice is
+// sorted by EdgeId for deterministic iteration.
+func aggregateImportsByTarget(edges []model.Edge) []model.Edge {
+	groups := map[model.NodeId][]model.Edge{}
+	for _, e := range edges {
+		groups[e.To()] = append(groups[e.To()], e)
+	}
+	var out []model.Edge
+	for _, group := range groups {
+		if len(group) == 1 {
+			out = append(out, group[0])
+			continue
+		}
+		// Use the first edge as the representative source; all edges share
+		// the same kind, so the aggregated edge points from that source to the target.
+		rep := group[0]
+		var evidence []string
+		for _, e := range group {
+			evidence = append(evidence, e.Evidence()...)
+		}
+		reason := fmt.Sprintf("aggregated %d imports of %s", len(group), rep.Reason())
+		agg, err := model.NewEdge(rep.From(), rep.To(), rep.Kind(), rep.Tier(), rep.Confidence(), reason, graphstore.CompactEvidence(evidence))
+		if err != nil {
+			// Deterministic edge construction should never fail for these inputs;
+			// fall back to the representative edge so indexing does not abort.
+			out = append(out, rep)
+			continue
+		}
+		out = append(out, agg)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID() < out[j].ID() })
+	return out
+}
+
 func (i *Ingester) allCachedNodeIDsTx(ctx context.Context, tx *sql.Tx) ([]string, error) {
 	rows, err := tx.QueryContext(ctx, "SELECT node_ids FROM file_content_cache")
 	if err != nil {

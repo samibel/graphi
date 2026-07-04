@@ -78,29 +78,42 @@ type PrCommentRequest struct {
 
 // MemoryRequest is the transport-agnostic input for memory operations.
 type MemoryRequest struct {
-	Op       string   `json:"op"` // store | recall | forget
-	Scope    string   `json:"scope"`
-	Notebook string   `json:"notebook"`
-	Tags     []string `json:"tags"`
-	Payload  string   `json:"payload"`
-	ID       string   `json:"id"` // for forget
+	Op           string   `json:"op"` // store | recall | forget | list | export
+	Scope        string   `json:"scope"`
+	Notebook     string   `json:"notebook"`
+	Tags         []string `json:"tags"`
+	Payload      string   `json:"payload"`
+	ID           string   `json:"id"`             // for forget or overwrite
+	Kind         string   `json:"kind"`           // for store
+	Source       string   `json:"source"`         // for store
+	Confidence   string   `json:"confidence"`     // for store
+	Evidence     string   `json:"evidence"`       // for store
+	Limit        int      `json:"limit"`          // for list
+	ExportToPath string   `json:"export_to_path"` // for export
 }
 
 // MemoryResponse is the canonical serialized output for memory operations.
 type MemoryResponse struct {
-	Entries []MemoryEntry `json:"entries"`
-	ID      string        `json:"id"`
-	Count   int           `json:"count"`
+	Entries       []MemoryEntry `json:"entries"`
+	ID            string        `json:"id"`
+	Count         int           `json:"count"`
+	SecretSuspect bool          `json:"secret_suspected"`
 }
 
 // MemoryEntry is one returned memory item.
 type MemoryEntry struct {
-	ID        string   `json:"id"`
-	Scope     string   `json:"scope"`
-	Notebook  string   `json:"notebook"`
-	Tags      []string `json:"tags"`
-	Payload   string   `json:"payload"`
-	CreatedAt int64    `json:"created_at"`
+	ID            string   `json:"id"`
+	Scope         string   `json:"scope"`
+	Notebook      string   `json:"notebook"`
+	Tags          []string `json:"tags"`
+	Payload       string   `json:"payload"`
+	Kind          string   `json:"kind,omitempty"`
+	Source        string   `json:"source,omitempty"`
+	Confidence    string   `json:"confidence,omitempty"`
+	Evidence      string   `json:"evidence,omitempty"`
+	SecretSuspect bool     `json:"secret_suspected,omitempty"`
+	CreatedAt     int64    `json:"created_at"`
+	UpdatedAt     int64    `json:"updated_at,omitempty"`
 }
 
 // DistillRequest is the transport-agnostic input for session distillation.
@@ -235,6 +248,23 @@ func AnalyzerSymbolOptional(name string) bool {
 	}
 }
 
+// DiagnoseOptions carries the per-surface flag configuration for the
+// diagnose engine boundary. It is the surface-layer contract; the in-process
+// Direct client translates it to engine/diagnostic.DiagnoseOptions.
+type DiagnoseOptions struct {
+	All                 bool
+	ConfidenceThreshold string
+	SeverityThreshold   string
+	JSON                bool
+	// ExplainSuppressed keeps suppressed findings visible (tagged with their
+	// suppression category) in otherwise-default output.
+	ExplainSuppressed bool
+	// Root, when non-empty, enables in-content generated-code marker detection
+	// for files resolved relative to this directory (surface-side I/O; the
+	// engine stays I/O-free).
+	Root string
+}
+
 // Client is the thin contract every surface uses to execute structural queries,
 // search, and read the savings ledger. Implementations may be in-process or over
 // a Unix domain socket.
@@ -325,12 +355,39 @@ type Client interface {
 	// WithSkillGen; other clients return ErrSkillGenUnavailable until wired.
 	SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, error)
 
+	// Brief runs the agent_brief assembler and returns the canonical serialized
+	// Result bytes plus a Markdown rendering in the response (EP-024 SW-134).
+	// The in-process Direct client wires it directly; other clients return
+	// ErrBriefUnavailable until wired.
+	Brief(ctx context.Context, topic string) ([]byte, []byte, error)
+
+	// ExplainSymbol runs the explain_symbol agent tool (EP-020) and returns the
+	// canonical serialized contract.Result bytes: a compact, cited symbol
+	// identity summary (definition, callers/callees/references) with a
+	// tier-derived confidence distribution. Ambiguous references yield
+	// candidates instead of a guess; unresolved ones yield the "empty" outcome
+	// with hints. Read-only. Clients without graph services return the
+	// contract's "unavailable" outcome.
+	ExplainSymbol(ctx context.Context, symbol string, maxItems int) ([]byte, error)
+
+	// RelatedFiles runs the related_files agent tool (EP-020): a deterministic,
+	// evidence-cited read-first file ranking around the resolved anchor.
+	// direction is "dependencies", "dependents", or "both"/"" (default both).
+	// Read-only.
+	RelatedFiles(ctx context.Context, target, direction string, maxFiles int) ([]byte, error)
+
+	// ChangeRisk runs the change_risk agent tool (EP-020): an evidence-based
+	// local blast-radius estimate (low/medium/high/unknown) for a symbol, file,
+	// or unified diff. At least one of target/diff must be non-empty. Read-only.
+	ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error)
+
 	// Diagnose runs the engine diagnostics (SW-091) over the graph and returns the
 	// canonical serialized diagnostic.Result bytes via diagnostic.Marshal — the
 	// single serializer every surface uses (byte-identical parity, SW-094). kinds
-	// selects analyzers; an empty slice runs all built-ins. Without a reader it
-	// returns ErrDiagnosticUnavailable.
-	Diagnose(ctx context.Context, kinds []string) ([]byte, error)
+	// selects analyzers; an empty slice runs all built-ins. opts carries the
+	// flag surface configuration (--all, --confidence, --severity, --json). Without
+	// a reader it returns ErrDiagnosticUnavailable.
+	Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error)
 
 	// Inline applies the SW-092 inline refactor through the shared edit applier and
 	// returns the canonical serialized InlineResult via edit.MarshalInlineResult.
@@ -430,3 +487,13 @@ var ErrDistillUnavailable = errors.New("client: distill service unavailable")
 
 // ErrSkillGenUnavailable is returned when a Client has no skill generation service configured.
 var ErrSkillGenUnavailable = errors.New("client: skillgen service unavailable")
+
+// ErrBriefUnavailable is returned when a Client has no agent_brief assembler configured.
+var ErrBriefUnavailable = errors.New("client: agent_brief service unavailable")
+
+// ErrAgentToolsUnavailable is returned when a Client cannot reach the EP-020
+// agent tools (explain_symbol / related_files / change_risk) on its transport.
+// The in-process Direct client always serves them (degrading to the contract's
+// "unavailable" outcome when no graph services are wired); remote clients
+// return this sentinel until an RPC is added.
+var ErrAgentToolsUnavailable = errors.New("client: agent tools unavailable")

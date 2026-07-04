@@ -1,0 +1,11 @@
+id: explain-ambiguous-symbol
+description: explain_symbol on a name defined multiple times returns candidates, never a guess.
+fixture_ref: tier1-fixture-go
+operation:
+  name: explain_symbol
+  args:
+    symbol: Greet
+expect:
+  outcome: ambiguous
+  has_evidence: true
+  max_latency_ms: 2000

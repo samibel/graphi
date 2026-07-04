@@ -20,7 +20,7 @@ export interface ResultEdge {
   from: string;
   to: string;
   kind: string;
-  confidence_tier: string; // confirmed | inferred | heuristic | ...
+  confidence_tier: string; // confirmed | derived | heuristic | ...
   confidence: number; // [0,1]
   reason: string;
   evidence: string[];
@@ -52,6 +52,59 @@ export interface SearchMatch {
   line: number;
   column: number;
   rank: number;
+  /** Optional per-match confidence [0,1]; not emitted by every backend build. */
+  confidence?: number;
+}
+
+// --- EP-020 agent-tool response envelope -------------------------------------
+// Canonical agent-first tool contract (engine/agenttools/contract/contract.go).
+// Served by GET /analyze/{related_files|change_risk|agent_brief}; the JSON
+// field names below mirror the Go struct tags exactly.
+
+/** Result classification (contract.Outcome). */
+export type AgentOutcome = "ok" | "ambiguous" | "empty" | "error";
+
+/** A file:line citation backing an item (contract.Evidence). */
+export interface AgentEvidence {
+  ref_id: string;
+  path: string;
+  line: number;
+  span?: string;
+  role: string;
+}
+
+/** A single ranked result row (contract.Item). */
+export interface AgentItem {
+  ref_id: string;
+  rank: number;
+  reason: string;
+  evidence_ref_ids: string[];
+}
+
+/** Normalized confidence distribution over outcome labels (contract.Confidence). */
+export interface AgentConfidence {
+  distribution: Record<string, number>;
+  top: string;
+  method: string; // e.g. "normalized" | "heuristic" | "empty"
+}
+
+/** Size-budget enforcement metadata (contract.Limits). */
+export interface AgentLimits {
+  cap_applied: number;
+  total_available: number;
+  dropped: number;
+  truncated: boolean;
+  next: string;
+}
+
+/** The canonical agent-response envelope (contract.Result). */
+export interface AgentToolResult {
+  outcome: AgentOutcome;
+  summary: string;
+  items: AgentItem[];
+  evidence: AgentEvidence[];
+  confidence: AgentConfidence;
+  limits: AgentLimits;
 }
 
 /** Canonical search response (engine/search.Response). */

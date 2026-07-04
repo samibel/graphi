@@ -12,12 +12,22 @@ type Comparator string
 
 const CmpLE Comparator = "<="
 
+// Severity is the gate behavior for a metric: fail causes the gate to fail,
+// warn only reports the delta but keeps the gate passing.
+type Severity string
+
+const (
+	SeverityFail Severity = "fail"
+	SeverityWarn Severity = "warn"
+)
+
 // MetricBudget is a single pinned metric definition in bench-budget.yml.
 type MetricBudget struct {
 	Baseline int64      // pinned reference value (delta = measured - baseline)
 	Budget   int64      // fail threshold (measured must not exceed for CmpLE)
 	Unit     string     // "ms" or "bytes"
 	Op       Comparator // comparator, defaults to CmpLE
+	Severity Severity   // severity, defaults to SeverityFail
 }
 
 // Manifest is the parsed, validated bench-budget.yml.
@@ -114,6 +124,15 @@ func parseMetricBudget(node map[string]any) (MetricBudget, error) {
 	if mb.Op != CmpLE {
 		return mb, fmt.Errorf("unsupported comparator %q (only '<=' is supported)", mb.Op)
 	}
+	if sev, ok := node["severity"]; ok {
+		mb.Severity = Severity(sev.(string))
+	}
+	if mb.Severity == "" {
+		mb.Severity = SeverityFail
+	}
+	if mb.Severity != SeverityFail && mb.Severity != SeverityWarn {
+		return mb, fmt.Errorf("unsupported severity %q (only 'fail' or 'warn' is supported)", mb.Severity)
+	}
 	return mb, nil
 }
 
@@ -126,6 +145,7 @@ type MetricResult struct {
 	Delta    float64    `json:"delta"` // measured - baseline
 	Unit     string     `json:"unit"`
 	Op       Comparator `json:"op"`
+	Severity Severity   `json:"severity"`
 	Pass     bool       `json:"pass"`
 }
 
@@ -163,14 +183,18 @@ func Gate(measured map[string]float64, man *Manifest) GateReport {
 			continue
 		}
 		pass := val <= float64(mb.Budget)
-		if !pass {
+		if !pass && (mb.Severity == SeverityFail || mb.Severity == "") {
 			rep.Pass = false
 			rep.Failed = append(rep.Failed, name)
+		}
+		severity := mb.Severity
+		if severity == "" {
+			severity = SeverityFail
 		}
 		rep.Results = append(rep.Results, MetricResult{
 			Name: name, Measured: val, Baseline: float64(mb.Baseline),
 			Budget: float64(mb.Budget), Delta: val - float64(mb.Baseline),
-			Unit: mb.Unit, Op: mb.Op, Pass: pass,
+			Unit: mb.Unit, Op: mb.Op, Pass: pass, Severity: severity,
 		})
 	}
 	return rep

@@ -1,0 +1,39 @@
+name: bench-nightly
+
+# Nightly performance trend (EP-019 / evaluation-harness PRD): runs the bench
+# harness on a schedule so performance drift is visible over time. Warn-only:
+# the job reports and uploads results but never gates merges — correctness
+# gating stays in eval-correctness.yml.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  bench-nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run bench harness (warn-only trend)
+        run: |
+          CGO_ENABLED=0 go test ./internal/bench/... -run TestBench -v -count=1 | tee bench-nightly.log || echo "::warning::bench harness reported issues (warn-only)"
+      - name: Run Tier-1 scorecard report
+        run: |
+          CGO_ENABLED=0 go run ./cmd/eval -manifest corpus/manifest.json -out bench-nightly-report.json -format markdown || echo "::warning::scorecard report failed (warn-only)"
+      - name: Upload nightly artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-nightly-${{ github.run_id }}
+          path: |
+            bench-nightly.log
+            bench-nightly-report.json
+            bench-nightly-report.md
+          if-no-files-found: warn

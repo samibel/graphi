@@ -50,53 +50,6 @@ var deadCandidateKinds = map[string]bool{
 	"class":    true,
 }
 
-// Diagnose runs the selected analyzers over the read-only graph and returns the
-// canonical typed envelope. When kinds is empty, all built-in analyzers run.
-// Unknown kinds are reported in Result.Unavailable (graceful skip) — the run
-// still returns whatever the known analyzers produced. The function performs no
-// I/O beyond the in-memory Reader and never mutates the graph.
-func Diagnose(ctx context.Context, r query.Reader, kinds []string) (Result, error) {
-	if r == nil {
-		return Result{}, fmt.Errorf("diagnostic: nil reader")
-	}
-
-	selected, unavailable := resolveKinds(kinds)
-
-	diags := []Diagnostic{}
-	ranAny := false
-	for _, k := range selected {
-		switch k {
-		case KindUnresolvedRef:
-			found, err := analyzeUnresolvedRefs(ctx, r)
-			if err != nil {
-				return Result{}, err
-			}
-			diags = append(diags, found...)
-			ranAny = true
-		case KindDeadSymbol:
-			found, err := analyzeDeadSymbols(ctx, r)
-			if err != nil {
-				return Result{}, err
-			}
-			diags = append(diags, found...)
-			ranAny = true
-		}
-	}
-
-	sortDiagnostics(diags)
-
-	out := Result{Diagnostics: diags, Unavailable: unavailable}
-	switch {
-	case !ranAny:
-		out.Outcome = OutcomeUnavailable
-	case len(diags) == 0:
-		out.Outcome = OutcomeClean
-	default:
-		out.Outcome = OutcomeReported
-	}
-	return out, nil
-}
-
 // resolveKinds maps the caller's selection onto known analyzers, returning the
 // ordered list to run (always in canonical analyzer order, independent of the
 // caller's order so output is deterministic) and the canonically-ordered list of
@@ -128,7 +81,8 @@ func resolveKinds(kinds []string) (run []string, unavailable []string) {
 // representation of an unresolved/best-effort reference (a confirmed dangling
 // edge cannot exist; see the package note). The diagnostic is anchored at the
 // referrer (From) node. It carries no auto-action: resolving an unconfirmed
-// reference needs agent judgment, so the finding is advisory.
+// reference needs agent judgment, so the finding is advisory. Findings carry
+// ConfidenceHeuristic because they are produced from best-effort edges.
 func analyzeUnresolvedRefs(ctx context.Context, r query.Reader) ([]Diagnostic, error) {
 	edges, err := r.Edges(ctx, graphstore.Query{})
 	if err != nil {
@@ -143,15 +97,24 @@ func analyzeUnresolvedRefs(ctx context.Context, r query.Reader) ([]Diagnostic, e
 		if ferr != nil {
 			continue
 		}
+		to, terr := r.GetNode(ctx, e.To())
+		if terr != nil {
+			continue
+		}
 		out = append(out, Diagnostic{
-			Severity: SeverityWarning,
-			Code:     "unresolved_reference",
-			Message:  fmt.Sprintf("%s edge from %q is unresolved (heuristic confidence only)", e.Kind(), from.QualifiedName()),
-			Symbol:   from.ID(),
-			File:     from.SourcePath(),
-			Line:     from.Line(),
-			Column:   from.Column(),
-			Actions:  []CodeAction{},
+			Severity:        SeverityWarning,
+			Code:            "unresolved_reference",
+			Reason:          ReasonUnresolvedExternalImport,
+			Message:         fmt.Sprintf("%s edge from %q is unresolved (heuristic confidence only)", e.Kind(), from.QualifiedName()),
+			Symbol:          from.ID(),
+			TargetSymbol:    to.ID(),
+			File:            from.SourcePath(),
+			Line:            from.Line(),
+			Column:          from.Column(),
+			Actions:         []CodeAction{},
+			Confidence:      ConfidenceHeuristic,
+			Evidence:        e.Evidence(),
+			OccurrenceCount: 1,
 		})
 	}
 	return out, nil
@@ -161,7 +124,9 @@ func analyzeUnresolvedRefs(ctx context.Context, r query.Reader) ([]Diagnostic, e
 // classes) with zero live inbound references. It is a warning, not an error:
 // entrypoints legitimately have no inbound edges, so the finding carries a
 // safe_delete_symbol code-action for the caller to gate through SW-093 rather
-// than implying the symbol is definitely removable.
+// than implying the symbol is definitely removable. Dead-symbol analysis is
+// based on the presence of live inbound references, which are derived or
+// confirmed edges, so findings carry ConfidenceExact.
 func analyzeDeadSymbols(ctx context.Context, r query.Reader) ([]Diagnostic, error) {
 	nodes, err := r.Nodes(ctx, graphstore.Query{})
 	if err != nil {
@@ -183,17 +148,22 @@ func analyzeDeadSymbols(ctx context.Context, r query.Reader) ([]Diagnostic, erro
 			continue
 		}
 		out = append(out, Diagnostic{
-			Severity: SeverityWarning,
-			Code:     "dead_symbol",
-			Message:  fmt.Sprintf("%s %q has no live inbound references", n.Kind(), n.QualifiedName()),
-			Symbol:   n.ID(),
-			File:     n.SourcePath(),
-			Line:     n.Line(),
-			Column:   n.Column(),
+			Severity:     SeverityWarning,
+			Code:         "dead_symbol",
+			Reason:       ReasonDeadInternalSymbol,
+			Message:      fmt.Sprintf("%s %q has no live inbound references", n.Kind(), n.QualifiedName()),
+			Symbol:       n.ID(),
+			TargetSymbol: n.ID(),
+			File:         n.SourcePath(),
+			Line:         n.Line(),
+			Column:       n.Column(),
 			Actions: []CodeAction{{
 				Kind:         ActionSafeDeleteSymbol,
 				TargetSymbol: n.ID(),
 			}},
+			Confidence:      ConfidenceExact,
+			Evidence:        []string{fmt.Sprintf("%s:%d", n.SourcePath(), n.Line())},
+			OccurrenceCount: 1,
 		})
 	}
 	return out, nil

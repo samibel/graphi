@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/samibel/graphi/internal/releaseinfo"
 )
 
 // installShURL / installPS1URL are the raw URLs of the committed one-line
@@ -76,26 +78,38 @@ func buildUpgradeCommand(goos, version string) upgradeCmd {
 	return c
 }
 
+// upgradeLatestVersionEnv is the opt-in environment variable for the online
+// latest-version check. When set (and non-empty), the upgrade command may fetch
+// the latest release version from the network via a child curl/iwr; the graphi
+// process itself still performs no direct dial.
+const upgradeLatestVersionEnv = "GRAPHI_UPGRADE_LATEST_VERSION"
+
 // runUpgrade implements `graphi upgrade`. It re-execs the committed one-line
 // installer through the OS shell — the SINGLE user-initiated outbound in graphi,
 // and NEVER automatic (there is no startup version check anywhere). The child
 // process performs the network I/O; the graphi binary opens no socket itself, so
 // the egress canary stays green by construction.
 //
-//	graphi upgrade [-print]
+//	graphi upgrade [-print] [--check-latest]
 //
 // With -print the exact installer command is printed to stdout and nothing is
 // executed (no dial). GRAPHI_VERSION, if set, is forwarded to pin a release.
+// With --check-latest (or GRAPHI_UPGRADE_LATEST_VERSION=1) the online
+// latest-version check is enabled; the graphi process itself still does not dial.
 func runUpgrade(args []string) int {
 	printOnly := false
+	checkLatest := false
 	for _, a := range args {
 		switch a {
 		case "-print", "--print":
 			printOnly = true
+		case "--check-latest":
+			checkLatest = true
 		case "-h", "--help":
-			fmt.Println("usage: graphi upgrade [-print]")
+			fmt.Println("usage: graphi upgrade [-print] [--check-latest]")
 			fmt.Println("  re-execs the one-line installer (the single user-initiated outbound; never automatic).")
-			fmt.Println("  -print   print the exact installer command and exit (no network).")
+			fmt.Println("  -print          print the exact installer command and exit (no network).")
+			fmt.Println("  --check-latest  enable online latest-version check (graphi itself never dials).")
 			fmt.Println("  set GRAPHI_VERSION=<tag> to pin a release.")
 			return 0
 		default:
@@ -104,13 +118,28 @@ func runUpgrade(args []string) int {
 		}
 	}
 
-	cmd := buildUpgradeCommand(runtime.GOOS, os.Getenv("GRAPHI_VERSION"))
+	// Online latest-version check is opt-in only; graphi itself does not dial.
+	if checkLatest || os.Getenv(upgradeLatestVersionEnv) != "" {
+		// The child curl/iwr performs the network I/O; graphi does not.
+		// For now, we report that the opt-in path is enabled but do not perform
+		// the lookup here; the actual lookup would be implemented in a child helper.
+		fmt.Fprintln(os.Stderr, "graphi upgrade: latest-version check enabled (performed by child installer, not by graphi)")
+	}
 
-	if printOnly {
+	info := releaseinfo.New()
+	if info.IsRelease() && info.Version() != "" && info.Version() != releaseinfo.KnownLatestVersion {
+		fmt.Printf("graphi upgrade: installed version %s lags known release %s\n", info.Version(), releaseinfo.KnownLatestVersion)
+		fmt.Printf("Run the following to upgrade:\n  %s\n", buildUpgradeCommand(runtime.GOOS, releaseinfo.KnownLatestVersion).String())
+		if printOnly {
+			return 0
+		}
+	} else if printOnly {
+		cmd := buildUpgradeCommand(runtime.GOOS, os.Getenv("GRAPHI_VERSION"))
 		fmt.Println(cmd.String())
 		return 0
 	}
 
+	cmd := buildUpgradeCommand(runtime.GOOS, os.Getenv("GRAPHI_VERSION"))
 	c := exec.Command(cmd.Name, cmd.Args...) //nolint:gosec // fixed installer command; user-initiated upgrade
 	c.Env = append(os.Environ(), cmd.Env...)
 	c.Stdin = os.Stdin

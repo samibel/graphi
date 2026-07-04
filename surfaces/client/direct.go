@@ -4,10 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/agenttools/brief"
+	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/related"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/agenttools/risk"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/distill"
@@ -500,15 +509,51 @@ func (d *Direct) Refactor(ctx context.Context, req RefactorRequest, actor string
 // diagnostics over the SAME read-only Reader the queries use and serializes the
 // one canonical result through diagnostic.Marshal — the single byte-source every
 // surface consumes.
-func (d *Direct) Diagnose(ctx context.Context, kinds []string) ([]byte, error) {
+func (d *Direct) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {
 	if d.querySvc == nil {
 		return nil, ErrDiagnosticUnavailable
 	}
-	res, err := diagnostic.Diagnose(ctx, d.querySvc.Reader(), kinds)
+	engineOpts := diagnostic.DiagnoseOptions{
+		All:                 opts.All,
+		ConfidenceThreshold: opts.ConfidenceThreshold,
+		SeverityThreshold:   opts.SeverityThreshold,
+		JSON:                opts.JSON,
+		ExplainSuppressed:   opts.ExplainSuppressed,
+	}
+	if opts.Root != "" {
+		engineOpts.SuppressionConfig.GeneratedMarkerDetector = GeneratedMarkerDetector(opts.Root)
+	}
+	res, err := diagnostic.DiagnoseWithOptions(ctx, d.querySvc.Reader(), kinds, engineOpts)
 	if err != nil {
 		return nil, err
 	}
 	return diagnostic.Marshal(res)
+}
+
+// generatedMarkerWindow bounds how much of a file the marker detector reads.
+const generatedMarkerWindow = 4096
+
+// GeneratedMarkerDetector returns a detector for in-content generated-code
+// markers ("Code generated ... DO NOT EDIT", "@generated") in the head of
+// files under root. It is the surface-side I/O companion to the I/O-free
+// engine suppression config: paths are repo-relative as recorded in the graph.
+// Unreadable files report false (never an error).
+func GeneratedMarkerDetector(root string) func(file string) bool {
+	return func(file string) bool {
+		if file == "" {
+			return false
+		}
+		f, err := os.Open(filepath.Join(root, filepath.FromSlash(file)))
+		if err != nil {
+			return false
+		}
+		defer f.Close()
+		buf := make([]byte, generatedMarkerWindow)
+		n, _ := io.ReadFull(f, buf)
+		head := string(buf[:n])
+		return (strings.Contains(head, "Code generated") && strings.Contains(head, "DO NOT EDIT")) ||
+			strings.Contains(head, "@generated")
+	}
 }
 
 // Inline implements Client (SW-092/SW-094). A blocked/unavailable outcome is a
@@ -552,7 +597,7 @@ func (d *Direct) Undo(ctx context.Context, undoToken, actor string) ([]byte, err
 	return edit.MarshalChangeRecord(rec)
 }
 
-// Memory implements Client. It runs memory store/recall/forget operations and
+// Memory implements Client. It runs memory store/recall/forget/list/export operations and
 // returns the canonical serialized MemoryResponse.
 func (d *Direct) Memory(ctx context.Context, req MemoryRequest) ([]byte, error) {
 	if d.memoryStore == nil {
@@ -560,7 +605,17 @@ func (d *Direct) Memory(ctx context.Context, req MemoryRequest) ([]byte, error) 
 	}
 	switch req.Op {
 	case "store":
-		id, err := d.memoryStore.StoreMemory(ctx, req.Scope, req.Notebook, req.Tags, req.Payload)
+		id, err := d.memoryStore.StoreMemoryWithProvenance(ctx, memory.ProvenanceInput{
+			Scope:       req.Scope,
+			Notebook:    req.Notebook,
+			Tags:        req.Tags,
+			Payload:     req.Payload,
+			Kind:        req.Kind,
+			Source:      req.Source,
+			Confidence:  req.Confidence,
+			Evidence:    req.Evidence,
+			OverwriteID: memory.ID(req.ID),
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -585,6 +640,41 @@ func (d *Direct) Memory(ctx context.Context, req MemoryRequest) ([]byte, error) 
 			return nil, err
 		}
 		return marshalJSON(MemoryResponse{ID: req.ID, Count: 0})
+	case "list":
+		entries, err := d.memoryStore.ListMemory(ctx, memory.Query{
+			Scope:      req.Scope,
+			Notebook:   req.Notebook,
+			TagPrefix:  "",
+			CreatedMin: 0,
+			CreatedMax: 0,
+		}, req.Limit)
+		if err != nil {
+			return nil, err
+		}
+		return marshalJSON(MemoryResponse{
+			Entries: toMemoryEntries(entries),
+			Count:   len(entries),
+		})
+	case "export":
+		var w io.Writer = os.Stdout
+		if req.ExportToPath != "" {
+			f, err := os.Create(req.ExportToPath)
+			if err != nil {
+				return nil, err
+			}
+			defer f.Close()
+			w = f
+		}
+		if err := d.memoryStore.ExportMemory(ctx, memory.Query{
+			Scope:      req.Scope,
+			Notebook:   req.Notebook,
+			TagPrefix:  "",
+			CreatedMin: 0,
+			CreatedMax: 0,
+		}, w); err != nil {
+			return nil, err
+		}
+		return marshalJSON(MemoryResponse{Count: 0})
 	default:
 		return nil, fmt.Errorf("client: unsupported memory op %q", req.Op)
 	}
@@ -594,12 +684,18 @@ func toMemoryEntries(entries []memory.Entry) []MemoryEntry {
 	out := make([]MemoryEntry, len(entries))
 	for i, e := range entries {
 		out[i] = MemoryEntry{
-			ID:        string(e.ID),
-			Scope:     e.Scope,
-			Notebook:  e.Notebook,
-			Tags:      e.Tags,
-			Payload:   e.Payload,
-			CreatedAt: e.CreatedAt,
+			ID:            string(e.ID),
+			Scope:         e.Scope,
+			Notebook:      e.Notebook,
+			Tags:          e.Tags,
+			Payload:       e.Payload,
+			Kind:          e.Kind,
+			Source:        e.Source,
+			Confidence:    e.Confidence,
+			Evidence:      e.Evidence,
+			SecretSuspect: e.SecretSuspect,
+			CreatedAt:     e.CreatedAt,
+			UpdatedAt:     e.UpdatedAt,
 		}
 	}
 	return out
@@ -680,6 +776,65 @@ func (d *Direct) SkillGen(ctx context.Context, req SkillGenRequest) ([]byte, err
 		Steps:       req.Steps,
 		Markdown:    string(md),
 	})
+}
+
+// Brief implements Client. It assembles the agent_brief context packet from
+// the wired graph services and memory store (each optional; the brief states
+// what is unavailable) and returns the canonical JSON bytes plus a Markdown
+// rendering.
+func (d *Direct) Brief(ctx context.Context, topic string) ([]byte, []byte, error) {
+	res, err := brief.Assemble(ctx, brief.Params{
+		Topic:  topic,
+		Deps:   d.agentDeps(),
+		Memory: d.memoryStore,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	jsonBytes, err := contract.Serialize(res)
+	if err != nil {
+		return nil, nil, err
+	}
+	md, err := brief.Markdown(res)
+	if err != nil {
+		return nil, nil, err
+	}
+	return jsonBytes, []byte(md), nil
+}
+
+// agentDeps assembles the shared EP-020 agent-tool dependency set from the
+// wired services. Missing services degrade to the contract's "unavailable"
+// outcome inside the tools rather than erroring here.
+func (d *Direct) agentDeps() resolve.Deps {
+	return resolve.Deps{Query: d.querySvc, Search: d.searchSvc}
+}
+
+// ExplainSymbol implements Client via the shared engine/agenttools/explain
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) ExplainSymbol(ctx context.Context, symbol string, maxItems int) ([]byte, error) {
+	res, err := explain.Explain(ctx, d.agentDeps(), symbol, maxItems)
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// RelatedFiles implements Client via the shared engine/agenttools/related package.
+func (d *Direct) RelatedFiles(ctx context.Context, target, direction string, maxFiles int) ([]byte, error) {
+	res, err := related.Files(ctx, d.agentDeps(), target, direction, maxFiles)
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// ChangeRisk implements Client via the shared engine/agenttools/risk package.
+func (d *Direct) ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error) {
+	res, err := risk.Assess(ctx, d.agentDeps(), target, diff, maxItems)
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
 }
 
 func marshalJSON(v any) ([]byte, error) {

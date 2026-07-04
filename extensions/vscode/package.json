@@ -13,6 +13,12 @@
     "onCommand:graphi.search",
     "onCommand:graphi.showGraph",
     "onCommand:graphi.setAuthToken",
+    "onCommand:graphi.relatedFiles",
+    "onCommand:graphi.explainSymbol",
+    "onCommand:graphi.changeRisk",
+    "onCommand:graphi.openBrief",
+    "onCommand:graphi.exportAgentContext",
+    "onCommand:graphi.watchIndexStatus",
     "onView:graphiResults"
   ],
   "contributes": {
@@ -75,7 +81,13 @@
       { "command": "graphi.search", "title": "Search symbols", "category": "graphi" },
       { "command": "graphi.showGraph", "title": "Show graph (webview)", "category": "graphi" },
       { "command": "graphi.retry", "title": "Retry daemon connection", "category": "graphi" },
-      { "command": "graphi.setAuthToken", "title": "Set daemon auth token", "category": "graphi" }
+      { "command": "graphi.setAuthToken", "title": "Set daemon auth token", "category": "graphi" },
+      { "command": "graphi.relatedFiles", "title": "Related files", "category": "graphi" },
+      { "command": "graphi.explainSymbol", "title": "Explain symbol", "category": "graphi" },
+      { "command": "graphi.changeRisk", "title": "Change risk", "category": "graphi" },
+      { "command": "graphi.openBrief", "title": "Open agent brief", "category": "graphi" },
+      { "command": "graphi.exportAgentContext", "title": "Export agent context", "category": "graphi" },
+      { "command": "graphi.watchIndexStatus", "title": "Watch / index status", "category": "graphi" }
     ],
     "menus": {
       "commandPalette": [
@@ -83,7 +95,13 @@
         { "command": "graphi.search" },
         { "command": "graphi.showGraph" },
         { "command": "graphi.retry" },
-        { "command": "graphi.setAuthToken" }
+        { "command": "graphi.setAuthToken" },
+        { "command": "graphi.relatedFiles" },
+        { "command": "graphi.explainSymbol" },
+        { "command": "graphi.changeRisk" },
+        { "command": "graphi.openBrief" },
+        { "command": "graphi.exportAgentContext" },
+        { "command": "graphi.watchIndexStatus" }
       ]
     }
   },

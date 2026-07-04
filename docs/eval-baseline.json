@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "baseline": 77.75,
+  "target": 90,
+  "scenarios": [
+    {
+      "id": "agent-brief-fixture",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "anchor-absent",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "change-risk-known-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "empty-result",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "explain-ambiguous-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "explain-known-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "go-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "related-files-single-file",
+      "outcome": "pass",
+      "tier1": true
+    }
+  ]
+}

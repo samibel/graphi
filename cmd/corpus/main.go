@@ -35,6 +35,8 @@ func run() int {
 	workdir := flag.String("workdir", "", "work dir for clones and stores (default: a temp dir)")
 	report := flag.String("report", "", "when set, write the machine-readable JSON report here")
 	timeout := flag.Duration("entry-timeout", 10*time.Minute, "per-repository timeout")
+	tier := flag.Int("tier", 0, "run only entries with this exact tier (1-3)")
+	maxTier := flag.Int("max-tier", 0, "run only entries with tier <= this value")
 	flag.Parse()
 
 	m, err := corpus.LoadManifest(*manifest)
@@ -69,6 +71,8 @@ func run() int {
 		Binary:          bin,
 		WorkDir:         wd,
 		PerEntryTimeout: *timeout,
+		Tier:            *tier,
+		MaxTier:         *maxTier,
 		Log: func(format string, args ...any) {
 			fmt.Fprintf(os.Stderr, format+"\n", args...)
 		},

@@ -71,14 +71,28 @@ type Entry struct {
 	Searches []Search `json:"searches"`
 	// ConfirmedEdges are optional confirmed-tier assertions (see ConfirmedEdge).
 	ConfirmedEdges []ConfirmedEdge `json:"confirmed_edges,omitempty"`
-	// Notes is free-form documentation (why this repo is in the corpus).
-	Notes string `json:"notes,omitempty"`
+	// Tier is the corpus tier: 1 = PR gate (local fixtures), 2 = pinned SHAs,
+	// 3 = nightly/manual large repos. Defaults to 1 for backward compatibility.
+	Tier int `json:"tier,omitempty"`
+	// BudgetMS is the declared wall-clock budget for this entry in milliseconds.
+	// It is surfaced in the report as warn-only metadata.
+	BudgetMS int64 `json:"budget_ms,omitempty"`
+	// ScenarioRef is a stable identifier reserved for scenario anchoring (C3).
+	// It is defined here but left unexecuted by this story.
+	ScenarioRef string `json:"scenario_ref,omitempty"`
+}
+
+// TierBudget is the per-tier budget metadata.
+type TierBudget struct {
+	Tier     int   `json:"tier"`
+	BudgetMS int64 `json:"budget_ms"`
 }
 
 // Manifest is the checked-in corpus definition (corpus/manifest.json).
 type Manifest struct {
-	Notes   string  `json:"notes,omitempty"`
-	Entries []Entry `json:"entries"`
+	Notes       string       `json:"notes,omitempty"`
+	Entries     []Entry      `json:"entries"`
+	TierBudgets []TierBudget `json:"tier_budgets,omitempty"`
 }
 
 // LoadManifest reads and validates the manifest at path.
@@ -103,6 +117,20 @@ func LoadManifest(path string) (Manifest, error) {
 		}
 		if e.URL != "" && e.Ref == "" {
 			return Manifest{}, fmt.Errorf("corpus: entry %q has a url but no ref (pin a release tag)", e.Name)
+		}
+		if e.Tier != 0 && (e.Tier < 1 || e.Tier > 3) {
+			return Manifest{}, fmt.Errorf("corpus: entry %q has invalid tier %d (must be 1, 2, or 3)", e.Name, e.Tier)
+		}
+		if e.Tier == 0 {
+			// Default to tier 1 for backward compatibility. Mutate by index:
+			// e is a copy, so writing e.Tier would not normalize the manifest.
+			m.Entries[i].Tier = 1
+		}
+		if e.URL != "" && e.Tier >= 2 && e.SHA == "" {
+			return Manifest{}, fmt.Errorf("corpus: entry %q tier %d URL entry requires an exact SHA pin", e.Name, e.Tier)
+		}
+		if e.BudgetMS < 0 {
+			return Manifest{}, fmt.Errorf("corpus: entry %q has negative budget_ms", e.Name)
 		}
 		if e.SHA != "" && !validShortSHA(e.SHA) {
 			return Manifest{}, fmt.Errorf("corpus: entry %q sha %q must be >=12 hex chars (a git sha prefix)", e.Name, e.SHA)
@@ -164,6 +192,8 @@ type EntryReport struct {
 	URL        string       `json:"url,omitempty"`
 	Ref        string       `json:"ref,omitempty"`
 	HeadSHA    string       `json:"head_sha,omitempty"`
+	Tier       int          `json:"tier,omitempty"`
+	BudgetMS   int64        `json:"budget_ms,omitempty"`
 	Pass       bool         `json:"pass"`
 	DurationMS int64        `json:"duration_ms"`
 	Steps      []StepResult `json:"steps"`

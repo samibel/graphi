@@ -53,7 +53,19 @@ func (allToolsClient) Distill(context.Context, client.DistillRequest) ([]byte, e
 func (allToolsClient) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
 	return []byte("{}"), nil
 }
-func (allToolsClient) Diagnose(context.Context, []string) ([]byte, error) {
+func (allToolsClient) Brief(context.Context, string) ([]byte, []byte, error) {
+	return []byte("{}"), []byte("# Agent Brief\n"), nil
+}
+func (allToolsClient) ExplainSymbol(context.Context, string, int) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) RelatedFiles(context.Context, string, string, int) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) ChangeRisk(context.Context, string, string, int) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return []byte("{}"), nil
 }
 func (allToolsClient) Inline(context.Context, client.InlineRequest) ([]byte, error) {

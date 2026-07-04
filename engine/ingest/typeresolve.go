@@ -9,6 +9,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/typeresolve"
 )
 
@@ -60,7 +61,7 @@ func typeresolveKind(kind string) bool {
 // Returns the ids of the edges it put, so the incremental site can funnel
 // them into the edit-provenance side-channel like the linker's edges.
 func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, units []fileUnit) ([]string, error) {
-	if typeresolveDisabled() {
+	if typeresolveDisabled() || i.profile == profile.Fast {
 		return nil, nil
 	}
 	files := make(map[string][]byte, len(units))

@@ -9,8 +9,21 @@ import { GraphPage } from "./GraphPage";
 import { queryPayload } from "./__fixtures__/contract";
 import type { QueryResult, SearchMatch } from "./types";
 
+// The GraphView stub exposes shift-click probes so the two-node compare
+// wiring (onSelect(id, shiftKey)) can be driven without Sigma/WebGL.
 vi.mock("./GraphView", () => ({
-  GraphView: () => <div data-testid="graphview" />,
+  GraphView: ({ onSelect }: { onSelect: (id: string, shift?: boolean) => void }) => (
+    <div data-testid="graphview">
+      {["n1", "n2", "n3"].map((id) => (
+        <button
+          key={id}
+          type="button"
+          data-testid={`shift-click-${id}`}
+          onClick={() => onSelect(id, true)}
+        />
+      ))}
+    </div>
+  ),
 }));
 
 const fetchNeighborhood = vi.fn<(s: string, d?: number) => Promise<QueryResult>>();
@@ -19,9 +32,13 @@ const searchSymbols = vi.fn<(q: string, limit?: number) => Promise<SearchMatch[]
 vi.mock("./graphiClient", () => ({
   getContract: vi.fn(async () => ({ schema_version: 1, resources: [], streams: [] })),
   resolveAnalyzerRoute: () => null,
+  hasResource: (c: { resources: string[] }, r: string) => c.resources.includes(r),
   fetchNeighborhood: (s: string, d?: number) => fetchNeighborhood(s, d),
   searchSymbols: (q: string, limit?: number) => searchSymbols(q, limit),
   fetchImpact: vi.fn(),
+  relatedFiles: vi.fn(),
+  changeRisk: vi.fn(),
+  agentBrief: vi.fn(),
   subscribeSSE: vi.fn(() => () => {}),
   SchemaMismatchError: class extends Error {},
 }));
@@ -125,5 +142,57 @@ describe("GraphPage — seed resolution via /search", () => {
     expect(fetchNeighborhood).toHaveBeenCalledWith("s1", 2);
     expect(r.container.querySelector(".candidates")).toBeNull();
     expect(r.container.textContent).toContain("3 nodes");
+  });
+});
+
+describe("GraphPage — two-node compare (shift-click)", () => {
+  async function shiftClick(container: HTMLElement, id: string) {
+    await act(async () => {
+      container
+        .querySelector(`[data-testid="shift-click-${id}"]`)!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  it("shift-clicking a connected pair lists their edges via the compare panel", async () => {
+    fetchNeighborhood.mockResolvedValue(queryPayload);
+    const r = await mountWithSeed("pkg.Func");
+    mounted = r;
+    await shiftClick(r.container, "n2");
+    // One pick prompts for the second node.
+    expect(r.container.textContent).toContain("shift-click a second node");
+    await shiftClick(r.container, "n1");
+    const panel = r.container.querySelector('[data-testid="compare-panel"]')!;
+    expect(panel.textContent).toContain("pkg.Caller");
+    expect(panel.textContent).toContain("pkg.Func");
+    // Reuses the why-connected rendering: kind, tier, confidence, reason, evidence.
+    expect(panel.textContent).toContain("calls");
+    expect(panel.textContent).toContain("(confirmed)");
+    expect(panel.textContent).toContain("direct call");
+    expect(panel.textContent).toContain("pkg/b.go:20");
+    // Shift-clicks feed COMPARE, not the blast-radius selection.
+    expect(r.container.textContent).toContain("no selection");
+    expect(r.container.textContent).toContain("comparing: n2 ↔ n1");
+  });
+
+  it("shows an explicit no-direct-edge state for an unconnected pair, and clears", async () => {
+    fetchNeighborhood.mockResolvedValue(queryPayload);
+    const r = await mountWithSeed("pkg.Func");
+    mounted = r;
+    await shiftClick(r.container, "n2");
+    await shiftClick(r.container, "n3");
+    const panel = r.container.querySelector('[data-testid="compare-panel"]')!;
+    expect(panel.textContent).toContain("No direct edge connects");
+    expect(panel.textContent).toContain("pkg.Caller");
+    expect(panel.textContent).toContain("pkg.Other");
+
+    await act(async () => {
+      panel
+        .querySelector(".compare-clear")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((res) => setTimeout(res, 0));
+    });
+    expect(r.container.querySelector('[data-testid="compare-panel"]')).toBeNull();
   });
 });

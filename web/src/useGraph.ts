@@ -27,6 +27,10 @@ import {
 export interface GraphState {
   nodes: HighlightableNode[];
   edges: HighlightableEdge[];
+  /** The raw payload nodes backing `nodes` (id ↔ name/kind/path lookups). */
+  resultNodes: ResultNode[];
+  /** The raw payload edges backing `edges` (kind/confidence/reason/evidence). */
+  resultEdges: ResultEdge[];
   selected: string | null;
   /** Selection acknowledged immediately while the blast-radius fetch is in flight (U3). */
   selecting: boolean;
@@ -50,6 +54,8 @@ export interface GraphState {
 const EMPTY: GraphState = {
   nodes: [],
   edges: [],
+  resultNodes: [],
+  resultEdges: [],
   selected: null,
   selecting: false,
   loading: false,
@@ -154,6 +160,8 @@ export function useGraph(seed: string, depth: number) {
         ...st,
         nodes,
         edges,
+        resultNodes: res.nodes,
+        resultEdges: res.edges,
         selected: null,
         selecting: false,
         loading: false,
@@ -193,6 +201,8 @@ export function useGraph(seed: string, depth: number) {
           ...st,
           nodes,
           edges,
+          resultNodes: direct.nodes,
+          resultEdges: direct.edges,
           selected: null,
           selecting: false,
           loading: false,
@@ -213,6 +223,8 @@ export function useGraph(seed: string, depth: number) {
         ...st,
         nodes: [],
         edges: [],
+        resultNodes: [],
+        resultEdges: [],
         selected: null,
         selecting: false,
         loading: false,
@@ -304,9 +316,21 @@ export function useGraph(seed: string, depth: number) {
                 );
                 const blast = applyBlast(merged.nodes, prevBlast);
                 const cite = applyCitation(merged.edges, blast, st.selected);
-                return { ...st, nodes: cite.nodes, edges: cite.edges };
+                return {
+                  ...st,
+                  nodes: cite.nodes,
+                  edges: cite.edges,
+                  resultNodes: res.nodes,
+                  resultEdges: res.edges,
+                };
               }
-              return { ...st, nodes: merged.nodes, edges: merged.edges };
+              return {
+                ...st,
+                nodes: merged.nodes,
+                edges: merged.edges,
+                resultNodes: res.nodes,
+                resultEdges: res.edges,
+              };
             });
           } catch (e) {
             if (e instanceof SchemaMismatchError) {

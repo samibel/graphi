@@ -24,6 +24,7 @@ type MemStore struct {
 	closed bool
 	nodes  map[model.NodeId]model.Node
 	edges  map[model.EdgeId]model.Edge
+	meta   map[string]string
 }
 
 // NewMemStore returns an empty in-memory store.
@@ -31,6 +32,7 @@ func NewMemStore() *MemStore {
 	return &MemStore{
 		nodes: make(map[model.NodeId]model.Node),
 		edges: make(map[model.EdgeId]model.Edge),
+		meta:  make(map[string]string),
 	}
 }
 
@@ -306,11 +308,41 @@ func (m *MemStore) EvictCache(ctx context.Context) error {
 	return nil
 }
 
+func (m *MemStore) SetMetadata(ctx context.Context, key, value string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.closed {
+		return ErrClosed
+	}
+	m.meta[key] = value
+	return nil
+}
+
+func (m *MemStore) Metadata(ctx context.Context, key string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.closed {
+		return "", ErrClosed
+	}
+	v, ok := m.meta[key]
+	if !ok {
+		return "", ErrNotFound
+	}
+	return v, nil
+}
+
 func (m *MemStore) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.closed = true
 	m.nodes = nil
 	m.edges = nil
+	m.meta = nil
 	return nil
 }

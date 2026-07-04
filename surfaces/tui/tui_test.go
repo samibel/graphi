@@ -108,7 +108,19 @@ func (f *fakeEngine) Distill(context.Context, client.DistillRequest) ([]byte, er
 func (f *fakeEngine) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
 	return nil, client.ErrSkillGenUnavailable
 }
-func (f *fakeEngine) Diagnose(context.Context, []string) ([]byte, error) {
+func (f *fakeEngine) Brief(context.Context, string) ([]byte, []byte, error) {
+	return nil, nil, client.ErrBriefUnavailable
+}
+func (f *fakeEngine) ExplainSymbol(context.Context, string, int) ([]byte, error) {
+	return nil, client.ErrAgentToolsUnavailable
+}
+func (f *fakeEngine) RelatedFiles(context.Context, string, string, int) ([]byte, error) {
+	return nil, client.ErrAgentToolsUnavailable
+}
+func (f *fakeEngine) ChangeRisk(context.Context, string, string, int) ([]byte, error) {
+	return nil, client.ErrAgentToolsUnavailable
+}
+func (f *fakeEngine) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }
 func (f *fakeEngine) Inline(context.Context, client.InlineRequest) ([]byte, error) {

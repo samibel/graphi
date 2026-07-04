@@ -99,7 +99,19 @@ func (s *stubClient) Distill(context.Context, client.DistillRequest) ([]byte, er
 func (s *stubClient) SkillGen(context.Context, client.SkillGenRequest) ([]byte, error) {
 	return nil, client.ErrSkillGenUnavailable
 }
-func (s *stubClient) Diagnose(context.Context, []string) ([]byte, error) {
+func (s *stubClient) Brief(context.Context, string) ([]byte, []byte, error) {
+	return nil, nil, client.ErrBriefUnavailable
+}
+func (s *stubClient) ExplainSymbol(context.Context, string, int) ([]byte, error) {
+	return nil, client.ErrAgentToolsUnavailable
+}
+func (s *stubClient) RelatedFiles(context.Context, string, string, int) ([]byte, error) {
+	return nil, client.ErrAgentToolsUnavailable
+}
+func (s *stubClient) ChangeRisk(context.Context, string, string, int) ([]byte, error) {
+	return nil, client.ErrAgentToolsUnavailable
+}
+func (s *stubClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }
 func (s *stubClient) Inline(context.Context, client.InlineRequest) ([]byte, error) {

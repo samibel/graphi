@@ -141,6 +141,10 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(
 -- listings stay ordered by id, so graph bytes are unaffected.
 CREATE INDEX IF NOT EXISTS edges_from_id ON edges(from_id);
 CREATE INDEX IF NOT EXISTS edges_to_id   ON edges(to_id);
+CREATE TABLE IF NOT EXISTS kv_meta (
+	key   TEXT PRIMARY KEY,
+	value TEXT NOT NULL
+);
 `
 	if _, err := s.db.ExecContext(ctx, ddl); err != nil {
 		return fmt.Errorf("graphstore: init schema (FTS5 may be unavailable): %w", err)
@@ -428,7 +432,8 @@ ON CONFLICT(id) DO UPDATE SET
 }
 
 func upsertEdgeTx(ctx context.Context, tx *sql.Tx, e model.Edge) error {
-	evJSON, err := json.Marshal(e.Evidence())
+	evidence := CompactEvidence(e.Evidence())
+	evJSON, err := json.Marshal(evidence)
 	if err != nil {
 		return fmt.Errorf("graphstore: encode evidence: %w", err)
 	}
@@ -452,6 +457,29 @@ ON CONFLICT(id) DO UPDATE SET
 		return fmt.Errorf("graphstore: fts5 index edge: %w", err)
 	}
 	return nil
+}
+
+// CompactEvidence deduplicates, deterministically sorts, and bounds the
+// evidence slice. It returns a nil slice for empty input so the JSON encoding
+// stays a consistent empty array.
+func CompactEvidence(ev []string) []string {
+	if len(ev) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(ev))
+	for _, s := range ev {
+		seen[s] = struct{}{}
+	}
+	out := make([]string, 0, len(seen))
+	for s := range seen {
+		out = append(out, s)
+	}
+	sort.Strings(out)
+	const evidenceCap = 64
+	if len(out) > evidenceCap {
+		out = out[:evidenceCap]
+	}
+	return out
 }
 
 // ---- reads (cache-first, transparent rebuild from SQLite on miss) ----
@@ -847,6 +875,66 @@ func (s *SQLiteStore) Load(ctx context.Context, path string) error {
 		return fmt.Errorf("graphstore: load commit: %w", err)
 	}
 	s.evict() // next read rebuilds from the freshly loaded durable state
+	return nil
+}
+
+// SetMetadata stores a durable key/value pair in the kv_meta table.
+func (s *SQLiteStore) SetMetadata(ctx context.Context, key, value string) error {
+	if s.closed.Load() {
+		return ErrClosed
+	}
+	if strings.TrimSpace(key) == "" {
+		return errors.New("graphstore: empty metadata key")
+	}
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	if _, err := s.db.ExecContext(ctx,
+		"INSERT INTO kv_meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+		key, value); err != nil {
+		return fmt.Errorf("graphstore: set metadata: %w", err)
+	}
+	return nil
+}
+
+// Metadata returns the value for key, or ErrNotFound if it does not exist.
+func (s *SQLiteStore) Metadata(ctx context.Context, key string) (string, error) {
+	if s.closed.Load() {
+		return "", ErrClosed
+	}
+	var value string
+	err := s.db.QueryRowContext(ctx, "SELECT value FROM kv_meta WHERE key = ?", key).Scan(&value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("graphstore: get metadata: %w", err)
+	}
+	return value, nil
+}
+
+// WALCheckpoint runs a SQLite WAL checkpoint. mode is passed to PRAGMA
+// wal_checkpoint(mode) and must be one of the SQLite checkpoint modes
+// (PASSIVE, FULL, RESTART, TRUNCATE); anything else is rejected so no
+// unvalidated string ever reaches the pragma. Use "TRUNCATE" to fold the WAL
+// back into the main DB.
+func (s *SQLiteStore) WALCheckpoint(ctx context.Context, mode string) error {
+	if s.closed.Load() {
+		return ErrClosed
+	}
+	if mode == "" {
+		mode = "TRUNCATE"
+	}
+	mode = strings.ToUpper(mode)
+	switch mode {
+	case "PASSIVE", "FULL", "RESTART", "TRUNCATE":
+	default:
+		return fmt.Errorf("graphstore: invalid wal_checkpoint mode %q", mode)
+	}
+	_, err := s.db.ExecContext(ctx, fmt.Sprintf("PRAGMA wal_checkpoint(%s)", mode))
+	if err != nil {
+		return fmt.Errorf("graphstore: wal_checkpoint(%s): %w", mode, err)
+	}
 	return nil
 }
 

@@ -165,12 +165,16 @@ type callParams struct {
 		Limit   *int   `json:"limit"`
 		Config  string `json:"config"`
 		// EP-012 memory arguments.
-		Op       string   `json:"op"`
-		Scope    string   `json:"scope"`
-		Notebook string   `json:"notebook"`
-		Tags     []string `json:"tags"`
-		Payload  string   `json:"payload"`
-		MemID    string   `json:"mem_id"`
+		Op           string   `json:"op"`
+		Scope        string   `json:"scope"`
+		Notebook     string   `json:"notebook"`
+		Tags         []string `json:"tags"`
+		Payload      string   `json:"payload"`
+		MemID        string   `json:"mem_id"`
+		Source       string   `json:"source"`
+		Confidence   string   `json:"confidence"`
+		Evidence     string   `json:"evidence"`
+		ExportToPath string   `json:"export_to_path"`
 		// EP-012 distill arguments.
 		SessionID      string        `json:"session_id"`
 		Turns          []client.Turn `json:"turns"`
@@ -289,6 +293,19 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return s.analysisCall(ctx, p)
 	}
 
+	// EP-020 agent-first task tools (SW-115 / SW-116 / SW-117) plus EP-024 (SW-134).
+	// These are advertised unconditionally because they require no extra capability probe.
+	switch p.Name {
+	case ToolExplainSymbol:
+		return s.explainSymbolCall(ctx, p)
+	case ToolRelatedFiles:
+		return s.relatedFilesCall(ctx, p)
+	case ToolChangeRisk:
+		return s.changeRiskCall(ctx, p)
+	case ToolAgentBrief:
+		return s.agentBriefCall(ctx, p)
+	}
+
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
@@ -332,12 +349,18 @@ func (s *Server) memoryCall(ctx context.Context, p callParams) (any, *rpcError) 
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: op"}
 	}
 	b, err := s.c.Memory(ctx, client.MemoryRequest{
-		Op:       p.Arguments.Op,
-		Scope:    p.Arguments.Scope,
-		Notebook: p.Arguments.Notebook,
-		Tags:     p.Arguments.Tags,
-		Payload:  p.Arguments.Payload,
-		ID:       p.Arguments.MemID,
+		Op:           p.Arguments.Op,
+		Scope:        p.Arguments.Scope,
+		Notebook:     p.Arguments.Notebook,
+		Tags:         p.Arguments.Tags,
+		Payload:      p.Arguments.Payload,
+		ID:           p.Arguments.MemID,
+		Kind:         p.Arguments.Kind,
+		Source:       p.Arguments.Source,
+		Confidence:   p.Arguments.Confidence,
+		Evidence:     p.Arguments.Evidence,
+		Limit:        derefInt(p.Arguments.Limit),
+		ExportToPath: p.Arguments.ExportToPath,
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
@@ -701,6 +724,67 @@ func textResult(b []byte) map[string]any {
 	}
 }
 
+func derefInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+// agentBriefCall (SW-134) returns a bounded, cited task-start context packet
+// in the C1 contract shape, plus a Markdown rendering in a fenced JSON block.
+// It rides the shared client seam so MCP and CLI emit the same canonical bytes
+// (and both see the graph/memory-backed content when those services are wired).
+func (s *Server) agentBriefCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, md, err := s.c.Brief(ctx, p.Arguments.Symbol)
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	// Dual-format delivery: human-readable Markdown with fenced canonical JSON.
+	text := string(md) + "\n\n```json\n" + string(b) + "\n```\n"
+	return textResult([]byte(text)), nil
+}
+
+// explainSymbolCall (SW-115) returns a compact symbol-identity summary in the C1
+// contract shape. It rides the shared client seam (engine/agenttools/explain
+// behind it) so MCP and CLI emit the same canonical bytes.
+func (s *Server) explainSymbolCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Symbol == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
+	}
+	b, err := s.c.ExplainSymbol(ctx, p.Arguments.Symbol, derefInt(p.Arguments.Limit))
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// relatedFilesCall (SW-116) returns a deterministically ranked read-first file
+// list in the C1 contract shape.
+func (s *Server) relatedFilesCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Target == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: target"}
+	}
+	b, err := s.c.RelatedFiles(ctx, p.Arguments.Target, p.Arguments.Direction, derefInt(p.Arguments.Limit))
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// changeRiskCall (SW-117) returns a change-risk evaluation in the C1 contract
+// shape.
+func (s *Server) changeRiskCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Target == "" && p.Arguments.Diff == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: target or diff"}
+	}
+	b, err := s.c.ChangeRisk(ctx, p.Arguments.Target, p.Arguments.Diff, derefInt(p.Arguments.Limit))
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
 // deepAnalyzerTools maps dedicated EP-005 MCP tool names → their analysis
 // dispatcher name so each tool name routes through analysisCall after injecting
 // the correct analyzer. The map is package-level so both toolsCall routing and
@@ -982,16 +1066,22 @@ func (s *Server) toolDescriptors() []map[string]any {
 	if _, err := s.c.Memory(context.Background(), client.MemoryRequest{Op: "recall"}); err == nil || !isMemoryUnavailable(err) {
 		tools = append(tools, map[string]any{
 			"name":        ToolMemory,
-			"description": "scoped agent memory: store, recall, or forget notes in scopes and notebooks",
+			"description": "scoped agent memory: store, recall, forget, list, or export notes in scopes and notebooks with provenance",
 			"inputSchema": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"op":       map[string]any{"type": "string", "description": "operation: store | recall | forget"},
-					"scope":    map[string]any{"type": "string", "description": "memory scope"},
-					"notebook": map[string]any{"type": "string", "description": "memory notebook"},
-					"tags":     map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
-					"payload":  map[string]any{"type": "string", "description": "payload for store"},
-					"mem_id":   map[string]any{"type": "string", "description": "entry id for forget"},
+					"op":             map[string]any{"type": "string", "description": "operation: store | recall | forget | list | export"},
+					"scope":          map[string]any{"type": "string", "description": "memory scope"},
+					"notebook":       map[string]any{"type": "string", "description": "memory notebook"},
+					"tags":           map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
+					"payload":        map[string]any{"type": "string", "description": "payload for store"},
+					"mem_id":         map[string]any{"type": "string", "description": "entry id for forget or overwrite"},
+					"kind":           map[string]any{"type": "string", "description": "entry kind for store: architecture | command | convention | decision | risk | dependency | workflow"},
+					"source":         map[string]any{"type": "string", "description": "provenance source for store"},
+					"confidence":     map[string]any{"type": "string", "description": "confirmed | derived | heuristic"},
+					"evidence":       map[string]any{"type": "string", "description": "optional file:line citation"},
+					"limit":          map[string]any{"type": "integer", "description": "max entries for list"},
+					"export_to_path": map[string]any{"type": "string", "description": "destination file for export"},
 				},
 				"required": []string{"op"},
 			},
@@ -1103,6 +1193,60 @@ func (s *Server) toolDescriptors() []map[string]any {
 			"annotations": readOnlyToolAnnotations(),
 		})
 	}
+	// EP-020 agent-first task tools (SW-115 / SW-116 / SW-117) plus EP-024 (SW-134). Advertised
+	// unconditionally: they require only the engine/agenttools packages, not a
+	// separate capability probe. Each descriptor uses the hardened six-facet
+	// template (purpose, when-to-use, when-not-to-use, input shape, read-only,
+	// partial-possible) and carries explicit read-only annotations.
+	tools = append(tools, map[string]any{
+		"name":        ToolExplainSymbol,
+		"description": "explain_symbol: return a compact, cited symbol-identity summary (qualified name, kind, declaring file:line, direct callers/callees). Purpose: answer 'what is this symbol?' in one call. When to use: the agent has a symbol reference and needs identity + immediate neighborhood without reading source. When NOT to use: for broad 'what should I read first?' questions (use related_files) or risk scoring (use change_risk). Input shape: a single symbol reference (qualified id, file:line, or bare name). Read-only: true. Partial results possible: neighbor lists may truncate.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol": map[string]any{"type": "string", "description": "symbol reference: qualified id, file:line anchor, or bare name"},
+			},
+			"required": []string{"symbol"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	tools = append(tools, map[string]any{
+		"name":        ToolRelatedFiles,
+		"description": "related_files: return a deterministically ranked 'read these first' file list for a symbol, file, or diff anchor. Purpose: answer 'what should I read first?' in one call. When to use: the agent needs a scoped, evidence-backed file list before editing or reviewing. When NOT to use: for a single symbol's identity (use explain_symbol) or for risk scoring (use change_risk). Input shape: a single anchor plus optional direction (dependencies | dependents | both). Read-only: true. Partial results possible: ranked file list may truncate.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"target":    map[string]any{"type": "string", "description": "anchor: symbol id, file path, or diff line-oriented refs"},
+				"direction": map[string]any{"type": "string", "description": "dependencies | dependents | both (default)"},
+			},
+			"required": []string{"target"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	tools = append(tools, map[string]any{
+		"name":        ToolChangeRisk,
+		"description": "change_risk: return an evidence-based low/medium/high/unknown risk assessment for a symbol, file, or diff target. Purpose: answer 'how risky is it to touch this?' in one call. When to use: before proposing or reviewing a change, to gauge blast radius and coverage. When NOT to use: when you only need a file list (use related_files) or a symbol summary (use explain_symbol). Input shape: a target symbol/file or a local-first diff. Read-only: true. Partial results possible: evidence may be truncated, and the tool returns unknown rather than guessing.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"target": map[string]any{"type": "string", "description": "symbol id or file path to evaluate"},
+				"diff":   map[string]any{"type": "string", "description": "local-first unified diff or line-oriented refs (alternative to target)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	// EP-024 agent_brief: bounded task-start context packet.
+	tools = append(tools, map[string]any{
+		"name":        ToolAgentBrief,
+		"description": "agent_brief: return a bounded, cited task-start context packet (project identity, start-here files, key symbols, known facts, hotspots, suggested next MCP calls) in Markdown with embedded canonical JSON. Purpose: give an agent a scoped, cited starting context without reading source blindly. When to use: at the beginning of a task or when entering a new subsystem. When NOT to use: when you already have a specific symbol to explain (use explain_symbol) or a file list to read (use related_files). Input shape: optional topic (symbol, path, or subsystem). Read-only: true. Partial results possible: sections may be empty if underlying analyzers are not yet wired.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol": map[string]any{"type": "string", "description": "optional topic: symbol id, file path, or subsystem name"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central experimental marking (single source: experimentalTools in
 	// tools.go) — descriptor literals never carry the tag by hand.
 	return markExperimental(tools)

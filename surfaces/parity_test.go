@@ -368,9 +368,10 @@ func TestMCP_ToolsList(t *testing.T) {
 	}
 	// query ops + the "search" tool + the optional "search_semantic" tool (SW-059)
 	// + the EP-011 G1 "compound" tool + the SW-085 "search_ast" and "find_clones"
-	// pattern-query tools (advertised whenever search is available).
-	if len(resp.Result.Tools) != len(query.Operations)+5 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+5)
+	// pattern-query tools + the EP-020 "explain_symbol", "related_files", and
+	// "change_risk" tools (advertised unconditionally).
+	if len(resp.Result.Tools) != len(query.Operations)+9 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+9)
 	}
 }
 
@@ -1750,5 +1751,76 @@ func (fakeWatchProvider) WatchStatus(_ context.Context) analysis.WatcherStatusRe
 		Roots: []analysis.WatchRootStatus{
 			{Root: "/repo", Watching: true, Healthy: false, LastError: "reconcile: non-code file encountered"},
 		},
+	}
+}
+
+// TestMCP_CLI_AgentToolsParity (EP-020): the explain_symbol / related_files /
+// change_risk tools return byte-identical canonical contract JSON over the CLI
+// and MCP surfaces, because both ride the same client seam and the same
+// contract serializer.
+func TestMCP_CLI_AgentToolsParity(t *testing.T) {
+	store, _ := seed(t)
+	qsvc := query.New(store)
+	ssvc := search.New(store)
+
+	mcpArgs := func(name string, args map[string]any) []byte {
+		t.Helper()
+		srv := mcp.NewServer(qsvc, ssvc)
+		reqBody, err := json.Marshal(map[string]any{
+			"jsonrpc": "2.0",
+			"id":      1,
+			"method":  "tools/call",
+			"params":  map[string]any{"name": name, "arguments": args},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out bytes.Buffer
+		if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
+			t.Fatalf("mcp.Serve: %v", err)
+		}
+		var resp struct {
+			Result struct {
+				Content []struct {
+					Text string `json:"text"`
+				} `json:"content"`
+			} `json:"result"`
+		}
+		if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &resp); err != nil {
+			t.Fatalf("decode mcp response: %v", err)
+		}
+		if len(resp.Result.Content) != 1 {
+			t.Fatalf("unexpected content: %+v", resp.Result.Content)
+		}
+		return []byte(resp.Result.Content[0].Text)
+	}
+
+	c := client.NewDirect(qsvc, ssvc)
+
+	// explain_symbol
+	var cliOut, cliErr bytes.Buffer
+	if err := cli.RunExplainSymbol(context.Background(), c, []string{"p.B"}, &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli explain-symbol: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolExplainSymbol, map[string]any{"symbol": "p.B"}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("explain_symbol parity mismatch:\n CLI: %s\n MCP: %s", want, got)
+	}
+
+	// related_files
+	cliOut.Reset()
+	if err := cli.RunRelatedFiles(context.Background(), c, []string{"-direction", "dependents", "p.B"}, &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli related-files: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolRelatedFiles, map[string]any{"target": "p.B", "direction": "dependents"}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("related_files parity mismatch:\n CLI: %s\n MCP: %s", want, got)
+	}
+
+	// change_risk
+	cliOut.Reset()
+	if err := cli.RunChangeRisk(context.Background(), c, []string{"p.B"}, strings.NewReader(""), &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli change-risk: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolChangeRisk, map[string]any{"target": "p.B"}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("change_risk parity mismatch:\n CLI: %s\n MCP: %s", want, got)
 	}
 }

@@ -1,0 +1,12 @@
+id: explain-known-symbol
+description: explain_symbol on a known fixture symbol returns a cited identity summary.
+fixture_ref: tier1-fixture-go
+operation:
+  name: explain_symbol
+  args:
+    symbol: Hello
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  max_latency_ms: 2000

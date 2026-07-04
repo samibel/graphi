@@ -54,8 +54,28 @@ var subcommandHelp = map[string]subHelp{
 	},
 	"memory": {
 		"agent memory operations",
-		"graphi memory store|recall|forget [-scope s] [-notebook n] [-payload text] [-tags a,b] [-id id] [-ledger path]",
-		"graphi memory store -scope repo -notebook decisions -payload \"we chose sqlite\"",
+		"graphi memory store|recall|forget|list|export [-scope s] [-notebook n] [-payload text] [-tags a,b] [-id id] [-kind k] [-source s] [-confidence c] [-evidence e] [-limit N] [-path file] [-ledger path]",
+		"graphi memory store -scope repo -notebook decisions -payload \"we chose sqlite\" -source architect -confidence confirmed",
+	},
+	"agent-brief": {
+		"bounded, cited task-start context packet for agents",
+		"graphi agent-brief [-topic <topic>] [-ledger path]",
+		"graphi agent-brief -topic \"engine/agenttools/brief\"",
+	},
+	"explain-symbol": {
+		"compact, cited symbol identity summary (definition, callers, callees, references)",
+		"graphi explain-symbol [-db path] [-max-items n] <symbol|path|node-id>",
+		"graphi explain-symbol -db graph.db util.Format",
+	},
+	"related-files": {
+		"ranked, cited read-first file list around a symbol, path, or task",
+		"graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>",
+		"graphi related-files -db graph.db -direction dependents util.Format",
+	},
+	"change-risk": {
+		"evidence-based local blast-radius estimate (low/medium/high/unknown)",
+		"graphi change-risk [-db path] [-max-items n] (<target> | -diff <file|->)",
+		"git diff | graphi change-risk -db graph.db -diff -",
 	},
 	"distill": {
 		"distill a session into a compact decision record",
@@ -123,9 +143,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi undo -root . -token 01HXYZ...",
 	},
 	"diagnose": {
-		"graph-derived diagnostics + suggested code-actions",
-		"graphi diagnose [-db path] [-daemon socket] [<kind>...]",
-		"graphi diagnose -db graph.db dead_symbol",
+		"graph-derived diagnostics + suggested code-actions (high-confidence by default)",
+		"graphi diagnose [-db path] [-daemon socket] [-all] [-confidence confirmed|derived|heuristic] [-severity error|warning|info] [-explain-suppressed] [-json] [-root dir] [<kind>...]",
+		"graphi diagnose -db graph.db -severity warning dead_symbol",
 	},
 	"inline": {
 		"inline refactor over the edit saga (single-line initializer targets)",
@@ -151,6 +171,11 @@ var subcommandHelp = map[string]subHelp{
 		"read-only loopback HTTP REST + SSE surface",
 		"graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo] [-meta dir]",
 		"graphi http -db graph.db -addr 127.0.0.1:8080",
+	},
+	"doctor": {
+		"read-only diagnostic checkup for binary, PATH, MCP clients, DB, privacy, and local-first invariants",
+		"graphi doctor [-db path] [--json]",
+		"graphi doctor --json",
 	},
 	"setup": {
 		"register graphi's MCP stdio server into local MCP clients' configs",

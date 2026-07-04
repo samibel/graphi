@@ -1,81 +1,96 @@
 {
-  "notes": "Real-repository smoke corpus (internal/corpus). Five repos chosen to cover the historical first-contact bug classes (non-source assets, symlinked layouts, JSON fixtures) plus language spread: Go (also the future typeresolve proving ground), Python, Ruby, TypeScript, JavaScript+JSON. Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars — recorded from the first green CI run, 2026-07-02). If an upstream tag is ever re-pointed, the pin step fails closed. Adding a repository is a data change here, never a code change.",
-  "entries": [
+ "version": 1,
+ "notes": "Real-repository smoke corpus (internal/corpus). Five repos chosen to cover the historical first-contact bug classes (non-source assets, symlinked layouts, JSON fixtures) plus language spread: Go (also the future typeresolve proving ground), Python, Ruby, TypeScript, JavaScript+JSON. Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars \u2014 recorded from the first green CI run, 2026-07-02). If an upstream tag is ever re-pointed, the pin step fails closed. Adding a repository is a data change here, never a code change.",
+ "entries": [
+  {
+   "name": "cobra",
+   "url": "https://github.com/spf13/cobra",
+   "ref": "v1.8.0",
+   "sha": "a0a6ae020bb3",
+   "searches": [
     {
-      "name": "cobra",
-      "url": "https://github.com/spf13/cobra",
-      "ref": "v1.8.0",
-      "sha": "a0a6ae020bb3",
-      "searches": [
-        {
-          "query": "Execute",
-          "expect_nonempty": true
-        },
-        {
-          "query": "Command",
-          "expect_nonempty": true
-        }
-      ],
-      "confirmed_edges": [
-        {
-          "symbol_query": "ExecuteC",
-          "operation": "callers",
-          "min": 1
-        }
-      ],
-      "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() — a receiver-method dispatch the name heuristic cannot prove — and the go/types pass must carry it at the confirmed tier."
+     "query": "Execute",
+     "expect_nonempty": true
     },
     {
-      "name": "flask",
-      "url": "https://github.com/pallets/flask",
-      "ref": "3.0.0",
-      "sha": "735a4701d6d5",
-      "searches": [
-        {
-          "query": "Flask",
-          "expect_nonempty": true
-        }
-      ],
-      "notes": "Python package; docs, JSON, and mixed non-source assets."
-    },
-    {
-      "name": "sinatra",
-      "url": "https://github.com/sinatra/sinatra",
-      "ref": "v4.0.0",
-      "sha": "b626e2d82c23",
-      "searches": [
-        {
-          "query": "Base",
-          "expect_nonempty": true
-        }
-      ],
-      "notes": "Ruby gem; multi-gem repo layout."
-    },
-    {
-      "name": "ky",
-      "url": "https://github.com/sindresorhus/ky",
-      "ref": "v1.2.0",
-      "sha": "38ac18bc1ac3",
-      "searches": [
-        {
-          "query": "request",
-          "expect_nonempty": true
-        }
-      ],
-      "notes": "TypeScript library; tsconfig/ESM import shapes."
-    },
-    {
-      "name": "express",
-      "url": "https://github.com/expressjs/express",
-      "ref": "4.18.2",
-      "sha": "8368dc178af1",
-      "searches": [
-        {
-          "query": "Router",
-          "expect_nonempty": true
-        }
-      ],
-      "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class."
+     "query": "Command",
+     "expect_nonempty": true
     }
-  ]
+   ],
+   "confirmed_edges": [
+    {
+     "symbol_query": "ExecuteC",
+     "operation": "callers",
+     "min": 1
+    }
+   ],
+   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() \u2014 a receiver-method dispatch the name heuristic cannot prove \u2014 and the go/types pass must carry it at the confirmed tier."
+  },
+  {
+   "name": "flask",
+   "url": "https://github.com/pallets/flask",
+   "ref": "3.0.0",
+   "sha": "735a4701d6d5",
+   "searches": [
+    {
+     "query": "Flask",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Python package; docs, JSON, and mixed non-source assets."
+  },
+  {
+   "name": "sinatra",
+   "url": "https://github.com/sinatra/sinatra",
+   "ref": "v4.0.0",
+   "sha": "b626e2d82c23",
+   "searches": [
+    {
+     "query": "Base",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Ruby gem; multi-gem repo layout."
+  },
+  {
+   "name": "ky",
+   "url": "https://github.com/sindresorhus/ky",
+   "ref": "v1.2.0",
+   "sha": "38ac18bc1ac3",
+   "searches": [
+    {
+     "query": "request",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "TypeScript library; tsconfig/ESM import shapes."
+  },
+  {
+   "name": "express",
+   "url": "https://github.com/expressjs/express",
+   "ref": "4.18.2",
+   "sha": "8368dc178af1",
+   "searches": [
+    {
+     "query": "Router",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "JavaScript + many JSON fixtures and markdown \u2014 the malformed-asset bug class."
+  },
+  {
+   "name": "tier1-fixture-go",
+   "path": "corpus/fixtures/go",
+   "tier": 1,
+   "budget_ms": 5000,
+   "scenario_ref": "go-sample",
+   "searches": [
+    {
+     "query": "Hello",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned local fixture for the PR-gate path. No network required."
+  }
+ ]
 }

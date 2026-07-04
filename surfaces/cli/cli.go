@@ -277,13 +277,32 @@ func RunFindClones(ctx context.Context, c client.Client, args []string, out, err
 // the MCP/HTTP/daemon surfaces. Positional args select analyzer kinds; none ⇒ all
 // built-ins. E.g. graphi diagnose            (all) / graphi diagnose dead_symbol.
 func RunDiagnose(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("diagnose", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	all := fs.Bool("all", false, "disable default confidence gate and severity floor")
+	confidence := fs.String("confidence", "", "confidence threshold (confirmed|derived|heuristic)")
+	severity := fs.String("severity", "", "severity floor (error|warning|info)")
+	jsonFlag := fs.Bool("json", false, "emit structured JSON output")
+	explainSuppressed := fs.Bool("explain-suppressed", false, "keep suppressed findings visible with their suppression category")
+	root := fs.String("root", ".", "repository root for generated-code marker detection (empty disables)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: diagnose: %w", err)
+	}
 	var kinds []string
-	for _, a := range args {
+	for _, a := range fs.Args() {
 		if a != "" {
 			kinds = append(kinds, a)
 		}
 	}
-	b, err := c.Diagnose(ctx, kinds)
+	opts := client.DiagnoseOptions{
+		All:                 *all,
+		ConfidenceThreshold: *confidence,
+		SeverityThreshold:   *severity,
+		JSON:                *jsonFlag,
+		ExplainSuppressed:   *explainSuppressed,
+		Root:                *root,
+	}
+	b, err := c.Diagnose(ctx, kinds, opts)
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
@@ -573,17 +592,145 @@ func RunSavings(ctx context.Context, c client.Client, out, errOut io.Writer) err
 	return nil
 }
 
+// RunAgentBrief runs the agent_brief assembler and prints the canonical JSON
+// output (parity with MCP). The Markdown rendering is also available.
+//
+// Usage:
+//
+//	agent-brief [-topic <topic>]
+func RunAgentBrief(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("agent-brief", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	topic := fs.String("topic", "", "optional topic: symbol, path, or subsystem")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	jsonBytes, _, err := c.Brief(ctx, *topic)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(jsonBytes, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunExplainSymbol runs the explain_symbol agent tool (EP-020) and prints the
+// canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	explain-symbol [-max-items n] <symbol|path|node-id>
+func RunExplainSymbol(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("explain-symbol", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 1 {
+		return fmt.Errorf("cli: explain-symbol needs exactly one symbol/path/node-id argument")
+	}
+	b, err := c.ExplainSymbol(ctx, fs.Arg(0), *maxItems)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunRelatedFiles runs the related_files agent tool (EP-020) and prints the
+// canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	related-files [-direction dependencies|dependents|both] [-max-files n] <target>
+func RunRelatedFiles(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("related-files", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	direction := fs.String("direction", "both", "dependencies, dependents, or both")
+	maxFiles := fs.Int("max-files", 0, "maximum ranked files (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 1 {
+		return fmt.Errorf("cli: related-files needs exactly one target argument (symbol, path, node id, or task text)")
+	}
+	b, err := c.RelatedFiles(ctx, fs.Arg(0), *direction, *maxFiles)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunChangeRisk runs the change_risk agent tool (EP-020) and prints the
+// canonical contract JSON (parity with MCP tools/call). The diff flag reads a
+// unified diff from a file, or from stdin when "-".
+//
+// Usage:
+//
+//	change-risk [-max-items n] (<target> | -diff <file|->)
+func RunChangeRisk(ctx context.Context, c client.Client, args []string, in io.Reader, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("change-risk", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	diffPath := fs.String("diff", "", "path to a unified diff, or - for stdin")
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	var target, diff string
+	switch {
+	case fs.NArg() == 1:
+		target = fs.Arg(0)
+	case fs.NArg() > 1:
+		return fmt.Errorf("cli: change-risk takes at most one target argument")
+	}
+	if *diffPath != "" {
+		var (
+			raw []byte
+			err error
+		)
+		if *diffPath == "-" {
+			raw, err = io.ReadAll(in)
+		} else {
+			raw, err = os.ReadFile(*diffPath)
+		}
+		if err != nil {
+			return fmt.Errorf("cli: read diff: %w", err)
+		}
+		diff = string(raw)
+	}
+	if target == "" && diff == "" {
+		return fmt.Errorf("cli: change-risk needs a target argument or -diff")
+	}
+	b, err := c.ChangeRisk(ctx, target, diff, *maxItems)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunMemory executes a memory operation against the shared client and writes the
 // canonical serialized MemoryResponse.
 //
 // Usage:
 //
-//	memory store -scope <scope> -notebook <nb> -payload <text> [-tags a,b]
+//	memory store -scope <scope> -notebook <nb> -payload <text> [-tags a,b] [-kind <k>] [-source <s>] [-confidence <c>] [-evidence <e>] [-id <id>]
 //	memory recall -scope <scope> [-notebook <nb>]
 //	memory forget -id <id>
+//	memory list -scope <scope> [-limit N]
+//	memory export -scope <scope> [-path <file>]
 func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
 	if len(args) < 1 {
-		fmt.Fprintln(errOut, "usage: memory store|recall|forget ...")
+		fmt.Fprintln(errOut, "usage: memory store|recall|forget|list|export ...")
 		return fmt.Errorf("cli: missing memory subcommand")
 	}
 	op := args[0]
@@ -593,7 +740,13 @@ func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut 
 	notebook := fs.String("notebook", "", "memory notebook")
 	tags := fs.String("tags", "", "comma-separated tags (store only)")
 	payload := fs.String("payload", "", "memory payload (store only)")
-	id := fs.String("id", "", "memory id (forget only)")
+	id := fs.String("id", "", "memory id (forget or overwrite)")
+	kind := fs.String("kind", "", "entry kind (store only)")
+	source := fs.String("source", "", "provenance source (store only)")
+	confidence := fs.String("confidence", "", "confirmed|derived|heuristic (store only)")
+	evidence := fs.String("evidence", "", "optional citation (store only)")
+	limit := fs.Int("limit", 0, "max entries for list")
+	exportPath := fs.String("path", "", "destination file for export")
 	if err := fs.Parse(args[1:]); err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
@@ -602,12 +755,18 @@ func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut 
 		tagList = strings.Split(*tags, ",")
 	}
 	b, err := c.Memory(ctx, client.MemoryRequest{
-		Op:       op,
-		Scope:    *scope,
-		Notebook: *notebook,
-		Tags:     tagList,
-		Payload:  *payload,
-		ID:       *id,
+		Op:           op,
+		Scope:        *scope,
+		Notebook:     *notebook,
+		Tags:         tagList,
+		Payload:      *payload,
+		ID:           *id,
+		Kind:         *kind,
+		Source:       *source,
+		Confidence:   *confidence,
+		Evidence:     *evidence,
+		Limit:        *limit,
+		ExportToPath: *exportPath,
 	})
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)

@@ -15,12 +15,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime/debug"
 	"runtime/pprof"
 	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/edit"
@@ -37,6 +37,7 @@ import (
 	"github.com/samibel/graphi/engine/watch"
 	"github.com/samibel/graphi/internal/audit"
 	"github.com/samibel/graphi/internal/mcpconfig"
+	"github.com/samibel/graphi/internal/releaseinfo"
 	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/internal/version"
 	"github.com/samibel/graphi/surfaces/cli"
@@ -80,6 +81,14 @@ func main() {
 		os.Exit(runSavings(os.Args[2:]))
 	case "memory":
 		os.Exit(runMemory(os.Args[2:]))
+	case "agent-brief":
+		os.Exit(runAgentBrief(os.Args[2:]))
+	case "explain-symbol":
+		os.Exit(runAgentTool(os.Args[2:], "explain-symbol"))
+	case "related-files":
+		os.Exit(runAgentTool(os.Args[2:], "related-files"))
+	case "change-risk":
+		os.Exit(runAgentTool(os.Args[2:], "change-risk"))
 	case "distill":
 		os.Exit(runDistill(os.Args[2:]))
 	case "skillgen":
@@ -120,6 +129,8 @@ func main() {
 		os.Exit(runHTTP(os.Args[2:]))
 	case "setup":
 		os.Exit(runSetup(os.Args[2:]))
+	case "doctor":
+		os.Exit(runDoctor(os.Args[2:]))
 	case "setup-embedder":
 		os.Exit(runSetupEmbedder(os.Args[2:]))
 	case "tui":
@@ -130,6 +141,7 @@ func main() {
 		os.Exit(runUpgrade(os.Args[2:]))
 	case "version":
 		runVersion()
+		os.Exit(0)
 	case "help":
 		os.Exit(runHelp(os.Args[2:], os.Stdout))
 	case "parse":
@@ -390,6 +402,7 @@ func runIndex(args []string) int {
 	semantic := false
 	full := false
 	root, dbPath, metaDir := "", "", ""
+	var profileFlag *string
 	cpuProfile := os.Getenv("GRAPHI_CPUPROFILE")
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -415,6 +428,8 @@ func runIndex(args []string) int {
 				dbPath = v
 			} else if v, ok := takeVal("-meta"); ok {
 				metaDir = v
+			} else if v, ok := takeVal("-profile"); ok {
+				profileFlag = &v
 			} else if v, ok := takeVal("-cpuprofile"); ok {
 				cpuProfile = v
 			}
@@ -422,6 +437,12 @@ func runIndex(args []string) int {
 	}
 	if root == "" {
 		fmt.Fprintln(os.Stderr, "graphi: -root <repo> is required for index")
+		return 1
+	}
+
+	prof, err := profile.ResolveProfile(profileFlag, os.Getenv(profile.EnvName))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return 1
 	}
 	stopProfile := startCPUProfile(cpuProfile)
@@ -441,6 +462,12 @@ func runIndex(args []string) int {
 		return 1
 	}
 	defer func() { _ = ing.Close() }()
+	ing.WithProfile(prof)
+	if isTerminal(os.Stderr) {
+		ing.WithHeartbeatMode(ingest.HeartbeatTTY)
+	} else {
+		ing.WithHeartbeatMode(ingest.HeartbeatNonTTY)
+	}
 	prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
 	ing.WithProgress(prog.Handle)
 	// Warm start by default (same cheap drift-check path bare `graphi` uses):
@@ -1153,8 +1180,15 @@ func runHTTP(args []string) int {
 	dbPath := fs.String("db", "", "SQLite graphstore path (empty = in-memory)")
 	root := fs.String("root", "", "optional repo root to ingest on startup (attaches the ingest-event producer for SSE)")
 	metaDir := fs.String("meta", "", "ingest meta sidecar dir; defaults to an OS temp dir when -root is set")
+	profileFlag := fs.String("profile", "", "index profile: fast|balanced|deep (overrides GRAPHI_INDEX_PROFILE)")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: http: %v\n", err)
+		return 1
+	}
+
+	prof, err := profile.ResolveProfile(profileFlag, os.Getenv(profile.EnvName))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return 1
 	}
 
@@ -1185,6 +1219,8 @@ func runHTTP(args []string) int {
 			fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", ierr)
 			return 1
 		}
+		ing.WithProfile(prof)
+		ing.WithHeartbeatMode(ingest.HeartbeatNonTTY)
 		ing.WithBroker(broker)
 		cleanupIngest = func() { _ = ing.Close(); _ = os.RemoveAll(meta) }
 		prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
@@ -1318,6 +1354,68 @@ func runMemory(args []string) int {
 	return 0
 }
 
+// runAgentBrief launches the CLI agent_brief surface (EP-024 SW-134). Usage:
+//
+//	graphi agent-brief [-topic <topic>] [-ledger path]
+func runAgentBrief(args []string) int {
+	dbPath, socket, rest := extractFlags(args)
+	ledgerPath := extractLedgerFlag(&rest)
+	c, storeCleanup := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	defer storeCleanup()
+	if socket != "" {
+		fmt.Fprintln(os.Stderr, "graphi: agent-brief: not available via daemon in this build")
+		return 1
+	}
+	c, cleanup, err := withLedgerAndAgentServices(c, ledgerPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: agent-brief: %v\n", err)
+		return 1
+	}
+	defer cleanup()
+	if err := cli.RunAgentBrief(context.Background(), c, rest, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: agent-brief: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// runAgentTool launches one of the EP-020 CLI agent-tool surfaces
+// (explain-symbol, related-files, change-risk). All three ride the shared
+// client seam, so their bytes match MCP tools/call exactly. Usage:
+//
+//	graphi explain-symbol [-db path] [-max-items n] <symbol|path|node-id>
+//	graphi related-files  [-db path] [-direction d] [-max-files n] <target>
+//	graphi change-risk    [-db path] [-max-items n] (<target> | -diff <file|->)
+func runAgentTool(args []string, verb string) int {
+	dbPath, socket, rest := extractFlags(args)
+	c, storeCleanup := makeClientOrOpen(dbPath, socket)
+	if c == nil {
+		return 1
+	}
+	defer storeCleanup()
+	if socket != "" {
+		fmt.Fprintf(os.Stderr, "graphi: %s: not available via daemon in this build\n", verb)
+		return 1
+	}
+	var err error
+	switch verb {
+	case "explain-symbol":
+		err = cli.RunExplainSymbol(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "related-files":
+		err = cli.RunRelatedFiles(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "change-risk":
+		err = cli.RunChangeRisk(context.Background(), c, rest, os.Stdin, os.Stdout, os.Stderr)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %s: %v\n", verb, err)
+		return 1
+	}
+	return 0
+}
+
 // runDistill launches the CLI session-distillation surface (EP-012). Usage:
 //
 //	graphi distill -session <id> ... [-ledger path]
@@ -1391,18 +1489,7 @@ func extractLedgerFlag(args *[]string) string {
 // packaging (ldflags-stamped version.Version + debug.ReadBuildInfo VCS stamps).
 // It is how the release checker verifies the embedded version/commit/date.
 func runVersion() {
-	commit, date := "", ""
-	if info, ok := debug.ReadBuildInfo(); ok {
-		for _, s := range info.Settings {
-			switch s.Key {
-			case "vcs.revision":
-				commit = s.Value
-			case "vcs.time":
-				date = s.Value
-			}
-		}
-	}
-	fmt.Printf("graphi version=%s commit=%s date=%s\n", version.Version, commit, date)
+	fmt.Println(releaseinfo.New().VersionString())
 }
 
 // printHelp prints the help blurb. Bare `graphi` now runs the zero-config
@@ -1412,6 +1499,10 @@ func printHelp() {
 	reg := parse.NewDefaultRegistry()
 	fmt.Print("graphi: run with no arguments to index the current repo and open the local UI in your browser.\n")
 	fmt.Print("\nQuick verbs:\n")
+	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")
+	fmt.Print("  graphi setup                register graphi's MCP server in local MCP clients\n")
+	fmt.Print("  graphi setup --check        run diagnostic checks (alias for graphi doctor)\n")
+	fmt.Print("  graphi upgrade -print       print the upgrade command without running it\n")
 	fmt.Print("  graphi callers <symbol>     who calls a symbol (also: callees, references, definition, neighborhood)\n")
 	fmt.Print("  graphi impact <symbol>      blast radius of a change (also: taint and other analyzers)\n")
 	fmt.Print("  graphi ui                   index this repo and open the local UI\n")
@@ -1420,7 +1511,7 @@ func printHelp() {
 	fmt.Print("  graphi query <op> -symbol <id> [-depth N]\n")
 	fmt.Print("  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
 	fmt.Print("\nDetails on any subcommand:  graphi help <subcommand>   (or: graphi <subcommand> --help)\n")
-	fmt.Printf("registered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, privacy-audit, version, help, parse <file>\n", reg.Languages())
+	fmt.Printf("registered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
 }
 
 // runParseDefault preserves the original SW-001 parser-registry behavior.
@@ -1461,6 +1552,12 @@ func runParseDefault(args []string) {
 // specific --client targets just that one. --config overrides the file path for a
 // single client (default claude), preserving the original single-file behavior.
 func runSetup(args []string) int {
+	// setup --check is a diagnostic alias for `graphi doctor`.
+	for _, a := range args {
+		if a == "--check" || a == "-check" {
+			return runDoctor(nil)
+		}
+	}
 	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
 	dryRun := fs.Bool("dry-run", false, "print the planned config change without writing")
 	binary := fs.String("binary", "", "graphi binary to register (default: this executable)")
