@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,8 +20,11 @@ type GateResult struct {
 	UX          *evalreport.UXMetrics
 	Removed     []string // MCP tools present in the baseline but missing live
 	Regressions []evalreport.Regression
-	Errors      []string
-	Pass        bool
+	// Warnings are non-blocking observations (e.g. an invariant that cannot
+	// be OBSERVED on this platform but is verified in CI).
+	Warnings []string
+	Errors   []string
+	Pass     bool
 }
 
 // Runner executes one hard constituent gate. A non-nil error blocks the
@@ -58,6 +62,11 @@ func Run(gates map[string]Runner, evalFn EvalReportFn, uxFn UXFn, baselinePath s
 	sort.Strings(gateNames)
 	for _, name := range gateNames {
 		if _, err := gates[name].Run(); err != nil {
+			var unverified *UnverifiedError
+			if errors.As(err, &unverified) {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("%s unverified: %s", name, unverified.Detail))
+				continue
+			}
 			res.Errors = append(res.Errors, fmt.Sprintf("%s failed: %v", name, err))
 		}
 	}
@@ -183,6 +192,9 @@ func FormatVerdict(result GateResult) string {
 	}
 	for _, r := range result.Removed {
 		b += fmt.Sprintf("  removed tool: %s\n", r)
+	}
+	for _, w := range result.Warnings {
+		b += fmt.Sprintf("  warning: %s\n", w)
 	}
 	for _, e := range result.Errors {
 		b += fmt.Sprintf("  error: %s\n", e)

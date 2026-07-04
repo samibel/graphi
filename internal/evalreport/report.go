@@ -305,18 +305,22 @@ func BaselineAreaScores() map[string]float64 {
 	}
 }
 
-// DeriveAreaScores computes scorecard area inputs from the run's actual data,
-// carrying baseline values for areas the harness does not measure yet.
+// DeriveAreaScores computes the scenario-based scorecard area inputs:
 //
-// Measured areas:
 //   - agent_mcp: pass fraction of the EP-020 agent-tool scenarios × 100
 //   - eval:      pass fraction of ALL scenarios × 100
+//   - any area with tagged scenarios (Area field): its pass fraction × 100
 //   - perf:      fraction of per-repo/tier runs that passed × 100 (only when
 //     repo metrics exist)
 //
-// Everything else (signal, setup_trust, ux) is carried from baseline. The
-// returned provenance map records "measured" or "carried" per area, and the
-// warnings list names every carried area explicitly.
+// Areas without any scenario data start from the baseline and are marked
+// "carried" — the CALLER (cmd/eval) then replaces signal, setup_trust, and
+// performance with their dedicated formula-based measurements (ground-truth
+// diagnostics fixture, doctor assertions, perf budgets), and the release gate
+// measures ux from the web suite. The returned provenance map records
+// "measured" or "carried" per area; the warnings list names every area that
+// REMAINS carried so a baseline number is never silently presented as a
+// measurement.
 func DeriveAreaScores(scenarios []PerScenarioResult, repos []PerRepoMetric) (map[string]float64, map[string]string, []string) {
 	scores := BaselineAreaScores()
 	provenance := map[string]string{}

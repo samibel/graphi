@@ -232,3 +232,28 @@ func writeBaseline(t *testing.T, path string, tools []string) {
 		t.Fatal(err)
 	}
 }
+
+// TestReleaseGateUnverifiedPrivacyIsAWarning pins the platform-robustness
+// contract: a privacy audit that cannot OBSERVE the network layer (macOS /
+// unprivileged local run) degrades to a warning — the Linux CI deny-egress
+// gate does the real verification — while an actual VIOLATED posture still
+// blocks (staticRunner with a plain error, covered above).
+func TestReleaseGateUnverifiedPrivacyIsAWarning(t *testing.T) {
+	dir := t.TempDir()
+	baseline := filepath.Join(dir, "baseline.json")
+	writeBaseline(t, baseline, []string{"search", "analyze"})
+
+	gates := allPassGates()
+	gates["privacy"] = staticRunner{err: &UnverifiedError{Detail: "no netns isolation on this platform"}}
+
+	result, err := Run(gates, passEval(t), passUX(), baseline)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !result.Pass {
+		t.Fatalf("expected pass with unverified-platform warning, got errors %v", result.Errors)
+	}
+	if len(result.Warnings) != 1 {
+		t.Fatalf("expected one warning, got %v", result.Warnings)
+	}
+}
