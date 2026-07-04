@@ -37,12 +37,7 @@ func DefaultRunners() map[string]Runner {
 			timeout: 5 * time.Minute,
 			score:   100,
 		},
-		"privacy": &shellRunner{
-			name: "privacy",
-			// go run avoids depending on a pre-built binary in the checkout
-			// (nothing in the gate workflow builds cmd/graphi/graphi).
-			cmd:     "go",
-			args:    []string{"run", "./cmd/graphi", "privacy-audit"},
+		"privacy": &privacyRunner{
 			timeout: 5 * time.Minute,
 			score:   100,
 		},
@@ -81,6 +76,58 @@ func (r *shellRunner) Run() (float64, error) {
 		return 0, fmt.Errorf("%s: %w: %s", r.name, err, strings.TrimSpace(stderr.String()))
 	}
 	return r.score, nil
+}
+
+// privacyRunner runs `graphi privacy-audit` with the elevation the audit's
+// zero-outbound check needs: creating the loopback-only network namespace
+// requires CAP_SYS_ADMIN, and without it the audit reports UNVERIFIED, which
+// by design exits non-zero (false-green prevention). It mirrors the dedicated
+// privacy-audit workflow: build the binary once, then execute it — under
+// passwordless sudo when the process is not already root (the GitHub runner
+// case). `go run` under sudo would resolve the toolchain as root, so the
+// build/execute split is deliberate.
+type privacyRunner struct {
+	timeout time.Duration
+	score   float64
+}
+
+func (r *privacyRunner) Run() (float64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	defer cancel()
+
+	dir, err := os.MkdirTemp("", "graphi-release-gate-*")
+	if err != nil {
+		return 0, fmt.Errorf("privacy: temp dir: %w", err)
+	}
+	defer os.RemoveAll(dir)
+	bin := filepath.Join(dir, "graphi")
+
+	build := exec.CommandContext(ctx, "go", "build", "-o", bin, "./cmd/graphi")
+	build.Env = append(os.Environ(), "CGO_ENABLED=0")
+	var buildErr bytes.Buffer
+	build.Stderr = &buildErr
+	if err := build.Run(); err != nil {
+		return 0, fmt.Errorf("privacy: build graphi: %w: %s", err, strings.TrimSpace(buildErr.String()))
+	}
+
+	argv := []string{bin, "privacy-audit"}
+	if os.Geteuid() != 0 && sudoAvailable(ctx) {
+		argv = append([]string{"sudo", "-n"}, argv...)
+	}
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	var out, stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return 0, fmt.Errorf("privacy: %w: %s%s", err, strings.TrimSpace(out.String()), strings.TrimSpace(stderr.String()))
+	}
+	return r.score, nil
+}
+
+// sudoAvailable probes for passwordless sudo (the GitHub-runner case) without
+// ever prompting.
+func sudoAvailable(ctx context.Context) bool {
+	return exec.CommandContext(ctx, "sudo", "-n", "true").Run() == nil
 }
 
 type webRunner struct {
