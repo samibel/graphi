@@ -41,6 +41,10 @@ const (
 	OpRelatedFiles  = "related_files"
 	OpChangeRisk    = "change_risk"
 	OpAgentBrief    = "agent_brief"
+
+	// OpDiagnose runs the engine diagnostics over the fixture store (signal
+	// quality scenarios).
+	OpDiagnose = "diagnose"
 )
 
 // KnownOps returns every operation name the runner can execute.
@@ -48,6 +52,7 @@ func KnownOps() []string {
 	return []string{
 		OpDefinition, OpReferences, OpCallers, OpSearch,
 		OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
+		OpDiagnose,
 	}
 }
 
@@ -207,11 +212,21 @@ func (b ExpectBlock) MarshalJSON() ([]byte, error) {
 
 // Scenario binds a fixture to an operation and expectations.
 type Scenario struct {
-	ID          string      `json:"id" yaml:"id"`
-	FixtureRef  string      `json:"fixture_ref" yaml:"fixture_ref"`
-	Operation   Operation   `json:"operation" yaml:"operation"`
-	Expect      ExpectBlock `json:"expect" yaml:"expect"`
-	Description string      `json:"description,omitempty" yaml:"description,omitempty"`
+	ID         string      `json:"id" yaml:"id"`
+	FixtureRef string      `json:"fixture_ref" yaml:"fixture_ref"`
+	Operation  Operation   `json:"operation" yaml:"operation"`
+	Expect     ExpectBlock `json:"expect" yaml:"expect"`
+	// Area optionally tags the scorecard area this scenario measures
+	// (agent_mcp, signal, performance, setup_trust, evaluation, ux). When
+	// empty, harnesses may infer it from the operation.
+	Area        string `json:"area,omitempty" yaml:"area,omitempty"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+}
+
+// validAreas is the closed scorecard-area vocabulary accepted by Scenario.Area.
+var validAreas = map[string]bool{
+	"agent_mcp": true, "signal": true, "performance": true,
+	"setup_trust": true, "evaluation": true, "ux": true,
 }
 
 // LoadScenario reads a scenario from YAML or JSON.
@@ -247,6 +262,9 @@ var validExpectedOutcomes = map[string]bool{
 	string(contract.OutcomeUnavailable): true,
 	string(contract.OutcomeError):       true,
 	"not_found":                         true,
+	// Diagnose outcomes (engine/diagnostic).
+	"reported": true,
+	"clean":    true,
 }
 
 // Validate checks that the scenario is well-formed.
@@ -274,6 +292,9 @@ func (s Scenario) Validate() error {
 	}
 	if s.Expect.MaxLatencyMS < 0 {
 		return fmt.Errorf("scenario %q: expect.max_latency_ms must not be negative", s.ID)
+	}
+	if s.Area != "" && !validAreas[s.Area] {
+		return fmt.Errorf("scenario %q: unknown area %q", s.ID, s.Area)
 	}
 	for i, e := range append(append([]Expect(nil), s.Expect.Anchors...), s.Expect.Absent...) {
 		if e.Value == "" {

@@ -138,3 +138,20 @@ func TestDeriveAreaScores_NoData(t *testing.T) {
 		t.Fatalf("every area must be flagged carried, got %v", warnings)
 	}
 }
+
+// TestWriteMarkdownEndsWithSingleNewline pins the file-ending contract: the
+// conditional template blocks must not leave trailing blank lines.
+func TestWriteMarkdownEndsWithSingleNewline(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "report.md")
+	r := Report{Scorecard: DefaultScorecard(), AreaProvenance: map[string]string{}}
+	if err := WriteMarkdown(r, path); err != nil {
+		t.Fatalf("WriteMarkdown: %v", err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(raw) < 2 || raw[len(raw)-1] != '\n' || raw[len(raw)-2] == '\n' {
+		t.Fatalf("markdown must end with exactly one newline, got tail %q", raw[len(raw)-4:])
+	}
+}

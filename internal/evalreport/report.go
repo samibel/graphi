@@ -34,9 +34,12 @@ type PerRepoMetric struct {
 
 // PerScenarioResult is one scenario outcome.
 type PerScenarioResult struct {
-	ID            string   `json:"id"`
-	FixtureRef    string   `json:"fixture_ref"`
-	Operation     string   `json:"operation"`
+	ID         string `json:"id"`
+	FixtureRef string `json:"fixture_ref"`
+	Operation  string `json:"operation"`
+	// Area is the scorecard area the scenario declares it measures ("" = infer
+	// from the operation).
+	Area          string   `json:"area,omitempty"`
 	Outcome       string   `json:"outcome"`
 	ResultSize    int      `json:"result_size"`
 	Evidence      []string `json:"evidence"`
@@ -68,6 +71,77 @@ type Report struct {
 	Target                float64           `json:"target"`
 	RegressionsVsBaseline []Regression      `json:"regressions_vs_baseline"`
 	PerfWarnings          []string          `json:"perf_warnings,omitempty"`
+	// SignalMetrics carries the measured diagnostic-quality inputs behind the
+	// signal area score (ground-truth fixture; see cmd/eval).
+	SignalMetrics *SignalMetrics `json:"signal_metrics,omitempty"`
+	// PerfMetrics carries the measured performance inputs behind the
+	// performance area score (tier-1 fixture budgets; see cmd/eval).
+	PerfMetrics *PerfMetrics `json:"perf_metrics,omitempty"`
+	// SetupTrustMetrics carries the measured doctor-behavior assertions behind
+	// the setup_trust area score (controlled fixtures; see cmd/eval).
+	SetupTrustMetrics *SetupTrustMetrics `json:"setup_trust_metrics,omitempty"`
+	// UXMetrics carries the measured web-suite inputs behind the ux area score
+	// (vitest run; see cmd/release-gate).
+	UXMetrics *UXMetrics `json:"ux_metrics,omitempty"`
+}
+
+// UXMetrics is the measured evidence behind the ux score: the web test suite
+// result plus presence of the required UX scenario suites (symbol search,
+// why-connected incl. two-node compare, agent-context export, agent-tool
+// panel states). Score = pass fraction × required-suite presence fraction.
+type UXMetrics struct {
+	TotalTests      int      `json:"total_tests"`
+	PassedTests     int      `json:"passed_tests"`
+	RequiredFound   []string `json:"required_found,omitempty"`
+	RequiredMissing []string `json:"required_missing,omitempty"`
+	Score           float64  `json:"score"`
+}
+
+// SetupTrustMetrics is the measured evidence behind the setup/trust score:
+// doctor behavior over controlled fixtures. Score = passed assertions /
+// total * 100.
+type SetupTrustMetrics struct {
+	Assertions []SetupAssertion `json:"assertions"`
+	Score      float64          `json:"score"`
+}
+
+// SetupAssertion is one doctor-behavior assertion with its observed detail.
+type SetupAssertion struct {
+	Name   string `json:"name"`
+	Pass   bool   `json:"pass"`
+	Detail string `json:"detail,omitempty"`
+}
+
+// SignalMetrics is the measured evidence behind the signal-quality score.
+// Score = mean of precision, recall, scaled noise reduction, and action
+// safety (each 0-100) over the ground-truth diagnostics fixture.
+type SignalMetrics struct {
+	DefaultCount         int      `json:"default_count"`
+	AllCount             int      `json:"all_count"`
+	Analyzed             int      `json:"analyzed"`
+	SuppressedTotal      int      `json:"suppressed_total"`
+	SuppressedByCategory []string `json:"suppressed_by_category,omitempty"`
+	FalsePositives       int      `json:"false_positives"`
+	FalsePositiveRate    float64  `json:"false_positive_rate"`
+	UnsafeActions        int      `json:"unsafe_actions"`
+	Score                float64  `json:"score"`
+}
+
+// PerfMetrics is the measured evidence behind the performance score: each
+// budget check carries its measured value, its budget, and pass/fail. Score =
+// passed checks / total checks * 100.
+type PerfMetrics struct {
+	Checks []PerfCheck `json:"checks"`
+	Score  float64     `json:"score"`
+}
+
+// PerfCheck is one measured performance budget check.
+type PerfCheck struct {
+	Name     string  `json:"name"`
+	Measured float64 `json:"measured"`
+	Budget   float64 `json:"budget"`
+	Unit     string  `json:"unit"`
+	Pass     bool    `json:"pass"`
 }
 
 // NewHeader builds a header from runtime info.
@@ -148,8 +222,8 @@ func WriteMarkdown(r Report, path string) error {
 
 ## Scorecard
 
-**Overall:** {{printf "%.1f" .Scorecard.Overall}}  
-**Pass:** {{.Scorecard.Pass}}  
+**Overall:** {{printf "%.1f" .Scorecard.Overall}}
+**Pass:** {{.Scorecard.Pass}}
 **Baseline → Target:** {{printf "%.1f" .Baseline}} → {{printf "%.1f" .Target}}
 
 ### Breakdown
@@ -193,7 +267,10 @@ func WriteMarkdown(r Report, path string) error {
 	if err := t.Execute(&b, r); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(b.String()), 0o644)
+	// Conditional template blocks leave trailing blank lines; normalize the
+	// file to end with exactly one newline.
+	out := strings.TrimRight(b.String(), "\n") + "\n"
+	return os.WriteFile(path, []byte(out), 0o644)
 }
 
 // DefaultBaseline returns the checked-in ~6.5/10 baseline.
@@ -231,18 +308,22 @@ func BaselineAreaScores() map[string]float64 {
 	}
 }
 
-// DeriveAreaScores computes scorecard area inputs from the run's actual data,
-// carrying baseline values for areas the harness does not measure yet.
+// DeriveAreaScores computes the scenario-based scorecard area inputs:
 //
-// Measured areas:
 //   - agent_mcp: pass fraction of the EP-020 agent-tool scenarios × 100
 //   - eval:      pass fraction of ALL scenarios × 100
+//   - any area with tagged scenarios (Area field): its pass fraction × 100
 //   - perf:      fraction of per-repo/tier runs that passed × 100 (only when
 //     repo metrics exist)
 //
-// Everything else (signal, setup_trust, ux) is carried from baseline. The
-// returned provenance map records "measured" or "carried" per area, and the
-// warnings list names every carried area explicitly.
+// Areas without any scenario data start from the baseline and are marked
+// "carried" — the CALLER (cmd/eval) then replaces signal, setup_trust, and
+// performance with their dedicated formula-based measurements (ground-truth
+// diagnostics fixture, doctor assertions, perf budgets), and the release gate
+// measures ux from the web suite. The returned provenance map records
+// "measured" or "carried" per area; the warnings list names every area that
+// REMAINS carried so a baseline number is never silently presented as a
+// measurement.
 func DeriveAreaScores(scenarios []PerScenarioResult, repos []PerRepoMetric) (map[string]float64, map[string]string, []string) {
 	scores := BaselineAreaScores()
 	provenance := map[string]string{}
@@ -253,27 +334,47 @@ func DeriveAreaScores(scenarios []PerScenarioResult, repos []PerRepoMetric) (map
 	agentToolOps := map[string]bool{
 		"explain_symbol": true, "related_files": true, "change_risk": true, "agent_brief": true,
 	}
-	var total, passed, agentTotal, agentPassed int
+	type counter struct{ total, passed int }
+	perArea := map[string]*counter{}
+	count := func(area string, pass bool) {
+		c, ok := perArea[area]
+		if !ok {
+			c = &counter{}
+			perArea[area] = c
+		}
+		c.total++
+		if pass {
+			c.passed++
+		}
+	}
+	var total, passed int
 	for _, s := range scenarios {
 		total++
 		pass := s.Outcome == "pass"
 		if pass {
 			passed++
 		}
-		if agentToolOps[s.Operation] {
-			agentTotal++
-			if pass {
-				agentPassed++
-			}
+		area := s.Area
+		if area == "" && agentToolOps[s.Operation] {
+			area = scorecard.AreaAgentMCP
+		}
+		if area != "" {
+			count(area, pass)
 		}
 	}
 	if total > 0 {
 		scores[scorecard.AreaEvaluation] = float64(passed) / float64(total) * 100
 		provenance[scorecard.AreaEvaluation] = "measured"
 	}
-	if agentTotal > 0 {
-		scores[scorecard.AreaAgentMCP] = float64(agentPassed) / float64(agentTotal) * 100
-		provenance[scorecard.AreaAgentMCP] = "measured"
+	// Every area with tagged scenarios gets its pass fraction as the measured
+	// baseline; richer per-area measurements (signal formula, perf budgets)
+	// may override the value afterwards — provenance stays "measured".
+	for area, c := range perArea {
+		if c.total == 0 {
+			continue
+		}
+		scores[area] = float64(c.passed) / float64(c.total) * 100
+		provenance[area] = "measured"
 	}
 	if len(repos) > 0 {
 		repoPassed := 0

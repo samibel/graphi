@@ -1,0 +1,16 @@
+id: signal-testcode-suppressed
+description: Test-only dead symbols are hidden by default and counted by category.
+fixture_ref: synthetic-signal
+area: signal
+operation:
+  name: diagnose
+expect:
+  outcome: reported
+  anchors:
+    - kind: symbol
+      value: "suppressed test_code=1"
+      match: contains
+  absent:
+    - kind: symbol
+      value: "sig/helper_test.go"
+      match: contains

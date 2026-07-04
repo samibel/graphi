@@ -357,6 +357,25 @@ Also available through `graphi analyze <analyzer>`:
 - **`graphi distill -session <id> …`** — distill a session into a compact decision record.
 - **`graphi skillgen -name <n> -trigger <t> -description <d>`** — deterministic skill generation from a procedure description.
 
+### Quality scorecard & release gate
+
+Product quality is measured, not asserted. `go run ./cmd/eval -manifest
+corpus/manifest.json -tier 1` runs the Tier-1 evaluation harness and emits a
+scorecard report with per-area scores (agent/MCP usefulness, signal quality,
+performance, setup/trust, evaluation, UX), each marked **measured** or
+**carried** so a baseline number is never silently presented as a
+measurement. The measured inputs — diagnostics ground truth, doctor-behavior
+assertions, performance budgets, web-suite results — are embedded in the
+report for audit.
+
+**The 9/10 target is achieved when the scorecard is >= 90 overall with no
+area below 80.** `go run ./cmd/release-gate` enforces exactly that: it runs
+the hard constituent gates (full test suite, coverage matrix, privacy audit,
+bench budgets), consumes the measured scorecard report, measures UX from the
+web suite, and blocks the release on a sub-90 overall, any sub-80 area, a
+removed MCP tool, or a Tier-1 regression. The published evidence lives in
+`docs/release-scorecard.{json,md}`.
+
 ## Semantic search (optional, OFF by default)
 
 Semantic (embedding-based) search is an **optional** capability that is **OFF by

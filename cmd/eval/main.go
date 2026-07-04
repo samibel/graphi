@@ -114,6 +114,7 @@ func runScorecardReport(manifestPath, outPath, format string, tier int, updateBa
 		fmt.Fprintf(os.Stderr, "eval: load manifest: %v\n", err)
 		return 2
 	}
+	addBuiltinFixtures(fixturePaths)
 
 	// Execute every scenario in the manifest's sibling scenarios directory
 	// against its fixture graph (real runs, not placeholders).
@@ -127,6 +128,43 @@ func runScorecardReport(manifestPath, outPath, format string, tier int, updateBa
 	// Derive measured area scores from the run; carry unmeasured areas from
 	// the baseline and say so.
 	areaScores, provenance, carryWarnings := evalreport.DeriveAreaScores(scenarios, nil)
+
+	// Signal quality: the formula-based measurement over the ground-truth
+	// fixture supersedes the plain scenario pass fraction.
+	signalMetrics, err := measureSignal()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: measure signal: %v\n", err)
+		return 2
+	}
+	areaScores[scorecard.AreaSignal] = signalMetrics.Score
+	provenance[scorecard.AreaSignal] = "measured"
+
+	// Performance: budget checks over the tier-1 fixture.
+	perfMetrics, err := measurePerformance()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: measure performance: %v\n", err)
+		return 2
+	}
+	areaScores[scorecard.AreaPerformance] = perfMetrics.Score
+	provenance[scorecard.AreaPerformance] = "measured"
+
+	// Setup/trust: doctor behavior over controlled fixtures.
+	setupScore, setupMetrics, err := measureSetupTrust()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: measure setup/trust: %v\n", err)
+		return 2
+	}
+	areaScores[scorecard.AreaSetupTrust] = setupScore
+	provenance[scorecard.AreaSetupTrust] = "measured"
+
+	carryWarnings = carryWarnings[:0]
+	for area, prov := range provenance {
+		if prov == "carried" {
+			carryWarnings = append(carryWarnings, fmt.Sprintf("area %s carried from baseline (%.0f), not measured by this run", area, areaScores[area]))
+		}
+	}
+	sort.Strings(carryWarnings)
+
 	score := evalreport.DefaultScorecard()
 	if computed, err := scorecard.Calculate(areaScores); err == nil {
 		score = computed
@@ -142,6 +180,9 @@ func runScorecardReport(manifestPath, outPath, format string, tier int, updateBa
 		AreaProvenance:     provenance,
 		Baseline:           65.0,
 		Target:             90.0,
+		SignalMetrics:      &signalMetrics,
+		PerfMetrics:        &perfMetrics,
+		SetupTrustMetrics:  setupMetrics,
 	}
 	report.PerfWarnings = append(report.PerfWarnings, carryWarnings...)
 
@@ -211,10 +252,20 @@ func runScorecardReport(manifestPath, outPath, format string, tier int, updateBa
 	return 0
 }
 
-// fixtureInfo is one local-fixture manifest entry the scenario runner can use.
+// addBuiltinFixtures registers the synthetic ground-truth fixtures (exact
+// hand-built graphs) alongside the manifest-declared ingested fixtures, under
+// tier 1.
+func addBuiltinFixtures(fixtures map[string]fixtureInfo) {
+	fixtures[SyntheticSignalFixture] = fixtureInfo{Tier: 1, Build: signalEngine}
+}
+
+// fixtureInfo is one fixture the scenario runner can use: either an ingested
+// local directory (Path) or a built-in synthetic graph (Build).
 type fixtureInfo struct {
 	Path string
 	Tier int
+	// Build constructs a synthetic fixture engine; takes precedence over Path.
+	Build func() (*scenario.FixtureEngine, error)
 }
 
 // loadCorpusManifest reads the corpus manifest and returns its version stamp
@@ -278,13 +329,21 @@ func runScenarios(dir, root string, fixturePaths map[string]fixtureInfo, tier in
 		if tier > 0 && fx.Tier != tier {
 			continue
 		}
-		eng, ok := engines[fx.Path]
+		engineKey := fx.Path
+		if fx.Build != nil {
+			engineKey = "synthetic:" + s.FixtureRef
+		}
+		eng, ok := engines[engineKey]
 		if !ok {
-			eng, err = buildFixtureEngine(filepath.Join(root, filepath.FromSlash(fx.Path)))
-			if err != nil {
-				return nil, fmt.Errorf("%s: fixture %s: %w", f, fx.Path, err)
+			if fx.Build != nil {
+				eng, err = fx.Build()
+			} else {
+				eng, err = buildFixtureEngine(filepath.Join(root, filepath.FromSlash(fx.Path)))
 			}
-			engines[fx.Path] = eng
+			if err != nil {
+				return nil, fmt.Errorf("%s: fixture %s: %w", f, engineKey, err)
+			}
+			engines[engineKey] = eng
 		}
 		runner := scenario.Runner{Engine: eng}
 		res := runner.Run(s)
@@ -292,13 +351,14 @@ func runScenarios(dir, root string, fixturePaths map[string]fixtureInfo, tier in
 			ID:            s.ID,
 			FixtureRef:    s.FixtureRef,
 			Operation:     s.Operation.Name,
+			Area:          s.Area,
 			Outcome:       res.Outcome,
 			ResultSize:    res.AnswerSize,
 			Evidence:      res.Evidence,
 			Confidence:    res.Confidence,
 			LatencyMS:     res.LatencyMS,
 			AnchorPresent: res.AnchorPresent,
-			Tier1:         true,
+			Tier1:         fx.Tier == 1,
 		})
 	}
 	return results, nil

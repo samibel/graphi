@@ -26,6 +26,7 @@ func TestRunScenarios_AllCorpusScenariosPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
+	addBuiltinFixtures(fixtures)
 	results, err := runScenarios(filepath.Join(root, "corpus", "scenarios"), root, fixtures, 1)
 	if err != nil {
 		t.Fatalf("run scenarios: %v", err)
@@ -37,9 +38,9 @@ func TestRunScenarios_AllCorpusScenariosPass(t *testing.T) {
 			t.Errorf("scenario %s (%s): outcome %s, evidence %v", r.ID, r.Operation, r.Outcome, r.Evidence)
 		}
 	}
-	for _, op := range []string{"explain_symbol", "related_files", "change_risk", "agent_brief"} {
+	for _, op := range []string{"explain_symbol", "related_files", "change_risk", "agent_brief", "diagnose"} {
 		if !covered[op] {
-			t.Errorf("no scenario covers agent tool %q", op)
+			t.Errorf("no scenario covers operation %q", op)
 		}
 	}
 }

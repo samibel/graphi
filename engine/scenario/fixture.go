@@ -3,7 +3,9 @@ package scenario
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/contract"
@@ -11,6 +13,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/risk"
+	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/query"
 )
 
@@ -48,12 +51,73 @@ func (e *FixtureEngine) Invoke(operation string, args map[string]string) ([]stri
 		return e.invokeSearch(ctx, args)
 	case OpDefinition, OpReferences, OpCallers:
 		return e.invokeStructural(ctx, operation, args)
+	case OpDiagnose:
+		return e.invokeDiagnose(ctx, args)
 	default:
 		if IsAgentToolOp(operation) {
 			return nil, nil, fmt.Errorf("scenario: agent-tool operation %q requires the contract seam", operation)
 		}
 		return nil, nil, fmt.Errorf("scenario: unknown operation %q", operation)
 	}
+}
+
+// invokeDiagnose runs the engine diagnostics over the fixture store and
+// renders the outcome, findings, and summary counters as evidence lines so
+// scenarios can anchor on suppression behavior:
+//
+//	outcome:reported
+//	diag <code> <file>:<line> confidence=<c> suppression=<cat> occ=<n> actions=<a,b>
+//	summary shown=<n> analyzed=<n> dedup=<n>
+//	suppressed <category>=<n>
+//
+// Args: all=true disables the default gates (--all), explain_suppressed=true
+// keeps suppressed findings visible, kinds=a,b selects analyzers.
+func (e *FixtureEngine) invokeDiagnose(ctx context.Context, args map[string]string) ([]string, *float64, error) {
+	if !e.Deps.Available() {
+		return nil, nil, fmt.Errorf("scenario: query service unavailable")
+	}
+	var kinds []string
+	if raw := args["kinds"]; raw != "" {
+		for _, k := range strings.Split(raw, ",") {
+			if k = strings.TrimSpace(k); k != "" {
+				kinds = append(kinds, k)
+			}
+		}
+	}
+	opts := diagnostic.DiagnoseOptions{
+		All:               args["all"] == "true",
+		ExplainSuppressed: args["explain_suppressed"] == "true",
+	}
+	res, err := diagnostic.DiagnoseWithOptions(ctx, e.Deps.Query.Reader(), kinds, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	lines := []string{outcomeMarker + string(res.Outcome)}
+	for _, d := range res.Diagnostics {
+		actions := make([]string, 0, len(d.Actions))
+		for _, a := range d.Actions {
+			actions = append(actions, string(a.Kind))
+		}
+		sort.Strings(actions)
+		occ := d.OccurrenceCount
+		if occ < 1 {
+			occ = 1
+		}
+		lines = append(lines, fmt.Sprintf("diag %s %s:%d confidence=%s suppression=%s occ=%d actions=%s",
+			d.Code, d.File, d.Line, d.Confidence, d.Suppression, occ, strings.Join(actions, ",")))
+	}
+	lines = append(lines, fmt.Sprintf("summary shown=%d analyzed=%d dedup=%d",
+		res.Summary.Shown, res.Summary.TotalAnalyzed, res.Summary.DedupCollapsed))
+	cats := make([]string, 0, len(res.Summary.SuppressedByCategory))
+	for cat := range res.Summary.SuppressedByCategory {
+		cats = append(cats, cat)
+	}
+	sort.Strings(cats)
+	for _, cat := range cats {
+		lines = append(lines, fmt.Sprintf("suppressed %s=%d", cat, res.Summary.SuppressedByCategory[cat]))
+	}
+	return lines, nil, nil
 }
 
 func (e *FixtureEngine) invokeSearch(ctx context.Context, args map[string]string) ([]string, *float64, error) {
