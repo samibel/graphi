@@ -134,6 +134,15 @@ type Graphstore interface {
 
 	// Close releases all resources. Subsequent operations return ErrClosed.
 	Close() error
+
+	// SetMetadata stores a durable key/value pair. Implementations must
+	// persist the value so it survives store Close/Reopen. Keys are caller-
+	// namespaced; the recommended prefix is "index." for index-time metadata.
+	SetMetadata(ctx context.Context, key, value string) error
+
+	// Metadata returns the value stored for key, or ErrNotFound if the key has
+	// not been set.
+	Metadata(ctx context.Context, key string) (string, error)
 }
 
 // RankedNode pairs a node with its full-text search rank. Lower rank values

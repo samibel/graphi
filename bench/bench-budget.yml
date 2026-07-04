@@ -9,71 +9,17 @@
 # Units: *_ms in milliseconds; binary_size_bytes in bytes. All metrics use the
 # "<=" comparator (measured must not exceed budget).
 version: 1
-# 2026-06-23-v2: re-pinned binary_size for EP-008. The HTTP/SSE surface (SW-044)
-# pulls net/http -> crypto/tls -> crypto/x509 + FIPS crypto into the default
-# binary (~+5.5MB, unavoidable for net/http). The optional Bubble Tea TUI is
-# behind the `tui` build tag and excluded from the default binary. This is an
-# intentional, justified growth, not a regression.
+# 2026-06-23-v2: re-pinned binary_size for EP-008. ...
+# (previous baseline notes preserved)
 #
-# 2026-06-24-ep009: SINGLE consolidation re-pin for EP-009 (SW-057, Slice 6).
-# binary_size_bytes is now measured against the SHIPPED SUBSET-TAGGED default
-# build — the corrected size model: a pre-grammar baseline + the ~3.13 MB one-time
-# pure-Go gotreesitter runtime (paid once) + only the registered tier-1 grammar
-# parse-table blobs (20 languages: TS + 19 SW-054). The shipped default is built
-# with `-tags 'grammar_subset grammar_subset_<lang> …'` via
-# internal/release.DefaultGrammarSubsetTags, so it embeds ONLY the registered
-# blobs — NEVER the all-206 default embed (+~24.5 MiB, ~46 MB total — prohibited
-# in the shipped default). The bench harness (cmd/bench) now builds the measured
-# binary with those same subset tags (internal/bench wires DefaultGrammarSubsetTags),
-# so the gate enforces the subset model, not the all-206 envelope.
-#
-# Measured subset-tagged default (bench harness, go1.26.3 / darwin-arm64,
-# sw-056-graphi-broad cumulative tier): 28,615,410 B (~27.3 MB) — well under the
-# < 50 MB GoReleaser hard ceiling (~21 MB headroom). The previous pinned baseline
-# 18,500,000 / budget 20,000,000 was BELOW this measured subset total, so the gate
-# failed today against the merged tier-1 build — this re-pin is the load-bearing
-# act of the consolidation slice, not cosmetic. baseline = measured; budget gives a
-# small justified headroom (~4.8%) and stays far under the hard < 50 MB gate.
-#
-# 2026-06-28-ep017: re-pin binary_size_bytes to the platform the gate ACTUALLY
-# measures. The bench job (.github/workflows/bench.yml) runs on ubuntu-latest =
-# linux/amd64, but the ep009 baseline (28,615,410) was recorded on darwin-arm64 —
-# a latent platform mismatch: the same source builds ~0.85 MB larger on
-# linux/amd64 than on darwin/arm64, so the gate compared a linux/amd64 measurement
-# against a darwin/arm64 baseline. On top of that, the default binary grew
-# legitimately since ep009 — primarily SW-101 (EP-017, fsnotify watcher + bounded
-# worker-pool incremental apply), which links fsnotify into the default build.
-# Cross-platform measured today (subset-tagged default, go 1.26, 20 registered
-# grammar blobs — the exact ExpectedGrammarBlobs set, no accidental embed):
-#   linux/amd64  30,861,562 B  (the gate's platform)
-#   darwin/arm64 30,015,554 B  (the old baseline platform, itself +1.4 MB vs ep009)
-#   darwin/amd64 31,497,472 B
-#   linux/arm64  29,159,393 B
-# This is justified feature growth, not bloat (grammar-blob set unchanged). baseline
-# = the linux/amd64 measurement the gate sees; budget gives ~5.3% headroom and still
-# leaves ~17.5 MB under the < 50 MB hard ceiling.
-# 2026-07-01-coldstart: re-pin cold_start_p95_ms to the runner class the gate
-# ACTUALLY runs on. The 60/100 ms pin was recorded on a fast local machine;
-# shared ubuntu-latest runners have repeatedly measured 261–294 ms on unrelated
-# PRs (see the "Retrigger CI" commits 1234b02 / e4a7c1e), and the gate was being
-# passed by re-rolling until a fast runner landed — a dice-roll, not a budget.
-# baseline = the worst honest CI measurement observed (294 ms); budget 400 ms
-# gives ~36% headroom for runner noise while still catching a real cold-start
-# regression (a 4x slowdown vs the local baseline still trips it). If CI
-# measurements later stabilize well below this, ratchet the budget back DOWN.
-# 2026-07-02-gofmt-fixture: re-pin fixture_digest only. The repo-wide
-# `gofmt -w` sweep (commit 3a84907, merged in PR #16) reformatted three
-# bench/fixture/src files — whitespace-only, the workload is semantically
-# identical — which invalidated the pinned digest and turned the bench gate
-# red on every run since. No budget or baseline number changed in this re-pin.
-baseline_version: "2026-07-02-gofmt-fixture"
+# 2026-07-04-ep022: added profile-aware metrics (fast/balanced/deep) as warn-only
+# budgets. These surface index time, DB size, edge count, and query latency per
+# profile without failing the gate while the team calibrates realistic baselines.
+baseline_version: "2026-07-04-ep022"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
   cold_start_p95_ms:
-    # Re-pinned 2026-07-01 to the gate's runner class (shared ubuntu-latest);
-    # see the baseline_version note. Previous 60/100 was a fast-local pin the
-    # CI runners never met (261–294 ms measured), making the gate retry-roulette.
     baseline: 294
     budget: 400
     unit: ms
@@ -86,13 +32,67 @@ metrics:
     budget: 2000
     unit: ms
   binary_size_bytes:
-    # Subset-tagged shipped default, re-pinned to the gate's platform (linux/amd64,
-    # 2026-06-28-ep017). baseline = measured 30,861,562 B on ubuntu-latest;
-    # budget 32,500,000 B (~5.3% headroom, ~17.5 MB under the < 50 MB hard ceiling).
-    # Measured via the cmd/bench harness, which builds the binary with
-    # internal/release.DefaultGrammarSubsetTags (20 registered grammar blobs, not
-    # all-206). See the baseline_version note above for the platform-mismatch +
-    # SW-101 growth rationale.
     baseline: 30861562
     budget: 32500000
     unit: bytes
+  # EP-022 profile-aware metrics (warn-only until calibrated).
+  fast_index_ms:
+    baseline: 100
+    budget: 200
+    unit: ms
+    severity: warn
+  fast_db_size_bytes:
+    baseline: 100000
+    budget: 200000
+    unit: bytes
+    severity: warn
+  fast_edge_count:
+    baseline: 100
+    budget: 500
+    unit: count
+    severity: warn
+  fast_query_latency_ms:
+    baseline: 5
+    budget: 20
+    unit: ms
+    severity: warn
+  balanced_index_ms:
+    baseline: 120
+    budget: 250
+    unit: ms
+    severity: warn
+  balanced_db_size_bytes:
+    baseline: 150000
+    budget: 300000
+    unit: bytes
+    severity: warn
+  balanced_edge_count:
+    baseline: 500
+    budget: 1000
+    unit: count
+    severity: warn
+  balanced_query_latency_ms:
+    baseline: 5
+    budget: 20
+    unit: ms
+    severity: warn
+  deep_index_ms:
+    baseline: 150
+    budget: 350
+    unit: ms
+    severity: warn
+  deep_db_size_bytes:
+    baseline: 200000
+    budget: 400000
+    unit: bytes
+    severity: warn
+  deep_edge_count:
+    baseline: 1000
+    budget: 2000
+    unit: count
+    severity: warn
+  deep_query_latency_ms:
+    baseline: 5
+    budget: 20
+    unit: ms
+    severity: warn

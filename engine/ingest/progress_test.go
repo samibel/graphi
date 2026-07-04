@@ -47,7 +47,7 @@ func TestIngestAll_ProgressEvents(t *testing.T) {
 	}
 
 	var parseDones []int
-	phaseOrder := map[ingest.Phase]int{ingest.PhaseWalk: 0, ingest.PhaseParse: 1, ingest.PhaseLink: 2, ingest.PhaseResolve: 3, ingest.PhaseDone: 4}
+	phaseOrder := map[ingest.Phase]int{ingest.PhaseWalk: 0, ingest.PhaseParse: 1, ingest.PhaseWrite: 2, ingest.PhaseLink: 3, ingest.PhaseFTS: 4, ingest.PhaseResolve: 5, ingest.PhaseCheckpoint: 6, ingest.PhaseDone: 7}
 	prevOrder := -1
 	for _, ev := range events {
 		ord, ok := phaseOrder[ev.Phase]
@@ -132,7 +132,7 @@ func TestIngestAll_ProgressBrokerEvent(t *testing.T) {
 			t.Fatalf("timed out; phases seen: %v", phases)
 		}
 	}
-	for _, want := range []ingest.Phase{ingest.PhaseWalk, ingest.PhaseParse, ingest.PhaseLink, ingest.PhaseResolve, ingest.PhaseDone} {
+	for _, want := range []ingest.Phase{ingest.PhaseWalk, ingest.PhaseParse, ingest.PhaseWrite, ingest.PhaseLink, ingest.PhaseFTS, ingest.PhaseResolve, ingest.PhaseCheckpoint, ingest.PhaseDone} {
 		if !phases[string(want)] {
 			t.Fatalf("no ingest-progress event for phase %q (saw %v)", want, phases)
 		}

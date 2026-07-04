@@ -88,3 +88,93 @@ func TestRunIndex_RequiresRoot(t *testing.T) {
 		t.Fatal("runIndex without -root exit = 0, want non-zero")
 	}
 }
+
+// TestRunIndex_ProfilePersists asserts that the resolved profile is stored in
+// graphstore metadata and survives reopening the store.
+func TestRunIndex_ProfilePersists(t *testing.T) {
+	repo := writeGoRepo(t)
+	meta := t.TempDir()
+	db := filepath.Join(t.TempDir(), "graph.db")
+	t.Setenv("GRAPHI_EMBEDDER", "")
+
+	if code := runIndex([]string{"-profile", "deep", "-root", repo, "-db", db, "-meta", meta}); code != 0 {
+		t.Fatalf("runIndex deep exit = %d, want 0", code)
+	}
+
+	st, err := openStore(db)
+	if err != nil {
+		t.Fatalf("openStore: %v", err)
+	}
+	defer func() { _ = st.Close() }()
+	got, err := st.Metadata(context.Background(), "index.profile")
+	if err != nil {
+		t.Fatalf("metadata: %v", err)
+	}
+	if got != "deep" {
+		t.Fatalf("index.profile = %q, want deep", got)
+	}
+}
+
+// TestRunIndex_ProfileEnvFlagPrecedence asserts CLI flag overrides env.
+func TestRunIndex_ProfileEnvFlagPrecedence(t *testing.T) {
+	repo := writeGoRepo(t)
+	meta := t.TempDir()
+	db := filepath.Join(t.TempDir(), "graph.db")
+	t.Setenv("GRAPHI_EMBEDDER", "")
+	t.Setenv("GRAPHI_INDEX_PROFILE", "deep")
+
+	if code := runIndex([]string{"-profile", "fast", "-root", repo, "-db", db, "-meta", meta}); code != 0 {
+		t.Fatalf("runIndex fast exit = %d, want 0", code)
+	}
+
+	st, err := openStore(db)
+	if err != nil {
+		t.Fatalf("openStore: %v", err)
+	}
+	defer func() { _ = st.Close() }()
+	got, err := st.Metadata(context.Background(), "index.profile")
+	if err != nil {
+		t.Fatalf("metadata: %v", err)
+	}
+	if got != "fast" {
+		t.Fatalf("index.profile = %q, want fast (flag overrides env)", got)
+	}
+}
+
+// TestRunIndex_ProfileInvalidRejects asserts that an invalid profile exits before indexing.
+func TestRunIndex_ProfileInvalidRejects(t *testing.T) {
+	repo := writeGoRepo(t)
+	meta := t.TempDir()
+	db := filepath.Join(t.TempDir(), "graph.db")
+	t.Setenv("GRAPHI_EMBEDDER", "")
+
+	if code := runIndex([]string{"-profile", "turbo", "-root", repo, "-db", db, "-meta", meta}); code == 0 {
+		t.Fatal("runIndex invalid profile exit = 0, want non-zero")
+	}
+}
+
+// TestRunIndex_ProfileDefaultBalanced asserts default profile is balanced.
+func TestRunIndex_ProfileDefaultBalanced(t *testing.T) {
+	repo := writeGoRepo(t)
+	meta := t.TempDir()
+	db := filepath.Join(t.TempDir(), "graph.db")
+	t.Setenv("GRAPHI_EMBEDDER", "")
+	t.Setenv("GRAPHI_INDEX_PROFILE", "")
+
+	if code := runIndex([]string{"-root", repo, "-db", db, "-meta", meta}); code != 0 {
+		t.Fatalf("runIndex default exit = %d, want 0", code)
+	}
+
+	st, err := openStore(db)
+	if err != nil {
+		t.Fatalf("openStore: %v", err)
+	}
+	defer func() { _ = st.Close() }()
+	got, err := st.Metadata(context.Background(), "index.profile")
+	if err != nil {
+		t.Fatalf("metadata: %v", err)
+	}
+	if got != "balanced" {
+		t.Fatalf("index.profile = %q, want balanced", got)
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	gs "github.com/samibel/graphi/core/graphstore"
@@ -284,5 +285,78 @@ func TestSQLite_Closed(t *testing.T) {
 	n := mustNode(t, "function", "pkg/q.A", "pkg/q.go", 1, 1)
 	if err := st.PutNode(ctx, n); !errors.Is(err, gs.ErrClosed) {
 		t.Fatalf("expected ErrClosed, got %v", err)
+	}
+}
+
+// TestSQLite_MetadataPersistence asserts that metadata survives a close/reopen cycle.
+func TestSQLite_MetadataPersistence(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "graphi.db")
+	st, err := gs.OpenSQLite(path)
+	if err != nil {
+		t.Fatalf("OpenSQLite: %v", err)
+	}
+	if err := st.SetMetadata(ctx, "index.profile", "deep"); err != nil {
+		t.Fatalf("SetMetadata: %v", err)
+	}
+	if err := st.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	st2, err := gs.OpenSQLite(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	defer func() { _ = st2.Close() }()
+	got, err := st2.Metadata(ctx, "index.profile")
+	if err != nil {
+		t.Fatalf("Metadata after reopen: %v", err)
+	}
+	if got != "deep" {
+		t.Fatalf("metadata after reopen = %q, want %q", got, "deep")
+	}
+}
+
+// TestSQLite_WALCheckpoint asserts that WALCheckpoint runs successfully and leaves
+// journal_mode=wal intact.
+func TestSQLite_WALCheckpoint(t *testing.T) {
+	ctx := context.Background()
+	st := newSQLite(t)
+	if err := st.WALCheckpoint(ctx, "TRUNCATE"); err != nil {
+		t.Fatalf("WALCheckpoint: %v", err)
+	}
+	mode, err := st.JournalMode(ctx)
+	if err != nil {
+		t.Fatalf("JournalMode: %v", err)
+	}
+	if mode != "wal" {
+		t.Fatalf("journal_mode = %q after checkpoint, want wal", mode)
+	}
+}
+
+// TestSQLite_CompactEvidence asserts that duplicate evidence strings are
+// deduplicated, deterministically sorted, and bounded by the cap.
+func TestSQLite_CompactEvidence(t *testing.T) {
+	ctx := context.Background()
+	st := newSQLite(t)
+	a := mustNode(t, "function", "pkg/p.A", "pkg/p.go", 1, 1)
+	b := mustNode(t, "function", "pkg/p.B", "pkg/p.go", 2, 1)
+	if err := st.PutNode(ctx, a); err != nil {
+		t.Fatalf("PutNode: %v", err)
+	}
+	if err := st.PutNode(ctx, b); err != nil {
+		t.Fatalf("PutNode: %v", err)
+	}
+	e := mustEdge(t, a.ID(), b.ID(), "calls", model.TierHeuristic, 0.8, "call", []string{"z.go:1", "a.go:1", "z.go:1", "b.go:1", "a.go:1"})
+	if err := st.PutEdge(ctx, e); err != nil {
+		t.Fatalf("PutEdge: %v", err)
+	}
+	got, err := st.GetEdge(ctx, e.ID())
+	if err != nil {
+		t.Fatalf("GetEdge: %v", err)
+	}
+	want := []string{"a.go:1", "b.go:1", "z.go:1"}
+	if !reflect.DeepEqual(got.Evidence(), want) {
+		t.Fatalf("evidence = %v, want %v", got.Evidence(), want)
 	}
 }

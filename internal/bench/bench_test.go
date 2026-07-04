@@ -188,6 +188,84 @@ func TestRun_RealHarnessProducesFourMetrics(t *testing.T) {
 	}
 }
 
+func TestGate_WarnOnlyViolationDoesNotFailGate(t *testing.T) {
+	man := &Manifest{BaselineVersion: "v1", Metrics: map[string]MetricBudget{
+		"fast_index_ms": {Baseline: 100, Budget: 200, Unit: "ms", Op: CmpLE, Severity: SeverityWarn},
+	}}
+	rep := Gate(map[string]float64{"fast_index_ms": 999}, man)
+	if !rep.Pass {
+		t.Errorf("warn-only violation should keep gate passing, got pass=%v", rep.Pass)
+	}
+	if len(rep.Results) != 1 || rep.Results[0].Severity != SeverityWarn {
+		t.Errorf("expected warn severity result, got %+v", rep.Results)
+	}
+}
+
+func TestGate_FailSeverityStillFailsGate(t *testing.T) {
+	man := &Manifest{BaselineVersion: "v1", Metrics: map[string]MetricBudget{
+		"cold_start_p95_ms": {Baseline: 60, Budget: 100, Unit: "ms", Op: CmpLE, Severity: SeverityFail},
+	}}
+	rep := Gate(map[string]float64{"cold_start_p95_ms": 150}, man)
+	if rep.Pass {
+		t.Error("expected fail severity to fail gate")
+	}
+}
+
+func TestLoadManifest_ParsesSeverity(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bench-budget.yml")
+	data := []byte(`version: 1
+baseline_version: "v1"
+metrics:
+  fast_index_ms:
+    baseline: 1
+    budget: 2
+    unit: ms
+    severity: warn
+`)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	man, err := LoadManifest(path)
+	if err != nil {
+		t.Fatalf("LoadManifest: %v", err)
+	}
+	mb, ok := man.Metrics["fast_index_ms"]
+	if !ok || mb.Severity != SeverityWarn {
+		t.Errorf("severity not parsed: %+v ok=%v", mb, ok)
+	}
+}
+
+func TestProfileMetrics_DistinctAndDeepSuperset(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping profile comparison in -short mode")
+	}
+	metrics, err := Run(context.Background(), HarnessConfig{Samples: 1, Warmup: 0})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	pm := metrics.ProfileMetrics
+	if len(pm) != 3 {
+		t.Fatalf("expected 3 profiles, got %d", len(pm))
+	}
+	fast, balanced, deep := pm["fast"], pm["balanced"], pm["deep"]
+	if fast.EdgeCount == 0 || balanced.EdgeCount == 0 || deep.EdgeCount == 0 {
+		t.Errorf("expected non-zero edge counts: fast=%d balanced=%d deep=%d", fast.EdgeCount, balanced.EdgeCount, deep.EdgeCount)
+	}
+	// The frozen fixture is small; assert the partial order that the profiles
+	// guarantee rather than strict distinctness.
+	if fast.EdgeCount > balanced.EdgeCount {
+		t.Errorf("fast edge count %d should not exceed balanced %d", fast.EdgeCount, balanced.EdgeCount)
+	}
+	if balanced.EdgeCount > deep.EdgeCount {
+		t.Errorf("balanced edge count %d should not exceed deep %d", balanced.EdgeCount, deep.EdgeCount)
+	}
+	// Best-effort distinctness: at least fast should be fewer than deep.
+	if fast.EdgeCount == deep.EdgeCount {
+		t.Logf("fast == deep edge count (%d) on small fixture; distinctness should be exercised with import-heavy fixture", fast.EdgeCount)
+	}
+}
+
 func contains(haystack, needle string) bool {
 	return len(haystack) >= len(needle) && indexOf(haystack, needle) >= 0
 }

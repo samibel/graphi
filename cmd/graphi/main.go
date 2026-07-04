@@ -21,6 +21,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/edit"
@@ -390,6 +391,7 @@ func runIndex(args []string) int {
 	semantic := false
 	full := false
 	root, dbPath, metaDir := "", "", ""
+	var profileFlag *string
 	cpuProfile := os.Getenv("GRAPHI_CPUPROFILE")
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -415,6 +417,8 @@ func runIndex(args []string) int {
 				dbPath = v
 			} else if v, ok := takeVal("-meta"); ok {
 				metaDir = v
+			} else if v, ok := takeVal("-profile"); ok {
+				profileFlag = &v
 			} else if v, ok := takeVal("-cpuprofile"); ok {
 				cpuProfile = v
 			}
@@ -422,6 +426,12 @@ func runIndex(args []string) int {
 	}
 	if root == "" {
 		fmt.Fprintln(os.Stderr, "graphi: -root <repo> is required for index")
+		return 1
+	}
+
+	prof, err := profile.ResolveProfile(profileFlag, os.Getenv(profile.EnvName))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return 1
 	}
 	stopProfile := startCPUProfile(cpuProfile)
@@ -441,6 +451,12 @@ func runIndex(args []string) int {
 		return 1
 	}
 	defer func() { _ = ing.Close() }()
+	ing.WithProfile(prof)
+	if isTerminal(os.Stderr) {
+		ing.WithHeartbeatMode(ingest.HeartbeatTTY)
+	} else {
+		ing.WithHeartbeatMode(ingest.HeartbeatNonTTY)
+	}
 	prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
 	ing.WithProgress(prog.Handle)
 	// Warm start by default (same cheap drift-check path bare `graphi` uses):
@@ -1153,8 +1169,15 @@ func runHTTP(args []string) int {
 	dbPath := fs.String("db", "", "SQLite graphstore path (empty = in-memory)")
 	root := fs.String("root", "", "optional repo root to ingest on startup (attaches the ingest-event producer for SSE)")
 	metaDir := fs.String("meta", "", "ingest meta sidecar dir; defaults to an OS temp dir when -root is set")
+	profileFlag := fs.String("profile", "", "index profile: fast|balanced|deep (overrides GRAPHI_INDEX_PROFILE)")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: http: %v\n", err)
+		return 1
+	}
+
+	prof, err := profile.ResolveProfile(profileFlag, os.Getenv(profile.EnvName))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return 1
 	}
 
@@ -1185,6 +1208,8 @@ func runHTTP(args []string) int {
 			fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", ierr)
 			return 1
 		}
+		ing.WithProfile(prof)
+		ing.WithHeartbeatMode(ingest.HeartbeatNonTTY)
 		ing.WithBroker(broker)
 		cleanupIngest = func() { _ = ing.Close(); _ = os.RemoveAll(meta) }
 		prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))

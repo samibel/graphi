@@ -16,6 +16,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
@@ -161,6 +162,76 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 		BinarySizeBytes: info.Size(),
 		FixtureDigest:   digest,
 		Samples:         cfg.Samples,
+		ProfileMetrics:  measureProfileMetrics(ctx, fixture),
+	}, nil
+}
+
+// measureProfileMetrics indexes the fixture once per profile and collects
+// index time, DB size, edge count, and a simple query latency. It is best-effort:
+// any individual profile failure is logged and skipped so the overall bench run
+// is not aborted.
+func measureProfileMetrics(ctx context.Context, fixture string) map[string]ProfileMetric {
+	out := make(map[string]ProfileMetric)
+	for _, p := range []profile.Profile{profile.Fast, profile.Balanced, profile.Deep} {
+		pm, err := measureOneProfile(ctx, fixture, p)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "bench: profile %s metrics skipped: %v\n", p, err)
+			continue
+		}
+		out[string(p)] = pm
+	}
+	return out
+}
+
+func measureOneProfile(ctx context.Context, fixture string, p profile.Profile) (ProfileMetric, error) {
+	tmp, err := os.MkdirTemp("", "graphi-bench-profile-*")
+	if err != nil {
+		return ProfileMetric{}, err
+	}
+	defer os.RemoveAll(tmp)
+
+	dbPath := filepath.Join(tmp, "graph.db")
+	store, err := graphstore.OpenSQLite(dbPath)
+	if err != nil {
+		return ProfileMetric{}, err
+	}
+	defer store.Close()
+
+	ing, err := ingest.New(store, parse.NewDefaultRegistry(), filepath.Join(tmp, "meta"))
+	if err != nil {
+		return ProfileMetric{}, err
+	}
+	defer ing.Close()
+	ing.WithProfile(p)
+
+	ti0 := time.Now()
+	if err := ing.IngestAll(ctx, fixture); err != nil {
+		return ProfileMetric{}, err
+	}
+	index := time.Since(ti0)
+
+	c := client.NewDirect(query.New(store), search.New(store))
+	q0 := time.Now()
+	if _, err := c.Query(ctx, "callers", "", 0); err != nil {
+		return ProfileMetric{}, err
+	}
+	ql := time.Since(q0)
+
+	edges, err := store.Edges(ctx, graphstore.Query{})
+	if err != nil {
+		return ProfileMetric{}, err
+	}
+
+	info, err := os.Stat(dbPath)
+	if err != nil {
+		return ProfileMetric{}, err
+	}
+
+	return ProfileMetric{
+		IndexMS:        ms(index),
+		DBSizeBytes:    info.Size(),
+		EdgeCount:      int64(len(edges)),
+		QueryLatencyMS: ms(ql),
 	}, nil
 }
 
