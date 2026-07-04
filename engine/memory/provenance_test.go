@@ -3,6 +3,7 @@ package memory
 import (
 	"bytes"
 	"context"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -145,5 +146,42 @@ func TestStoreSecretSuspected(t *testing.T) {
 	entries, _ := s.RecallMemory(context.Background(), Query{Scope: "repo"})
 	if len(entries) != 1 || !entries[0].SecretSuspect {
 		t.Fatalf("expected secret_suspected=true for %s", id)
+	}
+}
+
+func newTestStore(t *testing.T) *Store {
+	t.Helper()
+	s, err := NewMemStore(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	return s
+}
+
+func TestStoreRejectsUnknownKind(t *testing.T) {
+	s := newTestStore(t)
+	_, err := s.StoreMemoryWithProvenance(context.Background(), ProvenanceInput{
+		Scope: "repo", Notebook: "n", Payload: "x", Kind: "vibe",
+	})
+	if !errors.Is(err, ErrInvalidKind) {
+		t.Fatalf("expected ErrInvalidKind for unknown kind, got %v", err)
+	}
+}
+
+func TestStoreAcceptsAllValidKinds(t *testing.T) {
+	s := newTestStore(t)
+	for _, k := range ValidKinds() {
+		if _, err := s.StoreMemoryWithProvenance(context.Background(), ProvenanceInput{
+			Scope: "repo", Notebook: "n", Payload: "fact for " + k, Kind: k,
+		}); err != nil {
+			t.Fatalf("kind %q rejected: %v", k, err)
+		}
+	}
+	// Empty kind stays allowed (untyped fact).
+	if _, err := s.StoreMemoryWithProvenance(context.Background(), ProvenanceInput{
+		Scope: "repo", Notebook: "n", Payload: "untyped",
+	}); err != nil {
+		t.Fatalf("empty kind rejected: %v", err)
 	}
 }

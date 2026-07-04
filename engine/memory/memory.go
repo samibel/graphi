@@ -189,6 +189,40 @@ func (s *Store) StoreMemory(ctx context.Context, scope, notebook string, tags []
 	})
 }
 
+// Memory entry kinds — the closed product vocabulary for Entry.Kind. An empty
+// kind is allowed (untyped fact); a non-empty kind must be a member of this
+// set so agents can rely on the taxonomy.
+const (
+	KindArchitecture = "architecture"
+	KindCommand      = "command"
+	KindConvention   = "convention"
+	KindDecision     = "decision"
+	KindRisk         = "risk"
+	KindDependency   = "dependency"
+	KindWorkflow     = "workflow"
+)
+
+// ValidKinds returns the closed set of memory entry kinds in canonical order.
+func ValidKinds() []string {
+	return []string{
+		KindArchitecture, KindCommand, KindConvention,
+		KindDecision, KindRisk, KindDependency, KindWorkflow,
+	}
+}
+
+// validKindSet is the membership index backing kind validation.
+var validKindSet = func() map[string]bool {
+	m := map[string]bool{}
+	for _, k := range ValidKinds() {
+		m[k] = true
+	}
+	return m
+}()
+
+// ErrInvalidKind is wrapped by store operations that receive a kind outside
+// the closed vocabulary.
+var ErrInvalidKind = errors.New("memory: invalid kind")
+
 // ProvenanceInput carries the optional provenance fields for a memory entry.
 type ProvenanceInput struct {
 	Scope         string
@@ -205,6 +239,9 @@ type ProvenanceInput struct {
 // StoreMemoryWithProvenance persists a memory entry with provenance metadata.
 // If OverwriteID is set and exists, the old entry is replaced preserving CreatedAt.
 func (s *Store) StoreMemoryWithProvenance(ctx context.Context, p ProvenanceInput) (ID, error) {
+	if p.Kind != "" && !validKindSet[p.Kind] {
+		return "", fmt.Errorf("%w: %q (valid: %s)", ErrInvalidKind, p.Kind, strings.Join(ValidKinds(), ", "))
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {

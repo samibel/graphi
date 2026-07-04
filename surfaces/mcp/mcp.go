@@ -1076,7 +1076,7 @@ func (s *Server) toolDescriptors() []map[string]any {
 					"tags":           map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "tags for store"},
 					"payload":        map[string]any{"type": "string", "description": "payload for store"},
 					"mem_id":         map[string]any{"type": "string", "description": "entry id for forget or overwrite"},
-					"kind":           map[string]any{"type": "string", "description": "entry kind for store (e.g. note, decision, convention)"},
+					"kind":           map[string]any{"type": "string", "description": "entry kind for store: architecture | command | convention | decision | risk | dependency | workflow"},
 					"source":         map[string]any{"type": "string", "description": "provenance source for store"},
 					"confidence":     map[string]any{"type": "string", "description": "confirmed | derived | heuristic"},
 					"evidence":       map[string]any{"type": "string", "description": "optional file:line citation"},
