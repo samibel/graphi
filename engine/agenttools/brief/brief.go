@@ -89,7 +89,8 @@ type graphView struct {
 	totalNodes    int
 	available     bool
 	unavailErr    error
-	topicFiles    []contract.Item // resolved related-files rows for the topic
+	topicFiles    []contract.Item // related-files rows for the topic (may be empty)
+	topicNodes    []model.Node    // symbols the topic resolved to
 	topicResolved bool
 }
 
@@ -224,10 +225,30 @@ func buildView(ctx context.Context, p Params) *graphView {
 		v.nodeInDegree[e.To()]++
 	}
 	if p.Topic != "" {
-		if res, err := related.Files(ctx, p.Deps, p.Topic, related.DirectionBoth, maxTopic); err == nil {
-			if res.Outcome == contract.OutcomeFound || res.Outcome == contract.OutcomePartial {
+		// Resolution uses the SAME resolver as explain_symbol/related_files, so
+		// a topic that explain-symbol can answer is never reported unresolved.
+		// A resolved topic with no cross-file edges (single-file project) is
+		// still resolved — related files are an enrichment, not the test.
+		if res, err := resolve.Seeds(ctx, p.Deps, p.Topic, maxTopic); err == nil {
+			switch {
+			case res.Resolved():
 				v.topicResolved = true
-				v.topicFiles = res.Items
+				v.topicNodes = res.Nodes
+			case res.Ambiguous():
+				v.topicResolved = true
+				for _, c := range res.Candidates {
+					v.topicNodes = append(v.topicNodes, c.Node)
+				}
+				if len(v.topicNodes) > maxTopic {
+					v.topicNodes = v.topicNodes[:maxTopic]
+				}
+			}
+		}
+		if v.topicResolved {
+			if res, err := related.Files(ctx, p.Deps, p.Topic, related.DirectionBoth, maxTopic); err == nil {
+				if res.Outcome == contract.OutcomeFound || res.Outcome == contract.OutcomePartial {
+					v.topicFiles = res.Items
+				}
 			}
 		}
 	}
@@ -289,7 +310,24 @@ func projectIdentity(p Params, v *graphView) []SectionItem {
 // then the most connected files in the graph.
 func startHere(p Params, v *graphView) []SectionItem {
 	var out []SectionItem
+	seenTopic := map[string]bool{}
+	for _, n := range v.topicNodes {
+		if n.SourcePath() == "" || seenTopic[n.SourcePath()] {
+			continue
+		}
+		seenTopic[n.SourcePath()] = true
+		out = append(out, SectionItem{
+			Label:       n.SourcePath(),
+			Value:       fmt.Sprintf("defines topic symbol %s", n.QualifiedName()),
+			EvidenceRef: fmt.Sprintf("%s:%d", n.SourcePath(), n.Line()),
+			Tier:        TierDerived,
+		})
+	}
 	for _, it := range v.topicFiles {
+		if seenTopic[it.RefID] {
+			continue
+		}
+		seenTopic[it.RefID] = true
 		out = append(out, SectionItem{
 			Label:       it.RefID,
 			Value:       "related to topic: " + it.Reason,
@@ -335,10 +373,25 @@ func startHere(p Params, v *graphView) []SectionItem {
 	return out
 }
 
-// relevantSymbols ranks the most-referenced symbols (highest inbound degree).
+// relevantSymbols lists the topic's resolved symbols first, then the
+// most-referenced symbols (highest inbound degree).
 func relevantSymbols(v *graphView) []SectionItem {
 	if !v.available {
 		return nil
+	}
+	var out []SectionItem
+	seen := map[model.NodeId]bool{}
+	for _, n := range v.topicNodes {
+		if seen[n.ID()] {
+			continue
+		}
+		seen[n.ID()] = true
+		out = append(out, SectionItem{
+			Label:       n.QualifiedName(),
+			Value:       fmt.Sprintf("topic symbol (%s, %d inbound edges)", n.Kind(), v.nodeInDegree[n.ID()]),
+			EvidenceRef: fmt.Sprintf("%s:%d", n.SourcePath(), n.Line()),
+			Tier:        TierDerived,
+		})
 	}
 	type symRank struct {
 		id  model.NodeId
@@ -359,8 +412,10 @@ func relevantSymbols(v *graphView) []SectionItem {
 	if len(ranked) > maxSymbols {
 		ranked = ranked[:maxSymbols]
 	}
-	out := make([]SectionItem, 0, len(ranked))
 	for _, sr := range ranked {
+		if seen[sr.id] {
+			continue
+		}
 		n := v.nodes[sr.id]
 		out = append(out, SectionItem{
 			Label:       n.QualifiedName(),

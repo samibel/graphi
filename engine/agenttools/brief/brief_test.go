@@ -255,3 +255,43 @@ func TestMarkdownNil(t *testing.T) {
 		t.Fatal("expected error for nil result")
 	}
 }
+
+// TestAssembleTopicResolvesLikeExplainSymbol pins the resolver parity fix: a
+// topic that explain_symbol can resolve must never be reported unresolved,
+// even when it has no cross-file edges (single-file project) — related files
+// are an enrichment, not the resolution test.
+func TestAssembleTopicResolvesLikeExplainSymbol(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	n, err := model.NewNode("function", "fixture.Hello", "sample.go", 4, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PutNode(ctx, n); err != nil {
+		t.Fatal(err)
+	}
+	deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
+
+	r, err := Assemble(ctx, Params{Deps: deps, Topic: "Hello"})
+	if err != nil {
+		t.Fatalf("Assemble: %v", err)
+	}
+	if strings.Contains(r.Summary, "did not resolve") {
+		t.Fatalf("resolved topic must not be flagged unresolved: %q", r.Summary)
+	}
+	md, err := Markdown(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(md, "topic unresolved") {
+		t.Fatalf("no unresolved risk expected:\n%s", md)
+	}
+	if !strings.Contains(md, "defines topic symbol fixture.Hello") {
+		t.Fatalf("Start Here must cite the defining file of the topic symbol:\n%s", md)
+	}
+	for _, heading := range []string{"## Start Here", "## Relevant Symbols", "## Suggested Next Calls"} {
+		if !strings.Contains(md, heading) {
+			t.Fatalf("markdown missing %q:\n%s", heading, md)
+		}
+	}
+}
