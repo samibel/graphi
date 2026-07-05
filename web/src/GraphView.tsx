@@ -9,6 +9,7 @@
 import { useEffect, useRef } from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
+import { drawDiscNodeLabel, type NodeHoverDrawingFunction } from "sigma/rendering";
 import type { ResultEdge } from "./types";
 import {
   colorForKind,
@@ -22,6 +23,50 @@ import {
 } from "./highlights";
 import { radialLayout } from "./layout";
 import type { GraphState } from "./useGraph";
+
+// Dark-theme hover renderer. Sigma's default (drawDiscNodeHover) paints a
+// WHITE label box — unreadable with our light label text and jarring on the
+// near-black canvas. Same geometry as the default, but the backdrop uses the
+// site surface color with a faint phosphor glow. Purely visual.
+const drawDarkNodeHover: NodeHoverDrawingFunction = (context, data, settings) => {
+  const size = settings.labelSize;
+  context.font = `${settings.labelWeight} ${size}px ${settings.labelFont}`;
+
+  context.fillStyle = "#141b19"; // --color-surface-2
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
+  context.shadowBlur = 8;
+  context.shadowColor = "rgba(62, 230, 176, .25)"; // phosphor glow
+  const PADDING = 2;
+  if (typeof data.label === "string") {
+    const textWidth = context.measureText(data.label).width;
+    const boxWidth = Math.round(textWidth + 5);
+    const boxHeight = Math.round(size + 2 * PADDING);
+    const radius = Math.max(data.size, size / 2) + PADDING;
+    const angleRadian = Math.asin(boxHeight / 2 / radius);
+    const xDeltaCoord = Math.sqrt(
+      Math.abs(Math.pow(radius, 2) - Math.pow(boxHeight / 2, 2)),
+    );
+    context.beginPath();
+    context.moveTo(data.x + xDeltaCoord, data.y + boxHeight / 2);
+    context.lineTo(data.x + radius + boxWidth, data.y + boxHeight / 2);
+    context.lineTo(data.x + radius + boxWidth, data.y - boxHeight / 2);
+    context.lineTo(data.x + xDeltaCoord, data.y - boxHeight / 2);
+    context.arc(data.x, data.y, radius, angleRadian, -angleRadian);
+    context.closePath();
+    context.fill();
+  } else {
+    context.beginPath();
+    context.arc(data.x, data.y, data.size + PADDING, 0, Math.PI * 2);
+    context.closePath();
+    context.fill();
+  }
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
+  context.shadowBlur = 0;
+
+  drawDiscNodeLabel(context, data, settings);
+};
 
 interface Props {
   state: GraphState;
@@ -79,10 +124,11 @@ export function GraphView({ state, onSelect, onClear, onEdgeSelect }: Props) {
         defaultNodeColor: COLOR_DEFAULT,
         defaultEdgeColor: COLOR_DEFAULT,
         renderEdgeLabels: true,
-        // The page background is dark (#0b0f17) — Sigma's default black labels
-        // are invisible on it.
-        labelColor: { color: "#e5e7eb" },
-        edgeLabelColor: { color: "#9ca3af" },
+        // The graph canvas is near-black (#080b0a) — Sigma's default black
+        // labels are invisible on it. Colors match the site text palette.
+        labelColor: { color: "#d5e0dc" },
+        edgeLabelColor: { color: "#8ba09a" },
+        defaultDrawNodeHover: drawDarkNodeHover,
         labelSize: 12,
         edgeLabelSize: 10,
       });
