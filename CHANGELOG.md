@@ -7,6 +7,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-05
+
 ### Added
 - **Opt-in index scope:** `GRAPHI_RESPECT_GITIGNORE=1` honors the repository
   ROOT `.gitignore` (documented subset incl. `!` negation, anchoring,
