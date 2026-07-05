@@ -5,15 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>graphi — Local-first code-intelligence engine</title>
   <meta name="description" content="graphi indexes your repository once into a provenance-backed code graph and answers structural and semantic questions over CLI and MCP — CGo-free, local, without a single byte leaving your machine." />
+  <link rel="canonical" href="https://samibel.github.io/graphi/" />
   <meta property="og:title" content="graphi — Local-first code-intelligence engine" />
   <meta property="og:description" content="Index once into a code graph. Ask 'who calls this', 'what breaks if I change it' and 'how are two functions connected' in one round-trip — entirely on your machine." />
-  <meta property="og:image" content="assets/graph-ui.png" />
+  <meta property="og:url" content="https://samibel.github.io/graphi/" />
+  <meta property="og:image" content="https://samibel.github.io/graphi/assets/graph-ui.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="720" />
   <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="graphi — Local-first code-intelligence engine" />
+  <meta name="twitter:description" content="Index once into a code graph. Ask 'who calls this', 'what breaks if I change it' and 'how are two functions connected' in one round-trip — entirely on your machine." />
+  <meta name="twitter:image" content="https://samibel.github.io/graphi/assets/graph-ui.png" />
+  <meta name="theme-color" content="#0b0f0e" />
   <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <script>
+    try{
+      var t = localStorage.getItem('theme') ||
+        (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', t);
+    }catch(e){}
+  </script>
   <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
   <link href="https://api.fontshare.com/v2/css?f[]=jetbrains-mono@400,500,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="base.css" />
   <link rel="stylesheet" href="style.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "graphi",
+    "description": "Local-first, CGo-free code-intelligence engine. Indexes a repository into a provenance-backed code graph queried over CLI and MCP.",
+    "url": "https://samibel.github.io/graphi/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux, Windows",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "sameAs": ["https://github.com/samibel/graphi"]
+  }
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -22,7 +54,7 @@
   <header class="header" id="header">
     <div class="container header__inner">
       <a class="brand" href="#" aria-label="graphi home">
-        <img src="assets/logo.png" alt="" class="brand__logo" width="32" height="32" />
+        <img src="assets/logo-64.png" alt="" class="brand__logo" width="32" height="32" />
         <span class="brand__name">graphi</span>
       </a>
       <nav class="nav" aria-label="Primary navigation">
@@ -33,7 +65,7 @@
         <a href="#install">Install</a>
       </nav>
       <div class="header__actions">
-        <button class="icon-btn" data-theme-toggle aria-label="Switch to light mode"></button>
+        <button type="button" class="icon-btn" data-theme-toggle hidden aria-label="Switch to light mode"></button>
         <a class="btn btn--ghost" href="https://github.com/samibel/graphi" target="_blank" rel="noopener">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.2.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.7.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
           <span>GitHub</span>
@@ -45,10 +77,12 @@
   <main id="main">
     <!-- HERO -->
     <section class="hero">
+      <canvas class="hero__net" aria-hidden="true"></canvas>
+      <div class="hero__orb" aria-hidden="true"></div>
       <div class="container hero__inner">
         <div class="hero__copy">
-          <span class="eyebrow">Local-first · CGo-free · Zero egress</span>
-          <h1 class="hero__title">Your agent stops grepping the whole codebase.<br/><span class="accent">It asks the graph.</span></h1>
+          <span class="eyebrow eyebrow--pill"><span class="pulse-dot" aria-hidden="true"></span>Local-first · CGo-free · Zero egress</span>
+          <h1 class="hero__title"><span class="hero__title-line">Your agent stops grepping the whole codebase.</span><br/><span class="hero__title-line accent">It asks the graph.</span></h1>
           <p class="hero__lede">
             graphi parses a repository into a deterministic, provenance-backed
             <strong>code graph</strong> — symbols as nodes, calls/references/imports as edges — and
@@ -59,11 +93,7 @@
             <a class="btn btn--primary" href="#install">Install</a>
             <a class="btn btn--ghost" href="https://github.com/samibel/graphi" target="_blank" rel="noopener">View on GitHub</a>
           </div>
-          <ul class="hero__badges" role="list">
-            <li><span class="dot dot--ok"></span> No accounts</li>
-            <li><span class="dot dot--ok"></span> No telemetry</li>
-            <li><span class="dot dot--ok"></span> No network calls</li>
-          </ul>
+          <p class="hero__receipt"><span class="star" aria-hidden="true">★</span> open source · Apache-2.0 · 38 MCP tools · 22 languages</p>
         </div>
 
         <!-- Terminal window -->
@@ -72,34 +102,43 @@
             <span class="terminal__dot"></span><span class="terminal__dot"></span><span class="terminal__dot"></span>
             <span class="terminal__title">~/your-repo</span>
           </div>
-          <pre class="terminal__body"><code><span class="ln"><span class="prompt">$</span> curl -fsSL <span class="tok">…/install.sh</span> | sh</span>
+          <pre class="terminal__body"><code><span class="ln"><span class="prompt">$</span> <span class="typed">curl -fsSL <span class="tok">…/install.sh</span> | sh</span></span>
 <span class="ln muted">✓ checksum verified · installed to ~/.local/bin/graphi</span>
-<span class="ln"><span class="prompt">$</span> cd your-repo && graphi</span>
+<span class="ln"><span class="prompt">$</span> <span class="typed">cd your-repo &amp;&amp; graphi</span></span>
 <span class="ln muted">indexing… 1,284 symbols · 3,902 edges · graph hot</span>
 <span class="ln muted">Saved $2.14 this session</span>
-<span class="ln"><span class="prompt">$</span> graphi callers <span class="tok">ParseRepo</span></span>
+<span class="ln"><span class="prompt">$</span> <span class="typed">graphi callers <span class="tok">ParseRepo</span></span></span>
 <span class="ln out">ingest.Run          <span class="dim">confirmed</span></span>
 <span class="ln out">cmd.rootIndex       <span class="dim">confirmed</span></span>
-<span class="ln"><span class="prompt">$</span> graphi impact <span class="tok">ParseRepo</span><span class="cursor">▊</span></span></code></pre>
+<span class="ln"><span class="prompt">$</span> <span class="typed">graphi impact <span class="tok">ParseRepo</span></span><span class="cursor">▊</span></span></code></pre>
         </div>
       </div>
     </section>
 
     <!-- WHAT -->
-    <section class="section" id="what">
+    <section class="section section--compact" id="what">
       <div class="container">
-        <div class="section__head">
-          <span class="eyebrow">What is graphi?</span>
+        <div class="section__head section__head--center">
+          <span class="eyebrow"><span class="eyebrow__num">01</span>What is graphi?</span>
           <h2>A code-intelligence engine that runs entirely on your machine.</h2>
         </div>
-        <p class="prose">
-          Point graphi at a repository and it parses the source into a canonical
-          <strong>code graph</strong>: nodes are symbols (functions, types, files), edges are the
-          relationships between them (calls, references, definitions). It keeps that graph hot in a
-          background daemon and answers questions in a single round-trip — instead of grepping and
-          re-reading whole files on every question. Every relationship carries <strong>provenance</strong>:
-          a confidence tier (heuristic / derived / confirmed), a reason, and supporting evidence.
-        </p>
+        <ol class="steps-strip" role="list">
+          <li class="step-card">
+            <span class="step-card__num">01</span>
+            <h3>Parse</h3>
+            <p>Source in, canonical <strong>code graph</strong> out — symbols as nodes; calls, references and definitions as edges.</p>
+          </li>
+          <li class="step-card">
+            <span class="step-card__num">02</span>
+            <h3>Serve</h3>
+            <p>A background daemon keeps the graph hot and answers structural questions in a <strong>single round-trip</strong> — no re-grepping, no re-reading whole files.</p>
+          </li>
+          <li class="step-card">
+            <span class="step-card__num">03</span>
+            <h3>Prove</h3>
+            <p>Every relationship carries <strong>provenance</strong>: a confidence tier (heuristic / derived / confirmed), a reason, and supporting evidence.</p>
+          </li>
+        </ol>
       </div>
     </section>
 
@@ -107,11 +146,11 @@
     <section class="section section--tint" id="audience">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow">Built for two audiences</span>
+          <span class="eyebrow"><span class="eyebrow__num">02</span>Built for two audiences</span>
           <h2>One tool, two ways in.</h2>
         </div>
         <div class="audience-grid">
-          <article class="audience-card">
+          <article class="audience-card glow-card">
             <div class="audience-card__icon" aria-hidden="true">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
             </div>
@@ -121,7 +160,7 @@
 <span class="prompt">$</span> graphi impact  <span class="tok">handleAuth</span>
 <span class="prompt">$</span> graphi tui</code></pre>
           </article>
-          <article class="audience-card">
+          <article class="audience-card glow-card">
             <div class="audience-card__icon" aria-hidden="true">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
             </div>
@@ -139,12 +178,18 @@
     <section class="section" id="ui">
       <div class="container">
         <div class="section__head section__head--center">
-          <span class="eyebrow">Interactive web UI</span>
+          <span class="eyebrow"><span class="eyebrow__num">03</span>Interactive web UI</span>
           <h2>The code graph, loaded from a seed-symbol search.</h2>
         </div>
       </div>
       <figure class="showcase">
-        <img src="assets/graph-ui.png" alt="graphi web UI: interactive code graph loaded from a seed-symbol search" loading="lazy" width="1280" height="720" />
+        <div class="showcase__frame">
+          <picture>
+            <source srcset="assets/graph-ui.webp" type="image/webp" />
+            <img src="assets/graph-ui.png" alt="graphi web UI: interactive code graph loaded from a seed-symbol search" loading="lazy" width="1280" height="720" />
+          </picture>
+        </div>
+        <figcaption class="fine-print fine-print--center">graphi web UI — ships in the same binary; <code>graphi tui</code> for the terminal version.</figcaption>
       </figure>
     </section>
 
@@ -152,12 +197,13 @@
     <section class="section section--tint" id="features">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow">Features</span>
+          <span class="eyebrow"><span class="eyebrow__num">04</span>Features</span>
           <h2>38 MCP tools over one engine — grouped by task.</h2>
         </div>
 
         <div class="feature-groups">
-          <article class="fgroup">
+          <article class="fgroup fgroup--wide glow-card">
+            <span class="fgroup__idx" aria-hidden="true">01</span>
             <h3 class="fgroup__title">Structural queries</h3>
             <p class="fgroup__lede">Relationships and type hierarchy for any symbol.</p>
             <ul class="fgroup__list" role="list">
@@ -171,7 +217,8 @@
             </ul>
           </article>
 
-          <article class="fgroup">
+          <article class="fgroup fgroup--wide glow-card">
+            <span class="fgroup__idx" aria-hidden="true">02</span>
             <h3 class="fgroup__title">Impact &amp; semantics</h3>
             <p class="fgroup__lede">Reachability, call paths and concept resolution.</p>
             <ul class="fgroup__list" role="list">
@@ -183,7 +230,8 @@
             </ul>
           </article>
 
-          <article class="fgroup">
+          <article class="fgroup glow-card">
+            <span class="fgroup__idx" aria-hidden="true">03</span>
             <h3 class="fgroup__title">Deep analysis</h3>
             <p class="fgroup__lede">Taint, dependence graph and history signals.</p>
             <ul class="fgroup__list" role="list">
@@ -195,7 +243,8 @@
             </ul>
           </article>
 
-          <article class="fgroup">
+          <article class="fgroup glow-card">
+            <span class="fgroup__idx" aria-hidden="true">04</span>
             <h3 class="fgroup__title">Pattern queries</h3>
             <p class="fgroup__lede">Find patterns and duplicates in the graph.</p>
             <ul class="fgroup__list" role="list">
@@ -206,7 +255,8 @@
             </ul>
           </article>
 
-          <article class="fgroup">
+          <article class="fgroup glow-card">
+            <span class="fgroup__idx" aria-hidden="true">05</span>
             <h3 class="fgroup__title">Edits &amp; code actions</h3>
             <p class="fgroup__lede">Reference-correct refactors with a fail-safe.</p>
             <ul class="fgroup__list" role="list">
@@ -219,7 +269,8 @@
             </ul>
           </article>
 
-          <article class="fgroup">
+          <article class="fgroup glow-card">
+            <span class="fgroup__idx" aria-hidden="true">06</span>
             <h3 class="fgroup__title">PR review</h3>
             <p class="fgroup__lede">Deterministic, LLM-free review signals.</p>
             <ul class="fgroup__list" role="list">
@@ -233,7 +284,8 @@
             </ul>
           </article>
 
-          <article class="fgroup">
+          <article class="fgroup glow-card">
+            <span class="fgroup__idx" aria-hidden="true">07</span>
             <h3 class="fgroup__title">Memory &amp; skills</h3>
             <p class="fgroup__lede">Local agent memory, all on your machine.</p>
             <ul class="fgroup__list" role="list">
@@ -243,7 +295,8 @@
             </ul>
           </article>
 
-          <article class="fgroup">
+          <article class="fgroup glow-card">
+            <span class="fgroup__idx" aria-hidden="true">08</span>
             <h3 class="fgroup__title">Live IDE &amp; watcher</h3>
             <p class="fgroup__lede">Live transport, overlays and incremental indexing.</p>
             <ul class="fgroup__list" role="list">
@@ -265,34 +318,62 @@
     <section class="section" id="languages">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow">Language support</span>
+          <span class="eyebrow"><span class="eyebrow__num">05</span>Language support</span>
           <h2>Two stdlib parsers plus 20 pure-Go grammars.</h2>
         </div>
         <p class="prose prose--tight">The default tier is CGo-free. Go gets a type-checker-<strong>proven</strong> confirmed tier via <code>go/types</code>; every other language runs through per-language resolvers at the heuristic tier with file:line evidence.</p>
-        <div class="lang-cloud" role="list">
-          <span role="listitem" class="lang lang--star">Go</span>
-          <span role="listitem" class="lang">TypeScript</span>
-          <span role="listitem" class="lang">TSX / JSX</span>
-          <span role="listitem" class="lang">JavaScript</span>
-          <span role="listitem" class="lang lang--star">Python</span>
-          <span role="listitem" class="lang">Ruby</span>
-          <span role="listitem" class="lang">PHP</span>
-          <span role="listitem" class="lang">Lua</span>
-          <span role="listitem" class="lang">Java</span>
-          <span role="listitem" class="lang">Kotlin</span>
-          <span role="listitem" class="lang">C#</span>
-          <span role="listitem" class="lang">C</span>
-          <span role="listitem" class="lang">C++</span>
-          <span role="listitem" class="lang">Rust</span>
-          <span role="listitem" class="lang">Bash</span>
-          <span role="listitem" class="lang">SQL</span>
-          <span role="listitem" class="lang">JSON</span>
-          <span role="listitem" class="lang">YAML</span>
-          <span role="listitem" class="lang">TOML</span>
-          <span role="listitem" class="lang">CSS</span>
-          <span role="listitem" class="lang">Markdown</span>
-          <span role="listitem" class="lang">HCL / Terraform</span>
-        </div>
+      </div>
+      <div class="marquee" data-dir="ltr">
+        <ul class="marquee__track" role="list">
+          <li class="lang lang--star">Go</li>
+          <li class="lang">TypeScript</li>
+          <li class="lang">TSX / JSX</li>
+          <li class="lang">JavaScript</li>
+          <li class="lang lang--star">Python</li>
+          <li class="lang">Ruby</li>
+          <li class="lang">PHP</li>
+          <li class="lang">Lua</li>
+          <li class="lang">Java</li>
+          <li class="lang">Kotlin</li>
+          <li class="lang">C#</li>
+          <li class="lang lang--star" aria-hidden="true">Go</li>
+          <li class="lang" aria-hidden="true">TypeScript</li>
+          <li class="lang" aria-hidden="true">TSX / JSX</li>
+          <li class="lang" aria-hidden="true">JavaScript</li>
+          <li class="lang lang--star" aria-hidden="true">Python</li>
+          <li class="lang" aria-hidden="true">Ruby</li>
+          <li class="lang" aria-hidden="true">PHP</li>
+          <li class="lang" aria-hidden="true">Lua</li>
+          <li class="lang" aria-hidden="true">Java</li>
+          <li class="lang" aria-hidden="true">Kotlin</li>
+          <li class="lang" aria-hidden="true">C#</li>
+        </ul>
+      </div>
+      <div class="marquee" data-dir="rtl">
+        <ul class="marquee__track" role="list">
+          <li class="lang">C</li>
+          <li class="lang">C++</li>
+          <li class="lang">Rust</li>
+          <li class="lang">Bash</li>
+          <li class="lang">SQL</li>
+          <li class="lang">JSON</li>
+          <li class="lang">YAML</li>
+          <li class="lang">TOML</li>
+          <li class="lang">CSS</li>
+          <li class="lang">Markdown</li>
+          <li class="lang">HCL / Terraform</li>
+          <li class="lang" aria-hidden="true">C</li>
+          <li class="lang" aria-hidden="true">C++</li>
+          <li class="lang" aria-hidden="true">Rust</li>
+          <li class="lang" aria-hidden="true">Bash</li>
+          <li class="lang" aria-hidden="true">SQL</li>
+          <li class="lang" aria-hidden="true">JSON</li>
+          <li class="lang" aria-hidden="true">YAML</li>
+          <li class="lang" aria-hidden="true">TOML</li>
+          <li class="lang" aria-hidden="true">CSS</li>
+          <li class="lang" aria-hidden="true">Markdown</li>
+          <li class="lang" aria-hidden="true">HCL / Terraform</li>
+        </ul>
       </div>
     </section>
 
@@ -300,23 +381,23 @@
     <section class="section section--tint" id="local-first">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow">The local-first contract</span>
+          <span class="eyebrow"><span class="eyebrow__num">06</span>The local-first contract</span>
           <h2>Not a single byte leaves your machine.</h2>
         </div>
         <div class="contract-grid">
-          <div class="contract">
+          <div class="contract glow-card">
             <span class="contract__k">No accounts</span>
             <p>No login, no sign-up. Install and go.</p>
           </div>
-          <div class="contract">
+          <div class="contract glow-card">
             <span class="contract__k">No telemetry</span>
             <p>No usage data, no phone-home. What you do stays with you.</p>
           </div>
-          <div class="contract">
+          <div class="contract glow-card">
             <span class="contract__k">Zero egress</span>
             <p>An enforcement guard rejects any non-loopback dial at the surface boundary.</p>
           </div>
-          <div class="contract">
+          <div class="contract glow-card">
             <span class="contract__k">Semantic search: OFF</span>
             <p>Optional embedding search is off by default. The default binary ships no embedder and degrades gracefully.</p>
           </div>
@@ -327,45 +408,60 @@
     <!-- INSTALL -->
     <section class="section" id="install">
       <div class="container">
-        <div class="section__head section__head--center">
-          <span class="eyebrow">Quick start · 2 steps</span>
-          <h2>Run it in your repo.</h2>
-        </div>
+        <div class="install-panel">
+          <div class="section__head section__head--center">
+            <span class="eyebrow"><span class="eyebrow__num">07</span>Quick start · 2 steps</span>
+            <h2>Run it in your repo.</h2>
+          </div>
 
-        <div class="os-tabs" role="tablist" aria-label="Choose operating system">
-          <button role="tab" class="os-tab is-active" data-os="unix" aria-selected="true">macOS / Linux</button>
-          <button role="tab" class="os-tab" data-os="win" aria-selected="false">Windows</button>
-        </div>
+          <div class="os-tabs" role="group" aria-label="Choose operating system">
+            <button type="button" class="os-tab is-active" data-os="unix" aria-pressed="true">macOS / Linux</button>
+            <button type="button" class="os-tab" data-os="win" aria-pressed="false">Windows</button>
+          </div>
 
-        <div class="install-steps">
-          <div class="install-step">
-            <span class="step-badge">1</span>
-            <div class="install-step__body">
-              <p class="step-label">Install — one line, checksum-verified, no sudo.</p>
-              <div class="code-copy" data-os-block="unix">
-                <code>curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh</code>
-                <button class="copy-btn" aria-label="Copy command">Copy</button>
+          <div class="install-steps">
+            <div class="install-step">
+              <span class="step-badge">1</span>
+              <div class="install-step__body">
+                <p class="step-label">Install — one line, checksum-verified, no sudo.</p>
+                <div class="code-copy" data-os-block="unix">
+                  <span class="os-inline-label" data-nojs-label>macOS / Linux</span>
+                  <code tabindex="0" aria-label="Install command for macOS and Linux">curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh</code>
+                  <button type="button" class="copy-btn" aria-label="Copy command">Copy</button>
+                </div>
+                <div class="code-copy" data-os-block="win">
+                  <span class="os-inline-label" data-nojs-label>Windows</span>
+                  <code tabindex="0" aria-label="Install command for Windows">iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex</code>
+                  <button type="button" class="copy-btn" aria-label="Copy command">Copy</button>
+                </div>
               </div>
-              <div class="code-copy is-hidden" data-os-block="win">
-                <code>iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex</code>
-                <button class="copy-btn" aria-label="Copy command">Copy</button>
+            </div>
+            <div class="install-step">
+              <span class="step-badge">2</span>
+              <div class="install-step__body">
+                <p class="step-label">Run it in your repo — your browser opens the interactive code graph.</p>
+                <div class="code-copy">
+                  <code tabindex="0" aria-label="Run command">cd your-repo &amp;&amp; graphi</code>
+                  <button type="button" class="copy-btn" aria-label="Copy command">Copy</button>
+                </div>
               </div>
             </div>
           </div>
-          <div class="install-step">
-            <span class="step-badge">2</span>
-            <div class="install-step__body">
-              <p class="step-label">Run it in your repo — your browser opens the interactive code graph.</p>
-              <div class="code-copy">
-                <code>cd your-repo &amp;&amp; graphi</code>
-                <button class="copy-btn" aria-label="Copy command">Copy</button>
-              </div>
-            </div>
+
+          <div class="install-foot">
+            <p>On a headless box or over SSH, graphi prints the local URL instead with <code>--no-browser</code>.</p>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="install-foot">
-          <p>On a headless box or over SSH, graphi prints the local URL instead with <code>--no-browser</code>.</p>
+    <!-- FINAL CTA -->
+    <section class="section section--cta">
+      <div class="container cta-band">
+        <h2>If graphi saves your agent one full-repo grep, it already paid for itself.</h2>
+        <div class="cta-band__actions">
+          <a class="btn btn--primary" href="https://github.com/samibel/graphi" target="_blank" rel="noopener">Star on GitHub</a>
+          <a class="btn btn--ghost" href="#install">Install now</a>
         </div>
       </div>
     </section>
@@ -375,7 +471,7 @@
   <footer class="footer">
     <div class="container footer__inner">
       <div class="footer__brand">
-        <img src="assets/logo.png" alt="" width="28" height="28" />
+        <img src="assets/logo-64.png" alt="" width="28" height="28" />
         <span>graphi</span>
       </div>
       <p class="footer__tag">Local-first, CGo-free code-intelligence engine.</p>
