@@ -68,6 +68,48 @@ func TestSPA_ServesEmbeddedUI(t *testing.T) {
 	}
 }
 
+// TestWiki_BrowserNavigationServesSPA: a browser document navigation to /wiki*
+// (Accept: text/html) gets the SPA shell, while the client's data fetch
+// (Accept: text/markdown) still reaches the wiki markdown handler. Mirrors the
+// vite dev-server bypass so /wiki deep links / reloads land in the app.
+func TestWiki_BrowserNavigationServesSPA(t *testing.T) {
+	indexBytes, err := fs.ReadFile(webui.FS, "index.html")
+	if err != nil {
+		t.Fatalf("read embedded index.html: %v", err)
+	}
+
+	srv := New(nil, nil) // no wiki store attached
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	getAccept := func(path, accept string) (*http.Response, string) {
+		t.Helper()
+		req, err := http.NewRequest(http.MethodGet, ts.URL+path, nil)
+		if err != nil {
+			t.Fatalf("new request: %v", err)
+		}
+		req.Header.Set("Accept", accept)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("GET %s: %v", path, err)
+		}
+		b, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		return resp, string(b)
+	}
+
+	for _, path := range []string{"/wiki", "/wiki/c/1"} {
+		// Browser navigation → SPA shell, even though no wiki store is attached.
+		if resp, body := getAccept(path, "text/html,application/xhtml+xml"); resp.StatusCode != 200 || body != string(indexBytes) {
+			t.Fatalf("GET %s (Accept text/html) = %d, SPA shell=%v; want 200 + index.html", path, resp.StatusCode, body == string(indexBytes))
+		}
+		// Data fetch → wiki handler (404 here: wiki disabled without a store).
+		if resp, body := getAccept(path, "text/markdown"); resp.StatusCode != http.StatusNotFound || body == string(indexBytes) {
+			t.Fatalf("GET %s (Accept text/markdown) = %d, SPA shell=%v; want 404 from the wiki handler", path, resp.StatusCode, body == string(indexBytes))
+		}
+	}
+}
+
 // firstAsset returns the name of one real file under the embedded assets/ dir.
 func firstAsset(t *testing.T) string {
 	t.Helper()

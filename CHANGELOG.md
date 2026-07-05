@@ -7,6 +7,37 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-05
+
+### Added
+- **Readable graph view.** Nodes in the web UI now carry their qualified name
+  as an on-canvas label (files show their basename) and are colored by symbol
+  kind (function, method, type, file, package, variable — see the legend);
+  edges are labeled with their relationship kind ("calls", "references", …).
+- **Deterministic radial layout.** The seed symbol sits at the center with one
+  ring per hop (direct neighbors on ring 1, depth-2 nodes on ring 2). Positions
+  are stable: an SSE refresh of the same graph no longer re-scrambles the view
+  (previously every node landed at a fresh random position).
+- The web UI adopts the site's terminal design system: deep green-charcoal
+  palette, phosphor-teal primary, monospace chrome, and a dark node-hover
+  label (Sigma's stock white box was unreadable on the dark canvas).
+
+### Fixed
+- **Clicking a node no longer white-screens the app.** Selecting a symbol
+  (compare off) applied the citation highlight with the Sigma edge type
+  `"dashed"`, which Sigma v3 has no program for — the render threw and
+  unmounted the whole page. Citation edges are now amber + thicker, and a new
+  error boundary contains any future canvas failure to an inline message with
+  a retry button instead of a blank page.
+- Edge clicks now work: graph edges are keyed by their payload id, so the
+  "why connected" panel can actually resolve the clicked edge (the previous
+  auto-generated keys never matched and the click was silently dropped).
+- Deep-linking or reloading `/wiki` (and `/wiki/c/{id}`) in a bundled binary
+  now serves the app instead of raw markdown bytes: browser document
+  navigations (`Accept: text/html`) get the SPA shell, while the client's
+  data fetches (`Accept: text/markdown`) still receive markdown — matching
+  the vite dev-server behavior.
+
 ## [0.3.0] - 2026-07-05
 
 ### Added
