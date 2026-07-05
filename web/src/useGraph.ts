@@ -68,12 +68,25 @@ const EMPTY: GraphState = {
   resolvedSeed: null,
 };
 
+/** Human-readable node label: file nodes show their basename, symbols their
+ * qualified name — the raw node id is an opaque hash and useless on canvas. */
+function nodeLabel(n: ResultNode): string {
+  if (n.kind === "file") {
+    return n.qualified_name.split("/").pop() ?? n.qualified_name;
+  }
+  return n.qualified_name;
+}
+
 function toHL(result: QueryResult): {
   nodes: HighlightableNode[];
   edges: HighlightableEdge[];
 } {
   const nodes: HighlightableNode[] = result.nodes.map((n: ResultNode) => ({
     id: n.id,
+    // Render metadata for GraphView: label + kind drive on-canvas text and the
+    // per-kind neutral colors (the graph is unreadable as anonymous gray dots).
+    label: nodeLabel(n),
+    kind: n.kind,
     blast: false,
     citation: false,
   }));
@@ -81,6 +94,10 @@ function toHL(result: QueryResult): {
     id: e.id,
     from: e.from,
     to: e.to,
+    // Edge labels render the relationship kind ("calls", "imports", …).
+    label: e.kind,
+    kind: e.kind,
+    confidenceTier: e.confidence_tier,
     // Citation derives from evidence-bearing edges (D4), captured at hydrate time.
     hasEvidence: Array.isArray(e.evidence) && e.evidence.length > 0,
     blast: false,
