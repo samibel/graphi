@@ -47,10 +47,14 @@ var REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)');
   links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
   var io = new IntersectionObserver(function(entries){
     entries.forEach(function(en){
-      if(!en.isIntersecting) return;
-      links.forEach(function(a){ a.classList.remove('is-active'); });
       var a = map[en.target.id];
-      if(a) a.classList.add('is-active');
+      if(!a) return;
+      if(en.isIntersecting){
+        links.forEach(function(link){ link.classList.remove('is-active'); });
+        a.classList.add('is-active');
+      } else {
+        a.classList.remove('is-active');
+      }
     });
   }, {rootMargin:'-40% 0px -55% 0px'});
   Object.keys(map).forEach(function(id){
@@ -67,7 +71,7 @@ document.querySelectorAll('.copy-btn').forEach(function(btn){
   status.setAttribute('aria-live', 'polite');
   wrap.appendChild(status);
   btn.addEventListener('click', function(){
-    var code = wrap.querySelector('code').innerText;
+    var code = wrap.querySelector('code').textContent;
     var done = function(){
       var o = btn.textContent;
       btn.textContent = 'Copied ✓';
@@ -104,7 +108,8 @@ function copyFallback(text, cb){
     blocks.forEach(function(b){ b.classList.toggle('is-hidden', b.dataset.osBlock !== os); });
   }
   tabs.forEach(function(tab){ tab.addEventListener('click', function(){ select(tab.dataset.os); }); });
-  select(navigator.platform && /win/i.test(navigator.platform) ? 'win' : 'unix');
+  var platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+  select(/win/i.test(platform) || /windows/i.test(navigator.userAgent) ? 'win' : 'unix');
 })();
 
 // Scroll reveal — staggered per sibling group via --i.
@@ -127,15 +132,20 @@ function copyFallback(text, cb){
 })();
 
 // Pointer-tracked spotlight on glow cards (hover-gated, no idle cost).
+// Rect is cached per hover to avoid layout thrash on every pointermove.
 (function(){
   if(!matchMedia('(pointer: fine)').matches) return;
-  document.addEventListener('pointermove', function(e){
-    var card = e.target.closest && e.target.closest('.glow-card');
-    if(!card) return;
-    var r = card.getBoundingClientRect();
-    card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-    card.style.setProperty('--my', (e.clientY - r.top) + 'px');
-  }, {passive:true});
+  document.querySelectorAll('.glow-card').forEach(function(card){
+    var r;
+    card.addEventListener('pointerenter', function(){
+      r = card.getBoundingClientRect();
+    });
+    card.addEventListener('pointermove', function(e){
+      if(!r) r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    }, {passive:true});
+  });
 })();
 
 // Hero background: ambient node-graph canvas.
@@ -183,6 +193,7 @@ function copyFallback(text, cb){
   }
 
   function startPulse(now){
+    if(!nodes.length) return;
     // pick a connected pair, prefer starting from a hub
     var from = hubs.length ? hubs[Math.floor(Math.random() * hubs.length)] : nodes[0];
     var best = null, bestD = LINK_DIST;
