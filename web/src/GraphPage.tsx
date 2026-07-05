@@ -13,6 +13,7 @@
 // graph-view state when leaving for the wiki and returning).
 import { useState } from "react";
 import { GraphView } from "./GraphView";
+import { GraphErrorBoundary } from "./GraphErrorBoundary";
 import { Legend } from "./Legend";
 import { SymbolSearchPanel } from "./SymbolSearchPanel";
 import { WhyConnectedPanel } from "./WhyConnectedPanel";
@@ -214,7 +215,9 @@ export function GraphPage() {
         {!state.loading && state.nodes.length === 0 && activeSeed === "" && (
           <p className="hint">Enter a seed symbol and click “load”.</p>
         )}
-        <GraphView state={state} onSelect={handleNodeSelect} onClear={clear} onEdgeSelect={handleEdgeSelect} />
+        <GraphErrorBoundary>
+          <GraphView state={state} onSelect={handleNodeSelect} onClear={clear} onEdgeSelect={handleEdgeSelect} />
+        </GraphErrorBoundary>
       </div>
 
       <SymbolSearchPanel

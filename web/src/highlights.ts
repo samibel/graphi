@@ -5,7 +5,7 @@
 //
 // Three visually DISTINCT, color-independent-redundant treatments (AC-3, U1/U5):
 //   - blast     → nodes/edges in the impact set      (red, enlarged / solid weight)
-//   - citation  → edges carrying evidence/provenance  (amber, dashed/secondary)
+//   - citation  → edges carrying evidence/provenance  (amber, thicker weight)
 //   - dimmed    → everything out of scope             (faded default)
 // Citation is derived from edges that carry EVIDENCE (D4) — NOT a second fetch
 // and NOT merely edges incident to the selection.
@@ -86,12 +86,40 @@ export function clearHighlights(
 // --- Visual styles (applied by Sigma reducers in GraphView) -----------------
 // Redundant encodings so meaning never relies on color alone (U5):
 //   blast    = red   + enlarged  + solid (z above)
-//   citation = amber + dashed/secondary edge type
+//   citation = amber + thicker edge weight
 //   dimmed   = gray  + faded (low opacity) when a selection is active
 
-export const COLOR_DEFAULT = "#6b7280"; // gray
-export const COLOR_BLAST = "#dc2626"; // red
-export const COLOR_CITATION = "#d97706"; // amber
-export const COLOR_DIMMED = "#374151"; // faded gray (out of scope)
+// Hues are tuned for the terminal palette (deep green-charcoal canvas
+// #080b0a): blast red and citation amber stay clearly distinct; neutral
+// grays lean green so they sit in the same temperature as the site chrome.
+export const COLOR_DEFAULT = "#66807a"; // green-gray neutral
+export const COLOR_BLAST = "#ff5f57"; // terminal red
+export const COLOR_CITATION = "#febc2e"; // terminal amber
+export const COLOR_DIMMED = "#2c3d38"; // faded green-gray (out of scope)
 export const SIZE_DEFAULT = 8;
 export const SIZE_BLAST = 14;
+export const SIZE_SEED = 12;
+
+// Neutral-state node colors keyed by node kind, so the unselected graph is
+// readable at a glance (which dots are files vs. functions vs. types) instead
+// of a uniform gray. Unknown kinds fall back to COLOR_DEFAULT.
+export const KIND_COLORS: Record<string, string> = {
+  function: "#4c8dff", // blue
+  func: "#4c8dff",
+  method: "#a78bfa", // violet
+  type: "#3ee6b0", // phosphor teal-green (site primary)
+  struct: "#3ee6b0",
+  interface: "#3ee6b0",
+  class: "#3ee6b0",
+  file: "#59d0ff", // cyan (site secondary accent)
+  package: "#f472b6", // pink
+  module: "#f472b6",
+  var: "#e0c352", // yellow
+  const: "#e0c352",
+  field: "#e0c352",
+};
+
+export function colorForKind(kind: unknown): string {
+  if (typeof kind !== "string") return COLOR_DEFAULT;
+  return KIND_COLORS[kind.toLowerCase()] ?? COLOR_DEFAULT;
+}

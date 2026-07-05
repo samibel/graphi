@@ -66,7 +66,15 @@ box / over SSH (or with `--no-browser` / `GRAPHI_NO_BROWSER`), graphi prints the
 local URL instead of opening a browser.
 
 <p align="center">
-  <img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search" width="900" />
+  <img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search, radial layout with per-kind node colors" width="900" />
+</p>
+
+Click any node to see its blast radius: impacted symbols light up red, the
+evidence-bearing (citation) edges amber, and everything out of scope dims —
+while the agent-context export below fills with the selection.
+
+<p align="center">
+  <img src="docs/assets/graph-ui-selection.png" alt="graphi web UI — a selected symbol with blast-radius and citation highlights and the agent context export" width="900" />
 </p>
 
 ### Everyday use
