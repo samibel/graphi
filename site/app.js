@@ -114,7 +114,7 @@ function copyFallback(text, cb){
 
 // Scroll reveal — staggered per sibling group via --i.
 (function(){
-  var els = document.querySelectorAll('.section__head, .fgroup, .audience-card, .contract, .showcase, .install-step, .step-card, .cta-band');
+  var els = document.querySelectorAll('.section__head, .fgroup, .audience-card, .contract, .showcase, .install-step, .step-card, .cta-band, .proof-hero, .stat, .proof-card, .repro');
   var perParent = new Map();
   els.forEach(function(e){
     var n = perParent.get(e.parentElement) || 0;

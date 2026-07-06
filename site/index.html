@@ -60,6 +60,7 @@
       <nav class="nav" aria-label="Primary navigation">
         <a href="#what">What it is</a>
         <a href="#features">Features</a>
+        <a href="#benchmarks">Benchmarks</a>
         <a href="#languages">Languages</a>
         <a href="#local-first">Local-first</a>
         <a href="#install">Install</a>
@@ -193,11 +194,131 @@
       </figure>
     </section>
 
+    <!-- BENCHMARKS / PROOF -->
+    <section class="section" id="benchmarks">
+      <div class="container">
+        <div class="section__head section__head--center">
+          <span class="eyebrow"><span class="eyebrow__num">04</span>Benchmarks &amp; evidence</span>
+          <h2>Measured, not marketed.</h2>
+          <p class="prose" style="margin-inline:auto">Every number below comes from a committed benchmark harness with raw samples and machine-readable artifacts — reproduce it yourself in one command.</p>
+        </div>
+
+        <div class="proof-hero glow-card">
+          <div class="proof-hero__figure">
+            <span class="proof-hero__num">78×</span>
+            <span class="proof-hero__cap">aggregate · 12 cases</span>
+          </div>
+          <div class="proof-hero__body">
+            <h3>Fewer context tokens per structural answer.</h3>
+            <p>Across 11 capabilities — <code>callers</code>, <code>references</code>, <code>implements</code>, <code>overrides</code> and more — graphi returns the answer in a handful of tokens where a read-the-files baseline spends hundreds. Aggregate <strong>78.49×</strong> reduction, comfortably past the <strong>50×</strong> claim threshold.</p>
+            <div class="proof-hero__meta">
+              <span class="chip chip--ok">token-parity-eval PASS</span>
+              <span class="chip">threshold 50× · claim supported</span>
+              <span class="chip">coverage drift: none</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat glow-card">
+            <span class="stat__v">7.9<small> ms</small></span>
+            <span class="stat__k">Cold start to first query <span class="pass-pill">PASS</span></span>
+            <span class="stat__sub">p95 · budget 400 ms</span>
+          </div>
+          <div class="stat glow-card">
+            <span class="stat__v">3.8<small> ms</small></span>
+            <span class="stat__k">Full re-index of the fixture <span class="pass-pill">PASS</span></span>
+            <span class="stat__sub">budget 300 ms</span>
+          </div>
+          <div class="stat glow-card">
+            <span class="stat__v">63<small> s</small></span>
+            <span class="stat__k">End-to-end on a real repo <span class="pass-pill">PASS</span></span>
+            <span class="stat__sub">Hermes Agent · pinned</span>
+          </div>
+          <div class="stat glow-card">
+            <span class="stat__v">30.5<small> MB</small></span>
+            <span class="stat__k">Single static binary <span class="pass-pill">PASS</span></span>
+            <span class="stat__sub">no runtime deps · budget 32.5 MB</span>
+          </div>
+        </div>
+
+        <div class="proof-cols">
+          <article class="proof-card glow-card">
+            <div class="proof-card__head">
+              <h3>Performance gate</h3>
+              <span class="proof-card__tag">gate PASS</span>
+            </div>
+            <div class="gate-wrap">
+              <table class="gate">
+                <thead>
+                  <tr><th>Metric</th><th class="num">Measured</th><th class="num">Budget</th><th class="num">Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="metric">cold_start_p95</td><td class="num measured">7.87 ms</td><td class="num">400 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
+                  <tr><td class="metric">full_index</td><td class="num measured">3.83 ms</td><td class="num">300 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
+                  <tr><td class="metric">freshness_lag</td><td class="num measured">4.43 ms</td><td class="num">2000 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
+                  <tr><td class="metric">binary_size</td><td class="num measured">30.5 MB</td><td class="num">32.5 MB</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="bars__foot">15 samples per metric, raw values retained for min/max, variance and trend charts.</p>
+          </article>
+
+          <article class="proof-card glow-card">
+            <div class="proof-card__head">
+              <h3>Token reduction by capability</h3>
+              <span class="proof-card__tag">× vs. baseline</span>
+            </div>
+            <div class="bars" role="list" aria-label="Token reduction ratio per capability">
+              <div class="bar" role="listitem"><span class="bar__k">overrides</span><span class="bar__track"><span class="bar__fill" style="width:100%"></span></span><span class="bar__v">130×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">supertypes</span><span class="bar__track"><span class="bar__fill" style="width:100%"></span></span><span class="bar__v">130×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">subtypes</span><span class="bar__track"><span class="bar__fill" style="width:100%"></span></span><span class="bar__v">130×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">implements</span><span class="bar__track"><span class="bar__fill" style="width:83%"></span></span><span class="bar__v">109×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">callers</span><span class="bar__track"><span class="bar__fill" style="width:67%"></span></span><span class="bar__v">88×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">implementers</span><span class="bar__track"><span class="bar__fill" style="width:63%"></span></span><span class="bar__v">82×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">definition</span><span class="bar__track"><span class="bar__fill" style="width:46%"></span></span><span class="bar__v">60×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">callees</span><span class="bar__track"><span class="bar__fill" style="width:45%"></span></span><span class="bar__v">59×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">neighborhood</span><span class="bar__track"><span class="bar__fill" style="width:38%"></span></span><span class="bar__v">50×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">references</span><span class="bar__track"><span class="bar__fill" style="width:37%"></span></span><span class="bar__v">48×</span></div>
+              <div class="bar" role="listitem"><span class="bar__k">search</span><span class="bar__track"><span class="bar__fill" style="width:36%"></span></span><span class="bar__v">48×</span></div>
+            </div>
+            <p class="bars__foot">Graphi tokens vs. a baseline context, per capability. Bars scaled to the 130× peak.</p>
+          </article>
+        </div>
+
+        <div class="repro">
+          <div class="repro__body">
+            <h3>Reproduce every figure.</h3>
+            <p>The harness, the frozen fixture and the pinned third-party corpus (Hermes Agent) all live in the repo. Run the gate and the eval; each writes a machine-readable artifact you can diff over time.</p>
+            <div class="artifact-list" aria-label="Generated evidence artifacts">
+              <span class="artifact">bench-report.json</span>
+              <span class="artifact">eval-report.json</span>
+              <span class="artifact">hermes-corpus-report.json</span>
+            </div>
+          </div>
+          <div class="terminal" aria-hidden="true">
+            <div class="terminal__bar">
+              <span class="terminal__dot"></span><span class="terminal__dot"></span><span class="terminal__dot"></span>
+              <span class="terminal__title">~/graphi</span>
+            </div>
+            <pre class="terminal__body"><code><span class="ln"><span class="prompt">$</span> go run ./cmd/bench <span class="tok">-samples 15</span></span>
+<span class="ln muted">benchmark gate PASS</span>
+<span class="ln"><span class="prompt">$</span> go run ./cmd/eval <span class="tok">-claim-validate</span></span>
+<span class="ln out">token-parity-eval PASS <span class="dim">(aggregate=78.49x)</span></span>
+<span class="ln"><span class="prompt">$</span> go run ./cmd/corpus <span class="tok">-manifest hermes</span></span>
+<span class="ln out">corpus: hermes-agent PASS <span class="dim">(63.1s)</span></span></code></pre>
+          </div>
+        </div>
+
+        <p class="fine-print fine-print--center">Measured on a frozen benchmark fixture and one pinned third-party repository. A paired live-model cost experiment harness ships alongside — run it with your own provider key to attach real token spend.</p>
+      </div>
+    </section>
+
     <!-- FEATURES -->
     <section class="section section--tint" id="features">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow"><span class="eyebrow__num">04</span>Features</span>
+          <span class="eyebrow"><span class="eyebrow__num">05</span>Features</span>
           <h2>38 MCP tools over one engine — grouped by task.</h2>
         </div>
 
@@ -318,7 +439,7 @@
     <section class="section" id="languages">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow"><span class="eyebrow__num">05</span>Language support</span>
+          <span class="eyebrow"><span class="eyebrow__num">06</span>Language support</span>
           <h2>Two stdlib parsers plus 20 pure-Go grammars.</h2>
         </div>
         <p class="prose prose--tight">The default tier is CGo-free. Go gets a type-checker-<strong>proven</strong> confirmed tier via <code>go/types</code>; every other language runs through per-language resolvers at the heuristic tier with file:line evidence.</p>
@@ -381,7 +502,7 @@
     <section class="section section--tint" id="local-first">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow"><span class="eyebrow__num">06</span>The local-first contract</span>
+          <span class="eyebrow"><span class="eyebrow__num">07</span>The local-first contract</span>
           <h2>Not a single byte leaves your machine.</h2>
         </div>
         <div class="contract-grid">
@@ -410,7 +531,7 @@
       <div class="container">
         <div class="install-panel">
           <div class="section__head section__head--center">
-            <span class="eyebrow"><span class="eyebrow__num">07</span>Quick start · 2 steps</span>
+            <span class="eyebrow"><span class="eyebrow__num">08</span>Quick start · 2 steps</span>
             <h2>Run it in your repo.</h2>
           </div>
 
