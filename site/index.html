@@ -199,53 +199,76 @@
       <div class="container">
         <div class="section__head section__head--center">
           <span class="eyebrow"><span class="eyebrow__num">04</span>Benchmarks &amp; evidence</span>
-          <h2>Measured, not marketed.</h2>
-          <p class="prose" style="margin-inline:auto">Every number below comes from a committed benchmark harness with raw samples and machine-readable artifacts — reproduce it yourself in one command.</p>
+          <h2>Measured on real code. Proven with statistics.</h2>
+          <p class="prose" style="margin-inline:auto">graphi's token savings, benchmarked across <strong>37 agent query pairs</strong> on <strong>four real open-source repositories</strong> — not a synthetic fixture. Both sides counted on graphi's own frozen ruler; every headline figure passes a two-sided significance test.</p>
         </div>
 
         <div class="proof-hero glow-card">
           <div class="proof-hero__figure">
-            <span class="proof-hero__num">78×</span>
-            <span class="proof-hero__cap">aggregate · 12 cases</span>
+            <span class="proof-hero__num">99.4%</span>
+            <span class="proof-hero__cap">across 37 query pairs</span>
           </div>
           <div class="proof-hero__body">
-            <h3>Fewer context tokens per structural answer.</h3>
-            <p>Across 11 capabilities — <code>callers</code>, <code>references</code>, <code>implements</code>, <code>overrides</code> and more — graphi returns the answer in a handful of tokens where a read-the-files baseline spends hundreds. Aggregate <strong>78.49×</strong> reduction, comfortably past the <strong>50×</strong> claim threshold.</p>
+            <h3>Fewer context tokens per agent question.</h3>
+            <p>For the same set of code-intelligence questions across Gin, Click, Express and Got, graphi answered in <strong>~106 tokens</strong> where a whole-file-read baseline spent <strong>~16,485</strong> — about <strong>155× less context</strong>. Over the full run: <strong>3,918</strong> tokens vs. <strong>609,931</strong>.</p>
             <div class="proof-hero__meta">
-              <span class="chip chip--ok">token-parity-eval PASS</span>
-              <span class="chip">threshold 50× · claim supported</span>
-              <span class="chip">coverage drift: none</span>
+              <span class="chip chip--ok">p &lt; 0.05 · significant</span>
+              <span class="chip">Welch's t-test · two-sided</span>
+              <span class="chip">4 repos · Go · Python · JS · TS</span>
             </div>
           </div>
         </div>
 
         <div class="stat-grid">
           <div class="stat glow-card">
-            <span class="stat__v">7.9<small> ms</small></span>
-            <span class="stat__k">Cold start to first query <span class="pass-pill">PASS</span></span>
-            <span class="stat__sub">p95 · budget 400 ms</span>
+            <span class="stat__v">96%</span>
+            <span class="stat__k">Fewer context bytes returned</span>
+            <span class="stat__sub">6,336 vs 162,278 B / query</span>
           </div>
           <div class="stat glow-card">
-            <span class="stat__v">3.8<small> ms</small></span>
-            <span class="stat__k">Full re-index of the fixture <span class="pass-pill">PASS</span></span>
-            <span class="stat__sub">budget 300 ms</span>
+            <span class="stat__v">81%</span>
+            <span class="stat__k">Fewer files the agent opens</span>
+            <span class="stat__sub">1.0 vs 5.4 files / query</span>
+          </div>
+          <div class="stat stat--primary glow-card">
+            <span class="stat__tag">Primary KPI</span>
+            <span class="stat__v">99.4%</span>
+            <span class="stat__k">Fewer context tokens</span>
+            <span class="stat__sub">106 vs 16,485 tokens / query</span>
           </div>
           <div class="stat glow-card">
-            <span class="stat__v">63<small> s</small></span>
-            <span class="stat__k">End-to-end on a real repo <span class="pass-pill">PASS</span></span>
-            <span class="stat__sub">Hermes Agent · pinned</span>
-          </div>
-          <div class="stat glow-card">
-            <span class="stat__v">30.5<small> MB</small></span>
-            <span class="stat__k">Single static binary <span class="pass-pill">PASS</span></span>
-            <span class="stat__sub">no runtime deps · budget 32.5 MB</span>
+            <span class="stat__v">99.4%</span>
+            <span class="stat__k">Lower input cost</span>
+            <span class="stat__sub">proportional to context tokens</span>
           </div>
         </div>
+        <p class="chain-note">The causal chain — <b>fewer bytes</b> → <b>fewer files read</b> → <b>fewer tokens</b> → <b>lower cost</b>. Per-query means, whole-file-read-v1 baseline.</p>
 
         <div class="proof-cols">
           <article class="proof-card glow-card">
             <div class="proof-card__head">
-              <h3>Performance gate</h3>
+              <h3>Savings by repository</h3>
+              <span class="proof-card__tag">37 pairs</span>
+            </div>
+            <div class="gate-wrap">
+              <table class="gate">
+                <thead>
+                  <tr><th>Repository</th><th class="num">Pairs</th><th class="num">Tokens saved</th><th class="num">Mean tokens</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="metric">Gin · Go</td><td class="num">11</td><td class="num measured">99.0%</td><td class="num">215 → 22,611</td></tr>
+                  <tr><td class="metric">Click · Python</td><td class="num">9</td><td class="num measured">99.5%</td><td class="num">125 → 25,292</td></tr>
+                  <tr><td class="metric">Express · JS</td><td class="num">6</td><td class="num measured">97.9%</td><td class="num">28 → 1,319</td></tr>
+                  <tr><td class="metric">Got · TS</td><td class="num">11</td><td class="num measured">99.8%</td><td class="num">24 → 11,425</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="bars__foot">Mean tokens per query, graphi ON → whole-file-read baseline. Every repository drops by roughly two orders of magnitude.</p>
+          </article>
+
+          <article class="proof-card glow-card">
+            <div class="proof-card__head">
+              <h3>Engine performance gate</h3>
               <span class="proof-card__tag">gate PASS</span>
             </div>
             <div class="gate-wrap">
@@ -261,39 +284,18 @@
                 </tbody>
               </table>
             </div>
-            <p class="bars__foot">15 samples per metric, raw values retained for min/max, variance and trend charts.</p>
-          </article>
-
-          <article class="proof-card glow-card">
-            <div class="proof-card__head">
-              <h3>Token reduction by capability</h3>
-              <span class="proof-card__tag">× vs. baseline</span>
-            </div>
-            <div class="bars" role="list" aria-label="Token reduction ratio per capability">
-              <div class="bar" role="listitem"><span class="bar__k">overrides</span><span class="bar__track"><span class="bar__fill" style="width:100%"></span></span><span class="bar__v">130×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">supertypes</span><span class="bar__track"><span class="bar__fill" style="width:100%"></span></span><span class="bar__v">130×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">subtypes</span><span class="bar__track"><span class="bar__fill" style="width:100%"></span></span><span class="bar__v">130×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">implements</span><span class="bar__track"><span class="bar__fill" style="width:83%"></span></span><span class="bar__v">109×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">callers</span><span class="bar__track"><span class="bar__fill" style="width:67%"></span></span><span class="bar__v">88×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">implementers</span><span class="bar__track"><span class="bar__fill" style="width:63%"></span></span><span class="bar__v">82×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">definition</span><span class="bar__track"><span class="bar__fill" style="width:46%"></span></span><span class="bar__v">60×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">callees</span><span class="bar__track"><span class="bar__fill" style="width:45%"></span></span><span class="bar__v">59×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">neighborhood</span><span class="bar__track"><span class="bar__fill" style="width:38%"></span></span><span class="bar__v">50×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">references</span><span class="bar__track"><span class="bar__fill" style="width:37%"></span></span><span class="bar__v">48×</span></div>
-              <div class="bar" role="listitem"><span class="bar__k">search</span><span class="bar__track"><span class="bar__fill" style="width:36%"></span></span><span class="bar__v">48×</span></div>
-            </div>
-            <p class="bars__foot">Graphi tokens vs. a baseline context, per capability. Bars scaled to the 130× peak.</p>
+            <p class="bars__foot">Index speed and footprint, 15 samples per metric — a single CGo-free static binary.</p>
           </article>
         </div>
 
         <div class="repro">
           <div class="repro__body">
-            <h3>Reproduce every figure.</h3>
-            <p>The harness, the frozen fixture and the pinned third-party corpus (Hermes Agent) all live in the repo. Run the gate and the eval; each writes a machine-readable artifact you can diff over time.</p>
-            <div class="artifact-list" aria-label="Generated evidence artifacts">
-              <span class="artifact">bench-report.json</span>
-              <span class="artifact">eval-report.json</span>
-              <span class="artifact">hermes-corpus-report.json</span>
+            <h3>Honest by construction.</h3>
+            <p>Both sides are metered on the identical ruler — graphi's frozen <code>whole-file-read-v1</code> method in <code>engine/meter</code>. Query pairs that return no cited artifacts are excluded rather than scored with a fabricated baseline, which is why 37 of 48 authored queries are included.</p>
+            <div class="artifact-list" aria-label="Benchmark provenance">
+              <span class="artifact">engine/meter · whole-file-read-v1</span>
+              <span class="artifact">engine/price · prices-v1</span>
+              <span class="artifact">local-first · zero egress</span>
             </div>
           </div>
           <div class="terminal" aria-hidden="true">
@@ -301,16 +303,16 @@
               <span class="terminal__dot"></span><span class="terminal__dot"></span><span class="terminal__dot"></span>
               <span class="terminal__title">~/graphi</span>
             </div>
-            <pre class="terminal__body"><code><span class="ln"><span class="prompt">$</span> go run ./cmd/bench <span class="tok">-samples 15</span></span>
-<span class="ln muted">benchmark gate PASS</span>
-<span class="ln"><span class="prompt">$</span> go run ./cmd/eval <span class="tok">-claim-validate</span></span>
-<span class="ln out">token-parity-eval PASS <span class="dim">(aggregate=78.49x)</span></span>
-<span class="ln"><span class="prompt">$</span> go run ./cmd/corpus <span class="tok">-manifest hermes</span></span>
-<span class="ln out">corpus: hermes-agent PASS <span class="dim">(63.1s)</span></span></code></pre>
+            <pre class="terminal__body"><code><span class="ln"><span class="prompt">$</span> graphi index <span class="tok">gin click express got</span></span>
+<span class="ln muted">✓ 4 repos · 37 query pairs indexed</span>
+<span class="ln muted"># whole-file-read-v1 baseline · claude-sonnet pricing</span>
+<span class="ln out">context tokens   3,918   vs  609,931   <span class="dim">99.4% ↓</span></span>
+<span class="ln out">files read       1.0     vs  5.4       <span class="dim">81%  ↓</span></span>
+<span class="ln out">significance     p &lt; 0.05  <span class="dim">(Welch's t-test)</span></span></code></pre>
           </div>
         </div>
 
-        <p class="fine-print fine-print--center">Measured on a frozen benchmark fixture and one pinned third-party repository. A paired live-model cost experiment harness ships alongside — run it with your own provider key to attach real token spend.</p>
+        <p class="fine-print fine-print--center">Benchmarked against four real OSS repositories — Gin, Click, Express, Got — over 37 of 48 authored query pairs (empty-result pairs excluded). Token counts use graphi's frozen whole-file-read-v1 ruler on both sides; significance by two-sided Welch's t-test (p &lt; 0.05). Input cost is shown proportionally to context tokens.</p>
       </div>
     </section>
 
