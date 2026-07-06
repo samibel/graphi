@@ -95,10 +95,10 @@
             <a class="btn btn--ghost" href="https://github.com/samibel/graphi" target="_blank" rel="noopener">View on GitHub</a>
           </div>
           <p class="hero__receipt"><span class="star" aria-hidden="true">★</span> open source · Apache-2.0 · 38 MCP tools · 22 languages</p>
-          <a class="hero__proof" href="#benchmarks" aria-label="See the benchmarks — 99.4% fewer context tokens across four real repositories, statistically significant">
+          <a class="hero__proof" href="#benchmarks" aria-label="See the benchmarks — in a whole-file-read baseline, graphi reduced returned context tokens by 99.4% across 37 benchmarked queries">
             <span class="hero__proof-stat"><b>99.4%</b> fewer context tokens</span>
-            <span class="hero__proof-stat"><b>155×</b> less context</span>
-            <span class="hero__proof-stat"><b>p&lt;0.05</b> · 4 real repos</span>
+            <span class="hero__proof-stat">vs. a whole-file-read baseline</span>
+            <span class="hero__proof-stat"><b>37</b> benchmarked queries · p&lt;0.05</span>
             <span class="hero__proof-cta">See the benchmarks <span class="arw" aria-hidden="true">→</span></span>
           </a>
         </div>
@@ -205,8 +205,8 @@
       <div class="container">
         <div class="section__head section__head--center">
           <span class="eyebrow"><span class="eyebrow__num">04</span>Benchmarks &amp; evidence</span>
-          <h2>Measured on real code. Proven with statistics.</h2>
-          <p class="prose" style="margin-inline:auto">graphi's token savings, benchmarked across <strong>37 agent query pairs</strong> on <strong>four real open-source repositories</strong> — not a synthetic fixture. Both sides counted on graphi's own frozen ruler; every headline figure passes a two-sided significance test.</p>
+          <h2>Measured on real code. Honest about scope.</h2>
+          <p class="prose" style="margin-inline:auto">In a whole-file-read baseline, graphi reduced returned context tokens by <strong>99.4%</strong> across <strong>37 benchmarked code-intelligence queries</strong> on four real open-source repositories. This measures the <em>size of the returned context</em> — not answer quality — against an agent that opens whole files; an agent using grep, AST or symbol search would read less, so read 99.4% as the upper end.</p>
         </div>
 
         <div class="proof-hero glow-card">
@@ -216,7 +216,7 @@
           </div>
           <div class="proof-hero__body">
             <h3>Fewer context tokens per agent question.</h3>
-            <p>For the same set of code-intelligence questions across Gin, Click, Express and Got, graphi answered in <strong>~106 tokens</strong> where a whole-file-read baseline spent <strong>~16,485</strong> — about <strong>155× less context</strong>. Over the full run: <strong>3,918</strong> tokens vs. <strong>609,931</strong>.</p>
+            <p>For the same set of code-intelligence questions across Gin, Click, Express and Got, graphi answered in <strong>~106 tokens</strong> where a whole-file-read baseline spent <strong>~16,485</strong> — about <strong>155× less context in this baseline</strong>. Over the full run: <strong>3,918</strong> tokens vs. <strong>609,931</strong>.</p>
             <div class="proof-hero__meta">
               <span class="chip chip--ok">p &lt; 0.05 · significant</span>
               <span class="chip">Welch's t-test · two-sided</span>
@@ -290,7 +290,7 @@
                 </tbody>
               </table>
             </div>
-            <p class="bars__foot">Index speed and footprint, 15 samples per metric — a single CGo-free static binary.</p>
+            <p class="bars__foot">Index speed and footprint on the benchmark corpus, 15 samples per metric. Cold-start and index time scale with repository size — not a claim for large enterprise monorepos.</p>
           </article>
         </div>
 
@@ -318,7 +318,7 @@
           </div>
         </div>
 
-        <p class="fine-print fine-print--center">Benchmarked against four real OSS repositories — Gin, Click, Express, Got — over 37 of 48 authored query pairs (empty-result pairs excluded). Token counts use graphi's frozen whole-file-read-v1 ruler on both sides; significance by two-sided Welch's t-test (p &lt; 0.05). Input cost is shown proportionally to context tokens.</p>
+        <p class="fine-print fine-print--center">Scope: measured against a whole-file-read baseline — the case graphi helps most. An agent using grep, AST or symbol search would read less, so treat 99.4% as the upper end, and note the metric is returned <em>context size</em>, not answer correctness. 37 of 48 authored query pairs are included (empty-result pairs excluded, not scored). Both sides use graphi's frozen whole-file-read-v1 ruler; significance by two-sided Welch's t-test (p &lt; 0.05); input cost shown proportionally to context tokens.</p>
       </div>
     </section>
 
