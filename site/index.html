@@ -60,6 +60,7 @@
       <nav class="nav" aria-label="Primary navigation">
         <a href="#what">What it is</a>
         <a href="#features">Features</a>
+        <a href="#benchmarks">Benchmarks</a>
         <a href="#languages">Languages</a>
         <a href="#local-first">Local-first</a>
         <a href="#install">Install</a>
@@ -193,11 +194,133 @@
       </figure>
     </section>
 
+    <!-- BENCHMARKS / PROOF -->
+    <section class="section" id="benchmarks">
+      <div class="container">
+        <div class="section__head section__head--center">
+          <span class="eyebrow"><span class="eyebrow__num">04</span>Benchmarks &amp; evidence</span>
+          <h2>Measured on real code. Proven with statistics.</h2>
+          <p class="prose" style="margin-inline:auto">graphi's token savings, benchmarked across <strong>37 agent query pairs</strong> on <strong>four real open-source repositories</strong> — not a synthetic fixture. Both sides counted on graphi's own frozen ruler; every headline figure passes a two-sided significance test.</p>
+        </div>
+
+        <div class="proof-hero glow-card">
+          <div class="proof-hero__figure">
+            <span class="proof-hero__num">99.4%</span>
+            <span class="proof-hero__cap">across 37 query pairs</span>
+          </div>
+          <div class="proof-hero__body">
+            <h3>Fewer context tokens per agent question.</h3>
+            <p>For the same set of code-intelligence questions across Gin, Click, Express and Got, graphi answered in <strong>~106 tokens</strong> where a whole-file-read baseline spent <strong>~16,485</strong> — about <strong>155× less context</strong>. Over the full run: <strong>3,918</strong> tokens vs. <strong>609,931</strong>.</p>
+            <div class="proof-hero__meta">
+              <span class="chip chip--ok">p &lt; 0.05 · significant</span>
+              <span class="chip">Welch's t-test · two-sided</span>
+              <span class="chip">4 repos · Go · Python · JS · TS</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat glow-card">
+            <span class="stat__v">96%</span>
+            <span class="stat__k">Fewer context bytes returned</span>
+            <span class="stat__sub">6,336 vs 162,278 B / query</span>
+          </div>
+          <div class="stat glow-card">
+            <span class="stat__v">81%</span>
+            <span class="stat__k">Fewer files the agent opens</span>
+            <span class="stat__sub">1.0 vs 5.4 files / query</span>
+          </div>
+          <div class="stat stat--primary glow-card">
+            <span class="stat__tag">Primary KPI</span>
+            <span class="stat__v">99.4%</span>
+            <span class="stat__k">Fewer context tokens</span>
+            <span class="stat__sub">106 vs 16,485 tokens / query</span>
+          </div>
+          <div class="stat glow-card">
+            <span class="stat__v">99.4%</span>
+            <span class="stat__k">Lower input cost</span>
+            <span class="stat__sub">proportional to context tokens</span>
+          </div>
+        </div>
+        <p class="chain-note">The causal chain — <b>fewer bytes</b> → <b>fewer files read</b> → <b>fewer tokens</b> → <b>lower cost</b>. Per-query means, whole-file-read-v1 baseline.</p>
+
+        <div class="proof-cols">
+          <article class="proof-card glow-card">
+            <div class="proof-card__head">
+              <h3>Savings by repository</h3>
+              <span class="proof-card__tag">37 pairs</span>
+            </div>
+            <div class="gate-wrap">
+              <table class="gate">
+                <thead>
+                  <tr><th>Repository</th><th class="num">Pairs</th><th class="num">Tokens saved</th><th class="num">Mean tokens</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="metric">Gin · Go</td><td class="num">11</td><td class="num measured">99.0%</td><td class="num">215 → 22,611</td></tr>
+                  <tr><td class="metric">Click · Python</td><td class="num">9</td><td class="num measured">99.5%</td><td class="num">125 → 25,292</td></tr>
+                  <tr><td class="metric">Express · JS</td><td class="num">6</td><td class="num measured">97.9%</td><td class="num">28 → 1,319</td></tr>
+                  <tr><td class="metric">Got · TS</td><td class="num">11</td><td class="num measured">99.8%</td><td class="num">24 → 11,425</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="bars__foot">Mean tokens per query, graphi ON → whole-file-read baseline. Every repository drops by roughly two orders of magnitude.</p>
+          </article>
+
+          <article class="proof-card glow-card">
+            <div class="proof-card__head">
+              <h3>Engine performance gate</h3>
+              <span class="proof-card__tag">gate PASS</span>
+            </div>
+            <div class="gate-wrap">
+              <table class="gate">
+                <thead>
+                  <tr><th>Metric</th><th class="num">Measured</th><th class="num">Budget</th><th class="num">Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="metric">cold_start_p95</td><td class="num measured">7.87 ms</td><td class="num">400 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
+                  <tr><td class="metric">full_index</td><td class="num measured">3.83 ms</td><td class="num">300 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
+                  <tr><td class="metric">freshness_lag</td><td class="num measured">4.43 ms</td><td class="num">2000 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
+                  <tr><td class="metric">binary_size</td><td class="num measured">30.5 MB</td><td class="num">32.5 MB</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="bars__foot">Index speed and footprint, 15 samples per metric — a single CGo-free static binary.</p>
+          </article>
+        </div>
+
+        <div class="repro">
+          <div class="repro__body">
+            <h3>Honest by construction.</h3>
+            <p>Both sides are metered on the identical ruler — graphi's frozen <code>whole-file-read-v1</code> method in <code>engine/meter</code>. Query pairs that return no cited artifacts are excluded rather than scored with a fabricated baseline, which is why 37 of 48 authored queries are included.</p>
+            <div class="artifact-list" aria-label="Benchmark provenance">
+              <span class="artifact">engine/meter · whole-file-read-v1</span>
+              <span class="artifact">engine/price · prices-v1</span>
+              <span class="artifact">local-first · zero egress</span>
+            </div>
+          </div>
+          <div class="terminal" aria-hidden="true">
+            <div class="terminal__bar">
+              <span class="terminal__dot"></span><span class="terminal__dot"></span><span class="terminal__dot"></span>
+              <span class="terminal__title">~/graphi</span>
+            </div>
+            <pre class="terminal__body"><code><span class="ln"><span class="prompt">$</span> graphi index <span class="tok">gin click express got</span></span>
+<span class="ln muted">✓ 4 repos · 37 query pairs indexed</span>
+<span class="ln muted"># whole-file-read-v1 baseline · claude-sonnet pricing</span>
+<span class="ln out">context tokens   3,918   vs  609,931   <span class="dim">99.4% ↓</span></span>
+<span class="ln out">files read       1.0     vs  5.4       <span class="dim">81%  ↓</span></span>
+<span class="ln out">significance     p &lt; 0.05  <span class="dim">(Welch's t-test)</span></span></code></pre>
+          </div>
+        </div>
+
+        <p class="fine-print fine-print--center">Benchmarked against four real OSS repositories — Gin, Click, Express, Got — over 37 of 48 authored query pairs (empty-result pairs excluded). Token counts use graphi's frozen whole-file-read-v1 ruler on both sides; significance by two-sided Welch's t-test (p &lt; 0.05). Input cost is shown proportionally to context tokens.</p>
+      </div>
+    </section>
+
     <!-- FEATURES -->
     <section class="section section--tint" id="features">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow"><span class="eyebrow__num">04</span>Features</span>
+          <span class="eyebrow"><span class="eyebrow__num">05</span>Features</span>
           <h2>38 MCP tools over one engine — grouped by task.</h2>
         </div>
 
@@ -318,7 +441,7 @@
     <section class="section" id="languages">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow"><span class="eyebrow__num">05</span>Language support</span>
+          <span class="eyebrow"><span class="eyebrow__num">06</span>Language support</span>
           <h2>Two stdlib parsers plus 20 pure-Go grammars.</h2>
         </div>
         <p class="prose prose--tight">The default tier is CGo-free. Go gets a type-checker-<strong>proven</strong> confirmed tier via <code>go/types</code>; every other language runs through per-language resolvers at the heuristic tier with file:line evidence.</p>
@@ -381,7 +504,7 @@
     <section class="section section--tint" id="local-first">
       <div class="container">
         <div class="section__head">
-          <span class="eyebrow"><span class="eyebrow__num">06</span>The local-first contract</span>
+          <span class="eyebrow"><span class="eyebrow__num">07</span>The local-first contract</span>
           <h2>Not a single byte leaves your machine.</h2>
         </div>
         <div class="contract-grid">
@@ -410,7 +533,7 @@
       <div class="container">
         <div class="install-panel">
           <div class="section__head section__head--center">
-            <span class="eyebrow"><span class="eyebrow__num">07</span>Quick start · 2 steps</span>
+            <span class="eyebrow"><span class="eyebrow__num">08</span>Quick start · 2 steps</span>
             <h2>Run it in your repo.</h2>
           </div>
 
