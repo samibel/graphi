@@ -45,6 +45,14 @@ type SymbolIndex struct {
 	// derived from node qualified names (pkg.Symbol). Used to find the directory
 	// a selector base's import path resolves into.
 	clauseByDir map[string]string
+
+	// packageNodeByPath maps a full package path (e.g. "com.example.service") to
+	// its interned "package" node id (WP-01). FQN/package-header languages (Java,
+	// Kotlin) mint one such node per declared package; the resolver emits a single
+	// file→package `imports` edge to it in place of the file→file import fan-out.
+	// Package nodes are recorded here ONLY — they are deliberately kept out of
+	// byDir/byClause/clauseByDir so they never pollute symbol resolution.
+	packageNodeByPath map[string]model.NodeId
 }
 
 // fileKind / the qualified-name shape are mirrored from the Go extractor:
@@ -52,21 +60,34 @@ type SymbolIndex struct {
 // QualifiedName is "<pkgClause>.<name>" (methods: "<pkgClause>.<recv>.<name>").
 const fileKind = "file"
 
+// packageKind is the interned package-node kind (WP-01). Java/Kotlin parsers mint
+// one package node per declared package, keyed by full package path; BuildIndex
+// routes them to packageNodeByPath and the resolver links a single file→package
+// `imports` edge to them.
+const packageKind = "package"
+
 // BuildIndex constructs a SymbolIndex from a committed node set. It is pure and
 // deterministic: identical input (in any order) yields an index that resolves
 // identically. Resolution is O(1) per lookup (no caller×candidate scans).
 func BuildIndex(nodes []model.Node) *SymbolIndex {
 	idx := &SymbolIndex{
-		byDir:          map[string]map[string]model.NodeId{},
-		dirAmbiguous:   map[string]map[string]struct{}{},
-		byClause:       map[string]map[string]map[string]model.NodeId{},
-		fileNodeByPath: map[string]model.NodeId{},
-		fileNodesByDir: map[string][]model.NodeId{},
-		clauseByDir:    map[string]string{},
+		byDir:             map[string]map[string]model.NodeId{},
+		dirAmbiguous:      map[string]map[string]struct{}{},
+		byClause:          map[string]map[string]map[string]model.NodeId{},
+		fileNodeByPath:    map[string]model.NodeId{},
+		fileNodesByDir:    map[string][]model.NodeId{},
+		clauseByDir:       map[string]string{},
+		packageNodeByPath: map[string]model.NodeId{},
 	}
 	for _, n := range nodes {
 		sp := n.SourcePath() // already normalized POSIX repo-relative
 		dir := posixDir(sp)
+		if n.Kind() == packageKind {
+			// Interned package node (WP-01): index by its full package path and
+			// keep it OUT of the symbol tables so it can never resolve a symbol.
+			idx.packageNodeByPath[n.QualifiedName()] = n.ID()
+			continue
+		}
 		if n.Kind() == fileKind {
 			idx.fileNodeByPath[sp] = n.ID()
 			idx.fileNodesByDir[dir] = append(idx.fileNodesByDir[dir], n.ID())

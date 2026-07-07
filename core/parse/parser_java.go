@@ -109,7 +109,47 @@ func (e *javaSymbolExtractor) Extract(filename string, root any) ([]model.Node, 
 	}
 	javaCollectDefs(w, t.root)
 	javaResolveUses(w, t.root)
-	return w.finishExtract(filename, "java")
+	nodes, edges, pending, err := w.finishExtract(filename, "java")
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// WP-01: mint an interned package node keyed by the file's real
+	// `package com.x.y;` declaration (empty source path ⇒ identical NodeId across
+	// every file in the package). The linker attaches ONE file→package `imports`
+	// edge to it, collapsing the cross-module file→file import fan-out. A file
+	// with no package declaration mints no node.
+	if pkg := javaPackagePath(t); pkg != "" {
+		pn, perr := model.NewNode(KindPackage, pkg, "", 0, 0)
+		if perr != nil {
+			return nil, nil, nil, fmt.Errorf("parse: java package node for %q: %w", filename, perr)
+		}
+		nodes = append(nodes, pn)
+	}
+	return nodes, edges, pending, nil
+}
+
+// javaPackagePath returns the full dotted path of the file's `package_declaration`
+// (e.g. "com.example.service"), or "" when the file declares no package. The
+// scoped name is a scoped_identifier (multi-segment) or a bare identifier
+// (single segment), mirroring javaImports.
+func javaPackagePath(t *javaAST) string {
+	if t == nil || t.root == nil {
+		return ""
+	}
+	root := t.root
+	for i := 0; i < root.ChildCount(); i++ {
+		c := root.Child(i)
+		if c == nil || c.Type(t.lang) != "package_declaration" {
+			continue
+		}
+		if s := childByType(c, "scoped_identifier", t.lang); s != nil {
+			return s.Text(t.src)
+		}
+		if id := childByType(c, "identifier", t.lang); id != nil {
+			return id.Text(t.src)
+		}
+	}
+	return ""
 }
 
 func javaCollectDefs(w *cstWalk, program *gts.Node) {

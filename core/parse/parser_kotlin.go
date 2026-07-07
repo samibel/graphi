@@ -112,7 +112,42 @@ func (e *kotlinSymbolExtractor) Extract(filename string, root any) ([]model.Node
 	}
 	kotlinCollectDefs(w, t.root, false)
 	kotlinResolveUses(w, t.root, false)
-	return w.finishExtract(filename, "kotlin")
+	nodes, edges, pending, err := w.finishExtract(filename, "kotlin")
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// WP-01: mint an interned package node from the file's `package_header`
+	// (empty source path ⇒ identical NodeId across every file in the package),
+	// so the linker collapses the import fan-out to one file→package edge. A file
+	// with no package header mints no node.
+	if pkg := kotlinPackagePath(t); pkg != "" {
+		pn, perr := model.NewNode(KindPackage, pkg, "", 0, 0)
+		if perr != nil {
+			return nil, nil, nil, fmt.Errorf("parse: kotlin package node for %q: %w", filename, perr)
+		}
+		nodes = append(nodes, pn)
+	}
+	return nodes, edges, pending, nil
+}
+
+// kotlinPackagePath returns the full dotted path of the file's `package_header`
+// (e.g. "com.example.service"), or "" when the file declares no package. The
+// header's scoped name is an `identifier` whose source text carries the dots.
+func kotlinPackagePath(t *kotlinAST) string {
+	if t == nil || t.root == nil {
+		return ""
+	}
+	root := t.root
+	for i := 0; i < root.ChildCount(); i++ {
+		c := root.Child(i)
+		if c == nil || c.Type(t.lang) != "package_header" {
+			continue
+		}
+		if id := childByType(c, "identifier", t.lang); id != nil {
+			return id.Text(t.src)
+		}
+	}
+	return ""
 }
 
 // kotlinName returns the leading simple_identifier / type_identifier child of a

@@ -17,7 +17,7 @@ gate is a passing test.
 | # | Metric | Current (RED) | Target | Arming switch | Armed by | Where |
 |---|--------|---------------|--------|---------------|----------|-------|
 | 1 | Taint recall (vuln-go E2E) | **0/4**, 0 FP | 4/4, precision ≥ 0.8 | `gateArmed` | WP-05 | `engine/ingest/taint_vulngo_e2e_test.go` |
-| 2 | Edges/node ratio (Java fan-out) | **15.56** | < 8 (≈ < 500k on real repo) | `budgetArmed` | WP-08 | `engine/ingest/fanout_bench_test.go` |
+| 2 | Edges/node ratio (Java fan-out) | 15.56 → **0.96** ✅ ARMED | < 8 (≈ < 500k on real repo) | `budgetArmed` (=true) | WP-01 | `engine/ingest/fanout_bench_test.go` |
 | 3 | DB size (real monorepo) | 2.3 GB | < 300 MB | *(fixture pending)* | WP-06/WP-08 | `bench/` (on-disk store) |
 | 4 | Full index time | 4m48s | < 90s | *(fixture pending)* | WP-08 | `bench/bench-budget.yml` |
 | 5 | Link progress interval | minutes of silence | < 2s between events | *(gate pending)* | WP-02 | `engine/ingest` progress path |
@@ -38,11 +38,13 @@ go test ./engine/ingest/ -run 'TestTaintE2E_VulnGoRecall|TestLinkFanout' -v
 ```
 
 - `TestTaintE2E_VulnGoRecall` → `[RED GATE WP-05] vuln-go taint: recall=0/4, false_positives=0, findings=0, armed=false`
-- `TestLinkFanout_EdgeExplosionBudget` → `[RED GATE WP-08] java fan-out: nodes=384, edges=5976, edges/node=15.56, budget=8.00, armed=false`
+- `TestLinkFanout_EdgeExplosionBudget` → `[RED GATE WP-08] java fan-out: nodes=416, edges=400, edges/node=0.96, budget=8.00, armed=true` (WP-01 collapsed the import fan-out to a single file→package edge; the gate is now ARMED and enforces the sub-8 budget)
 
-Both PASS (green CI) while disarmed; both encode the exact failure the field
-tests found, so the moment WP-03/WP-01 change the underlying behavior the gate
-authors flip the switch and CI begins enforcing 4/4 recall and a sub-8 ratio.
+Gate 1 PASSES green while disarmed. Gate 2 was RED (15.56) until WP-01 replaced
+the Java/Kotlin file→file import fan-out with one file→package edge to an
+interned `package` node; it now measures **0.96** and is ARMED, so CI enforces
+the sub-8 budget and any regression fails. Gate 1 stays disarmed until WP-05
+lands 4/4 taint recall.
 
 ## Arming protocol
 

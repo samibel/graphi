@@ -31,6 +31,14 @@ const (
 	KindVariable = goKindVariable
 	// KindConstant is the node kind for a constant declaration.
 	KindConstant = goKindConstant
+	// KindPackage is the node kind for an INTERNED package/namespace node
+	// (WP-01). Unlike the six symbol kinds above (which are per-file), a package
+	// node is keyed by its full package path with an EMPTY source path, so every
+	// file declaring the same package mints the byte-identical NodeId — the node
+	// is interned by construction. It is emitted only by the FQN/package-header
+	// languages (Java, Kotlin) so a single file→package `imports` edge replaces
+	// the cross-module file→file import fan-out.
+	KindPackage = "package"
 )
 
 const (

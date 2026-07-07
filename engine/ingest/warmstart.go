@@ -18,7 +18,11 @@ import (
 // Bump whenever identical source bytes would ingest into a different graph:
 //
 //	1 : v0.2.x — go/types confirmed tier (engine/typeresolve) live.
-const ingestSemanticsVersion = "1"
+//	2 : WP-01 — Java/Kotlin mint interned `package` nodes and the import
+//	    fan-out collapses to a single file→package edge. The committed
+//	    node-kind content changes, so an older store must re-index (not
+//	    warm-start) against the new schema.
+const ingestSemanticsVersion = "2"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the

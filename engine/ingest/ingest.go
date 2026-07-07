@@ -1655,6 +1655,19 @@ func (i *Ingester) commitParsed(ctx context.Context, w graphstore.Writer, u file
 		if _, kept := newIDs[id]; kept {
 			continue
 		}
+		// WP-01 interned-node lifecycle: an interned `package` node is minted by
+		// EVERY file in the package with the same NodeId, so a file dropping it
+		// (e.g. its package declaration changed) must NOT delete the node while a
+		// sibling file still declares it. This guard is a strict no-op for the
+		// per-file symbol/file nodes (whose NodeId embeds the unique source path,
+		// so no other cache row references them) and only protects shared nodes.
+		shared, err := i.nodeReferencedByOtherFile(ctx, i.meta, u.relPath, id)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		if shared {
+			continue
+		}
 		if err := w.DeleteNode(ctx, model.NodeId(id)); err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("ingest: delete stale node %s: %w", id, err)
 		}
@@ -1930,6 +1943,35 @@ func (i *Ingester) cachedNodeIDs(ctx context.Context, path string) ([]string, er
 		return nil, fmt.Errorf("ingest: decode node ids: %w", err)
 	}
 	return ids, nil
+}
+
+// rowQuerier is the QueryRowContext surface shared by *sql.DB and *sql.Tx, so the
+// interned-node refcount check can run against either the live meta handle
+// (commitParsed) or the open Phase-2 transaction (removeFileTx).
+type rowQuerier interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+// nodeReferencedByOtherFile reports whether any cached file OTHER than excludePath
+// still lists node id in its node_ids. It underpins the WP-01 interned-package-node
+// lifecycle: a package node shared by many files must persist as long as ≥1 file
+// declares it, so full and incremental ingests stay byte-identical. The check is a
+// strict no-op for per-file nodes — their NodeId embeds the unique source path, so
+// no other cache row can reference the same id. node_ids is a JSON array of quoted
+// id strings; the LIKE pattern matches the id delimited by its surrounding quotes
+// (NodeIds are fixed-width hashes, so no id is a substring of another).
+func (i *Ingester) nodeReferencedByOtherFile(ctx context.Context, q rowQuerier, excludePath, id string) (bool, error) {
+	var one int
+	err := q.QueryRowContext(ctx,
+		`SELECT 1 FROM file_content_cache WHERE path != ? AND node_ids LIKE ? LIMIT 1`,
+		excludePath, "%\""+id+"\"%").Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("ingest: interned node refcount: %w", err)
+	}
+	return true, nil
 }
 
 // upsertCacheTx writes/updates the cache entry for a file. hasLinks records
@@ -2286,6 +2328,16 @@ func (i *Ingester) removeFileTx(ctx context.Context, tx *sql.Tx, w graphstore.Wr
 		return err
 	}
 	for _, id := range ids {
+		// WP-01 interned-node lifecycle: keep a shared `package` node alive while a
+		// sibling file still declares it (checked against the tx so an earlier
+		// removeFileTx in this pass is already visible). A no-op for per-file nodes.
+		shared, err := i.nodeReferencedByOtherFile(ctx, tx, path, id)
+		if err != nil {
+			return err
+		}
+		if shared {
+			continue
+		}
 		if err := w.DeleteNode(ctx, model.NodeId(id)); err != nil {
 			return fmt.Errorf("ingest: delete node of removed file %s: %w", path, err)
 		}

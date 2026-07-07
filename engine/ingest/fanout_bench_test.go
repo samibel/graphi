@@ -26,7 +26,7 @@ import (
 // budgetArmed is the WP-08 switch. While false, the ratio is measured and
 // logged but not enforced. WP-08 sets it true and the assertion below becomes a
 // hard gate.
-const budgetArmed = false
+const budgetArmed = true
 
 // maxEdgesPerNode is the RED budget: after WP-01 the fan-out collapses to one
 // package edge per import, so the ratio must fall below this. The current
