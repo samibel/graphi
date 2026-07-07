@@ -604,6 +604,8 @@ graphi search -semantic  "where do we validate auth tokens" -db ~/.graphi/graph.
           if(en.isIntersecting){
             links.forEach(function(l){ l.classList.remove('is-active'); });
             a.classList.add('is-active');
+          } else {
+            a.classList.remove('is-active');
           }
         });
       }, {rootMargin:'-25% 0px -65% 0px'});
