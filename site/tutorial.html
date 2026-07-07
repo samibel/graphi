@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>graphi — Praxis-Tutorial</title>
+  <meta name="description" content="Das ausführliche Praxis-Tutorial zu graphi: Installation, CLI-Nutzung, MCP-Integration in Claude Code, ein echtes Spring-Boot-Beispiel (PetClinic) und das Messen der Token-Ersparnis — alle Kommandos aus echten Läufen." />
+  <link rel="canonical" href="https://samibel.github.io/graphi/tutorial.html" />
+  <meta property="og:title" content="graphi — Praxis-Tutorial" />
+  <meta property="og:description" content="Von Install über MCP-Setup bis zum echten Spring-Boot-Beispiel: das ausführliche Praxis-Tutorial zu graphi." />
+  <meta property="og:url" content="https://samibel.github.io/graphi/tutorial.html" />
+  <meta property="og:image" content="https://samibel.github.io/graphi/assets/graph-ui.png" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="graphi — Praxis-Tutorial" />
+  <meta name="twitter:description" content="Von Install über MCP-Setup bis zum echten Spring-Boot-Beispiel: das ausführliche Praxis-Tutorial zu graphi." />
+  <meta name="twitter:image" content="https://samibel.github.io/graphi/assets/graph-ui.png" />
+  <meta name="theme-color" content="#0b0f0e" />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <script>
+    try{
+      var t = localStorage.getItem('theme') ||
+        (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', t);
+    }catch(e){}
+  </script>
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=jetbrains-mono@400,500,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="tutorial.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "graphi — Das ausführliche Praxis-Tutorial",
+    "description": "Installation, CLI-Nutzung, MCP-Integration in Claude Code, ein echtes Spring-Boot-Beispiel und das Messen der Token-Ersparnis.",
+    "url": "https://samibel.github.io/graphi/tutorial.html",
+    "inLanguage": "de",
+    "about": { "@type": "SoftwareApplication", "name": "graphi", "applicationCategory": "DeveloperApplication" },
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "isPartOf": "https://samibel.github.io/graphi/"
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+  <!-- HEADER -->
+  <header class="header" id="header">
+    <div class="container header__inner">
+      <a class="brand" href="index.html" aria-label="graphi Startseite">
+        <img src="assets/logo-64.png" alt="" class="brand__logo" width="32" height="32" />
+        <span class="brand__name">graphi</span>
+      </a>
+      <nav class="nav" aria-label="Primäre Navigation">
+        <a href="index.html">Überblick</a>
+        <a href="index.html#benchmarks">Benchmarks</a>
+        <a href="index.html#install">Install</a>
+        <a href="tutorial.html" class="is-active" aria-current="page">Tutorial</a>
+      </nav>
+      <div class="header__actions">
+        <button type="button" class="icon-btn" data-theme-toggle hidden aria-label="Zu hellem Modus wechseln"></button>
+        <a class="btn btn--ghost" href="https://github.com/samibel/graphi" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.2.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.7.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="doc-hero">
+      <div class="container">
+        <span class="eyebrow eyebrow--pill"><span class="pulse-dot" aria-hidden="true"></span>Praxis-Tutorial · alle Ausgaben aus echten Läufen</span>
+        <h1 class="doc-hero__title">Von <span class="accent">Install zu produktiv</span> — Schritt für Schritt.</h1>
+        <p class="doc-hero__lede">
+          Lokal-first Code-Intelligence-Engine für AI-Agenten und Entwickler. CLI-Nutzung, MCP-Integration
+          in Claude Code, ein echtes <strong>Spring-Boot-Beispiel</strong> (Spring PetClinic) und das Messen der
+          Token-Ersparnis — durchgespielt an einem realen Repo, nicht aus dem Gedächtnis.
+        </p>
+        <div class="doc-hero__meta">
+          <span class="chip chip--ok">Apache-2.0</span>
+          <span class="chip">Spring PetClinic · 48 Java-Dateien</span>
+          <span class="chip">CLI · MCP · Metering</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYOUT: TOC + ARTICLE -->
+    <div class="doc-layout">
+      <!-- TABLE OF CONTENTS -->
+      <aside class="toc" aria-label="Inhaltsverzeichnis">
+        <p class="toc__title">Inhalt</p>
+        <ol class="toc__list">
+          <li><a href="#s1">Was ist graphi &amp; warum</a></li>
+          <li><a href="#s2">Installation &amp; Build</a></li>
+          <li><a href="#s3">Kernkonzepte in 60 Sekunden</a></li>
+          <li><a href="#s4">CLI-Nutzung Schritt für Schritt</a></li>
+          <li><a href="#s5">Praxisbeispiel: Spring-Boot (PetClinic)</a></li>
+          <li><a href="#s6">MCP-Integration in Claude Code</a></li>
+          <li><a href="#s7">Token-Ersparnis messen</a></li>
+          <li><a href="#s8">Provenienz verstehen</a></li>
+          <li><a href="#s9">Grenzen &amp; Fallstricke</a></li>
+          <li><a href="#s10">Empfohlener Workflow</a></li>
+          <li><a href="#s11">Schnellreferenz (Cheat-Sheet)</a></li>
+        </ol>
+      </aside>
+
+      <!-- ARTICLE -->
+      <article class="doc-article">
+
+        <!-- 1 -->
+        <section class="doc-section" id="s1">
+          <h2 class="doc-section__h"><span class="doc-section__num">01</span>Was ist graphi und warum lohnt es sich</h2>
+          <div class="doc-prose">
+            <p>Ein AI-Coding-Agent, der bei jeder Frage das halbe Repo greppt und ganze Dateien neu liest, ist <strong>langsam, teuer (Tokens) und rät</strong>. graphi indexiert das Repo <strong>einmal</strong> in einen Graphen — Symbole (Funktionen, Typen, Dateien) als Knoten, Beziehungen (<code>calls</code>, <code>references</code>, <code>defines</code>, <code>imports</code>) als Kanten — und beantwortet dann Fragen wie „wer ruft das auf", „was bricht, wenn ich das ändere", „wie hängen diese zwei Funktionen zusammen" in <strong>einem</strong> gezielten Lookup, komplett auf deiner Maschine.</p>
+            <div class="doc-table-wrap">
+              <table class="doc-table">
+                <thead><tr><th>Vorteil</th><th>Bedeutung für dich</th></tr></thead>
+                <tbody>
+                  <tr><td><strong>Weniger Tokens</strong></td><td>Statt ganze Dateien zu lesen, kommt nur das relevante Symbol + Belege zurück. graphi führt sogar ein <strong>USD-Savings-Ledger</strong>.</td></tr>
+                  <tr><td><strong>Exakt statt geraten</strong></td><td>Deterministischer Graph mit stabilen IDs — kein probabilistisches RAG.</td></tr>
+                  <tr><td><strong>Vertrauenswürdig</strong></td><td>Jede Kante trägt <strong>Provenienz</strong>: <code>confidence_tier</code> (heuristic/derived/confirmed) + Grund + Beleg (<code>Datei:Zeile</code>).</td></tr>
+                  <tr><td><strong>Schnell &amp; frisch</strong></td><td>Hot-Daemon mit residentem Graph, Cold-Start P95 &lt; 100&nbsp;ms, inkrementell frisch.</td></tr>
+                  <tr><td><strong>Lokal-first</strong></td><td>Kein Byte verlässt die Maschine: null ausgehender Netzwerkverkehr, keine Telemetrie, CGo-frei, ein einziges Binary.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2 -->
+        <section class="doc-section" id="s2">
+          <h2 class="doc-section__h"><span class="doc-section__num">02</span>Installation &amp; Build</h2>
+          <div class="doc-prose">
+            <h3>Variante A — Prebuilt Binary (schnellster Weg)</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash"># Linux/macOS – checksum-verifiziert, kein sudo, nach ~/.local/bin
+curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh</code></pre></div>
+            <div class="codeblock"><span class="codeblock__lang">powershell</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="powershell"># Windows (PowerShell)
+iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex</code></pre></div>
+
+            <h3>Variante B — Aus dem Quellcode bauen</h3>
+            <p><strong>Voraussetzung:</strong> Go 1.26+ (kein C-Toolchain nötig — der Default-Build ist CGo-frei).</p>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">git clone https://github.com/samibel/graphi.git
+cd graphi
+
+# CGo-freier Build nur der CLI
+CGO_ENABLED=0 go build -o graphi ./cmd/graphi
+
+# optional auf den PATH legen
+install -m755 graphi ~/.local/bin/    # oder: sudo mv graphi /usr/local/bin/
+
+graphi version   # Version/Commit/Build-Datum prüfen</code></pre></div>
+            <div class="doc-note"><span class="doc-note__k">Praxis</span><p>graphi nutzt ein Go-Workspace (<code>go.work</code>). Beim Bauen aus dem Quellcode <strong>nicht</strong> <code>GOFLAGS</code> überschreiben und ggf. <code>export GOTOOLCHAIN=auto</code> setzen, damit die richtige Go-Version gezogen wird.</p></div>
+            <p><strong>Optionale Flavors:</strong></p>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash"># Breite Sprachabdeckung (257 Grammatiken, CGO, nur für vertrauenswürdige Quellen!)
+CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
+
+# Mit eingebetteter Web-UI
+scripts/build-release-webui.sh</code></pre></div>
+          </div>
+        </section>
+
+        <!-- 3 -->
+        <section class="doc-section" id="s3">
+          <h2 class="doc-section__h"><span class="doc-section__num">03</span>Kernkonzepte in 60 Sekunden</h2>
+          <div class="doc-prose">
+            <ul>
+              <li><strong>Code-Graph</strong> — Repository → Knoten (Funktionen, Typen, Dateien) + Kanten (<code>calls</code>, <code>references</code>, <code>defines</code>, <code>imports</code>), mit <strong>deterministischen IDs</strong>.</li>
+              <li><strong>Provenienz</strong> — jede Kante hat einen Confidence-Tier (<code>heuristic</code> / <code>derived</code> / <code>confirmed</code>), einen Grund und einen Beleg (<code>Datei:Zeile</code>). So kannst du jeder Beziehung trauen statt zu raten.</li>
+              <li><strong>Eine Engine, viele Oberflächen</strong> — CLI, Unix-Socket-Daemon, MCP-stdio-Server, loopback HTTP/SSE, TUI, Web-UI und VS-Code-Extension antworten alle aus <strong>derselben</strong> Engine → Antworten sind byte-identisch und können nie auseinanderdriften.</li>
+              <li><strong>Lokal-first</strong> — null ausgehender Netzwerkverkehr, keine Telemetrie, loopback-only. Beweisbar mit <code>graphi privacy-audit</code>.</li>
+            </ul>
+            <p><strong>Sprachabdeckung (Default-Tier, CGo-frei):</strong> Go (mit Type-Checker-bestätigten Kanten), TypeScript/TSX/JSX/JavaScript, <strong>Python, Java, Kotlin, C#</strong>, Ruby, PHP, Lua, C, C++, Rust, Bash, SQL sowie JSON/CSS/YAML/TOML/Markdown/HCL (bei Letzteren nur Intra-Datei). Für deine <strong>Spring-Boot-/Java-Welt</strong> ist Java also voll dabei.</p>
+          </div>
+        </section>
+
+        <!-- 4 -->
+        <section class="doc-section" id="s4">
+          <h2 class="doc-section__h"><span class="doc-section__num">04</span>CLI-Nutzung — Schritt für Schritt</h2>
+          <div class="doc-prose">
+            <h3>4.1 Repo indexieren</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">mkdir -p ~/.graphi
+graphi index -root . -db ~/.graphi/graph.db</code></pre></div>
+            <p>Das erzeugt einen persistenten SQLite-Store (<code>graph.db</code>), aus dem alle weiteren Abfragen lesen.</p>
+
+            <h3>4.2 Symbole finden (<code>search</code>)</h3>
+            <p>Suche liefert dir die <strong>node_id</strong>, die alle strukturellen Abfragen als <code>-symbol</code> erwarten:</p>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">graphi search -db ~/.graphi/graph.db -limit 8 OwnerController</code></pre></div>
+
+            <h3>4.3 Strukturelle Abfragen (<code>query &lt;op&gt;</code>)</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash"># Wer ruft dieses Symbol auf?
+graphi query callers      -db ~/.graphi/graph.db -symbol &lt;node_id&gt;
+
+# Was ruft es selbst auf?
+graphi query callees      -db ~/.graphi/graph.db -symbol &lt;node_id&gt;
+
+# Wo wird es referenziert?
+graphi query references   -db ~/.graphi/graph.db -symbol &lt;node_id&gt;
+
+# Wo ist es definiert?
+graphi query definition   -db ~/.graphi/graph.db -symbol &lt;node_id&gt;
+
+# Nachbarschaft (mit -depth N, gekappt auf 5)
+graphi query neighborhood -db ~/.graphi/graph.db -symbol &lt;node_id&gt; -depth 1</code></pre></div>
+            <p>Zusätzlich gibt es die typorientierten Ops: <code>implementers</code>, <code>implements</code>, <code>overrides</code>, <code>subtypes</code>, <code>supertypes</code> — ideal für Java-Interfaces/Vererbung.</p>
+
+            <h3>4.4 Analyse (<code>analyze &lt;analyzer&gt;</code>)</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash"># Blast-Radius: was hängt von diesem Symbol ab? (reverse = Dependents)
+graphi analyze impact -db ~/.graphi/graph.db -symbol &lt;node_id&gt; -direction reverse
+
+# Aufrufpfad zwischen zwei Symbolen
+graphi analyze call-chain -db ~/.graphi/graph.db -symbol &lt;caller_id&gt; -target &lt;callee_id&gt;
+
+# Natürlichsprachliches Konzept auf Graph-Stellen abbilden
+graphi analyze concept -db ~/.graphi/graph.db -symbol &lt;root_id&gt; -concept "rate limiting"
+
+# Graph-Metriken: Hubs, Bridges, hohe Zentralität
+graphi analyze metrics -db ~/.graphi/graph.db -symbol &lt;node_id&gt;</code></pre></div>
+            <p>Weitere Analyzer: <code>taint</code>, <code>pdg</code>, <code>interproc</code>, <code>contracts</code>, <code>git-history</code>, <code>batched</code> (impact + call-chain + metrics in einem).</p>
+
+            <h3>4.5 Hot-Daemon (für schnelle, wiederholte Abfragen)</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">graphi daemon start -socket /tmp/graphi.sock -db ~/.graphi/graph.db
+graphi query callers -daemon /tmp/graphi.sock -symbol &lt;node_id&gt;
+graphi daemon stop -socket /tmp/graphi.sock</code></pre></div>
+          </div>
+        </section>
+
+        <!-- 5 -->
+        <section class="doc-section" id="s5">
+          <h2 class="doc-section__h"><span class="doc-section__num">05</span>Praxisbeispiel: Spring-Boot-Projekt (PetClinic)</h2>
+          <div class="doc-prose">
+            <p>Alle folgenden Ausgaben stammen aus einem echten Lauf gegen <a href="https://github.com/spring-projects/spring-petclinic" target="_blank" rel="noopener">Spring PetClinic</a> (48 Java-Dateien, klassische Controller/Repository/Entity-Struktur).</p>
+
+            <h3>Schritt 1 — Indexieren</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">git clone --depth 1 https://github.com/spring-projects/spring-petclinic.git
+graphi index -root ./spring-petclinic -db /tmp/petclinic.db</code></pre></div>
+            <div class="codeblock"><span class="codeblock__lang">output</span><pre><code data-lang="text">graphi: scanning repo…
+graphi: indexing 128 files…
+graphi: indexing… 100% (128/128)
+graphi: linking cross-file references…
+graphi: resolving types…
+graphi: indexed 128 files in 30.5s
+graphi index: ingested ./spring-petclinic</code></pre></div>
+
+            <h3>Schritt 2 — Einen Controller suchen</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">graphi search -db /tmp/petclinic.db -limit 8 OwnerController</code></pre></div>
+            <p>Gekürzte Ausgabe (JSON):</p>
+            <div class="codeblock"><span class="codeblock__lang">json</span><button type="button" class="copy-btn" aria-label="Ausgabe kopieren">Copy</button><pre><code data-lang="json">{"query":"OwnerController","matches":[
+  {"node_id":"40631158f9245d47","kind":"type",
+   "qualified_name":"owner.OwnerController",
+   "source_path":".../owner/OwnerController.java","line":49},
+  {"node_id":"48deb92bf1ca3194","kind":"type",
+   "qualified_name":"owner.OwnerControllerTests","line":61}
+]}</code></pre></div>
+            <p>graphi trennt sauber die Produktivklasse von der Testklasse und liefert direkt Datei + Zeile.</p>
+
+            <h3>Schritt 3 — Blast-Radius: „Wer ruft <code>Owner.getPet</code> auf?"</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">graphi query callers -db /tmp/petclinic.db -symbol 057c32558eb28540</code></pre></div>
+            <div class="codeblock"><span class="codeblock__lang">json</span><button type="button" class="copy-btn" aria-label="Ausgabe kopieren">Copy</button><pre><code data-lang="json">{
+  "operation": "callers",
+  "outcome": "found",
+  "nodes": [
+    {"id":"057c32558eb28540","kind":"method","qualified_name":"owner.getPet",
+     "source_path":".../owner/Owner.java","line":108},
+    {"id":"0b3b441c0d5adf92","kind":"method","qualified_name":"owner.addVisit",
+     "source_path":".../owner/Owner.java","line":164}
+  ],
+  "edges": [
+    {"from":"0b3b441c0d5adf92","to":"057c32558eb28540","kind":"calls",
+     "confidence_tier":"derived","confidence":0.9,
+     "reason":"call resolved to an in-file definition",
+     "evidence":["src/main/java/.../owner/Owner.java:169"]}
+  ]
+}</code></pre></div>
+            <p>Das ist der Kern-Nutzen: In <strong>einem</strong> Aufruf weißt du, dass <code>addVisit</code> <code>getPet</code> aufruft — <strong>mit Beleg</strong> (<code>Owner.java:169</code>) und Confidence-Tier <code>derived</code>. Kein Datei-Durchlesen, kein Raten.</p>
+
+            <h3>Schritt 4 — Nachbarschaft mit bestätigter Kante</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">graphi query neighborhood -db /tmp/petclinic.db -symbol 3bcd1cf3c507e981 -depth 1</code></pre></div>
+            <p>Auszug: Die <code>defines</code>-Kante von <code>OwnerRepository.java</code> auf <code>findByLastNameStartingWith</code> ist <code>confidence_tier: "confirmed"</code> (confidence 1.0) mit Beleg <code>OwnerRepository.java:45</code>. „Definiert in Datei" ist beweisbar — daher der höchste Tier.</p>
+          </div>
+        </section>
+
+        <!-- 6 -->
+        <section class="doc-section" id="s6">
+          <h2 class="doc-section__h"><span class="doc-section__num">06</span>MCP-Integration in Claude Code &amp; andere Agenten</h2>
+          <div class="doc-prose">
+            <p>graphi spricht mit Agenten über <strong>MCP (stdio, JSON-RPC)</strong>. Damit wird aus „der Agent liest das Repo durch" ein „der Agent fragt den Graphen".</p>
+
+            <h3>6.1 Einrichtung in einem Befehl</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash"># 1) Graph bauen
+graphi index -root . -db ~/.graphi/graph.db
+
+# 2) graphi in alle erkannten lokalen MCP-Clients eintragen
+graphi setup
+#   Default --client all: Claude Code, Copilot, Cursor, Windsurf, Claude Desktop
+#   Nur Claude Code:  graphi setup --client claude
+#   Testlauf ohne Schreiben:  graphi setup --dry-run
+
+# 3) claude neu starten – graphis Tools sind jetzt sichtbar</code></pre></div>
+            <p>Der <code>setup</code>-Befehl schreibt den stdio-MCP-Eintrag idempotent, atomar und offline in die Client-Config (bei Claude Code z.&nbsp;B. <code>~/.claude.json</code>).</p>
+
+            <h3>6.2 Manuell für beliebige MCP-Clients</h3>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">graphi mcp -db ~/.graphi/graph.db</code></pre></div>
+            <p>Der Handshake funktioniert nach MCP-Standard. Echter <code>initialize</code>-Response:</p>
+            <div class="codeblock"><span class="codeblock__lang">json</span><button type="button" class="copy-btn" aria-label="Ausgabe kopieren">Copy</button><pre><code data-lang="json">{"jsonrpc":"2.0","id":1,"result":{
+  "capabilities":{"tools":{}},
+  "protocolVersion":"2024-11-05",
+  "serverInfo":{"name":"graphi-query","version":"1"}}}</code></pre></div>
+            <p>Und <code>tools/list</code> liefert u.&nbsp;a. <code>callers</code>, <code>callees</code>, <code>references</code>, <code>definition</code>, <code>neighborhood</code>, <code>implementers</code>, <code>implements</code>, <code>overrides</code>, <code>subtypes</code>, <code>supertypes</code>, <code>search</code> — jedes mit einem JSON-Schema, das <code>symbol</code> (die node_id) erwartet.</p>
+
+            <h3>6.3 Der Werkzeugkasten, den der Agent bekommt</h3>
+            <p>Alle Tools sind standardmäßig <strong>read-only</strong>:</p>
+            <ul>
+              <li><strong>Struktur:</strong> <code>callers</code>, <code>callees</code>, <code>references</code>, <code>definition</code>, <code>neighborhood</code>, <code>implementers</code>, <code>implements</code>, <code>overrides</code>, <code>subtypes</code>, <code>supertypes</code></li>
+              <li><strong>Suche:</strong> <code>search</code>, <code>search_semantic</code>, <code>compound</code> (Cypher-artig)</li>
+              <li><strong>Muster:</strong> <code>search_ast</code>, <code>find_clones</code></li>
+              <li><strong>Analyse:</strong> <code>analyze</code> (z.&nbsp;B. <code>analyzer: "impact"</code>), <code>analyze_taint</code>, <code>analyze_pdg</code>, <code>analyze_interproc</code>, <code>analyze_contracts</code>, <code>analyze_githistory</code></li>
+              <li><strong>PR-Review (experimentell):</strong> <code>analyze_pr_risk</code>, <code>triage_prs</code>, <code>suggest_reviewers</code>, <code>compare_branches</code>, <code>critique_review</code>, <code>pr_comment</code> u.&nbsp;a.</li>
+              <li><strong>Edit (opt-in) &amp; Readout:</strong> <code>refactor_preview</code>, <code>refactor</code>, <code>undo</code>, <code>savings</code></li>
+            </ul>
+
+            <h3>6.4 Typische Agenten-Prompts (auf ein Repo angewendet)</h3>
+            <div class="doc-table-wrap">
+              <table class="doc-table">
+                <thead><tr><th>Was du dem Agenten sagst</th><th>Welches Tool feuert</th><th>Warum es hilft</th></tr></thead>
+                <tbody>
+                  <tr><td>„Ich will <code>IngestAll</code> umbauen. Was hängt davon ab?"</td><td><code>callers</code> + <code>analyze impact</code> (reverse)</td><td>Alle abhängigen Symbole mit Beleg, ohne halbes Repo zu lesen</td></tr>
+                  <tr><td>„Wo wird X behandelt?"</td><td><code>search</code> + <code>neighborhood</code> + <code>analyze concept</code></td><td>Landet direkt auf der richtigen Stelle</td></tr>
+                  <tr><td>„Gibt es einen Pfad von Input-Quelle zu gefährlichem Sink?"</td><td><code>analyze_taint</code></td><td>Fluss-sensitive Source→Sink-Pfade</td></tr>
+                  <tr><td>„Wie riskant ist dieser Diff?"</td><td><code>analyze_pr_risk</code> / <code>analyze_pr_signals</code></td><td>Risiko-bewerteter Diff + Signale</td></tr>
+                  <tr><td>„Benenne <code>price</code> in <code>cost</code> um — über alle Call-Sites"</td><td><code>refactor_preview</code> → <code>refactor</code> → <code>undo</code></td><td>Atomare Saga mit Rollback</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7 -->
+        <section class="doc-section" id="s7">
+          <h2 class="doc-section__h"><span class="doc-section__num">07</span>Token-Ersparnis messen (Metering &amp; Pricing)</h2>
+          <div class="doc-prose">
+            <p>graphi misst pro Aufruf, wie viele Tokens es gegenüber der „ganze-Dateien-lesen"-Baseline gespart hat, bepreist das mit einer <strong>eingebetteten</strong> Preistabelle (kein Netz) und führt ein durables Ledger — sogar über Daemon-Neustarts hinweg.</p>
+
+            <h3>7.1 Die Kette</h3>
+            <div class="codeblock"><span class="codeblock__lang">flow</span><pre><code data-lang="text">meter.Record → price.Savings → cap.Apply → ledger.RecordCapped → Ledger.Readout</code></pre></div>
+            <ul>
+              <li><strong>Baseline (eingefroren, versioniert):</strong> <code>whole-file-read-v1</code>. Der Baseline-Wert ist eine reine Funktion aus (Artefakten, Datei-Bytes) und der Version. Ältere Records bleiben ihrer Methode zugeordnet — keine stille Neuberechnung.</li>
+              <li><strong>Ehrlich statt geschönt:</strong> Kann eine Baseline nicht ehrlich bestimmt werden (leere Artefakte), wird <code>BaselineAvailable = false</code> gesetzt und null Ersparnis gemeldet. Negative Ersparnis (graphi hat <em>mehr</em> gebraucht) wird <strong>roh</strong> gemeldet, nicht versteckt.</li>
+              <li><strong>Anti-Gaming-Cap:</strong> <code>engine/cap</code> deckelt pro Op und pro Session; ein Ausreißer kann die Schlagzeile nicht aufblähen. Ein angewandter Cap wird transparent mit <code>CapApplied</code> markiert.</li>
+            </ul>
+
+            <h3>7.2 Preistabelle (<code>engine/price/data/prices.json</code>, Version <code>prices-v1</code>)</h3>
+            <div class="doc-table-wrap">
+              <table class="doc-table">
+                <thead><tr><th>Modell</th><th class="num">Input (micro-USD/Token)</th><th class="num">Output (micro-USD/Token)</th></tr></thead>
+                <tbody>
+                  <tr><td>gpt-4o</td><td class="num">2500</td><td class="num">10000</td></tr>
+                  <tr><td>gpt-4o-mini</td><td class="num">150</td><td class="num">600</td></tr>
+                  <tr><td><strong>claude-sonnet</strong></td><td class="num">3000</td><td class="num">15000</td></tr>
+                  <tr><td>claude-haiku</td><td class="num">250</td><td class="num">1250</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>(1e6 micro-USD = 1 USD. Berechnung ist exakte Integer-Multiplikation, kein Float-Rounding.)</p>
+
+            <h3>7.3 Readout ansehen</h3>
+            <p>Nach einer MCP-/Daemon-Session, die ein Ledger geschrieben hat:</p>
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Befehl kopieren">Copy</button><pre><code data-lang="bash">graphi savings -ledger &lt;pfad&gt;
+# →  ⚡  Saved $0.42 this session  (cumulative $3.10)</code></pre></div>
+            <p>MCP und CLI lesen denselben kanonischen Readout — die Zahlen sind byte-identisch.</p>
+
+            <h3>7.4 Eigener Benchmark (wie im mitgelieferten Report)</h3>
+            <p>Willst du die Ersparnis für deine eigenen realistischen Agenten-Fragen belegen: vergleiche <strong>MIT graphi</strong> (Tokens des zurückgegebenen Kontext-Bündels) gegen <strong>OHNE graphi</strong> (Whole-File-Read-Äquivalent der Dateien, die ein Agent sonst öffnen würde), mit graphis eigenem <code>engine/meter</code> (<code>whole-file-read-v1</code>) und <code>engine/price</code> (<code>prices-v1</code>). Leere-Ergebnis-Abfragen ehrlich ausschließen.</p>
+          </div>
+        </section>
+
+        <!-- 8 -->
+        <section class="doc-section" id="s8">
+          <h2 class="doc-section__h"><span class="doc-section__num">08</span>Provenienz verstehen — warum man den Antworten trauen kann</h2>
+          <div class="doc-prose">
+            <p>Jede Kante trägt einen <strong>Confidence-Tier</strong>:</p>
+            <div class="doc-table-wrap">
+              <table class="doc-table">
+                <thead><tr><th>Tier</th><th>Bedeutung</th><th>Beispiel aus PetClinic</th></tr></thead>
+                <tbody>
+                  <tr><td><code>confirmed</code> (1.0)</td><td>Beweisbar (z.&nbsp;B. Type-Checker oder „definiert in Datei")</td><td><code>defines</code>-Kante <code>OwnerRepository.java → findByLastNameStartingWith</code></td></tr>
+                  <tr><td><code>derived</code> (~0.9)</td><td>Sicher aufgelöst innerhalb einer Datei</td><td><code>calls</code>-Kante <code>addVisit → getPet</code> (<code>Owner.java:169</code>)</td></tr>
+                  <tr><td><code>heuristic</code></td><td>Datei/Zeile-Beleg, aber cross-file heuristisch aufgelöst</td><td>die meisten cross-file <code>calls</code>/<code>imports</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Wichtig: graphi <strong>erfindet nie</strong> eine Kante. Unauflösbare oder mehrdeutige Referenzen werden deterministisch verworfen und gezählt („skip+count"), nie fabriziert. Für Go läuft zusätzlich der stdlib-<code>go/types</code>-Checker und hebt bewiesene Kanten auf <code>confirmed</code>.</p>
+          </div>
+        </section>
+
+        <!-- 9 -->
+        <section class="doc-section" id="s9">
+          <h2 class="doc-section__h"><span class="doc-section__num">09</span>Grenzen &amp; Fallstricke (ehrlich)</h2>
+          <div class="doc-prose">
+            <p>Aus dem echten PetClinic-Lauf und der Doku:</p>
+            <ul>
+              <li><strong>Spring-Data-Proxy-Methoden:</strong> Interface-Methoden wie <code>findByLastNameStartingWith</code> (die Spring zur Laufzeit implementiert) haben oft <strong>keine</strong> <code>callers</code>/<code>references</code>-Kanten, weil der Aufruf über einen dynamischen Proxy geht. graphi meldet dann ehrlich <code>outcome: "empty"</code> statt zu raten. → Für DI-/Proxy-lastige Aufrufe die <strong>konkreten</strong> Implementierungsmethoden abfragen.</li>
+              <li><strong>Cross-file-Auflösung ist bei Nicht-Go <code>heuristic</code>:</strong> Für Java/TS/Python etc. sind cross-file-Kanten heuristisch (mit Beleg), nie <code>confirmed</code>. Confidence-Tier immer mitlesen.</li>
+              <li><strong><code>compare-branches</code> nimmt keine Git-Refs:</strong> Es vergleicht zwei graphi-SQLite-Snapshots (<code>-base</code>/<code>-head</code> = Pfade zu <code>graphi index</code>-Outputs), nicht <code>main</code>/<code>feature</code> direkt.</li>
+              <li><strong><code>safe-delete</code> entfernt nur die Deklarationszeile:</strong> Bei mehrzeiligen Bodys den Diff prüfen.</li>
+              <li><strong><code>graphi-broad</code> (CGO) ist nicht speicher-isoliert:</strong> Nur für vertrauenswürdige/CI-Quellen. Ein C-Grammar-Crash wird von Gos Schutzmechanismen nicht abgefangen.</li>
+              <li><strong>Semantische Suche ist standardmäßig AUS:</strong> <code>search -semantic</code> liefert ohne konfigurierten Embedder eine typisierte „unavailable"-Antwort (kein Fehler, kein Netz). Aktivieren via <code>graphi setup-embedder</code> + <code>GRAPHI_EMBEDDER</code> (Ollama loopback oder ONNX).</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- 10 -->
+        <section class="doc-section" id="s10">
+          <h2 class="doc-section__h"><span class="doc-section__num">10</span>Empfohlener Workflow für deinen Alltag</h2>
+          <div class="doc-prose">
+            <p>Für deinen Kontext (Spring-Boot-Services, tiefe Code-Analyse, MCP, Repo-Vergleiche):</p>
+            <ol>
+              <li><strong>Einmalig pro Repo:</strong> <code>graphi index -root . -db ~/.graphi/&lt;repo&gt;.db</code></li>
+              <li><strong>Agenten anbinden:</strong> <code>graphi setup --client claude</code> (oder <code>all</code>), claude neu starten.</li>
+              <li><strong>Vor jedem Refactor:</strong> den Agenten <code>callers</code> + <code>analyze impact -direction reverse</code> auf das Zielsymbol laufen lassen → Blast-Radius mit Belegen.</li>
+              <li><strong>Unbekannten Code verstehen:</strong> <code>search</code> → <code>neighborhood</code> → <code>analyze concept</code>.</li>
+              <li><strong>Bei DI/Proxy-Code:</strong> konkrete Implementierungen statt Interface-Methoden abfragen.</li>
+              <li><strong>Frisch halten:</strong> graphi indexiert inkrementell; für Dauerbetrieb den Daemon starten.</li>
+              <li><strong>Wert belegen:</strong> regelmäßig <code>graphi savings</code> ansehen — das macht die Token-Ersparnis sichtbar.</li>
+              <li><strong>Lokal-first beweisen (z.&nbsp;B. für Compliance):</strong> <code>graphi privacy-audit</code>.</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- 11 -->
+        <section class="doc-section" id="s11">
+          <h2 class="doc-section__h"><span class="doc-section__num">11</span>Schnellreferenz (Cheat-Sheet)</h2>
+          <div class="doc-prose">
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Cheat-Sheet kopieren">Copy</button><pre><code data-lang="bash"># BAUEN
+CGO_ENABLED=0 go build -o graphi ./cmd/graphi
+
+# INDEXIEREN
+graphi index -root . -db ~/.graphi/graph.db
+
+# SUCHEN (liefert node_id)
+graphi search -db ~/.graphi/graph.db -limit 8 &lt;begriff&gt;
+
+# STRUKTUR
+graphi query callers|callees|references|definition|neighborhood \
+  -db ~/.graphi/graph.db -symbol &lt;node_id&gt; [-depth N]
+graphi query implementers|implements|overrides|subtypes|supertypes \
+  -db ~/.graphi/graph.db -symbol &lt;node_id&gt;
+
+# ANALYSE
+graphi analyze impact     -db ... -symbol &lt;id&gt; -direction reverse|forward
+graphi analyze call-chain -db ... -symbol &lt;id&gt; -target &lt;id&gt;
+graphi analyze concept    -db ... -symbol &lt;id&gt; -concept "..."
+graphi analyze metrics|taint|pdg|interproc|contracts|git-history|batched -db ... -symbol &lt;id&gt;
+
+# DAEMON (schnelle Wiederholabfragen)
+graphi daemon start -socket /tmp/graphi.sock -db ~/.graphi/graph.db
+graphi query callers -daemon /tmp/graphi.sock -symbol &lt;id&gt;
+graphi daemon stop  -socket /tmp/graphi.sock
+
+# MCP / AGENTEN
+graphi setup [--client claude|copilot|cursor|windsurf|claude-desktop|all] [--dry-run]
+graphi mcp -db ~/.graphi/graph.db      # manuell für beliebige MCP-Clients
+
+# WEITERE OBERFLÄCHEN
+graphi ui                              # Web-UI + Browser
+graphi http -addr 127.0.0.1:8080 -db ~/.graphi/graph.db -root .
+graphi tui  -db ~/.graphi/graph.db
+
+# ERSPARNIS &amp; VERTRAUEN
+graphi savings -ledger &lt;pfad&gt;
+graphi privacy-audit
+
+# SEMANTISCHE SUCHE (opt-in)
+graphi setup-embedder
+export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434
+graphi index  --semantic -root . -db ~/.graphi/graph.db -meta ~/.graphi/meta
+graphi search --semantic "wo validieren wir auth tokens" -db ~/.graphi/graph.db -meta ~/.graphi/meta</code></pre></div>
+
+            <h3>Quellen</h3>
+            <ul>
+              <li>graphi README &amp; Doku: <a href="https://github.com/samibel/graphi" target="_blank" rel="noopener">github.com/samibel/graphi</a> (<code>readme.md</code>, <code>docs/HOWTO.md</code>, <code>docs/tutorial/graphi-with-claude-cli.md</code>, <code>docs/meter/metering.md</code>, <code>docs/price/pricing.md</code>, <code>docs/savings/cap-readout.md</code>)</li>
+              <li>Landing-Page: <a href="index.html">samibel.github.io/graphi</a></li>
+              <li>Praxisbeispiel-Repo: Spring PetClinic — <a href="https://github.com/spring-projects/spring-petclinic" target="_blank" rel="noopener">github.com/spring-projects/spring-petclinic</a></li>
+              <li>Alle Kommando-Ausgaben in Abschnitt 5 &amp; 6 stammen aus echten Läufen von graphi gegen Spring PetClinic.</li>
+            </ul>
+
+            <div class="doc-foot-cta">
+              <p>Bereit? Installier graphi und indexier dein erstes Repo.</p>
+              <div class="cta-band__actions">
+                <a class="btn btn--primary" href="index.html#install">Zur Installation</a>
+                <a class="btn btn--ghost" href="https://github.com/samibel/graphi" target="_blank" rel="noopener">Star on GitHub</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </article>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <img src="assets/logo-64.png" alt="" width="28" height="28" />
+        <span>graphi</span>
+      </div>
+      <p class="footer__tag">Local-first, CGo-free code-intelligence engine.</p>
+      <div class="footer__links">
+        <a href="index.html">Überblick</a>
+        <a href="tutorial.html">Tutorial</a>
+        <a href="https://github.com/samibel/graphi" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/samibel/graphi/blob/main/LICENSE" target="_blank" rel="noopener">Apache-2.0</a>
+      </div>
+    </div>
+    <p class="footer__note container">Inhalt gespiegelt aus dem <a href="https://github.com/samibel/graphi" target="_blank" rel="noopener">samibel/graphi</a>-Repository. Alle Kommando-Ausgaben stammen aus echten Läufen gegen Spring PetClinic.</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    // Lightweight comment/output tinting for code blocks (textContent-safe,
+    // so the shared copy-button handler still copies raw text).
+    (function(){
+      document.querySelectorAll('.codeblock code').forEach(function(code){
+        var lines = code.textContent.split('\n');
+        code.textContent = '';
+        lines.forEach(function(line, i){
+          var trimmed = line.replace(/^\s+/, '');
+          var span = document.createElement('span');
+          if(trimmed.indexOf('#') === 0) span.className = 'cmt';
+          else if(trimmed.indexOf('→') === 0 || trimmed.indexOf('->') === 0) span.className = 'out';
+          span.textContent = line;
+          code.appendChild(span);
+          if(i < lines.length - 1) code.appendChild(document.createTextNode('\n'));
+        });
+      });
+    })();
+
+    // TOC scrollspy — mirrors the landing-page nav highlight for #-anchors.
+    (function(){
+      if(!('IntersectionObserver' in window)) return;
+      var links = document.querySelectorAll('.toc__list a[href^="#"]');
+      var map = {};
+      links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          var a = map[en.target.id];
+          if(!a) return;
+          if(en.isIntersecting){
+            links.forEach(function(l){ l.classList.remove('is-active'); });
+            a.classList.add('is-active');
+          }
+        });
+      }, {rootMargin:'-25% 0px -65% 0px'});
+      Object.keys(map).forEach(function(id){
+        var s = document.getElementById(id);
+        if(s) io.observe(s);
+      });
+    })();
+  </script>
+</body>
+</html>
