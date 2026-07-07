@@ -108,6 +108,10 @@ type ImportSpec struct {
 	Alias string
 	// Path is the imported package import path (e.g. "fmt", "github.com/x/y").
 	Path string
+	// Wildcard marks an on-demand / star import (Java `import com.a.b.*;`, Kotlin
+	// `import com.a.b.*`). For these the Path IS the package itself, so the linker
+	// must not strip a trailing type segment to derive the package (WP-01).
+	Wildcard bool
 }
 
 // Parser is the stable contract every language backend implements. Implementations

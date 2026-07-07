@@ -84,6 +84,10 @@ func (s *Service) WithSemantic(reg *embed.Registry, index embed.VectorIndex, nod
 // passes a non-positive limit.
 const DefaultResultLimit = 100
 
+// kindPackage is the interned package-node kind (WP-01), excluded from search
+// results; mirrors core/parse.KindPackage without importing the parse layer.
+const kindPackage = "package"
+
 // Search runs a ranked symbol/text search. An empty query returns an empty
 // result set with no error. Matches are ordered by rank ascending (better
 // matches first), then by qualified_name and node_id for deterministic
@@ -99,6 +103,12 @@ func (s *Service) Search(ctx context.Context, query string, limit int) (Response
 	matches := make([]Match, 0, len(ranked))
 	for _, rn := range ranked {
 		n := rn.Node
+		// WP-01 query hygiene: interned `package` nodes are structural linking
+		// artifacts (empty source path, no line) minted to collapse the import
+		// fan-out — they are not navigable symbols, so they never surface in search.
+		if n.Kind() == kindPackage {
+			continue
+		}
 		matches = append(matches, Match{
 			NodeID:        string(n.ID()),
 			Kind:          n.Kind(),

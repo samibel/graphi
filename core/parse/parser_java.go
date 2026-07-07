@@ -262,7 +262,22 @@ func javaImports(t *javaAST) []ImportSpec {
 				break
 			}
 		}
-		out = append(out, ImportSpec{Alias: alias, Path: path})
+		// On-demand import (`import com.a.b.*;`): the `.*` is a sibling token of the
+		// scoped_identifier, so the scoped path IS the package. Mark it so the linker
+		// links the package directly instead of stripping a (non-existent) type tail.
+		wildcard := importDeclIsWildcard(c, t)
+		out = append(out, ImportSpec{Alias: alias, Path: path, Wildcard: wildcard})
 	}
 	return out
+}
+
+// importDeclIsWildcard reports whether an import_declaration is an on-demand
+// import (`import com.a.b.*;`), detected by an asterisk token among its children.
+func importDeclIsWildcard(decl *gts.Node, t *javaAST) bool {
+	for j := 0; j < decl.ChildCount(); j++ {
+		if d := decl.Child(j); d != nil && d.Text(t.src) == "*" {
+			return true
+		}
+	}
+	return false
 }

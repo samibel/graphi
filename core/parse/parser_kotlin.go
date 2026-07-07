@@ -263,7 +263,17 @@ func kotlinImports(t *kotlinAST) []ImportSpec {
 		}
 		if n.Type(t.lang) == "import_header" {
 			if id := childByType(n, "identifier", t.lang); id != nil {
-				out = append(out, ImportSpec{Path: id.Text(t.src)})
+				// On-demand import (`import com.a.b.*`): the identifier is the package
+				// path and `.*` is a sibling token, so mark it (WP-01) — the linker
+				// links the package directly rather than stripping a type tail.
+				wildcard := false
+				for i := 0; i < n.ChildCount(); i++ {
+					if c := n.Child(i); c != nil && c.Text(t.src) == "*" {
+						wildcard = true
+						break
+					}
+				}
+				out = append(out, ImportSpec{Path: id.Text(t.src), Wildcard: wildcard})
 			}
 		}
 		for i := 0; i < n.ChildCount(); i++ {

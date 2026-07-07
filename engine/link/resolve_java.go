@@ -58,10 +58,16 @@ func fqnImportBinder(in FileRefs) binder {
 			b.bareNameImportPath[bound] = imp.Path
 		}
 		// WP-01: the file→file import fan-out (pkgImportPaths) is REPLACED by a
-		// single file→package edge to the interned package node. Drop the trailing
-		// type segment so "com.a.b.C" imports package "com.a.b". Symbol resolution
-		// (selBase/bareName above, clause = second-to-last segment) is unchanged.
-		if pkg := packagePathOf(imp.Path); pkg != "" {
+		// single file→package edge to the interned package node. For a normal
+		// `import com.a.b.C;` drop the trailing type segment so the package is
+		// "com.a.b"; for an on-demand `import com.a.b.*;` the path already IS the
+		// package, so use it verbatim (stripping would wrongly target "com.a").
+		// Symbol resolution (selBase/bareName above) is unchanged.
+		pkg := imp.Path
+		if !imp.Wildcard {
+			pkg = packagePathOf(imp.Path)
+		}
+		if pkg != "" {
 			b.packageImports = append(b.packageImports, pkg)
 		}
 	}

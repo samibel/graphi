@@ -40,6 +40,10 @@ const (
 // cost predictable for AI-agent callers.
 const MaxNeighborhoodDepth = 5
 
+// kindPackage is the interned package-node kind (WP-01), excluded from
+// neighborhood traversal; mirrors core/parse.KindPackage without importing parse.
+const kindPackage = "package"
+
 // Service is graphi's single shared, read-only structural query service. It is
 // the one place callers/callees/references/definition/neighborhood logic lives;
 // surfaces hold no query logic of their own. It is safe for concurrent use when
@@ -347,8 +351,8 @@ func (s *Service) Neighborhood(ctx context.Context, symbolID model.NodeId, depth
 				default:
 					continue
 				}
-				collectedEdges[e.ID()] = e
-				if _, seen := visitedNodes[other]; !seen {
+				otherNode, seen := visitedNodes[other]
+				if !seen {
 					n, err := s.reader.GetNode(ctx, other)
 					if err != nil {
 						if errors.Is(err, graphstore.ErrNotFound) {
@@ -356,7 +360,18 @@ func (s *Service) Neighborhood(ctx context.Context, symbolID model.NodeId, depth
 						}
 						return Result{}, err
 					}
-					visitedNodes[other] = n
+					otherNode = n
+				}
+				// WP-01 query hygiene: interned `package` nodes are structural
+				// linking artifacts, not navigable symbols. Skipping them keeps
+				// them out of neighborhoods AND prevents a popular package from
+				// acting as an import hub that pulls in every co-importer.
+				if otherNode.Kind() == kindPackage {
+					continue
+				}
+				collectedEdges[e.ID()] = e
+				if !seen {
+					visitedNodes[other] = otherNode
 					next = append(next, other)
 				}
 			}
