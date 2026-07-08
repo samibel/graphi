@@ -239,6 +239,14 @@ func TestTaintE2E_VulnGoRecall(t *testing.T) {
 		t.Errorf("taint recall = %d/%d, want %d/%d (missing flows are silent false-negatives)",
 			recall, len(expectedFlows), len(expectedFlows), len(expectedFlows))
 	}
+	// Strict precision on this exhaustive ground-truth fixture: the surfaced
+	// finding set must be EXACTLY the expected flows — no extra/duplicate findings
+	// beyond the planted ones (recall + fp alone would not catch a spurious
+	// finding that neither matches an expected flow nor touches a safe handler).
+	if len(findings) != len(expectedFlows) {
+		t.Errorf("taint findings = %d, want %d (unexpected/extra findings beyond the planted flows)",
+			len(findings), len(expectedFlows))
+	}
 	if fp != 0 {
 		t.Errorf("taint false positives = %d on sanitized/safe paths, want 0 (precision floor 0.8)", fp)
 	}

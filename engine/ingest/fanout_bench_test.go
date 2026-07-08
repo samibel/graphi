@@ -92,11 +92,14 @@ func TestLinkFanout_EdgeExplosionBudget(t *testing.T) {
 	}
 
 	nodeCount := len(nodes)
-	edgeCount := len(edges)
-	var ratio float64
-	if nodeCount > 0 {
-		ratio = float64(edgeCount) / float64(nodeCount)
+	if nodeCount == 0 {
+		// Guard against a silent pass: if ingestion produced no nodes (a parse or
+		// config regression), ratio would be 0.0 < budget and the gate would pass
+		// without actually measuring the fan-out.
+		t.Fatalf("no nodes ingested from the java fan-out fixture — cannot measure edges/node")
 	}
+	edgeCount := len(edges)
+	ratio := float64(edgeCount) / float64(nodeCount)
 
 	t.Logf("[RED GATE WP-08] java fan-out: nodes=%d, edges=%d, edges/node=%.2f, budget=%.2f, armed=%v",
 		nodeCount, edgeCount, ratio, maxEdgesPerNode, budgetArmed)
