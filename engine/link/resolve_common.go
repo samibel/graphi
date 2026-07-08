@@ -127,6 +127,40 @@ type binder struct {
 	// (C `#include "h"`, PHP `require`, Bash `source ./x`); an unresolved bare name
 	// is tried in each via byDir (unique hit resolves; >1 distinct → ambiguous).
 	ambientDirs []string
+
+	// externalQN, when non-nil, builds the fully-qualified name of an unresolved
+	// EXTERNAL target whose import path is KNOWN (WP-14). It is consulted only at a
+	// selBaseImportPath / bareNameImportPath miss whose package clause is NOT
+	// declared anywhere in the repo — i.e. a genuine stdlib / 3rd-party reference
+	// with an EXACT fully-qualified name (e.g. Java `org.springframework...
+	// RestTemplate.exchange`, Python `os.system`). The returned QN is interned as a
+	// single heuristic-tier `external` node (like resolve_go.go drop-point 1) so
+	// name-keyed analyses (taint sinks/sources) and unresolved-target aggregation
+	// have a real node to match. Returning "" declines materialization. nil (the
+	// default) means a language never mints externals here — preserving the exact
+	// prior skip behaviour for resolvers that do not opt in.
+	externalQN func(importPath, name string, selector bool) string
+}
+
+// externalMemberQN joins a known import path and a referenced member into the
+// external FQN "importPath.name" for BOTH selector and bare references. Used by
+// languages whose import path names a MODULE and the reference names a member of
+// it: Python (`import pkg` → `pkg.fn`; `from pkg import fn` → `pkg.fn`) and the
+// TypeScript family's non-relative package imports (`import {fn} from "pkg"` →
+// `pkg.fn`, `import * as ns from "pkg"` → `pkg.member`).
+func externalMemberQN(importPath, name string, _ bool) string {
+	return importPath + "." + name
+}
+
+// externalFQNBindingQN builds the external FQN for languages whose import binds a
+// fully-qualified TYPE/symbol (Java, Kotlin): a SELECTOR `Type.member` is
+// "importPath.member" (the import path IS the type's FQN), while a BARE reference
+// names the imported symbol itself, whose FQN is exactly the import path.
+func externalFQNBindingQN(importPath, name string, selector bool) string {
+	if selector {
+		return importPath + "." + name
+	}
+	return importPath
 }
 
 // clause returns the package-clause lookup key for an import path under this binder.
@@ -173,7 +207,7 @@ func resolveRefs(in FileRefs, idx *SymbolIndex, st *Stats, b binder) []intent {
 		// Cross-file / cross-module heuristic resolution (imported bare bindings and
 		// selector qualifiers), tried in honest order. Ambiguity short-circuits to a
 		// counted skip rather than guessing a single target.
-		to, found, ambiguous, reason := resolveCrossFile(idx, b, p.SelectorBase, p.Name, p.Selector, p.Kind)
+		to, found, ambiguous, reason, extQN := resolveCrossFile(idx, b, p.SelectorBase, p.Name, p.Selector, p.Kind)
 		if found {
 			out = append(out, intent{
 				from: from, to: to, kind: p.Kind, class: classSelector,
@@ -184,6 +218,20 @@ func resolveRefs(in FileRefs, idx *SymbolIndex, st *Stats, b binder) []intent {
 		}
 		if ambiguous {
 			st.Ambiguous++
+			continue
+		}
+		if extQN != "" {
+			// WP-14: an import-path-keyed miss whose clause is NOT in the repo is a
+			// genuine external symbol with an exact FQN — mint a heuristic-tier edge to
+			// an interned `external` node (kind excluded from structural queries, read
+			// by taint). Mirrors resolve_go.go drop-point 1 for the clause/FQN-keyed
+			// languages.
+			out = append(out, intent{
+				from: from, toExternalQN: extQN, kind: p.Kind, class: classSelector,
+				reason:   "external " + p.Kind + " (unresolved import)",
+				evidence: ev,
+			})
+			st.ResolvedExternal++
 			continue
 		}
 		st.Skipped++
@@ -271,61 +319,81 @@ func requireBinder(in FileRefs, exts []string) binder {
 // (heuristic tier). Ambiguity at any step short-circuits to (_, false, true, _) so
 // the caller counts st.Ambiguous instead of guessing; a definitive miss returns
 // (_, false, false, _). It never fabricates a target and never edits the index.
-func resolveCrossFile(idx *SymbolIndex, b binder, base, name string, selector bool, kind string) (model.NodeId, bool, bool, string) {
+func resolveCrossFile(idx *SymbolIndex, b binder, base, name string, selector bool, kind string) (model.NodeId, bool, bool, string, string) {
+	// extQN accumulates the external FQN of an import-path-keyed miss (WP-14). It is
+	// captured but NOT returned early: a later mechanism (namespace dir, ambient)
+	// may still resolve the same reference to a committed node, which always wins.
+	// Only if every mechanism misses does extQN surface as the external target.
+	extQN := ""
+	maybeExternal := func(impPath string, sel bool) {
+		if extQN != "" || b.externalQN == nil {
+			return
+		}
+		// A clause declared somewhere in the repo means this is an in-repo module
+		// with a merely-unindexed member — an honest skip, never a fabricated
+		// external (which would mislabel a local symbol, the WP-03 flood failure).
+		// Only a clause ABSENT from the whole repo is a genuine external target.
+		if len(idx.byClause[b.clause(impPath)]) > 0 {
+			return
+		}
+		extQN = b.externalQN(impPath, name, sel)
+	}
 	if !selector {
 		if dirs, ok := b.bareNameDirs[name]; ok {
 			if id, f, a := lookupInDirs(idx, dirs, name); f {
-				return id, true, false, "cross-file " + kind + " resolved via imported binding " + name
+				return id, true, false, "cross-file " + kind + " resolved via imported binding " + name, ""
 			} else if a {
-				return "", false, true, ""
+				return "", false, true, "", ""
 			}
 		}
 		if impPath, ok := b.bareNameImportPath[name]; ok {
 			if id, f, a := crossModule(idx, b.clause(impPath), name); f {
-				return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (binding " + name + ")"
+				return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (binding " + name + ")", ""
 			} else if a {
-				return "", false, true, ""
+				return "", false, true, "", ""
 			}
+			maybeExternal(impPath, false)
 		}
 	} else {
 		if impPath, ok := b.selBaseImportPath[base]; ok {
 			if id, f, a := crossModule(idx, b.clause(impPath), name); f {
-				return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (qualifier " + base + ")"
+				return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (qualifier " + base + ")", ""
 			} else if a {
-				return "", false, true, ""
+				return "", false, true, "", ""
 			}
+			maybeExternal(impPath, true)
 		}
 		if dirs, ok := b.selBaseDirs[base]; ok {
 			if id, f, a := lookupInDirs(idx, dirs, name); f {
-				return id, true, false, "cross-file " + kind + " resolved via namespace import " + base
+				return id, true, false, "cross-file " + kind + " resolved via namespace import " + base, ""
 			} else if a {
-				return "", false, true, ""
+				return "", false, true, "", ""
 			}
 		}
 		if b.selBaseAsClause {
 			if id, f, a := crossModule(idx, b.clause(base), name); f {
-				return id, true, false, "cross-module " + kind + " resolved via module path " + base
+				return id, true, false, "cross-module " + kind + " resolved via module path " + base, ""
 			} else if a {
-				return "", false, true, ""
+				return "", false, true, "", ""
 			}
 		}
 	}
 	// Ambient fallbacks apply to both bare and selector references.
 	if len(b.ambientDirs) > 0 {
 		if id, f, a := lookupInDirs(idx, b.ambientDirs, name); f {
-			return id, true, false, "cross-file " + kind + " resolved via a local include/require directory"
+			return id, true, false, "cross-file " + kind + " resolved via a local include/require directory", ""
 		} else if a {
-			return "", false, true, ""
+			return "", false, true, "", ""
 		}
 	}
 	if len(b.ambientClauses) > 0 {
 		if id, f, a := lookupAcrossClauses(idx, b.ambientClauses, name); f {
-			return id, true, false, "cross-module " + kind + " resolved via an imported namespace"
+			return id, true, false, "cross-module " + kind + " resolved via an imported namespace", ""
 		} else if a {
-			return "", false, true, ""
+			return "", false, true, "", ""
 		}
 	}
-	return "", false, false, ""
+	return "", false, false, "", extQN
 }
 
 // lookupAcrossClauses resolves a bare name across candidate package clauses via

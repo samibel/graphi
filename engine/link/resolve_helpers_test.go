@@ -27,6 +27,26 @@ func assertCall(t *testing.T, nodes []model.Node, edges []model.Edge, fromQN, to
 	t.Errorf("missing calls edge %s -> %s", fromQN, toQN)
 }
 
+// assertEdgeTier asserts an edge from→to of the given kind exists at the given
+// tier with non-empty provenance. Unlike assertCall it takes NodeIds directly, so
+// it works for edges to linker-minted external nodes (whose QN is not in the
+// fixture node set).
+func assertEdgeTier(t *testing.T, edges []model.Edge, from, to model.NodeId, kind string, tier model.ConfidenceTier) {
+	t.Helper()
+	for _, e := range edges {
+		if e.From() == from && e.To() == to && e.Kind() == kind {
+			if e.Tier() != tier {
+				t.Errorf("%s->%s tier=%q want %q", from, to, e.Tier(), tier)
+			}
+			if e.Reason() == "" || len(e.Evidence()) == 0 {
+				t.Errorf("%s->%s missing reason/evidence", from, to)
+			}
+			return
+		}
+	}
+	t.Errorf("missing %s edge %s -> %s", kind, from, to)
+}
+
 // assertNoPhantomNoConfirmed asserts every edge targets a committed node and no
 // edge is confirmed tier (the linker is NEVER confirmed).
 func assertNoPhantomNoConfirmed(t *testing.T, nodes []model.Node, edges []model.Edge) {

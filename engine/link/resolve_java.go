@@ -44,6 +44,11 @@ func fqnImportBinder(in FileRefs) binder {
 		selBaseImportPath:  map[string]string{},
 		bareNameImportPath: map[string]string{},
 		clauseOf:           func(p string) string { return packageSegment(p, ".") },
+		// WP-14: an imported FQN that resolves to no committed symbol is a genuine
+		// external type/member (stdlib / 3rd-party) with an exact FQN — mint an
+		// interned external node so taint sinks and unresolved-target aggregation
+		// can key on names like "org.springframework.web.client.RestTemplate.exchange".
+		externalQN: externalFQNBindingQN,
 	}
 	for _, imp := range in.Imports {
 		if imp.Path == "" {

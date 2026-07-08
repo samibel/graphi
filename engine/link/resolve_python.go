@@ -33,6 +33,10 @@ func (pyResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 		selBaseImportPath:  map[string]string{},
 		bareNameImportPath: map[string]string{},
 		clauseOf:           pyClause,
+		// WP-14: an imported module member that resolves to no committed symbol is a
+		// genuine external (stdlib / 3rd-party) reference with an exact FQN
+		// ("os.system", "subprocess.run") — mint an interned external node.
+		externalQN: externalMemberQN,
 	}
 	for _, imp := range in.Imports {
 		if imp.Path == "" {

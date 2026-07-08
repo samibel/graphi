@@ -341,11 +341,26 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
   (kein hand-gepflegter Wert).
 - **Abhängigkeiten:** WP-05 (Taint 4/4), WP-08 (Perf-Budgets grün).
 
-**WP-14 · A1-Rollout Java/Python/TS** `[nach WP-05]`
-- **Kern:** External-Node-Materialisierung über `resolve_common.go` auf die
-  weiteren Sprachen ausrollen (nach WP-01 haben Java-Imports volle Package-Pfade,
-  externe FQNs wie `org.springframework….RestTemplate.exchange` sind sauber baubar).
-- **Gate:** je Sprache ein E2E-Recall-Fixture analog WP-00 grün.
+**WP-14 · A1-Rollout Java/Python/TS** `[nach WP-05]` — ✅ erledigt
+- **Kern:** External-Node-Materialisierung (WP-03 „drop-point 1") über
+  `engine/link/resolve_common.go` auf die clause/FQN-gebundenen Sprachen
+  ausgerollt: ein `binder.externalQN`-Bauer je Sprache erzeugt aus einem
+  import-pfad-gebundenen Miss die exakte externe FQN — Java/Kotlin
+  (`externalFQNBindingQN`: Selector `Type.member`, bare = Import-Pfad), Python &
+  TypeScript-Familie (`externalMemberQN`: `importPfad.name`). TS bindet dafür
+  jetzt auch NICHT-relative Paket-Importe. Nur gemündet, wenn die Package-Clause
+  **nirgends im Repo** vorkommt (`idx.byClause`-Guard) — verhindert den
+  WP-03-Flood (kein Fabrizieren für in-Repo-Symbole/Locals). Nicht opt-in
+  Sprachen (C#, Rust, Ruby, …) bleiben unverändert (`externalQN == nil`).
+  Query-Hygiene ist kind-basiert (`kind == "external"`) und deckt daher alle
+  Sprachen automatisch ab; Warm-Start-Stamp auf „8" gebumpt (neuer committeter
+  Node/Edge-Inhalt).
+- **Gate:** `TestExternalNodes_Java` (`org.apache.commons.lang3.StringUtils.upperCase`),
+  `TestExternalNodes_Python` (`subprocess.run` + Taint-Sink-Match als
+  Sicherheits-Payoff, plus No-Flood-Assertion), `TestExternalNodes_TypeScript`
+  (`child_process.exec`) — alle über die echte Ingest+Link-Pipeline; dazu die
+  aktualisierten `engine/link`-Unit-Gates (Python/TS) und die unveränderten
+  byte-identischen Golden-Incremental-vs-Full-Tests je Sprache.
 - **Abhängigkeiten:** WP-05, WP-10.
 
 ---
