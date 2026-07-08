@@ -120,6 +120,24 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 	}, nil
 }
 
+// GoAST returns the *ast.File and *token.FileSet backing a Go ParseResult, when
+// res was produced by GoParser (its Root is the internal *goAST handle). It lets
+// an ENGINE-level consumer (e.g. engine/analysis/intraproctaint) run a pure
+// go/ast analysis over the already-parsed file without re-parsing. It returns
+// ok=false for a nil result or any non-Go backend, so callers degrade cleanly.
+// This exposes only the standard-library AST types (go/ast, go/token); core/parse
+// stays a pure leaf and takes on no new dependency.
+func GoAST(res *ParseResult) (*ast.File, *token.FileSet, bool) {
+	if res == nil {
+		return nil, nil, false
+	}
+	root, ok := res.Root.(*goAST)
+	if !ok || root == nil || root.File == nil || root.FileSet == nil {
+		return nil, nil, false
+	}
+	return root.File, root.FileSet, true
+}
+
 // goImports extracts the import declarations of a Go file as ImportSpecs. The
 // alias is the explicit local name when present ("." for dot-imports, "_" for
 // blank imports, "" for the default package-name binding). Paths are unquoted.

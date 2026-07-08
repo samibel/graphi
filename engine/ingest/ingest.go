@@ -778,6 +778,17 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	}); err != nil {
 		return err
 	}
+	// WP-05b-2: intra-procedural taint dataflow. Run the pure per-function
+	// source→sink analysis over every parsed Go file and persist the complete,
+	// canonical findings set to durable store metadata. It runs AFTER the graph
+	// transaction commits and writes only metadata (never nodes/edges), so it is
+	// deterministic and byte-parity safe — graphstore Snapshot serializes
+	// nodes/edges only, never metadata. The taint dispatch adapter reads these
+	// back so `graphi analyze taint` surfaces the flows.
+	if err := i.analyzeAndPersistIntraProcTaint(ctx, parsed); err != nil {
+		return err
+	}
+
 	// Persist the active profile to durable store metadata after the full pass
 	// commits. A zero/empty profile defaults to "balanced" for forward
 	// compatibility and is never treated as an error.
@@ -1014,7 +1025,12 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		prog(ProgressEvent{Phase: PhaseParse, Total: progTotal})
 	}
 	progDone := 0
-	return i.metaTx(ctx, func(tx *sql.Tx) error {
+	// WP-05b-2: retain the parse result of each reprocessed file so the
+	// intra-procedural taint refresh can re-analyze the touched Go files WITHOUT
+	// re-parsing (the parser was already invoked once this pass; re-parsing would
+	// double the observable parse count the incremental tests assert on).
+	parsedResults := make(map[string]*parse.ParseResult)
+	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
 		// Mirror IngestAll's batched write sessions: one durable graph
 		// transaction per phase, committed before each seam where the pass
 		// reads its own writes back. `open` guards the error paths.
@@ -1043,16 +1059,22 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			// re-read; otherwise fall back to a serial parse+commit. Either way the
 			// commit runs here in this single serialized goroutine, in canonical
 			// relPath-sorted order (units is sorted by walk).
-			var nodeIDs, edgeIDs, fwd []string
-			var fr *link.FileRefs
+			var pf *ParsedFile
 			var err error
-			if pf, ok := precomputed[u.relPath]; ok && pf != nil && !pf.skipped && pf.result != nil && pf.Hash == u.hash {
-				nodeIDs, edgeIDs, fwd, fr, err = i.commitParsed(ctx, batch, u, pf)
+			if p, ok := precomputed[u.relPath]; ok && p != nil && !p.skipped && p.result != nil && p.Hash == u.hash {
+				pf = p
 			} else {
-				nodeIDs, edgeIDs, fwd, fr, err = i.parseAndCommit(ctx, batch, u)
+				pf, err = i.parseUnit(ctx, u)
+				if err != nil {
+					return err
+				}
 			}
+			nodeIDs, edgeIDs, fwd, fr, err := i.commitParsed(ctx, batch, u, pf)
 			if err != nil {
 				return err
+			}
+			if pf != nil && pf.result != nil {
+				parsedResults[u.relPath] = pf.result
 			}
 			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs, fr != nil); err != nil {
 				return err
@@ -1234,7 +1256,15 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			prog(ProgressEvent{Phase: PhaseDone, Done: progDone, Total: progTotal})
 		}
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+	// WP-05b-2: refresh the persisted intra-procedural taint findings after the
+	// incremental commit. Findings of the reprocessed (and any now-deleted) Go
+	// files are recomputed and merged with the retained findings of untouched
+	// files, so the persisted set converges with a full re-index. Metadata-only
+	// (never nodes/edges) → byte-parity safe.
+	return i.refreshIntraProcTaint(ctx, root, toProcess, parsedResults)
 }
 
 // recordEditProvenanceTx writes one edit_provenance row per element id, keyed by

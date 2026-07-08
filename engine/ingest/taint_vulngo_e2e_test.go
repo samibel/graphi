@@ -34,7 +34,7 @@ import (
 // measured numbers without failing (the red gate is visible but non-blocking).
 // WP-05 sets it to true, at which point the assertions below enforce the
 // acceptance criteria: recall 4/4 and zero false positives on the safe paths.
-const gateArmed = false
+const gateArmed = true
 
 // vulnGoRepo is the fixture: a small HTTP service with four attacker-controlled
 // flows that reach dangerous sinks, plus two paths that must NOT be reported.
@@ -178,8 +178,20 @@ func TestTaintE2E_VulnGoRecall(t *testing.T) {
 		t.Fatalf("run taint analyzer: %v", err)
 	}
 
-	recall := matchedFlows(res.Findings)
-	fp := falsePositives(res.Findings)
+	// WP-05b-2: obtain the flows via the REAL surfaced path — the
+	// intra-procedural taint dataflow the ingest pipeline ran over each Go file's
+	// AST (with the production default config) and persisted to the store. The
+	// reachability analyzer alone still yields 0/4 (source and sink are both
+	// terminal callees with no connecting edge); the intra-proc findings are what
+	// connect them. Both sets are merged so the gate measures the surfaced union.
+	intra, err := ing.IntraProcTaintFindings(ctx)
+	if err != nil {
+		t.Fatalf("read intra-proc taint findings: %v", err)
+	}
+	findings := append(append([]taint.Finding{}, res.Findings...), intra...)
+
+	recall := matchedFlows(findings)
+	fp := falsePositives(findings)
 
 	// WP-05a milestone: report how many sink/source symbols the config now
 	// classifies from the ingested graph. Recall stays 0 until a propagation model
@@ -188,7 +200,7 @@ func TestTaintE2E_VulnGoRecall(t *testing.T) {
 	// materializes here where it was previously dropped entirely.
 	sinks, sources := classifiedSinkSource(ctx, t, store)
 	t.Logf("[RED GATE WP-05] vuln-go taint: recall=%d/%d, false_positives=%d, findings=%d, armed=%v",
-		recall, len(expectedFlows), fp, len(res.Findings), gateArmed)
+		recall, len(expectedFlows), fp, len(findings), gateArmed)
 	t.Logf("[WP-05a] materialized sink candidates=%d %v; source candidates=%d %v (recall needs 05b propagation)",
 		len(sinks), sinks, len(sources), sources)
 
