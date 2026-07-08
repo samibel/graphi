@@ -18,8 +18,8 @@ gate is a passing test.
 |---|--------|---------------|--------|---------------|----------|-------|
 | 1 | Taint recall (vuln-go E2E) | 0/4 → **5/5, 0 FP** ✅ ARMED (precision ~1.0 on realistic shapes; own-source 10→1) | 4/4, precision ≥ 0.8 | `gateArmed` (=true) | WP-05a/b | `engine/ingest/taint_vulngo_e2e_test.go` |
 | 2 | Edges/node ratio (Java fan-out) | 15.56 → **0.96** ✅ ARMED | < 8 (≈ < 500k on real repo) | `budgetArmed` (=true) | WP-01 | `engine/ingest/fanout_bench_test.go` |
-| 3 | DB size (real monorepo) | 2.3 GB | < 300 MB | *(fixture pending)* | WP-06/WP-08 | `bench/` (on-disk store) |
-| 4 | Full index time | 4m48s | < 90s | *(fixture pending)* | WP-08 | `bench/bench-budget.yml` |
+| 3 | DB size — bytes/edge proxy | ~500 B/edge → **226 B/edge** ✅ ARMED (budget 360) | < 300 MB (WP-01 ~10× fewer edges × WP-06 smaller/edge) | `maxBytesPerEdge` | WP-06/WP-08 | `engine/ingest/storage_budget_test.go` |
+| 4 | Full index time | 4m48s | < 90s | *(wall-clock; not a checked-in gate — flaky/machine-bound)* | WP-02 proxy | `bench/bench-budget.yml` (`full_index_ms`) + link-progress |
 | 5 | Link progress interval | minutes of silence → **≥2 incremental events, Done↑** ✅ ARMED | < 2s between events | inherent (≥2 PhaseLink events, Done increasing) | WP-02 | `engine/ingest/link_progress_test.go` |
 | 6 | dead_symbol false positives (@Test/@Bean/main) | "very many" | 0 as warning | *(gate pending)* | WP-11 | `engine/diagnostic` |
 | 7 | unresolved_reference diagnostics | O(edges) | 1 per external target | *(gate pending)* | WP-12 | `engine/diagnostic` |
