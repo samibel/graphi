@@ -16,7 +16,7 @@ gate is a passing test.
 
 | # | Metric | Current (RED) | Target | Arming switch | Armed by | Where |
 |---|--------|---------------|--------|---------------|----------|-------|
-| 1 | Taint recall (vuln-go E2E) | **0/4**, 0 FP | 4/4, precision ≥ 0.8 | `gateArmed` | WP-05 | `engine/ingest/taint_vulngo_e2e_test.go` |
+| 1 | Taint recall (vuln-go E2E) | **0/4**, 0 FP (05a: 2 sinks + 1 source materialized) | 4/4, precision ≥ 0.8 | `gateArmed` | WP-05 | `engine/ingest/taint_vulngo_e2e_test.go` |
 | 2 | Edges/node ratio (Java fan-out) | 15.56 → **0.96** ✅ ARMED | < 8 (≈ < 500k on real repo) | `budgetArmed` (=true) | WP-01 | `engine/ingest/fanout_bench_test.go` |
 | 3 | DB size (real monorepo) | 2.3 GB | < 300 MB | *(fixture pending)* | WP-06/WP-08 | `bench/` (on-disk store) |
 | 4 | Full index time | 4m48s | < 90s | *(fixture pending)* | WP-08 | `bench/bench-budget.yml` |

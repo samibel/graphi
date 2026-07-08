@@ -21,6 +21,7 @@ package ingest_test
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"testing"
 
@@ -180,8 +181,16 @@ func TestTaintE2E_VulnGoRecall(t *testing.T) {
 	recall := matchedFlows(res.Findings)
 	fp := falsePositives(res.Findings)
 
+	// WP-05a milestone: report how many sink/source symbols the config now
+	// classifies from the ingested graph. Recall stays 0 until a propagation model
+	// (05b) connects a source to a sink, but node materialization is the
+	// prerequisite the extractor fix delivers — os/exec.Command (a chained call)
+	// materializes here where it was previously dropped entirely.
+	sinks, sources := classifiedSinkSource(ctx, t, store)
 	t.Logf("[RED GATE WP-05] vuln-go taint: recall=%d/%d, false_positives=%d, findings=%d, armed=%v",
 		recall, len(expectedFlows), fp, len(res.Findings), gateArmed)
+	t.Logf("[WP-05a] materialized sink candidates=%d %v; source candidates=%d %v (recall needs 05b propagation)",
+		len(sinks), sinks, len(sources), sources)
 
 	if !gateArmed {
 		if recall == len(expectedFlows) && fp == 0 {
@@ -228,6 +237,29 @@ func falsePositives(findings []taint.Finding) int {
 		}
 	}
 	return fp
+}
+
+// classifiedSinkSource returns the qualified names of graph nodes the default
+// taint config classifies as a sink / source — the WP-05a node-materialization
+// milestone measured directly off the ingested store.
+func classifiedSinkSource(ctx context.Context, t *testing.T, store *graphstore.MemStore) (sinks, sources []string) {
+	t.Helper()
+	nodes, err := store.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatalf("read nodes: %v", err)
+	}
+	cfg := taint.DefaultConfig()
+	for _, n := range nodes {
+		if _, cat := cfg.MatchSink(n.Kind(), n.QualifiedName()); cat != "" {
+			sinks = append(sinks, n.QualifiedName())
+		}
+		if label, _ := cfg.MatchSource(n.Kind(), n.QualifiedName()); label != "" {
+			sources = append(sources, n.QualifiedName())
+		}
+	}
+	sort.Strings(sinks)
+	sort.Strings(sources)
+	return sinks, sources
 }
 
 // pathTouches reports whether any step in the finding's provenance path (or the

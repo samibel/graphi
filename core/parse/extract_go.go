@@ -282,6 +282,15 @@ func (e *goExtractor) resolveBody(from model.NodeId, fromQN string, fn *ast.Func
 				for _, arg := range x.Args {
 					ast.Inspect(arg, e.inspectFn(from, fromQN, &outErr))
 				}
+				// WP-05a: a chained call (`exec.Command(...).Output()`) has the
+				// inner call as the selector's receiver (fun.X). The old walk
+				// returned here and dropped it, so a chained sink like exec.Command
+				// was never recorded. Descend into the inner call so its own target
+				// is recorded as a pending ref (the bare-ident base case above is
+				// unaffected: fun.X is only a CallExpr for a chained call).
+				if inner, ok := fun.X.(*ast.CallExpr); ok {
+					ast.Inspect(inner, e.inspectFn(from, fromQN, &outErr))
+				}
 				return false
 			}
 			return true
@@ -348,6 +357,11 @@ func (e *goExtractor) inspectFn(from model.NodeId, fromQN string, outErr *error)
 				e.addPending(fromQN, base, fun.Sel.Name, goEdgeCalls, line, true)
 				for _, arg := range x.Args {
 					ast.Inspect(arg, e.inspectFn(from, fromQN, outErr))
+				}
+				// WP-05a: descend into a chained call's inner receiver call so it is
+				// not dropped (mirrors resolveBody).
+				if inner, ok := fun.X.(*ast.CallExpr); ok {
+					ast.Inspect(inner, e.inspectFn(from, fromQN, outErr))
 				}
 				return false
 			}
