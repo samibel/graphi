@@ -54,6 +54,11 @@ type nodeWire struct {
 	SourcePath    string `json:"source_path"`
 	Line          int    `json:"line"`
 	Column        int    `json:"column"`
+	// Meta is the non-identity annotation/flag rider. It is a POINTER with
+	// omitempty so a node WITHOUT metadata encodes exactly as before (no "meta"
+	// key at all) — preserving byte-parity for pre-meta graphs and the golden
+	// vector — while a node WITH metadata carries a deterministic (sorted) block.
+	Meta *NodeMeta `json:"meta,omitempty"`
 }
 
 type edgeWire struct {
@@ -75,7 +80,7 @@ type graphWire struct {
 }
 
 func (n Node) toWire() nodeWire {
-	return nodeWire{
+	w := nodeWire{
 		ID:            n.id,
 		Kind:          n.kind,
 		QualifiedName: n.qualifiedName,
@@ -83,6 +88,13 @@ func (n Node) toWire() nodeWire {
 		Line:          n.line,
 		Column:        n.column,
 	}
+	// Only emit meta when present so empty-meta nodes stay byte-identical to the
+	// pre-meta encoding. Re-normalize defensively so the wire block is sorted.
+	if !n.meta.IsZero() {
+		m := NewNodeMeta(n.meta.Annotations, n.meta.Flags)
+		w.Meta = &m
+	}
+	return w
 }
 
 func (e Edge) toWire() edgeWire {
@@ -174,6 +186,11 @@ func Unmarshal(data []byte) (Graph, error) {
 		}
 		if n.ID() != nw.ID {
 			return Graph{}, fmt.Errorf("model: node id mismatch on read: serialized %q, derived %q", nw.ID, n.ID())
+		}
+		// Re-attach non-identity meta (re-normalized so a hand-edited/unsorted
+		// snapshot still round-trips deterministically). Meta does not affect ID.
+		if nw.Meta != nil {
+			n = n.WithMeta(NewNodeMeta(nw.Meta.Annotations, nw.Meta.Flags))
 		}
 		nodes = append(nodes, n)
 	}

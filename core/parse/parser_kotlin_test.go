@@ -57,6 +57,8 @@ func TestExtractKotlin_Nodes(t *testing.T) {
 		"shop.checkout": goKindMethod,
 		"shop.price":    goKindFunction,
 		"shop.run":      goKindFunction,
+		// WP-01: the file's `package shop` mints one interned package node.
+		"shop": KindPackage,
 	}
 	for qn, kind := range want {
 		n, ok := nodeByQN(nodes, qn)
@@ -76,7 +78,7 @@ func TestExtractKotlin_Nodes(t *testing.T) {
 	for _, n := range nodes {
 		emitted[n.Kind()] = struct{}{}
 	}
-	for _, k := range []model.NodeKind{"file", "function", "method", "type"} {
+	for _, k := range []model.NodeKind{"file", "function", "method", "type", "package"} {
 		if _, ok := emitted[k]; !ok {
 			t.Errorf("expected kind literal %q to be present", k)
 		}
@@ -88,7 +90,7 @@ func TestExtractKotlin_Nodes(t *testing.T) {
 	}
 	for bad := range emitted {
 		switch string(bad) {
-		case "file", "function", "method", "type":
+		case "file", "function", "method", "type", "package":
 		default:
 			t.Errorf("unexpected node kind literal %q (closed vocabulary violated)", bad)
 		}

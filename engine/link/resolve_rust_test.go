@@ -53,7 +53,7 @@ func rustScene(t *testing.T) ([]model.Node, []FileRefs) {
 
 func TestRustLink_Resolves(t *testing.T) {
 	nodes, files := rustScene(t)
-	edges, st, err := New().Link("rust", files, BuildIndex(nodes))
+	_, edges, st, err := New().Link("rust", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}

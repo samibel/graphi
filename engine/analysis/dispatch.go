@@ -8,6 +8,7 @@ import (
 	"github.com/samibel/graphi/engine/analysis/githistory"
 	"github.com/samibel/graphi/engine/analysis/interproc"
 	"github.com/samibel/graphi/engine/analysis/interproctaint"
+	"github.com/samibel/graphi/engine/analysis/intraproctaint"
 	"github.com/samibel/graphi/engine/analysis/pdg"
 	"github.com/samibel/graphi/engine/analysis/taint"
 	"github.com/samibel/graphi/engine/community"
@@ -218,9 +219,28 @@ func (a taintAdapter) Analyze(ctx context.Context, r query.Reader, p Params) (An
 
 	report := buildInterprocTaintReport(sol)
 
+	// WP-05b-2: merge the persisted intra-procedural taint findings (computed by
+	// the ingest pipeline over each Go file's AST and stored in graphstore
+	// metadata) into the report so `graphi analyze taint` surfaces the
+	// source→sink flows the reachability model cannot see (source and sink are
+	// both terminal callees with no connecting edge). Read via a best-effort
+	// metadata type-assert; a reader without metadata simply contributes nothing.
+	if intra := readIntraProcTaintFlows(ctx, r); len(intra) > 0 {
+		report.Flows = append(report.Flows, intra...)
+	}
+
 	outcome := query.OutcomeFound
 	if len(result.Findings) == 0 && len(report.Flows) == 0 {
-		outcome = query.OutcomeEmpty
+		// WP-04: an empty result on a graph that contains NO sink (or source)
+		// candidates is not a clean bill of health — a flow could not exist by
+		// construction. Report it honestly as no_sink_candidates so a security
+		// consumer reads "unverified", not "checked, clean". Only a graph that DID
+		// have sink candidates but produced no path is a genuine `empty`.
+		if result.SinkCandidates == 0 || result.SourceCandidates == 0 {
+			outcome = query.OutcomeNoSinkCandidates
+		} else {
+			outcome = query.OutcomeEmpty
+		}
 	}
 	return Analysis{
 		Analyzer:       taint.AnalyzerName,
@@ -257,6 +277,52 @@ func (a taintQueryAdapter) Analyze(ctx context.Context, r query.Reader, p Params
 	}
 	res.Analyzer = TaintQueryAnalyzerName
 	return res, nil
+}
+
+// metadataReader is the read-only metadata seam a concrete graphstore satisfies.
+// The taint adapter type-asserts the query.Reader to it (mirroring the Searcher
+// pattern) so it can read the persisted intra-procedural taint findings without
+// widening the query.Reader interface.
+type metadataReader interface {
+	Metadata(ctx context.Context, key string) (string, error)
+}
+
+// readIntraProcTaintFlows loads the ingest-persisted intra-procedural taint
+// findings from store metadata and maps them into surface flows. It is
+// best-effort: a reader without metadata, an absent key, or a decode error
+// yields no flows (never an error) so the interprocedural verdict is unaffected.
+func readIntraProcTaintFlows(ctx context.Context, r query.Reader) []InterprocTaintFlow {
+	mr, ok := r.(metadataReader)
+	if !ok {
+		return nil
+	}
+	raw, err := mr.Metadata(ctx, intraproctaint.MetadataKey)
+	if err != nil || raw == "" {
+		return nil
+	}
+	findings, err := intraproctaint.Decode(raw)
+	if err != nil {
+		return nil
+	}
+	flows := make([]InterprocTaintFlow, 0, len(findings))
+	for _, f := range findings {
+		labels := []string(f.Labels)
+		if labels == nil {
+			labels = []string{}
+		}
+		callPath := make([]string, 0, len(f.Path))
+		for _, s := range f.Path {
+			callPath = append(callPath, s.QualifiedName)
+		}
+		flows = append(flows, InterprocTaintFlow{
+			SourceName:   f.SourceName,
+			SinkName:     f.SinkName,
+			SinkCategory: f.SinkCategory,
+			Labels:       labels,
+			CallPath:     callPath,
+		})
+	}
+	return flows
 }
 
 // buildInterprocTaintReport maps the engine-layer Solution into the surface

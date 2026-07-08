@@ -104,11 +104,49 @@ func SQLiteFactory(dir string) (Graphstore, error) {
 	return OpenSQLite(filepath.Join(dir, "graphi.db"))
 }
 
-// initSchema creates the base tables and the FTS5 index. Evidence is stored as a
-// JSON array so the null/empty/populated distinction round-trips exactly. The
-// FTS5 virtual table covers node name (qualified_name) and edge reason — the
-// searchable text fields named in the ACs.
+// graphstoreSchemaVersion is the on-disk edge layout version, stamped into
+// PRAGMA user_version. Bump it whenever the physical edges/reasons schema
+// changes so a pre-existing store built by an older binary is detected and
+// re-created rather than mis-read.
+//
+//	0 : implicit — the original inline layout (edges.reason TEXT, edges.evidence
+//	    TEXT) written before this stamp existed.
+//	2 : WP-06 storage diet — the highly-repetitive edge `reason` is interned into
+//	    the `reasons` dictionary (edges.reason_id); `evidence` stays inline (it is
+//	    per-edge-unique, so interning it does not dedup); and edges are no longer
+//	    full-text indexed in `search` (nodes only).
+//	3 : WP-10 node meta — nodes carry a NON-identity `meta` column (JSON-encoded
+//	    NodeMeta: source annotations + flags). Added non-destructively via ALTER
+//	    TABLE ADD COLUMN (default ''), so a pre-existing nodes table is migrated
+//	    in place rather than re-created.
+const graphstoreSchemaVersion = 3
+
+// initSchema creates the base tables and the (node-only) FTS5 index. Edge
+// provenance is stored compactly: the highly-repetitive `reason` string is
+// interned into the `reasons` dictionary and the edge row references it by
+// integer id (millions of near-identical edges then share one dictionary row
+// instead of repeating the text inline). `evidence` stays inline as a JSON
+// array: it is per-edge-unique (it carries the specific file:line references),
+// so interning it would add a dictionary row + UNIQUE-index entry per edge for
+// no dedup — strictly worse than inline. The JSON evidence encoding is preserved
+// verbatim, so the null/empty/populated distinction round-trips exactly. The
+// FTS5 virtual table covers node name (qualified_name) only — edge reason is NOT
+// full-text indexed (it is filtered by substring over the hot cache, matching
+// MemStore); FTS-indexing millions of repetitive edge reasons was a dominant
+// on-disk cost.
 func (s *SQLiteStore) initSchema(ctx context.Context) error {
+	// Detect and re-create a pre-existing old-layout edges table before creating
+	// the current schema (a no-op on a fresh DB). CREATE TABLE IF NOT EXISTS
+	// alone would leave the old inline columns in place and the interned reads
+	// would fail with "no such column: reason_id".
+	if err := s.migrateEdgeLayout(ctx); err != nil {
+		return err
+	}
+	// Add the WP-10 `meta` column to a pre-existing nodes table (no-op on a fresh
+	// DB, where the DDL below creates it directly).
+	if err := s.migrateNodeMeta(ctx); err != nil {
+		return err
+	}
 	const ddl = `
 CREATE TABLE IF NOT EXISTS nodes (
 	id             TEXT PRIMARY KEY,
@@ -116,7 +154,17 @@ CREATE TABLE IF NOT EXISTS nodes (
 	qualified_name TEXT NOT NULL,
 	source_path    TEXT NOT NULL,
 	line           INTEGER NOT NULL,
-	col            INTEGER NOT NULL
+	col            INTEGER NOT NULL,
+	-- WP-10: JSON-encoded NON-identity NodeMeta (annotations/flags). Empty string
+	-- means "no metadata". Migrated onto a pre-existing table by migrateNodeMeta.
+	meta           TEXT NOT NULL DEFAULT ''
+);
+-- reasons interns the repetitive edge reason string so millions of
+-- near-identical edges share one dictionary row instead of repeating the text
+-- inline. Evidence is NOT interned (it is per-edge-unique).
+CREATE TABLE IF NOT EXISTS reasons (
+	id   INTEGER PRIMARY KEY,
+	text TEXT NOT NULL UNIQUE
 );
 CREATE TABLE IF NOT EXISTS edges (
 	id              TEXT PRIMARY KEY,
@@ -125,13 +173,14 @@ CREATE TABLE IF NOT EXISTS edges (
 	kind            TEXT NOT NULL,
 	confidence_tier TEXT NOT NULL,
 	confidence      REAL NOT NULL,
-	reason          TEXT NOT NULL,
+	reason_id       INTEGER NOT NULL,
 	evidence        TEXT NOT NULL,
-	FOREIGN KEY(from_id) REFERENCES nodes(id),
-	FOREIGN KEY(to_id)   REFERENCES nodes(id)
+	FOREIGN KEY(from_id)   REFERENCES nodes(id),
+	FOREIGN KEY(to_id)     REFERENCES nodes(id),
+	FOREIGN KEY(reason_id) REFERENCES reasons(id)
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(
-	owner_kind UNINDEXED,  -- 'node' or 'edge'
+	owner_kind UNINDEXED,  -- 'node' (edges are never FTS-indexed)
 	owner_id   UNINDEXED,
 	text
 );
@@ -149,7 +198,161 @@ CREATE TABLE IF NOT EXISTS kv_meta (
 	if _, err := s.db.ExecContext(ctx, ddl); err != nil {
 		return fmt.Errorf("graphstore: init schema (FTS5 may be unavailable): %w", err)
 	}
+	// Stamp the layout version (informational; read by the doctor and by future
+	// migrations). user_version takes no bound parameter, so the compile-time
+	// constant is formatted directly.
+	if _, err := s.db.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", graphstoreSchemaVersion)); err != nil {
+		return fmt.Errorf("graphstore: stamp schema version: %w", err)
+	}
 	return nil
+}
+
+// migrateEdgeLayout detects a pre-existing edges table written under the old
+// inline layout (a `reason` column, no `reason_id`) and drops the edge data —
+// the edges table, the interning dictionary, and every edge row in the FTS
+// index — so the current schema can be created fresh below. This is safe
+// because the ingest warm-start stamp is bumped in lockstep (see
+// engine/ingest/warmstart.go), so an upgraded binary re-indexes rather than
+// warm-starting: a full pass repopulates the edges. Nodes and kv_meta are left
+// untouched. A fresh DB (no edges table) and an already-current DB (reason_id
+// present) both return without changes.
+func (s *SQLiteStore) migrateEdgeLayout(ctx context.Context) error {
+	var edgesTables int
+	if err := s.db.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='edges'").Scan(&edgesTables); err != nil {
+		return fmt.Errorf("graphstore: probe edges table: %w", err)
+	}
+	if edgesTables == 0 {
+		return nil // fresh DB: the DDL below builds the current layout.
+	}
+	rows, err := s.db.QueryContext(ctx, "PRAGMA table_info(edges)")
+	if err != nil {
+		return fmt.Errorf("graphstore: inspect edges columns: %w", err)
+	}
+	hasReasonID := false
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			rows.Close()
+			return fmt.Errorf("graphstore: scan edges column: %w", err)
+		}
+		if name == "reason_id" {
+			hasReasonID = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("graphstore: iterate edges columns: %w", err)
+	}
+	rows.Close()
+	if hasReasonID {
+		return nil // already the current interned layout.
+	}
+	// Old inline layout: drop the edge data and any stale edge FTS rows, then let
+	// the DDL recreate the current schema. A full re-index repopulates.
+	for _, stmt := range []string{
+		"DELETE FROM search WHERE owner_kind='edge'",
+		"DROP TABLE IF EXISTS edges",
+		"DROP TABLE IF EXISTS reasons",
+	} {
+		if _, err := s.db.ExecContext(ctx, stmt); err != nil {
+			return fmt.Errorf("graphstore: migrate edge layout (%s): %w", stmt, err)
+		}
+	}
+	return nil
+}
+
+// migrateNodeMeta adds the WP-10 `meta` column to a pre-existing nodes table
+// that predates it (built by an older binary). ADD COLUMN with DEFAULT ” is
+// non-destructive: existing node rows keep their identity/content and simply
+// gain an empty-metadata column, which decodes to the zero NodeMeta. A fresh DB
+// (no nodes table) is a no-op — the DDL creates the column directly — and an
+// already-migrated DB (meta present) returns without changes. The ingest
+// warm-start stamp is bumped in lockstep so an upgraded binary re-indexes and
+// repopulates real metadata rather than trusting the empty backfill.
+func (s *SQLiteStore) migrateNodeMeta(ctx context.Context) error {
+	var nodesTables int
+	if err := s.db.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='nodes'").Scan(&nodesTables); err != nil {
+		return fmt.Errorf("graphstore: probe nodes table: %w", err)
+	}
+	if nodesTables == 0 {
+		return nil // fresh DB: the DDL builds the current layout with meta.
+	}
+	rows, err := s.db.QueryContext(ctx, "PRAGMA table_info(nodes)")
+	if err != nil {
+		return fmt.Errorf("graphstore: inspect nodes columns: %w", err)
+	}
+	hasMeta := false
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			rows.Close()
+			return fmt.Errorf("graphstore: scan nodes column: %w", err)
+		}
+		if name == "meta" {
+			hasMeta = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("graphstore: iterate nodes columns: %w", err)
+	}
+	rows.Close()
+	if hasMeta {
+		return nil // already migrated.
+	}
+	if _, err := s.db.ExecContext(ctx, "ALTER TABLE nodes ADD COLUMN meta TEXT NOT NULL DEFAULT ''"); err != nil {
+		return fmt.Errorf("graphstore: add nodes.meta column: %w", err)
+	}
+	return nil
+}
+
+// encodeNodeMeta renders a NodeMeta to its stored JSON form, or "" when the meta
+// is zero (so the common no-metadata node stores an empty string, not "{}").
+func encodeNodeMeta(m model.NodeMeta) (string, error) {
+	if m.IsZero() {
+		return "", nil
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", fmt.Errorf("graphstore: encode node meta: %w", err)
+	}
+	return string(b), nil
+}
+
+// decodeNodeMeta parses stored node meta JSON back into a normalized NodeMeta.
+// An empty string or "{}" (the no-metadata sentinels) decode to the zero value.
+func decodeNodeMeta(s string) (model.NodeMeta, error) {
+	if s == "" || s == "{}" {
+		return model.NodeMeta{}, nil
+	}
+	var m model.NodeMeta
+	if err := json.Unmarshal([]byte(s), &m); err != nil {
+		return model.NodeMeta{}, fmt.Errorf("graphstore: decode node meta: %w", err)
+	}
+	// Re-normalize (sort/dedup) so downstream ordering is deterministic even if
+	// the stored bytes were hand-edited.
+	return model.NewNodeMeta(m.Annotations, m.Flags), nil
+}
+
+// internStringTx get-or-inserts text into the `reasons` dictionary and returns
+// its stable id. It is idempotent: INSERT OR IGNORE leaves an existing row
+// untouched, and the follow-up SELECT resolves the id whether the row was just
+// created or pre-existed.
+func internStringTx(ctx context.Context, tx *sql.Tx, text string) (int64, error) {
+	if _, err := tx.ExecContext(ctx, "INSERT OR IGNORE INTO reasons (text) VALUES (?)", text); err != nil {
+		return 0, fmt.Errorf("graphstore: intern string: %w", err)
+	}
+	var id int64
+	if err := tx.QueryRowContext(ctx, "SELECT id FROM reasons WHERE text = ?", text).Scan(&id); err != nil {
+		return 0, fmt.Errorf("graphstore: intern lookup: %w", err)
+	}
+	return id, nil
 }
 
 // selfCheck asserts journal_mode=wal on a pooled connection and that FTS5 is
@@ -276,9 +479,9 @@ func (s *SQLiteStore) PutEdge(ctx context.Context, e model.Edge) error {
 }
 
 // DeleteNode removes the node and every incident edge in a single SQLite
-// transaction (durable FIRST), then updates the cache. The FTS5 rows for the
-// node and the cascaded edges are removed in the same transaction so the search
-// index never references a deleted owner. Idempotent: a missing node deletes
+// transaction (durable FIRST), then updates the cache. The node's FTS5 row is
+// removed in the same transaction so the search index never references a
+// deleted owner (edges carry no FTS rows). Idempotent: a missing node deletes
 // zero rows and is not an error. Crash-safe: a fault between commit and cache
 // update leaves SQLite authoritative and only invalidates the cache (mirrors
 // PutNode), so the next read rebuilds correctly.
@@ -300,13 +503,8 @@ func (s *SQLiteStore) DeleteNode(ctx context.Context, id model.NodeId) error {
 	if err != nil {
 		return fmt.Errorf("graphstore: begin tx: %w", err)
 	}
-	// Edges first (they FK-reference the node), then the node; FTS rows alongside.
-	if _, err := tx.ExecContext(ctx,
-		"DELETE FROM search WHERE owner_kind='edge' AND owner_id IN (SELECT id FROM edges WHERE from_id=? OR to_id=?)",
-		string(id), string(id)); err != nil {
-		_ = tx.Rollback()
-		return fmt.Errorf("graphstore: delete node fts edges: %w", err)
-	}
+	// Edges first (they FK-reference the node), then the node. Edges carry no FTS
+	// rows (nodes only), so no edge-FTS cleanup is needed here.
 	if _, err := tx.ExecContext(ctx, "DELETE FROM edges WHERE from_id=? OR to_id=?", string(id), string(id)); err != nil {
 		_ = tx.Rollback()
 		return fmt.Errorf("graphstore: delete incident edges: %w", err)
@@ -351,10 +549,6 @@ func (s *SQLiteStore) DeleteEdge(ctx context.Context, id model.EdgeId) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("graphstore: begin tx: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, "DELETE FROM search WHERE owner_kind='edge' AND owner_id=?", string(id)); err != nil {
-		_ = tx.Rollback()
-		return fmt.Errorf("graphstore: delete edge fts: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, "DELETE FROM edges WHERE id=?", string(id)); err != nil {
 		_ = tx.Rollback()
@@ -410,13 +604,18 @@ func (s *SQLiteStore) assertNodeExists(ctx context.Context, id model.NodeId) err
 }
 
 func upsertNodeTx(ctx context.Context, tx *sql.Tx, n model.Node) error {
+	metaJSON, err := encodeNodeMeta(n.Meta())
+	if err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `
-INSERT INTO nodes (id, kind, qualified_name, source_path, line, col)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO nodes (id, kind, qualified_name, source_path, line, col, meta)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
 	kind=excluded.kind, qualified_name=excluded.qualified_name,
-	source_path=excluded.source_path, line=excluded.line, col=excluded.col`,
-		string(n.ID()), n.Kind(), n.QualifiedName(), n.SourcePath(), n.Line(), n.Column()); err != nil {
+	source_path=excluded.source_path, line=excluded.line, col=excluded.col,
+	meta=excluded.meta`,
+		string(n.ID()), n.Kind(), n.QualifiedName(), n.SourcePath(), n.Line(), n.Column(), metaJSON); err != nil {
 		return fmt.Errorf("graphstore: upsert node: %w", err)
 	}
 	// Refresh FTS row for this node (delete-then-insert keeps it idempotent).
@@ -437,24 +636,22 @@ func upsertEdgeTx(ctx context.Context, tx *sql.Tx, e model.Edge) error {
 	if err != nil {
 		return fmt.Errorf("graphstore: encode evidence: %w", err)
 	}
+	// Intern the repetitive reason string; the edge row stores its dictionary id.
+	// Evidence stays inline (per-edge-unique). Edges are never full-text indexed.
+	reasonID, err := internStringTx(ctx, tx, e.Reason())
+	if err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `
-INSERT INTO edges (id, from_id, to_id, kind, confidence_tier, confidence, reason, evidence)
+INSERT INTO edges (id, from_id, to_id, kind, confidence_tier, confidence, reason_id, evidence)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
 	from_id=excluded.from_id, to_id=excluded.to_id, kind=excluded.kind,
 	confidence_tier=excluded.confidence_tier, confidence=excluded.confidence,
-	reason=excluded.reason, evidence=excluded.evidence`,
+	reason_id=excluded.reason_id, evidence=excluded.evidence`,
 		string(e.ID()), string(e.From()), string(e.To()), e.Kind(),
-		string(e.Tier()), e.Confidence(), e.Reason(), string(evJSON)); err != nil {
+		string(e.Tier()), e.Confidence(), reasonID, string(evJSON)); err != nil {
 		return fmt.Errorf("graphstore: upsert edge: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, "DELETE FROM search WHERE owner_kind='edge' AND owner_id=?", string(e.ID())); err != nil {
-		return fmt.Errorf("graphstore: fts5 clear edge: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx,
-		"INSERT INTO search (owner_kind, owner_id, text) VALUES ('edge', ?, ?)",
-		string(e.ID()), e.Reason()); err != nil {
-		return fmt.Errorf("graphstore: fts5 index edge: %w", err)
 	}
 	return nil
 }
@@ -514,20 +711,27 @@ func (s *SQLiteStore) loadAllFromDB(ctx context.Context) (*memGraph, error) {
 		nodes: make(map[model.NodeId]model.Node),
 		edges: make(map[model.EdgeId]model.Edge),
 	}
-	nrows, err := s.db.QueryContext(ctx, "SELECT kind, qualified_name, source_path, line, col FROM nodes")
+	nrows, err := s.db.QueryContext(ctx, "SELECT kind, qualified_name, source_path, line, col, meta FROM nodes")
 	if err != nil {
 		return nil, fmt.Errorf("graphstore: load nodes: %w", err)
 	}
 	defer nrows.Close()
 	for nrows.Next() {
-		var kind, qn, sp string
+		var kind, qn, sp, metaJSON string
 		var line, col int
-		if err := nrows.Scan(&kind, &qn, &sp, &line, &col); err != nil {
+		if err := nrows.Scan(&kind, &qn, &sp, &line, &col, &metaJSON); err != nil {
 			return nil, fmt.Errorf("graphstore: scan node: %w", err)
 		}
 		n, err := model.NewNode(kind, qn, sp, line, col)
 		if err != nil {
 			return nil, fmt.Errorf("graphstore: reconstruct node: %w", err)
+		}
+		meta, err := decodeNodeMeta(metaJSON)
+		if err != nil {
+			return nil, err
+		}
+		if !meta.IsZero() {
+			n = n.WithMeta(meta)
 		}
 		g.nodes[n.ID()] = n
 	}
@@ -535,7 +739,10 @@ func (s *SQLiteStore) loadAllFromDB(ctx context.Context) (*memGraph, error) {
 		return nil, fmt.Errorf("graphstore: iterate nodes: %w", err)
 	}
 
-	erows, err := s.db.QueryContext(ctx, "SELECT from_id, to_id, kind, confidence_tier, confidence, reason, evidence FROM edges")
+	erows, err := s.db.QueryContext(ctx, `
+SELECT e.from_id, e.to_id, e.kind, e.confidence_tier, e.confidence, r.text, e.evidence
+FROM edges e
+JOIN reasons r ON e.reason_id = r.id`)
 	if err != nil {
 		return nil, fmt.Errorf("graphstore: load edges: %w", err)
 	}
@@ -635,29 +842,23 @@ func (s *SQLiteStore) Edges(ctx context.Context, q Query) ([]model.Edge, error) 
 	if s.closed.Load() {
 		return nil, ErrClosed
 	}
-	var textHits map[model.EdgeId]struct{}
-	if q.Text != "" {
-		var err error
-		textHits, err = s.ftsEdgeIDs(ctx, q.Text)
-		if err != nil {
-			return nil, err
-		}
-	}
 	c, err := s.ensureCache(ctx)
 	if err != nil {
 		return nil, err
 	}
+	// Edge reason is no longer full-text indexed; a Text query filters by
+	// case-insensitive substring over the hot cache's reason, matching MemStore
+	// exactly so both backends stay contract-identical.
+	needle := strings.ToLower(q.Text)
 	s.cacheMu.RLock()
 	defer s.cacheMu.RUnlock()
 	out := make([]model.Edge, 0, len(c.edges))
-	for id, e := range c.edges {
+	for _, e := range c.edges {
 		if q.EdgeKind != "" && e.Kind() != q.EdgeKind {
 			continue
 		}
-		if textHits != nil {
-			if _, ok := textHits[id]; !ok {
-				continue
-			}
+		if needle != "" && !strings.Contains(strings.ToLower(e.Reason()), needle) {
+			continue
 		}
 		out = append(out, e)
 	}
@@ -684,24 +885,6 @@ func (s *SQLiteStore) ftsNodeIDs(ctx context.Context, text string) (map[model.No
 	return out, rows.Err()
 }
 
-func (s *SQLiteStore) ftsEdgeIDs(ctx context.Context, text string) (map[model.EdgeId]struct{}, error) {
-	rows, err := s.db.QueryContext(ctx,
-		"SELECT owner_id FROM search WHERE owner_kind='edge' AND text MATCH ?", ftsQuery(text))
-	if err != nil {
-		return nil, fmt.Errorf("graphstore: fts5 edge search: %w", err)
-	}
-	defer rows.Close()
-	out := make(map[model.EdgeId]struct{})
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, fmt.Errorf("graphstore: scan fts5 edge hit: %w", err)
-		}
-		out[model.EdgeId(id)] = struct{}{}
-	}
-	return out, rows.Err()
-}
-
 // ftsQuery turns free user text into a safe FTS5 prefix query. The whole value is
 // still passed as a bound parameter; quoting each token as a string protects
 // against FTS5 query-syntax injection while keeping substring/prefix semantics.
@@ -720,7 +903,7 @@ func (s *SQLiteStore) SearchNodes(ctx context.Context, text string, limit int) (
 
 	// rank MATCHes by bm25, then deterministic tie-break.
 	q := `
-SELECT n.kind, n.qualified_name, n.source_path, n.line, n.col, rank
+SELECT n.kind, n.qualified_name, n.source_path, n.line, n.col, n.meta, rank
 FROM search s JOIN nodes n ON s.owner_id = n.id
 WHERE s.owner_kind = 'node' AND s.text MATCH ?
 ORDER BY rank ASC, n.qualified_name ASC, n.id ASC`
@@ -738,15 +921,22 @@ ORDER BY rank ASC, n.qualified_name ASC, n.id ASC`
 
 	out := make([]RankedNode, 0, 64)
 	for rows.Next() {
-		var kind, qn, sp string
+		var kind, qn, sp, metaJSON string
 		var line, col int
 		var rank float64
-		if err := rows.Scan(&kind, &qn, &sp, &line, &col, &rank); err != nil {
+		if err := rows.Scan(&kind, &qn, &sp, &line, &col, &metaJSON, &rank); err != nil {
 			return nil, fmt.Errorf("graphstore: scan ranked node: %w", err)
 		}
 		n, err := model.NewNode(kind, qn, sp, line, col)
 		if err != nil {
 			return nil, fmt.Errorf("graphstore: reconstruct ranked node: %w", err)
+		}
+		meta, err := decodeNodeMeta(metaJSON)
+		if err != nil {
+			return nil, err
+		}
+		if !meta.IsZero() {
+			n = n.WithMeta(meta)
 		}
 		out = append(out, RankedNode{Node: n, Rank: rank})
 	}
@@ -852,7 +1042,7 @@ func (s *SQLiteStore) Load(ctx context.Context, path string) error {
 
 	// Replace-into-fresh semantics: clear everything, then re-insert. The whole
 	// thing is one transaction, so a failure rolls back to the prior state.
-	for _, stmt := range []string{"DELETE FROM search", "DELETE FROM edges", "DELETE FROM nodes"} {
+	for _, stmt := range []string{"DELETE FROM search", "DELETE FROM edges", "DELETE FROM reasons", "DELETE FROM nodes"} {
 		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			rollback()
 			return fmt.Errorf("graphstore: load clear (%s): %w", stmt, err)

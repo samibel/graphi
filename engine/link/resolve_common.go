@@ -97,6 +97,14 @@ type binder struct {
 	// package is not in the repo).
 	pkgImportPaths []string
 
+	// packageImports are full PACKAGE paths (e.g. "com.a.b") this file imports, for
+	// FQN/package-node languages (Java, Kotlin). Each resolves to the interned
+	// `package` node keyed by that path (idx.packageNodeByPath) and emits ONE
+	// file→package `imports` edge — replacing the file→file fan-out pkgImportPaths
+	// would produce. A package not declared anywhere in the repo has no node, so no
+	// edge forms (skip honesty preserved; no cross-module fan-out).
+	packageImports []string
+
 	// clauseOf derives the package-clause lookup key from an import path. The
 	// SymbolIndex keys symbols by "<dirBase>.<bare>", so the clause is the import
 	// path's trailing module segment. Languages differ in the separator: Go-style
@@ -212,6 +220,14 @@ func resolveRefs(in FileRefs, idx *SymbolIndex, st *Stats, b binder) []intent {
 		for _, ip := range b.pkgImportPaths {
 			for _, tID := range clausePackageFileNodes(idx, b.clause(ip)) {
 				emit(tID, "file imports package "+ip)
+			}
+		}
+		// Interned package imports (Java, Kotlin): ONE file→package edge to the
+		// package node keyed by the full package path, only when that package is
+		// declared somewhere in the repo (no node ⇒ no edge ⇒ no false fan-out).
+		for _, pkg := range b.packageImports {
+			if pkgID, ok := idx.packageNodeByPath[pkg]; ok {
+				emit(pkgID, "file imports package "+pkg)
 			}
 		}
 	}

@@ -87,7 +87,19 @@ func DiagnoseWithOptions(ctx context.Context, r query.Reader, kinds []string, op
 	}
 
 	t := newTally()
-	t.TotalAnalyzed = len(diags)
+	// TotalAnalyzed counts underlying FINDINGS, not diagnostic records: an
+	// aggregated diagnostic (e.g. an unresolved_reference collapsed by target with
+	// OccurrenceCount=N) stands in for N findings. Summing OccurrenceCount here
+	// keeps TotalAnalyzed reconciled with Shown (which also sums OccurrenceCount)
+	// now that aggregation happens in the analyzer rather than a later stage.
+	t.TotalAnalyzed = 0
+	for _, d := range diags {
+		if d.OccurrenceCount < 1 {
+			t.TotalAnalyzed++
+		} else {
+			t.TotalAnalyzed += d.OccurrenceCount
+		}
+	}
 
 	// Build the filter pipeline. Confidence gate/severity floor only apply when not
 	// --all. Suppression classification (tagging + aggregation) always runs so

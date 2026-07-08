@@ -9,6 +9,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/ingest"
 )
 
@@ -56,6 +57,11 @@ const (
 	// ReasonUnresolved — a low-confidence (heuristic-tier) reference. Fail-safe:
 	// treated as blocking even though it could not be confirmed.
 	ReasonUnresolved RefReason = "unresolved"
+	// ReasonEntrypoint — the target itself is a framework/language entry point
+	// (annotated @Bean/@Test/…, a main, or a test-path symbol). It is LIVE even
+	// with no in-graph inbound reference, so deleting it would break the build.
+	// This blocks the delete as a correctness guard, not merely a noise filter.
+	ReasonEntrypoint RefReason = "entrypoint"
 )
 
 // BlockingRef is one reference that blocks a safe-delete, with the referrer's
@@ -109,6 +115,21 @@ func (a *Applier) ApplySafeDelete(ctx context.Context, op SafeDeleteOp) (SafeDel
 
 	// Reference-safety gate: collect every inbound live reference as blocking.
 	blocking := []BlockingRef{}
+	// Entry-point guard (WP-11): a framework/language entry point (@Bean/@Test/
+	// main/test-path) is LIVE even with zero in-graph inbound references, so
+	// deleting it would remove working code. Treat the target itself as a
+	// blocking reference (reusing the shared diagnostic predicate) — a correctness
+	// fix, not just noise reduction.
+	if diagnostic.IsEntryPoint(target) {
+		blocking = append(blocking, BlockingRef{
+			Symbol:   target.ID(),
+			File:     target.SourcePath(),
+			Line:     target.Line(),
+			EdgeKind: "",
+			Tier:     "",
+			Reason:   ReasonEntrypoint,
+		})
+	}
 	for _, e := range edges {
 		if string(e.To()) != op.TargetSymbol || !referencingEdgeKinds[e.Kind()] {
 			continue

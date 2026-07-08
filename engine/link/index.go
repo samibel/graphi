@@ -45,6 +45,22 @@ type SymbolIndex struct {
 	// derived from node qualified names (pkg.Symbol). Used to find the directory
 	// a selector base's import path resolves into.
 	clauseByDir map[string]string
+
+	// packageNodeByPath maps a full package path (e.g. "com.example.service") to
+	// its interned "package" node id (WP-01). FQN/package-header languages (Java,
+	// Kotlin) mint one such node per declared package; the resolver emits a single
+	// file→package `imports` edge to it in place of the file→file import fan-out.
+	// Package nodes are recorded here ONLY — they are deliberately kept out of
+	// byDir/byClause/clauseByDir so they never pollute symbol resolution.
+	packageNodeByPath map[string]model.NodeId
+
+	// methodDirs is the receiverMethod reverse index (WP-02): a method's bare
+	// name → the directories whose same-clause table declares that bare name
+	// (i.e. exactly the dirs for which uniqueMethodInDir can succeed). It lets
+	// receiverMethod consult only the candidate dirs for a given method instead
+	// of scanning every directory in byDir per unresolved recv.method call — an
+	// O(dirs)→O(candidates) win that changes NO resolution semantics.
+	methodDirs map[string][]string
 }
 
 // fileKind / the qualified-name shape are mirrored from the Go extractor:
@@ -52,21 +68,48 @@ type SymbolIndex struct {
 // QualifiedName is "<pkgClause>.<name>" (methods: "<pkgClause>.<recv>.<name>").
 const fileKind = "file"
 
+// packageKind is the interned package-node kind (WP-01). Java/Kotlin parsers mint
+// one package node per declared package, keyed by full package path; BuildIndex
+// routes them to packageNodeByPath and the resolver links a single file→package
+// `imports` edge to them.
+const packageKind = "package"
+
+// externalKind is the interned external-symbol node kind (WP-03). The Go resolver
+// mints these for unresolved stdlib / 3rd-party call/reference targets. Like
+// package nodes they are kept OUT of every symbol table so they can NEVER resolve
+// a reference: a committed external node must not let a later pass "resolve"
+// os.ReadFile to the external node itself (which would diverge from a full pass
+// and make drop-point 1 non-deterministic). BuildIndex simply skips them.
+const externalKind = "external"
+
 // BuildIndex constructs a SymbolIndex from a committed node set. It is pure and
 // deterministic: identical input (in any order) yields an index that resolves
 // identically. Resolution is O(1) per lookup (no caller×candidate scans).
 func BuildIndex(nodes []model.Node) *SymbolIndex {
 	idx := &SymbolIndex{
-		byDir:          map[string]map[string]model.NodeId{},
-		dirAmbiguous:   map[string]map[string]struct{}{},
-		byClause:       map[string]map[string]map[string]model.NodeId{},
-		fileNodeByPath: map[string]model.NodeId{},
-		fileNodesByDir: map[string][]model.NodeId{},
-		clauseByDir:    map[string]string{},
+		byDir:             map[string]map[string]model.NodeId{},
+		dirAmbiguous:      map[string]map[string]struct{}{},
+		byClause:          map[string]map[string]map[string]model.NodeId{},
+		fileNodeByPath:    map[string]model.NodeId{},
+		fileNodesByDir:    map[string][]model.NodeId{},
+		clauseByDir:       map[string]string{},
+		packageNodeByPath: map[string]model.NodeId{},
+		methodDirs:        map[string][]string{},
 	}
 	for _, n := range nodes {
 		sp := n.SourcePath() // already normalized POSIX repo-relative
 		dir := posixDir(sp)
+		if n.Kind() == packageKind {
+			// Interned package node (WP-01): index by its full package path and
+			// keep it OUT of the symbol tables so it can never resolve a symbol.
+			idx.packageNodeByPath[n.QualifiedName()] = n.ID()
+			continue
+		}
+		if n.Kind() == externalKind {
+			// Interned external node (WP-03): a linker artifact, never a resolution
+			// target. Skipping it keeps drop-point 1/2 deterministic across passes.
+			continue
+		}
 		if n.Kind() == fileKind {
 			idx.fileNodeByPath[sp] = n.ID()
 			idx.fileNodesByDir[dir] = append(idx.fileNodesByDir[dir], n.ID())
@@ -104,6 +147,21 @@ func BuildIndex(nodes []model.Node) *SymbolIndex {
 			idx.byClause[clause][dir][bare] = n.ID()
 		}
 	}
+
+	// Build the receiverMethod reverse index (WP-02). A dir participates in
+	// uniqueMethodInDir only through byClause[clauseByDir[dir]][dir], so index
+	// exactly those (dir, bareName) pairs. This is the SAME predicate
+	// uniqueMethodInDir tests, so receiverMethod's candidate set — and thus its
+	// resolved edge set — is byte-identical to the old full-byDir scan.
+	for dir, clause := range idx.clauseByDir {
+		tbl := idx.byClause[clause][dir]
+		if tbl == nil {
+			continue
+		}
+		for bare := range tbl {
+			idx.methodDirs[bare] = append(idx.methodDirs[bare], dir)
+		}
+	}
 	return idx
 }
 
@@ -121,6 +179,22 @@ func (idx *SymbolIndex) sameDir(dir, name string) (model.NodeId, bool) {
 	}
 	id, ok := tbl[name]
 	return id, ok
+}
+
+// hasPackage reports whether the repo contains an INTERNAL package for the given
+// import path, using the SAME clause (last-path-segment) basis crossPackage and
+// packageFileNodes resolve on: byClause[path.Base(importPath)] is non-empty. The
+// receiver-type external-minting path (resolve_go.go drop-point 2) uses this to
+// avoid materializing an external node for a receiver whose type belongs to a
+// package committed in the repo — an internal method call is resolved (or honestly
+// skipped) through the normal paths, never minted as `external`. Erring toward
+// "internal" on a clause collision (e.g. a repo package sharing a stdlib clause)
+// is the SAFE direction: it suppresses an external node rather than flooding.
+func (idx *SymbolIndex) hasPackage(importPath string) bool {
+	if importPath == "" {
+		return false
+	}
+	return len(idx.byClause[path.Base(importPath)]) > 0
 }
 
 // crossPackage resolves a selector (importPath, name) to a NodeId. The import
@@ -164,10 +238,15 @@ func (idx *SymbolIndex) receiverMethod(preferDir, recv, method string) (model.No
 	if id, ok := idx.uniqueMethodInDir(preferDir, recv, method); ok {
 		return id, true
 	}
-	// Then search globally for a unique (recv, method) match.
+	// Then search globally for a unique (recv, method) match. WP-02: consult the
+	// methodDirs reverse index — only the dirs that actually declare this bare
+	// method name — instead of scanning every directory in byDir. methodDirs is
+	// built from the same predicate uniqueMethodInDir tests, so the candidate set
+	// (and the collected distinct-NodeId set, and thus the resolved/ambiguous
+	// outcome) is identical to the old full scan; only the cost changes.
 	var found model.NodeId
 	count := 0
-	for dir := range idx.byDir {
+	for _, dir := range idx.methodDirs[method] {
 		if id, ok := idx.uniqueMethodInDir(dir, recv, method); ok {
 			if count == 0 {
 				found, count = id, 1

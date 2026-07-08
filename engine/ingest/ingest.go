@@ -135,6 +135,13 @@ type Ingester struct {
 	// profile selects the speed/depth trade-off for this ingest pass.
 	profile profile.Profile
 
+	// lastLinkStats holds the linker observability counters of the most recent
+	// linkFiles pass (WP-03), including ResolvedExternal — the number of
+	// materialized interned external references. Surfaced in the done-summary so
+	// external materialization is observable. Touched only from the single
+	// ingesting goroutine.
+	lastLinkStats link.Stats
+
 	// bounds are the fail-closed parse-time resource bounds (SW-055 AC#6) applied
 	// to untrusted inputs: max file size (checked before ReadFile via FileInfo),
 	// parse timeout (context.WithTimeout on the Parse ctx), and recursion depth
@@ -199,6 +206,14 @@ func (i *Ingester) WithProfile(p profile.Profile) *Ingester {
 	i.profile = p
 	return i
 }
+
+// LastLinkStats returns the linker observability counters of the most recent
+// linkFiles pass (WP-03). ResolvedExternal is the number of materialized interned
+// external references (Go stdlib / 3rd-party call/ref targets that used to be
+// silently dropped). Surfaces/tests read this to report external materialization
+// in the ingest done-summary. It reflects the single ingesting goroutine's last
+// pass and is not safe to read concurrently with an in-flight ingest.
+func (i *Ingester) LastLinkStats() link.Stats { return i.lastLinkStats }
 
 // notifyIngest publishes a loss-tolerant lifecycle event. It is nil-safe and
 // never returns an error — a publish failure must not fail ingestion.
@@ -684,7 +699,10 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 				fileRefs = append(fileRefs, *fr)
 			}
 		}
-		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseLink, Done: len(units), Total: len(units)})
+		// WP-02: link-phase START marker. Done=0 with the honest denominator (files
+		// that carry cross-file refs); linkFiles then emits climbing-Done events as
+		// each batch resolves, so the PhaseLink Done stream is monotonic 0→Total.
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseLink, Total: len(fileRefs)})
 
 		// Purge any prior node no longer produced by this pass (deleted files,
 		// or renamed symbols on a reused store). DeleteNode cascades incident
@@ -727,7 +745,9 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			return err
 		}
 		open = linkBatch
-		if _, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges); err != nil {
+		if _, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges, func(ev ProgressEvent) {
+			i.notifyProgress(ctx, ev)
+		}); err != nil {
 			return err
 		}
 		open = nil
@@ -758,6 +778,17 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	}); err != nil {
 		return err
 	}
+	// WP-05b-2: intra-procedural taint dataflow. Run the pure per-function
+	// source→sink analysis over every parsed Go file and persist the complete,
+	// canonical findings set to durable store metadata. It runs AFTER the graph
+	// transaction commits and writes only metadata (never nodes/edges), so it is
+	// deterministic and byte-parity safe — graphstore Snapshot serializes
+	// nodes/edges only, never metadata. The taint dispatch adapter reads these
+	// back so `graphi analyze taint` surfaces the flows.
+	if err := i.analyzeAndPersistIntraProcTaint(ctx, parsed); err != nil {
+		return err
+	}
+
 	// Persist the active profile to durable store metadata after the full pass
 	// commits. A zero/empty profile defaults to "balanced" for forward
 	// compatibility and is never treated as an error.
@@ -994,7 +1025,12 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		prog(ProgressEvent{Phase: PhaseParse, Total: progTotal})
 	}
 	progDone := 0
-	return i.metaTx(ctx, func(tx *sql.Tx) error {
+	// WP-05b-2: retain the parse result of each reprocessed file so the
+	// intra-procedural taint refresh can re-analyze the touched Go files WITHOUT
+	// re-parsing (the parser was already invoked once this pass; re-parsing would
+	// double the observable parse count the incremental tests assert on).
+	parsedResults := make(map[string]*parse.ParseResult)
+	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
 		// Mirror IngestAll's batched write sessions: one durable graph
 		// transaction per phase, committed before each seam where the pass
 		// reads its own writes back. `open` guards the error paths.
@@ -1023,16 +1059,22 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			// re-read; otherwise fall back to a serial parse+commit. Either way the
 			// commit runs here in this single serialized goroutine, in canonical
 			// relPath-sorted order (units is sorted by walk).
-			var nodeIDs, edgeIDs, fwd []string
-			var fr *link.FileRefs
+			var pf *ParsedFile
 			var err error
-			if pf, ok := precomputed[u.relPath]; ok && pf != nil && !pf.skipped && pf.result != nil && pf.Hash == u.hash {
-				nodeIDs, edgeIDs, fwd, fr, err = i.commitParsed(ctx, batch, u, pf)
+			if p, ok := precomputed[u.relPath]; ok && p != nil && !p.skipped && p.result != nil && p.Hash == u.hash {
+				pf = p
 			} else {
-				nodeIDs, edgeIDs, fwd, fr, err = i.parseAndCommit(ctx, batch, u)
+				pf, err = i.parseUnit(ctx, u)
+				if err != nil {
+					return err
+				}
 			}
+			nodeIDs, edgeIDs, fwd, fr, err := i.commitParsed(ctx, batch, u, pf)
 			if err != nil {
 				return err
+			}
+			if pf != nil && pf.result != nil {
+				parsedResults[u.relPath] = pf.result
 			}
 			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs, fr != nil); err != nil {
 				return err
@@ -1106,7 +1148,10 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			return err
 		}
 		open = linkBatch
-		linkEdgeIDs, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges)
+		// WP-02: the incremental path threads its own scoped `prog` (nil for
+		// background passes), so linkFiles emits climbing-Done link progress on the
+		// warm-start path too without ever leaking through the stored callback.
+		linkEdgeIDs, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges, prog)
 		if err != nil {
 			return err
 		}
@@ -1137,6 +1182,16 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		}
 		open = nil
 		if err := linkBatch.Commit(ctx); err != nil {
+			return err
+		}
+
+		// WP-03 (Vector 2c): reap any interned external node left with zero incident
+		// edges by this pass — e.g. a file that was the SOLE referencer of a stdlib
+		// symbol got edited or deleted, cascade-removing its last edge. This runs
+		// over the now-committed graph (the batch above was write-only, so the true
+		// post-cascade edge set is only observable post-commit) and keeps the
+		// incremental store byte-identical to a full re-index of the same state.
+		if err := i.sweepOrphanExternalNodes(ctx); err != nil {
 			return err
 		}
 
@@ -1201,7 +1256,15 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			prog(ProgressEvent{Phase: PhaseDone, Done: progDone, Total: progTotal})
 		}
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+	// WP-05b-2: refresh the persisted intra-procedural taint findings after the
+	// incremental commit. Findings of the reprocessed (and any now-deleted) Go
+	// files are recomputed and merged with the retained findings of untouched
+	// files, so the persisted set converges with a full re-index. Metadata-only
+	// (never nodes/edges) → byte-parity safe.
+	return i.refreshIntraProcTaint(ctx, root, toProcess, parsedResults)
 }
 
 // recordEditProvenanceTx writes one edit_provenance row per element id, keyed by
@@ -1655,6 +1718,19 @@ func (i *Ingester) commitParsed(ctx context.Context, w graphstore.Writer, u file
 		if _, kept := newIDs[id]; kept {
 			continue
 		}
+		// WP-01 interned-node lifecycle: an interned `package` node is minted by
+		// EVERY file in the package with the same NodeId, so a file dropping it
+		// (e.g. its package declaration changed) must NOT delete the node while a
+		// sibling file still declares it. This guard is a strict no-op for the
+		// per-file symbol/file nodes (whose NodeId embeds the unique source path,
+		// so no other cache row references them) and only protects shared nodes.
+		shared, err := i.nodeReferencedByOtherFile(ctx, i.meta, u.relPath, id)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		if shared {
+			continue
+		}
 		if err := w.DeleteNode(ctx, model.NodeId(id)); err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("ingest: delete stale node %s: %w", id, err)
 		}
@@ -1729,7 +1805,16 @@ func posixDir(p string) string {
 //
 // It returns the committed cross-file edge IDs so the incremental path can record
 // edit provenance for them.
-func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}) ([]string, error) {
+// linkProgressBatchSize bounds how many files each linker Link call processes
+// before linkFiles emits a PhaseLink progress event (WP-02). Grouping/iteration
+// order does not affect the committed edge set — construct merges intents by
+// content-derived (from,to,kind) and every edge's From is owned by exactly one
+// source file, so sub-batching the per-language file list yields a byte-identical
+// node/edge set while turning the link phase from one silent block into a stream
+// of climbing-Done events on a large repo.
+const linkProgressBatchSize = 64
+
+func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}, progress func(ProgressEvent)) ([]string, error) {
 	// Nothing reprocessed: no nodes to sweep stale edges from and nothing to
 	// re-link. (BLOCK-2: gating on ownedNodeIDs, NOT fileRefs — an edit that
 	// removes the LAST cross-file ref leaves fileRefs empty yet still owns
@@ -1746,6 +1831,8 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	}
 
 	// Remove stale from-owned linker edges before re-linking.
+	// WP-08 (deferred): decouple this stale-edge sweep from the full-edge read —
+	// scanning every committed edge to find from-owned ones is O(edges) per pass.
 	allEdges, err := i.store.Edges(ctx, graphstore.Query{})
 	if err != nil {
 		return nil, fmt.Errorf("ingest: link read edges: %w", err)
@@ -1796,10 +1883,37 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 
 	edgeIDs := make([]string, 0)
 	var importEdges []model.Edge
-	for _, lang := range langs {
-		edges, _, err := i.linker.Link(lang, byLang[lang], idx)
+	// WP-03: interned external nodes minted by the linker (Go stdlib / 3rd-party
+	// call/ref targets) are committed BEFORE their incident edges so the batch's
+	// endpoint check (ErrUnknownEdgeEndpoint) passes. Any node that ends up
+	// unreferenced (a file dropping its last reference to it) is reaped by the
+	// standalone post-commit sweepOrphanExternalNodes pass. Stats are aggregated
+	// for the ingest summary.
+	var linkStats link.Stats
+	// WP-02: link progress. Total is the honest count of files with cross-file
+	// refs (the files the linker actually processes); Done climbs by batch as each
+	// sub-group of files is resolved and committed, so a large repo shows real
+	// link progress instead of a single event bracketed by clock heartbeats.
+	total := len(fileRefs)
+	done := 0
+	// commit resolves and commits ONE sub-batch of files. Splitting a language's
+	// files into batches is byte-safe: construct keys edges by content-derived
+	// (from,to,kind), every edge's From is owned by exactly one file (so no edge
+	// crosses a batch boundary), and minted external nodes upsert idempotently.
+	commit := func(lang string, files []link.FileRefs) error {
+		extNodes, edges, st, err := i.linker.Link(lang, files, idx)
 		if err != nil {
-			return nil, fmt.Errorf("ingest: link %s: %w", lang, err)
+			return fmt.Errorf("ingest: link %s: %w", lang, err)
+		}
+		linkStats.ResolvedDerived += st.ResolvedDerived
+		linkStats.ResolvedHeuristic += st.ResolvedHeuristic
+		linkStats.ResolvedExternal += st.ResolvedExternal
+		linkStats.Skipped += st.Skipped
+		linkStats.Ambiguous += st.Ambiguous
+		for _, n := range extNodes {
+			if err := w.PutNode(ctx, n); err != nil {
+				return fmt.Errorf("ingest: link put external node %s: %w", n.ID(), err)
+			}
 		}
 		for _, e := range edges {
 			// Fast mode drops low-value import-fanout edges while preserving
@@ -1814,10 +1928,29 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 					continue
 				}
 			}
+			// WP-08 (deferred): chunk this edge commit into ~50k-edge durable
+			// transactions instead of accumulating the whole pass in one batch.
 			if err := w.PutEdge(ctx, e); err != nil {
-				return nil, fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
+				return fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
 			}
 			edgeIDs = append(edgeIDs, string(e.ID()))
+		}
+		return nil
+	}
+	for _, lang := range langs {
+		files := byLang[lang]
+		for start := 0; start < len(files); start += linkProgressBatchSize {
+			end := start + linkProgressBatchSize
+			if end > len(files) {
+				end = len(files)
+			}
+			if err := commit(lang, files[start:end]); err != nil {
+				return nil, err
+			}
+			done += end - start
+			if progress != nil {
+				progress(ProgressEvent{Phase: PhaseLink, Done: done, Total: total})
+			}
 		}
 	}
 
@@ -1831,7 +1964,72 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 			edgeIDs = append(edgeIDs, string(e.ID()))
 		}
 	}
+
+	i.lastLinkStats = linkStats
 	return edgeIDs, nil
+}
+
+// sweepOrphanExternalNodes deletes every interned external node (WP-03) that has
+// ZERO incident edges in the COMMITTED graph. External nodes are linker artifacts
+// reachable only via their incident calls/references edges and are NOT recorded in
+// any file's node_ids, so neither the per-file stale-node purge nor the removed-
+// file purge (removeFileTx) ever deletes them: a file that was the SOLE referencer
+// of an external symbol (edited to stop referencing it, or deleted outright) leaves
+// a zero-edge ghost external node that a full re-index would never mint — a
+// byte-parity divergence (Vector 2c).
+//
+// This runs as a STANDALONE pass over the committed store AFTER the main link/
+// delete batch commits. It must be post-commit because the graphstore batch is
+// write-only: the true post-pass edge set — including the incident edges that
+// removeFileTx cascade-deletes when it removes a file's nodes — is only observable
+// once committed. It is NOT gated on any reprocessed-node set, so it fires even for
+// a pure single-file deletion (which reprocesses no nodes and so short-circuits
+// linkFiles). A shared external node is protected by construction: any other file
+// that still references it keeps a surviving incident edge, so it is not an orphan.
+func (i *Ingester) sweepOrphanExternalNodes(ctx context.Context) error {
+	nodes, err := i.store.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		return fmt.Errorf("ingest: orphan sweep read nodes: %w", err)
+	}
+	external := map[model.NodeId]struct{}{}
+	for _, n := range nodes {
+		if n.Kind() == "external" {
+			external[n.ID()] = struct{}{}
+		}
+	}
+	if len(external) == 0 {
+		return nil
+	}
+	edges, err := i.store.Edges(ctx, graphstore.Query{})
+	if err != nil {
+		return fmt.Errorf("ingest: orphan sweep read edges: %w", err)
+	}
+	// Any external node incident to any edge (as From or To — external nodes are
+	// terminal, so in practice only To) is live; remove it from the orphan set.
+	for _, e := range edges {
+		delete(external, e.To())
+		delete(external, e.From())
+	}
+	if len(external) == 0 {
+		return nil
+	}
+	orphans := make([]model.NodeId, 0, len(external))
+	for id := range external {
+		orphans = append(orphans, id)
+	}
+	sort.Slice(orphans, func(a, b int) bool { return orphans[a] < orphans[b] })
+
+	batch, err := graphstore.BeginBatch(ctx, i.store)
+	if err != nil {
+		return fmt.Errorf("ingest: orphan sweep begin batch: %w", err)
+	}
+	for _, id := range orphans {
+		if err := batch.DeleteNode(ctx, id); err != nil {
+			_ = batch.Rollback()
+			return fmt.Errorf("ingest: sweep orphan external node %s: %w", id, err)
+		}
+	}
+	return batch.Commit(ctx)
 }
 
 // importPathFromReason extracts the import path from a linker import edge reason.
@@ -1930,6 +2128,35 @@ func (i *Ingester) cachedNodeIDs(ctx context.Context, path string) ([]string, er
 		return nil, fmt.Errorf("ingest: decode node ids: %w", err)
 	}
 	return ids, nil
+}
+
+// rowQuerier is the QueryRowContext surface shared by *sql.DB and *sql.Tx, so the
+// interned-node refcount check can run against either the live meta handle
+// (commitParsed) or the open Phase-2 transaction (removeFileTx).
+type rowQuerier interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+// nodeReferencedByOtherFile reports whether any cached file OTHER than excludePath
+// still lists node id in its node_ids. It underpins the WP-01 interned-package-node
+// lifecycle: a package node shared by many files must persist as long as ≥1 file
+// declares it, so full and incremental ingests stay byte-identical. The check is a
+// strict no-op for per-file nodes — their NodeId embeds the unique source path, so
+// no other cache row can reference the same id. node_ids is a JSON array of quoted
+// id strings; the LIKE pattern matches the id delimited by its surrounding quotes
+// (NodeIds are fixed-width hashes, so no id is a substring of another).
+func (i *Ingester) nodeReferencedByOtherFile(ctx context.Context, q rowQuerier, excludePath, id string) (bool, error) {
+	var one int
+	err := q.QueryRowContext(ctx,
+		`SELECT 1 FROM file_content_cache WHERE path != ? AND node_ids LIKE ? LIMIT 1`,
+		excludePath, "%\""+id+"\"%").Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("ingest: interned node refcount: %w", err)
+	}
+	return true, nil
 }
 
 // upsertCacheTx writes/updates the cache entry for a file. hasLinks records
@@ -2286,6 +2513,16 @@ func (i *Ingester) removeFileTx(ctx context.Context, tx *sql.Tx, w graphstore.Wr
 		return err
 	}
 	for _, id := range ids {
+		// WP-01 interned-node lifecycle: keep a shared `package` node alive while a
+		// sibling file still declares it (checked against the tx so an earlier
+		// removeFileTx in this pass is already visible). A no-op for per-file nodes.
+		shared, err := i.nodeReferencedByOtherFile(ctx, tx, path, id)
+		if err != nil {
+			return err
+		}
+		if shared {
+			continue
+		}
 		if err := w.DeleteNode(ctx, model.NodeId(id)); err != nil {
 			return fmt.Errorf("ingest: delete node of removed file %s: %w", path, err)
 		}

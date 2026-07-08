@@ -3,6 +3,7 @@ package diagnostic
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
@@ -76,19 +77,39 @@ func resolveKinds(kinds []string) (run []string, unavailable []string) {
 	return run, unavailable
 }
 
-// analyzeUnresolvedRefs flags every edge the resolver could not confirm — i.e.
-// edges carried at the heuristic confidence tier. These are the graph's
-// representation of an unresolved/best-effort reference (a confirmed dangling
-// edge cannot exist; see the package note). The diagnostic is anchored at the
-// referrer (From) node. It carries no auto-action: resolving an unconfirmed
-// reference needs agent judgment, so the finding is advisory. Findings carry
-// ConfidenceHeuristic because they are produced from best-effort edges.
+// analyzeUnresolvedRefs reports unresolved/best-effort references — edges carried
+// at the heuristic confidence tier (a confirmed dangling edge cannot exist; see
+// the package note). It aggregates BY TARGET: on a monorepo, a single external
+// symbol may be referenced by thousands of heuristic edges, and emitting one
+// finding per edge buries the signal (the WP-12 de-noise). Instead it emits ONE
+// diagnostic per unresolved target node, with OccurrenceCount = the number of
+// referencing edges into that target and Evidence = the merged (deduped, sorted,
+// bounded) evidence of those edges. The representative Symbol/File/Line are taken
+// from one DETERMINISTIC source edge (the referrer with the smallest NodeId), and
+// TargetSymbol is the shared target. Output is sorted by target (QualifiedName,
+// then NodeId) so the result is byte-stable. Findings carry ConfidenceHeuristic.
 func analyzeUnresolvedRefs(ctx context.Context, r query.Reader) ([]Diagnostic, error) {
 	edges, err := r.Edges(ctx, graphstore.Query{})
 	if err != nil {
 		return nil, fmt.Errorf("diagnostic: list edges: %w", err)
 	}
-	out := []Diagnostic{}
+
+	// Group heuristic edges by target node. For each target track the referring
+	// edges so we can pick a deterministic representative and merge evidence.
+	type group struct {
+		target   model.Node
+		count    int
+		evidence []string
+		// repFrom is the referrer (From) node of the representative source edge:
+		// the one with the lexicographically smallest From NodeId (ties broken by
+		// edge kind then edge id), so Symbol/File/Line are deterministic.
+		repFrom   model.Node
+		repFromID model.NodeId
+		repKind   string
+		repEdgeID model.EdgeId
+		hasRep    bool
+	}
+	groups := map[model.NodeId]*group{}
 	for _, e := range edges {
 		if e.Tier() != model.TierHeuristic {
 			continue
@@ -101,23 +122,64 @@ func analyzeUnresolvedRefs(ctx context.Context, r query.Reader) ([]Diagnostic, e
 		if terr != nil {
 			continue
 		}
+		g := groups[to.ID()]
+		if g == nil {
+			g = &group{target: to}
+			groups[to.ID()] = g
+		}
+		g.count++
+		g.evidence = append(g.evidence, e.Evidence()...)
+		// Deterministic representative: smallest (From id, kind, edge id).
+		cand := repLess(e.From(), e.Kind(), e.ID(), g.repFromID, g.repKind, g.repEdgeID)
+		if !g.hasRep || cand {
+			g.hasRep = true
+			g.repFrom = from
+			g.repFromID = e.From()
+			g.repKind = e.Kind()
+			g.repEdgeID = e.ID()
+		}
+	}
+
+	out := make([]Diagnostic, 0, len(groups))
+	for _, g := range groups {
 		out = append(out, Diagnostic{
 			Severity:        SeverityWarning,
 			Code:            "unresolved_reference",
 			Reason:          ReasonUnresolvedExternalImport,
-			Message:         fmt.Sprintf("%s edge from %q is unresolved (heuristic confidence only)", e.Kind(), from.QualifiedName()),
-			Symbol:          from.ID(),
-			TargetSymbol:    to.ID(),
-			File:            from.SourcePath(),
-			Line:            from.Line(),
-			Column:          from.Column(),
+			Message:         fmt.Sprintf("%d unresolved references to %q (heuristic confidence only)", g.count, g.target.QualifiedName()),
+			Symbol:          g.repFrom.ID(),
+			TargetSymbol:    g.target.ID(),
+			File:            g.repFrom.SourcePath(),
+			Line:            g.repFrom.Line(),
+			Column:          g.repFrom.Column(),
 			Actions:         []CodeAction{},
 			Confidence:      ConfidenceHeuristic,
-			Evidence:        e.Evidence(),
-			OccurrenceCount: 1,
+			Evidence:        graphstore.CompactEvidence(g.evidence),
+			OccurrenceCount: g.count,
 		})
 	}
+	// Deterministic order: by target qualified name, then target NodeId.
+	sort.Slice(out, func(i, j int) bool {
+		ti, tj := groups[out[i].TargetSymbol].target, groups[out[j].TargetSymbol].target
+		if ti.QualifiedName() != tj.QualifiedName() {
+			return ti.QualifiedName() < tj.QualifiedName()
+		}
+		return out[i].TargetSymbol < out[j].TargetSymbol
+	})
 	return out, nil
+}
+
+// repLess reports whether candidate source edge (fromID, kind, edgeID) sorts
+// before the current representative (curFrom, curKind, curEdge) under the total
+// order (From NodeId, edge kind, edge id). Used to pick a stable representative.
+func repLess(fromID model.NodeId, kind string, edgeID model.EdgeId, curFrom model.NodeId, curKind string, curEdge model.EdgeId) bool {
+	if fromID != curFrom {
+		return fromID < curFrom
+	}
+	if kind != curKind {
+		return kind < curKind
+	}
+	return edgeID < curEdge
 }
 
 // analyzeDeadSymbols flags referenceable symbols (functions, methods, types,
@@ -145,6 +207,29 @@ func analyzeDeadSymbols(ctx context.Context, r query.Reader) ([]Diagnostic, erro
 	out := []Diagnostic{}
 	for _, n := range nodes {
 		if !deadCandidateKinds[n.Kind()] || inbound[n.ID()] {
+			continue
+		}
+		// Entry-point de-noise (WP-11): a framework/language entry point (annotated
+		// @Test/@Bean/…, a main, or a test-path symbol) legitimately has no in-graph
+		// inbound reference. Rather than a false dead_symbol WARNING, downgrade it to
+		// an INFO-severity entrypoint_candidate and attach NO delete action — the
+		// symbol is live, so deleting it would break the build.
+		if IsEntryPoint(n) {
+			out = append(out, Diagnostic{
+				Severity:        SeverityInfo,
+				Code:            "dead_symbol",
+				Reason:          ReasonEntrypointCandidate,
+				Message:         fmt.Sprintf("%s %q has no live inbound references but looks like an entry point", n.Kind(), n.QualifiedName()),
+				Symbol:          n.ID(),
+				TargetSymbol:    n.ID(),
+				File:            n.SourcePath(),
+				Line:            n.Line(),
+				Column:          n.Column(),
+				Actions:         []CodeAction{},
+				Confidence:      ConfidenceExact,
+				Evidence:        []string{fmt.Sprintf("%s:%d", n.SourcePath(), n.Line())},
+				OccurrenceCount: 1,
+			})
 			continue
 		}
 		out = append(out, Diagnostic{

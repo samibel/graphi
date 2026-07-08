@@ -38,8 +38,10 @@ func TestDedup_CollapsesIdenticalDeadSymbols(t *testing.T) {
 }
 
 func TestDedup_C2AggregationNotRecollapsed(t *testing.T) {
-	// End-to-end: two identical unresolved external imports are aggregated by C2,
-	// not re-collapsed by C3. The result is 1 representative (count 2) + 1 suppressed.
+	// End-to-end (WP-12): two heuristic references to the same target are
+	// aggregated BY THE ANALYZER into a single diagnostic (count 2, merged
+	// evidence), so there are no per-edge diagnostics for a later stage to
+	// re-collapse. --all and default both show exactly that one diagnostic.
 	ctx := context.Background()
 	store := graphstore.NewMemStore()
 	a1 := makeNode(t, "function", "pkg.A1", "pkg/a.go", 10)
@@ -57,11 +59,11 @@ func TestDedup_C2AggregationNotRecollapsed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DiagnoseWithOptions: %v", err)
 	}
-	// With --all: 1 representative + 1 suppressed = 2 diagnostics.
-	if len(res.Diagnostics) != 2 {
-		t.Fatalf("expected 2 diagnostics (1 rep + 1 suppressed) with --all, got %d: %+v", len(res.Diagnostics), res.Diagnostics)
+	// The analyzer already aggregated by target, so --all shows one diagnostic.
+	if len(res.Diagnostics) != 1 {
+		t.Fatalf("expected 1 aggregated diagnostic with --all, got %d: %+v", len(res.Diagnostics), res.Diagnostics)
 	}
-	// Default output: only the representative is shown.
+	// Default output shows the same single aggregated diagnostic.
 	resDef, err := DiagnoseWithOptions(ctx, store, []string{KindUnresolvedRef}, DiagnoseOptions{ConfidenceThreshold: "heuristic"})
 	if err != nil {
 		t.Fatalf("DiagnoseWithOptions: %v", err)
@@ -72,11 +74,13 @@ func TestDedup_C2AggregationNotRecollapsed(t *testing.T) {
 	if resDef.Diagnostics[0].OccurrenceCount != 2 {
 		t.Fatalf("expected occurrence count 2, got %d", resDef.Diagnostics[0].OccurrenceCount)
 	}
-	if resDef.Summary.SuppressedByCategory["aggregated_external_import"] != 1 {
-		t.Fatalf("expected 1 aggregated_external_import suppression, got %+v", resDef.Summary)
+	// Aggregation now happens in the analyzer, so the suppression-stage
+	// aggregated_external_import category is not exercised.
+	if resDef.Summary.SuppressedByCategory["aggregated_external_import"] != 0 {
+		t.Fatalf("expected 0 aggregated_external_import suppressions (analyzer aggregates), got %+v", resDef.Summary)
 	}
 	if resDef.Summary.DedupCollapsed != 0 {
-		t.Fatalf("C3 should not re-collapse C2 aggregate, got DedupCollapsed=%d", resDef.Summary.DedupCollapsed)
+		t.Fatalf("C3 should not re-collapse the analyzer aggregate, got DedupCollapsed=%d", resDef.Summary.DedupCollapsed)
 	}
 	if resDef.Summary.Shown+resDef.Summary.TotalWithheld != resDef.Summary.TotalAnalyzed {
 		t.Fatalf("reconciliation violated: shown=%d withheld=%d analyzed=%d", resDef.Summary.Shown, resDef.Summary.TotalWithheld, resDef.Summary.TotalAnalyzed)
@@ -192,13 +196,14 @@ func TestDedup_C2C3Composition(t *testing.T) {
 		t.Fatalf("expected 1 aggregated diagnostic, got %d", len(res.Diagnostics))
 	}
 	if res.Diagnostics[0].OccurrenceCount != 3 {
-		t.Fatalf("expected C2 aggregate count 3, got %d", res.Diagnostics[0].OccurrenceCount)
+		t.Fatalf("expected aggregate count 3, got %d", res.Diagnostics[0].OccurrenceCount)
 	}
 	if res.Summary.DedupCollapsed != 0 {
-		t.Fatalf("C3 should not re-collapse C2 aggregate, got DedupCollapsed=%d", res.Summary.DedupCollapsed)
+		t.Fatalf("C3 should not re-collapse the analyzer aggregate, got DedupCollapsed=%d", res.Summary.DedupCollapsed)
 	}
-	if res.Summary.SuppressedByCategory["aggregated_external_import"] != 2 {
-		t.Fatalf("expected 2 aggregated_external_import suppressions, got %+v", res.Summary)
+	// The analyzer aggregates by target, so no suppression-stage aggregation runs.
+	if res.Summary.SuppressedByCategory["aggregated_external_import"] != 0 {
+		t.Fatalf("expected 0 aggregated_external_import suppressions (analyzer aggregates), got %+v", res.Summary)
 	}
 	if res.Summary.Shown+res.Summary.TotalWithheld != res.Summary.TotalAnalyzed {
 		t.Fatalf("reconciliation violated: shown=%d withheld=%d analyzed=%d", res.Summary.Shown, res.Summary.TotalWithheld, res.Summary.TotalAnalyzed)

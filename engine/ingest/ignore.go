@@ -23,9 +23,26 @@ const (
 	// documented pattern subset in internal/gitignore.
 	EnvRespectGitignore = "GRAPHI_RESPECT_GITIGNORE"
 	// EnvIgnoreDirs is a comma-separated list of extra directory basenames to
-	// prune (case-insensitive), merged with the built-in ignoredDirNames.
+	// prune (case-insensitive), merged with the built-in defaultIgnoredDirNames.
 	EnvIgnoreDirs = "GRAPHI_IGNORE"
+	// EnvIndexAll, when set non-empty and != "0", DISABLES the default-on
+	// build-output denylist (defaultIgnoredDirNames) so every directory is
+	// indexed. Like the other scope controls it changes graph content, so it is
+	// folded into the warm-start stamp.
+	EnvIndexAll = "GRAPHI_INDEX_ALL"
 )
+
+// defaultIgnoredDirNames are BUILD-OUTPUT directory basenames pruned by DEFAULT
+// (WP-07). A real monorepo checks generator/build output into the tree (a Spring
+// repo indexed its `build/` output; a Gradle repo its `.gradle/` cache), which
+// bloats the graph with non-source files nobody queries. These names are
+// ambiguous — they can occasionally be a real source directory — which is why the
+// unconditional never-source list (ignoredDirNames in ingest.go: node_modules,
+// .git, vendor, …) deliberately excludes them. WP-07 prunes them by default
+// anyway because the monorepo case dominates, but makes it reversible: set
+// GRAPHI_INDEX_ALL to index them. (node_modules et al. stay pruned regardless —
+// they are never source.)
+var defaultIgnoredDirNames = []string{"target", "build", ".gradle", "dist"}
 
 // ignoreConfig is the resolved opt-in ignore scope for one repo root.
 type ignoreConfig struct {
@@ -67,6 +84,21 @@ func (c ignoreConfig) ignoreFile(rel string) bool {
 func loadIgnoreConfig(root string) ignoreConfig {
 	var cfg ignoreConfig
 	h := fnv.New64a()
+	extra := map[string]bool{}
+
+	// WP-07: seed the default-on build-output denylist unless opted out. This
+	// changes DEFAULT graph content, so the choice is hashed into the warm-start
+	// stamp (and the base ingestSemanticsVersion was bumped when it landed) — a
+	// store indexed with the denylist never warm-starts as an index-all store.
+	if v := os.Getenv(EnvIndexAll); v != "" && v != "0" {
+		_, _ = io.WriteString(h, "indexall:\n")
+	} else {
+		for _, n := range defaultIgnoredDirNames {
+			extra[n] = true
+		}
+		_, _ = io.WriteString(h, "defaults:"+strings.Join(defaultIgnoredDirNames, ",")+"\n")
+	}
+
 	if raw := os.Getenv(EnvIgnoreDirs); strings.TrimSpace(raw) != "" {
 		names := strings.Split(raw, ",")
 		var kept []string
@@ -78,12 +110,14 @@ func loadIgnoreConfig(root string) ignoreConfig {
 		}
 		if len(kept) > 0 {
 			sort.Strings(kept)
-			cfg.extra = make(map[string]bool, len(kept))
 			for _, n := range kept {
-				cfg.extra[n] = true
+				extra[n] = true
 			}
 			_, _ = io.WriteString(h, "extra:"+strings.Join(kept, ",")+"\n")
 		}
+	}
+	if len(extra) > 0 {
+		cfg.extra = extra
 	}
 	if v := os.Getenv(EnvRespectGitignore); v != "" && v != "0" {
 		_, _ = io.WriteString(h, "gitignore:\n")

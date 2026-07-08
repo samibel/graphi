@@ -18,6 +18,14 @@ const (
 	// OutcomeNotFound — the requested symbol id does not exist / could not be
 	// resolved in the graph. No traversal is attempted.
 	OutcomeNotFound Outcome = "not_found"
+	// OutcomeNoSinkCandidates — a taint analysis found zero flows because the
+	// graph contains NO nodes the config classifies as a sink (or source), so a
+	// flow could not exist by construction (WP-04). This is distinct from
+	// OutcomeEmpty ("sinks exist but no source→sink path was found"): reporting an
+	// un-analyzable graph as `empty` reads as a false all-clear, which for a
+	// security signal is worse than an honest "I could not check". Callers should
+	// treat it as "unverified", not "clean".
+	OutcomeNoSinkCandidates Outcome = "no_sink_candidates"
 )
 
 // ResultNode is a node appearing in a result. It carries the canonical node

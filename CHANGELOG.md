@@ -7,6 +7,35 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Added
+- **Real-World Report Card** ([`docs/real-world-report.md`](docs/real-world-report.md)):
+  the honest before/after record for the two external field findings, with every
+  number reproducible from a checked-in, armed gate (a ratchet that hard-fails on
+  regression).
+
+### Fixed
+- **Taint found 0/4 real injections → now 5/5, 0 false positives.** External call
+  targets (`os/exec.Command`, `database/sql.DB.Query`, …) are materialized as
+  interned `external` nodes (import-alias selectors + syntactic receiver-type
+  inference), and a new intra-procedural dataflow connects a source to a sink
+  inside a function with sanitizer-aware precision — closing the field finding
+  where `analyze taint` reported a confident all-clear on a vulnerable app.
+- **Java import fan-out collapsed** from file→file edges against every
+  same-basename directory repo-wide to a single `file →imports→ package` edge on
+  an interned package node (edges/node 15.56 → 0.96 on the fan-out fixture).
+- **Storage diet**: edges are no longer FTS-indexed and the repetitive edge
+  `reason` is interned into a dictionary (~500 → ~226 bytes/edge).
+- **Link phase emits incremental progress** instead of minutes of silence on a
+  large repo, and `receiverMethod` resolution is O(1) via a reverse index.
+- **Monorepo defaults**: `node_modules`/`target`/`build`/`.gradle`/`dist` are
+  pruned by default (opt back in with `GRAPHI_INDEX_ALL`).
+- **`diagnose` de-noised**: `dead_symbol` exempts entry points
+  (`@Test`/`@Bean`/`@Component`/`main`/test paths) via a new non-identity node
+  `Meta` and `safe-delete` refuses to remove a live bean; `unresolved_reference`
+  is aggregated to one diagnostic per target with a count instead of one per edge.
+- **Honest taint verdict**: a graph with no sink candidates reports
+  `no_sink_candidates`, not an empty/clean result.
+
 ## [0.4.0] - 2026-07-05
 
 ### Added

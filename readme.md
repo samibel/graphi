@@ -607,6 +607,11 @@ flowchart TD
 New here? The **[How-To guide](docs/HOWTO.md)** walks through install, indexing a
 repo, and using every surface (CLI, HTTP/SSE, web client, TUI, VS Code, MCP).
 
+The **[Real-World Report Card](docs/real-world-report.md)** is the honest
+before/after record for two external field tests (a security app where taint
+found 0/4 real injections → now 5/5; an 11.7k-file monorepo that indexed in
+4m48s / 2.3 GB) — every number reproducible from a checked-in, armed gate.
+
 The **[Feature Inventory](docs/FEATURES.md)** is the complete catalogue of every
 MCP tool, CLI subcommand, HTTP endpoint, and analyzer graphi ships, with 10
 Mermaid diagrams (architecture, MCP taxonomy, surface matrix, PR pipeline, live-IDE

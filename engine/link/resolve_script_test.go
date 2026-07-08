@@ -25,7 +25,7 @@ func TestPHPLink_Resolves(t *testing.T) {
 			{FromQN: "app.checkout", Name: "helper", Kind: "calls", Line: 3, Selector: false},
 		},
 	}}
-	edges, _, err := New().Link("php", files, BuildIndex(nodes))
+	_, edges, _, err := New().Link("php", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestLuaLink_Resolves(t *testing.T) {
 			{FromQN: "app.checkout", SelectorBase: "util", Name: "helper", Kind: "calls", Line: 2, Selector: true},
 		},
 	}}
-	edges, _, err := New().Link("lua", files, BuildIndex(nodes))
+	_, edges, _, err := New().Link("lua", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestBashLink_Resolves(t *testing.T) {
 			{FromQN: "app.checkout", Name: "helper", Kind: "calls", Line: 2, Selector: false},
 		},
 	}}
-	edges, _, err := New().Link("bash", files, BuildIndex(nodes))
+	_, edges, _, err := New().Link("bash", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestRubyLink_ImportsEdge(t *testing.T) {
 		Language:   "ruby",
 		Imports:    []parse.ImportSpec{{Path: "util"}},
 	}}
-	edges, _, err := New().Link("ruby", files, BuildIndex(nodes))
+	_, edges, _, err := New().Link("ruby", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestSQLLink_NoOp(t *testing.T) {
 		mustNode(t, "type", "schema.users", "db/schema.sql"),
 	}
 	files := []FileRefs{{SourcePath: "db/schema.sql", Dir: "db", Language: "sql"}}
-	edges, st, err := New().Link("sql", files, BuildIndex(nodes))
+	_, edges, st, err := New().Link("sql", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}

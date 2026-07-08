@@ -57,7 +57,39 @@ func fqnImportBinder(in FileRefs) binder {
 			b.selBaseImportPath[bound] = imp.Path
 			b.bareNameImportPath[bound] = imp.Path
 		}
-		b.pkgImportPaths = append(b.pkgImportPaths, imp.Path)
+		// WP-01: the file→file import fan-out (pkgImportPaths) is REPLACED by a
+		// single file→package edge to the interned package node. For a normal
+		// `import com.a.b.C;` drop the trailing type segment so the package is
+		// "com.a.b"; for an on-demand `import com.a.b.*;` the path already IS the
+		// package, so use it verbatim (stripping would wrongly target "com.a").
+		// Symbol resolution (selBase/bareName above) is unchanged.
+		pkg := imp.Path
+		if !imp.Wildcard {
+			pkg = packagePathOf(imp.Path)
+		}
+		if pkg != "" {
+			b.packageImports = append(b.packageImports, pkg)
+		}
 	}
 	return b
+}
+
+// packagePathOf strips the trailing type/member segment from a Java/Kotlin FQN
+// import path, yielding the package path the imported symbol lives in:
+// "com.a.b.C" → "com.a.b". A dotless path (no package) yields "".
+func packagePathOf(importPath string) string {
+	if i := lastDot(importPath); i >= 0 {
+		return importPath[:i]
+	}
+	return ""
+}
+
+// lastDot returns the index of the final '.' in s, or -1 if absent.
+func lastDot(s string) int {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == '.' {
+			return i
+		}
+	}
+	return -1
 }

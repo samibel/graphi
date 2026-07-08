@@ -63,6 +63,8 @@ func TestExtractJava_Nodes(t *testing.T) {
 		"shop.run":        goKindMethod,
 		"shop.Cart":       goKindType,
 		"shop.items":      goKindMethod,
+		// WP-01: the file's `package shop;` mints one interned package node.
+		"shop": KindPackage,
 	}
 	for qn, kind := range want {
 		n, ok := nodeByQN(nodes, qn)
@@ -82,7 +84,7 @@ func TestExtractJava_Nodes(t *testing.T) {
 	for _, n := range nodes {
 		emitted[n.Kind()] = struct{}{}
 	}
-	for _, k := range []model.NodeKind{"file", "method", "type"} {
+	for _, k := range []model.NodeKind{"file", "method", "type", "package"} {
 		if _, ok := emitted[k]; !ok {
 			t.Errorf("expected kind literal %q to be present", k)
 		}
@@ -95,7 +97,7 @@ func TestExtractJava_Nodes(t *testing.T) {
 	}
 	for bad := range emitted {
 		switch string(bad) {
-		case "file", "method", "type":
+		case "file", "method", "type", "package":
 		default:
 			t.Errorf("unexpected node kind literal %q (closed vocabulary violated)", bad)
 		}
