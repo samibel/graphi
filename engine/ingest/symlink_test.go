@@ -30,11 +30,13 @@ func TestIngest_FailsClosed_OnSymlinkToDirectory(t *testing.T) {
 	parser := &stubParser{}
 	i := newIngester(t, store, parser)
 
+	// "sub" (not "target"): WP-07 prunes target/ by default, which would drop
+	// nested.go from the parse count this symlink test asserts.
 	root := writeRepo(t, map[string]string{
-		"real.go":          "package a\n",
-		"target/nested.go": "package b\n",
+		"real.go":       "package a\n",
+		"sub/nested.go": "package b\n",
 	})
-	if err := os.Symlink(filepath.Join(root, "target"), filepath.Join(root, "linked")); err != nil {
+	if err := os.Symlink(filepath.Join(root, "sub"), filepath.Join(root, "linked")); err != nil {
 		t.Fatalf("Symlink: %v", err)
 	}
 

@@ -43,6 +43,10 @@ func pathsOf(t *testing.T, store graphstore.Graphstore) map[string]bool {
 func TestIgnoreScope_OffByDefault(t *testing.T) {
 	t.Setenv(ingest.EnvRespectGitignore, "")
 	t.Setenv(ingest.EnvIgnoreDirs, "")
+	// WP-07 added a default-on build-output denylist that prunes dist/. This test
+	// pins the ORTHOGONAL gitignore/extra opt-in contract (dist/ indexed when no
+	// gitignore scope is set), so opt out of the denylist to isolate it.
+	t.Setenv(ingest.EnvIndexAll, "1")
 	store := graphstore.NewMemStore()
 	defer store.Close()
 	i := newIngester(t, store, &stubParser{})
@@ -89,6 +93,9 @@ func TestIgnoreScope_GitignoreOptIn(t *testing.T) {
 func TestIgnoreScope_ExtraDirs(t *testing.T) {
 	t.Setenv(ingest.EnvRespectGitignore, "")
 	t.Setenv(ingest.EnvIgnoreDirs, "assets, Missing")
+	// WP-07: opt out of the default build-output denylist so this test isolates
+	// the GRAPHI_IGNORE extra-dirs contract (it asserts dist/ stays indexed).
+	t.Setenv(ingest.EnvIndexAll, "1")
 	store := graphstore.NewMemStore()
 	defer store.Close()
 	i := newIngester(t, store, &stubParser{})

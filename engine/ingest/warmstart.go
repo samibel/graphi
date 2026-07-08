@@ -38,7 +38,11 @@ import (
 //	    byte-identical, but a store written by an older binary carries the old
 //	    inline `edges` columns, so an upgraded binary must re-index (a full pass
 //	    re-creates the edges table) rather than warm-start against it.
-const ingestSemanticsVersion = "5"
+//	6 : WP-07 default-on build-output denylist — node_modules/target/build/
+//	    .gradle/dist are pruned by default (opt out with GRAPHI_INDEX_ALL), which
+//	    changes the DEFAULT set of indexed files, so a store indexed by an older
+//	    (index-everything) binary must re-index under the new default scope.
+const ingestSemanticsVersion = "6"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
