@@ -257,6 +257,10 @@ func pyImports(t *pyAST) []ImportSpec {
 				}
 			}
 		case "import_from_statement":
+			// A `relative_import` child (`.`, `..`, `.mod`) marks an intra-package
+			// import whose target is always in-repo: record its bindings as Relative
+			// so the linker never fabricates an external node for them (WP-14).
+			relative := childByType(c, "relative_import", t.lang) != nil
 			mod := childByType(c, "dotted_name", t.lang)
 			if mod == nil {
 				continue
@@ -270,11 +274,11 @@ func pyImports(t *pyAST) []ImportSpec {
 				}
 			}
 			if len(names) <= 1 {
-				out = append(out, ImportSpec{Alias: modPath, Path: modPath})
+				out = append(out, ImportSpec{Alias: modPath, Path: modPath, Relative: relative})
 				continue
 			}
 			for _, nm := range names[1:] {
-				out = append(out, ImportSpec{Alias: nm.Text(t.src), Path: modPath})
+				out = append(out, ImportSpec{Alias: nm.Text(t.src), Path: modPath, Relative: relative})
 			}
 		}
 	}

@@ -140,6 +140,25 @@ type binder struct {
 	// default) means a language never mints externals here — preserving the exact
 	// prior skip behaviour for resolvers that do not opt in.
 	externalQN func(importPath, name string, selector bool) string
+
+	// externalIneligible names bindings that must NEVER be materialized as an
+	// external target even though they sit in the import-path maps — Python
+	// RELATIVE imports (`from . import x`), whose target is always in-repo, so an
+	// unresolved use is an honest skip, not a stdlib reference. Such a binding is
+	// still tried against crossModule (it may resolve internally); it just never
+	// falls through to externalQN.
+	externalIneligible map[string]bool
+
+	// importPathsExternalOnly declares that this language's import paths in
+	// selBaseImportPath / bareNameImportPath are NEVER resolvable to a committed
+	// repo node — they are opaque external module specifiers (the TypeScript family
+	// under the relative-only D1 rule: `import {x} from "pkg"`). For these,
+	// crossModule is SKIPPED entirely (its clause is not a repo package clause, so
+	// running it would false-match an unrelated repo directory that happens to
+	// share the specifier's basename) and the byClause presence guard is bypassed —
+	// an unresolved use goes straight to an external node. Relative-path resolution
+	// (selBaseDirs / bareNameDirs) is unaffected and still wins when it hits.
+	importPathsExternalOnly bool
 }
 
 // externalMemberQN joins a known import path and a referenced member into the
@@ -325,15 +344,26 @@ func resolveCrossFile(idx *SymbolIndex, b binder, base, name string, selector bo
 	// may still resolve the same reference to a committed node, which always wins.
 	// Only if every mechanism misses does extQN surface as the external target.
 	extQN := ""
-	maybeExternal := func(impPath string, sel bool) {
+	maybeExternal := func(impPath, binding string, sel bool) {
 		if extQN != "" || b.externalQN == nil {
 			return
+		}
+		if b.externalIneligible[binding] {
+			return // relative / in-repo import: never fabricated as external
 		}
 		// A clause declared somewhere in the repo means this is an in-repo module
 		// with a merely-unindexed member — an honest skip, never a fabricated
 		// external (which would mislabel a local symbol, the WP-03 flood failure).
-		// Only a clause ABSENT from the whole repo is a genuine external target.
-		if len(idx.byClause[b.clause(impPath)]) > 0 {
+		// Only a clause ABSENT from the whole repo is a genuine external target. The
+		// guard is bypassed for external-only import paths (their basename is not a
+		// repo clause; a collision there is coincidental, not an in-repo target).
+		if !b.importPathsExternalOnly && len(idx.byClause[b.clause(impPath)]) > 0 {
+			return
+		}
+		// A single-segment binding used bare AS its own name (importPath == name) is
+		// a module used as a value or a mis-recorded relative import, never a clean
+		// "module.member" FQN — declining avoids a nonsense "x.x" node.
+		if !sel && impPath == name {
 			return
 		}
 		extQN = b.externalQN(impPath, name, sel)
@@ -347,21 +377,25 @@ func resolveCrossFile(idx *SymbolIndex, b binder, base, name string, selector bo
 			}
 		}
 		if impPath, ok := b.bareNameImportPath[name]; ok {
-			if id, f, a := crossModule(idx, b.clause(impPath), name); f {
-				return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (binding " + name + ")", ""
-			} else if a {
-				return "", false, true, "", ""
+			if !b.importPathsExternalOnly {
+				if id, f, a := crossModule(idx, b.clause(impPath), name); f {
+					return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (binding " + name + ")", ""
+				} else if a {
+					return "", false, true, "", ""
+				}
 			}
-			maybeExternal(impPath, false)
+			maybeExternal(impPath, name, false)
 		}
 	} else {
 		if impPath, ok := b.selBaseImportPath[base]; ok {
-			if id, f, a := crossModule(idx, b.clause(impPath), name); f {
-				return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (qualifier " + base + ")", ""
-			} else if a {
-				return "", false, true, "", ""
+			if !b.importPathsExternalOnly {
+				if id, f, a := crossModule(idx, b.clause(impPath), name); f {
+					return id, true, false, "cross-module " + kind + " resolved via import " + impPath + " (qualifier " + base + ")", ""
+				} else if a {
+					return "", false, true, "", ""
+				}
 			}
-			maybeExternal(impPath, true)
+			maybeExternal(impPath, base, true)
 		}
 		if dirs, ok := b.selBaseDirs[base]; ok {
 			if id, f, a := lookupInDirs(idx, dirs, name); f {

@@ -32,10 +32,13 @@ func (pyResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 	b := binder{
 		selBaseImportPath:  map[string]string{},
 		bareNameImportPath: map[string]string{},
+		externalIneligible: map[string]bool{},
 		clauseOf:           pyClause,
 		// WP-14: an imported module member that resolves to no committed symbol is a
 		// genuine external (stdlib / 3rd-party) reference with an exact FQN
-		// ("os.system", "subprocess.run") — mint an interned external node.
+		// ("os.system", "subprocess.run") — mint an interned external node. RELATIVE
+		// imports are excluded (externalIneligible below): their target is in-repo,
+		// so an unresolved use is an honest skip, not a fabricated stdlib node.
 		externalQN: externalMemberQN,
 	}
 	for _, imp := range in.Imports {
@@ -45,6 +48,9 @@ func (pyResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 		if imp.Alias != "" {
 			b.selBaseImportPath[imp.Alias] = imp.Path
 			b.bareNameImportPath[imp.Alias] = imp.Path
+			if imp.Relative {
+				b.externalIneligible[imp.Alias] = true
+			}
 		}
 		b.pkgImportPaths = append(b.pkgImportPaths, imp.Path)
 	}

@@ -39,6 +39,11 @@ func (tsResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 		// node is a genuine external reference — mint an interned external node keyed
 		// by the package-qualified FQN ("pkg.fn", "@scope/pkg.member").
 		externalQN: externalMemberQN,
+		// TS module resolution is relative-only (D1): a non-relative specifier is
+		// NEVER a repo package, so its bindings must not be crossModule-resolved
+		// (which would false-match an unrelated repo directory sharing the
+		// specifier's basename) — they resolve straight to an external node.
+		importPathsExternalOnly: true,
 	}
 	for _, imp := range in.Imports {
 		if imp.Path == "" {

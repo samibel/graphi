@@ -361,6 +361,24 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
   (`child_process.exec`) — alle über die echte Ingest+Link-Pipeline; dazu die
   aktualisierten `engine/link`-Unit-Gates (Python/TS) und die unveränderten
   byte-identischen Golden-Incremental-vs-Full-Tests je Sprache.
+- **Adversarial-Verify:** zwei reale Defekte gefunden und VOR dem Abschluss
+  behoben (Regressionstests in `engine/link/external_rollout_test.go`):
+  (A) TS-nicht-relative Importe zogen über den sprach-globalen Clause-Index
+  falsche (auch sprachübergreifende) In-Repo-Kanten — Fix:
+  `importPathsExternalOnly` überspringt `crossModule` und mündet direkt extern;
+  (B) Python-Relativimporte (`from . import x`) wurden als Müll-Externals
+  (`x.x`, `sibling.run`) fabriziert — Fix: Parser markiert `ImportSpec.Relative`,
+  Resolver schließt sie via `externalIneligible` von der Externalisierung aus.
+- **Bekannte, bewusst offene Grenzen (safe-by-design / vorbestehend):**
+  (C) Java-Stdlib-Externals werden unterdrückt, wenn die Package-Clause
+  (`java.util` → „util") zufällig mit einem Repo-Verzeichnis kollidiert — es
+  wird eher NICHT gemündet als falsch gemündet (sichere Richtung, keine
+  Falsch-Knoten). (D) TS-aliasierte Importe (`import {e as f}`) werden vom
+  Parser unter dem Originalnamen geführt — vorbestehende Parser-Grenze, kein
+  Falsch-Knoten. (E) `engine/community`/`engine/wiki` gruppieren ungefiltert
+  ALLE Knoten (auch `package`/`file`); external-Knoten erscheinen dort nun
+  häufiger — vorbestehende Hygiene-Lücke einer nicht-strukturellen Fläche,
+  separater Follow-up (Struktur-Queries + Search sind kind-gefiltert und sauber).
 - **Abhängigkeiten:** WP-05, WP-10.
 
 ---
