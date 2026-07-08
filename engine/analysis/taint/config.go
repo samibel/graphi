@@ -209,7 +209,12 @@ func DefaultConfig() Config {
 			{ID: "http_redirect", Category: "open_redirect", NamePatterns: []string{"http.Redirect"}},
 			{ID: "net_dial", Category: "ssrf", NamePatterns: []string{"net.Dial", "net.DialTimeout", "http.Get", "http.Post", "http.NewRequest"}},
 			{ID: "ldap_search", Category: "ldap_injection", NamePatterns: []string{"ldap.Search", "ldap.SearchRequest"}},
-			{ID: "log_write", Category: "log_injection", NamePatterns: []string{"log.Printf", "log.Print", "log.Println", "fmt.Fprintf"}},
+			// log_write intentionally OMITS fmt.Fprintf: it is a general-purpose
+			// formatter (used for all formatted output — stderr diagnostics, file
+			// writers, buffers — not specifically logging), and was the single
+			// largest false-positive source in adversarial verification (WP-05b-3
+			// precision fix B). Real logging via log.Printf/Print/Println stays.
+			{ID: "log_write", Category: "log_injection", NamePatterns: []string{"log.Printf", "log.Print", "log.Println"}},
 			{ID: "regex_compile", Category: "redos", NamePatterns: []string{"regexp.Compile", "regexp.MustCompile"}},
 		},
 		Sanitizers: []SanitizerDef{

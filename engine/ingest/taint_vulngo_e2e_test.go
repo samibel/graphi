@@ -120,6 +120,28 @@ func safeConstant(w http.ResponseWriter, r *http.Request) {
 }
 `,
 
+	"globaldb.go": `package app
+
+import (
+	"database/sql"
+	"net/http"
+)
+
+// gdb is a PACKAGE-LEVEL DB handle (not a function parameter): the global-DB
+// shape real services use. Its sink was SILENTLY MISSED before WP-05b-3 because
+// receiver-type resolution only covered params/receivers; fix C resolves a
+// file-scope var's method call (gdb.Query -> database/sql.DB.Query).
+var gdb *sql.DB
+
+// hGlobalSQLi — SQL injection through a package-level db var. (flow 5: sql_injection)
+func hGlobalSQLi(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	rows, _ := gdb.Query("SELECT * FROM audit WHERE id = " + id)
+	_ = rows
+	_ = w
+}
+`,
+
 	"register.go": `package app
 
 import (
@@ -132,6 +154,7 @@ import (
 func Register(mux *http.ServeMux, db *sql.DB) {
 	mux.HandleFunc("/sqli", func(w http.ResponseWriter, r *http.Request) { vulnSQLiDirect(db, w, r) })
 	mux.HandleFunc("/sqli2", func(w http.ResponseWriter, r *http.Request) { vulnSQLiWrapper(db, w, r) })
+	mux.HandleFunc("/gsqli", hGlobalSQLi)
 	mux.HandleFunc("/rce", vulnRCE)
 	mux.HandleFunc("/lfi", vulnLFI)
 	mux.HandleFunc("/safe1", func(w http.ResponseWriter, r *http.Request) { safeSanitized(db, w, r) })
@@ -153,6 +176,7 @@ type expectedFlow struct {
 var expectedFlows = []expectedFlow{
 	{name: "sqli-direct", category: "sql_injection", sinkFunc: "vulnSQLiDirect"},
 	{name: "sqli-wrapper", category: "sql_injection", sinkFunc: "vulnSQLiWrapper"},
+	{name: "sqli-global", category: "sql_injection", sinkFunc: "hGlobalSQLi"},
 	{name: "rce", category: "command_injection", sinkFunc: "vulnRCE"},
 	{name: "lfi", category: "path_traversal", sinkFunc: "vulnLFI"},
 }

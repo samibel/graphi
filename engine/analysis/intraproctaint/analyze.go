@@ -53,6 +53,11 @@ func Analyze(file *ast.File, fset *token.FileSet, cfg taint.Config) []taint.Find
 	if file.Name != nil {
 		pkg = file.Name.Name
 	}
+	// File-scope var types let db.Query resolve when db is a package-level
+	// `var db *sql.DB` (not a function parameter) — the most common global-DB
+	// shape on real code, and the one whose SQLi sink was silently missed before
+	// WP-05b-3 (recall fix C).
+	pkgVars := packageVarTypes(file, aliases)
 	var findings []taint.Finding
 	for _, decl := range file.Decls {
 		fn, ok := decl.(*ast.FuncDecl)
@@ -60,14 +65,15 @@ func Analyze(file *ast.File, fset *token.FileSet, cfg taint.Config) []taint.Find
 			continue
 		}
 		fa := &funcAnalyzer{
-			cfg:       cfg,
-			fset:      fset,
-			aliases:   aliases,
-			pkg:       pkg,
-			funcQN:    funcQualifiedName(pkg, fn),
-			recvTypes: receiverTypes(fn, aliases),
-			tainted:   map[string]sourceRef{},
-			cfgHash:   cfg.ContentHash,
+			cfg:         cfg,
+			fset:        fset,
+			aliases:     aliases,
+			pkg:         pkg,
+			funcQN:      funcQualifiedName(pkg, fn),
+			recvTypes:   receiverTypes(fn, aliases),
+			pkgVarTypes: pkgVars,
+			tainted:     map[string]sourceRef{},
+			cfgHash:     cfg.ContentHash,
 		}
 		findings = append(findings, fa.run(fn)...)
 	}
@@ -87,14 +93,15 @@ type sourceRef struct {
 
 // funcAnalyzer holds the per-function analysis state.
 type funcAnalyzer struct {
-	cfg       taint.Config
-	fset      *token.FileSet
-	aliases   map[string]string // import alias -> import path
-	pkg       string
-	funcQN    string
-	recvTypes map[string]string    // param/receiver var -> "<importPath>.<TypeName>"
-	tainted   map[string]sourceRef // in-scope tainted variables -> origin
-	cfgHash   string
+	cfg         taint.Config
+	fset        *token.FileSet
+	aliases     map[string]string // import alias -> import path
+	pkg         string
+	funcQN      string
+	recvTypes   map[string]string    // param/receiver var -> "<importPath>.<TypeName>"
+	pkgVarTypes map[string]string    // file-scope var -> "<importPath>.<TypeName>"
+	tainted     map[string]sourceRef // in-scope tainted variables -> origin
+	cfgHash     string
 }
 
 // run seeds the taint roots from the function signature and walks the body in
@@ -157,11 +164,18 @@ func (a *funcAnalyzer) applyAssign(as *ast.AssignStmt) {
 		return
 	}
 	if len(as.Rhs) == 1 {
-		// Multi-value assignment from a single call (a, b := f()): every LHS var
-		// takes the call's taint status.
-		src, tainted := a.taintOrigin(as.Rhs[0])
+		// Multi-value assignment from a single call/expr (a, b := f(), v, ok := m[k],
+		// v, ok := x.(T)). We CANNOT tell syntactically which return (if any) carries
+		// the data, and in practice the extra returns are error/bool/int — tainting
+		// every LHS is the single largest false-positive source (e.g.
+		// `x, err := time.Parse(fmt, r.FormValue(k))` tainting err, `v, ok := m[k]`
+		// tainting the bool ok). So we deliberately do NOT propagate taint to any LHS
+		// here; each LHS is (re)set to clean. A SINGLE-value taint-preserving call
+		// (s := GetQueryParam(r, k) returning one string) goes through the
+		// equal-length branch above and STILL propagates, so the wrapper-source flow
+		// is preserved. (WP-05b-3 precision fix A3.)
 		for _, lhs := range as.Lhs {
-			a.setVar(lhs, src, tainted)
+			a.setVar(lhs, sourceRef{}, false)
 		}
 	}
 }
@@ -217,6 +231,16 @@ func (a *funcAnalyzer) taintOrigin(expr ast.Expr) (sourceRef, bool) {
 			}
 		}
 	case *ast.BinaryExpr:
+		// Comparison and logical operators produce a BOOL, not data: the result
+		// never carries the operands' taint (fixes `ok := r.FormValue(k) == "admin"`
+		// being flagged as tainted). Arithmetic/concatenation (`+`, `-`, ...) stays
+		// taint-preserving, so `"SELECT ... " + id` remains tainted — that is real.
+		// (WP-05b-3 precision fix A1.)
+		switch e.Op {
+		case token.EQL, token.NEQ, token.LSS, token.LEQ, token.GTR, token.GEQ,
+			token.LAND, token.LOR:
+			return sourceRef{}, false
+		}
 		if s, ok := a.taintOrigin(e.X); ok {
 			return s, true
 		}
@@ -232,6 +256,15 @@ func (a *funcAnalyzer) taintOrigin(expr ast.Expr) (sourceRef, bool) {
 	case *ast.KeyValueExpr:
 		return a.taintOrigin(e.Value)
 	case *ast.CallExpr:
+		// Obviously-scalar builtins (len, cap) return an int, never data: their
+		// result is not tainted even when the argument is (fixes `len(q)` where q is
+		// tainted being treated as tainted). (WP-05b-3 precision fix A2.)
+		if id, isID := e.Fun.(*ast.Ident); isID {
+			switch id.Name {
+			case "len", "cap":
+				return sourceRef{}, false
+			}
+		}
 		if qn, ok := a.callQN(e); ok {
 			// A sanitizer call removes taint: its result is CLEAN regardless of a
 			// tainted input (this is what makes safeSanitized produce no finding).
@@ -346,8 +379,49 @@ func (a *funcAnalyzer) callQN(call *ast.CallExpr) (string, bool) {
 		if rt, ok := a.recvTypes[base.Name]; ok {
 			return rt + "." + fun.Sel.Name, true
 		}
+		// Fall back to a file-scope var of a known type (package-level `var db
+		// *sql.DB` → db.Query resolves to database/sql.DB.Query). Params/receivers
+		// are checked first so a local shadow of the same name still wins there.
+		if rt, ok := a.pkgVarTypes[base.Name]; ok {
+			return rt + "." + fun.Sel.Name, true
+		}
 	}
 	return "", false
+}
+
+// packageVarTypes maps a file's top-level var names to their syntactically
+// resolvable "<importPath>.<TypeName>" (only explicit-type declarations such as
+// `var db *sql.DB`; a `var db = expr` with no written type, or a same-package
+// bare-ident type, is skipped — no guessing). This is what lets a global
+// `var db *sql.DB` resolve db.Query/db.Exec to the SQL sink when db is NOT a
+// function parameter. Struct-field (s.db.Query) and constructor-local
+// (db := openDB()) shapes are deferred: they need cross-file/RHS type info this
+// syntactic pass does not have.
+func packageVarTypes(file *ast.File, aliases map[string]string) map[string]string {
+	m := map[string]string{}
+	for _, decl := range file.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.VAR {
+			continue
+		}
+		for _, spec := range gd.Specs {
+			vs, ok := spec.(*ast.ValueSpec)
+			if !ok || vs.Type == nil {
+				continue
+			}
+			ref, ok := typeRef(vs.Type, aliases)
+			if !ok {
+				continue
+			}
+			for _, nm := range vs.Names {
+				if nm == nil || nm.Name == "" || nm.Name == "_" {
+					continue
+				}
+				m[nm.Name] = ref
+			}
+		}
+	}
+	return m
 }
 
 func (a *funcAnalyzer) pos(p token.Pos) (line, col int) {
