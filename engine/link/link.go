@@ -123,6 +123,15 @@ type FileRefs struct {
 // plus its provenance class and one evidence string. The Linker collects all
 // intents, merges evidence per logical edge as a sorted union, and constructs
 // each edge exactly once.
+//
+// INVARIANT (batch-safety): a resolver MUST set `from` to a symbol OWNED by the
+// file currently being resolved (`idx.sameDir(in.Dir, lastSeg(p.FromQN))`, where
+// FromQN is the ref's own enclosing declaration). Ingest may split a language's
+// files into sub-batches for link progress (WP-02) and merge each batch's edges
+// independently; byte-parity with a single pass holds ONLY because every logical
+// edge's intents share one `from` and therefore live in one batch. A resolver that
+// synthesized `from` from a cross-file name could split an edge's evidence union
+// across batches and diverge — do not.
 type intent struct {
 	from     model.NodeId
 	to       model.NodeId
