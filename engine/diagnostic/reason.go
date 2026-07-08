@@ -8,6 +8,7 @@ const (
 	ReasonDeadInternalSymbol       ReasonCode = "dead_internal_symbol"
 	ReasonUnresolvedInternalRef    ReasonCode = "unresolved_internal_ref"
 	ReasonUnresolvedExternalImport ReasonCode = "unresolved_external_import"
+	ReasonEntrypointCandidate      ReasonCode = "entrypoint_candidate"
 )
 
 // reasonCatalog maps each code to its documented meaning. This is the single
@@ -16,6 +17,7 @@ var reasonCatalog = map[ReasonCode]string{
 	ReasonDeadInternalSymbol:       "A symbol with no live inbound references that is internal to the analyzed module.",
 	ReasonUnresolvedInternalRef:    "A reference to an internal symbol the resolver could not confirm.",
 	ReasonUnresolvedExternalImport: "A reference to an external symbol the resolver could not confirm, aggregated by target.",
+	ReasonEntrypointCandidate:      "A symbol with no live inbound references that looks like a framework/language entry point (annotation, main, or test path), so it is reported at info severity rather than flagged as dead.",
 }
 
 // ValidReasonCodes returns the canonical ordered list of catalog members.
@@ -24,6 +26,7 @@ func ValidReasonCodes() []ReasonCode {
 		ReasonDeadInternalSymbol,
 		ReasonUnresolvedInternalRef,
 		ReasonUnresolvedExternalImport,
+		ReasonEntrypointCandidate,
 	}
 }
 

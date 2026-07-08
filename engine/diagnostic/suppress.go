@@ -197,8 +197,15 @@ func isExternalImport(d Diagnostic) bool {
 }
 
 // aggregateExternalImports groups unresolved external imports by target symbol,
-// emits one representative per group with OccurrenceCount = group size, and tags
-// the remaining members as suppressed aggregated. The tally is updated.
+// emits one representative per group with OccurrenceCount = the SUM of the
+// members' occurrence counts, and tags the remaining members as suppressed
+// aggregated. The tally is updated.
+//
+// Summing (rather than counting group size) makes this idempotent for input the
+// analyzer already aggregated by target: since WP-12 emits one diagnostic per
+// target with OccurrenceCount=N, each group here has size 1 and the sum
+// preserves N. It still collapses correctly if multiple pre-aggregated
+// diagnostics ever share a target.
 func aggregateExternalImports(diags []Diagnostic, t *tally) []Diagnostic {
 	if len(diags) == 0 {
 		return nil
@@ -214,13 +221,23 @@ func aggregateExternalImports(diags []Diagnostic, t *tally) []Diagnostic {
 		// Deterministic representative: canonical-comparator-smallest member.
 		sortDiagnostics(group)
 		rep := group[0]
-		rep.OccurrenceCount = len(group)
-		out = append(out, rep)
+		rep.OccurrenceCount = occurrenceOf(rep)
 		for _, other := range group[1:] {
+			rep.OccurrenceCount += occurrenceOf(other)
 			other.Suppression = SuppressionAggregatedExternalImport
 			t.SuppressedByCategory[string(SuppressionAggregatedExternalImport)]++
 			out = append(out, other)
 		}
+		out = append(out, rep)
 	}
 	return out
+}
+
+// occurrenceOf returns a diagnostic's occurrence count, treating an unset (<1)
+// count as a single occurrence.
+func occurrenceOf(d Diagnostic) int {
+	if d.OccurrenceCount < 1 {
+		return 1
+	}
+	return d.OccurrenceCount
 }

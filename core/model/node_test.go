@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -85,5 +86,69 @@ func TestNewNode_StableAcrossRuns(t *testing.T) {
 		if n.ID() != want {
 			t.Fatalf("iteration %d: NodeId = %q, want %q", i, n.ID(), want)
 		}
+	}
+}
+
+// TestWithMeta_IdentityInvariant proves NodeMeta is a NON-identity rider: adding
+// meta must not change the NodeId (byte-parity of identity), while Meta() must
+// round-trip the sorted/deduped value. This is the invariant the persistence and
+// snapshot layers rely on.
+func TestWithMeta_IdentityInvariant(t *testing.T) {
+	base, err := NewNode(goldenNodeKind, goldenNodeQName, goldenNodePath, 10, 4)
+	if err != nil {
+		t.Fatalf("NewNode: %v", err)
+	}
+	withMeta := base.WithMeta(NewNodeMeta([]string{"Bean", "Test", "Bean"}, []string{"static", "main"}))
+	if withMeta.ID() != base.ID() {
+		t.Fatalf("meta changed NodeId: base=%q withMeta=%q (meta must be non-identity)", base.ID(), withMeta.ID())
+	}
+	if withMeta.ID() != goldenNodeID {
+		t.Fatalf("NodeId drifted from golden with meta attached: %q", withMeta.ID())
+	}
+	// The base node is unmodified (WithMeta returns a copy).
+	if !base.Meta().IsZero() {
+		t.Fatalf("WithMeta mutated the receiver: base meta = %+v", base.Meta())
+	}
+	m := withMeta.Meta()
+	if got := m.Annotations; len(got) != 2 || got[0] != "Bean" || got[1] != "Test" {
+		t.Fatalf("annotations not sorted+deduped: %v", got)
+	}
+	if got := m.Flags; len(got) != 2 || got[0] != "main" || got[1] != "static" {
+		t.Fatalf("flags not sorted+deduped: %v", got)
+	}
+}
+
+// TestNodeMeta_SnapshotRoundTrip ensures a node's meta survives Marshal→Unmarshal
+// (the snapshot byte path) and that an empty-meta node encodes with NO meta key,
+// preserving byte-parity with the pre-meta format.
+func TestNodeMeta_SnapshotRoundTrip(t *testing.T) {
+	plain, _ := NewNode("function", "pkg.Plain", "pkg/p.go", 1, 1)
+	annotated, _ := NewNode("method", "pkg.Bean", "pkg/b.go", 2, 1)
+	annotated = annotated.WithMeta(NewNodeMeta([]string{"Bean"}, []string{"static"}))
+
+	g := NewGraph([]Node{plain, annotated}, nil)
+	data, err := g.Marshal()
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	// Empty-meta node must not emit a "meta" key for the plain node; only the
+	// annotated node carries one.
+	if got := strings.Count(string(data), `"meta"`); got != 1 {
+		t.Fatalf("expected exactly 1 meta key in snapshot, got %d: %s", got, data)
+	}
+	back, err := Unmarshal(data)
+	if err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	byID := map[NodeId]Node{}
+	for _, n := range back.Nodes() {
+		byID[n.ID()] = n
+	}
+	if !byID[plain.ID()].Meta().IsZero() {
+		t.Fatalf("plain node gained meta on round-trip: %+v", byID[plain.ID()].Meta())
+	}
+	rm := byID[annotated.ID()].Meta()
+	if len(rm.Annotations) != 1 || rm.Annotations[0] != "Bean" || len(rm.Flags) != 1 || rm.Flags[0] != "static" {
+		t.Fatalf("annotated meta did not round-trip: %+v", rm)
 	}
 }

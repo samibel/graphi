@@ -79,11 +79,12 @@ func (b *sqliteBatch) init(ctx context.Context) error {
 
 	prep := func(q string) (*sql.Stmt, error) { return tx.PrepareContext(ctx, q) }
 	if b.stmtNodeUpsert, err = prep(`
-INSERT INTO nodes (id, kind, qualified_name, source_path, line, col)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO nodes (id, kind, qualified_name, source_path, line, col, meta)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
 	kind=excluded.kind, qualified_name=excluded.qualified_name,
-	source_path=excluded.source_path, line=excluded.line, col=excluded.col`); err != nil {
+	source_path=excluded.source_path, line=excluded.line, col=excluded.col,
+	meta=excluded.meta`); err != nil {
 		return fmt.Errorf("graphstore: prepare node upsert: %w", err)
 	}
 	if b.stmtEdgeUpsert, err = prep(`
@@ -200,8 +201,12 @@ func (b *sqliteBatch) PutNode(ctx context.Context, n model.Node) error {
 	if b.done {
 		return ErrClosed
 	}
+	metaJSON, err := encodeNodeMeta(n.Meta())
+	if err != nil {
+		return err
+	}
 	if _, err := b.stmtNodeUpsert.ExecContext(ctx,
-		string(n.ID()), n.Kind(), n.QualifiedName(), n.SourcePath(), n.Line(), n.Column()); err != nil {
+		string(n.ID()), n.Kind(), n.QualifiedName(), n.SourcePath(), n.Line(), n.Column(), metaJSON); err != nil {
 		return fmt.Errorf("graphstore: upsert node: %w", err)
 	}
 	if err := b.refreshFTS(ctx, "node", string(n.ID()), n.QualifiedName()); err != nil {

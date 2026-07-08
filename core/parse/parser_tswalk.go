@@ -37,11 +37,12 @@ type cstWalk struct {
 	// default (configurable via SetMaxParseDepth) at newCSTWalk time. 0 = unbounded.
 	maxDepth int
 
-	defKind  map[string]string   // bareName -> Kind (first binding wins)
-	defPos   map[string]TSPoint  // bareName -> definition position
-	defOrder []string            // discovery order
-	funcs    map[string]struct{} // bare names that are callable (function/method)
-	types    map[string]struct{} // bare names that are types
+	defKind  map[string]string         // bareName -> Kind (first binding wins)
+	defPos   map[string]TSPoint        // bareName -> definition position
+	defMeta  map[string]model.NodeMeta // bareName -> non-identity meta (first binding wins)
+	defOrder []string                  // discovery order
+	funcs    map[string]struct{}       // bare names that are callable (function/method)
+	types    map[string]struct{}       // bare names that are types
 
 	edgeSpecs []TSEdgeSpec
 	edgeSeen  map[string]struct{}
@@ -60,6 +61,7 @@ func newCSTWalk(lang *gts.Language, src []byte, pkg string) *cstWalk {
 		maxDepth: maxParseDepth(),
 		defKind:  map[string]string{},
 		defPos:   map[string]TSPoint{},
+		defMeta:  map[string]model.NodeMeta{},
 		funcs:    map[string]struct{}{},
 		types:    map[string]struct{}{},
 		edgeSeen: map[string]struct{}{},
@@ -88,6 +90,20 @@ func (w *cstWalk) addDef(bare, kind string, pos TSPoint) {
 	}
 }
 
+// setDefMeta attaches NON-identity metadata (annotations/flags) to a
+// previously-added definition, keyed by bare name. First non-empty binding wins
+// (mirroring addDef's first-binding-wins), so a later same-named declaration
+// cannot clobber it. A zero meta or unknown bare name is ignored.
+func (w *cstWalk) setDefMeta(bare string, m model.NodeMeta) {
+	if bare == "" || m.IsZero() {
+		return
+	}
+	if _, set := w.defMeta[bare]; set {
+		return
+	}
+	w.defMeta[bare] = m
+}
+
 // guardDepth fail-closes the extract pass against deeply-nested (billion-laughs /
 // stack-overflow) inputs (SW-055 AC#6). It measures the CST nesting depth of root
 // ITERATIVELY (an explicit work stack — it never recurses, so the guard itself
@@ -108,7 +124,7 @@ func (w *cstWalk) nodeSpecs() []TSNodeSpec {
 	entries := make([]entry, 0, len(w.defOrder))
 	for _, bare := range w.defOrder {
 		entries = append(entries, entry{
-			spec: TSNodeSpec{Kind: w.defKind[bare], QualifiedName: w.pkg + "." + bare, Pos: w.defPos[bare]},
+			spec: TSNodeSpec{Kind: w.defKind[bare], QualifiedName: w.pkg + "." + bare, Pos: w.defPos[bare], Meta: w.defMeta[bare]},
 		})
 	}
 	sort.SliceStable(entries, func(i, j int) bool {

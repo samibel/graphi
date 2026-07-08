@@ -56,6 +56,11 @@ type TSNodeSpec struct {
 	// Pos is the 0-based start position used for the node's line/column and the
 	// defines-edge file:line evidence.
 	Pos TSPoint
+	// Meta is the NON-identity metadata rider (annotations/flags) attached to the
+	// minted node via WithMeta. The zero value adds nothing and leaves the node
+	// byte-identical to a pre-meta node, so non-Java extractors that never set it
+	// are unaffected.
+	Meta model.NodeMeta
 }
 
 // TSEdgeSpec describes one resolved intra-file relationship a grammar query proved:
@@ -132,6 +137,9 @@ func MapTreeSitter(filename, language string, nodeSpecs []TSNodeSpec, edgeSpecs 
 		n, err := model.NewNode(spec.Kind, spec.QualifiedName, filename, line, col)
 		if err != nil {
 			return nil, nil, fmt.Errorf("mapping: node %q: %w", spec.QualifiedName, err)
+		}
+		if !spec.Meta.IsZero() {
+			n = n.WithMeta(spec.Meta)
 		}
 		nodes = append(nodes, n)
 		byQN[spec.QualifiedName] = n.ID()

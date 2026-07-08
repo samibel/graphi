@@ -115,7 +115,11 @@ func SQLiteFactory(dir string) (Graphstore, error) {
 //	    the `reasons` dictionary (edges.reason_id); `evidence` stays inline (it is
 //	    per-edge-unique, so interning it does not dedup); and edges are no longer
 //	    full-text indexed in `search` (nodes only).
-const graphstoreSchemaVersion = 2
+//	3 : WP-10 node meta — nodes carry a NON-identity `meta` column (JSON-encoded
+//	    NodeMeta: source annotations + flags). Added non-destructively via ALTER
+//	    TABLE ADD COLUMN (default ''), so a pre-existing nodes table is migrated
+//	    in place rather than re-created.
+const graphstoreSchemaVersion = 3
 
 // initSchema creates the base tables and the (node-only) FTS5 index. Edge
 // provenance is stored compactly: the highly-repetitive `reason` string is
@@ -138,6 +142,11 @@ func (s *SQLiteStore) initSchema(ctx context.Context) error {
 	if err := s.migrateEdgeLayout(ctx); err != nil {
 		return err
 	}
+	// Add the WP-10 `meta` column to a pre-existing nodes table (no-op on a fresh
+	// DB, where the DDL below creates it directly).
+	if err := s.migrateNodeMeta(ctx); err != nil {
+		return err
+	}
 	const ddl = `
 CREATE TABLE IF NOT EXISTS nodes (
 	id             TEXT PRIMARY KEY,
@@ -145,7 +154,10 @@ CREATE TABLE IF NOT EXISTS nodes (
 	qualified_name TEXT NOT NULL,
 	source_path    TEXT NOT NULL,
 	line           INTEGER NOT NULL,
-	col            INTEGER NOT NULL
+	col            INTEGER NOT NULL,
+	-- WP-10: JSON-encoded NON-identity NodeMeta (annotations/flags). Empty string
+	-- means "no metadata". Migrated onto a pre-existing table by migrateNodeMeta.
+	meta           TEXT NOT NULL DEFAULT ''
 );
 -- reasons interns the repetitive edge reason string so millions of
 -- near-identical edges share one dictionary row instead of repeating the text
@@ -250,6 +262,82 @@ func (s *SQLiteStore) migrateEdgeLayout(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// migrateNodeMeta adds the WP-10 `meta` column to a pre-existing nodes table
+// that predates it (built by an older binary). ADD COLUMN with DEFAULT ” is
+// non-destructive: existing node rows keep their identity/content and simply
+// gain an empty-metadata column, which decodes to the zero NodeMeta. A fresh DB
+// (no nodes table) is a no-op — the DDL creates the column directly — and an
+// already-migrated DB (meta present) returns without changes. The ingest
+// warm-start stamp is bumped in lockstep so an upgraded binary re-indexes and
+// repopulates real metadata rather than trusting the empty backfill.
+func (s *SQLiteStore) migrateNodeMeta(ctx context.Context) error {
+	var nodesTables int
+	if err := s.db.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='nodes'").Scan(&nodesTables); err != nil {
+		return fmt.Errorf("graphstore: probe nodes table: %w", err)
+	}
+	if nodesTables == 0 {
+		return nil // fresh DB: the DDL builds the current layout with meta.
+	}
+	rows, err := s.db.QueryContext(ctx, "PRAGMA table_info(nodes)")
+	if err != nil {
+		return fmt.Errorf("graphstore: inspect nodes columns: %w", err)
+	}
+	hasMeta := false
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			rows.Close()
+			return fmt.Errorf("graphstore: scan nodes column: %w", err)
+		}
+		if name == "meta" {
+			hasMeta = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("graphstore: iterate nodes columns: %w", err)
+	}
+	rows.Close()
+	if hasMeta {
+		return nil // already migrated.
+	}
+	if _, err := s.db.ExecContext(ctx, "ALTER TABLE nodes ADD COLUMN meta TEXT NOT NULL DEFAULT ''"); err != nil {
+		return fmt.Errorf("graphstore: add nodes.meta column: %w", err)
+	}
+	return nil
+}
+
+// encodeNodeMeta renders a NodeMeta to its stored JSON form, or "" when the meta
+// is zero (so the common no-metadata node stores an empty string, not "{}").
+func encodeNodeMeta(m model.NodeMeta) (string, error) {
+	if m.IsZero() {
+		return "", nil
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", fmt.Errorf("graphstore: encode node meta: %w", err)
+	}
+	return string(b), nil
+}
+
+// decodeNodeMeta parses stored node meta JSON back into a normalized NodeMeta.
+// An empty string or "{}" (the no-metadata sentinels) decode to the zero value.
+func decodeNodeMeta(s string) (model.NodeMeta, error) {
+	if s == "" || s == "{}" {
+		return model.NodeMeta{}, nil
+	}
+	var m model.NodeMeta
+	if err := json.Unmarshal([]byte(s), &m); err != nil {
+		return model.NodeMeta{}, fmt.Errorf("graphstore: decode node meta: %w", err)
+	}
+	// Re-normalize (sort/dedup) so downstream ordering is deterministic even if
+	// the stored bytes were hand-edited.
+	return model.NewNodeMeta(m.Annotations, m.Flags), nil
 }
 
 // internStringTx get-or-inserts text into the `reasons` dictionary and returns
@@ -516,13 +604,18 @@ func (s *SQLiteStore) assertNodeExists(ctx context.Context, id model.NodeId) err
 }
 
 func upsertNodeTx(ctx context.Context, tx *sql.Tx, n model.Node) error {
+	metaJSON, err := encodeNodeMeta(n.Meta())
+	if err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `
-INSERT INTO nodes (id, kind, qualified_name, source_path, line, col)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO nodes (id, kind, qualified_name, source_path, line, col, meta)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
 	kind=excluded.kind, qualified_name=excluded.qualified_name,
-	source_path=excluded.source_path, line=excluded.line, col=excluded.col`,
-		string(n.ID()), n.Kind(), n.QualifiedName(), n.SourcePath(), n.Line(), n.Column()); err != nil {
+	source_path=excluded.source_path, line=excluded.line, col=excluded.col,
+	meta=excluded.meta`,
+		string(n.ID()), n.Kind(), n.QualifiedName(), n.SourcePath(), n.Line(), n.Column(), metaJSON); err != nil {
 		return fmt.Errorf("graphstore: upsert node: %w", err)
 	}
 	// Refresh FTS row for this node (delete-then-insert keeps it idempotent).
@@ -618,20 +711,27 @@ func (s *SQLiteStore) loadAllFromDB(ctx context.Context) (*memGraph, error) {
 		nodes: make(map[model.NodeId]model.Node),
 		edges: make(map[model.EdgeId]model.Edge),
 	}
-	nrows, err := s.db.QueryContext(ctx, "SELECT kind, qualified_name, source_path, line, col FROM nodes")
+	nrows, err := s.db.QueryContext(ctx, "SELECT kind, qualified_name, source_path, line, col, meta FROM nodes")
 	if err != nil {
 		return nil, fmt.Errorf("graphstore: load nodes: %w", err)
 	}
 	defer nrows.Close()
 	for nrows.Next() {
-		var kind, qn, sp string
+		var kind, qn, sp, metaJSON string
 		var line, col int
-		if err := nrows.Scan(&kind, &qn, &sp, &line, &col); err != nil {
+		if err := nrows.Scan(&kind, &qn, &sp, &line, &col, &metaJSON); err != nil {
 			return nil, fmt.Errorf("graphstore: scan node: %w", err)
 		}
 		n, err := model.NewNode(kind, qn, sp, line, col)
 		if err != nil {
 			return nil, fmt.Errorf("graphstore: reconstruct node: %w", err)
+		}
+		meta, err := decodeNodeMeta(metaJSON)
+		if err != nil {
+			return nil, err
+		}
+		if !meta.IsZero() {
+			n = n.WithMeta(meta)
 		}
 		g.nodes[n.ID()] = n
 	}
@@ -803,7 +903,7 @@ func (s *SQLiteStore) SearchNodes(ctx context.Context, text string, limit int) (
 
 	// rank MATCHes by bm25, then deterministic tie-break.
 	q := `
-SELECT n.kind, n.qualified_name, n.source_path, n.line, n.col, rank
+SELECT n.kind, n.qualified_name, n.source_path, n.line, n.col, n.meta, rank
 FROM search s JOIN nodes n ON s.owner_id = n.id
 WHERE s.owner_kind = 'node' AND s.text MATCH ?
 ORDER BY rank ASC, n.qualified_name ASC, n.id ASC`
@@ -821,15 +921,22 @@ ORDER BY rank ASC, n.qualified_name ASC, n.id ASC`
 
 	out := make([]RankedNode, 0, 64)
 	for rows.Next() {
-		var kind, qn, sp string
+		var kind, qn, sp, metaJSON string
 		var line, col int
 		var rank float64
-		if err := rows.Scan(&kind, &qn, &sp, &line, &col, &rank); err != nil {
+		if err := rows.Scan(&kind, &qn, &sp, &line, &col, &metaJSON, &rank); err != nil {
 			return nil, fmt.Errorf("graphstore: scan ranked node: %w", err)
 		}
 		n, err := model.NewNode(kind, qn, sp, line, col)
 		if err != nil {
 			return nil, fmt.Errorf("graphstore: reconstruct ranked node: %w", err)
+		}
+		meta, err := decodeNodeMeta(metaJSON)
+		if err != nil {
+			return nil, err
+		}
+		if !meta.IsZero() {
+			n = n.WithMeta(meta)
 		}
 		out = append(out, RankedNode{Node: n, Rank: rank})
 	}

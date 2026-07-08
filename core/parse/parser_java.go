@@ -3,6 +3,7 @@ package parse
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	gts "github.com/odvcencio/gotreesitter"
 	"github.com/odvcencio/gotreesitter/grammars"
@@ -107,7 +108,7 @@ func (e *javaSymbolExtractor) Extract(filename string, root any) ([]model.Node, 
 	if derr := w.guardDepth(t.root, filename, "java"); derr != nil {
 		return nil, nil, nil, derr
 	}
-	javaCollectDefs(w, t.root)
+	javaCollectDefs(w, t.root, filename)
 	javaResolveUses(w, t.root)
 	nodes, edges, pending, err := w.finishExtract(filename, "java")
 	if err != nil {
@@ -152,7 +153,7 @@ func javaPackagePath(t *javaAST) string {
 	return ""
 }
 
-func javaCollectDefs(w *cstWalk, program *gts.Node) {
+func javaCollectDefs(w *cstWalk, program *gts.Node, filename string) {
 	for i := 0; i < program.ChildCount(); i++ {
 		c := program.Child(i)
 		if c == nil {
@@ -161,24 +162,111 @@ func javaCollectDefs(w *cstWalk, program *gts.Node) {
 		switch c.Type(w.lang) {
 		case "class_declaration", "interface_declaration", "enum_declaration":
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
-				w.addDef(name.Text(w.src), KindType, nodePoint(name))
+				bare := name.Text(w.src)
+				w.addDef(bare, KindType, nodePoint(name))
+				// WP-10: attach the declaration's annotations/flags (e.g. a
+				// @Configuration or @RestController class) as non-identity meta.
+				w.setDefMeta(bare, javaDeclMeta(w, c, bare, filename, false))
 			}
 			if body := c.ChildByFieldName("body", w.lang); body != nil {
-				javaCollectMethods(w, body)
+				javaCollectMethods(w, body, filename)
 			}
 		}
 	}
 }
 
-func javaCollectMethods(w *cstWalk, body *gts.Node) {
+func javaCollectMethods(w *cstWalk, body *gts.Node, filename string) {
 	for i := 0; i < body.ChildCount(); i++ {
 		c := body.Child(i)
 		if c != nil && c.Type(w.lang) == "method_declaration" {
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
-				w.addDef(name.Text(w.src), KindMethod, nodePoint(name))
+				bare := name.Text(w.src)
+				w.addDef(bare, KindMethod, nodePoint(name))
+				// WP-10: attach method annotations (@Test/@Bean/@Override/…), the
+				// static flag, and the main-signature flag as non-identity meta.
+				w.setDefMeta(bare, javaDeclMeta(w, c, bare, filename, true))
 			}
 		}
 	}
+}
+
+// javaDeclMeta derives the NON-identity NodeMeta for a class/method declaration:
+// its annotation NAMES and the `static` flag from the `modifiers` child, plus a
+// `main` flag for a static `main` method and a `test_path` flag when the file
+// sits on a Java test path. NewNodeMeta sorts+dedups so the result is
+// deterministic and a pure function of the source.
+func javaDeclMeta(w *cstWalk, decl *gts.Node, bareName, filename string, isMethod bool) model.NodeMeta {
+	var annotations, flags []string
+	static := false
+	if mods := childByType(decl, "modifiers", w.lang); mods != nil {
+		for i := 0; i < mods.ChildCount(); i++ {
+			m := mods.Child(i)
+			if m == nil {
+				continue
+			}
+			switch m.Type(w.lang) {
+			case "marker_annotation", "annotation":
+				if name := javaAnnotationName(w, m); name != "" {
+					annotations = append(annotations, name)
+				}
+			default:
+				if m.Text(w.src) == "static" {
+					static = true
+				}
+			}
+		}
+	}
+	if static {
+		flags = append(flags, "static")
+	}
+	// `public static void main(String[])`: name main + static is a program entry.
+	if isMethod && bareName == "main" && static {
+		flags = append(flags, "main")
+	}
+	if javaIsTestPath(filename) {
+		flags = append(flags, "test_path")
+	}
+	return model.NewNodeMeta(annotations, flags)
+}
+
+// javaAnnotationName extracts the bare annotation identifier (the token after
+// '@') from a marker_annotation / annotation node — the trailing segment of a
+// scoped name (`org.junit.Test` → "Test"). Returns "" when no name resolves.
+func javaAnnotationName(w *cstWalk, ann *gts.Node) string {
+	nameNode := ann.ChildByFieldName("name", w.lang)
+	if nameNode == nil {
+		for i := 0; i < ann.ChildCount(); i++ {
+			c := ann.Child(i)
+			if c == nil {
+				continue
+			}
+			if t := c.Type(w.lang); t == "identifier" || t == "scoped_identifier" {
+				nameNode = c
+				break
+			}
+		}
+	}
+	if nameNode == nil {
+		return ""
+	}
+	text := nameNode.Text(w.src)
+	if idx := strings.LastIndex(text, "."); idx >= 0 {
+		text = text[idx+1:]
+	}
+	return strings.TrimSpace(text)
+}
+
+// javaIsTestPath reports whether a Java source path follows a test convention:
+// a `src/test/` directory, or a `*Test.java` / `*Tests.java` file name.
+func javaIsTestPath(p string) bool {
+	if strings.Contains(p, "src/test/") {
+		return true
+	}
+	base := p
+	if i := strings.LastIndex(p, "/"); i >= 0 {
+		base = p[i+1:]
+	}
+	return strings.HasSuffix(base, "Test.java") || strings.HasSuffix(base, "Tests.java")
 }
 
 func javaResolveUses(w *cstWalk, program *gts.Node) {

@@ -1,7 +1,9 @@
 id: signal-external-imports-aggregated
 description: >
-  Repeated unresolved external imports collapse to one representative with an
-  occurrence count; the rest are tagged aggregated (visible under --all).
+  Repeated unresolved references to the same external target collapse to a
+  single diagnostic carrying an occurrence count and merged evidence. WP-12
+  performs this aggregation in the analyzer (one finding per target), so no
+  per-edge duplicates reach the output even under --all.
 fixture_ref: synthetic-signal
 area: signal
 operation:
@@ -18,5 +20,5 @@ expect:
       value: "occ=2"
       match: contains
     - kind: symbol
-      value: "suppressed aggregated_external_import=1"
+      value: "suppression= occ=2"
       match: contains

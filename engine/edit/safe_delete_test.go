@@ -21,6 +21,40 @@ func putEdge(t *testing.T, store interface {
 	}
 }
 
+// TestApplySafeDelete_BlockEntryPoint is the WP-11 correctness guard: a live
+// framework entry point (here a @Bean method) with ZERO in-graph inbound
+// references must NOT be deletable — the framework invokes it by reflection,
+// which the static graph cannot see, so removing it would break the build.
+func TestApplySafeDelete_BlockEntryPoint(t *testing.T) {
+	a, store, _ := newInlineApplier(t, map[string]string{"app/App.java": "class App { }\n"})
+	ctx := context.Background()
+
+	bean, err := model.NewNode("method", "app.dataSource", "app/App.java", 1, 1)
+	if err != nil {
+		t.Fatalf("NewNode: %v", err)
+	}
+	bean = bean.WithMeta(model.NewNodeMeta([]string{"Bean"}, nil))
+	if err := store.PutNode(ctx, bean); err != nil {
+		t.Fatalf("PutNode: %v", err)
+	}
+
+	// No inbound edges at all: without the entry-point guard the gate would clear
+	// and delete a live Spring bean.
+	res, err := a.ApplySafeDelete(ctx, SafeDeleteOp{TargetSymbol: string(bean.ID())})
+	if err != nil {
+		t.Fatalf("ApplySafeDelete: %v", err)
+	}
+	if res.Outcome != SafeDeleteBlocked {
+		t.Fatalf("outcome = %q, want blocked (a live @Bean must not be deletable)", res.Outcome)
+	}
+	if len(res.BlockingRefs) != 1 || res.BlockingRefs[0].Reason != ReasonEntrypoint {
+		t.Fatalf("want 1 entrypoint blocking ref, got %+v", res.BlockingRefs)
+	}
+	if res.BlockingRefs[0].Symbol != bean.ID() {
+		t.Fatalf("entrypoint blocking ref should point at the target itself, got %+v", res.BlockingRefs[0])
+	}
+}
+
 func TestApplySafeDelete_BlockLiveReference(t *testing.T) {
 	a, store, _ := newInlineApplier(t, map[string]string{"a.go": "const Foo = 42\n", "b.go": "use Foo\n"})
 	ctx := context.Background()

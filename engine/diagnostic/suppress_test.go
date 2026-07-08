@@ -149,23 +149,26 @@ func TestSuppression_ExternalImportAggregation(t *testing.T) {
 	if res.Diagnostics[0].OccurrenceCount != 3 {
 		t.Fatalf("expected occurrence count 3, got %d", res.Diagnostics[0].OccurrenceCount)
 	}
-	if res.Summary.SuppressedByCategory["aggregated_external_import"] != 2 {
-		t.Fatalf("expected 2 aggregated_external_import suppressions, got %+v", res.Summary)
+	// WP-12: the analyzer emits ONE diagnostic per target (count 3, merged
+	// evidence), so the suppression-stage aggregated_external_import category is
+	// not exercised and there are no separately-withheld members.
+	if res.Summary.SuppressedByCategory["aggregated_external_import"] != 0 {
+		t.Fatalf("expected 0 aggregated_external_import suppressions (analyzer aggregates), got %+v", res.Summary)
 	}
 	if res.Summary.TotalWithheld != 0 {
-		t.Fatalf("with --confidence heuristic all 3 underlying are represented by the rep, so TotalWithheld should be 0, got %+v", res.Summary)
-	}
-	if res.Summary.SuppressedByCategory["aggregated_external_import"] != 2 {
-		t.Fatalf("expected 2 aggregated_external_import suppressions, got %+v", res.Summary)
+		t.Fatalf("all 3 underlying references are represented by the single aggregate, so TotalWithheld should be 0, got %+v", res.Summary)
 	}
 
-	// --all shows all 3: 1 representative + 2 suppressed.
+	// --all shows the single aggregated diagnostic (count 3), not per-edge rows.
 	resAll, err := DiagnoseWithOptions(ctx, store, []string{KindUnresolvedRef}, DiagnoseOptions{All: true})
 	if err != nil {
 		t.Fatalf("DiagnoseWithOptions: %v", err)
 	}
-	if len(resAll.Diagnostics) != 3 {
-		t.Fatalf("--all should show 3 diagnostics, got %d", len(resAll.Diagnostics))
+	if len(resAll.Diagnostics) != 1 {
+		t.Fatalf("--all should show 1 aggregated diagnostic, got %d", len(resAll.Diagnostics))
+	}
+	if resAll.Diagnostics[0].OccurrenceCount != 3 {
+		t.Fatalf("--all aggregate should carry occurrence count 3, got %d", resAll.Diagnostics[0].OccurrenceCount)
 	}
 }
 

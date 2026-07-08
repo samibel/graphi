@@ -42,7 +42,11 @@ import (
 //	    .gradle/dist are pruned by default (opt out with GRAPHI_INDEX_ALL), which
 //	    changes the DEFAULT set of indexed files, so a store indexed by an older
 //	    (index-everything) binary must re-index under the new default scope.
-const ingestSemanticsVersion = "6"
+//	7 : WP-10 node meta — the Java extractor attaches NON-identity NodeMeta
+//	    (annotations/flags) to declaration nodes, persisted in the new nodes.meta
+//	    column. Node CONTENT changes for annotated Java symbols, so a store built
+//	    by an older binary must re-index to populate real metadata.
+const ingestSemanticsVersion = "7"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
