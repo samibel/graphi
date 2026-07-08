@@ -96,6 +96,16 @@ type PendingRef struct {
 	// Selector reports whether the reference was a selector expression
 	// (alias.Name / recv.Method) versus a bare identifier.
 	Selector bool
+	// ReceiverType is the syntactically-resolved "<importPath>.<TypeName>" of a
+	// selector call's receiver variable when its declared type is known from the
+	// AST (a function/method parameter or method receiver typed as `[*]alias.T`
+	// with alias in the file's imports), e.g. "database/sql.DB" for a `db *sql.DB`
+	// parameter. It is empty when the receiver type is not syntactically known
+	// (short-var-decls, composite types, same-package bare-ident types, chained
+	// selectors). The linker uses it to mint a PRECISE external method node
+	// ("database/sql.DB.Query") that config sinks can match; without it the call
+	// stays an honest skip. Only populated for selector call refs (Kind=="calls").
+	ReceiverType string
 }
 
 // ImportSpec is one import declaration: the local alias (empty for the default

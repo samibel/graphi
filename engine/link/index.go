@@ -181,6 +181,22 @@ func (idx *SymbolIndex) sameDir(dir, name string) (model.NodeId, bool) {
 	return id, ok
 }
 
+// hasPackage reports whether the repo contains an INTERNAL package for the given
+// import path, using the SAME clause (last-path-segment) basis crossPackage and
+// packageFileNodes resolve on: byClause[path.Base(importPath)] is non-empty. The
+// receiver-type external-minting path (resolve_go.go drop-point 2) uses this to
+// avoid materializing an external node for a receiver whose type belongs to a
+// package committed in the repo — an internal method call is resolved (or honestly
+// skipped) through the normal paths, never minted as `external`. Erring toward
+// "internal" on a clause collision (e.g. a repo package sharing a stdlib clause)
+// is the SAFE direction: it suppresses an external node rather than flooding.
+func (idx *SymbolIndex) hasPackage(importPath string) bool {
+	if importPath == "" {
+		return false
+	}
+	return len(idx.byClause[path.Base(importPath)]) > 0
+}
+
 // crossPackage resolves a selector (importPath, name) to a NodeId. The import
 // path maps to a package clause via its last segment; the symbol is then looked
 // up in every directory declaring that clause. A unique hit resolves; zero or

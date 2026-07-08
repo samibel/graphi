@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"path"
+	"strconv"
 
 	"github.com/samibel/graphi/core/model"
 )
@@ -61,12 +63,13 @@ const (
 // boundary and the byte-identical full-vs-incremental invariant.
 func extractGo(filename, pkg string, fset *token.FileSet, file *ast.File) ([]model.Node, []model.Edge, []PendingRef, error) {
 	ex := &goExtractor{
-		filename: filename,
-		pkg:      pkg,
-		fset:     fset,
-		funcs:    map[string]model.NodeId{},
-		symbols:  map[string]model.NodeId{},
-		edgeSeen: map[model.EdgeId]struct{}{},
+		filename:    filename,
+		pkg:         pkg,
+		fset:        fset,
+		funcs:       map[string]model.NodeId{},
+		symbols:     map[string]model.NodeId{},
+		edgeSeen:    map[model.EdgeId]struct{}{},
+		aliasToPath: goAliasToPath(file),
 	}
 
 	fileNode, err := model.NewNode(goKindFile, filename, filename, 1, 1)
@@ -126,6 +129,18 @@ type goExtractor struct {
 	qnByDecl map[*ast.FuncDecl]string
 
 	edgeSeen map[model.EdgeId]struct{}
+
+	// aliasToPath maps a file import alias to its import path (dot/blank imports
+	// excluded), reused to resolve a receiver variable's declared type expression
+	// (`sql` → "database/sql") into an interned external-method qualified name.
+	aliasToPath map[string]string
+	// recvTypes maps the receiver-var name to its syntactically-resolved
+	// "<importPath>.<TypeName>" for the function CURRENTLY being walked by
+	// resolveBody (parameters + method receiver). It is rebuilt per function and
+	// consulted by addPending to stamp a selector call's ReceiverType. It is nil
+	// outside a body walk (e.g. during declare/recordEmbeds), where a nil-map read
+	// safely yields "".
+	recvTypes map[string]string
 
 	// pending accumulates deferred references the linker resolves later. It is
 	// deduplicated by logical reference identity so repeated call sites collapse;
@@ -248,6 +263,11 @@ func (e *goExtractor) resolveBody(from model.NodeId, fromQN string, fn *ast.Func
 			err = fmt.Errorf("extract: recovered from panic resolving %q body: %v", fromQN, r)
 		}
 	}()
+	// Build the receiver-type table for THIS function so selector calls on a
+	// typed parameter / method receiver (e.g. `db.Query(...)` with `db *sql.DB`)
+	// carry the receiver's fully-qualified type for the linker to mint a precise
+	// external method node. Rebuilt per function; consulted by addPending.
+	e.recvTypes = e.receiverTypes(fn)
 	var outErr error
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		if outErr != nil {
@@ -404,6 +424,15 @@ func (e *goExtractor) addPending(fromQN, base, name, kind string, line int, sele
 		return
 	}
 	e.pendingSeen[key] = struct{}{}
+	// Stamp the syntactically-known receiver type for a selector CALL whose base is
+	// a typed receiver variable (parameter / method receiver). Restricted to calls
+	// (method sinks); field references and non-selector refs never carry it. The
+	// dedup key already includes base, and recvTypes is fixed per function, so the
+	// stamped type is consistent across a collapsed ref's call sites (determinism).
+	recvType := ""
+	if selector && kind == goEdgeCalls && base != "" {
+		recvType = e.recvTypes[base]
+	}
 	e.pending = append(e.pending, PendingRef{
 		FromQN:       fromQN,
 		Name:         name,
@@ -411,6 +440,7 @@ func (e *goExtractor) addPending(fromQN, base, name, kind string, line int, sele
 		Kind:         kind,
 		Line:         line,
 		Selector:     selector,
+		ReceiverType: recvType,
 	})
 }
 
@@ -493,6 +523,97 @@ func embedName(t ast.Expr) (base, name string, selector, ok bool) {
 		}
 	}
 	return "", "", false, false
+}
+
+// receiverTypes maps a function's receiver-var names (method receiver + explicit
+// parameters) to their syntactically-resolved "<importPath>.<TypeName>" when the
+// declared type is a plain `[*]alias.TypeName` with alias in the file's imports.
+// Anything else (same-package bare-ident types, composite types, unresolvable
+// aliases) is skipped — no guessing. This is the SYNTACTIC receiver-type
+// inference the linker needs to mint precise external method nodes offline (the
+// engine's go/types pass uses empty stub packages and cannot resolve these).
+func (e *goExtractor) receiverTypes(fn *ast.FuncDecl) map[string]string {
+	m := map[string]string{}
+	add := func(names []*ast.Ident, typ ast.Expr) {
+		ref, ok := e.typeRef(typ)
+		if !ok {
+			return
+		}
+		for _, nm := range names {
+			if nm == nil || nm.Name == "" || nm.Name == "_" {
+				continue
+			}
+			m[nm.Name] = ref
+		}
+	}
+	if fn.Recv != nil {
+		for _, f := range fn.Recv.List {
+			add(f.Names, f.Type)
+		}
+	}
+	if fn.Type != nil && fn.Type.Params != nil {
+		for _, f := range fn.Type.Params.List {
+			add(f.Names, f.Type)
+		}
+	}
+	return m
+}
+
+// typeRef reduces a type expression to "<importPath>.<TypeName>" when it is a
+// plain `[*]alias.TypeName` whose alias binds to a file import (e.g. `*sql.DB`
+// with `import "database/sql"` → "database/sql.DB"). It deliberately returns
+// ok=false for a bare *ast.Ident (a same-package type — internal, resolved
+// elsewhere) and any composite/complex shape (maps, slices, channels, func
+// types, chained selectors), keeping receiver-type inference precise.
+func (e *goExtractor) typeRef(expr ast.Expr) (string, bool) {
+	if star, ok := expr.(*ast.StarExpr); ok {
+		expr = star.X
+	}
+	sel, ok := expr.(*ast.SelectorExpr)
+	if !ok {
+		return "", false
+	}
+	id, ok := sel.X.(*ast.Ident)
+	if !ok {
+		return "", false
+	}
+	impPath, ok := e.aliasToPath[id.Name]
+	if !ok {
+		return "", false
+	}
+	return impPath + "." + sel.Sel.Name, true
+}
+
+// goAliasToPath builds the file's import alias → import path map, mirroring the
+// linker's own alias resolution: an unaliased import binds to the last segment of
+// its path; dot ("."), blank ("_") imports are excluded (they never qualify a
+// selector). Used to resolve a receiver variable's declared type package.
+func goAliasToPath(file *ast.File) map[string]string {
+	out := map[string]string{}
+	for _, imp := range file.Imports {
+		if imp == nil || imp.Path == nil {
+			continue
+		}
+		p, err := strconv.Unquote(imp.Path.Value)
+		if err != nil {
+			continue
+		}
+		if p == "" {
+			continue
+		}
+		alias := ""
+		if imp.Name != nil {
+			alias = imp.Name.Name
+		}
+		switch alias {
+		case ".", "_":
+			continue
+		case "":
+			alias = path.Base(p)
+		}
+		out[alias] = p
+	}
+	return out
 }
 
 // selectorBase returns the leading qualifier of a selector's X expression when

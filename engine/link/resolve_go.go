@@ -3,6 +3,7 @@ package link
 import (
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/samibel/graphi/core/model"
 )
@@ -134,20 +135,44 @@ func (goResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 		}
 		// A selector whose base is NOT an import alias and whose receiver-method
 		// attempt missed is a receiver-qualified access on a value whose TYPE is
-		// unknown here: a local-var field/method (`res.Nodes`, `e.tier`, `a.From`,
-		// `db.Query`) or a chained selector (base == ""). WP-03 deliberately does NOT
-		// materialize these as `external` nodes:
-		//   - PRECISION: on real code the overwhelming majority are local-var accesses,
-		//     NOT external symbols — minting them floods the graph with mislabeled
-		//     nodes (measured ~55% phantom on engine/query).
-		//   - VALUE: the best-effort QN (`db.Query`) cannot recover the receiver type,
-		//     so it never matches a config sink keyed on the fully-qualified stdlib
-		//     name (`database/sql.DB.Query`) — zero taint value today.
-		// Receiver-qualified external targets are DEFERRED to WP-05, which will use
-		// receiver-type inference to make them BOTH precise (no local-var false
-		// positives) AND useful (emit `database/sql.DB.Query` that matches config).
-		// Until then this is an honest skip. (Drop-point 1 above — the import-alias
-		// selector miss, where the import path IS known — stays; its QN is exact.)
+		// often unknown here: a local-var field/method (`res.Nodes`, `e.tier`,
+		// `a.From`) or a chained selector (base == ""). These are NOT materialized as
+		// `external` nodes (untyped): on real code most are local-var accesses, and a
+		// best-effort QN (`db.Query`) cannot recover the receiver type, so it never
+		// matches a config sink keyed on the fully-qualified stdlib name — minting
+		// them floods the graph with mislabeled nodes (measured ~55% phantom on
+		// engine/query) for zero taint value.
+		//
+		// Receiver-qualified external targets (WP-05b-1): when the extractor
+		// SYNTACTICALLY inferred the receiver's declared type (a `db *sql.DB`
+		// parameter / method receiver typed `[*]alias.T`), p.ReceiverType holds the
+		// fully-qualified type ("database/sql.DB"). If that type's package is NOT in
+		// the repo (the stdlib / 3rd-party case), mint a PRECISE external method node
+		// keyed "<ReceiverType>.<method>" (e.g. "database/sql.DB.Query") so config
+		// sinks match. This is type-guarded, so it does NOT reintroduce the WP-03
+		// flood: an internal-package or unknown-typed receiver produces no node.
+		if p.ReceiverType != "" {
+			ti := strings.LastIndexByte(p.ReceiverType, '.')
+			impPath := ""
+			if ti > 0 {
+				impPath = p.ReceiverType[:ti]
+			}
+			if impPath != "" && !idx.hasPackage(impPath) {
+				out = append(out, intent{
+					from: from, toExternalQN: p.ReceiverType + "." + p.Name, kind: p.Kind, class: classSelector,
+					reason:   "external method call on typed receiver (" + p.ReceiverType + ")",
+					evidence: ev,
+				})
+				st.ResolvedExternal++
+				continue
+			}
+			// Internal-package receiver type: a real internal match wins / honest skip
+			// — never mint external for a type committed in the repo.
+		}
+		// Otherwise: a receiver-qualified access on a value whose type is unknown
+		// here (local-var field/method, chained selector) — an honest skip.
+		// (Drop-point 1 above — the import-alias selector miss, where the import path
+		// IS known — stays; its QN is exact.)
 		st.Skipped++
 	}
 

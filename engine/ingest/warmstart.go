@@ -27,7 +27,12 @@ import (
 //	    heuristic calls/references edges (previously dropped). The committed
 //	    node/edge set changes for every Go repo, so an older store must
 //	    re-index rather than warm-start.
-const ingestSemanticsVersion = "3"
+//	4 : WP-05b-1 — the Go linker mints PRECISE external METHOD nodes for
+//	    selector calls on a syntactically-typed receiver (`db.Query` with
+//	    `db *sql.DB` → "database/sql.DB.Query"), where WP-03 honestly skipped
+//	    them. New committed external node/edge content for Go repos with typed
+//	    receivers, so an older store must re-index rather than warm-start.
+const ingestSemanticsVersion = "4"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
