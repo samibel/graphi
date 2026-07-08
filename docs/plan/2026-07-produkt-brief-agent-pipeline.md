@@ -276,12 +276,27 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
 
 #### Phase 4 — M4/M5: Config, Meta-Modell, Diagnose entlärmen
 
-**WP-09 · Taint-Config-Loader** `[∥ nach WP-05]`
-- **Kern:** `LoadTaintConfig(path)` für projektspezifische Sources/Sinks/
-  Sanitizer (Structs sind bereits JSON-getaggt, `config.go:13-62`); Suchpfad
-  `.graphi/taint.json`, Merge über Defaults, Anschluss in `dispatch.go:72,119`.
-- **Gate:** ein Custom-Sink aus `.graphi/taint.json` erzeugt ein Finding, das
-  ohne Config fehlt.
+**WP-09 · Taint-Config-Loader** `[∥ nach WP-05]` — ✅ erledigt
+- **Kern:** `taint.LoadConfig(root)` (`engine/analysis/taint/load.go`) liest
+  `<root>/.graphi/taint.json`, mergt projektspezifische Sources/Sinks/Sanitizer
+  per ID über die Defaults (gleiche ID ⇒ ersetzt/deaktiviert, neue ID ⇒
+  angehängt) und stempelt einen deterministischen `ContentHash`. Fehlt die
+  Datei, bleibt `DefaultConfig` **unverändert** (Byte-Parität); eine defekte
+  Datei lässt den Index **fail-closed** scheitern statt still auf Defaults
+  zurückzufallen.
+- **Anschluss:** nicht am Dispatch-Solver (der läuft über einen Store ohne
+  Repo-Root und wird einmalig mit `DefaultConfig` registriert), sondern am
+  **realen surfaced Pfad** — der Ingest-Intra-Proc-Analyse
+  (`engine/ingest/intraproctaint.go`, `intraProcTaintConfig(root)`), deren
+  persistierte Findings `graphi analyze taint` über `readIntraProcTaintFlows`
+  einliest. Der Config-Fingerprint fließt in den Warm-Start-Stamp
+  (`ignore.go:semanticsStamp` + `taint.ConfigFingerprint`), damit ein
+  Hinzufügen/Ändern der Config genau einmal kalt neu indiziert.
+- **Gate:** `TestTaintConfig_CustomSinkChangesFindings` — ein Custom-Sink
+  (`render.HTML`) erzeugt genau ein persistiertes Finding, das ohne Config
+  fehlt; `TestTaintConfig_MalformedFailsIngest` (fail-closed);
+  `TestTaintConfig_WarmStartInvalidatedByConfig` (Stamp); `TestLoadConfig_*`
+  (Merge/Override/Hash/Validierung).
 - **Abhängigkeiten:** WP-05.
 
 **WP-10 · Annotations/Modifier ins Modell (gemeinsames Fundament)**
