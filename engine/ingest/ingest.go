@@ -699,7 +699,10 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 				fileRefs = append(fileRefs, *fr)
 			}
 		}
-		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseLink, Done: len(units), Total: len(units)})
+		// WP-02: link-phase START marker. Done=0 with the honest denominator (files
+		// that carry cross-file refs); linkFiles then emits climbing-Done events as
+		// each batch resolves, so the PhaseLink Done stream is monotonic 0→Total.
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseLink, Total: len(fileRefs)})
 
 		// Purge any prior node no longer produced by this pass (deleted files,
 		// or renamed symbols on a reused store). DeleteNode cascades incident
@@ -742,7 +745,9 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			return err
 		}
 		open = linkBatch
-		if _, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges); err != nil {
+		if _, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges, func(ev ProgressEvent) {
+			i.notifyProgress(ctx, ev)
+		}); err != nil {
 			return err
 		}
 		open = nil
@@ -1121,7 +1126,10 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			return err
 		}
 		open = linkBatch
-		linkEdgeIDs, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges)
+		// WP-02: the incremental path threads its own scoped `prog` (nil for
+		// background passes), so linkFiles emits climbing-Done link progress on the
+		// warm-start path too without ever leaking through the stored callback.
+		linkEdgeIDs, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges, prog)
 		if err != nil {
 			return err
 		}
@@ -1767,7 +1775,16 @@ func posixDir(p string) string {
 //
 // It returns the committed cross-file edge IDs so the incremental path can record
 // edit provenance for them.
-func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}) ([]string, error) {
+// linkProgressBatchSize bounds how many files each linker Link call processes
+// before linkFiles emits a PhaseLink progress event (WP-02). Grouping/iteration
+// order does not affect the committed edge set — construct merges intents by
+// content-derived (from,to,kind) and every edge's From is owned by exactly one
+// source file, so sub-batching the per-language file list yields a byte-identical
+// node/edge set while turning the link phase from one silent block into a stream
+// of climbing-Done events on a large repo.
+const linkProgressBatchSize = 64
+
+func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}, progress func(ProgressEvent)) ([]string, error) {
 	// Nothing reprocessed: no nodes to sweep stale edges from and nothing to
 	// re-link. (BLOCK-2: gating on ownedNodeIDs, NOT fileRefs — an edit that
 	// removes the LAST cross-file ref leaves fileRefs empty yet still owns
@@ -1784,6 +1801,8 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	}
 
 	// Remove stale from-owned linker edges before re-linking.
+	// WP-08 (deferred): decouple this stale-edge sweep from the full-edge read —
+	// scanning every committed edge to find from-owned ones is O(edges) per pass.
 	allEdges, err := i.store.Edges(ctx, graphstore.Query{})
 	if err != nil {
 		return nil, fmt.Errorf("ingest: link read edges: %w", err)
@@ -1841,10 +1860,20 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	// standalone post-commit sweepOrphanExternalNodes pass. Stats are aggregated
 	// for the ingest summary.
 	var linkStats link.Stats
-	for _, lang := range langs {
-		extNodes, edges, st, err := i.linker.Link(lang, byLang[lang], idx)
+	// WP-02: link progress. Total is the honest count of files with cross-file
+	// refs (the files the linker actually processes); Done climbs by batch as each
+	// sub-group of files is resolved and committed, so a large repo shows real
+	// link progress instead of a single event bracketed by clock heartbeats.
+	total := len(fileRefs)
+	done := 0
+	// commit resolves and commits ONE sub-batch of files. Splitting a language's
+	// files into batches is byte-safe: construct keys edges by content-derived
+	// (from,to,kind), every edge's From is owned by exactly one file (so no edge
+	// crosses a batch boundary), and minted external nodes upsert idempotently.
+	commit := func(lang string, files []link.FileRefs) error {
+		extNodes, edges, st, err := i.linker.Link(lang, files, idx)
 		if err != nil {
-			return nil, fmt.Errorf("ingest: link %s: %w", lang, err)
+			return fmt.Errorf("ingest: link %s: %w", lang, err)
 		}
 		linkStats.ResolvedDerived += st.ResolvedDerived
 		linkStats.ResolvedHeuristic += st.ResolvedHeuristic
@@ -1853,7 +1882,7 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 		linkStats.Ambiguous += st.Ambiguous
 		for _, n := range extNodes {
 			if err := w.PutNode(ctx, n); err != nil {
-				return nil, fmt.Errorf("ingest: link put external node %s: %w", n.ID(), err)
+				return fmt.Errorf("ingest: link put external node %s: %w", n.ID(), err)
 			}
 		}
 		for _, e := range edges {
@@ -1869,10 +1898,29 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 					continue
 				}
 			}
+			// WP-08 (deferred): chunk this edge commit into ~50k-edge durable
+			// transactions instead of accumulating the whole pass in one batch.
 			if err := w.PutEdge(ctx, e); err != nil {
-				return nil, fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
+				return fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
 			}
 			edgeIDs = append(edgeIDs, string(e.ID()))
+		}
+		return nil
+	}
+	for _, lang := range langs {
+		files := byLang[lang]
+		for start := 0; start < len(files); start += linkProgressBatchSize {
+			end := start + linkProgressBatchSize
+			if end > len(files) {
+				end = len(files)
+			}
+			if err := commit(lang, files[start:end]); err != nil {
+				return nil, err
+			}
+			done += end - start
+			if progress != nil {
+				progress(ProgressEvent{Phase: PhaseLink, Done: done, Total: total})
+			}
 		}
 	}
 

@@ -20,7 +20,7 @@ gate is a passing test.
 | 2 | Edges/node ratio (Java fan-out) | 15.56 → **0.96** ✅ ARMED | < 8 (≈ < 500k on real repo) | `budgetArmed` (=true) | WP-01 | `engine/ingest/fanout_bench_test.go` |
 | 3 | DB size (real monorepo) | 2.3 GB | < 300 MB | *(fixture pending)* | WP-06/WP-08 | `bench/` (on-disk store) |
 | 4 | Full index time | 4m48s | < 90s | *(fixture pending)* | WP-08 | `bench/bench-budget.yml` |
-| 5 | Link progress interval | minutes of silence | < 2s between events | *(gate pending)* | WP-02 | `engine/ingest` progress path |
+| 5 | Link progress interval | minutes of silence → **≥2 incremental events, Done↑** ✅ ARMED | < 2s between events | inherent (≥2 PhaseLink events, Done increasing) | WP-02 | `engine/ingest/link_progress_test.go` |
 | 6 | dead_symbol false positives (@Test/@Bean/main) | "very many" | 0 as warning | *(gate pending)* | WP-11 | `engine/diagnostic` |
 | 7 | unresolved_reference diagnostics | O(edges) | 1 per external target | *(gate pending)* | WP-12 | `engine/diagnostic` |
 
@@ -39,6 +39,7 @@ go test ./engine/ingest/ -run 'TestTaintE2E_VulnGoRecall|TestLinkFanout' -v
 
 - `TestTaintE2E_VulnGoRecall` → `[RED GATE WP-05] vuln-go taint: recall=0/4, false_positives=0, findings=0, armed=false`
 - `TestLinkFanout_EdgeExplosionBudget` → `[RED GATE WP-08] java fan-out: nodes=416, edges=400, edges/node=0.96, budget=8.00, armed=true` (WP-01 collapsed the import fan-out to a single file→package edge; the gate is now ARMED and enforces the sub-8 budget)
+- `TestLinkProgress_Incremental` → `[GATE WP-02] link phase emitted 5 PhaseLink events; Done sequence: 0/200->64/200->128/200->192/200->200/200` (WP-02 made link progress real: linkFiles emits a PhaseLink event per batch of files linked, so the phase is a stream of strictly-increasing Done toward a non-zero Total instead of one silent block. ARMED — the gate hard-fails if link regresses to < 2 incremental events. The event-count + increasing-Done is the deterministic stand-in for the "< 2s between events" target; wall-clock timing is deliberately not asserted.)
 
 Gate 1 PASSES green while disarmed. Gate 2 was RED (15.56) until WP-01 replaced
 the Java/Kotlin file→file import fan-out with one file→package edge to an

@@ -53,6 +53,14 @@ type SymbolIndex struct {
 	// Package nodes are recorded here ONLY — they are deliberately kept out of
 	// byDir/byClause/clauseByDir so they never pollute symbol resolution.
 	packageNodeByPath map[string]model.NodeId
+
+	// methodDirs is the receiverMethod reverse index (WP-02): a method's bare
+	// name → the directories whose same-clause table declares that bare name
+	// (i.e. exactly the dirs for which uniqueMethodInDir can succeed). It lets
+	// receiverMethod consult only the candidate dirs for a given method instead
+	// of scanning every directory in byDir per unresolved recv.method call — an
+	// O(dirs)→O(candidates) win that changes NO resolution semantics.
+	methodDirs map[string][]string
 }
 
 // fileKind / the qualified-name shape are mirrored from the Go extractor:
@@ -86,6 +94,7 @@ func BuildIndex(nodes []model.Node) *SymbolIndex {
 		fileNodesByDir:    map[string][]model.NodeId{},
 		clauseByDir:       map[string]string{},
 		packageNodeByPath: map[string]model.NodeId{},
+		methodDirs:        map[string][]string{},
 	}
 	for _, n := range nodes {
 		sp := n.SourcePath() // already normalized POSIX repo-relative
@@ -136,6 +145,21 @@ func BuildIndex(nodes []model.Node) *SymbolIndex {
 				idx.byClause[clause][dir] = map[string]model.NodeId{}
 			}
 			idx.byClause[clause][dir][bare] = n.ID()
+		}
+	}
+
+	// Build the receiverMethod reverse index (WP-02). A dir participates in
+	// uniqueMethodInDir only through byClause[clauseByDir[dir]][dir], so index
+	// exactly those (dir, bareName) pairs. This is the SAME predicate
+	// uniqueMethodInDir tests, so receiverMethod's candidate set — and thus its
+	// resolved edge set — is byte-identical to the old full-byDir scan.
+	for dir, clause := range idx.clauseByDir {
+		tbl := idx.byClause[clause][dir]
+		if tbl == nil {
+			continue
+		}
+		for bare := range tbl {
+			idx.methodDirs[bare] = append(idx.methodDirs[bare], dir)
 		}
 	}
 	return idx
@@ -198,10 +222,15 @@ func (idx *SymbolIndex) receiverMethod(preferDir, recv, method string) (model.No
 	if id, ok := idx.uniqueMethodInDir(preferDir, recv, method); ok {
 		return id, true
 	}
-	// Then search globally for a unique (recv, method) match.
+	// Then search globally for a unique (recv, method) match. WP-02: consult the
+	// methodDirs reverse index — only the dirs that actually declare this bare
+	// method name — instead of scanning every directory in byDir. methodDirs is
+	// built from the same predicate uniqueMethodInDir tests, so the candidate set
+	// (and the collected distinct-NodeId set, and thus the resolved/ambiguous
+	// outcome) is identical to the old full scan; only the cost changes.
 	var found model.NodeId
 	count := 0
-	for dir := range idx.byDir {
+	for _, dir := range idx.methodDirs[method] {
 		if id, ok := idx.uniqueMethodInDir(dir, recv, method); ok {
 			if count == 0 {
 				found, count = id, 1
