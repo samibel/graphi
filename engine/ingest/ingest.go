@@ -1155,6 +1155,16 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			return err
 		}
 
+		// WP-03 (Vector 2c): reap any interned external node left with zero incident
+		// edges by this pass — e.g. a file that was the SOLE referencer of a stdlib
+		// symbol got edited or deleted, cascade-removing its last edge. This runs
+		// over the now-committed graph (the batch above was write-only, so the true
+		// post-cascade edge set is only observable post-commit) and keeps the
+		// incremental store byte-identical to a full re-index of the same state.
+		if err := i.sweepOrphanExternalNodes(ctx); err != nil {
+			return err
+		}
+
 		// A parse/syntax error makes parseUnit fail closed with a SkipParseError
 		// diagnostic and continue — correct for a FULL index (IngestAll), where a
 		// single malformed PRE-EXISTING file must not sink the whole repo. But the
@@ -1825,11 +1835,11 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	edgeIDs := make([]string, 0)
 	var importEdges []model.Edge
 	// WP-03: interned external nodes minted by the linker (Go stdlib / 3rd-party
-	// call/ref targets). They must be committed BEFORE their incident edges so the
-	// batch's endpoint check (ErrUnknownEdgeEndpoint) passes. mintedExternal
-	// collects their ids so the post-link orphan sweep can drop any that end up
-	// unreferenced (see below). Stats are aggregated for the ingest summary.
-	mintedExternal := map[model.NodeId]struct{}{}
+	// call/ref targets) are committed BEFORE their incident edges so the batch's
+	// endpoint check (ErrUnknownEdgeEndpoint) passes. Any node that ends up
+	// unreferenced (a file dropping its last reference to it) is reaped by the
+	// standalone post-commit sweepOrphanExternalNodes pass. Stats are aggregated
+	// for the ingest summary.
 	var linkStats link.Stats
 	for _, lang := range langs {
 		extNodes, edges, st, err := i.linker.Link(lang, byLang[lang], idx)
@@ -1845,7 +1855,6 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 			if err := w.PutNode(ctx, n); err != nil {
 				return nil, fmt.Errorf("ingest: link put external node %s: %w", n.ID(), err)
 			}
-			mintedExternal[n.ID()] = struct{}{}
 		}
 		for _, e := range edges {
 			// Fast mode drops low-value import-fanout edges while preserving
@@ -1878,103 +1887,71 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 		}
 	}
 
-	// WP-03 external-node lifecycle: an external node is a linker artifact
-	// reachable ONLY via its incident calls/references edges. After the stale-edge
-	// sweep and re-link, an external node that was minted by a PRIOR pass but is no
-	// longer referenced by any surviving or freshly-emitted edge would linger as an
-	// orphan incrementally while being absent from a full re-index — a byte-parity
-	// divergence. Sweep those orphans so incremental converges with full. The
-	// external node's identity is interned (one id per unique QN), so a still-shared
-	// node is protected by construction: any other file that still names it emits a
-	// surviving edge, which keeps it in the referenced set below.
-	if err := i.sweepOrphanExternalNodes(ctx, w, nodes, allEdges, mintedExternal, ownedNodeIDs, parserEdges, edgeIDs); err != nil {
-		return nil, err
-	}
-
 	i.lastLinkStats = linkStats
 	return edgeIDs, nil
 }
 
-// sweepOrphanExternalNodes deletes interned external nodes (WP-03) that have no
-// remaining incident edge after this link pass, so an incremental re-link
-// converges byte-identically with a full re-index. Because linkFiles reads
-// COMMITTED state (the batch's writes are staged, not yet visible to i.store), the
-// surviving-edge set is computed in memory: committed edges MINUS the stale
-// linker edges this pass swept, PLUS the edges freshly emitted this pass. An
-// external node referenced by ANY of those survives; the rest are orphans.
-func (i *Ingester) sweepOrphanExternalNodes(
-	ctx context.Context,
-	w graphstore.Writer,
-	committedNodes []model.Node,
-	committedEdges []model.Edge,
-	mintedExternal map[model.NodeId]struct{},
-	ownedNodeIDs map[string]struct{},
-	parserEdges map[string]struct{},
-	emittedEdgeIDs []string,
-) error {
-	// All external node ids in play: those already committed plus those minted now.
+// sweepOrphanExternalNodes deletes every interned external node (WP-03) that has
+// ZERO incident edges in the COMMITTED graph. External nodes are linker artifacts
+// reachable only via their incident calls/references edges and are NOT recorded in
+// any file's node_ids, so neither the per-file stale-node purge nor the removed-
+// file purge (removeFileTx) ever deletes them: a file that was the SOLE referencer
+// of an external symbol (edited to stop referencing it, or deleted outright) leaves
+// a zero-edge ghost external node that a full re-index would never mint — a
+// byte-parity divergence (Vector 2c).
+//
+// This runs as a STANDALONE pass over the committed store AFTER the main link/
+// delete batch commits. It must be post-commit because the graphstore batch is
+// write-only: the true post-pass edge set — including the incident edges that
+// removeFileTx cascade-deletes when it removes a file's nodes — is only observable
+// once committed. It is NOT gated on any reprocessed-node set, so it fires even for
+// a pure single-file deletion (which reprocesses no nodes and so short-circuits
+// linkFiles). A shared external node is protected by construction: any other file
+// that still references it keeps a surviving incident edge, so it is not an orphan.
+func (i *Ingester) sweepOrphanExternalNodes(ctx context.Context) error {
+	nodes, err := i.store.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		return fmt.Errorf("ingest: orphan sweep read nodes: %w", err)
+	}
 	external := map[model.NodeId]struct{}{}
-	for _, n := range committedNodes {
+	for _, n := range nodes {
 		if n.Kind() == "external" {
 			external[n.ID()] = struct{}{}
 		}
 	}
-	for id := range mintedExternal {
-		external[id] = struct{}{}
+	if len(external) == 0 {
+		return nil
+	}
+	edges, err := i.store.Edges(ctx, graphstore.Query{})
+	if err != nil {
+		return fmt.Errorf("ingest: orphan sweep read edges: %w", err)
+	}
+	// Any external node incident to any edge (as From or To — external nodes are
+	// terminal, so in practice only To) is live; remove it from the orphan set.
+	for _, e := range edges {
+		delete(external, e.To())
+		delete(external, e.From())
 	}
 	if len(external) == 0 {
 		return nil
 	}
-
-	emitted := make(map[string]struct{}, len(emittedEdgeIDs))
-	for _, id := range emittedEdgeIDs {
-		emitted[id] = struct{}{}
-	}
-
-	// referenced = external ids kept alive by a surviving or freshly-emitted edge.
-	referenced := map[model.NodeId]struct{}{}
-	for _, e := range committedEdges {
-		if _, isExt := external[e.To()]; !isExt {
-			continue
-		}
-		// Mirror the stale-edge sweep predicate: a from-owned linker-kind edge NOT
-		// re-committed by the parser this pass was deleted above, so it does not
-		// keep the node alive.
-		_, fromOwned := ownedNodeIDs[string(e.From())]
-		linkerKind := e.Kind() == "calls" || e.Kind() == "references" || e.Kind() == "imports" ||
-			e.Kind() == "implements" || e.Kind() == "inherits" || e.Kind() == "overrides"
-		_, fresh := parserEdges[string(e.ID())]
-		if fromOwned && linkerKind && !fresh {
-			if _, reAdded := emitted[string(e.ID())]; !reAdded {
-				continue // this committed edge was swept
-			}
-		}
-		referenced[e.To()] = struct{}{}
-	}
-	// Freshly-emitted edges this pass (their ids are in emitted; recover targets by
-	// re-reading is unnecessary — a freshly emitted edge to an external node was
-	// only produced because a file still references it, so mark all minted-external
-	// as referenced when they received at least one emitted edge). We conservatively
-	// treat every minted external node as referenced: it was minted this pass only
-	// because a reprocessed file emitted an edge to it.
-	for id := range mintedExternal {
-		referenced[id] = struct{}{}
-	}
-
-	// Delete orphans deterministically (sorted) for stable behaviour.
-	var orphans []model.NodeId
+	orphans := make([]model.NodeId, 0, len(external))
 	for id := range external {
-		if _, ok := referenced[id]; !ok {
-			orphans = append(orphans, id)
-		}
+		orphans = append(orphans, id)
 	}
 	sort.Slice(orphans, func(a, b int) bool { return orphans[a] < orphans[b] })
+
+	batch, err := graphstore.BeginBatch(ctx, i.store)
+	if err != nil {
+		return fmt.Errorf("ingest: orphan sweep begin batch: %w", err)
+	}
 	for _, id := range orphans {
-		if err := w.DeleteNode(ctx, id); err != nil {
+		if err := batch.DeleteNode(ctx, id); err != nil {
+			_ = batch.Rollback()
 			return fmt.Errorf("ingest: sweep orphan external node %s: %w", id, err)
 		}
 	}
-	return nil
+	return batch.Commit(ctx)
 }
 
 // importPathFromReason extracts the import path from a linker import edge reason.

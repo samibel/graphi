@@ -223,11 +223,13 @@ func TestLink_OrderIndependent(t *testing.T) {
 }
 
 // TestLink_Honesty mixes a resolvable same-package ref with stdlib / 3rd-party /
-// receiver-method selector refs. WP-03 changed the contract for the latter: an
-// unresolved SELECTOR target is no longer dropped but MATERIALIZED as an interned
-// external node with a heuristic edge. The test asserts the exact split (1 internal
-// derived edge + 3 external heuristic edges), zero skips, every edge points at a
-// committed-or-minted node (never a fabricated id), and full provenance throughout.
+// receiver-method selector refs. WP-03 materializes an unresolved IMPORT-ALIAS
+// selector target (drop-point 1, exact QN) as an interned external node, but an
+// unresolved RECEIVER-qualified selector whose base is NOT an import alias
+// (`obj.Method`) is an honest SKIP (deferred to WP-05 receiver-type inference — a
+// best-effort QN would be imprecise and match no config). The test asserts the
+// exact split (1 internal derived + 2 external heuristic edges, 1 skip), every edge
+// points at a committed-or-minted node, and full provenance throughout.
 func TestLink_Honesty(t *testing.T) {
 	nodes := []model.Node{
 		mustNode(t, "file", "a/a.go", "a/a.go"),
@@ -242,18 +244,18 @@ func TestLink_Honesty(t *testing.T) {
 			{FromQN: "a.Caller", Name: "Local", Kind: "calls", Line: 2},                                        // resolvable same-package
 			{FromQN: "a.Caller", SelectorBase: "fmt", Name: "Println", Kind: "calls", Line: 3, Selector: true}, // stdlib → external fmt.Println
 			{FromQN: "a.Caller", SelectorBase: "y", Name: "Do", Kind: "calls", Line: 4, Selector: true},        // 3rd-party → external github.com/x/y.Do
-			{FromQN: "a.Caller", SelectorBase: "obj", Name: "Method", Kind: "calls", Line: 5, Selector: true},  // unresolvable recv → external obj.Method
+			{FromQN: "a.Caller", SelectorBase: "obj", Name: "Method", Kind: "calls", Line: 5, Selector: true},  // unresolvable recv → SKIP (WP-05)
 		},
 	}}
 	extNodes, edges, st, err := New().Link("go", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link returned error on unresolvable refs: %v", err)
 	}
-	// 1 same-package derived edge + 3 external heuristic edges.
-	if len(edges) != 4 {
-		t.Fatalf("want 4 edges (1 internal + 3 external), got %d: %v", len(edges), dump(edges))
+	// 1 same-package derived edge + 2 external heuristic edges (obj.Method skipped).
+	if len(edges) != 3 {
+		t.Fatalf("want 3 edges (1 internal + 2 external), got %d: %v", len(edges), dump(edges))
 	}
-	// Three unique external targets are minted, keyed by exact qualified name.
+	// Two unique external targets are minted, keyed by exact qualified name.
 	gotQN := map[string]bool{}
 	for _, n := range extNodes {
 		if n.Kind() != "external" {
@@ -261,20 +263,24 @@ func TestLink_Honesty(t *testing.T) {
 		}
 		gotQN[n.QualifiedName()] = true
 	}
-	for _, want := range []string{"fmt.Println", "github.com/x/y.Do", "obj.Method"} {
+	for _, want := range []string{"fmt.Println", "github.com/x/y.Do"} {
 		if !gotQN[want] {
 			t.Errorf("missing external node %q (got %v)", want, gotQN)
 		}
 	}
-	if len(extNodes) != 3 {
-		t.Errorf("external nodes = %d, want 3", len(extNodes))
+	// The receiver-qualified miss must NOT be materialized (no local-var flood).
+	if gotQN["obj.Method"] {
+		t.Errorf("obj.Method must be skipped, not materialized as an external node")
 	}
-	// Materialization is NOT a skip; it is counted distinctly.
-	if st.Skipped != 0 {
-		t.Errorf("Skipped = %d, want 0 (selector misses now materialized)", st.Skipped)
+	if len(extNodes) != 2 {
+		t.Errorf("external nodes = %d, want 2", len(extNodes))
 	}
-	if st.ResolvedExternal != 3 {
-		t.Errorf("ResolvedExternal = %d, want 3", st.ResolvedExternal)
+	// The receiver-qualified miss is an honest skip.
+	if st.Skipped != 1 {
+		t.Errorf("Skipped = %d, want 1 (obj.Method receiver-qualified miss)", st.Skipped)
+	}
+	if st.ResolvedExternal != 2 {
+		t.Errorf("ResolvedExternal = %d, want 2", st.ResolvedExternal)
 	}
 	if st.ResolvedDerived != 1 {
 		t.Errorf("ResolvedDerived = %d, want 1", st.ResolvedDerived)

@@ -132,27 +132,22 @@ func (goResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 				continue
 			}
 		}
-		// WP-03 drop-point 2 (LOWER confidence): a selector call/reference whose base
-		// is NOT an import alias and whose receiver-method attempt missed — a
-		// receiver-qualified call on a local var (`db.Query`, `db.Exec`) or a chained
-		// selector (base == ""). The receiver TYPE is unknown, so the external QN is
-		// best-effort (SelectorBase + "." + Name, e.g. "db.Query"; ".Query" when the
-		// base is a chained selector). We still mint a heuristic-tier external node so
-		// the taint analyzer has a node to match. Guarded to calls/references only
-		// (never bare idents — see drop-point above). Note: because the receiver type
-		// cannot be recovered here, these QNs will NOT match a config sink pattern
-		// that keys on the fully-qualified stdlib name (e.g. "database/sql.DB.Query");
-		// closing that gap is WP-05's job (receiver-type inference / config patterns).
-		if p.Kind == edgeCalls || p.Kind == edgeReferences {
-			out = append(out, intent{
-				from: from, toExternalQN: p.SelectorBase + "." + p.Name, kind: p.Kind, class: classSelector,
-				reason:   "external " + p.Kind + " (unresolved receiver " + p.SelectorBase + ")",
-				evidence: ev,
-			})
-			st.ResolvedExternal++
-			continue
-		}
-		// Unresolvable selector (ambiguous, non-call/ref kinds): skip.
+		// A selector whose base is NOT an import alias and whose receiver-method
+		// attempt missed is a receiver-qualified access on a value whose TYPE is
+		// unknown here: a local-var field/method (`res.Nodes`, `e.tier`, `a.From`,
+		// `db.Query`) or a chained selector (base == ""). WP-03 deliberately does NOT
+		// materialize these as `external` nodes:
+		//   - PRECISION: on real code the overwhelming majority are local-var accesses,
+		//     NOT external symbols — minting them floods the graph with mislabeled
+		//     nodes (measured ~55% phantom on engine/query).
+		//   - VALUE: the best-effort QN (`db.Query`) cannot recover the receiver type,
+		//     so it never matches a config sink keyed on the fully-qualified stdlib
+		//     name (`database/sql.DB.Query`) — zero taint value today.
+		// Receiver-qualified external targets are DEFERRED to WP-05, which will use
+		// receiver-type inference to make them BOTH precise (no local-var false
+		// positives) AND useful (emit `database/sql.DB.Query` that matches config).
+		// Until then this is an honest skip. (Drop-point 1 above — the import-alias
+		// selector miss, where the import path IS known — stays; its QN is exact.)
 		st.Skipped++
 	}
 

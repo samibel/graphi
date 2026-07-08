@@ -67,6 +67,43 @@ func TestLink_GoExternalNode_InterningLifecycle(t *testing.T) {
 		}
 	})
 
+	t.Run("orphan external swept when sole referencer deleted", func(t *testing.T) {
+		// a.go is the SOLE referencer of os.ReadFile; b.go references strconv.Atoi.
+		// Deleting a.go reprocesses NO nodes (pure single-file deletion), so the
+		// linkFiles pass short-circuits — only the standalone post-commit sweep can
+		// reap the now-zero-edge os.ReadFile ghost. This is the exact Vector 2c case.
+		bAtoi := "package app\n\nimport \"strconv\"\n\nfunc UseB() { _, _ = strconv.Atoi(\"1\") }\n"
+		initial := map[string]string{
+			"go.mod":   goMod,
+			"pkg/a.go": aReadFile,
+			"pkg/b.go": bAtoi,
+		}
+		storeInc := graphstore.NewMemStore()
+		t.Cleanup(func() { _ = storeInc.Close() })
+		iInc := newIngester(t, storeInc, parse.NewDefaultRegistry())
+		repo := writeRepo(t, initial)
+		if err := iInc.IngestAll(ctx, repo); err != nil {
+			t.Fatalf("inc IngestAll: %v", err)
+		}
+		if err := os.Remove(filepath.Join(repo, "pkg", "a.go")); err != nil {
+			t.Fatalf("rm a.go: %v", err)
+		}
+		if err := iInc.IngestChanged(ctx, repo, []string{"pkg/a.go"}); err != nil {
+			t.Fatalf("incremental: %v", err)
+		}
+		incSnap := filepath.Join(t.TempDir(), "inc")
+		if err := storeInc.Snapshot(ctx, incSnap); err != nil {
+			t.Fatalf("inc snapshot: %v", err)
+		}
+		incBytes, _ := os.ReadFile(incSnap)
+
+		full := map[string]string{"go.mod": goMod, "pkg/b.go": bAtoi}
+		fullBytes := fullSnapshotBytes(t, full)
+		if !bytes.Equal(incBytes, fullBytes) {
+			t.Fatalf("incremental != full after sole-referencer DELETE (ghost external node not swept)")
+		}
+	})
+
 	t.Run("orphan external swept when sole referencer stops", func(t *testing.T) {
 		// a.go is the SOLE referencer of os.ReadFile; b.go references strconv.Atoi.
 		bAtoi := "package app\n\nimport \"strconv\"\n\nfunc UseB() { _, _ = strconv.Atoi(\"1\") }\n"
