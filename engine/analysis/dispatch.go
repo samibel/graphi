@@ -220,7 +220,16 @@ func (a taintAdapter) Analyze(ctx context.Context, r query.Reader, p Params) (An
 
 	outcome := query.OutcomeFound
 	if len(result.Findings) == 0 && len(report.Flows) == 0 {
-		outcome = query.OutcomeEmpty
+		// WP-04: an empty result on a graph that contains NO sink (or source)
+		// candidates is not a clean bill of health — a flow could not exist by
+		// construction. Report it honestly as no_sink_candidates so a security
+		// consumer reads "unverified", not "checked, clean". Only a graph that DID
+		// have sink candidates but produced no path is a genuine `empty`.
+		if result.SinkCandidates == 0 || result.SourceCandidates == 0 {
+			outcome = query.OutcomeNoSinkCandidates
+		} else {
+			outcome = query.OutcomeEmpty
+		}
 	}
 	return Analysis{
 		Analyzer:       taint.AnalyzerName,

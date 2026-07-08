@@ -106,11 +106,16 @@ func (t *Analyzer) run(ctx context.Context, r query.Reader) (TaintResult, error)
 		}
 	}
 
-	// If no sources or sinks, return empty.
+	// If no sources or sinks, return early. The candidate counts travel with the
+	// result so the caller can distinguish "no sink symbols in the graph at all"
+	// (a graph that cannot possibly match — honest no_sink_candidates) from a
+	// genuine no-flow result (WP-04).
 	if len(sources) == 0 || len(sinks) == 0 {
 		return TaintResult{
-			Findings:   []Finding{},
-			ConfigHash: t.config.ContentHash,
+			Findings:         []Finding{},
+			ConfigHash:       t.config.ContentHash,
+			SinkCandidates:   len(sinks),
+			SourceCandidates: len(sources),
 		}, nil
 	}
 
@@ -262,9 +267,11 @@ func (t *Analyzer) run(ctx context.Context, r query.Reader) (TaintResult, error)
 	sortFindings(allFindings)
 
 	return TaintResult{
-		Findings:    allFindings,
-		Diagnostics: diagnostics,
-		ConfigHash:  t.config.ContentHash,
+		Findings:         allFindings,
+		Diagnostics:      diagnostics,
+		ConfigHash:       t.config.ContentHash,
+		SinkCandidates:   len(sinks),
+		SourceCandidates: len(sources),
 	}, nil
 }
 

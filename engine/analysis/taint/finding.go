@@ -47,6 +47,14 @@ type TaintResult struct {
 	Truncated   bool      `json:"truncated,omitempty"`
 	Diagnostics []string  `json:"diagnostics,omitempty"`
 	ConfigHash  string    `json:"config_hash"`
+	// SinkCandidates / SourceCandidates count the graph nodes the config
+	// classified as a sink / source before propagation ran (WP-04). They let the
+	// dispatch layer tell "checked, no flow found" (candidates exist) apart from
+	// "the graph CANNOT match a sink" (zero candidates) — the latter must never be
+	// reported as an empty/clean result. A graph with zero sink candidates is an
+	// honest "no_sink_candidates", not a false all-clear.
+	SinkCandidates   int `json:"sink_candidates"`
+	SourceCandidates int `json:"source_candidates"`
 }
 
 // sortFindings sorts findings in canonical order for deterministic output:
