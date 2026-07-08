@@ -32,7 +32,13 @@ import (
 //	    `db *sql.DB` → "database/sql.DB.Query"), where WP-03 honestly skipped
 //	    them. New committed external node/edge content for Go repos with typed
 //	    receivers, so an older store must re-index rather than warm-start.
-const ingestSemanticsVersion = "4"
+//	5 : WP-06 — the graphstore edges schema changes physically: edge `reason`
+//	    and `evidence` are interned into a `reasons` dictionary (reason_id /
+//	    evidence_id) and edges are no longer FTS-indexed. The graph CONTENT is
+//	    byte-identical, but a store written by an older binary carries the old
+//	    inline `edges` columns, so an upgraded binary must re-index (a full pass
+//	    re-creates the edges table) rather than warm-start against it.
+const ingestSemanticsVersion = "5"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
