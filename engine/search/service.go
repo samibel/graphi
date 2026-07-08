@@ -88,6 +88,13 @@ const DefaultResultLimit = 100
 // results; mirrors core/parse.KindPackage without importing the parse layer.
 const kindPackage = "package"
 
+// kindExternal is the interned external-symbol node kind (WP-03), excluded from
+// search results: external nodes are heuristic linker artifacts (stdlib /
+// 3rd-party call/ref targets, empty source path, no line) minted so name-keyed
+// analyses have a node to match — they are not navigable symbols. Mirrors
+// core/parse.KindExternal without importing the parse layer.
+const kindExternal = "external"
+
 // Search runs a ranked symbol/text search. An empty query returns an empty
 // result set with no error. Matches are ordered by rank ascending (better
 // matches first), then by qualified_name and node_id for deterministic
@@ -106,7 +113,7 @@ func (s *Service) Search(ctx context.Context, query string, limit int) (Response
 		// WP-01 query hygiene: interned `package` nodes are structural linking
 		// artifacts (empty source path, no line) minted to collapse the import
 		// fan-out — they are not navigable symbols, so they never surface in search.
-		if n.Kind() == kindPackage {
+		if n.Kind() == kindPackage || n.Kind() == kindExternal {
 			continue
 		}
 		matches = append(matches, Match{

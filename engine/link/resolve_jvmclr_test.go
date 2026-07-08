@@ -44,7 +44,7 @@ func javaScene(t *testing.T) ([]model.Node, []FileRefs) {
 
 func TestJavaLink_Resolves(t *testing.T) {
 	nodes, files := javaScene(t)
-	edges, st, err := New().Link("java", files, BuildIndex(nodes))
+	_, edges, st, err := New().Link("java", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -83,7 +83,7 @@ func kotlinScene(t *testing.T) ([]model.Node, []FileRefs) {
 
 func TestKotlinLink_Resolves(t *testing.T) {
 	nodes, files := kotlinScene(t)
-	edges, _, err := New().Link("kotlin", files, BuildIndex(nodes))
+	_, edges, _, err := New().Link("kotlin", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -114,7 +114,7 @@ func csharpScene(t *testing.T) ([]model.Node, []FileRefs) {
 
 func TestCSharpLink_Resolves(t *testing.T) {
 	nodes, files := csharpScene(t)
-	edges, _, err := New().Link("c_sharp", files, BuildIndex(nodes))
+	_, edges, _, err := New().Link("c_sharp", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}

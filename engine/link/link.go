@@ -77,6 +77,12 @@ type Stats struct {
 	Skipped int
 	// Ambiguous counts references skipped because resolution was ambiguous.
 	Ambiguous int
+	// ResolvedExternal counts references materialized against an interned
+	// `external` node (WP-03): a cross-package call/reference whose target lives
+	// outside the repo (stdlib / 3rd-party). These are heuristic-tier edges to a
+	// second-class, terminal node — distinct from ResolvedHeuristic so external
+	// materialization is observable in the ingest summary.
+	ResolvedExternal int
 }
 
 // Resolver is the language-neutral registry seam (Open/Closed): FU-2 adds a new
@@ -124,6 +130,14 @@ type intent struct {
 	class    resolutionClass
 	reason   string
 	evidence string
+	// toExternalQN, when non-empty, means the resolver wants the edge's target to
+	// be an INTERNED external node (WP-03) keyed by this qualified name rather than
+	// a committed NodeId. `to` is left zero; construct() interns the node
+	// (model.NewNode(KindExternal, toExternalQN, "", 0, 0)), dedups by NodeId so one
+	// node per unique QN, and uses its id as the edge target. The class is always
+	// classSelector (heuristic tier) for these — an external edge is never derived
+	// or confirmed.
+	toExternalQN string
 }
 
 // Linker resolves pending references into provenanced edges. It holds the
@@ -177,15 +191,15 @@ func (l *Linker) Register(r Resolver) { l.resolvers[r.Language()] = r }
 // language selects the resolver; for FU-1 it is always "go". A reference that
 // resolves to nothing (stdlib/3rd-party/local var) is dropped and counted, never
 // turned into a phantom edge.
-func (l *Linker) Link(language string, files []FileRefs, idx *SymbolIndex) ([]model.Edge, Stats, error) {
+func (l *Linker) Link(language string, files []FileRefs, idx *SymbolIndex) ([]model.Node, []model.Edge, Stats, error) {
 	var st Stats
 	r, ok := l.resolvers[language]
 	if !ok {
 		// No resolver ⇒ nothing to link (not an error); FU-2 registers more.
-		return nil, st, nil
+		return nil, nil, st, nil
 	}
 	if idx == nil {
-		return nil, st, nil
+		return nil, nil, st, nil
 	}
 
 	// Collect intents from every file. Order does not matter: we group + sort.
@@ -197,11 +211,11 @@ func (l *Linker) Link(language string, files []FileRefs, idx *SymbolIndex) ([]mo
 		intents = append(intents, r.Resolve(f, idx, &st)...)
 	}
 
-	edges, err := construct(intents)
+	nodes, edges, err := construct(intents)
 	if err != nil {
-		return nil, st, err
+		return nil, nil, st, err
 	}
-	return edges, st, nil
+	return nodes, edges, st, nil
 }
 
 // edgeKey is the logical identity of an edge for collect-then-construct merging.
@@ -213,10 +227,41 @@ type edgeKey struct {
 
 // construct merges intents by logical (from,to,kind), unions their evidence
 // (sorted, deduped) and reasons, constructs each edge exactly once via
-// model.NewEdge, and returns the edges sorted by EdgeId. Constructing once with a
-// fixed tier→confidence map is what makes the output byte-identical regardless of
-// input order and idempotent across calls.
-func construct(intents []intent) ([]model.Edge, error) {
+// model.NewEdge, and returns the minted external nodes plus the edges, both
+// sorted by content id. Constructing once with a fixed tier→confidence map is
+// what makes the output byte-identical regardless of input order and idempotent
+// across calls.
+//
+// External-target intents (in.toExternalQN != "") are resolved FIRST: each unique
+// QN is interned into a single external node (model.NewNode(KindExternal, qn, "",
+// 0, 0)) via extByQN, and the intent's edge target becomes that node's id. The
+// interning is deduped by NodeId so one node is minted per unique QN no matter how
+// many callsites/files name it, and the returned node set is sorted by NodeId — so
+// identical input yields a byte-identical node+edge set, order-independent and
+// idempotent (a second Link over the same committed graph re-mints the same nodes
+// with the same ids, which upsert cleanly).
+func construct(intents []intent) ([]model.Node, []model.Edge, error) {
+	// Intern external target nodes and rewrite those intents' `to` to the node id.
+	extByQN := map[string]model.Node{}
+	resolved := make([]intent, len(intents))
+	copy(resolved, intents)
+	for i := range resolved {
+		qn := resolved[i].toExternalQN
+		if qn == "" {
+			continue
+		}
+		n, ok := extByQN[qn]
+		if !ok {
+			var err error
+			n, err = model.NewNode(parse.KindExternal, qn, "", 0, 0)
+			if err != nil {
+				return nil, nil, err
+			}
+			extByQN[qn] = n
+		}
+		resolved[i].to = n.ID()
+	}
+
 	type agg struct {
 		class    resolutionClass
 		reasons  map[string]struct{}
@@ -224,7 +269,7 @@ func construct(intents []intent) ([]model.Edge, error) {
 	}
 	groups := map[edgeKey]*agg{}
 	var order []edgeKey
-	for _, in := range intents {
+	for _, in := range resolved {
 		k := edgeKey{from: in.from, to: in.to, kind: in.kind}
 		g := groups[k]
 		if g == nil {
@@ -253,12 +298,18 @@ func construct(intents []intent) ([]model.Edge, error) {
 		reason := joinSorted(g.reasons)
 		e, err := model.NewEdge(k.from, k.to, k.kind, tier, conf, reason, evidence)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		edges = append(edges, e)
 	}
 	sort.Slice(edges, func(a, b int) bool { return edges[a].ID() < edges[b].ID() })
-	return edges, nil
+
+	nodes := make([]model.Node, 0, len(extByQN))
+	for _, n := range extByQN {
+		nodes = append(nodes, n)
+	}
+	sort.Slice(nodes, func(a, b int) bool { return nodes[a].ID() < nodes[b].ID() })
+	return nodes, edges, nil
 }
 
 // sortedKeys returns the map keys as a sorted, deduped slice (the sorted-union

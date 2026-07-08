@@ -25,7 +25,7 @@ func TestIndex_DirectoryKeyedNoCrossDirPhantom(t *testing.T) {
 		Dir:        "a",
 		Pending:    []parse.PendingRef{{FromQN: "util.Caller", Name: "Helper", Kind: "calls", Line: 2}},
 	}}
-	edges, _, err := New().Link("go", files, idx)
+	_, edges, _, err := New().Link("go", files, idx)
 	if err != nil {
 		t.Fatal(err)
 	}

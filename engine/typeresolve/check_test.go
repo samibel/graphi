@@ -72,7 +72,7 @@ func runFixture(t *testing.T, files map[string]string) fixtureRun {
 		})
 	}
 
-	heurEdges, _, err := link.New().Link("go", refs, link.BuildIndex(nodes))
+	_, heurEdges, _, err := link.New().Link("go", refs, link.BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("heuristic link: %v", err)
 	}

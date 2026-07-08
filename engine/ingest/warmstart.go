@@ -22,7 +22,12 @@ import (
 //	    fan-out collapses to a single file→package edge. The committed
 //	    node-kind content changes, so an older store must re-index (not
 //	    warm-start) against the new schema.
-const ingestSemanticsVersion = "2"
+//	3 : WP-03 — the Go linker materializes unresolved stdlib / 3rd-party
+//	    selector call/reference targets as interned `external` nodes with
+//	    heuristic calls/references edges (previously dropped). The committed
+//	    node/edge set changes for every Go repo, so an older store must
+//	    re-index rather than warm-start.
+const ingestSemanticsVersion = "3"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the

@@ -60,7 +60,7 @@ func scene(t *testing.T) ([]model.Node, []FileRefs) {
 func TestLink_Resolves(t *testing.T) {
 	nodes, files := scene(t)
 	idx := BuildIndex(nodes)
-	edges, st, err := New().Link("go", files, idx)
+	extNodes, edges, st, err := New().Link("go", files, idx)
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -97,9 +97,17 @@ func TestLink_Resolves(t *testing.T) {
 	// recv.Method heuristic call
 	has(id("shop.checkout"), id("shop.Cart.Add"), "calls", model.TierHeuristic)
 
-	// No edge may point at an unknown target.
+	// WP-03: fmt.Println (import alias "fmt") is now MATERIALIZED as an interned
+	// external node + heuristic edge rather than dropped. No edge may point at a
+	// target absent from the committed nodes UNION the linker-minted external nodes.
 	known := map[model.NodeId]struct{}{}
 	for _, n := range nodes {
+		known[n.ID()] = struct{}{}
+	}
+	for _, n := range extNodes {
+		if n.Kind() != "external" {
+			t.Errorf("minted node %s has kind %q, want external", n.ID(), n.Kind())
+		}
 		known[n.ID()] = struct{}{}
 	}
 	for _, e := range edges {
@@ -111,12 +119,28 @@ func TestLink_Resolves(t *testing.T) {
 		}
 	}
 
-	// fmt.Println was the only stdlib selector ⇒ exactly one skip.
-	if st.Skipped != 1 {
-		t.Errorf("Skipped = %d, want 1 (fmt.Println)", st.Skipped)
+	// fmt.Println is materialized as one interned external node ("fmt.Println"),
+	// so nothing is skipped and ResolvedExternal counts it.
+	var extQNs []string
+	for _, n := range extNodes {
+		extQNs = append(extQNs, n.QualifiedName())
+	}
+	if len(extNodes) != 1 || extNodes[0].QualifiedName() != "fmt.Println" {
+		t.Errorf("external nodes = %v, want exactly [fmt.Println]", extQNs)
+	}
+	if st.Skipped != 0 {
+		t.Errorf("Skipped = %d, want 0 (fmt.Println now materialized as external)", st.Skipped)
+	}
+	if st.ResolvedExternal != 1 {
+		t.Errorf("ResolvedExternal = %d, want 1 (fmt.Println)", st.ResolvedExternal)
 	}
 	if st.ResolvedDerived != 1 {
 		t.Errorf("ResolvedDerived = %d, want 1", st.ResolvedDerived)
+	}
+	// The external edge is heuristic tier, never derived/confirmed.
+	extEdge := has(id("shop.checkout"), extNodes[0].ID(), "calls", model.TierHeuristic)
+	if extEdge.Reason() == "" {
+		t.Errorf("external edge missing reason")
 	}
 }
 
@@ -135,11 +159,11 @@ func TestLink_Idempotent(t *testing.T) {
 	nodes, files := scene(t)
 	idx := BuildIndex(nodes)
 	l := New()
-	e1, _, err := l.Link("go", files, idx)
+	_, e1, _, err := l.Link("go", files, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	e2, _, err := l.Link("go", files, idx)
+	_, e2, _, err := l.Link("go", files, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +180,7 @@ func TestLink_OrderIndependent(t *testing.T) {
 		parse.PendingRef{FromQN: "shop.checkout", Name: "price", Kind: "calls", Line: 9, Selector: false})
 
 	idx := BuildIndex(nodes)
-	base, _, err := New().Link("go", files, idx)
+	_, base, _, err := New().Link("go", files, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +195,7 @@ func TestLink_OrderIndependent(t *testing.T) {
 		rng.Shuffle(len(p), func(i, j int) { p[i], p[j] = p[j], p[i] })
 		shFiles[0].Pending = p
 
-		got, _, err := New().Link("go", shFiles, BuildIndex(shNodes))
+		_, got, _, err := New().Link("go", shFiles, BuildIndex(shNodes))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -198,9 +222,12 @@ func TestLink_OrderIndependent(t *testing.T) {
 	}
 }
 
-// TestLink_Honesty mixes resolvable refs with stdlib/3rd-party/unresolvable
-// recv.Method refs and asserts the exact resolvable count, zero unknown targets,
-// no error, and full provenance on every edge.
+// TestLink_Honesty mixes a resolvable same-package ref with stdlib / 3rd-party /
+// receiver-method selector refs. WP-03 changed the contract for the latter: an
+// unresolved SELECTOR target is no longer dropped but MATERIALIZED as an interned
+// external node with a heuristic edge. The test asserts the exact split (1 internal
+// derived edge + 3 external heuristic edges), zero skips, every edge points at a
+// committed-or-minted node (never a fabricated id), and full provenance throughout.
 func TestLink_Honesty(t *testing.T) {
 	nodes := []model.Node{
 		mustNode(t, "file", "a/a.go", "a/a.go"),
@@ -213,22 +240,60 @@ func TestLink_Honesty(t *testing.T) {
 		Imports:    []parse.ImportSpec{{Path: "fmt"}, {Path: "github.com/x/y"}},
 		Pending: []parse.PendingRef{
 			{FromQN: "a.Caller", Name: "Local", Kind: "calls", Line: 2},                                        // resolvable same-package
-			{FromQN: "a.Caller", SelectorBase: "fmt", Name: "Println", Kind: "calls", Line: 3, Selector: true}, // stdlib
-			{FromQN: "a.Caller", SelectorBase: "y", Name: "Do", Kind: "calls", Line: 4, Selector: true},        // 3rd-party unindexed
-			{FromQN: "a.Caller", SelectorBase: "obj", Name: "Method", Kind: "calls", Line: 5, Selector: true},  // unresolvable recv
+			{FromQN: "a.Caller", SelectorBase: "fmt", Name: "Println", Kind: "calls", Line: 3, Selector: true}, // stdlib → external fmt.Println
+			{FromQN: "a.Caller", SelectorBase: "y", Name: "Do", Kind: "calls", Line: 4, Selector: true},        // 3rd-party → external github.com/x/y.Do
+			{FromQN: "a.Caller", SelectorBase: "obj", Name: "Method", Kind: "calls", Line: 5, Selector: true},  // unresolvable recv → external obj.Method
 		},
 	}}
-	edges, st, err := New().Link("go", files, BuildIndex(nodes))
+	extNodes, edges, st, err := New().Link("go", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link returned error on unresolvable refs: %v", err)
 	}
-	if len(edges) != 1 {
-		t.Fatalf("want exactly 1 resolvable edge, got %d: %v", len(edges), dump(edges))
+	// 1 same-package derived edge + 3 external heuristic edges.
+	if len(edges) != 4 {
+		t.Fatalf("want 4 edges (1 internal + 3 external), got %d: %v", len(edges), dump(edges))
 	}
-	if st.Skipped != 3 {
-		t.Errorf("Skipped = %d, want 3", st.Skipped)
+	// Three unique external targets are minted, keyed by exact qualified name.
+	gotQN := map[string]bool{}
+	for _, n := range extNodes {
+		if n.Kind() != "external" {
+			t.Errorf("minted node %s kind = %q, want external", n.ID(), n.Kind())
+		}
+		gotQN[n.QualifiedName()] = true
+	}
+	for _, want := range []string{"fmt.Println", "github.com/x/y.Do", "obj.Method"} {
+		if !gotQN[want] {
+			t.Errorf("missing external node %q (got %v)", want, gotQN)
+		}
+	}
+	if len(extNodes) != 3 {
+		t.Errorf("external nodes = %d, want 3", len(extNodes))
+	}
+	// Materialization is NOT a skip; it is counted distinctly.
+	if st.Skipped != 0 {
+		t.Errorf("Skipped = %d, want 0 (selector misses now materialized)", st.Skipped)
+	}
+	if st.ResolvedExternal != 3 {
+		t.Errorf("ResolvedExternal = %d, want 3", st.ResolvedExternal)
+	}
+	if st.ResolvedDerived != 1 {
+		t.Errorf("ResolvedDerived = %d, want 1", st.ResolvedDerived)
+	}
+	// No edge points at a fabricated target, and every edge carries full provenance.
+	known := map[model.NodeId]struct{}{}
+	for _, n := range nodes {
+		known[n.ID()] = struct{}{}
+	}
+	for _, n := range extNodes {
+		known[n.ID()] = struct{}{}
 	}
 	for _, e := range edges {
+		if _, ok := known[e.To()]; !ok {
+			t.Errorf("edge to unknown target %s", e.To())
+		}
+		if e.Tier() == model.TierConfirmed {
+			t.Errorf("linker emitted a confirmed edge: %s", e.ID())
+		}
 		if e.Reason() == "" || len(e.Evidence()) == 0 || !e.Tier().Valid() {
 			t.Errorf("edge lacks provenance: %+v", e)
 		}
@@ -258,7 +323,7 @@ func TestLink_MaliciousPathEvidence(t *testing.T) {
 		Dir:        dir,
 		Pending:    []parse.PendingRef{{FromQN: "x.Caller", Name: "Callee", Kind: "calls", Line: 3}},
 	}}
-	edges, _, err := New().Link("go", files, BuildIndex(nodes))
+	_, edges, _, err := New().Link("go", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +349,7 @@ func containsTraversal(s string) bool {
 }
 
 func TestLink_NoResolverIsNoOp(t *testing.T) {
-	edges, _, err := New().Link("python", nil, BuildIndex(nil))
+	_, edges, _, err := New().Link("python", nil, BuildIndex(nil))
 	if err != nil {
 		t.Fatal(err)
 	}

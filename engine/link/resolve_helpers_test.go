@@ -51,11 +51,11 @@ func assertOrderIndependent(t *testing.T, lang string, scene func(*testing.T) ([
 	t.Helper()
 	nodes, files := scene(t)
 	idx := BuildIndex(nodes)
-	base, _, err := New().Link(lang, files, idx)
+	_, base, _, err := New().Link(lang, files, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, _, err := New().Link(lang, files, idx)
+	_, again, _, err := New().Link(lang, files, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func assertOrderIndependent(t *testing.T, lang string, scene func(*testing.T) ([
 			rng.Shuffle(len(p), func(i, j int) { p[i], p[j] = p[j], p[i] })
 			shFiles[0].Pending = p
 		}
-		got, _, err := New().Link(lang, shFiles, BuildIndex(shNodes))
+		_, got, _, err := New().Link(lang, shFiles, BuildIndex(shNodes))
 		if err != nil {
 			t.Fatal(err)
 		}

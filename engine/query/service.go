@@ -44,6 +44,16 @@ const MaxNeighborhoodDepth = 5
 // neighborhood traversal; mirrors core/parse.KindPackage without importing parse.
 const kindPackage = "package"
 
+// kindExternal is the interned external-symbol node kind (WP-03), excluded from
+// every structural query surface. Unlike package nodes (which only sit on
+// `imports` edges, so callers/callees/references were already clean), external
+// nodes sit on `calls`/`references` edges and so WOULD leak into structural
+// results — they are heuristic linker artifacts (stdlib / 3rd-party targets with
+// empty source path), not navigable symbols. The taint analyzer reads nodes
+// directly (not via this service), so filtering here does not hide them from
+// taint. Mirrors core/parse.KindExternal without importing parse.
+const kindExternal = "external"
+
 // Service is graphi's single shared, read-only structural query service. It is
 // the one place callers/callees/references/definition/neighborhood logic lives;
 // surfaces hold no query logic of their own. It is safe for concurrent use when
@@ -137,9 +147,13 @@ func (s *Service) directedLookup(ctx context.Context, operation string, id model
 		return Result{}, err
 	}
 
+	type edgeEndpoint struct {
+		edge     ResultEdge
+		endpoint model.NodeId
+	}
 	var (
-		resEdges []ResultEdge
-		nodeIDs  = map[model.NodeId]struct{}{}
+		pairs   []edgeEndpoint
+		nodeIDs = map[model.NodeId]struct{}{}
 	)
 	for _, e := range edges {
 		var endpoint model.NodeId
@@ -154,7 +168,7 @@ func (s *Service) directedLookup(ctx context.Context, operation string, id model
 			}
 			endpoint = e.To()
 		}
-		resEdges = append(resEdges, edgeToResult(e))
+		pairs = append(pairs, edgeEndpoint{edge: edgeToResult(e), endpoint: endpoint})
 		nodeIDs[endpoint] = struct{}{}
 	}
 
@@ -162,7 +176,46 @@ func (s *Service) directedLookup(ctx context.Context, operation string, id model
 	if err != nil {
 		return Result{}, err
 	}
+	// WP-03 query hygiene: interned external nodes are heuristic linker artifacts
+	// on calls/references edges, not navigable symbols. Drop them AND the edges
+	// that reach only them so a caller never sees a dangling endpoint.
+	external := externalIDs(resNodes)
+	resNodes = dropExternalNodes(resNodes, external)
+	resEdges := make([]ResultEdge, 0, len(pairs))
+	for _, p := range pairs {
+		if _, isExt := external[p.endpoint]; isExt {
+			continue
+		}
+		resEdges = append(resEdges, p.edge)
+	}
 	return finalize(operation, id, nil, resNodes, resEdges), nil
+}
+
+// externalIDs returns the set of node ids in the slice whose kind is the interned
+// external kind (WP-03).
+func externalIDs(nodes []ResultNode) map[model.NodeId]struct{} {
+	out := map[model.NodeId]struct{}{}
+	for _, n := range nodes {
+		if n.Kind == kindExternal {
+			out[n.ID] = struct{}{}
+		}
+	}
+	return out
+}
+
+// dropExternalNodes returns nodes with the external-kind entries removed.
+func dropExternalNodes(nodes []ResultNode, external map[model.NodeId]struct{}) []ResultNode {
+	if len(external) == 0 {
+		return nodes
+	}
+	out := nodes[:0]
+	for _, n := range nodes {
+		if _, isExt := external[n.ID]; isExt {
+			continue
+		}
+		out = append(out, n)
+	}
+	return out
 }
 
 // collectNodes fetches the given node ids (read-only), skipping any that no
@@ -266,9 +319,13 @@ func (s *Service) multiKindLookup(ctx context.Context, operation string, id mode
 	if err != nil {
 		return Result{}, err
 	}
+	type edgeEndpoint struct {
+		edge     ResultEdge
+		endpoint model.NodeId
+	}
 	var (
-		resEdges []ResultEdge
-		nodeIDs  = map[model.NodeId]struct{}{}
+		pairs   []edgeEndpoint
+		nodeIDs = map[model.NodeId]struct{}{}
 	)
 	for _, e := range edges {
 		if _, want := kindSet[e.Kind()]; !want {
@@ -286,12 +343,22 @@ func (s *Service) multiKindLookup(ctx context.Context, operation string, id mode
 			}
 			endpoint = e.To()
 		}
-		resEdges = append(resEdges, edgeToResult(e))
+		pairs = append(pairs, edgeEndpoint{edge: edgeToResult(e), endpoint: endpoint})
 		nodeIDs[endpoint] = struct{}{}
 	}
 	resNodes, err := s.collectNodes(ctx, nodeIDs)
 	if err != nil {
 		return Result{}, err
+	}
+	// WP-03 query hygiene: drop interned external endpoints (and their edges).
+	external := externalIDs(resNodes)
+	resNodes = dropExternalNodes(resNodes, external)
+	resEdges := make([]ResultEdge, 0, len(pairs))
+	for _, p := range pairs {
+		if _, isExt := external[p.endpoint]; isExt {
+			continue
+		}
+		resEdges = append(resEdges, p.edge)
 	}
 	return finalize(operation, id, nil, resNodes, resEdges), nil
 }
@@ -367,6 +434,12 @@ func (s *Service) Neighborhood(ctx context.Context, symbolID model.NodeId, depth
 				// them out of neighborhoods AND prevents a popular package from
 				// acting as an import hub that pulls in every co-importer.
 				if otherNode.Kind() == kindPackage {
+					continue
+				}
+				// WP-03: interned external nodes are terminal linker artifacts, not
+				// navigable symbols — skip so they never appear as neighbors nor are
+				// traversed into.
+				if otherNode.Kind() == kindExternal {
 					continue
 				}
 				collectedEdges[e.ID()] = e

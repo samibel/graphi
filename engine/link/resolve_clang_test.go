@@ -51,7 +51,7 @@ func cScene(t *testing.T) ([]model.Node, []FileRefs) {
 
 func TestCLink_Resolves(t *testing.T) {
 	nodes, files := cScene(t)
-	edges, st, err := New().Link("c", files, BuildIndex(nodes))
+	_, edges, st, err := New().Link("c", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -99,7 +99,7 @@ func TestCppLink_Resolves(t *testing.T) {
 			{FromQN: "app.run", Name: "helper", Kind: "calls", Line: 2, Selector: false},
 		},
 	}}
-	edges, _, err := New().Link("cpp", files, BuildIndex(nodes))
+	_, edges, _, err := New().Link("cpp", files, BuildIndex(nodes))
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}

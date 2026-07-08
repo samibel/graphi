@@ -63,6 +63,13 @@ func (goResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 			// Same-package (directory) bare-name resolution → derived.
 			to, ok := idx.sameDir(in.Dir, p.Name)
 			if !ok {
+				// WP-03: a bare-ident miss is NOT materialized as an external node.
+				// In Go a bare unresolved identifier is almost always a LOCAL
+				// variable / parameter / builtin (e.g. `id`, `rows`, `_`), NOT an
+				// external symbol — minting external nodes here would flood the graph
+				// with mislabeled locals. External materialization is deliberately
+				// scoped to SELECTOR misses with a known import path (drop-point 1)
+				// or a receiver-qualified call (drop-point 2) below.
 				st.Skipped++
 				continue
 			}
@@ -86,7 +93,19 @@ func (goResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 		if impPath, isPkg := aliasToPath[p.SelectorBase]; isPkg {
 			to, ok := idx.crossPackage(impPath, p.Name)
 			if !ok {
-				st.Skipped++ // stdlib / 3rd-party / unindexed package
+				// WP-03 drop-point 1 (HIGH confidence): the selector base IS a known
+				// import alias but the target is not in the repo (stdlib / 3rd-party).
+				// The import path is known, so the external qualified name is exact
+				// (impPath + "." + Name, e.g. "os/exec.Command", "os.ReadFile"). Mint
+				// a heuristic-tier edge to an interned external node so name-keyed
+				// analyses (taint sinks/sources) have a real node to match. These are
+				// explicitly second-class heuristic nodes — never confirmed.
+				out = append(out, intent{
+					from: from, toExternalQN: impPath + "." + p.Name, kind: p.Kind, class: classSelector,
+					reason:   "external " + p.Kind + " (unresolved import " + impPath + ")",
+					evidence: ev,
+				})
+				st.ResolvedExternal++
 				continue
 			}
 			out = append(out, intent{
@@ -99,7 +118,8 @@ func (goResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 		}
 
 		// Not a known import alias ⇒ treat the base as a receiver name and try a
-		// unique recv.Method heuristic. Only methods (calls) are attempted.
+		// unique recv.Method heuristic. Only methods (calls) are attempted. A real
+		// internal match ALWAYS wins over external materialization.
 		if p.Kind == edgeCalls {
 			to, ok := idx.receiverMethod(in.Dir, p.SelectorBase, p.Name)
 			if ok {
@@ -112,7 +132,27 @@ func (goResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 				continue
 			}
 		}
-		// Unresolvable selector (local var method, ambiguous, stdlib): skip.
+		// WP-03 drop-point 2 (LOWER confidence): a selector call/reference whose base
+		// is NOT an import alias and whose receiver-method attempt missed — a
+		// receiver-qualified call on a local var (`db.Query`, `db.Exec`) or a chained
+		// selector (base == ""). The receiver TYPE is unknown, so the external QN is
+		// best-effort (SelectorBase + "." + Name, e.g. "db.Query"; ".Query" when the
+		// base is a chained selector). We still mint a heuristic-tier external node so
+		// the taint analyzer has a node to match. Guarded to calls/references only
+		// (never bare idents — see drop-point above). Note: because the receiver type
+		// cannot be recovered here, these QNs will NOT match a config sink pattern
+		// that keys on the fully-qualified stdlib name (e.g. "database/sql.DB.Query");
+		// closing that gap is WP-05's job (receiver-type inference / config patterns).
+		if p.Kind == edgeCalls || p.Kind == edgeReferences {
+			out = append(out, intent{
+				from: from, toExternalQN: p.SelectorBase + "." + p.Name, kind: p.Kind, class: classSelector,
+				reason:   "external " + p.Kind + " (unresolved receiver " + p.SelectorBase + ")",
+				evidence: ev,
+			})
+			st.ResolvedExternal++
+			continue
+		}
+		// Unresolvable selector (ambiguous, non-call/ref kinds): skip.
 		st.Skipped++
 	}
 

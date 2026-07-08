@@ -18,6 +18,10 @@ import (
 // Analysis.Truncated is set.
 const DefaultMaxNodes = 1024
 
+// externalNodeKind is the interned external-symbol node kind (WP-03), excluded
+// from impact reachability results. Mirrors core/parse.KindExternal.
+const externalNodeKind = "external"
+
 // dependencyKinds are the edge kinds traversed for impact when Params.Kinds is
 // empty: the canonical calls/references vocabulary fixed by engine/query.
 // `defines` is deliberately NOT a default kind — a file "defining" a symbol is
@@ -142,6 +146,14 @@ func (a impactAnalyzer) Analyze(ctx context.Context, r query.Reader, p Params) (
 						continue // referential drift: endpoint no longer exists
 					}
 					return Analysis{}, err
+				}
+				// WP-03 query hygiene: interned external nodes are terminal heuristic
+				// linker artifacts (stdlib / 3rd-party targets), not part of the
+				// dependency graph a user reasons about — exclude them from the blast
+				// radius. They have no outgoing edges, so not enqueuing them also stops
+				// traversal cleanly.
+				if n.Kind() == externalNodeKind {
+					continue
 				}
 				reached[nb.id] = ReachedNode{
 					Node:       nodeToResult(n),

@@ -61,7 +61,7 @@ func pyScene(t *testing.T) ([]model.Node, []FileRefs) {
 func TestPyLink_ResolvesCrossModule(t *testing.T) {
 	nodes, files := pyScene(t)
 	idx := BuildIndex(nodes)
-	edges, st, err := New().Link("python", files, idx)
+	_, edges, st, err := New().Link("python", files, idx)
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -114,11 +114,11 @@ func TestPyLink_ResolvesCrossModule(t *testing.T) {
 func TestPyLink_OrderIndependentAndIdempotent(t *testing.T) {
 	nodes, files := pyScene(t)
 	idx := BuildIndex(nodes)
-	base, _, err := New().Link("python", files, idx)
+	_, base, _, err := New().Link("python", files, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, _, err := New().Link("python", files, idx)
+	_, again, _, err := New().Link("python", files, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestPyLink_OrderIndependentAndIdempotent(t *testing.T) {
 		p := append([]parse.PendingRef(nil), files[0].Pending...)
 		rng.Shuffle(len(p), func(i, j int) { p[i], p[j] = p[j], p[i] })
 		shFiles[0].Pending = p
-		got, _, err := New().Link("python", shFiles, BuildIndex(shNodes))
+		_, got, _, err := New().Link("python", shFiles, BuildIndex(shNodes))
 		if err != nil {
 			t.Fatal(err)
 		}

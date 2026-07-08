@@ -66,6 +66,14 @@ const fileKind = "file"
 // `imports` edge to them.
 const packageKind = "package"
 
+// externalKind is the interned external-symbol node kind (WP-03). The Go resolver
+// mints these for unresolved stdlib / 3rd-party call/reference targets. Like
+// package nodes they are kept OUT of every symbol table so they can NEVER resolve
+// a reference: a committed external node must not let a later pass "resolve"
+// os.ReadFile to the external node itself (which would diverge from a full pass
+// and make drop-point 1 non-deterministic). BuildIndex simply skips them.
+const externalKind = "external"
+
 // BuildIndex constructs a SymbolIndex from a committed node set. It is pure and
 // deterministic: identical input (in any order) yields an index that resolves
 // identically. Resolution is O(1) per lookup (no caller×candidate scans).
@@ -86,6 +94,11 @@ func BuildIndex(nodes []model.Node) *SymbolIndex {
 			// Interned package node (WP-01): index by its full package path and
 			// keep it OUT of the symbol tables so it can never resolve a symbol.
 			idx.packageNodeByPath[n.QualifiedName()] = n.ID()
+			continue
+		}
+		if n.Kind() == externalKind {
+			// Interned external node (WP-03): a linker artifact, never a resolution
+			// target. Skipping it keeps drop-point 1/2 deterministic across passes.
 			continue
 		}
 		if n.Kind() == fileKind {
