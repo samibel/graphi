@@ -60,7 +60,11 @@ import (
 //	    same NON-identity meta (C#: `override` flag + attribute names; TS:
 //	    `override` flag), so an older store with empty meta on C#/TS declarations
 //	    must re-index for the dead_symbol override exemption to apply.
-const ingestSemanticsVersion = "10"
+//	11: WP-14 follow-up (cont.) — the TypeScript extractor now attaches decorator
+//	    names + a `decorated` flag to decorated classes/methods (Angular/NestJS
+//	    framework entry points), so an older store with empty meta on decorated TS
+//	    declarations must re-index for the dead_symbol decorator exemption to apply.
+const ingestSemanticsVersion = "11"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
