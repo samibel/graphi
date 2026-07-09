@@ -56,7 +56,11 @@ import (
 //	    (annotation names + the `override` flag) to declarations, so an older store
 //	    (Kotlin nodes with empty meta) must re-index to populate it; the
 //	    dead_symbol entry-point exemption reads this meta.
-const ingestSemanticsVersion = "9"
+//	10: WP-14 follow-up (cont.) — the C# and TypeScript extractors now attach the
+//	    same NON-identity meta (C#: `override` flag + attribute names; TS:
+//	    `override` flag), so an older store with empty meta on C#/TS declarations
+//	    must re-index for the dead_symbol override exemption to apply.
+const ingestSemanticsVersion = "10"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the

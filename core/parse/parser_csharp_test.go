@@ -240,3 +240,46 @@ func TestExtractCS_Deterministic(t *testing.T) {
 		}
 	}
 }
+
+// TestExtractCS_OverrideAndAttributeMeta is the WP-14 follow-up gate: the C#
+// extractor attaches the "override" flag to an `override` method and the
+// attribute name to a `[Fact]`-attributed method, so the dead_symbol entry-point
+// exemption can see them. A plain method carries neither.
+func TestExtractCS_OverrideAndAttributeMeta(t *testing.T) {
+	src := `namespace N;
+
+class Impl : Base {
+    [Fact]
+    public void Checks() {}
+
+    public override int Render() { return 1; }
+
+    public int Plain() { return 2; }
+}
+`
+	res, err := NewCSharpParser().Parse(context.Background(), "n/Impl.cs", []byte(src))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	metaByName := map[string]model.NodeMeta{}
+	for _, n := range res.Nodes {
+		metaByName[n.QualifiedName()] = n.Meta()
+	}
+	has := func(s []string, want string) bool {
+		for _, v := range s {
+			if v == want {
+				return true
+			}
+		}
+		return false
+	}
+	if !has(metaByName["n.Render"].Flags, "override") {
+		t.Errorf("n.Render flags = %v, want to contain \"override\"", metaByName["n.Render"].Flags)
+	}
+	if !has(metaByName["n.Checks"].Annotations, "Fact") {
+		t.Errorf("n.Checks annotations = %v, want to contain \"Fact\"", metaByName["n.Checks"].Annotations)
+	}
+	if has(metaByName["n.Plain"].Flags, "override") {
+		t.Errorf("n.Plain flags = %v, must NOT contain \"override\"", metaByName["n.Plain"].Flags)
+	}
+}

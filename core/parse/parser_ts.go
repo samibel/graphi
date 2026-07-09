@@ -164,6 +164,7 @@ func (e *tsSymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 		pkg:      tsPackage(filename),
 		defKind:  map[string]string{},
 		defPos:   map[string]TSPoint{},
+		defMeta:  map[string]model.NodeMeta{},
 		funcs:    map[string]struct{}{},
 		edgeSeen: map[string]struct{}{},
 		pendSeen: map[string]struct{}{},
@@ -188,7 +189,7 @@ func (e *tsSymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 	for _, bare := range w.defOrder {
 		entries = append(entries, entry{
 			bare: bare,
-			spec: TSNodeSpec{Kind: w.defKind[bare], QualifiedName: w.pkg + "." + bare, Pos: w.defPos[bare]},
+			spec: TSNodeSpec{Kind: w.defKind[bare], QualifiedName: w.pkg + "." + bare, Pos: w.defPos[bare], Meta: w.defMeta[bare]},
 		})
 	}
 	sort.SliceStable(entries, func(i, j int) bool {
@@ -225,10 +226,11 @@ type tsWalk struct {
 	src  []byte
 	pkg  string
 
-	defKind  map[string]string   // bareName -> Kind (first binding wins)
-	defPos   map[string]TSPoint  // bareName -> definition position
-	defOrder []string            // discovery order
-	funcs    map[string]struct{} // bare names that are callable (function/method)
+	defKind  map[string]string         // bareName -> Kind (first binding wins)
+	defPos   map[string]TSPoint        // bareName -> definition position
+	defMeta  map[string]model.NodeMeta // bareName -> non-identity meta (first binding wins)
+	defOrder []string                  // discovery order
+	funcs    map[string]struct{}       // bare names that are callable (function/method)
 
 	edgeSpecs []TSEdgeSpec
 	edgeSeen  map[string]struct{}
@@ -249,6 +251,20 @@ func (w *tsWalk) addDef(bare, kind string, pos TSPoint) {
 	if kind == KindFunction || kind == KindMethod {
 		w.funcs[bare] = struct{}{}
 	}
+}
+
+// setDefMeta attaches NON-identity metadata (flags) to a previously-added
+// definition (first binding wins, mirroring addDef), so a later same-named
+// declaration never clobbers it. A zero meta is skipped so it does not shadow a
+// real one recorded for the same name.
+func (w *tsWalk) setDefMeta(bare string, m model.NodeMeta) {
+	if bare == "" || len(m.Annotations) == 0 && len(m.Flags) == 0 {
+		return
+	}
+	if _, set := w.defMeta[bare]; set {
+		return
+	}
+	w.defMeta[bare] = m
 }
 
 // point returns the 0-based start position of n as a TSPoint.
@@ -291,7 +307,13 @@ func (w *tsWalk) walkDefs(n *gts.Node, inClass bool) {
 		case "method_definition":
 			if inClass {
 				if name := c.ChildByFieldName("name", w.lang); name != nil {
-					w.addDef(name.Text(w.src), KindMethod, point(name))
+					bare := name.Text(w.src)
+					w.addDef(bare, KindMethod, point(name))
+					// WP-14 follow-up: a TS `override` member is invoked through its
+					// supertype, so flag it "override" to exempt it from dead_symbol.
+					if childByType(c, "override_modifier", w.lang) != nil {
+						w.setDefMeta(bare, model.NewNodeMeta(nil, []string{"override"}))
+					}
 				}
 			}
 		case "lexical_declaration":

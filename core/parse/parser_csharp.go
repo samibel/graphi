@@ -139,19 +139,89 @@ func csVisitTypes(w *cstWalk, n *gts.Node, fn func(typeDecl *gts.Node)) {
 func csCollectDefs(w *cstWalk, unit *gts.Node) {
 	csVisitTypes(w, unit, func(td *gts.Node) {
 		if name := td.ChildByFieldName("name", w.lang); name != nil {
-			w.addDef(name.Text(w.src), KindType, nodePoint(name))
+			bare := name.Text(w.src)
+			w.addDef(bare, KindType, nodePoint(name))
+			w.setDefMeta(bare, csDeclMeta(w, td))
 		}
 		if body := childByType(td, "declaration_list", w.lang); body != nil {
 			for i := 0; i < body.ChildCount(); i++ {
 				m := body.Child(i)
 				if m != nil && m.Type(w.lang) == "method_declaration" {
 					if name := m.ChildByFieldName("name", w.lang); name != nil {
-						w.addDef(name.Text(w.src), KindMethod, nodePoint(name))
+						bare := name.Text(w.src)
+						w.addDef(bare, KindMethod, nodePoint(name))
+						// WP-14 follow-up: the `override` modifier becomes the "override"
+						// entry-point flag (an override is invoked polymorphically through
+						// its base type), plus any attribute names.
+						w.setDefMeta(bare, csDeclMeta(w, m))
 					}
 				}
 			}
 		}
 	})
+}
+
+// csDeclMeta derives the NON-identity NodeMeta for a C# type/method declaration:
+// the "override" flag from an `override` modifier and any attribute NAMES from
+// the declaration's `attribute_list` children. NewNodeMeta sorts+dedups, so the
+// result is a deterministic, pure function of the source.
+func csDeclMeta(w *cstWalk, decl *gts.Node) model.NodeMeta {
+	var annotations, flags []string
+	for i := 0; i < decl.ChildCount(); i++ {
+		c := decl.Child(i)
+		if c == nil {
+			continue
+		}
+		switch c.Type(w.lang) {
+		case "modifier":
+			if c.Text(w.src) == "override" {
+				flags = append(flags, "override")
+			}
+		case "attribute_list":
+			for j := 0; j < c.ChildCount(); j++ {
+				a := c.Child(j)
+				if a != nil && a.Type(w.lang) == "attribute" {
+					if name := csAttributeName(w, a); name != "" {
+						annotations = append(annotations, name)
+					}
+				}
+			}
+		}
+	}
+	return model.NewNodeMeta(annotations, flags)
+}
+
+// csAttributeName extracts the bare attribute identifier — the trailing segment
+// of a scoped name (`System.ObsoleteAttribute` → "ObsoleteAttribute") — from a C#
+// `attribute` node. Returns "" when no name resolves.
+func csAttributeName(w *cstWalk, attr *gts.Node) string {
+	name := attr.ChildByFieldName("name", w.lang)
+	if name == nil {
+		for i := 0; i < attr.ChildCount(); i++ {
+			c := attr.Child(i)
+			if c != nil {
+				if t := c.Type(w.lang); t == "identifier" || t == "qualified_name" {
+					name = c
+					break
+				}
+			}
+		}
+	}
+	if name == nil {
+		return ""
+	}
+	return trailingDotSegment(name.Text(w.src))
+}
+
+// trailingDotSegment returns the segment after the final '.' ("a.b.C" → "C"), or
+// the whole string when there is no dot.
+func trailingDotSegment(s string) string {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == '.' {
+			return s[i+1:]
+		}
+	}
+	return s
 }
 
 func csResolveUses(w *cstWalk, unit *gts.Node) {
