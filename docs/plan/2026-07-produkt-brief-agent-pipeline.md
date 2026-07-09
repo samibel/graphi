@@ -308,6 +308,24 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
   full-vs-incremental byte-identisch.
 - **Abhängigkeiten:** WP-01 (Parser-Bereich stabil).
 
+**WP-11-Follow-up · `override`-Keyword-Sprachen (Kotlin) im dead_symbol-Exempt** — ✅ erledigt
+- **Kern:** Java-`@Override` war bereits im Entry-Point-Set, aber Kotlin/C#/TS
+  nutzen das `override`-KEYWORD (kein `@Override`-Annotation) und der Kotlin-
+  Extractor hängte gar keine `NodeMeta` an → Kotlin-Overrides wurden als
+  dead_symbol-Falschpositive geflaggt. Fix: Kotlin-Extractor liest den
+  `modifiers`-Knoten (`kotlinDeclMeta`) und setzt das Flag `"override"` plus
+  Annotationsnamen; `IsEntryPoint` erkennt das `"override"`-Flag
+  sprach-agnostisch. Dieselbe Predicate schützt Overrides automatisch auch vor
+  `safe_delete` (Korrektheits-Gate). Warm-Start-Stamp auf „9" (Kotlin-Meta-
+  Content ändert sich).
+- **Gate:** `TestExtractKotlin_OverrideAndAnnotationMeta` (Extractor),
+  `TestDiagnose_KotlinOverrideNotDead` (E2E über Ingest+SQLite: `override fun`
+  → info `entrypoint_candidate`, kein Warning), `TestApplySafeDelete_BlockOverride`
+  (Löschschutz).
+- **Offen (Follow-up):** C#- und TypeScript-`override`-Keyword — `IsEntryPoint`
+  ist bereits vorbereitet (flag-basiert), es fehlt nur die Meta-Extraktion in
+  `parser_csharp.go` / `parser_tswalk.go`.
+
 **WP-11 · Entry-Point-aware dead_symbol + safe_delete-Gate**
 - **Kern:** Exclusion-Prädikat an `analyze.go:181-184` (Entry-Point-Annotationen,
   `main`-Signatur, Test-Konvention); optional Severity-Downgrade auf `info`

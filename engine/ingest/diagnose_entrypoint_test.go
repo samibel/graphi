@@ -109,6 +109,70 @@ public class App {
 	}
 }
 
+// TestDiagnose_KotlinOverrideNotDead is the WP-14 follow-up gate: a Kotlin
+// `override fun` with no in-graph caller (its supertype method is invoked
+// polymorphically, an edge the static graph resolves to the base type) must NOT
+// be flagged as a dead_symbol warning — it is exempt via the extractor-attached
+// "override" flag, surfacing as an info entrypoint_candidate instead. Java's
+// `@Override` annotation already covered the annotation-based languages; this
+// covers the `override`-keyword languages through the real ingest+SQLite path.
+func TestDiagnose_KotlinOverrideNotDead(t *testing.T) {
+	ctx := context.Background()
+
+	src := `package com.example.app
+
+class Widget : Base {
+    override fun render(): Int {
+        return 1
+    }
+
+    fun deadHelper(): Int {
+        return 2
+    }
+}
+`
+	root := writeRepo(t, map[string]string{"app/Widget.kt": src})
+
+	store, err := graphstore.OpenSQLite(filepath.Join(t.TempDir(), "graphi.db"))
+	if err != nil {
+		t.Fatalf("OpenSQLite: %v", err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	ing := newIngester(t, store, parse.NewDefaultRegistry())
+	if err := ing.IngestAll(ctx, root); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	if err := store.EvictCache(ctx); err != nil {
+		t.Fatalf("EvictCache: %v", err)
+	}
+
+	// --all keeps suppressed findings visible, so the override method surfaces as
+	// an info entrypoint_candidate; it must never be a warning.
+	all, err := diagnostic.DiagnoseWithOptions(ctx, store, []string{diagnostic.KindDeadSymbol}, diagnostic.DiagnoseOptions{All: true})
+	if err != nil {
+		t.Fatalf("DiagnoseWithOptions(--all): %v", err)
+	}
+	var sawOverrideInfo bool
+	for _, d := range all.Diagnostics {
+		if d.Code != "dead_symbol" {
+			continue
+		}
+		if qnOf(d.Message) != "app.render" {
+			continue
+		}
+		if d.Severity == diagnostic.SeverityWarning {
+			t.Errorf("Kotlin override app.render wrongly flagged as a dead_symbol WARNING")
+		}
+		if d.Severity == diagnostic.SeverityInfo && d.Reason == diagnostic.ReasonEntrypointCandidate {
+			sawOverrideInfo = true
+		}
+	}
+	if !sawOverrideInfo {
+		t.Errorf("Kotlin override app.render should be an info entrypoint_candidate (override exemption)")
+	}
+}
+
 // qnOf extracts the quoted qualified name from a diagnostic message.
 func qnOf(msg string) string {
 	start := -1
