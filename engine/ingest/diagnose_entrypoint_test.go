@@ -173,6 +173,80 @@ class Widget : Base {
 	}
 }
 
+// TestDiagnose_OverrideKeywordNotDead extends the Kotlin override gate to the
+// other `override`-keyword languages (C#, TypeScript): an override member with no
+// in-graph caller must surface as an info entrypoint_candidate, never a
+// dead_symbol warning, through the real ingest+SQLite path.
+func TestDiagnose_OverrideKeywordNotDead(t *testing.T) {
+	cases := []struct {
+		name string
+		file string
+		src  string
+		qn   string
+	}{
+		{
+			name: "csharp",
+			file: "app/Widget.cs",
+			src: `namespace app;
+
+class Widget : Base {
+    public override int Render() { return 1; }
+}
+`,
+			qn: "app.Render",
+		},
+		{
+			name: "typescript",
+			file: "app/widget.ts",
+			src: `class Widget extends Base {
+    override render(): number { return 1; }
+}
+`,
+			qn: "app.render",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			root := writeRepo(t, map[string]string{tc.file: tc.src})
+
+			store, err := graphstore.OpenSQLite(filepath.Join(t.TempDir(), "graphi.db"))
+			if err != nil {
+				t.Fatalf("OpenSQLite: %v", err)
+			}
+			t.Cleanup(func() { _ = store.Close() })
+
+			ing := newIngester(t, store, parse.NewDefaultRegistry())
+			if err := ing.IngestAll(ctx, root); err != nil {
+				t.Fatalf("IngestAll: %v", err)
+			}
+			if err := store.EvictCache(ctx); err != nil {
+				t.Fatalf("EvictCache: %v", err)
+			}
+
+			all, err := diagnostic.DiagnoseWithOptions(ctx, store, []string{diagnostic.KindDeadSymbol}, diagnostic.DiagnoseOptions{All: true})
+			if err != nil {
+				t.Fatalf("DiagnoseWithOptions(--all): %v", err)
+			}
+			var sawInfo bool
+			for _, d := range all.Diagnostics {
+				if d.Code != "dead_symbol" || qnOf(d.Message) != tc.qn {
+					continue
+				}
+				if d.Severity == diagnostic.SeverityWarning {
+					t.Errorf("%s override %q wrongly flagged as a dead_symbol WARNING", tc.name, tc.qn)
+				}
+				if d.Severity == diagnostic.SeverityInfo && d.Reason == diagnostic.ReasonEntrypointCandidate {
+					sawInfo = true
+				}
+			}
+			if !sawInfo {
+				t.Errorf("%s override %q should be an info entrypoint_candidate", tc.name, tc.qn)
+			}
+		})
+	}
+}
+
 // qnOf extracts the quoted qualified name from a diagnostic message.
 func qnOf(msg string) string {
 	start := -1

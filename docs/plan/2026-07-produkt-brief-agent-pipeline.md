@@ -322,9 +322,13 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
   `TestDiagnose_KotlinOverrideNotDead` (E2E über Ingest+SQLite: `override fun`
   → info `entrypoint_candidate`, kein Warning), `TestApplySafeDelete_BlockOverride`
   (Löschschutz).
-- **Offen (Follow-up):** C#- und TypeScript-`override`-Keyword — `IsEntryPoint`
-  ist bereits vorbereitet (flag-basiert), es fehlt nur die Meta-Extraktion in
-  `parser_csharp.go` / `parser_tswalk.go`.
+- **C#/TS-Nachzug** — ✅ erledigt: `parser_csharp.go` (`csDeclMeta`: `override`-
+  Modifier → Flag + Attribut-Namen über die geteilte `cstWalk`/`setDefMeta`) und
+  `parser_ts.go` (`tsWalk` bekommt `defMeta`/`setDefMeta`; `override_modifier` →
+  Flag). Warm-Start-Stamp „10". Gates: `TestExtractCS_OverrideAndAttributeMeta`,
+  `TestExtractTS_OverrideMeta`, `TestDiagnose_OverrideKeywordNotDead`
+  (C#+TS E2E). Damit sind alle vier Tier-1-Override-Sprachen (Java-Annotation +
+  Kotlin/C#/TS-Keyword) abgedeckt.
 
 **WP-11 · Entry-Point-aware dead_symbol + safe_delete-Gate**
 - **Kern:** Exclusion-Prädikat an `analyze.go:181-184` (Entry-Point-Annotationen,

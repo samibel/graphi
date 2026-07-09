@@ -332,3 +332,36 @@ func TestExtractTS_Deterministic(t *testing.T) {
 		}
 	}
 }
+
+// TestExtractTS_OverrideMeta is the WP-14 follow-up gate: the TypeScript
+// extractor attaches the "override" flag to an `override` method so the
+// dead_symbol entry-point exemption can see it; a plain method carries none.
+func TestExtractTS_OverrideMeta(t *testing.T) {
+	src := `class Impl extends Base {
+    override render(): number { return 1; }
+    plain(): number { return 2; }
+}
+`
+	res, err := NewTSParser().Parse(context.Background(), "src/impl.ts", []byte(src))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	metaByName := map[string]model.NodeMeta{}
+	for _, n := range res.Nodes {
+		metaByName[n.QualifiedName()] = n.Meta()
+	}
+	has := func(s []string, want string) bool {
+		for _, v := range s {
+			if v == want {
+				return true
+			}
+		}
+		return false
+	}
+	if !has(metaByName["src.render"].Flags, "override") {
+		t.Errorf("src.render flags = %v, want to contain \"override\"", metaByName["src.render"].Flags)
+	}
+	if has(metaByName["src.plain"].Flags, "override") {
+		t.Errorf("src.plain flags = %v, must NOT contain \"override\"", metaByName["src.plain"].Flags)
+	}
+}
