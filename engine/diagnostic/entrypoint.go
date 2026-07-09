@@ -65,7 +65,12 @@ func EntryPointAnnotationSet() map[string]bool {
 //     overriding member is invoked polymorphically through its base type /
 //     interface, an edge the static call graph often resolves to the DECLARED
 //     type rather than this concrete member — so it legitimately has no direct
-//     inbound reference and must not be dead-flagged.
+//     inbound reference and must not be dead-flagged;
+//   - it is DECORATED: Meta().Flags contains "decorated" (a TypeScript class /
+//     method decorator, e.g. Angular `@Component` / `@Injectable`, NestJS
+//     `@Controller` / `@Get`). A decorated symbol is instantiated or invoked by
+//     the framework via the decorator's registration, which the static graph
+//     cannot see, so it legitimately has no in-graph inbound reference.
 //
 // This is intentionally permissive toward NOT flagging/deleting: a false
 // "entry point" only suppresses a dead-symbol warning or blocks a delete, both
@@ -78,7 +83,7 @@ func IsEntryPoint(n model.Node) bool {
 		}
 	}
 	for _, f := range meta.Flags {
-		if f == "main" || f == "test_path" || f == "override" {
+		if f == "main" || f == "test_path" || f == "override" || f == "decorated" {
 			return true
 		}
 	}

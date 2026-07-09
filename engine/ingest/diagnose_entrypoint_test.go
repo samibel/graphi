@@ -247,6 +247,63 @@ class Widget : Base {
 	}
 }
 
+// TestDiagnose_TSDecoratedNotDead is the WP-14 follow-up gate: a decorated
+// TypeScript class/method with no in-graph caller (the framework instantiates or
+// invokes it via the decorator's registration) must surface as an info
+// entrypoint_candidate, never a dead_symbol warning, through the real
+// ingest+SQLite path.
+func TestDiagnose_TSDecoratedNotDead(t *testing.T) {
+	ctx := context.Background()
+	src := `@Controller("/widgets")
+class WidgetController {
+    @Get("/")
+    list(): number { return 1; }
+}
+`
+	root := writeRepo(t, map[string]string{"app/widget.controller.ts": src})
+
+	store, err := graphstore.OpenSQLite(filepath.Join(t.TempDir(), "graphi.db"))
+	if err != nil {
+		t.Fatalf("OpenSQLite: %v", err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	ing := newIngester(t, store, parse.NewDefaultRegistry())
+	if err := ing.IngestAll(ctx, root); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	if err := store.EvictCache(ctx); err != nil {
+		t.Fatalf("EvictCache: %v", err)
+	}
+
+	all, err := diagnostic.DiagnoseWithOptions(ctx, store, []string{diagnostic.KindDeadSymbol}, diagnostic.DiagnoseOptions{All: true})
+	if err != nil {
+		t.Fatalf("DiagnoseWithOptions(--all): %v", err)
+	}
+	// Both the decorated class and the decorated handler method must be exempt.
+	want := map[string]bool{"app.WidgetController": false, "app.list": false}
+	for _, d := range all.Diagnostics {
+		if d.Code != "dead_symbol" {
+			continue
+		}
+		qn := qnOf(d.Message)
+		if _, tracked := want[qn]; !tracked {
+			continue
+		}
+		if d.Severity == diagnostic.SeverityWarning {
+			t.Errorf("decorated TS symbol %q wrongly flagged as a dead_symbol WARNING", qn)
+		}
+		if d.Severity == diagnostic.SeverityInfo && d.Reason == diagnostic.ReasonEntrypointCandidate {
+			want[qn] = true
+		}
+	}
+	for qn, ok := range want {
+		if !ok {
+			t.Errorf("decorated TS symbol %q should be an info entrypoint_candidate", qn)
+		}
+	}
+}
+
 // qnOf extracts the quoted qualified name from a diagnostic message.
 func qnOf(msg string) string {
 	start := -1

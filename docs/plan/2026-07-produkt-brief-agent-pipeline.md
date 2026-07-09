@@ -329,6 +329,14 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
   `TestExtractTS_OverrideMeta`, `TestDiagnose_OverrideKeywordNotDead`
   (C#+TS E2E). Damit sind alle vier Tier-1-Override-Sprachen (Java-Annotation +
   Kotlin/C#/TS-Keyword) abgedeckt.
+- **TS-Decorators** — ✅ erledigt: der TS-Extractor liest Klassen- und
+  Methoden-`decorator`-Knoten (Namen als Annotations, plus `decorated`-Flag) —
+  inkl. der `export class`-Form, wo der Decorator im `export_statement` steht.
+  `IsEntryPoint` erkennt das `decorated`-Flag: framework-verwaltete TS-Symbole
+  (Angular `@Component`/`@Injectable`, NestJS `@Controller`/`@Get`) sind damit
+  vom `dead_symbol` ausgenommen (Präsenz eines Decorators als Signal statt
+  brüchiger Framework-Allowlist; fail-safe). Warm-Start-Stamp „11". Gates:
+  `TestExtractTS_DecoratorMeta`, `TestDiagnose_TSDecoratedNotDead` (E2E).
 
 **WP-11 · Entry-Point-aware dead_symbol + safe_delete-Gate**
 - **Kern:** Exclusion-Prädikat an `analyze.go:181-184` (Entry-Point-Annotationen,

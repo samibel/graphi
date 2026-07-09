@@ -282,41 +282,68 @@ func (w *tsWalk) collectDefs(n *gts.Node) {
 }
 
 func (w *tsWalk) walkDefs(n *gts.Node, inClass bool) {
+	// A decorator precedes its target declaration as a sibling (method decorators
+	// in a class body; a class decorator may also sit here before `export`).
+	// Accumulate pending decorators and attach them to the next declaration.
+	var decoNames []string
+	var hasDeco bool
 	for i := 0; i < n.ChildCount(); i++ {
 		c := n.Child(i)
 		if c == nil {
 			continue
 		}
+		if c.Type(w.lang) == "decorator" {
+			hasDeco = true
+			if name := tsDecoratorName(w, c); name != "" {
+				decoNames = append(decoNames, name)
+			}
+			continue
+		}
+
 		switch c.Type(w.lang) {
 		case "function_declaration":
+			decoNames, hasDeco = nil, false // reset: a decorator never precedes a function
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
 				w.addDef(name.Text(w.src), KindFunction, point(name))
 			}
 		case "class_declaration":
+			// Class decorators (Angular @Component, NestJS @Controller, …) are
+			// CHILDREN of the class_declaration when unexported, but siblings inside
+			// the `export_statement` when exported — union both sources.
+			childNames, childHas := tsCollectDecorators(w, c)
+			names := append(append([]string(nil), decoNames...), childNames...)
+			decorated := hasDeco || childHas
+			decoNames, hasDeco = nil, false
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
-				w.addDef(name.Text(w.src), KindType, point(name))
+				bare := name.Text(w.src)
+				w.addDef(bare, KindType, point(name))
+				w.setDefMeta(bare, tsEntryMeta(names, decorated, false))
 			}
 			// Recurse into the class body to pick up methods.
 			if body := c.ChildByFieldName("body", w.lang); body != nil {
 				w.walkDefs(body, true)
 			}
 		case "interface_declaration", "type_alias_declaration", "enum_declaration":
+			decoNames, hasDeco = nil, false
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
 				w.addDef(name.Text(w.src), KindType, point(name))
 			}
 		case "method_definition":
+			names, decorated := decoNames, hasDeco
+			decoNames, hasDeco = nil, false
 			if inClass {
 				if name := c.ChildByFieldName("name", w.lang); name != nil {
 					bare := name.Text(w.src)
 					w.addDef(bare, KindMethod, point(name))
-					// WP-14 follow-up: a TS `override` member is invoked through its
-					// supertype, so flag it "override" to exempt it from dead_symbol.
-					if childByType(c, "override_modifier", w.lang) != nil {
-						w.setDefMeta(bare, model.NewNodeMeta(nil, []string{"override"}))
-					}
+					// WP-14 follow-up: `override` member (invoked through its supertype)
+					// and a decorated member (NestJS @Get, framework-invoked) are both
+					// entry points — exempt from dead_symbol.
+					override := childByType(c, "override_modifier", w.lang) != nil
+					w.setDefMeta(bare, tsEntryMeta(names, decorated, override))
 				}
 			}
 		case "lexical_declaration":
+			decoNames, hasDeco = nil, false
 			// const / let
 			kind := KindVariable
 			if w.lexicalIsConst(c) {
@@ -324,19 +351,82 @@ func (w *tsWalk) walkDefs(n *gts.Node, inClass bool) {
 			}
 			w.collectDeclarators(c, kind)
 		case "variable_declaration":
+			decoNames, hasDeco = nil, false
 			// var
 			w.collectDeclarators(c, KindVariable)
+		case "export_statement":
+			// Recurse through export wrappers so exported declarations are still
+			// discovered. A decorator on an exported class sits INSIDE the
+			// export_statement (before the class_declaration), so the recursion's own
+			// accumulator picks it up; the parent accumulator is left intact here (the
+			// `export` keyword is a transparent token, not a declaration boundary).
+			w.walkDefs(c, inClass)
 		default:
-			// Recurse through export wrappers and the program node so exported
-			// declarations are still discovered.
-			if c.Type(w.lang) == "export_statement" {
-				w.walkDefs(c, inClass)
-			} else if !inClass {
-				// Top-level only: do not descend arbitrary nodes (keeps the node set
-				// to genuine top-level declarations).
-			}
+			// Transparent tokens (the `export`/`default` keywords, comments, …) do
+			// NOT reset the pending-decorator accumulator, so a decorator still
+			// reaches the declaration it precedes. Genuine top-level non-declaration
+			// nodes are simply not descended (keeps the node set to real declarations).
 		}
 	}
+}
+
+// tsEntryMeta builds the non-identity NodeMeta for a TS declaration from its
+// decorator names (annotations), whether it is decorated (the "decorated"
+// entry-point flag), and whether it is an `override` member. An empty result is
+// skipped by setDefMeta.
+func tsEntryMeta(decoNames []string, decorated, override bool) model.NodeMeta {
+	var flags []string
+	if decorated {
+		flags = append(flags, "decorated")
+	}
+	if override {
+		flags = append(flags, "override")
+	}
+	return model.NewNodeMeta(decoNames, flags)
+}
+
+// tsCollectDecorators returns the decorator NAMES that are direct children of n
+// (class decorators) and whether any decorator child is present (even one whose
+// name did not resolve).
+func tsCollectDecorators(w *tsWalk, n *gts.Node) (names []string, has bool) {
+	for i := 0; i < n.ChildCount(); i++ {
+		c := n.Child(i)
+		if c == nil || c.Type(w.lang) != "decorator" {
+			continue
+		}
+		has = true
+		if name := tsDecoratorName(w, c); name != "" {
+			names = append(names, name)
+		}
+	}
+	return names, has
+}
+
+// tsDecoratorName extracts the bare decorator identifier from a `decorator` node:
+// the callee of a call form (`@Component({…})` → "Component") or a bare
+// identifier (`@Injectable` → "Injectable"), with a scoped name reduced to its
+// trailing segment (`@ng.Component` → "Component"). Returns "" when none resolves.
+func tsDecoratorName(w *tsWalk, dec *gts.Node) string {
+	var target *gts.Node
+	for i := 0; i < dec.ChildCount(); i++ {
+		c := dec.Child(i)
+		if c == nil {
+			continue
+		}
+		switch c.Type(w.lang) {
+		case "call_expression":
+			target = c.ChildByFieldName("function", w.lang)
+		case "identifier", "member_expression":
+			target = c
+		}
+		if target != nil {
+			break
+		}
+	}
+	if target == nil {
+		return ""
+	}
+	return trailingDotSegment(target.Text(w.src))
 }
 
 // lexicalIsConst reports whether a lexical_declaration is a `const` (vs `let`).

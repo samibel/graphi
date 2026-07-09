@@ -365,3 +365,52 @@ func TestExtractTS_OverrideMeta(t *testing.T) {
 		t.Errorf("src.plain flags = %v, must NOT contain \"override\"", metaByName["src.plain"].Flags)
 	}
 }
+
+// TestExtractTS_DecoratorMeta is the WP-14 follow-up gate: the TypeScript
+// extractor records decorator names as annotations and sets the "decorated" flag
+// on decorated classes and methods (Angular/NestJS framework entry points),
+// including the exported-class form where the decorator sits inside the
+// export_statement. Undecorated declarations carry neither.
+func TestExtractTS_DecoratorMeta(t *testing.T) {
+	src := `@Component({selector: "x"})
+class Widget {
+    @Get("/")
+    handle(): number { return 1; }
+    plain(): number { return 2; }
+}
+
+@Injectable()
+export class Svc {}
+`
+	res, err := NewTSParser().Parse(context.Background(), "app/x.ts", []byte(src))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	metaByName := map[string]model.NodeMeta{}
+	for _, n := range res.Nodes {
+		metaByName[n.QualifiedName()] = n.Meta()
+	}
+	has := func(s []string, want string) bool {
+		for _, v := range s {
+			if v == want {
+				return true
+			}
+		}
+		return false
+	}
+	check := func(qn, wantAnno string) {
+		m := metaByName[qn]
+		if !has(m.Flags, "decorated") {
+			t.Errorf("%s flags = %v, want to contain \"decorated\"", qn, m.Flags)
+		}
+		if !has(m.Annotations, wantAnno) {
+			t.Errorf("%s annotations = %v, want to contain %q", qn, m.Annotations, wantAnno)
+		}
+	}
+	check("app.Widget", "Component") // decorated class
+	check("app.handle", "Get")       // decorated method
+	check("app.Svc", "Injectable")   // decorated exported class
+	if has(metaByName["app.plain"].Flags, "decorated") {
+		t.Errorf("app.plain flags = %v, must NOT contain \"decorated\"", metaByName["app.plain"].Flags)
+	}
+}
