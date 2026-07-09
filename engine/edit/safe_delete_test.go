@@ -55,6 +55,36 @@ func TestApplySafeDelete_BlockEntryPoint(t *testing.T) {
 	}
 }
 
+// TestApplySafeDelete_BlockOverride is the WP-14-follow-up correctness guard: a
+// method carrying the "override" flag (a Kotlin/C#/TS `override` member) with
+// ZERO in-graph inbound references must NOT be deletable — it implements a
+// supertype contract invoked polymorphically, an edge the static graph resolves
+// to the base type, so removing the concrete override would break the build.
+func TestApplySafeDelete_BlockOverride(t *testing.T) {
+	a, store, _ := newInlineApplier(t, map[string]string{"app/Widget.kt": "class Widget\n"})
+	ctx := context.Background()
+
+	ovr, err := model.NewNode("method", "app.render", "app/Widget.kt", 1, 1)
+	if err != nil {
+		t.Fatalf("NewNode: %v", err)
+	}
+	ovr = ovr.WithMeta(model.NewNodeMeta(nil, []string{"override"}))
+	if err := store.PutNode(ctx, ovr); err != nil {
+		t.Fatalf("PutNode: %v", err)
+	}
+
+	res, err := a.ApplySafeDelete(ctx, SafeDeleteOp{TargetSymbol: string(ovr.ID())})
+	if err != nil {
+		t.Fatalf("ApplySafeDelete: %v", err)
+	}
+	if res.Outcome != SafeDeleteBlocked {
+		t.Fatalf("outcome = %q, want blocked (an override member must not be deletable)", res.Outcome)
+	}
+	if len(res.BlockingRefs) != 1 || res.BlockingRefs[0].Reason != ReasonEntrypoint {
+		t.Fatalf("want 1 entrypoint blocking ref, got %+v", res.BlockingRefs)
+	}
+}
+
 func TestApplySafeDelete_BlockLiveReference(t *testing.T) {
 	a, store, _ := newInlineApplier(t, map[string]string{"a.go": "const Foo = 42\n", "b.go": "use Foo\n"})
 	ctx := context.Background()

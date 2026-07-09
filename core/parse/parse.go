@@ -122,6 +122,11 @@ type ImportSpec struct {
 	// `import com.a.b.*`). For these the Path IS the package itself, so the linker
 	// must not strip a trailing type segment to derive the package (WP-01).
 	Wildcard bool
+	// Relative marks an intra-package RELATIVE import (Python `from . import x`,
+	// `from .mod import y`). Its target is always in-repo, so the linker must NOT
+	// fabricate an external node for it on a resolution miss (WP-14) — an
+	// unresolved relative import is an honest skip, never a stdlib/3rd-party target.
+	Relative bool
 }
 
 // Parser is the stable contract every language backend implements. Implementations

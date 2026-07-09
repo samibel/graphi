@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/samibel/graphi/engine/analysis/taint"
 	"github.com/samibel/graphi/internal/gitignore"
 )
 
@@ -166,13 +167,19 @@ func (i *Ingester) ignoreConfigFor(root string) ignoreConfig {
 }
 
 // semanticsStamp is the warm-start certification value: the semantics version,
-// plus the ignore-scope fingerprint when an opt-in scope is active. Identical
-// sources indexed under a different scope produce a different graph, so the
-// stamp must differ.
+// plus the ignore-scope fingerprint when an opt-in scope is active, plus the
+// per-project taint-config fingerprint when a <root>/.graphi/taint.json is
+// present (WP-09). Identical sources indexed under a different scope OR a
+// different taint config produce different persisted state, so the stamp must
+// differ; a repo with neither an opt-in scope nor a taint config keeps the bare
+// version stamp exactly as before.
 func (i *Ingester) semanticsStamp(root string) string {
-	cfg := i.ignoreConfigFor(root)
-	if cfg.fingerprint == "" {
-		return ingestSemanticsVersion
+	stamp := ingestSemanticsVersion
+	if cfg := i.ignoreConfigFor(root); cfg.fingerprint != "" {
+		stamp += "+ig:" + cfg.fingerprint
 	}
-	return ingestSemanticsVersion + "+ig:" + cfg.fingerprint
+	if tc := taint.ConfigFingerprint(root); tc != "" {
+		stamp += "+taint:" + tc
+	}
+	return stamp
 }

@@ -43,9 +43,13 @@ func Detect(ctx context.Context, reader graphstore.Graphstore) ([]Community, err
 	if err != nil {
 		return nil, err
 	}
-	// group members by package key
+	// group members by package key, excluding non-symbol artifact nodes (external
+	// / package / file) so communities are symbol-only (WP-14 follow-up E).
 	groups := make(map[string][]model.NodeId)
 	for _, n := range nodes {
+		if isArtifactKind(n.Kind()) {
+			continue
+		}
 		k := packageKey(n.QualifiedName())
 		groups[k] = append(groups[k], n.ID())
 	}

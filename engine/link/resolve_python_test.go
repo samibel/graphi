@@ -61,7 +61,7 @@ func pyScene(t *testing.T) ([]model.Node, []FileRefs) {
 func TestPyLink_ResolvesCrossModule(t *testing.T) {
 	nodes, files := pyScene(t)
 	idx := BuildIndex(nodes)
-	_, edges, st, err := New().Link("python", files, idx)
+	extNodes, edges, st, err := New().Link("python", files, idx)
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -85,10 +85,20 @@ func TestPyLink_ResolvesCrossModule(t *testing.T) {
 	// same-directory call is derived.
 	hasCall("app.checkout", "app.helper", model.TierDerived)
 
-	// No phantom, never confirmed.
+	// WP-14: json.loads (import "json", a clause absent from the repo) is now
+	// MATERIALIZED as one interned external node "json.loads" instead of skipped.
+	// No edge may target a node outside the committed set UNION the minted externals.
 	known := map[model.NodeId]struct{}{}
 	for _, n := range nodes {
 		known[n.ID()] = struct{}{}
+	}
+	var extQNs []string
+	for _, n := range extNodes {
+		if n.Kind() != "external" {
+			t.Errorf("minted node %s kind = %q, want external", n.ID(), n.Kind())
+		}
+		known[n.ID()] = struct{}{}
+		extQNs = append(extQNs, n.QualifiedName())
 	}
 	for _, e := range edges {
 		if _, ok := known[e.To()]; !ok {
@@ -99,9 +109,18 @@ func TestPyLink_ResolvesCrossModule(t *testing.T) {
 		}
 	}
 
-	// json.loads is stdlib → skipped; dup is ambiguous across two "pkg" dirs.
-	if st.Skipped != 1 {
-		t.Errorf("Skipped = %d, want 1 (json.loads)", st.Skipped)
+	if len(extNodes) != 1 || extNodes[0].QualifiedName() != "json.loads" {
+		t.Fatalf("external nodes = %v, want exactly [json.loads]", extQNs)
+	}
+	// The external edge is heuristic tier, keyed on the minted external node id.
+	assertEdgeTier(t, edges, idOfQN(t, nodes, "app.checkout"), extNodes[0].ID(), "calls", model.TierHeuristic)
+	if st.ResolvedExternal != 1 {
+		t.Errorf("ResolvedExternal = %d, want 1 (json.loads)", st.ResolvedExternal)
+	}
+	// json.loads is materialized (not skipped); dup stays ambiguous across two "pkg"
+	// dirs (clause "pkg" IS in the repo, so it is never fabricated as external).
+	if st.Skipped != 0 {
+		t.Errorf("Skipped = %d, want 0 (json.loads now external)", st.Skipped)
 	}
 	if st.Ambiguous != 1 {
 		t.Errorf("Ambiguous = %d, want 1 (pkg.dup twin dirs)", st.Ambiguous)

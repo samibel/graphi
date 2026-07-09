@@ -276,12 +276,27 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
 
 #### Phase 4 — M4/M5: Config, Meta-Modell, Diagnose entlärmen
 
-**WP-09 · Taint-Config-Loader** `[∥ nach WP-05]`
-- **Kern:** `LoadTaintConfig(path)` für projektspezifische Sources/Sinks/
-  Sanitizer (Structs sind bereits JSON-getaggt, `config.go:13-62`); Suchpfad
-  `.graphi/taint.json`, Merge über Defaults, Anschluss in `dispatch.go:72,119`.
-- **Gate:** ein Custom-Sink aus `.graphi/taint.json` erzeugt ein Finding, das
-  ohne Config fehlt.
+**WP-09 · Taint-Config-Loader** `[∥ nach WP-05]` — ✅ erledigt
+- **Kern:** `taint.LoadConfig(root)` (`engine/analysis/taint/load.go`) liest
+  `<root>/.graphi/taint.json`, mergt projektspezifische Sources/Sinks/Sanitizer
+  per ID über die Defaults (gleiche ID ⇒ ersetzt/deaktiviert, neue ID ⇒
+  angehängt) und stempelt einen deterministischen `ContentHash`. Fehlt die
+  Datei, bleibt `DefaultConfig` **unverändert** (Byte-Parität); eine defekte
+  Datei lässt den Index **fail-closed** scheitern statt still auf Defaults
+  zurückzufallen.
+- **Anschluss:** nicht am Dispatch-Solver (der läuft über einen Store ohne
+  Repo-Root und wird einmalig mit `DefaultConfig` registriert), sondern am
+  **realen surfaced Pfad** — der Ingest-Intra-Proc-Analyse
+  (`engine/ingest/intraproctaint.go`, `intraProcTaintConfig(root)`), deren
+  persistierte Findings `graphi analyze taint` über `readIntraProcTaintFlows`
+  einliest. Der Config-Fingerprint fließt in den Warm-Start-Stamp
+  (`ignore.go:semanticsStamp` + `taint.ConfigFingerprint`), damit ein
+  Hinzufügen/Ändern der Config genau einmal kalt neu indiziert.
+- **Gate:** `TestTaintConfig_CustomSinkChangesFindings` — ein Custom-Sink
+  (`render.HTML`) erzeugt genau ein persistiertes Finding, das ohne Config
+  fehlt; `TestTaintConfig_MalformedFailsIngest` (fail-closed);
+  `TestTaintConfig_WarmStartInvalidatedByConfig` (Stamp); `TestLoadConfig_*`
+  (Merge/Override/Hash/Validierung).
 - **Abhängigkeiten:** WP-05.
 
 **WP-10 · Annotations/Modifier ins Modell (gemeinsames Fundament)**
@@ -292,6 +307,24 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
 - **Gate:** Java-`@Test`/`@Bean`/`@Component` erscheinen als Meta am Node;
   full-vs-incremental byte-identisch.
 - **Abhängigkeiten:** WP-01 (Parser-Bereich stabil).
+
+**WP-11-Follow-up · `override`-Keyword-Sprachen (Kotlin) im dead_symbol-Exempt** — ✅ erledigt
+- **Kern:** Java-`@Override` war bereits im Entry-Point-Set, aber Kotlin/C#/TS
+  nutzen das `override`-KEYWORD (kein `@Override`-Annotation) und der Kotlin-
+  Extractor hängte gar keine `NodeMeta` an → Kotlin-Overrides wurden als
+  dead_symbol-Falschpositive geflaggt. Fix: Kotlin-Extractor liest den
+  `modifiers`-Knoten (`kotlinDeclMeta`) und setzt das Flag `"override"` plus
+  Annotationsnamen; `IsEntryPoint` erkennt das `"override"`-Flag
+  sprach-agnostisch. Dieselbe Predicate schützt Overrides automatisch auch vor
+  `safe_delete` (Korrektheits-Gate). Warm-Start-Stamp auf „9" (Kotlin-Meta-
+  Content ändert sich).
+- **Gate:** `TestExtractKotlin_OverrideAndAnnotationMeta` (Extractor),
+  `TestDiagnose_KotlinOverrideNotDead` (E2E über Ingest+SQLite: `override fun`
+  → info `entrypoint_candidate`, kein Warning), `TestApplySafeDelete_BlockOverride`
+  (Löschschutz).
+- **Offen (Follow-up):** C#- und TypeScript-`override`-Keyword — `IsEntryPoint`
+  ist bereits vorbereitet (flag-basiert), es fehlt nur die Meta-Extraktion in
+  `parser_csharp.go` / `parser_tswalk.go`.
 
 **WP-11 · Entry-Point-aware dead_symbol + safe_delete-Gate**
 - **Kern:** Exclusion-Prädikat an `analyze.go:181-184` (Entry-Point-Annotationen,
@@ -326,11 +359,44 @@ Phase 0. `[∥]` = parallel startbar, sobald Abhängigkeiten grün sind.
   (kein hand-gepflegter Wert).
 - **Abhängigkeiten:** WP-05 (Taint 4/4), WP-08 (Perf-Budgets grün).
 
-**WP-14 · A1-Rollout Java/Python/TS** `[nach WP-05]`
-- **Kern:** External-Node-Materialisierung über `resolve_common.go` auf die
-  weiteren Sprachen ausrollen (nach WP-01 haben Java-Imports volle Package-Pfade,
-  externe FQNs wie `org.springframework….RestTemplate.exchange` sind sauber baubar).
-- **Gate:** je Sprache ein E2E-Recall-Fixture analog WP-00 grün.
+**WP-14 · A1-Rollout Java/Python/TS** `[nach WP-05]` — ✅ erledigt
+- **Kern:** External-Node-Materialisierung (WP-03 „drop-point 1") über
+  `engine/link/resolve_common.go` auf die clause/FQN-gebundenen Sprachen
+  ausgerollt: ein `binder.externalQN`-Bauer je Sprache erzeugt aus einem
+  import-pfad-gebundenen Miss die exakte externe FQN — Java/Kotlin
+  (`externalFQNBindingQN`: Selector `Type.member`, bare = Import-Pfad), Python &
+  TypeScript-Familie (`externalMemberQN`: `importPfad.name`). TS bindet dafür
+  jetzt auch NICHT-relative Paket-Importe. Nur gemündet, wenn die Package-Clause
+  **nirgends im Repo** vorkommt (`idx.byClause`-Guard) — verhindert den
+  WP-03-Flood (kein Fabrizieren für in-Repo-Symbole/Locals). Nicht opt-in
+  Sprachen (C#, Rust, Ruby, …) bleiben unverändert (`externalQN == nil`).
+  Query-Hygiene ist kind-basiert (`kind == "external"`) und deckt daher alle
+  Sprachen automatisch ab; Warm-Start-Stamp auf „8" gebumpt (neuer committeter
+  Node/Edge-Inhalt).
+- **Gate:** `TestExternalNodes_Java` (`org.apache.commons.lang3.StringUtils.upperCase`),
+  `TestExternalNodes_Python` (`subprocess.run` + Taint-Sink-Match als
+  Sicherheits-Payoff, plus No-Flood-Assertion), `TestExternalNodes_TypeScript`
+  (`child_process.exec`) — alle über die echte Ingest+Link-Pipeline; dazu die
+  aktualisierten `engine/link`-Unit-Gates (Python/TS) und die unveränderten
+  byte-identischen Golden-Incremental-vs-Full-Tests je Sprache.
+- **Adversarial-Verify:** zwei reale Defekte gefunden und VOR dem Abschluss
+  behoben (Regressionstests in `engine/link/external_rollout_test.go`):
+  (A) TS-nicht-relative Importe zogen über den sprach-globalen Clause-Index
+  falsche (auch sprachübergreifende) In-Repo-Kanten — Fix:
+  `importPathsExternalOnly` überspringt `crossModule` und mündet direkt extern;
+  (B) Python-Relativimporte (`from . import x`) wurden als Müll-Externals
+  (`x.x`, `sibling.run`) fabriziert — Fix: Parser markiert `ImportSpec.Relative`,
+  Resolver schließt sie via `externalIneligible` von der Externalisierung aus.
+- **Bekannte, bewusst offene Grenzen (safe-by-design / vorbestehend):**
+  (C) Java-Stdlib-Externals werden unterdrückt, wenn die Package-Clause
+  (`java.util` → „util") zufällig mit einem Repo-Verzeichnis kollidiert — es
+  wird eher NICHT gemündet als falsch gemündet (sichere Richtung, keine
+  Falsch-Knoten). (D) TS-aliasierte Importe (`import {e as f}`) werden vom
+  Parser unter dem Originalnamen geführt — vorbestehende Parser-Grenze, kein
+  Falsch-Knoten. (E) `engine/community`/`engine/wiki` gruppieren ungefiltert
+  ALLE Knoten (auch `package`/`file`); external-Knoten erscheinen dort nun
+  häufiger — vorbestehende Hygiene-Lücke einer nicht-strukturellen Fläche,
+  separater Follow-up (Struktur-Queries + Search sind kind-gefiltert und sauber).
 - **Abhängigkeiten:** WP-05, WP-10.
 
 ---

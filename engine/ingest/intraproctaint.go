@@ -14,9 +14,12 @@ import (
 )
 
 // intraProcTaintConfig is the taint source/sink/sanitizer config the ingest
-// pipeline runs the intra-procedural dataflow with. It matches the analyzer's
-// default so ingested findings and a `graphi analyze taint` run agree.
-func intraProcTaintConfig() taint.Config { return taint.DefaultConfig() }
+// pipeline runs the intra-procedural dataflow with. It is the built-in default
+// merged with the repository's optional <root>/.graphi/taint.json (WP-09), so a
+// project's custom sources/sinks/sanitizers shape the ingested findings that a
+// `graphi analyze taint` run surfaces. A malformed config file fails the pass
+// closed rather than silently reverting to defaults.
+func intraProcTaintConfig(root string) (taint.Config, error) { return taint.LoadConfig(root) }
 
 // analyzeAndPersistIntraProcTaint runs the pure per-function intra-procedural
 // taint analysis over every parsed Go file of a FULL pass and replaces the
@@ -24,8 +27,11 @@ func intraProcTaintConfig() taint.Config { return taint.DefaultConfig() }
 // the parsed file contents (deterministic) and writes ONLY graphstore metadata,
 // so it never perturbs the node/edge graph (byte-parity safe: Snapshot omits
 // metadata).
-func (i *Ingester) analyzeAndPersistIntraProcTaint(ctx context.Context, parsed []*ParsedFile) error {
-	cfg := intraProcTaintConfig()
+func (i *Ingester) analyzeAndPersistIntraProcTaint(ctx context.Context, root string, parsed []*ParsedFile) error {
+	cfg, err := intraProcTaintConfig(root)
+	if err != nil {
+		return err
+	}
 	var findings []taint.Finding
 	for _, pf := range parsed {
 		if pf == nil || pf.result == nil {
@@ -57,7 +63,10 @@ func (i *Ingester) refreshIntraProcTaint(ctx context.Context, root string, repro
 		return err
 	}
 
-	cfg := intraProcTaintConfig()
+	cfg, err := intraProcTaintConfig(root)
+	if err != nil {
+		return err
+	}
 	out := make([]taint.Finding, 0, len(existing))
 	for _, f := range existing {
 		file := findingFile(f)

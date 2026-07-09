@@ -254,6 +254,53 @@ graphi version
 Options: `-target <id>`, `-concept <term>`, `-direction forward|reverse`,
 `-max-nodes N`.
 
+#### Custom taint sources/sinks (`.graphi/taint.json`)
+
+`taint` ships with a built-in default config covering the Go stdlib
+(`net/http`, `database/sql`, `os/exec`, …). To teach it project-specific
+sources, sinks, or sanitizers — a framework's request accessor, an in-house
+query builder, your escaping helper — drop a `.graphi/taint.json` at the
+**repository root**. It is read at **index time**; its definitions are merged
+**over** the defaults and shape the findings a later `graphi analyze taint`
+surfaces.
+
+```jsonc
+{
+  "version": "acme-1",                 // optional; overrides the default version tag
+  "sources": [
+    { "id": "framework_ctx", "label": "user_input",
+      "name_patterns": ["acme/web.Context.Param"] }
+  ],
+  "sinks": [
+    { "id": "render_html", "category": "xss",
+      "name_patterns": ["acme/render.HTML"] }
+  ],
+  "sanitizers": [
+    { "id": "acme_escape", "name_patterns": ["acme/safe.Escape"],
+      "remove_labels": ["user_input"] }   // omit to strip ALL labels
+  ]
+}
+```
+
+Merge rules:
+
+- **New `id`** → the definition is **added** to the defaults.
+- **Existing `id`** (same as a built-in) → the definition **replaces** the
+  built-in, so you can retune or **disable** a default (override it with empty
+  `name_patterns`/`node_kinds`, which then matches nothing).
+- `name_patterns` match by case-insensitive substring against a node's
+  resolved qualified name (e.g. `database/sql.DB.Query`); `node_kinds` match a
+  node's kind exactly.
+- No file → the built-in defaults are used **unchanged** (a repo without a
+  config indexes exactly as before).
+- A **malformed or invalid** file (bad JSON, unknown field, missing required
+  field) **fails the index closed** — it never silently falls back to defaults,
+  so a config typo can't turn a real finding into a false "clean".
+
+Because the config is part of what the persisted findings mean, adding,
+editing, or removing `.graphi/taint.json` triggers a one-time full re-index
+(warm-start is invalidated), after which incremental indexing resumes.
+
 ### 6.2 HTTP / SSE API
 
 Start it with `graphi http` ([§4](#4-quick-start--2-minutes)). It is **read-only**

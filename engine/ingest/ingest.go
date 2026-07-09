@@ -785,7 +785,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	// deterministic and byte-parity safe — graphstore Snapshot serializes
 	// nodes/edges only, never metadata. The taint dispatch adapter reads these
 	// back so `graphi analyze taint` surfaces the flows.
-	if err := i.analyzeAndPersistIntraProcTaint(ctx, parsed); err != nil {
+	if err := i.analyzeAndPersistIntraProcTaint(ctx, root, parsed); err != nil {
 		return err
 	}
 

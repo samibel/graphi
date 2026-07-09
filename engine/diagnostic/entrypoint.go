@@ -59,7 +59,13 @@ func EntryPointAnnotationSet() map[string]bool {
 //   - it is a program entry: Meta().Flags contains "main", or its qualified name
 //     is a Go `main.main` / `*.main` free function;
 //   - it lives on a test path: Meta().Flags contains "test_path", or its source
-//     path matches a test convention (`*_test.go`, `src/test/`, `test_*.py`).
+//     path matches a test convention (`*_test.go`, `src/test/`, `test_*.py`);
+//   - it OVERRIDES a supertype member: Meta().Flags contains "override" (Kotlin /
+//     C# / TS `override` keyword). Like Java's `@Override` annotation, an
+//     overriding member is invoked polymorphically through its base type /
+//     interface, an edge the static call graph often resolves to the DECLARED
+//     type rather than this concrete member — so it legitimately has no direct
+//     inbound reference and must not be dead-flagged.
 //
 // This is intentionally permissive toward NOT flagging/deleting: a false
 // "entry point" only suppresses a dead-symbol warning or blocks a delete, both
@@ -72,7 +78,7 @@ func IsEntryPoint(n model.Node) bool {
 		}
 	}
 	for _, f := range meta.Flags {
-		if f == "main" || f == "test_path" {
+		if f == "main" || f == "test_path" || f == "override" {
 			return true
 		}
 	}

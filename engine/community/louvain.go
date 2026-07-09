@@ -36,12 +36,33 @@ func (LouvainDetector) Detect(ctx context.Context, reader graphstore.Graphstore)
 		return nil, err
 	}
 
-	ids := make([]model.NodeId, len(nodes))
-	for i, n := range nodes {
-		ids[i] = n.ID()
+	// Exclude non-symbol artifact nodes (external / package / file) from the
+	// community projection so they never appear as members and never skew the
+	// modularity partition; drop any edge incident to an excluded node so the core
+	// detector never references a node id outside the projected set (WP-14
+	// follow-up E). Full-vs-incremental parity and determinism are preserved: the
+	// filter is a pure function of node kind, applied identically on every run.
+	ids := make([]model.NodeId, 0, len(nodes))
+	kept := make(map[model.NodeId]struct{}, len(nodes))
+	for _, n := range nodes {
+		if isArtifactKind(n.Kind()) {
+			continue
+		}
+		ids = append(ids, n.ID())
+		kept[n.ID()] = struct{}{}
+	}
+	projEdges := make([]model.Edge, 0, len(edges))
+	for _, e := range edges {
+		if _, ok := kept[e.From()]; !ok {
+			continue
+		}
+		if _, ok := kept[e.To()]; !ok {
+			continue
+		}
+		projEdges = append(projEdges, e)
 	}
 
-	res := corecommunity.Detect(ids, edges)
+	res := corecommunity.Detect(ids, projEdges)
 
 	out := make([]Community, 0, len(res.Communities))
 	for _, c := range res.Communities {

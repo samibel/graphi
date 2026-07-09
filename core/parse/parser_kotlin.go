@@ -178,17 +178,71 @@ func kotlinCollectDefs(w *cstWalk, n *gts.Node, inClass bool) {
 				kind = KindMethod
 			}
 			if name := kotlinName(c, w.lang); name != nil {
-				w.addDef(name.Text(w.src), kind, nodePoint(name))
+				bare := name.Text(w.src)
+				w.addDef(bare, kind, nodePoint(name))
+				// WP-14 follow-up: attach annotations + the "override" flag so an
+				// override fun / @Test / @Component member is exempt from dead_symbol.
+				w.setDefMeta(bare, kotlinDeclMeta(w, c))
 			}
 		case "class_declaration", "object_declaration":
 			if name := kotlinName(c, w.lang); name != nil {
-				w.addDef(name.Text(w.src), KindType, nodePoint(name))
+				bare := name.Text(w.src)
+				w.addDef(bare, KindType, nodePoint(name))
+				w.setDefMeta(bare, kotlinDeclMeta(w, c))
 			}
 			if body := childByType(c, "class_body", w.lang); body != nil {
 				kotlinCollectDefs(w, body, true)
 			}
 		}
 	}
+}
+
+// kotlinDeclMeta derives the NON-identity NodeMeta for a Kotlin declaration from
+// its `modifiers` child: annotation NAMES (`@Test`, `@Component`, …) and the
+// "override" flag for an `override` member modifier. An overriding member is
+// invoked through its supertype, so — like Java's `@Override` — it must be exempt
+// from dead-symbol flagging. NewNodeMeta sorts+dedups, so the result is a
+// deterministic, pure function of the source.
+func kotlinDeclMeta(w *cstWalk, decl *gts.Node) model.NodeMeta {
+	var annotations, flags []string
+	if mods := childByType(decl, "modifiers", w.lang); mods != nil {
+		for i := 0; i < mods.ChildCount(); i++ {
+			m := mods.Child(i)
+			if m == nil {
+				continue
+			}
+			switch m.Type(w.lang) {
+			case "annotation":
+				if name := kotlinAnnotationName(w, m); name != "" {
+					annotations = append(annotations, name)
+				}
+			case "member_modifier":
+				if m.Text(w.src) == "override" {
+					flags = append(flags, "override")
+				}
+			}
+		}
+	}
+	return model.NewNodeMeta(annotations, flags)
+}
+
+// kotlinAnnotationName extracts the bare annotation identifier from a Kotlin
+// `annotation` node — the trailing `type_identifier` of its `user_type`
+// (`@org.junit.Test` → "Test"), matching Java's trailing-segment convention.
+// Returns "" when no name resolves.
+func kotlinAnnotationName(w *cstWalk, ann *gts.Node) string {
+	ut := childByType(ann, "user_type", w.lang)
+	if ut == nil {
+		return ""
+	}
+	name := ""
+	for i := 0; i < ut.ChildCount(); i++ {
+		c := ut.Child(i)
+		if c != nil && c.Type(w.lang) == "type_identifier" {
+			name = c.Text(w.src) // keep the LAST segment: org.junit.Test → Test
+		}
+	}
+	return name
 }
 
 func kotlinResolveUses(w *cstWalk, n *gts.Node, inClass bool) {

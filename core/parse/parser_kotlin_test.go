@@ -193,6 +193,49 @@ func TestExtractKotlin_Imports(t *testing.T) {
 	}
 }
 
+// TestExtractKotlin_OverrideAndAnnotationMeta asserts the WP-14 follow-up: the
+// Kotlin extractor attaches the "override" flag to an `override fun` and the
+// annotation name to an `@Test`-annotated member, so the dead_symbol entry-point
+// exemption can see them. A plain member carries neither.
+func TestExtractKotlin_OverrideAndAnnotationMeta(t *testing.T) {
+	src := `package p
+
+class Impl : Base {
+	override fun run(): Int { return 1 }
+
+	@Test
+	fun checks() {}
+
+	fun plain(): Int { return 2 }
+}
+`
+	res, err := NewKotlinParser().Parse(context.Background(), "p/impl.kt", []byte(src))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	metaByName := map[string]model.NodeMeta{}
+	for _, n := range res.Nodes {
+		metaByName[n.QualifiedName()] = n.Meta()
+	}
+	has := func(s []string, want string) bool {
+		for _, v := range s {
+			if v == want {
+				return true
+			}
+		}
+		return false
+	}
+	if !has(metaByName["p.run"].Flags, "override") {
+		t.Errorf("p.run flags = %v, want to contain \"override\"", metaByName["p.run"].Flags)
+	}
+	if !has(metaByName["p.checks"].Annotations, "Test") {
+		t.Errorf("p.checks annotations = %v, want to contain \"Test\"", metaByName["p.checks"].Annotations)
+	}
+	if has(metaByName["p.plain"].Flags, "override") {
+		t.Errorf("p.plain flags = %v, must NOT contain \"override\"", metaByName["p.plain"].Flags)
+	}
+}
+
 // TestExtractKotlin_Deterministic asserts repeated + concurrent (-race) determinism.
 func TestExtractKotlin_Deterministic(t *testing.T) {
 	n1, e1 := parseKotlinFixture(t)

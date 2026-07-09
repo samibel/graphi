@@ -69,7 +69,7 @@ func idOfQN(t *testing.T, nodes []model.Node, qn string) model.NodeId {
 func TestTSLink_ResolvesCrossFile(t *testing.T) {
 	nodes, files := tsScene(t)
 	idx := BuildIndex(nodes)
-	_, edges, st, err := New().Link("typescript", files, idx)
+	extNodes, edges, st, err := New().Link("typescript", files, idx)
 	if err != nil {
 		t.Fatalf("Link: %v", err)
 	}
@@ -94,10 +94,19 @@ func TestTSLink_ResolvesCrossFile(t *testing.T) {
 	hasCall("app.run", "lib.greet", model.TierHeuristic)
 	hasCall("app.run", "lib.add", model.TierHeuristic)
 
-	// No phantom + never confirmed.
+	// WP-14: react.useState (non-relative package import, clause "react" absent from
+	// the repo) is now MATERIALIZED as one interned external node "react.useState".
 	known := map[model.NodeId]struct{}{}
 	for _, n := range nodes {
 		known[n.ID()] = struct{}{}
+	}
+	var extQNs []string
+	for _, n := range extNodes {
+		if n.Kind() != "external" {
+			t.Errorf("minted node %s kind = %q, want external", n.ID(), n.Kind())
+		}
+		known[n.ID()] = struct{}{}
+		extQNs = append(extQNs, n.QualifiedName())
 	}
 	for _, e := range edges {
 		if _, ok := known[e.To()]; !ok {
@@ -108,9 +117,17 @@ func TestTSLink_ResolvesCrossFile(t *testing.T) {
 		}
 	}
 
-	// react.useState is external (D1) → skipped; Cfg is ambiguous across twin dirs.
-	if st.Skipped != 1 {
-		t.Errorf("Skipped = %d, want 1 (react useState)", st.Skipped)
+	if len(extNodes) != 1 || extNodes[0].QualifiedName() != "react.useState" {
+		t.Fatalf("external nodes = %v, want exactly [react.useState]", extQNs)
+	}
+	assertEdgeTier(t, edges, idOfQN(t, nodes, "app.run"), extNodes[0].ID(), "calls", model.TierHeuristic)
+	if st.ResolvedExternal != 1 {
+		t.Errorf("ResolvedExternal = %d, want 1 (react.useState)", st.ResolvedExternal)
+	}
+	// react.useState is materialized (not skipped); Cfg stays ambiguous across the
+	// relative twin dirs (a relative-path miss is never fabricated as external).
+	if st.Skipped != 0 {
+		t.Errorf("Skipped = %d, want 0 (react.useState now external)", st.Skipped)
 	}
 	if st.Ambiguous != 1 {
 		t.Errorf("Ambiguous = %d, want 1 (Cfg twin dirs)", st.Ambiguous)

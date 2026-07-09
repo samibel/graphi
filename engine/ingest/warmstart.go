@@ -46,7 +46,17 @@ import (
 //	    (annotations/flags) to declaration nodes, persisted in the new nodes.meta
 //	    column. Node CONTENT changes for annotated Java symbols, so a store built
 //	    by an older binary must re-index to populate real metadata.
-const ingestSemanticsVersion = "7"
+//	8 : WP-14 external-node rollout — the Java/Kotlin/Python/TypeScript linkers now
+//	    materialize interned `external` nodes (with heuristic calls/references
+//	    edges) for import-path-keyed references to stdlib / 3rd-party symbols whose
+//	    package clause is absent from the repo (previously dropped+counted). The
+//	    committed node/edge set changes for every non-Go repo with external
+//	    references, so an older store must re-index rather than warm-start.
+//	9 : WP-14 follow-up — the Kotlin extractor now attaches NON-identity NodeMeta
+//	    (annotation names + the `override` flag) to declarations, so an older store
+//	    (Kotlin nodes with empty meta) must re-index to populate it; the
+//	    dead_symbol entry-point exemption reads this meta.
+const ingestSemanticsVersion = "9"
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
