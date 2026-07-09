@@ -12,6 +12,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   the honest before/after record for the two external field findings, with every
   number reproducible from a checked-in, armed gate (a ratchet that hard-fails on
   regression).
+- **Per-project taint config** (`.graphi/taint.json`): merge custom
+  sources/sinks/sanitizers over the built-in defaults by id (a new id appends, a
+  matching id overrides or disables a default). Absent file → defaults unchanged;
+  a malformed or invalid file fails the index **closed** rather than silently
+  reverting to defaults. Read at index time; adding, editing, or removing it
+  re-certifies warm-start with one cold pass.
 
 ### Fixed
 - **Taint found 0/4 real injections → now 5/5, 0 false positives.** External call
@@ -35,6 +41,25 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   is aggregated to one diagnostic per target with a count instead of one per edge.
 - **Honest taint verdict**: a graph with no sink candidates reports
   `no_sink_candidates`, not an empty/clean result.
+- **Interned external nodes rolled out to Java/Kotlin/Python/TypeScript** (was
+  Go-only): an import-path-keyed reference to a stdlib/3rd-party symbol whose
+  package clause is absent from the repo becomes one interned `external` node
+  with its exact fully-qualified name, so taint sinks and unresolved-target
+  aggregation have a real node to match. Guarded so it never fabricates a node
+  for an in-repo symbol or local (no node flood).
+- **Community detection and the generated wiki are symbol-only**: `external`,
+  `package`, and `file` artifact nodes no longer leak into community partitions
+  or wiki member lists (the structural query and search surfaces already
+  excluded them).
+- **`dead_symbol` exempts `override` members** across the tier-1 languages: the
+  Kotlin/C#/TypeScript `override` keyword joins Java's `@Override`. An override
+  is invoked polymorphically through its supertype (an edge the static graph
+  resolves to the base type), so it is reported as an info `entrypoint_candidate`
+  and protected from `safe-delete`, never flagged dead.
+- **`dead_symbol` exempts decorated TypeScript symbols**: an Angular/NestJS
+  decorator (`@Component`, `@Injectable`, `@Controller`, `@Get`, …) on a class or
+  method marks it as framework-invoked (a wiring the static graph cannot see), so
+  it is an info `entrypoint_candidate` and protected from `safe-delete`.
 
 ## [0.4.0] - 2026-07-05
 
