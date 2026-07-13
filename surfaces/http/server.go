@@ -178,37 +178,69 @@ func mapError(err error) (status int, code, message string) {
 	}
 }
 
+// route is one registered HTTP route: the wire-visible method+pattern and the
+// handler serving it. The route table is the SINGLE SOURCE OF TRUTH the router
+// and the SW-110 route snapshot both read, so the advertised HTTP surface cannot
+// drift from what a scope change reviews as an intentional diff (TEST-01 AC3).
+type route struct {
+	Pattern string // Go 1.22 ServeMux "METHOD /path" pattern
+	handler http.HandlerFunc
+}
+
+// routes returns the ordered route table this surface serves. Handler registers
+// exactly these in order; the SPA catch-all is LAST and least specific so every
+// explicit API/SSE/wiki route wins (Go 1.22 precedence).
+func (s *Server) routes() []route {
+	return []route{
+		{"GET /healthz", s.handleHealth},
+		{"GET /contract", s.handleContract},
+		{"GET /query/{op}", s.schemaGuard(s.handleQuery)},
+		{"POST /compound", s.schemaGuard(s.handleCompound)},
+		{"POST /query-ast", s.schemaGuard(s.handleSearchAST)},
+		{"POST /find-clones", s.schemaGuard(s.handleFindClones)},
+		{"GET /search", s.schemaGuard(s.handleSearch)},
+		{"GET /search/semantic", s.schemaGuard(s.handleSemanticSearch)},
+		{"GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze)},
+		{"GET /prs", s.schemaGuard(s.handleListPRs)},
+		{"GET /prs/triage", s.schemaGuard(s.handleTriagePRs)},
+		{"GET /prs/conflicts", s.schemaGuard(s.handleConflictsPRs)},
+		{"GET /prs/suggest-reviewers", s.schemaGuard(s.handleSuggestReviewers)},
+		{"GET /branches/compare", s.schemaGuard(s.handleCompareBranches)},
+		{"GET /reviews/critique", s.schemaGuard(s.handleCritiqueReview)},
+		{"POST /memory", s.schemaGuard(s.handleMemory)},
+		{"POST /distill", s.schemaGuard(s.handleDistill)},
+		{"POST /skillgen", s.schemaGuard(s.handleSkillGen)},
+		{"GET /events", s.schemaGuard(s.handleSSE)},
+		{"GET /wiki", s.handleWikiIndex},
+		{"GET /wiki/c/{id}", s.handleWikiPage},
+		// SPA catch-all (SW-066). Registered LAST and matched LEAST specifically:
+		// Go 1.22 ServeMux routes the explicit patterns above ahead of "GET /", so
+		// every existing API/SSE/wiki route is byte-identical and the SPA only sees
+		// paths none of them claim. It is served over this same loopback surface.
+		{"GET /", s.spaHandler()},
+	}
+}
+
+// RoutePatterns returns the ordered ServeMux patterns this surface registers. It
+// is the descriptive projection the SW-110 route-set snapshot pins; it registers
+// nothing and has no side effects.
+func (s *Server) RoutePatterns() []string {
+	rs := s.routes()
+	out := make([]string, len(rs))
+	for i, r := range rs {
+		out[i] = r.Pattern
+	}
+	return out
+}
+
 // Handler returns the routed http.Handler. Routing uses Go 1.22+ method-pattern
 // matching: non-GET methods on data routes return 405 automatically, and unknown
 // paths return 404.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", s.handleHealth)
-	mux.HandleFunc("GET /contract", s.handleContract)
-	mux.HandleFunc("GET /query/{op}", s.schemaGuard(s.handleQuery))
-	mux.HandleFunc("POST /compound", s.schemaGuard(s.handleCompound))
-	mux.HandleFunc("POST /query-ast", s.schemaGuard(s.handleSearchAST))
-	mux.HandleFunc("POST /find-clones", s.schemaGuard(s.handleFindClones))
-	mux.HandleFunc("GET /search", s.schemaGuard(s.handleSearch))
-	mux.HandleFunc("GET /search/semantic", s.schemaGuard(s.handleSemanticSearch))
-	mux.HandleFunc("GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze))
-	mux.HandleFunc("GET /prs", s.schemaGuard(s.handleListPRs))
-	mux.HandleFunc("GET /prs/triage", s.schemaGuard(s.handleTriagePRs))
-	mux.HandleFunc("GET /prs/conflicts", s.schemaGuard(s.handleConflictsPRs))
-	mux.HandleFunc("GET /prs/suggest-reviewers", s.schemaGuard(s.handleSuggestReviewers))
-	mux.HandleFunc("GET /branches/compare", s.schemaGuard(s.handleCompareBranches))
-	mux.HandleFunc("GET /reviews/critique", s.schemaGuard(s.handleCritiqueReview))
-	mux.HandleFunc("POST /memory", s.schemaGuard(s.handleMemory))
-	mux.HandleFunc("POST /distill", s.schemaGuard(s.handleDistill))
-	mux.HandleFunc("POST /skillgen", s.schemaGuard(s.handleSkillGen))
-	mux.HandleFunc("GET /events", s.schemaGuard(s.handleSSE))
-	mux.HandleFunc("GET /wiki", s.handleWikiIndex)
-	mux.HandleFunc("GET /wiki/c/{id}", s.handleWikiPage)
-	// SPA catch-all (SW-066). Registered LAST and matched LEAST specifically:
-	// Go 1.22 ServeMux routes the explicit patterns above ahead of "GET /", so
-	// every existing API/SSE/wiki route is byte-identical and the SPA only sees
-	// paths none of them claim. It is served over this same loopback surface.
-	mux.HandleFunc("GET /", s.spaHandler())
+	for _, r := range s.routes() {
+		mux.HandleFunc(r.Pattern, r.handler)
+	}
 	return mux
 }
 
