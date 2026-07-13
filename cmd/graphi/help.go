@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
+
+	"github.com/samibel/graphi/surfaces/mcp"
 )
 
 // subHelp is the per-subcommand help entry: a one-line synopsis, the usage
@@ -229,6 +232,33 @@ var subcommandHelp = map[string]subHelp{
 	},
 }
 
+// labsHelpMarker is the CLI-help Stable/Labs tier marker (SCOPE-01). It mirrors
+// the MCP surface's [labs] description prefix so the stability taxonomy reads the
+// same across surfaces.
+const labsHelpMarker = "[labs] "
+
+// subcommandIsStable reports whether a CLI subcommand exposes one of the 12
+// frozen stable operations (SCOPE-01). Stability is DERIVED from the single
+// source surfaces/mcp.StableOperations (dash→underscore normalized), plus the one
+// umbrella verb `query`, whose hosted structural ops (callers|callees|references|
+// definition|neighborhood) are all stable. Everything else — including the
+// generic `analyze` dispatcher and the type-hierarchy query verbs — is Labs.
+func subcommandIsStable(name string) bool {
+	if name == "query" {
+		return true
+	}
+	return mcp.IsStableOperation(strings.ReplaceAll(name, "-", "_"))
+}
+
+// stabilityMarker returns the CLI-help tier marker for a subcommand: "" for a
+// stable operation, labsHelpMarker otherwise.
+func stabilityMarker(name string) string {
+	if subcommandIsStable(name) {
+		return ""
+	}
+	return labsHelpMarker
+}
+
 // isHelpFlag reports whether s is one of the conventional help flags.
 func isHelpFlag(s string) bool {
 	return s == "-h" || s == "-help" || s == "--help"
@@ -250,7 +280,7 @@ func printSubcommandHelp(name string, w io.Writer) bool {
 	if !ok {
 		return false
 	}
-	fmt.Fprintf(w, "graphi %s — %s\n", name, entry.synopsis)
+	fmt.Fprintf(w, "graphi %s — %s%s\n", name, stabilityMarker(name), entry.synopsis)
 	fmt.Fprintf(w, "usage:   %s\n", entry.usage)
 	fmt.Fprintf(w, "example: %s\n", entry.example)
 	return true
@@ -272,8 +302,9 @@ func runHelp(args []string, w io.Writer) int {
 	}
 	sort.Strings(names)
 	fmt.Fprintln(w, "known subcommands:")
+	fmt.Fprintln(w, "  (🟢 stable operations unmarked · [labs] = kept in-tree, not a stable promise)")
 	for _, n := range names {
-		fmt.Fprintf(w, "  %-18s %s\n", n, subcommandHelp[n].synopsis)
+		fmt.Fprintf(w, "  %-18s %s%s\n", n, stabilityMarker(n), subcommandHelp[n].synopsis)
 	}
 	return 1
 }

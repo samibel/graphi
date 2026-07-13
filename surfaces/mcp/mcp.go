@@ -1247,9 +1247,10 @@ func (s *Server) toolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
-	// Central experimental marking (single source: experimentalTools in
-	// tools.go) — descriptor literals never carry the tag by hand.
-	return markExperimental(tools)
+	// Central stability-tier marking (single source: StableOperations in
+	// tools.go) — every advertised tool outside the frozen 12-op stable set is
+	// prefixed [labs]; descriptor literals never carry the tag by hand.
+	return markLabs(tools)
 }
 
 // isForgeUnavailable reports whether err is the SW-105 "forge PR-enumeration

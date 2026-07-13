@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/surfaces/client"
@@ -118,40 +119,68 @@ func TestToolNames_MatchesAdvertisedMaximalSet(t *testing.T) {
 	}
 }
 
-// TestExperimentalMarking asserts the central experimental set is reflected in
-// the advertised descriptors — every experimental tool's description carries
-// the prefix, and no core tool's does — and that every set member is a real
-// canonical tool name (no stale entries).
-func TestExperimentalMarking(t *testing.T) {
+// TestLabsMarking asserts the Stable/Labs stability tier (SCOPE-01) is reflected
+// in the advertised MCP descriptors: every advertised tool that is NOT one of the
+// 12 frozen stable operations carries the [labs] prefix, and every stable tool's
+// description does not. This is the MCP half of "the taxonomy is visible in
+// user-facing output".
+func TestLabsMarking(t *testing.T) {
 	s := NewServerWithClient(allToolsClient{})
 	descriptors := s.toolDescriptors()
 
-	known := map[string]bool{}
-	for _, n := range ToolNames() {
-		known[n] = true
-	}
-	for name := range experimentalTools {
-		if !known[name] {
-			t.Errorf("experimentalTools entry %q is not a canonical tool name (stale entry)", name)
-		}
-	}
-
-	seen := map[string]bool{}
+	sawStable := false
+	sawLabs := false
 	for _, d := range descriptors {
 		name, _ := d["name"].(string)
 		desc, _ := d["description"].(string)
-		seen[name] = true
-		hasPrefix := len(desc) >= len(experimentalPrefix) && desc[:len(experimentalPrefix)] == experimentalPrefix
+		hasPrefix := strings.HasPrefix(desc, labsPrefix)
 		switch {
-		case experimentalTools[name] && !hasPrefix:
-			t.Errorf("experimental tool %q advertised without the %q description prefix", name, experimentalPrefix)
-		case !experimentalTools[name] && hasPrefix:
-			t.Errorf("core tool %q advertised WITH the experimental prefix", name)
+		case IsStableOperation(name):
+			sawStable = true
+			if hasPrefix {
+				t.Errorf("stable operation %q advertised WITH the %q labs prefix", name, labsPrefix)
+			}
+		default:
+			sawLabs = true
+			if !hasPrefix {
+				t.Errorf("labs tool %q advertised without the %q description prefix", name, labsPrefix)
+			}
 		}
 	}
-	for name := range experimentalTools {
-		if !seen[name] {
-			t.Errorf("experimental tool %q not advertised by the maximal server (probe wiring changed?)", name)
+	if !sawStable || !sawLabs {
+		t.Fatalf("expected both stable and labs tools in the maximal descriptor set (stable=%v labs=%v)", sawStable, sawLabs)
+	}
+}
+
+// TestStableOperations_FrozenTwelve pins the SCOPE-01 stable set: exactly the 12
+// named operations, sorted, and every one that is an MCP tool name is actually
+// advertised by the maximal server (so the marker set cannot silently drift from
+// the served surface).
+func TestStableOperations_FrozenTwelve(t *testing.T) {
+	want := []string{
+		"agent_brief", "callees", "callers", "change_risk", "definition",
+		"explain_symbol", "impact", "index", "neighborhood", "references",
+		"related_files", "search",
+	}
+	if !reflect.DeepEqual(StableOperations, want) {
+		t.Fatalf("StableOperations drifted (SCOPE-01 freezes exactly 12):\n got  = %#v\n want = %#v", StableOperations, want)
+	}
+	if !sort.StringsAreSorted(StableOperations) {
+		t.Errorf("StableOperations must stay sorted: %v", StableOperations)
+	}
+
+	toolSet := map[string]bool{}
+	for _, n := range ToolNames() {
+		toolSet[n] = true
+	}
+	for _, op := range StableOperations {
+		// index and impact are not MCP tool names (ingest verb / analyzer); the
+		// other ten must be advertised tools.
+		if op == "index" || op == "impact" {
+			continue
+		}
+		if !toolSet[op] {
+			t.Errorf("stable operation %q is expected to be an advertised MCP tool but is not in ToolNames()", op)
 		}
 	}
 }
