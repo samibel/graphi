@@ -31,6 +31,17 @@
 # instead of being treated as "already handled" forever just because the tag
 # is there. Fully idempotent otherwise: nothing runs at all once the latest
 # CHANGELOG version has both its tag and its release.
+#
+# CT-01 (SW-109) — PUBLISH LOCK. Before doing any of the above, this job runs
+# `go run ./cmd/publish-lock`, which reads the checked-in reversible gate file
+# `.github/publish-lock.json`. While that gate is engaged (`"locked": true`),
+# the tag-push and release-dispatch steps below are skipped entirely, so a merge
+# to main can NEVER publish a release automatically — the only remaining path to
+# a release is an intentional, human-initiated `workflow_dispatch` of release.yml.
+# The gate fails CLOSED (a missing/broken gate file is treated as locked), so a
+# deliberately-red gate yields no tag and no release. RC-01 lifts the lock with
+# one documented change — flipping `"locked"` to false in the gate file — with no
+# edit to this workflow.
 name: auto-release
 
 on:
@@ -60,6 +71,19 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # CT-01 (SW-109): the publish lock. Emits `locked=true|false` and, while
+      # locked, a "publish locked (CT-01)" notice. The tag-push and dispatch
+      # steps below are gated on `locked != 'true'`, so nothing is published
+      # while the gate is engaged. Fails closed on a missing/broken gate file.
+      - name: check the publish lock (CT-01)
+        id: lock
+        run: go run ./cmd/publish-lock
+
       - name: read the newest released version from CHANGELOG.md
         id: ver
         run: |
@@ -72,7 +96,7 @@ jobs:
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: create and push the tag if it doesn't exist yet
-        if: steps.ver.outputs.tag != ''
+        if: steps.ver.outputs.tag != '' && steps.lock.outputs.locked != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.ver.outputs.tag }}
@@ -88,7 +112,7 @@ jobs:
           echo "::notice::pushed $TAG"
 
       - name: dispatch release.yml if this tag has no release yet
-        if: steps.ver.outputs.tag != ''
+        if: steps.ver.outputs.tag != '' && steps.lock.outputs.locked != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.ver.outputs.tag }}
