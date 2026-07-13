@@ -136,8 +136,35 @@ func TestSessionProfile_MCPRepositoryJourney_RedUntilRUN01(t *testing.T) {
 	if len(call.Content) == 0 || call.Content[0].Type != "text" {
 		t.Fatalf("tools/call unexpected content: %+v", call.Content)
 	}
-	if !strings.Contains(call.Content[0].Text, "Hello") {
-		t.Fatalf("tools/call(search Hello) did not cite the fixture symbol; got: %s", call.Content[0].Text)
+	// The text payload is the canonical engine/search.Response JSON
+	// ({"query":...,"matches":[...]}). A raw substring check for "Hello" over the
+	// whole blob is a placebo oracle: engine/search.Response echoes the query
+	// verbatim in the "query" field, so "Hello" appears even when matches is EMPTY
+	// — i.e. against today's empty-in-memory graph (the very bug ADR 0002 fixes).
+	// A faithful oracle must prove the repo was really resolved + ingested +
+	// queried, so decode the payload and require a NON-EMPTY matches array with a
+	// match whose qualified name cites the fixture symbol.
+	var search struct {
+		Query   string `json:"query"`
+		Matches []struct {
+			QualifiedName string `json:"qualified_name"`
+		} `json:"matches"`
+	}
+	if err := json.Unmarshal([]byte(call.Content[0].Text), &search); err != nil {
+		t.Fatalf("tools/call search-response decode: %v (%s)", err, call.Content[0].Text)
+	}
+	if len(search.Matches) == 0 {
+		t.Fatalf("tools/call(search Hello) returned zero matches — the repo was not ingested/queried (empty-graph bug); got: %s", call.Content[0].Text)
+	}
+	found := false
+	for _, m := range search.Matches {
+		if strings.Contains(m.QualifiedName, "Hello") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("tools/call(search Hello) returned matches but none cite the fixture 'Hello' symbol; got: %s", call.Content[0].Text)
 	}
 }
 
