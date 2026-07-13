@@ -67,6 +67,12 @@ func main() {
 	rep := coverage.Check(live, caps)
 	fmt.Print(rep.Format())
 
+	// SCOPE-01 (SW-111): the `tier: stable` set must equal exactly the frozen 12
+	// operations. This EXTENDS the coverage gate — a 13th stable row or a missing
+	// one fails -check alongside live-drift.
+	stableRep := coverage.CheckStableTier(caps)
+	fmt.Print(stableRep.Format())
+
 	// Also verify the rendered .md is fresh, so -check is the single CI gate.
 	if current, rerr := os.ReadFile(mdPath); rerr == nil {
 		if want := coverage.RenderMarkdown(caps); string(current) != want {
@@ -75,7 +81,7 @@ func main() {
 		}
 	}
 
-	if !rep.Pass() {
+	if !rep.Pass() || !stableRep.Pass() {
 		os.Exit(1)
 	}
 }

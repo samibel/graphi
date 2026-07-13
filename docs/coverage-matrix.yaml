@@ -14,506 +14,615 @@
 # Edit this file, then run `go run ./cmd/coverage -generate` to refresh
 # docs/coverage-matrix.md (a test asserts the .md equals the regenerated output).
 #
+# Every row also declares a SCOPE-01 (SW-111) stability tier. The `stable` tier is
+# FROZEN to exactly the 12 operations (index, search, definition, callers, callees,
+# references, neighborhood, impact, agent_brief, related_files, explain_symbol,
+# change_risk); internal/coverage.CheckStableTier fails the coverage-matrix build
+# if a 13th row is tagged stable or one is dropped. The canonical set is
+# surfaces/mcp.StableOperations. Everything else is `labs` (kept in-tree, no stable
+# promise) or `disabled`.
+#
 # status: shipped | partial | planned
+# tier:   stable | labs | disabled
 capabilities:
   - id: bash
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: c
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: c_sharp
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: cpp
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: css
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: go
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "Go AST→graph extractor (reference SymbolExtractor, go/ast, CGo-free)."
   - id: hcl
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: java
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: javascript
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: json
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "stdlib structural parser (CGo-free)."
   - id: kotlin
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: lua
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: markdown
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: php
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: python
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: ruby
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: rust
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: sql
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: toml
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: tsx
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: typescript
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: yaml
     category: parser
     status: shipped
+    tier: labs
     epic: EP-001
     note: "pure-Go gotreesitter grammar (CGo-free, subset-tagged)."
   - id: html
     category: parser
     status: planned
+    tier: disabled
     epic: EP-001
     note: "pure-Go grammar present but not subset-buildable in isolation (gotreesitter scanner co-located with grammar_subset_blade); deferred to graphi-broad."
   - id: batched
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-004
     note: "batched composite over impact+call-chain+metrics."
   - id: call-chain
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-004
     note: "caller/callee chain reconstruction."
   - id: concept
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-004
     note: "lexical-search-backed concept resolution (needs Searcher)."
   - id: contracts
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-005
     note: "producer/consumer contract drift detection."
   - id: git-history
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-005
     note: "churn / bus-factor / co-change signals."
   - id: impact
     category: analyzer
     status: shipped
+    tier: stable
     epic: EP-004
     note: "forward/reverse blast-radius reachability."
   - id: interproc
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-005
     note: "interprocedural fixpoint over per-procedure gen/kill summaries."
   - id: metrics
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-004
     note: "graph centrality / hub-bridge metrics."
   - id: pdg
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-005
     note: "program dependence graph (data + control dependence)."
   - id: pr-questions
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-007
     note: "deterministic, no-LLM reviewer questions from findings."
   - id: pr-risk
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-007
     note: "deterministic per-region PR risk score (impact+taint)."
   - id: pr-signals
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-007
     note: "hub/bridge/surprise signals on PR-changed code."
   - id: taint
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-005
     note: "flow-sensitive source→sink taint analysis."
   - id: communities
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-017
     note: "SW-104: SW-103 Louvain community detection surfaced behind the single dispatch table."
   - id: triage-prs
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface)."
   - id: conflicts-prs
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-106: inter-PR conflict detection over an enumerated PR set — textual overlap + shared file/symbol/high-centrality node + asymmetric contract-dependency edge check; entity→PRs inverted index, byte-stable pairwise report (zero engine egress; forge enumeration stays at the surface)."
   - id: suggest-reviewers
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-107: ranked candidate-reviewer recommender — file-granular ownership + recency-decayed churn over the touched files (fixed decay reference, never now()) plus symbol-granular affected-subgraph proximity (callers/callees/contract neighbors, centrality-weighted), folded into a fixed-integer composite with a transparent per-signal breakdown; deterministic total order (composite DESC, reviewer identity ASC); zero engine egress."
   - id: compare-branches
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-107: graph-level branch diff over TWO already-built read-only graph states (materialized above the surface boundary) — added/removed/changed/moved entities + edges added/removed, keyed by canonical NodeId (not line ranges); detects signature/contract changes and correlates cross-file moves by path-independent symbol identity; pure local set-diff, zero engine egress (the engine never resolves a git ref)."
   - id: critique-review
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-108 (capstone): deterministic graph-evidence critique of an EXISTING PR review — replays the EP-007 risk/blast/centrality/taint oracle over the touched set and runs a three-way diff (gap / over_flag / unsupported_claim) against the review; deterministic resolveRef anchoring with an honest unanchored tally (never guessed); NO LLM prose; total order type→NodeId→anchor; zero engine egress (the only egress is the surface review fetch)."
   - id: notebook-ingest
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-017
     note: "SW-104: SW-100 notebook (.ipynb) cell provenance surfaced behind the single dispatch table."
   - id: taint-query
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-017
     note: "SW-104: SW-102 interprocedural taint verdict + flows surfaced behind the single dispatch table."
   - id: watcher-status
     category: analyzer
     status: shipped
+    tier: labs
     epic: EP-017
     note: "SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table."
   - id: analyze
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-004
     note: "run a named graph analyzer over the indexed graph."
   - id: analyze_contracts
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-005
     note: "dedicated tool for the contracts analyzer."
   - id: analyze_githistory
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-005
     note: "dedicated tool for the git-history analyzer."
   - id: analyze_interproc
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-005
     note: "dedicated tool for the interproc analyzer."
   - id: analyze_pdg
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-005
     note: "dedicated tool for the PDG analyzer."
   - id: analyze_pr_questions
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-007
     note: "dedicated tool for the pr-questions generator."
   - id: analyze_pr_risk
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-007
     note: "dedicated tool for the pr-risk scorer."
   - id: analyze_pr_signals
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-007
     note: "dedicated tool for the pr-signals detector."
   - id: analyze_taint
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-005
     note: "dedicated tool for the taint analyzer."
   - id: callees
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-001
     note: "structural query: callees."
   - id: callers
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-001
     note: "structural query: callers."
   - id: definition
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-001
     note: "structural query: definition."
   - id: neighborhood
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-001
     note: "structural query: k-hop neighborhood."
   - id: implementers
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-011
     note: "structural query: types that implement/embed a symbol (G2)."
   - id: implements
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-011
     note: "structural query: interfaces/types a symbol implements (G2)."
   - id: overrides
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-011
     note: "structural query: methods that override a symbol (G2)."
   - id: subtypes
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-011
     note: "structural query: subtypes (inherits+implements composed) (G2)."
   - id: supertypes
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-011
     note: "structural query: supertypes (inherits+implements composed) (G2)."
   - id: compound
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-011
     note: "compound / Cypher-style graph query composing traversals+filters (G1)."
   - id: pr_comment
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-007
     note: "render sticky PR review comment + optional merge gate."
   - id: list_prs
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-105: read-only forge enumeration of open PRs (metadata only; no scoring, no comment posting)."
   - id: triage_prs
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-105: single-pass graph-derived ranked multi-PR triage over the enumerated PR set (zero engine egress)."
   - id: conflicts_prs
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress)."
   - id: suggest_reviewers
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-107: ranked candidate-reviewer recommendation from local graph ownership/churn + affected-subgraph proximity over the touched set, with a transparent per-signal breakdown (zero engine egress)."
   - id: compare_branches
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary)."
   - id: critique_review
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-018
     note: "SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress)."
   - id: refactor
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-006
     note: "apply a graph-aware refactor with an auditable change record."
   - id: refactor_preview
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-006
     note: "preview a graph-aware refactor (impact set, no mutation)."
   - id: references
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-001
     note: "structural query: references."
   - id: savings
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-003
     note: "token-savings ledger readout (per-call/session/cumulative USD)."
   - id: search
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-001
     note: "lexical / symbol search over the indexed graph."
   - id: search_semantic
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-001
     note: "optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061)."
   - id: distill
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-012
     note: "session distillation into a compact decision record."
   - id: find_clones
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-013
     note: "structural clone-group detection from a JSON config (G4)."
   - id: memory
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-012
     note: "agent memory store/recall/forget operations."
   - id: search_ast
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-013
     note: "structural AST pattern query over the indexed graph (G3)."
   - id: skillgen
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-012
     note: "deterministic skill generation from a procedure description."
   - id: undo
     category: mcp-tool
     status: shipped
+    tier: labs
     epic: EP-006
     note: "reverse a previously applied edit by undo token."
   - id: explain_symbol
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-020
     note: "SW-115: compact, cited symbol-identity summary (definition + callers/callees/references) over the live graph; ambiguous references return candidates; CLI parity via `graphi explain-symbol`."
   - id: related_files
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-020
     note: "SW-116: deterministic, evidence-cited read-first file ranking by graph proximity with direction filtering; CLI parity via `graphi related-files`."
   - id: change_risk
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-020
     note: "SW-117: evidence-based low/medium/high/unknown blast-radius estimate from fan-in and dependent files, with diff targeting; CLI parity via `graphi change-risk`."
   - id: agent_brief
     category: mcp-tool
     status: shipped
+    tier: stable
     epic: EP-024
     note: "SW-134: bounded, cited task-start context packet derived from the live graph and local memory store (start-here files, key symbols, known facts, risks)."
   - id: cli
     category: surface
     status: shipped
+    tier: labs
     epic: EP-008
     note: "graphi CLI (query/search/analyze/edit/setup/parse)."
   - id: daemon
     category: surface
     status: shipped
+    tier: labs
     epic: EP-008
     note: "Unix-socket daemon serving the shared client."
   - id: github-action
     category: surface
     status: shipped
+    tier: labs
     epic: EP-007
     note: "GitHub Action for the PR-review vertical (extensions/github-action)."
   - id: http
     category: surface
     status: shipped
+    tier: labs
     epic: EP-008
     note: "loopback HTTP/SSE surface."
   - id: mcp
     category: surface
     status: shipped
+    tier: labs
     epic: EP-008
     note: "MCP stdio server (JSON-RPC 2.0, stdlib only)."
   - id: tui
     category: surface
     status: shipped
+    tier: labs
     epic: EP-008
     note: "terminal UI surface."
   - id: vscode
     category: surface
     status: shipped
+    tier: labs
     epic: EP-008
     note: "VS Code extension (extensions/vscode)."
   - id: web
     category: surface
     status: shipped
+    tier: labs
     epic: EP-008
     note: "React + Sigma web client (web/)."
   - id: FU-1
     category: feature-unit
     status: shipped
+    tier: labs
     epic: EP-001
     note: "Cross-file / cross-package linker pass (SW-050, engine/link) — resolves selector calls/imports against the committed symbol table; wired into ingest with a Go resolver."
   - id: FU-2
     category: feature-unit
     status: shipped
+    tier: labs
     epic: EP-001
     note: "Curated pure-Go language tier (20 gotreesitter grammars + 2 stdlib) + opt-in graphi-broad CGO flavor."
   - id: FU-3
     category: feature-unit
     status: shipped
+    tier: labs
     epic: EP-001
     note: "Optional embedder graceful-skip path + semantic search (SW-059); resolves OQ6."
   - id: FU-4
     category: feature-unit
     status: shipped
+    tier: labs
     epic: EP-001
     note: "Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix)."
   - id: FU-5
     category: feature-unit
     status: shipped
+    tier: labs
     epic: EP-001
     note: "Per-language cross-file/cross-package resolvers over engine/link (SW-063), with ingest dispatching the linker per language. Resolvers: Go, TypeScript family (ts/tsx/js), Python, Rust, Java, Kotlin, C#, C, C++, Ruby, PHP, Lua, Bash. SQL is an honest no-op (no provable cross-file refs at this tier → skip+count). Each is heuristic tier, deterministic, byte-identical full-vs-incremental, never confirmed, never fabricates."
   # CLI subcommands are machine-checked against the dispatch switch in
@@ -522,210 +631,252 @@ capabilities:
   - id: analyze
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "run a registered analyzer over the graph"
   - id: change-risk
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: EP-020
     note: "evidence-based local blast-radius estimate (low/medium/high/unknown) for a symbol, path, or unified diff; byte-parity with the change_risk MCP tool"
   - id: claude
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "short-verb alias for `setup` (register the MCP server)"
   - id: explain-symbol
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: EP-020
     note: "compact, cited symbol identity summary; byte-parity with the explain_symbol MCP tool"
   - id: related-files
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: EP-020
     note: "ranked, cited read-first file list; byte-parity with the related_files MCP tool"
   - id: compare-branches
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "graph-level diff of two graphi SQLite snapshots (paths, not git refs)"
   - id: compound
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "compound / Cypher-style graph query"
   - id: conflicts-prs
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "inter-PR conflict detection"
   - id: critique-review
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "graph-evidence critique of an existing PR review"
   - id: daemon
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "hot-index Unix-socket daemon lifecycle (start|stop|status)"
   - id: diagnose
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "graph-derived diagnostics + suggested code-actions"
   - id: doctor
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: EP-023
     note: "read-only diagnostic checkup (binary, PATH, MCP clients, DB, privacy, local-first)"
   - id: distill
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "session distillation"
   - id: find-clones
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "edge-profile clone detection"
   - id: help
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "print the help blurb"
   - id: http
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "loopback-only HTTP REST + SSE surface"
   - id: index
     category: cli-subcommand
     status: shipped
+    tier: stable
     epic: "-"
     note: "ingest a repo into a durable store (optional --semantic embed pass)"
   - id: inline
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "inline refactor over the edit saga (requires -root)"
   - id: list-prs
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "read-only forge enumeration of open PRs"
   - id: mcp
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "MCP stdio server (the agent-first surface)"
   - id: memory
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "agent memory store|recall|forget"
   - id: agent-brief
     category: cli-subcommand
     status: partial
+    tier: labs
     epic: "-"
     note: "bounded, cited task-start context packet for agents"
   - id: parse
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "parse a single file (the original SW-001 default)"
   - id: pr-comment
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "sticky PR comment + optional risk-threshold merge gate"
   - id: privacy-audit
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "local-first proof (CGo scan + canary egress guard)"
   - id: query
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "structural query (callers|callees|references|definition|neighborhood)"
   - id: refactor
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "commit a rename refactor through the edit saga"
   - id: refactor-preview
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "impact-set preview of a refactor, no mutation"
   - id: safe-delete
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "reference-safety-gated delete over the edit saga (requires -root)"
   - id: savings
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "session token-savings readout (requires -ledger)"
   - id: search
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "lexical search; -semantic runs the optional embedding search"
   - id: search-ast
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "structural AST pattern query"
   - id: setup
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "register the MCP stdio server into local MCP clients' configs"
   - id: setup-embedder
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "print the opt-in semantic-search instructions (offline)"
   - id: skillgen
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "deterministic skill generation"
   - id: suggest-reviewers
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "ranked candidate-reviewer recommender"
   - id: triage-prs
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "graph-derived multi-PR triage ranking"
   - id: tui
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "interactive terminal surface"
   - id: ui
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "short-verb alias for the zero-config index+serve flow"
   - id: undo
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "reverse an applied edit by its undo token"
   - id: upgrade
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "user-initiated self-update via the pinned install script"
   - id: version
     category: cli-subcommand
     status: shipped
+    tier: labs
     epic: "-"
     note: "print version / commit / build date"

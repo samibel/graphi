@@ -67,6 +67,46 @@ func TestPrintSubcommandHelp(t *testing.T) {
 	}
 }
 
+// TestStabilityMarker asserts the SCOPE-01 Stable/Labs tier is visible and
+// correct in CLI help: stable operations render WITHOUT the [labs] marker; Labs
+// subcommands render WITH it. Stability is derived from mcp.StableOperations.
+func TestStabilityMarker(t *testing.T) {
+	stable := []string{"index", "search", "explain-symbol", "related-files", "change-risk", "agent-brief", "query", "callers", "definition", "impact"}
+	for _, n := range stable {
+		if !subcommandIsStable(n) {
+			t.Errorf("%q should be a stable operation (SCOPE-01)", n)
+		}
+		if stabilityMarker(n) != "" {
+			t.Errorf("stable %q must not carry the labs marker", n)
+		}
+	}
+	labs := []string{"analyze", "taint", "refactor", "memory", "distill", "skillgen", "triage-prs", "http", "daemon", "tui", "implementers", "supertypes"}
+	for _, n := range labs {
+		if subcommandIsStable(n) {
+			t.Errorf("%q should be Labs, not stable (SCOPE-01)", n)
+		}
+		if stabilityMarker(n) != labsHelpMarker {
+			t.Errorf("labs %q must carry the %q marker", n, labsHelpMarker)
+		}
+	}
+
+	// End-to-end through the rendered help line.
+	var b bytes.Buffer
+	if !printSubcommandHelp("analyze", &b) {
+		t.Fatal("analyze should be known")
+	}
+	if !strings.Contains(b.String(), labsHelpMarker) {
+		t.Errorf("analyze help should carry the labs marker:\n%s", b.String())
+	}
+	b.Reset()
+	if !printSubcommandHelp("search", &b) {
+		t.Fatal("search should be known")
+	}
+	if strings.Contains(b.String(), labsHelpMarker) {
+		t.Errorf("stable search help should NOT carry the labs marker:\n%s", b.String())
+	}
+}
+
 // TestRunHelp asserts `graphi help <sub>` exit codes and the unknown-name
 // listing.
 func TestRunHelp(t *testing.T) {

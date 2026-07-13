@@ -26,6 +26,20 @@ func statusBadge(status string) string {
 	}
 }
 
+// tierBadge maps a SCOPE-01 stability tier to its legend glyph.
+func tierBadge(tier string) string {
+	switch tier {
+	case TierStable:
+		return "🟢 stable"
+	case TierLabs:
+		return "🧪 labs"
+	case TierDisabled:
+		return "⛔ disabled"
+	default:
+		return tier
+	}
+}
+
 // categoryOrder fixes the section order in the rendered table; categories not
 // listed are appended alphabetically after these.
 var categoryOrder = []string{CategoryParser, CategoryAnalyzer, CategoryMCPTool, CategorySurface, CategoryCLI}
@@ -92,19 +106,44 @@ func RenderMarkdown(caps []Capability) string {
 	b.WriteString("Every row below is checked against the live registries by the `coverage-matrix`\n")
 	b.WriteString("CI gate (`internal/coverage`). A docs-only change that contradicts the code — a\n")
 	b.WriteString("missing capability, a phantom \"shipped\" entry, or a live capability marked\n")
-	b.WriteString("\"planned\" — breaks the build. **Legend:** ✅ shipped · 🟡 partial · ⏳ planned.\n\n")
+	b.WriteString("\"planned\" — breaks the build. **Status legend:** ✅ shipped · 🟡 partial · ⏳ planned.\n")
+	b.WriteString("**Stability tier (SCOPE-01):** 🟢 stable · 🧪 labs · ⛔ disabled. The `stable` set is\n")
+	b.WriteString("FROZEN to exactly the 12 operations below; the guard fails the build if a 13th\n")
+	b.WriteString("row is tagged stable or one is dropped.\n\n")
+	b.WriteString(renderStableCallout(sorted))
 	b.WriteString(fmt.Sprintf("Total capabilities: **%d**. See [`architecture-plan.md`](architecture-plan.md) for the design context.\n", len(sorted)))
 
 	for _, cat := range order {
 		rows := byCat[cat]
 		fmt.Fprintf(&b, "\n## %s (%d)\n\n", categoryTitle(cat), len(rows))
-		b.WriteString("| id | status | epic | note |\n")
-		b.WriteString("|---|---|---|---|\n")
+		b.WriteString("| id | tier | status | epic | note |\n")
+		b.WriteString("|---|---|---|---|---|\n")
 		for _, c := range rows {
-			fmt.Fprintf(&b, "| `%s` | %s | %s | %s |\n",
-				c.ID, statusBadge(c.Status), mdCell(c.Epic), mdCell(c.Note))
+			fmt.Fprintf(&b, "| `%s` | %s | %s | %s | %s |\n",
+				c.ID, tierBadge(c.Tier), statusBadge(c.Status), mdCell(c.Epic), mdCell(c.Note))
 		}
 	}
+	return b.String()
+}
+
+// renderStableCallout renders the frozen 12-op stable set (SCOPE-01) as a visible
+// bullet so the taxonomy is legible in the generated doc, not just in the tier
+// column. It lists every row tagged `tier: stable`, sorted by (category, id).
+func renderStableCallout(sorted []Capability) string {
+	var stable []Capability
+	for _, c := range sorted {
+		if c.Tier == TierStable {
+			stable = append(stable, c)
+		}
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "**The %d stable operations (frozen):** ", len(stable))
+	ids := make([]string, 0, len(stable))
+	for _, c := range stable {
+		ids = append(ids, "`"+c.ID+"`")
+	}
+	b.WriteString(strings.Join(ids, ", "))
+	b.WriteString(".\n\n")
 	return b.String()
 }
 
