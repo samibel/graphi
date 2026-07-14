@@ -24,7 +24,7 @@ func main() {
 
 	// Publish the decision to the workflow so downstream steps can gate on it.
 	if out := os.Getenv("GITHUB_OUTPUT"); out != "" {
-		f, err := os.OpenFile(out, os.O_APPEND|os.O_WRONLY, 0o644)
+f, err := os.OpenFile(out, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "publish-lock: cannot write GITHUB_OUTPUT: %v\n", err)
 			os.Exit(2)
