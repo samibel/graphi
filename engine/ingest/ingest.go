@@ -633,14 +633,24 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	}
 
 	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
-		// Capture the node IDs of the PREVIOUS full pass (if this store is being
-		// re-indexed) BEFORE clearing the cache, so nodes of files that have since
-		// disappeared can be purged — otherwise a full re-index of a reused store
-		// retains stale nodes and is no longer "full", breaking byte-identity
-		// against a fresh full index AND against the incremental path.
-		priorNodeIDs, err := i.allCachedNodeIDsTx(ctx, tx)
+		// Capture every node id CURRENTLY IN THE STORE (not the meta cache's
+		// view of the previous pass) BEFORE this pass writes, so any node this
+		// pass does not re-produce is purged — files that disappeared, renamed
+		// symbols on a reused store, AND leftovers of an INTERRUPTED earlier
+		// pass (ING-DEC / SW-118): a crash between a committed graph batch and
+		// the meta commit leaves the graph ahead of the (rolled-back) cache, so
+		// a cache-derived prior set would never see — and never purge — those
+		// orphans. Deriving the prior set from the authoritative store makes a
+		// full pass converge to the fresh-index bytes from ANY partial state.
+		// For an uninterrupted store the two sets are identical, so bytes are
+		// unchanged on the happy path.
+		priorNodes, err := i.store.Nodes(ctx, graphstore.Query{})
 		if err != nil {
-			return err
+			return fmt.Errorf("ingest: list prior store nodes: %w", err)
+		}
+		priorNodeIDs := make([]string, 0, len(priorNodes))
+		for _, n := range priorNodes {
+			priorNodeIDs = append(priorNodeIDs, string(n.ID()))
 		}
 
 		if _, err := tx.ExecContext(ctx, "DELETE FROM file_content_cache"); err != nil {
@@ -2090,27 +2100,6 @@ func aggregateImportsByTarget(edges []model.Edge) []model.Edge {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID() < out[j].ID() })
 	return out
-}
-
-func (i *Ingester) allCachedNodeIDsTx(ctx context.Context, tx *sql.Tx) ([]string, error) {
-	rows, err := tx.QueryContext(ctx, "SELECT node_ids FROM file_content_cache")
-	if err != nil {
-		return nil, fmt.Errorf("ingest: list cached node ids: %w", err)
-	}
-	defer rows.Close()
-	var out []string
-	for rows.Next() {
-		var raw string
-		if err := rows.Scan(&raw); err != nil {
-			return nil, err
-		}
-		var ids []string
-		if err := json.Unmarshal([]byte(raw), &ids); err != nil {
-			return nil, fmt.Errorf("ingest: decode cached node ids: %w", err)
-		}
-		out = append(out, ids...)
-	}
-	return out, rows.Err()
 }
 
 // cachedNodeIDs returns the node IDs previously produced for path.

@@ -130,6 +130,16 @@ func warmOrFullIngest(ctx context.Context, ing *ingest.Ingester, root string, pr
 			progress(ev)
 		}
 	}
+	// ING-DEC (SW-118): replay any dirty units left by an interrupted
+	// incremental pass BEFORE trusting the store. The dirty rows are durable by
+	// design (phase 1 of ingestChanged commits them first), but nothing replayed
+	// them at session open until now — a crashed incremental would otherwise
+	// serve a divergent graph through a warm start. A recovery failure falls
+	// through to the tolerant full pass below, which re-certifies from scratch.
+	if err := ing.RecoverWithRoot(ctx, root); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: crash recovery failed (%v) — re-indexing from scratch\n", err)
+		return ing.IngestAll(ctx, root)
+	}
 	if _, ok, err := ing.CanWarmStart(ctx, root); err == nil && ok {
 		emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift})
 		var totalChecked int
