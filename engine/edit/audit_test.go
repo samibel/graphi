@@ -171,17 +171,17 @@ func TestChangeRecorder_RolledBackEditLeavesNoArtifacts(t *testing.T) {
 	}
 }
 
-// AC-3: undo round-trip across all four refactor kinds and single/multi-file
-// blast radii — the graph digest and every touched source file are byte-identical
-// to pre-edit, and a reversal record with reverses_edit_id is written.
+// AC-3: undo round-trip across the implemented refactor kinds and single/multi-
+// file blast radii — the graph digest and every touched source file are
+// byte-identical to pre-edit, and a reversal record with reverses_edit_id is
+// written. (extract/move fail closed since SW-112 / SAFE-01 and can never mint
+// an undo record.)
 func TestUndo_RoundTripByteIdentical(t *testing.T) {
 	kinds := []struct {
 		name string
 		kind edit.RefactorKind
 	}{
 		{"rename", edit.RefactorRename},
-		{"extract", edit.RefactorExtract},
-		{"move", edit.RefactorMove},
 		{"signature_change", edit.RefactorSignatureChange},
 	}
 	radii := []struct {

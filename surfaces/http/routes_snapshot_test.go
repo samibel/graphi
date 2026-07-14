@@ -43,64 +43,90 @@ func TestCharacterization_HTTPRoutes_Snapshot(t *testing.T) {
 	}
 }
 
-// TestCharacterization_UnauthLabsRoutes_ExpectedRed is the SW-110 AC6
-// explicitly-documented EXPECTED-RED characterization of a KNOWN DEFECT: the HTTP
-// surface applies NO authentication to any route, so the "Labs" endpoints (the
-// non-core PR-triage / memory / distill / skillgen / critique tools that SCOPE-01
-// classifies as not-Stable) are reachable by any local client with no token,
-// header, or capability check whatsoever.
+// labsRoutes is the set of Labs / non-core routes SCOPE-01 flags as not-Stable
+// and SW-112 (SAFE-01) fail-closes behind the GRAPHI_HTTP_LABS opt-in.
+var labsRoutes = []struct {
+	method string
+	path   string
+}{
+	{http.MethodGet, "/prs"},
+	{http.MethodGet, "/prs/triage"},
+	{http.MethodGet, "/prs/conflicts"},
+	{http.MethodGet, "/prs/suggest-reviewers"},
+	{http.MethodGet, "/branches/compare"},
+	{http.MethodGet, "/reviews/critique"},
+	{http.MethodPost, "/memory"},
+	{http.MethodPost, "/distill"},
+	{http.MethodPost, "/skillgen"},
+}
+
+// TestSAFE01_LabsRoutes_FailClosedByDefault is the SW-112 (SAFE-01) gate that
+// replaced the SW-110 AC6 expected-red characterization
+// (TestCharacterization_UnauthLabsRoutes_ExpectedRed): historically the surface
+// served every Labs route (PR-triage / forge / memory / distill / skillgen /
+// critique) to any local client with no token, header, or capability check.
 //
-// This test PINS the defective state — it asserts the Labs routes are served
-// WITHOUT auth today — and is written to FAIL LOUDLY the moment SW-112 (SAFE-01)
-// fail-closes them. It does NOT fix the defect (that is SW-112's job) and it does
-// NOT make the suite red: it is "expected-red" in the sense that it captures a
-// red/defective behavior as the current, reviewed expectation. When the guard
-// lands, the assertion flips and the fix owner updates this baseline.
-//
-// A "served without auth" response is anything OTHER than 401 Unauthorized / 403
-// Forbidden. The concrete status varies (405 for a wrong verb, 503 when the Labs
-// capability is unwired, 400 for missing args) — the defect is precisely that
-// NONE of them is an auth rejection.
-func TestCharacterization_UnauthLabsRoutes_ExpectedRed(t *testing.T) {
+// Since SW-112 the contract is FAIL CLOSED: without the explicit
+// GRAPHI_HTTP_LABS=1 operator opt-in, every Labs route answers 403 with the
+// stable "labs_disabled" code and the wrapped handler is never reached. The
+// Stable read routes are untouched by the guard.
+func TestSAFE01_LabsRoutes_FailClosedByDefault(t *testing.T) {
+	t.Setenv(LabsEnvVar, "") // pin the default: no opt-in
 	srv := New(&stubClient{}, nil)
 	ts := httptest.NewServer(srv.Handler())
 	defer ts.Close()
 
-	// The Labs / non-core routes SCOPE-01 flags as not-Stable.
-	labs := []struct {
-		method string
-		path   string
-	}{
-		{http.MethodGet, "/prs"},
-		{http.MethodGet, "/prs/triage"},
-		{http.MethodGet, "/prs/conflicts"},
-		{http.MethodGet, "/prs/suggest-reviewers"},
-		{http.MethodGet, "/branches/compare"},
-		{http.MethodGet, "/reviews/critique"},
-		{http.MethodPost, "/memory"},
-		{http.MethodPost, "/distill"},
-		{http.MethodPost, "/skillgen"},
-	}
-	for _, r := range labs {
+	for _, r := range labsRoutes {
 		req, err := http.NewRequest(r.method, ts.URL+r.path, http.NoBody)
 		if err != nil {
 			t.Fatalf("build request %s %s: %v", r.method, r.path, err)
 		}
-		// Deliberately NO Authorization header / token of any kind.
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			t.Fatalf("%s %s: %v", r.method, r.path, err)
 		}
 		status := resp.StatusCode
 		_ = resp.Body.Close()
-
-		if status == http.StatusUnauthorized || status == http.StatusForbidden {
-			t.Errorf("KNOWN-DEFECT CHARACTERIZATION FLIPPED: %s %s now rejects unauthenticated access (%d). "+
-				"The unauth-Labs-routes defect appears FIXED — update this baseline and close it against SW-112 (SAFE-01).",
-				r.method, r.path, status)
-			continue
+		if status != http.StatusForbidden {
+			t.Errorf("%s %s: want 403 (fail-closed Labs route, SAFE-01), got %d", r.method, r.path, status)
 		}
-		// Defect present (expected): the Labs route was reached with no auth.
-		t.Logf("characterized unauth Labs route %s %s → %d (no auth applied; SW-112 fail-closes this)", r.method, r.path, status)
+	}
+
+	// Guard scope check: a Stable read route must NOT be captured by the guard.
+	resp, err := http.Get(ts.URL + "/healthz")
+	if err != nil {
+		t.Fatalf("GET /healthz: %v", err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode == http.StatusForbidden {
+		t.Errorf("GET /healthz: stable route was fail-closed by the Labs guard (%d)", resp.StatusCode)
+	}
+}
+
+// TestSAFE01_LabsRoutes_ExplicitOptIn proves the fail-closed default is
+// reversible exactly as documented: with GRAPHI_HTTP_LABS=1 exported at server
+// construction, the Labs routes are served again (any status EXCEPT the guard's
+// 401/403 — the stub client yields 405/400/503-class answers, and the point is
+// precisely that the guard no longer intercepts).
+func TestSAFE01_LabsRoutes_ExplicitOptIn(t *testing.T) {
+	t.Setenv(LabsEnvVar, "1")
+	srv := New(&stubClient{}, nil)
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	for _, r := range labsRoutes {
+		req, err := http.NewRequest(r.method, ts.URL+r.path, http.NoBody)
+		if err != nil {
+			t.Fatalf("build request %s %s: %v", r.method, r.path, err)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("%s %s: %v", r.method, r.path, err)
+		}
+		status := resp.StatusCode
+		_ = resp.Body.Close()
+		if status == http.StatusForbidden || status == http.StatusUnauthorized {
+			t.Errorf("%s %s: opted-in Labs route still rejected (%d)", r.method, r.path, status)
+		}
 	}
 }

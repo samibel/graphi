@@ -68,7 +68,7 @@ const cliActor = "cli"
 func refactorFlags(name string, args []string, errOut io.Writer) (client.RefactorRequest, string, error) {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(errOut)
-	kind := fs.String("kind", "", "refactor kind: rename|signature_change (extract|move are accepted but currently perform the same OldName→NewName rewrite as rename; -destination-file is not yet honored)")
+	kind := fs.String("kind", "", "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)")
 	target := fs.String("target", "", "resolved node id of the symbol to refactor")
 	oldName := fs.String("old-name", "", "current spelling of the symbol")
 	newName := fs.String("new-name", "", "replacement spelling")
@@ -721,6 +721,11 @@ func RunChangeRisk(ctx context.Context, c client.Client, args []string, in io.Re
 // RunMemory executes a memory operation against the shared client and writes the
 // canonical serialized MemoryResponse.
 //
+// export never hands a filesystem path to the transport (SW-112 / SAFE-01: the
+// client contract returns bytes and rejects server-side destination paths).
+// When -path is given, the CLI itself writes the returned export payload to the
+// file as a LOCAL operator action, with 0600 permissions.
+//
 // Usage:
 //
 //	memory store -scope <scope> -notebook <nb> -payload <text> [-tags a,b] [-kind <k>] [-source <s>] [-confidence <c>] [-evidence <e>] [-id <id>]
@@ -746,7 +751,7 @@ func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut 
 	confidence := fs.String("confidence", "", "confirmed|derived|heuristic (store only)")
 	evidence := fs.String("evidence", "", "optional citation (store only)")
 	limit := fs.Int("limit", 0, "max entries for list")
-	exportPath := fs.String("path", "", "destination file for export")
+	exportPath := fs.String("path", "", "destination file for export — written LOCALLY by the CLI (0600); the transport returns bytes and never writes files (SAFE-01)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
@@ -754,22 +759,33 @@ func RunMemory(ctx context.Context, c client.Client, args []string, out, errOut 
 	if *tags != "" {
 		tagList = strings.Split(*tags, ",")
 	}
+	// Note: ExportToPath is deliberately NOT forwarded — the transport rejects
+	// destination paths (client.ErrExportPathRejected). The file write below is
+	// the CLI's own local operator action over the returned bytes.
 	b, err := c.Memory(ctx, client.MemoryRequest{
-		Op:           op,
-		Scope:        *scope,
-		Notebook:     *notebook,
-		Tags:         tagList,
-		Payload:      *payload,
-		ID:           *id,
-		Kind:         *kind,
-		Source:       *source,
-		Confidence:   *confidence,
-		Evidence:     *evidence,
-		Limit:        *limit,
-		ExportToPath: *exportPath,
+		Op:         op,
+		Scope:      *scope,
+		Notebook:   *notebook,
+		Tags:       tagList,
+		Payload:    *payload,
+		ID:         *id,
+		Kind:       *kind,
+		Source:     *source,
+		Confidence: *confidence,
+		Evidence:   *evidence,
+		Limit:      *limit,
 	})
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)
+	}
+	if op == "export" && *exportPath != "" {
+		var resp client.MemoryResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			return fmt.Errorf("cli: decode export response: %w", err)
+		}
+		if err := os.WriteFile(*exportPath, []byte(resp.Export), 0o600); err != nil {
+			return fmt.Errorf("cli: write export file: %w", err)
+		}
 	}
 	if _, err := out.Write(append(b, '\n')); err != nil {
 		return fmt.Errorf("cli: write output: %w", err)

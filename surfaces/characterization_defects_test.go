@@ -2,7 +2,13 @@ package surfaces_test
 
 import (
 	"context"
-	"fmt"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -13,7 +19,7 @@ import (
 
 // buildApplier wires the edit/refactor applier over the pinned fixture exactly as
 // cmd/graphi's makeEditorClient does (ingest → applier with a parser-consistency
-// checker), so the characterization exercises the REAL refactor planner.
+// checker), so the gate exercises the REAL refactor planner.
 func buildApplier(t *testing.T) (*edit.Applier, string) {
 	t.Helper()
 	ctx := context.Background()
@@ -46,87 +52,97 @@ func buildApplier(t *testing.T) (*edit.Applier, string) {
 	return applier, helloID
 }
 
-func normalizeOps(ops []edit.EditOp) []string {
-	out := make([]string, len(ops))
-	for i, o := range ops {
-		out[i] = fmt.Sprintf("%s [%d,%d)=%q", o.FilePath, o.ByteSpan.Start, o.ByteSpan.End, string(o.Replacement))
-	}
-	return out
-}
-
-func opsEqual(a, b []edit.EditOp) bool {
-	na, nb := normalizeOps(a), normalizeOps(b)
-	if len(na) != len(nb) {
-		return false
-	}
-	for i := range na {
-		if na[i] != nb[i] {
-			return false
+// treeDigest hashes every regular file under root (relative path + content), so
+// a single mutated byte anywhere in the fixture tree changes the digest.
+func treeDigest(t *testing.T, root string) string {
+	t.Helper()
+	var files []string
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
+		if d.Type().IsRegular() {
+			files = append(files, p)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk %s: %v", root, err)
 	}
-	return true
+	sort.Strings(files)
+	h := sha256.New()
+	for _, p := range files {
+		rel, err := filepath.Rel(root, p)
+		if err != nil {
+			t.Fatalf("rel %s: %v", p, err)
+		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatalf("read %s: %v", p, err)
+		}
+		h.Write([]byte(rel))
+		h.Write([]byte{0})
+		h.Write(b)
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
-// TestCharacterization_ExtractMove_NameRewrite_ExpectedRed is the SW-110 AC6
-// explicitly-documented EXPECTED-RED characterization of a KNOWN DEFECT:
-// `extract` and `move` are NOT implemented as their own operations — planRefactor
-// funnels rename, signature_change, extract AND move through the SAME
-// planNameRewrite pass (engine/edit/refactor.go), so an `extract`/`move` preview
-// blindly rewrites every occurrence of OldName→NewName across the blast radius,
-// exactly as a `rename` would. That is wrong: extracting a region should mint a
-// NEW symbol and moving one should relocate it — neither should rename call sites.
+// TestSAFE01_ExtractMove_FailClosed is the SW-112 (SAFE-01) gate that replaced
+// the SW-110 AC6 expected-red characterization
+// (TestCharacterization_ExtractMove_NameRewrite_ExpectedRed): historically
+// planRefactor funneled extract AND move through the SAME planNameRewrite pass
+// as rename, so both blindly rewrote every OldName→NewName occurrence — wrong
+// semantics presented as success.
 //
-// This test PINS the defective state: it asserts an extract preview and a move
-// preview produce edit plans BYTE-IDENTICAL to a rename preview (a global name
-// rewrite). It does NOT fix the defect (SW-112 / SAFE-01 owns that) and it does
-// NOT make the suite red — it is "expected-red" in the documented sense: it
-// captures the red/defective behavior as the current, reviewed expectation and
-// FAILS LOUDLY the moment extract/move stop mirroring rename (i.e. when the fix
-// lands), forcing the fix owner to update this baseline.
-func TestCharacterization_ExtractMove_NameRewrite_ExpectedRed(t *testing.T) {
+// Since SW-112 the contract is FAIL CLOSED: extract and move are rejected with
+// the typed edit.ErrNotImplemented BEFORE any graph read or source write, for
+// previews and commits alike, across the real surface wiring. This test proves
+// the rejection AND that nothing in the pinned fixture tree was mutated, while
+// rename keeps planning a real name rewrite (the planner itself still works).
+func TestSAFE01_ExtractMove_FailClosed(t *testing.T) {
 	applier, helloID := buildApplier(t)
 	ctx := context.Background()
+	fixture := charFixtureDir(t)
+	digestBefore := treeDigest(t, fixture)
 
-	preview := func(kind edit.RefactorKind) []edit.EditOp {
-		res, err := applier.ApplyRefactor(ctx, edit.RefactorOp{
-			Kind:         kind,
-			TargetSymbol: helloID,
-			OldName:      "Hello",
-			NewName:      "Greeting",
-			DryRun:       true,
-		})
-		if err != nil {
-			t.Fatalf("%s preview: %v", kind, err)
-		}
-		return res.PlannedOps
+	// Sanity guard: the implemented rename path still plans a real name rewrite
+	// (preview only — the fixture is checked-in corpus and must never be edited).
+	renameRes, err := applier.ApplyRefactor(ctx, edit.RefactorOp{
+		Kind:         edit.RefactorRename,
+		TargetSymbol: helloID,
+		OldName:      "Hello",
+		NewName:      "Greeting",
+		DryRun:       true,
+	})
+	if err != nil {
+		t.Fatalf("rename preview: %v", err)
 	}
-
-	rename := preview(edit.RefactorRename)
-	if len(rename) == 0 {
+	if len(renameRes.PlannedOps) == 0 {
 		t.Fatalf("rename preview produced no planned edits; the fixture must have rewritable occurrences of Hello")
 	}
-	// Sanity: the rename really is a NAME rewrite (every op writes the new spelling).
-	for _, op := range rename {
-		if string(op.Replacement) != "Greeting" {
-			t.Fatalf("expected rename to write %q, got %q at %s", "Greeting", string(op.Replacement), op.FilePath)
+
+	for _, kind := range []edit.RefactorKind{edit.RefactorExtract, edit.RefactorMove} {
+		for _, dryRun := range []bool{true, false} {
+			mode := map[bool]string{true: "preview", false: "commit"}[dryRun]
+			res, err := applier.ApplyRefactor(ctx, edit.RefactorOp{
+				Kind:            kind,
+				TargetSymbol:    helloID,
+				OldName:         "Hello",
+				NewName:         "Greeting",
+				DestinationFile: "moved.go",
+				DryRun:          dryRun,
+			})
+			if !errors.Is(err, edit.ErrNotImplemented) {
+				t.Errorf("%s %s: want edit.ErrNotImplemented, got err=%v", kind, mode, err)
+			}
+			if len(res.PlannedOps) != 0 || len(res.ImpactFiles) != 0 {
+				t.Errorf("%s %s: rejected op leaked planned work: ops=%d impact=%d", kind, mode, len(res.PlannedOps), len(res.ImpactFiles))
+			}
 		}
 	}
 
-	extract := preview(edit.RefactorExtract)
-	move := preview(edit.RefactorMove)
-
-	if !opsEqual(extract, rename) {
-		t.Errorf("KNOWN-DEFECT CHARACTERIZATION FLIPPED: `extract` no longer mirrors `rename`'s name rewrite. "+
-			"The extract/move name-rewrite defect appears FIXED — update this baseline and close it against SW-112 (SAFE-01).\n"+
-			" rename =%v\n extract=%v", normalizeOps(rename), normalizeOps(extract))
-	}
-	if !opsEqual(move, rename) {
-		t.Errorf("KNOWN-DEFECT CHARACTERIZATION FLIPPED: `move` no longer mirrors `rename`'s name rewrite. "+
-			"The extract/move name-rewrite defect appears FIXED — update this baseline and close it against SW-112 (SAFE-01).\n"+
-			" rename=%v\n move  =%v", normalizeOps(rename), normalizeOps(move))
-	}
-
-	if !t.Failed() {
-		t.Logf("characterized defect: extract & move both blindly rewrite %d occurrences Hello→Greeting, identical to rename (SW-112 fail-closes this)", len(rename))
+	if got := treeDigest(t, fixture); got != digestBefore {
+		t.Fatalf("fixture tree mutated by rejected extract/move — the fail-closed contract is broken")
 	}
 }

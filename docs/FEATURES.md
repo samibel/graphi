@@ -415,7 +415,7 @@ flowchart TD
   R --> O["engine/overlay<br/>(in-memory editor state)"]
   O --> P["presented to user<br/>(deterministic order)"]
   P --> A["apply code-action"]
-  A --> SAG["refactor saga<br/>(inline / safe_delete / rename / extract)"]
+  A --> SAG["refactor saga<br/>(inline / safe_delete / rename / signature_change;<br/>extract & move fail closed — SAFE-01)"]
   SAG --> G
 ```
 

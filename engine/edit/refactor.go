@@ -22,11 +22,16 @@ const (
 	// new NodeId (QualifiedName is an identity field); the old node is deleted by
 	// the incremental re-index (Slice 1).
 	RefactorRename RefactorKind = "rename"
-	// RefactorExtract pulls a region into a new symbol; the new node(s) are
-	// created and references repointed.
+	// RefactorExtract would pull a region into a new symbol. It is NOT
+	// implemented: no extract planner exists, and the former fallback (a blind
+	// OldName→NewName rewrite identical to rename) silently violated the
+	// advertised semantics. It fail-closes with ErrNotImplemented before any
+	// graph read or source write (SW-112 / SAFE-01).
 	RefactorExtract RefactorKind = "extract"
-	// RefactorMove relocates a symbol to a different file (SourcePath is an
-	// identity field, so this mints a new NodeId and deletes the old).
+	// RefactorMove would relocate a symbol to a different file. It is NOT
+	// implemented: DestinationFile was never honored and the former fallback
+	// rewrote names like rename. It fail-closes with ErrNotImplemented before
+	// any graph read or source write (SW-112 / SAFE-01).
 	RefactorMove RefactorKind = "move"
 	// RefactorSignatureChange alters a function/method signature at its definition
 	// and at every call site / dependent edge.
@@ -87,9 +92,10 @@ type RefactorResult struct {
 // blast radius for op.TargetSymbol, plans the concrete []EditOp via the
 // span-resolution layer, and applies them all in ONE atomic multi-op saga
 // (applyBatch) so every reference across every file is rewritten or none is.
-// rename/move/signature-change mint a new NodeId for the target; the incremental
+// rename/signature-change mint a new NodeId for the target; the incremental
 // re-index deletes the old node (Slice 1), so the result is byte-identical to a
-// full re-index.
+// full re-index. extract/move are not implemented and are rejected with
+// ErrNotImplemented before the blast-radius read (SW-112 / SAFE-01).
 //
 // When op.DryRun is set, ApplyRefactor computes the impact set + planned ops and
 // returns them WITHOUT mutating any source or graph — the preview seam SW-038
@@ -172,36 +178,51 @@ func (s *sagaArtifacts) discard() {
 }
 
 // planRefactor turns a high-level RefactorOp + its blast-radius files into the
-// concrete []EditOp the saga applies. rename, signature-change, extract and move
-// all rewrite occurrences of OldName→NewName across the blast radius via the
-// span-resolution layer; the operations differ in which identity field changes
-// (and therefore which old node the re-index deletes), which is realized purely
-// by the resulting source bytes, not by special-casing the edit application.
+// concrete []EditOp the saga applies. rename and signature-change rewrite
+// occurrences of OldName→NewName across the blast radius via the span-resolution
+// layer; the two differ in which identity field changes (and therefore which old
+// node the re-index deletes), which is realized purely by the resulting source
+// bytes. extract and move have no planner and fail closed here as a second line
+// of defense — validateRefactorOp already rejects them before any graph read.
 func (a *Applier) planRefactor(op RefactorOp, files []string) ([]EditOp, error) {
 	switch op.Kind {
-	case RefactorRename, RefactorSignatureChange, RefactorExtract, RefactorMove:
+	case RefactorRename, RefactorSignatureChange:
 		return planNameRewrite(a.root, files, op.OldName, op.NewName)
+	case RefactorExtract, RefactorMove:
+		return nil, notImplementedRefactor(op.Kind)
 	default:
 		return nil, fmt.Errorf("%w: unknown refactor kind %q", ErrInvalidOp, op.Kind)
 	}
 }
 
+// notImplementedRefactor is the single typed rejection for the advertised-but-
+// unimplemented refactor kinds (SW-112 / SAFE-01). Every surface (CLI, MCP,
+// daemon) funnels through it, so the failure is identical everywhere and callers
+// can match errors.Is(err, ErrNotImplemented).
+func notImplementedRefactor(k RefactorKind) error {
+	return fmt.Errorf("%w: %q is not implemented and fails closed — no source or graph mutation was performed (rename and signature_change are the supported kinds)", ErrNotImplemented, k)
+}
+
 // validateRefactorOp checks the structural invariants of a RefactorOp before any
-// graph read or mutation. Operation-specific payload requirements (a non-empty
-// NewName for the name-rewriting kinds) are enforced here so a malformed request
-// fails fast and identically across surfaces.
+// graph read or mutation. Unimplemented kinds (extract, move) are rejected here
+// — before the blast-radius graph read — so a rejected request provably touches
+// nothing. Operation-specific payload requirements (a non-empty NewName for the
+// name-rewriting kinds) are enforced here so a malformed request fails fast and
+// identically across surfaces.
 func validateRefactorOp(op RefactorOp) error {
 	if strings.TrimSpace(op.TargetSymbol) == "" {
 		return fmt.Errorf("%w: empty target symbol", ErrInvalidOp)
 	}
 	switch op.Kind {
-	case RefactorRename, RefactorSignatureChange, RefactorExtract, RefactorMove:
+	case RefactorRename, RefactorSignatureChange:
 		if strings.TrimSpace(op.OldName) == "" {
 			return fmt.Errorf("%w: %s requires OldName", ErrInvalidOp, op.Kind)
 		}
 		if strings.TrimSpace(op.NewName) == "" {
 			return fmt.Errorf("%w: %s requires NewName", ErrInvalidOp, op.Kind)
 		}
+	case RefactorExtract, RefactorMove:
+		return notImplementedRefactor(op.Kind)
 	default:
 		return fmt.Errorf("%w: unknown refactor kind %q", ErrInvalidOp, op.Kind)
 	}

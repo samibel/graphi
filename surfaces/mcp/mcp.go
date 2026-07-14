@@ -1081,7 +1081,7 @@ func (s *Server) toolDescriptors() []map[string]any {
 					"confidence":     map[string]any{"type": "string", "description": "confirmed | derived | heuristic"},
 					"evidence":       map[string]any{"type": "string", "description": "optional file:line citation"},
 					"limit":          map[string]any{"type": "integer", "description": "max entries for list"},
-					"export_to_path": map[string]any{"type": "string", "description": "destination file for export"},
+					"export_to_path": map[string]any{"type": "string", "description": "REJECTED (SAFE-01): the transport never writes server-side files; export returns the payload in the response's `export` field — omit this argument"},
 				},
 				"required": []string{"op"},
 			},
@@ -1297,7 +1297,7 @@ var editToolDescriptors = []map[string]any{
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|extract|move|signature_change"},
+				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)"},
 				"target_symbol":    map[string]any{"type": "string", "description": "resolved node id of the symbol to refactor"},
 				"old_name":         map[string]any{"type": "string", "description": "current spelling of the symbol"},
 				"new_name":         map[string]any{"type": "string", "description": "replacement spelling"},
@@ -1312,7 +1312,7 @@ var editToolDescriptors = []map[string]any{
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|extract|move|signature_change"},
+				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)"},
 				"target_symbol":    map[string]any{"type": "string", "description": "resolved node id of the symbol to refactor"},
 				"old_name":         map[string]any{"type": "string", "description": "current spelling of the symbol"},
 				"new_name":         map[string]any{"type": "string", "description": "replacement spelling"},

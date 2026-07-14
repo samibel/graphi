@@ -134,6 +134,11 @@ var (
 	// highest-severity case (the store may be left in an indeterminate state) and
 	// is surfaced explicitly so callers never mistake it for a clean rollback.
 	ErrRollback = errors.New("edit: rollback failed")
+	// ErrNotImplemented is returned for a refactor kind whose advertised semantics
+	// have no real implementation (extract, move). It is raised BEFORE any graph
+	// read or source write, so a rejected request provably mutates nothing
+	// (SW-112 / SAFE-01 fail-closed contract).
+	ErrNotImplemented = errors.New("edit: refactor kind not implemented")
 )
 
 // faultStage names a saga step at which a test fault can be injected.

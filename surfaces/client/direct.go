@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -656,25 +657,24 @@ func (d *Direct) Memory(ctx context.Context, req MemoryRequest) ([]byte, error) 
 			Count:   len(entries),
 		})
 	case "export":
-		var w io.Writer = os.Stdout
+		// SW-112 / SAFE-01: the transport never writes server-side files. A
+		// request naming a destination path is rejected with a typed error;
+		// the export payload is returned as bytes for the caller to handle
+		// locally (the CLI writes them to a file as its own operator action).
 		if req.ExportToPath != "" {
-			f, err := os.Create(req.ExportToPath)
-			if err != nil {
-				return nil, err
-			}
-			defer f.Close()
-			w = f
+			return nil, ErrExportPathRejected
 		}
+		var buf bytes.Buffer
 		if err := d.memoryStore.ExportMemory(ctx, memory.Query{
 			Scope:      req.Scope,
 			Notebook:   req.Notebook,
 			TagPrefix:  "",
 			CreatedMin: 0,
 			CreatedMax: 0,
-		}, w); err != nil {
+		}, &buf); err != nil {
 			return nil, err
 		}
-		return marshalJSON(MemoryResponse{Count: 0})
+		return marshalJSON(MemoryResponse{Count: 0, Export: buf.String()})
 	default:
 		return nil, fmt.Errorf("client: unsupported memory op %q", req.Op)
 	}

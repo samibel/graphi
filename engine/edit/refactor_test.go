@@ -394,51 +394,54 @@ func TestApplyRefactor_FailOnFileKRollsBackAll(t *testing.T) {
 	}
 }
 
-// --- AC-2: extract/move provenance + freshness restored <=2s ----------------
+// --- SW-112 / SAFE-01: extract/move fail closed ------------------------------
 
-func TestApplyRefactor_ExtractByteIdentical(t *testing.T) {
-	ctx := context.Background()
-	h := newRefactorHarness(t, map[string]string{
-		"a_def.go": "def:Helper\n",
-		"b_use.go": "def:UseB\nref:a_def.go:Helper\nHelper()\n",
-	})
-	res, err := h.applier.ApplyRefactor(ctx, edit.RefactorOp{
-		Kind:         edit.RefactorExtract,
-		TargetSymbol: h.symbolID("Helper", "a_def.go"),
-		OldName:      "Helper",
-		NewName:      "Helper2",
-	})
-	if err != nil {
-		t.Fatalf("ApplyRefactor extract: %v", err)
-	}
-	if res.Outcome != edit.OutcomeApplied {
-		t.Fatalf("outcome = %q", res.Outcome)
-	}
-	if h.liveDigest(t) != h.fullReindexDigest(t) {
-		t.Fatalf("extract not byte-identical to full re-index")
-	}
-}
+// TestApplyRefactor_ExtractMove_FailClosed is the SAFE-01 gate: the advertised-
+// but-unimplemented kinds are rejected with the typed ErrNotImplemented BEFORE
+// any graph read or source write — for previews AND commits — and provably
+// mutate nothing: every source file and the live graph digest are byte-identical
+// to the pre-request state.
+func TestApplyRefactor_ExtractMove_FailClosed(t *testing.T) {
+	kinds := []edit.RefactorKind{edit.RefactorExtract, edit.RefactorMove}
+	modes := []struct {
+		name   string
+		dryRun bool
+	}{{"preview", true}, {"commit", false}}
+	for _, kind := range kinds {
+		for _, mode := range modes {
+			t.Run(string(kind)+"/"+mode.name, func(t *testing.T) {
+				ctx := context.Background()
+				files := map[string]string{
+					"a_def.go": "def:Helper\n",
+					"b_use.go": "def:UseB\nref:a_def.go:Helper\nHelper()\n",
+				}
+				h := newRefactorHarness(t, files)
+				graphBefore := h.liveDigest(t)
 
-func TestApplyRefactor_MoveByteIdentical(t *testing.T) {
-	ctx := context.Background()
-	h := newRefactorHarness(t, map[string]string{
-		"a_def.go": "def:Mover\n",
-		"b_use.go": "def:UseB\nref:a_def.go:Mover\nMover()\n",
-	})
-	res, err := h.applier.ApplyRefactor(ctx, edit.RefactorOp{
-		Kind:         edit.RefactorMove,
-		TargetSymbol: h.symbolID("Mover", "a_def.go"),
-		OldName:      "Mover",
-		NewName:      "Moved",
-	})
-	if err != nil {
-		t.Fatalf("ApplyRefactor move: %v", err)
-	}
-	if res.Outcome != edit.OutcomeApplied {
-		t.Fatalf("outcome = %q", res.Outcome)
-	}
-	if h.liveDigest(t) != h.fullReindexDigest(t) {
-		t.Fatalf("move not byte-identical to full re-index")
+				res, err := h.applier.ApplyRefactor(ctx, edit.RefactorOp{
+					Kind:            kind,
+					TargetSymbol:    h.symbolID("Helper", "a_def.go"),
+					OldName:         "Helper",
+					NewName:         "Helper2",
+					DestinationFile: "moved.go",
+					DryRun:          mode.dryRun,
+				})
+				if !errors.Is(err, edit.ErrNotImplemented) {
+					t.Fatalf("want ErrNotImplemented, got err=%v", err)
+				}
+				if len(res.PlannedOps) != 0 || len(res.ImpactFiles) != 0 {
+					t.Fatalf("rejected %s leaked planned work: ops=%d impact=%d", kind, len(res.PlannedOps), len(res.ImpactFiles))
+				}
+				for name, want := range files {
+					if got := h.read(t, name); got != want {
+						t.Fatalf("rejected %s mutated %s:\n got=%q\nwant=%q", kind, name, got, want)
+					}
+				}
+				if got := h.liveDigest(t); got != graphBefore {
+					t.Fatalf("rejected %s mutated the graph", kind)
+				}
+			})
+		}
 	}
 }
 
@@ -548,18 +551,20 @@ func TestApplyRefactor_RejectsInvalidRequests(t *testing.T) {
 	}
 }
 
-// SW-037 AC-1: an extract/move refactor applied through the existing incremental
-// route records the saga-minted (edit_id, op_type, timestamp) in the
-// edit_provenance side-channel for the affected nodes AND edges, with a single
-// timestamp shared across the touched set, and surfaces edit_id on the Result.
+// SW-037 AC-1: a refactor applied through the existing incremental route records
+// the saga-minted (edit_id, op_type, timestamp) in the edit_provenance
+// side-channel for the affected nodes AND edges, with a single timestamp shared
+// across the touched set, and surfaces edit_id on the Result. (Originally
+// exercised via extract/move; those kinds fail closed since SW-112 / SAFE-01, so
+// the implemented kinds carry the AC now.)
 func TestApplyRefactor_RecordsEditProvenance(t *testing.T) {
 	cases := []struct {
 		name   string
 		kind   edit.RefactorKind
 		opType ingest.EditOpType
 	}{
-		{"move", edit.RefactorMove, ingest.EditOpMove},
-		{"extract", edit.RefactorExtract, ingest.EditOpExtract},
+		{"rename", edit.RefactorRename, ingest.EditOpRename},
+		{"signature_change", edit.RefactorSignatureChange, ingest.EditOpSignatureChange},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
