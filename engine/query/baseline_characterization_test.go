@@ -8,18 +8,23 @@ import (
 	"github.com/samibel/graphi/core/model"
 )
 
-// countingReader wraps a Reader and records the query-plan shape the structural
-// service actually executes: how many times it hits Edges/Nodes and how many
-// ROWS each of those calls scans. It is the instrument behind the SW-110
-// (TEST-01) AC5 rows-scanned baseline.
+// countingReader wraps a MemStore and records the query-plan shape the
+// structural service actually executes: legacy full listings (Edges/Nodes)
+// versus selective port reads (Incoming/Outgoing/NodesByID), and how many rows
+// each returns. It was the instrument behind the SW-110 (TEST-01) AC5
+// rows-scanned baseline and is now the instrument behind the flipped SW-116
+// (CORE-02) must-be-selective gates.
 type countingReader struct {
-	inner Reader
+	inner *graphstore.MemStore
 
-	edgeCalls int
-	edgeRows  int // total edge rows returned across all Edges() calls
-	nodeCalls int
+	edgeCalls int // legacy full/kind listings via Edges()
+	edgeRows  int
+	nodeCalls int // legacy full listings via Nodes()
 	nodeRows  int
-	lastEdgeQ graphstore.Query
+
+	selEdgeCalls int // selective Incoming/Outgoing reads
+	selEdgeRows  int // rows RETURNED by selective edge reads (== matched set)
+	selNodeRows  int // rows returned by NodesByID
 }
 
 func (c *countingReader) GetNode(ctx context.Context, id model.NodeId) (model.Node, error) {
@@ -36,10 +41,28 @@ func (c *countingReader) Nodes(ctx context.Context, q graphstore.Query) ([]model
 }
 func (c *countingReader) Edges(ctx context.Context, q graphstore.Query) ([]model.Edge, error) {
 	c.edgeCalls++
-	c.lastEdgeQ = q
 	es, err := c.inner.Edges(ctx, q)
 	c.edgeRows += len(es)
 	return es, err
+}
+
+// Selective port delegation (graphstore.GraphLookup), instrumented.
+func (c *countingReader) Incoming(ctx context.Context, id model.NodeId, kinds ...model.EdgeKind) ([]model.Edge, error) {
+	c.selEdgeCalls++
+	es, err := c.inner.Incoming(ctx, id, kinds...)
+	c.selEdgeRows += len(es)
+	return es, err
+}
+func (c *countingReader) Outgoing(ctx context.Context, id model.NodeId, kinds ...model.EdgeKind) ([]model.Edge, error) {
+	c.selEdgeCalls++
+	es, err := c.inner.Outgoing(ctx, id, kinds...)
+	c.selEdgeRows += len(es)
+	return es, err
+}
+func (c *countingReader) NodesByID(ctx context.Context, ids []model.NodeId) ([]model.Node, error) {
+	ns, err := c.inner.NodesByID(ctx, ids)
+	c.selNodeRows += len(ns)
+	return ns, err
 }
 
 // seedCallsGraph builds a deterministic graph with fanCallers functions all
@@ -76,8 +99,8 @@ func seedCallsGraph(t *testing.T, fanCallers, decoyCalls int) (*graphstore.MemSt
 		mkEdge(caller.ID(), hub.ID(), "calls")
 	}
 	// Decoy "calls" edges between unrelated nodes: they share the hub's edge KIND
-	// but not its endpoint, so a selective (endpoint-indexed) read would skip them
-	// while today's full-kind scan must still walk them.
+	// but not its endpoint. The old full-kind scan had to walk them; the selective
+	// read must never see them.
 	for i := 0; i < decoyCalls; i++ {
 		a := mkFunc(decoyName(i) + "A")
 		b := mkFunc(decoyName(i) + "B")
@@ -104,19 +127,16 @@ func itoa(i int) string {
 	return string(b)
 }
 
-// TestCharacterization_DirectedLookup_ScansAllEdgesOfKind is AC5: it pins the
-// current read HOTPATH plan of callers/callees/references/definition. Because
-// graphstore.Query has no endpoint filter, Service.directedLookup issues a single
-// Edges(Query{EdgeKind}) that returns EVERY edge of that kind and filters to the
-// symbol's endpoint in Go (service.go directedLookup). This baseline records that
-// the rows SCANNED equals the total "calls" edges in the store — NOT the far
-// smaller matched set — so SP-11/CORE-02's selective-read work has a measured
-// "before" number to beat.
-func TestCharacterization_DirectedLookup_ScansAllEdgesOfKind(t *testing.T) {
+// TestSelectiveGate_DirectedLookup_ScansOnlyIncidentEdges is the FLIPPED SW-110
+// AC5 baseline (flipped by SW-116 / CORE-02, exactly as the old drift message
+// instructed): callers/callees/references/definition no longer issue an
+// Edges(Query{EdgeKind}) whole-class scan — they read ONLY the symbol's
+// incident edges through graphstore.GraphLookup. The decoy edges of the same
+// kind are never touched: rows scanned == matched set, not the edge class.
+func TestSelectiveGate_DirectedLookup_ScansOnlyIncidentEdges(t *testing.T) {
 	const fanCallers = 3
 	const decoyCalls = 7
 	st, hub := seedCallsGraph(t, fanCallers, decoyCalls)
-	totalCallsEdges := fanCallers + decoyCalls // every "calls" edge in the store
 
 	cr := &countingReader{inner: st}
 	svc := New(cr)
@@ -126,44 +146,54 @@ func TestCharacterization_DirectedLookup_ScansAllEdgesOfKind(t *testing.T) {
 		t.Fatalf("Callers: %v", err)
 	}
 
-	// Result is the SMALL matched set …
+	// Result is the matched set …
 	if len(res.Nodes) != fanCallers {
 		t.Fatalf("expected %d callers in the result, got %d", fanCallers, len(res.Nodes))
 	}
-	// … but the plan SCANNED every "calls" edge (the characterized inefficiency).
-	if cr.lastEdgeQ.EdgeKind != "calls" {
-		t.Fatalf("expected an Edges(Query{EdgeKind:calls}) scan, got EdgeKind=%q", cr.lastEdgeQ.EdgeKind)
+	// … and the plan touched NOTHING else: no legacy listing, and the selective
+	// reads returned exactly the matched edges (the decoys stayed unread).
+	if cr.edgeCalls != 0 || cr.nodeCalls != 0 {
+		t.Fatalf("SELECTIVE-GATE RED: callers issued %d Edges()/%d Nodes() legacy listings — a full scan crept back in (ADR 0003 D7)",
+			cr.edgeCalls, cr.nodeCalls)
 	}
-	if cr.edgeRows != totalCallsEdges {
-		t.Fatalf("BASELINE DRIFT: directedLookup scanned %d edge rows, expected the full %d calls edges "+
-			"(loads all edges of a kind, filters in Go). If this dropped, a selective read landed — record the new baseline.",
-			cr.edgeRows, totalCallsEdges)
+	if cr.selEdgeRows != fanCallers {
+		t.Fatalf("SELECTIVE-GATE RED: callers' selective reads returned %d edge rows, want exactly the %d matched (over-scan)",
+			cr.selEdgeRows, fanCallers)
 	}
-	// Baseline ratio, recorded for the SP-11 "before": rows scanned per matched row.
-	t.Logf("directedLookup(callers) baseline: scanned %d calls edges to return %d matches (%.1fx over-scan)",
-		cr.edgeRows, len(res.Nodes), float64(cr.edgeRows)/float64(len(res.Nodes)))
+	t.Logf("directedLookup(callers) selective plan: %d port read(s), %d edge rows for %d matches (1.0x scan ratio; old baseline scanned all %d calls edges)",
+		cr.selEdgeCalls, cr.selEdgeRows, len(res.Nodes), fanCallers+decoyCalls)
 }
 
-// TestCharacterization_Neighborhood_ScansAllEdges is AC5 for the neighborhood
-// hotpath: it loads the ENTIRE edge set once (Edges(Query{}), no kind or endpoint
-// filter) to build undirected adjacency. This pins that whole-graph read.
-func TestCharacterization_Neighborhood_ScansAllEdges(t *testing.T) {
+// TestSelectiveGate_Neighborhood_ScansOnlyComponent is the FLIPPED SW-110 AC5
+// neighborhood baseline: the traversal no longer loads the entire edge set —
+// each hop reads only the frontier's incident edges, so the decoy component is
+// never touched.
+func TestSelectiveGate_Neighborhood_ScansOnlyComponent(t *testing.T) {
 	const fanCallers = 2
 	const decoyCalls = 5
 	st, hub := seedCallsGraph(t, fanCallers, decoyCalls)
-	totalEdges := fanCallers + decoyCalls + 1 // calls edges + the one references edge
+	// Depth 1 expands only the hub: its incident edges are the fanCallers calls
+	// edges plus the one references edge.
+	hubIncident := fanCallers + 1
 
 	cr := &countingReader{inner: st}
 	svc := New(cr)
 
-	if _, err := svc.Neighborhood(context.Background(), hub, 1); err != nil {
+	res, err := svc.Neighborhood(context.Background(), hub, 1)
+	if err != nil {
 		t.Fatalf("Neighborhood: %v", err)
 	}
-	if cr.lastEdgeQ.EdgeKind != "" {
-		t.Fatalf("expected an unfiltered Edges(Query{}) full scan, got EdgeKind=%q", cr.lastEdgeQ.EdgeKind)
+	if len(res.Edges) != hubIncident {
+		t.Fatalf("expected %d neighborhood edges, got %d", hubIncident, len(res.Edges))
 	}
-	if cr.edgeRows != totalEdges {
-		t.Fatalf("BASELINE DRIFT: neighborhood scanned %d edge rows, expected the full %d edges", cr.edgeRows, totalEdges)
+	if cr.edgeCalls != 0 || cr.nodeCalls != 0 {
+		t.Fatalf("SELECTIVE-GATE RED: neighborhood issued %d Edges()/%d Nodes() legacy listings — the whole-graph read crept back in (ADR 0003 D7)",
+			cr.edgeCalls, cr.nodeCalls)
 	}
-	t.Logf("neighborhood baseline: loads the full edge set of %d rows (no endpoint index)", cr.edgeRows)
+	if cr.selEdgeRows != hubIncident {
+		t.Fatalf("SELECTIVE-GATE RED: neighborhood's selective reads returned %d edge rows, want exactly the hub's %d incident edges (decoys must stay unread)",
+			cr.selEdgeRows, hubIncident)
+	}
+	t.Logf("neighborhood selective plan: %d port read(s), %d edge rows (old baseline loaded all %d edges)",
+		cr.selEdgeCalls, cr.selEdgeRows, fanCallers+decoyCalls+1)
 }
