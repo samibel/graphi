@@ -10,22 +10,23 @@ import (
 	"github.com/samibel/graphi/core/model"
 )
 
-// This file is the SW-114 (SP-11) selective-read spike's EXECUTABLE EVIDENCE.
-// It changes no production code and no production schema: it opens the real
+// This file began as the SW-114 (SP-11) selective-read spike's executable
+// evidence and is now the PERMANENT PLAN GATE promised by ADR 0003 D3/D7
+// (promoted in SW-115 / CORE-01, which added the two node indexes to the
+// production DDL — the documented baseline flip: the spike's "SCAN nodes
+// today" pin became the index-usage assertion below). It opens the real
 // SQLiteStore, seeds it through the production API, and pins what the SQLite
-// query planner does for the read shapes ADR 0003 specifies for CORE-01:
+// query planner does for the ports' statement shapes:
 //
-//  1. endpoint-selective edge reads (Incoming/Outgoing) CAN use the existing
-//     edges_from_id / edges_to_id indexes with bound parameters — no schema
-//     change needed for the GraphLookup hotpath;
-//  2. symbol lookups by qualified_name / source_path are FULL TABLE SCANS on
-//     today's schema (nodes has no secondary index) — the measured gap;
-//  3. adding the two content-neutral indexes ADR 0003 proposes (here created
-//     only inside this test's scratch DB) flips those lookups to index
-//     searches, proving CORE-01's fix is index-only.
+//  1. endpoint-selective edge reads (Incoming/Outgoing) use the
+//     edges_from_id / edges_to_id indexes with bound parameters;
+//  2. symbol lookups by qualified_name / source_path use the CORE-01
+//     nodes_qualified_name / nodes_source_path indexes;
+//  3. the legacy listing path still materializes the whole graph into the hot
+//     cache — the pinned reason the ports bypass it (ADR 0003 D5).
 //
-// If the production schema changes underneath these pins (an index added or
-// dropped), the affected assertion fails and the baseline must be re-recorded.
+// If the production schema or planner behavior drifts (an index dropped or
+// no longer chosen), the affected assertion fails and must be re-reviewed.
 
 // spikeStore opens a real on-disk SQLiteStore seeded with a small graph via the
 // production API and returns it with its underlying *sql.DB for EXPLAIN probes.
@@ -127,47 +128,30 @@ func TestSpike_EndpointEdgeReads_UseExistingIndexes(t *testing.T) {
 	}
 }
 
-// TestSpike_SymbolLookups_FullScanToday_IndexedWithProposedIndexes is SP-11
-// evidence (2) and (3): on today's production schema a qualified_name or
-// source_path equality lookup SCANS the whole nodes table (no secondary index
-// exists — the pinned gap resolveExact's full Nodes() read papers over), and
-// the two content-neutral indexes ADR 0003 proposes for CORE-01 — created here
-// ONLY in this test's scratch DB — flip both lookups to index searches.
-func TestSpike_SymbolLookups_FullScanToday_IndexedWithProposedIndexes(t *testing.T) {
+// TestSpike_SymbolLookups_UseProductionIndexes is the CORE-01 plan gate for
+// SymbolLookupPort: on the production schema (which since SW-115 carries the
+// nodes_qualified_name / nodes_source_path indexes the SP-11 spike proved out
+// in a scratch DB), both exact-equality lookup shapes are index searches, and
+// the exact statement lookupNodes issues (full projection) keeps the index.
+func TestSpike_SymbolLookups_UseProductionIndexes(t *testing.T) {
 	s := spikeStore(t)
 
-	// (2) Today: full table scan for both symbol-lookup shapes.
 	byQN := explainPlan(t, s,
 		"SELECT id FROM nodes WHERE qualified_name = ? ORDER BY id", "pkg.Hub")
-	if !strings.Contains(byQN, "SCAN nodes") {
-		t.Errorf("BASELINE DRIFT: qualified_name lookup no longer scans (an index landed?) — re-record this baseline:\n%s", byQN)
+	if !strings.Contains(byQN, "USING INDEX nodes_qualified_name") {
+		t.Errorf("qualified_name lookup does not use nodes_qualified_name:\n%s", byQN)
 	}
 	byPath := explainPlan(t, s,
 		"SELECT id FROM nodes WHERE source_path = ? ORDER BY id", "pkg/Hub.go")
-	if !strings.Contains(byPath, "SCAN nodes") {
-		t.Errorf("BASELINE DRIFT: source_path lookup no longer scans (an index landed?) — re-record this baseline:\n%s", byPath)
-	}
-
-	// (3) With ADR 0003's proposed content-neutral indexes (scratch-DB only —
-	// CORE-01 adds them to the production DDL), both shapes become searches.
-	for _, ddl := range []string{
-		"CREATE INDEX nodes_qualified_name ON nodes(qualified_name)",
-		"CREATE INDEX nodes_source_path ON nodes(source_path)",
-	} {
-		if _, err := s.db.Exec(ddl); err != nil {
-			t.Fatalf("%s: %v", ddl, err)
-		}
-	}
-
-	byQN = explainPlan(t, s,
-		"SELECT id FROM nodes WHERE qualified_name = ? ORDER BY id", "pkg.Hub")
-	if !strings.Contains(byQN, "USING INDEX nodes_qualified_name") {
-		t.Errorf("qualified_name lookup does not use the proposed index:\n%s", byQN)
-	}
-	byPath = explainPlan(t, s,
-		"SELECT id FROM nodes WHERE source_path = ? ORDER BY id", "pkg/Hub.go")
 	if !strings.Contains(byPath, "USING INDEX nodes_source_path") {
-		t.Errorf("source_path lookup does not use the proposed index:\n%s", byPath)
+		t.Errorf("source_path lookup does not use nodes_source_path:\n%s", byPath)
+	}
+
+	// The full-projection shape SymbolLookupPort actually issues.
+	fullRow := explainPlan(t, s,
+		"SELECT kind, qualified_name, source_path, line, col, meta FROM nodes WHERE qualified_name = ? ORDER BY id", "pkg.Hub")
+	if !strings.Contains(fullRow, "USING INDEX nodes_qualified_name") {
+		t.Errorf("full-projection qualified_name lookup does not use nodes_qualified_name:\n%s", fullRow)
 	}
 }
 

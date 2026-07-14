@@ -25,14 +25,70 @@ type MemStore struct {
 	nodes  map[model.NodeId]model.Node
 	edges  map[model.EdgeId]model.Edge
 	meta   map[string]string
+
+	// Selective-read indexes (CORE-01, ADR 0003 D4): per-node adjacency for
+	// GraphLookup and exact-match lookup maps for SymbolLookupPort. They are
+	// maintained atomically inside the SAME write lock as nodes/edges, so a
+	// reader can never observe the maps and the indexes out of sync.
+	in     map[model.NodeId]map[model.EdgeId]struct{} // To endpoint → incident edge ids
+	out    map[model.NodeId]map[model.EdgeId]struct{} // From endpoint → incident edge ids
+	byQN   map[string]map[model.NodeId]struct{}       // qualified_name → node ids
+	byPath map[string]map[model.NodeId]struct{}       // source_path → node ids
 }
 
 // NewMemStore returns an empty in-memory store.
 func NewMemStore() *MemStore {
 	return &MemStore{
-		nodes: make(map[model.NodeId]model.Node),
-		edges: make(map[model.EdgeId]model.Edge),
-		meta:  make(map[string]string),
+		nodes:  make(map[model.NodeId]model.Node),
+		edges:  make(map[model.EdgeId]model.Edge),
+		meta:   make(map[string]string),
+		in:     make(map[model.NodeId]map[model.EdgeId]struct{}),
+		out:    make(map[model.NodeId]map[model.EdgeId]struct{}),
+		byQN:   make(map[string]map[model.NodeId]struct{}),
+		byPath: make(map[string]map[model.NodeId]struct{}),
+	}
+}
+
+// indexNode/unindexNode/indexEdge/unindexEdge maintain the selective-read
+// indexes. All four MUST be called with m.mu held for writing.
+
+func (m *MemStore) indexNode(n model.Node) {
+	addToSet(m.byQN, n.QualifiedName(), n.ID())
+	addToSet(m.byPath, n.SourcePath(), n.ID())
+}
+
+func (m *MemStore) unindexNode(n model.Node) {
+	dropFromSet(m.byQN, n.QualifiedName(), n.ID())
+	dropFromSet(m.byPath, n.SourcePath(), n.ID())
+}
+
+func (m *MemStore) indexEdge(e model.Edge) {
+	addToSet(m.out, e.From(), e.ID())
+	addToSet(m.in, e.To(), e.ID())
+}
+
+func (m *MemStore) unindexEdge(e model.Edge) {
+	dropFromSet(m.out, e.From(), e.ID())
+	dropFromSet(m.in, e.To(), e.ID())
+}
+
+func addToSet[K comparable, V comparable](idx map[K]map[V]struct{}, k K, v V) {
+	set, ok := idx[k]
+	if !ok {
+		set = make(map[V]struct{})
+		idx[k] = set
+	}
+	set[v] = struct{}{}
+}
+
+func dropFromSet[K comparable, V comparable](idx map[K]map[V]struct{}, k K, v V) {
+	set, ok := idx[k]
+	if !ok {
+		return
+	}
+	delete(set, v)
+	if len(set) == 0 {
+		delete(idx, k)
 	}
 }
 
@@ -50,7 +106,11 @@ func (m *MemStore) PutNode(ctx context.Context, n model.Node) error {
 	if m.closed {
 		return ErrClosed
 	}
+	// NodeId is content-addressed over Kind+QualifiedName+SourcePath, so a
+	// replace under the same ID cannot change the indexed keys — indexNode is
+	// idempotent for it.
 	m.nodes[n.ID()] = n
+	m.indexNode(n)
 	return nil
 }
 
@@ -69,7 +129,10 @@ func (m *MemStore) PutEdge(ctx context.Context, e model.Edge) error {
 	if _, ok := m.nodes[e.To()]; !ok {
 		return ErrUnknownEdgeEndpoint
 	}
+	// EdgeId is content-addressed over its endpoints (among other fields), so a
+	// replace under the same ID cannot move the edge — indexEdge is idempotent.
 	m.edges[e.ID()] = e
+	m.indexEdge(e)
 	return nil
 }
 
@@ -86,11 +149,24 @@ func (m *MemStore) DeleteNode(ctx context.Context, id model.NodeId) error {
 	if m.closed {
 		return ErrClosed
 	}
+	if n, ok := m.nodes[id]; ok {
+		m.unindexNode(n)
+	}
 	delete(m.nodes, id)
 	// Cascade: drop every edge touching the removed node so no dangling edge
-	// survives (the PutEdge endpoint invariant in reverse).
-	for eid, e := range m.edges {
-		if e.From() == id || e.To() == id {
+	// survives (the PutEdge endpoint invariant in reverse). The adjacency
+	// indexes make the cascade degree-proportional instead of a full edge scan;
+	// collecting ids first keeps the iteration separate from the unindexing.
+	var incident []model.EdgeId
+	for eid := range m.in[id] {
+		incident = append(incident, eid)
+	}
+	for eid := range m.out[id] {
+		incident = append(incident, eid)
+	}
+	for _, eid := range incident {
+		if e, ok := m.edges[eid]; ok {
+			m.unindexEdge(e)
 			delete(m.edges, eid)
 		}
 	}
@@ -107,6 +183,9 @@ func (m *MemStore) DeleteEdge(ctx context.Context, id model.EdgeId) error {
 	defer m.mu.Unlock()
 	if m.closed {
 		return ErrClosed
+	}
+	if e, ok := m.edges[id]; ok {
+		m.unindexEdge(e)
 	}
 	delete(m.edges, id)
 	return nil
@@ -277,13 +356,23 @@ func (m *MemStore) Load(ctx context.Context, path string) error {
 		return err
 	}
 	// Build the replacement state fully before swapping (atomic, fail-closed).
+	// The selective-read indexes are re-derived from the snapshot content, never
+	// trusted from the file — mirroring how SQLite re-derives its FTS index.
 	newNodes := make(map[model.NodeId]model.Node, len(g.Nodes()))
+	newQN := make(map[string]map[model.NodeId]struct{})
+	newPath := make(map[string]map[model.NodeId]struct{})
 	for _, n := range g.Nodes() {
 		newNodes[n.ID()] = n
+		addToSet(newQN, n.QualifiedName(), n.ID())
+		addToSet(newPath, n.SourcePath(), n.ID())
 	}
 	newEdges := make(map[model.EdgeId]model.Edge, len(g.Edges()))
+	newIn := make(map[model.NodeId]map[model.EdgeId]struct{})
+	newOut := make(map[model.NodeId]map[model.EdgeId]struct{})
 	for _, e := range g.Edges() {
 		newEdges[e.ID()] = e
+		addToSet(newOut, e.From(), e.ID())
+		addToSet(newIn, e.To(), e.ID())
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -292,6 +381,10 @@ func (m *MemStore) Load(ctx context.Context, path string) error {
 	}
 	m.nodes = newNodes
 	m.edges = newEdges
+	m.byQN = newQN
+	m.byPath = newPath
+	m.in = newIn
+	m.out = newOut
 	return nil
 }
 
@@ -344,5 +437,9 @@ func (m *MemStore) Close() error {
 	m.nodes = nil
 	m.edges = nil
 	m.meta = nil
+	m.in = nil
+	m.out = nil
+	m.byQN = nil
+	m.byPath = nil
 	return nil
 }

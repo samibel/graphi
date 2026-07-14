@@ -187,9 +187,17 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(
 -- Endpoint indexes: DeleteNode's incident-edge cascade and incidentEdgeIDs
 -- filter on from_id/to_id; without these every node delete full-scans the
 -- edge table (and the FK enforcement lacks its child index). Content-neutral:
--- listings stay ordered by id, so graph bytes are unaffected.
+-- listings stay ordered by id, so graph bytes are unaffected. Since CORE-01
+-- (ADR 0003 D3) they also serve GraphLookup.Incoming/Outgoing.
 CREATE INDEX IF NOT EXISTS edges_from_id ON edges(from_id);
 CREATE INDEX IF NOT EXISTS edges_to_id   ON edges(to_id);
+-- Symbol-lookup indexes (CORE-01, ADR 0003 D3): SymbolLookupPort's
+-- QualifiedName/SourcePath equality lookups were full nodes scans without
+-- them (pinned by the SP-11 spike). Content-neutral like the endpoint
+-- indexes — no row content changes, listings stay ordered by id, so graph
+-- bytes/snapshots are unaffected and no user_version bump is needed.
+CREATE INDEX IF NOT EXISTS nodes_qualified_name ON nodes(qualified_name);
+CREATE INDEX IF NOT EXISTS nodes_source_path    ON nodes(source_path);
 CREATE TABLE IF NOT EXISTS kv_meta (
 	key   TEXT PRIMARY KEY,
 	value TEXT NOT NULL

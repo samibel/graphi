@@ -97,10 +97,10 @@ type GraphLookup interface {
 ```go
 // core/graphstore — CORE-01
 type SymbolLookupPort interface {
-    ExactName(ctx context.Context, name string) ([]model.Node, error)      // see U1
     QualifiedName(ctx context.Context, qn string) ([]model.Node, error)
     SourcePath(ctx context.Context, path string) ([]model.Node, error)
     Search(ctx context.Context, text string, limit int) ([]RankedNode, error)
+    // ExactName(ctx, name) is RESERVED, not part of v1 — see U1.
 }
 ```
 
@@ -111,10 +111,12 @@ type SymbolLookupPort interface {
 - **`Search`** is the existing ranked FTS5 lexical search — `Graphstore.SearchNodes`'s contract
   verbatim (it is already selective; it moves into the port so stable consumers depend on one
   read surface).
-- **`ExactName`** (bare final-segment name) is **specified but deferred**: no stable hotpath
-  consumes a bare-name equality today (resolution falls through to ranked `Search`). It is
-  implemented only when `CORE-02`'s migration surfaces a consumer — see **U1**. This keeps the
-  master-plan port shape without inventing an unneeded index.
+- **`ExactName`** (bare final-segment name) is **reserved, not part of the v1 Go interface**: no
+  stable hotpath consumes a bare-name equality today (resolution falls through to ranked
+  `Search`), and `model.Node` carries no bare-name field, so its derivation rule would be
+  invented without a consumer. It is added to the interface only when `CORE-02`'s migration
+  surfaces one — see **U1**. This keeps the master-plan port shape without inventing an unneeded
+  index or semantics.
 
 ### D3. SQLite implementation: bound-parameter reads, two new content-neutral indexes
 
