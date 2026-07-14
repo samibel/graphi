@@ -1,0 +1,18 @@
+id: hero-16-explain-symbol-cited
+description: >
+  explain_symbol on a known symbol returns its identity with definition and
+  caller items, every item backed by evidence citations.
+fixture_ref: tier1-fixture-go
+operation:
+  name: explain_symbol
+  args:
+    symbol: Hello
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  anchors:
+    - kind: line
+      value: "definition: function fixture.Hello"
+      match: contains

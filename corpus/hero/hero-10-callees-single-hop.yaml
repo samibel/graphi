@@ -1,0 +1,20 @@
+id: hero-10-callees-single-hop
+description: >
+  Callees are one hop only: ChainA calls ChainB; the transitive callee
+  ChainC must not leak into the direct-callee answer (negative anchor).
+fixture_ref: tier1-fixture-go
+operation:
+  name: callees
+  args:
+    symbol: ChainA
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: fixture.ChainB
+      match: contains
+  absent:
+    - kind: symbol
+      value: fixture.ChainC
+      match: contains

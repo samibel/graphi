@@ -1,0 +1,20 @@
+id: hero-18-explain-symbol-ambiguous
+description: >
+  Failure class AMBIGUOUS: explain_symbol on "Greet" lists both greeter
+  methods as candidates with evidence instead of guessing.
+fixture_ref: tier1-fixture-go
+operation:
+  name: explain_symbol
+  args:
+    symbol: Greet
+area: agent_mcp
+expect:
+  outcome: ambiguous
+  has_evidence: true
+  anchors:
+    - kind: symbol
+      value: fixture.EnglishGreeter.Greet
+      match: contains
+    - kind: symbol
+      value: fixture.SpanishGreeter.Greet
+      match: contains

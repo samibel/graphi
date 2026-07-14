@@ -1,0 +1,25 @@
+id: hero-20-change-risk-inbound
+description: >
+  change_risk on Parse reports every inbound dependent across files; the
+  unaffected sibling Render stays out (negative anchor).
+fixture_ref: tier1-fixture-hero-go
+operation:
+  name: change_risk
+  args:
+    target: Parse
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: core.go
+  has_evidence: true
+  anchors:
+    - kind: symbol
+      value: hero.Publish
+      match: contains
+    - kind: symbol
+      value: hero.Report
+      match: contains
+  absent:
+    - kind: symbol
+      value: hero.Render
+      match: contains

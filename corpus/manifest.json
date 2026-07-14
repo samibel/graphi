@@ -1,6 +1,6 @@
 {
- "version": 1,
- "notes": "Real-repository smoke corpus (internal/corpus). Five repos chosen to cover the historical first-contact bug classes (non-source assets, symlinked layouts, JSON fixtures) plus language spread: Go (also the future typeresolve proving ground), Python, Ruby, TypeScript, JavaScript+JSON. Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars \u2014 recorded from the first green CI run, 2026-07-02). If an upstream tag is ever re-pointed, the pin step fails closed. Adding a repository is a data change here, never a code change.",
+ "version": 2,
+ "notes": "Real-repository smoke corpus (internal/corpus). Six repos cover the historical first-contact bug classes (non-source assets, symlinked layouts, JSON fixtures) plus language spread: Go (also the future typeresolve proving ground), Python, Ruby, TypeScript, JavaScript+JSON, and a Java/JVM Maven monorepo (guava, tier 3 — nightly/manual, excluded from the PR gate via -max-tier 2). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars — recorded from the first green CI run, 2026-07-02; guava recorded via git ls-remote refs/tags/v33.0.0 on 2026-07-14, a lightweight tag whose object IS the commit). If an upstream tag is ever re-pointed, the pin step fails closed. Adding a repository is a data change here, never a code change.",
  "entries": [
   {
    "name": "cobra",
@@ -24,7 +24,7 @@
      "min": 1
     }
    ],
-   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() \u2014 a receiver-method dispatch the name heuristic cannot prove \u2014 and the go/types pass must carry it at the confirmed tier."
+   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() — a receiver-method dispatch the name heuristic cannot prove — and the go/types pass must carry it at the confirmed tier."
   },
   {
    "name": "flask",
@@ -76,7 +76,25 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "JavaScript + many JSON fixtures and markdown \u2014 the malformed-asset bug class."
+   "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class."
+  },
+  {
+   "name": "guava",
+   "url": "https://github.com/google/guava",
+   "ref": "v33.0.0",
+   "sha": "2214c63670fc",
+   "tier": 3,
+   "searches": [
+    {
+     "query": "ImmutableList",
+     "expect_nonempty": true
+    },
+    {
+     "query": "Preconditions",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) — the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate."
   },
   {
    "name": "tier1-fixture-go",
@@ -91,6 +109,19 @@
     }
    ],
    "notes": "Tier-1 pinned local fixture for the PR-gate path. No network required."
+  },
+  {
+   "name": "tier1-fixture-hero-go",
+   "path": "corpus/fixtures/hero-go",
+   "tier": 1,
+   "scenario_ref": "hero",
+   "searches": [
+    {
+     "query": "Parse",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file Go fixture for the SW-122 hero tasks (cross-file callers, related_files ranking). The single-file go fixture is frozen as the SW-110 byte-parity oracle and must not grow, so multi-file shapes live here. No network required."
   }
  ]
 }

@@ -1,0 +1,24 @@
+id: hero-07-callers-direct
+description: >
+  Callers of Hello are exactly its two direct call sites; the greeter that
+  never calls Hello must not appear (negative anchor).
+fixture_ref: tier1-fixture-go
+operation:
+  name: callers
+  args:
+    symbol: Hello
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: sample.go
+  anchors:
+    - kind: symbol
+      value: fixture.ChainC
+      match: contains
+    - kind: symbol
+      value: fixture.EnglishGreeter.Greet
+      match: contains
+  absent:
+    - kind: symbol
+      value: SpanishGreeter
+      match: contains

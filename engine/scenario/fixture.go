@@ -6,13 +6,17 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
+	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/risk"
+	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/query"
 )
@@ -31,6 +35,11 @@ type FixtureEngine struct {
 	RepoRoot string
 	// ProjectName is reported to agent_brief as the project name (optional).
 	ProjectName string
+
+	// analysisOnce/analysisSvc lazily build the shared analysis dispatch
+	// service (impact) over the same read-only reader.
+	analysisOnce sync.Once
+	analysisSvc  *analysis.Service
 }
 
 // NewFixtureEngine builds a FixtureEngine over the given engine services.
@@ -49,8 +58,12 @@ func (e *FixtureEngine) Invoke(operation string, args map[string]string) ([]stri
 	switch operation {
 	case OpSearch:
 		return e.invokeSearch(ctx, args)
-	case OpDefinition, OpReferences, OpCallers:
+	case OpDefinition, OpReferences, OpCallers, OpCallees, OpNeighborhood:
 		return e.invokeStructural(ctx, operation, args)
+	case OpImpact:
+		return e.invokeImpact(ctx, args)
+	case OpIndex:
+		return e.invokeIndex(ctx)
 	case OpDiagnose:
 		return e.invokeDiagnose(ctx, args)
 	default:
@@ -141,28 +154,10 @@ func (e *FixtureEngine) invokeSearch(ctx context.Context, args map[string]string
 }
 
 func (e *FixtureEngine) invokeStructural(ctx context.Context, operation string, args map[string]string) ([]string, *float64, error) {
-	if !e.Deps.Available() {
-		return nil, nil, fmt.Errorf("scenario: query service unavailable")
+	id, early, err := e.resolveTarget(ctx, operation, args)
+	if early != nil || err != nil {
+		return early, nil, err
 	}
-	ref := firstArg(args, "symbol", "ref", "query")
-	if ref == "" {
-		return nil, nil, fmt.Errorf("scenario: %s needs a symbol argument", operation)
-	}
-	res, err := resolve.Strict(ctx, e.Deps, ref)
-	if err != nil {
-		return nil, nil, err
-	}
-	if res.Ambiguous() {
-		lines := []string{outcomeMarker + string(contract.OutcomeAmbiguous)}
-		for _, c := range res.Candidates {
-			lines = append(lines, fmt.Sprintf("candidate %s %s %s:%d", c.Node.Kind(), c.Node.QualifiedName(), c.Node.SourcePath(), c.Node.Line()))
-		}
-		return lines, nil, nil
-	}
-	if !res.Resolved() {
-		return []string{outcomeMarker + "not_found"}, nil, nil
-	}
-	id := res.Nodes[0].ID()
 
 	var qr query.Result
 	switch operation {
@@ -172,6 +167,10 @@ func (e *FixtureEngine) invokeStructural(ctx context.Context, operation string, 
 		qr, err = e.Deps.Query.References(ctx, id)
 	case OpCallers:
 		qr, err = e.Deps.Query.Callers(ctx, id)
+	case OpCallees:
+		qr, err = e.Deps.Query.Callees(ctx, id)
+	case OpNeighborhood:
+		qr, err = e.Deps.Query.Neighborhood(ctx, id, intArg(args, "depth", 1))
 	}
 	if err != nil {
 		return nil, nil, err
@@ -182,6 +181,104 @@ func (e *FixtureEngine) invokeStructural(ctx context.Context, operation string, 
 	}
 	for _, ed := range qr.Edges {
 		lines = append(lines, fmt.Sprintf("edge %s %s->%s [%s]", ed.Kind, ed.From, ed.To, ed.Tier))
+	}
+	return lines, nil, nil
+}
+
+// resolveTarget resolves the scenario's symbol argument to a single node id.
+// When resolution ends early (ambiguous or not-found), the rendered evidence
+// lines are returned as early and the caller passes them through unchanged.
+func (e *FixtureEngine) resolveTarget(ctx context.Context, operation string, args map[string]string) (id model.NodeId, early []string, err error) {
+	if !e.Deps.Available() {
+		return "", nil, fmt.Errorf("scenario: query service unavailable")
+	}
+	ref := firstArg(args, "symbol", "ref", "query")
+	if ref == "" {
+		return "", nil, fmt.Errorf("scenario: %s needs a symbol argument", operation)
+	}
+	res, err := resolve.Strict(ctx, e.Deps, ref)
+	if err != nil {
+		return "", nil, err
+	}
+	if res.Ambiguous() {
+		lines := []string{outcomeMarker + string(contract.OutcomeAmbiguous)}
+		for _, c := range res.Candidates {
+			lines = append(lines, fmt.Sprintf("candidate %s %s %s:%d", c.Node.Kind(), c.Node.QualifiedName(), c.Node.SourcePath(), c.Node.Line()))
+		}
+		return "", lines, nil
+	}
+	if !res.Resolved() {
+		return "", []string{outcomeMarker + "not_found"}, nil
+	}
+	return res.Nodes[0].ID(), nil, nil
+}
+
+// invokeImpact runs the blast-radius analysis through the single
+// analysis.Dispatch entry point (the same path every surface uses) and renders
+// the reached nodes with depth and reaching-edge provenance.
+func (e *FixtureEngine) invokeImpact(ctx context.Context, args map[string]string) ([]string, *float64, error) {
+	id, early, err := e.resolveTarget(ctx, OpImpact, args)
+	if early != nil || err != nil {
+		return early, nil, err
+	}
+	e.analysisOnce.Do(func() {
+		e.analysisSvc = analysis.NewDefaultService(e.Deps.Query.Reader())
+	})
+	p := analysis.Params{Symbol: id, MaxNodes: intArg(args, "max_nodes", 0)}
+	if d := args["direction"]; d != "" {
+		p.Direction = analysis.Direction(d)
+	}
+	an, err := e.analysisSvc.Dispatch(ctx, "impact", p)
+	if err != nil {
+		return nil, nil, err
+	}
+	lines := []string{outcomeMarker + string(an.Outcome)}
+	for _, rn := range an.Nodes {
+		lines = append(lines, fmt.Sprintf("%s %s %s:%d depth=%d via=%s [%s]",
+			rn.Node.Kind, rn.Node.QualifiedName, rn.Node.SourcePath, rn.Node.Line,
+			rn.Depth, rn.ReachedVia.Kind, rn.ReachedVia.Tier))
+	}
+	return lines, nil, nil
+}
+
+// invokeIndex reports whether the fixture ingest produced a non-trivial,
+// queryable graph: node/edge/file counts plus one "file <path>" line per
+// distinct indexed source file, so scenarios can anchor on expected files.
+func (e *FixtureEngine) invokeIndex(ctx context.Context) ([]string, *float64, error) {
+	if !e.Deps.Available() {
+		return nil, nil, fmt.Errorf("scenario: query service unavailable")
+	}
+	reader := e.Deps.Query.Reader()
+	nodes, err := reader.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		return nil, nil, err
+	}
+	edges, err := reader.Edges(ctx, graphstore.Query{})
+	if err != nil {
+		return nil, nil, err
+	}
+	fileSet := map[string]struct{}{}
+	for _, n := range nodes {
+		if p := n.SourcePath(); p != "" {
+			fileSet[p] = struct{}{}
+		}
+	}
+	files := make([]string, 0, len(fileSet))
+	for p := range fileSet {
+		files = append(files, p)
+	}
+	sort.Strings(files)
+
+	outcome := contract.OutcomeEmpty
+	if len(nodes) > 0 {
+		outcome = contract.OutcomeFound
+	}
+	lines := []string{
+		outcomeMarker + string(outcome),
+		fmt.Sprintf("indexed nodes=%d edges=%d files=%d", len(nodes), len(edges), len(files)),
+	}
+	for _, p := range files {
+		lines = append(lines, "file "+p)
 	}
 	return lines, nil, nil
 }

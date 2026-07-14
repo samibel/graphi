@@ -1,0 +1,23 @@
+id: hero-14-impact-blast-radius
+description: >
+  Reverse impact (blast radius) of Hello propagates transitively up the
+  call chain to ChainA; the unrelated greeter stays out (negative anchor).
+fixture_ref: tier1-fixture-go
+operation:
+  name: impact
+  args:
+    symbol: Hello
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: fixture.ChainA
+      match: contains
+    - kind: symbol
+      value: fixture.EnglishGreeter.Greet
+      match: contains
+  absent:
+    - kind: symbol
+      value: fixture.SpanishGreeter
+      match: contains

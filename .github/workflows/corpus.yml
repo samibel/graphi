@@ -29,6 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CGO_ENABLED: "0"
+      # Tier 3 (nightly/manual large repos, e.g. the guava JVM monorepo) is
+      # excluded from the push/PR gate so its cost never lands on every PR;
+      # the nightly schedule and manual dispatch run the full corpus.
+      MAX_TIER: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '3' || '2' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -36,7 +40,7 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: run the corpus harness
-        run: go run ./cmd/corpus -manifest corpus/manifest.json -report corpus-report.json
+        run: go run ./cmd/corpus -manifest corpus/manifest.json -report corpus-report.json -max-tier "$MAX_TIER"
       - name: upload report artifact
         if: always()
         uses: actions/upload-artifact@v4

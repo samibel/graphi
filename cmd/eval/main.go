@@ -45,6 +45,7 @@ func main() {
 
 	// EP-019 scorecard report flags.
 	manifest := flag.String("manifest", "", "corpus/scenario manifest path (scorecard-report mode)")
+	scenariosDir := flag.String("scenarios", "", "scenario directory override (default: the manifest's sibling scenarios/ directory; SW-122: pass corpus/hero for the hero-task suite)")
 	out := flag.String("out", "", "write the JSON scorecard report here")
 	format := flag.String("format", "json", "report format: json or markdown")
 	tier := flag.Int("tier", 0, "run only scenarios whose fixture is in this corpus tier (0 = all)")
@@ -53,7 +54,7 @@ func main() {
 	flag.Parse()
 
 	if *manifest != "" {
-		os.Exit(runScorecardReport(*manifest, *out, *format, *tier, *updateBaseline))
+		os.Exit(runScorecardReport(*manifest, *scenariosDir, *out, *format, *tier, *updateBaseline))
 	}
 
 	// Original token-parity eval mode.
@@ -105,7 +106,7 @@ func resolveCommit() string {
 	return head
 }
 
-func runScorecardReport(manifestPath, outPath, format string, tier int, updateBaseline bool) int {
+func runScorecardReport(manifestPath, scenariosDir, outPath, format string, tier int, updateBaseline bool) int {
 	version := "0.0.0-dev"
 	commit := resolveCommit()
 
@@ -117,8 +118,19 @@ func runScorecardReport(manifestPath, outPath, format string, tier int, updateBa
 	addBuiltinFixtures(fixturePaths)
 
 	// Execute every scenario in the manifest's sibling scenarios directory
-	// against its fixture graph (real runs, not placeholders).
-	scenarioDir := filepath.Join(filepath.Dir(manifestPath), "scenarios")
+	// against its fixture graph (real runs, not placeholders). -scenarios
+	// selects an alternative suite over the same manifest (corpus/hero); the
+	// checked-in baseline belongs to the DEFAULT suite, so alternative suites
+	// neither diff against it nor overwrite it (their own baselines/budgets
+	// are frozen from CI runs in EVAL-02, per ADR 0003 U5).
+	defaultSuite := scenariosDir == ""
+	scenarioDir := scenariosDir
+	if defaultSuite {
+		scenarioDir = filepath.Join(filepath.Dir(manifestPath), "scenarios")
+	} else if updateBaseline {
+		fmt.Fprintf(os.Stderr, "eval: -update-baseline only applies to the default scenario suite (docs/eval-baseline.json), not %s\n", scenarioDir)
+		return 2
+	}
 	scenarios, err := runScenarios(scenarioDir, filepath.Dir(filepath.Dir(manifestPath)), fixturePaths, tier)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "eval: run scenarios: %v\n", err)
@@ -187,15 +199,20 @@ func runScorecardReport(manifestPath, outPath, format string, tier int, updateBa
 	report.PerfWarnings = append(report.PerfWarnings, carryWarnings...)
 
 	baseline := evalreport.DefaultBaseline()
-	if raw, err := os.ReadFile("docs/eval-baseline.json"); err == nil {
-		var loaded evalreport.BaselineRecord
-		if err := json.Unmarshal(raw, &loaded); err == nil {
-			baseline = loaded
+	if defaultSuite {
+		if raw, err := os.ReadFile("docs/eval-baseline.json"); err == nil {
+			var loaded evalreport.BaselineRecord
+			if err := json.Unmarshal(raw, &loaded); err == nil {
+				baseline = loaded
+			}
 		}
+		regs, warnings := evalreport.DiffAgainstBaseline(report, baseline)
+		report.RegressionsVsBaseline = regs
+		report.PerfWarnings = append(report.PerfWarnings, warnings...)
+	} else {
+		report.PerfWarnings = append(report.PerfWarnings,
+			fmt.Sprintf("suite %s not diffed against docs/eval-baseline.json (baseline covers the default suite only)", scenarioDir))
 	}
-	regs, warnings := evalreport.DiffAgainstBaseline(report, baseline)
-	report.RegressionsVsBaseline = regs
-	report.PerfWarnings = append(report.PerfWarnings, warnings...)
 
 	if updateBaseline {
 		b := evalreport.BaselineRecord{
@@ -242,6 +259,24 @@ func runScorecardReport(manifestPath, outPath, format string, tier int, updateBa
 			return 2
 		}
 		fmt.Fprintf(os.Stderr, "eval: wrote Markdown report to %s\n", mdPath)
+	}
+
+	if !defaultSuite {
+		// Alternative suites (corpus/hero) gate directly on their own scenario
+		// outcomes: every tier-1 scenario must pass.
+		failed := 0
+		for _, s := range scenarios {
+			if s.Tier1 && s.Outcome != "pass" {
+				failed++
+				fmt.Fprintf(os.Stderr, "eval: scenario %s: %s\n", s.ID, s.Outcome)
+			}
+		}
+		if failed > 0 {
+			fmt.Fprintf(os.Stderr, "eval: FAIL - %d/%d tier-1 scenarios in %s did not pass\n", failed, len(scenarios), scenarioDir)
+			return 1
+		}
+		fmt.Fprintf(os.Stderr, "eval: PASS - all %d scenarios in %s pass\n", len(scenarios), scenarioDir)
+		return 0
 	}
 
 	if report.HasTier1Regression() {

@@ -1,0 +1,18 @@
+id: hero-11-agent-brief-topic
+description: >
+  agent_brief on a topic symbol produces a cited orientation brief with a
+  Start Here section anchored to the defining file.
+fixture_ref: tier1-fixture-go
+operation:
+  name: agent_brief
+  args:
+    topic: Hello
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  anchors:
+    - kind: line
+      value: "Start Here"
+      match: contains
