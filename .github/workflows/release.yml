@@ -1,35 +1,21 @@
 # SW-013 — Workspace CI, layer-direction guard, and reproducible release packaging.
 #
-# Three distinct, named checks:
+# CI-ONLY since SW-120 (REL-01): publishing (tag, GitHub Release, assets,
+# tap/bucket) lives EXCLUSIVELY in release-dag.yml, which re-runs the decisive
+# gates on the exact SHA it publishes. This workflow keeps the fast PR/branch
+# checks:
 #   workspace-build-test — build + test every module discovered from go.work use
 #                          directives as a single gated job (new modules auto-included).
 #   layer-direction      — enforce cmd → surfaces → engine → core, naming any
 #                          upward/sideways import violation.
-#   release              — produce the single static CGo-free, version/commit/date-
-#                          stamped graphi binary and verify a reproducible (byte-
-#                          identical) build.
+#   release              — verify the reproducible (byte-identical) static build
+#                          and the grammar-subset embed gate.
 name: release
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
-  # A tag pushed by auto-release.yml (which authenticates as the built-in
-  # GITHUB_TOKEN) does NOT fire this workflow's own `tags: ['v*']` trigger —
-  # GitHub suppresses downstream workflow runs caused by GITHUB_TOKEN-authored
-  # pushes to prevent recursive triggering. workflow_dispatch is exempt from
-  # that suppression, so auto-release.yml explicitly dispatches this workflow
-  # (against `main`, passing the tag as an input) instead of relying on the
-  # push event. The `tag` input also lets a maintainer manually re-run
-  # release-assets for any already-pushed tag whose original push never
-  # triggered a release, without needing to touch git tags at all.
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Existing tag to build release assets for (e.g. v0.1.1)'
-        required: true
-        type: string
 
 jobs:
   workspace-build-test:
@@ -128,100 +114,3 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: shellcheck install.sh
         run: shellcheck install.sh
-
-  # SW-064 (EP-010 Task A): on a v* tag push, cross-compile the full
-  # ReleaseTargets matrix, generate SHA256SUMS, and upload every asset to the
-  # GitHub Release for that tag. Tag-only — never runs on branch/PR builds.
-  release-assets:
-    name: cross-compile release matrix + upload assets
-    # Tag pushes satisfy the first clause directly. A workflow_dispatch run is
-    # always dispatched against `main` (see auto-release.yml) with `inputs.tag`
-    # naming the actual tag to build — github.ref there is refs/heads/main, not
-    # a tag, so it needs its own clause rather than relying on github.ref.
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    env:
-      CGO_ENABLED: "0"
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # Build the actual tagged commit, not whatever `main` (the dispatch
-          # target) has moved on to since.
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: resolve the tag name for this run
-        id: tag
-        run: echo "name=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
-      # Released binaries embed the web UI (-tags webui_embed) so the quick-start
-      # promise — "your browser opens with the interactive code graph" — is true
-      # for the binaries users actually install. Without this, released binaries
-      # served the "UI not bundled" notice page at "/".
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: build web UI for embedding
-        run: |
-          (cd web && npm ci && npm run build)
-          rm -rf surfaces/http/webui/dist
-          cp -R web/dist surfaces/http/webui/dist
-      - name: cross-compile matrix + SHA256SUMS (web UI embedded)
-        run: go run ./cmd/release -dist dist -webui -version "${{ steps.tag.outputs.name }}"
-      - name: upload assets to the GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        # Ensure the Release exists for this tag (a bare tag push does not create
-        # one), then upload every matrix asset + SHA256SUMS, replacing same-named
-        # assets on re-runs (--clobber → idempotent).
-        run: |
-          TAG="${{ steps.tag.outputs.name }}"
-          gh release view "$TAG" >/dev/null 2>&1 \
-            || gh release create "$TAG" --title "$TAG" --generate-notes
-          gh release upload "$TAG" dist/* --clobber
-      # Publish the Homebrew formula and Scoop manifest to the tap/bucket repos
-      # (samibel/homebrew-graphi → Formula/graphi.rb, samibel/scoop-graphi →
-      # bucket/graphi.json), rendered from the REAL SHA256SUMS of this release.
-      # Gated on the PACKAGING_PUSH_TOKEN secret — a fine-grained PAT with
-      # contents:write on ONLY those two repos. Until the maintainer creates
-      # the repos and adds the secret, this step logs and skips cleanly so the
-      # release stays green; once the token exists, a missing/unwritable repo
-      # is a hard failure (a half-configured pipeline must be visible, and the
-      # job is idempotent to re-run). The committed packaging/ placeholders
-      # (version 0.0.0) are never pushed anywhere and stay untouched in git —
-      # the release render happens only in this job's workspace.
-      - name: publish Homebrew tap + Scoop bucket
-        env:
-          PACKAGING_PUSH_TOKEN: ${{ secrets.PACKAGING_PUSH_TOKEN }}
-        run: |
-          if [ -z "$PACKAGING_PUSH_TOKEN" ]; then
-            echo "PACKAGING_PUSH_TOKEN not configured — skipping tap/bucket publish."
-            echo "To enable: create samibel/homebrew-graphi and samibel/scoop-graphi, then add a fine-grained PAT (contents:write, only those two repos) as the PACKAGING_PUSH_TOKEN secret."
-            exit 0
-          fi
-          TAG="${{ steps.tag.outputs.name }}"
-          go run ./cmd/gen-packaging -version "$TAG" -sums dist/SHA256SUMS
-          publish() {
-            repo="$1"; src="$2"; dest="$3"
-            dir="$(mktemp -d)"
-            git clone --depth 1 "https://x-access-token:${PACKAGING_PUSH_TOKEN}@github.com/${repo}.git" "$dir"
-            mkdir -p "$dir/$(dirname "$dest")"
-            cp "$src" "$dir/$dest"
-            git -C "$dir" config user.name "github-actions[bot]"
-            git -C "$dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git -C "$dir" add "$dest"
-            if git -C "$dir" diff --cached --quiet; then
-              echo "${repo}: ${dest} already up to date for ${TAG}"
-            else
-              git -C "$dir" commit -m "graphi ${TAG}"
-              git -C "$dir" push origin HEAD
-            fi
-          }
-          publish "samibel/homebrew-graphi" packaging/homebrew/graphi.rb Formula/graphi.rb
-          publish "samibel/scoop-graphi" packaging/scoop/graphi.json bucket/graphi.json
-          git checkout -- packaging/

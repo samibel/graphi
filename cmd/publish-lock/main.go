@@ -1,10 +1,11 @@
 // Command publish-lock is the CT-01 containment gate: it decides, from a
-// checked-in reversible gate file (.github/publish-lock.json), whether an
-// automatic publish may proceed. The auto-release workflow runs it first and
-// gates its tag-push and release-dispatch steps on the emitted `locked` output,
-// so a merge to main can never publish a release automatically while the lock
-// is engaged. RC-01 lifts the lock with one documented change — flipping
-// "locked" to false in the gate file — with no workflow re-authoring.
+// checked-in reversible gate file (.github/publish-lock.json), whether a
+// publish may proceed. The release DAG (release-dag.yml, SW-120/REL-01) runs
+// it in its gate job and conditions the single mutating publish job on the
+// emitted `locked` output, so NO trigger — merge or manual dispatch — can
+// publish while the lock is engaged. RC-01 lifts the lock with one documented
+// change — flipping "locked" to false in the gate file — with no workflow
+// re-authoring.
 //
 // It fails closed (see Evaluate): a missing/broken gate file is treated as
 // locked, so a deliberately-red gate yields no tag and no release.

@@ -1,0 +1,276 @@
+# SW-120 (REL-01) — the single, commit-bound release DAG.
+#
+# ONE workflow carries ONE immutable SHA (github.sha) through every stage:
+#
+#   gate (publish-lock → full test suite via testgate → layerguard →
+#         coverage/manifest join → release-gate + scorecard)
+#     → build (reproducibility verify → grammar-subset gate → web-embedded
+#              cross-compile matrix + SHA256SUMS, uploaded as an artifact)
+#       → sbom (SPDX SBOM of the gated source tree)
+#         → publish (provenance attestation → tag the EXACT gated SHA →
+#                    GitHub Release + assets → Homebrew/Scoop)
+#
+# Design invariants (asserted statically by cmd/publish-lock/workflow_test.go):
+#   - publish `needs:` every prior stage — a red gate can NEVER yield a tag or
+#     a release (GitHub skips needs-failed dependents);
+#   - every checkout pins `ref: github.sha` — the tag always points at the
+#     commit the gates actually ran on, never a moved branch head;
+#   - this is the ONLY workflow that pushes tags or creates releases — the
+#     former auto-release.yml workflow_run chain (which could tag a commit
+#     whose release-gate never ran) is deleted, and release.yml is CI-only;
+#   - the CT-01 publish lock gates the publish job even on workflow_dispatch:
+#     while .github/publish-lock.json is engaged there is NO publish path at
+#     all. Lifting it is one reviewed commit (RC-01's documented Go step).
+#
+# Follow-up recorded in ADR 0005: pin third-party `uses:` to full commit SHAs
+# (needs network access to resolve the refs; blocked in the authoring session).
+name: release-dag
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-dag-${{ github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: release gates on the exact SHA
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    outputs:
+      locked: ${{ steps.lock.outputs.locked }}
+      tag: ${{ steps.ver.outputs.tag }}
+      exists: ${{ steps.exists.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # CT-01: the reversible publish lock. Fails CLOSED on a missing/broken
+      # gate file; while engaged the publish job below never runs.
+      - name: check the publish lock (CT-01)
+        id: lock
+        run: go run ./cmd/publish-lock
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: install web dependencies
+        run: cd web && npm ci
+
+      # The decisive quality gates, all on this SHA. testgate enforces the
+      # frozen failure allowlist over the FULL suite; coverage -check joins the
+      # capability manifest (CAP-01: matrix = live set = stable tier = manifest).
+      - name: full test suite (testgate allowlist)
+        run: go test -json ./... | go run ./cmd/testgate -stdin
+      - name: layer-direction guard
+        run: go run ./cmd/layerguard
+      - name: capability matrix + manifest join
+        run: go run ./cmd/coverage -check
+      - name: release gate + published scorecard
+        run: |
+          go run ./cmd/release-gate -publish
+          test -f docs/release-scorecard.json
+          test -f docs/release-scorecard.md
+
+      - name: resolve the release version from CHANGELOG.md
+        id: ver
+        run: |
+          version=$(grep -m1 -E '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | sed -E 's/^## \[([0-9]+\.[0-9]+\.[0-9]+)\].*/\1/')
+          if [ -z "$version" ]; then
+            echo "::notice::no '## [X.Y.Z]' released-version header in CHANGELOG.md yet; nothing to publish"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: check whether tag or release already exist (idempotency)
+        id: exists
+        if: steps.ver.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1 \
+             && gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::$TAG is already fully published; nothing to do"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: reproducible build + release matrix (same SHA)
+    needs: gate
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: resolve the build version
+        id: ver
+        run: |
+          v="${{ needs.gate.outputs.tag }}"
+          [ -z "$v" ] && v="v0.0.0-${GITHUB_SHA::12}"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: reproducible release build (verify-only)
+        run: go run ./cmd/release -version "${{ steps.ver.outputs.version }}-${{ github.sha }}" -verify-only
+      # SW-053 AC#3: the shipped default binary embeds ONLY the registered
+      # grammar blobs — never the all-206 default embed. Derived from the source
+      # of truth, so a new tier-1 language updates the gate automatically.
+      - name: subset-tag default build embeds exactly the registered grammars
+        run: |
+          go run ./cmd/release -version "${{ steps.ver.outputs.version }}-${{ github.sha }}" -out ./graphi-default
+          embedded=$(strings ./graphi-default | grep -oE 'grammar_blobs/[a-z_0-9]+\.bin' | sort -u)
+          expected=$(go run ./cmd/release -list-grammar-blobs | sort -u)
+          if [ "$embedded" != "$expected" ]; then
+            echo "::error::default build embeds an unexpected grammar blob set (AC#3 violation)"
+            diff <(echo "$expected") <(echo "${embedded:-<none>}") || true
+            exit 1
+          fi
+          rm -f ./graphi-default
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      # Released binaries embed the web UI so the quick-start promise holds.
+      - name: build web UI for embedding
+        run: |
+          (cd web && npm ci && npm run build)
+          rm -rf surfaces/http/webui/dist
+          cp -R web/dist surfaces/http/webui/dist
+      - name: cross-compile matrix + SHA256SUMS (web UI embedded)
+        run: go run ./cmd/release -dist dist -webui -version "${{ steps.ver.outputs.version }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+
+  sbom:
+    name: SBOM of the gated source tree
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.spdx.json
+          if-no-files-found: error
+
+  publish:
+    name: tag + release the exact gated SHA
+    needs: [gate, build, sbom]
+    # The ONLY mutating job. Runs only when: the CT-01 lock is lifted, the
+    # CHANGELOG names an unpublished version, and every prior stage is green
+    # (needs). A deliberately red gate therefore yields no tag and no release.
+    if: >
+      needs.gate.outputs.locked != 'true' &&
+      needs.gate.outputs.tag != '' &&
+      needs.gate.outputs.exists != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+      # Provenance binds the exact artifacts to this workflow run + SHA. Fails
+      # closed: a plan/repo that cannot attest fails the publish loudly rather
+      # than shipping unattested artifacts (see ADR 0005).
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+      - name: create and push the tag at the gated SHA
+        env:
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            git tag -a "$TAG" "${{ github.sha }}" -m "Release $TAG (release-dag, gated SHA ${{ github.sha }})"
+            git push origin "$TAG"
+          fi
+      - name: create the release and upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --title "$TAG" --generate-notes --target "${{ github.sha }}"
+          gh release upload "$TAG" dist/* sbom.spdx.json docs/capability-manifest.json --clobber
+      # Homebrew tap + Scoop bucket, rendered from the REAL SHA256SUMS. Gated on
+      # the PACKAGING_PUSH_TOKEN secret: absent → log + skip cleanly; present →
+      # a missing/unwritable repo is a hard failure.
+      - name: publish Homebrew tap + Scoop bucket
+        env:
+          PACKAGING_PUSH_TOKEN: ${{ secrets.PACKAGING_PUSH_TOKEN }}
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          if [ -z "$PACKAGING_PUSH_TOKEN" ]; then
+            echo "PACKAGING_PUSH_TOKEN not configured — skipping tap/bucket publish."
+            exit 0
+          fi
+          go run ./cmd/gen-packaging -version "$TAG" -sums dist/SHA256SUMS
+          publish() {
+            repo="$1"; src="$2"; dest="$3"
+            dir="$(mktemp -d)"
+            git clone --depth 1 "https://x-access-token:${PACKAGING_PUSH_TOKEN}@github.com/${repo}.git" "$dir"
+            mkdir -p "$dir/$(dirname "$dest")"
+            cp "$src" "$dir/$dest"
+            git -C "$dir" config user.name "github-actions[bot]"
+            git -C "$dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git -C "$dir" add "$dest"
+            if git -C "$dir" diff --cached --quiet; then
+              echo "${repo}: ${dest} already up to date for ${TAG}"
+            else
+              git -C "$dir" commit -m "graphi ${TAG}"
+              git -C "$dir" push origin HEAD
+            fi
+          }
+          publish "samibel/homebrew-graphi" packaging/homebrew/graphi.rb Formula/graphi.rb
+          publish "samibel/scoop-graphi" packaging/scoop/graphi.json bucket/graphi.json
+          git checkout -- packaging/
