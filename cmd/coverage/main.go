@@ -41,6 +41,7 @@ func main() {
 	}
 	yamlPath := filepath.Join(dir, filepath.FromSlash(coverage.MatrixYAMLPath))
 	mdPath := filepath.Join(dir, filepath.FromSlash(coverage.MatrixMDPath))
+	jsonPath := filepath.Join(dir, filepath.FromSlash(coverage.MatrixJSONPath))
 
 	caps, err := coverage.LoadMatrix(yamlPath)
 	if err != nil {
@@ -54,7 +55,18 @@ func main() {
 			fmt.Fprintf(os.Stderr, "coverage: write %s: %v\n", mdPath, err)
 			os.Exit(2)
 		}
-		fmt.Printf("coverage: regenerated %s (%d capabilities)\n", coverage.MatrixMDPath, len(caps))
+		// CAP-01 (SW-117): the machine-readable manifest is generated alongside
+		// the human-readable matrix from the same checked source.
+		jb, err := coverage.RenderJSON(caps)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "coverage: %v\n", err)
+			os.Exit(2)
+		}
+		if err := os.WriteFile(jsonPath, jb, 0o644); err != nil {
+			fmt.Fprintf(os.Stderr, "coverage: write %s: %v\n", jsonPath, err)
+			os.Exit(2)
+		}
+		fmt.Printf("coverage: regenerated %s and %s (%d capabilities)\n", coverage.MatrixMDPath, coverage.MatrixJSONPath, len(caps))
 		return
 	}
 
@@ -80,6 +92,22 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
+	// CAP-01 (SW-117): the generated JSON manifest must exist and be fresh —
+	// byte-identical to a regeneration from the checked matrix. Unlike the .md
+	// staleness check above, a MISSING manifest fails too: downstream consumers
+	// (the REL-01 release-profile join) depend on the artifact existing.
+	wantJSON, err := coverage.RenderJSON(caps)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "coverage: %v\n", err)
+		os.Exit(2)
+	}
+	currentJSON, rerr := os.ReadFile(jsonPath)
+	if rerr != nil || string(currentJSON) != string(wantJSON) {
+		fmt.Fprintf(os.Stderr, "coverage: %s is missing or stale — run `go run ./cmd/coverage -generate`\n", coverage.MatrixJSONPath)
+		os.Exit(1)
+	}
+	fmt.Printf("capability-manifest check PASS — %s matches the checked matrix.\n", coverage.MatrixJSONPath)
 
 	if !rep.Pass() || !stableRep.Pass() {
 		os.Exit(1)

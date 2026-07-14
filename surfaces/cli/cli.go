@@ -28,7 +28,7 @@ import (
 //	<op> -symbol <id> [-depth N]
 //
 // where <op> is one of callers|callees|references|definition|neighborhood.
-func Run(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+func Run(ctx context.Context, c client.QueryPort, args []string, out, errOut io.Writer) error {
 	if len(args) < 1 {
 		fmt.Fprintf(errOut, "usage: <operation> -symbol <id> [-depth N]\n")
 		return fmt.Errorf("cli: missing operation")
@@ -171,7 +171,7 @@ func RunUndo(ctx context.Context, c client.Client, args []string, out, errOut io
 // With -semantic it runs the OPTIONAL semantic search (SW-059); when no embedder
 // is configured the engine returns the typed graceful-skip "unavailable" response
 // (no error, no network). Without it, the always-available lexical search runs.
-func RunSearch(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+func RunSearch(ctx context.Context, c client.SearchPort, args []string, out, errOut io.Writer) error {
 	limit := 100
 	semantic := false
 	var queryArgs []string
@@ -598,7 +598,7 @@ func RunSavings(ctx context.Context, c client.Client, out, errOut io.Writer) err
 // Usage:
 //
 //	agent-brief [-topic <topic>]
-func RunAgentBrief(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+func RunAgentBrief(ctx context.Context, c client.AgentContextPort, args []string, out, errOut io.Writer) error {
 	fs := flag.NewFlagSet("agent-brief", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	topic := fs.String("topic", "", "optional topic: symbol, path, or subsystem")
@@ -621,7 +621,7 @@ func RunAgentBrief(ctx context.Context, c client.Client, args []string, out, err
 // Usage:
 //
 //	explain-symbol [-max-items n] <symbol|path|node-id>
-func RunExplainSymbol(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+func RunExplainSymbol(ctx context.Context, c client.AgentContextPort, args []string, out, errOut io.Writer) error {
 	fs := flag.NewFlagSet("explain-symbol", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
@@ -647,7 +647,7 @@ func RunExplainSymbol(ctx context.Context, c client.Client, args []string, out, 
 // Usage:
 //
 //	related-files [-direction dependencies|dependents|both] [-max-files n] <target>
-func RunRelatedFiles(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+func RunRelatedFiles(ctx context.Context, c client.AgentContextPort, args []string, out, errOut io.Writer) error {
 	fs := flag.NewFlagSet("related-files", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	direction := fs.String("direction", "both", "dependencies, dependents, or both")
@@ -675,7 +675,7 @@ func RunRelatedFiles(ctx context.Context, c client.Client, args []string, out, e
 // Usage:
 //
 //	change-risk [-max-items n] (<target> | -diff <file|->)
-func RunChangeRisk(ctx context.Context, c client.Client, args []string, in io.Reader, out, errOut io.Writer) error {
+func RunChangeRisk(ctx context.Context, c client.AgentContextPort, args []string, in io.Reader, out, errOut io.Writer) error {
 	fs := flag.NewFlagSet("change-risk", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	diffPath := fs.String("diff", "", "path to a unified diff, or - for stdin")
@@ -888,7 +888,7 @@ func splitCSV(s string) []string {
 //	<name> -symbol <id> [-direction forward|reverse] [-max-nodes N]
 //
 // where <name> is a registered analyzer (e.g. impact).
-func RunAnalysis(ctx context.Context, c client.Client, args []string, out, errOut io.Writer) error {
+func RunAnalysis(ctx context.Context, c client.QueryPort, args []string, out, errOut io.Writer) error {
 	if len(args) < 1 {
 		fmt.Fprintf(errOut, "usage: <analyzer> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
 		return fmt.Errorf("cli: missing analyzer name")
