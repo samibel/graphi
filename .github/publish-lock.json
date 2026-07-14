@@ -1,0 +1,4 @@
+{
+  "locked": true,
+  "reason": "CT-01 (SW-109): automatic publication is locked until the Focused Core RC reaches its explicit Go (RC-01). Releases only via an intentional, human-initiated workflow_dispatch. To lift: set \"locked\" to false in this file (RC-01) — no workflow change needed."
+}

@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/samibel/graphi/engine/query"
 )
@@ -121,41 +122,69 @@ var singletonToolNames = []string{
 	ToolAgentBrief,
 }
 
-// experimentalPrefix marks a tool description as experimental. Tool NAMES are
-// frozen wire identifiers and never change; the prefix lives in the
-// human/agent-facing description only.
-const experimentalPrefix = "[experimental] "
-
-// experimentalTools is the single place a tool is declared experimental: the
-// PR-triage vertical and the agent memory/distill/skillgen suite are unproven
-// against real-world use and may change shape or be removed before 1.0. The
-// descriptor assembly prefixes their descriptions centrally (markExperimental),
-// so individual descriptor literals never carry the tag by hand; README's
-// "Experimental" section mirrors this set.
-var experimentalTools = map[string]bool{
-	ToolMemory:           true,
-	ToolDistill:          true,
-	ToolSkillGen:         true,
-	ToolAgentBrief:       true,
-	ToolListPRs:          true,
-	ToolTriagePRs:        true,
-	ToolConflictsPRs:     true,
-	ToolSuggestReviewers: true,
-	ToolCompareBranches:  true,
-	ToolCritiqueReview:   true,
+// StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE
+// product operations — the exact capabilities graphi commits to as stable
+// product surface. It is the SINGLE CODE source of the stability tier: the
+// coverage matrix's `tier: stable` rows are cross-checked against this set by
+// internal/coverage, MCP tool descriptions mark every advertised tool OUTSIDE
+// this set `[labs]` (markLabs), and CLI help groups Stable vs Labs from it — so
+// dispatch, the MCP tool list, CLI help, the coverage matrix, and the generated
+// docs cannot disagree about what is stable.
+//
+// The set spans surfaces: `index` is the ingest operation and `impact` is an
+// analyzer; the remaining ten are advertised MCP tool names. Membership is by
+// operation NAME (underscore spelling); the wire-level tool-name constants are
+// unchanged. Freezing this set is the whole point of SCOPE-01 — adding a 13th or
+// dropping one fails the coverage-matrix build. Keep it sorted.
+var StableOperations = []string{
+	"agent_brief",
+	"callees",
+	"callers",
+	"change_risk",
+	"definition",
+	"explain_symbol",
+	"impact",
+	"index",
+	"neighborhood",
+	"references",
+	"related_files",
+	"search",
 }
 
-// markExperimental prefixes the description of every experimental tool in
-// tools (in place) and returns the slice. Idempotent: an already-prefixed
-// description is left alone.
-func markExperimental(tools []map[string]any) []map[string]any {
+// stableOperationSet is the O(1) membership view of StableOperations.
+var stableOperationSet = func() map[string]bool {
+	m := make(map[string]bool, len(StableOperations))
+	for _, op := range StableOperations {
+		m[op] = true
+	}
+	return m
+}()
+
+// IsStableOperation reports whether name is one of the 12 frozen stable
+// operations (SCOPE-01). It is the single membership check every surface uses to
+// decide Stable vs Labs, so the taxonomy cannot diverge across MCP, CLI, and the
+// coverage matrix.
+func IsStableOperation(name string) bool { return stableOperationSet[name] }
+
+// labsPrefix marks a tool description as belonging to the Labs stability tier
+// (SCOPE-01): kept in-tree and still advertised, but NOT part of the frozen
+// 12-op stable product surface. Tool NAMES are frozen wire identifiers and never
+// change; the tier marker lives in the human/agent-facing description only.
+const labsPrefix = "[labs] "
+
+// markLabs prefixes the description of every advertised tool that is NOT a stable
+// operation (SCOPE-01) with labsPrefix, in place, and returns the slice. The
+// stable 12 are left unmarked. Idempotent: an already-prefixed description is
+// left alone. This makes the Stable/Labs taxonomy visible in the MCP tools/list
+// descriptions without touching the frozen tool-name constants.
+func markLabs(tools []map[string]any) []map[string]any {
 	for _, t := range tools {
 		name, _ := t["name"].(string)
-		if !experimentalTools[name] {
+		if IsStableOperation(name) {
 			continue
 		}
-		if d, ok := t["description"].(string); ok && len(d) >= len(experimentalPrefix) && d[:len(experimentalPrefix)] != experimentalPrefix {
-			t["description"] = experimentalPrefix + d
+		if d, ok := t["description"].(string); ok && !strings.HasPrefix(d, labsPrefix) {
+			t["description"] = labsPrefix + d
 		}
 	}
 	return tools

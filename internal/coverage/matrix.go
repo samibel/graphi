@@ -8,13 +8,16 @@ import (
 )
 
 // Capability is one row of the coverage matrix: a capability id, its category,
-// lifecycle status, owning epic, and a short human note. ID+Category identify a
-// row uniquely. For the four code-derived categories the drift guard cross-checks
-// Status against the live registries.
+// lifecycle status, stability tier, owning epic, and a short human note.
+// ID+Category identify a row uniquely. For the four code-derived categories the
+// drift guard cross-checks Status against the live registries; Tier is the
+// SCOPE-01 (SW-111) product-stability dimension, and the `stable` tier is
+// cross-checked to equal exactly the 12 frozen operations (see CheckStableTier).
 type Capability struct {
 	ID       string
 	Category string
 	Status   string // shipped | partial | planned
+	Tier     string // stable | labs | disabled  (SCOPE-01 stability taxonomy)
 	Epic     string
 	Note     string
 }
@@ -24,6 +27,14 @@ const (
 	StatusShipped = "shipped"
 	StatusPartial = "partial"
 	StatusPlanned = "planned"
+)
+
+// Valid stability tiers for a capability row (SCOPE-01). Every row must declare
+// one; the `stable` set is frozen to exactly the 12 operations by CheckStableTier.
+const (
+	TierStable   = "stable"
+	TierLabs     = "labs"
+	TierDisabled = "disabled"
 )
 
 // codeDerivedCategories are the categories whose rows are machine-checked against
@@ -93,6 +104,12 @@ func parseMatrixYAML(text string) ([]Capability, error) {
 		if cur.Status != StatusShipped && cur.Status != StatusPartial && cur.Status != StatusPlanned {
 			return fmt.Errorf("row %q has invalid status %q (want shipped|partial|planned)", cur.Key(), cur.Status)
 		}
+		if cur.Tier == "" {
+			return fmt.Errorf("row %q missing stability tier (SCOPE-01: every capability must declare tier stable|labs|disabled)", cur.Key())
+		}
+		if cur.Tier != TierStable && cur.Tier != TierLabs && cur.Tier != TierDisabled {
+			return fmt.Errorf("row %q has invalid tier %q (want stable|labs|disabled)", cur.Key(), cur.Tier)
+		}
 		caps = append(caps, *cur)
 		cur = nil
 		return nil
@@ -150,6 +167,8 @@ func assignField(c *Capability, key, val string) error {
 		c.Category = val
 	case "status":
 		c.Status = val
+	case "tier":
+		c.Tier = val
 	case "epic":
 		c.Epic = val
 	case "note":
