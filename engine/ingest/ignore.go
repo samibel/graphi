@@ -19,9 +19,13 @@ import (
 // semantics stamp: flipping either forces one certified cold pass instead of
 // silently serving a graph indexed under a different scope.
 const (
-	// EnvRespectGitignore, when set non-empty and != "0", makes the walk (and
-	// the watcher's ParseFile) honor the repository ROOT .gitignore — the
-	// documented pattern subset in internal/gitignore.
+	// EnvRespectGitignore controls whether the walk (and the watcher's
+	// ParseFile) honors the repository ROOT .gitignore — the documented pattern
+	// subset in internal/gitignore. Since PRIV-01 (SW-119) this is ON BY
+	// DEFAULT: ignored files are exactly where secrets, local configs and
+	// credentials live, and indexing them into a persistent, searchable graph
+	// violated the privacy default. Set "0" to opt OUT (index ignored files);
+	// any other non-empty value keeps the pre-PRIV-01 opt-in spelling working.
 	EnvRespectGitignore = "GRAPHI_RESPECT_GITIGNORE"
 	// EnvIgnoreDirs is a comma-separated list of extra directory basenames to
 	// prune (case-insensitive), merged with the built-in defaultIgnoredDirNames.
@@ -120,16 +124,26 @@ func loadIgnoreConfig(root string) ignoreConfig {
 	if len(extra) > 0 {
 		cfg.extra = extra
 	}
-	if v := os.Getenv(EnvRespectGitignore); v != "" && v != "0" {
-		_, _ = io.WriteString(h, "gitignore:\n")
+	// PRIV-01 (SW-119): the root .gitignore is respected BY DEFAULT — ignored
+	// files are where secrets live, and they must not land in the persistent
+	// graph or its search index. "0" opts out explicitly. Fingerprinting is
+	// asymmetric on purpose: a repo WITHOUT a .gitignore hashes nothing here,
+	// so its pre-PRIV-01 warm stamp stays valid (its scope genuinely did not
+	// change); a repo WITH one hashes the pattern bytes (default) or the
+	// explicit opt-out marker, so flipping either state re-certifies with one
+	// cold pass instead of silently serving a differently-scoped graph.
+	if v := os.Getenv(EnvRespectGitignore); v == "0" {
+		_, _ = io.WriteString(h, "nogitignore:\n")
+		if cfg.extra == nil {
+			// Opt-out active with no other scope: still fingerprint, so the
+			// opt-out itself invalidates a default-scoped warm store.
+			cfg.extra = map[string]bool{}
+		}
+	} else {
 		if data, err := os.ReadFile(filepath.Join(root, ".gitignore")); err == nil { //nolint:gosec // root is the repo being indexed
 			cfg.matcher = gitignore.Compile(strings.Split(string(data), "\n"))
+			_, _ = io.WriteString(h, "gitignore:\n")
 			_, _ = h.Write(data)
-		}
-		if cfg.matcher == nil && len(cfg.extra) == 0 {
-			// Mode is on but there is nothing to match — still fingerprint, so
-			// adding a .gitignore later invalidates the warm store.
-			cfg.extra = map[string]bool{}
 		}
 	}
 	if cfg.matcher != nil || cfg.extra != nil {

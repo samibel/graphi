@@ -292,6 +292,16 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 		_ = db.Close()
 		return nil, err
 	}
+	// PRIV-01 (SW-119): the sidecar caches file hashes, reverse-deps and edit
+	// provenance derived from potentially private source — owner-only, and a
+	// pre-existing too-wide sidecar is migrated on open. (metaDir itself is
+	// created 0700 above; in-memory sidecars have no file to tighten.)
+	if metaDir != "" {
+		if err := graphstore.TightenDBFileModes(dbPath); err != nil {
+			_ = db.Close()
+			return nil, fmt.Errorf("ingest: %w", err)
+		}
+	}
 	return i, nil
 }
 

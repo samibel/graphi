@@ -141,6 +141,10 @@ func TestAssembleWithoutMemoryStatesRisk(t *testing.T) {
 }
 
 func TestAssembleWithholdsSecrets(t *testing.T) {
+	// PRIV-01: the store now REJECTS secret-like payloads by default; this test
+	// exercises the brief's second line of defense (withholding an
+	// override-stored, flagged entry from the packet), so opt in explicitly.
+	t.Setenv(memory.EnvAllowSecrets, "1")
 	mem := memStoreWith(t,
 		memory.ProvenanceInput{Scope: "repo", Notebook: "n", Payload: "api_key=sk-abcdef0123456789abcdef", Kind: "risk"},
 		memory.ProvenanceInput{Scope: "repo", Notebook: "n", Payload: "plain fact", Kind: "convention"},
