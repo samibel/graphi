@@ -1,7 +1,7 @@
 package main
 
 // SW-118 (ING-DEC): proves the session-open path replays crash-recovery state.
-// warmOrFullIngest now calls RecoverWithRoot BEFORE trusting the store — this
+// runtime.WarmOrFullIngest calls RecoverWithRoot BEFORE trusting the store — this
 // test constructs the one divergence the drift pass CANNOT see and asserts the
 // wiring heals it:
 //
@@ -13,7 +13,7 @@ package main
 //     change and a drift-only warm start would serve the divergent graph
 //     (missing node) forever. Only the durable dirty rows know better.
 //
-// warmOrFullIngest must replay the dirty units and converge the store to the
+// WarmOrFullIngest must replay the dirty units and converge the store to the
 // reference bytes of an uninterrupted index of the (reverted) tree.
 
 import (
@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	rtime "github.com/samibel/graphi/cmd/internal/runtime"
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
@@ -67,7 +68,7 @@ func TestWarmOrFullIngest_ReplaysDirtyUnitsBeforeTrustingTheStore(t *testing.T) 
 	}
 	defer ing.Close()
 
-	if err := warmOrFullIngest(ctx, ing, repo, nil); err != nil {
+	if err := rtime.WarmOrFullIngest(ctx, ing, repo, nil); err != nil {
 		t.Fatalf("initial warmOrFullIngest: %v", err)
 	}
 
@@ -99,7 +100,7 @@ func TestWarmOrFullIngest_ReplaysDirtyUnitsBeforeTrustingTheStore(t *testing.T) 
 	}
 
 	// Session open: must recover (replay dirty) before the warm/drift decision.
-	if err := warmOrFullIngest(ctx, ing, repo, nil); err != nil {
+	if err := rtime.WarmOrFullIngest(ctx, ing, repo, nil); err != nil {
 		t.Fatalf("session-open warmOrFullIngest: %v", err)
 	}
 

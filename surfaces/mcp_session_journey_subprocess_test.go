@@ -33,11 +33,10 @@ import (
 // pins TODAY's honest path where the caller pre-indexes and passes `-db`. This
 // one asserts the NOT-YET-BUILT zero-config setup→initialize→list→call contract.
 func TestSessionProfile_MCPRepositoryJourney_RedUntilRUN01(t *testing.T) {
-	// --- red until RUN-01 ---------------------------------------------------
-	// Remove this single line once RUN-01 has wired cmd/internal/runtime.Runtime
-	// per ADR 0002 (repo resolution from roots/cwd + initial ingest + readiness).
-	t.Skip("red until RUN-01: zero-config MCP session/repo resolution (ADR 0002) is not implemented yet; see docs/adr/0002-session-profile-contract.md")
-	// ------------------------------------------------------------------------
+	// GREEN since SW-121 (RUN-01): cmd/internal/runtime.Runtime implements the
+	// ADR 0002 session — cwd repo resolution, per-repo state, open→recover→
+	// ingest→ready (sync-before-serve), single owned Close. The skip is gone;
+	// this journey is now the standing G3 gate.
 
 	if _, err := exec.LookPath("go"); err != nil {
 		t.Skipf("go toolchain unavailable: %v", err)

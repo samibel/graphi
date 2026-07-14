@@ -123,11 +123,12 @@ type Server struct {
 
 	mu     sync.Mutex
 	closed bool
+	done   chan struct{} // closed by Stop; the RUN-01 process-exit wait seam
 }
 
 // NewServer constructs a daemon server bound to the given handler.
 func NewServer(handler Handler) *Server {
-	return &Server{handler: handler, ctl: newControl(nil)}
+	return &Server{handler: handler, ctl: newControl(nil), done: make(chan struct{})}
 }
 
 // NewServerWithWatch constructs a daemon server whose control plane drives the
@@ -135,8 +136,14 @@ func NewServer(handler Handler) *Server {
 // refreshes the graph without an explicit re-index (SW-101 AC-1). Passing a nil
 // WatchManager is equivalent to NewServer.
 func NewServerWithWatch(handler Handler, wm WatchManager) *Server {
-	return &Server{handler: handler, ctl: newControlWithWatch(nil, wm)}
+	return &Server{handler: handler, ctl: newControlWithWatch(nil, wm), done: make(chan struct{})}
 }
+
+// Done is closed when the server has been stopped — by the `stop` RPC or a
+// direct Stop call. It is the RUN-01 lifecycle seam that lets the hosting
+// process (cmd/graphi's `daemon start`) actually EXIT after `daemon stop`
+// instead of parking forever in `select {}`.
+func (s *Server) Done() <-chan struct{} { return s.done }
 
 // Start validates the socket path, creates a Unix listener with owner-only
 // permissions, and begins serving requests.
@@ -175,6 +182,7 @@ func (s *Server) Stop() error {
 		return nil
 	}
 	s.closed = true
+	defer close(s.done) // signal Done exactly once, after teardown
 	if s.listener != nil {
 		if err := s.listener.Close(); err != nil {
 			return err

@@ -15,9 +15,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"runtime/pprof"
 	"strings"
+	"syscall"
 
+	rtime "github.com/samibel/graphi/cmd/internal/runtime"
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/core/profile"
@@ -31,7 +34,6 @@ import (
 	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
-	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/skillgen"
 	"github.com/samibel/graphi/engine/watch"
@@ -478,7 +480,7 @@ func runIndex(args []string) int {
 	if full {
 		ierr = ing.IngestAll(ctx, root)
 	} else {
-		ierr = warmOrFullIngest(ctx, ing, root, prog.Handle)
+		ierr = rtime.WarmOrFullIngest(ctx, ing, root, prog.Handle)
 	}
 	prog.Finish(ierr)
 	if ierr != nil {
@@ -798,14 +800,32 @@ func makeForgeClient(dbPath, socket string) client.Client {
 }
 
 // runMCP launches the MCP stdio server. Usage: graphi mcp [-db path] [-daemon socket]
+//
+// RUN-01 (ADR 0002): with no explicit -db/-daemon the session self-resolves —
+// the cwd walk finds the repository root (D4 fallback; the MCP-roots rung is
+// U2), the per-repo state paths are derived and created (D1/D2), the store is
+// opened, RECOVERED, and warm/full-ingested BEFORE serving (D3
+// sync-before-serve: a successful initialize already means "ready"), and the
+// Runtime owns every resource with one idempotent Close (D5). An explicit -db
+// keeps the exact pre-RUN-01 behavior (Attach; SW-110 pins it).
 func runMCP(args []string) int {
 	dbPath, socket, _ := extractFlags(args)
-	c, cleanup := makeClientOrOpen(dbPath, socket)
-	if c == nil {
+	rt, err := rtime.OpenSession(context.Background(), rtime.Options{
+		Cwd:        getwd(),
+		DBOverride: dbPath,
+		Socket:     socket,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
 		return 1
 	}
-	defer cleanup()
-	srv := mcp.NewServerWithClient(c)
+	defer rt.Close()
+	if rt.Root == "" && dbPath == "" && socket == "" {
+		// ADR 0002 D4: no repository bound. The session still serves (empty
+		// graph) so tools/list and non-repository tools work; be honest about it.
+		fmt.Fprintln(os.Stderr, "graphi: mcp: no repository bound — cwd is not a repo (no .git/go.work/go.mod marker); serving an empty graph. cd into a repository or pass -db.")
+	}
+	srv := mcp.NewServerWithClient(rt.Client)
 	if err := srv.Serve(context.Background(), os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
 		return 1
@@ -858,72 +878,18 @@ func makeClientOrOpen(dbPath, socket string) (client.Client, func()) {
 	return makeClientOrOpenMeta(dbPath, socket, "")
 }
 
-// makeClientOrOpenMeta is makeClientOrOpen plus an optional meta sidecar dir. When
-// a semantic embedder is configured AND metaDir is set, the search service reloads
-// its durable vectors from the meta sidecar so `search -semantic` returns hits
-// without re-embedding (SW-061 reload-on-startup; a pure local read).
+// makeClientOrOpenMeta is makeClientOrOpen plus an optional meta sidecar dir.
+// Since RUN-01 it is a thin adapter over the composition root's Attach mode
+// (cmd/internal/runtime), which owns the store/client wiring exactly once; the
+// print-and-nil error shape is preserved for the existing CLI call sites.
 func makeClientOrOpenMeta(dbPath, socket, metaDir string) (client.Client, func()) {
-	if socket != "" {
-		return daemon.NewClient(socket, ""), func() {}
-	}
-	store, err := openStore(dbPath)
+	rt, err := rtime.Attach(dbPath, socket, metaDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return nil, func() {}
 	}
-	analysisSvc := analysis.NewDefaultService(store)
-	c := client.NewDirect(query.New(store), newSearchService(store, metaDir)).
-		WithAnalysis(analysisSvc).
-		WithReview(review.NewService(analysisSvc))
-	return c, func() { _ = store.Close() }
+	return rt.Client, rt.Close
 }
-
-// newSearchService builds the shared search service. Lexical search is always
-// available. Semantic search is OPTIONAL and OFF by default: it is enabled ONLY
-// when GRAPHI_EMBEDDER explicitly selects a (recognized) embedder, which is
-// constructed here through the embed.Constructor seam. An empty/unknown selector
-// leaves the service in the graceful-skip state (no embedder, no network), so the
-// default binary never constructs or dials an embedder (SW-059 / OQ6).
-func newSearchService(store graphstore.Graphstore, metaDir string) *search.Service {
-	svc := search.New(store)
-	emb, err := embed.Constructor(os.Getenv(embed.EnvSelector), embed.DefaultConstructors())
-	if err != nil {
-		// Fail-closed (e.g. a non-loopback Ollama host): report and keep semantic
-		// search OFF rather than constructing an unsafe embedder.
-		fmt.Fprintf(os.Stderr, "graphi: embedder disabled: %v\n", err)
-		return svc
-	}
-	if emb == nil {
-		return svc // graceful skip: nothing configured
-	}
-	reg := embed.NewRegistry()
-	reg.Register(emb)
-
-	// RELOAD (SW-061): rebuild the in-memory index from the durable `vectors`
-	// sidecar so `search -semantic` returns the vectors a prior `index --semantic`
-	// generated — WITHOUT re-embedding. Rebuild reads only local SQLite rows scoped
-	// to the active embedder's (id, dim), so a changed/absent embedder loads zero
-	// stale vectors. This is a PURE LOCAL READ: zero embedder dials, zero network.
-	// When no metaDir is given (e.g. an in-memory ad-hoc run) the index starts
-	// empty; nothing is dialed.
-	index := embed.NewIndex()
-	if metaDir != "" {
-		table, terr := embed.OpenSQLiteVectorTable(context.Background(), metaDir, emb.ID(), emb.Dim())
-		if terr != nil {
-			fmt.Fprintf(os.Stderr, "graphi: vectors reload disabled: %v\n", terr)
-		} else {
-			if rerr := index.Rebuild(context.Background(), table); rerr != nil {
-				fmt.Fprintf(os.Stderr, "graphi: vectors reload failed: %v\n", rerr)
-			}
-			_ = table.Close()
-		}
-	}
-	return svc.WithSemantic(reg, index, nodeReader(store))
-}
-
-// nodeReader adapts the graphstore to the narrow search.NodeReader seam used to
-// enrich semantic hits with node provenance.
-func nodeReader(store graphstore.Graphstore) search.NodeReader { return store }
 
 // runRefactor launches the SW-038 edit/refactor command surface (refactor-preview
 // / refactor / undo). It builds an in-process client with a fully-wired edit
@@ -1141,8 +1107,19 @@ func runDaemon(args []string) int {
 			return 1
 		}
 		fmt.Printf("daemon listening on %s\n", *socket)
-		// Block until stopped via signal or Stop.
-		select {}
+		// RUN-01 (ADR 0002 D5): wait until the server is STOPPED — by the
+		// `daemon stop` RPC (which calls srv.Stop, closing Done) or an operator
+		// signal — then RETURN, so the deferred cleanups (watcher StopAll, store
+		// Close) actually run and the process exits. This replaces the former
+		// `select {}` that parked the process forever after `stop`.
+		sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer cancel()
+		select {
+		case <-srv.Done():
+		case <-sigCtx.Done():
+			_ = srv.Stop()
+		}
+		return 0
 	case "stop":
 		// The daemon's "stop" RPC already exists server-side (surfaces/daemon.
 		// Server.dispatch acks, then handleConn tears down the listener + socket
