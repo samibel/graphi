@@ -32,7 +32,7 @@ mit dem dokumentierten Lock-Handgriff.
 |-------|---------|
 | Die 12 Stable-Ops sind eingefroren und überall identisch | `surfaces/mcp.StableOperations` (einzige Quelle); `internal/coverage` Stable-Tier-Gate: exakt 12, kein 13., keins fehlt (SW-111/SCOPE-01, main) |
 | Generiertes, CI-frisches Capability-Manifest | `docs/capability-manifest.json` + `cmd/coverage -check` Freshness-Gate — `9f1f88c` (SW-117/CAP-01) |
-| Consumer-owned Ports; kein Stable-Op endet in einem Stub | `surfaces/client/ports.go` (QueryPort/SearchPort/AgentContextPort/StableClient); `surfaces/capability_ports_test.go` treibt alle 12 Ops port-TYPISIERT und scheitert auf jedem `*Unavailable`-Sentinel |
+| Consumer-owned Ports; kein Stable-Op endet in einem Stub | `surfaces/client/ports.go` (QueryPort/SearchPort/AgentContextPort/StableClient); `surfaces/capability_ports_test.go` treibt 11 der 12 Ops port-TYPISIERT (`index` läuft als Ingest-Fixture-Schritt, im Test dokumentiert) und scheitert auf jedem `*Unavailable`-Sentinel |
 | Testgate-Allowlist statt stiller Rot-Toleranz | `cmd/testgate` (SW-110/TEST-01, main): GREEN = nur die 2 dokumentierten Root-Carve-outs |
 
 ### G2 — Kern-Korrektheit, Recovery, Privacy: GRÜN

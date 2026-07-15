@@ -14,10 +14,11 @@ import (
 	"github.com/samibel/graphi/internal/gitignore"
 )
 
-// Opt-in scope controls. Ignore scope changes GRAPH CONTENT (which files get
-// symbols), so both are off by default and both are folded into the warm-start
-// semantics stamp: flipping either forces one certified cold pass instead of
-// silently serving a graph indexed under a different scope.
+// Ignore-scope controls. Ignore scope changes GRAPH CONTENT (which files get
+// symbols); since PRIV-01 (SW-119) gitignore respect is ON by default (opt-out
+// via "0") while EnvIgnoreDirs stays an opt-in addition. Both are folded into
+// the warm-start semantics stamp: flipping either forces one certified cold
+// pass instead of silently serving a graph indexed under a different scope.
 const (
 	// EnvRespectGitignore controls whether the walk (and the watcher's
 	// ParseFile) honors the repository ROOT .gitignore — the documented pattern

@@ -113,6 +113,21 @@ func TestFaultMatrix_FullPass_KillAtEveryBatchBoundary(t *testing.T) {
 		"c.go": "name:Doomed\n",
 	}
 
+	// Coverage guard: the matrix below kills at boundaries 1..3, so a clean
+	// pass must open EXACTLY 3 batches — if IngestAll ever grows a fourth,
+	// this fails loudly instead of the matrix silently under-covering it.
+	t.Run("matrix-covers-every-boundary", func(t *testing.T) {
+		fs := &batchFaultStore{Graphstore: graphstore.NewMemStore()}
+		defer fs.Close()
+		i := newIngester(t, fs, renamingParser{})
+		if err := i.IngestAll(ctx, writeRepo(t, tree)); err != nil {
+			t.Fatalf("clean IngestAll: %v", err)
+		}
+		if fs.batchCalls != 3 {
+			t.Fatalf("IngestAll opened %d graph batches; the kill matrix covers exactly 3 — extend the matrix", fs.batchCalls)
+		}
+	})
+
 	for kill := 1; kill <= 3; kill++ {
 		t.Run(fmt.Sprintf("kill-before-batch-%d", kill), func(t *testing.T) {
 			injected := fmt.Errorf("simulated crash before batch %d", kill)
