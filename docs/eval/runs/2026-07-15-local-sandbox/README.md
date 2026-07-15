@@ -9,7 +9,7 @@ the first green `eval-full.yml` run on `ubuntu-latest`).
 
 | Repo | Index | Peak RSS | DB | Nodes / Edges / Files | structural p95 | search p95 | agent_tools p95 |
 |------|-------|----------|----|----------------------|----------------|------------|-----------------|
-| cobra (Go) | 0.8 s | 275 MB | 1.1 MB | 938 / 4 206 / 58 | 300 µs | 1.2 ms | 11.3 ms |
+| cobra (Go) | 0.8 s | 275 MB | 1.1 MB | 938 / 4 206 / 58 | 459 µs | 1.2 ms | 11.3 ms |
 | flask (Python) | 0.6 s | 283 MB | 0.8 MB | 1 058 / 2 220 / 106 | 345 µs | 2.2 ms | 9.9 ms |
 | guava (JVM monorepo) | 19.5 s | 4 229 MB | 35 MB | 40 712 / 68 323 / 3 223 | 596 µs | 1.2 ms | 558 ms |
 
@@ -26,3 +26,15 @@ Two findings that carry into the ADRs:
 
 All three SHA pins verified fail-closed during clone (`repo.sha` in each
 report matches the manifest pin).
+
+Two provenance notes for careful readers:
+
+- `hero-report.md` carries a scorecard footer of **Pass: false**. That footer
+  is the EP-019 overall scorecard, which folds in areas this run does not
+  measure (the `ux` area is *carried* from the baseline at 62.0, below its
+  floor). The hero gate is the per-scenario table — 20/20 pass; the carried
+  scorecard areas are out of scope for this evidence run.
+- `header.commit` in the JSONs is `660b5a3`: the run executed on the working
+  tree one commit BEFORE the commit that checked it in (the harness landed in
+  the same change set). Consistent with the PRELIMINARY label; the reference
+  run on `ubuntu-latest` will carry a clean committed SHA.

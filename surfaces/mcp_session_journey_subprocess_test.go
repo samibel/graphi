@@ -12,32 +12,24 @@ import (
 	"time"
 )
 
-// TestSessionProfile_MCPRepositoryJourney_RedUntilRUN01 is the SW-113 (SP-10)
-// red-now / green-later journey. It encodes the Session/Profile contract of
-// ADR 0002 as an executable target: a FRESH setup with NO pre-indexing and NO
-// explicit `-db` must still answer a real `tools/call` over the user's repo,
+// TestSessionProfile_MCPRepositoryJourney is the standing G3 gate for the
+// Session/Profile contract of ADR 0002: a FRESH setup with NO pre-indexing and
+// NO explicit `-db` must still answer a real `tools/call` over the user's repo,
 // because the server resolves the repo from the MCP client's roots / the process
 // cwd, performs the initial ingest, signals readiness, and then serves the 12
 // stable operations against the REAL indexed graph.
 //
-// It is DELIBERATELY SKIPPED ("red until RUN-01"): on `main` today `graphi setup`
-// writes a bare `["mcp"]` command (internal/mcpconfig GraphiEntry) and `runMCP`
-// never calls resolveSession, so the zero-config path binds an EMPTY in-memory
-// graph — the very gap ADR 0002 specifies and RUN-01 implements. Keeping this
-// test skipped (rather than failing) keeps `go test ./...` and the testgate
-// allowlist GREEN while still checking the target contract into the tree as a
-// reviewed diff. When RUN-01 wires the composition root, delete the t.Skip line
-// and this journey must pass unchanged.
+// History: authored by SW-113 (SP-10) as a red-now / green-later journey and
+// DELIBERATELY skipped, because the pre-RUN-01 zero-config path bound an EMPTY
+// in-memory graph. GREEN since SW-121 (RUN-01): cmd/internal/runtime.Runtime
+// implements the ADR 0002 session — cwd repo resolution, per-repo state,
+// open→recover→ingest→ready (sync-before-serve), single owned Close — and the
+// skip was removed with this journey passing unchanged.
 //
 // Distinct from TestCharacterization_MCPStdioJourney_Subprocess (SW-110), which
-// pins TODAY's honest path where the caller pre-indexes and passes `-db`. This
-// one asserts the NOT-YET-BUILT zero-config setup→initialize→list→call contract.
-func TestSessionProfile_MCPRepositoryJourney_RedUntilRUN01(t *testing.T) {
-	// GREEN since SW-121 (RUN-01): cmd/internal/runtime.Runtime implements the
-	// ADR 0002 session — cwd repo resolution, per-repo state, open→recover→
-	// ingest→ready (sync-before-serve), single owned Close. The skip is gone;
-	// this journey is now the standing G3 gate.
-
+// pins the explicit path where the caller pre-indexes and passes `-db`. This
+// one asserts the zero-config setup→initialize→list→call contract.
+func TestSessionProfile_MCPRepositoryJourney(t *testing.T) {
 	if _, err := exec.LookPath("go"); err != nil {
 		t.Skipf("go toolchain unavailable: %v", err)
 	}
