@@ -29,25 +29,41 @@
     }
   },
   "real_repos": {
-    "selection": ["cobra", "flask", "guava"],
+    "selection": [
+      "cobra",
+      "flask",
+      "guava"
+    ],
     "per_repo": {
       "cobra": {
         "index_wallclock_ms": null,
         "peak_rss_mb": null,
         "db_size_mb": null,
-        "warm_p95_ms": { "structural": null, "search": null, "agent_tools": null }
+        "warm_p95_us": {
+          "structural": null,
+          "search": null,
+          "agent_tools": null
+        }
       },
       "flask": {
         "index_wallclock_ms": null,
         "peak_rss_mb": null,
         "db_size_mb": null,
-        "warm_p95_ms": { "structural": null, "search": null, "agent_tools": null }
+        "warm_p95_us": {
+          "structural": null,
+          "search": null,
+          "agent_tools": null
+        }
       },
       "guava": {
         "index_wallclock_ms": null,
         "peak_rss_mb": null,
         "db_size_mb": null,
-        "warm_p95_ms": { "structural": null, "search": null, "agent_tools": null }
+        "warm_p95_us": {
+          "structural": null,
+          "search": null,
+          "agent_tools": null
+        }
       }
     }
   }

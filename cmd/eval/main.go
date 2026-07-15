@@ -51,7 +51,20 @@ func main() {
 	tier := flag.Int("tier", 0, "run only scenarios whose fixture is in this corpus tier (0 = all)")
 	updateBaseline := flag.Bool("update-baseline", false, "write the current report to docs/eval-baseline.json (human-approved PR only)")
 
+	// SW-123 (EVAL-02) full-run flags.
+	fullRun := flag.String("full-run", "", "measure ONE manifest entry end-to-end (clone, index, warm p95) and emit the raw evidence JSON")
+	workDir := flag.String("workdir", "", "full-run working directory (default: a fresh temp dir, removed afterwards)")
+	runnerClass := flag.String("runner-class", "local", "machine class stamped into the full-run report (CI passes ubuntu-latest; budgets are only frozen from the reference class)")
+
 	flag.Parse()
+
+	if *fullRun != "" {
+		if *manifest == "" {
+			fmt.Fprintln(os.Stderr, "eval: -full-run requires -manifest")
+			os.Exit(2)
+		}
+		os.Exit(runFullRun(*manifest, *fullRun, *workDir, *runnerClass, *out))
+	}
 
 	if *manifest != "" {
 		os.Exit(runScorecardReport(*manifest, *scenariosDir, *out, *format, *tier, *updateBaseline))

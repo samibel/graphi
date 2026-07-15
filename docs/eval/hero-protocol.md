@@ -1,9 +1,12 @@
-# Hero-Task Protocol (SW-122 / EVAL-01)
+# Hero-Task Protocol (SW-122 / EVAL-01 · SW-123 / EVAL-02)
 
-> **Status:** ACTIVE — suite versioned, smoke-gated; execution against the pinned
-> real repos happens in CI (SW-123 / EVAL-02).
-> **Suite:** `corpus/hero/` (20 tasks) · **Gate:** `cmd/eval/hero_test.go`
-> **Budgets:** `docs/eval/hero-budgets.json` (schema now, numbers from EVAL-02)
+> **Status:** ACTIVE — suite versioned and smoke-gated; full-run harness and
+> CI workflow in place (`cmd/eval -full-run`, `.github/workflows/eval-full.yml`);
+> preliminary evidence committed (`docs/eval/runs/2026-07-15-local-sandbox/`).
+> **Suite:** `corpus/hero/` (20 tasks) · **Gates:** `cmd/eval/hero_test.go`,
+> `cmd/eval/fullrun_test.go`
+> **Budgets:** `docs/eval/hero-budgets.json` (schema now; numbers from the first
+> green `eval-full.yml` run on `ubuntu-latest`)
 
 ## What the hero suite is
 
@@ -86,13 +89,36 @@ The CLI gates alternative suites on their own outcomes (every tier-1 scenario
 must pass); `docs/eval-baseline.json` belongs to the default suite only and is
 neither read nor writable from a `-scenarios` run.
 
-## EVAL-02 handoff (SW-123)
+## EVAL-02 execution (SW-123)
 
-1. CI workflow (extending the `corpus.yml` / `eval-correctness.yml` pattern)
-   runs, per pinned repo: full index (wallclock, peak RSS, DB size), warm p95
-   per op class, then the 20 hero tasks; raw `internal/evalreport` JSON is
-   published as an artifact **and** committed under `docs/eval/`.
-2. First green run freezes the `null` budgets in `hero-budgets.json` as
-   ratchets (separate reviewed commit citing the run).
-3. The same measurements close ADR 0003 U2 (brief aggregate strategy) and U4
-   (whole-graph cache disposition).
+**Harness:** `go run ./cmd/eval -manifest corpus/manifest.json -full-run <repo>`
+measures ONE repo per process (peak RSS stays attributable): shallow-clone at
+the pinned ref with fail-closed SHA verification → cold full index (wallclock,
+`getrusage` peak RSS, on-disk DB size) → warm per-op-class p95 (microseconds;
+per-op resolution in `warm_p95_us_per_op`) over the same in-process session,
+driven through the same `engine/scenario.FixtureEngine` the hero suite uses.
+Raw evidence: `internal/evalreport.FullRunReport` JSON. Hermetic gate:
+`cmd/eval/fullrun_test.go` (local fixture, no network).
+
+**Workflow:** `.github/workflows/eval-full.yml` — matrix over cobra/flask/guava
+on `ubuntu-latest` (the reference runner class) + the hero-suite job; weekly
+schedule + manual dispatch; never a PR gate (the hero suite's PR gate is
+`cmd/eval/hero_test.go` inside testgate).
+
+**Evidence & budget freeze:**
+
+1. Raw reports are uploaded as artifacts per run. After a green run on the
+   reference runner: download the artifacts, commit them under
+   `docs/eval/runs/<date>-ubuntu-latest/`, and fill the `null` budgets in
+   `hero-budgets.json` as ratchets — one reviewed PR citing the workflow run.
+2. Preliminary evidence from the development sandbox is committed under
+   `docs/eval/runs/2026-07-15-local-sandbox/` (20/20 hero tasks pass; all
+   three repos index, pins verified). It freezes nothing; it directs the ADR
+   decisions:
+   - **ADR 0003 U2** — `agent_brief` is the only scaling outlier
+     (11 ms → 558 ms p95, cobra → guava); every other op stays ≤ ~2 ms.
+   - **ADR 0003 U4** — guava peaks at 4.2 GB RSS against a 35 MB store while
+     the selective warm paths stay scale-flat; the with/without-cache pair on
+     the reference runner decides delete/bound/flag.
+3. U2/U4 are closed as ADR updates from the reference-runner numbers (RC-01
+   window).

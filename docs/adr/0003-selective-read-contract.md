@@ -204,6 +204,11 @@ index usage in CI.
 - **U2 — brief aggregate strategy.** Catalog read vs. SQL aggregates. *Experiment:* on the three
   EVAL-01 pinned repos measure brief's wall-clock + peak-RSS with the status-quo digest; adopt
   SQL aggregates only if the digest breaches the (then-measured) budget. Resolve in `CORE-02`.
+  *Preliminary evidence (SW-123, `docs/eval/runs/2026-07-15-local-sandbox/`):* `agent_brief` is
+  the ONLY scaling outlier across the three repos — p95 11 ms (cobra, 938 nodes) → 558 ms
+  (guava, 40 712 nodes) while every other stable op stays ≤ ~2 ms. The decision is confirmed to
+  be about this one op's full-catalog digest; final numbers and the adopt/keep call come from
+  the first `eval-full.yml` run on the reference runner (`ubuntu-latest`).
 - **U3 — frontier batching for neighborhood/impact.** Per-hop loops may need
   `Incoming(ids []NodeId)` batch variants on high-degree frontiers. *Experiment:* the CORE-02
   1M-edge fixture (master `MVP-04` heritage) measures per-hop probe counts; add batch variants
@@ -211,6 +216,12 @@ index usage in CI.
 - **U4 — whole-graph cache disposition.** Keep, bound, or opt-in. *Experiment:* after all stable
   hotpaths bypass it (D7), measure RSS + latency with and without the cache on the EVAL-01 repos;
   decide delete/bound/flag from data. Resolve in `CORE-02`/`RC-01` window.
+  *Preliminary evidence (SW-123, `docs/eval/runs/2026-07-15-local-sandbox/`):* peak RSS on the
+  guava full run is 4.2 GB against a 35 MB on-disk store, while the selective warm paths stay
+  scale-flat (≤ 600 µs structural p95) — i.e. the stable tier no longer needs whatever the
+  process holds in memory. The number pools ingest working set and cache; the deciding
+  experiment (same run with the memGraph cache disabled) still needs the with/without pair on
+  the reference runner.
 - **U5 — latency/rows budgets.** Absolute p95 and rows-scanned budgets are **not invented here**
   (master: "keine Scheingenauigkeit"). *Experiment:* first reproducible EVAL-01 baseline run
   fixes the numbers; they are then versioned as gates (EVAL-02).

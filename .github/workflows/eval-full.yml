@@ -1,0 +1,88 @@
+# SW-123 (EVAL-02): full evaluation runs over the pinned real repositories.
+#
+# Per repo (matrix job, ONE repo per process so peak RSS is attributable):
+# shallow-clone at the pinned ref (fail-closed SHA verification), cold full
+# index (wallclock, peak RSS, DB size), warm per-op-class p95 over the same
+# in-process session — raw evidence as internal/evalreport JSON artifacts.
+# Plus the 20-task hero suite (SW-122) over the hermetic tier-1 fixtures.
+#
+# ubuntu-latest is the REFERENCE RUNNER CLASS (docs/eval/hero-protocol.md):
+# only numbers recorded here freeze the ADR 0003 U5 budgets. Procedure after
+# a green run: download the artifacts, commit them under
+# docs/eval/runs/<date>-ubuntu-latest/, and fill the null budgets in
+# docs/eval/hero-budgets.json as ratchets in the same reviewed PR, citing
+# this workflow run.
+#
+# DELIBERATELY a separate workflow (like corpus.yml): it clones public
+# repositories, so it needs the network and never joins the zero-egress
+# canary posture. Scheduled weekly + manual dispatch; not a PR gate — the
+# hero suite's PR gate is cmd/eval/hero_test.go inside testgate.
+name: eval-full
+
+on:
+  schedule:
+    # Weekly, Monday 04:00 UTC — after the nightly corpus run has verified
+    # the pins, before the work week consumes the numbers.
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+jobs:
+  full-run:
+    name: full run over ${{ matrix.repo }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Mirrors the EVAL-02 selection in docs/eval/hero-budgets.json:
+        # Go (typeresolve acceptance target), Python, Java/JVM monorepo.
+        repo: [cobra, flask, guava]
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: full measurement run (${{ matrix.repo }})
+        run: |
+          go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -full-run "${{ matrix.repo }}" \
+            -runner-class ubuntu-latest \
+            -out "eval-full-${{ matrix.repo }}.json"
+      - name: upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-full-${{ matrix.repo }}
+          path: eval-full-${{ matrix.repo }}.json
+
+  hero-suite:
+    name: hero suite (20 tasks, tier-1 fixtures)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: run the hero suite
+        run: |
+          go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -scenarios corpus/hero \
+            -out hero-report.json \
+            -format markdown
+      - name: upload hero report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hero-report
+          path: |
+            hero-report.json
+            hero-report.md

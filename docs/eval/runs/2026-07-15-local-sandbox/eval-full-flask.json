@@ -1,0 +1,75 @@
+{
+  "header": {
+    "timestamp": "2026-07-15T00:15:25Z",
+    "version": "0.0.0-dev",
+    "commit": "660b5a32e7c67a1cc40446bea44d99666e9d75f2",
+    "os": "linux",
+    "arch": "amd64",
+    "corpus_version": 2
+  },
+  "runner_class": "local-sandbox",
+  "notes": "in-process session model: engine services over one open SQLite store; cold index timed around IngestAll; peak RSS = getrusage MAXRSS sampled after the index pass; warm p95 pooled per op class over the recorded warm_ops/warm_samples",
+  "repo": {
+    "name": "flask",
+    "ref": "3.0.0",
+    "sha": "735a4701d6d5e848241e7d7535db898efb62d400",
+    "tier": 1,
+    "clone_ms": 849,
+    "index": {
+      "wallclock_ms": 640,
+      "peak_rss_mb": 283,
+      "db_size_bytes": 823296,
+      "nodes": 1058,
+      "edges": 2220,
+      "files": 106
+    },
+    "warm_p95_us": {
+      "agent_tools": 9227,
+      "search": 2166,
+      "structural": 262
+    },
+    "warm_p95_us_per_op": {
+      "agent_brief": 9932,
+      "callees": 253,
+      "callers": 226,
+      "change_risk": 198,
+      "definition": 132,
+      "explain_symbol": 416,
+      "neighborhood": 345,
+      "references": 127,
+      "related_files": 297,
+      "search": 2166
+    },
+    "warm_samples": {
+      "agent_tools": 33,
+      "search": 20,
+      "structural": 125
+    },
+    "warm_ops": {
+      "agent_tools": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ],
+      "search": [
+        "search"
+      ],
+      "structural": [
+        "callees",
+        "callers",
+        "definition",
+        "neighborhood",
+        "references"
+      ]
+    },
+    "searches": [
+      {
+        "query": "Flask",
+        "matches": 24,
+        "pass": true
+      }
+    ],
+    "pass": true
+  }
+}
