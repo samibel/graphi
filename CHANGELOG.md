@@ -7,6 +7,20 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-15
+
+The **Focused Core RC**: the stable surface is frozen to 12 operations and
+everything on it is now evidenced by an armed gate — selective reads, crash
+recovery, privacy defaults, a zero-config MCP session, an SHA-bound release
+pipeline, and a versioned evaluation harness. Publishing this version runs
+through the new release DAG and requires lifting the publish lock
+(`.github/publish-lock.json`, see `docs/rc/focused-core-rc.md` §5).
+
+> **Upgrade note:** `.gitignore` is now respected **by default** (see
+> Security below). The first index after upgrading runs one certified cold
+> pass because the ignore-scope semantics stamp changed; set
+> `GRAPHI_RESPECT_GITIGNORE=0` to restore the old scope.
+
 ### Added
 - **Real-World Report Card** ([`docs/real-world-report.md`](docs/real-world-report.md)):
   the honest before/after record for the two external field findings, with every
@@ -18,6 +32,53 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   a malformed or invalid file fails the index **closed** rather than silently
   reverting to defaults. Read at index time; adding, editing, or removing it
   re-certifies warm-start with one cold pass.
+- **Zero-config MCP session**: `graphi mcp` with no `-db` resolves the
+  repository from the process working directory, performs the initial ingest
+  (recovery replay included) before serving, and then answers the stable
+  operations against the real indexed graph — `graphi setup` + a real client
+  is now enough. The end-to-end journey is a standing subprocess test.
+- **Frozen stable surface**: exactly 12 stable operations (`index`, `search`,
+  `definition`, `callers`, `callees`, `references`, `neighborhood`, `impact`,
+  `explain_symbol`, `related_files`, `change_risk`, `agent_brief`), enforced
+  by a CI gate, published as a generated capability manifest
+  ([`docs/capability-manifest.json`](docs/capability-manifest.json)), and
+  consumable through typed client ports (`surfaces/client/ports.go`). No
+  stable operation can silently degrade to a stub.
+- **SHA-bound release pipeline**: one workflow (`release-dag.yml`) carries a
+  single commit through gate → build → SBOM → provenance attestation → tag →
+  publish; a red gate yields no tag and no release, and a reversible publish
+  lock keeps releases impossible until it is lifted in a reviewed commit.
+  Every action in the DAG is pinned to a full commit SHA.
+- **Evaluation harness**: 20 versioned hero tasks over the 12 stable ops
+  (`corpus/hero/`, with ambiguity/partial/empty/not-found failure classes and
+  negative anchors), a per-repo full-run measurement harness
+  (`cmd/eval -full-run`: index wallclock, peak RSS, DB size, warm per-op p95),
+  a weekly `eval-full` CI workflow over the pinned real repos, and a Java/JVM
+  monorepo (guava v33.0.0, SHA-pinned) joining the corpus. Budgets are frozen
+  from reference-runner evidence, never invented
+  ([`docs/eval/hero-budgets.json`](docs/eval/hero-budgets.json)).
+- **RC dossier** ([`docs/rc/focused-core-rc.md`](docs/rc/focused-core-rc.md)):
+  the G0–G4 evidence checklist, the Go/No-Go protocol, and the documented
+  lock-lift step.
+
+### Changed
+- **Stable operations read selectively.** Every stable hotpath (structural
+  queries, resolution, impact, related files, change risk) now uses indexed
+  point lookups on both backends instead of whole-graph scans — byte-identical
+  results (golden-tested), with measured scale-flat structural latency
+  (≤ 600 µs p95 from a 1k-node to a 40k-node repo). The port contract is
+  ADR 0003; EXPLAIN-plan gates pin the SQLite query shapes.
+- **Session open replays crash recovery before trusting the store**: dirty
+  units from an interrupted ingest are re-applied on open, and interrupted
+  full passes purge crash orphans from the store itself (not a cache that may
+  have rolled back). A kill-at-every-batch-boundary fault matrix proves
+  byte-identical convergence with an uninterrupted index.
+
+### Removed
+- **`auto-release.yml`**: the `workflow_run` auto-tag chain listened to the
+  wrong workflow (`release`, not `release-gate`) and could tag a commit whose
+  gates never ran. The release DAG is now the only publish path — enforced by
+  a repo-wide workflow-scan test.
 
 ### Fixed
 - **Taint found 0/4 real injections → now 5/5, 0 false positives.** External call
@@ -60,6 +121,33 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
   decorator (`@Component`, `@Injectable`, `@Controller`, `@Get`, …) on a class or
   method marks it as framework-invoked (a wiring the static graph cannot see), so
   it is an info `entrypoint_candidate` and protected from `safe-delete`.
+- **`graphi daemon stop` (and SIGTERM) now terminates the daemon process.**
+  Previously the listener and socket were torn down but the host process
+  parked in `select {}` forever, so deferred cleanups (watcher stop, store
+  close) never ran. Both paths now exit 0, remove the socket, and are
+  restartable — pinned by subprocess lifecycle tests.
+- **Crash-recovery gaps found by fault injection**: the post-crash purge was
+  derived from a meta cache that had rolled back (orphaning nodes of renamed/
+  deleted files); it is now derived from the store. `RecoverWithRoot` had no
+  production caller; it now runs on every session open.
+
+### Security
+- **`.gitignore` is respected by default** when indexing: ignored files are
+  exactly where secrets, local configs, and credentials live, and indexing
+  them into a persistent, searchable graph violated the privacy default.
+  Opt out with `GRAPHI_RESPECT_GITIGNORE=0` (see the upgrade note above).
+- **On-disk state is owner-only**: graph databases (including `-wal`/`-shm`),
+  the meta sidecar, and memory journals are created `0600` in `0700`
+  directories, and existing world-readable files are migrated on open.
+- **The memory store rejects secret-like content by default** (API keys,
+  private keys, tokens) before anything is written; override with
+  `GRAPHI_MEMORY_ALLOW_SECRETS=1`.
+- **Labs HTTP routes are disabled by default**: PR/branch/review/distill
+  endpoints answer 403 unless `GRAPHI_HTTP_LABS=1`, so experimental surface
+  is opt-in.
+- **Unimplemented refactors fail closed**: `extract`/`move` are rejected
+  before any blast-radius read instead of returning a half-planned answer,
+  and memory export renders inline instead of writing caller-supplied paths.
 
 ## [0.4.0] - 2026-07-05
 
