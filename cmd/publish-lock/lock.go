@@ -18,7 +18,7 @@ type gateFile struct {
 }
 
 // Decision is the evaluated publish-lock state. When Locked is true the
-// auto-release workflow must push no tag and dispatch no release.
+// release DAG's publish job must not run: no tag, no release, no assets.
 type Decision struct {
 	Locked bool
 	Reason string

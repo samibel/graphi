@@ -1,0 +1,17 @@
+id: hero-13-neighborhood-depth2
+description: >
+  Depth-2 neighborhood expansion: from ChainA the frontier reaches ChainC
+  (two call hops away).
+fixture_ref: tier1-fixture-go
+operation:
+  name: neighborhood
+  args:
+    symbol: ChainA
+    depth: "2"
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: fixture.ChainC
+      match: contains

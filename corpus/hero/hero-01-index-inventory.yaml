@@ -1,0 +1,20 @@
+id: hero-01-index-inventory
+description: >
+  Index the multi-file fixture: the ingest must produce a non-trivial,
+  queryable graph whose evidence cites every source file.
+fixture_ref: tier1-fixture-hero-go
+operation:
+  name: index
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: file
+      value: core.go
+      match: contains
+    - kind: file
+      value: consumer.go
+      match: contains
+    - kind: file
+      value: report.go
+      match: contains

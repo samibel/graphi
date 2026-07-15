@@ -1174,6 +1174,9 @@ func memoryMCPOutput(t *testing.T, direct *client.Direct, op string, args map[st
 
 func memoryHTTPOutput(t *testing.T, direct *client.Direct, op string, body client.MemoryRequest) []byte {
 	t.Helper()
+	// POST /memory is a Labs route, fail-closed by default (SW-112 / SAFE-01);
+	// parity is asserted for the opted-in configuration.
+	t.Setenv(httpsrv.LabsEnvVar, "1")
 	srv := httpsrv.New(direct, observe.New())
 	b, _ := json.Marshal(body)
 	req := httptest.NewRequest(http.MethodPost, "/memory", bytes.NewReader(b))

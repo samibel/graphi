@@ -1,0 +1,19 @@
+id: hero-19-related-files-dependents
+description: >
+  related_files ranks the files that depend on the anchor symbol: both
+  consumer files of Parse appear, cited with edge evidence.
+fixture_ref: tier1-fixture-hero-go
+operation:
+  name: related_files
+  args:
+    anchor: Parse
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: consumer.go
+  has_evidence: true
+  anchors:
+    - kind: file
+      value: report.go
+      match: contains

@@ -51,18 +51,25 @@ type rpcError struct {
 // Server is the MCP stdio handler bound to a shared surface client.
 type Server struct {
 	c client.Client
+	// stable is the CAP-01 (SW-117) consumer-owned view of the SAME client:
+	// exactly the three stable ports (QueryPort/SearchPort/AgentContextPort).
+	// Every stable tool dispatch routes through it, so the compiler proves the
+	// stable path cannot reach a Labs capability; the full Client above remains
+	// the isolated Labs facade for everything else.
+	stable client.StableClient
 }
 
 // NewServer constructs an MCP server over an in-process query service.
 // If searchSvc is non-nil, the search tool is also advertised.
 func NewServer(q *query.Service, searchSvc *search.Service) *Server {
-	return &Server{c: client.NewDirect(q, searchSvc)}
+	return NewServerWithClient(client.NewDirect(q, searchSvc))
 }
 
 // NewServerWithClient constructs an MCP server over an arbitrary client
-// (in-process or daemon).
+// (in-process or daemon). The stable view is the same client, narrowed to the
+// consumer-owned ports (CAP-01).
 func NewServerWithClient(c client.Client) *Server {
-	return &Server{c: c}
+	return &Server{c: c, stable: c}
 }
 
 // Serve runs the JSON-RPC read/dispatch/write loop until in reaches EOF. Each
@@ -314,7 +321,7 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		depth = *p.Arguments.Depth
 	}
 
-	b, err := s.c.Query(ctx, p.Name, p.Arguments.Symbol, depth)
+	b, err := s.stable.Query(ctx, p.Name, p.Arguments.Symbol, depth)
 	if err != nil {
 		return nil, &rpcError{Code: -32602, Message: err.Error()}
 	}
@@ -416,7 +423,7 @@ func (s *Server) searchCall(ctx context.Context, p callParams) (any, *rpcError) 
 	if p.Arguments.Depth != nil && *p.Arguments.Depth > 0 {
 		limit = *p.Arguments.Depth
 	}
-	b, err := s.c.Search(ctx, p.Arguments.Symbol, limit)
+	b, err := s.stable.Search(ctx, p.Arguments.Symbol, limit)
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -534,7 +541,7 @@ func (s *Server) analysisCall(ctx context.Context, p callParams) (any, *rpcError
 	if p.Arguments.MaxNodes != nil {
 		maxNodes = *p.Arguments.MaxNodes
 	}
-	b, err := s.c.Analyze(ctx, client.AnalyzeParams{
+	b, err := s.stable.Analyze(ctx, client.AnalyzeParams{
 		Name:       p.Arguments.Analyzer,
 		Symbol:     p.Arguments.Symbol,
 		Target:     p.Arguments.Target,
@@ -736,7 +743,7 @@ func derefInt(p *int) int {
 // It rides the shared client seam so MCP and CLI emit the same canonical bytes
 // (and both see the graph/memory-backed content when those services are wired).
 func (s *Server) agentBriefCall(ctx context.Context, p callParams) (any, *rpcError) {
-	b, md, err := s.c.Brief(ctx, p.Arguments.Symbol)
+	b, md, err := s.stable.Brief(ctx, p.Arguments.Symbol)
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -752,7 +759,7 @@ func (s *Server) explainSymbolCall(ctx context.Context, p callParams) (any, *rpc
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
-	b, err := s.c.ExplainSymbol(ctx, p.Arguments.Symbol, derefInt(p.Arguments.Limit))
+	b, err := s.stable.ExplainSymbol(ctx, p.Arguments.Symbol, derefInt(p.Arguments.Limit))
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -765,7 +772,7 @@ func (s *Server) relatedFilesCall(ctx context.Context, p callParams) (any, *rpcE
 	if p.Arguments.Target == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: target"}
 	}
-	b, err := s.c.RelatedFiles(ctx, p.Arguments.Target, p.Arguments.Direction, derefInt(p.Arguments.Limit))
+	b, err := s.stable.RelatedFiles(ctx, p.Arguments.Target, p.Arguments.Direction, derefInt(p.Arguments.Limit))
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -778,7 +785,7 @@ func (s *Server) changeRiskCall(ctx context.Context, p callParams) (any, *rpcErr
 	if p.Arguments.Target == "" && p.Arguments.Diff == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: target or diff"}
 	}
-	b, err := s.c.ChangeRisk(ctx, p.Arguments.Target, p.Arguments.Diff, derefInt(p.Arguments.Limit))
+	b, err := s.stable.ChangeRisk(ctx, p.Arguments.Target, p.Arguments.Diff, derefInt(p.Arguments.Limit))
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -1081,7 +1088,7 @@ func (s *Server) toolDescriptors() []map[string]any {
 					"confidence":     map[string]any{"type": "string", "description": "confirmed | derived | heuristic"},
 					"evidence":       map[string]any{"type": "string", "description": "optional file:line citation"},
 					"limit":          map[string]any{"type": "integer", "description": "max entries for list"},
-					"export_to_path": map[string]any{"type": "string", "description": "destination file for export"},
+					"export_to_path": map[string]any{"type": "string", "description": "REJECTED (SAFE-01): the transport never writes server-side files; export returns the payload in the response's `export` field — omit this argument"},
 				},
 				"required": []string{"op"},
 			},
@@ -1297,7 +1304,7 @@ var editToolDescriptors = []map[string]any{
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|extract|move|signature_change"},
+				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)"},
 				"target_symbol":    map[string]any{"type": "string", "description": "resolved node id of the symbol to refactor"},
 				"old_name":         map[string]any{"type": "string", "description": "current spelling of the symbol"},
 				"new_name":         map[string]any{"type": "string", "description": "replacement spelling"},
@@ -1312,7 +1319,7 @@ var editToolDescriptors = []map[string]any{
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|extract|move|signature_change"},
+				"kind":             map[string]any{"type": "string", "description": "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)"},
 				"target_symbol":    map[string]any{"type": "string", "description": "resolved node id of the symbol to refactor"},
 				"old_name":         map[string]any{"type": "string", "description": "current spelling of the symbol"},
 				"new_name":         map[string]any{"type": "string", "description": "replacement spelling"},

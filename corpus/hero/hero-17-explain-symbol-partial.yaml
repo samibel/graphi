@@ -1,0 +1,19 @@
+id: hero-17-explain-symbol-partial
+description: >
+  Failure class PARTIAL: an item cap below the natural answer size must be
+  reported as partial (truncation is never silent), and the definition
+  always survives the cap.
+fixture_ref: tier1-fixture-go
+operation:
+  name: explain_symbol
+  args:
+    symbol: Hello
+    max_items: "1"
+area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true
+  anchors:
+    - kind: line
+      value: "definition: function fixture.Hello"
+      match: contains

@@ -23,7 +23,8 @@
 //
 // # Status taxonomy (AC-5, stable across REST and SSE)
 //
-//	200 ok · 400 bad input · 404 unknown route/resource · 405 mutating verb ·
+//	200 ok · 400 bad input · 403 Labs route fail-closed (SW-112 / SAFE-01,
+//	GRAPHI_HTTP_LABS=1 opts in) · 404 unknown route/resource · 405 mutating verb ·
 //	412 schema-version mismatch · 503 capability unavailable
 //	(ErrSearchUnavailable / ErrAnalysisUnavailable) · 500 sanitized unexpected.
 //
@@ -50,6 +51,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -107,15 +109,28 @@ type Server struct {
 	// preserving the surface→engine layering. Empty when not wired.
 	analyzers []string
 
+	// labsEnabled gates the non-Stable ("Labs") routes — the PR/forge, memory,
+	// distill and skillgen endpoints SCOPE-01 classifies outside the frozen
+	// stable set. It is FALSE by default (SW-112 / SAFE-01 fail-closed): the
+	// routes stay registered (the wire surface is pinned by the SW-110 route
+	// snapshot) but answer 403 until the operator opts in by exporting
+	// GRAPHI_HTTP_LABS=1 for the server process.
+	labsEnabled bool
+
 	wikiOnce      sync.Once
 	wikiErr       error
 	wikiGenerated wiki.Wiki
 }
 
+// LabsEnvVar is the explicit operator opt-in for the Labs HTTP routes (SW-112 /
+// SAFE-01). Unset or any value other than "1" keeps them fail-closed (403).
+const LabsEnvVar = "GRAPHI_HTTP_LABS"
+
 // New constructs a Server over the given client and (optionally) an event broker.
-// A nil broker disables the /events SSE endpoint (it returns 503).
+// A nil broker disables the /events SSE endpoint (it returns 503). The Labs
+// routes are fail-closed unless GRAPHI_HTTP_LABS=1 is exported (read once here).
 func New(c client.Client, b *observe.Broker) *Server {
-	return &Server{client: c, broker: b}
+	return &Server{client: c, broker: b, labsEnabled: os.Getenv(LabsEnvVar) == "1"}
 }
 
 // WithWiki enables the self-generated wiki (SW-041) by attaching a read-only
@@ -187,9 +202,27 @@ type route struct {
 	handler http.HandlerFunc
 }
 
+// labsGuard fail-closes a Labs route (SW-112 / SAFE-01): unless the operator
+// exported GRAPHI_HTTP_LABS=1 for this process, the route answers 403 with a
+// stable machine code and performs NO work — the wrapped handler (and any
+// mutation or forge egress behind it) is never reached. The route itself stays
+// registered so the SW-110 route snapshot pins an unchanged wire surface.
+func (s *Server) labsGuard(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !s.labsEnabled {
+			writeErr(w, http.StatusForbidden, "labs_disabled",
+				"this Labs route is outside the stable capability set and is disabled by default (SAFE-01); export "+LabsEnvVar+"=1 to opt in")
+			return
+		}
+		next(w, r)
+	}
+}
+
 // routes returns the ordered route table this surface serves. Handler registers
 // exactly these in order; the SPA catch-all is LAST and least specific so every
-// explicit API/SSE/wiki route wins (Go 1.22 precedence).
+// explicit API/SSE/wiki route wins (Go 1.22 precedence). Labs routes (PR/forge,
+// memory, distill, skillgen) are wrapped in labsGuard and fail closed by
+// default.
 func (s *Server) routes() []route {
 	return []route{
 		{"GET /healthz", s.handleHealth},
@@ -201,15 +234,15 @@ func (s *Server) routes() []route {
 		{"GET /search", s.schemaGuard(s.handleSearch)},
 		{"GET /search/semantic", s.schemaGuard(s.handleSemanticSearch)},
 		{"GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze)},
-		{"GET /prs", s.schemaGuard(s.handleListPRs)},
-		{"GET /prs/triage", s.schemaGuard(s.handleTriagePRs)},
-		{"GET /prs/conflicts", s.schemaGuard(s.handleConflictsPRs)},
-		{"GET /prs/suggest-reviewers", s.schemaGuard(s.handleSuggestReviewers)},
-		{"GET /branches/compare", s.schemaGuard(s.handleCompareBranches)},
-		{"GET /reviews/critique", s.schemaGuard(s.handleCritiqueReview)},
-		{"POST /memory", s.schemaGuard(s.handleMemory)},
-		{"POST /distill", s.schemaGuard(s.handleDistill)},
-		{"POST /skillgen", s.schemaGuard(s.handleSkillGen)},
+		{"GET /prs", s.labsGuard(s.schemaGuard(s.handleListPRs))},
+		{"GET /prs/triage", s.labsGuard(s.schemaGuard(s.handleTriagePRs))},
+		{"GET /prs/conflicts", s.labsGuard(s.schemaGuard(s.handleConflictsPRs))},
+		{"GET /prs/suggest-reviewers", s.labsGuard(s.schemaGuard(s.handleSuggestReviewers))},
+		{"GET /branches/compare", s.labsGuard(s.schemaGuard(s.handleCompareBranches))},
+		{"GET /reviews/critique", s.labsGuard(s.schemaGuard(s.handleCritiqueReview))},
+		{"POST /memory", s.labsGuard(s.schemaGuard(s.handleMemory))},
+		{"POST /distill", s.labsGuard(s.schemaGuard(s.handleDistill))},
+		{"POST /skillgen", s.labsGuard(s.schemaGuard(s.handleSkillGen))},
 		{"GET /events", s.schemaGuard(s.handleSSE)},
 		{"GET /wiki", s.handleWikiIndex},
 		{"GET /wiki/c/{id}", s.handleWikiPage},

@@ -1,0 +1,21 @@
+id: hero-12-neighborhood-depth1
+description: >
+  Depth-1 neighborhood of Hello contains its direct callers and defining
+  file only; the two-hop caller ChainB must be absent (negative anchor).
+fixture_ref: tier1-fixture-go
+operation:
+  name: neighborhood
+  args:
+    symbol: Hello
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: fixture.ChainC
+      match: contains
+  absent:
+    - kind: symbol
+      value: fixture.ChainB
+      match: contains

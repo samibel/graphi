@@ -145,40 +145,38 @@ func resolveExact(ctx context.Context, d Deps, ref string) (Resolution, bool, er
 		// from dereferencing nil.
 		return Resolution{}, true, errors.New("resolve: query service is nil")
 	}
+	// CORE-02 (ADR 0003 D7): the exact resolutions are selective index lookups
+	// against the ports both shipped backends provide — never a full node scan.
 	reader := d.Query.Reader()
+	lookup, lok := reader.(graphstore.GraphLookup)
+	symbols, sok := reader.(graphstore.SymbolLookupPort)
+	if !lok || !sok {
+		return Resolution{}, true, query.ErrSelectiveLookupUnavailable
+	}
 
 	if nodeIDPattern.MatchString(ref) {
-		n, err := reader.GetNode(ctx, model.NodeId(ref))
-		if err == nil {
-			return Resolution{Method: MethodNodeID, Nodes: []model.Node{n}}, true, nil
-		}
-		if !errors.Is(err, graphstore.ErrNotFound) {
+		ns, err := lookup.NodesByID(ctx, []model.NodeId{model.NodeId(ref)})
+		if err != nil {
 			return Resolution{}, true, err
 		}
+		if len(ns) == 1 {
+			return Resolution{Method: MethodNodeID, Nodes: ns}, true, nil
+		}
+		// Absent id: fall through to path/name resolution, as before.
 	}
 
-	all, err := reader.Nodes(ctx, graphstore.Query{})
+	inFile, err := symbols.SourcePath(ctx, model.NormalizePath(ref))
 	if err != nil {
 		return Resolution{}, true, err
-	}
-
-	norm := model.NormalizePath(ref)
-	var inFile []model.Node
-	for _, n := range all {
-		if n.SourcePath() == norm {
-			inFile = append(inFile, n)
-		}
 	}
 	if len(inFile) > 0 {
 		sortNodes(inFile)
 		return Resolution{Method: MethodFile, Nodes: inFile}, true, nil
 	}
 
-	var byName []model.Node
-	for _, n := range all {
-		if n.QualifiedName() == ref {
-			byName = append(byName, n)
-		}
+	byName, err := symbols.QualifiedName(ctx, ref)
+	if err != nil {
+		return Resolution{}, true, err
 	}
 	sortNodes(byName)
 	switch len(byName) {

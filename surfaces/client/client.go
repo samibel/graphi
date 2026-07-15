@@ -78,18 +78,22 @@ type PrCommentRequest struct {
 
 // MemoryRequest is the transport-agnostic input for memory operations.
 type MemoryRequest struct {
-	Op           string   `json:"op"` // store | recall | forget | list | export
-	Scope        string   `json:"scope"`
-	Notebook     string   `json:"notebook"`
-	Tags         []string `json:"tags"`
-	Payload      string   `json:"payload"`
-	ID           string   `json:"id"`             // for forget or overwrite
-	Kind         string   `json:"kind"`           // for store
-	Source       string   `json:"source"`         // for store
-	Confidence   string   `json:"confidence"`     // for store
-	Evidence     string   `json:"evidence"`       // for store
-	Limit        int      `json:"limit"`          // for list
-	ExportToPath string   `json:"export_to_path"` // for export
+	Op         string   `json:"op"` // store | recall | forget | list | export
+	Scope      string   `json:"scope"`
+	Notebook   string   `json:"notebook"`
+	Tags       []string `json:"tags"`
+	Payload    string   `json:"payload"`
+	ID         string   `json:"id"`         // for forget or overwrite
+	Kind       string   `json:"kind"`       // for store
+	Source     string   `json:"source"`     // for store
+	Confidence string   `json:"confidence"` // for store
+	Evidence   string   `json:"evidence"`   // for store
+	Limit      int      `json:"limit"`      // for list
+	// ExportToPath is a REJECTED legacy field (SW-112 / SAFE-01): a non-empty
+	// value fails the request with ErrExportPathRejected. It stays decodable so
+	// an old caller gets a typed error instead of a silently ignored argument.
+	// Export payloads are returned in MemoryResponse.Export instead.
+	ExportToPath string `json:"export_to_path"`
 }
 
 // MemoryResponse is the canonical serialized output for memory operations.
@@ -98,6 +102,10 @@ type MemoryResponse struct {
 	ID            string        `json:"id"`
 	Count         int           `json:"count"`
 	SecretSuspect bool          `json:"secret_suspected"`
+	// Export carries the serialized export payload for op=export (SW-112 /
+	// SAFE-01: the transport returns bytes; it never writes server-side files).
+	// Empty for every other op, so their wire bytes are unchanged.
+	Export string `json:"export,omitempty"`
 }
 
 // MemoryEntry is one returned memory item.
@@ -183,11 +191,11 @@ type SkillGenResponse struct {
 // decoding, which the trivial 1:1 mapping plus the parity test eliminate. The
 // command implementation lives ONCE in Direct (parity by construction).
 type RefactorRequest struct {
-	Kind            string `json:"kind"`             // rename|extract|move|signature_change
+	Kind            string `json:"kind"`             // rename|signature_change (extract|move fail closed: edit.ErrNotImplemented, SAFE-01)
 	TargetSymbol    string `json:"target_symbol"`    // resolved NodeId (EP-001)
 	OldName         string `json:"old_name"`         // current spelling
 	NewName         string `json:"new_name"`         // replacement spelling
-	DestinationFile string `json:"destination_file"` // move destination (optional)
+	DestinationFile string `json:"destination_file"` // reserved for a real move planner; unused
 }
 
 // InlineRequest is the transport-agnostic input for the SW-092 inline refactor.
@@ -481,6 +489,13 @@ var ErrForgeUnavailable = errors.New("client: forge PR-enumeration client unavai
 
 // ErrMemoryUnavailable is returned when a Client has no memory service configured.
 var ErrMemoryUnavailable = errors.New("client: memory service unavailable")
+
+// ErrExportPathRejected is returned when a memory export names a server-side
+// destination path. The transport contract no longer performs filesystem writes
+// (SW-112 / SAFE-01): export returns the serialized entries in
+// MemoryResponse.Export, and only a LOCAL operator action (the CLI, with the
+// returned bytes in hand) may write them to a file it chooses.
+var ErrExportPathRejected = errors.New("client: export_to_path was removed from the transport contract (SAFE-01); export returns bytes in the response — write them locally")
 
 // ErrDistillUnavailable is returned when a Client has no distillation service configured.
 var ErrDistillUnavailable = errors.New("client: distill service unavailable")

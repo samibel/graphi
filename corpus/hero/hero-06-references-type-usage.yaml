@@ -1,0 +1,20 @@
+id: hero-06-references-type-usage
+description: >
+  References on a type surface its non-call usages: Document is used (not
+  called) by Parse and Render, carried as confirmed "references" edges.
+fixture_ref: tier1-fixture-hero-go
+operation:
+  name: references
+  args:
+    symbol: Document
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: core.go
+  anchors:
+    - kind: symbol
+      value: hero.Parse
+      match: contains
+    - kind: symbol
+      value: hero.Render
+      match: contains

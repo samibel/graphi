@@ -1,0 +1,574 @@
+{
+  "header": {
+    "timestamp": "2026-07-15T00:17:07Z",
+    "version": "0.0.0-dev",
+    "commit": "660b5a32e7c67a1cc40446bea44d99666e9d75f2",
+    "os": "linux",
+    "arch": "amd64",
+    "corpus_version": 2
+  },
+  "per_repo_metrics": [],
+  "per_scenario_results": [
+    {
+      "id": "hero-01-index-inventory",
+      "fixture_ref": "tier1-fixture-hero-go",
+      "operation": "index",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 78,
+      "evidence": [
+        "file consumer.go",
+        "file core.go",
+        "file report.go",
+        "indexed nodes=9 edges=13 files=3"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-02-search-hit",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "search",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 35,
+      "evidence": [
+        "function fixture.Hello sample.go:4"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-03-search-empty",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "search",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 0,
+      "evidence": [],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-04-definition-leaf-empty",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "definition",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 0,
+      "evidence": [],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-05-definition-unknown-not-found",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "definition",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 0,
+      "evidence": [],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-06-references-type-usage",
+      "fixture_ref": "tier1-fixture-hero-go",
+      "operation": "references",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 189,
+      "evidence": [
+        "edge references 943002027d126c8b-\u003edfdc8c5104970ba2 [confirmed]",
+        "edge references c192cf239713051c-\u003edfdc8c5104970ba2 [confirmed]",
+        "function hero.Parse core.go:12",
+        "function hero.Render core.go:15"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-07-callers-direct",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "callers",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 202,
+      "evidence": [
+        "edge calls 2d6c7cb8dacc1bfa-\u003e853d67f187f74714 [confirmed]",
+        "edge calls 36748a838a6f84db-\u003e853d67f187f74714 [confirmed]",
+        "function fixture.ChainC sample.go:24",
+        "method fixture.EnglishGreeter.Greet sample.go:15"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-08-callers-ambiguous",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "callers",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 263,
+      "evidence": [
+        "candidate method fixture.EnglishGreeter.Greet sample.go:15",
+        "candidate method fixture.SpanishGreeter.Greet sample.go:19",
+        "candidate type fixture.EnglishGreeter sample.go:13",
+        "candidate type fixture.Greeter sample.go:9",
+        "candidate type fixture.SpanishGreeter sample.go:17"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-09-callers-cross-file",
+      "fixture_ref": "tier1-fixture-hero-go",
+      "operation": "callers",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 280,
+      "evidence": [
+        "edge calls 6a71588cb50c26be-\u003ec192cf239713051c [confirmed]",
+        "edge calls a6fbd2f882e520ad-\u003ec192cf239713051c [confirmed]",
+        "edge calls d017f2dc1e292a52-\u003ec192cf239713051c [confirmed]",
+        "function hero.Preview consumer.go:10",
+        "function hero.Publish consumer.go:4",
+        "function hero.Report report.go:4"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-10-callees-single-hop",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "callees",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 95,
+      "evidence": [
+        "edge calls 78cc3ba8a87539d3-\u003e51c41c96ab92a5b0 [confirmed]",
+        "function fixture.ChainB sample.go:23"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-11-agent-brief-topic",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "agent_brief",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 2675,
+      "evidence": [
+        "evidence PARITY.md:1 [source]",
+        "evidence sample.go:23 [source]",
+        "evidence sample.go:24 [source]",
+        "evidence sample.go:32 [source]",
+        "evidence sample.go:4 [source]",
+        "evidence sample.go:9 [source]",
+        "item brief-0-1: Project identity: name — sample.go (heuristic)",
+        "item brief-1-2: Start Here: sample.go — defines topic symbol fixture.Hello (derived)",
+        "item brief-1-3: Start Here: PARITY.md — 2 symbols, 2 edge endpoints (derived)",
+        "item brief-2-4: Relevant Symbols: fixture.Hello — topic symbol (function, 3 inbound edges) (derived)",
+        "item brief-2-5: Relevant Symbols: fixture.Greeter — type with 3 inbound edges (derived)",
+        "item brief-2-6: Relevant Symbols: fixture.Sink — function with 2 inbound edges (derived)",
+        "item brief-2-7: Relevant Symbols: fixture.ChainC — function with 2 inbound edges (derived)",
+        "item brief-2-8: Relevant Symbols: fixture.ChainB — function with 2 inbound edges (derived)",
+        "item brief-4-9: Risks and Unknowns: no memory — no memory store wired; stored project facts unavailable (heuristic)",
+        "item brief-5-10: Suggested Next Calls: related_files — {\"target\": \"Hello\"} (heuristic)",
+        "item brief-5-11: Suggested Next Calls: explain_symbol — {\"symbol\": \"fixture.Greeter\"} (heuristic)",
+        "item brief-5-12: Suggested Next Calls: change_risk — {\"target\": \"fixture.Greeter\"} before editing (heuristic)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-12-neighborhood-depth1",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "neighborhood",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 324,
+      "evidence": [
+        "edge calls 2d6c7cb8dacc1bfa-\u003e853d67f187f74714 [confirmed]",
+        "edge calls 36748a838a6f84db-\u003e853d67f187f74714 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e853d67f187f74714 [confirmed]",
+        "file sample.go sample.go:1",
+        "function fixture.ChainC sample.go:24",
+        "function fixture.Hello sample.go:4",
+        "method fixture.EnglishGreeter.Greet sample.go:15"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-13-neighborhood-depth2",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "neighborhood",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 1636,
+      "evidence": [
+        "edge calls 51c41c96ab92a5b0-\u003e36748a838a6f84db [confirmed]",
+        "edge calls 78cc3ba8a87539d3-\u003e51c41c96ab92a5b0 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e088c4d62c47dfd4f [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e23935db28b1aca91 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e2b06d5aeeb59c833 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e2d6c7cb8dacc1bfa [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e36748a838a6f84db [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e37c2c661c5ef0a14 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e51c41c96ab92a5b0 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e5ce9fe7ff655c700 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e6b2648f00e0510b0 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e6f43cf0f007fcdf1 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e78cc3ba8a87539d3 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003e853d67f187f74714 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003ed0a7538dfac84f39 [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003ed3f291370ce2c8dc [confirmed]",
+        "edge defines 388cdcec97f4aaab-\u003eff7461b35909e2c8 [confirmed]",
+        "file sample.go sample.go:1",
+        "function fixture.ChainA sample.go:22",
+        "function fixture.ChainB sample.go:23",
+        "function fixture.ChainC sample.go:24",
+        "function fixture.ClonePairA sample.go:39",
+        "function fixture.ClonePairB sample.go:40",
+        "function fixture.Hello sample.go:4",
+        "function fixture.Sink sample.go:32",
+        "function fixture.Source sample.go:27",
+        "function fixture.TaintFlow sample.go:34",
+        "function fixture.userInput sample.go:29",
+        "method fixture.EnglishGreeter.Greet sample.go:15",
+        "method fixture.SpanishGreeter.Greet sample.go:19",
+        "type fixture.EnglishGreeter sample.go:13",
+        "type fixture.Greeter sample.go:9",
+        "type fixture.SpanishGreeter sample.go:17"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-14-impact-blast-radius",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "impact",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 280,
+      "evidence": [
+        "function fixture.ChainA sample.go:22 depth=3 via=calls [confirmed]",
+        "function fixture.ChainB sample.go:23 depth=2 via=calls [confirmed]",
+        "function fixture.ChainC sample.go:24 depth=1 via=calls [confirmed]",
+        "method fixture.EnglishGreeter.Greet sample.go:15 depth=1 via=calls [confirmed]"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-15-impact-forward-deps",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "impact",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 199,
+      "evidence": [
+        "function fixture.ChainB sample.go:23 depth=1 via=calls [confirmed]",
+        "function fixture.ChainC sample.go:24 depth=2 via=calls [confirmed]",
+        "function fixture.Hello sample.go:4 depth=3 via=calls [confirmed]"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-16-explain-symbol-cited",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "explain_symbol",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 940,
+      "evidence": [
+        "evidence sample.go:15 [caller]",
+        "evidence sample.go:24 [caller]",
+        "evidence sample.go:4 [definition]",
+        "item 2d6c7cb8dacc1bfa: caller: method fixture.EnglishGreeter.Greet (sample.go:15) [confirmed]",
+        "item 36748a838a6f84db: caller: function fixture.ChainC (sample.go:24) [confirmed]",
+        "item 853d67f187f74714: definition: function fixture.Hello (sample.go:4)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-17-explain-symbol-partial",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "explain_symbol",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 652,
+      "evidence": [
+        "evidence sample.go:15 [caller]",
+        "evidence sample.go:24 [caller]",
+        "evidence sample.go:4 [definition]",
+        "item 853d67f187f74714: definition: function fixture.Hello (sample.go:4)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-18-explain-symbol-ambiguous",
+      "fixture_ref": "tier1-fixture-go",
+      "operation": "explain_symbol",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 1295,
+      "evidence": [
+        "evidence sample.go:13 [candidate]",
+        "evidence sample.go:15 [candidate]",
+        "evidence sample.go:17 [candidate]",
+        "evidence sample.go:19 [candidate]",
+        "evidence sample.go:9 [candidate]",
+        "item 2b06d5aeeb59c833: candidate: method fixture.SpanishGreeter.Greet (sample.go:19)",
+        "item 2d6c7cb8dacc1bfa: candidate: method fixture.EnglishGreeter.Greet (sample.go:15)",
+        "item 6b2648f00e0510b0: candidate: type fixture.SpanishGreeter (sample.go:17)",
+        "item d0a7538dfac84f39: candidate: type fixture.Greeter (sample.go:9)",
+        "item d3f291370ce2c8dc: candidate: type fixture.EnglishGreeter (sample.go:13)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-19-related-files-dependents",
+      "fixture_ref": "tier1-fixture-hero-go",
+      "operation": "related_files",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 758,
+      "evidence": [
+        "evidence consumer.go:10 [edge]",
+        "evidence consumer.go:5 [edge]",
+        "evidence report.go:5 [edge]",
+        "item consumer.go: 2 edges into anchor (calls×2; symbols: hero.Preview, hero.Publish)",
+        "item report.go: 1 edges into anchor (calls×1; symbols: hero.Report)"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    },
+    {
+      "id": "hero-20-change-risk-inbound",
+      "fixture_ref": "tier1-fixture-hero-go",
+      "operation": "change_risk",
+      "area": "agent_mcp",
+      "outcome": "pass",
+      "result_size": 1347,
+      "evidence": [
+        "evidence consumer.go:10 [inbound]",
+        "evidence consumer.go:5 [inbound]",
+        "evidence core.go:12 [inbound]",
+        "evidence core.go:12 [target]",
+        "evidence report.go:5 [inbound]",
+        "item 6a71588cb50c26be: affected calls: function hero.Report (report.go:4) [confirmed]",
+        "item a6fbd2f882e520ad: affected calls: function hero.Preview (consumer.go:10) [confirmed]",
+        "item c192cf239713051c: target: function hero.Parse (core.go:12)",
+        "item d017f2dc1e292a52: affected calls: function hero.Publish (consumer.go:4) [confirmed]",
+        "item ed8a0b5954330374: affected defines: file core.go (core.go:1) [confirmed]"
+      ],
+      "latency_ms": 0,
+      "anchor_present": true,
+      "tier1": true
+    }
+  ],
+  "scorecard": {
+    "overall": 96.2,
+    "pass": false,
+    "floored_areas": [
+      "ux"
+    ],
+    "breakdown": {
+      "agent_mcp": {
+        "score": 100,
+        "weight": 25,
+        "contribution": 25,
+        "below_floor": false
+      },
+      "evaluation": {
+        "score": 100,
+        "weight": 10,
+        "contribution": 10,
+        "below_floor": false
+      },
+      "performance": {
+        "score": 100,
+        "weight": 20,
+        "contribution": 20,
+        "below_floor": false
+      },
+      "setup_trust": {
+        "score": 100,
+        "weight": 15,
+        "contribution": 15,
+        "below_floor": false
+      },
+      "signal": {
+        "score": 100,
+        "weight": 20,
+        "contribution": 20,
+        "below_floor": false
+      },
+      "ux": {
+        "score": 62,
+        "weight": 10,
+        "contribution": 6.2,
+        "below_floor": true
+      }
+    }
+  },
+  "area_provenance": {
+    "agent_mcp": "measured",
+    "evaluation": "measured",
+    "performance": "measured",
+    "setup_trust": "measured",
+    "signal": "measured",
+    "ux": "carried"
+  },
+  "baseline": 65,
+  "target": 90,
+  "regressions_vs_baseline": null,
+  "perf_warnings": [
+    "area ux carried from baseline (62), not measured by this run",
+    "suite corpus/hero not diffed against docs/eval-baseline.json (baseline covers the default suite only)"
+  ],
+  "signal_metrics": {
+    "default_count": 1,
+    "all_count": 7,
+    "analyzed": 8,
+    "suppressed_total": 5,
+    "suppressed_by_category": [
+      "framework_entrypoint=2",
+      "generated=1",
+      "public_api_no_evidence=1",
+      "test_code=1"
+    ],
+    "false_positives": 0,
+    "false_positive_rate": 0,
+    "unsafe_actions": 0,
+    "score": 100
+  },
+  "perf_metrics": {
+    "checks": [
+      {
+        "name": "index_time",
+        "measured": 19,
+        "budget": 10000,
+        "unit": "ms",
+        "pass": true
+      },
+      {
+        "name": "db_size",
+        "measured": 94208,
+        "budget": 5242880,
+        "unit": "bytes",
+        "pass": true
+      },
+      {
+        "name": "query_latency_median",
+        "measured": 0.202,
+        "budget": 100,
+        "unit": "ms",
+        "pass": true
+      },
+      {
+        "name": "mcp_tool_latency_median",
+        "measured": 0.638,
+        "budget": 500,
+        "unit": "ms",
+        "pass": true
+      },
+      {
+        "name": "incremental_update",
+        "measured": 6,
+        "budget": 5000,
+        "unit": "ms",
+        "pass": true
+      }
+    ],
+    "score": 100
+  },
+  "setup_trust_metrics": {
+    "assertions": [
+      {
+        "name": "mcp_valid_registration_passes",
+        "pass": true,
+        "detail": "status=pass action=\"re-run `graphi setup` to update registrations\""
+      },
+      {
+        "name": "mcp_stale_command_path_warns",
+        "pass": true,
+        "detail": "status=warn action=\"re-run `graphi setup` to update registrations\""
+      },
+      {
+        "name": "mcp_missing_registration_fails",
+        "pass": true,
+        "detail": "status=fail action=\"re-run `graphi setup` to update registrations\""
+      },
+      {
+        "name": "db_readable_passes",
+        "pass": true,
+        "detail": "status=pass msg=\"DB /tmp/graphi-eval-doctor-1367395052/readable.db readable, 1 nodes, profile: unknown, FTS present, schema: user_version=3\""
+      },
+      {
+        "name": "db_empty_warns_with_action",
+        "pass": true,
+        "detail": "status=warn action=\"run `graphi index` to populate the database\""
+      },
+      {
+        "name": "db_missing_fails_and_stays_absent",
+        "pass": true,
+        "detail": "status=fail created=false"
+      },
+      {
+        "name": "path-graphi_contract",
+        "pass": true,
+        "detail": "status=fail msg=\"graphi is not on PATH\" action=\"add graphi to your PATH or run the installer\""
+      },
+      {
+        "name": "privacy_contract",
+        "pass": true,
+        "detail": "status=pass msg=\"egress guard is present and machine-verifiable (no dial performed)\" action=\"\""
+      },
+      {
+        "name": "local-first_contract",
+        "pass": true,
+        "detail": "status=pass msg=\"no account/credential file required; local checks need no background service\" action=\"\""
+      },
+      {
+        "name": "non_pass_results_carry_actions",
+        "pass": true
+      },
+      {
+        "name": "doctor_json_stable_and_contract_shaped",
+        "pass": true
+      },
+      {
+        "name": "doctor_writes_nothing",
+        "pass": true
+      }
+    ],
+    "score": 100
+  }
+}

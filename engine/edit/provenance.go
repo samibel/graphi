@@ -12,17 +12,18 @@ import (
 
 // opTypeForRefactorKind maps the engine/edit closed RefactorKind enum onto the
 // ingest closed EditOpType enum (the two mirror each other deliberately). An
-// unknown kind is rejected so the audit op_type can never be poisoned.
+// unknown kind is rejected so the audit op_type can never be poisoned. The
+// unimplemented kinds (extract, move) are rejected upstream by
+// validateRefactorOp (SW-112 / SAFE-01) and can never reach a commit; they are
+// rejected here too so no future call path can mint provenance for them.
 func opTypeForRefactorKind(k RefactorKind) (ingest.EditOpType, error) {
 	switch k {
 	case RefactorRename:
 		return ingest.EditOpRename, nil
-	case RefactorExtract:
-		return ingest.EditOpExtract, nil
-	case RefactorMove:
-		return ingest.EditOpMove, nil
 	case RefactorSignatureChange:
 		return ingest.EditOpSignatureChange, nil
+	case RefactorExtract, RefactorMove:
+		return "", notImplementedRefactor(k)
 	default:
 		return "", fmt.Errorf("%w: unknown refactor kind %q", ErrInvalidOp, k)
 	}

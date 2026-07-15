@@ -33,7 +33,21 @@ const (
 	OpDefinition = "definition"
 	OpReferences = "references"
 	OpCallers    = "callers"
+	OpCallees    = "callees"
 	OpSearch     = "search"
+
+	// OpNeighborhood is the bounded k-hop structural query (depth via the
+	// "depth" arg, default 1).
+	OpNeighborhood = "neighborhood"
+
+	// OpImpact is the blast-radius analysis (engine/analysis "impact"), with
+	// "direction" (forward/reverse, default reverse) and "max_nodes" args.
+	OpImpact = "impact"
+
+	// OpIndex asserts the fixture ingest produced a non-trivial, queryable
+	// graph: evidence carries node/edge/file counts plus one line per indexed
+	// source file, so scenarios can anchor on expected files.
+	OpIndex = "index"
 
 	// EP-020 agent-tool operations, executed against the fixture store via the
 	// engine/agenttools packages.
@@ -50,7 +64,8 @@ const (
 // KnownOps returns every operation name the runner can execute.
 func KnownOps() []string {
 	return []string{
-		OpDefinition, OpReferences, OpCallers, OpSearch,
+		OpDefinition, OpReferences, OpCallers, OpCallees, OpSearch,
+		OpNeighborhood, OpImpact, OpIndex,
 		OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpDiagnose,
 	}

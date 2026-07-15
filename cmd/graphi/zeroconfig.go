@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"runtime"
 
+	rtime "github.com/samibel/graphi/cmd/internal/runtime"
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/analysis"
@@ -93,7 +94,7 @@ func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent)) (srv *http
 	ing.WithProgress(progress)
 	cleanup = func() { _ = ing.Close(); _ = store.Close() }
 
-	if err = warmOrFullIngest(context.Background(), ing, root, progress); err != nil {
+	if err = rtime.WarmOrFullIngest(context.Background(), ing, root, progress); err != nil {
 		cleanup()
 		cleanup = func() {}
 		return nil, nil, "", nil, nil, cleanup, false, err
@@ -111,48 +112,6 @@ func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent)) (srv *http
 	srv = httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names())
 	url = "http://" + ln.Addr().String() + "/"
 	return srv, ln, url, c, store, cleanup, false, nil
-}
-
-// warmOrFullIngest brings the per-repo state up to date the cheap way when it
-// can: a store already filled under the CURRENT ingest semantics is only
-// drift-checked (hash walk), and just the changed/deleted files — plus their
-// cascade — are re-ingested through the incremental path, whose result is
-// byte-identical to a full pass by the SW-101 invariant. An empty drift means
-// no ingest at all: bare `graphi` on an unchanged repo starts in seconds
-// instead of re-parsing everything. Any warm-path failure (probe, drift walk,
-// incremental error such as a file that no longer parses) falls back to the
-// tolerant full pass — the warm start is an optimization, never a new failure
-// mode. Cold stores and stores stamped by an older binary take the full pass,
-// which re-certifies them.
-func warmOrFullIngest(ctx context.Context, ing *ingest.Ingester, root string, progress func(ingest.ProgressEvent)) error {
-	emit := func(ev ingest.ProgressEvent) {
-		if progress != nil {
-			progress(ev)
-		}
-	}
-	if _, ok, err := ing.CanWarmStart(ctx, root); err == nil && ok {
-		emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift})
-		var totalChecked int
-		changed, deleted, derr := ing.DriftSetWithProgress(ctx, root, func(checked int) {
-			totalChecked = checked
-			if checked%64 == 0 {
-				emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: checked})
-			}
-		})
-		if derr == nil {
-			emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: totalChecked})
-			delta := append(changed, deleted...)
-			if len(delta) == 0 {
-				return nil // up to date — the summary comes from the renderer
-			}
-			uerr := ing.IngestChangedWithProgress(ctx, root, delta, progress)
-			if uerr == nil {
-				return nil
-			}
-			fmt.Fprintf(os.Stderr, "graphi: warm start failed (%v) — re-indexing from scratch\n", uerr)
-		}
-	}
-	return ing.IngestAll(ctx, root)
 }
 
 // runZeroConfig is the bare-`graphi` entrypoint (SW-067, EP-010 Task D). It

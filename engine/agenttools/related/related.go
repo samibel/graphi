@@ -16,6 +16,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/shape"
+	"github.com/samibel/graphi/engine/query"
 )
 
 const tool = "related_files"
@@ -77,10 +78,12 @@ func Files(ctx context.Context, deps resolve.Deps, anchor, direction string, max
 		seedFiles[n.SourcePath()] = struct{}{}
 	}
 
+	// CORE-02 (ADR 0003 D7): only the seeds' incident edges are read (one
+	// Incoming+Outgoing pair per seed), never the whole edge set.
 	reader := deps.Query.Reader()
-	edges, err := reader.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return nil, err
+	glk, ok := reader.(graphstore.GraphLookup)
+	if !ok {
+		return nil, query.ErrSelectiveLookupUnavailable
 	}
 
 	scores := map[string]*fileScore{}
@@ -89,13 +92,13 @@ func Files(ctx context.Context, deps resolve.Deps, anchor, direction string, max
 		if n, ok := nodeCache[id]; ok {
 			return n
 		}
-		n, err := reader.GetNode(ctx, id)
-		if err != nil {
+		ns, err := glk.NodesByID(ctx, []model.NodeId{id})
+		if err != nil || len(ns) == 0 {
 			nodeCache[id] = nil
 			return nil
 		}
-		nodeCache[id] = &n
-		return &n
+		nodeCache[id] = &ns[0]
+		return &ns[0]
 	}
 	record := func(other model.NodeId, e model.Edge, inbound bool) {
 		n := lookup(other)
@@ -131,15 +134,44 @@ func Files(ctx context.Context, deps resolve.Deps, anchor, direction string, max
 		fs.symbolSet[n.QualifiedName()] = struct{}{}
 	}
 
-	for _, e := range edges {
-		_, fromSeed := seedIDs[e.From()]
-		_, toSeed := seedIDs[e.To()]
-		if fromSeed && !toSeed && direction != DirectionDependents {
-			record(e.To(), e, false) // anchor → other: dependency
+	// Gather the seeds' incident edges selectively, then replay record() in
+	// canonical EdgeId order — the exact accumulation order the old full-scan
+	// loop had — so the float score sums stay byte-identical.
+	type match struct {
+		other   model.NodeId
+		edge    model.Edge
+		inbound bool
+	}
+	var matches []match
+	for _, n := range res.Nodes {
+		if direction != DirectionDependents {
+			out, err := glk.Outgoing(ctx, n.ID())
+			if err != nil {
+				return nil, err
+			}
+			for _, e := range out {
+				if _, toSeed := seedIDs[e.To()]; toSeed {
+					continue // seed-to-seed: neither dependency nor dependent
+				}
+				matches = append(matches, match{other: e.To(), edge: e, inbound: false}) // anchor → other: dependency
+			}
 		}
-		if toSeed && !fromSeed && direction != DirectionDependencies {
-			record(e.From(), e, true) // other → anchor: dependent
+		if direction != DirectionDependencies {
+			in, err := glk.Incoming(ctx, n.ID())
+			if err != nil {
+				return nil, err
+			}
+			for _, e := range in {
+				if _, fromSeed := seedIDs[e.From()]; fromSeed {
+					continue
+				}
+				matches = append(matches, match{other: e.From(), edge: e, inbound: true}) // other → anchor: dependent
+			}
 		}
+	}
+	sort.Slice(matches, func(i, j int) bool { return matches[i].edge.ID() < matches[j].edge.ID() })
+	for _, m := range matches {
+		record(m.other, m.edge, m.inbound)
 	}
 
 	ranked := make([]*fileScore, 0, len(scores))

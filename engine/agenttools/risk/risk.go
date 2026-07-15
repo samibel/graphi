@@ -16,6 +16,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/shape"
+	"github.com/samibel/graphi/engine/query"
 )
 
 const tool = "change_risk"
@@ -79,10 +80,14 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 		seedFiles[n.SourcePath()] = struct{}{}
 	}
 
+	// CORE-02 (ADR 0003 D7): only the seeds' incident edges are read (one
+	// Incoming+Outgoing pair per seed), never the whole edge set. All the
+	// aggregates below are order-independent (integer counts, sets, a tier
+	// tally); inboundEdges is explicitly re-sorted before shaping.
 	reader := deps.Query.Reader()
-	edges, err := reader.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return nil, err
+	glk, ok := reader.(graphstore.GraphLookup)
+	if !ok {
+		return nil, query.ErrSelectiveLookupUnavailable
 	}
 
 	nodeCache := map[model.NodeId]*model.Node{}
@@ -90,13 +95,13 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 		if n, ok := nodeCache[id]; ok {
 			return n
 		}
-		n, err := reader.GetNode(ctx, id)
-		if err != nil {
+		ns, err := glk.NodesByID(ctx, []model.NodeId{id})
+		if err != nil || len(ns) == 0 {
 			nodeCache[id] = nil
 			return nil
 		}
-		nodeCache[id] = &n
-		return &n
+		nodeCache[id] = &ns[0]
+		return &ns[0]
 	}
 
 	var (
@@ -106,11 +111,15 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 		tally          = shape.TierTally{}
 		inboundEdges   []model.Edge
 	)
-	for _, e := range edges {
-		_, fromSeed := seedIDs[e.From()]
-		_, toSeed := seedIDs[e.To()]
-		switch {
-		case toSeed && !fromSeed:
+	for _, seed := range res.Nodes {
+		in, err := glk.Incoming(ctx, seed.ID())
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range in {
+			if _, fromSeed := seedIDs[e.From()]; fromSeed {
+				continue // seed-to-seed edges count neither as fan-in nor fan-out
+			}
 			fanIn++
 			if e.Kind() == "calls" {
 				callsIn++
@@ -122,7 +131,15 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 					dependentFiles[n.SourcePath()] = struct{}{}
 				}
 			}
-		case fromSeed && !toSeed:
+		}
+		out, err := glk.Outgoing(ctx, seed.ID())
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range out {
+			if _, toSeed := seedIDs[e.To()]; toSeed {
+				continue
+			}
 			fanOut++
 		}
 	}
@@ -197,26 +214,32 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 }
 
 // resolveDiff extracts changed file paths from a unified diff and resolves
-// every graph node in those files as the change target.
+// every graph node in those files as the change target. CORE-02 (ADR 0003 D7):
+// one selective SourcePath lookup per changed file, never a full node scan;
+// the merged result is re-sorted to the canonical NodeId order the old
+// full-scan filter produced.
 func resolveDiff(ctx context.Context, deps resolve.Deps, diff string) (resolve.Resolution, error) {
 	paths := DiffPaths(diff)
 	if len(paths) == 0 {
 		return resolve.Resolution{}, nil
 	}
+	symbols, ok := deps.Query.Reader().(graphstore.SymbolLookupPort)
+	if !ok {
+		return resolve.Resolution{}, query.ErrSelectiveLookupUnavailable
+	}
 	pathSet := make(map[string]struct{}, len(paths))
 	for _, p := range paths {
 		pathSet[model.NormalizePath(p)] = struct{}{}
 	}
-	all, err := deps.Query.Reader().Nodes(ctx, graphstore.Query{})
-	if err != nil {
-		return resolve.Resolution{}, err
-	}
 	var nodes []model.Node
-	for _, n := range all {
-		if _, ok := pathSet[n.SourcePath()]; ok {
-			nodes = append(nodes, n)
+	for p := range pathSet {
+		ns, err := symbols.SourcePath(ctx, p)
+		if err != nil {
+			return resolve.Resolution{}, err
 		}
+		nodes = append(nodes, ns...)
 	}
+	sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID() < nodes[j].ID() })
 	return resolve.Resolution{Method: resolve.MethodDiff, Nodes: nodes}, nil
 }
 

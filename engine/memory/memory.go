@@ -27,6 +27,16 @@ var ErrClosed = errors.New("memory: store closed")
 // ErrNotFound is returned when a requested entry does not exist.
 var ErrNotFound = errors.New("memory: entry not found")
 
+// EnvAllowSecrets is the explicit LOCAL override for the PRIV-01 (SW-119)
+// secret default: set "1" to persist payloads the heuristic flags as
+// secret-like. Unset (the default), such payloads are REJECTED with
+// ErrSecretRejected instead of being stored with a mere warning flag.
+const EnvAllowSecrets = "GRAPHI_MEMORY_ALLOW_SECRETS"
+
+// ErrSecretRejected is returned when a store operation refuses a secret-like
+// payload under the default policy. Nothing was persisted.
+var ErrSecretRejected = errors.New("memory: payload looks like a secret and was NOT persisted (default policy); set " + EnvAllowSecrets + "=1 to store it anyway")
+
 // ID is a stable identifier for a memory entry. It is assigned by the store on
 // StoreMemory and is guaranteed to be unique within that store.
 type ID string
@@ -99,14 +109,30 @@ func NewMemStore(ledger Ledger) (*Store, error) {
 }
 
 // Open opens or creates a memory store at path. The journal is a local JSONL
-// file. If ledger is nil, a no-op ledger is used.
+// file holding whatever an agent chose to remember — owner-only by contract
+// (PRIV-01 / SW-119): missing parent directories are created 0700, the journal
+// is created 0600, and a pre-existing too-wide journal is migrated to 0600 on
+// open. Existing parent directories are never chmodded (the caller may point
+// into a shared directory it does not own the policy for). If ledger is nil, a
+// no-op ledger is used.
 func Open(path string, ledger Ledger) (*Store, error) {
 	if ledger == nil {
 		ledger = noopLedger{}
 	}
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o644)
+	if dir := filepath.Dir(path); dir != "." && dir != "" {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			return nil, fmt.Errorf("memory: create parent dir %s: %w", dir, err)
+		}
+	}
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("memory: open %s: %w", path, err)
+	}
+	if fi, serr := f.Stat(); serr == nil && fi.Mode().Perm() != 0o600 {
+		if cerr := f.Chmod(0o600); cerr != nil {
+			_ = f.Close()
+			return nil, fmt.Errorf("memory: tighten journal mode: %w", cerr)
+		}
 	}
 	s := &Store{path: path, f: f, byID: make(map[ID]*Entry), ledger: ledger}
 	if err := s.reload(); err != nil {
@@ -249,6 +275,13 @@ func (s *Store) StoreMemoryWithProvenance(ctx context.Context, p ProvenanceInput
 	}
 	now := time.Now().UTC().UnixNano()
 	secretSuspect := detectSecret(p.Payload)
+	// PRIV-01 (SW-119): reject, don't persist-and-flag. A flagged entry that is
+	// stored anyway is already a leak into a durable journal; the default fails
+	// closed BEFORE any write, and the override is an explicit local decision.
+	// Overrides keep the SecretSuspect flag so the entry stays visibly marked.
+	if secretSuspect && os.Getenv(EnvAllowSecrets) != "1" {
+		return "", ErrSecretRejected
+	}
 	var id ID
 	var createdAt int64
 	if p.OverwriteID != "" {

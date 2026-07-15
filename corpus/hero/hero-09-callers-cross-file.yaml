@@ -1,0 +1,20 @@
+id: hero-09-callers-cross-file
+description: >
+  Cross-file call resolution: Parse (core.go) is called from consumer.go
+  and report.go; the linker must resolve callers across file boundaries.
+fixture_ref: tier1-fixture-hero-go
+operation:
+  name: callers
+  args:
+    symbol: Parse
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: consumer.go
+  anchors:
+    - kind: symbol
+      value: hero.Publish
+      match: contains
+    - kind: symbol
+      value: hero.Report
+      match: contains

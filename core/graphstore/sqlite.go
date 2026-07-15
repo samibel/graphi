@@ -95,7 +95,34 @@ func OpenSQLite(dbPath string) (*SQLiteStore, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	// PRIV-01 (SW-119): the graph derives from potentially private source, so
+	// the database files are owner-only. The SQLite driver creates them with
+	// the umask default (typically 0644); tighten the main file plus the WAL
+	// sidecars, migrating a pre-existing too-wide store on open.
+	if err := TightenDBFileModes(dbPath); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return s, nil
+}
+
+// TightenDBFileModes chmods a SQLite database file and its -wal/-shm sidecars
+// to 0600 when they exist with wider permissions (PRIV-01). The main file's
+// failure is an error; absent sidecars are fine (SQLite creates them lazily,
+// inheriting the main file's mode).
+func TightenDBFileModes(dbPath string) error {
+	for i, p := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
+		fi, err := os.Stat(p)
+		if err != nil || fi.Mode().Perm() == 0o600 {
+			continue
+		}
+		if err := os.Chmod(p, 0o600); err != nil {
+			if i == 0 {
+				return fmt.Errorf("graphstore: tighten db file mode: %w", err)
+			}
+		}
+	}
+	return nil
 }
 
 // SQLiteFactory is a Factory for the durable backend. It places the database file
@@ -187,9 +214,17 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(
 -- Endpoint indexes: DeleteNode's incident-edge cascade and incidentEdgeIDs
 -- filter on from_id/to_id; without these every node delete full-scans the
 -- edge table (and the FK enforcement lacks its child index). Content-neutral:
--- listings stay ordered by id, so graph bytes are unaffected.
+-- listings stay ordered by id, so graph bytes are unaffected. Since CORE-01
+-- (ADR 0003 D3) they also serve GraphLookup.Incoming/Outgoing.
 CREATE INDEX IF NOT EXISTS edges_from_id ON edges(from_id);
 CREATE INDEX IF NOT EXISTS edges_to_id   ON edges(to_id);
+-- Symbol-lookup indexes (CORE-01, ADR 0003 D3): SymbolLookupPort's
+-- QualifiedName/SourcePath equality lookups were full nodes scans without
+-- them (pinned by the SP-11 spike). Content-neutral like the endpoint
+-- indexes — no row content changes, listings stay ordered by id, so graph
+-- bytes/snapshots are unaffected and no user_version bump is needed.
+CREATE INDEX IF NOT EXISTS nodes_qualified_name ON nodes(qualified_name);
+CREATE INDEX IF NOT EXISTS nodes_source_path    ON nodes(source_path);
 CREATE TABLE IF NOT EXISTS kv_meta (
 	key   TEXT PRIMARY KEY,
 	value TEXT NOT NULL

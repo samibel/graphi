@@ -1,0 +1,12 @@
+id: hero-03-search-empty
+description: >
+  Failure class EMPTY: searching for a nonexistent term reports an honest
+  empty outcome instead of near-miss noise.
+fixture_ref: tier1-fixture-go
+operation:
+  name: search
+  args:
+    query: zzz_no_such_symbol_zzz
+area: agent_mcp
+expect:
+  outcome: empty

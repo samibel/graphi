@@ -54,19 +54,35 @@ const kindPackage = "package"
 // taint. Mirrors core/parse.KindExternal without importing parse.
 const kindExternal = "external"
 
+// ErrSelectiveLookupUnavailable is returned by the structural hotpaths when the
+// backing Reader does not provide the CORE-02 selective read port
+// (graphstore.GraphLookup). The stable operations refuse to fall back to
+// whole-graph scans — a silent fallback would resurrect exactly the full-scan
+// plan the SW-110 baselines pinned and ADR 0003 retired. Both shipped backends
+// (MemStore, SQLiteStore) implement the port.
+var ErrSelectiveLookupUnavailable = errors.New("query: reader lacks selective lookup (graphstore.GraphLookup); stable hotpaths do not fall back to full scans")
+
 // Service is graphi's single shared, read-only structural query service. It is
 // the one place callers/callees/references/definition/neighborhood logic lives;
 // surfaces hold no query logic of their own. It is safe for concurrent use when
 // the underlying Reader is (the shipped backends are).
 type Service struct {
 	reader Reader
+	// lookup is the CORE-02 selective read port (ADR 0003): every structural
+	// hotpath reads through it, so cost scales with the symbol's degree instead
+	// of an edge class or the whole graph. nil when the Reader does not provide
+	// it — the hotpaths then fail with ErrSelectiveLookupUnavailable.
+	lookup graphstore.GraphLookup
 }
 
 // New constructs a Service over the given read-only Reader. graphstore.Graphstore
 // satisfies Reader, so a Service can be built directly from any backend while
-// remaining mutation-free by construction.
+// remaining mutation-free by construction. Backends additionally providing
+// graphstore.GraphLookup (both shipped backends do) serve the structural
+// operations selectively (CORE-02).
 func New(reader Reader) *Service {
-	return &Service{reader: reader}
+	lookup, _ := reader.(graphstore.GraphLookup)
+	return &Service{reader: reader, lookup: lookup}
 }
 
 // Reader returns the read-only Reader the Service traverses. It lets sibling
@@ -78,16 +94,21 @@ func (s *Service) Reader() Reader { return s.reader }
 // resolve looks up the symbol node. It returns (node, true, nil) when the symbol
 // exists, (_, false, nil) when it is genuinely absent (so callers can return an
 // explicit NotFound result — NOT an error), and a non-nil error only for real
-// infrastructure failures (closed store, cancelled context, …).
+// infrastructure failures (closed store, cancelled context, …). It reads through
+// the selective port (a bounded point read) rather than Reader.GetNode, whose
+// SQLite implementation materializes the whole-graph hot cache.
 func (s *Service) resolve(ctx context.Context, id model.NodeId) (model.Node, bool, error) {
-	n, err := s.reader.GetNode(ctx, id)
+	if s.lookup == nil {
+		return model.Node{}, false, ErrSelectiveLookupUnavailable
+	}
+	ns, err := s.lookup.NodesByID(ctx, []model.NodeId{id})
 	if err != nil {
-		if errors.Is(err, graphstore.ErrNotFound) {
-			return model.Node{}, false, nil
-		}
 		return model.Node{}, false, err
 	}
-	return n, true, nil
+	if len(ns) == 0 {
+		return model.Node{}, false, nil
+	}
+	return ns[0], true, nil
 }
 
 // notFound builds the explicit, typed not-found result for an unresolved symbol.
@@ -142,7 +163,14 @@ func (s *Service) directedLookup(ctx context.Context, operation string, id model
 		return notFound(operation, id), nil
 	}
 
-	edges, err := s.reader.Edges(ctx, graphstore.Query{EdgeKind: edgeKind})
+	// CORE-02 (ADR 0003 D7): endpoint-selective read — only the edges incident
+	// to the symbol on the requested side are fetched, never the whole kind.
+	var edges []model.Edge
+	if inbound {
+		edges, err = s.lookup.Incoming(ctx, id, edgeKind)
+	} else {
+		edges, err = s.lookup.Outgoing(ctx, id, edgeKind)
+	}
 	if err != nil {
 		return Result{}, err
 	}
@@ -156,16 +184,8 @@ func (s *Service) directedLookup(ctx context.Context, operation string, id model
 		nodeIDs = map[model.NodeId]struct{}{}
 	)
 	for _, e := range edges {
-		var endpoint model.NodeId
-		if inbound {
-			if e.To() != id {
-				continue
-			}
-			endpoint = e.From()
-		} else {
-			if e.From() != id {
-				continue
-			}
+		endpoint := e.From()
+		if !inbound {
 			endpoint = e.To()
 		}
 		pairs = append(pairs, edgeEndpoint{edge: edgeToResult(e), endpoint: endpoint})
@@ -218,19 +238,23 @@ func dropExternalNodes(nodes []ResultNode, external map[model.NodeId]struct{}) [
 	return out
 }
 
-// collectNodes fetches the given node ids (read-only), skipping any that no
-// longer exist in the store (referential drift), and returns them as result
-// nodes. Order is irrelevant here; the caller sorts canonically.
+// collectNodes fetches the given node ids in ONE batched selective read
+// (NodesByID skips ids that no longer exist — referential drift) and returns
+// them as result nodes. Order is irrelevant here; the caller sorts canonically.
 func (s *Service) collectNodes(ctx context.Context, ids map[model.NodeId]struct{}) ([]ResultNode, error) {
-	out := make([]ResultNode, 0, len(ids))
+	if len(ids) == 0 {
+		return []ResultNode{}, nil
+	}
+	list := make([]model.NodeId, 0, len(ids))
 	for nid := range ids {
-		n, err := s.reader.GetNode(ctx, nid)
-		if err != nil {
-			if errors.Is(err, graphstore.ErrNotFound) {
-				continue
-			}
-			return nil, err
-		}
+		list = append(list, nid)
+	}
+	nodes, err := s.lookup.NodesByID(ctx, list)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ResultNode, 0, len(nodes))
+	for _, n := range nodes {
 		out = append(out, nodeToResult(n))
 	}
 	return out, nil
@@ -311,11 +335,13 @@ func (s *Service) multiKindLookup(ctx context.Context, operation string, id mode
 	if !ok {
 		return notFound(operation, id), nil
 	}
-	kindSet := make(map[string]struct{}, len(kinds))
-	for _, k := range kinds {
-		kindSet[k] = struct{}{}
+	// CORE-02 (ADR 0003 D7): the multi-kind union is one endpoint-selective read.
+	var edges []model.Edge
+	if inbound {
+		edges, err = s.lookup.Incoming(ctx, id, kinds...)
+	} else {
+		edges, err = s.lookup.Outgoing(ctx, id, kinds...)
 	}
-	edges, err := s.reader.Edges(ctx, graphstore.Query{})
 	if err != nil {
 		return Result{}, err
 	}
@@ -328,19 +354,8 @@ func (s *Service) multiKindLookup(ctx context.Context, operation string, id mode
 		nodeIDs = map[model.NodeId]struct{}{}
 	)
 	for _, e := range edges {
-		if _, want := kindSet[e.Kind()]; !want {
-			continue
-		}
-		var endpoint model.NodeId
-		if inbound {
-			if e.To() != id {
-				continue
-			}
-			endpoint = e.From()
-		} else {
-			if e.From() != id {
-				continue
-			}
+		endpoint := e.From()
+		if !inbound {
 			endpoint = e.To()
 		}
 		pairs = append(pairs, edgeEndpoint{edge: edgeToResult(e), endpoint: endpoint})
@@ -388,13 +403,11 @@ func (s *Service) Neighborhood(ctx context.Context, symbolID model.NodeId, depth
 		depth = MaxNeighborhoodDepth // documented clamp
 	}
 
-	// Load all edges once; build adjacency over the undirected graph. Reading the
-	// full edge set keeps the traversal backend-agnostic and read-only.
-	allEdges, err := s.reader.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return Result{}, err
-	}
-
+	// CORE-02 (ADR 0003 D7): per-hop endpoint-selective expansion. Each frontier
+	// node contributes exactly its incident edges (Incoming ∪ Outgoing, all
+	// kinds); unseen opposite endpoints are hydrated in ONE NodesByID batch per
+	// hop. Cost scales with the visited component's degree sum, never with the
+	// whole edge set.
 	visitedNodes := map[model.NodeId]model.Node{seed.ID(): seed}
 	collectedEdges := map[model.EdgeId]model.Edge{}
 
@@ -402,51 +415,82 @@ func (s *Service) Neighborhood(ctx context.Context, symbolID model.NodeId, depth
 	expanded := map[model.NodeId]struct{}{} // cycle guard: expand each node once
 
 	for hop := 0; hop < depth && len(frontier) > 0; hop++ {
-		var next []model.NodeId
+		type candidate struct {
+			edge  model.Edge
+			other model.NodeId
+		}
+		var cands []candidate
+		unseen := map[model.NodeId]struct{}{}
 		for _, cur := range frontier {
 			if _, done := expanded[cur]; done {
 				continue
 			}
 			expanded[cur] = struct{}{}
-			for _, e := range allEdges {
-				var other model.NodeId
-				switch cur {
-				case e.From():
+			incoming, err := s.lookup.Incoming(ctx, cur)
+			if err != nil {
+				return Result{}, err
+			}
+			outgoing, err := s.lookup.Outgoing(ctx, cur)
+			if err != nil {
+				return Result{}, err
+			}
+			for _, e := range append(incoming, outgoing...) {
+				other := e.From()
+				if other == cur {
 					other = e.To()
-				case e.To():
-					other = e.From()
-				default:
-					continue
 				}
-				otherNode, seen := visitedNodes[other]
-				if !seen {
-					n, err := s.reader.GetNode(ctx, other)
-					if err != nil {
-						if errors.Is(err, graphstore.ErrNotFound) {
-							continue
-						}
-						return Result{}, err
-					}
-					otherNode = n
+				if _, seen := visitedNodes[other]; !seen {
+					unseen[other] = struct{}{}
 				}
-				// WP-01 query hygiene: interned `package` nodes are structural
-				// linking artifacts, not navigable symbols. Skipping them keeps
-				// them out of neighborhoods AND prevents a popular package from
-				// acting as an import hub that pulls in every co-importer.
-				if otherNode.Kind() == kindPackage {
-					continue
+				cands = append(cands, candidate{edge: e, other: other})
+			}
+		}
+
+		// Hydrate every unseen endpoint once; ids NodesByID skips no longer exist
+		// (referential drift) and their edges are dropped below, matching the old
+		// per-edge GetNode/ErrNotFound behavior.
+		fetched := map[model.NodeId]model.Node{}
+		if len(unseen) > 0 {
+			ids := make([]model.NodeId, 0, len(unseen))
+			for id := range unseen {
+				ids = append(ids, id)
+			}
+			ns, err := s.lookup.NodesByID(ctx, ids)
+			if err != nil {
+				return Result{}, err
+			}
+			for _, n := range ns {
+				fetched[n.ID()] = n
+			}
+		}
+
+		var next []model.NodeId
+		for _, c := range cands {
+			otherNode, seen := visitedNodes[c.other]
+			if !seen {
+				n, ok := fetched[c.other]
+				if !ok {
+					continue // referential drift: endpoint no longer exists
 				}
-				// WP-03: interned external nodes are terminal linker artifacts, not
-				// navigable symbols — skip so they never appear as neighbors nor are
-				// traversed into.
-				if otherNode.Kind() == kindExternal {
-					continue
-				}
-				collectedEdges[e.ID()] = e
-				if !seen {
-					visitedNodes[other] = otherNode
-					next = append(next, other)
-				}
+				otherNode = n
+			}
+			// WP-01 query hygiene: interned `package` nodes are structural
+			// linking artifacts, not navigable symbols. Skipping them keeps
+			// them out of neighborhoods AND prevents a popular package from
+			// acting as an import hub that pulls in every co-importer.
+			if otherNode.Kind() == kindPackage {
+				continue
+			}
+			// WP-03: interned external nodes are terminal linker artifacts, not
+			// navigable symbols — skip so they never appear as neighbors nor are
+			// traversed into.
+			if otherNode.Kind() == kindExternal {
+				continue
+			}
+			collectedEdges[c.edge.ID()] = c.edge
+			if !seen {
+				visitedNodes[c.other] = otherNode
+				next = append(next, c.other)
 			}
 		}
 		frontier = next

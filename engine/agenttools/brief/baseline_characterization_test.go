@@ -88,8 +88,14 @@ func seedBriefGraph(t *testing.T) (*graphstore.MemStore, int, int) {
 // TestCharacterization_Brief_FullGraphScan is AC5 for the agent_brief full-graph
 // read (engine/agenttools/brief): buildView loads the ENTIRE node set and the
 // ENTIRE edge set with unfiltered Nodes(Query{}) / Edges(Query{}) (brief.go
-// buildView) to compute file degrees and hotspots. This baseline pins that whole
-// -graph digest as the measured "before" number the selective-read work targets.
+// buildView) to compute file degrees and hotspots.
+//
+// DELIBERATELY NOT flipped by SW-116 (CORE-02): the digest is an AGGREGATE
+// (file degrees, hotspots), not a traversal — replacing it with per-node port
+// reads would be an N+1 regression. Per ADR 0003 D6/U2 the catalog read stays
+// until the EVAL-01 repos measure whether SQL aggregates are needed. This pin
+// keeps that decision visible: if a selective read lands in buildView, U2 was
+// resolved and this baseline must be re-recorded with the chosen strategy.
 func TestCharacterization_Brief_FullGraphScan(t *testing.T) {
 	st, totalNodes, totalEdges := seedBriefGraph(t)
 

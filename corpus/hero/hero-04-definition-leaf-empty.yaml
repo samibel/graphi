@@ -1,0 +1,13 @@
+id: hero-04-definition-leaf-empty
+description: >
+  Failure class EMPTY: pins the shipped definition semantics (outbound
+  "defines" edges - a symbol points at what it defines). A leaf function
+  defines nothing, so the honest outcome is empty, not a guess.
+fixture_ref: tier1-fixture-go
+operation:
+  name: definition
+  args:
+    symbol: Hello
+area: agent_mcp
+expect:
+  outcome: empty

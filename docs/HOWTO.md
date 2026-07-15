@@ -198,20 +198,25 @@ graphi mcp -db ~/.graphi/graph.db
 > metadata — it does **not** build a queryable graph. Use `-root` (whole repo)
 > for that.
 
-### 5.3 Index scope (opt-in ignores)
+### 5.3 Index scope
 
 By default graphi indexes every parseable file except a small fixed set of
-tooling directories (`node_modules`, `.git`, `vendor`, …). Two opt-in switches
-narrow the scope — **they change what the graph contains**, so both are off by
-default and flipping either forces one full re-index (the warm-start stamp
-carries an ignore fingerprint; a store certified under one scope never
-warm-starts under another):
+tooling directories (`node_modules`, `.git`, `vendor`, …), the build-output
+denylist (`target`, `build`, `.gradle`, `dist` — opt out with
+`GRAPHI_INDEX_ALL=1`), and — **on by default since PRIV-01** — everything the
+repository ROOT `.gitignore` excludes: ignored files are where secrets, local
+configs and credentials live, and they never enter the persistent graph or its
+search index unless you explicitly opt out. Scope switches **change what the
+graph contains**, so flipping any of them forces one full re-index (the
+warm-start stamp carries an ignore fingerprint; a store certified under one
+scope never warm-starts under another):
 
 ```bash
-# Honor the repository ROOT .gitignore (documented subset: comments, ! negation
+# .gitignore is honored BY DEFAULT (documented subset: comments, ! negation
 # with last-match-wins, anchoring, trailing / for dirs, *, ?, [...], **;
-# nested .gitignore files are not consulted):
-GRAPHI_RESPECT_GITIGNORE=1 graphi index -root .
+# nested .gitignore files are not consulted). Opt OUT — indexing ignored
+# files, including whatever secrets they hold — with:
+GRAPHI_RESPECT_GITIGNORE=0 graphi index -root .
 
 # Prune extra directory basenames at any depth (case-insensitive):
 GRAPHI_IGNORE=fixtures,testdata graphi index -root .

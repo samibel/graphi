@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "notes": "SW-122 (EVAL-01) budget SCHEMA for the hero-task suite and the pinned real-repo runs. Per ADR 0003 U5, absolute values are NOT invented: every null below is frozen as a ratchet from the first reproducible CI run on the declared runner class (SW-123 / EVAL-02), citing that run's commit, workflow run id, and report artifact. Until then the schema carries the fields, not numbers.",
+  "runner_class": "ubuntu-latest",
+  "os": "linux",
+  "cgo_enabled": false,
+  "recorded_from": {
+    "commit": null,
+    "workflow_run": null,
+    "report_artifact": null,
+    "recorded_at": null
+  },
+  "hero_suite": {
+    "scenario_dir": "corpus/hero",
+    "pass_rate_min": 1.0,
+    "max_latency_ms_per_op": {
+      "index": null,
+      "search": null,
+      "definition": null,
+      "references": null,
+      "callers": null,
+      "callees": null,
+      "neighborhood": null,
+      "impact": null,
+      "explain_symbol": null,
+      "related_files": null,
+      "change_risk": null,
+      "agent_brief": null
+    }
+  },
+  "real_repos": {
+    "selection": [
+      "cobra",
+      "flask",
+      "guava"
+    ],
+    "per_repo": {
+      "cobra": {
+        "index_wallclock_ms": null,
+        "peak_rss_mb": null,
+        "db_size_mb": null,
+        "warm_p95_us": {
+          "structural": null,
+          "search": null,
+          "agent_tools": null
+        }
+      },
+      "flask": {
+        "index_wallclock_ms": null,
+        "peak_rss_mb": null,
+        "db_size_mb": null,
+        "warm_p95_us": {
+          "structural": null,
+          "search": null,
+          "agent_tools": null
+        }
+      },
+      "guava": {
+        "index_wallclock_ms": null,
+        "peak_rss_mb": null,
+        "db_size_mb": null,
+        "warm_p95_us": {
+          "structural": null,
+          "search": null,
+          "agent_tools": null
+        }
+      }
+    }
+  }
+}

@@ -129,7 +129,35 @@ func TestDetectSecret(t *testing.T) {
 	}
 }
 
-func TestStoreSecretSuspected(t *testing.T) {
+// TestStoreSecretRejectedByDefault pins the PRIV-01 (SW-119) secret default:
+// a secret-like payload is REJECTED with the typed sentinel and nothing is
+// persisted — persist-and-flag was already a leak into a durable journal.
+func TestStoreSecretRejectedByDefault(t *testing.T) {
+	t.Setenv(EnvAllowSecrets, "")
+	s, err := NewMemStore(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	_, err = s.StoreMemoryWithProvenance(context.Background(), ProvenanceInput{
+		Scope:   "repo",
+		Payload: "password=supersecret123",
+	})
+	if !errors.Is(err, ErrSecretRejected) {
+		t.Fatalf("expected ErrSecretRejected, got %v", err)
+	}
+	entries, _ := s.RecallMemory(context.Background(), Query{Scope: "repo"})
+	if len(entries) != 0 {
+		t.Fatalf("rejected secret was persisted anyway: %d entries", len(entries))
+	}
+}
+
+// TestStoreSecretSuspected_WithExplicitOverride pins the documented local
+// override: with GRAPHI_MEMORY_ALLOW_SECRETS=1 the payload is stored and stays
+// visibly flagged as secret-suspected.
+func TestStoreSecretSuspected_WithExplicitOverride(t *testing.T) {
+	t.Setenv(EnvAllowSecrets, "1")
 	s, err := NewMemStore(nil)
 	if err != nil {
 		t.Fatal(err)

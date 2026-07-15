@@ -2,7 +2,6 @@ package analysis
 
 import (
 	"context"
-	"errors"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
@@ -45,16 +44,24 @@ func (impactAnalyzer) Name() string { return "impact" }
 // Analyze resolves the seed and runs a cycle-guarded bounded traversal in the
 // requested direction, attaching the best-tier reaching edge to every reached
 // node, then materializes-sorts-truncates for a deterministic, ranked result.
+// CORE-02 (ADR 0003 D7): the traversal expands each frontier node through the
+// endpoint-selective port, so cost scales with the reached component's degree
+// sum, never with the whole edge set.
 func (a impactAnalyzer) Analyze(ctx context.Context, r query.Reader, p Params) (Analysis, error) {
 	const op = "impact"
 
+	lookup, ok := r.(graphstore.GraphLookup)
+	if !ok {
+		return Analysis{}, query.ErrSelectiveLookupUnavailable
+	}
+
 	// Resolve the seed. A missing symbol is an explicit not-found result, NEVER
-	// an error (parity with query.Service.resolve).
-	if _, err := r.GetNode(ctx, p.Symbol); err != nil {
-		if errors.Is(err, graphstore.ErrNotFound) {
-			return notFound(op, p.Symbol), nil
-		}
+	// an error (parity with query.Service.resolve). The point read goes through
+	// the port (bounded) rather than Reader.GetNode (whole-graph cache on SQLite).
+	if seed, err := lookup.NodesByID(ctx, []model.NodeId{p.Symbol}); err != nil {
 		return Analysis{}, err
+	} else if len(seed) == 0 {
+		return notFound(op, p.Symbol), nil
 	}
 
 	// Default direction is Reverse (dependents / blast radius): "impact of X"
@@ -76,93 +83,115 @@ func (a impactAnalyzer) Analyze(ctx context.Context, r query.Reader, p Params) (
 		kinds = dependencyKinds
 	}
 
-	edges, err := r.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return Analysis{}, err
-	}
-	want := make(map[string]struct{}, len(kinds))
-	for _, k := range kinds {
-		want[k] = struct{}{}
-	}
-
-	// Build directed adjacency once. For each kept edge e (From -> To):
-	//   Reverse (dependents / blast radius)   : a node's neighbors are the FROM
-	//     endpoints of its INCOMING edges (everything pointing AT it) — the
+	// BFS with per-node selective expansion. For each frontier node:
+	//   Reverse (dependents / blast radius)   : neighbors are the FROM endpoints
+	//     of its INCOMING edges (everything pointing AT it) — the
 	//     reverse-dependency (rdeps) convention.
-	//   Forward (dependencies)                : a node's neighbors are the TO
-	//     endpoints of its OUTGOING edges (everything it points at) — traversal
-	//     ALONG edge direction.
+	//   Forward (dependencies)                : neighbors are the TO endpoints of
+	//     its OUTGOING edges (everything it points at) — traversal ALONG edge
+	//     direction.
+	// Cycle guard: expand each node at most once. The seed is excluded from its
+	// own result (a node is neither its own dependent nor its own dependency).
+	// The graph is finite, so this always terminates; the MaxNodes cap is
+	// applied to the OUTPUT after sorting.
 	type nbr struct {
 		id  model.NodeId
 		via query.ResultEdge
 	}
-	adj := make(map[model.NodeId][]nbr)
-	for _, e := range edges {
-		if _, ok := want[e.Kind()]; !ok {
-			continue
-		}
-		re := edgeToResult(e)
-		switch direction {
-		case Forward:
-			adj[e.From()] = append(adj[e.From()], nbr{id: e.To(), via: re})
-		default: // Reverse (dependents / blast radius)
-			adj[e.To()] = append(adj[e.To()], nbr{id: e.From(), via: re})
-		}
-	}
-
-	// BFS over the adjacency. Cycle guard: expand each node at most once. The
-	// seed is excluded from its own result (a node is neither its own dependent
-	// nor its own dependency). The graph is finite, so this always terminates;
-	// the MaxNodes cap is applied to the OUTPUT after sorting.
 	reached := make(map[model.NodeId]ReachedNode)
 	depth := map[model.NodeId]int{p.Symbol: 0}
 	expanded := map[model.NodeId]struct{}{}
 	frontier := []model.NodeId{p.Symbol}
 
 	for len(frontier) > 0 {
+		// Gather this hop's neighbor candidates via endpoint-selective reads.
+		var cands []nbr
+		fetchIDs := map[model.NodeId]struct{}{}
 		var next []model.NodeId
 		for _, cur := range frontier {
 			if _, done := expanded[cur]; done {
 				continue
 			}
 			expanded[cur] = struct{}{}
-			for _, nb := range adj[cur] {
-				if nb.id == p.Symbol {
-					continue
-				}
-				if existing, seen := reached[nb.id]; seen {
-					// Already reached: keep the best-tier reaching edge
-					// (deterministic tie-break by edge id) so the most
-					// trustworthy reason leads and the choice is stable.
-					if edgeBetter(nb.via, existing.ReachedVia) {
-						existing.ReachedVia = nb.via
-						reached[nb.id] = existing
-					}
-					continue
-				}
-				n, err := r.GetNode(ctx, nb.id)
-				if err != nil {
-					if errors.Is(err, graphstore.ErrNotFound) {
-						continue // referential drift: endpoint no longer exists
-					}
-					return Analysis{}, err
-				}
-				// WP-03 query hygiene: interned external nodes are terminal heuristic
-				// linker artifacts (stdlib / 3rd-party targets), not part of the
-				// dependency graph a user reasons about — exclude them from the blast
-				// radius. They have no outgoing edges, so not enqueuing them also stops
-				// traversal cleanly.
-				if n.Kind() == externalNodeKind {
-					continue
-				}
-				reached[nb.id] = ReachedNode{
-					Node:       nodeToResult(n),
-					ReachedVia: nb.via,
-					Depth:      depth[cur] + 1,
-				}
-				depth[nb.id] = depth[cur] + 1
-				next = append(next, nb.id)
+			var (
+				edges []model.Edge
+				err   error
+			)
+			if direction == Forward {
+				edges, err = lookup.Outgoing(ctx, cur, kinds...)
+			} else {
+				edges, err = lookup.Incoming(ctx, cur, kinds...)
 			}
+			if err != nil {
+				return Analysis{}, err
+			}
+			for _, e := range edges {
+				id := e.From()
+				if direction == Forward {
+					id = e.To()
+				}
+				if id == p.Symbol {
+					continue
+				}
+				cands = append(cands, nbr{id: id, via: edgeToResult(e)})
+				if _, seen := reached[id]; !seen {
+					fetchIDs[id] = struct{}{}
+				}
+				// Depth is BFS-layer semantics: every candidate discovered while
+				// expanding cur sits one hop past cur.
+				if _, has := depth[id]; !has {
+					depth[id] = depth[cur] + 1
+				}
+			}
+		}
+
+		// Hydrate unseen neighbors in one batch; ids NodesByID skips no longer
+		// exist (referential drift) and are dropped below, matching the old
+		// per-edge GetNode/ErrNotFound behavior.
+		fetched := map[model.NodeId]model.Node{}
+		if len(fetchIDs) > 0 {
+			ids := make([]model.NodeId, 0, len(fetchIDs))
+			for id := range fetchIDs {
+				ids = append(ids, id)
+			}
+			ns, err := lookup.NodesByID(ctx, ids)
+			if err != nil {
+				return Analysis{}, err
+			}
+			for _, n := range ns {
+				fetched[n.ID()] = n
+			}
+		}
+
+		for _, nb := range cands {
+			if existing, seen := reached[nb.id]; seen {
+				// Already reached: keep the best-tier reaching edge
+				// (deterministic tie-break by edge id) so the most
+				// trustworthy reason leads and the choice is stable.
+				if edgeBetter(nb.via, existing.ReachedVia) {
+					existing.ReachedVia = nb.via
+					reached[nb.id] = existing
+				}
+				continue
+			}
+			n, ok := fetched[nb.id]
+			if !ok {
+				continue // referential drift: endpoint no longer exists
+			}
+			// WP-03 query hygiene: interned external nodes are terminal heuristic
+			// linker artifacts (stdlib / 3rd-party targets), not part of the
+			// dependency graph a user reasons about — exclude them from the blast
+			// radius. They have no outgoing edges, so not enqueuing them also stops
+			// traversal cleanly.
+			if n.Kind() == externalNodeKind {
+				continue
+			}
+			reached[nb.id] = ReachedNode{
+				Node:       nodeToResult(n),
+				ReachedVia: nb.via,
+				Depth:      depth[nb.id],
+			}
+			next = append(next, nb.id)
 		}
 		frontier = next
 	}

@@ -59,6 +59,9 @@ func mcpToolTextArgs(t *testing.T, c client.Client, tool string, args map[string
 
 func httpPayloadGet(t *testing.T, c client.Client, path string) []byte {
 	t.Helper()
+	// The routes this helper drives are Labs routes, fail-closed by default
+	// (SW-112 / SAFE-01); parity is asserted for the opted-in configuration.
+	t.Setenv(httpsrv.LabsEnvVar, "1")
 	srv := httpsrv.New(c, observe.New())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	rec := httptest.NewRecorder()

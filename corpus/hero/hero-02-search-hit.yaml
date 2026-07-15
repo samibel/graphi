@@ -1,0 +1,21 @@
+id: hero-02-search-hit
+description: >
+  Lexical search for a known symbol returns it with its source anchor and
+  never invents symbols that do not exist (negative anchor).
+fixture_ref: tier1-fixture-go
+operation:
+  name: search
+  args:
+    query: Hello
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: sample.go
+  anchors:
+    - kind: symbol
+      value: Hello
+      match: exact
+  absent:
+    - kind: symbol
+      value: DoesNotExistXyz
+      match: contains

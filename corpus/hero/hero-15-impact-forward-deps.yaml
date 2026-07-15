@@ -1,0 +1,24 @@
+id: hero-15-impact-forward-deps
+description: >
+  Forward impact (dependencies) of ChainA reaches Hello three call hops
+  down; unrelated flows (TaintFlow) stay out (negative anchor).
+fixture_ref: tier1-fixture-go
+operation:
+  name: impact
+  args:
+    symbol: ChainA
+    direction: forward
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: fixture.Hello
+      match: contains
+    - kind: line
+      value: depth=3
+      match: contains
+  absent:
+    - kind: symbol
+      value: fixture.TaintFlow
+      match: contains

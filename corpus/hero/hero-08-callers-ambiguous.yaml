@@ -1,0 +1,19 @@
+id: hero-08-callers-ambiguous
+description: >
+  Failure class AMBIGUOUS: "Greet" matches several distinct symbols; the
+  tool must present candidates instead of silently picking one.
+fixture_ref: tier1-fixture-go
+operation:
+  name: callers
+  args:
+    symbol: Greet
+area: agent_mcp
+expect:
+  outcome: ambiguous
+  anchors:
+    - kind: symbol
+      value: fixture.EnglishGreeter.Greet
+      match: contains
+    - kind: symbol
+      value: fixture.SpanishGreeter.Greet
+      match: contains

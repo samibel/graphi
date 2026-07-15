@@ -1,0 +1,12 @@
+id: hero-05-definition-unknown-not-found
+description: >
+  Failure class NOT_FOUND: an unknown symbol yields the typed not_found
+  outcome (never an error, never a fabricated definition).
+fixture_ref: tier1-fixture-go
+operation:
+  name: definition
+  args:
+    symbol: NoSuchSymbolXyz
+area: agent_mcp
+expect:
+  outcome: not_found

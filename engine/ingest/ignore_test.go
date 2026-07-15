@@ -38,14 +38,40 @@ func pathsOf(t *testing.T, store graphstore.Graphstore) map[string]bool {
 	return got
 }
 
-// TestIgnoreScope_OffByDefault pins the opt-in contract: without the env
-// switches, .gitignore is NOT consulted and the graph is unchanged.
-func TestIgnoreScope_OffByDefault(t *testing.T) {
+// TestIgnoreScope_GitignoreDefaultOn pins the PRIV-01 (SW-119) privacy
+// default: with NO env switches set, the root .gitignore governs what gets
+// symbols — ignored files (where secrets live) never enter the graph, and
+// negation still re-includes.
+func TestIgnoreScope_GitignoreDefaultOn(t *testing.T) {
 	t.Setenv(ingest.EnvRespectGitignore, "")
 	t.Setenv(ingest.EnvIgnoreDirs, "")
-	// WP-07 added a default-on build-output denylist that prunes dist/. This test
-	// pins the ORTHOGONAL gitignore/extra opt-in contract (dist/ indexed when no
-	// gitignore scope is set), so opt out of the denylist to isolate it.
+	t.Setenv(ingest.EnvIndexAll, "")
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	i := newIngester(t, store, &stubParser{})
+	root := scopeRepo(t)
+	if err := i.IngestAll(context.Background(), root); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	got := pathsOf(t, store)
+	for _, want := range []string{"main.go", "keep.log", "assets/big/blob.go"} {
+		if !got[want] {
+			t.Errorf("in-scope file %s missing from graph", want)
+		}
+	}
+	for _, banned := range []string{"debug.log", "dist/bundle.go"} {
+		if got[banned] {
+			t.Errorf("gitignored file %s was indexed under the privacy default", banned)
+		}
+	}
+}
+
+// TestIgnoreScope_GitignoreExplicitOptOut pins the documented escape hatch:
+// GRAPHI_RESPECT_GITIGNORE=0 indexes ignored files again (with the WP-07
+// denylist also opted out to isolate the gitignore axis).
+func TestIgnoreScope_GitignoreExplicitOptOut(t *testing.T) {
+	t.Setenv(ingest.EnvRespectGitignore, "0")
+	t.Setenv(ingest.EnvIgnoreDirs, "")
 	t.Setenv(ingest.EnvIndexAll, "1")
 	store := graphstore.NewMemStore()
 	defer store.Close()
@@ -57,7 +83,7 @@ func TestIgnoreScope_OffByDefault(t *testing.T) {
 	got := pathsOf(t, store)
 	for _, want := range []string{"debug.log", "dist/bundle.go", "assets/big/blob.go"} {
 		if !got[want] {
-			t.Errorf("default scope must index %s (opt-in must stay off)", want)
+			t.Errorf("opt-out scope must index %s", want)
 		}
 	}
 }
@@ -91,7 +117,9 @@ func TestIgnoreScope_GitignoreOptIn(t *testing.T) {
 // TestIgnoreScope_ExtraDirs pins GRAPHI_IGNORE: extra directory basenames
 // prune at any depth, independent of .gitignore.
 func TestIgnoreScope_ExtraDirs(t *testing.T) {
-	t.Setenv(ingest.EnvRespectGitignore, "")
+	// Opt out of the PRIV-01 gitignore default to isolate the extra-dirs axis
+	// (the fixture .gitignore would otherwise prune debug.log/dist).
+	t.Setenv(ingest.EnvRespectGitignore, "0")
 	t.Setenv(ingest.EnvIgnoreDirs, "assets, Missing")
 	// WP-07: opt out of the default build-output denylist so this test isolates
 	// the GRAPHI_IGNORE extra-dirs contract (it asserts dist/ stays indexed).
@@ -152,9 +180,9 @@ func TestIgnoreScope_WarmStartInvalidatedOnConfigChange(t *testing.T) {
 	}
 	defer store.Close()
 
-	// Pass 1: default scope. A fresh Ingester per phase over the SAME meta
-	// sidecar simulates "same store, new process" — the env is captured per
-	// (Ingester, root), matching real process lifecycles.
+	// Pass 1: default scope (PRIV-01: gitignore ON). A fresh Ingester per phase
+	// over the SAME meta sidecar simulates "same store, new process" — the env
+	// is captured per (Ingester, root), matching real process lifecycles.
 	metaDir := t.TempDir()
 	t.Setenv(ingest.EnvRespectGitignore, "")
 	i1, err := ingest.New(store, &stubParser{}, metaDir)
@@ -169,8 +197,9 @@ func TestIgnoreScope_WarmStartInvalidatedOnConfigChange(t *testing.T) {
 		t.Fatalf("same scope must warm-start: ok=%v err=%v", ok, err)
 	}
 
-	// Same meta, new process with gitignore scope ON → stamp mismatch → cold.
-	t.Setenv(ingest.EnvRespectGitignore, "1")
+	// Same meta, new process with the gitignore scope opted OUT → stamp
+	// mismatch → cold.
+	t.Setenv(ingest.EnvRespectGitignore, "0")
 	i2, err := ingest.New(store, &stubParser{}, metaDir)
 	if err != nil {
 		t.Fatalf("ingest.New: %v", err)
