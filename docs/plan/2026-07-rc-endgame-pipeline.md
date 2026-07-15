@@ -1,7 +1,10 @@
 # RC-Endgame-Pipeline: die letzten vier Pakete bis zum Focused Core RC
 
-> **Status:** PROPOSED (Ausführungsplan für `RUN-01`, `EVAL-01`, `EVAL-02`, `RC-01`)
-> **Stand:** 14. Juli 2026, Branch `claude/plan-feedback-f5khoi` @ `aa96826`
+> **Status:** EXECUTED — Stages 1–3 umgesetzt (`RUN-01` @ `5b9eeb5`, `EVAL-01`
+> @ `660b5a3`, `EVAL-02` @ `ecef54f`); Stage 4 entscheidungsreif, siehe das
+> RC-Dossier `docs/rc/focused-core-rc.md` (Go/No-Go: Sami). Stage 0 (Review &
+> Merge des Stapels) steht aus.
+> **Stand:** 15. Juli 2026, Branch `claude/plan-feedback-f5khoi`
 > **Autorität:** `temp/plan/00_master_execution_plan.md` (WBS-IDs, Gates); dieses Dokument
 > ordnet nur die Ausführung der Restpakete, es vergibt keine neuen IDs.
 

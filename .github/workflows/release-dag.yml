@@ -22,8 +22,13 @@
 #     while .github/publish-lock.json is engaged there is NO publish path at
 #     all. Lifting it is one reviewed commit (RC-01's documented Go step).
 #
-# Follow-up recorded in ADR 0005: pin third-party `uses:` to full commit SHAs
-# (needs network access to resolve the refs; blocked in the authoring session).
+# ADR 0005 U1 (RESOLVED, SW-124): every `uses:` is pinned to the full commit
+# SHA (trailing comment names the tag it was resolved from). SHAs recorded
+# 2026-07-15 via `git ls-remote <repo> refs/tags/<tag> 'refs/tags/<tag>^{}'`
+# — the peeled `^{}` commit for annotated tags (attest-build-provenance),
+# the tag object itself for lightweight ones. To bump an action: re-run the
+# ls-remote, update SHA + comment together; the publish-lock workflow test
+# fails on any unpinned `uses:` in this file.
 name: release-dag
 
 on:
@@ -49,11 +54,11 @@ jobs:
       tag: ${{ steps.ver.outputs.tag }}
       exists: ${{ steps.exists.outputs.exists }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
@@ -64,7 +69,7 @@ jobs:
         id: lock
         run: go run ./cmd/publish-lock
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
       - name: install web dependencies
@@ -118,10 +123,10 @@ jobs:
     env:
       CGO_ENABLED: "0"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.sha }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
@@ -147,7 +152,7 @@ jobs:
             exit 1
           fi
           rm -f ./graphi-default
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
           cache: npm
@@ -160,7 +165,7 @@ jobs:
           cp -R web/dist surfaces/http/webui/dist
       - name: cross-compile matrix + SHA256SUMS (web UI embedded)
         run: go run ./cmd/release -dist dist -webui -version "${{ steps.ver.outputs.version }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dist-${{ github.sha }}
           path: dist/
@@ -171,17 +176,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.sha }}
-      - uses: anchore/sbom-action@v0
+      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
           path: .
           format: spdx-json
           output-file: sbom.spdx.json
           upload-artifact: false
           upload-release-assets: false
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom-${{ github.sha }}
           path: sbom.spdx.json
@@ -203,25 +208,25 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist-${{ github.sha }}
           path: dist
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: sbom-${{ github.sha }}
       # Provenance binds the exact artifacts to this workflow run + SHA. Fails
       # closed: a plan/repo that cannot attest fails the publish loudly rather
       # than shipping unattested artifacts (see ADR 0005).
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
         with:
           subject-path: dist/*
       - name: create and push the tag at the gated SHA

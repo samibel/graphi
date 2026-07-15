@@ -65,14 +65,18 @@ gate (publish-lock → testgate full suite → layerguard → coverage/manifest 
 
 ## Explicit follow-ups (UNKNOWNs)
 
-- **U1 — full-SHA action pins.** The authoring session's network policy
-  blocked resolving tag→commit refs for third-party actions, and inventing
-  pins would be worse than tags. Resolve each `uses:` in `release-dag.yml`
-  (and the other release-critical workflows) to its 40-hex commit, e.g.:
-  `gh api repos/actions/checkout/git/refs/tags/v4 --jq .object.sha`. When
-  done, arm a pin assertion in `cmd/publish-lock/workflow_test.go` (every
-  `uses:` matches `@[0-9a-f]{40}`). Owner: next session with GitHub API
-  access; before RC-01.
+- **U1 — full-SHA action pins. RESOLVED (SW-124, 2026-07-15).** Every
+  `uses:` in `release-dag.yml` is pinned to its 40-hex commit SHA with a
+  trailing `# <tag>` comment. The refs were resolved from the live remotes
+  via `git ls-remote <repo> refs/tags/<tag> 'refs/tags/<tag>^{}'` — taking
+  the peeled `^{}` commit for annotated tags (attest-build-provenance) and
+  the tag object itself for lightweight ones; the REST-API route in the
+  original note was unavailable, raw git was not. The pin assertion is
+  armed: `TestReleaseDAG_EveryActionIsSHAPinned` in
+  `cmd/publish-lock/workflow_test.go` fails on any unpinned `uses:` in the
+  DAG. Non-publish workflows deliberately keep tag pins (they ship
+  nothing); bumping an action = re-run the ls-remote, update SHA + comment
+  in one diff.
 - **U2 — environment protection.** GitHub "environments" with required
   reviewers on the `publish` job are repo settings, not committed files;
   configure once in the repo UI and note it in the RC-01 checklist.

@@ -177,3 +177,24 @@ func jobIfExpression(t *testing.T, yaml, job string) string {
 	t.Fatalf("job %q has no `if:` expression", job)
 	return ""
 }
+
+// TestReleaseDAG_EveryActionIsSHAPinned (ADR 0005 U1, armed by SW-124): every
+// `uses:` in the release DAG references a full 40-hex commit SHA with a
+// trailing `# <tag>` comment naming the tag it was resolved from. A mutable
+// tag reference in the PUBLISH path would let a re-pointed upstream tag swap
+// the action's code under the DAG — the exact supply-chain hole the SHA-bound
+// DAG exists to close. Other workflows may keep tag pins (they publish
+// nothing); this file may not.
+func TestReleaseDAG_EveryActionIsSHAPinned(t *testing.T) {
+	yaml := readDAG(t)
+	pinned := regexp.MustCompile(`(?m)uses:\s+[\w./-]+@[0-9a-f]{40} # \S+$`)
+	anyUse := regexp.MustCompile(`(?m)^\s*-?\s*uses:\s+(\S+.*)$`)
+	for _, m := range anyUse.FindAllString(yaml, -1) {
+		if !pinned.MatchString(m) {
+			t.Errorf("release-dag action not pinned to a full commit SHA with a `# tag` comment: %s", strings.TrimSpace(m))
+		}
+	}
+	if n := len(anyUse.FindAllString(yaml, -1)); n == 0 {
+		t.Fatal("no uses: lines found — the DAG scan is broken")
+	}
+}
