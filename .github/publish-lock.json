@@ -1,4 +1,4 @@
 {
-  "locked": true,
-  "reason": "CT-01 (SW-109): publication is locked until the Focused Core RC reaches its explicit Go (RC-01). Since SW-120 (REL-01) the lock gates release-dag.yml's publish job on EVERY trigger (including workflow_dispatch) — while engaged there is no publish path at all. To lift: set \"locked\" to false in this file via a reviewed commit (RC-01's documented Go step) — no workflow change needed."
+  "locked": false,
+  "reason": "RC-01 Go (2026-07-15, docs/rc/focused-core-rc.md §5): the Focused Core RC reached its documented Go after the §4.1 blocking items closed (review/merge #51/#52; budget freeze #53 with the ubuntu-latest reference run 29418826616 and ADR 0003 U2/U4/U5 resolved). Publication is now OPEN: release-dag.yml's publish job runs for an unpublished CHANGELOG version (v0.5.0) once every gate on the same SHA is green. To re-engage (incident/freeze): set \"locked\" back to true in one reviewed commit — the lock gates every trigger including workflow_dispatch, no workflow change needed."
 }

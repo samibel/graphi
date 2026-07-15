@@ -14,16 +14,19 @@ const (
 	workflowsDir  = "../../.github/workflows"
 )
 
-// TestCommittedGateIsEngaged pins the shipped posture: the checked-in gate file
-// is LOCKED, so the release DAG publishes nothing until RC-01 lifts it. This is
-// the standing state the whole G0 program depends on.
-func TestCommittedGateIsEngaged(t *testing.T) {
+// TestCommittedGateIsLifted pins the shipped posture SINCE the RC-01 Go
+// (2026-07-15): the checked-in gate file is UNLOCKED, so the release DAG may
+// publish an unpublished CHANGELOG version once every gate is green. Before the
+// Go this test pinned the inverse (locked) — flipping it is the reviewed lock
+// lift itself, so the gate file and this pin can never silently disagree. To
+// re-engage the lock (incident/freeze), flip both back together.
+func TestCommittedGateIsLifted(t *testing.T) {
 	d := Evaluate(committedGate)
-	if !d.Locked {
-		t.Fatalf("committed %s must be engaged (locked); got %+v", committedGate, d)
+	if d.Locked {
+		t.Fatalf("committed %s must be LIFTED (unlocked) after the RC-01 Go; got %+v", committedGate, d)
 	}
-	if d.OutputLine() != "locked=true" {
-		t.Fatalf("committed gate must emit locked=true, got %q", d.OutputLine())
+	if d.OutputLine() != "locked=false" {
+		t.Fatalf("lifted gate must emit locked=false, got %q", d.OutputLine())
 	}
 }
 
