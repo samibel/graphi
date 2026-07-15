@@ -52,6 +52,16 @@ jobs:
             -full-run "${{ matrix.repo }}" \
             -runner-class ubuntu-latest \
             -out "eval-full-${{ matrix.repo }}.json"
+      # The raw report also goes to the job log (and step summary): the run
+      # page is then self-documenting, and the evidence stays retrievable via
+      # the logs API even where artifact-storage domains are unreachable.
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== EVAL-FULL-REPORT-BEGIN ${{ matrix.repo }} ==="
+          cat "eval-full-${{ matrix.repo }}.json"
+          echo "=== EVAL-FULL-REPORT-END ${{ matrix.repo }} ==="
+          { echo '```json'; cat "eval-full-${{ matrix.repo }}.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: upload raw evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -78,6 +88,12 @@ jobs:
             -scenarios corpus/hero \
             -out hero-report.json \
             -format markdown
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== HERO-REPORT-BEGIN ==="
+          cat hero-report.json
+          echo "=== HERO-REPORT-END ==="
       - name: upload hero report
         if: always()
         uses: actions/upload-artifact@v4

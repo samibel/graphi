@@ -1,12 +1,12 @@
 # Hero-Task Protocol (SW-122 / EVAL-01 · SW-123 / EVAL-02)
 
-> **Status:** ACTIVE — suite versioned and smoke-gated; full-run harness and
-> CI workflow in place (`cmd/eval -full-run`, `.github/workflows/eval-full.yml`);
-> preliminary evidence committed (`docs/eval/runs/2026-07-15-local-sandbox/`).
+> **Status:** COMPLETE — suite versioned and gated; reference evidence
+> committed (`docs/eval/runs/2026-07-15-ubuntu-latest/`, workflow run
+> 29418826616) and the U5 budgets **frozen** as baseline+ratchet pairs.
 > **Suite:** `corpus/hero/` (20 tasks) · **Gates:** `cmd/eval/hero_test.go`,
 > `cmd/eval/fullrun_test.go`
-> **Budgets:** `docs/eval/hero-budgets.json` (schema now; numbers from the first
-> green `eval-full.yml` run on `ubuntu-latest`)
+> **Budgets:** `docs/eval/hero-budgets.json` (frozen 2026-07-15; re-pinning is
+> a reviewed manifest edit citing a newer reference run)
 
 ## What the hero suite is
 

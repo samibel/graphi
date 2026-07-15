@@ -78,15 +78,15 @@ Stable-Tier + Manifest-Freshness) PASS.
 
 ### 4.1 Blockierend (Reihenfolge)
 
-1. **Stage-0-Review & Merge** des Branch-Stapels (13 Commits, story-atomar,
-   in Commit-Reihenfolge reviewbar) — Sami. Ohne Merge läuft kein Workflow.
-2. **Referenzlauf + Budget-Freeze:** nach dem Merge `eval-full.yml` manuell
-   dispatchen (ubuntu-latest). Artefakte herunterladen, unter
-   `docs/eval/runs/<datum>-ubuntu-latest/` einchecken, die `null`-Budgets in
-   `docs/eval/hero-budgets.json` als Ratchets füllen — **ein** reviewter PR,
-   der den Workflow-Run zitiert. Gleichzeitig ADR 0003 **U2** (Brief-Digest:
-   Katalog-Read vs. SQL-Aggregat — Messfrage einer einzigen Op) und **U4**
-   (memGraph-Cache: mit/ohne-Paar) als ADR-Updates schließen.
+1. **Stage-0-Review & Merge** — ERLEDIGT (PR #51 gemergt, `060f1ab`;
+   Audit-Nachschliff PR #52, `fa2441c`).
+2. **Referenzlauf + Budget-Freeze** — ERLEDIGT: `eval-full` Run
+   [29418826616](https://github.com/samibel/graphi/actions/runs/29418826616)
+   auf `ubuntu-latest` (Hero 20/20, drei Full-Runs, Pins fail-closed);
+   Roh-Evidenz `docs/eval/runs/2026-07-15-ubuntu-latest/`, Ratchets in
+   `docs/eval/hero-budgets.json` (Baseline+Budget, Policy dokumentiert),
+   ADR 0003 **U2/U4/U5 geschlossen** — der Budget-Freeze-PR (#53) zitiert
+   den Lauf. Nach dessen Merge ist §4.1 leer und §5 entscheidbar.
 
 ### 4.2 Nicht blockierend, vor dem ersten Release
 

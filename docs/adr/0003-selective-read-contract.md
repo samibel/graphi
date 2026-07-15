@@ -201,30 +201,37 @@ index usage in CI.
   if a bare-name shape appears, implement `ExactName` (index or expression-index decision then),
   else leave it specified-but-unimplemented and record that in the port doc. Resolve in
   `CORE-02`.
-- **U2 — brief aggregate strategy.** Catalog read vs. SQL aggregates. *Experiment:* on the three
-  EVAL-01 pinned repos measure brief's wall-clock + peak-RSS with the status-quo digest; adopt
-  SQL aggregates only if the digest breaches the (then-measured) budget. Resolve in `CORE-02`.
-  *Preliminary evidence (SW-123, `docs/eval/runs/2026-07-15-local-sandbox/`):* `agent_brief` is
-  the ONLY scaling outlier across the three repos — p95 11 ms (cobra, 938 nodes) → 558 ms
-  (guava, 40 712 nodes) while every other stable op stays ≤ ~2 ms. The decision is confirmed to
-  be about this one op's full-catalog digest; final numbers and the adopt/keep call come from
-  the first `eval-full.yml` run on the reference runner (`ubuntu-latest`).
+- **U2 — brief aggregate strategy. RESOLVED (SW-124 budget freeze, 2026-07-15).** Measured on
+  the reference runner (`docs/eval/runs/2026-07-15-ubuntu-latest/`): `agent_brief` is the ONLY
+  scaling op — p95 8.5 ms (cobra, 938 nodes) → 184 ms (guava, 40 712 nodes) while every other
+  stable op stays ≤ 1.3 ms. **Decision: KEEP the catalog-read digest.** brief is a
+  once-per-session orientation call, not a hot-loop op; 184 ms on a 40k-node monorepo is within
+  UX tolerance and now ratcheted (agent_tools p95 budget 300 ms on guava-class repos,
+  `docs/eval/hero-budgets.json`). SQL aggregates stay the documented follow-up ONLY if a real
+  repository breaches that ratchet — adopting them now would trade reviewable simplicity for
+  headroom nothing needs.
 - **U3 — frontier batching for neighborhood/impact.** Per-hop loops may need
   `Incoming(ids []NodeId)` batch variants on high-degree frontiers. *Experiment:* the CORE-02
   1M-edge fixture (master `MVP-04` heritage) measures per-hop probe counts; add batch variants
   only if the loop shape breaches budget. Until then the port keeps single-source methods only.
-- **U4 — whole-graph cache disposition.** Keep, bound, or opt-in. *Experiment:* after all stable
-  hotpaths bypass it (D7), measure RSS + latency with and without the cache on the EVAL-01 repos;
-  decide delete/bound/flag from data. Resolve in `CORE-02`/`RC-01` window.
-  *Preliminary evidence (SW-123, `docs/eval/runs/2026-07-15-local-sandbox/`):* peak RSS on the
-  guava full run is 4.2 GB against a 35 MB on-disk store, while the selective warm paths stay
-  scale-flat (≤ 600 µs structural p95) — i.e. the stable tier no longer needs whatever the
-  process holds in memory. The number pools ingest working set and cache; the deciding
-  experiment (same run with the memGraph cache disabled) still needs the with/without pair on
-  the reference runner.
-- **U5 — latency/rows budgets.** Absolute p95 and rows-scanned budgets are **not invented here**
-  (master: "keine Scheingenauigkeit"). *Experiment:* first reproducible EVAL-01 baseline run
-  fixes the numbers; they are then versioned as gates (EVAL-02).
+- **U4 — whole-graph cache disposition. DECIDED (SW-124 budget freeze, 2026-07-15):
+  remove it from the stable path — demote to opt-in.** The decision no longer needs the
+  with/without pair, because both of its inputs are now facts: (a) since CORE-02 **no stable
+  hotpath reads the memGraph cache** (code fact, pinned by the `TestSelectiveGate_*` scan
+  gates), and (b) the selective paths are scale-flat at reference conditions (120–252 µs
+  structural p95 up to 40 712 nodes, `docs/eval/runs/2026-07-15-ubuntu-latest/`) — the cache
+  earns nothing on the stable tier. Peak RSS meanwhile scales with available memory, not the
+  store (11.8 GB on the 16 GB reference runner vs 4.2 GB in the sandbox for the same 33 MB
+  guava store). *Implementation is a follow-up story* (labs surfaces still consume the cache);
+  the with/without pair then merely QUANTIFIES the saving for the downward re-pin of the guava
+  `peak_rss_mb` budget — it no longer gates the decision.
+- **U5 — latency/rows budgets. RESOLVED (SW-124 budget freeze, 2026-07-15).** Frozen from the
+  first reproducible run on the reference runner class (`ubuntu-latest`, workflow run
+  29418826616): per-repo baselines + ratchet budgets in `docs/eval/hero-budgets.json`
+  (policy: ~2× latency baseline for shared-runner variance, ~1.5× memory/size baseline;
+  re-pinning is a reviewed manifest edit citing a newer reference run). Raw evidence committed
+  under `docs/eval/runs/2026-07-15-ubuntu-latest/`; the earlier sandbox run remains as the
+  preliminary cross-check.
 
 ## Governed code seams (so `CORE-01`/`CORE-02` implement against this)
 
