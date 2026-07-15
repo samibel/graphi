@@ -20,7 +20,7 @@ mit dem dokumentierten Lock-Handgriff.
 
 | Beleg | Evidenz |
 |-------|---------|
-| Publish-Lock eingerastet; Release unmöglich bis RC-Go | `.github/publish-lock.json` (`"locked": true`); Test `cmd/publish-lock` `TestCommittedGateIsEngaged` (SW-109/CT-01, main) |
+| Publish-Lock: reversibles CT-01-Gate, gates JEDEN Trigger; nach dem RC-01-Go (2026-07-15) auf `false` gedreht, Release freigegeben | `.github/publish-lock.json` (`"locked": false`); Test `cmd/publish-lock` `TestCommittedGateIsLifted` (Pin folgt dem Gate — Flip = reviewter Lift; Wieder-Einrasten dreht beide zurück) |
 | Ein einziger, SHA-gebundener Release-Pfad | `.github/workflows/release-dag.yml`: gate→build→sbom→publish, jede Stufe `needs`-verkettet auf `${{ github.sha }}`; `auto-release.yml` (workflow_run-Kette auf dem FALSCHEN Workflow) gelöscht — `aa96826` (SW-120/REL-01), ADR 0005 |
 | Red-Gate-Beweis: roter Gate ⇒ kein Tag, kein Release | `TestReleaseDAG_RedGateYieldsNoTagOrRelease`, `TestReleaseDAG_IsTheOnlyPublishPath` (repo-weiter Scan: genau ein Publish-Pfad) |
 | Action-Supply-Chain gepinnt (ADR 0005 U1, RESOLVED) | Jede `uses:` im DAG auf 40-hex Commit-SHA; Assertion scharf: `TestReleaseDAG_EveryActionIsSHAPinned` (SW-124) |
@@ -101,26 +101,28 @@ Stable-Tier + Manifest-Freshness) PASS.
 **Entscheider:** Sami. **Grundlage:** §2-Checkliste + §4.1 abgearbeitet.
 
 ```text
-Entscheidung: [ GO / NO-GO ]        Datum: ____________
-Begründung (3 Sätze reichen):
-1. ____________________________________________________________
-2. ____________________________________________________________
-3. ____________________________________________________________
+Entscheidung: [ GO ]                 Datum: 2026-07-15
+Begründung:
+1. G0–G4 grün mit eingecheckter Evidenz; alle Repo-Gates grün; der
+   adversariale Audit brach keine Sicherheits-/Korrektheitsbehauptung.
+2. §4.1 abgearbeitet: Review/Merge (#51/#52) und Budget-Freeze (#53) mit
+   Referenzlauf auf ubuntu-latest; ADR 0003 U2/U4/U5 geschlossen.
+3. Release-Pfad ist ein einziger, SHA-gebundener, red-gate-sicherer DAG;
+   ein roter Gate produziert weiterhin weder Tag noch Release.
 ```
 
-**Bei GO — der dokumentierte Handgriff (genau ein Commit):**
+**GO umgesetzt (der dokumentierte Handgriff — genau ein reviewter Commit):**
+`.github/publish-lock.json` `"locked": true → false` (plus der mitgedrehte
+Pin `TestCommittedGateIsLifted`, damit Gate-Datei und Test nie auseinanderlaufen).
 
-```sh
-# .github/publish-lock.json: "locked": true -> false — sonst NICHTS im Diff.
-# Eigener, reviewter Commit; Commit-Message referenziert dieses Dossier.
-```
-
-Danach läuft der erste Release vollständig durch den DAG: gate → build → sbom
-→ attest → tag → publish, alles auf einer SHA; ein roter Gate produziert
+Danach läuft der Release vollständig durch den DAG: gate → build → sbom →
+attest → tag → publish, alles auf einer SHA; ein roter Gate produziert
 weiterhin weder Tag noch Release (`TestReleaseDAG_RedGateYieldsNoTagOrRelease`).
+Die Version ergibt sich aus dem ersten Released-Header in `CHANGELOG.md`
+(**v0.5.0**); ein zweiter Release entsteht durch den nächsten Header + Push.
 
-**Bei NO-GO:** Blocker hier benennen, Lock bleibt zu, Dossier bleibt der
-Wiedervorlage-Punkt.
+**Wieder-Einrasten (Incident/Freeze):** `"locked"` zurück auf `true` und den
+Pin mitdrehen — ein reviewter Commit, keine Workflow-Änderung.
 
 ## 6. Reproduktion (eine Zeile je Beleg)
 
