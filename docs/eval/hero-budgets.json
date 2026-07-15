@@ -1,70 +1,68 @@
 {
-  "schema_version": 1,
-  "notes": "SW-122 (EVAL-01) budget SCHEMA for the hero-task suite and the pinned real-repo runs. Per ADR 0003 U5, absolute values are NOT invented: every null below is frozen as a ratchet from the first reproducible CI run on the declared runner class (SW-123 / EVAL-02), citing that run's commit, workflow run id, and report artifact. Until then the schema carries the fields, not numbers.",
+  "schema_version": 2,
+  "notes": "SW-123 (EVAL-02) budgets for the hero-task suite and the pinned real-repo runs, FROZEN per ADR 0003 U5 from the first reproducible run on the reference runner class (see recorded_from). Ratchet policy (bench/bench-budget.yml precedent): budget ~= 2x the measured latency baseline (shared-runner variance headroom), ~1.5x the memory/size baseline, rounded to round numbers. Re-pinning is a reviewed edit of this file citing a newer reference run - never a code change. The gate fails when a measured value EXCEEDS its budget.",
   "runner_class": "ubuntu-latest",
   "os": "linux",
   "cgo_enabled": false,
   "recorded_from": {
-    "commit": null,
-    "workflow_run": null,
-    "report_artifact": null,
-    "recorded_at": null
+    "commit": "71353f90720e079b84b7a0549bd51fc632bcfe37",
+    "workflow_run": "https://github.com/samibel/graphi/actions/runs/29418826616",
+    "report_artifact": "docs/eval/runs/2026-07-15-ubuntu-latest/ (artifacts eval-full-{cobra,flask,guava}, hero-report)",
+    "recorded_at": "2026-07-15T13:22:14Z"
   },
   "hero_suite": {
     "scenario_dir": "corpus/hero",
     "pass_rate_min": 1.0,
-    "max_latency_ms_per_op": {
-      "index": null,
-      "search": null,
-      "definition": null,
-      "references": null,
-      "callers": null,
-      "callees": null,
-      "neighborhood": null,
-      "impact": null,
-      "explain_symbol": null,
-      "related_files": null,
-      "change_risk": null,
-      "agent_brief": null
-    }
+    "measured_max_latency_ms_per_op": {
+      "index": 0,
+      "search": 0,
+      "definition": 0,
+      "references": 0,
+      "callers": 0,
+      "callees": 0,
+      "neighborhood": 0,
+      "impact": 0,
+      "explain_symbol": 0,
+      "related_files": 0,
+      "change_risk": 0,
+      "agent_brief": 0
+    },
+    "notes": "The reference run measured <1ms (millisecond-granularity floor) for every hero task on the tier-1 fixtures, so per-op millisecond budgets carry no ratchet signal there; the hero ratchet is the 20/20 pass gate (cmd/eval/hero_test.go + the eval-full hero job). Latency ratchets live in real_repos.warm_p95_us, where microsecond resolution supports them."
   },
   "real_repos": {
-    "selection": [
-      "cobra",
-      "flask",
-      "guava"
-    ],
+    "selection": ["cobra", "flask", "guava"],
     "per_repo": {
       "cobra": {
-        "index_wallclock_ms": null,
-        "peak_rss_mb": null,
-        "db_size_mb": null,
+        "index_wallclock_ms": { "baseline": 532, "budget": 1000 },
+        "peak_rss_mb": { "baseline": 337, "budget": 512 },
+        "db_size_mb": { "baseline": 1.12, "budget": 2 },
         "warm_p95_us": {
-          "structural": null,
-          "search": null,
-          "agent_tools": null
+          "structural": { "baseline": 252, "budget": 500 },
+          "search": { "baseline": 894, "budget": 2000 },
+          "agent_tools": { "baseline": 8236, "budget": 20000 }
         }
       },
       "flask": {
-        "index_wallclock_ms": null,
-        "peak_rss_mb": null,
-        "db_size_mb": null,
+        "index_wallclock_ms": { "baseline": 375, "budget": 800 },
+        "peak_rss_mb": { "baseline": 529, "budget": 800 },
+        "db_size_mb": { "baseline": 0.79, "budget": 2 },
         "warm_p95_us": {
-          "structural": null,
-          "search": null,
-          "agent_tools": null
+          "structural": { "baseline": 120, "budget": 300 },
+          "search": { "baseline": 1238, "budget": 3000 },
+          "agent_tools": { "baseline": 5061, "budget": 15000 }
         }
       },
       "guava": {
-        "index_wallclock_ms": null,
-        "peak_rss_mb": null,
-        "db_size_mb": null,
+        "index_wallclock_ms": { "baseline": 13216, "budget": 25000 },
+        "peak_rss_mb": { "baseline": 11821, "budget": 14000 },
+        "db_size_mb": { "baseline": 33.4, "budget": 50 },
         "warm_p95_us": {
-          "structural": null,
-          "search": null,
-          "agent_tools": null
+          "structural": { "baseline": 171, "budget": 400 },
+          "search": { "baseline": 573, "budget": 1500 },
+          "agent_tools": { "baseline": 177507, "budget": 300000 }
         }
       }
-    }
+    },
+    "notes": "guava peak_rss baseline nearly fills the 16GB reference runner; the ADR 0003 U4 disposition (whole-graph cache off the stable path) is expected to lower it - re-pin DOWNWARD after that story lands. agent_tools p95 is dominated by agent_brief's full-catalog digest (ADR 0003 U2): cobra 8.5ms / flask 5.2ms / guava 184ms while every other op stays <= 1.3ms."
   }
 }

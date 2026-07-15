@@ -1,0 +1,80 @@
+{
+  "header": {
+    "timestamp": "2026-07-15T13:22:14Z",
+    "version": "0.0.0-dev",
+    "commit": "71353f90720e079b84b7a0549bd51fc632bcfe37",
+    "os": "linux",
+    "arch": "amd64",
+    "corpus_version": 2
+  },
+  "runner_class": "ubuntu-latest",
+  "notes": "in-process session model: engine services over one open SQLite store; cold index timed around IngestAll; peak RSS = getrusage MAXRSS sampled after the index pass; warm p95 pooled per op class over the recorded warm_ops/warm_samples",
+  "repo": {
+    "name": "guava",
+    "ref": "v33.0.0",
+    "sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+    "tier": 3,
+    "clone_ms": 1356,
+    "index": {
+      "wallclock_ms": 13216,
+      "peak_rss_mb": 11821,
+      "db_size_bytes": 34996224,
+      "nodes": 40712,
+      "edges": 68323,
+      "files": 3223
+    },
+    "warm_p95_us": {
+      "agent_tools": 177507,
+      "search": 573,
+      "structural": 171
+    },
+    "warm_p95_us_per_op": {
+      "agent_brief": 183933,
+      "callees": 155,
+      "callers": 103,
+      "change_risk": 180,
+      "definition": 96,
+      "explain_symbol": 343,
+      "neighborhood": 184,
+      "references": 99,
+      "related_files": 280,
+      "search": 573
+    },
+    "warm_samples": {
+      "agent_tools": 33,
+      "search": 40,
+      "structural": 125
+    },
+    "warm_ops": {
+      "agent_tools": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ],
+      "search": [
+        "search"
+      ],
+      "structural": [
+        "callees",
+        "callers",
+        "definition",
+        "neighborhood",
+        "references"
+      ]
+    },
+    "searches": [
+      {
+        "query": "ImmutableList",
+        "matches": 24,
+        "pass": true
+      },
+      {
+        "query": "Preconditions",
+        "matches": 8,
+        "pass": true
+      }
+    ],
+    "pass": true
+  }
+}
