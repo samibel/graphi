@@ -1,9 +1,12 @@
 package gitignore
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestMatch_GitSemanticsSubset(t *testing.T) {
-	m := Compile([]string{
+	m, err := Compile([]string{
 		"# comment",
 		"",
 		"*.log",
@@ -16,6 +19,9 @@ func TestMatch_GitSemanticsSubset(t *testing.T) {
 		"a/**/b",
 		"[Tt]humbs.db",
 	})
+	if err != nil {
+		t.Fatalf("Compile: %v", err)
+	}
 	cases := []struct {
 		path  string
 		isDir bool
@@ -63,21 +69,59 @@ func TestMatch_GitSemanticsSubset(t *testing.T) {
 }
 
 func TestMatch_NoReincludeBelowExcludedDir(t *testing.T) {
-	m := Compile([]string{"vendor/", "!vendor/important.go"})
+	m, err := Compile([]string{"vendor/", "!vendor/important.go"})
+	if err != nil {
+		t.Fatalf("Compile: %v", err)
+	}
 	if !m.Match("vendor/important.go", false) {
 		t.Fatal("negation below an excluded directory must not re-include (git rule)")
 	}
 }
 
 func TestCompile_EmptyAndNil(t *testing.T) {
-	if Compile(nil) != nil {
+	if m, err := Compile(nil); err != nil || m != nil {
 		t.Fatal("Compile(nil) should return nil matcher")
 	}
-	if Compile([]string{"", "# only comments"}) != nil {
+	if m, err := Compile([]string{"", "# only comments"}); err != nil || m != nil {
 		t.Fatal("comment-only input should return nil matcher")
 	}
 	var m *Matcher
 	if m.Match("anything", false) {
 		t.Fatal("nil matcher must ignore nothing")
+	}
+}
+
+func TestCompile_InvalidPatternFailsClosedWithLine(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		lines []string
+		line  string
+	}{
+		{name: "unterminated class", lines: []string{"# comment", "[secret"}, line: "line 2"},
+		{name: "invalid range", lines: []string{"[z-a]"}, line: "line 1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m, err := Compile(tc.lines)
+			if err == nil {
+				t.Fatal("malformed pattern must return an error")
+			}
+			if m != nil {
+				t.Fatalf("malformed pattern returned a matcher: %#v", m)
+			}
+			if !strings.Contains(err.Error(), tc.line) {
+				t.Fatalf("error %q does not identify %s", err, tc.line)
+			}
+		})
+	}
+}
+
+func TestCompileErrorDoesNotEchoRawPattern(t *testing.T) {
+	const secret = "SECRET_PATTERN_CONTENT"
+	_, err := Compile([]string{"[" + secret})
+	if err == nil {
+		t.Fatal("Compile accepted malformed pattern")
+	}
+	if strings.Contains(err.Error(), secret) {
+		t.Fatalf("Compile error leaked raw pattern: %q", err)
 	}
 }

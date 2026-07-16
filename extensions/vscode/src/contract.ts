@@ -22,6 +22,10 @@ export interface ErrorEnvelope {
       | "not_found"
       | "schema_mismatch"
       | "unavailable"
+      | "labs_disabled"
+      | "invalid_host"
+      | "origin_forbidden"
+      | "request_too_large"
       | "internal";
     /** Sanitized, client-safe message. Never a raw engine string/path/trace. */
     message: string;
@@ -93,17 +97,37 @@ export interface QueryResult {
   edges: ResultEdge[];
 }
 
-/** Impact (blast-radius) analysis payload. */
-export interface ImpactResult {
-  analyzer: string;
-  impacted: string[]; // impacted node ids
-  provenance?: { tier?: string };
+/** One provenance-bearing node reached by the impact traversal. */
+export interface ImpactReachedNode {
+  node: ResultNode;
+  reached_via: ResultEdge;
+  depth: number;
 }
 
-/** Search result payload. */
+/** Impact (blast-radius) analysis payload (engine/analysis.Analysis). */
+export interface ImpactResult {
+  analyzer: string;
+  outcome: string;
+  symbol: string;
+  truncated?: boolean;
+  nodes?: ImpactReachedNode[];
+}
+
+/** One ranked lexical search hit (engine/search.Match). */
+export interface SearchMatch {
+  node_id: string;
+  kind: string;
+  qualified_name: string;
+  source_path: string;
+  line: number;
+  column: number;
+  rank: number;
+}
+
+/** Search result payload (engine/search.Response). */
 export interface SearchResult {
   query: string;
-  matches: Array<{ id: string; path: string; line: number }>;
+  matches: SearchMatch[];
 }
 
 /** SSE data-event payload (engine/observe.Event). */

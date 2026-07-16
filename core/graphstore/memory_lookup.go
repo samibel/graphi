@@ -7,6 +7,7 @@ package graphstore
 // EdgeId, nodes by NodeId) is applied on the matched set only.
 
 import (
+	"container/heap"
 	"context"
 	"sort"
 
@@ -22,6 +23,150 @@ func (m *MemStore) Incoming(ctx context.Context, id model.NodeId, kinds ...model
 // Outgoing implements GraphLookup: Incoming's mirror for the From endpoint.
 func (m *MemStore) Outgoing(ctx context.Context, id model.NodeId, kinds ...model.EdgeKind) ([]model.Edge, error) {
 	return m.incident(ctx, m.outSet, id, kinds)
+}
+
+// IncomingBounded implements BoundedGraphLookup without scanning the complete
+// adjacency set. The ordered per-endpoint indexes are maintained with each
+// write under the same lock as the edge catalog.
+func (m *MemStore) IncomingBounded(ctx context.Context, id model.NodeId, limit int, kinds ...model.EdgeKind) ([]model.Edge, bool, error) {
+	return m.incidentBounded(ctx, id, limit, true, kinds)
+}
+
+// OutgoingBounded is IncomingBounded's mirror for the From endpoint.
+func (m *MemStore) OutgoingBounded(ctx context.Context, id model.NodeId, limit int, kinds ...model.EdgeKind) ([]model.Edge, bool, error) {
+	return m.incidentBounded(ctx, id, limit, false, kinds)
+}
+
+func (m *MemStore) incidentBounded(
+	ctx context.Context,
+	id model.NodeId,
+	limit int,
+	incoming bool,
+	kinds []model.EdgeKind,
+) ([]model.Edge, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, false, err
+	}
+	if limit <= 0 {
+		return nil, false, ErrInvalidLimit
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.closed {
+		return nil, false, ErrClosed
+	}
+	byKind := m.outKindOrdered
+	knownKinds := m.outKinds
+	if incoming {
+		byKind = m.inKindOrdered
+		knownKinds = m.inKinds
+	}
+
+	probeLimit := boundedProbeLimit(limit)
+	var ids []model.EdgeId
+	if len(kinds) == 0 {
+		// Zero kinds means every stored kind. Canonical order is (kind, EdgeId),
+		// matching SQLite's endpoint+kind+id index order while touching only the
+		// prefix needed from each successive kind tree.
+		orderedKinds := knownKinds[id].first(probeLimit)
+		ids = make([]model.EdgeId, 0, min(probeLimit, len(m.edges)))
+		for _, kind := range orderedKinds {
+			remaining := probeLimit - len(ids)
+			if remaining <= 0 {
+				break
+			}
+			ids = append(ids, byKind[incidentKindKey{id: id, kind: kind}].first(remaining)...)
+		}
+	} else {
+		// Merge requested endpoint+kind indexes directly. At most limit+1 IDs
+		// are emitted regardless of endpoint degree; every individual kind prefix
+		// is itself capped at limit+1.
+		var cursors edgeIDCursorHeap
+		for _, kind := range uniqueEdgeKinds(kinds) {
+			ordered := byKind[incidentKindKey{id: id, kind: kind}].first(probeLimit)
+			if len(ordered) > 0 {
+				cursors = append(cursors, edgeIDCursor{ids: ordered})
+			}
+		}
+		heap.Init(&cursors)
+		ids = make([]model.EdgeId, 0, min(probeLimit, cursors.totalAvailable()))
+		for len(ids) < probeLimit && cursors.Len() > 0 {
+			cursor := heap.Pop(&cursors).(edgeIDCursor)
+			ids = append(ids, cursor.ids[cursor.pos])
+			cursor.pos++
+			if cursor.pos < len(cursor.ids) {
+				heap.Push(&cursors, cursor)
+			}
+		}
+	}
+
+	truncated := len(ids) > limit
+	if truncated {
+		ids = ids[:limit]
+	}
+	out := make([]model.Edge, 0, len(ids))
+	for _, edgeID := range ids {
+		if edge, ok := m.edges[edgeID]; ok {
+			out = append(out, edge)
+		}
+	}
+	return out, truncated, nil
+}
+
+type edgeIDCursor struct {
+	ids []model.EdgeId
+	pos int
+}
+
+type edgeIDCursorHeap []edgeIDCursor
+
+func (h edgeIDCursorHeap) Len() int { return len(h) }
+func (h edgeIDCursorHeap) Less(i, j int) bool {
+	return h[i].ids[h[i].pos] < h[j].ids[h[j].pos]
+}
+func (h edgeIDCursorHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
+func (h *edgeIDCursorHeap) Push(value any) {
+	*h = append(*h, value.(edgeIDCursor))
+}
+func (h *edgeIDCursorHeap) Pop() any {
+	old := *h
+	last := old[len(old)-1]
+	*h = old[:len(old)-1]
+	return last
+}
+
+func (h edgeIDCursorHeap) totalAvailable() int {
+	total := 0
+	maxInt := int(^uint(0) >> 1)
+	for _, cursor := range h {
+		remaining := len(cursor.ids) - cursor.pos
+		if total > maxInt-remaining {
+			return maxInt
+		}
+		total += remaining
+	}
+	return total
+}
+
+func boundedProbeLimit(limit int) int {
+	if limit < int(^uint(0)>>1) {
+		return limit + 1
+	}
+	return limit
+}
+
+func uniqueEdgeKinds(kinds []model.EdgeKind) []string {
+	seen := make(map[string]struct{}, len(kinds))
+	out := make([]string, 0, len(kinds))
+	for _, kind := range kinds {
+		if _, exists := seen[kind]; exists {
+			continue
+		}
+		seen[kind] = struct{}{}
+		out = append(out, kind)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func (m *MemStore) inSet(id model.NodeId) map[model.EdgeId]struct{}  { return m.in[id] }

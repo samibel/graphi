@@ -42,8 +42,9 @@ go build -tags webui_embed ./...     # bundle the web UI into the binary
 # Full suite, the way CI runs it (CGo-free)
 CGO_ENABLED=0 go test ./...
 
-# The privilege-aware expected-failure gate CI uses
-go test -json ./... | go run ./cmd/testgate -stdin
+# The privilege-aware expected-failure gate CI uses. testgate owns the child
+# process and therefore cannot lose go test's exit status through a pipe.
+CGO_ENABLED=0 go run ./cmd/testgate -target ./...
 ```
 
 Please add or update tests for any behavior change. Determinism and

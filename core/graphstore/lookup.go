@@ -42,6 +42,25 @@ type GraphLookup interface {
 	Outgoing(ctx context.Context, id model.NodeId, kinds ...model.EdgeKind) ([]model.Edge, error)
 }
 
+// BoundedGraphLookup is the incident-read port for work-budgeted traversals.
+// It is deliberately separate from GraphLookup so consumers that genuinely
+// need every incident edge retain that contract while bounded consumers cannot
+// accidentally materialize a high-degree adjacency list before applying their
+// own cap.
+//
+// Both methods return at most limit edges. Explicitly kind-filtered results use
+// canonical EdgeId order; zero kinds means all kinds and uses canonical
+// (EdgeKind, EdgeId) order so the two production indexes can stop before a
+// high-degree sort. truncated is true exactly when more matching edges exist
+// than were returned. Kinds have set semantics (duplicates do not change the
+// result). limit must be positive or ErrInvalidLimit is returned. Backend work
+// is degree-independent: unfiltered reads inspect at most limit+1 edge rows;
+// filtered reads inspect at most limit+1 rows per distinct requested kind.
+type BoundedGraphLookup interface {
+	IncomingBounded(ctx context.Context, id model.NodeId, limit int, kinds ...model.EdgeKind) (edges []model.Edge, truncated bool, err error)
+	OutgoingBounded(ctx context.Context, id model.NodeId, limit int, kinds ...model.EdgeKind) (edges []model.Edge, truncated bool, err error)
+}
+
 // SymbolLookupPort is the selective symbol resolution port (ADR 0003 D2): the
 // exact-equality lookups resolveExact performs in Go over a full node scan
 // today, plus the already-selective ranked lexical search. Callers pass
@@ -68,10 +87,59 @@ type SymbolLookupPort interface {
 	Search(ctx context.Context, text string, limit int) ([]RankedNode, error)
 }
 
+// BriefFileStats is the compact per-file aggregate consumed by agent_brief.
+// SymbolCount counts graph nodes with this source path; EdgeEndpoints counts
+// incident edge endpoints (a same-file edge contributes two, matching the
+// original digest semantics).
+type BriefFileStats struct {
+	Path          string
+	SymbolCount   int
+	EdgeEndpoints int
+}
+
+// BriefSymbolStats is one symbol ranked by inbound edge count.
+type BriefSymbolStats struct {
+	Node         model.Node
+	InboundEdges int
+}
+
+// BriefStats is a bounded aggregate view of a graph. Files is compact by file
+// count rather than node/edge count; TopInbound is capped by the caller.
+type BriefStats struct {
+	TotalNodes int
+	TotalEdges int
+	TierCounts map[model.ConfidenceTier]int
+	Files      []BriefFileStats
+	TopInbound []BriefSymbolStats
+}
+
+// BriefAggregatePort serves agent_brief's genuinely aggregate query without
+// materializing the whole graph or issuing one lookup per node. Implementations
+// must return Files in path order and TopInbound by degree descending then
+// NodeId ascending. topSymbols <= 0 returns no TopInbound rows.
+type BriefAggregatePort interface {
+	BriefStats(ctx context.Context, topSymbols int) (BriefStats, error)
+}
+
+// DegreeSamplePort returns a deterministic, degree-stratified function/method
+// sample for real-repository evaluation. Candidates are ranked by incident
+// degree descending then NodeId, divided into maxSymbols quantile buckets, and
+// the first row from each bucket is returned. This prevents latency evidence
+// from measuring only the first low-entropy NodeId prefix.
+type DegreeSamplePort interface {
+	DegreeStratifiedSymbols(ctx context.Context, maxSymbols int) ([]model.Node, error)
+}
+
 // Compile-time proof both reference backends implement both ports.
 var (
-	_ GraphLookup      = (*MemStore)(nil)
-	_ GraphLookup      = (*SQLiteStore)(nil)
-	_ SymbolLookupPort = (*MemStore)(nil)
-	_ SymbolLookupPort = (*SQLiteStore)(nil)
+	_ GraphLookup        = (*MemStore)(nil)
+	_ GraphLookup        = (*SQLiteStore)(nil)
+	_ BoundedGraphLookup = (*MemStore)(nil)
+	_ BoundedGraphLookup = (*SQLiteStore)(nil)
+	_ SymbolLookupPort   = (*MemStore)(nil)
+	_ SymbolLookupPort   = (*SQLiteStore)(nil)
+	_ BriefAggregatePort = (*MemStore)(nil)
+	_ BriefAggregatePort = (*SQLiteStore)(nil)
+	_ DegreeSamplePort   = (*MemStore)(nil)
+	_ DegreeSamplePort   = (*SQLiteStore)(nil)
 )

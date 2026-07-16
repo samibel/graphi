@@ -799,38 +799,67 @@ func makeForgeClient(dbPath, socket string) client.Client {
 	return d
 }
 
-// runMCP launches the MCP stdio server. Usage: graphi mcp [-db path] [-daemon socket]
+// runMCP launches the MCP stdio server. Usage:
 //
-// RUN-01 (ADR 0002): with no explicit -db/-daemon the session self-resolves —
-// the cwd walk finds the repository root (D4 fallback; the MCP-roots rung is
-// U2), the per-repo state paths are derived and created (D1/D2), the store is
-// opened, RECOVERED, and warm/full-ingested BEFORE serving (D3
-// sync-before-serve: a successful initialize already means "ready"), and the
-// Runtime owns every resource with one idempotent Close (D5). An explicit -db
-// keeps the exact pre-RUN-01 behavior (Attach; SW-110 pins it).
+//	graphi mcp [-db path] [-daemon socket] [-labs]
+//
+// RUN-01 (ADR 0002): with no explicit -db/-daemon Runtime construction is
+// deferred until the MCP initialize lifecycle identifies the client workspace.
+// Legacy rootUri/inline roots bind during initialize; roots-capable clients are
+// queried via roots/list after initialized; only clients offering neither use
+// the process-cwd fallback. The selected per-repo state is recovered and
+// warm/full-ingested before any tool can run. An explicit -db keeps the exact
+// pre-RUN-01 behavior (Attach; SW-110 pins it).
 func runMCP(args []string) int {
-	dbPath, socket, _ := extractFlags(args)
-	rt, err := rtime.OpenSession(context.Background(), rtime.Options{
-		Cwd:        getwd(),
-		DBOverride: dbPath,
-		Socket:     socket,
-	})
+	dbPath, socket, labs, err := extractMCPFlags(args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
 		return 1
 	}
-	defer rt.Close()
-	if rt.Root == "" && dbPath == "" && socket == "" {
-		// ADR 0002 D4: no repository bound. The session still serves (empty
-		// graph) so tools/list and non-repository tools work; be honest about it.
-		fmt.Fprintln(os.Stderr, "graphi: mcp: no repository bound — cwd is not a repo (no .git/go.work/go.mod marker); serving an empty graph. cd into a repository or pass -db.")
+	var options []mcp.ServerOption
+	if labs {
+		options = append(options, mcp.WithLabs())
 	}
-	srv := mcp.NewServerWithClient(rt.Client)
-	if err := srv.Serve(context.Background(), os.Stdin, os.Stdout); err != nil {
+	var srv *mcp.Server
+	if dbPath != "" || socket != "" {
+		rt, err := rtime.Attach(dbPath, socket, "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
+			return 1
+		}
+		defer rt.Close()
+		srv = mcp.NewServerWithClient(rt.Client, options...)
+	} else {
+		cwd := getwd()
+		srv = mcp.NewServerWithBinder(func(ctx context.Context, roots []string) (mcp.Binding, error) {
+			rt, err := rtime.OpenSession(ctx, rtime.Options{Cwd: cwd, Roots: roots})
+			if err != nil {
+				return mcp.Binding{}, err
+			}
+			return mcp.Binding{Client: rt.Client, Close: rt.Close}, nil
+		}, options...)
+	}
+	defer srv.Close()
+	serveCtx, stopSignals := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignals()
+	if err := srv.Serve(serveCtx, os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
 		return 1
 	}
 	return 0
+}
+
+func extractMCPFlags(args []string) (dbPath, socket string, labs bool, err error) {
+	dbPath, socket, rest := extractFlags(args)
+	for _, arg := range rest {
+		switch arg {
+		case "-labs", "--labs":
+			labs = true
+		default:
+			return "", "", false, fmt.Errorf("unknown argument %q", arg)
+		}
+	}
+	return dbPath, socket, labs, nil
 }
 
 // resolveSession is the additive default-discovery seam (SW-068). Given the cwd
@@ -1162,6 +1191,8 @@ func runHTTP(args []string) int {
 		fmt.Fprintf(os.Stderr, "graphi: http: %v\n", err)
 		return 1
 	}
+	runCtx, stopSignals := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignals()
 
 	prof, err := profile.ResolveProfile(profileFlag, os.Getenv(profile.EnvName))
 	if err != nil {
@@ -1202,7 +1233,7 @@ func runHTTP(args []string) int {
 		cleanupIngest = func() { _ = ing.Close(); _ = os.RemoveAll(meta) }
 		prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
 		ing.WithProgress(prog.Handle)
-		ierr = ing.IngestAll(context.Background(), *root)
+		ierr = ing.IngestAll(runCtx, *root)
 		prog.Finish(ierr)
 		if ierr != nil {
 			fmt.Fprintf(os.Stderr, "graphi: initial ingest: %v\n", ierr)
@@ -1218,11 +1249,12 @@ func runHTTP(args []string) int {
 		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return 1
 	}
+	defer func() { _ = ln.Close() }()
 	fmt.Printf("graphi http listening on %s (schema_version=%d)\n", ln.Addr(), httpsrv.SchemaVersion)
 	// Inject the analyzer names so /contract can advertise them for client
 	// capability negotiation without the http package importing engine/analysis.
 	srv := httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names())
-	if err := srv.Serve(ln); err != nil {
+	if err := srv.ServeContext(runCtx, ln); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: http serve: %v\n", err)
 		return 1
 	}
@@ -1336,6 +1368,9 @@ func runMemory(args []string) int {
 //	graphi agent-brief [-topic <topic>] [-ledger path]
 func runAgentBrief(args []string) int {
 	dbPath, socket, rest := extractFlags(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
 	ledgerPath := extractLedgerFlag(&rest)
 	c, storeCleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
@@ -1368,6 +1403,9 @@ func runAgentBrief(args []string) int {
 //	graphi change-risk    [-db path] [-max-items n] (<target> | -diff <file|->)
 func runAgentTool(args []string, verb string) int {
 	dbPath, socket, rest := extractFlags(args)
+	if dbPath == "" && socket == "" {
+		dbPath, socket = resolveSession(getwd(), "", "")
+	}
 	c, storeCleanup := makeClientOrOpen(dbPath, socket)
 	if c == nil {
 		return 1

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
 )
@@ -31,8 +32,37 @@ func NewClient(socketPath, binaryPath string) *DaemonClient {
 	return &DaemonClient{socketPath: socketPath, binaryPath: binaryPath}
 }
 
-// Ensure DaemonClient satisfies the surfaces/client.Client contract.
-var _ client.Client = (*DaemonClient)(nil)
+// Ensure DaemonClient satisfies the execution and capability-reporting
+// contracts. The latter keeps surface catalogs honest while several Client
+// methods remain compatibility stubs pending daemon RPCs.
+var (
+	_ client.Client             = (*DaemonClient)(nil)
+	_ client.CapabilityReporter = (*DaemonClient)(nil)
+)
+
+// SupportsCapability reports which public operation names can reach a real
+// daemon RPC. It is deliberately an allow-list: a newly added Client method or
+// MCP tool is hidden on daemon bindings until its transport is actually wired.
+// The check is local and side-effect free; tools/list must never dial or
+// auto-start a daemon merely to discover its catalog.
+func (*DaemonClient) SupportsCapability(name string) bool {
+	for _, operation := range query.Operations {
+		if name == operation {
+			return true // the generic query RPC accepts every structural operation
+		}
+	}
+	switch name {
+	case "search", "search_semantic", "search_ast", "find_clones",
+		"compound",
+		"impact", "analyze",
+		"analyze_taint", "analyze_pdg", "analyze_interproc",
+		"analyze_contracts", "analyze_githistory", "analyze_pr_risk",
+		"analyze_pr_signals", "analyze_pr_questions":
+		return true
+	default:
+		return false
+	}
+}
 
 // connect returns a net.Conn to the daemon, auto-starting it if necessary.
 func (c *DaemonClient) connect(ctx context.Context) (net.Conn, error) {

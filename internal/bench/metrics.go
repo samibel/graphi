@@ -5,16 +5,29 @@ import (
 	"time"
 )
 
+const (
+	ExternalBinaryBuildContract = "external-binary/unverified"
+	CustomBuildContract         = "custom-build/unverified"
+)
+
 // Metrics are the four measured benchmark values plus provenance. Durations are
 // expressed as float milliseconds; binary size as bytes.
 type Metrics struct {
-	ColdStartP95MS  float64 `json:"cold_start_p95_ms"` // daemon/engine cold-start to first served query, P95
-	FullIndexMS     float64 `json:"full_index_ms"`     // engine/ingest IngestAll over the frozen fixture, median
-	FreshnessLagMS  float64 `json:"freshness_lag_ms"`  // hot-index IngestChanged + query round-trip
-	BinarySizeBytes int64   `json:"binary_size_bytes"` // size of the static default binary
-	FixtureDigest   string  `json:"fixture_digest"`
-	BaselineVersion string  `json:"baseline_version"`
-	Samples         int     `json:"samples"`
+	ColdStartP95MS   float64 `json:"cold_start_p95_ms"` // daemon/engine cold-start to first served query, P95
+	FullIndexMS      float64 `json:"full_index_ms"`     // engine/ingest IngestAll over the frozen fixture, median
+	FreshnessLagMS   float64 `json:"freshness_lag_ms"`  // hot-index IngestChanged + query round-trip
+	BinarySizeBytes  int64   `json:"binary_size_bytes"` // size of the static default binary
+	BuildContract    string  `json:"build_contract"`
+	BuildGoVersion   string  `json:"build_go_version"`
+	BuildGOOS        string  `json:"build_goos"`
+	BuildGOARCH      string  `json:"build_goarch"`
+	BuildGOAMD64     string  `json:"build_goamd64,omitempty"`
+	BuildCGOEnabled  string  `json:"build_cgo_enabled"`
+	BuildVCSRevision string  `json:"build_vcs_revision,omitempty"`
+	BuildVCSModified string  `json:"build_vcs_modified,omitempty"`
+	FixtureDigest    string  `json:"fixture_digest"`
+	BaselineVersion  string  `json:"baseline_version"`
+	Samples          int     `json:"samples"`
 	// ProfileMetrics holds per-profile index/db/edge/query metrics keyed by
 	// profile name (fast/balanced/deep). Added for EP-022 profile-aware budgets.
 	ProfileMetrics map[string]ProfileMetric `json:"profile_metrics,omitempty"`

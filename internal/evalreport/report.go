@@ -214,6 +214,11 @@ func WriteJSON(r Report, path string) error {
 func WriteMarkdown(r Report, path string) error {
 	const tmpl = `# Eval Report
 
+> Internal evaluation evidence stamped with the reported revision. Only a clean,
+> fully resolved commit SHA is commit-bound; '+dirty' or 'unknown' identifies
+> non-citable development evidence. This score is not an independent project
+> rating, production-readiness certification, or competitor benchmark.
+
 **Timestamp:** {{.Header.Timestamp}}
 **Version:** {{.Header.Version}}
 **Commit:** {{.Header.Commit}}

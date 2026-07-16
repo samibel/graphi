@@ -91,14 +91,14 @@ func TestCompareBranchesTool_Advertised(t *testing.T) {
 	withMat := client.NewDirect(query.New(store), search.New(store)).
 		WithAnalysis(analysis.NewDefaultService(store)).
 		WithBranchStates(mapMaterializer{})
-	names := listToolNames(t, mcp.NewServerWithClient(withMat))
+	names := listToolNames(t, mcp.NewServerWithClient(withMat, mcp.WithLabs()))
 	if !containsStr(names, mcp.ToolCompareBranches) {
 		t.Fatalf("compare_branches not advertised when materializer wired; got %v", names)
 	}
 
 	noMat := client.NewDirect(query.New(store), search.New(store)).
 		WithAnalysis(analysis.NewDefaultService(store))
-	namesNo := listToolNames(t, mcp.NewServerWithClient(noMat))
+	namesNo := listToolNames(t, mcp.NewServerWithClient(noMat, mcp.WithLabs()))
 	if containsStr(namesNo, mcp.ToolCompareBranches) {
 		t.Fatalf("compare_branches advertised when materializer absent (should probe-hide); got %v", namesNo)
 	}

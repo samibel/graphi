@@ -43,7 +43,16 @@ and its delta versus baseline.
 | `cold_start_p95_ms` | daemon/engine hot-index | fresh durable store → ingester → `IngestAll` → wire query+search → first served query; P95 over N samples |
 | `full_index_ms` | engine/ingest | `IngestAll` over the frozen fixture; median over N samples |
 | `freshness_lag_ms` | daemon/engine hot-index | hot-index `IngestChanged` + query round-trip latency |
-| `binary_size_bytes` | release artifact | byte size of the `CGO_ENABLED=0` `./cmd/graphi` build (SW-013 will supply the canonical stamped artifact) |
+| `binary_size_bytes` | canonical default release flavor | byte size of the `CGO_ENABLED=0` build produced with `internal/release.CanonicalBuildArgs`: `-trimpath`, VCS metadata, a fixed version stamp, and `DefaultGrammarSubsetTags` |
+
+The JSON report reads Go version, GOOS, GOARCH, GOAMD64, CGO and VCS settings
+from the measured binary itself. CI pins `GOAMD64=v1`; the enforced baseline is
+therefore a clean `go1.26.5/linux-amd64` artifact rather than a value silently
+mixed across machines or source-path lengths. Supplying `BinaryPath` skips the
+canonical build and marks the contract `external-binary/unverified`; an
+arbitrary prebuilt binary is never reported as canonical. Internally built
+artifacts with a non-default target, tag set, path or build setting are marked
+`custom-build/unverified` instead.
 
 > Note on `freshness_lag_ms`: the Go parser now runs an extraction pass
 > (`core/parse/extract_go.go`) that populates symbol nodes and intra-file
@@ -99,8 +108,7 @@ the release packaging described in `docs/ci/release.md`.
 
 ## Out of scope
 
-- The static binary packaging itself — the harness measures the default build
-  today and will target the canonical release artifact once that packaging work
-  lands (see `docs/ci/release.md`).
+- Symbol stripping (`-s -w`) is a separate release/debuggability policy and is
+  not used to make the size gate pass.
 - Egress/telemetry enforcement — reused here as posture only (see
   `docs/ci/egress-canary.md`).

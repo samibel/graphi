@@ -20,9 +20,64 @@ class Range {
   constructor(public readonly start: Position, public readonly end: Position) {}
 }
 class Location {
-  constructor(public readonly uri: Uri, public readonly position: Position) {}
+  readonly range: Range;
+  constructor(public readonly uri: Uri, positionOrRange: Position | Range) {
+    this.range =
+      positionOrRange instanceof Range
+        ? positionOrRange
+        : new Range(positionOrRange, positionOrRange);
+  }
 }
 class Selection extends Range {}
+
+class MarkdownString {
+  value = "";
+  isTrusted: boolean | undefined;
+  constructor(value?: string) {
+    this.value = value ?? "";
+  }
+  appendMarkdown(value: string): MarkdownString {
+    this.value += value;
+    return this;
+  }
+}
+
+class Hover {
+  constructor(
+    public readonly contents: MarkdownString,
+    public readonly range?: Range,
+  ) {}
+}
+
+class Disposable {
+  constructor(private readonly callOnDispose: () => unknown = () => undefined) {}
+  dispose(): void {
+    this.callOnDispose();
+  }
+}
+
+class EventEmitter<T> {
+  readonly event = (_listener: (event: T) => unknown): Disposable => new Disposable();
+  fire(_event?: T): void {}
+  dispose(): void {}
+}
+
+class TreeItem {
+  description?: string;
+  tooltip?: string;
+  iconPath?: ThemeIcon;
+  command?: unknown;
+  constructor(
+    public readonly label: string,
+    public readonly collapsibleState: number,
+  ) {}
+}
+
+class ThemeIcon {
+  constructor(public readonly id: string) {}
+}
+
+const TreeItemCollapsibleState = { None: 0 };
 
 const workspace = {
   workspaceFolders: undefined as readonly { uri: Uri }[] | undefined,
@@ -36,11 +91,17 @@ const window = {
   showErrorMessage: () => Promise.resolve(undefined),
   showWarningMessage: () => Promise.resolve(undefined),
   showInformationMessage: () => Promise.resolve(undefined),
+  showQuickPick: () => Promise.resolve(undefined),
+  onDidChangeTextEditorSelection: () => new Disposable(),
+  createWebviewPanel: () => {
+    throw new Error("createWebviewPanel is not configured in this unit test");
+  },
 };
 
 const commands = { executeCommand: () => Promise.resolve(undefined) };
 
 const TextEditorRevealType = { InCenter: 2 };
+const ViewColumn = { Beside: 2 };
 
 export {
   Uri,
@@ -48,8 +109,16 @@ export {
   Range,
   Location,
   Selection,
+  MarkdownString,
+  Hover,
+  Disposable,
+  EventEmitter,
+  TreeItem,
+  ThemeIcon,
+  TreeItemCollapsibleState,
   workspace,
   window,
   commands,
   TextEditorRevealType,
+  ViewColumn,
 };

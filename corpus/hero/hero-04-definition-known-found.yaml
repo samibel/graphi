@@ -1,0 +1,19 @@
+id: hero-04-definition-known-found
+description: >
+  Accuracy gate: definition follows the inbound "defines" edge from a known
+  symbol to its defining file or container. A top-level function must resolve
+  to sample.go; returning empty would hide a real definition.
+fixture_ref: tier1-fixture-go
+operation:
+  name: definition
+  args:
+    symbol: Hello
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  anchors:
+    - kind: line
+      value: "file sample.go sample.go:1"
+      match: contains

@@ -229,6 +229,63 @@ func TestEnsure_PermsAndRepoJSON(t *testing.T) {
 	}
 }
 
+func TestEnsure_MigratesExistingPermissiveStateBeforeEarlyReturn(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	p, err := Resolve(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Model state written by an older release: MkdirAll would otherwise leave
+	// these permissive modes untouched, and the existing repo.json causes Ensure
+	// to return early.
+	if err := os.MkdirAll(p.Meta, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(p.Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(p.Meta, 0o775); err != nil {
+		t.Fatal(err)
+	}
+	wantContent := []byte(`{"legacy":true}`)
+	if err := os.WriteFile(p.RepoFile, wantContent, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(p.RepoFile, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Ensure(p); err != nil {
+		t.Fatal(err)
+	}
+
+	for path, want := range map[string]os.FileMode{
+		p.Dir:      0o700,
+		p.Meta:     0o700,
+		p.RepoFile: 0o600,
+	} {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := info.Mode().Perm(); got != want {
+			t.Errorf("%s perm = %o, want %o", path, got, want)
+		}
+	}
+	gotContent, err := os.ReadFile(p.RepoFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotContent) != string(wantContent) {
+		t.Fatalf("existing repo.json content changed: got %q want %q", gotContent, wantContent)
+	}
+}
+
 func TestDiscoverDB_AbsentReturnsEmptyAndOverrideWins(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	repo := t.TempDir()

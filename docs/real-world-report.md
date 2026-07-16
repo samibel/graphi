@@ -60,17 +60,20 @@ bytes).
 
 ## Reproduce everything
 
-Every gate above is a normal `go test` and runs under the CGo-free default build:
+The package-level gates run as normal `go test` checks under the CGo-free
+default build; the full-index measurement is executed by the benchmark command:
 
 ```sh
 CGO_ENABLED=0 go test ./engine/... ./core/...
-# or the whole suite the way CI evaluates it (green except 2 known
-# root-perms carve-outs):
+CGO_ENABLED=0 go run ./cmd/bench
+# or the whole suite with the same fail-closed stream/status validation as CI:
 CGO_ENABLED=0 go run ./cmd/testgate
 ```
 
-The gates are armed: they hard-fail on regression (a ratchet), so these numbers
-cannot silently rot. The design and per-package details are in
+The commands remeasure the behavior and the gates hard-fail when their declared
+boundaries regress. Exact table values are historical snapshots and may move
+inside those budgets; they are not pinned as byte-exact performance claims. The
+design and per-package details are in
 [`docs/plan/2026-07-produkt-brief-agent-pipeline.md`](plan/2026-07-produkt-brief-agent-pipeline.md)
 and the gate scorecard in
 [`docs/plan/wp00-red-gates.md`](plan/wp00-red-gates.md).

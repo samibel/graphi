@@ -1,218 +1,233 @@
-# ADR 0002 — Session / Profile Contract and the MCP Repository Lifecycle (SW-113 / SP-10)
+# ADR 0002 — Session/Profile Contract and MCP Repository Lifecycle
 
-- Status: Accepted (decision spike — contract of record for `RUN-01`)
-- Date: 2026-07-14
-- Story: SW-113 — SP-10 (spike): Session/Profile RFC and a real MCP repository journey
-- Spec / Gate: `focused-core-rc-g0-g1` — gate **G1** (contract freeze)
-- Master WBS: `SP-10`; master plan §4 "Session/Profile"
-- Depends on: SW-111 (frozen 12 stable ops + Stable/Labs/Disabled tiers), SW-110 (MCP-journey baseline)
-- Governs (implemented later, NOT here): `RUN-01` — the `cmd/internal/runtime.Runtime`
-  composition root and the CLI + MCP-stdio migration onto it.
+- Status: **Accepted and implemented** (`RUN-01` is green)
+- Original decision: 2026-07-14
+- Implementation status reconciled: 2026-07-15
+- Scope: zero-config CLI/MCP repository binding, readiness, profile selection, and shutdown
+- Canonical implementation: `cmd/internal/runtime`, `cmd/graphi.runMCP`, `surfaces/mcp`
 
 ## Status of this document
 
-This is a **decision spike**. It is accepted as a **written contract**, not as running code.
-It defines *what* the Session/Profile behavior must be so that `RUN-01` can implement against a
-fixed target; the companion red-now journey test
-(`surfaces/mcp_session_journey_subprocess_test.go`) encodes the same target as an executable
-assertion that is deliberately skipped ("red until RUN-01") until the contract is built. Where a
-decision cannot be made from current evidence, it is recorded below as an explicit **UNKNOWN**
-with the experiment that resolves it — it is **not** silently assumed.
+This ADR is no longer a design spike for future work. The composition root and the
+zero-config MCP repository journey are implemented. The former red-now journey in
+`surfaces/mcp_session_journey_subprocess_test.go` is unskipped and green.
 
-## Context — what is undefined today (evidence)
+This document records the behavior that exists now. It does not claim compatibility
+with MCP clients, operating systems, or repository sizes that have not been exercised.
+Those gaps remain explicit under **UNKNOWNs**.
 
-`graphi setup` wires an MCP client to launch the stdio server, but session / repository / store
-resolution is not a defined product contract. Concretely, on `main` at the time of writing:
+## Decision implemented
 
-1. **Setup writes no repository binding.** `mcpconfig.GraphiEntry` (`internal/mcpconfig/config.go:45`)
-   emits a server entry whose args default to exactly `["mcp"]` — no `-db`, no `-daemon`, no cwd.
-   So the registered command is literally `graphi mcp`.
-2. **`runMCP` does no discovery.** `runMCP` (`cmd/graphi/main.go:801-814`) calls
-   `extractFlags(args)` then `makeClientOrOpen(dbPath, socket)` with whatever `-db`/`-daemon`
-   the args carried. Unlike `runQuery`/`runSearch`/`runIndex` (which call
-   `resolveSession(getwd(), …)` — e.g. `main.go:239, 264, 303`), `runMCP` **never calls
-   `resolveSession`**. With the setup-written args (`["mcp"]`, empty `-db`), `makeClientOrOpen`
-   opens an **empty in-memory store**: the server answers, but over an empty graph.
-3. **The MCP server ignores the client's roots.** `surfaces/mcp/mcp.go` `initialize`
-   (`mcp.go:106-111`) returns a static handshake and reads none of the `initialize` params;
-   there is no `roots/list` round-trip and no `workspaceFolders` handling. Grep for
-   `roots`/`Roots` in `surfaces/mcp/` returns nothing.
+### D0. One resource owner: `cmd/internal/runtime.Runtime`
 
-Net effect: **`graphi setup` + a real MCP client today yields a server bound to an empty graph
-in the process's ambient working directory** — not the user's repository. The existing SW-110
-characterization (`surfaces/mcp_journey_subprocess_test.go`) only proves the honest path *when a
-caller pre-indexes and passes `-db` explicitly*; it does not exercise, and does not define, the
-zero-config setup→MCP path. That gap is what this contract closes.
+`Runtime` owns the store, ingester, observe broker, repository identity, surface client,
+and cleanup callbacks. `Close` is idempotent and closes owned resources in reverse
+construction order.
 
-The path-resolution machinery to close it already exists as a pure helper — `internal/state`
-(`RepoRoot`, `DetectRepo`, `Fingerprint`, `Resolve`, `Ensure`, `DiscoverDB`, `DiscoverSocket`) —
-but nothing on the MCP surface calls it. This ADR specifies how `RUN-01` wires it in.
+There are two deliberately different entry points:
 
-## Decision
+- `runtime.Attach(dbPath, socket, metaDir)` preserves the explicit-path behavior. A
+  socket creates a daemon client; otherwise the exact database is opened. An empty
+  database path uses the historical in-memory store. Attach does no discovery and no
+  ingest.
+- `runtime.OpenSession(ctx, Options)` is the zero-config path. It resolves one real
+  repository, creates the per-repository state, opens SQLite, recovers interrupted
+  ingest work, performs warm or full ingest, and only then exposes the client.
 
-### D0. One owner: the composition root (`cmd/internal/runtime.Runtime`)
+The MCP transport does not discover repositories or construct stores. It receives a
+`BindFunc` from the command composition layer and owns only the protocol lifecycle.
 
-Store, ingest, session, services, and shutdown are owned **exactly once** by the PLANNED
-`cmd/internal/runtime.Runtime` (master §4 "Composition Root"; does not exist yet — `RUN-01`
-creates it under `cmd/internal/` so `cmd` may import it without crossing the
-`cmd→surfaces→engine→core` layer guard). Both `runMCP` and the CLI verbs construct their client
-*through* the Runtime rather than each calling `makeClientOrOpen` directly. The MCP surface
-(`surfaces/mcp`) stays a thin transport: it holds **no** discovery, ingest, or session logic —
-consistent with the "one engine, many surfaces" invariant. All Session/Profile behavior below is
-Runtime behavior invoked by `runMCP`, not new logic inside `surfaces/mcp`.
+**Evidence:** `cmd/internal/runtime/runtime.go`,
+`cmd/internal/runtime/runtime_test.go`, `cmd/graphi/main.go` (`runMCP`).
 
-### D1. Repository identity and root
+### D1. Repository binding and precedence
 
-- The **repository root** is resolved with the existing `internal/state.RepoRoot` /
-  `DetectRepo` walk: from a candidate directory, walk up for `.git`, then `go.work`, then
-  `go.mod`, and take the first hit's directory. `DetectRepo` distinguishes "this is a code
-  repository" (marker found) from "just some directory" (no marker).
-- **Repository identity** is `state.Fingerprint(absRoot)` — a stable, path-only 16-hex-char
-  SHA-256 of the cleaned absolute root. It embeds no time and no randomness, so identity is
-  deterministic across runs and across CLI vs MCP (preserving the determinism invariant).
-- The candidate directory is chosen per **D4** (roots → cwd precedence). One MCP session binds to
-  **exactly one** repository for its lifetime (see D5); a session does not hop repositories.
+The implemented precedence is:
 
-### D2. DB / meta / state path resolution
+1. explicit `-db` or `-daemon` on `graphi mcp` uses `runtime.Attach` and bypasses
+   discovery and ingest;
+2. transport roots are authoritative when supplied;
+3. the process working directory is considered only when the transport supplied no
+   roots at all (`Options.Roots == nil`).
 
-- All per-repo state lives under `state.StateDir()`: `$XDG_STATE_HOME/graphi/<fingerprint>/` when
-  `XDG_STATE_HOME` is set and non-empty, else `~/.graphi/<fingerprint>/`. From `state.Resolve`
-  this yields, deterministically: `db.sqlite` (authoritative SQLite sidecar), `meta/` (sidecar
-  metadata dir), `daemon.sock` (UNIX socket — **not used by the RC MCP path**, see D6),
-  `repo.json` (path-only descriptor, `created:"-"` placeholder — no wall-clock).
-- **Override precedence (highest wins):** explicit `-db` / `-meta` flags on the `graphi mcp`
-  invocation → resolved per-repo layout from D1/D4 → today's empty in-memory fallback. An
-  explicit `-db` therefore continues to behave exactly as SW-110 pins it (zero regression for
-  callers who pre-index and pass `-db`).
-- Directory creation is `state.Ensure`: `MkdirAll(dir, 0o700)`, `meta/` `0o700`, `repo.json`
-  `0o600`, owner-only, idempotent, and it never rewrites an existing `repo.json` (deterministic
-  content preserved).
+For transport roots, `runtime.OpenSession` tests candidates in advertised order and
+binds the first candidate for which `state.DetectRepo` finds `.git`, `go.work`, or
+`go.mod`. An explicitly empty or unrelated root set does **not** fall back to the
+process working directory. Failure to bind returns `runtime.ErrNoRepository`; an empty
+graph is never served as a successful substitute.
 
-### D3. Initial-ingest trigger and readiness signalling
+Tool discovery is binding-aware. The in-process binding exposes all 11 Stable
+MCP tools; a transport that implements `client.CapabilityReporter` removes
+unwired operations from both `tools/list` and the dispatch allow-list without
+performing I/O. The current daemon binding therefore exposes seven Stable tools
+and omits its four unwired agent-context RPCs.
 
-- **Trigger:** when the resolved DB (D2) does **not** yet exist for the bound repo, the Runtime
-  performs an **initial full ingest** of the repo root (the same pipeline `graphi index` drives:
-  `engine/ingest` → `engine/link` → `core/graphstore`) before serving repository-dependent tool
-  calls. When the DB already exists, the session opens it directly and does **not** re-ingest on
-  startup (incremental freshness is out of scope for this RC — the daemon/watch path is Labs).
-- **Readiness — protocol shape (UNKNOWN U1, see below).** The contract *requires* that a client
-  can tell "indexing, not ready" apart from "ready, empty result" and never silently receives
-  wrong-because-not-ready answers. Two admissible shapes, to be chosen by U1's experiment:
-  1. **Synchronous-before-serve:** the Runtime completes initial ingest *before* returning the
-     `initialize` result, so a successful handshake already means "ready." Simplest; cost is a
-     slow first `initialize` on large repos.
-  2. **Async with an explicit not-ready signal:** `initialize` returns immediately; repository
-     tool calls made before readiness return a typed, uniform "indexing in progress" MCP result
-     (an `isError:true` payload with a stable reason code), never a partial/empty success.
-  The default this ADR adopts pending U1 is **(1) synchronous-before-serve**, because it needs no
-  new wire shape, keeps MCP↔CLI parity trivial, and matches the RC's "MCP-stdio is the long-lived
-  session" posture; U1 exists to confirm the first-`initialize` latency is acceptable on a
-  realistic repo or to fall back to (2).
+One runtime binds one repository. A `notifications/roots/list_changed` notification
+closes the current binding, fails subsequent tool calls, and requires a fresh MCP
+session. It does not silently hop the running session to another repository.
 
-### D4. MCP `cwd` / roots behavior
+**Evidence:** `runtime.resolveRepositoryRoot`,
+`TestOpenSession_ClientRootsOverrideProcessCwd`,
+`TestOpenSession_AuthoritativeEmptyRootsRejectCwd`,
+`TestSessionBinding_RootsListChangedFailsClosedAndClosesSession`.
 
-- **Resolution order for the candidate directory (highest precedence first):**
-  1. an explicit `-db`/`-root` override on the `graphi mcp` command (deterministic, wins always);
-  2. an MCP **root** advertised by the client — the first `file://` root from the client's
-     declared `roots` (via the `initialize` `capabilities.roots` / a `roots/list` round-trip),
-     mapped to a local path and fed to D1's `DetectRepo`;
-  3. the server process's **ambient working directory** (`os.Getwd()`), fed to `DetectRepo`.
-- **When the candidate is not a repository** (`DetectRepo` returns `ok=false`) and no override is
-  given, the session binds **no** repository and repository-dependent tools report a typed
-  "no repository bound" result (not a crash, not an empty-graph success). `tools/list` and
-  non-repository tools still work — mirroring today's graceful capability probing.
-- **Roots wire details are UNKNOWN U2** (which MCP clients populate `roots`, whether a
-  `roots/list` request is needed vs. reading `initialize` params, and single- vs multi-root
-  handling). The contract fixes the *precedence and fallback semantics* above; U2 fixes the exact
-  handshake. Multi-root: for this RC, **bind the first `file://` root**; multi-repo sessions are
-  explicitly out of scope.
+### D2. MCP roots lifecycle
 
-### D5. Session lifetime and shutdown
+The protocol accepts local filesystem roots through three paths:
 
-- **MCP-stdio is the long-lived agent session** (master §4). One `graphi mcp` process = one
-  session, bound to one repository (D1) for the whole process lifetime.
-- **Lifetime:** the session lives for the life of the stdio process; `Server.Serve` already runs
-  the read/dispatch/write loop until stdin reaches EOF (`surfaces/mcp/mcp.go:71-99`). When the MCP
-  client closes stdin / exits, `Serve` returns and the process exits.
-- **Shutdown:** the Runtime owns teardown exactly once — on `Serve` returning (EOF) or a
-  termination signal, it closes the store/services via the Runtime's single `Close`/cleanup path
-  (superseding today's ad-hoc `defer cleanup()` in `runMCP`, `main.go:807`). Shutdown is graceful
-  and idempotent; it flushes/commits nothing beyond what each tool call already committed (reads
-  dominate; the RC MCP path is read-only for the 12 stable ops).
-- **Out of scope (explicitly `RUN-01`, restated so nobody implements it here):** the daemon's
-  `select{}` block (`cmd/graphi/main.go:1145`) that parks the *daemon* process forever. The daemon
-  is **not** part of the first Focused Core RC; the MCP-stdio session above does not use it.
+- legacy `initialize.rootUri`;
+- inline roots in the initialize payload;
+- `roots/list`, requested after `notifications/initialized` when the client advertises
+  the roots capability.
 
-### D6. Supported operating systems
+Only local absolute paths and local `file://` URIs are accepted. Remote-file hosts,
+network URLs, and relative paths are rejected.
 
-- **CI-verified today: Linux only** — every workflow in `.github/workflows/` is `runs-on:
-  ubuntu-latest`. That is the only OS with mechanical evidence.
-- **Intended RC support: Linux + macOS.** The default binary is CGo-free/static and the MCP-stdio
-  path uses only stdin/stdout + local filesystem (no UNIX-socket dependency — the daemon socket in
-  D2 is unused by the RC MCP path), so macOS is expected to work; packaging already targets
-  Homebrew (`cmd/gen-packaging/templates/graphi.rb.tmpl`).
-- **Windows: UNKNOWN U3 (not claimed for this RC).** The stdio path has no obvious blocker, but
-  `internal/state` path semantics and the (Labs) daemon's `net.Listen("unix", …)`
-  (`surfaces/daemon/daemon.go:151`) are POSIX-shaped and unverified on Windows. The RC does not
-  claim Windows until U3's experiment passes.
+Binding timing is intentionally different by client capability:
 
-### D7. Stable vs Labs profile
+- `rootUri`, inline roots, and clients without roots capability bind synchronously
+  during `initialize`;
+- roots-capable clients receive a `roots/list` request after `initialized`. Until its
+  response has been validated and bound, repository-dependent tool calls fail closed
+  with a waiting error.
 
-- The session serves the **12 frozen Stable operations** (SW-111 / spec): `index`, `search`,
-  `definition`, `callers`, `callees`, `references`, `neighborhood`, `impact`, `agent_brief`,
-  `related_files`, `explain_symbol`, `change_risk`. These, and only these, are the session's
-  stable product contract.
-- Everything else the MCP surface can advertise today (compound query, memory/distill/skillgen,
-  the PR/review/reviewer vertical, deep analyzers, edit/refactor, semantic search, savings) is
-  **Labs** — kept in-tree, capability-probed, **no stable claim** — or **Disabled**. The
-  Stable/Labs/Disabled tier is machine-visible via SW-111's manifest; the MCP `tools/list` for a
-  **Stable profile** advertises the 12 stable tools, and Labs tools appear only under the Labs
-  profile. The capability manifest (SW-111, and CAP-01 later) is the single source of truth for
-  dispatch = `tools/list` = CLI help = docs = coverage matrix; this ADR does **not** re-freeze the
-  set, it binds the session to it.
+Therefore, a successful `initialize` means "ready" only for the synchronous paths. For
+the `roots/list` path, readiness begins after the roots response has produced a valid
+binding. The old blanket claim that every successful initialize implies readiness was
+wrong.
 
-## Explicit UNKNOWNs (each with the experiment that resolves it)
+#### Transport boundary
 
-- **U1 — readiness protocol shape.** Sync-before-serve (default) vs. async-with-not-ready-signal.
-  *Experiment:* on a realistic repo (e.g. a mid-size Go module of ~50–200k LOC) measure
-  wall-time of the initial full ingest; if first-`initialize` latency under sync-before-serve
-  exceeds an agent-acceptable budget (target: a few seconds), adopt async (D3 shape 2) and pin a
-  typed "indexing in progress" result. Resolve in `RUN-01`.
-- **U2 — MCP roots handshake.** Do the target clients (Claude Code / Claude Desktop / the clients
-  `mcpconfig` wires) populate `roots` in `initialize`, or is a `roots/list` request required, and
-  what do they send for a single-repo workspace? *Experiment:* capture the real `initialize`
-  params + `roots/list` exchange from each wired client against a fixture repo; pin the observed
-  shape as the D4 mapping. Resolve in `RUN-01`.
-- **U3 — Windows support.** *Experiment:* run the D4→D3→tools/call journey on
-  `windows-latest` in CI against the Go fixture; if the CGo-free stdio path passes with correct
-  `internal/state` path resolution, promote Windows from UNKNOWN to supported; otherwise record the
-  concrete blocker. Until then the RC claims Linux + macOS only.
-- **U4 — flag vs. roots override ergonomics.** Whether setup should keep writing bare `["mcp"]`
-  (relying on roots/cwd discovery, D4) or write an explicit `-root`/`-db` for robustness on
-  clients that don't advertise roots. *Experiment:* fold U2's findings back into
-  `mcpconfig.GraphiEntry`; if a wired client advertises no usable root and launches the server in
-  a non-repo cwd, setup must write an explicit binding. Resolve in `RUN-01` alongside U2.
+The productive `graphi mcp` command implements this bidirectional lifecycle over
+**stdio**. `roots/list` discovery and `roots/list_changed` handling require that
+bidirectional stream.
 
-## Governed code seams (so `RUN-01` implements against this)
+`Server.HTTPHandler()` is a reusable, loopback-guarded, POST-only embedding adapter:
+one HTTP request carries one JSON-RPC message and receives one response. It has no
+request-associated SSE channel on which the server could issue `roots/list`. A
+binder-backed HTTP initialize must therefore include `rootUri` or inline `roots`;
+otherwise it fails with JSON-RPC `-32602`. The handler is not exposed as a standalone
+full MCP streamable-HTTP server by the current CLI. `graphi http` is the separate Labs
+REST/SSE surface in `surfaces/http`, not a listener for `surfaces/mcp.HTTPHandler`.
 
-- `cmd/graphi/main.go` — `runMCP` (`:801-814`), `resolveSession` (`:816-840`, the additive
-  discovery seam to reuse for MCP), `extractFlags`/`extractFlagsMeta`, and the daemon `select{}`
-  (`:1145`, out of scope).
-- `internal/mcpconfig/config.go` — `GraphiEntry` (`:45`, the setup-written command; U4).
-- `internal/state/state.go` — `RepoRoot`/`DetectRepo`/`Fingerprint`/`Resolve`/`Ensure`/
-  `DiscoverDB`/`DiscoverSocket` (the path/identity machinery D1/D2 reuse).
-- `surfaces/mcp/mcp.go` — `Serve` (`:71`), `handle`/`initialize` (`:101-131`, where roots
-  handling and readiness surface), `toolDescriptors` (`:908`, Stable-vs-Labs advertising).
-- `cmd/internal/runtime.Runtime` — **PLANNED**, created by `RUN-01`; owner of D0/D3/D5.
+**Evidence:** `surfaces/mcp/session_test.go`,
+`TestSessionProfile_MCPRepositoryJourney`,
+`TestSessionProfile_MCPRootsListJourney`,
+`TestMCP_HTTP_BinderRequiresInlineRepositoryRoot`,
+`TestMCP_HTTP_BinderAcceptsRootURI`.
+
+### D3. Durable state and permissions
+
+Repository identity is `state.Fingerprint(absRoot)`, a deterministic path-derived
+identifier. State resolves to:
+
+- `$XDG_STATE_HOME/graphi/<fingerprint>/` when `XDG_STATE_HOME` is set;
+- otherwise `~/.graphi/<fingerprint>/`.
+
+The layout contains `db.sqlite`, `meta/`, `daemon.sock`, and `repo.json`. State
+directories are owner-only (`0700`) and state files are owner-only (`0600`).
+`state.Ensure` also tightens already-existing permissive state before returning; this
+is not merely a creation-time promise.
+
+**Evidence:** `internal/state/state.go`,
+`TestEnsure_PermsAndRepoJSON`,
+`TestEnsure_MigratesExistingPermissiveStateBeforeEarlyReturn`.
+
+### D4. Recovery, ingest, and readiness
+
+`OpenSession` executes the following order before returning a client:
+
+1. resolve and ensure state;
+2. open SQLite and the ingest sidecar;
+3. replay durable interrupted-ingest state with `RecoverWithRoot`;
+4. use the warm path only when the store and generation metadata are trustworthy;
+5. otherwise run a full ingest;
+6. construct query, lexical search, analysis, and review services.
+
+This is synchronous-before-bind. No stable operation is dispatched against a partial
+repository. A roots-capable MCP client may complete the protocol initialize exchange
+before binding, but tool dispatch remains blocked until the synchronous bind/ingest
+finishes.
+
+Freshness is evaluated at session startup. Continuous watching is a separate Labs
+daemon capability; the default MCP session does not promise live re-indexing after the
+session is ready.
+
+**Evidence:** `runtime.OpenSession`, `runtime.WarmOrFullIngest`,
+`engine/ingest/faultmatrix_test.go`,
+`surfaces/mcp_session_journey_subprocess_test.go`.
+
+### D5. Stable and Labs MCP profiles
+
+The product contract freezes 12 Stable operations:
+
+`index`, `search`, `definition`, `callers`, `callees`, `references`,
+`neighborhood`, `impact`, `agent_brief`, `related_files`, `explain_symbol`,
+`change_risk`.
+
+`index` is a repository lifecycle operation, not an MCP `tools/call`. Consequently:
+
+- default `graphi mcp` advertises exactly **11** tools: the Stable set minus `index`;
+- `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog;
+- the maximal registered union is **43** tools, but an actual Labs session may expose
+  fewer when optional services such as forge/review are not wired;
+- an unadvertised tool call is rejected before it reaches the client;
+- `impact` has a dedicated Stable descriptor and dispatches only
+  `StableClient.Impact`; a caller cannot select another analyzer through it;
+- generic `analyze`, semantic search, edits, PR tools, memory/skills, compound and
+  hierarchy extensions remain Labs.
+
+Profile selection is a server construction option (`mcp.WithLabs`). The shipped CLI
+passes it only for the explicit `-labs` flag; an embedding host may choose the same
+option deliberately. It cannot be enabled by request payload or ambient client input.
+
+**Evidence:** `surfaces/mcp/tools.go`, `surfaces/mcp/profile_test.go`,
+`cmd/graphi/mcp_profile_test.go`, `surfaces/client/ports.go`.
+
+### D6. Lifetime and shutdown
+
+One `graphi mcp` process is one MCP session. EOF, `SIGINT`, or `SIGTERM` cancels the
+serve context. Cancellation closes a closeable input such as `os.Stdin`, unblocking a
+scanner that would otherwise wait forever. `Server.Close` releases the active binding
+once, and the runtime cleanup remains idempotent.
+
+**Evidence:** `mcp.Server.Serve`, `mcp.Server.Close`, `runMCP`,
+`TestSessionProfile_MCPSignalGracefulShutdown`.
+
+## Rejected behavior
+
+- Serving an empty in-memory graph when zero-config discovery fails.
+- Falling back to the process cwd after a client supplied authoritative roots.
+- Returning successful empty answers while roots binding or ingest is pending.
+- Changing repositories in-place after `roots/list_changed`.
+- Advertising Labs tools in the default MCP profile.
+- Routing Stable `impact` through the generic analyzer selector.
+
+## Explicit UNKNOWNs
+
+- **U1 — real-client roots compatibility.** Repository tests cover the protocol shapes,
+  but captured end-to-end exchanges for every setup-supported MCP client are not in the
+  repository. Client-by-client compatibility is **UNKNOWN** until those journeys are
+  recorded and gated.
+- **U2 — first-session latency at production scale.** Index performance is measured by
+  the eval harness, but a user-visible first MCP binding/handshake budget on large
+  repositories is not pinned. Acceptable synchronous startup latency is **UNKNOWN**.
+- **U3 — multi-root product behavior.** The implementation chooses the first detectable
+  repository in advertised order and binds one repo. A coherent multi-repository graph
+  and cross-root semantics are **UNKNOWN** and not claimed.
+- **U4 — macOS and Windows lifecycle parity.** Linux is CI-evidenced. Cross-compiled
+  artifacts do not prove roots exchange, filesystem permissions, signals, or state
+  semantics. End-to-end macOS and Windows support is **UNKNOWN**.
+- **U5 — live freshness in default MCP.** The default session snapshots freshness at
+  startup. Whether it should adopt a bounded watcher without inheriting the Labs daemon
+  lifecycle is **UNKNOWN**.
+- **U6 — full MCP streamable-HTTP product surface.** The repository contains a secure
+  POST embedding adapter, not a CLI-owned bidirectional HTTP/SSE session server. Session
+  IDs, server requests, reconnect/resume, and request-associated SSE semantics are
+  **UNKNOWN** and not shipped as a product claim.
 
 ## Consequences
 
-- `RUN-01` has a fixed target: wire `runMCP` through the Runtime, resolve the repo via D4→D1,
-  create/open state via D2, initial-ingest + signal readiness via D3, and own shutdown via D5 —
-  with the four UNKNOWNs to close by experiment, not assumption.
-- The companion red-now journey test asserts this end-to-end (setup→initialize→list→call on a real
-  repo). It is checked in **skipped with an explicit "red until RUN-01" reason** so the suite and
-  `testgate` stay green; `RUN-01` un-skips it to turn the contract green.
-- No behavior changes on `main` from this story: `runMCP`, `surfaces/mcp`, and `mcpconfig` are
-  **referenced, not refactored**. Invariants (CGo-free, zero-egress, layer direction, determinism)
-  are untouched because no runtime code is added.
+The former `RUN-01` blocker is closed: zero-config MCP sessions bind and ingest a real
+repository, roots are scoped fail-closed, and cleanup is owned once. Remaining work is
+validation and product policy, not completion of the old planned composition root.

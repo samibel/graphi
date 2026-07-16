@@ -36,11 +36,20 @@ export interface QueryResult {
   edges: ResultEdge[];
 }
 
-/** Impact (blast-radius) analysis payload. */
+/** One provenance-bearing node reached by the impact traversal. */
+export interface ImpactReachedNode {
+  node: ResultNode;
+  reached_via: ResultEdge;
+  depth: number;
+}
+
+/** Impact (blast-radius) analysis payload (engine/analysis.Analysis). */
 export interface ImpactResult {
   analyzer: string;
-  impacted: string[]; // impacted node ids
-  provenance?: { tier?: string };
+  outcome: string;
+  symbol: string;
+  truncated?: boolean;
+  nodes?: ImpactReachedNode[];
 }
 
 /** One ranked lexical search hit (engine/search.Match). */
@@ -62,7 +71,14 @@ export interface SearchMatch {
 // field names below mirror the Go struct tags exactly.
 
 /** Result classification (contract.Outcome). */
-export type AgentOutcome = "ok" | "ambiguous" | "empty" | "error";
+export type AgentOutcome =
+  | "ok"
+  | "found"
+  | "partial"
+  | "ambiguous"
+  | "empty"
+  | "unavailable"
+  | "error";
 
 /** A file:line citation backing an item (contract.Evidence). */
 export interface AgentEvidence {

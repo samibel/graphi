@@ -13,7 +13,7 @@ server for Claude Code. Everything runs **locally**; no code leaves your machine
 
 | You want to use… | You need |
 |---|---|
-| The `graphi` binary (CLI, HTTP, MCP, daemon, TUI) | **Go 1.26+** — no C toolchain (the default build is CGo-free) |
+| The `graphi` binary (CLI, HTTP, MCP, daemon, TUI) | **Go 1.26.5+** — no C toolchain (the default build is CGo-free) |
 | The web client (Sigma graph viz + wiki) | **Node.js 18+** and npm |
 | The VS Code extension | Node.js 18+, npm, and **VS Code 1.80+** (plus `@vscode/vsce` for packaging) |
 | The MCP integration | **Claude Code** installed |
@@ -21,7 +21,7 @@ server for Claude Code. Everything runs **locally**; no code leaves your machine
 Check Go:
 
 ```bash
-go version   # must report go1.26 or newer
+go version   # must report go1.26.5 or newer
 ```
 
 ---
@@ -222,8 +222,25 @@ GRAPHI_RESPECT_GITIGNORE=0 graphi index -root .
 GRAPHI_IGNORE=fixtures,testdata graphi index -root .
 ```
 
+The root `.gitignore` is a fail-closed privacy boundary. It is read from a
+repository-anchored descriptor, must be a non-symlink regular file no larger
+than 1 MiB, and cannot resolve through a link outside the repository. If it
+cannot be safely read or contains a malformed pattern in the supported subset,
+indexing stops with an error before repository files are walked or persisted;
+the error identifies the bad line without echoing its content.
+A missing root file is valid. Nested `.gitignore` files are explicitly not
+implemented; only `GRAPHI_RESPECT_GITIGNORE=0` bypasses root-file validation.
+The scope is snapshotted for one running ingester so its walk and watcher cannot
+disagree mid-session. Restart graphi after changing the root `.gitignore`; the
+new fingerprint then forces a full re-index before the store can warm-start.
+
 The filesystem watcher agrees with the walk: an edit to an out-of-scope file
-never re-introduces it into the graph.
+never re-introduces it into the graph. Both paths open files through an
+`os.Root` anchored at the repository, reject final symlinks and non-regular
+entries, and refuse any intermediate symlink that escapes that root. An
+intermediate link whose target remains inside the root is safely confined by
+`os.Root`; source bytes are read only from the validated file descriptor and
+the read itself is capped at `MaxFileSize+1` to catch concurrent growth.
 
 ---
 
@@ -301,6 +318,9 @@ Merge rules:
 - A **malformed or invalid** file (bad JSON, unknown field, missing required
   field) **fails the index closed** — it never silently falls back to defaults,
   so a config typo can't turn a real finding into a false "clean".
+- The config must be a non-symlink regular file no larger than 1 MiB. It is read
+  through a repository-anchored descriptor; final symlinks and intermediate
+  links that escape the repository fail closed before JSON decoding.
 
 Because the config is part of what the persisted findings mean, adding,
 editing, or removing `.graphi/taint.json` triggers a one-time full re-index
@@ -402,9 +422,8 @@ code --install-extension graphi-*.vsix
 
 1. Start the backend: `graphi http -addr 127.0.0.1:8080 -root ./my-repo`.
 2. In VS Code settings, set **`graphi.daemonUrl`** (default `http://127.0.0.1:8080`;
-   must be loopback). Optionally set a daemon auth token via the command
-   *“graphi: Set daemon auth token”* (stored in VS Code SecretStorage, never in
-   settings/URLs).
+   must be loopback). The HTTP daemon does not currently validate bearer tokens,
+   so the extension intentionally exposes no token setting or command.
 3. Use the Command Palette (`graphi:` prefix):
    - **Show blast-radius** — impact of the symbol under the cursor
    - **Search symbols**
@@ -465,6 +484,12 @@ client at:
 ```bash
 graphi mcp -db ~/.graphi/graph.db     # or -daemon <socket>
 ```
+
+The direct/in-process binding exposes all 11 Stable MCP tools. The current
+daemon transport wires the five structural queries plus `search` and `impact`
+(seven tools total) and omits `agent_brief`, `explain_symbol`, `related_files`,
+and `change_risk` from `tools/list` until their daemon RPCs exist. It never
+advertises a Stable tool that is guaranteed to fail.
 
 ### 6.7 Daemon (hot index)
 

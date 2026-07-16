@@ -13,7 +13,7 @@ foundation: a deterministic, pluggable entry point for parsing.
 
 ## After
 
-A Go 1.26 module (`github.com/samibel/graphi`, `CGO_ENABLED=0`) with a pure-leaf
+A Go 1.26.5 module (`github.com/samibel/graphi`, `CGO_ENABLED=0`) with a pure-leaf
 `core/parse` package that is the single parse boundary for the whole engine:
 
 - `Parser` interface + normalized `ParseResult` (language-tagged tree + source

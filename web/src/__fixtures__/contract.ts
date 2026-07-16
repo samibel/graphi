@@ -32,8 +32,11 @@ export const queryPayload: QueryResult = {
 
 export const impactPayload: ImpactResult = {
   analyzer: "impact",
-  impacted: ["n1", "n2"],
-  provenance: { tier: "confirmed" },
+  outcome: "found",
+  symbol: "n1",
+  nodes: [
+    { node: queryPayload.nodes[1], reached_via: queryPayload.edges[0], depth: 1 },
+  ],
 };
 
 export const searchPayload: SearchResult = {

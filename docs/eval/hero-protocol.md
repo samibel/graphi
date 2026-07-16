@@ -1,12 +1,15 @@
 # Hero-Task Protocol (SW-122 / EVAL-01 · SW-123 / EVAL-02)
 
-> **Status:** COMPLETE — suite versioned and gated; reference evidence
-> committed (`docs/eval/runs/2026-07-15-ubuntu-latest/`, workflow run
-> 29418826616) and the U5 budgets **frozen** as baseline+ratchet pairs.
+> **Status:** correctness suite COMPLETE; current-harness performance
+> re-baseline PENDING. Historical reference evidence is committed under
+> `docs/eval/runs/2026-07-15-ubuntu-latest/` (workflow run 29418826616), but it
+> was produced by the previous harness and is not directly comparable to a
+> current run.
 > **Suite:** `corpus/hero/` (20 tasks) · **Gates:** `cmd/eval/hero_test.go`,
 > `cmd/eval/fullrun_test.go`
-> **Budgets:** `docs/eval/hero-budgets.json` (frozen 2026-07-15; re-pinning is
-> a reviewed manifest edit citing a newer reference run)
+> **Budgets:** `docs/eval/hero-budgets.json` (historical numeric compatibility
+> ceilings; not validated post-change ratchets until a new current-harness
+> `ubuntu-latest` run is pinned)
 
 ## What the hero suite is
 
@@ -25,14 +28,14 @@ adding or tightening a task is a reviewed YAML change, never a code change.
 |-------------|--------------|--------------|
 | `ambiguous` | hero-08, hero-18 | several candidates are presented, never silently picked |
 | `partial`   | hero-17 | truncation by item cap is reported, never silent |
-| `empty`     | hero-03, hero-04 | honest empty answers instead of near-miss noise |
+| `empty`     | hero-03 | honest empty answers instead of near-miss noise |
 | `not_found` | hero-05 | unknown symbols yield the typed not-found outcome |
 | negative anchors | hero-02, -07, -10, -12, -14, -15, -20 | evidence never cites symbols that cannot appear |
 
-hero-04 deliberately pins the **shipped** `definition` semantics (outbound
-`defines` edges — "a symbol points at what it defines", so a leaf function is
-`empty`). If that contract is ever redefined, the task must change in the same
-reviewed diff.
+hero-04 pins the graph's canonical `definition` semantics: ingest emits
+`defines` as **definer/container → defined symbol**, so the query follows an
+inbound edge from a symbol to its defining file or container. A known top-level
+function returning `empty` is an accuracy failure.
 
 ### Fixtures
 
@@ -50,10 +53,19 @@ Reference runner: **`ubuntu-latest`** (GitHub-hosted, linux, `CGO_ENABLED=0`)
 runs are evidence.
 
 Absolute latency/rows budgets are **not invented**: `corpus/hero` tasks carry
-no `max_latency_ms` (enforced by `TestHeroSuite_FailureClassesRepresented`),
-and every budget field in `docs/eval/hero-budgets.json` is `null` until the
-first reproducible EVAL-02 run on the reference runner freezes it as a
-ratchet, citing commit, workflow run, and report artifact.
+no `max_latency_ms` (enforced by `TestHeroSuite_FailureClassesRepresented`).
+The first reproducible reference run supplied the numeric limits now stored in
+`docs/eval/hero-budgets.json`. `eval-full.yml` passes that file explicitly; the
+CLI validates runner class, repo selection, metric presence, and every threshold
+fail-closed, recording checks inside each JSON report.
+
+Those numbers are currently **compatibility ceilings**, not comparable
+baseline+ratchet pairs. The historical harness did not measure the same workload:
+it omitted `impact` from the structural pool, did not require semantic checks for
+all 12 Stable operations, used the earlier symbol sample, and sampled MAXRSS only
+immediately after `IngestAll`. The current harness adds degree-stratified sampling,
+all-12 semantic coverage, and a second MAXRSS sample after the Stable suite. A new
+run on the current commit is required to establish ratchets under that method.
 
 ## Pinned real repositories (EVAL-02 selection)
 
@@ -91,10 +103,16 @@ neither read nor writable from a `-scenarios` run.
 
 ## EVAL-02 execution (SW-123)
 
-**Harness:** `go run ./cmd/eval -manifest corpus/manifest.json -full-run <repo>`
+**Harness:**
+
+```sh
+go run ./cmd/eval -manifest corpus/manifest.json -full-run <repo> \
+  -runner-class ubuntu-latest -budgets docs/eval/hero-budgets.json
+```
 measures ONE repo per process (peak RSS stays attributable): shallow-clone at
 the pinned ref with fail-closed SHA verification → cold full index (wallclock,
-`getrusage` peak RSS, on-disk DB size) → warm per-op-class p95 (microseconds;
+`getrusage` peak RSS, on-disk DB size) → degree-stratified warm coverage of all
+12 stable operations → a second full-session MAXRSS sample and per-op-class p95 (microseconds;
 per-op resolution in `warm_p95_us_per_op`) over the same in-process session,
 driven through the same `engine/scenario.FixtureEngine` the hero suite uses.
 Raw evidence: `internal/evalreport.FullRunReport` JSON. Hermetic gate:
@@ -105,20 +123,22 @@ on `ubuntu-latest` (the reference runner class) + the hero-suite job; weekly
 schedule + manual dispatch; never a PR gate (the hero suite's PR gate is
 `cmd/eval/hero_test.go` inside testgate).
 
-**Evidence & budget freeze:**
+**Evidence and required re-baseline:**
 
-1. Raw reports are uploaded as artifacts per run. After a green run on the
-   reference runner: download the artifacts, commit them under
-   `docs/eval/runs/<date>-ubuntu-latest/`, and fill the `null` budgets in
-   `hero-budgets.json` as ratchets — one reviewed PR citing the workflow run.
-2. Preliminary evidence from the development sandbox is committed under
-   `docs/eval/runs/2026-07-15-local-sandbox/` (20/20 hero tasks pass; all
-   three repos index, pins verified). It freezes nothing; it directs the ADR
-   decisions:
-   - **ADR 0003 U2** — `agent_brief` is the only scaling outlier
-     (11 ms → 558 ms p95, cobra → guava); every other op stays ≤ ~2 ms.
-   - **ADR 0003 U4** — guava peaks at 4.2 GB RSS against a 35 MB store while
-     the selective warm paths stay scale-flat; the with/without-cache pair on
-     the reference runner decides delete/bound/flag.
-3. U2/U4 are closed as ADR updates from the reference-runner numbers (RC-01
-   window).
+1. The committed `ubuntu-latest` reports are immutable historical evidence for
+   commit `71353f90720e079b84b7a0549bd51fc632bcfe37`. Their guava 11,821 MB
+   MAXRSS value was sampled immediately after ingest, before `agent_brief` or
+   the other warm operations. Its cause is **UNKNOWN**; it cannot be attributed
+   to Stable reads or whole-cache materialization from those reports.
+2. Preliminary sandbox reports under
+   `docs/eval/runs/2026-07-15-local-sandbox/` freeze nothing. Runner class and
+   old-harness measurements make them smoke evidence only.
+3. Selective hydration, aggregate brief reads, and bounded impact work are implemented.
+   Impact uses indexed bounded incident reads, a `16× MaxNodes` returned-edge budget,
+   and a `min(2× MaxNodes, 16)` distinct-kind probe cap; exhausting any cap marks the
+   result `truncated`. Semantic checks and the extended harness are also implemented.
+   Those code facts do not prove a production performance improvement.
+4. Run the current workflow matrix on the current commit. Commit the new raw
+   reports, verify all 12 semantic checks and the post-suite RSS metric, then
+   replace the provisional limits with reviewed comparable ratchets. Historical
+   JSON remains unchanged.

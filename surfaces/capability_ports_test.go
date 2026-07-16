@@ -3,11 +3,26 @@ package surfaces_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/surfaces/client"
 )
+
+func TestCAP01_StableClientMethodSetExcludesLabsSelectors(t *testing.T) {
+	typeOfStable := reflect.TypeOf((*client.StableClient)(nil)).Elem()
+	for _, forbidden := range []string{"Analyze", "SemanticSearch"} {
+		if _, ok := typeOfStable.MethodByName(forbidden); ok {
+			t.Fatalf("StableClient must not expose Labs selector %s", forbidden)
+		}
+	}
+	for _, required := range []string{"Query", "Impact", "Search", "Brief", "ExplainSymbol", "RelatedFiles", "ChangeRisk"} {
+		if _, ok := typeOfStable.MethodByName(required); !ok {
+			t.Fatalf("StableClient missing required stable method %s", required)
+		}
+	}
+}
 
 // TestCAP01_StableOps_ServedByPorts_NoStubs is the CAP-01 (SW-117) exit gate:
 // every client-served stable operation is driven through the SMALLEST
@@ -23,12 +38,10 @@ func TestCAP01_StableOps_ServedByPorts_NoStubs(t *testing.T) {
 	c := charClient(store)
 	helloID := findFuncID(t, store, "Hello")
 
-	// The consumer-owned views. Assigning Direct to them is the isolation
-	// proof; every call below goes through the port type, never client.Client.
+	// The consumer-owned Stable view is capability-narrowed by construction;
+	// every call below goes through that type, never client.Client.
 	var (
-		qp client.QueryPort        = c
-		sp client.SearchPort       = c
-		ap client.AgentContextPort = c
+		stable client.StableClient = client.AsStable(c)
 	)
 
 	// unavailableStub matches every capability-unavailable sentinel the labs
@@ -62,25 +75,25 @@ func TestCAP01_StableOps_ServedByPorts_NoStubs(t *testing.T) {
 		}
 	}
 
-	// QueryPort: the five structural ops + impact via the analyzer dispatch.
+	// StableQueryPort: the five structural ops plus the dedicated impact port.
 	for _, op := range []string{"definition", "callers", "callees", "references", "neighborhood"} {
-		b, err := qp.Query(ctx, op, helloID, 1)
+		b, err := stable.Query(ctx, op, helloID, 1)
 		check(op, b, err)
 	}
-	b, err := qp.Analyze(ctx, client.AnalyzeParams{Name: "impact", Symbol: helloID})
+	b, err := stable.Impact(ctx, client.ImpactParams{Symbol: helloID})
 	check("impact", b, err)
 
-	// SearchPort: the stable lexical search.
-	b, err = sp.Search(ctx, "Hello", 10)
+	// StableSearchPort: lexical search only; SemanticSearch is not in scope.
+	b, err = stable.Search(ctx, "Hello", 10)
 	check("search", b, err)
 
 	// AgentContextPort: the four agent-first ops.
-	jb, _, err := ap.Brief(ctx, "Hello")
+	jb, _, err := stable.Brief(ctx, "Hello")
 	check("agent_brief", jb, err)
-	b, err = ap.ExplainSymbol(ctx, helloID, 5)
+	b, err = stable.ExplainSymbol(ctx, helloID, 5)
 	check("explain_symbol", b, err)
-	b, err = ap.RelatedFiles(ctx, helloID, "both", 5)
+	b, err = stable.RelatedFiles(ctx, helloID, "both", 5)
 	check("related_files", b, err)
-	b, err = ap.ChangeRisk(ctx, helloID, "", 5)
+	b, err = stable.ChangeRisk(ctx, helloID, "", 5)
 	check("change_risk", b, err)
 }

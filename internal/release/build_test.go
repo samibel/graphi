@@ -8,6 +8,33 @@ import (
 	"testing"
 )
 
+func TestCanonicalBuildArgsPinsReleaseContract(t *testing.T) {
+	if CanonicalBuildContract != "internal/release.CanonicalBuildArgs/v1" {
+		t.Fatalf("unexpected canonical build contract %q", CanonicalBuildContract)
+	}
+	args := CanonicalBuildArgs(BuildConfig{
+		Target:  "./cmd/graphi/",
+		Version: "bench",
+		Tags:    []string{"grammar_subset", "grammar_subset_typescript"},
+	}, "out/graphi")
+
+	want := []string{
+		"build",
+		"-trimpath",
+		"-buildvcs=true",
+		"-tags",
+		"grammar_subset grammar_subset_typescript",
+		"-ldflags",
+		"-X " + VersionVar + "=bench",
+		"-o",
+		"out/graphi",
+		"./cmd/graphi/",
+	}
+	if !slices.Equal(args, want) {
+		t.Fatalf("canonical build args = %q, want exact contract %q", args, want)
+	}
+}
+
 // TestDefaultGrammarSubsetTags_WiresSubsetEmbed asserts the shipped default
 // build is subset-tagged (SW-053 AC#3): the umbrella `grammar_subset` tag
 // (which switches OFF the all-206 default embed) plus exactly the registered

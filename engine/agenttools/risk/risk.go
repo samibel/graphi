@@ -90,20 +90,6 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 		return nil, query.ErrSelectiveLookupUnavailable
 	}
 
-	nodeCache := map[model.NodeId]*model.Node{}
-	lookup := func(id model.NodeId) *model.Node {
-		if n, ok := nodeCache[id]; ok {
-			return n
-		}
-		ns, err := glk.NodesByID(ctx, []model.NodeId{id})
-		if err != nil || len(ns) == 0 {
-			nodeCache[id] = nil
-			return nil
-		}
-		nodeCache[id] = &ns[0]
-		return &ns[0]
-	}
-
 	var (
 		fanIn, fanOut  int
 		callsIn        int
@@ -126,11 +112,6 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 			}
 			tally.Count(e.Tier())
 			inboundEdges = append(inboundEdges, e)
-			if n := lookup(e.From()); n != nil {
-				if _, own := seedFiles[n.SourcePath()]; !own && n.SourcePath() != "" {
-					dependentFiles[n.SourcePath()] = struct{}{}
-				}
-			}
 		}
 		out, err := glk.Outgoing(ctx, seed.ID())
 		if err != nil {
@@ -141,6 +122,33 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 				continue
 			}
 			fanOut++
+		}
+	}
+
+	// Hydrate all inbound endpoints once. Per-edge NodesByID calls made this
+	// path O(edges) round trips and swallowed database failures as absent nodes.
+	// A missing endpoint row remains skippable drift; infrastructure errors are
+	// authoritative and fail the operation.
+	neighborIDs := make([]model.NodeId, 0, len(inboundEdges))
+	seenNeighbor := make(map[model.NodeId]struct{}, len(inboundEdges))
+	for _, e := range inboundEdges {
+		if _, seen := seenNeighbor[e.From()]; seen {
+			continue
+		}
+		seenNeighbor[e.From()] = struct{}{}
+		neighborIDs = append(neighborIDs, e.From())
+	}
+	nodeCache := make(map[model.NodeId]model.Node, len(neighborIDs))
+	if len(neighborIDs) > 0 {
+		nodes, err := glk.NodesByID(ctx, neighborIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range nodes {
+			nodeCache[n.ID()] = n
+			if _, own := seedFiles[n.SourcePath()]; !own && n.SourcePath() != "" {
+				dependentFiles[n.SourcePath()] = struct{}{}
+			}
 		}
 	}
 
@@ -186,8 +194,8 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 		return inboundEdges[i].ID() < inboundEdges[j].ID()
 	})
 	for i, e := range inboundEdges {
-		n := lookup(e.From())
-		if n == nil {
+		n, found := nodeCache[e.From()]
+		if !found {
 			continue
 		}
 		var evIDs []string

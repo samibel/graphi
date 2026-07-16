@@ -2,13 +2,16 @@
 #
 # ONE workflow carries ONE immutable SHA (github.sha) through every stage:
 #
-#   gate (publish-lock → full test suite via testgate → layerguard →
-#         coverage/manifest join → release-gate + scorecard)
-#     → build (reproducibility verify → grammar-subset gate → web-embedded
-#              cross-compile matrix + SHA256SUMS, uploaded as an artifact)
-#       → sbom (SPDX SBOM of the gated source tree)
-#         → publish (provenance attestation → tag the EXACT gated SHA →
-#                    GitHub Release + assets → Homebrew/Scoop)
+#   gate (publish-lock → exact-SHA Go/npm vulnerability gates →
+#         layerguard → ONE authoritative release-gate + scorecard →
+#         version + existing-release integrity inspection)
+#     → build (grammar-subset gate → build web UI → reproducibility verify of
+#              that exact web-embedded flavor/version → release matrix)
+#       → sbom (SPDX SBOM of the release binaries + capability manifest)
+#         → publish (assemble/checksum/verify complete asset set → attest +
+#                    verify provenance → verify/push the tag at the EXACT gated
+#                    SHA → create/resume draft with --verify-tag → upload +
+#                    byte-verify → publish + re-verify → Homebrew/Scoop)
 #
 # Design invariants (asserted statically by cmd/publish-lock/workflow_test.go):
 #   - publish `needs:` every prior stage — a red gate can NEVER yield a tag or
@@ -18,9 +21,11 @@
 #   - this is the ONLY workflow that pushes tags or creates releases — the
 #     former auto-release.yml workflow_run chain (which could tag a commit
 #     whose release-gate never ran) is deleted, and release.yml is CI-only;
-#   - the CT-01 publish lock gates the publish job even on workflow_dispatch:
-#     while .github/publish-lock.json is engaged there is NO publish path at
-#     all. Lifting it is one reviewed commit (RC-01's documented Go step).
+#   - publication can start only from a push to the protected main branch;
+#     there is no manual-dispatch or side-branch path into this privileged DAG;
+#   - the CT-01 publish lock gates the publish job: while
+#     .github/publish-lock.json is engaged there is NO publish path at all.
+#     Lifting it is one reviewed commit (RC-01's documented Go step).
 #
 # ADR 0005 U1 (RESOLVED, SW-124): every `uses:` is pinned to the full commit
 # SHA (trailing comment names the tag it was resolved from). SHAs recorded
@@ -34,10 +39,11 @@ name: release-dag
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 concurrency:
-  group: release-dag-${{ github.sha }}
+  # Serialize across SHAs: two main pushes naming the same CHANGELOG version
+  # must never race while creating/re-drafting one release.
+  group: release-dag-publish
   cancel-in-progress: false
 
 permissions:
@@ -46,13 +52,18 @@ permissions:
 jobs:
   gate:
     name: release gates on the exact SHA
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: read
     env:
       CGO_ENABLED: "0"
     outputs:
       locked: ${{ steps.lock.outputs.locked }}
       tag: ${{ steps.ver.outputs.tag }}
-      exists: ${{ steps.exists.outputs.exists }}
+      version_introduced: ${{ steps.ver.outputs.introduced }}
+      release_state: ${{ steps.release_state.outputs.state }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -63,6 +74,11 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # Keep dependency-fetch diagnostics outside the strict go test JSON
+      # producer. A download failure is still a hard release-gate failure.
+      - name: download Go modules
+        run: go mod download
+
       # CT-01: the reversible publish lock. Fails CLOSED on a missing/broken
       # gate file; while engaged the publish job below never runs.
       - name: check the publish lock (CT-01)
@@ -72,19 +88,54 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
+
+      # These checks deliberately live inside the publish DAG rather than only
+      # in dependency-security.yml. They inspect this job's github.sha and any
+      # scanner/registry/network failure is a hard gate failure, so a stale or
+      # independently green workflow run can never authorize publication.
+      - name: Go vulnerability reachability gate (exact SHA)
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_list="${RUNNER_TEMP}/graphi-first-party-packages.txt"
+          go list ./... >"$package_list"
+          packages=()
+          while IFS= read -r package; do
+            case "/$package/" in
+              */node_modules/*) ;;
+              *) packages+=("$package") ;;
+            esac
+          done <"$package_list"
+          if [ "${#packages[@]}" -eq 0 ]; then
+            echo "::error::go list returned no first-party packages"
+            exit 1
+          fi
+          go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 "${packages[@]}"
+
+      - name: npm production vulnerability gates (exact SHA)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for project in web extensions/vscode; do
+            (
+              cd "$project"
+              npm ci --omit=dev --ignore-scripts
+              npm audit --omit=dev --audit-level=high
+            )
+          done
+
+      # The production-only install above intentionally excludes test/build
+      # tooling. Restore the complete web lockfile before the release/UX gate.
       - name: install web dependencies
         run: cd web && npm ci
 
-      # The decisive quality gates, all on this SHA. testgate enforces the
-      # frozen failure allowlist over the FULL suite; coverage -check joins the
-      # capability manifest (CAP-01: matrix = live set = stable tier = manifest).
-      - name: full test suite (testgate allowlist)
-        run: go test -json ./... | go run ./cmd/testgate -stdin
+      # release-gate is the ONE authoritative release verdict. It owns the
+      # testgate, coverage/manifest, privacy, benchmark-budget, eval, and UX
+      # decisions. Do not run those noisy measurements a second time here and
+      # risk contradictory pass/fail outcomes from the same release DAG.
       - name: layer-direction guard
         run: go run ./cmd/layerguard
-      - name: capability matrix + manifest join
-        run: go run ./cmd/coverage -check
-      - name: release gate + published scorecard
+      - name: authoritative release gate + scorecard
         run: |
           go run ./cmd/release-gate -publish
           test -f docs/release-scorecard.json
@@ -100,25 +151,159 @@ jobs:
             exit 0
           fi
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          previous_version=$(git show "${GITHUB_SHA}^:CHANGELOG.md" 2>/dev/null | grep -m1 -E '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' | sed -E 's/^## \[([0-9]+\.[0-9]+\.[0-9]+)\].*/\1/' || true)
+          if [ "$previous_version" = "$version" ]; then
+            echo "introduced=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "introduced=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: check whether tag or release already exist (idempotency)
-        id: exists
+      - name: inspect tag and release integrity (fail-closed idempotency)
+        id: release_state
         if: steps.ver.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.ver.outputs.tag }}
+          VERSION_INTRODUCED: ${{ steps.ver.outputs.introduced }}
         run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1 \
-             && gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::notice::$TAG is already fully published; nothing to do"
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          ref_line=$(git ls-remote --refs --tags origin "refs/tags/$TAG")
+          ref_count=$(printf '%s\n' "$ref_line" | sed '/^$/d' | wc -l | tr -d ' ')
+          if [ "$ref_count" -gt 1 ]; then
+            echo "::error::ambiguous remote tag ref for $TAG"
+            exit 1
           fi
+
+          has_tag=false
+          tag_matches_sha=false
+          if [ "$ref_count" -eq 1 ]; then
+            tag_object=$(printf '%s\n' "$ref_line" | awk '{print $1}')
+            peeled_line=$(git ls-remote --tags origin "refs/tags/$TAG^{}")
+            peeled_count=$(printf '%s\n' "$peeled_line" | sed '/^$/d' | wc -l | tr -d ' ')
+            if [ "$peeled_count" -gt 1 ]; then
+              echo "::error::ambiguous peeled tag ref for $TAG"
+              exit 1
+            fi
+            peeled_sha="$tag_object"
+            if [ "$peeled_count" -eq 1 ]; then
+              peeled_sha=$(printf '%s\n' "$peeled_line" | awk '{print $1}')
+            fi
+            has_tag=true
+            if [ "$peeled_sha" = "$GITHUB_SHA" ]; then
+              tag_matches_sha=true
+            fi
+          fi
+
+          # The by-tag REST endpoint returns published releases only. Listing
+          # releases is required here so an interrupted draft remains visible
+          # and resumable instead of colliding with a second create attempt.
+          release_json=$(mktemp)
+          release_pages=$(mktemp)
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" >"$release_pages"
+          release_count=$(jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | length' "$release_pages")
+          if [ "$release_count" -gt 1 ]; then
+            echo "::error::multiple releases exist for $TAG"
+            exit 1
+          fi
+          if [ "$release_count" -eq 1 ]; then
+            jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)][0]' "$release_pages" >"$release_json"
+            draft=$(jq -r '.draft' "$release_json")
+            target=$(jq -r '.target_commitish' "$release_json")
+            # A changelog's latest released header naturally remains in place
+            # after publication. A published release on its historical SHA is
+            # "no new candidate" only after its immutable public evidence has
+            # been verified against the tag SHA and this workflow identity.
+            if [ "$has_tag" = true ] && [ "$tag_matches_sha" != true ]; then
+              if [ "$draft" = true ]; then
+                echo "::error::$TAG is a draft but its tag peels to $peeled_sha instead of $GITHUB_SHA"
+                exit 1
+              fi
+              if [ "$VERSION_INTRODUCED" = true ]; then
+                echo "::error::$TAG was introduced by this candidate but is already published at conflicting SHA $peeled_sha"
+                exit 1
+              fi
+              expected=$(mktemp)
+              actual=$(mktemp)
+              assets=$(mktemp)
+              provenance_assets=$(mktemp)
+              remote_assets=$(mktemp -d)
+              gh release download "$TAG" --dir "$remote_assets"
+              if [ "$TAG" = v0.5.0 ]; then
+                go run ./cmd/release -list-v050-assets >"$assets"
+                go run ./cmd/release -list-v050-provenance-assets >"$provenance_assets"
+                # v0.5.0's published contract checksummed the five binaries and
+                # attested those plus SHA256SUMS. Its SBOM/manifest are present
+                # but are deliberately not trusted or reused as provenance.
+                go run ./cmd/release -verify-v050-assets "$remote_assets"
+              else
+                # Later releases describe their own immutable asset contract:
+                # complete SHA256SUMS membership plus provenance is independent
+                # of whatever platforms the current source tree supports.
+                go run ./cmd/release -verify-historical-assets "$remote_assets" >"$assets"
+                cp "$assets" "$provenance_assets"
+              fi
+              sort "$assets" >"$expected"
+              jq -r '.assets[].name' "$release_json" | sort >"$actual"
+              diff -u "$expected" "$actual"
+              while read -r name; do
+                gh attestation verify "$remote_assets/$name" \
+                  --repo "$GITHUB_REPOSITORY" \
+                  --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-dag.yml" \
+                  --source-digest "$peeled_sha" >/dev/null
+              done <"$provenance_assets"
+              state=already-published
+              echo "state=$state" >> "$GITHUB_OUTPUT"
+              echo "::notice::$TAG is already published at $peeled_sha; bump CHANGELOG before the next release"
+              exit 0
+            fi
+            if { [ "$draft" = true ] || [ "$has_tag" != true ]; } && [ "$target" != "$GITHUB_SHA" ]; then
+              echo "::error::$TAG release targets $target; expected planned gated SHA $GITHUB_SHA"
+              exit 1
+            fi
+            if [ "$draft" = true ]; then
+              state=draft
+            elif [ "$has_tag" != true ]; then
+              echo "::error::$TAG is published but its tag is missing; published releases are never mutated automatically"
+              exit 1
+            else
+              expected=$(mktemp)
+              actual=$(mktemp)
+              assets=$(mktemp)
+              go run ./cmd/release -list-release-assets >"$assets"
+              sort "$assets" >"$expected"
+              jq -r '.assets[].name' "$release_json" | sort >"$actual"
+              diff -u "$expected" "$actual"
+              remote_assets=$(mktemp -d)
+              gh release download "$TAG" --dir "$remote_assets"
+              go run ./cmd/release -verify-assets "$remote_assets"
+              while read -r name; do
+                gh attestation verify "$remote_assets/$name" \
+                  --repo "$GITHUB_REPOSITORY" \
+                  --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-dag.yml" \
+                  --source-digest "$GITHUB_SHA" >/dev/null
+              done <"$assets"
+              state=complete
+            fi
+          else
+            if [ "$has_tag" = true ] && [ "$tag_matches_sha" != true ]; then
+              echo "::error::$TAG exists at $peeled_sha but has no published release; refusing to hide an inconsistent historical tag"
+              exit 1
+            fi
+            if [ "$has_tag" = true ]; then state=tag-only; else state=absent; fi
+          fi
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          echo "::notice::$TAG release state: $state"
 
   build:
     name: reproducible build + release matrix (same SHA)
     needs: gate
+    # The latest released CHANGELOG header stays at the top until the next
+    # version is prepared. Do not rebuild or mutate that historical release on
+    # every ordinary main push.
+    if: >
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.gate.outputs.release_state != 'already-published'
     runs-on: ubuntu-latest
     env:
       CGO_ENABLED: "0"
@@ -136,8 +321,6 @@ jobs:
           v="${{ needs.gate.outputs.tag }}"
           [ -z "$v" ] && v="v0.0.0-${GITHUB_SHA::12}"
           echo "version=$v" >> "$GITHUB_OUTPUT"
-      - name: reproducible release build (verify-only)
-        run: go run ./cmd/release -version "${{ steps.ver.outputs.version }}-${{ github.sha }}" -verify-only
       # SW-053 AC#3: the shipped default binary embeds ONLY the registered
       # grammar blobs — never the all-206 default embed. Derived from the source
       # of truth, so a new tier-1 language updates the gate automatically.
@@ -163,6 +346,11 @@ jobs:
           (cd web && npm ci && npm run build)
           rm -rf surfaces/http/webui/dist
           cp -R web/dist surfaces/http/webui/dist
+      # Verify the exact host-platform member of the published matrix: same
+      # version and same webui_embed/default-grammar tag set. cmd/release uses
+      # this one config for both the double build and -dist.
+      - name: reproducible published web-embedded flavor (verify-only)
+        run: go run ./cmd/release -webui -version "${{ steps.ver.outputs.version }}" -verify-only
       - name: cross-compile matrix + SHA256SUMS (web UI embedded)
         run: go run ./cmd/release -dist dist -webui -version "${{ steps.ver.outputs.version }}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -172,16 +360,25 @@ jobs:
           if-no-files-found: error
 
   sbom:
-    name: SBOM of the gated source tree
-    needs: build
+    name: SBOM of the assembled release artifacts
+    needs: [gate, build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.sha }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: dist-${{ github.sha }}
+          path: release-assets
+      - name: add the gated capability manifest to the release input
+        run: |
+          rm release-assets/SHA256SUMS
+          cp docs/capability-manifest.json release-assets/capability-manifest.json
       - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
-          path: .
+          path: release-assets
           format: spdx-json
           output-file: sbom.spdx.json
           upload-artifact: false
@@ -193,15 +390,16 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: tag + release the exact gated SHA
+    name: attest + draft/verify/publish the exact gated SHA
     needs: [gate, build, sbom]
-    # The ONLY mutating job. Runs only when: the CT-01 lock is lifted, the
-    # CHANGELOG names an unpublished version, and every prior stage is green
-    # (needs). A deliberately red gate therefore yields no tag and no release.
+    # The ONLY mutating job. The lock output must be exactly false; missing or
+    # malformed output therefore fails closed. Published releases are verified
+    # but never changed by this workflow.
     if: >
-      needs.gate.outputs.locked != 'true' &&
-      needs.gate.outputs.tag != '' &&
-      needs.gate.outputs.exists != 'true'
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.gate.outputs.locked == 'false' &&
+      needs.gate.outputs.tag != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -223,30 +421,283 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: sbom-${{ github.sha }}
-      # Provenance binds the exact artifacts to this workflow run + SHA. Fails
-      # closed: a plan/repo that cannot attest fails the publish loudly rather
-      # than shipping unattested artifacts (see ADR 0005).
-      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
-        with:
-          subject-path: dist/*
-      - name: create and push the tag at the gated SHA
-        env:
-          TAG: ${{ needs.gate.outputs.tag }}
+      - name: assemble and checksum the complete release asset set
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            git tag -a "$TAG" "${{ github.sha }}" -m "Release $TAG (release-dag, gated SHA ${{ github.sha }})"
-            git push origin "$TAG"
-          fi
-      - name: create the release and upload assets
+          set -euo pipefail
+          rm -rf release-assets
+          mkdir release-assets
+          cp dist/* release-assets/
+          rm -f release-assets/SHA256SUMS
+          cp sbom.spdx.json release-assets/sbom.spdx.json
+          cp docs/capability-manifest.json release-assets/capability-manifest.json
+          go run ./cmd/release -write-release-sums release-assets
+
+      - name: verify assembled local release assets
+        run: go run ./cmd/release -verify-assets release-assets
+
+      # Re-check remote state immediately before mutation. A complete release
+      # is downloaded and verified but remains immutable. Only an absent
+      # release or an existing draft can enter the mutation path.
+      - name: preflight remote tag/release state
+        id: preflight
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.gate.outputs.tag }}
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 \
-            || gh release create "$TAG" --title "$TAG" --generate-notes --target "${{ github.sha }}"
-          gh release upload "$TAG" dist/* sbom.spdx.json docs/capability-manifest.json --clobber
+          set -euo pipefail
+          ref_line=$(git ls-remote --refs --tags origin "refs/tags/$TAG")
+          ref_count=$(printf '%s\n' "$ref_line" | sed '/^$/d' | wc -l | tr -d ' ')
+          if [ "$ref_count" -gt 1 ]; then
+            echo "::error::ambiguous remote tag ref for $TAG"
+            exit 1
+          fi
+          has_tag=false
+          if [ "$ref_count" -eq 1 ]; then
+            tag_object=$(printf '%s\n' "$ref_line" | awk '{print $1}')
+            peeled_line=$(git ls-remote --tags origin "refs/tags/$TAG^{}")
+            peeled_count=$(printf '%s\n' "$peeled_line" | sed '/^$/d' | wc -l | tr -d ' ')
+            if [ "$peeled_count" -gt 1 ]; then
+              echo "::error::ambiguous peeled tag ref for $TAG"
+              exit 1
+            fi
+            peeled_sha="$tag_object"
+            if [ "$peeled_count" -eq 1 ]; then
+              peeled_sha=$(printf '%s\n' "$peeled_line" | awk '{print $1}')
+            fi
+            if [ "$peeled_sha" != "$GITHUB_SHA" ]; then
+              echo "::error::$TAG peels to $peeled_sha, planned gated SHA is $GITHUB_SHA"
+              exit 1
+            fi
+            has_tag=true
+          fi
+
+          complete=false
+          release_exists=false
+          release_json=$(mktemp)
+          release_pages=$(mktemp)
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" >"$release_pages"
+          release_count=$(jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | length' "$release_pages")
+          if [ "$release_count" -gt 1 ]; then
+            echo "::error::multiple releases exist for $TAG"
+            exit 1
+          fi
+          if [ "$release_count" -eq 1 ]; then
+            jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)][0]' "$release_pages" >"$release_json"
+            release_exists=true
+            draft=$(jq -r '.draft' "$release_json")
+            target=$(jq -r '.target_commitish' "$release_json")
+            if [ "$draft" = true ] && [ "$target" != "$GITHUB_SHA" ]; then
+              echo "::error::$TAG draft targets $target, planned gated SHA is $GITHUB_SHA"
+              exit 1
+            fi
+            if [ "$draft" != true ]; then
+              if [ "$has_tag" != true ]; then
+                echo "::error::$TAG is published but its tag disappeared; refusing to mutate a published release"
+                exit 1
+              fi
+              expected=$(mktemp)
+              actual=$(mktemp)
+              assets=$(mktemp)
+              targets=$(mktemp)
+              go run ./cmd/release -list-release-assets >"$assets"
+              go run ./cmd/release -list-targets >"$targets"
+              sort "$assets" >"$expected"
+              jq -r '.assets[].name' "$release_json" | sort >"$actual"
+              diff -u "$expected" "$actual"
+              remote_assets=$(mktemp -d)
+              gh release download "$TAG" --dir "$remote_assets"
+              go run ./cmd/release -verify-assets "$remote_assets"
+              while read -r name; do
+                cmp "release-assets/$name" "$remote_assets/$name"
+              done <"$targets"
+              cmp release-assets/capability-manifest.json "$remote_assets/capability-manifest.json"
+              while read -r name; do
+                gh attestation verify "$remote_assets/$name" \
+                  --repo "$GITHUB_REPOSITORY" \
+                  --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-dag.yml" \
+                  --source-digest "$GITHUB_SHA" >/dev/null
+              done <"$assets"
+              complete=true
+              rm -rf release-assets
+              mkdir release-assets
+              cp -a "$remote_assets"/. release-assets/
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+          echo "release_exists=$release_exists" >> "$GITHUB_OUTPUT"
+
+      # Provenance covers the exact public set — binaries, complete checksum
+      # index, SBOM, and capability manifest — rather than only dist/*.
+      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        if: steps.preflight.outputs.complete != 'true'
+        with:
+          subject-path: release-assets/*
+      - name: verify provenance for every release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          assets=$(mktemp)
+          go run ./cmd/release -list-release-assets >"$assets"
+          while read -r name; do
+            gh attestation verify "release-assets/$name" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-dag.yml" \
+              --source-digest "$GITHUB_SHA" >/dev/null
+          done <"$assets"
+      - name: create and push the tag at the gated SHA
+        if: steps.preflight.outputs.complete != 'true'
+        env:
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          ref_line=$(git ls-remote --refs --tags origin "refs/tags/$TAG")
+          if [ -z "$ref_line" ]; then
+            if git show-ref --verify --quiet "refs/tags/$TAG"; then
+              [ "$(git rev-parse "$TAG^{}")" = "$GITHUB_SHA" ]
+            else
+              git tag -a "$TAG" "${{ github.sha }}" -m "Release $TAG (release-dag, gated SHA $GITHUB_SHA)"
+            fi
+            git push origin "refs/tags/$TAG"
+          fi
+
+          tag_object=$(git ls-remote --refs --tags origin "refs/tags/$TAG" | awk '{print $1}')
+          peeled=$(git ls-remote --tags origin "refs/tags/$TAG^{}" | awk '{print $1}')
+          [ "${peeled:-$tag_object}" = "$GITHUB_SHA" ]
+
+      # The GitHub CLI can otherwise create a missing tag as a side effect of
+      # release creation. That operation is intentionally unreachable until
+      # local integrity + provenance have passed and the remote tag has been
+      # proven to peel to github.sha.
+      - name: create/resume a draft and replace its assets
+        if: steps.preflight.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          tag_object=$(git ls-remote --refs --tags origin "refs/tags/$TAG" | awk '{print $1}')
+          peeled=$(git ls-remote --tags origin "refs/tags/$TAG^{}" | awk '{print $1}')
+          if [ -z "$tag_object" ] || [ "${peeled:-$tag_object}" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG must exist and peel to $GITHUB_SHA before draft creation"
+            exit 1
+          fi
+
+          if [ "${{ steps.preflight.outputs.release_exists }}" = true ]; then
+            echo "::notice::resuming existing verified draft $TAG"
+          else
+            gh release create "$TAG" --verify-tag --draft --title "$TAG" --generate-notes --target "$GITHUB_SHA"
+          fi
+
+          release_json=$(mktemp)
+          release_pages=$(mktemp)
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" >"$release_pages"
+          release_count=$(jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | length' "$release_pages")
+          [ "$release_count" -eq 1 ]
+          jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)][0]' "$release_pages" >"$release_json"
+          if [ "$(jq -r '.draft' "$release_json")" != true ]; then
+            echo "::error::$TAG must be a draft while assets are replaced"
+            exit 1
+          fi
+          target=$(jq -r '.target_commitish' "$release_json")
+          if [ "$target" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG draft targets $target; expected exact gated SHA $GITHUB_SHA"
+            exit 1
+          fi
+          tag_object=$(git ls-remote --refs --tags origin "refs/tags/$TAG" | awk '{print $1}')
+          peeled=$(git ls-remote --tags origin "refs/tags/$TAG^{}" | awk '{print $1}')
+          if [ -z "$tag_object" ] || [ "${peeled:-$tag_object}" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG moved or disappeared during draft creation"
+            exit 1
+          fi
+
+          # Clear partial/stale assets by immutable API id, then upload the
+          # complete local set. A failure at any point is safe to retry.
+          jq -r '.assets[].id' "$release_json" | while read -r asset_id; do
+            [ -z "$asset_id" ] && continue
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id"
+          done
+          gh release upload "$TAG" release-assets/* --clobber
+
+      - name: verify the uploaded draft byte-for-byte
+        if: steps.preflight.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          release_json=$(mktemp)
+          expected=$(mktemp)
+          actual=$(mktemp)
+          release_pages=$(mktemp)
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" >"$release_pages"
+          release_count=$(jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | length' "$release_pages")
+          [ "$release_count" -eq 1 ]
+          jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)][0]' "$release_pages" >"$release_json"
+          [ "$(jq -r '.draft' "$release_json")" = true ]
+          go run ./cmd/release -list-release-assets | sort >"$expected"
+          jq -r '.assets[].name' "$release_json" | sort >"$actual"
+          diff -u "$expected" "$actual"
+          uploaded=$(mktemp -d)
+          gh release download "$TAG" --dir "$uploaded"
+          go run ./cmd/release -verify-assets "$uploaded"
+          assets=$(mktemp)
+          go run ./cmd/release -list-release-assets >"$assets"
+          while read -r name; do
+            cmp "release-assets/$name" "$uploaded/$name"
+          done <"$assets"
+
+      - name: publish the verified draft
+        if: steps.preflight.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          tag_object=$(git ls-remote --refs --tags origin "refs/tags/$TAG" | awk '{print $1}')
+          peeled=$(git ls-remote --tags origin "refs/tags/$TAG^{}" | awk '{print $1}')
+          if [ -z "$tag_object" ] || [ "${peeled:-$tag_object}" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG moved or disappeared before publication"
+            exit 1
+          fi
+          release_pages=$(mktemp)
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" >"$release_pages"
+          release_count=$(jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | length' "$release_pages")
+          [ "$release_count" -eq 1 ]
+          if [ "$(jq -r --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)][0].draft' "$release_pages")" != true ]; then
+            echo "::error::$TAG is no longer the verified draft"
+            exit 1
+          fi
+          gh release edit "$TAG" --draft=false
+
+      - name: verify the published tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          tag_object=$(git ls-remote --refs --tags origin "refs/tags/$TAG" | awk '{print $1}')
+          peeled=$(git ls-remote --tags origin "refs/tags/$TAG^{}" | awk '{print $1}')
+          [ -n "$tag_object" ]
+          [ "${peeled:-$tag_object}" = "$GITHUB_SHA" ]
+          release_json=$(mktemp)
+          expected=$(mktemp)
+          actual=$(mktemp)
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" >"$release_json"
+          [ "$(jq -r '.draft' "$release_json")" = false ]
+          go run ./cmd/release -list-release-assets | sort >"$expected"
+          jq -r '.assets[].name' "$release_json" | sort >"$actual"
+          diff -u "$expected" "$actual"
+          published=$(mktemp -d)
+          gh release download "$TAG" --dir "$published"
+          go run ./cmd/release -verify-assets "$published"
+          assets=$(mktemp)
+          go run ./cmd/release -list-release-assets >"$assets"
+          while read -r name; do
+            cmp "release-assets/$name" "$published/$name"
+          done <"$assets"
       # Homebrew tap + Scoop bucket, rendered from the REAL SHA256SUMS. Gated on
       # the PACKAGING_PUSH_TOKEN secret: absent → log + skip cleanly; present →
       # a missing/unwritable repo is a hard failure.
@@ -259,7 +710,7 @@ jobs:
             echo "PACKAGING_PUSH_TOKEN not configured — skipping tap/bucket publish."
             exit 0
           fi
-          go run ./cmd/gen-packaging -version "$TAG" -sums dist/SHA256SUMS
+          go run ./cmd/gen-packaging -version "$TAG" -sums release-assets/SHA256SUMS
           publish() {
             repo="$1"; src="$2"; dest="$3"
             dir="$(mktemp -d)"

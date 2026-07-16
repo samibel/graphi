@@ -20,7 +20,7 @@ import {
 import { hasResource } from "./graphiClient";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const conn = new Connection(context.secrets, context.subscriptions);
+  const conn = new Connection(context.subscriptions);
   context.subscriptions.push(conn);
 
   // --- code-intelligence providers (read-only, degrade independently) -------
@@ -55,19 +55,6 @@ export function activate(context: vscode.ExtensionContext): void {
       runShowGraph(conn, context.extensionUri),
     ),
     vscode.commands.registerCommand("graphi.retry", () => void conn.retry()),
-    vscode.commands.registerCommand("graphi.setAuthToken", async () => {
-      const token = await vscode.window.showInputBox({
-        prompt: "graphi: auth token for the local daemon (stored in SecretStorage)",
-        password: true,
-        placeHolder: "leave empty to clear",
-      });
-      // undefined = cancelled (no change); "" = clear.
-      if (token === undefined) return;
-      await conn.setAuthToken(token);
-      void vscode.window.showInformationMessage(
-        token ? "graphi: auth token stored." : "graphi: auth token cleared.",
-      );
-    }),
 
     // SW-138 / SW-137: IDE affordances as thin clients over the shared HTTP surface.
     vscode.commands.registerCommand("graphi.relatedFiles", async () => {

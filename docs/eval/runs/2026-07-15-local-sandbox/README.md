@@ -3,9 +3,9 @@
 First complete execution of the SW-123 full-run harness (`cmd/eval -full-run`)
 over the three EVAL-02 repos plus the 20-task hero suite. Produced in the
 development sandbox, **not** on the reference runner class — these numbers
-demonstrate the pipeline end-to-end and direct the ADR 0003 U2/U4 decisions,
-but they freeze **no** budgets (`docs/eval/hero-budgets.json` stays null until
-the first green `eval-full.yml` run on `ubuntu-latest`).
+demonstrate the historical pipeline end-to-end but decide no current ADR or
+budget. The current harness measures a different workload; see ADR 0003 and
+`docs/eval/hero-protocol.md` before comparing these values.
 
 | Repo | Index | Peak RSS | DB | Nodes / Edges / Files | structural p95 | search p95 | agent_tools p95 |
 |------|-------|----------|----|----------------------|----------------|------------|-----------------|
@@ -16,13 +16,15 @@ the first green `eval-full.yml` run on `ubuntu-latest`).
 (Class p95 = worst op in class from `warm_p95_us_per_op`; full distributions
 in the JSON files. Hero suite: 20/20 pass, `hero-report.json`.)
 
-Two findings that carry into the ADRs:
+Two historical observations under that harness:
 
-1. **Structural ops are scale-flat** (≤ 600 µs p95 at 43× node count) — the
-   CORE-02 selective-read migration behaves as designed (ADR 0003 D7).
-2. **`agent_brief` is the only scaling outlier** (11 ms → 558 ms cobra →
-   guava; every other op stays ≤ ~2 ms). The U2 decision (catalog read vs.
-   SQL aggregates) is now a measured question about ONE operation.
+1. The old structural pool observed ≤ 600 µs p95 at 43× node count. It omitted
+   `impact` and used NodeId sampling, so it is not a current-harness baseline.
+2. `agent_brief` was the slowest sampled operation (11 ms → 558 ms cobra →
+   guava; the other sampled operations stayed ≤ ~2 ms). This motivated the
+   aggregate implementation, but it does not establish current performance or
+   explain RSS. Those values and causality remain **UNKNOWN** until the new
+   comparable reference run.
 
 All three SHA pins verified fail-closed during clone (`repo.sha` in each
 report matches the manifest pin).

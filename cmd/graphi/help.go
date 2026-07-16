@@ -161,9 +161,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi safe-delete -root . -dry-run a1b2c3d4",
 	},
 	"mcp": {
-		"MCP stdio server (the agent-first surface)",
-		"graphi mcp [-db path] [-daemon socket]",
-		"graphi mcp -db ~/.graphi/graph.db",
+		"MCP stdio server (Stable tools by default; explicit -labs opt-in for experimental tools)",
+		"graphi mcp [-db path] [-daemon socket] [-labs]",
+		"graphi mcp -db ~/.graphi/graph.db -labs",
 	},
 	"daemon": {
 		"hot-index Unix-socket daemon lifecycle",

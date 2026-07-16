@@ -17,6 +17,38 @@ func TestCheckStableTier_RealMatrix(t *testing.T) {
 	}
 }
 
+func TestCheckMCPDefaultProfile_RealMatrix(t *testing.T) {
+	rep := CheckMCPDefaultProfile(loadRealMatrix(t))
+	if !rep.Pass() {
+		t.Fatalf("checked-in MCP profile != StableMCPToolNames:\n%s", rep.Format())
+	}
+	if rep.Count != 11 || rep.Want != 11 {
+		t.Fatalf("default MCP profile size = %d, want %d (canonical %d)", rep.Count, 11, rep.Want)
+	}
+}
+
+// The global 12-id check cannot catch a stable operation represented on the
+// wrong surface. Reproduce the former impact bug: demote MCP impact and promote
+// analyzer impact. The global set still passes; the profile guard must fail.
+func TestCheckMCPDefaultProfile_ImpactCannotMoveToLabs(t *testing.T) {
+	matrix := loadRealMatrix(t)
+	for i := range matrix {
+		switch {
+		case matrix[i].Category == CategoryMCPTool && matrix[i].ID == "impact":
+			matrix[i].Tier = TierLabs
+		case matrix[i].Category == CategoryAnalyzer && matrix[i].ID == "impact":
+			matrix[i].Tier = TierStable
+		}
+	}
+	if rep := CheckStableTier(matrix); !rep.Pass() {
+		t.Fatalf("fixture must preserve the global 12-id invariant:\n%s", rep.Format())
+	}
+	rep := CheckMCPDefaultProfile(matrix)
+	if rep.Pass() || !contains(rep.Missing, "impact") {
+		t.Fatalf("MCP profile guard missed stable impact demotion:\n%s", rep.Format())
+	}
+}
+
 // TestCheckStableTier_ThirteenthFails proves the guard bites: adding a 13th
 // stable row (a non-canonical id tagged stable) fails the invariant.
 func TestCheckStableTier_ThirteenthFails(t *testing.T) {

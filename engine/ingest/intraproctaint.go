@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
@@ -67,6 +66,11 @@ func (i *Ingester) refreshIntraProcTaint(ctx context.Context, root string, repro
 	if err != nil {
 		return err
 	}
+	rootHandle, err := os.OpenRoot(root)
+	if err != nil {
+		return fmt.Errorf("ingest: open root for intra-proc taint refresh: %w", err)
+	}
+	defer rootHandle.Close()
 	out := make([]taint.Finding, 0, len(existing))
 	for _, f := range existing {
 		file := findingFile(f)
@@ -76,8 +80,11 @@ func (i *Ingester) refreshIntraProcTaint(ctx context.Context, root string, repro
 		if _, hit := reprocessed[file]; hit {
 			continue // recomputed below from the retained parse result
 		}
-		if _, statErr := os.Stat(filepath.Join(root, filepath.FromSlash(file))); statErr != nil {
-			continue // file gone from disk: drop its findings
+		info, statErr := rootHandle.Lstat(file)
+		if statErr != nil || info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+			// Missing, escaped, final-symlink, and non-regular paths cannot own a
+			// current source finding. Drop rather than retaining stale metadata.
+			continue
 		}
 		out = append(out, f)
 	}

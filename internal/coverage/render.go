@@ -102,7 +102,7 @@ func RenderMarkdown(caps []Capability) string {
 	b.WriteString("     Regenerate:      go run ./cmd/coverage -generate\n")
 	b.WriteString("     CI-enforced:     internal/coverage drift guard fails the build if this\n")
 	b.WriteString("                      matrix omits, adds, or mislabels a live capability\n")
-	b.WriteString("                      (registered parsers/analyzers, advertised MCP tools, present surfaces). -->\n\n")
+	b.WriteString("                      (registered parsers/analyzers, the maximal MCP registry, present surfaces). -->\n\n")
 	b.WriteString("Every row below is checked against the live registries by the `coverage-matrix`\n")
 	b.WriteString("CI gate (`internal/coverage`). A docs-only change that contradicts the code — a\n")
 	b.WriteString("missing capability, a phantom \"shipped\" entry, or a live capability marked\n")
@@ -111,6 +111,7 @@ func RenderMarkdown(caps []Capability) string {
 	b.WriteString("FROZEN to exactly the 12 operations below; the guard fails the build if a 13th\n")
 	b.WriteString("row is tagged stable or one is dropped.\n\n")
 	b.WriteString(renderStableCallout(sorted))
+	b.WriteString(renderMCPProfileCallout(sorted))
 	b.WriteString(fmt.Sprintf("Total capabilities: **%d**. See [`architecture-plan.md`](architecture-plan.md) for the design context.\n", len(sorted)))
 
 	for _, cat := range order {
@@ -124,6 +125,30 @@ func RenderMarkdown(caps []Capability) string {
 		}
 	}
 	return b.String()
+}
+
+// renderMCPProfileCallout makes the distinction ToolNames intentionally
+// carries explicit: the matrix lists the maximal registry, while only its
+// stable MCP rows form the maximal default profile. Concrete bindings then
+// remove operations their transport cannot execute; Labs is an explicit CLI
+// opt-in and remains capability-gated at runtime.
+func renderMCPProfileCallout(sorted []Capability) string {
+	var total, stable, labs, disabled int
+	for _, c := range sorted {
+		if c.Category != CategoryMCPTool {
+			continue
+		}
+		total++
+		switch c.Tier {
+		case TierStable:
+			stable++
+		case TierLabs:
+			labs++
+		case TierDisabled:
+			disabled++
+		}
+	}
+	return fmt.Sprintf("**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **%d Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **%d-tool** union (%d Labs, %d disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.\n\n", stable, total, labs, disabled)
 }
 
 // renderStableCallout renders the frozen 12-op stable set (SCOPE-01) as a visible

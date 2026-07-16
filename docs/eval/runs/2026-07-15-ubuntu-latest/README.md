@@ -1,7 +1,9 @@
-# Full-run evidence — 2026-07-15, runner class `ubuntu-latest` (REFERENCE)
+# Historical full-run evidence — 2026-07-15, runner class `ubuntu-latest`
 
-The first reproducible run on the reference runner class — the run the
-ADR 0003 U5 budgets in `docs/eval/hero-budgets.json` are frozen from.
+The first reproducible run on the reference runner class. Its numeric values are
+retained as provisional compatibility ceilings in `docs/eval/hero-budgets.json`,
+but this report used the previous harness and is not a comparable baseline for
+the current all-12/degree-stratified/post-suite-RSS method.
 
 **Provenance:** workflow `eval-full` run
 [29418826616](https://github.com/samibel/graphi/actions/runs/29418826616)
@@ -22,14 +24,15 @@ artifacts); every SHA pin was verified fail-closed during clone.
 carries areas not measured by this run — the hero gate is the per-scenario
 table.)
 
-Findings the ADR closures cite:
+What these historical files establish:
 
-1. **Structural ops are scale-flat on the reference runner** (120–252 µs p95,
-   independent of repo size up to 40k nodes) — ADR 0003 D7 confirmed at
-   reference conditions; U5 budgets frozen from these numbers.
-2. **`agent_brief` is the only scaling op** (8.5 ms → 184 ms p95, cobra →
-   guava; every other op ≤ 1.3 ms) — the U2 decision input.
-3. **Peak RSS scales with available memory, not the store**: 11.8 GB on the
-   16 GB reference runner vs 4.2 GB in the 26 GB-heap-limited sandbox for the
-   same guava index against a 33 MB store — the in-process peak is ingest
-   working set + resident caches under relaxed GC pressure. U4 input.
+1. The previous structural pool reported 120–252 µs p95. It omitted `impact`
+   and used the earlier sample, so it does not establish the current pool's
+   scale behavior.
+2. Within the operations that old harness measured, `agent_brief` reported
+   8.5 ms on cobra and 184 ms on guava; every other recorded operation was at
+   most 1.3 ms. This is historical observation, not a post-change result.
+3. The 11,821 MB guava MAXRSS sample was taken immediately after `IngestAll`,
+   before the warm operation suite. The reports do not identify its cause and
+   cannot attribute it to `agent_brief`, Stable reads, cache materialization,
+   available memory, or Go GC policy. Cause: **UNKNOWN**.

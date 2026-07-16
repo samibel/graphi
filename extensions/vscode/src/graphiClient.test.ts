@@ -4,10 +4,11 @@ import {
   GraphiClient,
   hasResource,
   resolveAnalyzerRoute,
+  resolveSearchMatches,
   SchemaMismatchError,
 } from "./graphiClient";
 import { assertLoopback } from "./loopback";
-import { SCHEMA_VERSION, type Contract } from "./contract";
+import { SCHEMA_VERSION, type Contract, type SearchMatch } from "./contract";
 
 function mkRes(body: unknown, status = 200): Response {
   return new Response(typeof body === "string" ? body : JSON.stringify(body), {
@@ -99,6 +100,7 @@ describe("decodeEnvelope — fail-closed schema guard (AC-7)", () => {
 // --- read-only by construction (only GET issued) ---------------------------
 describe("GraphiClient read-only surface", () => {
   it("issues only GET requests for query/search/impact/health", async () => {
+    const nodeID = "0123456789abcdef";
     const methods: string[] = [];
     vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
       methods.push((init?.method ?? "GET").toUpperCase());
@@ -111,8 +113,10 @@ describe("GraphiClient read-only surface", () => {
     });
     const c = new GraphiClient("http://127.0.0.1:8080");
     await c.health();
-    await c.getNeighborhood("x");
-    await c.getImpact("analyze/impact", "x");
+    await c.getNeighborhood(nodeID);
+    await c.getDefinition(nodeID);
+    await c.getReferences(nodeID);
+    await c.getImpact("analyze/impact", nodeID);
     await c.search("x");
     expect(methods.every((m) => m === "GET")).toBe(true);
     // No mutating verb exists on the class surface.
@@ -136,20 +140,174 @@ describe("GraphiClient read-only surface", () => {
     await expect(c.getContract()).rejects.toBeInstanceOf(SchemaMismatchError);
   });
 
-  it("sends Authorization header from token provider (never in URL)", async () => {
+  it("getContract unwraps the server's success envelope", async () => {
+    const contract: Contract = {
+      schema_version: SCHEMA_VERSION,
+      resources: ["search", "query/definition", "analyze/impact"],
+      streams: ["ready", "bye", "error"],
+    };
+    vi.stubGlobal("fetch", () => Promise.resolve(mkRes(okBody(contract))));
+    const c = new GraphiClient("http://127.0.0.1:8080");
+    const result = await c.getContract();
+    expect(result).toEqual(contract);
+    expect(result).not.toHaveProperty("payload");
+  });
+
+  it("getContract fails closed on a mismatched inner contract version", async () => {
+    vi.stubGlobal("fetch", () =>
+      Promise.resolve(
+        mkRes(
+          okBody({
+            schema_version: 99,
+            resources: ["search"],
+            streams: [],
+          }),
+        ),
+      ),
+    );
+    const c = new GraphiClient("http://127.0.0.1:8080");
+    await expect(c.getContract()).rejects.toBeInstanceOf(SchemaMismatchError);
+  });
+
+  it("getContract rejects a same-version payload that violates the contract shape", async () => {
+    vi.stubGlobal("fetch", () =>
+      Promise.resolve(
+        mkRes(
+          okBody({
+            schema_version: SCHEMA_VERSION,
+            resources: "search",
+            streams: [],
+          }),
+        ),
+      ),
+    );
+    const c = new GraphiClient("http://127.0.0.1:8080");
+    await expect(c.getContract()).rejects.toMatchObject({
+      name: "ApiError",
+      code: "internal",
+    });
+  });
+
+  it("does not advertise unsupported bearer authentication", async () => {
     let seenAuth: string | undefined;
-    let seenUrl = "";
-    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-      seenUrl = String(url);
+    vi.stubGlobal("fetch", (_url: string, init?: RequestInit) => {
       seenAuth = (init?.headers as Record<string, string>)?.Authorization;
       return Promise.resolve(mkRes(okBody({ symbol: "x", nodes: [], edges: [] })));
     });
-    const c = new GraphiClient("http://127.0.0.1:8080", () =>
-      Promise.resolve("secret"),
-    );
-    await c.getNeighborhood("x");
-    expect(seenAuth).toBe("Bearer secret");
-    expect(seenUrl).not.toContain("secret");
+    const c = new GraphiClient("http://127.0.0.1:8080");
+    await c.getNeighborhood("0123456789abcdef");
+    expect(seenAuth).toBeUndefined();
+  });
+
+  it("blocks a plain symbol before any exact-NodeId request is issued", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const c = new GraphiClient("http://127.0.0.1:8080");
+    await expect(c.getNeighborhood("Foo")).rejects.toMatchObject({
+      name: "ApiError",
+      code: "bad_request",
+    });
+    await expect(c.getImpact("analyze/impact", "Foo")).rejects.toMatchObject({
+      name: "ApiError",
+      code: "bad_request",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+// --- lexical text -> exact NodeId resolution -------------------------------
+describe("resolveSearchMatches / exact NodeId boundary", () => {
+  const match = (
+    nodeID: string,
+    qualifiedName: string,
+    rank: number,
+  ): SearchMatch => ({
+    node_id: nodeID,
+    kind: "function",
+    qualified_name: qualifiedName,
+    source_path: `${nodeID}.go`,
+    line: 7,
+    column: 3,
+    rank,
+  });
+
+  it("rejects fuzzy hits and resolves one exact final-name match", () => {
+    const result = resolveSearchMatches("Foo", [
+      match("1111111111111111", "pkg.FooFactory", -10),
+      match("2222222222222222", "pkg.Foo", -1),
+    ]);
+    expect(result).toEqual({
+      outcome: "found",
+      matches: [expect.objectContaining({ node_id: "2222222222222222" })],
+    });
+  });
+
+  it("preserves ambiguity instead of silently choosing ranked result zero", () => {
+    const result = resolveSearchMatches("Foo", [
+      match("1111111111111111", "one.Foo", -100),
+      match("2222222222222222", "two.Foo", -1),
+    ]);
+    expect(result.outcome).toBe("ambiguous");
+    expect(result.matches.map((m) => m.node_id)).toEqual([
+      "1111111111111111",
+      "2222222222222222",
+    ]);
+  });
+
+  it("reports not_found when search has no exact identity candidate", () => {
+    expect(
+      resolveSearchMatches("Foo", [match("fuzzy", "pkg.FooFactory", -10)]),
+    ).toEqual({ outcome: "not_found", matches: [] });
+  });
+
+  it("rejects a malformed node_id even when the qualified name is exact", () => {
+    expect(resolveSearchMatches("Foo", [match("Foo", "pkg.Foo", -1)])).toEqual({
+      outcome: "not_found",
+      matches: [],
+    });
+  });
+
+  it("never sends the plain editor identifier to exact-NodeId endpoints", async () => {
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", (input: string | URL | Request) => {
+      const url = String(input);
+      urls.push(url);
+      if (url.includes("/search?")) {
+        return Promise.resolve(
+          mkRes(
+            okBody({
+              query: "Foo",
+              matches: [match("0123456789abcdef", "pkg.Foo", -1)],
+            }),
+          ),
+        );
+      }
+      return Promise.resolve(
+        mkRes(
+          okBody({
+            operation: "definition",
+            symbol: "0123456789abcdef",
+            outcome: "empty",
+            nodes: [],
+            edges: [],
+          }),
+        ),
+      );
+    });
+
+    const c = new GraphiClient("http://127.0.0.1:8080");
+    const resolved = await c.resolveSymbol("Foo");
+    expect(resolved.outcome).toBe("found");
+    if (resolved.outcome !== "found") throw new Error("expected one exact match");
+    const nodeID = resolved.matches[0].node_id;
+    await c.getDefinition(nodeID);
+    await c.getReferences(nodeID);
+    await c.getImpact("analyze/impact", nodeID);
+
+    const exactCalls = urls.filter((url) => !url.includes("/search?"));
+    expect(exactCalls).toHaveLength(3);
+    expect(exactCalls.every((url) => url.includes("symbol=0123456789abcdef"))).toBe(true);
+    expect(exactCalls.every((url) => !url.includes("symbol=Foo"))).toBe(true);
   });
 });
 
@@ -167,6 +325,22 @@ describe("resolveAnalyzerRoute / hasResource", () => {
     expect(
       resolveAnalyzerRoute({ ...contract, resources: ["search"] }),
     ).toBeNull();
+  });
+  it("does not substitute an unrelated analyzer when impact is absent", () => {
+    expect(
+      resolveAnalyzerRoute({
+        ...contract,
+        resources: ["search", "analyze/agent_brief", "analyze/change_risk"],
+      }),
+    ).toBeNull();
+  });
+  it("accepts an explicitly advertised blast-radius alias", () => {
+    expect(
+      resolveAnalyzerRoute({
+        ...contract,
+        resources: ["search", "analyze/blast_radius"],
+      }),
+    ).toBe("analyze/blast_radius");
   });
   it("detects advertised resources for per-feature degradation", () => {
     expect(hasResource(contract, "query/neighborhood")).toBe(true);

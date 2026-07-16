@@ -9,8 +9,9 @@
 #
 # Pinned runtime (AC1 / supply-chain control): `runs.using: composite` and every
 # referenced `uses:` step is pinned by FULL 40-hex commit SHA (not a floating tag
-# such as @v4 or :latest), and the engine itself is pinned via the `graphi-version`
-# input. The action.yml validator (see ./validate) FAILS CI on any unpinned ref.
+# such as @v4 or :latest). The engine source is the same checkout selected by the
+# consumer's `uses: owner/repo/extensions/github-action@ref`. The action.yml
+# validator (see ./validate) FAILS CI on any unpinned dependency ref.
 name: "graphi PR Review (local-first)"
 description: >-
   Run the graphi code-intelligence PR-review vertical inside the CI runner and
@@ -35,12 +36,12 @@ inputs:
     # No default: a secret must be supplied explicitly.
   graphi-version:
     description: >-
-      PINNED graphi engine version (git ref / release tag) to build in-runner.
-      Pin this to a release tag or commit SHA for a reproducible runtime; do NOT
-      leave it floating.
+      Version label stamped into the binary built from this Action's source
+      checkout. This does not select source; pin the Action's `uses:` ref for
+      reproducibility and keep this label equal to that release.
     type: string
     required: false
-    default: "v0.43.0"
+    default: "v0.5.0"
   base-ref:
     description: "Base git ref of the PR (the diff is computed locally as base..head; no GitHub get-diff API call)."
     type: string
@@ -108,7 +109,9 @@ runs:
       # actions/setup-go v5.2.0 pinned by full commit SHA.
       uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
       with:
-        go-version: "1.26"
+        # Keep this exact patch in sync with go.mod/go.work. Earlier 1.26.x
+        # patches contain reachable standard-library vulnerabilities.
+        go-version: "1.26.5"
 
     - name: Build pinned graphi engine (CGo-free, in-runner)
       shell: bash
@@ -117,11 +120,22 @@ runs:
         GRAPHI_VERSION: ${{ inputs.graphi-version }}
       run: |
         set -euo pipefail
-        # Build the pinned engine from the action's vendored source so the runtime
-        # is reproducible and offline after checkout. GRAPHI_VERSION documents the
-        # pinned ref the consumer selected.
+        # GITHUB_ACTION_PATH points at the separately downloaded Action checkout;
+        # the workspace itself is the consumer repository. Building ./cmd/graphi
+        # from the workspace would execute consumer-controlled source.
+        GRAPHI_SOURCE_ROOT="$(cd "${GITHUB_ACTION_PATH}/../.." && pwd -P)"
+        if [[ ! -f "${GRAPHI_SOURCE_ROOT}/go.mod" || ! -d "${GRAPHI_SOURCE_ROOT}/cmd/graphi" ]]; then
+          echo "graphi: pinned Action source tree is incomplete: ${GRAPHI_SOURCE_ROOT}" >&2
+          exit 1
+        fi
+        if ! [[ "${GRAPHI_VERSION}" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$ ]]; then
+          echo "graphi: invalid graphi-version label" >&2
+          exit 1
+        fi
         echo "graphi: building pinned engine ${GRAPHI_VERSION} (CGo-free)"
-        go build -o "${RUNNER_TEMP:-/tmp}/graphi" ./cmd/graphi
+        go -C "${GRAPHI_SOURCE_ROOT}" build -trimpath \
+          -ldflags "-X github.com/samibel/graphi/internal/version.Version=${GRAPHI_VERSION}" \
+          -o "${RUNNER_TEMP:-/tmp}/graphi" ./cmd/graphi
         echo "GRAPHI_BIN=${RUNNER_TEMP:-/tmp}/graphi" >> "$GITHUB_ENV"
 
     - name: Run graphi PR review (engine in-runner; single GitHub egress)

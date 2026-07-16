@@ -11,8 +11,9 @@
 import * as vscode from "vscode";
 import * as crypto from "crypto";
 import type { Connection } from "../connection";
-import { symbolUnderCursor, reveal } from "../blastRadius";
-import type { QueryResult, ResultNode } from "../contract";
+import { chooseSymbolMatch, symbolUnderCursor, reveal } from "../blastRadius";
+import { hasResource } from "../graphiClient";
+import type { QueryResult, ResultNode, SearchMatch } from "../contract";
 import { parseWebviewMessage, type HostToWebview } from "./protocol";
 import { boundedGraphMessage } from "./bounding";
 
@@ -34,27 +35,49 @@ export async function runShowGraph(
     client = conn.client();
   }
   if (!client) return;
-  const seed = symbolUnderCursor(vscode.window.activeTextEditor);
-  if (!seed) {
+  const contract = conn.contract();
+  if (
+    !contract ||
+    !hasResource(contract, "search") ||
+    !hasResource(contract, "query/neighborhood")
+  ) {
+    void vscode.window.showInformationMessage(
+      "graphi: this Engine does not advertise search + neighborhood.",
+    );
+    return;
+  }
+  const symbolText = symbolUnderCursor(vscode.window.activeTextEditor);
+  if (!symbolText) {
     void vscode.window.showWarningMessage("graphi: place the cursor on a symbol first.");
     return;
   }
+  let match: SearchMatch | null;
+  try {
+    match = await chooseSymbolMatch(client, symbolText);
+  } catch (error) {
+    void vscode.window.showErrorMessage(
+      `graphi: ${error instanceof Error ? error.message : "symbol resolution failed"}`,
+    );
+    return;
+  }
+  if (!match) return;
   if (current) {
     current.reveal();
-    await current.load(seed);
+    await current.load(match, symbolText);
     return;
   }
   current = new GraphPanel(conn, extensionUri);
   current.onDispose(() => {
     current = undefined;
   });
-  await current.load(seed);
+  await current.load(match, symbolText);
 }
 
 class GraphPanel {
   private readonly panel: vscode.WebviewPanel;
   private readonly disposables: vscode.Disposable[] = [];
-  private seed = "";
+  private seedNodeID = "";
+  private cursorText = "";
   private nodeById = new Map<string, ResultNode>();
   private webviewReady = false;
   private pending: HostToWebview[] = [];
@@ -91,7 +114,7 @@ class GraphPanel {
       vscode.window.onDidChangeTextEditorSelection((e) => {
         if (e.textEditor === vscode.window.activeTextEditor) {
           const sym = symbolUnderCursor(e.textEditor);
-          if (sym && sym !== this.seed) void this.load(sym);
+          if (sym && sym !== this.cursorText) void this.loadCursorSymbol(sym);
         }
       }),
     );
@@ -106,18 +129,20 @@ class GraphPanel {
     this.disposables.push(new vscode.Disposable(cb));
   }
 
-  /** Load the bounded neighborhood of `seed` and push it to the webview. */
-  async load(seed: string): Promise<void> {
-    this.seed = seed;
-    this.panel.title = `graphi — ${seed}`;
+  /** Load the bounded neighborhood of one search-validated exact NodeId. */
+  async load(match: SearchMatch, cursorText = match.qualified_name): Promise<void> {
+    this.seedNodeID = match.node_id;
+    this.cursorText = cursorText;
+    this.panel.title = `graphi — ${match.qualified_name}`;
     const client = this.conn.client();
     if (!client) {
       this.post({ kind: "status", connected: false });
       return;
     }
     try {
-      const result = await client.getNeighborhood(seed, this.conn.maxDepth());
-      this.applyResult(seed, result);
+      const result = await client.getNeighborhood(match.node_id, this.conn.maxDepth());
+      if (this.seedNodeID !== match.node_id) return;
+      this.applyResult(match.node_id, result);
     } catch (e) {
       this.post({
         kind: "status",
@@ -127,10 +152,51 @@ class GraphPanel {
     }
   }
 
+  /**
+   * Passive cursor re-seeding may not prompt or guess. A unique search match is
+   * loaded; ambiguous/not-found text clears the old graph so it cannot be
+   * mistaken for the new cursor context.
+   */
+  private async loadCursorSymbol(symbolText: string): Promise<void> {
+    this.cursorText = symbolText;
+    const client = this.conn.client();
+    if (!client) return;
+    try {
+      const resolution = await client.resolveSymbol(symbolText);
+      if (this.cursorText !== symbolText) return;
+      if (resolution.outcome === "found") {
+        await this.load(resolution.matches[0], symbolText);
+        return;
+      }
+      this.clearUnresolved(symbolText, resolution.outcome);
+    } catch {
+      if (this.cursorText === symbolText) this.clearUnresolved(symbolText, "unavailable");
+    }
+  }
+
+  private clearUnresolved(
+    symbolText: string,
+    outcome: "ambiguous" | "not_found" | "unavailable",
+  ): void {
+    this.seedNodeID = "";
+    this.nodeById.clear();
+    this.panel.title = `graphi — ${symbolText} (${outcome.replace("_", " ")})`;
+    this.post({ kind: "graph", seed: "", nodes: [], edges: [], truncated: false });
+  }
+
   /** Re-fetch on SSE data without resetting the seed (live update, AC-4). */
   private async refreshFromStream(): Promise<void> {
-    if (!this.seed) return;
-    await this.load(this.seed);
+    if (!this.seedNodeID) return;
+    const nodeID = this.seedNodeID;
+    const client = this.conn.client();
+    if (!client) return;
+    try {
+      const result = await client.getNeighborhood(nodeID, this.conn.maxDepth());
+      if (this.seedNodeID === nodeID) this.applyResult(nodeID, result);
+    } catch {
+      // Keep the last graph on transient stream-refresh failure; connection
+      // state will independently render the disconnected banner.
+    }
   }
 
   private applyResult(seed: string, result: QueryResult): void {

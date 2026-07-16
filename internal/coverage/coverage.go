@@ -1,6 +1,6 @@
 // Package coverage derives graphi's LIVE capability set directly from the
 // registries the product runs on — registered parsers, registered analyzers,
-// advertised MCP tools, and present surfaces — so the checked-in capability
+// maximally advertisable MCP tools, and present surfaces — so the checked-in capability
 // coverage matrix (docs/coverage-matrix.yaml + docs/coverage-matrix.md) can be
 // machine-checked against reality and never silently drift (story SW-060, FU-4).
 //
@@ -48,7 +48,7 @@ const (
 type LiveSet struct {
 	Parsers        []string // registered parser languages (parse.NewDefaultRegistry().Languages())
 	Analyzers      []string // registered analyzer names (analysis default registry .Names())
-	MCPTools       []string // advertisable MCP tool names (mcp.ToolNames())
+	MCPTools       []string // maximal Stable+Labs union (mcp.ToolNames()); tiers define the default profile
 	Surfaces       []string // present surfaces (fixed dir→id map, existence-checked)
 	CLISubcommands []string // dispatch case labels statically scanned from cmd/graphi/main.go
 }

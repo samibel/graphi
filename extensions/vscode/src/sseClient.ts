@@ -11,7 +11,7 @@
 // transport retry. Named-event dispatch routes framing events (ready/bye/error)
 // and negotiated data streams separately.
 import { SCHEMA_VERSION, type ErrorEnvelope } from "./contract";
-import { ApiError, SchemaMismatchError, type TokenProvider } from "./graphiClient";
+import { ApiError, SchemaMismatchError } from "./graphiClient";
 
 export interface SseReconnectConfig {
   /** Max reconnect attempts before giving up (0 = unlimited). */
@@ -98,7 +98,6 @@ export class SseClient {
     private readonly dataStreams: string[],
     private readonly cfg: SseReconnectConfig,
     private readonly handlers: SseHandlers,
-    private readonly tokenProvider?: TokenProvider,
   ) {}
 
   /** Begin streaming (idempotent). Off-thread; never blocks the caller. */
@@ -206,8 +205,6 @@ export class SseClient {
       Accept: "text/event-stream",
       "X-Graphi-Schema-Version": String(SCHEMA_VERSION),
     };
-    const token = await this.tokenProvider?.();
-    if (token) headers.Authorization = `Bearer ${token}`;
     try {
       const res = await fetch(`${this.baseUrl}/events`, {
         method: "GET",

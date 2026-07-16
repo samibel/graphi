@@ -7,7 +7,7 @@
 #
 # Categories parser / analyzer / mcp-tool / surface / cli-subcommand are
 # machine-checked against registered parsers (core/parse), registered analyzers
-# (engine/analysis), advertised MCP tools (surfaces/mcp.ToolNames), present
+# (engine/analysis), the maximal MCP registry (surfaces/mcp.ToolNames), present
 # surfaces, and the dispatch switch in cmd/graphi/main.go. Other categories
 # (feature-unit) are informational traceability and are NOT live-checked.
 #
@@ -18,9 +18,11 @@
 # FROZEN to exactly the 12 operations (index, search, definition, callers, callees,
 # references, neighborhood, impact, agent_brief, related_files, explain_symbol,
 # change_risk); internal/coverage.CheckStableTier fails the coverage-matrix build
-# if a 13th row is tagged stable or one is dropped. The canonical set is
-# surfaces/mcp.StableOperations. Everything else is `labs` (kept in-tree, no stable
-# promise) or `disabled`.
+# if a 13th operation is tagged stable or one is dropped. The canonical set is
+# surfaces/mcp.StableOperations. For MCP specifically, the `stable` rows must equal
+# surfaces/mcp.StableMCPToolNames(): exactly 11 default tools (all Stable operations
+# except lifecycle-only index). `labs` MCP rows require explicit `graphi mcp -labs`;
+# ToolNames is their maximal capability-gated union, not the default catalog.
 #
 # status: shipped | partial | planned
 # tier:   stable | labs | disabled
@@ -196,9 +198,9 @@ capabilities:
   - id: impact
     category: analyzer
     status: shipped
-    tier: stable
+    tier: labs
     epic: EP-004
-    note: "forward/reverse blast-radius reachability."
+    note: "analyzer implementation reachable through the Labs generic dispatcher; the dedicated fixed-dispatch MCP/CLI impact operation is the Stable surface."
   - id: interproc
     category: analyzer
     status: shipped
@@ -367,6 +369,12 @@ capabilities:
     tier: stable
     epic: EP-001
     note: "structural query: definition."
+  - id: impact
+    category: mcp-tool
+    status: shipped
+    tier: stable
+    epic: EP-004
+    note: "dedicated default-profile entry for the frozen Stable impact operation; dispatch is fixed to StableClient.Impact with no generic analyzer selector."
   - id: neighborhood
     category: mcp-tool
     status: shipped

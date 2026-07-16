@@ -4,8 +4,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/samibel/graphi/internal/release"
 )
 
 func TestParseTinyYAML_SchemaRoundTrip(t *testing.T) {
@@ -186,6 +189,106 @@ func TestRun_RealHarnessProducesFourMetrics(t *testing.T) {
 	if metrics.FixtureDigest == "" {
 		t.Error("FixtureDigest empty")
 	}
+	if metrics.BuildContract != release.CanonicalBuildContract {
+		t.Errorf("BuildContract = %q, want canonical release contract", metrics.BuildContract)
+	}
+	if metrics.BuildGoVersion == "" || metrics.BuildGOOS == "" || metrics.BuildGOARCH == "" {
+		t.Errorf("incomplete build provenance: %+v", metrics)
+	}
+	if metrics.BuildCGOEnabled != "0" {
+		t.Errorf("BuildCGOEnabled = %q, want 0", metrics.BuildCGOEnabled)
+	}
+}
+
+func TestRunExternalBinaryIsUnverifiedAndUsesArtifactProvenance(t *testing.T) {
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := readBinaryBuildProvenance(exe)
+	if err != nil {
+		t.Fatal(err)
+	}
+	metrics, err := Run(context.Background(), HarnessConfig{
+		BinaryPath: exe,
+		Samples:    1,
+		Warmup:     1,
+	})
+	if err != nil {
+		t.Fatalf("Run external binary: %v", err)
+	}
+	if metrics.BuildContract != ExternalBinaryBuildContract {
+		t.Fatalf("BuildContract = %q, want %q", metrics.BuildContract, ExternalBinaryBuildContract)
+	}
+	if metrics.BuildGoVersion != want.goVersion ||
+		metrics.BuildGOOS != want.settings["GOOS"] ||
+		metrics.BuildGOARCH != want.settings["GOARCH"] ||
+		metrics.BuildCGOEnabled != want.settings["CGO_ENABLED"] {
+		t.Fatalf("metrics provenance does not match external artifact: metrics=%+v artifact=%+v", metrics, want)
+	}
+}
+
+func TestClassifyBuildContractRejectsNonCanonicalBuilds(t *testing.T) {
+	cfg := HarnessConfig{}
+	cfg.defaults()
+	canonical := binaryBuildProvenance{
+		path:      "github.com/samibel/graphi/cmd/graphi",
+		goVersion: "go1.26.5",
+		settings: map[string]string{
+			"-trimpath":   "true",
+			"-tags":       strings.Join(release.DefaultGrammarSubsetTags, ","),
+			"CGO_ENABLED": "0",
+			"GOOS":        "linux",
+			"GOARCH":      "amd64",
+		},
+	}
+	if got := classifyBuildContract(cfg, canonical, true); got != release.CanonicalBuildContract {
+		t.Fatalf("canonical build classified as %q", got)
+	}
+	if got := classifyBuildContract(cfg, canonical, false); got != ExternalBinaryBuildContract {
+		t.Fatalf("external build classified as %q", got)
+	}
+
+	tests := map[string]func(HarnessConfig, binaryBuildProvenance) (HarnessConfig, binaryBuildProvenance){
+		"target": func(c HarnessConfig, p binaryBuildProvenance) (HarnessConfig, binaryBuildProvenance) {
+			c.BinaryTarget = "./cmd/testgate"
+			return c, p
+		},
+		"configured tags": func(c HarnessConfig, p binaryBuildProvenance) (HarnessConfig, binaryBuildProvenance) {
+			c.BuildTags = []string{"grammar_subset"}
+			return c, p
+		},
+		"artifact path": func(c HarnessConfig, p binaryBuildProvenance) (HarnessConfig, binaryBuildProvenance) {
+			p.path = "github.com/samibel/graphi/cmd/testgate"
+			return c, p
+		},
+		"artifact tags": func(c HarnessConfig, p binaryBuildProvenance) (HarnessConfig, binaryBuildProvenance) {
+			p.settings = cloneStrings(p.settings)
+			p.settings["-tags"] = "grammar_subset"
+			return c, p
+		},
+		"artifact trimpath": func(c HarnessConfig, p binaryBuildProvenance) (HarnessConfig, binaryBuildProvenance) {
+			p.settings = cloneStrings(p.settings)
+			p.settings["-trimpath"] = "false"
+			return c, p
+		},
+	}
+	for name, mutate := range tests {
+		t.Run(name, func(t *testing.T) {
+			customCfg, customProvenance := mutate(cfg, canonical)
+			if got := classifyBuildContract(customCfg, customProvenance, true); got != CustomBuildContract {
+				t.Fatalf("non-canonical build classified as %q", got)
+			}
+		})
+	}
+}
+
+func cloneStrings(in map[string]string) map[string]string {
+	out := make(map[string]string, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
 }
 
 func TestGate_WarnOnlyViolationDoesNotFailGate(t *testing.T) {

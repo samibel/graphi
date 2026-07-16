@@ -76,7 +76,7 @@ func triageDirect(t *testing.T) *client.Direct {
 
 func mcpToolText(t *testing.T, c client.Client, tool string) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(c)
+	srv := mcp.NewServerWithClient(c, mcp.WithLabs())
 	reqBody, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
 		"params": map[string]any{"name": tool, "arguments": map[string]any{}},
@@ -117,6 +117,7 @@ func httpPayload(t *testing.T, c client.Client, path string) []byte {
 	t.Setenv(httpsrv.LabsEnvVar, "1")
 	srv := httpsrv.New(c, observe.New())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Host = "127.0.0.1"
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -184,7 +185,7 @@ func TestTriagePRs_CrossSurfaceParity(t *testing.T) {
 // forge boundary is wired, and probe-hidden when it is absent.
 func TestTriageTools_Advertised(t *testing.T) {
 	withForge := triageDirect(t)
-	names := listToolNames(t, mcp.NewServerWithClient(withForge))
+	names := listToolNames(t, mcp.NewServerWithClient(withForge, mcp.WithLabs()))
 	if !containsStr(names, mcp.ToolListPRs) || !containsStr(names, mcp.ToolTriagePRs) {
 		t.Fatalf("list_prs/triage_prs not advertised when forge wired; got %v", names)
 	}
@@ -192,7 +193,7 @@ func TestTriageTools_Advertised(t *testing.T) {
 	store := triageSeed(t)
 	noForge := client.NewDirect(query.New(store), search.New(store)).
 		WithAnalysis(analysis.NewDefaultService(store))
-	namesNo := listToolNames(t, mcp.NewServerWithClient(noForge))
+	namesNo := listToolNames(t, mcp.NewServerWithClient(noForge, mcp.WithLabs()))
 	if containsStr(namesNo, mcp.ToolListPRs) || containsStr(namesNo, mcp.ToolTriagePRs) {
 		t.Fatalf("triage tools advertised when forge absent (should probe-hide); got %v", namesNo)
 	}

@@ -92,3 +92,74 @@ func (r StableTierReport) Format() string {
 	b.WriteString("\nThe canonical set is surfaces/mcp.StableOperations.\n")
 	return b.String()
 }
+
+// MCPDefaultProfileReport verifies the matrix representation of the runtime
+// profile boundary. The global StableTierReport alone is insufficient: moving
+// the stable "impact" label from its MCP row to the analyzer row preserves the
+// same 12 ids but falsely documents impact as Labs on the default MCP surface.
+type MCPDefaultProfileReport struct {
+	Extra   []Capability
+	Missing []string
+	Count   int
+	Want    int
+}
+
+// Pass reports whether the matrix's stable MCP rows are exactly the default
+// server catalog (the 12 product operations minus lifecycle-only index).
+func (r MCPDefaultProfileReport) Pass() bool {
+	return len(r.Extra) == 0 && len(r.Missing) == 0 && r.Count == r.Want
+}
+
+// CheckMCPDefaultProfile cross-checks tier=stable MCP rows against the same
+// StableMCPToolNames source used by tools/list and dispatch.
+func CheckMCPDefaultProfile(matrix []Capability) MCPDefaultProfileReport {
+	wantNames := mcp.StableMCPToolNames()
+	want := make(map[string]bool, len(wantNames))
+	for _, name := range wantNames {
+		want[name] = true
+	}
+	rep := MCPDefaultProfileReport{Want: len(want)}
+	seen := make(map[string]bool, len(want))
+	for _, c := range matrix {
+		if c.Category != CategoryMCPTool || c.Tier != TierStable {
+			continue
+		}
+		rep.Count++
+		if want[c.ID] {
+			seen[c.ID] = true
+		} else {
+			rep.Extra = append(rep.Extra, c)
+		}
+	}
+	for name := range want {
+		if !seen[name] {
+			rep.Missing = append(rep.Missing, name)
+		}
+	}
+	sortCapabilities(rep.Extra)
+	sort.Strings(rep.Missing)
+	return rep
+}
+
+// Format renders a deterministic CI report for the MCP profile invariant.
+func (r MCPDefaultProfileReport) Format() string {
+	if r.Pass() {
+		return fmt.Sprintf("mcp-default-profile check PASS — exactly %d Stable MCP tools are default; Labs remains opt-in.\n", r.Want)
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "mcp-default-profile check FAILED — tier=stable MCP rows must equal exactly the %d default tools, found %d:\n", r.Want, r.Count)
+	if len(r.Extra) > 0 {
+		b.WriteString("\n  non-default tools incorrectly tagged stable:\n")
+		for _, c := range r.Extra {
+			fmt.Fprintf(&b, "    - %q\n", c.ID)
+		}
+	}
+	if len(r.Missing) > 0 {
+		b.WriteString("\n  default MCP tools not tagged stable:\n")
+		for _, name := range r.Missing {
+			fmt.Fprintf(&b, "    - %q\n", name)
+		}
+	}
+	b.WriteString("\nThe canonical default is surfaces/mcp.StableMCPToolNames().\n")
+	return b.String()
+}

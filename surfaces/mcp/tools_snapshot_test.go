@@ -38,6 +38,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"distill",
 		"explain_symbol",
 		"find_clones",
+		"impact",
 		"implementers",
 		"implements",
 		"list_prs",

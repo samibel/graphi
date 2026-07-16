@@ -1,61 +1,186 @@
-// Command testgate runs the default test suite under CGO_ENABLED=0 and asserts it
-// is green EXCEPT exactly the two known internal/mcpconfig root-perms tests,
-// expressed as an explicit, privilege-conditional expected-failure allowlist
-// (SW-055 AC#3/AC#7). New regressions cannot hide behind the carve-out: a third
-// failing test, or an allowlisted test that starts passing, fails the gate.
+// Command testgate runs the default test suite under CGO_ENABLED=0 and requires
+// a complete all-green result. No expected test failure is accepted: named
+// tests, package/setup failures, build failures, producer stderr, and producer
+// status inconsistencies all fail closed.
 //
 // Usage:
 //
-//	go run ./cmd/testgate            # runs `go test -json ./...` and evaluates
-//	go test -json ./... | go run ./cmd/testgate -stdin
+//	go run ./cmd/testgate
+//	go run ./cmd/testgate -target ./internal/example
+//	go run ./cmd/testgate -stdin -producer-exit-code 0 < go-test-events.json
 //
-// Exit code is 0 when the run is green under the allowlist, 1 otherwise.
+// Direct mode is recommended because testgate captures stdout, stderr, and the
+// go test exit status itself. Stdin mode requires the producer's recorded exit
+// code explicitly; a plain shell pipeline cannot safely communicate it.
+//
+// Exit code is 0 when the run is fully green, 1 when the tests are
+// not green, and 2 when the gate itself cannot obtain or validate a complete run.
 package main
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/samibel/graphi/internal/testgate"
 )
 
 func main() {
-	stdin := flag.Bool("stdin", false, "read a `go test -json` stream from stdin instead of running go test")
-	target := flag.String("target", "./...", "test target when running go test")
-	timeout := flag.Duration("timeout", 15*time.Minute, "overall timeout when running go test")
-	flag.Parse()
+	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+}
 
-	euid := os.Geteuid()
+func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("testgate", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	readStdin := fs.Bool("stdin", false, "read a go test -json stream from stdin instead of running go test")
+	target := fs.String("target", "./...", "test target when running go test")
+	timeout := fs.Duration("timeout", 15*time.Minute, "overall timeout when running go test")
+	producerExitCode := fs.Int("producer-exit-code", -1, "recorded producer exit code (required with -stdin)")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 0 {
+		fmt.Fprintf(stderr, "testgate: unexpected positional arguments: %v\n", fs.Args())
+		return 2
+	}
+	if *timeout <= 0 {
+		fmt.Fprintln(stderr, "testgate: timeout must be greater than zero")
+		return 2
+	}
 
-	var stream *bytes.Reader
-	if *stdin {
-		buf := new(bytes.Buffer)
-		if _, err := buf.ReadFrom(os.Stdin); err != nil {
-			fmt.Fprintf(os.Stderr, "testgate: read stdin: %v\n", err)
-			os.Exit(2)
+	var stream []byte
+	status := testgate.ProducerStatus{}
+	if *readStdin {
+		if *producerExitCode < 0 {
+			fmt.Fprintln(stderr, "testgate: -stdin requires -producer-exit-code; a JSON pipe alone loses the producer status")
+			return 2
 		}
-		stream = bytes.NewReader(buf.Bytes())
+		buf, err := io.ReadAll(stdin)
+		if err != nil {
+			fmt.Fprintf(stderr, "testgate: read stdin: %v\n", err)
+			return 2
+		}
+		stream = buf
+		status.ExitCode = *producerExitCode
 	} else {
+		if *producerExitCode >= 0 {
+			fmt.Fprintln(stderr, "testgate: -producer-exit-code is only valid with -stdin")
+			return 2
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, "go", "test", "-json", *target)
-		cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
-		out, _ := cmd.Output() // non-zero exit is EXPECTED when carve-out tests fail; evaluate the stream
-		stream = bytes.NewReader(out)
+
+		env := append(os.Environ(), "CGO_ENABLED=0")
+		targets := []string{*target}
+		if *target == "./..." {
+			var err error
+			targets, err = discoverFirstPartyTargets(ctx, env)
+			if err != nil {
+				fmt.Fprintf(stderr, "testgate: discover first-party packages: %v\n", err)
+				return 2
+			}
+		}
+		cmdArgs := append([]string{"test", "-json"}, targets...)
+		cmd := exec.CommandContext(ctx, "go", cmdArgs...)
+		cmd.Env = env
+		var outBuf, errBuf bytes.Buffer
+		cmd.Stdout = &outBuf
+		cmd.Stderr = &errBuf
+		err := cmd.Run()
+		stream = outBuf.Bytes()
+		status.Stderr = errBuf.String()
+		if err == nil {
+			status.ExitCode = 0
+		} else {
+			var exitErr *exec.ExitError
+			switch {
+			case ctx.Err() != nil:
+				fmt.Fprintf(stderr, "testgate: go test did not complete: %v\n", ctx.Err())
+				if status.Stderr != "" {
+					fmt.Fprintf(stderr, "testgate: go test stderr: %s\n", status.Stderr)
+				}
+				return 2
+			case errors.As(err, &exitErr) && exitErr.ExitCode() >= 0:
+				status.ExitCode = exitErr.ExitCode()
+			case errors.As(err, &exitErr):
+				fmt.Fprintf(stderr, "testgate: go test terminated without an exit code: %v\n", err)
+				return 2
+			default:
+				fmt.Fprintf(stderr, "testgate: start go test: %v\n", err)
+				return 2
+			}
+		}
 	}
 
-	res, err := testgate.Evaluate(stream, euid)
+	res, err := testgate.EvaluateWithProducer(bytes.NewReader(stream), status)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "testgate: evaluate: %v\n", err)
-		os.Exit(2)
+		fmt.Fprintf(stderr, "testgate: evaluate: %v\n", err)
+		return 2
 	}
-	fmt.Print(testgate.FormatVerdict(res, euid))
+	fmt.Fprint(stdout, testgate.FormatVerdict(res))
 	if !res.Green {
-		os.Exit(1)
+		return 1
 	}
+	return 0
+}
+
+// discoverFirstPartyTargets preserves ./... auto-discovery while preventing a
+// preceding npm install from turning vendored Go snippets/tests inside
+// node_modules into executable CI code. go list only inspects package metadata;
+// the returned explicit import paths are what go test is allowed to execute.
+func discoverFirstPartyTargets(ctx context.Context, env []string) ([]string, error) {
+	return discoverFirstPartyTargetsWithRunner(ctx, env, runGoList)
+}
+
+type goListRunner func(context.Context, []string) (stdout, stderr []byte, err error)
+
+func runGoList(ctx context.Context, env []string) ([]byte, []byte, error) {
+	cmd := exec.CommandContext(ctx, "go", "list", "./...")
+	cmd.Env = env
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.Bytes(), stderr.Bytes(), err
+}
+
+func discoverFirstPartyTargetsWithRunner(ctx context.Context, env []string, runner goListRunner) ([]string, error) {
+	out, stderr, err := runner(ctx, env)
+	if err != nil {
+		detail := strings.TrimSpace(string(stderr))
+		if detail != "" {
+			return nil, fmt.Errorf("go list ./...: %w: %s", err, detail)
+		}
+		return nil, fmt.Errorf("go list ./...: %w", err)
+	}
+	// A successful go command may emit module-download diagnostics on stderr.
+	// They are not package paths and must never enter the strict test target set.
+	return filterFirstPartyTargets(strings.Fields(string(out)))
+}
+
+func filterFirstPartyTargets(targets []string) ([]string, error) {
+	filtered := make([]string, 0, len(targets))
+	for _, target := range targets {
+		dependencyTree := false
+		for _, segment := range strings.Split(target, "/") {
+			if segment == "node_modules" {
+				dependencyTree = true
+				break
+			}
+		}
+		if !dependencyTree {
+			filtered = append(filtered, target)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil, fmt.Errorf("go list returned no first-party packages")
+	}
+	return filtered, nil
 }

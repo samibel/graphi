@@ -10,18 +10,19 @@ import (
 	"github.com/samibel/graphi/engine/query"
 )
 
-// countingReader instruments the query-plan shape agent_brief executes: it
-// records whether any read was selective (non-empty Query) and how many full
-// node/edge scans it performs. It backs the SW-110 (TEST-01) AC5 full-scan
-// baseline for the agent-brief graph read.
+// countingReader instruments the query-plan shape agent_brief executes. The
+// stable path must use one compact aggregate and must never fall back to the
+// legacy Nodes/Edges catalog reads.
 type countingReader struct {
 	inner query.Reader
 
-	nodeScans    int // Nodes() calls
-	edgeScans    int // Edges() calls
-	maxNodeRows  int
-	maxEdgeRows  int
-	sawSelective bool
+	nodeScans      int // Nodes() calls
+	edgeScans      int // Edges() calls
+	maxNodeRows    int
+	maxEdgeRows    int
+	sawSelective   bool
+	aggregateCalls int
+	aggregateRows  int
 }
 
 func (c *countingReader) GetNode(ctx context.Context, id model.NodeId) (model.Node, error) {
@@ -51,6 +52,13 @@ func (c *countingReader) Edges(ctx context.Context, q graphstore.Query) ([]model
 		c.maxEdgeRows = len(es)
 	}
 	return es, err
+}
+
+func (c *countingReader) BriefStats(ctx context.Context, topSymbols int) (graphstore.BriefStats, error) {
+	c.aggregateCalls++
+	stats, err := c.inner.(graphstore.BriefAggregatePort).BriefStats(ctx, topSymbols)
+	c.aggregateRows += len(stats.Files) + len(stats.TopInbound)
+	return stats, err
 }
 
 // seedBriefGraph builds a small deterministic graph: a chain of functions with
@@ -85,18 +93,11 @@ func seedBriefGraph(t *testing.T) (*graphstore.MemStore, int, int) {
 	return st, n, edges
 }
 
-// TestCharacterization_Brief_FullGraphScan is AC5 for the agent_brief full-graph
-// read (engine/agenttools/brief): buildView loads the ENTIRE node set and the
-// ENTIRE edge set with unfiltered Nodes(Query{}) / Edges(Query{}) (brief.go
-// buildView) to compute file degrees and hotspots.
-//
-// DELIBERATELY NOT flipped by SW-116 (CORE-02): the digest is an AGGREGATE
-// (file degrees, hotspots), not a traversal — replacing it with per-node port
-// reads would be an N+1 regression. Per ADR 0003 D6/U2 the catalog read stays
-// until the EVAL-01 repos measure whether SQL aggregates are needed. This pin
-// keeps that decision visible: if a selective read lands in buildView, U2 was
-// resolved and this baseline must be re-recorded with the chosen strategy.
-func TestCharacterization_Brief_FullGraphScan(t *testing.T) {
+// TestSelectiveGate_Brief_UsesCompactAggregate flips the old full-scan
+// characterization: the backend may scan internally to aggregate, but the
+// engine receives only O(files + top symbols) rows and never materializes the
+// entire graph through Nodes/Edges.
+func TestSelectiveGate_Brief_UsesCompactAggregate(t *testing.T) {
 	st, totalNodes, totalEdges := seedBriefGraph(t)
 
 	cr := &countingReader{inner: st}
@@ -106,15 +107,14 @@ func TestCharacterization_Brief_FullGraphScan(t *testing.T) {
 		t.Fatalf("Assemble: %v", err)
 	}
 
-	if cr.sawSelective {
-		t.Fatalf("BASELINE DRIFT: agent_brief issued a selective (non-empty) query — a selective read landed; record the new baseline")
+	if cr.nodeScans != 0 || cr.edgeScans != 0 {
+		t.Fatalf("SELECTIVE-GATE RED: brief issued %d Nodes()/%d Edges() catalog reads", cr.nodeScans, cr.edgeScans)
 	}
-	if cr.maxNodeRows < totalNodes {
-		t.Fatalf("BASELINE DRIFT: brief's largest node scan was %d rows, expected a full scan of all %d nodes", cr.maxNodeRows, totalNodes)
+	if cr.aggregateCalls != 1 {
+		t.Fatalf("brief aggregate calls = %d, want exactly one", cr.aggregateCalls)
 	}
-	if cr.maxEdgeRows < totalEdges {
-		t.Fatalf("BASELINE DRIFT: brief's largest edge scan was %d rows, expected a full scan of all %d edges", cr.maxEdgeRows, totalEdges)
+	if cr.aggregateRows >= totalNodes+totalEdges {
+		t.Fatalf("brief returned %d aggregate rows for %d nodes + %d edges; result is not compact", cr.aggregateRows, totalNodes, totalEdges)
 	}
-	t.Logf("agent_brief baseline: full-graph digest — %d node scan(s) up to %d rows, %d edge scan(s) up to %d rows (no endpoint/symbol index)",
-		cr.nodeScans, cr.maxNodeRows, cr.edgeScans, cr.maxEdgeRows)
+	t.Logf("agent_brief compact aggregate: %d returned rows for %d nodes + %d edges", cr.aggregateRows, totalNodes, totalEdges)
 }

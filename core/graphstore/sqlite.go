@@ -211,13 +211,21 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(
 	owner_id   UNINDEXED,
 	text
 );
--- Endpoint indexes: DeleteNode's incident-edge cascade and incidentEdgeIDs
--- filter on from_id/to_id; without these every node delete full-scans the
--- edge table (and the FK enforcement lacks its child index). Content-neutral:
--- listings stay ordered by id, so graph bytes are unaffected. Since CORE-01
--- (ADR 0003 D3) they also serve GraphLookup.Incoming/Outgoing.
-CREATE INDEX IF NOT EXISTS edges_from_id ON edges(from_id);
-CREATE INDEX IF NOT EXISTS edges_to_id   ON edges(to_id);
+-- Retire superseded endpoint-only and endpoint+id indexes. Exactly two
+-- endpoint+kind+id composites remain: their endpoint prefix still serves
+-- FK/delete lookups, their endpoint+kind prefix serves sparse filtered reads,
+-- and their complete order serves deterministic unfiltered bounded reads.
+-- Keeping redundant variants fails the per-edge storage budget and amplifies
+-- every ingest write.
+DROP INDEX IF EXISTS edges_from_id;
+DROP INDEX IF EXISTS edges_to_id;
+DROP INDEX IF EXISTS edges_from_id_edge_id;
+DROP INDEX IF EXISTS edges_to_id_edge_id;
+-- BoundedGraphLookup stops after its explicit window. Unfiltered reads use
+-- deterministic (kind,id) order; explicitly filtered reads retain EdgeId order.
+-- The indexes are content-neutral: graph bytes/snapshot ordering do not change.
+CREATE INDEX IF NOT EXISTS edges_from_kind_id_edge_id ON edges(from_id, kind, id);
+CREATE INDEX IF NOT EXISTS edges_to_kind_id_edge_id   ON edges(to_id, kind, id);
 -- Symbol-lookup indexes (CORE-01, ADR 0003 D3): SymbolLookupPort's
 -- QualifiedName/SourcePath equality lookups were full nodes scans without
 -- them (pinned by the SP-11 spike). Content-neutral like the endpoint

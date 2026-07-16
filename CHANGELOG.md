@@ -7,6 +7,78 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Changed
+- Root `.gitignore` and `.graphi/taint.json` loading is root-confined and
+  fail-closed: final/outside symlinks, non-regular files, concurrent path
+  replacement, files over 1 MiB, and malformed content abort ingest before the
+  repository walk. Missing files remain valid; nested `.gitignore` files remain
+  unsupported, and the explicit `GRAPHI_RESPECT_GITIGNORE=0` opt-out bypasses
+  only root `.gitignore` validation. Invalid gitignore errors expose the line
+  number but never echo raw pattern content.
+- The test gate no longer accepts expected failures. Permission-denial fixtures
+  probe whether the active filesystem enforces mode bits and skip when that path
+  cannot be exercised; every emitted test, package, or build failure is fatal.
+  First-party Go packages are discovered with `go list` and dependency trees
+  such as `node_modules` are excluded from execution.
+- Stable reads now hydrate only requested nodes and bounded neighborhoods;
+  resolution, related-file, risk, brief, and impact paths no longer fall back to
+  an unbounded whole-graph materialization. Impact now reads incident edges
+  through composite SQLite indexes or logarithmic-write in-memory ordered
+  indexes, enforces MaxNodes-derived node/edge/kind work caps, selects capped
+  kinds with bounded auxiliary memory, and reports every exhausted cap through
+  `truncated`.
+- MCP advertises exactly the 11 query operations available in a running session;
+  `index` remains a lifecycle operation and Labs tools require explicit opt-in.
+  Stable client ports expose a dedicated typed impact call instead of a generic
+  analysis escape hatch.
+- Evaluation reports enforce runner-bound budgets, execute every stable
+  operation and validate its envelope/outcome class, mark dirty worktrees in
+  provenance, and explicitly distinguish internal scores from independent
+  project or competitor ratings. Task-level correctness is limited to Hero
+  anchors and declared confirmed-edge assertions; broader real-repository
+  accuracy remains unmeasured.
+
+### Fixed
+- Full-pass recovery now uses a persistent cross-store generation handshake and
+  replays from reopened databases after interruption; warm start fails closed on
+  mismatched or incomplete state.
+- Definition lookup follows incoming `defines` edges, matching the graph's edge
+  direction and the checked-in hero contract.
+- REST and MCP HTTP requests have strict size limits and Host/Origin protection;
+  the REST server additionally has bounded timeouts, signal-aware graceful
+  shutdown, and active SSE cancellation. The VS Code client no longer presents
+  an unvalidated bearer token as authentication.
+- Web and VS Code clients consume the canonical search and impact payloads; the
+  web graph supports parallel edges, and definition locations correctly convert
+  one-based protocol columns to zero-based editor coordinates.
+- The GitHub Action builds Graphi from the action source checkout instead of the
+  consumer repository.
+- Release publication is fail-closed around immutable published releases,
+  peeled tag SHAs, exact draft reuse, asset checksums, workflow-bound provenance,
+  and self-describing historical asset sets.
+
+### Security
+- Every remote GitHub Action used by repository workflows is pinned to a full
+  commit SHA. A repository-wide regression test rejects floating refs; PRs also
+  receive dependency-diff review, pinned `govulncheck` source analysis, and
+  high/critical production-dependency audits for both npm workspaces. The
+  publish DAG repeats the Go and npm vulnerability gates on the exact SHA it
+  can tag, so an independent or stale workflow result cannot authorize release.
+- The minimum Go toolchain is 1.26.5 in both `go.mod` and `go.work`, closing
+  four reachable standard-library vulnerabilities reported against 1.26.3,
+  including the `os.Root` confinement escape fixed by GO-2026-4970.
+- Existing and newly created state directories/files are normalized to owner-only
+  permissions (`0700`/`0600`), including SQLite sidecars.
+- Full and incremental ingest open source files through a repository-anchored
+  `os.Root`, validate the opened descriptor against root-confined `Lstat`
+  results, and reject final symlinks, non-regular files, concurrent path
+  replacement, and intermediate symlinks that escape the repository. Reads are
+  capped at `MaxFileSize+1`, so growth after the descriptor-size check cannot
+  bypass the memory bound; replacing an indexed file with a rejected path still
+  removes its stale graph state.
+- HTTP Labs endpoints and MCP Labs tools remain disabled unless explicitly
+  enabled; unadvertised MCP tool calls are rejected.
+
 ## [0.5.0] - 2026-07-15
 
 The **Focused Core RC**: the stable surface is frozen to 12 operations and
@@ -23,9 +95,9 @@ through the new release DAG and requires lifting the publish lock
 
 ### Added
 - **Real-World Report Card** ([`docs/real-world-report.md`](docs/real-world-report.md)):
-  the honest before/after record for the two external field findings, with every
-  number reproducible from a checked-in, armed gate (a ratchet that hard-fails on
-  regression).
+  the before/after record for two external field findings. Checked-in gates
+  remeasure and protect the declared boundaries; exact table values are
+  historical snapshots and may vary inside those budgets.
 - **Per-project taint config** (`.graphi/taint.json`): merge custom
   sources/sinks/sanitizers over the built-in defaults by id (a new id appends, a
   matching id overrides or disables a default). Absent file → defaults unchanged;
@@ -54,9 +126,11 @@ through the new release DAG and requires lifting the publish lock
   negative anchors), a per-repo full-run measurement harness
   (`cmd/eval -full-run`: index wallclock, peak RSS, DB size, warm per-op p95),
   a weekly `eval-full` CI workflow over the pinned real repos, and a Java/JVM
-  monorepo (guava v33.0.0, SHA-pinned) joining the corpus. Budgets are frozen
-  from reference-runner evidence, never invented
-  ([`docs/eval/hero-budgets.json`](docs/eval/hero-budgets.json)).
+  monorepo (guava v33.0.0, SHA-pinned) joining the corpus. The v0.5.0 budgets
+  were frozen from its then-current reference-runner method, never invented
+  ([`docs/eval/hero-budgets.json`](docs/eval/hero-budgets.json)); after the
+  measurement method changed they remain provisional compatibility ceilings,
+  not a comparable current-performance ratchet.
 - **RC dossier** ([`docs/rc/focused-core-rc.md`](docs/rc/focused-core-rc.md)):
   the G0–G4 evidence checklist, the Go/No-Go protocol, and the documented
   lock-lift step.

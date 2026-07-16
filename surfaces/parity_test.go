@@ -260,7 +260,7 @@ func semanticCLIOutput(t *testing.T, direct *client.Direct, q string) []byte {
 // semanticMCPOutput runs the MCP search_semantic tool.
 func semanticMCPOutput(t *testing.T, direct *client.Direct, q string) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 	reqBody, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
 		"params": map[string]any{"name": "search_semantic", "arguments": map[string]any{"symbol": q}},
@@ -298,8 +298,10 @@ func semanticMCPOutput(t *testing.T, direct *client.Direct, q string) []byte {
 // envelope payload bytes.
 func semanticHTTPOutput(t *testing.T, direct *client.Direct, q string) []byte {
 	t.Helper()
+	t.Setenv(httpsrv.LabsEnvVar, "1")
 	srv := httpsrv.New(direct, observe.New())
 	req := httptest.NewRequest(http.MethodGet, "/search/semantic?q="+q, nil)
+	req.Host = "127.0.0.1"
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -349,7 +351,7 @@ func TestMCP_ToolsList(t *testing.T) {
 	store, _ := seed(t)
 	svc := query.New(store)
 	ssvc := search.New(store)
-	srv := mcp.NewServer(svc, ssvc)
+	srv := mcp.NewServer(svc, ssvc, mcp.WithLabs())
 
 	req := `{"jsonrpc":"2.0","id":1,"method":"tools/list"}` + "\n"
 	var out bytes.Buffer
@@ -394,7 +396,7 @@ func analysisCLIOutput(t *testing.T, direct *client.Direct, analyzer, symbol, di
 // bound to the same in-process client and extracts the canonical text payload.
 func analysisMCPOutput(t *testing.T, direct *client.Direct, analyzer, symbol, direction string, maxNodes int) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 
 	args := map[string]any{"analyzer": analyzer, "symbol": symbol, "direction": direction}
 	if maxNodes > 0 {
@@ -474,14 +476,14 @@ func TestMCP_AnalyzeToolAdvertised(t *testing.T) {
 	// With analysis attached -> analyze tool advertised.
 	withAnalysis := client.NewDirect(query.New(store), nil).
 		WithAnalysis(analysis.NewDefaultService(store))
-	srv := mcp.NewServerWithClient(withAnalysis)
+	srv := mcp.NewServerWithClient(withAnalysis, mcp.WithLabs())
 	tools := listTools(t, srv)
 	if !containsName(tools, "analyze") {
 		t.Fatal("analyze tool not advertised when analysis service is attached")
 	}
 
 	// Without analysis (the legacy constructor) -> analyze tool NOT advertised.
-	srvNoAnalysis := mcp.NewServer(query.New(store), nil)
+	srvNoAnalysis := mcp.NewServer(query.New(store), nil, mcp.WithLabs())
 	toolsNo := listTools(t, srvNoAnalysis)
 	if containsName(toolsNo, "analyze") {
 		t.Fatal("analyze tool advertised when analysis service is absent (should probe-hide)")
@@ -553,7 +555,7 @@ func TestMCP_CLI_BatchedParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 	var out bytes.Buffer
 	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
 		t.Fatalf("mcp batched serve: %v", err)
@@ -612,7 +614,7 @@ func TestMCP_CLI_CallChainParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 	var out bytes.Buffer
 	if err := srv.Serve(context.Background(), strings.NewReader(string(reqBody)+"\n"), &out); err != nil {
 		t.Fatalf("mcp call-chain serve: %v", err)
@@ -653,7 +655,7 @@ func TestMCP_CLI_CallChainParity(t *testing.T) {
 // and extracts the canonical text payload from the JSON-RPC response.
 func deepAnalyzerMCPOutput(t *testing.T, direct *client.Direct, toolName, symbol string) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 
 	args := map[string]any{"symbol": symbol}
 	reqBody, err := json.Marshal(map[string]any{
@@ -781,7 +783,7 @@ func TestMCP_CLI_PriskParity(t *testing.T) {
 // canonical text payload.
 func priskMCPOutput(t *testing.T, direct *client.Direct, tool string, args map[string]any) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 	reqBody, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
 		"params": map[string]any{"name": tool, "arguments": args},
@@ -862,7 +864,7 @@ func TestMCP_PrQuestions_ToolAdvertised(t *testing.T) {
 	if !containsName(listTools(t, withAnalysis2srv(withAnalysis)), "analyze_pr_questions") {
 		t.Fatal("analyze_pr_questions not advertised when analysis attached")
 	}
-	if containsName(listTools(t, mcp.NewServer(query.New(store), nil)), "analyze_pr_questions") {
+	if containsName(listTools(t, mcp.NewServer(query.New(store), nil, mcp.WithLabs())), "analyze_pr_questions") {
 		t.Fatal("analyze_pr_questions advertised when analysis absent (should probe-hide)")
 	}
 }
@@ -876,12 +878,14 @@ func TestMCP_Prisk_ToolAdvertised(t *testing.T) {
 	if !containsName(listTools(t, withAnalysis2srv(withAnalysis)), "analyze_pr_risk") {
 		t.Fatal("analyze_pr_risk not advertised when analysis attached")
 	}
-	if containsName(listTools(t, mcp.NewServer(query.New(store), nil)), "analyze_pr_risk") {
+	if containsName(listTools(t, mcp.NewServer(query.New(store), nil, mcp.WithLabs())), "analyze_pr_risk") {
 		t.Fatal("analyze_pr_risk advertised when analysis absent (should probe-hide)")
 	}
 }
 
-func withAnalysis2srv(c *client.Direct) *mcp.Server { return mcp.NewServerWithClient(c) }
+func withAnalysis2srv(c *client.Direct) *mcp.Server {
+	return mcp.NewServerWithClient(c, mcp.WithLabs())
+}
 
 // TestMCP_EP005_ToolsAdvertised (SW-033): all 5 EP-005 dedicated tools are
 // advertised in tools/list when the analysis service is attached, and NOT
@@ -892,7 +896,7 @@ func TestMCP_EP005_ToolsAdvertised(t *testing.T) {
 	// With analysis service attached: all EP-005 tools should be advertised.
 	withAnalysis := client.NewDirect(query.New(store), nil).
 		WithAnalysis(analysis.NewDefaultService(store))
-	srv := mcp.NewServerWithClient(withAnalysis)
+	srv := mcp.NewServerWithClient(withAnalysis, mcp.WithLabs())
 	names := listTools(t, srv)
 
 	ep005Tools := []string{"analyze_taint", "analyze_pdg", "analyze_interproc", "analyze_contracts", "analyze_githistory"}
@@ -903,7 +907,7 @@ func TestMCP_EP005_ToolsAdvertised(t *testing.T) {
 	}
 
 	// Without analysis service: EP-005 tools should NOT be advertised.
-	srvNoAnalysis := mcp.NewServer(query.New(store), nil)
+	srvNoAnalysis := mcp.NewServer(query.New(store), nil, mcp.WithLabs())
 	namesNo := listTools(t, srvNoAnalysis)
 	for _, toolName := range ep005Tools {
 		if containsName(namesNo, toolName) {
@@ -925,7 +929,7 @@ func TestMCP_EP005_EmptyResult(t *testing.T) {
 	ep005Tools := []string{"analyze_taint", "analyze_pdg", "analyze_interproc", "analyze_contracts", "analyze_githistory"}
 	for _, toolName := range ep005Tools {
 		t.Run(toolName, func(t *testing.T) {
-			srv := mcp.NewServerWithClient(direct)
+			srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 			args := map[string]any{"symbol": "nonexistent"}
 			reqBody, err := json.Marshal(map[string]any{
 				"jsonrpc": "2.0",
@@ -1021,13 +1025,13 @@ func TestMCP_CLI_PrCommentParity(t *testing.T) {
 func TestMCP_PrComment_ToolAdvertised(t *testing.T) {
 	store, _ := seed(t)
 	withReview := reviewDirect(store)
-	if !containsName(listTools(t, mcp.NewServerWithClient(withReview)), "pr_comment") {
+	if !containsName(listTools(t, mcp.NewServerWithClient(withReview, mcp.WithLabs())), "pr_comment") {
 		t.Fatal("pr_comment not advertised when review publisher attached")
 	}
 	// A client WITHOUT review wired must probe-hide pr_comment.
 	noReview := client.NewDirect(query.New(store), search.New(store)).
 		WithAnalysis(analysis.NewDefaultService(store))
-	if containsName(listTools(t, mcp.NewServerWithClient(noReview)), "pr_comment") {
+	if containsName(listTools(t, mcp.NewServerWithClient(noReview, mcp.WithLabs())), "pr_comment") {
 		t.Fatal("pr_comment advertised when review publisher absent (should probe-hide)")
 	}
 }
@@ -1051,6 +1055,7 @@ func httpQueryOutput(t *testing.T, direct *client.Direct, op, symbol string, dep
 		target = fmt.Sprintf("%s&depth=%d", target, depth)
 	}
 	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req.Host = "127.0.0.1"
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -1075,6 +1080,7 @@ func httpSearchOutput(t *testing.T, direct *client.Direct, q string, limit int) 
 		target = fmt.Sprintf("%s&limit=%d", target, limit)
 	}
 	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req.Host = "127.0.0.1"
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -1156,7 +1162,7 @@ func memoryCLIOutput(t *testing.T, direct *client.Direct, op string, args ...str
 
 func memoryMCPOutput(t *testing.T, direct *client.Direct, op string, args map[string]any) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 	args["op"] = op
 	reqBody, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
@@ -1180,6 +1186,7 @@ func memoryHTTPOutput(t *testing.T, direct *client.Direct, op string, body clien
 	srv := httpsrv.New(direct, observe.New())
 	b, _ := json.Marshal(body)
 	req := httptest.NewRequest(http.MethodPost, "/memory", bytes.NewReader(b))
+	req.Host = "127.0.0.1"
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -1259,7 +1266,7 @@ func distillCLIOutput(t *testing.T, direct *client.Direct, session string, decis
 
 func distillMCPOutput(t *testing.T, direct *client.Direct, session string, decisions []string) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 	args := map[string]any{"session_id": session, "decisions": decisions}
 	reqBody, _ := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
@@ -1295,7 +1302,7 @@ func skillGenCLIOutput(t *testing.T, direct *client.Direct, name, trigger string
 
 func skillGenMCPOutput(t *testing.T, direct *client.Direct, name, trigger string) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 	args := map[string]any{"name": name, "trigger": trigger}
 	reqBody, _ := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
@@ -1354,7 +1361,7 @@ func TestHTTP_MCP_CLI_SearchParity(t *testing.T) {
 // canonical text payload, mirroring mcpOutput but with arbitrary tool+arguments.
 func callMCPTool(t *testing.T, qsvc *query.Service, ssvc *search.Service, name string, args map[string]any) []byte {
 	t.Helper()
-	srv := mcp.NewServer(qsvc, ssvc)
+	srv := mcp.NewServer(qsvc, ssvc, mcp.WithLabs())
 	reqBody, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
 		"params": map[string]any{"name": name, "arguments": args},
@@ -1394,9 +1401,11 @@ func callMCPTool(t *testing.T, qsvc *query.Service, ssvc *search.Service, name s
 // existing HTTP parity helpers (envelope = {"payload": <canonical bytes>}).
 func httpPostOutput(t *testing.T, direct *client.Direct, path, body string) []byte {
 	t.Helper()
+	t.Setenv(httpsrv.LabsEnvVar, "1")
 	srv := httpsrv.New(direct, observe.New())
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+	req.Host = "127.0.0.1"
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("http POST %s: code=%d body=%s", path, rec.Code, rec.Body.String())
@@ -1479,7 +1488,7 @@ func TestParity_FindClones(t *testing.T) {
 // SW-085 AC4 annotation set (readOnly / idempotent / !destructive / !openWorld).
 func TestMCP_NewToolAnnotations(t *testing.T) {
 	store, _ := seed(t)
-	srv := mcp.NewServer(query.New(store), search.New(store))
+	srv := mcp.NewServer(query.New(store), search.New(store), mcp.WithLabs())
 	reqBody, _ := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/list",
 	})
@@ -1575,7 +1584,7 @@ func opCLIOutput(t *testing.T, direct *client.Direct, op string) []byte {
 // opMCPStdioOutput runs an EP-017 operation through the MCP stdio analyze tool.
 func opMCPStdioOutput(t *testing.T, direct *client.Direct, op string) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(direct)
+	srv := mcp.NewServerWithClient(direct, mcp.WithLabs())
 	reqBody, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
 		"id":      1,
@@ -1616,8 +1625,10 @@ func opMCPStdioOutput(t *testing.T, direct *client.Direct, op string) []byte {
 // and returns the unwrapped canonical payload (the envelope wraps the SAME bytes).
 func opHTTPOutput(t *testing.T, direct *client.Direct, op string) []byte {
 	t.Helper()
+	t.Setenv(httpsrv.LabsEnvVar, "1")
 	srv := httpsrv.New(direct, observe.New())
 	req := httptest.NewRequest(http.MethodGet, "/analyze/"+op, nil)
+	req.Host = "127.0.0.1"
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -1638,8 +1649,10 @@ func opHTTPOutput(t *testing.T, direct *client.Direct, op string) []byte {
 // data payload is byte-identical to the other surfaces' envelopes.
 func opSSEOutput(t *testing.T, direct *client.Direct, op string) []byte {
 	t.Helper()
+	t.Setenv(httpsrv.LabsEnvVar, "1")
 	srv := httpsrv.New(direct, observe.New())
 	req := httptest.NewRequest(http.MethodGet, "/events?analyzer="+op, nil)
+	req.Host = "127.0.0.1"
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {

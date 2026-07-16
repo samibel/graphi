@@ -7,9 +7,11 @@
   "x-status-taxonomy": {
     "200": "ok",
     "400": "bad input (code=bad_request)",
+    "403": "Labs capability disabled or local request policy rejected (code=labs_disabled|invalid_host|origin_forbidden)",
     "404": "unknown route/resource (code=not_found)",
     "405": "mutating verb on a GET route (Go 1.22 method routing)",
     "412": "schema-version mismatch (code=schema_mismatch)",
+    "413": "request body exceeds the hard limit (code=request_too_large)",
     "503": "capability unavailable (code=unavailable; ErrSearchUnavailable/ErrAnalysisUnavailable)",
     "500": "sanitized unexpected (code=internal; raw error logged locally, never returned)"
   },
@@ -38,7 +40,7 @@
           "properties": {
             "code": {
               "type": "string",
-              "enum": ["bad_request", "not_found", "schema_mismatch", "unavailable", "internal"]
+              "enum": ["bad_request", "labs_disabled", "invalid_host", "origin_forbidden", "not_found", "request_too_large", "schema_mismatch", "unavailable", "internal"]
             },
             "message": {
               "type": "string",

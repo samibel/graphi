@@ -1,15 +1,9 @@
-# SW-055 AC#3/AC#7: explicit expected-failure allowlist gate.
+# SW-055 AC#3/AC#7: strict all-green test gate.
 #
-# Runs the default suite under CGO_ENABLED=0 and asserts it is green EXCEPT exactly
-# the two known internal/mcpconfig root-perms tests, expressed as a structured,
-# privilege-conditional allowlist (no wildcard, length == 2) consumed via
-# `go test -json`. A third failing test, or an allowlisted test that starts
-# passing, fails this gate — so new regressions cannot hide behind the carve-out.
-#
-# CI runs as a NON-root user, so the two carve-out tests are expected to PASS here
-# (the carve-out is active only under root). The gate is privilege-aware and
-# evaluates correctly in both environments (cmd/testgate reads os.Geteuid()).
-name: test-allowlist-gate
+# Runs the default suite under CGO_ENABLED=0 and accepts no expected failures.
+# Permission-denial fixtures skip when the current filesystem does not enforce
+# chmod mode bits; every emitted test, package, or build failure remains fatal.
+name: test-gate
 
 on:
   push:
@@ -17,21 +11,28 @@ on:
   pull_request:
 
 jobs:
-  test-allowlist:
-    name: test-allowlist (CGO_ENABLED=0)
+  test-gate:
+    name: test-gate (CGO_ENABLED=0)
     runs-on: ubuntu-latest
     env:
       CGO_ENABLED: "0"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
 
-      - name: allowlist + drift-guard unit tests
+      # Keep dependency-fetch diagnostics outside the strict go test JSON
+      # producer. A download failure is still a hard workflow failure here.
+      - name: download Go modules
+        run: go mod download
+
+      - name: stream-validator + drift-guard unit tests
         run: go test ./internal/testgate/...
 
-      # Run the full suite as JSON and pipe it into the privilege-aware gate.
-      - name: expected-failure allowlist gate (full suite)
-        run: go test -json ./... | go run ./cmd/testgate -stdin
+      # Direct mode auto-discovers first-party Go packages, excludes npm's
+      # node_modules dependency trees, and captures JSON, stderr, and exit status
+      # together. A shell pipeline would expose only testgate's own exit status.
+      - name: strict all-green gate (full suite)
+        run: go run ./cmd/testgate

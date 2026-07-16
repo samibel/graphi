@@ -23,6 +23,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -55,6 +56,7 @@ func main() {
 	fullRun := flag.String("full-run", "", "measure ONE manifest entry end-to-end (clone, index, warm p95) and emit the raw evidence JSON")
 	workDir := flag.String("workdir", "", "full-run working directory (default: a fresh temp dir, removed afterwards)")
 	runnerClass := flag.String("runner-class", "local", "machine class stamped into the full-run report (CI passes ubuntu-latest; budgets are only frozen from the reference class)")
+	budgets := flag.String("budgets", "", "full-run budget manifest to enforce fail-closed (for example docs/eval/hero-budgets.json)")
 
 	flag.Parse()
 
@@ -63,7 +65,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "eval: -full-run requires -manifest")
 			os.Exit(2)
 		}
-		os.Exit(runFullRun(*manifest, *fullRun, *workDir, *runnerClass, *out))
+		os.Exit(runFullRun(*manifest, *fullRun, *workDir, *runnerClass, *out, *budgets))
 	}
 
 	if *manifest != "" {
@@ -102,9 +104,18 @@ func main() {
 		rep.Name, rep.AggregateRatio, verdict, rep.ClaimThreshold)
 }
 
-// resolveCommit reads .git/HEAD and, when it is a symbolic ref, follows it to
-// the actual SHA. Falls back to the raw HEAD content, then "unknown".
+// resolveCommit records the exact Git revision and marks a dirty worktree so a
+// locally generated report cannot be presented as evidence for the clean
+// commit it started from. The file fallback keeps archive/non-git fixtures
+// readable without making Git availability a runtime requirement.
 func resolveCommit() string {
+	if out, err := exec.Command("git", "rev-parse", "HEAD").Output(); err == nil {
+		commit := strings.TrimSpace(string(out))
+		if status, statusErr := exec.Command("git", "status", "--porcelain", "--untracked-files=normal").Output(); statusErr == nil && len(status) > 0 {
+			commit += "+dirty"
+		}
+		return commit
+	}
 	b, err := os.ReadFile(".git/HEAD")
 	if err != nil {
 		return "unknown"

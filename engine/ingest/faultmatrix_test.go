@@ -21,6 +21,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/ingest"
 )
 
 // batchFaultStore fails BeginBatch on the Nth call. IngestAll opens exactly
@@ -41,6 +42,40 @@ func (f *batchFaultStore) BeginBatch(ctx context.Context) (graphstore.Batch, err
 		return nil, f.injected
 	}
 	return graphstore.BeginBatch(ctx, f.Graphstore)
+}
+
+// commitFaultStore returns an error only AFTER the selected native SQLite
+// batch committed. Closing both databases immediately afterwards models a
+// process death at a real durable boundary, not merely a failed BeginBatch.
+type commitFaultStore struct {
+	graphstore.Graphstore
+	commits         int
+	failAfterCommit int // absolute 1-based commit count; 0 disarms
+	injected        error
+}
+
+func (f *commitFaultStore) BeginBatch(ctx context.Context) (graphstore.Batch, error) {
+	b, err := graphstore.BeginBatch(ctx, f.Graphstore)
+	if err != nil {
+		return nil, err
+	}
+	return &commitFaultBatch{Batch: b, parent: f}, nil
+}
+
+type commitFaultBatch struct {
+	graphstore.Batch
+	parent *commitFaultStore
+}
+
+func (b *commitFaultBatch) Commit(ctx context.Context) error {
+	if err := b.Batch.Commit(ctx); err != nil {
+		return err
+	}
+	b.parent.commits++
+	if b.parent.failAfterCommit != 0 && b.parent.commits == b.parent.failAfterCommit {
+		return b.parent.injected
+	}
+	return nil
 }
 
 // writeFaultStore fails the Nth mutating write. Over a MemStore the batch
@@ -96,6 +131,23 @@ func mutateTree(t *testing.T, repo string) {
 	}
 	if err := os.WriteFile(filepath.Join(repo, "d.go"), []byte("name:Added\n"), 0o600); err != nil {
 		t.Fatalf("add d.go: %v", err)
+	}
+}
+
+// revertTree restores mutateTree's source changes exactly. This is the
+// adversarial crash shape for a hash-only warm start: the old sidecar cache and
+// the reverted source agree, while the graph may contain the interrupted pass's
+// new generation, so drift alone reports no work.
+func revertTree(t *testing.T, repo string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(repo, "a.go"), []byte("name:Original\n"), 0o600); err != nil {
+		t.Fatalf("revert a.go: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "c.go"), []byte("name:Doomed\n"), 0o600); err != nil {
+		t.Fatalf("restore c.go: %v", err)
+	}
+	if err := os.Remove(filepath.Join(repo, "d.go")); err != nil {
+		t.Fatalf("remove added d.go: %v", err)
 	}
 }
 
@@ -167,6 +219,265 @@ func TestFaultMatrix_FullPass_KillAtEveryBatchBoundary(t *testing.T) {
 				t.Fatalf("healed store not warm-startable: ok=%v err=%v", ok, err)
 			}
 		})
+	}
+}
+
+// TestFaultMatrix_FullPass_SQLiteCloseReopen starts from an already certified
+// warm store, mutates the tree, and then dies immediately after each durable
+// graph batch of the replacement full pass. This includes the third (last)
+// graph commit just before the sidecar transaction would commit. After genuine
+// Close/Reopen, every partial generation must be cold and a forced full rebuild
+// must converge to a fresh index.
+func TestFaultMatrix_FullPass_SQLiteCloseReopen(t *testing.T) {
+	ctx := context.Background()
+	initial := map[string]string{
+		"a.go": "name:Original\n",
+		"b.go": "name:Keeper\n",
+		"c.go": "name:Doomed\n",
+	}
+
+	for kill := 1; kill <= 3; kill++ {
+		t.Run(fmt.Sprintf("crash-after-durable-batch-%d", kill), func(t *testing.T) {
+			stateDir := t.TempDir()
+			graphPath := filepath.Join(stateDir, "graphi.db")
+			metaDir := filepath.Join(stateDir, "meta")
+			repo := writeRepo(t, initial)
+
+			sqlStore, err := graphstore.OpenSQLite(graphPath)
+			if err != nil {
+				t.Fatalf("OpenSQLite seed: %v", err)
+			}
+			faultStore := &commitFaultStore{Graphstore: sqlStore}
+			ing, err := ingest.New(faultStore, renamingParser{}, metaDir)
+			if err != nil {
+				_ = sqlStore.Close()
+				t.Fatalf("ingest.New seed: %v", err)
+			}
+			if err := ing.IngestAll(ctx, repo); err != nil {
+				_ = ing.Close()
+				_ = sqlStore.Close()
+				t.Fatalf("seed IngestAll: %v", err)
+			}
+			if faultStore.commits != 3 {
+				_ = ing.Close()
+				_ = sqlStore.Close()
+				t.Fatalf("seed full pass committed %d graph batches, want 3", faultStore.commits)
+			}
+			if _, ok, err := ing.CanWarmStart(ctx, repo); err != nil || !ok {
+				_ = ing.Close()
+				_ = sqlStore.Close()
+				t.Fatalf("seed store not warm: ok=%v err=%v", ok, err)
+			}
+
+			mutateTree(t, repo)
+			injected := fmt.Errorf("simulated process death after durable batch %d", kill)
+			faultStore.failAfterCommit = faultStore.commits + kill
+			faultStore.injected = injected
+			if err := ing.IngestAll(ctx, repo); !errors.Is(err, injected) {
+				_ = ing.Close()
+				_ = sqlStore.Close()
+				t.Fatalf("expected injected crash, got %v", err)
+			}
+			// Restore the source to exactly what the still-old sidecar cache
+			// records. A hash-only restart would now see zero drift and serve the
+			// interrupted graph generation indefinitely.
+			revertTree(t, repo)
+			// A process death drops both handles. The next checks intentionally use
+			// fresh pools/connections against only the durable on-disk state.
+			if err := ing.Close(); err != nil {
+				_ = sqlStore.Close()
+				t.Fatalf("close sidecar after crash: %v", err)
+			}
+			if err := sqlStore.Close(); err != nil {
+				t.Fatalf("close graph after crash: %v", err)
+			}
+
+			reopenedStore, err := graphstore.OpenSQLite(graphPath)
+			if err != nil {
+				t.Fatalf("OpenSQLite after crash: %v", err)
+			}
+			t.Cleanup(func() { _ = reopenedStore.Close() })
+			reopenedIng, err := ingest.New(reopenedStore, renamingParser{}, metaDir)
+			if err != nil {
+				t.Fatalf("ingest.New after crash: %v", err)
+			}
+			t.Cleanup(func() { _ = reopenedIng.Close() })
+
+			var openGeneration string
+			if err := reopenedIng.MetaDB().QueryRowContext(ctx,
+				"SELECT value FROM ingest_semantics WHERE key = 'full_pass_in_progress'").Scan(&openGeneration); err != nil {
+				t.Fatalf("read durable full-pass marker: %v", err)
+			}
+			graphGeneration, err := reopenedStore.Metadata(ctx, "index.full_ingest_generation")
+			if err != nil {
+				t.Fatalf("read durable graph generation: %v", err)
+			}
+			if openGeneration == "" || openGeneration != graphGeneration {
+				t.Fatalf("recovery intent mismatch: marker=%q graph=%q", openGeneration, graphGeneration)
+			}
+			changed, deleted, err := reopenedIng.DriftSet(ctx, repo)
+			if err != nil {
+				t.Fatalf("drift after source revert: %v", err)
+			}
+			if len(changed) != 0 || len(deleted) != 0 {
+				t.Fatalf("source-revert fixture has drift: changed=%v deleted=%v", changed, deleted)
+			}
+			if files, ok, err := reopenedIng.CanWarmStart(ctx, repo); err != nil || ok || files == 0 {
+				t.Fatalf("partial generation trusted after reopen: files=%d ok=%v err=%v", files, ok, err)
+			}
+
+			// Session disposition for ok=false is a complete rebuild. It must both
+			// converge and close/align the generation marker again.
+			if err := reopenedIng.IngestAll(ctx, repo); err != nil {
+				t.Fatalf("forced recovery full pass: %v", err)
+			}
+			if _, ok, err := reopenedIng.CanWarmStart(ctx, repo); err != nil || !ok {
+				t.Fatalf("recovered store not warm: ok=%v err=%v", ok, err)
+			}
+
+			ref := graphstore.NewMemStore()
+			defer ref.Close()
+			refIng := newIngester(t, ref, renamingParser{})
+			if err := refIng.IngestAll(ctx, repo); err != nil {
+				t.Fatalf("reference IngestAll: %v", err)
+			}
+			got, want := faultSnapshotBytes(t, reopenedStore), faultSnapshotBytes(t, ref)
+			if !bytes.Equal(got, want) {
+				t.Fatalf("full pass after durable-batch-%d crash did not converge:\n got=%s\nwant=%s", kill, got, want)
+			}
+		})
+	}
+}
+
+// TestFullPassGeneration_GraphFileRevert restores only the graph database to a
+// prior, internally valid warm generation while leaving the sidecar at the
+// latest generation. Content hashes and semantics still look valid on both
+// files in isolation; the cross-store generation mismatch must nevertheless
+// force a full rebuild after Close/Reopen.
+func TestFullPassGeneration_GraphFileRevert(t *testing.T) {
+	ctx := context.Background()
+	stateDir := t.TempDir()
+	graphPath := filepath.Join(stateDir, "graphi.db")
+	metaDir := filepath.Join(stateDir, "meta")
+	repo := writeRepo(t, map[string]string{
+		"a.go": "name:Original\n",
+		"b.go": "name:Keeper\n",
+		"c.go": "name:Doomed\n",
+	})
+
+	store, err := graphstore.OpenSQLite(graphPath)
+	if err != nil {
+		t.Fatalf("OpenSQLite generation one: %v", err)
+	}
+	ing, err := ingest.New(store, renamingParser{}, metaDir)
+	if err != nil {
+		_ = store.Close()
+		t.Fatalf("ingest.New generation one: %v", err)
+	}
+	if err := ing.IngestAll(ctx, repo); err != nil {
+		_ = ing.Close()
+		_ = store.Close()
+		t.Fatalf("generation-one IngestAll: %v", err)
+	}
+	firstGeneration, err := store.Metadata(ctx, "index.full_ingest_generation")
+	if err != nil {
+		t.Fatalf("read generation one: %v", err)
+	}
+	if err := ing.Close(); err != nil {
+		_ = store.Close()
+		t.Fatalf("close generation-one sidecar: %v", err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatalf("close generation-one graph: %v", err)
+	}
+	oldGraphFile, err := os.ReadFile(graphPath)
+	if err != nil {
+		t.Fatalf("backup generation-one graph file: %v", err)
+	}
+
+	mutateTree(t, repo)
+	store, err = graphstore.OpenSQLite(graphPath)
+	if err != nil {
+		t.Fatalf("OpenSQLite generation two: %v", err)
+	}
+	ing, err = ingest.New(store, renamingParser{}, metaDir)
+	if err != nil {
+		_ = store.Close()
+		t.Fatalf("ingest.New generation two: %v", err)
+	}
+	if err := ing.IngestAll(ctx, repo); err != nil {
+		_ = ing.Close()
+		_ = store.Close()
+		t.Fatalf("generation-two IngestAll: %v", err)
+	}
+	secondGeneration, err := store.Metadata(ctx, "index.full_ingest_generation")
+	if err != nil {
+		t.Fatalf("read generation two: %v", err)
+	}
+	if firstGeneration == secondGeneration {
+		t.Fatalf("two full passes reused generation %q", firstGeneration)
+	}
+	if err := ing.Close(); err != nil {
+		_ = store.Close()
+		t.Fatalf("close generation-two sidecar: %v", err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatalf("close generation-two graph: %v", err)
+	}
+
+	// Revert only the graph DB. Sidecars are removed in case the platform kept
+	// empty WAL artifacts after the last close; no generation-two WAL may be
+	// replayed over the restored generation-one main file.
+	for _, suffix := range []string{"-wal", "-shm"} {
+		if err := os.Remove(graphPath + suffix); err != nil && !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("remove graph SQLite sidecar %s: %v", suffix, err)
+		}
+	}
+	if err := os.WriteFile(graphPath, oldGraphFile, 0o600); err != nil {
+		t.Fatalf("restore generation-one graph file: %v", err)
+	}
+
+	revertedStore, err := graphstore.OpenSQLite(graphPath)
+	if err != nil {
+		t.Fatalf("OpenSQLite reverted graph: %v", err)
+	}
+	t.Cleanup(func() { _ = revertedStore.Close() })
+	revertedIng, err := ingest.New(revertedStore, renamingParser{}, metaDir)
+	if err != nil {
+		t.Fatalf("ingest.New reverted graph: %v", err)
+	}
+	t.Cleanup(func() { _ = revertedIng.Close() })
+	graphGeneration, err := revertedStore.Metadata(ctx, "index.full_ingest_generation")
+	if err != nil {
+		t.Fatalf("read reverted graph generation: %v", err)
+	}
+	var metaGeneration string
+	if err := revertedIng.MetaDB().QueryRowContext(ctx,
+		"SELECT value FROM ingest_semantics WHERE key = 'full_pass_generation'").Scan(&metaGeneration); err != nil {
+		t.Fatalf("read latest sidecar generation: %v", err)
+	}
+	if graphGeneration != firstGeneration || metaGeneration != secondGeneration {
+		t.Fatalf("revert fixture generations: graph=%q (want %q), meta=%q (want %q)", graphGeneration, firstGeneration, metaGeneration, secondGeneration)
+	}
+	if files, ok, err := revertedIng.CanWarmStart(ctx, repo); err != nil || ok || files == 0 {
+		t.Fatalf("reverted graph trusted: files=%d ok=%v err=%v", files, ok, err)
+	}
+
+	if err := revertedIng.IngestAll(ctx, repo); err != nil {
+		t.Fatalf("full rebuild after graph revert: %v", err)
+	}
+	if _, ok, err := revertedIng.CanWarmStart(ctx, repo); err != nil || !ok {
+		t.Fatalf("rebuilt reverted store not warm: ok=%v err=%v", ok, err)
+	}
+	ref := graphstore.NewMemStore()
+	defer ref.Close()
+	refIng := newIngester(t, ref, renamingParser{})
+	if err := refIng.IngestAll(ctx, repo); err != nil {
+		t.Fatalf("reference IngestAll: %v", err)
+	}
+	got, want := faultSnapshotBytes(t, revertedStore), faultSnapshotBytes(t, ref)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("rebuild after graph-file revert did not converge:\n got=%s\nwant=%s", got, want)
 	}
 }
 

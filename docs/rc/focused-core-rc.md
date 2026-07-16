@@ -33,7 +33,7 @@ mit dem dokumentierten Lock-Handgriff.
 | Die 12 Stable-Ops sind eingefroren und überall identisch | `surfaces/mcp.StableOperations` (einzige Quelle); `internal/coverage` Stable-Tier-Gate: exakt 12, kein 13., keins fehlt (SW-111/SCOPE-01, main) |
 | Generiertes, CI-frisches Capability-Manifest | `docs/capability-manifest.json` + `cmd/coverage -check` Freshness-Gate — `9f1f88c` (SW-117/CAP-01) |
 | Consumer-owned Ports; kein Stable-Op endet in einem Stub | `surfaces/client/ports.go` (QueryPort/SearchPort/AgentContextPort/StableClient); `surfaces/capability_ports_test.go` treibt 11 der 12 Ops port-TYPISIERT (`index` läuft als Ingest-Fixture-Schritt, im Test dokumentiert) und scheitert auf jedem `*Unavailable`-Sentinel |
-| Testgate-Allowlist statt stiller Rot-Toleranz | `cmd/testgate` (SW-110/TEST-01, main): GREEN = nur die 2 dokumentierten Root-Carve-outs |
+| Striktes Testgate ohne Rot-Toleranz | `cmd/testgate` (SW-110/TEST-01, main): GREEN = vollständiger Stream ohne Test-, Paket- oder Build-Fehler; Permission-Fixtures skippen nur, wenn der Fehlerpfad auf dem aktiven Dateisystem nicht erzwingbar ist |
 
 ### G2 — Kern-Korrektheit, Recovery, Privacy: GRÜN
 
@@ -53,7 +53,7 @@ mit dem dokumentierten Lock-Handgriff.
 | Daemon-Prozess terminiert (stop-RPC UND SIGTERM), Socket weg, restartfähig | `surfaces/daemon_lifecycle_subprocess_test.go` |
 | Recovery vor Vertrauen beim Session-Open (ADR-0004-Restscope) | `cmd/graphi/zeroconfig_recovery_test.go` (drift-unsichtbare Divergenz wird geheilt) |
 
-### G4 — Eval-Evidenz: GRÜN mit einem dokumentierten Rest (§4.2)
+### G4 — Eval-Evidenz: Hero/Pins GRÜN; aktuelle Performance-Neubaseline OFFEN
 
 | Beleg | Evidenz |
 |-------|---------|
@@ -61,7 +61,7 @@ mit dem dokumentierten Lock-Handgriff.
 | 3 gepinnte Real-Repos inkl. JVM-Monorepo, fail-closed SHA-Pins | `corpus/manifest.json` v2: cobra / flask / **guava v33.0.0** (`2214c63670fc`, Tier 3) |
 | Full-Run-Harness + CI-Workflow | `cmd/eval -full-run` (+ hermetisches Gate `fullrun_test.go`), `.github/workflows/eval-full.yml` — `ecef54f` (SW-123/EVAL-02) |
 | Erste vollständige Roh-Evidenz, eingecheckt | `docs/eval/runs/2026-07-15-local-sandbox/` (PRELIMINARY, Runnerklasse `local-sandbox`): alle 3 Repos PASS, Pins verifiziert, Hero 20/20 |
-| U2/U4 messbar eingegrenzt | ADR 0003: `agent_brief` einziger Skalierungs-Ausreißer (11 ms → 558 ms); guava 4,2 GB RSS vs. 35 MB Store |
+| Historische Performance-Beobachtungen | Der alte Harness beobachtete separat skalierende `agent_brief`-Latenz und hohe Index-Phasen-MAXRSS. Ihr kausaler Zusammenhang und aktuelle Werte unter dem geänderten Harness sind **UNKNOWN**; siehe ADR 0003 und `docs/eval/hero-protocol.md`. |
 
 ### G5 — Design-Partner: OFFEN (Sami, non-engineering)
 
@@ -70,7 +70,7 @@ optionale Wette. Läuft parallel zur RC-Entscheidung.
 
 ## 3. Repo-Gates (Stand dieses Commits)
 
-`go test ./…` via testgate: GREEN (nur die 2 Allowlist-Carve-outs) · `gofmt -l`
+`go test ./…` via testgate: GREEN (keine Expected-Failure-Ausnahmen) · `gofmt -l`
 leer · `go vet` sauber · `layerguard` PASS · `coverage -check` (Matrix +
 Stable-Tier + Manifest-Freshness) PASS.
 
@@ -80,13 +80,16 @@ Stable-Tier + Manifest-Freshness) PASS.
 
 1. **Stage-0-Review & Merge** — ERLEDIGT (PR #51 gemergt, `060f1ab`;
    Audit-Nachschliff PR #52, `fa2441c`).
-2. **Referenzlauf + Budget-Freeze** — ERLEDIGT: `eval-full` Run
+2. **Aktuelle Referenz-Neubaseline** — **OFFEN vor dem nächsten Release**. Der
+   historische `eval-full` Run
    [29418826616](https://github.com/samibel/graphi/actions/runs/29418826616)
-   auf `ubuntu-latest` (Hero 20/20, drei Full-Runs, Pins fail-closed);
-   Roh-Evidenz `docs/eval/runs/2026-07-15-ubuntu-latest/`, Ratchets in
-   `docs/eval/hero-budgets.json` (Baseline+Budget, Policy dokumentiert),
-   ADR 0003 **U2/U4/U5 geschlossen** — der Budget-Freeze-PR (#53) zitiert
-   den Lauf. Nach dessen Merge ist §4.1 leer und §5 entscheidbar.
+   auf `ubuntu-latest` lieferte valide Hero-/Pin-Evidenz, nutzte aber eine ältere
+   Messmethode: Index-Phasen-RSS, NodeId-Sampling und keinen `impact`-Sample.
+   Die Zahlen in `docs/eval/hero-budgets.json` bleiben vorläufige, fail-closed
+   Kompatibilitätsgrenzen, sind aber kein vergleichbarer Ratchet für den aktuellen
+   Harness. Erst ein neuer Lauf desselben aktuellen Commits mit derselben aktuellen
+   Methode darf Latenz/RSS neu baselinen. Die früheren Bezeichnungen „U2/U4/U5
+   geschlossen“ sind durch die aktuelle ADR-0003-UNKNOWN-Liste ersetzt.
 
 ### 4.2 Nicht blockierend, vor dem ersten Release
 
@@ -96,17 +99,21 @@ Stable-Tier + Manifest-Freshness) PASS.
   gegen ein Fixture-Repo, `initialize`-Params sichern — Sami, 15 min. Justiert
   nur das Roots-Mapping, nicht die Architektur.
 
-## 5. Go/No-Go-Protokoll
+## 5. Historisches v0.5.0-Go/No-Go-Protokoll
 
-**Entscheider:** Sami. **Grundlage:** §2-Checkliste + §4.1 abgearbeitet.
+Der folgende Block dokumentiert die Entscheidung vom 2026-07-15. Er ist **keine**
+Freigabe des aktuellen, geänderten Harness oder dieses Worktree-Diffs.
+
+**Entscheider:** Sami. **Historische Grundlage:** damalige §2-Checkliste + §4.1.
 
 ```text
 Entscheidung: [ GO ]                 Datum: 2026-07-15
 Begründung:
 1. G0–G4 grün mit eingecheckter Evidenz; alle Repo-Gates grün; der
    adversariale Audit brach keine Sicherheits-/Korrektheitsbehauptung.
-2. §4.1 abgearbeitet: Review/Merge (#51/#52) und Budget-Freeze (#53) mit
-   Referenzlauf auf ubuntu-latest; ADR 0003 U2/U4/U5 geschlossen.
+2. Nach damaligem Evidenzvertrag waren Review/Merge (#51/#52) und
+   Budget-Freeze (#53) abgearbeitet. Diese Performance-Freigabe ist wegen der
+   später geänderten Messmethode nicht auf den aktuellen Harness übertragbar.
 3. Release-Pfad ist ein einziger, SHA-gebundener, red-gate-sicherer DAG;
    ein roter Gate produziert weiterhin weder Tag noch Release.
 ```
@@ -127,11 +134,12 @@ Pin mitdrehen — ein reviewter Commit, keine Workflow-Änderung.
 ## 6. Reproduktion (eine Zeile je Beleg)
 
 ```sh
-CGO_ENABLED=0 go test -json ./... | go run ./cmd/testgate -stdin   # Repo-Gates
+CGO_ENABLED=0 go run ./cmd/testgate -target ./...                  # Repo-Gates (Exitcode fail-closed)
 go run ./cmd/coverage -check                                       # Manifest/Stable-Tier
 go test ./cmd/publish-lock/                                        # Lock + DAG-Beweise
 go test ./surfaces/ -run 'SessionProfile|DaemonLifecycle'          # G3-Journeys
 go test ./cmd/eval/ -run 'TestHeroSuite|TestFullRun'               # G4-Gates (hermetisch)
 go run ./cmd/eval -manifest corpus/manifest.json -scenarios corpus/hero  # Hero 20/20
-go run ./cmd/eval -manifest corpus/manifest.json -full-run cobra   # Full-Run (Netz)
+go run ./cmd/eval -manifest corpus/manifest.json -full-run cobra \
+  -runner-class ubuntu-latest -budgets docs/eval/hero-budgets.json # Full-Run + vorläufige Kompatibilitätsgrenze (Netz)
 ```

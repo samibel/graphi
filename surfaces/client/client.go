@@ -471,6 +471,20 @@ type Client interface {
 	CritiqueReview(ctx context.Context, prNumber int, diff, reviewJSON string) ([]byte, error)
 }
 
+// CapabilityReporter is the optional, side-effect-free capability-negotiation
+// seam for clients whose Client methods include transport compatibility stubs.
+// A catalog may use it to omit operations that cannot reach a real backing
+// implementation on the current binding. SupportsCapability must report wiring,
+// not whether a particular request would find data, and must not perform I/O.
+//
+// Client implementations that do not implement this interface retain the
+// historical full-Client behavior. That preserves compatibility for in-process
+// and third-party implementations whose Client contract is fully backed, while
+// remote clients can explicitly fail closed for RPCs they have not wired yet.
+type CapabilityReporter interface {
+	SupportsCapability(name string) bool
+}
+
 // ErrReviewFetchUnavailable is returned when CritiqueReview is asked to fetch an
 // existing review but no inline review was supplied AND no review-fetch boundary is
 // wired (SW-108). The in-process Direct client wires the fetch via WithReviewFetcher;

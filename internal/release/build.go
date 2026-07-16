@@ -20,8 +20,13 @@ import (
 	"strings"
 )
 
-// VersionVar is the ldflags target for the release version string.
-const VersionVar = "github.com/samibel/graphi/internal/version.Version"
+const (
+	// VersionVar is the ldflags target for the release version string.
+	VersionVar = "github.com/samibel/graphi/internal/version.Version"
+	// CanonicalBuildContract versions the exact release argument contract shared
+	// by release builds and the binary-size benchmark.
+	CanonicalBuildContract = "internal/release.CanonicalBuildArgs/v1"
+)
 
 // DefaultGrammarSubsetTags is the build-tag set the shipped default graphi
 // binary is built with (EP-009, SW-053 AC#3). It is the single source of truth
@@ -143,19 +148,24 @@ func (c *BuildConfig) defaults() {
 	}
 }
 
-// Build produces the static binary at out under CGO_ENABLED=0 with trimpath,
-// VCS stamping, and the version ldflag. It runs from the module root.
-func Build(ctx context.Context, cfg BuildConfig, out string) error {
+// CanonicalBuildArgs returns the exact go build arguments used for a release
+// binary. Keeping this argument contract in one place prevents benchmarks and
+// other release gates from silently measuring a different flavor.
+func CanonicalBuildArgs(cfg BuildConfig, out string) []string {
 	cfg.defaults()
 	ldflags := fmt.Sprintf("-X %s=%s", VersionVar, cfg.Version)
 	args := []string{"build", "-trimpath", "-buildvcs=true"}
 	if len(cfg.Tags) > 0 {
-		// Space-joined tag list (the modern `-tags 'a b c'` form). This is the
-		// load-bearing SW-053 AC#3 wiring: the shipped default build is
-		// subset-tagged so only the registered grammar blobs are embedded.
 		args = append(args, "-tags", strings.Join(cfg.Tags, " "))
 	}
-	args = append(args, "-ldflags", ldflags, "-o", out, cfg.Target)
+	return append(args, "-ldflags", ldflags, "-o", out, cfg.Target)
+}
+
+// Build produces the static binary at out under CGO_ENABLED=0 with trimpath,
+// VCS stamping, and the version ldflag. It runs from the module root.
+func Build(ctx context.Context, cfg BuildConfig, out string) error {
+	cfg.defaults()
+	args := CanonicalBuildArgs(cfg, out)
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Env = withCgo(os.Environ(), "0")
 	// Cross-compile when a target is set; empty ⇒ host platform (unchanged).

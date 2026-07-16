@@ -40,8 +40,8 @@ jobs:
     env:
       CGO_ENABLED: "0"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
@@ -51,6 +51,7 @@ jobs:
             -manifest corpus/manifest.json \
             -full-run "${{ matrix.repo }}" \
             -runner-class ubuntu-latest \
+            -budgets docs/eval/hero-budgets.json \
             -out "eval-full-${{ matrix.repo }}.json"
       # The raw report also goes to the job log (and step summary): the run
       # page is then self-documenting, and the evidence stays retrievable via
@@ -64,7 +65,7 @@ jobs:
           { echo '```json'; cat "eval-full-${{ matrix.repo }}.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: upload raw evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eval-full-${{ matrix.repo }}
           path: eval-full-${{ matrix.repo }}.json
@@ -76,8 +77,8 @@ jobs:
     env:
       CGO_ENABLED: "0"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
@@ -96,7 +97,7 @@ jobs:
           echo "=== HERO-REPORT-END ==="
       - name: upload hero report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hero-report
           path: |

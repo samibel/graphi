@@ -41,9 +41,9 @@ moment the guarantee silently regresses.
 | **Zero egress / no telemetry** | `internal/audit.checkNoTelemetry()` returned a **hard-coded declared PASS**. | Backed by the **real `internal/canary` static gate** (telemetry-import denylist + type-checked outbound-dial AST scan over the default graph) + a **runtime zero-egress test** that exercises every default-tier parser under an **injected failing dialer** (no live sockets). |
 | **Supply chain** | `go.mod` pin + `go.sum` only; license **assumed** Apache-2.0. | **Provenance/license record** (`internal/release.DefaultTierGrammarProvenance`): pinned `gotreesitter v0.20.2`, source URL, **actual license = MIT** read from the resolved module cache. Tests assert pin-match against `go.mod`, `go mod verify`, and SPDX-permissive license (fails on a license-changing bump). |
 | **Offline build** | Assumed from the `//go:embed` mechanism, never tested. | **Actively tested**: the default flavor builds under `GOPROXY=off` + warm cache (the real risk is a *module* fetch, not a grammar fetch — blobs are Go-embedded via subset tags). |
-| **Parse-time resource bounds** | **None** — `engine/ingest` read files unbounded (`os.ReadFile`), `Parse()` had no enforced size/timeout/depth. (The `parser_go.go` comment referenced a guard that did not exist.) | **Introduced fail-closed** (`parse.ResourceBounds`): max file size checked via `FileInfo.Size()` *before* read; parse timeout via `context.WithTimeout`; CST nesting depth capped inside the gotreesitter walk. On any breach the file is **skipped with a structured diagnostic** — never parse-anyway, never truncate. |
+| **Parse-time resource bounds** | **None** — `engine/ingest` read files unbounded (`os.ReadFile`), `Parse()` had no enforced size/timeout/depth. (The `parser_go.go` comment referenced a guard that did not exist.) | **Introduced fail-closed** (`parse.ResourceBounds`): source files are opened through a repository-confined `os.Root`, descriptor size is checked before reading, and the descriptor read is capped at `MaxFileSize+1`; parse timeout uses `context.WithTimeout`, and CST nesting depth is capped inside the gotreesitter walk. On any breach the file is **skipped with a structured diagnostic** — never parse-anyway, never silently truncate. |
 | **Error/log source sanitization** | Unaudited; parser errors could echo raw source. | **Default-deny** (`parse.SanitizedError` / `Provenance`): errors carry only structured provenance (file, language, byte-span, node-kind), **never raw source bytes**. Verified by sentinel-secret negative tests across every failure mode. |
-| **CI test-suite assertion** | `go test ./...` green with no carve-out machinery. | **Explicit expected-failure allowlist** (`internal/testgate`): exactly the two known `internal/mcpconfig` root-perms tests, **no wildcard**, **length asserted == 2**, **privilege-conditional** (expected-fail only under root), consumed via `go test -json`. A third failure — or an allowlisted test that starts passing — fails the gate, so **regressions cannot hide behind the carve-out**. |
+| **CI test-suite assertion** | A shell pipeline could lose `go test`'s producer status, and two permission fixtures were tolerated as expected failures under root. | **Strict all-green gate** (`internal/testgate`): consumes the complete `go test -json` stream plus exit status and stderr; every test/package/build failure is fatal. Permission fixtures probe actual filesystem enforcement and skip where denial cannot be exercised (root/ACL/platform), so the gate needs no UID-dependent carve-out. |
 
 ## Defense-in-depth: the two complementary no-CGO layers
 
@@ -74,14 +74,20 @@ planted CGO offender. Neither layer subsumes the other.
 
 ```mermaid
 flowchart LR
-    F["Untrusted source file"] --> S{"size > MaxFileSize?<br/>(FileInfo.Size, before read)"}
-    S -->|yes| SKIP1["skip + structured diagnostic"]
-    S -->|no| R["os.ReadFile"]
-    R --> T{"Parse exceeds<br/>ParseTimeout?"}
+    F["Untrusted source file"] --> O["os.OpenRoot + root-confined<br/>Lstat / Open / descriptor Stat"]
+    O --> V{"regular descriptor,<br/>same file, no final symlink?"}
+    V -->|no| SKIP0["skip unreadable + structured diagnostic"]
+    V -->|yes| S{"descriptor size > MaxFileSize?"}
+    S -->|yes| SKIP1["skip oversize + structured diagnostic"]
+    S -->|no| R["read descriptor through<br/>LimitReader(MaxFileSize+1)"]
+    R --> G{"more than MaxFileSize<br/>bytes observed?"}
+    G -->|yes| SKIP1
+    G -->|no| T{"Parse exceeds<br/>ParseTimeout?"}
     T -->|yes| SKIP2["skip + structured diagnostic"]
     T -->|no| D{"CST depth > MaxDepth?"}
     D -->|yes| SKIP3["SanitizedError(ErrMaxDepthExceeded)<br/>→ skip + structured diagnostic"]
     D -->|no| OK["parse, commit graph"]
+    SKIP0 --> CONT["ingestion continues"]
     SKIP1 --> CONT["ingestion continues"]
     SKIP2 --> CONT
     SKIP3 --> CONT
@@ -100,8 +106,8 @@ deeply-nested / failing file can never leak into an error or log line.
 | Static forest-unreachable scan | `internal/cgoconformance/gate.go` (`ForestReachablePackages`) | `internal/cgoconformance/gate_test.go` |
 | Zero-egress / no-telemetry (real) | `internal/audit/audit.go` (`checkNoTelemetry` → `canary.RunGate`) | `internal/audit/telemetry_test.go`, `core/parse/egress_test.go` |
 | Supply chain + offline build | `internal/release/provenance.go` | `internal/release/provenance_test.go` |
-| Fail-closed bounds + sanitization | `core/parse/bounds.go`, `engine/ingest/ingest.go` | `core/parse/bounds_test.go`, `engine/ingest/bounds_test.go` |
-| Expected-failure allowlist + drift-guard | `internal/testgate/allowlist.go`, `cmd/testgate` | `internal/testgate/allowlist_test.go` |
+| Root-confined reads, fail-closed bounds + sanitization | `internal/rootfile/rootfile.go`, `core/parse/bounds.go`, `engine/ingest/ingest.go` | `internal/rootfile/rootfile_test.go`, `core/parse/bounds_test.go`, `engine/ingest/bounds_test.go` |
+| Strict test-stream validator + drift-guard | `internal/testgate/allowlist.go`, `cmd/testgate` | `internal/testgate/allowlist_test.go`, `internal/mcpconfig/fixture_test.go` |
 
 ## CI wiring
 
@@ -109,5 +115,7 @@ deeply-nested / failing file can never leak into an error or log line.
   registration guard" step (`go test ./core/parse/ -run TestAssertPureGoDefaults`)
   ahead of the named `cgo-free-conformance` check (which now also runs the static
   forest-unreachable scan).
-- `.github/workflows/testgate.yml` — runs the privilege-aware expected-failure
-  allowlist gate over `go test -json ./...`.
+- `.github/workflows/testgate.yml` — runs the strict all-green gate over a
+  complete auto-discovered first-party `go test -json` result; npm
+  `node_modules` trees are excluded before execution and no expected failures
+  are accepted.

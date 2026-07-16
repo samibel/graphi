@@ -3,7 +3,9 @@
 // neighborhood of the symbol under the cursor (kind + qualified name; click →
 // reveal source location). Refreshes (debounced) on active-editor change and
 // cursor movement, and on SSE data events via the Connection listener. Async,
-// non-blocking; degrades when the Engine is offline or the resource is absent.
+// non-blocking; cursor text resolves through /search before the exact-NodeId
+// neighborhood route. Ambiguous names clear the passive tree instead of
+// silently choosing one ranked hit.
 import * as vscode from "vscode";
 import type { Connection } from "../connection";
 import { hasResource } from "../graphiClient";
@@ -56,7 +58,12 @@ export class ResultsTreeProvider implements vscode.TreeDataProvider<NodeItem> {
   async refresh(): Promise<void> {
     const client = this.conn.client();
     const contract = this.conn.contract();
-    if (!client || !contract || !hasResource(contract, "query/neighborhood")) {
+    if (
+      !client ||
+      !contract ||
+      !hasResource(contract, "search") ||
+      !hasResource(contract, "query/neighborhood")
+    ) {
       this.items = [];
       this._onDidChange.fire();
       return;
@@ -70,7 +77,18 @@ export class ResultsTreeProvider implements vscode.TreeDataProvider<NodeItem> {
     }
     this.currentSymbol = symbol;
     try {
-      const result = await client.getNeighborhood(symbol, this.conn.maxDepth());
+      const resolution = await client.resolveSymbol(symbol);
+      // Guard both resolution and query against stale cursor movement.
+      if (this.currentSymbol !== symbol) return;
+      if (resolution.outcome !== "found") {
+        this.items = [];
+        this._onDidChange.fire();
+        return;
+      }
+      const result = await client.getNeighborhood(
+        resolution.matches[0].node_id,
+        this.conn.maxDepth(),
+      );
       // Guard against a stale in-flight response after the cursor moved on.
       if (this.currentSymbol !== symbol) return;
       this.items = result.nodes

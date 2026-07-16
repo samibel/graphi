@@ -1,11 +1,7 @@
-// Package testgate expresses the `CGO_ENABLED=0 go test ./...`-green CI assertion
-// as an EXPLICIT expected-failure allowlist (SW-055 AC#3/AC#7). The default suite
-// is green IFF every test passes EXCEPT exactly the two known internal/mcpconfig
-// root-perms tests — and only when running as root, since those tests force a
-// write failure via os.Chmod(dir, 0o500) which root bypasses. The allowlist is
-// structured DATA (no wildcard, length asserted == 2) consumed via `go test -json`
-// so a new regression cannot hide behind the carve-out: if a third test fails, or
-// an allowlisted test starts passing/disappears, the gate fails loudly.
+// Package testgate validates a complete `CGO_ENABLED=0 go test -json ./...`
+// stream and its producer status. There are no expected-failure carve-outs:
+// every named test failure, package-level failure, build failure, truncated
+// stream, non-zero unexplained producer status, or producer stderr fails closed.
 package testgate
 
 import (
@@ -14,148 +10,251 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 )
 
-// ExpectedFailure names one carve-out test that is expected to FAIL under the
-// privilege condition. It is fully qualified (package + test name) — never a
-// package-level skip or a wildcard — so the carve-out is exact.
-type ExpectedFailure struct {
-	Package string // full import path, e.g. github.com/samibel/graphi/internal/mcpconfig
-	Test    string // exact top-level test name
-	Reason  string // why it is expected to fail (root bypasses the forced write failure)
-}
-
-// Key is the package\x00test identity used for set membership.
-func (e ExpectedFailure) Key() string { return e.Package + "\x00" + e.Test }
-
-func (e ExpectedFailure) String() string { return e.Package + "." + e.Test }
-
-// expectedFailuresUnderRoot is the SINGLE SOURCE OF TRUTH for the carve-out: the
-// EXACTLY TWO internal/mcpconfig root-perms tests. They force a write failure by
-// chmod'ing the parent dir to 0o500; root bypasses that, so they fail ONLY as root
-// and pass otherwise. ExpectedFailures() asserts len == 2 — adding a wildcard or a
-// third entry is a deliberate, reviewable change, never an accident.
-var expectedFailuresUnderRoot = []ExpectedFailure{
-	{
-		Package: "github.com/samibel/graphi/internal/mcpconfig",
-		Test:    "TestFixture_Unwritable_FailsAndLeavesOriginalIntact",
-		Reason:  "forces write failure via os.Chmod(dir,0o500); root bypasses the permission, so the test fails only under root",
-	},
-	{
-		Package: "github.com/samibel/graphi/internal/mcpconfig",
-		Test:    "TestBackupFailureAbortsBeforeTouchingConfig",
-		Reason:  "forces write failure via os.Chmod(dir,0o500); root bypasses the permission, so the test fails only under root",
-	},
-}
-
-// ExpectedFailures returns the privilege-conditional carve-out set. When euid != 0
-// the carve-out is EMPTY (those two tests are expected to PASS as a normal user);
-// when euid == 0 it is exactly the two root-perms tests. It panics if the static
-// list is ever not exactly two entries — a guard against silent wildcarding.
-func ExpectedFailures(euid int) []ExpectedFailure {
-	if len(expectedFailuresUnderRoot) != 2 {
-		panic(fmt.Sprintf("testgate: expected-failure allowlist must be EXACTLY 2 entries, got %d (no wildcard, no drift)", len(expectedFailuresUnderRoot)))
-	}
-	if euid != 0 {
-		return nil // non-root: the two tests are expected to pass
-	}
-	out := make([]ExpectedFailure, len(expectedFailuresUnderRoot))
-	copy(out, expectedFailuresUnderRoot)
-	return out
-}
-
 // TestEvent is the subset of a `go test -json` event this gate consumes.
 type TestEvent struct {
-	Action  string `json:"Action"` // "pass" | "fail" | "skip" | "run" | "output" | ...
-	Package string `json:"Package"`
-	Test    string `json:"Test"`
+	Action      string `json:"Action"` // "pass" | "fail" | "skip" | "run" | "output" | ...
+	Package     string `json:"Package"`
+	Test        string `json:"Test"`
+	ImportPath  string `json:"ImportPath"`  // build-output/build-fail events emitted by recent Go versions
+	FailedBuild string `json:"FailedBuild"` // package fail caused by a compile/setup failure
 }
 
 // EvaluateResult is the gate verdict.
 type EvaluateResult struct {
-	Green           bool
-	UnexpectedFails []string // failing tests NOT on the allowlist (real regressions)
-	MissingExpected []string // allowlisted tests that did NOT fail (started passing / disappeared)
-	MatchedExpected []string // allowlisted tests that correctly failed
+	Green            bool
+	UnexpectedFails  []string // every observed test/package/build failure
+	ProducerFailures []string // exit/stderr inconsistencies from the go test producer
 }
 
-// Evaluate consumes a `go test -json` stream and decides whether the run is green
-// under the allowlist for the given euid. The run is GREEN iff:
-//   - no test outside the allowlist failed (no hidden regression), AND
-//   - every allowlisted test for this privilege level actually failed AND exists.
-//
-// A failing allowlisted test that starts passing, or a third failing test, both
-// flip the verdict to not-green and are named — so a regression cannot hide behind
-// the carve-out, and a stale carve-out cannot mask a now-passing test.
-func Evaluate(r io.Reader, euid int) (EvaluateResult, error) {
-	allow := ExpectedFailures(euid)
-	allowSet := make(map[string]ExpectedFailure, len(allow))
-	for _, e := range allow {
-		allowSet[e.Key()] = e
-	}
+// ProducerStatus is the out-of-band status of the command that produced the
+// JSON stream. go test's exit status cannot be encoded in its stdout, so callers
+// must provide it explicitly instead of relying on a shell pipeline's last
+// command. Stderr is also kept out of the JSON stream and must be supplied here.
+type ProducerStatus struct {
+	ExitCode int
+	Stderr   string
+}
 
-	failed := make(map[string]struct{})  // package\x00test of every failing test
-	matched := make(map[string]struct{}) // allowlisted keys that failed
-	var unexpected []string
+// Evaluate consumes a `go test -json` stream. The run is GREEN only when the
+// stream is structurally complete and contains no test, package, or build
+// failure. The evaluator has deliberately no allowlist or privilege input.
+func Evaluate(r io.Reader) (EvaluateResult, error) {
+	failed := make(map[string]struct{}) // package\x00test of every failing test
+	unexpected := make(map[string]struct{})
+	packageFails := make(map[string]struct{})
+	packageBuildFails := make(map[string]struct{})
+	packageSeen := make(map[string]struct{})
+	packageStarted := make(map[string]struct{})
+	packageFinished := make(map[string]struct{})
+	testSeen := make(map[string]struct{})
+	testStarted := make(map[string]struct{})
+	testFinished := make(map[string]struct{})
+	eventCount := 0
 
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 1024*1024), 16*1024*1024)
+	lineNumber := 0
 	for sc.Scan() {
+		lineNumber++
 		line := strings.TrimSpace(sc.Text())
-		if line == "" || !strings.HasPrefix(line, "{") {
+		if line == "" {
 			continue
 		}
 		var ev TestEvent
 		if err := json.Unmarshal([]byte(line), &ev); err != nil {
-			continue // tolerate non-JSON interleaved output
+			return EvaluateResult{}, fmt.Errorf("testgate: invalid go test -json event on line %d: %w", lineNumber, err)
 		}
-		if ev.Action != "fail" || ev.Test == "" {
-			continue // only test-level fail events (skip package-level fail summaries)
+		if ev.Action == "" {
+			return EvaluateResult{}, fmt.Errorf("testgate: invalid go test -json event on line %d: missing Action", lineNumber)
 		}
-		key := ev.Package + "\x00" + ev.Test
-		failed[key] = struct{}{}
-		if _, ok := allowSet[key]; ok {
-			matched[key] = struct{}{}
-		} else {
-			unexpected = append(unexpected, ev.Package+"."+ev.Test)
+		eventCount++
+
+		if ev.Action == "build-fail" {
+			name := ev.ImportPath
+			if name == "" {
+				name = "<unknown package>"
+			}
+			unexpected[name+" (build failure)"] = struct{}{}
+			continue
 		}
+		if ev.Action == "build-output" {
+			continue
+		}
+		if ev.Package == "" {
+			return EvaluateResult{}, fmt.Errorf("testgate: invalid go test -json event on line %d: action %q has no Package", lineNumber, ev.Action)
+		}
+
+		packageKey := ev.Package
+		testKey := ev.Package + "\x00" + ev.Test
+		packageSeen[packageKey] = struct{}{}
+		if ev.Test != "" {
+			testSeen[testKey] = struct{}{}
+		}
+		switch ev.Action {
+		case "start":
+			if ev.Test != "" {
+				return EvaluateResult{}, fmt.Errorf("testgate: invalid go test -json event on line %d: package start names test %q", lineNumber, ev.Test)
+			}
+			packageStarted[packageKey] = struct{}{}
+		case "run":
+			if ev.Test == "" {
+				return EvaluateResult{}, fmt.Errorf("testgate: invalid go test -json event on line %d: run event has no Test", lineNumber)
+			}
+			testStarted[testKey] = struct{}{}
+		case "pass", "skip":
+			if ev.Test == "" {
+				packageFinished[packageKey] = struct{}{}
+			} else {
+				testFinished[testKey] = struct{}{}
+			}
+		case "fail":
+			if ev.Test == "" {
+				// This is either the summary for named test failures or an
+				// unstructured package/compile/TestMain failure. Reconcile it
+				// after the whole stream has been classified.
+				packageFails[packageKey] = struct{}{}
+				packageFinished[packageKey] = struct{}{}
+				if ev.FailedBuild != "" {
+					packageBuildFails[packageKey] = struct{}{}
+					unexpected[ev.Package+" (build failure)"] = struct{}{}
+				}
+				continue
+			}
+			testFinished[testKey] = struct{}{}
+		case "output", "pause", "cont", "bench":
+			// These events carry no independent verdict.
+		default:
+			return EvaluateResult{}, fmt.Errorf("testgate: invalid go test -json event on line %d: unknown Action %q", lineNumber, ev.Action)
+		}
+		if ev.Action != "fail" {
+			continue
+		}
+		failed[testKey] = struct{}{}
+		unexpected[ev.Package+"."+ev.Test] = struct{}{}
 	}
 	if err := sc.Err(); err != nil {
 		return EvaluateResult{}, fmt.Errorf("testgate: read go test -json stream: %w", err)
 	}
+	if eventCount == 0 {
+		return EvaluateResult{}, fmt.Errorf("testgate: empty go test -json stream")
+	}
+	if len(packageSeen) == 0 {
+		return EvaluateResult{}, fmt.Errorf("testgate: truncated go test -json stream: no package events")
+	}
 
-	res := EvaluateResult{}
-	for _, e := range allow {
-		if _, ok := matched[e.Key()]; ok {
-			res.MatchedExpected = append(res.MatchedExpected, e.String())
-		} else {
-			res.MissingExpected = append(res.MissingExpected, e.String())
+	for pkg := range packageSeen {
+		if _, ok := packageStarted[pkg]; !ok {
+			return EvaluateResult{}, fmt.Errorf("testgate: truncated go test -json stream: package %s has no start event", pkg)
+		}
+		if _, ok := packageFinished[pkg]; !ok {
+			return EvaluateResult{}, fmt.Errorf("testgate: truncated go test -json stream: package %s has no terminal event", pkg)
 		}
 	}
-	res.UnexpectedFails = unexpected
-	sort.Strings(res.UnexpectedFails)
-	sort.Strings(res.MissingExpected)
-	sort.Strings(res.MatchedExpected)
+	for key := range testSeen {
+		if _, ok := testStarted[key]; !ok {
+			pkg, test, _ := strings.Cut(key, "\x00")
+			return EvaluateResult{}, fmt.Errorf("testgate: truncated go test -json stream: test %s.%s has no run event", pkg, test)
+		}
+		if _, ok := testFinished[key]; !ok {
+			pkg, test, _ := strings.Cut(key, "\x00")
+			return EvaluateResult{}, fmt.Errorf("testgate: truncated go test -json stream: test %s.%s has no terminal event", pkg, test)
+		}
+	}
 
-	res.Green = len(res.UnexpectedFails) == 0 && len(res.MissingExpected) == 0
+	// A package-level fail is a normal summary when the package also emitted at
+	// least one named failing test; each named failure has already been matched
+	// exactly or reported as unexpected. With no named failure, it is an
+	// unstructured compile/setup/TestMain failure and must fail closed.
+	for pkg := range packageFails {
+		hasNamedFailure := false
+		for key := range failed {
+			failedPkg, _, _ := strings.Cut(key, "\x00")
+			if failedPkg == pkg {
+				hasNamedFailure = true
+				break
+			}
+		}
+		_, hasBuildFailure := packageBuildFails[pkg]
+		if !hasNamedFailure && !hasBuildFailure {
+			unexpected[pkg+" (package-level failure)"] = struct{}{}
+		}
+	}
+
+	res := EvaluateResult{}
+	for failure := range unexpected {
+		res.UnexpectedFails = append(res.UnexpectedFails, failure)
+	}
+	sort.Strings(res.UnexpectedFails)
+
+	res.Green = len(res.UnexpectedFails) == 0 && len(res.ProducerFailures) == 0
 	return res, nil
 }
 
+// EvaluateWithProducer additionally validates the status of the command that
+// generated the stream. Exit code 1 is consistent with structured failures,
+// but those failures still make the verdict red. Exit code 0 with failures and
+// non-zero without failures are producer inconsistencies. Any stderr is an
+// out-of-band producer failure because it was not classified by go test -json.
+func EvaluateWithProducer(r io.Reader, status ProducerStatus) (EvaluateResult, error) {
+	if status.ExitCode < 0 {
+		return EvaluateResult{}, fmt.Errorf("testgate: invalid producer exit code %d", status.ExitCode)
+	}
+	stderrFailure := formatProducerStderr(status.Stderr)
+	res, err := Evaluate(r)
+	if err != nil {
+		if stderrFailure != "" {
+			return EvaluateResult{}, fmt.Errorf("%w (go test exit %d; %s)", err, status.ExitCode, stderrFailure)
+		}
+		return EvaluateResult{}, fmt.Errorf("%w (go test exit %d)", err, status.ExitCode)
+	}
+
+	if stderrFailure != "" {
+		res.ProducerFailures = append(res.ProducerFailures, stderrFailure)
+	}
+	hasObservedFailure := len(res.UnexpectedFails) > 0
+	if status.ExitCode == 0 && hasObservedFailure {
+		res.ProducerFailures = append(res.ProducerFailures, "go test exited 0 despite structured failure events")
+	}
+	if status.ExitCode > 1 {
+		res.ProducerFailures = append(res.ProducerFailures, fmt.Sprintf("go test exited with unsupported status %d (only status 1 can represent classified test failures)", status.ExitCode))
+	} else if status.ExitCode != 0 && !hasObservedFailure {
+		res.ProducerFailures = append(res.ProducerFailures, fmt.Sprintf("go test exited %d without a structured failure event", status.ExitCode))
+	}
+	sort.Strings(res.ProducerFailures)
+	res.Green = len(res.UnexpectedFails) == 0 && len(res.ProducerFailures) == 0
+	return res, nil
+}
+
+func formatProducerStderr(stderr string) string {
+	stderr = strings.TrimSpace(stderr)
+	if stderr == "" {
+		return ""
+	}
+	const maxStderr = 2048
+	if len(stderr) > maxStderr {
+		stderr = stderr[:maxStderr] + "..."
+	}
+	return "go test wrote stderr: " + strconv.Quote(stderr)
+}
+
 // FormatVerdict renders a human-readable summary of an EvaluateResult.
-func FormatVerdict(res EvaluateResult, euid int) string {
+func FormatVerdict(res EvaluateResult) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "test-allowlist gate (euid=%d): ", euid)
+	b.WriteString("test gate: ")
 	if res.Green {
-		fmt.Fprintf(&b, "GREEN — only the %d allowlisted carve-out test(s) failed\n", len(res.MatchedExpected))
+		b.WriteString("GREEN — complete go test stream contains no failures\n")
 	} else {
 		b.WriteString("NOT GREEN\n")
 	}
 	if len(res.UnexpectedFails) > 0 {
-		fmt.Fprintf(&b, "  unexpected failures (regressions, cannot hide behind the carve-out): %v\n", res.UnexpectedFails)
+		fmt.Fprintf(&b, "  test/package/build failures: %v\n", res.UnexpectedFails)
 	}
-	if len(res.MissingExpected) > 0 {
-		fmt.Fprintf(&b, "  allowlisted tests that did NOT fail (started passing / disappeared): %v\n", res.MissingExpected)
+	if len(res.ProducerFailures) > 0 {
+		fmt.Fprintf(&b, "  producer failures (exit/stderr inconsistency): %v\n", res.ProducerFailures)
 	}
 	return b.String()
 }

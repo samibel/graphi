@@ -36,6 +36,11 @@ var (
 	// reference an already-stored node. Edges require their endpoints to exist so
 	// the durable graph stays referentially consistent.
 	ErrUnknownEdgeEndpoint = errors.New("graphstore: edge references unknown node")
+
+	// ErrInvalidLimit is returned by bounded read ports when their limit is not
+	// positive. A bounded read cannot honestly report completeness for a
+	// non-positive budget, so callers must provide an explicit positive limit.
+	ErrInvalidLimit = errors.New("graphstore: bounded read limit must be positive")
 )
 
 // Query constrains a node/edge listing or search. The zero Query matches

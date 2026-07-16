@@ -73,6 +73,7 @@ func TestSPA_ServesEmbeddedUI(t *testing.T) {
 // (Accept: text/markdown) still reaches the wiki markdown handler. Mirrors the
 // vite dev-server bypass so /wiki deep links / reloads land in the app.
 func TestWiki_BrowserNavigationServesSPA(t *testing.T) {
+	t.Setenv(LabsEnvVar, "1")
 	indexBytes, err := fs.ReadFile(webui.FS, "index.html")
 	if err != nil {
 		t.Fatalf("read embedded index.html: %v", err)

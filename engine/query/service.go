@@ -55,12 +55,13 @@ const kindPackage = "package"
 const kindExternal = "external"
 
 // ErrSelectiveLookupUnavailable is returned by the structural hotpaths when the
-// backing Reader does not provide the CORE-02 selective read port
-// (graphstore.GraphLookup). The stable operations refuse to fall back to
-// whole-graph scans — a silent fallback would resurrect exactly the full-scan
-// plan the SW-110 baselines pinned and ADR 0003 retired. Both shipped backends
-// (MemStore, SQLiteStore) implement the port.
-var ErrSelectiveLookupUnavailable = errors.New("query: reader lacks selective lookup (graphstore.GraphLookup); stable hotpaths do not fall back to full scans")
+// backing Reader does not provide the CORE-02 selective read port required by
+// that operation (GraphLookup; bounded traversals additionally require
+// BoundedGraphLookup). Stable operations refuse to fall back to whole-graph
+// scans — a silent fallback would resurrect exactly the full-scan plan the
+// SW-110 baselines pinned and ADR 0003 retired. Both shipped backends implement
+// both ports.
+var ErrSelectiveLookupUnavailable = errors.New("query: reader lacks a required selective graph lookup port; stable hotpaths do not fall back to full scans")
 
 // Service is graphi's single shared, read-only structural query service. It is
 // the one place callers/callees/references/definition/neighborhood logic lives;
@@ -280,11 +281,12 @@ func (s *Service) References(ctx context.Context, symbolID model.NodeId) (Result
 	return s.directedLookup(ctx, "references", symbolID, EdgeKindReferences, true)
 }
 
-// Definition returns the definition(s) of symbolID: the targets of outbound
-// "defines" edges from symbolID, with provenance attached. (A symbol points at
-// what it defines.) Read-only.
+// Definition returns the node(s) that define symbolID: the sources of inbound
+// "defines" edges, with provenance attached. Ingest emits defines as
+// definer/container -> defined symbol (for top-level declarations, file ->
+// symbol), so definition must traverse the edge in reverse. Read-only.
 func (s *Service) Definition(ctx context.Context, symbolID model.NodeId) (Result, error) {
-	return s.directedLookup(ctx, "definition", symbolID, EdgeKindDefines, false)
+	return s.directedLookup(ctx, "definition", symbolID, EdgeKindDefines, true)
 }
 
 // Implementers returns the types that IMPLEMENT/EMBED symbolID (inbound

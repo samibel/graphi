@@ -18,8 +18,8 @@ import (
 // SQLiteStore, seeds it through the production API, and pins what the SQLite
 // query planner does for the ports' statement shapes:
 //
-//  1. endpoint-selective edge reads (Incoming/Outgoing) use the
-//     edges_from_id / edges_to_id indexes with bound parameters;
+//  1. bounded endpoint reads use the two endpoint+kind+EdgeId composites with
+//     bound parameters and no degree-sized temporary sort;
 //  2. symbol lookups by qualified_name / source_path use the CORE-01
 //     nodes_qualified_name / nodes_source_path indexes;
 //  3. the legacy listing path still materializes the whole graph into the hot
@@ -90,41 +90,41 @@ func explainPlan(t *testing.T, s *SQLiteStore, query string, args ...any) string
 	return plan
 }
 
-// TestSpike_EndpointEdgeReads_UseExistingIndexes is SP-11 evidence (1): the
-// bound-parameter Incoming/Outgoing statement shapes ADR 0003 specifies for
-// GraphLookup are served by the EXISTING edges_to_id / edges_from_id indexes —
-// including with an additional kind filter and the canonical ORDER BY id — so
-// CORE-01's edge hotpath needs no schema change at all.
-func TestSpike_EndpointEdgeReads_UseExistingIndexes(t *testing.T) {
+// TestSpike_EndpointEdgeReads_UseCompositeIndexes is SP-11 evidence (1): the
+// bound-parameter bounded Incoming/Outgoing statement shapes ADR 0003 specifies
+// use exactly the endpoint+kind+EdgeId composite indexes. Filtered and
+// unfiltered variants can stop in their specified deterministic order without
+// scanning or sorting the complete adjacency set.
+func TestSpike_EndpointEdgeReads_UseCompositeIndexes(t *testing.T) {
 	s := spikeStore(t)
 
 	incoming := explainPlan(t, s,
-		"SELECT id FROM edges WHERE to_id = ? ORDER BY id", "nid")
-	if !strings.Contains(incoming, "USING INDEX edges_to_id") {
-		t.Errorf("Incoming shape does not use edges_to_id:\n%s", incoming)
+		"SELECT id FROM edges WHERE to_id = ? ORDER BY kind, id LIMIT ?", "nid", 17)
+	if !strings.Contains(incoming, "edges_to_kind_id_edge_id") || strings.Contains(incoming, "USE TEMP B-TREE") {
+		t.Errorf("unfiltered bounded Incoming shape is not endpoint+kind+id ordered:\n%s", incoming)
 	}
 
 	outgoing := explainPlan(t, s,
-		"SELECT id FROM edges WHERE from_id = ? ORDER BY id", "nid")
-	if !strings.Contains(outgoing, "USING INDEX edges_from_id") {
-		t.Errorf("Outgoing shape does not use edges_from_id:\n%s", outgoing)
+		"SELECT id FROM edges WHERE from_id = ? ORDER BY kind, id LIMIT ?", "nid", 17)
+	if !strings.Contains(outgoing, "edges_from_kind_id_edge_id") || strings.Contains(outgoing, "USE TEMP B-TREE") {
+		t.Errorf("unfiltered bounded Outgoing shape is not endpoint+kind+id ordered:\n%s", outgoing)
 	}
 
-	// The kind filter (Incoming(id, kind...)) stays on the same index: kind is
-	// applied as a residual filter after the endpoint probe.
+	// A sparse kind filter must not walk unrelated endpoint edges.
 	kindFiltered := explainPlan(t, s,
-		"SELECT id FROM edges WHERE to_id = ? AND kind = ? ORDER BY id", "nid", "calls")
-	if !strings.Contains(kindFiltered, "USING INDEX edges_to_id") {
-		t.Errorf("kind-filtered Incoming shape does not use edges_to_id:\n%s", kindFiltered)
+		"SELECT id FROM edges WHERE to_id = ? AND kind = ? ORDER BY id LIMIT ?", "nid", "calls", 17)
+	if !strings.Contains(kindFiltered, "edges_to_kind_id_edge_id") || strings.Contains(kindFiltered, "USE TEMP B-TREE") {
+		t.Errorf("bounded kind-filtered Incoming shape is not index-ordered:\n%s", kindFiltered)
 	}
 
-	// The full-row read (join to the interned reason) keeps the endpoint index.
+	// The exact unfiltered bounded full-row read (join to the interned reason)
+	// keeps the endpoint+kind+EdgeId index and needs no temporary sort.
 	fullRow := explainPlan(t, s,
 		`SELECT e.id, e.from_id, e.to_id, e.kind, e.confidence_tier, e.confidence, r.text, e.evidence
 		 FROM edges e JOIN reasons r ON r.id = e.reason_id
-		 WHERE e.to_id = ? ORDER BY e.id`, "nid")
-	if !strings.Contains(fullRow, "USING INDEX edges_to_id") {
-		t.Errorf("full-row Incoming join does not use edges_to_id:\n%s", fullRow)
+		 WHERE e.to_id = ? ORDER BY e.kind, e.id LIMIT ?`, "nid", 17)
+	if !strings.Contains(fullRow, "edges_to_kind_id_edge_id") || strings.Contains(fullRow, "USE TEMP B-TREE") {
+		t.Errorf("bounded full-row Incoming join is not index-ordered:\n%s", fullRow)
 	}
 }
 

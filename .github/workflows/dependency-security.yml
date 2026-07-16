@@ -1,0 +1,88 @@
+name: dependency-security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 3 * * 1'
+  workflow_dispatch:
+
+# All three jobs are read-only. Dependency Review compares the PR dependency graph;
+# govulncheck analyzes first-party Go packages against the public Go
+# vulnerability database, and npm audit checks both production lockfiles. No
+# job receives write or OIDC permissions.
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: dependency review (high/critical additions)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Dependency Review's supported PR usage checks out the compared tree
+      # before invoking the API-backed dependency diff.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: reject newly introduced vulnerable dependencies
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: high
+
+  govulncheck:
+    name: govulncheck (source reachability)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: download project modules
+        run: go mod download
+      - name: run pinned govulncheck over first-party packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_list="${RUNNER_TEMP}/graphi-first-party-packages.txt"
+          go list ./... >"$package_list"
+          packages=()
+          while IFS= read -r package; do
+            case "/$package/" in
+              */node_modules/*) ;;
+              *) packages+=("$package") ;;
+            esac
+          done <"$package_list"
+          if [ "${#packages[@]}" -eq 0 ]; then
+            echo "::error::go list returned no first-party packages"
+            exit 1
+          fi
+          # Pin the scanner itself. Unlike govulncheck-action@v1, this does not
+          # install a floating scanner version at runtime.
+          go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 "${packages[@]}"
+
+  npm-production-audit:
+    name: npm production audit (${{ matrix.path }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        path: [web, extensions/vscode]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+      - name: install lockfile-exact production dependencies
+        working-directory: ${{ matrix.path }}
+        run: npm ci --omit=dev --ignore-scripts
+      - name: reject high/critical production dependency vulnerabilities
+        working-directory: ${{ matrix.path }}
+        run: npm audit --omit=dev --audit-level=high

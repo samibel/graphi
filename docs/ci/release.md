@@ -66,6 +66,13 @@ reproducible. A reproducibility check builds the same source **twice** and asser
 the binaries are **byte-for-byte identical** (sha256 equal). `graphi version`
 self-reports the embedded version + commit + date.
 
+The public GitHub Release uses the bundled `webui_embed` flavor. Its proof is
+not borrowed from the smaller UI-free default: the workflow first builds and
+copies the deterministic web output, then runs `cmd/release -webui -verify-only`
+with the exact public version before invoking the matrix build with the same
+configuration. `cmd/release` constructs that flavor once and reuses it for the
+double build, host output, and every cross-compile target.
+
 ```mermaid
 flowchart LR
   S[same source revision] --> B1[build A: CGO0 + trimpath + VCS + ldflags]
@@ -97,6 +104,28 @@ CGO_ENABLED=0 go build -trimpath -buildvcs=true \
 Two such builds of the same clean revision produce sha256-identical binaries.
 The `date` is the VCS commit time (`vcs.time`), not wall-clock, so it is stable
 across builds.
+
+For the bundled public flavor (after `web/dist` has been copied into
+`surfaces/http/webui/dist`), the canonical verification/build pair is:
+
+```sh
+go run ./cmd/release -webui -version vX.Y.Z -verify-only
+go run ./cmd/release -webui -version vX.Y.Z -dist dist
+```
+
+The release DAG then adds `sbom.spdx.json` and
+`capability-manifest.json`, rewrites `SHA256SUMS` so it covers all seven payload
+files, and checks the exact eight-file public set with:
+
+```sh
+go run ./cmd/release -verify-assets release-assets
+```
+
+Before any version is resolved, the same SHA-bound release `gate` also runs
+the pinned Go reachability scanner over first-party packages and production
+npm audits for `web` and `extensions/vscode`. These checks are intentionally
+inside the publish DAG; a separate or stale dependency-security run cannot
+authorize a tag. Scanner, registry, or advisory lookup failure blocks release.
 
 ## Out of scope
 

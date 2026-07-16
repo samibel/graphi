@@ -92,9 +92,9 @@
       "id": "impact",
       "category": "analyzer",
       "status": "shipped",
-      "tier": "stable",
+      "tier": "labs",
       "epic": "EP-004",
-      "note": "forward/reverse blast-radius reachability."
+      "note": "analyzer implementation reachable through the Labs generic dispatcher; the dedicated fixed-dispatch MCP/CLI impact operation is the Stable surface."
     },
     {
       "id": "interproc",
@@ -697,6 +697,14 @@
       "tier": "labs",
       "epic": "EP-013",
       "note": "structural clone-group detection from a JSON config (G4)."
+    },
+    {
+      "id": "impact",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "stable",
+      "epic": "EP-004",
+      "note": "dedicated default-profile entry for the frozen Stable impact operation; dispatch is fixed to StableClient.Impact with no generic analyzer selector."
     },
     {
       "id": "implementers",

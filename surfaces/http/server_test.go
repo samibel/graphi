@@ -169,7 +169,7 @@ func jsonRaw(t *testing.T, v any) []byte {
 // schema_version field.
 func get(t *testing.T, srv *Server, target string, headers ...[2]string) (int, map[string]json.RawMessage) {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req := newLocalRequest(http.MethodGet, target, nil)
 	for _, h := range headers {
 		req.Header.Set(h[0], h[1])
 	}
@@ -235,7 +235,7 @@ func TestREST_MutatingVerb_MethodNotAllowed(t *testing.T) {
 	srv, _, _ := newServer(t)
 	// Go 1.22+ method-pattern routing returns 405 for non-GET on GET routes.
 	for _, route := range []string{"/query/callers?symbol=x", "/search?q=x", "/analyze/impact?symbol=x"} {
-		req := httptest.NewRequest(http.MethodPost, route, nil)
+		req := newLocalRequest(http.MethodPost, route, nil)
 		rec := httptest.NewRecorder()
 		srv.Handler().ServeHTTP(rec, req)
 		if rec.Code != http.StatusMethodNotAllowed {
@@ -252,7 +252,7 @@ func TestREST_MutatingVerb_MethodNotAllowed(t *testing.T) {
 // specificity — see TestREST_* and the webui_embed-tagged server_webui_test.go).
 func TestREST_UnknownRoute_SPACatchAll(t *testing.T) {
 	srv, _, _ := newServer(t)
-	req := httptest.NewRequest(http.MethodGet, "/nope", nil)
+	req := newLocalRequest(http.MethodGet, "/nope", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 200 {
@@ -384,7 +384,7 @@ func TestSSE_KeepAlive(t *testing.T) {
 	// contract is in place. (Full 15s keep-alive is covered by inspection.)
 	sc := &stubClient{}
 	srv := New(sc, observe.New())
-	req := httptest.NewRequest(http.MethodGet, "/events", nil)
+	req := newLocalRequest(http.MethodGet, "/events", nil)
 	rec := httptest.NewRecorder()
 	// cancel immediately so the handler returns after flushing headers
 	ctx, cancel := context.WithCancel(req.Context())
@@ -402,7 +402,7 @@ func TestSSE_KeepAlive(t *testing.T) {
 func TestSSE_NoBroker_ServiceUnavailable(t *testing.T) {
 	sc := &stubClient{}
 	srv := New(sc, nil) // no broker
-	req := httptest.NewRequest(http.MethodGet, "/events", nil)
+	req := newLocalRequest(http.MethodGet, "/events", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusServiceUnavailable {
@@ -423,6 +423,106 @@ func TestLoopback_RefusesNonLoopbackBind(t *testing.T) {
 	}
 }
 
+func TestHTTPServerTimeoutsConfigured(t *testing.T) {
+	srv := New(&stubClient{}, observe.New()).newHTTPServer("127.0.0.1:0")
+	if srv.ReadHeaderTimeout != httpReadHeaderTimeout {
+		t.Fatalf("ReadHeaderTimeout=%s, want %s", srv.ReadHeaderTimeout, httpReadHeaderTimeout)
+	}
+	if srv.ReadTimeout != httpReadTimeout {
+		t.Fatalf("ReadTimeout=%s, want %s", srv.ReadTimeout, httpReadTimeout)
+	}
+	if srv.WriteTimeout != httpWriteTimeout {
+		t.Fatalf("WriteTimeout=%s, want %s", srv.WriteTimeout, httpWriteTimeout)
+	}
+	if srv.IdleTimeout != httpIdleTimeout {
+		t.Fatalf("IdleTimeout=%s, want %s", srv.IdleTimeout, httpIdleTimeout)
+	}
+}
+
+func TestServeContext_CancelGracefullyStopsActiveSSE(t *testing.T) {
+	serverConn, clientConn := net.Pipe()
+	_ = clientConn.SetDeadline(time.Now().Add(2 * time.Second))
+	ln := newSingleConnListener(serverConn)
+	t.Cleanup(func() { _ = clientConn.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	srv := New(&stubClient{}, observe.New())
+	done := make(chan error, 1)
+	go func() { done <- srv.ServeContext(ctx, ln) }()
+
+	if _, err := io.WriteString(clientConn, "GET /events HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"); err != nil {
+		cancel()
+		t.Fatalf("write SSE request: %v", err)
+	}
+	resp, err := http.ReadResponse(bufio.NewReader(clientConn), &http.Request{Method: http.MethodGet})
+	if err != nil {
+		cancel()
+		t.Fatalf("SSE request: %v", err)
+	}
+	defer resp.Body.Close()
+	line, err := bufio.NewReader(resp.Body).ReadString('\n')
+	if err != nil || strings.TrimSpace(line) != "event: ready" {
+		cancel()
+		t.Fatalf("SSE ready frame: line=%q err=%v", line, err)
+	}
+	// net.Pipe is unbuffered; keep consuming so net/http can write its final
+	// chunk terminator after the SSE handler observes shutdown.
+	go func() { _, _ = io.Copy(io.Discard, resp.Body) }()
+
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("ServeContext after cancel: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("ServeContext did not stop after cancellation")
+	}
+}
+
+type singleConnListener struct {
+	mu        sync.Mutex
+	conn      net.Conn
+	closed    chan struct{}
+	closeOnce sync.Once
+}
+
+func newSingleConnListener(conn net.Conn) *singleConnListener {
+	return &singleConnListener{conn: conn, closed: make(chan struct{})}
+}
+
+func (l *singleConnListener) Accept() (net.Conn, error) {
+	l.mu.Lock()
+	if l.conn != nil {
+		conn := l.conn
+		l.conn = nil
+		l.mu.Unlock()
+		return conn, nil
+	}
+	l.mu.Unlock()
+	<-l.closed
+	return nil, net.ErrClosed
+}
+
+func (l *singleConnListener) Close() error {
+	l.closeOnce.Do(func() {
+		close(l.closed)
+		l.mu.Lock()
+		if l.conn != nil {
+			_ = l.conn.Close()
+			l.conn = nil
+		}
+		l.mu.Unlock()
+	})
+	return nil
+}
+
+func (l *singleConnListener) Addr() net.Addr { return pipeAddr{} }
+
+type pipeAddr struct{}
+
+func (pipeAddr) Network() string { return "pipe" }
+func (pipeAddr) String() string  { return "pipe" }
+
 func TestColdStart_P95Under100ms(t *testing.T) {
 	// Cold-start = first read latency. The server reuses the client; there is no
 	// per-request re-ingest, so a read is one in-process call. We sample over a
@@ -434,7 +534,7 @@ func TestColdStart_P95Under100ms(t *testing.T) {
 	const samples = 50
 	var latencies []time.Duration
 	for i := 0; i < samples; i++ {
-		req := httptest.NewRequest(http.MethodGet, "/query/callers?symbol=x", nil)
+		req := newLocalRequest(http.MethodGet, "/query/callers?symbol=x", nil)
 		rec := httptest.NewRecorder()
 		start := time.Now()
 		h.ServeHTTP(rec, req)
@@ -463,7 +563,7 @@ func (c *errClient) Query(context.Context, string, string, int) ([]byte, error) 
 func TestError_5xx_Sanitized(t *testing.T) {
 	leaky := errors.New("boom at /Users/secret/repo/engine/query/query.go:42 in query.Service.dispatch")
 	srv := New(&errClient{err: leaky}, observe.New())
-	req := httptest.NewRequest(http.MethodGet, "/query/callers?symbol=x", nil)
+	req := newLocalRequest(http.MethodGet, "/query/callers?symbol=x", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 500 {
@@ -490,6 +590,7 @@ func TestError_Taxonomy(t *testing.T) {
 	})
 	t.Run("404_not_found", func(t *testing.T) {
 		// /wiki with no store attached → 404 not_found.
+		t.Setenv(LabsEnvVar, "1")
 		srv := New(&stubClient{}, observe.New())
 		assertErrCode(t, srv, "/wiki", nil, 404, "not_found")
 	})
@@ -509,7 +610,7 @@ func TestError_Taxonomy(t *testing.T) {
 	})
 	t.Run("405_method_not_allowed", func(t *testing.T) {
 		srv, _, _ := newServer(t)
-		req := httptest.NewRequest(http.MethodPost, "/query/callers?symbol=x", nil)
+		req := newLocalRequest(http.MethodPost, "/query/callers?symbol=x", nil)
 		rec := httptest.NewRecorder()
 		srv.Handler().ServeHTTP(rec, req)
 		if rec.Code != 405 {
@@ -520,7 +621,7 @@ func TestError_Taxonomy(t *testing.T) {
 
 func assertErrCode(t *testing.T, srv *Server, target string, headers [][2]string, wantCode int, wantErrCode string) {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req := newLocalRequest(http.MethodGet, target, nil)
 	for _, h := range headers {
 		req.Header.Set(h[0], h[1])
 	}
@@ -585,7 +686,7 @@ func driveSSE(t *testing.T, publish func(ctx context.Context, b *observe.Broker)
 	t.Helper()
 	b := observe.New()
 	srv := New(&stubClient{}, b)
-	req := httptest.NewRequest(http.MethodGet, "/events", nil)
+	req := newLocalRequest(http.MethodGet, "/events", nil)
 	ctx, cancel := context.WithCancel(req.Context())
 	req = req.WithContext(ctx)
 	rec := &syncRecorder{rec: httptest.NewRecorder()}
@@ -691,7 +792,7 @@ func waitFor2(d time.Duration) { time.Sleep(d) }
 
 func TestSSE_SchemaMismatch_PreconditionFailed(t *testing.T) {
 	srv, _, _ := newServer(t)
-	req := httptest.NewRequest(http.MethodGet, "/events", nil)
+	req := newLocalRequest(http.MethodGet, "/events", nil)
 	req.Header.Set("X-Graphi-Schema-Version", "999")
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
@@ -711,7 +812,7 @@ func TestSSE_SchemaMismatch_PreconditionFailed(t *testing.T) {
 
 func TestContract_EnumeratesResourcesAndStreams(t *testing.T) {
 	srv := New(&stubClient{}, observe.New()).WithDescriptors([]string{"impact", "call-chain"})
-	req := httptest.NewRequest(http.MethodGet, "/contract", nil)
+	req := newLocalRequest(http.MethodGet, "/contract", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 200 {
@@ -735,17 +836,49 @@ func TestContract_EnumeratesResourcesAndStreams(t *testing.T) {
 	if err := json.Unmarshal(env.Payload, &doc); err != nil {
 		t.Fatalf("decode contract doc: %v", err)
 	}
-	// Every query op + search + each injected analyzer must be present.
+	// The default contract advertises only resources that the default Stable
+	// profile will actually serve.
 	want := []string{"query/callers", "query/callees", "query/references",
-		"query/definition", "query/neighborhood", "search", "analyze/impact", "analyze/call-chain"}
+		"query/definition", "query/neighborhood", "search", "analyze/impact"}
 	for _, r := range want {
 		if !containsStr(doc.Resources, r) {
 			t.Fatalf("resource %q missing from %v", r, doc.Resources)
 		}
 	}
+	for _, labsResource := range []string{"query/implements", "analyze/call-chain"} {
+		if containsStr(doc.Resources, labsResource) {
+			t.Fatalf("default contract advertises disabled Labs resource %q: %v", labsResource, doc.Resources)
+		}
+	}
 	for _, s := range []string{"ingest-completed", "ingest-progress", "ready", "bye", "error"} {
 		if !containsStr(doc.Streams, s) {
 			t.Fatalf("stream %q missing from %v", s, doc.Streams)
+		}
+	}
+}
+
+func TestContract_LabsOptInAdvertisesLabsResources(t *testing.T) {
+	t.Setenv(LabsEnvVar, "1")
+	srv := New(&stubClient{}, observe.New()).WithDescriptors([]string{"impact", "call-chain"})
+	req := newLocalRequest(http.MethodGet, "/contract", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var env struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+		t.Fatal(err)
+	}
+	var doc contractDoc
+	if err := json.Unmarshal(env.Payload, &doc); err != nil {
+		t.Fatal(err)
+	}
+	for _, resource := range []string{"query/implements", "analyze/call-chain"} {
+		if !containsStr(doc.Resources, resource) {
+			t.Fatalf("Labs contract missing enabled resource %q: %v", resource, doc.Resources)
 		}
 	}
 }
@@ -773,7 +906,7 @@ func TestRoutes_GETOnly_MutationFree(t *testing.T) {
 	}
 	for _, route := range routes {
 		for _, verb := range []string{http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch} {
-			req := httptest.NewRequest(verb, route, nil)
+			req := newLocalRequest(verb, route, nil)
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, req)
 			if rec.Code != http.StatusMethodNotAllowed {
@@ -811,7 +944,7 @@ func TestZeroOutbound_NoNonLoopbackDial(t *testing.T) {
 	}, observe.New()).WithDescriptors([]string{"impact"})
 	h := srv.Handler()
 	for _, route := range []string{"/healthz", "/contract", "/query/callers?symbol=x", "/search?q=x", "/analyze/impact?symbol=x"} {
-		req := httptest.NewRequest(http.MethodGet, route, nil)
+		req := newLocalRequest(http.MethodGet, route, nil)
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
 		if rec.Code/100 == 5 {
@@ -893,10 +1026,11 @@ func wikiStore(t *testing.T) graphstore.Graphstore {
 }
 
 func TestWiki_IndexServedAsMarkdown(t *testing.T) {
+	t.Setenv(LabsEnvVar, "1")
 	srv := New(&stubClient{}, observe.New()).WithWiki(wikiStore(t))
 	code, m := get(t, srv, "/wiki")
 	// wiki returns raw markdown, not JSON envelope — inspect the recorder body
-	req := httptest.NewRequest(http.MethodGet, "/wiki", nil)
+	req := newLocalRequest(http.MethodGet, "/wiki", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 200 {
@@ -913,8 +1047,9 @@ func TestWiki_IndexServedAsMarkdown(t *testing.T) {
 }
 
 func TestWiki_CommunityPageServed(t *testing.T) {
+	t.Setenv(LabsEnvVar, "1")
 	srv := New(&stubClient{}, observe.New()).WithWiki(wikiStore(t))
-	req := httptest.NewRequest(http.MethodGet, "/wiki/c/1", nil)
+	req := newLocalRequest(http.MethodGet, "/wiki/c/1", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 200 {
@@ -935,8 +1070,9 @@ func TestWiki_CommunityPageServed(t *testing.T) {
 }
 
 func TestWiki_UnknownCommunity_404(t *testing.T) {
+	t.Setenv(LabsEnvVar, "1")
 	srv := New(&stubClient{}, observe.New()).WithWiki(wikiStore(t))
-	req := httptest.NewRequest(http.MethodGet, "/wiki/c/999", nil)
+	req := newLocalRequest(http.MethodGet, "/wiki/c/999", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 404 {
@@ -946,8 +1082,9 @@ func TestWiki_UnknownCommunity_404(t *testing.T) {
 
 func TestWiki_NoStore_404(t *testing.T) {
 	// Server without WithWiki → /wiki is 404 (disabled), not a crash.
+	t.Setenv(LabsEnvVar, "1")
 	srv := New(&stubClient{}, observe.New())
-	req := httptest.NewRequest(http.MethodGet, "/wiki", nil)
+	req := newLocalRequest(http.MethodGet, "/wiki", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 404 {

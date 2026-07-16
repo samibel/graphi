@@ -12,6 +12,7 @@ import (
 
 	"github.com/samibel/graphi/engine/analysis/taint"
 	"github.com/samibel/graphi/internal/gitignore"
+	"github.com/samibel/graphi/internal/rootfile"
 )
 
 // Ignore-scope controls. Ignore scope changes GRAPH CONTENT (which files get
@@ -36,6 +37,10 @@ const (
 	// indexed. Like the other scope controls it changes graph content, so it is
 	// folded into the warm-start stamp.
 	EnvIndexAll = "GRAPHI_INDEX_ALL"
+	// maxGitignoreSize caps the root privacy policy itself. One MiB is far above
+	// normal root .gitignore files while preventing a repository-controlled
+	// config path from driving an unbounded allocation before source ingest.
+	maxGitignoreSize int64 = 1 << 20
 )
 
 // defaultIgnoredDirNames are BUILD-OUTPUT directory basenames pruned by DEFAULT
@@ -84,10 +89,12 @@ func (c ignoreConfig) ignoreFile(rel string) bool {
 	return c.matcher.Match(rel, false)
 }
 
-// loadIgnoreConfig resolves the env-driven scope for root. Reading the root
-// .gitignore is best-effort: an unreadable file simply means no matcher (the
-// mode still fingerprints, so toggling the env always re-certifies).
-func loadIgnoreConfig(root string) ignoreConfig {
+// loadIgnoreConfig resolves the env-driven scope for root. The default-on root
+// .gitignore boundary is fail-closed: an unreadable file or invalid supported
+// pattern returns an error instead of silently widening the persisted index.
+// A missing root .gitignore is valid, and the explicit "0" opt-out intentionally
+// bypasses reading and parsing it. Nested .gitignore files remain unsupported.
+func loadIgnoreConfig(root string) (ignoreConfig, error) {
 	var cfg ignoreConfig
 	h := fnv.New64a()
 	extra := map[string]bool{}
@@ -141,8 +148,17 @@ func loadIgnoreConfig(root string) ignoreConfig {
 			cfg.extra = map[string]bool{}
 		}
 	} else {
-		if data, err := os.ReadFile(filepath.Join(root, ".gitignore")); err == nil { //nolint:gosec // root is the repo being indexed
-			cfg.matcher = gitignore.Compile(strings.Split(string(data), "\n"))
+		gitignorePath := filepath.Join(root, ".gitignore")
+		data, err := rootfile.Read(root, ".gitignore", maxGitignoreSize)
+		if os.IsNotExist(err) {
+			// A repository is not required to have a root .gitignore.
+		} else if err != nil {
+			return ignoreConfig{}, fmt.Errorf("ingest: read root .gitignore %q: %w", gitignorePath, err)
+		} else {
+			cfg.matcher, err = gitignore.Compile(strings.Split(string(data), "\n"))
+			if err != nil {
+				return ignoreConfig{}, fmt.Errorf("ingest: parse root .gitignore %q: %w", gitignorePath, err)
+			}
 			_, _ = io.WriteString(h, "gitignore:\n")
 			_, _ = h.Write(data)
 		}
@@ -150,7 +166,7 @@ func loadIgnoreConfig(root string) ignoreConfig {
 	if cfg.matcher != nil || cfg.extra != nil {
 		cfg.fingerprint = fmt.Sprintf("%016x", h.Sum64())
 	}
-	return cfg
+	return cfg, nil
 }
 
 // ignoreState caches the resolved config per root on the Ingester so the walk,
@@ -164,21 +180,25 @@ type ignoreState struct {
 	set  bool
 }
 
-func (i *Ingester) ignoreConfigFor(root string) ignoreConfig {
+func (i *Ingester) ignoreConfigFor(root string) (ignoreConfig, error) {
 	abs, err := filepath.Abs(root)
 	if err != nil {
-		abs = root
+		return ignoreConfig{}, fmt.Errorf("ingest: abs ignore root: %w", err)
 	}
 	abs = filepath.Clean(abs)
 	i.ignore.mu.Lock()
 	defer i.ignore.mu.Unlock()
 	if i.ignore.set && i.ignore.root == abs {
-		return i.ignore.cfg
+		return i.ignore.cfg, nil
 	}
-	i.ignore.cfg = loadIgnoreConfig(abs)
+	cfg, err := loadIgnoreConfig(abs)
+	if err != nil {
+		return ignoreConfig{}, err
+	}
+	i.ignore.cfg = cfg
 	i.ignore.root = abs
 	i.ignore.set = true
-	return i.ignore.cfg
+	return i.ignore.cfg, nil
 }
 
 // semanticsStamp is the warm-start certification value: the semantics version,
@@ -188,13 +208,21 @@ func (i *Ingester) ignoreConfigFor(root string) ignoreConfig {
 // different taint config produce different persisted state, so the stamp must
 // differ; a repo with neither an opt-in scope nor a taint config keeps the bare
 // version stamp exactly as before.
-func (i *Ingester) semanticsStamp(root string) string {
+func (i *Ingester) semanticsStamp(root string) (string, error) {
 	stamp := ingestSemanticsVersion
-	if cfg := i.ignoreConfigFor(root); cfg.fingerprint != "" {
+	cfg, err := i.ignoreConfigFor(root)
+	if err != nil {
+		return "", err
+	}
+	if cfg.fingerprint != "" {
 		stamp += "+ig:" + cfg.fingerprint
 	}
-	if tc := taint.ConfigFingerprint(root); tc != "" {
-		stamp += "+taint:" + tc
+	taintConfig, err := taint.LoadConfig(root)
+	if err != nil {
+		return "", err
 	}
-	return stamp
+	if taintConfig.ContentHash != "" {
+		stamp += "+taint:" + taintConfig.ContentHash
+	}
+	return stamp, nil
 }

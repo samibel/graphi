@@ -2,6 +2,7 @@ package risk
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -12,6 +13,20 @@ import (
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 )
+
+type lookupProbe struct {
+	*graphstore.MemStore
+	calls int
+	err   error
+}
+
+func (p *lookupProbe) NodesByID(ctx context.Context, ids []model.NodeId) ([]model.Node, error) {
+	p.calls++
+	if p.err != nil {
+		return nil, p.err
+	}
+	return p.MemStore.NodesByID(ctx, ids)
+}
 
 // fixtureDeps builds the shared in-memory relation graph (see explain tests),
 // plus an isolated leaf symbol for the low-risk case.
@@ -184,5 +199,29 @@ func TestAssessDeterministic(t *testing.T) {
 	bb, _ := contract.Serialize(b)
 	if string(ab) != string(bb) {
 		t.Fatal("change_risk output is not deterministic")
+	}
+}
+
+func TestAssessBatchesHydrationAndPropagatesFailure(t *testing.T) {
+	baseDeps := fixtureDeps(t)
+	store := baseDeps.Query.Reader().(*graphstore.MemStore)
+	probe := &lookupProbe{MemStore: store}
+	deps := resolve.Deps{Query: query.New(probe), Search: search.New(probe)}
+
+	if _, err := Assess(context.Background(), deps, "util.Format", "", 0); err != nil {
+		t.Fatalf("Assess: %v", err)
+	}
+	if probe.calls != 1 {
+		t.Fatalf("neighbor hydration used %d NodesByID calls, want one batch", probe.calls)
+	}
+
+	wantErr := errors.New("hydrate failed")
+	probe.calls = 0
+	probe.err = wantErr
+	if _, err := Assess(context.Background(), deps, "util.Format", "", 0); !errors.Is(err, wantErr) {
+		t.Fatalf("Assess hydration error = %v, want %v", err, wantErr)
+	}
+	if probe.calls != 1 {
+		t.Fatalf("failed hydration used %d NodesByID calls, want one", probe.calls)
 	}
 }

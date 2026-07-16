@@ -10,14 +10,15 @@
 //     an explicit -db opens exactly that store, a live daemon socket dials it,
 //     an empty path yields an in-memory store. NO discovery, NO ingest.
 //   - OpenSession: the zero-config session (ADR 0002 D1–D5): resolve the repo
-//     root (explicit override → cwd walk), derive the per-repo state paths,
-//     open → RECOVER → warm/full ingest → ready (sync-before-serve, D3
-//     default), then hand out the client. One session binds one repository
-//     for its whole lifetime.
+//     root (transport roots → cwd fallback), derive the per-repo state paths,
+//     open → RECOVER → warm/full ingest → ready, then hand out the client. One
+//     Runtime binds one repository; an MCP server may replace that Runtime when
+//     the client announces a roots-list change.
 package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -38,10 +39,15 @@ import (
 
 // Options configures OpenSession.
 type Options struct {
-	// Cwd is the candidate directory for repository detection (ADR 0002 D4:
-	// explicit overrides win, then the cwd walk; the MCP-roots middle rung is
-	// U2 and lands once real client captures fix the wire mapping).
+	// Cwd is the fallback directory for repository detection when Roots is nil
+	// (ADR 0002 D4: explicit DB/socket → client roots → cwd walk).
 	Cwd string
+	// Roots is the authoritative ordered set of repository candidates supplied
+	// by a session-aware transport (for example MCP rootUri or roots/list).
+	// A nil slice means "no transport roots were supplied" and permits the Cwd
+	// fallback. A non-nil slice, including an empty one, is authoritative: Cwd
+	// must not leak into a client-scoped session when none of its roots bind.
+	Roots []string
 	// DBOverride, when non-empty, short-circuits to Attach semantics: exactly
 	// this store, no discovery, no ingest (D2 precedence, zero regression).
 	DBOverride string
@@ -51,14 +57,20 @@ type Options struct {
 	Progress func(ingest.ProgressEvent)
 }
 
+// ErrNoRepository is returned when a zero-config session cannot bind a real
+// repository. Serving an empty in-memory graph in that situation makes valid
+// requests look successful while answering over the wrong state, so callers
+// must surface this error or wait for a transport-provided root.
+var ErrNoRepository = errors.New("no repository could be bound")
+
 // Runtime owns one session's resources. Close is idempotent and releases them
 // exactly once, in reverse construction order; Done is closed when the Runtime
 // is closed (the daemon wait seam).
 type Runtime struct {
 	// Client is the surface client bound to this session.
 	Client client.Client
-	// Root is the bound repository root; empty when no repository is bound
-	// (Attach mode, or a cwd that is not a repository — ADR 0002 D4).
+	// Root is the bound repository root; empty only in Attach mode, where a
+	// caller selected a store/socket rather than a repository.
 	Root string
 
 	store  graphstore.Graphstore
@@ -116,19 +128,20 @@ func Attach(dbPath, socket, metaDir string) (*Runtime, error) {
 
 // OpenSession opens the ADR 0002 session. Precedence (D4): an explicit
 // DBOverride/Socket behaves exactly like Attach (zero regression for callers
-// that pre-index and pass -db); otherwise the cwd walk decides. A cwd that is
-// not a repository binds NO repository: the session serves an empty in-memory
-// graph and Root stays "" so the caller can surface an honest notice.
+// that pre-index and pass -db); otherwise transport roots are tried in order,
+// and only when Roots is nil does the cwd walk decide. A session that cannot
+// bind a repository fails closed with ErrNoRepository; it never masquerades as
+// a successful empty graph.
 func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	if opts.DBOverride != "" || opts.Socket != "" {
 		return Attach(opts.DBOverride, opts.Socket, "")
 	}
-	root, ok := state.DetectRepo(opts.Cwd)
-	if !ok {
-		return Attach("", "", "")
+	root, err := resolveRepositoryRoot(opts)
+	if err != nil {
+		return nil, err
 	}
 
-	p, err := state.Resolve(opts.Cwd)
+	p, err := state.Resolve(root)
 	if err != nil {
 		return nil, fmt.Errorf("resolve session paths: %w", err)
 	}
@@ -171,6 +184,25 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 		WithAnalysis(asvc).
 		WithReview(review.NewService(asvc))
 	return rt, nil
+}
+
+// resolveRepositoryRoot enforces session scoping. MCP roots are authoritative
+// when present: choosing the process cwd after a client explicitly supplied an
+// empty or unrelated root set would cross workspace boundaries. With no
+// transport roots (nil), legacy/non-roots-capable clients retain the cwd walk.
+func resolveRepositoryRoot(opts Options) (string, error) {
+	if opts.Roots != nil {
+		for _, candidate := range opts.Roots {
+			if root, ok := state.DetectRepo(candidate); ok {
+				return root, nil
+			}
+		}
+		return "", fmt.Errorf("%w: none of %d client root(s) contains .git, go.work, or go.mod", ErrNoRepository, len(opts.Roots))
+	}
+	if root, ok := state.DetectRepo(opts.Cwd); ok {
+		return root, nil
+	}
+	return "", fmt.Errorf("%w: cwd %q contains no .git, go.work, or go.mod", ErrNoRepository, opts.Cwd)
 }
 
 // OpenStore opens the durable SQLite store at dbPath, or an in-memory store

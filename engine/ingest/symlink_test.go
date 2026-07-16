@@ -64,6 +64,125 @@ func TestIngest_FailsClosed_OnSymlinkToDirectory(t *testing.T) {
 	}
 }
 
+func TestIngest_NeverFollowsFileSymlinkOutsideRoot(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privileges on windows")
+	}
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	parser := &stubParser{}
+	i := newIngester(t, store, parser)
+
+	root := writeRepo(t, map[string]string{"safe.go": "package safe\n"})
+	outside := filepath.Join(t.TempDir(), "secret.go")
+	if err := os.WriteFile(outside, []byte("package private\nconst Token = \"must-not-enter\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "secret.go")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := i.IngestAll(ctx, root); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	if parser.parseCount.Load() != 1 {
+		t.Fatalf("outside symlink target was parsed: count=%d, want only safe.go", parser.parseCount.Load())
+	}
+	assertUnreadableSkip(t, i.SkippedDiagnostics(), "secret.go")
+
+	parser.parseCount.Store(0)
+	if _, err := i.ParseFile(ctx, root, "secret.go"); err != nil {
+		t.Fatalf("ParseFile symlink: %v", err)
+	}
+	if parser.parseCount.Load() != 0 {
+		t.Fatal("watch parse followed an outside symlink target")
+	}
+}
+
+func TestIngest_ParseFileNeverFollowsIntermediateSymlinkOutsideRoot(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privileges on windows")
+	}
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	parser := &stubParser{}
+	i := newIngester(t, store, parser)
+
+	root := writeRepo(t, map[string]string{"safe.go": "package safe\n"})
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "secret.go"), []byte("package private\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "linked-dir")); err != nil {
+		t.Fatal(err)
+	}
+
+	pf, err := i.ParseFile(ctx, root, "linked-dir/secret.go")
+	if err != nil {
+		t.Fatalf("ParseFile intermediate symlink: %v", err)
+	}
+	if pf == nil {
+		t.Fatal("outside-root path must be represented as a fail-closed skip")
+	}
+	if parser.parseCount.Load() != 0 {
+		t.Fatal("watch parse followed an intermediate symlink outside root")
+	}
+	assertUnreadableSkip(t, i.SkippedDiagnostics(), "linked-dir/secret.go")
+}
+
+func TestIngest_FileReplacedBySymlinkIsRemovedFromGraph(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privileges on windows")
+	}
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	parser := &stubParser{}
+	i := newIngester(t, store, parser)
+	root := writeRepo(t, map[string]string{"owned.go": "package owned\n"})
+	if err := i.IngestAll(ctx, root); err != nil {
+		t.Fatal(err)
+	}
+
+	outside := filepath.Join(t.TempDir(), "private.go")
+	if err := os.WriteFile(outside, []byte("package private\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	owned := filepath.Join(root, "owned.go")
+	if err := os.Remove(owned); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, owned); err != nil {
+		t.Fatal(err)
+	}
+	parser.parseCount.Store(0)
+	if err := i.IngestChanged(ctx, root, []string{"owned.go"}); err != nil {
+		t.Fatalf("IngestChanged: %v", err)
+	}
+	if parser.parseCount.Load() != 0 {
+		t.Fatal("incremental ingest followed replacement symlink")
+	}
+	nodes, err := store.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(nodes) != 0 {
+		t.Fatalf("stale node survived file-to-symlink replacement: %v", nodes)
+	}
+}
+
+func assertUnreadableSkip(t *testing.T, skips []ingest.SkipDiagnostic, path string) {
+	t.Helper()
+	for _, skip := range skips {
+		if skip.Path == path && skip.Reason == ingest.SkipUnreadable {
+			return
+		}
+	}
+	t.Fatalf("missing SkipUnreadable for %q: %v", path, skips)
+}
+
 // TestIngest_PrunesIgnoredDirectories proves node_modules, .git, vendor, and
 // friends are never descended into or read — not skipped-with-diagnostic (that
 // would still cost a stat/read attempt per entry), but pruned via

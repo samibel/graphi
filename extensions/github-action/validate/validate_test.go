@@ -44,6 +44,24 @@ func TestRealActionYMLSatisfiesContract(t *testing.T) {
 	if len(res.UsesRefs) < 2 {
 		t.Fatalf("expected at least 2 pinned `uses` steps, got %d", len(res.UsesRefs))
 	}
+
+	// The consumer checkout is the working tree being reviewed. The engine must
+	// be built from the independently pinned Action checkout, otherwise a
+	// consumer can replace ./cmd/graphi with arbitrary code executed under the
+	// Action token.
+	action := string(b)
+	if !strings.Contains(action, `GITHUB_ACTION_PATH}/../..`) {
+		t.Fatal("engine build must resolve source from GITHUB_ACTION_PATH")
+	}
+	if strings.Contains(action, `go build -o "${RUNNER_TEMP:-/tmp}/graphi" ./cmd/graphi`) {
+		t.Fatal("engine build must not resolve ./cmd/graphi from the consumer workspace")
+	}
+	if !strings.Contains(action, `go -C "${GRAPHI_SOURCE_ROOT}" build`) {
+		t.Fatal("engine build must execute from the pinned Action source root")
+	}
+	if !strings.Contains(action, `go-version: "1.26.5"`) {
+		t.Fatal("shipped Action must use the CVE-fixed Go 1.26.5 toolchain, not a floating or vulnerable 1.26.x selector")
+	}
 }
 
 // TestRealEntrypointSatisfiesContract is the AC1/AC2/S1 gate: the shipped

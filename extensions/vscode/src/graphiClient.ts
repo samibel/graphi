@@ -8,8 +8,8 @@
 // exactly one place on EVERY response path: 200 bodies, error envelopes, HTTP
 // 412, and /contract. (The SSE `ready` frame is guarded in sseClient.ts, which
 // reuses SchemaMismatchError from here.) Ported from web/src/graphiClient.ts;
-// the only adaptations are a config-driven base URL (no import.meta.env), an
-// optional header-only auth token, and host-side `fetch` (Node 18+).
+// the only adaptations are a config-driven base URL (no import.meta.env) and
+// host-side `fetch` (Node 18+).
 import {
   SCHEMA_VERSION,
   type Contract,
@@ -17,6 +17,7 @@ import {
   type ErrorEnvelope,
   type ImpactResult,
   type QueryResult,
+  type SearchMatch,
   type SearchResult,
 } from "./contract";
 import { assertLoopback } from "./loopback";
@@ -46,6 +47,73 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Honest result of resolving editor text to canonical graph identities.
+ *
+ * Structural query and analyzer routes accept an exact NodeId, not a lexical
+ * symbol.  Keeping ambiguity explicit prevents a ranked search result from
+ * silently turning "Foo" into whichever Foo happened to sort first.
+ */
+export type SymbolResolution =
+  | { outcome: "found"; matches: [SearchMatch] }
+  | { outcome: "ambiguous"; matches: SearchMatch[] }
+  | { outcome: "not_found"; matches: [] };
+
+const SYMBOL_RESOLUTION_LIMIT = 100;
+const NODE_ID_PATTERN = /^[0-9a-f]{16}$/;
+
+function requireNodeID(value: string): string {
+  if (!NODE_ID_PATTERN.test(value)) {
+    throw new ApiError("bad_request", "invalid graph node id");
+  }
+  return value;
+}
+
+/** Return the final language-neutral segment of a qualified symbol name. */
+function terminalSymbol(qualifiedName: string): string {
+  const parts = qualifiedName.split(/::|[.#/\\$]/).filter(Boolean);
+  return parts[parts.length - 1] ?? qualifiedName;
+}
+
+/**
+ * Reduce lexical search results to exact identity candidates.  Fuzzy results
+ * are deliberately rejected: only NodeId, full qualified-name, or final-name
+ * equality can authorize a subsequent exact-NodeId request.
+ */
+export function resolveSearchMatches(
+  symbolText: string,
+  matches: readonly SearchMatch[],
+): SymbolResolution {
+  const symbol = symbolText.trim();
+  if (!symbol) return { outcome: "not_found", matches: [] };
+
+  const byID = new Map<string, SearchMatch>();
+  for (const match of matches) {
+    // NodeId is the canonical fixed-width lowercase-hex identity. A malformed
+    // search payload must not authorize an exact structural/analyzer request.
+    if (
+      typeof match.node_id !== "string" ||
+      typeof match.qualified_name !== "string" ||
+      !NODE_ID_PATTERN.test(match.node_id)
+    ) {
+      continue;
+    }
+    if (
+      match.node_id === symbol ||
+      match.qualified_name === symbol ||
+      terminalSymbol(match.qualified_name) === symbol
+    ) {
+      byID.set(match.node_id, match);
+    }
+  }
+  const exact = [...byID.values()];
+  if (exact.length === 0) return { outcome: "not_found", matches: [] };
+  if (exact.length === 1) {
+    return { outcome: "found", matches: [exact[0]] };
+  }
+  return { outcome: "ambiguous", matches: exact };
+}
+
 function isErrorEnvelope(body: unknown): body is ErrorEnvelope {
   return (
     typeof body === "object" &&
@@ -61,6 +129,20 @@ function envelopeVersion(body: unknown): number | undefined {
     return typeof v === "number" ? v : undefined;
   }
   return undefined;
+}
+
+function isContract(body: unknown): body is Contract {
+  if (typeof body !== "object" || body === null) return false;
+  const value = body as {
+    resources?: unknown;
+    streams?: unknown;
+  };
+  return (
+    Array.isArray(value.resources) &&
+    value.resources.every((entry) => typeof entry === "string") &&
+    Array.isArray(value.streams) &&
+    value.streams.every((entry) => typeof entry === "string")
+  );
 }
 
 /**
@@ -114,20 +196,11 @@ export async function decodeEnvelope<T>(res: Response): Promise<Envelope<T>> {
   return body as Envelope<T>;
 }
 
-/** Provides the optional auth token (header-only) lazily; never logged. */
-export type TokenProvider = () => Promise<string | undefined>;
-
 export class GraphiClient {
-  private readonly tokenProvider?: TokenProvider;
-
-  constructor(
-    private readonly baseUrl: string,
-    tokenProvider?: TokenProvider,
-  ) {
+  constructor(private readonly baseUrl: string) {
     // Loopback hard precondition on EVERY construction (S1) — fail fast, no
     // request is ever issued against a non-loopback target.
     assertLoopback(baseUrl);
-    this.tokenProvider = tokenProvider;
   }
 
   /** Expose the base URL for the SSE reader (which streams, not envelope-decodes). */
@@ -135,23 +208,20 @@ export class GraphiClient {
     return this.baseUrl;
   }
 
-  /** Build request headers: schema-version stamp + optional bearer token. */
-  async headers(): Promise<Record<string, string>> {
-    const h: Record<string, string> = {
+  /** Build request headers with the schema-version stamp. */
+  headers(): Record<string, string> {
+    return {
       // Header is OPTIONAL per R5; we send it so the server can 412 early, but
       // the body guard is what actually enforces the contract.
       "X-Graphi-Schema-Version": String(SCHEMA_VERSION),
     };
-    const token = await this.tokenProvider?.();
-    if (token) h.Authorization = `Bearer ${token}`; // header-only, never in URL (S3)
-    return h;
   }
 
   /** The single GET primitive. There is no non-GET method on this class (R-only). */
   private async getEnvelope<T>(path: string): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: "GET",
-      headers: await this.headers(),
+      headers: this.headers(),
     });
     const env = await decodeEnvelope<T>(res);
     return env.payload;
@@ -163,32 +233,41 @@ export class GraphiClient {
    * guarded the same way.
    */
   async getContract(): Promise<Contract> {
-    const res = await fetch(`${this.baseUrl}/contract`, {
-      method: "GET",
-      headers: await this.headers(),
-    });
-    if (res.status === 412) throw new SchemaMismatchError(SCHEMA_VERSION);
-    let body: unknown;
-    try {
-      body = await res.json();
-    } catch {
-      throw new ApiError("internal", `HTTP ${res.status}`);
+    // /contract uses the same outer success envelope as every other data
+    // route.  getEnvelope validates that outer stamp and unwraps payload; the
+    // contract document's own stamp is independently mandatory.
+    const payload: unknown = await this.getEnvelope<unknown>("/contract");
+    const version = envelopeVersion(payload);
+    if (version !== SCHEMA_VERSION) {
+      throw new SchemaMismatchError(SCHEMA_VERSION, version);
     }
-    if (isErrorEnvelope(body)) {
-      const { code, message } = body.error;
-      if (code === "schema_mismatch") throw new SchemaMismatchError(SCHEMA_VERSION);
-      throw new ApiError(code, message);
+    if (!isContract(payload)) {
+      throw new ApiError("internal", "invalid contract response");
     }
-    if (envelopeVersion(body) !== SCHEMA_VERSION) {
-      throw new SchemaMismatchError(SCHEMA_VERSION, envelopeVersion(body));
-    }
-    return body as Contract;
+    return payload;
   }
 
-  /** Read-only: neighborhood of a seed symbol — the bounded graph endpoint. */
-  async getNeighborhood(seed: string, depth = 2): Promise<QueryResult> {
+  /** Read-only: neighborhood of an exact seed NodeId. */
+  async getNeighborhood(nodeID: string, depth = 2): Promise<QueryResult> {
+    const exact = requireNodeID(nodeID);
     return this.getEnvelope<QueryResult>(
-      `/query/neighborhood?symbol=${encodeURIComponent(seed)}&depth=${depth}`,
+      `/query/neighborhood?symbol=${encodeURIComponent(exact)}&depth=${depth}`,
+    );
+  }
+
+  /** Read-only: definition relation for an exact NodeId. */
+  async getDefinition(nodeID: string): Promise<QueryResult> {
+    const exact = requireNodeID(nodeID);
+    return this.getEnvelope<QueryResult>(
+      `/query/definition?symbol=${encodeURIComponent(exact)}`,
+    );
+  }
+
+  /** Read-only: inbound reference relations for an exact NodeId. */
+  async getReferences(nodeID: string): Promise<QueryResult> {
+    const exact = requireNodeID(nodeID);
+    return this.getEnvelope<QueryResult>(
+      `/query/references?symbol=${encodeURIComponent(exact)}`,
     );
   }
 
@@ -197,9 +276,10 @@ export class GraphiClient {
    * hard-coded /analyze/impact). `analyzerRoute` comes from getContract +
    * resolveAnalyzerRoute.
    */
-  async getImpact(analyzerRoute: string, symbol: string): Promise<ImpactResult> {
+  async getImpact(analyzerRoute: string, nodeID: string): Promise<ImpactResult> {
+    const exact = requireNodeID(nodeID);
     return this.getEnvelope<ImpactResult>(
-      `/${analyzerRoute}?symbol=${encodeURIComponent(symbol)}&direction=reverse`,
+      `/${analyzerRoute}?symbol=${encodeURIComponent(exact)}&direction=reverse`,
     );
   }
 
@@ -208,6 +288,12 @@ export class GraphiClient {
     return this.getEnvelope<SearchResult>(
       `/search?q=${encodeURIComponent(q)}&limit=${limit}`,
     );
+  }
+
+  /** Resolve editor text to one or more exact graph NodeIds via lexical search. */
+  async resolveSymbol(symbolText: string): Promise<SymbolResolution> {
+    const result = await this.search(symbolText, SYMBOL_RESOLUTION_LIMIT);
+    return resolveSearchMatches(symbolText, result.matches);
   }
 
   /** Read-only: explain symbol analyzer. */
@@ -235,7 +321,7 @@ export class GraphiClient {
   async health(): Promise<{ status: string; schema_version: number }> {
     const res = await fetch(`${this.baseUrl}/healthz`, {
       method: "GET",
-      headers: await this.headers(),
+      headers: this.headers(),
     });
     if (res.status === 412) throw new SchemaMismatchError(SCHEMA_VERSION);
     if (!res.ok) throw new ApiError("unavailable", `HTTP ${res.status}`);
@@ -250,9 +336,17 @@ export class GraphiClient {
 /** Resolve the impact/blast-radius analyzer route from negotiated resources. */
 export function resolveAnalyzerRoute(contract: Contract): string | null {
   const analyzers = contract.resources.filter((r) => r.startsWith("analyze/"));
-  if (analyzers.length === 0) return null;
-  const impact = analyzers.find((r) => /impact|blast/i.test(r));
-  return impact ?? analyzers[0];
+  return (
+    analyzers.find((resource) => {
+      const name = resource.slice("analyze/".length).toLowerCase();
+      return (
+        name === "impact" ||
+        name === "blast" ||
+        name === "blast-radius" ||
+        name === "blast_radius"
+      );
+    }) ?? null
+  );
 }
 
 /** True when /contract advertises the given resource (per-feature degradation). */

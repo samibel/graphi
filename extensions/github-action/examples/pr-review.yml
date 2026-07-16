@@ -1,7 +1,7 @@
 # Copy-paste minimal example workflow for the graphi PR-Review Action (SW-043).
 #
 # Pin `uses:` to a release tag (shown) or a commit SHA for the strictest
-# supply-chain posture. Replace OWNER/graphi-pr-review with your published Action.
+# supply-chain posture.
 name: graphi PR review
 on:
   pull_request:
@@ -16,9 +16,10 @@ jobs:
     steps:
       - name: graphi PR review
         id: graphi
-        uses: OWNER/graphi-pr-review@v0.43.0   # pinned to the action version
+        uses: samibel/graphi/extensions/github-action@v0.5.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          graphi-version: v0.5.0
           base-ref: ${{ github.event.pull_request.base.sha }}
           head-ref: ${{ github.event.pull_request.head.sha }}
           pr-ref: ${{ github.repository }}#${{ github.event.pull_request.number }}

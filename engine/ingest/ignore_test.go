@@ -2,7 +2,10 @@ package ingest_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -22,6 +25,142 @@ func scopeRepo(t *testing.T) string {
 		"assets/big/blob.go": "package big\n",
 	})
 	return root
+}
+
+// TestIgnoreScope_InvalidRootGitignoreFailsClosed proves that a malformed
+// privacy boundary aborts before the walk can persist any repository content.
+func TestIgnoreScope_InvalidRootGitignoreFailsClosed(t *testing.T) {
+	t.Setenv(ingest.EnvRespectGitignore, "")
+	t.Setenv(ingest.EnvIgnoreDirs, "")
+	root := writeRepo(t, map[string]string{
+		".gitignore": "# private files\n[secret\n",
+		"main.go":    "package main\n",
+	})
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	i := newIngester(t, store, &stubParser{})
+
+	err := i.IngestAll(context.Background(), root)
+	if err == nil {
+		t.Fatal("invalid root .gitignore must abort ingest")
+	}
+	if got := err.Error(); !strings.Contains(got, "parse root .gitignore") || !strings.Contains(got, "line 2") {
+		t.Fatalf("error must identify the root config and invalid line, got %q", got)
+	}
+	if got := pathsOf(t, store); len(got) != 0 {
+		t.Fatalf("failed scope validation persisted graph content: %v", got)
+	}
+}
+
+// TestIgnoreScope_UnreadableRootGitignoreFailsClosed uses a directory at the
+// config path instead of chmod so the read fails even as root. Ingest must not
+// reinterpret that failure as "no .gitignore".
+func TestIgnoreScope_UnreadableRootGitignoreFailsClosed(t *testing.T) {
+	t.Setenv(ingest.EnvRespectGitignore, "")
+	t.Setenv(ingest.EnvIgnoreDirs, "")
+	root := writeRepo(t, map[string]string{"main.go": "package main\n"})
+	if err := os.Mkdir(filepath.Join(root, ".gitignore"), 0o700); err != nil {
+		t.Fatalf("create unreadable .gitignore fixture: %v", err)
+	}
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	i := newIngester(t, store, &stubParser{})
+
+	err := i.IngestAll(context.Background(), root)
+	if err == nil || !strings.Contains(err.Error(), "read root .gitignore") {
+		t.Fatalf("unreadable root .gitignore error = %v", err)
+	}
+	if got := pathsOf(t, store); len(got) != 0 {
+		t.Fatalf("failed scope validation persisted graph content: %v", got)
+	}
+}
+
+func TestIgnoreScope_OutsideSymlinkGitignoreFailsClosedWithoutContentLeak(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privileges on windows")
+	}
+	t.Setenv(ingest.EnvRespectGitignore, "")
+	t.Setenv(ingest.EnvIgnoreDirs, "")
+	root := writeRepo(t, map[string]string{"main.go": "package main\n"})
+	const secret = "OUTSIDE_GITIGNORE_SECRET_MUST_NOT_LEAK"
+	outside := filepath.Join(t.TempDir(), "external.gitignore")
+	if err := os.WriteFile(outside, []byte("["+secret+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, ".gitignore")); err != nil {
+		t.Fatal(err)
+	}
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	i := newIngester(t, store, &stubParser{})
+
+	err := i.IngestAll(context.Background(), root)
+	if err == nil || !strings.Contains(err.Error(), "read root .gitignore") {
+		t.Fatalf("outside symlink error = %v", err)
+	}
+	if strings.Contains(err.Error(), secret) {
+		t.Fatalf("outside .gitignore content leaked in error: %q", err)
+	}
+	if got := pathsOf(t, store); len(got) != 0 {
+		t.Fatalf("failed scope validation persisted graph content: %v", got)
+	}
+}
+
+func TestIgnoreScope_OversizeRootGitignoreFailsClosed(t *testing.T) {
+	t.Setenv(ingest.EnvRespectGitignore, "")
+	t.Setenv(ingest.EnvIgnoreDirs, "")
+	root := writeRepo(t, map[string]string{
+		".gitignore": strings.Repeat("x", (1<<20)+1),
+		"main.go":    "package main\n",
+	})
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	i := newIngester(t, store, &stubParser{})
+
+	err := i.IngestAll(context.Background(), root)
+	if err == nil || !strings.Contains(err.Error(), "exceeds 1048576-byte limit") {
+		t.Fatalf("oversize .gitignore error = %v", err)
+	}
+	if got := pathsOf(t, store); len(got) != 0 {
+		t.Fatalf("oversize scope config persisted graph content: %v", got)
+	}
+}
+
+// TestIgnoreScope_ExplicitOptOutBypassesInvalidRootGitignore pins the escape
+// hatch: opting out means the root file is deliberately neither read nor parsed.
+func TestIgnoreScope_ExplicitOptOutBypassesInvalidRootGitignore(t *testing.T) {
+	t.Setenv(ingest.EnvRespectGitignore, "0")
+	t.Setenv(ingest.EnvIgnoreDirs, "")
+	t.Setenv(ingest.EnvIndexAll, "1")
+	root := writeRepo(t, map[string]string{
+		".gitignore": "[secret\n",
+		"main.go":    "package main\n",
+	})
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	i := newIngester(t, store, &stubParser{})
+	if err := i.IngestAll(context.Background(), root); err != nil {
+		t.Fatalf("explicit opt-out must bypass invalid .gitignore: %v", err)
+	}
+	if !pathsOf(t, store)["main.go"] {
+		t.Fatal("explicit opt-out did not ingest source file")
+	}
+}
+
+func TestIgnoreScope_MissingRootGitignoreIsValid(t *testing.T) {
+	t.Setenv(ingest.EnvRespectGitignore, "")
+	t.Setenv(ingest.EnvIgnoreDirs, "")
+	t.Setenv(ingest.EnvIndexAll, "1")
+	root := writeRepo(t, map[string]string{"main.go": "package main\n"})
+	store := graphstore.NewMemStore()
+	defer store.Close()
+	i := newIngester(t, store, &stubParser{})
+	if err := i.IngestAll(context.Background(), root); err != nil {
+		t.Fatalf("missing root .gitignore must be valid: %v", err)
+	}
+	if !pathsOf(t, store)["main.go"] {
+		t.Fatal("source file missing from repo without .gitignore")
+	}
 }
 
 // pathsOf returns the set of source paths present in the store.

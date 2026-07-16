@@ -2,6 +2,7 @@ package related
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -12,6 +13,20 @@ import (
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 )
+
+type lookupProbe struct {
+	*graphstore.MemStore
+	calls int
+	err   error
+}
+
+func (p *lookupProbe) NodesByID(ctx context.Context, ids []model.NodeId) ([]model.Node, error) {
+	p.calls++
+	if p.err != nil {
+		return nil, p.err
+	}
+	return p.MemStore.NodesByID(ctx, ids)
+}
 
 // fixtureDeps builds the shared in-memory relation graph (see explain tests).
 func fixtureDeps(t *testing.T) resolve.Deps {
@@ -189,5 +204,29 @@ func TestFilesTruncationMarksPartial(t *testing.T) {
 	}
 	if !strings.Contains(res.Summary, "related files") {
 		t.Fatalf("unexpected summary: %q", res.Summary)
+	}
+}
+
+func TestFilesBatchesHydrationAndPropagatesFailure(t *testing.T) {
+	baseDeps := fixtureDeps(t)
+	store := baseDeps.Query.Reader().(*graphstore.MemStore)
+	probe := &lookupProbe{MemStore: store}
+	deps := resolve.Deps{Query: query.New(probe), Search: search.New(probe)}
+
+	if _, err := Files(context.Background(), deps, "util.Format", DirectionDependents, 0); err != nil {
+		t.Fatalf("Files: %v", err)
+	}
+	if probe.calls != 1 {
+		t.Fatalf("neighbor hydration used %d NodesByID calls, want one batch", probe.calls)
+	}
+
+	wantErr := errors.New("hydrate failed")
+	probe.calls = 0
+	probe.err = wantErr
+	if _, err := Files(context.Background(), deps, "util.Format", DirectionDependents, 0); !errors.Is(err, wantErr) {
+		t.Fatalf("Files hydration error = %v, want %v", err, wantErr)
+	}
+	if probe.calls != 1 {
+		t.Fatalf("failed hydration used %d NodesByID calls, want one", probe.calls)
 	}
 }

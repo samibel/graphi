@@ -2,9 +2,13 @@ package ingest
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
+
+	"github.com/samibel/graphi/core/graphstore"
 )
 
 // ingestSemanticsVersion identifies the SEMANTICS of the graph a full pass
@@ -66,6 +70,13 @@ import (
 //	    declarations must re-index for the dead_symbol decorator exemption to apply.
 const ingestSemanticsVersion = "11"
 
+const (
+	semanticsVersionKey        = "semantics_version"
+	fullPassInProgressKey      = "full_pass_in_progress"
+	fullPassGenerationKey      = "full_pass_generation"
+	graphFullPassGenerationKey = "index.full_ingest_generation"
+)
+
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
 // current index scope (see semanticsStamp — an opt-in ignore configuration is
@@ -81,15 +92,53 @@ func (i *Ingester) CanWarmStart(ctx context.Context, root string) (files int, ok
 	if files == 0 {
 		return 0, false, nil
 	}
+
+	// A full pass writes the graph and this sidecar in separate durable
+	// transactions. Never trust the old cache/semantics stamp while such a pass
+	// is open: at least one graph batch may already have committed even though
+	// the sidecar transaction rolled back. The marker is written before the
+	// graph generation (and therefore before the first graph batch).
+	if _, found, err := i.semanticsValue(ctx, fullPassInProgressKey); err != nil {
+		return files, false, fmt.Errorf("ingest: warm-start full-pass marker: %w", err)
+	} else if found {
+		return files, false, nil
+	}
+
+	// Matching completed generations bind the two independent SQLite files.
+	// Missing values identify a pre-generation store and a mismatch identifies
+	// an interrupted pass or a one-file restore/revert; both require one full
+	// rebuild before any incremental warm start is safe.
+	metaGeneration, found, err := i.semanticsValue(ctx, fullPassGenerationKey)
+	if err != nil {
+		return files, false, fmt.Errorf("ingest: warm-start sidecar generation: %w", err)
+	}
+	if !found || metaGeneration == "" {
+		return files, false, nil
+	}
+	graphGeneration, err := i.store.Metadata(ctx, graphFullPassGenerationKey)
+	if errors.Is(err, graphstore.ErrNotFound) {
+		return files, false, nil
+	}
+	if err != nil {
+		return files, false, fmt.Errorf("ingest: warm-start graph generation: %w", err)
+	}
+	if graphGeneration == "" || graphGeneration != metaGeneration {
+		return files, false, nil
+	}
+
 	var v string
-	err = i.meta.QueryRowContext(ctx, "SELECT value FROM ingest_semantics WHERE key = 'semantics_version'").Scan(&v)
+	err = i.meta.QueryRowContext(ctx, "SELECT value FROM ingest_semantics WHERE key = ?", semanticsVersionKey).Scan(&v)
 	if errors.Is(err, sql.ErrNoRows) {
 		return files, false, nil // pre-stamp store (older binary): re-index once
 	}
 	if err != nil {
 		return files, false, fmt.Errorf("ingest: warm-start stamp: %w", err)
 	}
-	return files, v == i.semanticsStamp(root), nil
+	stamp, err := i.semanticsStamp(root)
+	if err != nil {
+		return files, false, err
+	}
+	return files, v == stamp, nil
 }
 
 // stampSemanticsTx records the current ingest semantics (including the
@@ -98,11 +147,76 @@ func (i *Ingester) CanWarmStart(ctx context.Context, root string) (files int, ok
 // semantics, and a store without the stamp must stay cold until a full pass
 // under the current binary has run.
 func (i *Ingester) stampSemanticsTx(ctx context.Context, tx *sql.Tx, root string) error {
-	_, err := tx.ExecContext(ctx,
-		"INSERT INTO ingest_semantics(key, value) VALUES('semantics_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-		i.semanticsStamp(root))
+	stamp, err := i.semanticsStamp(root)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx,
+		"INSERT INTO ingest_semantics(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+		semanticsVersionKey, stamp)
 	if err != nil {
 		return fmt.Errorf("ingest: stamp semantics: %w", err)
 	}
 	return nil
+}
+
+// beginFullPass persists the cross-database recovery intent. Ordering is the
+// safety property: the sidecar marker commits first, then the graph generation
+// commits, and only then may IngestAll open its first graph batch. Any failure
+// after step one deliberately leaves the marker open so the next session
+// rebuilds instead of trusting a potentially divergent graph.
+func (i *Ingester) beginFullPass(ctx context.Context) (string, error) {
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return "", fmt.Errorf("ingest: mint full-pass generation: %w", err)
+	}
+	generation := hex.EncodeToString(raw[:])
+	if _, err := i.meta.ExecContext(ctx,
+		"INSERT INTO ingest_semantics(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+		fullPassInProgressKey, generation); err != nil {
+		return "", fmt.Errorf("ingest: persist full-pass marker: %w", err)
+	}
+	if err := i.store.SetMetadata(ctx, graphFullPassGenerationKey, generation); err != nil {
+		return "", fmt.Errorf("ingest: persist graph generation: %w", err)
+	}
+	return generation, nil
+}
+
+// finishFullPass atomically certifies the sidecar at the generation already
+// stored with the graph and removes the in-progress marker. It is called only
+// after every graph batch, the main sidecar transaction, graph metadata writes,
+// and the final SQLite checkpoint have completed.
+func (i *Ingester) finishFullPass(ctx context.Context, generation string) error {
+	return i.metaTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx,
+			"INSERT INTO ingest_semantics(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+			fullPassGenerationKey, generation); err != nil {
+			return fmt.Errorf("ingest: certify sidecar generation: %w", err)
+		}
+		res, err := tx.ExecContext(ctx,
+			"DELETE FROM ingest_semantics WHERE key = ? AND value = ?",
+			fullPassInProgressKey, generation)
+		if err != nil {
+			return fmt.Errorf("ingest: clear full-pass marker: %w", err)
+		}
+		cleared, err := res.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("ingest: count cleared full-pass marker: %w", err)
+		}
+		if cleared != 1 {
+			return fmt.Errorf("ingest: full-pass marker changed before certification")
+		}
+		return nil
+	})
+}
+
+func (i *Ingester) semanticsValue(ctx context.Context, key string) (value string, found bool, err error) {
+	err = i.meta.QueryRowContext(ctx, "SELECT value FROM ingest_semantics WHERE key = ?", key).Scan(&value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	return value, true, nil
 }
