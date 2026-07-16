@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/samibel/graphi/internal/rootfile"
 )
 
 // ConfigDir / ConfigFile locate the optional per-project taint config, relative
@@ -15,6 +18,9 @@ import (
 const (
 	ConfigDir  = ".graphi"
 	ConfigFile = "taint.json"
+	// maxConfigSize bounds the repository-controlled semantic config before JSON
+	// decoding. One MiB is intentionally generous for declarative taint rules.
+	maxConfigSize int64 = 1 << 20
 )
 
 // LoadConfig returns the taint configuration for the repository rooted at root.
@@ -31,17 +37,43 @@ const (
 func LoadConfig(root string) (Config, error) {
 	base := DefaultConfig()
 	path := filepath.Join(root, ConfigDir, ConfigFile)
-	data, err := os.ReadFile(path) //nolint:gosec // root is the repo being indexed
+	data, present, err := readProjectConfig(root)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return base, nil
-		}
 		return Config{}, fmt.Errorf("taint: read %s: %w", path, err)
 	}
+	if !present {
+		return base, nil
+	}
+	return mergeProjectConfig(base, path, data)
+}
+
+// readProjectConfig is the single filesystem boundary shared by LoadConfig and
+// ConfigFingerprint. Missing remains a valid default; every other path, type,
+// root-escape, replacement, and size failure is fail-closed.
+func readProjectConfig(root string) ([]byte, bool, error) {
+	rel := filepath.Join(ConfigDir, ConfigFile)
+	data, err := rootfile.Read(root, rel, maxConfigSize)
+	if os.IsNotExist(err) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	return data, true, nil
+}
+
+func mergeProjectConfig(base Config, path string, data []byte) (Config, error) {
 	var overlay Config
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&overlay); err != nil {
+		return Config{}, fmt.Errorf("taint: parse %s: %w", path, err)
+	}
+	var trailing json.RawMessage
+	if err := dec.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return Config{}, fmt.Errorf("taint: parse %s: multiple JSON values", path)
+		}
 		return Config{}, fmt.Errorf("taint: parse %s: %w", path, err)
 	}
 	merged := mergeConfig(base, overlay)
@@ -61,17 +93,19 @@ func LoadConfig(root string) (Config, error) {
 // editing, or removing the file changes the stamp and re-certifies with a cold
 // pass (the config is part of what the persisted findings MEAN, exactly like the
 // ignore-scope fingerprint). A present-but-malformed file yields a fixed
-// "invalid" sentinel, which forces a cold pass whose ingest then fails closed
-// with the real parse/validation error rather than warm-starting stale findings.
+// "invalid" sentinel; a rejected path/type/size/read returns "unreadable".
+// Either forces a cold pass whose ingest then fails closed with the real error
+// rather than warm-starting stale findings.
 func ConfigFingerprint(root string) string {
 	path := filepath.Join(root, ConfigDir, ConfigFile)
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			return ""
-		}
+	data, present, err := readProjectConfig(root)
+	if err != nil {
 		return "unreadable"
 	}
-	cfg, err := LoadConfig(root)
+	if !present {
+		return ""
+	}
+	cfg, err := mergeProjectConfig(DefaultConfig(), path, data)
 	if err != nil {
 		return "invalid"
 	}

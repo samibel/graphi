@@ -31,10 +31,12 @@ components — it adds no analysis or comment-formatting logic of its own:
   `GITHUB_TOKEN` environment variable. It is **never** placed on the command
   line (argv is world-readable via `/proc`) and is never echoed. The
   `validate` package asserts that the entrypoint never passes the token as a flag.
-- **Pinned runtime.** `runs.using: composite`, and every `uses:` step is pinned
-  by a full 40-hex commit SHA (no floating `@v4` / `:latest`); the engine itself
-  is pinned via the `graphi-version` input. The `validate` package **fails CI**
-  on any unpinned ref.
+- **Pinned runtime.** `runs.using: composite`, and every dependency `uses:` step
+  is pinned by a full 40-hex commit SHA (no floating `@v4` / `:latest`). The
+  engine is built from the Action checkout selected by the consumer's own
+  `uses: ...@ref`, never from the repository being reviewed. `graphi-version`
+  only stamps that binary; it does not select source. The `validate` package
+  **fails CI** on any unpinned dependency ref.
 - **Least privilege.** The Action only needs `permissions: pull-requests: write`
   to post the sticky comment. The merge gate is **advisory**: it surfaces a
   `gate-status` output (and fails the step on `BLOCK`), so your **branch
@@ -47,7 +49,7 @@ components — it adds no analysis or comment-formatting logic of its own:
 | Input | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `github-token` | string | **yes** | — (secret) | Token used only to post/update the sticky comment. Passed via env, never argv. |
-| `graphi-version` | string | no | `v0.43.0` | Pinned graphi engine version (git ref / release tag) built in-runner. |
+| `graphi-version` | string | no | `v0.5.0` | Version label stamped into the binary. Source is selected only by the Action's `uses:` ref. |
 | `base-ref` | string | no | `""` | Base git ref of the PR (diff computed locally as `base..head`). |
 | `head-ref` | string | no | `""` | Head git ref (defaults to checked-out HEAD). |
 | `pr-ref` | string | no | `""` | PR reference for the comment header / issue resolution (e.g. `owner/repo#42`). |
@@ -71,8 +73,8 @@ components — it adds no analysis or comment-formatting logic of its own:
 ## Usage (copy-paste, pinned to the action version)
 
 Pin the Action to a release tag, or to a commit SHA for the strictest
-supply-chain posture. Replace `OWNER/graphi-pr-review` and the version with
-your published Action coordinates.
+supply-chain posture. The Action lives in this repository's
+`extensions/github-action` directory.
 
 ```yaml
 name: graphi PR review
@@ -89,9 +91,10 @@ jobs:
     steps:
       - name: graphi PR review
         id: graphi
-        uses: OWNER/graphi-pr-review@v0.43.0   # pin to a release tag or commit SHA
+        uses: samibel/graphi/extensions/github-action@v0.5.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          graphi-version: v0.5.0
           base-ref: ${{ github.event.pull_request.base.sha }}
           head-ref: ${{ github.event.pull_request.head.sha }}
           pr-ref: ${{ github.repository }}#${{ github.event.pull_request.number }}

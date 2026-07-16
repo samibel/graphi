@@ -84,6 +84,8 @@ func main() {
 	// one fails -check alongside live-drift.
 	stableRep := coverage.CheckStableTier(caps)
 	fmt.Print(stableRep.Format())
+	profileRep := coverage.CheckMCPDefaultProfile(caps)
+	fmt.Print(profileRep.Format())
 
 	// Also verify the rendered .md is fresh, so -check is the single CI gate.
 	if current, rerr := os.ReadFile(mdPath); rerr == nil {
@@ -109,7 +111,7 @@ func main() {
 	}
 	fmt.Printf("capability-manifest check PASS — %s matches the checked matrix.\n", coverage.MatrixJSONPath)
 
-	if !rep.Pass() || !stableRep.Pass() {
+	if !rep.Pass() || !stableRep.Pass() || !profileRep.Pass() {
 		os.Exit(1)
 	}
 }

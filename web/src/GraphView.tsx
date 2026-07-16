@@ -7,7 +7,7 @@
 // other `type` value (e.g. "dashed") throws at render time and white-screens
 // the app, so citation edges are encoded as amber + thicker instead.
 import { useEffect, useRef } from "react";
-import Graph from "graphology";
+import type Graph from "graphology";
 import Sigma from "sigma";
 import { drawDiscNodeLabel, type NodeHoverDrawingFunction } from "sigma/rendering";
 import type { ResultEdge } from "./types";
@@ -21,7 +21,7 @@ import {
   SIZE_DEFAULT,
   SIZE_SEED,
 } from "./highlights";
-import { radialLayout } from "./layout";
+import { buildRenderGraph } from "./graphModel";
 import type { GraphState } from "./useGraph";
 
 // Dark-theme hover renderer. Sigma's default (drawDiscNodeHover) paints a
@@ -100,23 +100,7 @@ export function GraphView({ state, onSelect, onClear, onEdgeSelect }: Props) {
   // same graph always lands in the same place — no per-render re-scramble.
   useEffect(() => {
     if (!containerRef.current) return;
-    const positions = radialLayout(
-      state.nodes.map((n) => n.id),
-      state.edges,
-      state.resolvedSeed,
-    );
-    const g = new Graph();
-    for (const n of state.nodes) {
-      const p = positions.get(n.id) ?? { x: 0, y: 0 };
-      g.addNode(n.id, { ...n, x: p.x, y: p.y });
-    }
-    for (const e of state.edges) {
-      if (g.hasNode(e.from) && g.hasNode(e.to) && !g.hasEdge(e.from, e.to)) {
-        // Keyed by the payload edge id so clickEdge can look the raw edge back
-        // up in resultEdges (auto-generated Graphology keys never match).
-        g.addEdgeWithKey(e.id, e.from, e.to, { ...e });
-      }
-    }
+    const g = buildRenderGraph(state.nodes, state.edges, state.resolvedSeed);
     graphRef.current = g;
 
     if (!sigmaRef.current) {

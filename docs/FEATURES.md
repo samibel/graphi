@@ -2,13 +2,13 @@
 
 > Single-source catalogue of every capability graphi ships today, grouped by epic.
 > Every entry maps to the machine-checked [coverage matrix](coverage-matrix.md)
-> (CI-enforced — docs-vs-code drift breaks the build) and to the live
-> `surfaces/mcp.ToolNames()` set. The companion source of truth for the
-> `analyze` subcommand set is `engine/analysis/dispatch.go`.
+> (CI-enforced — docs-vs-code drift breaks the build). MCP has two distinct
+> code-derived sets: `StableMCPToolNames()` is the exact default profile;
+> `ToolNames()` is the maximal Stable+Labs registry. The companion source of
+> truth for the `analyze` subcommand set is `engine/analysis/dispatch.go`.
 >
-> Historical snapshot generated 2026-06-27; the machine-checked inventory is
-> [`coverage-matrix.md`](coverage-matrix.md) — where the two disagree, trust the
-> matrix (it is CI-enforced, this file is not).
+> Reconciled 2026-07-15. The generated
+> [`coverage-matrix.md`](coverage-matrix.md) remains authoritative.
 
 ## Contents
 
@@ -55,35 +55,40 @@ flowchart LR
 
 ## MCP tool taxonomy
 
-38 MCP tools, grouped by capability. The wire-visible identifier is the
-canonical name; the dispatcher in `surfaces/mcp/mcp.go` routes each call to
-the shared `surfaces/client.Client` interface — so CLI, MCP stdio, MCP
-streamable-HTTP, and HTTP/SSE surfaces return byte-identical bytes by
-construction.
+The default in-process MCP product surface is intentionally small: `graphi mcp`
+advertises exactly **11 Stable tools**. These are the 12 frozen product
+operations minus `index`, which is repository lifecycle rather than an MCP
+`tools/call`. Every concrete binding is filtered again through its
+side-effect-free capability report. In particular, `graphi mcp -daemon`
+currently advertises seven wired Stable RPCs and omits the four unwired agent
+tools instead of returning guaranteed failures.
+
+`graphi mcp -labs` is the only CLI opt-in to the larger profile. The maximal
+registry contains exactly **43 tools**: the same 11 Stable tools plus 32 Labs
+tools. Actual Stable and Labs advertisement is binding-capability-gated, so a
+session can expose fewer tools when its transport or an optional service is not
+wired. An unadvertised call is rejected before client dispatch.
+
+The wire-visible identifier is canonical; `surfaces/mcp/mcp.go` routes through
+the shared client. Stable `impact` is a dedicated fixed-dispatch tool through
+`StableClient.Impact`; the generic analyzer selector remains Labs.
 
 ```mermaid
 flowchart TD
-  ROOT["MCP tools (38)"]:::root
-  ROOT --> Q["Structural query (10)"]
-  ROOT --> P["Pattern query (2)"]
-  ROOT --> S["Search / readout (3)"]
-  ROOT --> A["Analyze (1 generic + 9 dedicated)"]
-  ROOT --> E["Edit / refactor (3)"]
-  ROOT --> C["Code actions (3)"]
-  ROOT --> R["PR review (8)"]
-  ROOT --> M["Memory & skills (3)"]
-  Q --> Q1["callers · callees · references · definition · neighborhood"]
-  Q --> Q2["implementers · implements · overrides · subtypes · supertypes"]
-  P --> P1["search_ast · find_clones"]
-  S --> S1["search · search_semantic · savings"]
-  A --> A1["analyze"]
-  A --> A2["analyze_taint · analyze_pdg · analyze_interproc · analyze_contracts · analyze_githistory"]
-  A --> A3["analyze_pr_risk · analyze_pr_signals · analyze_pr_questions"]
-  E --> E1["refactor_preview · refactor · undo"]
-  C --> C1["diagnose · inline · safe_delete (CLI-only today)"]
-  R --> R1["pr_comment · list_prs · triage_prs · conflicts_prs"]
-  R --> R2["suggest_reviewers · compare_branches · critique_review"]
-  M --> M1["memory · distill · skillgen"]
+  ROOT["Maximal MCP registry (43)"]:::root
+  ROOT --> ST["Default Stable profile (11)"]
+  ROOT --> LB["Labs additions (32, explicit opt-in)"]
+  ST --> STQ["Structural (5)<br/>callers · callees · references · definition · neighborhood"]
+  ST --> STS["Lexical search (1)"]
+  ST --> STI["Fixed impact (1)"]
+  ST --> STA["Agent tasks (4)<br/>explain_symbol · related_files · change_risk · agent_brief"]
+  LB --> LBQ["Hierarchy structural (5)"]
+  LB --> LBP["Pattern (2) + compound (1)"]
+  LB --> LBS["Semantic search / savings (2)"]
+  LB --> LBA["Generic + dedicated analyzers (9)"]
+  LB --> LBE["Edit / refactor (3)"]
+  LB --> LBR["PR / review (7)"]
+  LB --> LBM["Memory / skills (3)"]
   classDef root fill:#fff7d0,stroke:#7a5a00,color:#3a2c00
 ```
 
@@ -94,7 +99,7 @@ flowchart LR
   U["User / Agent"]
   U --> S1["CLI<br/>(surfaces/cli)"]
   U --> S2["MCP stdio<br/>(surfaces/mcp mcp.go)"]
-  U --> S3["MCP streamable-HTTP<br/>(surfaces/mcp http.go)"]
+  U --> S3["MCP POST embedding adapter<br/>(no CLI listener / no SSE)"]
   U --> S4["HTTP + SSE<br/>(surfaces/http)"]
   U --> S5["TUI<br/>(surfaces/tui)"]
   U --> S6["Web (React + Sigma)<br/>(web/)"]
@@ -119,17 +124,18 @@ flowchart LR
 > Notation: a tool is listed under the surface(s) that currently expose it.
 > The MCP, HTTP, and CLI surfaces all share the `surfaces/client.Client`
 > interface, so the engine-side implementation is identical — only the
-> transport differs.
+> transport differs. MCP tables inventory the maximal registry; only entries
+> explicitly marked **Stable default** are present without `-labs`.
 
 ### EP-001 — Core code graph & structural queries
 
 - **Status:** ✅ shipped (foundation epic; everything builds on it)
 - **Key packages:** `core/{model,parse,graphstore}`, `engine/{query,search,ingest,link}`
-- **Capabilities:** 23 CGo-free parsers (22 shipped + 1 html ⏳ planned), FU-1 cross-file linker (shipped), FU-3 graceful-skip semantic search, 10 structural MCP tools.
+- **Capabilities:** 23 matrix entries for CGo-free parsers (22 shipped + 1 html disabled/planned), FU-1 cross-file linker, FU-3 graceful-skip semantic search, 10 structural MCP registry tools. Five structural operations are in the default Stable profile; five hierarchy operations require Labs.
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
-| `callers`, `callees`, `references`, `definition`, `neighborhood`, `implementers`, `implements`, `overrides`, `subtypes`, `supertypes` | `graphi parse`, `graphi query <op>`, `graphi search`, `graphi setup-embedder` | `GET /query/{op}`, `GET /search`, `GET /search/semantic`, `GET /contract`, `GET /healthz` | (foundational — consumed by all analyzers) |
+| Stable default: `callers`, `callees`, `references`, `definition`, `neighborhood`; Labs: `implementers`, `implements`, `overrides`, `subtypes`, `supertypes` | `graphi parse`, `graphi query <op>`, `graphi search`, `graphi setup-embedder` | `GET /query/{op}`, `GET /search`, `GET /search/semantic`, `GET /contract`, `GET /healthz` | (foundational — consumed by all analyzers) |
 
 ### EP-004 — Impact & semantic queries
 
@@ -139,10 +145,11 @@ flowchart LR
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
-| `analyze` (generic dispatcher) | `graphi analyze <analyzer>` | `GET /analyze/{analyzer}` | `impact`, `call-chain`, `concept`, `metrics`, `batched` |
+| Stable default: `impact` (fixed dispatcher); Labs: `analyze` (generic selector) | Stable: `graphi impact <symbol>`; Labs: `graphi analyze <analyzer>` | `GET /analyze/{analyzer}` | `impact`, `call-chain`, `concept`, `metrics`, `batched` |
 
 ```bash
-graphi analyze impact    -symbol p.MyFunc -direction reverse
+graphi impact p.MyFunc
+graphi analyze impact    -symbol p.MyFunc -direction reverse # Labs generic path
 graphi analyze call-chain -symbol p.Caller -target p.Callee
 graphi analyze concept   -symbol p.Root -concept "rate limiting"
 ```
@@ -231,13 +238,16 @@ graphi safe-delete p/LegacyThing
 - **What it is:**
   - The in-memory editor-overlay subsystem tracks unsaved buffers.
   - The daemon control plane adds RPCs (`DaemonStop`, `WatchStatus`, `IngestNotebook`, `AnalyzeCommunities`/`TaintQuery`/`WatcherStatus`).
-  - The MCP streamable-HTTP transport keeps stdio envelope parity.
+  - `surfaces/mcp.HTTPHandler` is a loopback-guarded POST embedding adapter with
+    ordinary response-envelope parity. It is not a standalone CLI-owned
+    streamable-HTTP/SSE server: `roots/list` discovery remains stdio-only, and a
+    binder-backed HTTP initialize must supply `rootUri` or inline roots.
   - Per-class SSE subscriptions let an editor subscribe to only the event classes it cares about.
   - The **zero-egress enforcement guard** rejects any non-loopback dial at the surface boundary, and the central loopback/egress chokepoint is fail-closed.
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
-| (streamable-HTTP transport exposes the same 38-tool set) | `graphi daemon start\|stop\|status` | `GET /events` (with optional `?analyzer=<name>` for one-shot analysis frames, SW-104) | (overlay + observe + guard) |
+| The embeddable POST handler preserves the constructed server profile (11 Stable by default; explicit Labs construction up to the capability-gated 43-tool maximum). No standalone MCP HTTP CLI listener is shipped. | `graphi daemon start\|stop\|status`; `graphi http` serves the separate REST/SSE surface, not MCP HTTP | REST/SSE `GET /events` (optional `?analyzer=<name>`); no request-associated SSE in `mcp.HTTPHandler` | (overlay + observe + guard) |
 
 ### EP-017 — Notebooks, watcher, interproc taint, communities
 
@@ -327,23 +337,24 @@ flowchart LR
 ```mermaid
 sequenceDiagram
   participant ED as Editor
-  participant MC as MCP streamable-HTTP
-  participant DA as graphi daemon
+  participant HO as Embedding host (not graphi CLI)
+  participant MC as MCP POST handler
   participant EN as engine/observe
   participant CL as client.Client
-  ED->>MC: tools/call <name> (POST /mcp)
-  MC->>DA: dial control plane
-  DA->>CL: client.<op>(args)
+  participant HS as Separate REST/SSE surface
+  ED->>HO: initialize with rootUri/inline roots
+  HO->>MC: one JSON-RPC POST
+  MC->>CL: client.<op>(args)
   CL->>EN: analyze / query / edit
   EN-->>CL: canonical result bytes
-  CL-->>DA: surface-format envelope
-  DA-->>MC: JSON-RPC 2.0 response
-  MC-->>ED: result + optional follow-up SSE
-  Note over ED,EN: editor subscribes to per-class SSE (e.g. ingest, analyze, overlay)
-  ED->>MC: GET /events?class=ingest
-  MC->>EN: observe.Subscribe(class=ingest)
-  EN-->>MC: event stream (typed)
-  MC-->>ED: SSE frame (typed, envelope-versioned)
+  CL-->>MC: canonical result bytes
+  MC-->>HO: one JSON-RPC response
+  HO-->>ED: result
+  Note over ED,MC: no roots/list server request and no request-associated SSE
+  ED->>HS: GET /events?class=ingest
+  HS->>EN: observe.Subscribe(class=ingest)
+  EN-->>HS: event stream (typed)
+  HS-->>ED: SSE frame (separate surface)
 ```
 
 ## Watcher + conformance
@@ -425,18 +436,15 @@ flowchart TD
 |---|---|---|
 | Parsers (CGo-free tier) | 23 | `core/parse` registry + `docs/coverage-matrix.md` § Parsers |
 | Analyzers | 22 | `engine/analysis/dispatch.go` + `docs/coverage-matrix.md` § Analyzers |
-| MCP tools | 38 | `surfaces/mcp/tools.go` (10 query ops + 28 singletons) |
+| MCP tools (default) | 11 | `surfaces/mcp.StableMCPToolNames()`; 12 Stable product operations minus lifecycle-only `index` |
+| MCP tools (maximal registry) | 43 | `surfaces/mcp.ToolNames()`; 11 Stable + 32 explicit-opt-in Labs rows, capability-gated at runtime |
 | CLI subcommands | ~30 | `surfaces/cli/cli.go` + `cmd/graphi/main.go` |
 | HTTP endpoints | 22 | `surfaces/http/server.go` (incl. `/prs/*`, `/branches/compare`, `/reviews/critique`) |
 | Surfaces | 8 | `docs/coverage-matrix.md` § Surfaces |
 | Feature Units | 5 | `docs/coverage-matrix.md` § Feature-Unit |
-| New MCP tools (branch vs main) | +6 | `list_prs`, `triage_prs`, `conflicts_prs`, `suggest_reviewers`, `compare_branches`, `critique_review` |
-| New analyzers (branch vs main) | +9 | `communities`, `notebook-ingest`, `taint-query`, `watcher-status`, `triage-prs`, `conflicts-prs`, `suggest-reviewers`, `compare-branches`, `critique-review` |
-| New CLI subcommands (branch vs main) | +9 | `diagnose`, `inline`, `safe-delete`, `list-prs`, `triage-prs`, `conflicts-prs`, `suggest-reviewers`, `compare-branches`, `critique-review` |
-| New HTTP endpoints (branch vs main) | +6 | `/prs`, `/prs/triage`, `/prs/conflicts`, `/prs/suggest-reviewers`, `/branches/compare`, `/reviews/critique` (+ `/events?analyzer=` query) |
-| New engine subsystems (branch vs main) | +5 | `engine/overlay`, `engine/watch`, `engine/community`, `engine/interproctaint` (under `engine/analysis/`), `engine/conformance` |
-| New surfaces (branch vs main) | +2 | `surfaces/forge`, `surfaces/guard` |
 
 ---
 
-Last reconciled to: `docs/coverage-matrix.md` (CI-enforced) and `surfaces/mcp/tools.go::ToolNames()` (drift guard).
+Last reconciled to: `docs/coverage-matrix.md` (CI-enforced),
+`surfaces/mcp.StableMCPToolNames()` (default profile), and
+`surfaces/mcp.ToolNames()` (maximal registry).

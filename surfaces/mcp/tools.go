@@ -21,6 +21,9 @@ const (
 	ToolSearch         = "search"
 	ToolSearchSemantic = "search_semantic"
 	ToolSavings        = "savings"
+	// ToolImpact is the dedicated stable blast-radius analyzer. Unlike the Labs
+	// generic analyzer dispatcher, callers cannot choose a different analyzer.
+	ToolImpact = "impact"
 
 	// Generic analyzer dispatch tool (SW-022).
 	ToolAnalyze = "analyze"
@@ -84,13 +87,14 @@ const (
 	ToolChangeRisk    = "change_risk"
 )
 
-// singletonToolNames are the non-structural-query tools advertised behind a
-// capability probe. They are listed once here and consumed by both ToolNames()
-// and toolDescriptors() so the canonical set cannot drift from what is served.
+// singletonToolNames are the non-structural-query tools in the maximal catalog.
+// They are listed once here and consumed by both ToolNames() and descriptor
+// construction so the canonical set cannot drift from what can be served.
 var singletonToolNames = []string{
 	ToolSearch,
 	ToolSearchSemantic,
 	ToolSavings,
+	ToolImpact,
 	ToolAnalyze,
 	ToolAnalyzeTaint,
 	ToolAnalyzePDG,
@@ -131,11 +135,13 @@ var singletonToolNames = []string{
 // dispatch, the MCP tool list, CLI help, the coverage matrix, and the generated
 // docs cannot disagree about what is stable.
 //
-// The set spans surfaces: `index` is the ingest operation and `impact` is an
-// analyzer; the remaining ten are advertised MCP tool names. Membership is by
-// operation NAME (underscore spelling); the wire-level tool-name constants are
-// unchanged. Freezing this set is the whole point of SCOPE-01 — adding a 13th or
-// dropping one fails the coverage-matrix build. Keep it sorted.
+// The set spans surfaces: `index` is the ingest lifecycle operation and is the
+// only member not exposed as an MCP tool; `impact` is the stable analyzer behind
+// a dedicated MCP tool whose analyzer name cannot be selected by the caller.
+// Membership is by operation NAME (underscore spelling); the wire-level
+// tool-name constants are unchanged. Freezing this set is the whole point of
+// SCOPE-01 — adding a 13th or dropping one fails the coverage-matrix build. Keep
+// it sorted.
 var StableOperations = []string{
 	"agent_brief",
 	"callees",
@@ -165,6 +171,26 @@ var stableOperationSet = func() map[string]bool {
 // decide Stable vs Labs, so the taxonomy cannot diverge across MCP, CLI, and the
 // coverage matrix.
 func IsStableOperation(name string) bool { return stableOperationSet[name] }
+
+// StableMCPToolNames returns the exact default MCP profile: every frozen stable
+// operation except index, whose lifecycle is repository ingest rather than an
+// MCP tools/call operation. The result is sorted and freshly allocated.
+func StableMCPToolNames() []string {
+	out := make([]string, 0, len(StableOperations)-1)
+	for _, op := range StableOperations {
+		if op != "index" {
+			out = append(out, op)
+		}
+	}
+	return out
+}
+
+// IsStableMCPTool reports membership in the default MCP profile. Keep the
+// lifecycle-only exclusion centralized here so advertisement and dispatch use
+// the same boundary.
+func IsStableMCPTool(name string) bool {
+	return name != "index" && IsStableOperation(name)
+}
 
 // labsPrefix marks a tool description as belonging to the Labs stability tier
 // (SCOPE-01): kept in-tree and still advertised, but NOT part of the frozen

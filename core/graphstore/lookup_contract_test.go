@@ -2,6 +2,8 @@ package graphstore
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"testing"
@@ -95,6 +97,20 @@ func canonEdges(es ...[]model.Edge) []model.Edge {
 	return out
 }
 
+func canonEdgesByKindID(es ...[]model.Edge) []model.Edge {
+	var out []model.Edge
+	for _, edges := range es {
+		out = append(out, edges...)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Kind() != out[j].Kind() {
+			return out[i].Kind() < out[j].Kind()
+		}
+		return out[i].ID() < out[j].ID()
+	})
+	return out
+}
+
 func canonNodes(ns ...model.Node) []model.Node {
 	out := append([]model.Node(nil), ns...)
 	sort.Slice(out, func(i, j int) bool { return out[i].ID() < out[j].ID() })
@@ -171,6 +187,76 @@ func TestLookupContract_IncomingOutgoing(t *testing.T) {
 	}
 }
 
+func TestLookupContract_BoundedIncomingOutgoing(t *testing.T) {
+	for name, factory := range lookupFactories() {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			st, err := factory(t.TempDir())
+			if err != nil {
+				t.Fatalf("factory: %v", err)
+			}
+			defer st.Close()
+			lookup := st.(BoundedGraphLookup)
+			fixture := seedLookupFixture(t, st)
+			var cacheRebuilds int64
+			if sqlite, ok := st.(*SQLiteStore); ok {
+				cacheRebuilds = sqlite.CacheRebuilds()
+			}
+
+			allIncoming := canonEdgesByKindID(fixture.inCalls, fixture.inRefs)
+			got, truncated, err := lookup.IncomingBounded(ctx, fixture.hub.ID(), 2)
+			if err != nil {
+				t.Fatalf("IncomingBounded: %v", err)
+			}
+			if !truncated || !reflect.DeepEqual(got, allIncoming[:2]) {
+				t.Fatalf("IncomingBounded(limit=2) = %v, truncated=%v; want first two of %v, true", got, truncated, allIncoming)
+			}
+
+			got, truncated, err = lookup.IncomingBounded(ctx, fixture.hub.ID(), len(allIncoming))
+			if err != nil {
+				t.Fatalf("IncomingBounded(exact): %v", err)
+			}
+			if truncated || !reflect.DeepEqual(got, allIncoming) {
+				t.Fatalf("IncomingBounded(exact) = %v, truncated=%v; want %v, false", got, truncated, allIncoming)
+			}
+
+			calls := canonEdges(fixture.inCalls)
+			got, truncated, err = lookup.IncomingBounded(ctx, fixture.hub.ID(), 2, "calls", "calls")
+			if err != nil {
+				t.Fatalf("IncomingBounded(calls): %v", err)
+			}
+			if !truncated || !reflect.DeepEqual(got, calls[:2]) {
+				t.Fatalf("IncomingBounded(calls, duplicate kind) = %v, truncated=%v; want %v, true", got, truncated, calls[:2])
+			}
+
+			outgoing := canonEdges(fixture.outCalls)
+			got, truncated, err = lookup.OutgoingBounded(ctx, fixture.hub.ID(), 8, "calls")
+			if err != nil {
+				t.Fatalf("OutgoingBounded: %v", err)
+			}
+			if truncated || !reflect.DeepEqual(got, outgoing) {
+				t.Fatalf("OutgoingBounded = %v, truncated=%v; want %v, false", got, truncated, outgoing)
+			}
+
+			got, truncated, err = lookup.IncomingBounded(ctx, model.NodeId("nd_missing"), 1)
+			if err != nil || truncated || len(got) != 0 {
+				t.Fatalf("IncomingBounded(missing) = %v, truncated=%v, err=%v; want empty/false/nil", got, truncated, err)
+			}
+			if _, _, err := lookup.IncomingBounded(ctx, fixture.hub.ID(), 0); !errors.Is(err, ErrInvalidLimit) {
+				t.Fatalf("IncomingBounded(limit=0) error = %v, want ErrInvalidLimit", err)
+			}
+			canceled, cancel := context.WithCancel(ctx)
+			cancel()
+			if _, _, err := lookup.IncomingBounded(canceled, fixture.hub.ID(), 1); !errors.Is(err, context.Canceled) {
+				t.Fatalf("IncomingBounded(canceled) error = %v, want context.Canceled", err)
+			}
+			if sqlite, ok := st.(*SQLiteStore); ok && sqlite.CacheRebuilds() != cacheRebuilds {
+				t.Fatalf("bounded reads rebuilt whole-graph cache: before=%d after=%d", cacheRebuilds, sqlite.CacheRebuilds())
+			}
+		})
+	}
+}
+
 func TestLookupContract_NodesByID(t *testing.T) {
 	for name, factory := range lookupFactories() {
 		t.Run(name, func(t *testing.T) {
@@ -202,7 +288,141 @@ func TestLookupContract_NodesByID(t *testing.T) {
 			if len(got) != 0 {
 				t.Fatalf("NodesByID(nil): want empty, got %d", len(got))
 			}
+
+			// Cancellation is authoritative even for an empty lookup. Backends
+			// must not diverge merely because no SQL statement is needed.
+			canceled, cancel := context.WithCancel(ctx)
+			cancel()
+			if _, err := lk.NodesByID(canceled, nil); !errors.Is(err, context.Canceled) {
+				t.Fatalf("NodesByID(canceled, nil): got %v, want context.Canceled", err)
+			}
 		})
+	}
+}
+
+func TestBriefAggregateContract_BackendParityAndNoCacheRebuild(t *testing.T) {
+	type backend struct {
+		name    string
+		factory Factory
+	}
+	backends := []backend{{"mem", MemFactory}, {"sqlite", SQLiteFactory}}
+	var reference BriefStats
+	for i, backend := range backends {
+		t.Run(backend.name, func(t *testing.T) {
+			st, err := backend.factory(t.TempDir())
+			if err != nil {
+				t.Fatalf("factory: %v", err)
+			}
+			defer st.Close()
+			seedLookupFixture(t, st)
+
+			var before int64
+			if sqlite, ok := st.(*SQLiteStore); ok {
+				before = sqlite.CacheRebuilds()
+			}
+			got, err := st.(BriefAggregatePort).BriefStats(context.Background(), 5)
+			if err != nil {
+				t.Fatalf("BriefStats: %v", err)
+			}
+			if got.TotalNodes != 8 || got.TotalEdges != 6 {
+				t.Fatalf("totals = %d nodes/%d edges, want 8/6", got.TotalNodes, got.TotalEdges)
+			}
+			if got.TierCounts[model.TierDerived] != 6 {
+				t.Fatalf("derived tier count = %d, want 6", got.TierCounts[model.TierDerived])
+			}
+			if len(got.TopInbound) == 0 || got.TopInbound[0].Node.QualifiedName() != "pkg.Hub" || got.TopInbound[0].InboundEdges != 4 {
+				t.Fatalf("top inbound = %+v, want pkg.Hub with 4", got.TopInbound)
+			}
+			if sqlite, ok := st.(*SQLiteStore); ok && sqlite.CacheRebuilds() != before {
+				t.Fatalf("BriefStats rebuilt whole-graph cache: before=%d after=%d", before, sqlite.CacheRebuilds())
+			}
+			if i == 0 {
+				reference = got
+			} else if !reflect.DeepEqual(got, reference) {
+				t.Fatalf("backend aggregate mismatch:\n got=%+v\nwant=%+v", got, reference)
+			}
+		})
+	}
+}
+
+func TestDegreeSampleContract_BackendParityAndStratification(t *testing.T) {
+	type backend struct {
+		name    string
+		factory Factory
+	}
+	backends := []backend{{"mem", MemFactory}, {"sqlite", SQLiteFactory}}
+	var reference []model.Node
+	for i, backend := range backends {
+		t.Run(backend.name, func(t *testing.T) {
+			st, err := backend.factory(t.TempDir())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer st.Close()
+			seedLookupFixture(t, st)
+			var before int64
+			if sqlite, ok := st.(*SQLiteStore); ok {
+				before = sqlite.CacheRebuilds()
+			}
+			got, err := st.(DegreeSamplePort).DegreeStratifiedSymbols(context.Background(), 3)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(got) != 3 {
+				t.Fatalf("sample size = %d, want 3", len(got))
+			}
+			if sqlite, ok := st.(*SQLiteStore); ok && sqlite.CacheRebuilds() != before {
+				t.Fatalf("degree sample rebuilt whole-graph cache")
+			}
+			if i == 0 {
+				reference = got
+			} else if !reflect.DeepEqual(got, reference) {
+				t.Fatalf("backend sample mismatch:\n got=%+v\nwant=%+v", got, reference)
+			}
+		})
+	}
+}
+
+func TestSQLiteNodesByID_ChunksBeyondHostParameterLimit(t *testing.T) {
+	ctx := context.Background()
+	st, err := OpenSQLite(t.TempDir() + "/graph.db")
+	if err != nil {
+		t.Fatalf("OpenSQLite: %v", err)
+	}
+	defer st.Close()
+
+	first, err := model.NewNode("function", "pkg.First", "pkg/first.go", 1, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last, err := model.NewNode("function", "pkg.Last", "pkg/last.go", 1, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.PutNode(ctx, first); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.PutNode(ctx, last); err != nil {
+		t.Fatal(err)
+	}
+
+	ids := make([]model.NodeId, 0, 33_000)
+	ids = append(ids, first.ID())
+	for i := 0; i < 32_998; i++ {
+		ids = append(ids, model.NodeId(fmt.Sprintf("missing-%05d", i)))
+	}
+	ids = append(ids, last.ID(), first.ID()) // duplicate must remain collapsed
+
+	before := st.CacheRebuilds()
+	got, err := st.NodesByID(ctx, ids)
+	if err != nil {
+		t.Fatalf("NodesByID(33k): %v", err)
+	}
+	if want := canonNodes(first, last); !reflect.DeepEqual(got, want) {
+		t.Fatalf("NodesByID(33k) mismatch:\n got=%v\nwant=%v", got, want)
+	}
+	if st.CacheRebuilds() != before {
+		t.Fatalf("NodesByID rebuilt the whole-graph cache: before=%d after=%d", before, st.CacheRebuilds())
 	}
 }
 
@@ -297,6 +517,10 @@ func TestLookupContract_WritesKeepIndexesFresh(t *testing.T) {
 			if want := canonEdges(f.inCalls[1:]); !reflect.DeepEqual(got, want) {
 				t.Fatalf("Incoming after DeleteEdge mismatch:\n got=%v\nwant=%v", got, want)
 			}
+			bounded, truncated, err := st.(BoundedGraphLookup).IncomingBounded(ctx, f.hub.ID(), 8, "calls")
+			if err != nil || truncated || !reflect.DeepEqual(bounded, canonEdges(f.inCalls[1:])) {
+				t.Fatalf("IncomingBounded after DeleteEdge = %v, truncated=%v, err=%v", bounded, truncated, err)
+			}
 
 			// Delete the hub → cascade: no incident edges remain anywhere, and the
 			// symbol lookup no longer returns the deleted node (the same-QN node in
@@ -373,6 +597,10 @@ func TestLookupContract_MemLoadRebuildsIndexes(t *testing.T) {
 	}
 	if want := canonEdges(f.inCalls); !reflect.DeepEqual(got, want) {
 		t.Fatalf("Incoming after Load mismatch:\n got=%v\nwant=%v", got, want)
+	}
+	bounded, truncated, err := dst.IncomingBounded(ctx, f.hub.ID(), 2, "calls")
+	if err != nil || !truncated || !reflect.DeepEqual(bounded, canonEdges(f.inCalls)[:2]) {
+		t.Fatalf("IncomingBounded after Load = %v, truncated=%v, err=%v", bounded, truncated, err)
 	}
 	byPath, err := dst.SourcePath(ctx, "pkg/callers.go")
 	if err != nil {

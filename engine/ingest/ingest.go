@@ -143,7 +143,8 @@ type Ingester struct {
 	lastLinkStats link.Stats
 
 	// bounds are the fail-closed parse-time resource bounds (SW-055 AC#6) applied
-	// to untrusted inputs: max file size (checked before ReadFile via FileInfo),
+	// to untrusted inputs: max file size (checked on the root-confined descriptor
+	// and enforced again while reading at MaxFileSize+1),
 	// parse timeout (context.WithTimeout on the Parse ctx), and recursion depth
 	// (enforced inside core/parse). On any breach the offending file is SKIPPED
 	// with a structured diagnostic and ingestion continues — never parse-anyway,
@@ -309,20 +310,18 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 type SkipReason string
 
 const (
-	// SkipOversize: file exceeded ResourceBounds.MaxFileSize (checked before read).
+	// SkipOversize: file exceeded ResourceBounds.MaxFileSize. Descriptor size is
+	// checked before reading and a MaxFileSize+1 reader catches concurrent growth.
 	SkipOversize SkipReason = "oversize"
 	// SkipTimeout: parse exceeded ResourceBounds.ParseTimeout.
 	SkipTimeout SkipReason = "timeout"
 	// SkipMaxDepth: input exceeded ResourceBounds.MaxDepth (nesting/recursion).
 	SkipMaxDepth SkipReason = "max-depth"
-	// SkipUnreadable: the path could not be read as a regular file. The usual
-	// cause is a symlink whose target is a directory: fs.DirEntry.IsDir() (the
-	// walk's earlier directory check) reports a symlink's OWN type, which is
-	// never "directory", regardless of what it points to — so a symlink into a
-	// directory (e.g. a pnpm-style node_modules/.pnpm layout, which links whole
-	// package directories) reaches the read step instead of being skipped
-	// there. A broken symlink or a permission-denied file land here too. Either
-	// way this is fail-closed: skip and record, never abort the whole ingest.
+	// SkipUnreadable: the root-confined path could not be opened and validated as
+	// a regular file. Final symlinks, outside-root intermediate symlinks, special
+	// files, concurrent path replacement, broken links, and permission failures
+	// land here. This is fail-closed: skip and record, never parse path-resolved
+	// bytes and never abort ingestion of unrelated files.
 	SkipUnreadable SkipReason = "unreadable"
 	// SkipParseError: the file has a registered parser but is not valid source
 	// for it — a genuine syntax error. This is a property of the FILE, not a
@@ -618,6 +617,13 @@ type fileUnit struct {
 // rebuilding the cache and reverse-dependency index from scratch.
 func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	i.resetSkips()
+	// Validate every repository-controlled semantics config before walking,
+	// parsing, or persisting source. stampSemanticsTx recomputes the value at the
+	// end so a mid-pass config change also fails closed instead of certifying a
+	// graph under stale semantics.
+	if _, err := i.semanticsStamp(root); err != nil {
+		return err
+	}
 	i.notifyProgress(ctx, ProgressEvent{Phase: PhaseWalk})
 	units, err := i.walk(root, func(discovered int) {
 		if discovered%64 == 0 {
@@ -638,6 +644,15 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	parsed, err := i.parseUnitsParallel(ctx, units, func(done int, path string) {
 		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: done, Total: len(units), Path: path})
 	})
+	if err != nil {
+		return err
+	}
+
+	// Persist the recovery intent before the first durable graph write. The
+	// marker remains open on every error path and makes the next warm-start probe
+	// force a complete rebuild; finishFullPass clears it only after both stores
+	// and all post-pass graph metadata are durable.
+	fullPassGeneration, err := i.beginFullPass(ctx)
 	if err != nil {
 		return err
 	}
@@ -823,6 +838,9 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		if err := sqlStore.WALCheckpoint(ctx, "TRUNCATE"); err != nil {
 			return fmt.Errorf("ingest: final checkpoint: %w", err)
 		}
+	}
+	if err := i.finishFullPass(ctx, fullPassGeneration); err != nil {
+		return err
 	}
 	i.notifyProgress(ctx, ProgressEvent{Phase: PhaseDone, Done: len(units), Total: len(units)})
 	i.notifyIngest(ctx, "ingest-completed", len(units))
@@ -1456,65 +1474,55 @@ func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, e
 		return nil, fmt.Errorf("ingest: abs root: %w", err)
 	}
 	root = filepath.Clean(root)
-	// Opt-in index scope (GRAPHI_RESPECT_GITIGNORE / GRAPHI_IGNORE): pruned
+	rootHandle, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: open root: %w", err)
+	}
+	defer rootHandle.Close()
+	// Configured index scope (default-on root .gitignore / GRAPHI_IGNORE): pruned
 	// silently, exactly like the built-in ignoredDirNames — scope hygiene is
 	// configuration, not a diagnostic.
-	scope := i.ignoreConfigFor(root)
+	scope, err := i.ignoreConfigFor(root)
+	if err != nil {
+		return nil, err
+	}
 
 	var units []fileUnit
-	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(rootHandle.FS(), ".", func(rel string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
-			if path == root {
+			if rel == "." {
 				return nil
 			}
 			if isIgnoredDirName(d.Name()) {
 				return filepath.SkipDir
 			}
 			if scope.active() {
-				rel, rerr := filepath.Rel(root, path)
-				if rerr == nil && scope.ignoreDir(d.Name(), filepath.ToSlash(rel)) {
+				if scope.ignoreDir(d.Name(), rel) {
 					return filepath.SkipDir
 				}
 			}
 			return nil
 		}
-		rel, err := filepath.Rel(root, path)
-		if err != nil {
-			return err
-		}
-		rel = filepath.ToSlash(rel)
-		if strings.Contains(rel, "..") {
+		if rel == "." || strings.HasPrefix(rel, "../") || strings.Contains(rel, "/../") {
 			return fmt.Errorf("ingest: escaped path %q", rel)
 		}
 		if scope.active() && scope.ignoreFile(rel) {
 			return nil
 		}
-		// SW-055 AC#6: fail-closed max-file-size bound. Check the size from the
-		// directory entry's FileInfo BEFORE reading any bytes into memory, so a
-		// multi-GB adversarial file is never even read. On breach the file is
-		// SKIPPED with a structured, source-free diagnostic and the walk continues.
-		if i.bounds.MaxFileSize > 0 {
-			if info, ierr := d.Info(); ierr == nil && info.Size() > i.bounds.MaxFileSize {
-				i.recordSkip(SkipDiagnostic{Path: rel, Reason: SkipOversize, Size: info.Size()})
-				return nil
-			}
-		}
-		src, err := os.ReadFile(path) //nolint:gosec // path derived from sanitized root
-		if err != nil {
-			// Fail-closed, not fail-stop: a symlink resolving to a directory (see
-			// SkipUnreadable), a broken symlink, a permission-denied file, or a file
-			// removed mid-walk must never abort indexing of the rest of the repo.
-			i.recordSkip(SkipDiagnostic{Path: rel, Reason: SkipUnreadable})
+		read := readRootedRegularFile(rootHandle, rel, i.bounds.MaxFileSize)
+		if read.reason != "" {
+			i.recordSkip(SkipDiagnostic{Path: rel, Reason: read.reason, Size: read.size})
 			return nil
 		}
+		path := filepath.Join(root, filepath.FromSlash(rel))
 		units = append(units, fileUnit{
 			path:    path,
 			relPath: rel,
-			src:     src,
-			hash:    hashBytes(src),
+			src:     read.src,
+			hash:    hashBytes(read.src),
 		})
 		if onFile != nil {
 			onFile(len(units))
@@ -1598,26 +1606,25 @@ func (i *Ingester) ParseFile(ctx context.Context, root, relPath string) (*Parsed
 	}
 	// Opt-in index scope: the watcher must agree with the walk or a watched
 	// edit would re-introduce a file the full pass excludes (parity break).
-	if scope := i.ignoreConfigFor(root); scope.active() && scope.ignoreFile(rel) {
+	scope, err := i.ignoreConfigFor(root)
+	if err != nil {
+		return nil, err
+	}
+	if scope.active() && scope.ignoreFile(rel) {
 		return nil, nil
 	}
-	abs := filepath.Join(root, filepath.FromSlash(rel))
-	// Fail-closed max-file-size bound (mirrors walk): stat before reading bytes.
-	if i.bounds.MaxFileSize > 0 {
-		if info, ierr := os.Stat(abs); ierr == nil && info.Size() > i.bounds.MaxFileSize {
-			i.recordSkip(SkipDiagnostic{Path: rel, Reason: SkipOversize, Size: info.Size()})
-			return &ParsedFile{RelPath: rel, skipped: true}, nil
-		}
-	}
-	src, err := os.ReadFile(abs) //nolint:gosec // path derived from sanitized root
+	rootHandle, err := os.OpenRoot(root)
 	if err != nil {
-		// Mirrors the walk()'s SkipUnreadable handling: a symlink resolving to a
-		// directory, a broken symlink, or a permission-denied file must not abort
-		// the watcher's whole reconcile batch (see pool.go's firstErr/cancel).
-		i.recordSkip(SkipDiagnostic{Path: rel, Reason: SkipUnreadable})
+		return nil, fmt.Errorf("ingest: open root: %w", err)
+	}
+	defer rootHandle.Close()
+	read := readRootedRegularFile(rootHandle, rel, i.bounds.MaxFileSize)
+	if read.reason != "" {
+		i.recordSkip(SkipDiagnostic{Path: rel, Reason: read.reason, Size: read.size})
 		return &ParsedFile{RelPath: rel, skipped: true}, nil
 	}
-	u := fileUnit{path: abs, relPath: rel, src: src, hash: hashBytes(src)}
+	abs := filepath.Join(root, filepath.FromSlash(rel))
+	u := fileUnit{path: abs, relPath: rel, src: read.src, hash: hashBytes(read.src)}
 	pf, err := i.parseUnit(ctx, u)
 	if err != nil {
 		return nil, err

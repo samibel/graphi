@@ -1,5 +1,9 @@
 # Eval Report
 
+> Historical internal sandbox snapshot for the commit shown below. It is not a
+> current release result, independent project rating, production certification,
+> or competitor benchmark.
+
 **Timestamp:** 2026-07-15T00:17:07Z
 **Version:** 0.0.0-dev
 **Commit:** 660b5a32e7c67a1cc40446bea44d99666e9d75f2

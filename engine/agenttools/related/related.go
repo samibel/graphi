@@ -87,22 +87,10 @@ func Files(ctx context.Context, deps resolve.Deps, anchor, direction string, max
 	}
 
 	scores := map[string]*fileScore{}
-	nodeCache := map[model.NodeId]*model.Node{}
-	lookup := func(id model.NodeId) *model.Node {
-		if n, ok := nodeCache[id]; ok {
-			return n
-		}
-		ns, err := glk.NodesByID(ctx, []model.NodeId{id})
-		if err != nil || len(ns) == 0 {
-			nodeCache[id] = nil
-			return nil
-		}
-		nodeCache[id] = &ns[0]
-		return &ns[0]
-	}
+	nodeCache := map[model.NodeId]model.Node{}
 	record := func(other model.NodeId, e model.Edge, inbound bool) {
-		n := lookup(other)
-		if n == nil {
+		n, found := nodeCache[other]
+		if !found {
 			return
 		}
 		path := n.SourcePath()
@@ -170,6 +158,29 @@ func Files(ctx context.Context, deps resolve.Deps, anchor, direction string, max
 		}
 	}
 	sort.Slice(matches, func(i, j int) bool { return matches[i].edge.ID() < matches[j].edge.ID() })
+
+	// Hydrate every distinct neighbor in one port call. The old per-edge lookup
+	// was an N+1 query and, worse, converted storage errors into silently missing
+	// files. Missing endpoint rows are still skipped as referential drift; an
+	// actual lookup failure is returned to the caller.
+	neighborIDs := make([]model.NodeId, 0, len(matches))
+	seenNeighbor := make(map[model.NodeId]struct{}, len(matches))
+	for _, m := range matches {
+		if _, seen := seenNeighbor[m.other]; seen {
+			continue
+		}
+		seenNeighbor[m.other] = struct{}{}
+		neighborIDs = append(neighborIDs, m.other)
+	}
+	if len(neighborIDs) > 0 {
+		nodes, err := glk.NodesByID(ctx, neighborIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range nodes {
+			nodeCache[n.ID()] = n
+		}
+	}
 	for _, m := range matches {
 		record(m.other, m.edge, m.inbound)
 	}

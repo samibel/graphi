@@ -23,7 +23,7 @@ import (
 // canonical text payload (mirrors mcpToolText, which passes empty arguments).
 func mcpToolTextArgs(t *testing.T, c client.Client, tool string, args map[string]any) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(c)
+	srv := mcp.NewServerWithClient(c, mcp.WithLabs())
 	reqBody, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
 		"params": map[string]any{"name": tool, "arguments": args},
@@ -64,6 +64,7 @@ func httpPayloadGet(t *testing.T, c client.Client, path string) []byte {
 	t.Setenv(httpsrv.LabsEnvVar, "1")
 	srv := httpsrv.New(c, observe.New())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Host = "127.0.0.1"
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -112,7 +113,7 @@ func TestSuggestReviewersTool_Advertised(t *testing.T) {
 	store := triageSeed(t)
 	withAnalysis := client.NewDirect(query.New(store), search.New(store)).
 		WithAnalysis(analysis.NewDefaultService(store))
-	names := listToolNames(t, mcp.NewServerWithClient(withAnalysis))
+	names := listToolNames(t, mcp.NewServerWithClient(withAnalysis, mcp.WithLabs()))
 	if !containsStr(names, mcp.ToolSuggestReviewers) {
 		t.Fatalf("suggest_reviewers not advertised when analysis wired; got %v", names)
 	}

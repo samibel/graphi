@@ -1,6 +1,6 @@
 // Pure citation-mapping logic, framework-agnostic (no vscode import) so it is
 // unit-testable in isolation. blastRadius.ts wires it into the vscode UI.
-import type { ImpactResult, ResultNode } from "./contract";
+import type { ImpactResult, ResultNode, SearchMatch } from "./contract";
 
 /** A clickable citation: symbol id + optional file:line source location. */
 export interface CitationItem {
@@ -16,8 +16,9 @@ export function toCitationItems(
   impact: ImpactResult,
   nodes: Map<string, ResultNode>,
 ): CitationItem[] {
-  return impact.impacted.map((id) => {
-    const n = nodes.get(id);
+  return (impact.nodes ?? []).map((reached) => {
+    const id = reached.node.id;
+    const n = nodes.get(id) ?? reached.node;
     return {
       label: id,
       description: n?.qualified_name ?? id,
@@ -30,12 +31,13 @@ export function toCitationItems(
 
 /** toSearchCitations maps a search-result match list to citations. */
 export function toSearchCitations(
-  matches: Array<{ id: string; path: string; line: number }>,
+  matches: SearchMatch[],
 ): CitationItem[] {
   return matches.map((m) => ({
-    label: m.id,
-    detail: `${m.path}:${m.line}`,
-    filePath: m.path,
+    label: m.node_id,
+    description: m.qualified_name,
+    detail: `${m.source_path}:${m.line}`,
+    filePath: m.source_path,
     line: m.line,
   }));
 }

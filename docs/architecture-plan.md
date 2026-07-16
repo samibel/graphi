@@ -21,7 +21,7 @@ dependency direction is strictly downward:
 ```
 cmd/*        entry points & wiring (graphi, layerguard, coverage, canary, …)
    ↓
-surfaces/*   CLI · daemon · MCP (stdio + streamable-HTTP) · HTTP/SSE · TUI · web · extensions · forge · guard
+surfaces/*   CLI · daemon · MCP stdio · embeddable MCP HTTP adapter · HTTP/SSE · TUI · web · extensions · forge · guard
    ↓
 engine/*     query · search · analysis · edit · review · ingest · observe · overlay · watch · community · interproc-taint · conformance · ledger · context · memory · distill · skillgen · wiki
    ↓
@@ -131,7 +131,7 @@ README claim:
 | **Eval claim gate** | [`eval.yml`](../.github/workflows/eval.yml) · `internal/eval` | the headline token-savings metric on a committed dataset |
 | **Bench budget** | [`bench.yml`](../.github/workflows/bench.yml) · `bench/lang-budget.md` | binary-size budget (<50 MB) for the default tier |
 | **Privacy audit** | [`privacy-audit.yml`](../.github/workflows/privacy-audit.yml) | zero-telemetry static scan |
-| **Test allowlist** | [`testgate.yml`](../.github/workflows/testgate.yml) · `cmd/testgate` | full suite green except a structured 2-test root-perms carve-out |
+| **Strict test gate** | [`testgate.yml`](../.github/workflows/testgate.yml) · `cmd/testgate` | complete full-suite stream is green; no expected-failure carve-out |
 | **Layer direction** | `release.yml` · `cmd/layerguard` | `cmd→surfaces→engine→core` import direction |
 | **Coverage matrix** | [`coverage-matrix.yml`](../.github/workflows/coverage-matrix.yml) · `cmd/coverage` | the checked-in [coverage matrix](coverage-matrix.md) matches the live registries (FU-4) |
 | **Reproducible release** | [`release.yml`](../.github/workflows/release.yml) | deterministic, CGo-free release build |

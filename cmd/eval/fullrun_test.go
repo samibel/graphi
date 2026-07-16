@@ -25,6 +25,7 @@ func TestFullRun_HermeticFixture_ProducesCompleteEvidence(t *testing.T) {
 		t.TempDir(),
 		"test",
 		outPath,
+		"",
 	)
 	if code != 0 {
 		t.Fatalf("runFullRun exit code = %d, want 0", code)
@@ -55,6 +56,9 @@ func TestFullRun_HermeticFixture_ProducesCompleteEvidence(t *testing.T) {
 	if r.Index.PeakRSSMB == 0 {
 		t.Error("peak_rss_mb is zero — getrusage was not sampled")
 	}
+	if r.StablePeakRSSMB == 0 || r.StablePeakRSSMB < r.Index.PeakRSSMB {
+		t.Errorf("stable_peak_rss_mb = %d, index peak = %d; complete-session MAXRSS not recorded", r.StablePeakRSSMB, r.Index.PeakRSSMB)
+	}
 
 	for _, class := range []string{"structural", "search", "agent_tools"} {
 		if r.WarmSamples[class] == 0 {
@@ -63,6 +67,15 @@ func TestFullRun_HermeticFixture_ProducesCompleteEvidence(t *testing.T) {
 		if len(r.WarmOps[class]) == 0 {
 			t.Errorf("op class %q lists no ops", class)
 		}
+	}
+	foundImpact := false
+	for _, op := range r.WarmOps["structural"] {
+		if op == "impact" {
+			foundImpact = true
+		}
+	}
+	if !foundImpact {
+		t.Error("stable impact operation is absent from the warm suite")
 	}
 	// Per-op resolution must cover every pooled op (ADR 0003 U2 needs to see
 	// which op dominates a class).
@@ -76,11 +89,31 @@ func TestFullRun_HermeticFixture_ProducesCompleteEvidence(t *testing.T) {
 	if len(r.Searches) == 0 || !r.Searches[0].Pass {
 		t.Errorf("manifest search assertions not verified: %+v", r.Searches)
 	}
+	if len(r.StableChecks) != 12 {
+		t.Fatalf("stable semantic checks = %d, want exactly 12: %+v", len(r.StableChecks), r.StableChecks)
+	}
+	for _, check := range r.StableChecks {
+		if !check.Pass || check.Samples == 0 || len(check.Outcomes) == 0 {
+			t.Errorf("stable operation was measured without semantic proof: %+v", check)
+		}
+	}
+	if len(r.SemanticChecks) == 0 || !r.SemanticChecks[0].Pass {
+		t.Errorf("manifest confirmed-edge assertion not enforced: %+v", r.SemanticChecks)
+	}
+}
+
+func TestRenderedAndContractOutcomeFailClosed(t *testing.T) {
+	if got := renderedOutcome([]string{"not-an-outcome"}); got != "" {
+		t.Fatalf("renderedOutcome malformed = %q, want empty", got)
+	}
+	if _, err := contractOutcome(nil, nil); err == nil {
+		t.Fatal("nil agent contract must fail semantic validation")
+	}
 }
 
 func TestFullRun_UnknownRepoIsAUsageError(t *testing.T) {
 	root := repoRoot(t)
-	code := runFullRun(filepath.Join(root, "corpus", "manifest.json"), "no-such-repo", t.TempDir(), "test", filepath.Join(t.TempDir(), "r.json"))
+	code := runFullRun(filepath.Join(root, "corpus", "manifest.json"), "no-such-repo", t.TempDir(), "test", filepath.Join(t.TempDir(), "r.json"), "")
 	if code != 2 {
 		t.Fatalf("exit code = %d, want 2 (usage error)", code)
 	}

@@ -150,11 +150,21 @@ func TestDefinition(t *testing.T) {
 	store, ids := seedGraph(t)
 	svc := query.New(store)
 
-	res, err := svc.Definition(ctx, ids["pkg.A"])
+	res, err := svc.Definition(ctx, ids["pkg.A_inner"])
 	if err != nil {
 		t.Fatal(err)
 	}
-	mustHaveNode(t, res, ids["pkg.A_inner"])
+	if res.Outcome != query.OutcomeFound {
+		t.Fatalf("outcome = %s, want found", res.Outcome)
+	}
+	mustHaveNode(t, res, ids["pkg.A"])
+	e, ok := findEdge(res, ids["pkg.A"], ids["pkg.A_inner"], query.EdgeKindDefines)
+	if !ok {
+		t.Fatal("missing A->A_inner defines edge")
+	}
+	if len(e.Evidence) != 1 || e.Evidence[0] != "pkg/A.go:2" {
+		t.Fatalf("definition evidence not preserved: %+v", e.Evidence)
+	}
 }
 
 // AC4 + refinement AC3: unresolved symbol → explicit not-found, no error.

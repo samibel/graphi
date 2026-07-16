@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -43,21 +44,58 @@ func TestCharacterization_HTTPRoutes_Snapshot(t *testing.T) {
 	}
 }
 
-// labsRoutes is the set of Labs / non-core routes SCOPE-01 flags as not-Stable
-// and SW-112 (SAFE-01) fail-closes behind the GRAPHI_HTTP_LABS opt-in.
-var labsRoutes = []struct {
-	method string
-	path   string
-}{
-	{http.MethodGet, "/prs"},
-	{http.MethodGet, "/prs/triage"},
-	{http.MethodGet, "/prs/conflicts"},
-	{http.MethodGet, "/prs/suggest-reviewers"},
-	{http.MethodGet, "/branches/compare"},
-	{http.MethodGet, "/reviews/critique"},
-	{http.MethodPost, "/memory"},
-	{http.MethodPost, "/distill"},
-	{http.MethodPost, "/skillgen"},
+type routeProbe struct {
+	method     string
+	path       string
+	capability string
+}
+
+// labsRouteProbes derives its coverage from the production route table. Mixed
+// routes use a representative Labs operation; every fixed route is classified
+// by the resolver stored beside its handler. This prevents the test itself from
+// becoming another hand-maintained list that can omit a newly registered route.
+func labsRouteProbes(t *testing.T, srv *Server) []routeProbe {
+	t.Helper()
+	var probes []routeProbe
+	for _, registered := range srv.routes() {
+		parts := strings.SplitN(registered.Pattern, " ", 2)
+		if len(parts) != 2 {
+			t.Fatalf("invalid route pattern %q", registered.Pattern)
+		}
+		method, path := parts[0], parts[1]
+		reqPath := path
+		request := newLocalRequest(method, path, nil)
+		switch registered.Pattern {
+		case "GET /query/{op}":
+			reqPath = "/query/implementers?symbol=x"
+			request = newLocalRequest(method, reqPath, nil)
+			request.SetPathValue("op", "implementers")
+		case "GET /analyze/{analyzer}":
+			reqPath = "/analyze/taint?symbol=x"
+			request = newLocalRequest(method, reqPath, nil)
+			request.SetPathValue("analyzer", "taint")
+		case "GET /events":
+			reqPath = "/events?analyzer=taint"
+			request = newLocalRequest(method, reqPath, nil)
+		case "GET /wiki/c/{id}":
+			reqPath = "/wiki/c/1"
+			request = newLocalRequest(method, reqPath, nil)
+			request.SetPathValue("id", "1")
+		}
+		capability := registered.capability(request)
+		if isLabsCapability(capability) {
+			probes = append(probes, routeProbe{method: method, path: reqPath, capability: capability})
+		}
+	}
+	return probes
+}
+
+func TestRoutes_EveryEntryHasCapabilityClassification(t *testing.T) {
+	for _, registered := range New(&stubClient{}, nil).routes() {
+		if registered.capability == nil {
+			t.Errorf("route %q has no capability classification", registered.Pattern)
+		}
+	}
 }
 
 // TestSAFE01_LabsRoutes_FailClosedByDefault is the SW-112 (SAFE-01) gate that
@@ -73,33 +111,25 @@ var labsRoutes = []struct {
 func TestSAFE01_LabsRoutes_FailClosedByDefault(t *testing.T) {
 	t.Setenv(LabsEnvVar, "") // pin the default: no opt-in
 	srv := New(&stubClient{}, nil)
-	ts := httptest.NewServer(srv.Handler())
-	defer ts.Close()
 
-	for _, r := range labsRoutes {
-		req, err := http.NewRequest(r.method, ts.URL+r.path, http.NoBody)
-		if err != nil {
-			t.Fatalf("build request %s %s: %v", r.method, r.path, err)
+	for _, probe := range labsRouteProbes(t, srv) {
+		req := newLocalRequest(probe.method, probe.path, nil)
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("%s %s (%s): want 403 (fail-closed Labs route, SAFE-01), got %d", probe.method, probe.path, probe.capability, rec.Code)
 		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatalf("%s %s: %v", r.method, r.path, err)
-		}
-		status := resp.StatusCode
-		_ = resp.Body.Close()
-		if status != http.StatusForbidden {
-			t.Errorf("%s %s: want 403 (fail-closed Labs route, SAFE-01), got %d", r.method, r.path, status)
+		if !strings.Contains(rec.Body.String(), `"code":"labs_disabled"`) {
+			t.Errorf("%s %s (%s): missing labs_disabled error: %s", probe.method, probe.path, probe.capability, rec.Body.String())
 		}
 	}
 
 	// Guard scope check: a Stable read route must NOT be captured by the guard.
-	resp, err := http.Get(ts.URL + "/healthz")
-	if err != nil {
-		t.Fatalf("GET /healthz: %v", err)
-	}
-	_ = resp.Body.Close()
-	if resp.StatusCode == http.StatusForbidden {
-		t.Errorf("GET /healthz: stable route was fail-closed by the Labs guard (%d)", resp.StatusCode)
+	req := newLocalRequest(http.MethodGet, "/query/callers?symbol=x", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code == http.StatusForbidden {
+		t.Errorf("GET /query/callers: stable route was fail-closed by the Labs guard (%d)", rec.Code)
 	}
 }
 
@@ -111,22 +141,40 @@ func TestSAFE01_LabsRoutes_FailClosedByDefault(t *testing.T) {
 func TestSAFE01_LabsRoutes_ExplicitOptIn(t *testing.T) {
 	t.Setenv(LabsEnvVar, "1")
 	srv := New(&stubClient{}, nil)
-	ts := httptest.NewServer(srv.Handler())
-	defer ts.Close()
 
-	for _, r := range labsRoutes {
-		req, err := http.NewRequest(r.method, ts.URL+r.path, http.NoBody)
-		if err != nil {
-			t.Fatalf("build request %s %s: %v", r.method, r.path, err)
+	for _, probe := range labsRouteProbes(t, srv) {
+		req := newLocalRequest(probe.method, probe.path, nil)
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, req)
+		if rec.Code == http.StatusForbidden || rec.Code == http.StatusUnauthorized {
+			t.Errorf("%s %s (%s): opted-in Labs route still rejected (%d)", probe.method, probe.path, probe.capability, rec.Code)
 		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatalf("%s %s: %v", r.method, r.path, err)
-		}
-		status := resp.StatusCode
-		_ = resp.Body.Close()
-		if status == http.StatusForbidden || status == http.StatusUnauthorized {
-			t.Errorf("%s %s: opted-in Labs route still rejected (%d)", r.method, r.path, status)
+	}
+}
+
+func TestSAFE01_StableCapabilityVariantsRemainAvailable(t *testing.T) {
+	t.Setenv(LabsEnvVar, "")
+	srv := New(&stubClient{}, nil)
+	paths := []string{
+		"/query/callers?symbol=x",
+		"/query/callees?symbol=x",
+		"/query/references?symbol=x",
+		"/query/definition?symbol=x",
+		"/query/neighborhood?symbol=x",
+		"/search?q=x",
+		"/analyze/impact?symbol=x",
+		"/analyze/agent_brief",
+		"/analyze/change_risk?target=x",
+		"/analyze/explain_symbol?symbol=x",
+		"/analyze/related_files?target=x",
+		"/events?analyzer=impact&symbol=x",
+	}
+	for _, path := range paths {
+		req := newLocalRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, req)
+		if rec.Code == http.StatusForbidden {
+			t.Errorf("GET %s: stable capability was rejected by Labs guard: %s", path, rec.Body.String())
 		}
 	}
 }

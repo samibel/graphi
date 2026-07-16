@@ -1,5 +1,10 @@
 # RC-Endgame-Pipeline: die letzten vier Pakete bis zum Focused Core RC
 
+> **Historical execution snapshot.** Die Status-/UNKNOWN-Angaben unten stammen
+> vom damaligen Branch und sind nicht der aktuelle Contract of Record. Für den
+> implementierten Stand und die heute offenen Performance-UNKNOWNs gelten ADR
+> 0002, ADR 0003 und `docs/eval/hero-protocol.md`.
+>
 > **Status:** EXECUTED — Stages 1–3 umgesetzt (`RUN-01` @ `5b9eeb5`, `EVAL-01`
 > @ `660b5a3`, `EVAL-02` @ `ecef54f`); Stage 4 entscheidungsreif, siehe das
 > RC-Dossier `docs/rc/focused-core-rc.md` (Go/No-Go: Sami). Stage 0 (Review &

@@ -5,7 +5,7 @@
      Regenerate:      go run ./cmd/coverage -generate
      CI-enforced:     internal/coverage drift guard fails the build if this
                       matrix omits, adds, or mislabels a live capability
-                      (registered parsers/analyzers, advertised MCP tools, present surfaces). -->
+                      (registered parsers/analyzers, the maximal MCP registry, present surfaces). -->
 
 Every row below is checked against the live registries by the `coverage-matrix`
 CI gate (`internal/coverage`). A docs-only change that contradicts the code — a
@@ -15,9 +15,11 @@ missing capability, a phantom "shipped" entry, or a live capability marked
 FROZEN to exactly the 12 operations below; the guard fails the build if a 13th
 row is tagged stable or one is dropped.
 
-**The 12 stable operations (frozen):** `impact`, `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `neighborhood`, `references`, `related_files`, `search`.
+**The 12 stable operations (frozen):** `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `impact`, `neighborhood`, `references`, `related_files`, `search`.
 
-Total capabilities: **142**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **43-tool** union (32 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
+
+Total capabilities: **143**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -60,7 +62,7 @@ Total capabilities: **142**. See [`architecture-plan.md`](architecture-plan.md) 
 | `contracts` | 🧪 labs | ✅ shipped | EP-005 | producer/consumer contract drift detection. |
 | `critique-review` | 🧪 labs | ✅ shipped | EP-018 | SW-108 (capstone): deterministic graph-evidence critique of an EXISTING PR review — replays the EP-007 risk/blast/centrality/taint oracle over the touched set and runs a three-way diff (gap / over_flag / unsupported_claim) against the review; deterministic resolveRef anchoring with an honest unanchored tally (never guessed); NO LLM prose; total order type→NodeId→anchor; zero engine egress (the only egress is the surface review fetch). |
 | `git-history` | 🧪 labs | ✅ shipped | EP-005 | churn / bus-factor / co-change signals. |
-| `impact` | 🟢 stable | ✅ shipped | EP-004 | forward/reverse blast-radius reachability. |
+| `impact` | 🧪 labs | ✅ shipped | EP-004 | analyzer implementation reachable through the Labs generic dispatcher; the dedicated fixed-dispatch MCP/CLI impact operation is the Stable surface. |
 | `interproc` | 🧪 labs | ✅ shipped | EP-005 | interprocedural fixpoint over per-procedure gen/kill summaries. |
 | `metrics` | 🧪 labs | ✅ shipped | EP-004 | graph centrality / hub-bridge metrics. |
 | `notebook-ingest` | 🧪 labs | ✅ shipped | EP-017 | SW-104: SW-100 notebook (.ipynb) cell provenance surfaced behind the single dispatch table. |
@@ -74,7 +76,7 @@ Total capabilities: **142**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage-prs` | 🧪 labs | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | 🧪 labs | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (42)
+## MCP tools (43)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -99,6 +101,7 @@ Total capabilities: **142**. See [`architecture-plan.md`](architecture-plan.md) 
 | `distill` | 🧪 labs | ✅ shipped | EP-012 | session distillation into a compact decision record. |
 | `explain_symbol` | 🟢 stable | ✅ shipped | EP-020 | SW-115: compact, cited symbol-identity summary (definition + callers/callees/references) over the live graph; ambiguous references return candidates; CLI parity via `graphi explain-symbol`. |
 | `find_clones` | 🧪 labs | ✅ shipped | EP-013 | structural clone-group detection from a JSON config (G4). |
+| `impact` | 🟢 stable | ✅ shipped | EP-004 | dedicated default-profile entry for the frozen Stable impact operation; dispatch is fixed to StableClient.Impact with no generic analyzer selector. |
 | `implementers` | 🧪 labs | ✅ shipped | EP-011 | structural query: types that implement/embed a symbol (G2). |
 | `implements` | 🧪 labs | ✅ shipped | EP-011 | structural query: interfaces/types a symbol implements (G2). |
 | `list_prs` | 🧪 labs | ✅ shipped | EP-018 | SW-105: read-only forge enumeration of open PRs (metadata only; no scoring, no comment posting). |

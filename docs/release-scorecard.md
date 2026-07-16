@@ -1,5 +1,9 @@
 # Eval Report
 
+> Historical internal snapshot for commit `fd2be7c899de689d470ed2891971c7508b4c465d`.
+> It is not the current release result, an independent 9/10 project rating, a
+> production-readiness certification, or evidence of superiority over Graphify.
+
 **Timestamp:** 2026-07-04T17:18:21Z
 **Version:** dev
 **Commit:** fd2be7c899de689d470ed2891971c7508b4c465d

@@ -52,7 +52,8 @@ type Params struct {
 	// Empty defaults to Reverse (dependents / blast radius).
 	Direction Direction `json:"direction,omitempty"`
 	// Kinds constrains the edge kinds traversed (impact). Empty = the default
-	// dependency kinds {calls, references, defines}.
+	// dependency kinds {calls, references}. `defines` is containment rather than
+	// dependency and must be requested explicitly.
 	Kinds []string `json:"kinds,omitempty"`
 	// MaxNodes bounds the number of reached/scored nodes returned (impact,
 	// metrics). Zero/negative means the analyzer default cap. The bound is an

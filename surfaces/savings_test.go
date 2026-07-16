@@ -39,7 +39,7 @@ func newSavingsClient(t *testing.T) (client.Client, *ledger.Ledger) {
 // the canonical text payload (the structured readout JSON).
 func readoutOverMCP(t *testing.T, c client.Client) []byte {
 	t.Helper()
-	srv := mcp.NewServerWithClient(c)
+	srv := mcp.NewServerWithClient(c, mcp.WithLabs())
 	reqBody, _ := json.Marshal(map[string]any{
 		"jsonrpc": "2.0", "id": 1, "method": "tools/call",
 		"params": map[string]any{"name": "savings", "arguments": map[string]any{}},

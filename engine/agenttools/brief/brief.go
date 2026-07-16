@@ -20,6 +20,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/memory"
+	"github.com/samibel/graphi/engine/query"
 )
 
 // Tier is the product-level confidence classification for every brief item.
@@ -78,7 +79,7 @@ const (
 	maxTopic     = 5
 )
 
-// graphView is the single-pass digest of the store the sections draw from.
+// graphView is the compact aggregate digest the sections draw from.
 type graphView struct {
 	fileDegree    map[string]int // path → incident edge endpoints
 	fileSymbols   map[string]int // path → node count
@@ -182,7 +183,9 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 	}, nil
 }
 
-// buildView digests the graph once and resolves the topic when given.
+// buildView reads compact backend aggregates and resolves the topic when given.
+// It never falls back to Nodes(Query{})/Edges(Query{}): on SQLite that fallback
+// would materialize the whole graph merely to render a bounded brief.
 func buildView(ctx context.Context, p Params) *graphView {
 	v := &graphView{
 		fileDegree:   map[string]int{},
@@ -195,60 +198,82 @@ func buildView(ctx context.Context, p Params) *graphView {
 		return v
 	}
 	reader := p.Deps.Query.Reader()
-	nodes, err := reader.Nodes(ctx, graphstore.Query{})
-	if err != nil {
-		v.unavailErr = err
+	aggregates, ok := reader.(graphstore.BriefAggregatePort)
+	if !ok {
+		v.unavailErr = query.ErrSelectiveLookupUnavailable
 		return v
 	}
-	edges, err := reader.Edges(ctx, graphstore.Query{})
+	stats, err := aggregates.BriefStats(ctx, maxSymbols)
 	if err != nil {
 		v.unavailErr = err
 		return v
 	}
 	v.available = true
-	v.totalNodes = len(nodes)
-	v.totalEdges = len(edges)
-	for _, n := range nodes {
-		v.nodes[n.ID()] = n
-		if n.SourcePath() != "" {
-			v.fileSymbols[n.SourcePath()]++
+	v.totalNodes = stats.TotalNodes
+	v.totalEdges = stats.TotalEdges
+	for tier, count := range stats.TierCounts {
+		v.tierCount[tier] = count
+	}
+	for _, file := range stats.Files {
+		v.fileSymbols[file.Path] = file.SymbolCount
+		if file.EdgeEndpoints > 0 {
+			v.fileDegree[file.Path] = file.EdgeEndpoints
 		}
 	}
-	for _, e := range edges {
-		v.tierCount[e.Tier()]++
-		if from, ok := v.nodes[e.From()]; ok && from.SourcePath() != "" {
-			v.fileDegree[from.SourcePath()]++
-		}
-		if to, ok := v.nodes[e.To()]; ok && to.SourcePath() != "" {
-			v.fileDegree[to.SourcePath()]++
-		}
-		v.nodeInDegree[e.To()]++
+	for _, symbol := range stats.TopInbound {
+		n := symbol.Node
+		v.nodes[n.ID()] = n
+		v.nodeInDegree[n.ID()] = symbol.InboundEdges
 	}
 	if p.Topic != "" {
 		// Resolution uses the SAME resolver as explain_symbol/related_files, so
 		// a topic that explain-symbol can answer is never reported unresolved.
 		// A resolved topic with no cross-file edges (single-file project) is
 		// still resolved — related files are an enrichment, not the test.
-		if res, err := resolve.Seeds(ctx, p.Deps, p.Topic, maxTopic); err == nil {
-			switch {
-			case res.Resolved():
-				v.topicResolved = true
-				v.topicNodes = res.Nodes
-			case res.Ambiguous():
-				v.topicResolved = true
-				for _, c := range res.Candidates {
-					v.topicNodes = append(v.topicNodes, c.Node)
-				}
-				if len(v.topicNodes) > maxTopic {
-					v.topicNodes = v.topicNodes[:maxTopic]
-				}
+		res, err := resolve.Seeds(ctx, p.Deps, p.Topic, maxTopic)
+		if err != nil {
+			v.available = false
+			v.unavailErr = err
+			return v
+		}
+		switch {
+		case res.Resolved():
+			v.topicResolved = true
+			v.topicNodes = res.Nodes
+		case res.Ambiguous():
+			v.topicResolved = true
+			for _, c := range res.Candidates {
+				v.topicNodes = append(v.topicNodes, c.Node)
+			}
+			if len(v.topicNodes) > maxTopic {
+				v.topicNodes = v.topicNodes[:maxTopic]
 			}
 		}
 		if v.topicResolved {
-			if res, err := related.Files(ctx, p.Deps, p.Topic, related.DirectionBoth, maxTopic); err == nil {
-				if res.Outcome == contract.OutcomeFound || res.Outcome == contract.OutcomePartial {
-					v.topicFiles = res.Items
+			lookup, ok := reader.(graphstore.GraphLookup)
+			if !ok {
+				v.available = false
+				v.unavailErr = query.ErrSelectiveLookupUnavailable
+				return v
+			}
+			for _, n := range v.topicNodes {
+				v.nodes[n.ID()] = n
+				incoming, err := lookup.Incoming(ctx, n.ID())
+				if err != nil {
+					v.available = false
+					v.unavailErr = err
+					return v
 				}
+				v.nodeInDegree[n.ID()] = len(incoming)
+			}
+			relatedResult, err := related.Files(ctx, p.Deps, p.Topic, related.DirectionBoth, maxTopic)
+			if err != nil {
+				v.available = false
+				v.unavailErr = err
+				return v
+			}
+			if relatedResult.Outcome == contract.OutcomeFound || relatedResult.Outcome == contract.OutcomePartial {
+				v.topicFiles = relatedResult.Items
 			}
 		}
 	}

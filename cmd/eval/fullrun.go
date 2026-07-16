@@ -4,7 +4,8 @@ package main
 // ONE pinned corpus repository end-to-end — clone (fail-closed SHA pin) →
 // cold full index (wallclock, peak RSS, DB size) → warm per-op-class p95 over
 // the same in-process session — and emits the raw internal/evalreport JSON
-// the ADR 0003 U5 budgets are frozen from.
+// used for fail-closed compatibility limits and, once the same harness method
+// has a pinned reference run, comparable performance ratchets.
 //
 // One repo per process is deliberate: getrusage MAXRSS is a process-lifetime
 // peak, so batching repos would attribute the largest repo's peak to every
@@ -30,6 +31,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/query"
@@ -50,12 +52,12 @@ const (
 )
 
 const fullRunNotes = "in-process session model: engine services over one open SQLite store; " +
-	"cold index timed around IngestAll; peak RSS = getrusage MAXRSS sampled after the index pass; " +
-	"warm p95 pooled per op class over the recorded warm_ops/warm_samples"
+	"cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; " +
+	"degree-stratified symbol sample; all 12 stable operations covered; warm p95 pooled per op class over the recorded warm_ops/warm_samples"
 
 // runFullRun executes the full measurement for one manifest entry and writes
 // the report to outPath. Returns the process exit code.
-func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath string) int {
+func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPath string) int {
 	ctx := context.Background()
 
 	m, err := corpus.LoadManifest(manifestPath)
@@ -89,6 +91,23 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath string) in
 	}
 
 	run := fullRepoRun(ctx, *entry, filepath.Dir(manifestPath), workDir)
+	if budgetPath != "" {
+		run.BudgetSource = budgetPath
+		if run.Pass {
+			checks, err := checkFullRunBudgets(budgetPath, runnerClass, run)
+			if err != nil {
+				run.Failures = append(run.Failures, "budgets: "+err.Error())
+			} else {
+				run.BudgetChecks = checks
+				for _, check := range checks {
+					if !check.Pass {
+						run.Failures = append(run.Failures, fmt.Sprintf("budget %s exceeded: %.3f %s > %.3f %s", check.Name, check.Measured, check.Unit, check.Budget, check.Unit))
+					}
+				}
+			}
+			run.Pass = len(run.Failures) == 0
+		}
+	}
 
 	report := evalreport.FullRunReport{
 		Header:      evalreport.NewHeader("0.0.0-dev", resolveCommit()),
@@ -162,7 +181,7 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 
 	// 2. Cold full index into a fresh on-disk SQLite store (the shipped
-	// session backend), timed; peak RSS sampled immediately afterwards.
+	// session backend), timed; index-only peak RSS sampled immediately afterwards.
 	dbPath := filepath.Join(workDir, e.Name+".db")
 	store, err := graphstore.OpenSQLite(dbPath)
 	if err != nil {
@@ -182,54 +201,113 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	run.Index.WallclockMS = time.Since(indexStart).Milliseconds()
 	run.Index.PeakRSSMB = peakRSSMB()
 
-	nodes, err := store.Nodes(ctx, graphstore.Query{})
+	aggregate, ok := any(store).(graphstore.BriefAggregatePort)
+	if !ok {
+		return fail("inventory", fmt.Errorf("BriefAggregatePort unavailable"))
+	}
+	stats, err := aggregate.BriefStats(ctx, 0)
 	if err != nil {
-		return fail("nodes", err)
+		return fail("inventory", err)
 	}
-	edges, err := store.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return fail("edges", err)
-	}
-	run.Index.Nodes, run.Index.Edges = len(nodes), len(edges)
-	files := map[string]struct{}{}
-	for _, n := range nodes {
-		if p := n.SourcePath(); p != "" {
-			files[p] = struct{}{}
-		}
-	}
-	run.Index.Files = len(files)
+	run.Index.Nodes, run.Index.Edges, run.Index.Files = stats.TotalNodes, stats.TotalEdges, len(stats.Files)
 
 	// 3. Warm per-op-class p95 over the same open store, driven through the
 	// same FixtureEngine the hero suite uses.
 	eng := scenario.NewFixtureEngine(resolve.Deps{Query: query.New(store), Search: search.New(store)})
-	sample := sampleSymbols(nodes, fullRunSymbolSample)
-	if len(sample) == 0 {
+	eng.RepoRoot = repoDir
+	eng.ProjectName = e.Name
+	sampler, ok := any(store).(graphstore.DegreeSamplePort)
+	if !ok {
+		return fail("sample", fmt.Errorf("DegreeSamplePort unavailable"))
+	}
+	sampleNodes, err := sampler.DegreeStratifiedSymbols(ctx, fullRunSymbolSample)
+	if err != nil {
+		return fail("sample", err)
+	}
+	if len(sampleNodes) == 0 {
 		return fail("sample", fmt.Errorf("index produced no function/method symbols to measure"))
 	}
 
 	perOp := map[string][]time.Duration{}
 	opClass := map[string]string{}
-	timeOp := func(class, op string, invoke func() error) {
+	stableChecks := map[string]*evalreport.StableOperationCheck{}
+	checkFor := func(op, requirement string) *evalreport.StableOperationCheck {
+		check := stableChecks[op]
+		if check == nil {
+			check = &evalreport.StableOperationCheck{
+				Operation: op, Requirement: requirement, Outcomes: map[string]int{}, Pass: true,
+			}
+			stableChecks[op] = check
+		}
+		return check
+	}
+	recordOutcome := func(op, requirement, outcome string, allowed ...string) bool {
+		check := checkFor(op, requirement)
+		check.Samples++
+		if outcome == "" {
+			outcome = "missing"
+		}
+		check.Outcomes[outcome]++
+		for _, want := range allowed {
+			if outcome == want {
+				return true
+			}
+		}
+		if check.Pass {
+			run.Failures = append(run.Failures, fmt.Sprintf("stable %s returned outcome %q; require %s", op, outcome, requirement))
+		}
+		check.Pass = false
+		return false
+	}
+	timeOp := func(class, op, requirement string, allowed []string, invoke func() (string, error)) {
 		start := time.Now()
-		err := invoke()
+		outcome, err := invoke()
 		d := time.Since(start)
 		if err != nil {
-			run.Failures = append(run.Failures, fmt.Sprintf("warm %s: %v", op, err))
+			check := checkFor(op, requirement)
+			check.Samples++
+			check.Outcomes["error"]++
+			if check.Pass {
+				run.Failures = append(run.Failures, fmt.Sprintf("warm %s: %v", op, err))
+			}
+			check.Pass = false
+			return
+		}
+		if !recordOutcome(op, requirement, outcome, allowed...) {
 			return
 		}
 		perOp[op] = append(perOp[op], d)
 		opClass[op] = class
 	}
 
-	for _, id := range sample {
-		ref := string(id)
+	indexOutcome := "empty"
+	if run.Index.Nodes > 0 && run.Index.Files > 0 {
+		indexOutcome = "found"
+	}
+	recordOutcome(scenario.OpIndex, "successful ingest with non-empty node and file inventory", indexOutcome, "found")
+
+	for _, sampled := range sampleNodes {
+		ref := string(sampled.ID())
 		for _, op := range []string{scenario.OpDefinition, scenario.OpCallers, scenario.OpCallees, scenario.OpReferences} {
 			op := op
-			timeOp("structural", op, func() error { _, _, err := eng.Invoke(op, map[string]string{"symbol": ref}); return err })
+			allowed := []string{"found", "empty"}
+			requirement := "resolved symbol; found or legitimately empty"
+			if op == scenario.OpDefinition {
+				allowed = []string{"found"}
+				requirement = "resolved symbol with at least one definition"
+			}
+			timeOp("structural", op, requirement, allowed, func() (string, error) {
+				lines, _, err := eng.Invoke(op, map[string]string{"symbol": ref})
+				return renderedOutcome(lines), err
+			})
 		}
-		timeOp("structural", scenario.OpNeighborhood, func() error {
-			_, _, err := eng.Invoke(scenario.OpNeighborhood, map[string]string{"symbol": ref, "depth": "1"})
-			return err
+		timeOp("structural", scenario.OpNeighborhood, "resolved symbol; bounded neighborhood outcome", []string{"found", "empty"}, func() (string, error) {
+			lines, _, err := eng.Invoke(scenario.OpNeighborhood, map[string]string{"symbol": ref, "depth": "1"})
+			return renderedOutcome(lines), err
+		})
+		timeOp("structural", scenario.OpImpact, "resolved symbol; bounded impact outcome", []string{"found", "empty"}, func() (string, error) {
+			lines, _, err := eng.Invoke(scenario.OpImpact, map[string]string{"symbol": ref, "direction": "reverse", "max_nodes": "256"})
+			return renderedOutcome(lines), err
 		})
 	}
 
@@ -250,28 +328,52 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 			run.Failures = append(run.Failures, fmt.Sprintf("search %q: expected non-empty, got none", q))
 		}
 		for range fullRunSearchIters {
-			timeOp("search", scenario.OpSearch, func() error {
-				_, _, err := eng.Invoke(scenario.OpSearch, map[string]string{"query": q})
-				return err
+			allowed := []string{"found", "empty"}
+			requirement := "valid search outcome"
+			if s.ExpectNonEmpty {
+				allowed = []string{"found"}
+				requirement = "manifest-promised non-empty search"
+			}
+			timeOp("search", scenario.OpSearch, requirement, allowed, func() (string, error) {
+				lines, _, err := eng.Invoke(scenario.OpSearch, map[string]string{"query": q})
+				return renderedOutcome(lines), err
 			})
 		}
 	}
 
-	agentSample := sample
+	for _, assertion := range e.ConfirmedEdges {
+		check := evaluateConfirmedEdge(ctx, eng, assertion)
+		run.SemanticChecks = append(run.SemanticChecks, check)
+		if !check.Pass {
+			run.Failures = append(run.Failures, fmt.Sprintf("semantic %s: %s (observed %s)", check.Name, check.Requirement, check.Observed))
+		}
+	}
+
+	agentSample := sampleNodes
 	if len(agentSample) > fullRunAgentToolSample {
 		agentSample = agentSample[:fullRunAgentToolSample]
 	}
-	for _, id := range agentSample {
-		ref := string(id)
+	for _, sampled := range agentSample {
+		ref := string(sampled.ID())
 		for _, op := range []string{scenario.OpExplainSymbol, scenario.OpChangeRisk, scenario.OpRelatedFiles} {
 			op := op
-			timeOp("agent_tools", op, func() error { _, err := eng.InvokeContract(ctx, op, map[string]string{"symbol": ref}); return err })
+			allowed := []string{"found"}
+			requirement := "resolved target with a valid found envelope"
+			if op == scenario.OpRelatedFiles {
+				allowed = []string{"found", "empty"}
+				requirement = "resolved target; found or legitimately empty related-file set"
+			}
+			timeOp("agent_tools", op, requirement, allowed, func() (string, error) {
+				result, err := eng.InvokeContract(ctx, op, map[string]string{"symbol": ref})
+				return contractOutcome(result, err)
+			})
 		}
 	}
 	for i := 0; i < fullRunBriefIters; i++ {
-		timeOp("agent_tools", scenario.OpAgentBrief, func() error {
-			_, err := eng.InvokeContract(ctx, scenario.OpAgentBrief, map[string]string{"topic": e.Name})
-			return err
+		topic := string(sampleNodes[i%len(sampleNodes)].ID())
+		timeOp("agent_tools", scenario.OpAgentBrief, "resolved topic with a valid found/partial project brief", []string{"found", "partial"}, func() (string, error) {
+			result, err := eng.InvokeContract(ctx, scenario.OpAgentBrief, map[string]string{"topic": topic})
+			return contractOutcome(result, err)
 		})
 	}
 
@@ -295,6 +397,15 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		run.WarmSamples[class] = len(ds)
 		run.WarmOps[class] = sortedKeys(classOps[class])
 	}
+	stableNames := make([]string, 0, len(stableChecks))
+	for op := range stableChecks {
+		stableNames = append(stableNames, op)
+	}
+	sort.Strings(stableNames)
+	for _, op := range stableNames {
+		run.StableChecks = append(run.StableChecks, *stableChecks[op])
+	}
+	run.StablePeakRSSMB = peakRSSMB()
 
 	// 4. DB size after a clean close (WAL checkpointed into the main file).
 	if err := store.Close(); err != nil {
@@ -308,6 +419,78 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 
 	run.Pass = len(run.Failures) == 0
 	return run
+}
+
+func renderedOutcome(lines []string) string {
+	if len(lines) == 0 {
+		return ""
+	}
+	outcome, ok := strings.CutPrefix(lines[0], "outcome:")
+	if !ok {
+		return ""
+	}
+	return outcome
+}
+
+func contractOutcome(result *contract.Result, err error) (string, error) {
+	if err != nil {
+		return "", err
+	}
+	if err := contract.ValidateResult(result); err != nil {
+		return "", fmt.Errorf("invalid contract envelope: %w", err)
+	}
+	return string(result.Outcome), nil
+}
+
+func evaluateConfirmedEdge(ctx context.Context, eng *scenario.FixtureEngine, assertion corpus.ConfirmedEdge) evalreport.SemanticCheck {
+	check := evalreport.SemanticCheck{
+		Name:        "confirmed:" + assertion.Operation + ":" + assertion.SymbolQuery,
+		Requirement: fmt.Sprintf("at least %d confirmed edge(s)", assertion.Min),
+	}
+	resp, err := eng.Deps.Search.Search(ctx, assertion.SymbolQuery, 25)
+	if err != nil {
+		check.Observed = "search error: " + err.Error()
+		return check
+	}
+	var anchor string
+	for _, match := range resp.Matches {
+		bare := match.QualifiedName
+		if i := strings.LastIndexByte(bare, '.'); i >= 0 {
+			bare = bare[i+1:]
+		}
+		if bare == assertion.SymbolQuery {
+			anchor = match.NodeID
+			break
+		}
+	}
+	if anchor == "" {
+		check.Observed = fmt.Sprintf("no exact anchor among %d search match(es)", len(resp.Matches))
+		return check
+	}
+	var result query.Result
+	switch assertion.Operation {
+	case scenario.OpCallers:
+		result, err = eng.Deps.Query.Callers(ctx, model.NodeId(anchor))
+	case scenario.OpCallees:
+		result, err = eng.Deps.Query.Callees(ctx, model.NodeId(anchor))
+	case scenario.OpReferences:
+		result, err = eng.Deps.Query.References(ctx, model.NodeId(anchor))
+	default:
+		err = fmt.Errorf("unsupported confirmed-edge operation %q", assertion.Operation)
+	}
+	if err != nil {
+		check.Observed = "query error: " + err.Error()
+		return check
+	}
+	confirmed := 0
+	for _, edge := range result.Edges {
+		if edge.Tier == "confirmed" {
+			confirmed++
+		}
+	}
+	check.Observed = fmt.Sprintf("%d confirmed edge(s) of %d total", confirmed, len(result.Edges))
+	check.Pass = confirmed >= assertion.Min
+	return check
 }
 
 // cloneAt shallow-clones url at ref into dir (fresh every run — a stale cached
@@ -330,23 +513,6 @@ func gitHead(ctx context.Context, dir string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(string(out)), nil
-}
-
-// sampleSymbols returns up to n function/method node ids in canonical NodeId
-// order (nodes arrive canonically ordered from the store), so the sample is
-// deterministic per index state.
-func sampleSymbols(nodes []model.Node, n int) []model.NodeId {
-	out := make([]model.NodeId, 0, n)
-	for _, node := range nodes {
-		switch node.Kind() {
-		case "function", "method":
-			out = append(out, node.ID())
-			if len(out) == n {
-				return out
-			}
-		}
-	}
-	return out
 }
 
 // peakRSSMB reads the process's peak resident set via getrusage. Linux

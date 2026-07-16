@@ -59,14 +59,14 @@ func TestConflictsPRsTool_Advertised(t *testing.T) {
 	withForge := client.NewDirect(query.New(store), search.New(store)).
 		WithAnalysis(analysis.NewDefaultService(store)).
 		WithForge(triageMockForge())
-	names := listToolNames(t, mcp.NewServerWithClient(withForge))
+	names := listToolNames(t, mcp.NewServerWithClient(withForge, mcp.WithLabs()))
 	if !containsStr(names, mcp.ToolConflictsPRs) {
 		t.Fatalf("conflicts_prs not advertised when forge wired; got %v", names)
 	}
 
 	noForge := client.NewDirect(query.New(store), search.New(store)).
 		WithAnalysis(analysis.NewDefaultService(store))
-	namesNo := listToolNames(t, mcp.NewServerWithClient(noForge))
+	namesNo := listToolNames(t, mcp.NewServerWithClient(noForge, mcp.WithLabs()))
 	if containsStr(namesNo, mcp.ToolConflictsPRs) {
 		t.Fatalf("conflicts_prs advertised when forge absent (should probe-hide); got %v", namesNo)
 	}

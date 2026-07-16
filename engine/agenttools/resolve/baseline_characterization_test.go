@@ -7,6 +7,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/search"
 )
 
 // countingReader instruments the query-plan shape resolve executes: legacy
@@ -21,11 +22,14 @@ type countingReader struct {
 	nodeRows  int
 	edgeCalls int // legacy listings via Edges()
 
-	selLookups  int // selective QualifiedName/SourcePath/NodesByID calls
-	selNodeRows int // rows returned by those selective lookups
+	selLookups   int // selective QualifiedName/SourcePath/NodesByID calls
+	selNodeRows  int // rows returned by those selective lookups
+	nodeBatches  int // NodesByID calls (search hydration must batch these)
+	getNodeCalls int // legacy GetNode calls (SQLite would rebuild its full cache)
 }
 
 func (c *countingReader) GetNode(ctx context.Context, id model.NodeId) (model.Node, error) {
+	c.getNodeCalls++
 	return c.inner.GetNode(ctx, id)
 }
 func (c *countingReader) GetEdge(ctx context.Context, id model.EdgeId) (model.Edge, error) {
@@ -52,6 +56,7 @@ func (c *countingReader) Outgoing(ctx context.Context, id model.NodeId, kinds ..
 }
 func (c *countingReader) NodesByID(ctx context.Context, ids []model.NodeId) ([]model.Node, error) {
 	c.selLookups++
+	c.nodeBatches++
 	ns, err := c.inner.NodesByID(ctx, ids)
 	c.selNodeRows += len(ns)
 	return ns, err
@@ -70,6 +75,9 @@ func (c *countingReader) SourcePath(ctx context.Context, path string) ([]model.N
 }
 func (c *countingReader) Search(ctx context.Context, text string, limit int) ([]graphstore.RankedNode, error) {
 	return c.inner.Search(ctx, text, limit)
+}
+func (c *countingReader) SearchNodes(ctx context.Context, text string, limit int) ([]graphstore.RankedNode, error) {
+	return c.inner.SearchNodes(ctx, text, limit)
 }
 
 func seedNodes(t *testing.T, n int) (*graphstore.MemStore, string) {
@@ -136,4 +144,28 @@ func TestSelectiveGate_ResolveExact_NoFullNodeScan(t *testing.T) {
 	}
 	t.Logf("resolveExact selective plan: %d lookup(s), %d node row(s) for one exact name (old baseline scanned all %d nodes)",
 		cr.selLookups, cr.selNodeRows, total)
+}
+
+func TestSelectiveGate_SearchHydrationIsOneBatch(t *testing.T) {
+	const total = 20
+	st, _ := seedNodes(t, total)
+	cr := &countingReader{inner: st}
+	d := Deps{Query: query.New(cr), Search: search.New(cr)}
+
+	res, err := Strict(context.Background(), d, "pkg.Sym")
+	if err != nil {
+		t.Fatalf("Strict: %v", err)
+	}
+	if !res.Ambiguous() || res.Method != MethodSearch {
+		t.Fatalf("expected ambiguous search resolution, got ambiguous=%v method=%q", res.Ambiguous(), res.Method)
+	}
+	if cr.getNodeCalls != 0 {
+		t.Fatalf("SELECTIVE-GATE RED: search hydration issued %d GetNode calls; SQLite would materialize the whole graph", cr.getNodeCalls)
+	}
+	if cr.nodeBatches != 1 {
+		t.Fatalf("SELECTIVE-GATE RED: search hydration issued %d NodesByID calls, want one batch", cr.nodeBatches)
+	}
+	if len(res.Candidates) != 10 {
+		t.Fatalf("search candidate count = %d, want limit 10", len(res.Candidates))
+	}
 }

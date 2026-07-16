@@ -130,7 +130,7 @@ func decodeBody(t *testing.T, body []byte) any {
 func TestContract_QueryEnvelopeConforms(t *testing.T) {
 	schema := loadContract(t)
 	srv, _, _ := newServer(t)
-	req := httptest.NewRequest(http.MethodGet, "/query/callers?symbol=pkg.Foo", nil)
+	req := newLocalRequest(http.MethodGet, "/query/callers?symbol=pkg.Foo", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 200 {
@@ -156,7 +156,7 @@ func TestContract_ErrorEnvelopeConforms(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, c.target, nil)
+			req := newLocalRequest(http.MethodGet, c.target, nil)
 			if c.header[0] != "" {
 				req.Header.Set(c.header[0], c.header[1])
 			}
@@ -174,7 +174,7 @@ func TestContract_ContractResponseConforms(t *testing.T) {
 	schema := loadContract(t)
 	srv, _, _ := newServer(t)
 	srv.WithDescriptors([]string{"impact", "call-chain"})
-	req := httptest.NewRequest(http.MethodGet, "/contract", nil)
+	req := newLocalRequest(http.MethodGet, "/contract", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
 	if rec.Code != 200 {

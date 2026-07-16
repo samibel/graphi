@@ -57,6 +57,60 @@ func NewDirect(q *query.Service, s *search.Service) *Direct {
 	return &Direct{querySvc: q, searchSvc: s}
 }
 
+// Compile-time proof that Direct exposes its optional wiring to capability-
+// negotiating catalogs instead of relying on error-producing probe calls.
+var _ CapabilityReporter = (*Direct)(nil)
+
+// SupportsCapability reports whether this Direct binding can execute a public
+// operation with its current wiring. It is deliberately side-effect free and
+// fail-closed for unknown names: adding a new catalog entry cannot advertise it
+// until Direct explicitly maps the service it requires.
+func (d *Direct) SupportsCapability(name string) bool {
+	for _, operation := range query.Operations {
+		if name == operation {
+			return d.querySvc != nil
+		}
+	}
+	switch name {
+	case "search", "search_semantic":
+		return d.searchSvc != nil
+	case "compound", "search_ast", "find_clones", "diagnose":
+		return d.querySvc != nil
+	case "savings":
+		return d.ledger != nil
+	case "impact", "analyze",
+		"analyze_taint", "analyze_pdg", "analyze_interproc",
+		"analyze_contracts", "analyze_githistory", "analyze_pr_risk",
+		"analyze_pr_signals", "analyze_pr_questions", "suggest_reviewers",
+		"critique_review":
+		return d.analysisSvc != nil
+	case "refactor_preview", "inline", "safe_delete":
+		return d.applier != nil
+	case "refactor", "undo":
+		return d.applier != nil && d.recorder != nil
+	case "pr_comment":
+		return d.reviewSvc != nil
+	case "memory":
+		return d.memoryStore != nil
+	case "distill":
+		return d.distiller != nil
+	case "skillgen":
+		return d.skillGen != nil
+	case "list_prs":
+		return d.forge != nil
+	case "triage_prs", "conflicts_prs":
+		return d.forge != nil && d.analysisSvc != nil
+	case "compare_branches":
+		return d.branchState != nil && d.analysisSvc != nil
+	case "agent_brief", "explain_symbol", "related_files", "change_risk":
+		// These tools intentionally return a typed unavailable/partial result when
+		// graph dependencies are absent; the operation itself is fully executable.
+		return true
+	default:
+		return false
+	}
+}
+
 // WithLedger attaches a savings ledger so the Savings readout is available. It
 // returns the receiver for chaining. Without a ledger, Savings returns
 // ErrSavingsUnavailable (query/search are unaffected).

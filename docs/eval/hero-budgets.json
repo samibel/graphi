@@ -1,13 +1,13 @@
 {
   "schema_version": 2,
-  "notes": "SW-123 (EVAL-02) budgets for the hero-task suite and the pinned real-repo runs, FROZEN per ADR 0003 U5 from the first reproducible run on the reference runner class (see recorded_from). Ratchet policy (bench/bench-budget.yml precedent): budget ~= 2x the measured latency baseline (shared-runner variance headroom), ~1.5x the memory/size baseline, rounded to round numbers. Re-pinning is a reviewed edit of this file citing a newer reference run - never a code change. The gate fails when a measured value EXCEEDS its budget.",
+  "notes": "Provisional compatibility ceilings copied from the cited historical reference run. cmd/eval enforces them fail-closed when -budgets is supplied, but the current harness measures a different workload (all 12 Stable operations, degree-stratified symbols, semantic checks, post-Stable-suite MAXRSS). They are not comparable post-change ratchets. Replace them only from a new current-harness ubuntu-latest run on the current commit; never rewrite historical reports.",
   "runner_class": "ubuntu-latest",
   "os": "linux",
   "cgo_enabled": false,
   "recorded_from": {
     "commit": "71353f90720e079b84b7a0549bd51fc632bcfe37",
     "workflow_run": "https://github.com/samibel/graphi/actions/runs/29418826616",
-    "report_artifact": "docs/eval/runs/2026-07-15-ubuntu-latest/ (artifacts eval-full-{cobra,flask,guava}, hero-report)",
+    "report_artifact": "docs/eval/runs/2026-07-15-ubuntu-latest/ (historical previous-harness artifacts eval-full-{cobra,flask,guava}, hero-report)",
     "recorded_at": "2026-07-15T13:22:14Z"
   },
   "hero_suite": {
@@ -27,7 +27,7 @@
       "change_risk": 0,
       "agent_brief": 0
     },
-    "notes": "The reference run measured <1ms (millisecond-granularity floor) for every hero task on the tier-1 fixtures, so per-op millisecond budgets carry no ratchet signal there; the hero ratchet is the 20/20 pass gate (cmd/eval/hero_test.go + the eval-full hero job). Latency ratchets live in real_repos.warm_p95_us, where microsecond resolution supports them."
+    "notes": "The historical run measured <1ms (millisecond-granularity floor) for every hero task on the tier-1 fixtures, so these zero values carry no latency ratchet signal. The current correctness gate is the full scenario pass rate; performance requires a new current-harness reference run."
   },
   "real_repos": {
     "selection": ["cobra", "flask", "guava"],
@@ -63,6 +63,6 @@
         }
       }
     },
-    "notes": "guava peak_rss baseline nearly fills the 16GB reference runner; the ADR 0003 U4 disposition (whole-graph cache off the stable path) is expected to lower it - re-pin DOWNWARD after that story lands. agent_tools p95 is dominated by agent_brief's full-catalog digest (ADR 0003 U2): cobra 8.5ms / flask 5.2ms / guava 184ms while every other op stays <= 1.3ms."
+    "notes": "These values came from the previous harness and are retained only as fail-closed upper compatibility limits. In those reports impact was absent from the structural pool and peak_rss_mb was sampled immediately after IngestAll; the 11821 MB guava value therefore cannot be attributed to agent_brief or Stable cache reads. The current harness includes impact, degree-stratified sampling, semantic checks, and stable_peak_rss_mb after all Stable operations. Until a new green ubuntu-latest matrix run is pinned, current comparable latency/RSS baselines and the cause of the historical guava peak are UNKNOWN."
   }
 }

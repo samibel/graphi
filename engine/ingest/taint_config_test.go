@@ -14,6 +14,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -177,5 +178,60 @@ func TestTaintConfig_MalformedFailsIngest(t *testing.T) {
 	ing := newIngester(t, store, parse.NewDefaultRegistry())
 	if err := ing.IngestAll(ctx, repo); err == nil {
 		t.Fatal("ingest accepted a malformed .graphi/taint.json; want a hard failure (fail-closed)")
+	}
+	nodes, err := store.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatalf("read store after rejected config: %v", err)
+	}
+	if len(nodes) != 0 {
+		t.Fatalf("malformed config persisted graph content before rejection: %v", nodes)
+	}
+}
+
+func TestTaintFindingDroppedWhenUntouchedFileBecomesSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privileges on windows")
+	}
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	t.Cleanup(func() { _ = store.Close() })
+	repo := writeRepo(t, customSinkRepo(true))
+	ing := newIngester(t, store, parse.NewDefaultRegistry())
+	if err := ing.IngestAll(ctx, repo); err != nil {
+		t.Fatalf("initial ingest: %v", err)
+	}
+	findings, err := ing.IntraProcTaintFindings(ctx)
+	if err != nil || countXSS(findings) != 1 {
+		t.Fatalf("initial findings = %v, err=%v; want one XSS finding", findings, err)
+	}
+
+	outside := filepath.Join(t.TempDir(), "handlers.go")
+	if err := os.WriteFile(outside, []byte(customSinkSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	handler := filepath.Join(repo, "handlers.go")
+	if err := os.Remove(handler); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, handler); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "note.txt"), []byte("unrelated change\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	// handlers.go is deliberately absent from the explicit change set. The
+	// incremental cache sweep notices it is no longer a regular walked file; the
+	// taint refresh must not follow the outside symlink when deciding whether to
+	// retain its otherwise untouched finding.
+	if err := ing.IngestChanged(ctx, repo, []string{"note.txt"}); err != nil {
+		t.Fatalf("incremental ingest: %v", err)
+	}
+	findings, err = ing.IntraProcTaintFindings(ctx)
+	if err != nil {
+		t.Fatalf("read refreshed findings: %v", err)
+	}
+	if got := countXSS(findings); got != 0 {
+		t.Fatalf("stale finding survived file-to-symlink replacement: %v", findings)
 	}
 }

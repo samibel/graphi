@@ -144,16 +144,30 @@ type repoRecord struct {
 }
 
 // Ensure creates the per-repo state directories with owner-only permissions and
-// writes repo.json (0600) if it is absent. It is idempotent and never rewrites
-// an existing repo.json (so its deterministic content is preserved).
+// writes repo.json (0600) if it is absent. Existing state from an older release
+// is migrated to those owner-only modes on every call, including the idempotent
+// repo.json-present path. It never rewrites an existing repo.json, so its
+// deterministic content is preserved.
 func Ensure(p Paths) error {
 	if err := os.MkdirAll(p.Dir, 0o700); err != nil {
 		return fmt.Errorf("state: mkdir dir: %w", err)
 	}
+	// MkdirAll intentionally leaves an existing directory's mode untouched.
+	// Tighten it explicitly so a state tree created by an older version (or a
+	// permissive umask/manual setup) does not remain group/world-readable.
+	if err := os.Chmod(p.Dir, 0o700); err != nil {
+		return fmt.Errorf("state: chmod dir: %w", err)
+	}
 	if err := os.MkdirAll(p.Meta, 0o700); err != nil {
 		return fmt.Errorf("state: mkdir meta: %w", err)
 	}
+	if err := os.Chmod(p.Meta, 0o700); err != nil {
+		return fmt.Errorf("state: chmod meta: %w", err)
+	}
 	if _, err := os.Stat(p.RepoFile); err == nil {
+		if err := os.Chmod(p.RepoFile, 0o600); err != nil {
+			return fmt.Errorf("state: chmod repo.json: %w", err)
+		}
 		return nil // already present; leave deterministic content untouched
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("state: stat repo.json: %w", err)
@@ -165,6 +179,11 @@ func Ensure(p Paths) error {
 	}
 	if err := os.WriteFile(p.RepoFile, data, 0o600); err != nil {
 		return fmt.Errorf("state: write repo.json: %w", err)
+	}
+	// WriteFile preserves the mode if another process won the create race.
+	// Enforce the privacy contract after the write as well.
+	if err := os.Chmod(p.RepoFile, 0o600); err != nil {
+		return fmt.Errorf("state: chmod repo.json: %w", err)
 	}
 	return nil
 }

@@ -1,9 +1,7 @@
 // Connection lifecycle: owns the hardened GraphiClient + the host-side SseClient,
 // drives the status-bar connected/disconnected indicator, and bounds reconnects
 // on SSE drop. Never throws out of a command (no IDE crash) and never blocks the
-// UI thread (all network is async). The auth token lives in SecretStorage and is
-// supplied to the client/SSE as a header-only provider — never logged, never in
-// a URL (S3).
+// UI thread (all network is async).
 import * as vscode from "vscode";
 import { GraphiClient, SchemaMismatchError } from "./graphiClient";
 import { SseClient, type SseReconnectConfig } from "./sseClient";
@@ -11,7 +9,6 @@ import { assertLoopback } from "./loopback";
 import type { Contract } from "./contract";
 import { resolveAnalyzerRoute } from "./graphiClient";
 
-const SECRET_TOKEN_KEY = "graphi.authToken";
 const DEFAULT_URL = "http://127.0.0.1:8080";
 
 export type ConnState = "connected" | "disconnected" | "mismatch";
@@ -32,10 +29,7 @@ export class Connection {
   private state: ConnState = "disconnected";
   private readonly listeners = new Set<ConnectionListener>();
 
-  constructor(
-    private readonly secrets: vscode.SecretStorage,
-    private readonly subscriptions: { dispose(): unknown }[],
-  ) {
+  constructor(private readonly subscriptions: { dispose(): unknown }[]) {
     this.item = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Left,
       50,
@@ -74,23 +68,6 @@ export class Connection {
 
   maxEdges(): number {
     return vscode.workspace.getConfiguration("graphi").get<number>("maxEdges") ?? 4000;
-  }
-
-  // --- token (SecretStorage) ------------------------------------------------
-
-  /** Token provider passed to the client/SSE; reads from SecretStorage lazily. */
-  private tokenProvider = (): Promise<string | undefined> =>
-    Promise.resolve(this.secrets.get(SECRET_TOKEN_KEY)).then(
-      (v) => v ?? undefined,
-    );
-
-  async setAuthToken(token: string | undefined): Promise<void> {
-    if (token && token.length > 0) {
-      await this.secrets.store(SECRET_TOKEN_KEY, token);
-    } else {
-      await this.secrets.delete(SECRET_TOKEN_KEY);
-    }
-    await this.refresh();
   }
 
   // --- accessors ------------------------------------------------------------
@@ -138,7 +115,7 @@ export class Connection {
     }
 
     try {
-      const client = new GraphiClient(url, this.tokenProvider);
+      const client = new GraphiClient(url);
       await client.health();
       const contract = await client.getContract();
       this._client = client;
@@ -189,7 +166,6 @@ export class Connection {
           /* non-fatal stream error; status unchanged */
         },
       },
-      this.tokenProvider,
     );
     this.sse.start();
   }
@@ -227,7 +203,7 @@ export class Connection {
   }
 }
 
-/** Sanitize an error to a short, non-leaking string (no URL/token/internals). */
+/** Sanitize an error to a short, non-leaking string (no URL/internals). */
 function sanitize(e: unknown): string {
   if (e instanceof SchemaMismatchError) return e.message;
   if (e instanceof Error) return e.name;

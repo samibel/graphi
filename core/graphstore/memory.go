@@ -34,6 +34,21 @@ type MemStore struct {
 	out    map[model.NodeId]map[model.EdgeId]struct{} // From endpoint → incident edge ids
 	byQN   map[string]map[model.NodeId]struct{}       // qualified_name → node ids
 	byPath map[string]map[model.NodeId]struct{}       // source_path → node ids
+
+	// The endpoint+kind ordered adjacency indexes back BoundedGraphLookup. A
+	// bounded read touches only requested kind prefixes; it never scans a
+	// high-degree map merely to discover the first N deterministic edges. The
+	// companion ordered kind indexes let zero-kind reads take only the first
+	// required distinct kinds without scanning every endpoint+kind key.
+	inKindOrdered  map[incidentKindKey]*edgeIDTree
+	outKindOrdered map[incidentKindKey]*edgeIDTree
+	inKinds        map[model.NodeId]*kindTree
+	outKinds       map[model.NodeId]*kindTree
+}
+
+type incidentKindKey struct {
+	id   model.NodeId
+	kind string
 }
 
 // NewMemStore returns an empty in-memory store.
@@ -46,6 +61,11 @@ func NewMemStore() *MemStore {
 		out:    make(map[model.NodeId]map[model.EdgeId]struct{}),
 		byQN:   make(map[string]map[model.NodeId]struct{}),
 		byPath: make(map[string]map[model.NodeId]struct{}),
+
+		inKindOrdered:  make(map[incidentKindKey]*edgeIDTree),
+		outKindOrdered: make(map[incidentKindKey]*edgeIDTree),
+		inKinds:        make(map[model.NodeId]*kindTree),
+		outKinds:       make(map[model.NodeId]*kindTree),
 	}
 }
 
@@ -65,11 +85,63 @@ func (m *MemStore) unindexNode(n model.Node) {
 func (m *MemStore) indexEdge(e model.Edge) {
 	addToSet(m.out, e.From(), e.ID())
 	addToSet(m.in, e.To(), e.ID())
+	addToEdgeIDTree(m.outKindOrdered, incidentKindKey{id: e.From(), kind: e.Kind()}, e.ID())
+	addToEdgeIDTree(m.inKindOrdered, incidentKindKey{id: e.To(), kind: e.Kind()}, e.ID())
+	addToKindTree(m.outKinds, e.From(), e.Kind())
+	addToKindTree(m.inKinds, e.To(), e.Kind())
 }
 
 func (m *MemStore) unindexEdge(e model.Edge) {
 	dropFromSet(m.out, e.From(), e.ID())
 	dropFromSet(m.in, e.To(), e.ID())
+	if dropFromEdgeIDTree(m.outKindOrdered, incidentKindKey{id: e.From(), kind: e.Kind()}, e.ID()) {
+		dropFromKindTree(m.outKinds, e.From(), e.Kind())
+	}
+	if dropFromEdgeIDTree(m.inKindOrdered, incidentKindKey{id: e.To(), kind: e.Kind()}, e.ID()) {
+		dropFromKindTree(m.inKinds, e.To(), e.Kind())
+	}
+}
+
+func addToEdgeIDTree[K comparable](idx map[K]*edgeIDTree, key K, id model.EdgeId) {
+	tree := idx[key]
+	if tree == nil {
+		tree = &edgeIDTree{}
+		idx[key] = tree
+	}
+	tree.insert(id)
+}
+
+func dropFromEdgeIDTree[K comparable](idx map[K]*edgeIDTree, key K, id model.EdgeId) bool {
+	tree := idx[key]
+	if tree == nil {
+		return false
+	}
+	tree.delete(id)
+	if tree.len() == 0 {
+		delete(idx, key)
+		return true
+	}
+	return false
+}
+
+func addToKindTree(idx map[model.NodeId]*kindTree, id model.NodeId, kind string) {
+	tree := idx[id]
+	if tree == nil {
+		tree = &kindTree{}
+		idx[id] = tree
+	}
+	tree.insert(kind)
+}
+
+func dropFromKindTree(idx map[model.NodeId]*kindTree, id model.NodeId, kind string) {
+	tree := idx[id]
+	if tree == nil {
+		return
+	}
+	tree.delete(kind)
+	if tree.len() == 0 {
+		delete(idx, id)
+	}
 }
 
 func addToSet[K comparable, V comparable](idx map[K]map[V]struct{}, k K, v V) {
@@ -369,10 +441,18 @@ func (m *MemStore) Load(ctx context.Context, path string) error {
 	newEdges := make(map[model.EdgeId]model.Edge, len(g.Edges()))
 	newIn := make(map[model.NodeId]map[model.EdgeId]struct{})
 	newOut := make(map[model.NodeId]map[model.EdgeId]struct{})
+	newInKindOrdered := make(map[incidentKindKey]*edgeIDTree)
+	newOutKindOrdered := make(map[incidentKindKey]*edgeIDTree)
+	newInKinds := make(map[model.NodeId]*kindTree)
+	newOutKinds := make(map[model.NodeId]*kindTree)
 	for _, e := range g.Edges() {
 		newEdges[e.ID()] = e
 		addToSet(newOut, e.From(), e.ID())
 		addToSet(newIn, e.To(), e.ID())
+		addToEdgeIDTree(newOutKindOrdered, incidentKindKey{id: e.From(), kind: e.Kind()}, e.ID())
+		addToEdgeIDTree(newInKindOrdered, incidentKindKey{id: e.To(), kind: e.Kind()}, e.ID())
+		addToKindTree(newOutKinds, e.From(), e.Kind())
+		addToKindTree(newInKinds, e.To(), e.Kind())
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -385,6 +465,10 @@ func (m *MemStore) Load(ctx context.Context, path string) error {
 	m.byPath = newPath
 	m.in = newIn
 	m.out = newOut
+	m.inKindOrdered = newInKindOrdered
+	m.outKindOrdered = newOutKindOrdered
+	m.inKinds = newInKinds
+	m.outKinds = newOutKinds
 	return nil
 }
 
@@ -439,6 +523,10 @@ func (m *MemStore) Close() error {
 	m.meta = nil
 	m.in = nil
 	m.out = nil
+	m.inKindOrdered = nil
+	m.outKindOrdered = nil
+	m.inKinds = nil
+	m.outKinds = nil
 	m.byQN = nil
 	m.byPath = nil
 	return nil

@@ -9,7 +9,7 @@
 
 | | Before | After initial HTTP surface | After later extensions |
 |---|---|---|---|
-| **Transports** | CLI, Unix-socket daemon, MCP stdio | + **HTTP REST + SSE** over loopback | + **MCP streamable-HTTP** + **per-class SSE** + **PR-tool endpoints** |
+| **Transports** | CLI, Unix-socket daemon, MCP stdio | + **HTTP REST + SSE** over loopback | + package-level MCP HTTP adapter for embedders + **per-class SSE** + **PR-tool endpoints** |
 | **TS/web/IDE backend** | none (no transport for the web client or VS Code extension) | stable, versioned HTTP contract these surfaces consume | unchanged; consumers can pin to the same envelope |
 | **Freshness/events** | none (no observer) | `engine/observe` broker; ingest publishes lifecycle events; SSE streams them | + per-class subscriptions (`class=ingest`, `class=analyze`, `class=overlay`, `class=watcher`, `class=community`) and a one-shot `?analyzer=<name>` analysis frame on `/events` |
 | **Code reuse** | each surface delegates to `client.Client` | HTTP delegates to the **same** `client.Client` seam → byte-identical answers (parity) | unchanged; every new endpoint rides the same shared client |

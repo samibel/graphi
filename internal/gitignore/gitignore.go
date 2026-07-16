@@ -10,6 +10,7 @@
 package gitignore
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -27,12 +28,14 @@ type Matcher struct {
 	patterns []pattern
 }
 
-// Compile parses .gitignore lines into a Matcher. Malformed glob lines are
-// skipped (fail-open per line — an unreadable pattern must not take down the
-// walk); a nil Matcher is returned when nothing usable remains.
-func Compile(lines []string) *Matcher {
+// Compile parses .gitignore lines into a Matcher. It rejects malformed glob
+// lines with their one-based line number: silently dropping a bad exclusion
+// would widen the index scope and can persist files the repository meant to
+// keep private. A nil Matcher and nil error are returned when no patterns
+// remain after comments and blank lines are removed.
+func Compile(lines []string) (*Matcher, error) {
 	var pats []pattern
-	for _, raw := range lines {
+	for lineNumber, raw := range lines {
 		line := strings.TrimRight(raw, " \t")
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -50,14 +53,17 @@ func Compile(lines []string) *Matcher {
 		line = strings.TrimPrefix(line, "/")
 		re, err := translate(line, anchored)
 		if err != nil {
-			continue
+			// The line number is sufficient provenance. Never echo raw pattern
+			// bytes: .gitignore is an untrusted repository config and may itself
+			// contain a secret or originate from a rejected external path.
+			return nil, fmt.Errorf("invalid .gitignore pattern on line %d: %w", lineNumber+1, err)
 		}
 		pats = append(pats, pattern{re: re, negate: neg, dirOnly: dirOnly})
 	}
 	if len(pats) == 0 {
-		return nil
+		return nil, nil
 	}
-	return &Matcher{patterns: pats}
+	return &Matcher{patterns: pats}, nil
 }
 
 // Match reports whether the repo-relative POSIX path is ignored. It applies
@@ -124,9 +130,7 @@ func translate(glob string, anchored bool) (*regexp.Regexp, error) {
 		case '[':
 			end := strings.IndexByte(glob[i+1:], ']')
 			if end < 0 {
-				b.WriteString(regexp.QuoteMeta(string(c)))
-				i++
-				continue
+				return nil, fmt.Errorf("unterminated character class")
 			}
 			b.WriteString(glob[i : i+end+2])
 			i += end + 2

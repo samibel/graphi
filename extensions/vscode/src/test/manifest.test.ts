@@ -43,10 +43,10 @@ describe("VSIX manifest content (AC-6)", () => {
       "graphi.search",
       "graphi.showGraph",
       "graphi.retry",
-      "graphi.setAuthToken",
     ]) {
       expect(cmds).toContain(c);
     }
+    expect(cmds).not.toContain("graphi.setAuthToken");
   });
 
   it("contributes configuration incl. URL, perf bounds, reconnect", () => {
@@ -63,7 +63,7 @@ describe("VSIX manifest content (AC-6)", () => {
     }
   });
 
-  it("does NOT store the auth token as a settings key (SecretStorage only)", () => {
+  it("does not advertise unsupported bearer-token configuration", () => {
     const props = pkg.contributes.configuration?.properties ?? {};
     expect(props).not.toHaveProperty("graphi.authToken");
     expect(props).not.toHaveProperty("graphi.token");

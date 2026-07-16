@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,6 +16,27 @@ import (
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/query"
 )
+
+type impactLookupProbe struct {
+	*graphstore.MemStore
+	boundedOutgoingCalls int
+	boundedEdgesRead     int
+	maxIncidentLimit     int
+	maxKindsProbed       int
+}
+
+func (p *impactLookupProbe) OutgoingBounded(ctx context.Context, id model.NodeId, limit int, kinds ...model.EdgeKind) ([]model.Edge, bool, error) {
+	p.boundedOutgoingCalls++
+	if limit > p.maxIncidentLimit {
+		p.maxIncidentLimit = limit
+	}
+	if len(kinds) > p.maxKindsProbed {
+		p.maxKindsProbed = len(kinds)
+	}
+	edges, truncated, err := p.MemStore.OutgoingBounded(ctx, id, limit, kinds...)
+	p.boundedEdgesRead += len(edges)
+	return edges, truncated, err
+}
 
 // seedImpactGraph builds a deterministic synthetic graph in an in-memory store:
 //
@@ -203,6 +225,118 @@ func TestImpactBoundTruncatedRanked(t *testing.T) {
 	// two leading dependents must be in canonical order.
 	if !sortReachedIsSorted(res.Nodes) {
 		t.Fatalf("result not canonically ranked (tier then node id)")
+	}
+}
+
+func TestImpactMaxNodesAlsoBoundsTraversalWork(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	const nodeCount = 500
+	nodes := make([]model.Node, 0, nodeCount)
+	for i := 0; i < nodeCount; i++ {
+		n, err := model.NewNode("function", fmt.Sprintf("chain.N%03d", i), "chain/chain.go", i+1, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.PutNode(ctx, n); err != nil {
+			t.Fatal(err)
+		}
+		nodes = append(nodes, n)
+	}
+	for i := 0; i < len(nodes)-1; i++ {
+		e, err := model.NewEdge(nodes[i].ID(), nodes[i+1].ID(), string(query.EdgeKindCalls), model.TierConfirmed, 1, "chain", []string{"chain/chain.go:1"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.PutEdge(ctx, e); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	probe := &impactLookupProbe{MemStore: store}
+	svc := analysis.NewDefaultService(probe)
+	res, err := svc.Dispatch(ctx, "impact", analysis.Params{
+		Symbol: nodes[0].ID(), Direction: analysis.Forward, MaxNodes: 2,
+	})
+	if err != nil {
+		t.Fatalf("Dispatch: %v", err)
+	}
+	if len(res.Nodes) != 2 || !res.Truncated {
+		t.Fatalf("bounded result = nodes:%d truncated:%v, want 2/true", len(res.Nodes), res.Truncated)
+	}
+	if probe.boundedOutgoingCalls > 20 {
+		t.Fatalf("MaxNodes=2 expanded %d of 500 chain nodes; traversal work is not bounded", probe.boundedOutgoingCalls)
+	}
+	if probe.boundedEdgesRead > 32 {
+		t.Fatalf("MaxNodes=2 read %d edges, want <=32 global edge budget", probe.boundedEdgesRead)
+	}
+}
+
+func TestImpactHighDegreeIncidentReadIsActuallyBounded(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	seed, err := model.NewNode("function", "star.Seed", "star/star.go", 1, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PutNode(ctx, seed); err != nil {
+		t.Fatal(err)
+	}
+	const degree = 10_000
+	for i := 0; i < degree; i++ {
+		leaf, err := model.NewNode("function", fmt.Sprintf("star.Leaf%05d", i), "star/star.go", i+2, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.PutNode(ctx, leaf); err != nil {
+			t.Fatal(err)
+		}
+		edge, err := model.NewEdge(seed.ID(), leaf.ID(), string(query.EdgeKindCalls), model.TierConfirmed, 1, "star", []string{"star/star.go:1"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.PutEdge(ctx, edge); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	probe := &impactLookupProbe{MemStore: store}
+	res, err := analysis.NewDefaultService(probe).Dispatch(ctx, "impact", analysis.Params{
+		Symbol: seed.ID(), Direction: analysis.Forward, MaxNodes: 1,
+	})
+	if err != nil {
+		t.Fatalf("Dispatch: %v", err)
+	}
+	if len(res.Nodes) != 1 || !res.Truncated {
+		t.Fatalf("high-degree result = nodes:%d truncated:%v, want 1/true", len(res.Nodes), res.Truncated)
+	}
+	if probe.boundedOutgoingCalls != 1 {
+		t.Fatalf("bounded incident calls = %d, want exactly 1", probe.boundedOutgoingCalls)
+	}
+	if probe.maxIncidentLimit > 16 || probe.boundedEdgesRead > 16 {
+		t.Fatalf("MaxNodes=1 requested/read %d/%d incident edges from degree %d, want <=16/<=16", probe.maxIncidentLimit, probe.boundedEdgesRead, degree)
+	}
+}
+
+func TestImpactUntrustedKindsListIsBudgeted(t *testing.T) {
+	store, ids := seedImpactGraph(t)
+	probe := &impactLookupProbe{MemStore: store}
+	kinds := []string{string(query.EdgeKindCalls)}
+	const untrustedKinds = 50_000
+	for i := 0; i < untrustedKinds; i++ {
+		kinds = append(kinds, fmt.Sprintf("zz-untrusted-%04d", i))
+	}
+	res, err := analysis.NewDefaultService(probe).Dispatch(context.Background(), "impact", analysis.Params{
+		Symbol: ids["pkg.A"], Direction: analysis.Forward, MaxNodes: 1, Kinds: kinds,
+	})
+	if err != nil {
+		t.Fatalf("Dispatch: %v", err)
+	}
+	if !res.Truncated {
+		t.Fatal("oversized distinct kinds list must produce Truncated=true")
+	}
+	if probe.maxKindsProbed > 2 {
+		t.Fatalf("MaxNodes=1 probed %d distinct kinds from %d inputs, want <=2", probe.maxKindsProbed, untrustedKinds+1)
 	}
 }
 

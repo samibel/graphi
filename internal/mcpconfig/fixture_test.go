@@ -79,6 +79,23 @@ func readBytes(t *testing.T, path string) []byte {
 	return b
 }
 
+// requireCreateDenied verifies the fixture's actual filesystem behavior instead
+// of assuming chmod mode bits are enforced. Root, some ACL setups, and Windows
+// filesystems can still create files in a 0o500 directory; those environments
+// cannot exercise this permission-denial path and must skip it rather than turn
+// an environment limitation into an expected test failure.
+func requireCreateDenied(t *testing.T, dir string) {
+	t.Helper()
+	f, err := os.CreateTemp(dir, ".graphi-permission-probe-*")
+	if err != nil {
+		return
+	}
+	name := f.Name()
+	_ = f.Close()
+	_ = os.Remove(name)
+	t.Skip("filesystem permits file creation in a chmod 0500 directory; permission-denial path is not testable here")
+}
+
 // S1 virgin → created, file written, NO backup (nothing to back up).
 func TestFixture_Virgin_Created_NoBackup(t *testing.T) {
 	path, entry := newFixture(t, stateVirgin)
@@ -160,6 +177,7 @@ func TestFixture_AlreadyConfigured_Unchanged_NoBackup(t *testing.T) {
 // S4 unwritable → write fails, original byte-identical, non-zero (error returned).
 func TestFixture_Unwritable_FailsAndLeavesOriginalIntact(t *testing.T) {
 	path, entry := newFixture(t, stateUnwritable)
+	requireCreateDenied(t, filepath.Dir(path))
 	before := readBytes(t, path)
 
 	_, err := Apply(path, "graphi", entry, false)
@@ -239,6 +257,7 @@ func TestBackupFailureAbortsBeforeTouchingConfig(t *testing.T) {
 		t.Fatalf("chmod: %v", err)
 	}
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	requireCreateDenied(t, dir)
 
 	_, err := Apply(path, "graphi", entry, false)
 	if err == nil {

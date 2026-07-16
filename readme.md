@@ -114,7 +114,9 @@ graphi is built for two audiences:
 - **Developers** who want fast, structural answers about an unfamiliar or large codebase, on the command line.
 - **AI coding agents** that need a stable, read-only graph backend to query over MCP — without owning parsing or indexing themselves, and without sending code to a third party.
 
-Everything runs locally. No accounts, no telemetry, no network calls.
+The Stable default tier runs locally with no accounts or telemetry and no
+outbound network access. Explicitly configured Labs/forge or embedder features
+may contact their configured service; they are not part of that default claim.
 
 ## Features
 
@@ -124,14 +126,13 @@ The full feature inventory — every MCP tool, CLI subcommand, HTTP endpoint, an
 flowchart LR
   DEV["Developer"] --> CLI["graphi CLI"]
   AGT["AI Agent (MCP)"] --> MCPSTD["MCP stdio"]
-  AGT2["AI Agent (HTTP)"] --> MCPHTTP["MCP streamable-HTTP"]
+  AGT2["Agent / IDE (HTTP)"] --> HTTP
   USR["Browser / curl"] --> HTTP["loopback HTTP/SSE"]
   TUI_USER["TUI user"] --> TUI["graphi tui"]
   VS["VS Code"] --> VSX["graphi-vscode"]
   CI["CI / GitHub Action"] --> GHA["graphi-github-action"]
   CLI --> CL["surfaces/client.Client"]
   MCPSTD --> CL
-  MCPHTTP --> CL
   HTTP --> CL
   TUI --> CL
   VSX --> CL
@@ -143,8 +144,8 @@ flowchart LR
 
 ### Highlights
 
-- **One engine, many surfaces.** CLI, MCP stdio, MCP streamable-HTTP, loopback HTTP/SSE, TUI, web UI, VS Code, and the GitHub Action all share the same `surfaces/client.Client` interface. There is no surface-local query or analysis logic — every answer is byte-identical by construction (parity-tested on every PR).
-- **Live IDE transport.** The MCP streamable-HTTP transport keeps stdio envelope parity; per-class SSE subscriptions let an editor subscribe only to the event classes it cares about; the in-memory editor-overlay subsystem tracks unsaved buffers and the zero-egress enforcement guard rejects any non-loopback dial at the surface boundary.
+- **One engine, many surfaces.** CLI, MCP stdio, loopback HTTP/SSE, TUI, web UI, VS Code, and the GitHub Action share the same `surfaces/client.Client` interface. Surface parity is pinned for the operations covered by the parity suite; it is not a blanket claim that every transport frame is identical.
+- **Live IDE transport.** Versioned loopback REST/SSE lets an editor subscribe to ingest and analysis events; the in-memory editor-overlay subsystem tracks unsaved buffers and the zero-egress enforcement guard rejects any non-loopback dial at the surface boundary. A package-level MCP HTTP adapter exists for embedders, but no `graphi` CLI command currently serves it.
 - **Diagnostics & code actions.** `diagnose` runs graph-derived diagnostics (severity + suggested code-action), `inline` performs reference-correct inline refactor with a fail-safe block list, `safe_delete` gates on reference-safety before removing a symbol.
 - **Notebooks, watcher, interproc taint, communities.** `.ipynb` cell-provenance ingestion, an `fsnotify` watcher with bounded worker-pool and deterministic canonical-ordered apply, an interprocedural taint fixpoint over per-procedure gen/kill summaries (procedure-level label sets — not statement-level dataflow), and deterministic Louvain community detection behind a single grouping seam. Full-vs-incremental byte-parity is enforced as a conformance gate.
 - **PR-tool suite.** `list_prs` enumerates open PRs (read-only forge seam), `triage_prs` produces a single-pass graph-derived ranking, `conflicts_prs` detects inter-PR conflicts (textual + graph-semantic + asymmetric contract-dependency), `suggest_reviewers` ranks candidates by ownership/churn + affected-subgraph proximity, `compare_branches` is a graph-level diff keyed by canonical NodeId, and `critique_review` is a deterministic graph-evidence critique of an existing review (no LLM prose; the only egress is the surface review fetch).
@@ -365,24 +366,33 @@ Also available through `graphi analyze <analyzer>`:
 - **`graphi distill -session <id> …`** — distill a session into a compact decision record.
 - **`graphi skillgen -name <n> -trigger <t> -description <d>`** — deterministic skill generation from a procedure description.
 
-### Quality scorecard & release gate
+### Internal quality gate (not an independent 9/10 rating)
 
-Product quality is measured, not asserted. `go run ./cmd/eval -manifest
+Repository quality is regression-tested, not asserted. `go run ./cmd/eval -manifest
 corpus/manifest.json -tier 1` runs the Tier-1 evaluation harness and emits a
-scorecard report with per-area scores (agent/MCP usefulness, signal quality,
+revision-stamped internal scorecard with per-area scores (agent/MCP usefulness, signal quality,
 performance, setup/trust, evaluation, UX), each marked **measured** or
 **carried** so a baseline number is never silently presented as a
 measurement. The measured inputs — diagnostics ground truth, doctor-behavior
 assertions, performance budgets, web-suite results — are embedded in the
 report for audit.
 
-**The 9/10 target is achieved when the scorecard is >= 90 overall with no
-area below 80.** `go run ./cmd/release-gate` enforces exactly that: it runs
+The internal release threshold is **>= 90 overall with no area below 80**.
+`go run ./cmd/release-gate` enforces exactly that: it runs
 the hard constituent gates (full test suite, coverage matrix, privacy audit,
 bench budgets), consumes the measured scorecard report, measures UX from the
 web suite, and blocks the release on a sub-90 overall, any sub-80 area, a
-removed MCP tool, or a Tier-1 regression. The published evidence lives in
-`docs/release-scorecard.{json,md}`.
+removed MCP tool, or a Tier-1 regression.
+
+That number is a synthetic in-repository release gate, **not** a credible
+overall 9/10 project rating. It does not prove production adoption, external
+security, language-wide accuracy, commercial viability, or superiority over a
+competitor. Those claims remain **UNKNOWN** until independently measured. Any
+`docs/release-scorecard.{json,md}` file is a historical snapshot; its embedded
+commit must match the candidate before it can be cited as current evidence.
+A “faster or more accurate than Graphify” claim additionally requires a public,
+matched-corpus benchmark with identical hardware, cold/warm methodology, and
+task-level correctness labels. No such claim is made here today.
 
 ## Semantic search (optional, OFF by default)
 
@@ -472,7 +482,7 @@ graphi is designed so that nothing leaves your machine:
 
 ### Prerequisites
 
-- **Go 1.26+**
+- **Go 1.26.5+**
 - No C toolchain required — the default build is CGo-free.
 
 ### Build

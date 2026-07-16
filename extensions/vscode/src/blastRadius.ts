@@ -4,7 +4,10 @@
 // editor on selection. Strictly read-only.
 import * as vscode from "vscode";
 import type { Connection } from "./connection";
-import { toCitationItems, type CitationItem } from "./citations";
+import type { GraphiClient } from "./graphiClient";
+import { hasResource } from "./graphiClient";
+import { toCitationItems, toSearchCitations, type CitationItem } from "./citations";
+import type { SearchMatch } from "./contract";
 
 // CitationItem is re-exported for callers that pair this command with reveal().
 export type { CitationItem };
@@ -60,6 +63,34 @@ export function resolveWorkspaceUri(
   return null;
 }
 
+/**
+ * Resolve cursor text to an exact graph NodeId for an interactive command.
+ * Ambiguity always requires an explicit user choice; cancellation performs no
+ * analyzer request. A fuzzy search hit is never treated as identity.
+ */
+export async function chooseSymbolMatch(
+  client: GraphiClient,
+  symbolText: string,
+): Promise<SearchMatch | null> {
+  const resolution = await client.resolveSymbol(symbolText);
+  if (resolution.outcome === "not_found") {
+    void vscode.window.showInformationMessage(
+      `graphi: no exact indexed symbol found for "${symbolText}".`,
+    );
+    return null;
+  }
+  if (resolution.outcome === "found") return resolution.matches[0];
+
+  const picked = await vscode.window.showQuickPick(
+    toSearchCitations(resolution.matches),
+    {
+      placeHolder: `"${symbolText}" is ambiguous — select the exact symbol`,
+    },
+  );
+  if (!picked) return null;
+  return resolution.matches.find((match) => match.node_id === picked.label) ?? null;
+}
+
 /** runBlastRadius is the command handler. */
 export async function runBlastRadius(conn: Connection): Promise<void> {
   let client = conn.client();
@@ -72,6 +103,13 @@ export async function runBlastRadius(conn: Connection): Promise<void> {
     client = conn.client();
   }
   if (!client) return;
+  const contract = conn.contract();
+  if (!contract || !hasResource(contract, "search")) {
+    void vscode.window.showInformationMessage(
+      "graphi: this Engine does not advertise symbol search.",
+    );
+    return;
+  }
   const route = conn.analyzerRoute();
   if (!route) {
     void vscode.window.showInformationMessage(
@@ -85,18 +123,24 @@ export async function runBlastRadius(conn: Connection): Promise<void> {
     return;
   }
   try {
-    const [impact, neigh] = await Promise.all([
-      client.getImpact(route, sym),
-      client.getNeighborhood(sym, 1),
-    ]);
-    const nodes = new Map(neigh.nodes.map((n) => [n.id, n]));
-    const items = toCitationItems(impact, nodes);
+    const match = await chooseSymbolMatch(client, sym);
+    if (!match) return;
+    const impact = await client.getImpact(route, match.node_id);
+    if (impact.outcome === "not_found") {
+      void vscode.window.showInformationMessage(
+        `graphi: "${match.qualified_name}" disappeared from the index; retry after ingest.`,
+      );
+      return;
+    }
+    const items = toCitationItems(impact, new Map());
     if (items.length === 0) {
-      void vscode.window.showInformationMessage(`graphi: no blast-radius for "${sym}".`);
+      void vscode.window.showInformationMessage(
+        `graphi: no blast-radius for "${match.qualified_name}".`,
+      );
       return;
     }
     const picked = await vscode.window.showQuickPick(items, {
-      placeHolder: `Blast-radius of ${sym} (${items.length} impacted)`,
+      placeHolder: `Blast-radius of ${match.qualified_name} (${items.length} impacted)`,
     });
     if (picked?.filePath && picked.line !== undefined) {
       await reveal(picked.filePath, picked.line);

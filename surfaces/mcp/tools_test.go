@@ -10,8 +10,9 @@ import (
 	"github.com/samibel/graphi/surfaces/client"
 )
 
-// allToolsClient is a fake client.Client whose every capability probe succeeds,
-// so the MCP server advertises the MAXIMAL tool set. It lets the no-drift test
+// allToolsClient is a fully backed third-party-style client with no optional
+// CapabilityReporter, so the explicit Labs profile advertises the MAXIMAL tool
+// set without executing any method. It lets the no-drift test
 // assert that what toolDescriptors() actually advertises equals the canonical
 // ToolNames() registry — the structural guarantee that the FU-4 coverage matrix
 // source cannot silently diverge from the served tools.
@@ -100,7 +101,7 @@ func (allToolsClient) CritiqueReview(context.Context, int, string, string) ([]by
 // tools/list. If a tool is added to toolDescriptors() but not to the ToolNames()
 // source (or vice-versa), this fails — keeping the registry honest.
 func TestToolNames_MatchesAdvertisedMaximalSet(t *testing.T) {
-	s := NewServerWithClient(allToolsClient{})
+	s := NewServerWithClient(allToolsClient{}, WithLabs())
 	descriptors := s.toolDescriptors()
 
 	advertised := make([]string, 0, len(descriptors))
@@ -125,7 +126,7 @@ func TestToolNames_MatchesAdvertisedMaximalSet(t *testing.T) {
 // description does not. This is the MCP half of "the taxonomy is visible in
 // user-facing output".
 func TestLabsMarking(t *testing.T) {
-	s := NewServerWithClient(allToolsClient{})
+	s := NewServerWithClient(allToolsClient{}, WithLabs())
 	descriptors := s.toolDescriptors()
 
 	sawStable := false
@@ -174,9 +175,9 @@ func TestStableOperations_FrozenTwelve(t *testing.T) {
 		toolSet[n] = true
 	}
 	for _, op := range StableOperations {
-		// index and impact are not MCP tool names (ingest verb / analyzer); the
-		// other ten must be advertised tools.
-		if op == "index" || op == "impact" {
+		// index is lifecycle-only ingest; every other stable operation is an MCP
+		// tool, including the dedicated impact analyzer.
+		if op == "index" {
 			continue
 		}
 		if !toolSet[op] {

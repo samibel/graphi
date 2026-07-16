@@ -23,6 +23,7 @@ import {
   type HighlightableEdge,
   type HighlightableNode,
 } from "./highlights";
+import { impactNodeIDs } from "./impact";
 
 export interface GraphState {
   nodes: HighlightableNode[];
@@ -283,7 +284,10 @@ export function useGraph(seed: string, depth: number) {
     try {
       const impact = await fetchImpact(route, id);
       setState((st) => {
-        const blasted = applyBlast(st.nodes, new Set(impact.impacted));
+        const blasted = applyBlast(
+          st.nodes,
+          impactNodeIDs(impact),
+        );
         const cited = applyCitation(st.edges, blasted, id);
         return { ...st, nodes: cited.nodes, edges: cited.edges, selected: id, selecting: false };
       });

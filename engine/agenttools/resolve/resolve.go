@@ -86,19 +86,19 @@ func Strict(ctx context.Context, d Deps, ref string) (Resolution, error) {
 	case 0:
 		return Resolution{}, nil
 	case 1:
-		n, err := nodeForMatch(ctx, d, matches[0])
+		nodes, err := nodesForMatches(ctx, d, matches)
 		if err != nil {
 			return Resolution{}, err
 		}
-		return Resolution{Method: MethodSearch, Nodes: []model.Node{n}}, nil
+		return Resolution{Method: MethodSearch, Nodes: nodes}, nil
 	default:
+		nodes, err := nodesForMatches(ctx, d, matches)
+		if err != nil {
+			return Resolution{}, err
+		}
 		cands := make([]Candidate, 0, len(matches))
-		for _, m := range matches {
-			n, err := nodeForMatch(ctx, d, m)
-			if err != nil {
-				return Resolution{}, err
-			}
-			cands = append(cands, Candidate{Node: n, Rank: m.Rank})
+		for i, m := range matches {
+			cands = append(cands, Candidate{Node: nodes[i], Rank: m.Rank})
 		}
 		return Resolution{Method: MethodSearch, Candidates: cands}, nil
 	}
@@ -122,13 +122,9 @@ func Seeds(ctx context.Context, d Deps, ref string, k int) (Resolution, error) {
 	if len(matches) == 0 {
 		return Resolution{}, nil
 	}
-	nodes := make([]model.Node, 0, len(matches))
-	for _, m := range matches {
-		n, err := nodeForMatch(ctx, d, m)
-		if err != nil {
-			return Resolution{}, err
-		}
-		nodes = append(nodes, n)
+	nodes, err := nodesForMatches(ctx, d, matches)
+	if err != nil {
+		return Resolution{}, err
 	}
 	return Resolution{Method: MethodSearch, Nodes: nodes}, nil
 }
@@ -201,25 +197,49 @@ func searchMatches(ctx context.Context, d Deps, ref string, limit int) ([]search
 	}
 	resp, err := d.Search.Search(ctx, ref, limit)
 	if err != nil {
-		// FTS syntax errors on odd inputs are a resolution miss, not an
-		// infrastructure failure: exact forms were already tried.
-		return nil, nil
+		// SearchNodes already turns user text into a quoted, parameterized FTS
+		// expression. Any remaining error is cancellation, closure, corruption,
+		// or another infrastructure failure and must not become a false not-found.
+		return nil, err
 	}
 	return resp.Matches, nil
 }
 
-// nodeForMatch upgrades a search match to the full model node so downstream
-// consumers work with one type. A match whose node vanished (referential
-// drift) is rebuilt from the match fields.
-func nodeForMatch(ctx context.Context, d Deps, m search.Match) (model.Node, error) {
-	n, err := d.Query.Reader().GetNode(ctx, model.NodeId(m.NodeID))
-	if err == nil {
-		return n, nil
+// nodesForMatches upgrades search matches to full model nodes in one selective
+// batch. Using Reader.GetNode here would force SQLite's legacy whole-graph
+// cache to materialize for a free-text lookup. A match whose row vanished
+// between search and hydration is rebuilt from the match fields, preserving
+// the existing referential-drift behavior without hiding infrastructure errors.
+func nodesForMatches(ctx context.Context, d Deps, matches []search.Match) ([]model.Node, error) {
+	lookup, ok := d.Query.Reader().(graphstore.GraphLookup)
+	if !ok {
+		return nil, query.ErrSelectiveLookupUnavailable
 	}
-	if errors.Is(err, graphstore.ErrNotFound) {
-		return model.NewNode(m.Kind, m.QualifiedName, m.SourcePath, m.Line, m.Column)
+	ids := make([]model.NodeId, 0, len(matches))
+	for _, m := range matches {
+		ids = append(ids, model.NodeId(m.NodeID))
 	}
-	return model.Node{}, err
+	hydrated, err := lookup.NodesByID(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[model.NodeId]model.Node, len(hydrated))
+	for _, n := range hydrated {
+		byID[n.ID()] = n
+	}
+	out := make([]model.Node, 0, len(matches))
+	for _, m := range matches {
+		if n, found := byID[model.NodeId(m.NodeID)]; found {
+			out = append(out, n)
+			continue
+		}
+		n, err := model.NewNode(m.Kind, m.QualifiedName, m.SourcePath, m.Line, m.Column)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, n)
+	}
+	return out, nil
 }
 
 func sortNodes(nodes []model.Node) {

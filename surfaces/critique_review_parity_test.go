@@ -57,7 +57,7 @@ func TestCritiqueReviewTool_Advertised(t *testing.T) {
 	store := triageSeed(t)
 	withAnalysis := client.NewDirect(query.New(store), search.New(store)).
 		WithAnalysis(analysis.NewDefaultService(store))
-	names := listToolNames(t, mcp.NewServerWithClient(withAnalysis))
+	names := listToolNames(t, mcp.NewServerWithClient(withAnalysis, mcp.WithLabs()))
 	if !containsStr(names, mcp.ToolCritiqueReview) {
 		t.Fatalf("critique_review not advertised when analysis wired; got %v", names)
 	}

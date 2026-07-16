@@ -23,9 +23,10 @@
 //
 // # Status taxonomy (AC-5, stable across REST and SSE)
 //
-//	200 ok · 400 bad input · 403 Labs route fail-closed (SW-112 / SAFE-01,
-//	GRAPHI_HTTP_LABS=1 opts in) · 404 unknown route/resource · 405 mutating verb ·
-//	412 schema-version mismatch · 503 capability unavailable
+//	200 ok · 400 bad input · 403 Labs route fail-closed or rejected Host/Origin
+//	(SW-112 / SAFE-01; GRAPHI_HTTP_LABS=1 opts in to Labs) · 404 unknown
+//	route/resource · 405 mutating verb ·
+//	412 schema-version mismatch · 413 request body too large · 503 capability unavailable
 //	(ErrSearchUnavailable / ErrAnalysisUnavailable) · 500 sanitized unexpected.
 //
 // 5xx bodies carry only a generic message + a stable error code; the raw engine
@@ -42,6 +43,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -51,6 +53,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -64,6 +67,7 @@ import (
 	"github.com/samibel/graphi/engine/wiki"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/http/webui"
+	"github.com/samibel/graphi/surfaces/mcp"
 )
 
 // SchemaVersion is the envelope contract version stamped on every response and
@@ -71,6 +75,20 @@ import (
 // envelope shape consumed by the TS/React web client (SW-040) and VS Code
 // extension (SW-043); the engine's internal payload versioning is separate.
 const SchemaVersion = 1
+
+const (
+	// maxRequestBodyBytes is shared by every route on this HTTP surface. The
+	// body-limit middleware reads at most one byte beyond it (via
+	// http.MaxBytesReader), so oversized bodies are rejected instead of being
+	// silently truncated into a different request.
+	maxRequestBodyBytes int64 = 1 << 20
+
+	httpReadHeaderTimeout = 5 * time.Second
+	httpReadTimeout       = 30 * time.Second
+	httpWriteTimeout      = 30 * time.Second
+	httpIdleTimeout       = 2 * time.Minute
+	httpShutdownTimeout   = 5 * time.Second
+)
 
 // queryOps is the allow-list of structural query operations the REST surface
 // accepts. It is DERIVED from engine/query.Operations so the HTTP surface can
@@ -97,6 +115,7 @@ var streamDescriptors = []string{"ingest-completed", "ingest-progress", "ready",
 // via ListenAndServe (loopback) or Serve (custom listener, for tests).
 type Server struct {
 	client client.Client
+	stable client.StableClient
 	broker *observe.Broker
 
 	// Optional read-only store for serving the self-generated wiki (SW-041).
@@ -130,7 +149,7 @@ const LabsEnvVar = "GRAPHI_HTTP_LABS"
 // A nil broker disables the /events SSE endpoint (it returns 503). The Labs
 // routes are fail-closed unless GRAPHI_HTTP_LABS=1 is exported (read once here).
 func New(c client.Client, b *observe.Broker) *Server {
-	return &Server{client: c, broker: b, labsEnabled: os.Getenv(LabsEnvVar) == "1"}
+	return &Server{client: c, stable: client.AsStable(c), broker: b, labsEnabled: os.Getenv(LabsEnvVar) == "1"}
 }
 
 // WithWiki enables the self-generated wiki (SW-041) by attaching a read-only
@@ -198,18 +217,50 @@ func mapError(err error) (status int, code, message string) {
 // and the SW-110 route snapshot both read, so the advertised HTTP surface cannot
 // drift from what a scope change reviews as an intentional diff (TEST-01 AC3).
 type route struct {
-	Pattern string // Go 1.22 ServeMux "METHOD /path" pattern
-	handler http.HandlerFunc
+	Pattern    string // Go 1.22 ServeMux "METHOD /path" pattern
+	capability capabilityResolver
+	handler    http.HandlerFunc
 }
 
-// labsGuard fail-closes a Labs route (SW-112 / SAFE-01): unless the operator
-// exported GRAPHI_HTTP_LABS=1 for this process, the route answers 403 with a
-// stable machine code and performs NO work — the wrapped handler (and any
-// mutation or forge egress behind it) is never reached. The route itself stays
-// registered so the SW-110 route snapshot pins an unchanged wire surface.
-func (s *Server) labsGuard(next http.HandlerFunc) http.HandlerFunc {
+// capabilityResolver maps one concrete HTTP request to the canonical product
+// operation it invokes. An empty result marks transport/infrastructure behavior
+// such as health, contract negotiation, the plain event stream, or the SPA.
+// Every route supplies a resolver, including mixed routes such as
+// /query/{op}, /analyze/{analyzer}, and /events?analyzer=.
+type capabilityResolver func(*http.Request) string
+
+func infrastructureCapability(*http.Request) string { return "" }
+
+func fixedCapability(name string) capabilityResolver {
+	return func(*http.Request) string { return name }
+}
+
+func queryCapability(r *http.Request) string {
+	op := r.PathValue("op")
+	if _, known := queryOps[op]; !known {
+		// Preserve the documented 400 for an unknown query operation. Known
+		// hierarchy operations are resolved below and therefore fail closed.
+		return ""
+	}
+	return op
+}
+
+func analyzerCapability(r *http.Request) string { return r.PathValue("analyzer") }
+
+func eventCapability(r *http.Request) string { return r.URL.Query().Get("analyzer") }
+
+func isLabsCapability(name string) bool {
+	return name != "" && !mcp.IsStableOperation(name)
+}
+
+// capabilityGuard fail-closes every request that resolves to an operation
+// outside the frozen StableOperations manifest (SW-112 / SAFE-01). Guarding is
+// applied centrally while registering the route table, so adding a route cannot
+// accidentally bypass protection by forgetting a hand-written wrapper.
+func (s *Server) capabilityGuard(resolve capabilityResolver, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !s.labsEnabled {
+		capability := resolve(r)
+		if isLabsCapability(capability) && !s.labsEnabled {
 			writeErr(w, http.StatusForbidden, "labs_disabled",
 				"this Labs route is outside the stable capability set and is disabled by default (SAFE-01); export "+LabsEnvVar+"=1 to opt in")
 			return
@@ -221,36 +272,37 @@ func (s *Server) labsGuard(next http.HandlerFunc) http.HandlerFunc {
 // routes returns the ordered route table this surface serves. Handler registers
 // exactly these in order; the SPA catch-all is LAST and least specific so every
 // explicit API/SSE/wiki route wins (Go 1.22 precedence). Labs routes (PR/forge,
-// memory, distill, skillgen) are wrapped in labsGuard and fail closed by
-// default.
+// memory, distill, skillgen, hierarchy/compound/pattern/semantic queries,
+// non-impact analyzers, analyzer-over-SSE, and community wiki) are classified
+// here and guarded centrally by Handler.
 func (s *Server) routes() []route {
 	return []route{
-		{"GET /healthz", s.handleHealth},
-		{"GET /contract", s.handleContract},
-		{"GET /query/{op}", s.schemaGuard(s.handleQuery)},
-		{"POST /compound", s.schemaGuard(s.handleCompound)},
-		{"POST /query-ast", s.schemaGuard(s.handleSearchAST)},
-		{"POST /find-clones", s.schemaGuard(s.handleFindClones)},
-		{"GET /search", s.schemaGuard(s.handleSearch)},
-		{"GET /search/semantic", s.schemaGuard(s.handleSemanticSearch)},
-		{"GET /analyze/{analyzer}", s.schemaGuard(s.handleAnalyze)},
-		{"GET /prs", s.labsGuard(s.schemaGuard(s.handleListPRs))},
-		{"GET /prs/triage", s.labsGuard(s.schemaGuard(s.handleTriagePRs))},
-		{"GET /prs/conflicts", s.labsGuard(s.schemaGuard(s.handleConflictsPRs))},
-		{"GET /prs/suggest-reviewers", s.labsGuard(s.schemaGuard(s.handleSuggestReviewers))},
-		{"GET /branches/compare", s.labsGuard(s.schemaGuard(s.handleCompareBranches))},
-		{"GET /reviews/critique", s.labsGuard(s.schemaGuard(s.handleCritiqueReview))},
-		{"POST /memory", s.labsGuard(s.schemaGuard(s.handleMemory))},
-		{"POST /distill", s.labsGuard(s.schemaGuard(s.handleDistill))},
-		{"POST /skillgen", s.labsGuard(s.schemaGuard(s.handleSkillGen))},
-		{"GET /events", s.schemaGuard(s.handleSSE)},
-		{"GET /wiki", s.handleWikiIndex},
-		{"GET /wiki/c/{id}", s.handleWikiPage},
+		{"GET /healthz", infrastructureCapability, s.handleHealth},
+		{"GET /contract", infrastructureCapability, s.handleContract},
+		{"GET /query/{op}", queryCapability, s.schemaGuard(s.handleQuery)},
+		{"POST /compound", fixedCapability("compound"), s.schemaGuard(s.handleCompound)},
+		{"POST /query-ast", fixedCapability("search_ast"), s.schemaGuard(s.handleSearchAST)},
+		{"POST /find-clones", fixedCapability("find_clones"), s.schemaGuard(s.handleFindClones)},
+		{"GET /search", fixedCapability("search"), s.schemaGuard(s.handleSearch)},
+		{"GET /search/semantic", fixedCapability("search_semantic"), s.schemaGuard(s.handleSemanticSearch)},
+		{"GET /analyze/{analyzer}", analyzerCapability, s.schemaGuard(s.handleAnalyze)},
+		{"GET /prs", fixedCapability("list_prs"), s.schemaGuard(s.handleListPRs)},
+		{"GET /prs/triage", fixedCapability("triage_prs"), s.schemaGuard(s.handleTriagePRs)},
+		{"GET /prs/conflicts", fixedCapability("conflicts_prs"), s.schemaGuard(s.handleConflictsPRs)},
+		{"GET /prs/suggest-reviewers", fixedCapability("suggest_reviewers"), s.schemaGuard(s.handleSuggestReviewers)},
+		{"GET /branches/compare", fixedCapability("compare_branches"), s.schemaGuard(s.handleCompareBranches)},
+		{"GET /reviews/critique", fixedCapability("critique_review"), s.schemaGuard(s.handleCritiqueReview)},
+		{"POST /memory", fixedCapability("memory"), s.schemaGuard(s.handleMemory)},
+		{"POST /distill", fixedCapability("distill"), s.schemaGuard(s.handleDistill)},
+		{"POST /skillgen", fixedCapability("skillgen"), s.schemaGuard(s.handleSkillGen)},
+		{"GET /events", eventCapability, s.schemaGuard(s.handleSSE)},
+		{"GET /wiki", fixedCapability("communities"), s.handleWikiIndex},
+		{"GET /wiki/c/{id}", fixedCapability("communities"), s.handleWikiPage},
 		// SPA catch-all (SW-066). Registered LAST and matched LEAST specifically:
 		// Go 1.22 ServeMux routes the explicit patterns above ahead of "GET /", so
 		// every existing API/SSE/wiki route is byte-identical and the SPA only sees
 		// paths none of them claim. It is served over this same loopback surface.
-		{"GET /", s.spaHandler()},
+		{"GET /", infrastructureCapability, s.spaHandler()},
 	}
 }
 
@@ -272,9 +324,144 @@ func (s *Server) RoutePatterns() []string {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	for _, r := range s.routes() {
-		mux.HandleFunc(r.Pattern, r.handler)
+		mux.HandleFunc(r.Pattern, s.capabilityGuard(r.capability, r.handler))
 	}
-	return mux
+	return requestSecurityGuard(limitRequestBody(mux))
+}
+
+// limitRequestBody enforces one hard limit before routing. Buffering once here
+// covers both today's POST handlers and future routes; handlers receive a fresh
+// reader containing the complete body only after the limit check succeeds.
+func limitRequestBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Body == nil || r.Body == http.NoBody {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		limited := http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
+		body, err := io.ReadAll(limited)
+		_ = limited.Close()
+		if err != nil {
+			var tooLarge *http.MaxBytesError
+			if errors.As(err, &tooLarge) {
+				writeErr(w, http.StatusRequestEntityTooLarge, "request_too_large",
+					fmt.Sprintf("request body exceeds %d bytes", maxRequestBodyBytes))
+				return
+			}
+			writeErr(w, http.StatusBadRequest, "bad_request", "cannot read request body")
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		r.ContentLength = int64(len(body))
+		next.ServeHTTP(w, r)
+	})
+}
+
+// requestSecurityGuard protects the loopback HTTP surface against DNS
+// rebinding and cross-origin browser access. Host must name localhost or a
+// loopback IP. Browser requests that carry Origin must be exactly same-origin
+// (scheme, normalized host, and port); requests without Origin remain valid for
+// curl, the CLI HTTP client, IDEs, and other non-browser local consumers.
+func requestSecurityGuard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		requestAuthority, err := parseHTTPAuthority(r.Host, scheme)
+		if err != nil || !isLoopbackHTTPHost(requestAuthority.host) {
+			writeErr(w, http.StatusForbidden, "invalid_host", "request host must be loopback or localhost")
+			return
+		}
+
+		origins := r.Header.Values("Origin")
+		if len(origins) > 1 {
+			writeErr(w, http.StatusForbidden, "origin_forbidden", "cross-origin requests are not allowed")
+			return
+		}
+		if origin := r.Header.Get("Origin"); origin != "" {
+			originAuthority, originScheme, err := parseHTTPOrigin(origin)
+			if err != nil || originScheme != scheme || originAuthority != requestAuthority {
+				writeErr(w, http.StatusForbidden, "origin_forbidden", "cross-origin requests are not allowed")
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+type httpAuthority struct {
+	host string
+	port string
+}
+
+func parseHTTPAuthority(raw, scheme string) (httpAuthority, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.ContainsAny(raw, "/?#@") {
+		return httpAuthority{}, errors.New("invalid authority")
+	}
+
+	host, port, err := net.SplitHostPort(raw)
+	if err != nil {
+		switch {
+		case net.ParseIP(raw) != nil:
+			host = raw // bare IPv6, accepted defensively for in-process clients
+		case !strings.Contains(raw, ":"):
+			host = raw
+		default:
+			return httpAuthority{}, fmt.Errorf("invalid authority %q: %w", raw, err)
+		}
+	}
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	if host == "" {
+		return httpAuthority{}, errors.New("empty authority host")
+	}
+	if port == "" {
+		port = defaultHTTPPort(scheme)
+	} else {
+		n, err := strconv.Atoi(port)
+		if err != nil || n < 1 || n > 65535 {
+			return httpAuthority{}, errors.New("invalid authority port")
+		}
+		port = strconv.Itoa(n)
+	}
+	return httpAuthority{host: host, port: port}, nil
+}
+
+func parseHTTPOrigin(raw string) (httpAuthority, string, error) {
+	if raw == "null" {
+		return httpAuthority{}, "", errors.New("opaque origin")
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme == "" || u.Host == "" || u.User != nil || u.Opaque != "" ||
+		u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return httpAuthority{}, "", errors.New("invalid origin")
+	}
+	scheme := strings.ToLower(u.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return httpAuthority{}, "", errors.New("invalid origin scheme")
+	}
+	authority, err := parseHTTPAuthority(u.Host, scheme)
+	if err != nil || !isLoopbackHTTPHost(authority.host) {
+		return httpAuthority{}, "", errors.New("invalid origin authority")
+	}
+	return authority, scheme, nil
+}
+
+func defaultHTTPPort(scheme string) string {
+	if scheme == "https" {
+		return "443"
+	}
+	return "80"
+}
+
+func isLoopbackHTTPHost(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // spaHandler serves the embedded single-page web UI at "/" (SW-066).
@@ -321,15 +508,68 @@ func (s *Server) ListenAndServe(addr string) error {
 	if err := AssertLoopback(addr); err != nil {
 		return err
 	}
-	srv := &http.Server{Addr: addr, Handler: s.Handler(), ReadHeaderTimeout: 5 * time.Second}
-	return srv.ListenAndServe()
+	return s.newHTTPServer(addr).ListenAndServe()
 }
 
 // Serve serves the HTTP surface on the given listener (tests). Blocks until the
 // listener is closed.
 func (s *Server) Serve(ln net.Listener) error {
-	srv := &http.Server{Handler: s.Handler(), ReadHeaderTimeout: 5 * time.Second}
-	return srv.Serve(ln)
+	return s.ServeContext(context.Background(), ln)
+}
+
+// ServeContext serves until the listener fails or ctx is cancelled. Cancellation
+// first attempts a bounded graceful shutdown; if active handlers do not drain in
+// time, Close releases their connections before the method returns.
+func (s *Server) ServeContext(ctx context.Context, ln net.Listener) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	httpServer := s.newHTTPServer("")
+	requestCtx, cancelRequests := context.WithCancel(context.Background())
+	defer cancelRequests()
+	httpServer.BaseContext = func(net.Listener) context.Context { return requestCtx }
+	// Shutdown does not cancel active request contexts by itself. Cancelling
+	// them from its callback lets long-lived SSE handlers exit cleanly while the
+	// bounded Shutdown call continues to drain the server.
+	httpServer.RegisterOnShutdown(cancelRequests)
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- httpServer.Serve(ln) }()
+
+	select {
+	case err := <-serveErr:
+		if ctx.Err() != nil && errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return err
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
+		shutdownErr := httpServer.Shutdown(shutdownCtx)
+		cancel()
+		if shutdownErr != nil {
+			if closeErr := httpServer.Close(); closeErr != nil {
+				shutdownErr = errors.Join(shutdownErr, closeErr)
+			}
+		}
+		err := <-serveErr
+		if shutdownErr != nil {
+			return fmt.Errorf("http: graceful shutdown: %w", shutdownErr)
+		}
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	}
+}
+
+func (s *Server) newHTTPServer(addr string) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           s.Handler(),
+		ReadHeaderTimeout: httpReadHeaderTimeout,
+		ReadTimeout:       httpReadTimeout,
+		WriteTimeout:      httpWriteTimeout,
+		IdleTimeout:       httpIdleTimeout,
+	}
 }
 
 // AssertLoopback rejects a non-loopback bind address, enforcing the zero-outbound
@@ -392,25 +632,35 @@ type contractDoc struct {
 	Streams       []string `json:"streams"`
 }
 
-// handleContract returns the contract/metadata document wrapped in the standard
-// envelope. resources = sorted query ops + "search" + injected analyzer names;
-// streams = the SSE event descriptors. It is the runtime mirror of the
-// hand-authored contract.schema.json (the Go↔TS single source of truth).
+// handleContract returns only resources that the current server profile will
+// actually serve. The default profile therefore omits Labs query operations and
+// analyzers instead of advertising capabilities that capabilityGuard will
+// reject. Labs opt-in exposes the complete catalog. It is the runtime mirror of
+// the hand-authored contract.schema.json (the Go↔TS single source of truth).
 func (s *Server) handleContract(w http.ResponseWriter, r *http.Request) {
-	resources := make([]string, 0, len(queryOps)+1+len(s.analyzers))
-	for op := range queryOps {
-		resources = append(resources, "query/"+op)
+	resourceSet := make(map[string]struct{}, len(queryOps)+1+len(agentToolNames)+len(s.analyzers))
+	add := func(operation, resource string) {
+		if s.labsEnabled || !isLabsCapability(operation) {
+			resourceSet[resource] = struct{}{}
+		}
 	}
-	sort.Strings(resources)
-	resources = append(resources, "search")
+	for op := range queryOps {
+		add(op, "query/"+op)
+	}
+	add("search", "search")
 	// EP-020 agent tools are always served (the client seam degrades to the
 	// contract "unavailable" outcome when no graph services are wired).
 	for _, t := range agentToolNames {
-		resources = append(resources, "analyze/"+t)
+		add(t, "analyze/"+t)
 	}
 	for _, a := range s.analyzers {
-		resources = append(resources, "analyze/"+a)
+		add(a, "analyze/"+a)
 	}
+	resources := make([]string, 0, len(resourceSet))
+	for resource := range resourceSet {
+		resources = append(resources, resource)
+	}
+	sort.Strings(resources)
 	doc := contractDoc{
 		SchemaVersion: SchemaVersion,
 		Resources:     resources,
@@ -457,7 +707,7 @@ func (s *Server) handleQuery(w http.ResponseWriter, r *http.Request) {
 // in the same envelope as /query, so compound and fixed-query results are
 // byte-identical across CLI/MCP/HTTP/daemon.
 func (s *Server) handleCompound(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read compound body")
 		return
@@ -477,7 +727,7 @@ func (s *Server) handleCompound(w http.ResponseWriter, r *http.Request) {
 // A malformed pattern surfaces the engine's typed error through the shared
 // sanitized-error path (no new surface error shape).
 func (s *Server) handleSearchAST(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read query-ast body")
 		return
@@ -504,7 +754,7 @@ func (s *Server) handleSearchAST(w http.ResponseWriter, r *http.Request) {
 // query.CloneResult payload is returned in the same envelope for byte-identical
 // parity across surfaces.
 func (s *Server) handleFindClones(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read find-clones body")
 		return
@@ -593,7 +843,17 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		}
 		p.MaxNodes = v
 	}
-	raw, err := s.client.Analyze(r.Context(), p)
+	var raw []byte
+	var err error
+	if analyzer == "impact" {
+		// The only Stable analyzer route uses the selector-free StableClient seam;
+		// arbitrary analyzer dispatch remains confined to the Labs branch below.
+		raw, err = s.stable.Impact(r.Context(), client.ImpactParams{
+			Symbol: p.Symbol, Direction: p.Direction, MaxNodes: p.MaxNodes,
+		})
+	} else {
+		raw, err = s.client.Analyze(r.Context(), p)
+	}
 	if err != nil {
 		writeErrSanitized(w, err)
 		return
@@ -868,6 +1128,7 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 			// terminal frame (it would error). The broker removes the subscriber.
 			return
 		case <-ticker.C:
+			refreshWriteDeadline(w)
 			if _, err := fmt.Fprintf(w, ":keep-alive\n\n"); err != nil {
 				return
 			}
@@ -948,12 +1209,20 @@ func (s *Server) handleSSEAnalyze(w http.ResponseWriter, r *http.Request, analyz
 // gone), so the caller can stop streaming. The id counter is per-connection and
 // monotonic.
 func writeFrame(w http.ResponseWriter, flusher http.Flusher, seq *uint64, event string, data []byte) bool {
+	refreshWriteDeadline(w)
 	*seq++
 	if _, err := fmt.Fprintf(w, "event: %s\nid: %d\ndata: %s\n\n", event, *seq, data); err != nil {
 		return false
 	}
 	flusher.Flush()
 	return true
+}
+
+// refreshWriteDeadline keeps long-lived SSE connections compatible with the
+// server-wide WriteTimeout while retaining a bounded deadline for each frame.
+// Recorders and wrapper writers may not support deadlines; that is harmless.
+func refreshWriteDeadline(w http.ResponseWriter) {
+	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(httpWriteTimeout))
 }
 
 // writeEnvelope writes a successful data response: the engine bytes embedded

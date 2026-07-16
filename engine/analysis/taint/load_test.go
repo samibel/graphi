@@ -3,6 +3,8 @@ package taint
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -146,5 +148,68 @@ func TestLoadConfig_MalformedFailsClosed(t *testing.T) {
 				t.Errorf("LoadConfig accepted %s config; want error (fail-closed)", name)
 			}
 		})
+	}
+}
+
+func TestLoadConfigRejectsTrailingJSONValue(t *testing.T) {
+	root := writeConfig(t, `{"version":"one"}{"version":"two"}`)
+	_, err := LoadConfig(root)
+	if err == nil || !strings.Contains(err.Error(), "multiple JSON values") {
+		t.Fatalf("trailing JSON value error = %v", err)
+	}
+}
+
+func TestLoadConfigRejectsSymlinkEscapes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privileges on windows")
+	}
+	const externalConfig = `{"sinks":[{"id":"outside","category":"secret"}]}`
+	for _, tc := range []struct {
+		name        string
+		linkFinal   bool
+		fingerprint string
+	}{
+		{name: "final symlink", linkFinal: true, fingerprint: "unreadable"},
+		{name: "intermediate directory symlink", fingerprint: "unreadable"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			outside := t.TempDir()
+			outsideFile := filepath.Join(outside, ConfigFile)
+			if err := os.WriteFile(outsideFile, []byte(externalConfig), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if tc.linkFinal {
+				dir := filepath.Join(root, ConfigDir)
+				if err := os.MkdirAll(dir, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(outsideFile, filepath.Join(dir, ConfigFile)); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := os.Symlink(outside, filepath.Join(root, ConfigDir)); err != nil {
+				t.Fatal(err)
+			}
+
+			if _, err := LoadConfig(root); err == nil {
+				t.Fatal("LoadConfig followed a symlink escape")
+			} else if strings.Contains(err.Error(), externalConfig) {
+				t.Fatalf("external config content leaked in error: %q", err)
+			}
+			if got := ConfigFingerprint(root); got != tc.fingerprint {
+				t.Fatalf("ConfigFingerprint = %q, want %q", got, tc.fingerprint)
+			}
+		})
+	}
+}
+
+func TestLoadConfigRejectsOversizeBeforeDecode(t *testing.T) {
+	root := writeConfig(t, strings.Repeat(" ", (1<<20)+1))
+	_, err := LoadConfig(root)
+	if err == nil || !strings.Contains(err.Error(), "exceeds 1048576-byte limit") {
+		t.Fatalf("oversize config error = %v", err)
+	}
+	if got := ConfigFingerprint(root); got != "unreadable" {
+		t.Fatalf("ConfigFingerprint = %q, want unreadable", got)
 	}
 }

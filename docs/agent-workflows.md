@@ -80,12 +80,18 @@ git diff | graphi change-risk -db graph.db -diff -
 
 ## Generic MCP clients
 
-Any MCP client can drive the stdio or streamable-HTTP transport:
+Generic MCP clients use the shipped stdio command. HTTP consumers use Graphi's
+separate REST/SSE surface; `graphi http` is not an MCP endpoint:
 
 ```bash
 graphi mcp -db graph.db          # stdio JSON-RPC
-graphi http -db graph.db         # loopback HTTP; tools at /analyze/{tool}
+graphi http -db graph.db         # loopback REST/SSE; tools at /analyze/{tool}
 ```
+
+`surfaces/mcp.Server.HTTPHandler` is a package-level adapter for embedders, not a
+shipped CLI transport. Binder-backed use must provide `rootUri` or inline roots
+during `initialize`; this POST-only adapter deliberately rejects lifecycle flows
+that would require a server-initiated `roots/list` request.
 
 Over HTTP the tools are `GET /analyze/agent_brief?topic=…`,
 `/analyze/related_files?target=…&direction=…`,

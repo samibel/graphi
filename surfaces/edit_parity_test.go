@@ -164,7 +164,7 @@ func cliRefactorRecord(t *testing.T, c client.Client, target, actor string) edit
 // mcpRefactorRecord runs the MCP refactor tool against c and decodes the record.
 func mcpRefactorRecord(t *testing.T, c client.Client, target, actor string) edit.ChangeRecord {
 	t.Helper()
-	srv := mcp.NewServerWithClient(c)
+	srv := mcp.NewServerWithClient(c, mcp.WithLabs())
 	args := map[string]any{"kind": "rename", "target_symbol": target, "old_name": "Widget", "new_name": "Gadget"}
 	if actor != "" {
 		args["actor"] = actor
@@ -376,7 +376,7 @@ func TestEdit_UndoThroughSurfaces(t *testing.T) {
 func TestEdit_ToolsAdvertised(t *testing.T) {
 	files := map[string]string{"a_def.go": "def:Widget\n"}
 	c, _ := editFixture(t, files)
-	srv := mcp.NewServerWithClient(c)
+	srv := mcp.NewServerWithClient(c, mcp.WithLabs())
 	names := listTools(t, srv)
 	for _, want := range []string{"refactor_preview", "refactor", "undo"} {
 		if !containsName(names, want) {
@@ -387,7 +387,7 @@ func TestEdit_ToolsAdvertised(t *testing.T) {
 	// Without an editor (plain query-only client) the edit tools are hidden.
 	store, _ := seed(t)
 	plain := client.NewDirect(query.New(store), nil)
-	srvNo := mcp.NewServerWithClient(plain)
+	srvNo := mcp.NewServerWithClient(plain, mcp.WithLabs())
 	namesNo := listTools(t, srvNo)
 	for _, name := range []string{"refactor_preview", "refactor", "undo"} {
 		if containsName(namesNo, name) {

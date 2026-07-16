@@ -35,7 +35,16 @@ export interface Envelope {
 export interface ErrorEnvelope {
   schema_version: 1;
   error: {
-    code: "bad_request" | "not_found" | "schema_mismatch" | "unavailable" | "internal";
+    code:
+      | "bad_request"
+      | "labs_disabled"
+      | "invalid_host"
+      | "origin_forbidden"
+      | "not_found"
+      | "request_too_large"
+      | "schema_mismatch"
+      | "unavailable"
+      | "internal";
     /**
      * Sanitized, client-safe message. NEVER a raw engine error string, stack trace, or filesystem path.
      */
