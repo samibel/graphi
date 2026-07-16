@@ -3,6 +3,7 @@ package bench
 import (
 	"context"
 	"crypto/sha256"
+	buildinfo "debug/buildinfo"
 	"encoding/hex"
 	"fmt"
 	"io/fs"
@@ -30,7 +31,7 @@ type HarnessConfig struct {
 	Samples      int      // default 15 (plus warmup)
 	Warmup       int      // default 2 (discarded cold samples)
 	BinaryTarget string   // default ./cmd/graphi/
-	BinaryPath   string   // if set, skip the build and stat this path
+	BinaryPath   string   // if set, skip the build; provenance is read from this external Go binary
 	CGOEnabled   string   // default "0"
 	BuildTags    []string // build tags for the measured binary; default release.DefaultGrammarSubsetTags
 }
@@ -118,6 +119,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 	// (1) Binary size: build the default binary under CGO_ENABLED=0 and stat it.
 	binPath := cfg.BinaryPath
 	ownedBin := ""
+	buildContract := "external-binary/unverified"
 	if binPath == "" {
 		tmp, err := os.MkdirTemp("", "graphi-bench-bin-*")
 		if err != nil {
@@ -129,10 +131,15 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 			return Metrics{}, fmt.Errorf("bench: build binary: %w (%s)", err, strings.TrimSpace(string(out)))
 		}
 		binPath = ownedBin
+		buildContract = release.CanonicalBuildContract
 	}
 	info, err := os.Stat(binPath)
 	if err != nil {
 		return Metrics{}, fmt.Errorf("bench: stat binary: %w", err)
+	}
+	provenance, err := readBinaryBuildProvenance(binPath)
+	if err != nil {
+		return Metrics{}, fmt.Errorf("bench: read binary build provenance: %w", err)
 	}
 
 	// (2) Cold-start P95 + full-index median over N samples (warmup discarded).
@@ -156,13 +163,21 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 	}
 
 	return Metrics{
-		ColdStartP95MS:  ms(P95(coldSamples)),
-		FullIndexMS:     ms(Median(idxSamples)),
-		FreshnessLagMS:  ms(fresh),
-		BinarySizeBytes: info.Size(),
-		FixtureDigest:   digest,
-		Samples:         cfg.Samples,
-		ProfileMetrics:  measureProfileMetrics(ctx, fixture),
+		ColdStartP95MS:   ms(P95(coldSamples)),
+		FullIndexMS:      ms(Median(idxSamples)),
+		FreshnessLagMS:   ms(fresh),
+		BinarySizeBytes:  info.Size(),
+		BuildContract:    buildContract,
+		BuildGoVersion:   provenance.goVersion,
+		BuildGOOS:        provenance.settings["GOOS"],
+		BuildGOARCH:      provenance.settings["GOARCH"],
+		BuildGOAMD64:     provenance.settings["GOAMD64"],
+		BuildCGOEnabled:  provenance.settings["CGO_ENABLED"],
+		BuildVCSRevision: provenance.settings["vcs.revision"],
+		BuildVCSModified: provenance.settings["vcs.modified"],
+		FixtureDigest:    digest,
+		Samples:          cfg.Samples,
+		ProfileMetrics:   measureProfileMetrics(ctx, fixture),
 	}, nil
 }
 
@@ -352,18 +367,35 @@ func copyDir(src, dst string) error {
 }
 
 func buildBinary(ctx context.Context, target, out, cgo, modRoot string, tags []string) ([]byte, error) {
-	args := []string{"build"}
-	if len(tags) > 0 {
-		// Subset-tag the measured binary so binary_size_bytes reflects the SHIPPED
-		// default build (only the registered grammar blobs embedded), matching the
-		// canonical cmd/release build. Space-joined `-tags 'a b c'` form.
-		args = append(args, "-tags", strings.Join(tags, " "))
+	if cgo != "0" {
+		return nil, fmt.Errorf("bench: canonical release build requires CGO_ENABLED=0, got %q", cgo)
 	}
-	args = append(args, "-o", out, target)
+	args := release.CanonicalBuildArgs(release.BuildConfig{
+		Target:  target,
+		Version: "dev",
+		Tags:    tags,
+	}, out)
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Env = withCgo(os.Environ(), cgo)
 	cmd.Dir = modRoot
 	return cmd.CombinedOutput()
+}
+
+type binaryBuildProvenance struct {
+	goVersion string
+	settings  map[string]string
+}
+
+func readBinaryBuildProvenance(path string) (binaryBuildProvenance, error) {
+	info, err := buildinfo.ReadFile(path)
+	if err != nil {
+		return binaryBuildProvenance{}, err
+	}
+	settings := make(map[string]string, len(info.Settings))
+	for _, setting := range info.Settings {
+		settings[setting.Key] = setting.Value
+	}
+	return binaryBuildProvenance{goVersion: info.GoVersion, settings: settings}, nil
 }
 
 func withCgo(env []string, cgo string) []string {

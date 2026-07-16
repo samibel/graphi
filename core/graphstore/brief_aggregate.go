@@ -120,28 +120,35 @@ func (s *SQLiteStore) BriefStats(ctx context.Context, topSymbols int) (BriefStat
 		return BriefStats{}, fmt.Errorf("graphstore: count brief edges: %w", err)
 	}
 
-	tierRows, err := tx.QueryContext(ctx, `SELECT confidence_tier, COUNT(*) FROM edges GROUP BY confidence_tier`)
-	if err != nil {
-		return BriefStats{}, fmt.Errorf("graphstore: brief tier counts: %w", err)
-	}
-	for tierRows.Next() {
-		var tier string
-		var count int
-		if err := tierRows.Scan(&tier, &count); err != nil {
-			tierRows.Close()
-			return BriefStats{}, fmt.Errorf("graphstore: scan brief tier count: %w", err)
+	if err := func() (retErr error) {
+		tierRows, err := tx.QueryContext(ctx, `SELECT confidence_tier, COUNT(*) FROM edges GROUP BY confidence_tier`)
+		if err != nil {
+			return fmt.Errorf("graphstore: brief tier counts: %w", err)
 		}
-		out.TierCounts[model.ConfidenceTier(tier)] = count
-	}
-	if err := tierRows.Err(); err != nil {
-		tierRows.Close()
-		return BriefStats{}, fmt.Errorf("graphstore: iterate brief tier counts: %w", err)
-	}
-	if err := tierRows.Close(); err != nil {
-		return BriefStats{}, fmt.Errorf("graphstore: close brief tier counts: %w", err)
+		defer func() {
+			if err := tierRows.Close(); retErr == nil && err != nil {
+				retErr = fmt.Errorf("graphstore: close brief tier counts: %w", err)
+			}
+		}()
+
+		for tierRows.Next() {
+			var tier string
+			var count int
+			if err := tierRows.Scan(&tier, &count); err != nil {
+				return fmt.Errorf("graphstore: scan brief tier count: %w", err)
+			}
+			out.TierCounts[model.ConfidenceTier(tier)] = count
+		}
+		if err := tierRows.Err(); err != nil {
+			return fmt.Errorf("graphstore: iterate brief tier counts: %w", err)
+		}
+		return nil
+	}(); err != nil {
+		return BriefStats{}, err
 	}
 
-	fileRows, err := tx.QueryContext(ctx, `
+	if err := func() (retErr error) {
+		fileRows, err := tx.QueryContext(ctx, `
 WITH file_symbols AS (
   SELECT source_path AS path, COUNT(*) AS symbol_count
   FROM nodes WHERE source_path <> '' GROUP BY source_path
@@ -159,63 +166,72 @@ WITH file_symbols AS (
 SELECT s.path, s.symbol_count, COALESCE(d.endpoint_count, 0)
 FROM file_symbols s LEFT JOIN file_degree d ON d.path = s.path
 ORDER BY s.path`)
-	if err != nil {
-		return BriefStats{}, fmt.Errorf("graphstore: brief file aggregates: %w", err)
-	}
-	for fileRows.Next() {
-		var fs BriefFileStats
-		if err := fileRows.Scan(&fs.Path, &fs.SymbolCount, &fs.EdgeEndpoints); err != nil {
-			fileRows.Close()
-			return BriefStats{}, fmt.Errorf("graphstore: scan brief file aggregate: %w", err)
+		if err != nil {
+			return fmt.Errorf("graphstore: brief file aggregates: %w", err)
 		}
-		out.Files = append(out.Files, fs)
-	}
-	if err := fileRows.Err(); err != nil {
-		fileRows.Close()
-		return BriefStats{}, fmt.Errorf("graphstore: iterate brief file aggregates: %w", err)
-	}
-	if err := fileRows.Close(); err != nil {
-		return BriefStats{}, fmt.Errorf("graphstore: close brief file aggregates: %w", err)
+		defer func() {
+			if err := fileRows.Close(); retErr == nil && err != nil {
+				retErr = fmt.Errorf("graphstore: close brief file aggregates: %w", err)
+			}
+		}()
+
+		for fileRows.Next() {
+			var fs BriefFileStats
+			if err := fileRows.Scan(&fs.Path, &fs.SymbolCount, &fs.EdgeEndpoints); err != nil {
+				return fmt.Errorf("graphstore: scan brief file aggregate: %w", err)
+			}
+			out.Files = append(out.Files, fs)
+		}
+		if err := fileRows.Err(); err != nil {
+			return fmt.Errorf("graphstore: iterate brief file aggregates: %w", err)
+		}
+		return nil
+	}(); err != nil {
+		return BriefStats{}, err
 	}
 
 	if topSymbols > 0 {
-		topRows, err := tx.QueryContext(ctx, `
+		if err := func() (retErr error) {
+			topRows, err := tx.QueryContext(ctx, `
 SELECT n.kind, n.qualified_name, n.source_path, n.line, n.col, n.meta, COUNT(e.id) AS inbound_count
 FROM edges e JOIN nodes n ON n.id = e.to_id
 GROUP BY n.id, n.kind, n.qualified_name, n.source_path, n.line, n.col, n.meta
 ORDER BY inbound_count DESC, n.id ASC
 LIMIT ?`, topSymbols)
-		if err != nil {
-			return BriefStats{}, fmt.Errorf("graphstore: brief top inbound: %w", err)
-		}
-		for topRows.Next() {
-			var kind, qn, path, metaJSON string
-			var line, col, degree int
-			if err := topRows.Scan(&kind, &qn, &path, &line, &col, &metaJSON, &degree); err != nil {
-				topRows.Close()
-				return BriefStats{}, fmt.Errorf("graphstore: scan brief top inbound: %w", err)
-			}
-			n, err := model.NewNode(kind, qn, path, line, col)
 			if err != nil {
-				topRows.Close()
-				return BriefStats{}, fmt.Errorf("graphstore: reconstruct brief node: %w", err)
+				return fmt.Errorf("graphstore: brief top inbound: %w", err)
 			}
-			meta, err := decodeNodeMeta(metaJSON)
-			if err != nil {
-				topRows.Close()
-				return BriefStats{}, err
+			defer func() {
+				if err := topRows.Close(); retErr == nil && err != nil {
+					retErr = fmt.Errorf("graphstore: close brief top inbound: %w", err)
+				}
+			}()
+
+			for topRows.Next() {
+				var kind, qn, path, metaJSON string
+				var line, col, degree int
+				if err := topRows.Scan(&kind, &qn, &path, &line, &col, &metaJSON, &degree); err != nil {
+					return fmt.Errorf("graphstore: scan brief top inbound: %w", err)
+				}
+				n, err := model.NewNode(kind, qn, path, line, col)
+				if err != nil {
+					return fmt.Errorf("graphstore: reconstruct brief node: %w", err)
+				}
+				meta, err := decodeNodeMeta(metaJSON)
+				if err != nil {
+					return err
+				}
+				if !meta.IsZero() {
+					n = n.WithMeta(meta)
+				}
+				out.TopInbound = append(out.TopInbound, BriefSymbolStats{Node: n, InboundEdges: degree})
 			}
-			if !meta.IsZero() {
-				n = n.WithMeta(meta)
+			if err := topRows.Err(); err != nil {
+				return fmt.Errorf("graphstore: iterate brief top inbound: %w", err)
 			}
-			out.TopInbound = append(out.TopInbound, BriefSymbolStats{Node: n, InboundEdges: degree})
-		}
-		if err := topRows.Err(); err != nil {
-			topRows.Close()
-			return BriefStats{}, fmt.Errorf("graphstore: iterate brief top inbound: %w", err)
-		}
-		if err := topRows.Close(); err != nil {
-			return BriefStats{}, fmt.Errorf("graphstore: close brief top inbound: %w", err)
+			return nil
+		}(); err != nil {
+			return BriefStats{}, err
 		}
 	}
 

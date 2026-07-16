@@ -2,10 +2,42 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestDiscoverFirstPartyTargetsIgnoresSuccessfulStderr(t *testing.T) {
+	want := []string{"github.com/samibel/graphi/core/model"}
+	got, err := discoverFirstPartyTargetsWithRunner(
+		context.Background(),
+		nil,
+		func(context.Context, []string) ([]byte, []byte, error) {
+			return []byte(want[0] + "\n"), []byte("go: downloading example.invalid/module v1.0.0\n"), nil
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("targets = %v, want %v", got, want)
+	}
+}
+
+func TestDiscoverFirstPartyTargetsReportsFailedStderr(t *testing.T) {
+	_, err := discoverFirstPartyTargetsWithRunner(
+		context.Background(),
+		nil,
+		func(context.Context, []string) ([]byte, []byte, error) {
+			return nil, []byte("module resolution failed\n"), errors.New("exit status 1")
+		},
+	)
+	if err == nil || !strings.Contains(err.Error(), "module resolution failed") {
+		t.Fatalf("error = %v, want failed go-list stderr", err)
+	}
+}
 
 func TestFilterFirstPartyTargetsExcludesNodeModulesWithoutLosingAutoDiscovery(t *testing.T) {
 	got, err := filterFirstPartyTargets([]string{

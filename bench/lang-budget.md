@@ -5,6 +5,13 @@ grammars: which languages are in scope, how the size cost is modeled, and the
 measured deltas each worker recorded. It's for contributors adding or auditing
 a language grammar in the default build.
 
+> **Current enforced whole-binary gate (2026-07-16):** the benchmark uses the
+> canonical CGo-free release argument contract (`-trimpath`, VCS metadata,
+> version stamp, and the 20 subset grammar tags) on
+> `go1.26.5/linux-amd64/GOAMD64=v1`. Baseline: **32,509,872 B**; budget:
+> **34,250,000 B**. Historical EP-009 planning figures below are retained to
+> explain the per-language allocation, not as the current gate value.
+
 > **Owner:** SW-052 (STEP-0 foundation seam — hard gate). This file defines the
 > per-worker binary-budget sub-allocation that the tier-1 language workers
 > (SW-053..056) build against. It **freezes** the curated tier-1 list and assigns
@@ -18,7 +25,8 @@ a language grammar in the default build.
 ## Why a sub-allocation
 
 The whole-binary budget is **< 50 MB** (GoReleaser), pinned in `bench-budget.yml`
-as `binary_size_bytes` (current baseline `18,500,000`, budget `20,000,000`). EP-009
+as `binary_size_bytes` (the original SW-052 planning baseline was `18,500,000`,
+with a `20,000,000` budget). EP-009
 fans grammar work out across parallel language workers. Without a per-worker
 envelope, the first worker to land could consume the shared headroom and silently
 starve later workers — turning a parallelizable epic into a serialized contention
@@ -98,11 +106,14 @@ available grammar is **CGO-only** (`go-sitter-forest`). They MUST NOT enter the 
 
 ## Per-worker binary-size envelope
 
-Baseline (CGo-free stdlib build, ADR 0001): the default binary is ~3.4 MiB; with
-the EP-008 HTTP/SSE surface plus the curated 20-grammar subset-tagged tier, the
-pinned `binary_size_bytes` baseline is **`28,615,410`**, budget **`30,000,000`**
-(`baseline_version: 2026-06-24-ep009`, SW-057) — i.e. **~1.4 MB of headroom against
-the pinned gate**, and ~21 MB against the hard < 50 MB whole-binary ceiling.
+Historical SW-057 measurement (CGo-free stdlib build, ADR 0001): the default
+binary was ~3.4 MiB; with the EP-008 HTTP/SSE surface plus the curated
+20-grammar subset-tagged tier, `binary_size_bytes` was pinned to
+**`28,615,410`** with a **`30,000,000`** budget
+(`baseline_version: 2026-06-24-ep009`) — then ~1.4 MB of headroom and ~21 MB
+below the hard < 50 MB whole-binary ceiling. These are historical numbers, not
+the current enforced gate; the current values are stated at the top of this
+document and in `bench/bench-budget.yml`.
 
 > **RE-PLANNED 2026-06-24 — size model corrected.** The old "≤ 1.0 MB **per language**,
 > ≤ 25 MB **epic-total**" envelope is **superseded** (EP-009-REPLAN-001). It is the **wrong
@@ -251,28 +262,33 @@ the default `CGO_ENABLED=0` subset build green. Re-evaluate when upstream gotree
 shared HTML scanner core out of `blade_scanner.go` into an html-gated file. This deferral is for a
 **build-packaging** reason (subset-isolation), distinct from the SW-056 CGO-only-grammar path.
 
-### Re-pinning (SW-057) — APPLIED
+### Historical re-pinning (SW-057, superseded)
 
-**Done (SW-057, 2026-06-24).** The tier-1 grammars landed; the consolidation slice
-re-pinned `bench-budget.yml` `binary_size_bytes` **once** against the **shipped
-subset-tagged** total and bumped `baseline_version`:
+**Historical record (SW-057, 2026-06-24).** When the tier-1 grammars landed, the
+consolidation slice re-pinned `bench-budget.yml` `binary_size_bytes` against the
+then-shipped subset-tagged total and bumped `baseline_version`:
 
 - **baseline:** `28,615,410` B (= measured shipped subset-tagged default)
 - **budget:** `30,000,000` B (~4.8% headroom; ~20 MB under the < 50 MB hard ceiling)
 - **baseline_version:** `2026-06-24-ep009` (with a justification comment block)
 
-**Measurement note (flag reconciliation).** The per-worker SW-053/SW-054 "Measured
+**Historical measurement note (flag reconciliation).** The per-worker SW-053/SW-054 "Measured
 deltas" tables above were recorded with `-trimpath -ldflags="-s -w"` (symbol-stripped),
 giving the smaller historical figures (e.g. 18,979,778 B for the 20-blob subset). The
-**enforced gate** measures the **shipped** binary as built by the canonical `cmd/release`
-path / the `cmd/bench` harness — `-trimpath`, version-stamped, **without** `-s -w`
-stripping — which is **28,615,410 B**. The gate is pinned against that shipped number (the
-one users actually ship), not the stripped-build figure. Both are far under the < 50 MB
-ceiling; the all-206 untagged build (~46 MB) is what the subset tags prevent shipping.
+gate at that time measured the **shipped** binary as built by the canonical
+`cmd/release` path / the `cmd/bench` harness — `-trimpath`, version-stamped,
+**without** `-s -w` stripping — and measured **28,615,410 B**. That superseded
+gate was pinned against the shipped number, not the stripped-build figure. Both
+historical figures were far under the < 50 MB ceiling; the all-206 untagged build
+(~46 MB) is what the subset tags prevent shipping.
 
 The `cmd/bench` harness now builds its measured binary with
-`internal/release.DefaultGrammarSubsetTags` (SW-057), so the budget gate enforces the
-**subset model** (20 registered blobs), never the all-206 envelope.
+`internal/release.CanonicalBuildArgs` plus
+`internal/release.DefaultGrammarSubsetTags`, so the budget gate enforces the
+same unstripped, version-stamped default release contract and the **subset
+model** (20 registered blobs), never the all-206 envelope. The current enforced
+numbers are recorded at the top of this document; the SW-057 values in this
+section are historical.
 
 ## Hard constraints carried from SW-052 (+ EP-009 re-plan)
 

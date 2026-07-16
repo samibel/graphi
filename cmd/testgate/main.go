@@ -136,12 +136,32 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 // node_modules into executable CI code. go list only inspects package metadata;
 // the returned explicit import paths are what go test is allowed to execute.
 func discoverFirstPartyTargets(ctx context.Context, env []string) ([]string, error) {
+	return discoverFirstPartyTargetsWithRunner(ctx, env, runGoList)
+}
+
+type goListRunner func(context.Context, []string) (stdout, stderr []byte, err error)
+
+func runGoList(ctx context.Context, env []string) ([]byte, []byte, error) {
 	cmd := exec.CommandContext(ctx, "go", "list", "./...")
 	cmd.Env = env
-	out, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.Bytes(), stderr.Bytes(), err
+}
+
+func discoverFirstPartyTargetsWithRunner(ctx context.Context, env []string, runner goListRunner) ([]string, error) {
+	out, stderr, err := runner(ctx, env)
 	if err != nil {
-		return nil, fmt.Errorf("go list ./...: %w: %s", err, strings.TrimSpace(string(out)))
+		detail := strings.TrimSpace(string(stderr))
+		if detail != "" {
+			return nil, fmt.Errorf("go list ./...: %w: %s", err, detail)
+		}
+		return nil, fmt.Errorf("go list ./...: %w", err)
 	}
+	// A successful go command may emit module-download diagnostics on stderr.
+	// They are not package paths and must never enter the strict test target set.
 	return filterFirstPartyTargets(strings.Fields(string(out)))
 }
 

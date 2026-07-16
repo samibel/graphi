@@ -182,12 +182,27 @@ func (r *shellRunner) Run() (float64, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, r.cmd, r.args...)
 	cmd.Env = r.env
-	var stderr bytes.Buffer
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return 0, fmt.Errorf("%s: %w: %s", r.name, err, strings.TrimSpace(stderr.String()))
+		detail := strings.TrimSpace(strings.Join(nonEmptyStrings(stdout.String(), stderr.String()), "\n"))
+		if detail == "" {
+			return 0, fmt.Errorf("%s: %w", r.name, err)
+		}
+		return 0, fmt.Errorf("%s: %w: %s", r.name, err, detail)
 	}
 	return r.score, nil
+}
+
+func nonEmptyStrings(values ...string) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			out = append(out, value)
+		}
+	}
+	return out
 }
 
 // privacyRunner runs `graphi privacy-audit` with the elevation the audit's

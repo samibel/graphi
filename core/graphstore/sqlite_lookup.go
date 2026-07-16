@@ -232,17 +232,20 @@ WHERE id IN (?` + strings.Repeat(",?", len(chunk)-1) + `) ORDER BY id`
 		for _, id := range chunk {
 			args = append(args, string(id))
 		}
-		rows, err := s.db.QueryContext(ctx, q, args...)
+		nodes, err := func() (nodes []model.Node, retErr error) {
+			rows, err := s.db.QueryContext(ctx, q, args...)
+			if err != nil {
+				return nil, fmt.Errorf("graphstore: nodes by id chunk %d: %w", start/sqliteNodesByIDChunkSize, err)
+			}
+			defer func() {
+				if err := rows.Close(); retErr == nil && err != nil {
+					retErr = fmt.Errorf("graphstore: close nodes by id rows: %w", err)
+				}
+			}()
+			return scanNodeRows(rows)
+		}()
 		if err != nil {
-			return nil, fmt.Errorf("graphstore: nodes by id chunk %d: %w", start/sqliteNodesByIDChunkSize, err)
-		}
-		nodes, scanErr := scanNodeRows(rows)
-		closeErr := rows.Close()
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		if closeErr != nil {
-			return nil, fmt.Errorf("graphstore: close nodes by id rows: %w", closeErr)
+			return nil, err
 		}
 		out = append(out, nodes...)
 	}

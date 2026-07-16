@@ -12,10 +12,17 @@ version: 1
 # 2026-06-23-v2: re-pinned binary_size for EP-008. ...
 # (previous baseline notes preserved)
 #
-# 2026-07-04-ep022: added profile-aware metrics (fast/balanced/deep) as warn-only
-# budgets. These surface index time, DB size, edge count, and query latency per
-# profile without failing the gate while the team calibrates realistic baselines.
-baseline_version: "2026-07-04-ep022"
+# 2026-07-16-v050-hardening: binary_size_bytes now measures the canonical
+# CGo-free release build contract (-trimpath, VCS metadata, fixed version stamp,
+# and the 20 registered subset grammar tags) on go1.26.5/linux-amd64/GOAMD64=v1.
+# The previous raw `go build` was source-path dependent and had drifted from the
+# release command it claimed to measure. The v0.5 hardening work adds bounded
+# graph reads plus root/HTTP/MCP security and grows the default binary
+# intentionally; package analysis found no new external dependency or accidental
+# grammar blob. Baseline 32,509,872 B is the measured canonical current tree;
+# budget 34,250,000 B preserves ~5.35% headroom and remains ~15.75 MB below the
+# hard 50 MB product ceiling.
+baseline_version: "2026-07-16-v050-hardening-go1.26.5-linux-amd64-release"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
@@ -32,8 +39,8 @@ metrics:
     budget: 2000
     unit: ms
   binary_size_bytes:
-    baseline: 30861562
-    budget: 32500000
+    baseline: 32509872
+    budget: 34250000
     unit: bytes
   # EP-022 profile-aware metrics (warn-only until calibrated).
   fast_index_ms:

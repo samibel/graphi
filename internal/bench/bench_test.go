@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/samibel/graphi/internal/release"
 )
 
 func TestParseTinyYAML_SchemaRoundTrip(t *testing.T) {
@@ -185,6 +187,15 @@ func TestRun_RealHarnessProducesFourMetrics(t *testing.T) {
 	}
 	if metrics.FixtureDigest == "" {
 		t.Error("FixtureDigest empty")
+	}
+	if metrics.BuildContract != release.CanonicalBuildContract {
+		t.Errorf("BuildContract = %q, want canonical release contract", metrics.BuildContract)
+	}
+	if metrics.BuildGoVersion == "" || metrics.BuildGOOS == "" || metrics.BuildGOARCH == "" {
+		t.Errorf("incomplete build provenance: %+v", metrics)
+	}
+	if metrics.BuildCGOEnabled != "0" {
+		t.Errorf("BuildCGOEnabled = %q, want 0", metrics.BuildCGOEnabled)
 	}
 }
 
