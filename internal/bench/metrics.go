@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const (
+	ExternalBinaryBuildContract = "external-binary/unverified"
+	CustomBuildContract         = "custom-build/unverified"
+)
+
 // Metrics are the four measured benchmark values plus provenance. Durations are
 // expressed as float milliseconds; binary size as bytes.
 type Metrics struct {

@@ -129,11 +129,12 @@ embeds only the selected blobs, and the delta decomposes as:
   runtime (parser/lexer/query engine), linked the moment the first grammar registers.
 - **Marginal cost (per registered language):** the parse-table blob only — tens to hundreds of
   KiB (TypeScript `typescript.bin` ≈ 119 KiB).
-- **Governing gate:** the whole-binary **< 50 MB** hard ceiling. The **measured** subset-tagged
-  tier-1 total (20 grammars, go1.26.3 / darwin-arm64, bench harness) is **28,615,410 B
-  (~27.3 MB)** — ~21 MB of headroom under the hard gate. The global `bench-budget.yml` re-pin
-  against this subset total is owned by **SW-057** and is now applied (baseline `28,615,410`,
-  budget `30,000,000`, `baseline_version: 2026-06-24-ep009`). See "Re-pinning (SW-057)" below.
+- **Historical SW-057 gate:** the whole-binary **< 50 MB** hard ceiling already applied. The
+  then-measured subset-tagged tier-1 total (20 grammars, go1.26.3 / darwin-arm64,
+  bench harness) was **28,615,410 B (~27.3 MB)** — ~21 MB below that hard ceiling.
+  SW-057 pinned the global manifest to baseline `28,615,410`, budget `30,000,000`,
+  `baseline_version: 2026-06-24-ep009`. Those manifest values are superseded; see
+  the current gate at the top of this document and the historical record below.
 
 **Subset-tag default build (SW-053 AC#3 — load-bearing).** The shipped default build MUST be
 built with `-tags 'grammar_subset grammar_subset_<lang> …'` (one `grammar_subset_<lang>` per

@@ -50,7 +50,9 @@ from the measured binary itself. CI pins `GOAMD64=v1`; the enforced baseline is
 therefore a clean `go1.26.5/linux-amd64` artifact rather than a value silently
 mixed across machines or source-path lengths. Supplying `BinaryPath` skips the
 canonical build and marks the contract `external-binary/unverified`; an
-arbitrary prebuilt binary is never reported as canonical.
+arbitrary prebuilt binary is never reported as canonical. Internally built
+artifacts with a non-default target, tag set, path or build setting are marked
+`custom-build/unverified` instead.
 
 > Note on `freshness_lag_ms`: the Go parser now runs an extraction pass
 > (`core/parse/extract_go.go`) that populates symbol nodes and intra-file

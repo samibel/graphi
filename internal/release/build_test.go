@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 )
 
@@ -19,20 +18,20 @@ func TestCanonicalBuildArgsPinsReleaseContract(t *testing.T) {
 		Tags:    []string{"grammar_subset", "grammar_subset_typescript"},
 	}, "out/graphi")
 
-	for _, required := range []string{"-trimpath", "-buildvcs=true", "-tags", "-ldflags", "-o"} {
-		if !slices.Contains(args, required) {
-			t.Fatalf("canonical build args %v missing %q", args, required)
-		}
-	}
-	joined := strings.Join(args, " ")
-	for _, required := range []string{
+	want := []string{
+		"build",
+		"-trimpath",
+		"-buildvcs=true",
+		"-tags",
 		"grammar_subset grammar_subset_typescript",
-		VersionVar + "=bench",
-		"out/graphi ./cmd/graphi/",
-	} {
-		if !strings.Contains(joined, required) {
-			t.Fatalf("canonical build args %q missing %q", joined, required)
-		}
+		"-ldflags",
+		"-X " + VersionVar + "=bench",
+		"-o",
+		"out/graphi",
+		"./cmd/graphi/",
+	}
+	if !slices.Equal(args, want) {
+		t.Fatalf("canonical build args = %q, want exact contract %q", args, want)
 	}
 }
 

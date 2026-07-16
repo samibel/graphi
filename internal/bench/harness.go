@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -119,7 +120,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 	// (1) Binary size: build the default binary under CGO_ENABLED=0 and stat it.
 	binPath := cfg.BinaryPath
 	ownedBin := ""
-	buildContract := "external-binary/unverified"
+	builtInternally := binPath == ""
 	if binPath == "" {
 		tmp, err := os.MkdirTemp("", "graphi-bench-bin-*")
 		if err != nil {
@@ -131,7 +132,6 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 			return Metrics{}, fmt.Errorf("bench: build binary: %w (%s)", err, strings.TrimSpace(string(out)))
 		}
 		binPath = ownedBin
-		buildContract = release.CanonicalBuildContract
 	}
 	info, err := os.Stat(binPath)
 	if err != nil {
@@ -141,6 +141,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 	if err != nil {
 		return Metrics{}, fmt.Errorf("bench: read binary build provenance: %w", err)
 	}
+	buildContract := classifyBuildContract(cfg, provenance, builtInternally)
 
 	// (2) Cold-start P95 + full-index median over N samples (warmup discarded).
 	coldSamples := make([]time.Duration, 0, cfg.Samples)
@@ -382,6 +383,7 @@ func buildBinary(ctx context.Context, target, out, cgo, modRoot string, tags []s
 }
 
 type binaryBuildProvenance struct {
+	path      string
 	goVersion string
 	settings  map[string]string
 }
@@ -395,7 +397,25 @@ func readBinaryBuildProvenance(path string) (binaryBuildProvenance, error) {
 	for _, setting := range info.Settings {
 		settings[setting.Key] = setting.Value
 	}
-	return binaryBuildProvenance{goVersion: info.GoVersion, settings: settings}, nil
+	return binaryBuildProvenance{path: info.Path, goVersion: info.GoVersion, settings: settings}, nil
+}
+
+func classifyBuildContract(cfg HarnessConfig, provenance binaryBuildProvenance, builtInternally bool) string {
+	if !builtInternally {
+		return ExternalBinaryBuildContract
+	}
+	settings := provenance.settings
+	if filepath.Clean(cfg.BinaryTarget) != filepath.Clean("./cmd/graphi/") ||
+		!slices.Equal(cfg.BuildTags, release.DefaultGrammarSubsetTags) ||
+		provenance.path != "github.com/samibel/graphi/cmd/graphi" ||
+		provenance.goVersion == "" ||
+		settings["-trimpath"] != "true" ||
+		settings["-tags"] != strings.Join(release.DefaultGrammarSubsetTags, ",") ||
+		settings["CGO_ENABLED"] != "0" ||
+		settings["GOOS"] == "" || settings["GOARCH"] == "" {
+		return CustomBuildContract
+	}
+	return release.CanonicalBuildContract
 }
 
 func withCgo(env []string, cgo string) []string {
