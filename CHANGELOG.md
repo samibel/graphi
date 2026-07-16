@@ -7,6 +7,21 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Added
+- The M0 candidate is frozen and recorded in
+  `docs/decisions/2026-07-m0-candidate-freeze.md`: the candidate is the merge
+  commit of #55 on `main`, `4e72637d3c2c0dc7d32142a590d46c0c62c10733` (not the
+  branch head `e285822`), and every measurement in the 9/10 program binds to it.
+  The record states its digest with provenance — a reproducible verify-only build
+  digest (`sha256=03f22af4…`, from the `release` workflow's `reproducible static
+  release binary` job) genuinely exists for that SHA, while the **published**
+  release digest is **UNKNOWN**: the candidate publishes nothing, because
+  `CHANGELOG.md`'s first released header is still v0.5.0, which is already
+  published at the parent commit `65713de`. Per plan §2.4, that UNKNOWN counts as
+  not passed. The record also carries the change-control rule: the candidate SHA
+  moves only for a documented blocker fix, and every move must list the
+  measurements it invalidates. Linked from `docs/rc/focused-core-rc.md` §1.
+
 ### Changed
 - Root `.gitignore` and `.graphi/taint.json` loading is root-confined and
   fail-closed: final/outside symlinks, non-regular files, concurrent path
