@@ -614,7 +614,7 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi agent-brief` | **GA** | Bounded, cited task-start context packet. |
 | `graphi parse <file>` | labs | Parse a single file into the graph (default when no subcommand is given). |
 | `graphi query <op> -symbol <id> [-depth N]` | **GA** | Structural query. `<op>` is one of `callers`, `callees`, `references`, `definition`, `neighborhood`. |
-| `graphi search [-limit N] [-semantic] <query>` | **GA** | Lexical / symbol search; `-semantic` runs the optional embedding search (graceful-skip when no embedder is configured). |
+| `graphi search [-limit N] [-semantic] <query>` | **GA** | Lexical / symbol search — the **GA** tier covers the lexical operation only. The optional `-semantic` flag is **labs**: it runs the embedding search (graceful-skip when no embedder is configured). |
 | `graphi setup-embedder [<selector>]` | labs | Print how to opt in to the optional semantic search (offline; semantic search stays OFF until you set `GRAPHI_EMBEDDER`). |
 | `graphi analyze <analyzer> -symbol <id> [options]` | labs | Run a semantic or deep analyzer (see below). |
 | `graphi mcp` | **GA** | Run the MCP **stdio** server (the agent-first surface). GA as a transport for the 12 operations; `-labs` opens the Labs catalog and is not GA. |
