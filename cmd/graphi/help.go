@@ -303,6 +303,7 @@ func runHelp(args []string, w io.Writer) int {
 	sort.Strings(names)
 	fmt.Fprintln(w, "known subcommands:")
 	fmt.Fprintln(w, "  (🟢 stable operations unmarked · [labs] = kept in-tree, not a stable promise)")
+	fmt.Fprintln(w, "  (GA = the stable operations on Go over CLI + MCP stdio; other languages are Preview. See docs/stability-tiers.md)")
 	for _, n := range names {
 		fmt.Fprintf(w, "  %-18s %s%s\n", n, stabilityMarker(n), subcommandHelp[n].synopsis)
 	}

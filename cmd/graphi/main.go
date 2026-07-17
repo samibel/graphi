@@ -1513,7 +1513,7 @@ func runVersion() {
 func printHelp() {
 	reg := parse.NewDefaultRegistry()
 	fmt.Print("graphi: run with no arguments to index the current repo and open the local UI in your browser.\n")
-	fmt.Print("\nStability taxonomy (SCOPE-01): 🟢 Stable — the 12 frozen product operations; 🧪 Labs — kept in-tree, not a stable promise. Full matrix: docs/coverage-matrix.md.\n")
+	fmt.Print("\nStability taxonomy (SCOPE-01): 🟢 Stable — the 12 frozen product operations, on Go, over CLI + MCP stdio (this is the GA scope); 🧪 Labs — kept in-tree, not a stable promise. On a non-Go language a Stable operation is Preview, not GA. Canonical tiers: docs/stability-tiers.md. Full matrix: docs/coverage-matrix.md.\n")
 	fmt.Print("\nStable operations:\n")
 	fmt.Print("  graphi index                index the current repo into a durable graph store\n")
 	fmt.Print("  graphi search <query>       lexical / symbol search over the graph\n")
@@ -1534,7 +1534,7 @@ func printHelp() {
 	fmt.Print("  graphi query <op> -symbol <id> [-depth N]\n")
 	fmt.Print("  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
 	fmt.Print("\nDetails on any subcommand:  graphi help <subcommand>   (or: graphi <subcommand> --help)\n")
-	fmt.Printf("registered languages: %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
+	fmt.Printf("registered languages (Go is GA; every other language is Preview — see docs/stability-tiers.md): %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
 }
 
 // runParseDefault preserves the original SW-001 parser-registry behavior.
