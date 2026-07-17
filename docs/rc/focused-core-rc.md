@@ -88,6 +88,15 @@ optionale Wette. Läuft parallel zur RC-Entscheidung.
 leer · `go vet` sauber · `layerguard` PASS · `coverage -check` (Matrix +
 Stable-Tier + Manifest-Freshness) PASS.
 
+**Evidence-Index & Gate-Dashboard (SW-119):** Die 9/10-Programm-Gates (Plan §6
+WP0–WP10 + §5 M0–M5) stehen in [`docs/rc/evidence-index.md`](evidence-index.md),
+generiert aus [`docs/rc/evidence-index.yaml`](evidence-index.yaml) über
+`go run ./cmd/evidence -generate`. `go run ./cmd/evidence -check` erzwingt die
+WP0-Regel — eine PASS-Zeile braucht Evidence URI **und** SHA/Digest, sonst rot;
+eine Zeile ohne belegten Status liest UNKNOWN. Heute sind praktisch alle Zeilen
+UNKNOWN; das ist der Punkt. Diese RC-Checkliste (§2/§4) bleibt die maßgebliche
+Freigabe-Sicht; der Index ist die Programm-Ebene darüber, nicht ihre Ablösung.
+
 ## 4. Offen vor dem Go
 
 ### 4.1 Blockierend (Reihenfolge)
