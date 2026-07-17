@@ -95,7 +95,7 @@ sha256=03f22af4682cba4323bef098ddb089594dc173046948f42c6aa15b819c3c92ab
 
 **Provenance — re-derivable, not pasted:**
 
-| | |
+| Property | Detail |
 |---|---|
 | Workflow | `release` (`.github/workflows/release.yml`) |
 | Job | `reproducible static release binary` |
