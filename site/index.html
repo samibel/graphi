@@ -133,7 +133,7 @@
           <li class="step-card">
             <span class="step-card__num">02</span>
             <h3>Serve</h3>
-            <p>A background daemon keeps the graph hot and answers structural questions in a <strong>single round-trip</strong> — no re-grepping, no re-reading whole files.</p>
+            <p>graphi answers structural questions in a <strong>single round-trip</strong> — no re-grepping, no re-reading whole files. Queries read the graph straight from your local store; an optional background daemon (Labs) can keep it hot for repeated queries.</p>
           </li>
           <li class="step-card">
             <span class="step-card__num">03</span>
@@ -160,7 +160,7 @@
             <p>Fast, structural answers about an unfamiliar or large codebase — right on the command line.</p>
             <pre class="mini-term"><code><span class="prompt">$</span> graphi callers <span class="tok">handleAuth</span>
 <span class="prompt">$</span> graphi impact  <span class="tok">handleAuth</span>
-<span class="prompt">$</span> graphi tui</code></pre>
+<span class="prompt">$</span> graphi tui <span class="muted"># labs</span></code></pre>
           </article>
           <article class="audience-card glow-card">
             <div class="audience-card__icon" aria-hidden="true">
@@ -191,7 +191,7 @@
             <img src="assets/graph-ui.png" alt="graphi web UI: interactive code graph loaded from a seed-symbol search" loading="lazy" width="1280" height="720" />
           </picture>
         </div>
-        <figcaption class="fine-print fine-print--center">graphi web UI — ships in the same binary; <code>graphi tui</code> for the terminal version.</figcaption>
+        <figcaption class="fine-print fine-print--center">graphi web UI (Labs) — ships in the same binary; <code>graphi tui</code> (Labs) for the terminal version. Neither is part of the GA promise: <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</figcaption>
       </figure>
     </section>
 
