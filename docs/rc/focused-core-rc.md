@@ -14,6 +14,15 @@ keine Behauptung ohne Gate, Test oder Rohdaten. §4 listet die Punkte, die vor
 einem Go noch offen sind (und wem sie gehören); §5 ist das Go/No-Go-Protokoll
 mit dem dokumentierten Lock-Handgriff.
 
+> **Eingefrorener M0-Candidate:** `docs/decisions/2026-07-m0-candidate-freeze.md`
+> (SW-116). Dort steht die maßgebliche Candidate-SHA
+> (`4e72637` — der Merge-Commit von #55 auf `main`, **nicht** `e285822`), der
+> zugehörige Digest samt Provenienz — der **veröffentlichte** Release-Digest ist
+> für diese SHA **UNKNOWN**, da v0.5.0 bereits am Eltern-Commit `65713de`
+> publiziert ist — und die Change-Control-Regel (Plan §2.3/WP0). Jede Messung
+> dieses Programms ist an diese SHA gebunden; dieses Dossier beschreibt den
+> Stand v0.5.0 @ `65713de`.
+
 ## 2. Gate-Checkliste
 
 ### G0 — Sicherheits-Posture: GRÜN
