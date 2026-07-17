@@ -1,0 +1,215 @@
+# graphi — evidence index & gate dashboard (SOURCE OF TRUTH)
+#
+# Regenerate the human-readable table:  go run ./cmd/evidence -generate
+# Honesty guard (CI):                    go run ./cmd/evidence -check
+#
+# This is the source; docs/rc/evidence-index.md is GENERATED from it and must
+# never be hand-edited. One row per gate, drawn from the execution plan
+# (docs/plan/2026-07-graphi-9of10-execution-plan.md): §6 WP0–WP10 per-WP `Gate:`
+# statements, plus the §5 milestone exit gates (M0–M5).
+#
+# THE RULE (plan §6 WP0): a row may read PASS only if it carries BOTH a non-empty
+# evidence_uri AND a non-empty sha; `-check` fails otherwise. A gate with no proven
+# evidence reads UNKNOWN — and UNKNOWN counts as NOT passed (plan §2.4). A row with
+# no explicit status defaults to UNKNOWN, so a new gate starts honest. Almost every
+# row is UNKNOWN today, and that is the point: the gap is the artifact. Turning a
+# row green is M1+ measurement work, not this story.
+
+candidate:
+  # Cited from SW-116's record, not restated. Where SW-116 records the published
+  # release digest as UNKNOWN, this says UNKNOWN too — the two must not disagree.
+  source: docs/decisions/2026-07-m0-candidate-freeze.md
+  sha: 4e72637d3c2c0dc7d32142a590d46c0c62c10733
+  release_digest: UNKNOWN
+
+gates:
+  # ── §6 per-work-package gates (WP0–WP10) ────────────────────────────────────
+  - id: WP0
+    gate: Program Control & Evidence Contract
+    section: plan §6 WP0
+    threshold: "Every 9/10 claim traces to a versioned raw artifact; no hand-maintained green without evidence."
+    current: "UNKNOWN — PRD absent (deferred to backlog); Evidence Pack not assembled. This index + the SW-116 change-control record stand up part of the deliverable."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG Lead
+    next_action: "Assemble the Evidence Pack; author the PRD (backlog); keep this dashboard weekly."
+    due: W0–2 (weekly after)
+  - id: WP1
+    gate: GA scope & claims cleaned
+    section: plan §6 WP1
+    threshold: "An external reviewer can unambiguously tell GA / Preview / Labs / Source-only apart from public docs, and no text promises more than the candidate artifact."
+    current: "UNKNOWN — prose claims-sweep + canonical tier mapping landed (SW-118), but no external-reviewer confirmation exists."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: PROD
+    next_action: "Run an external-reviewer pass against the public surfaces and record the result."
+    due: W0–2
+  - id: WP2
+    gate: Candidate & reproducible technical baseline
+    section: plan §6 WP2
+    threshold: "An independent engineer reproduces the baseline with a documented command and the same artifact; deviations and measurement uncertainty are visible."
+    current: "UNKNOWN — no eval-full baseline has been run on the candidate SHA / release binary."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG
+    next_action: "Run eval-full on the candidate SHA over the pinned real Go repos; store raw data."
+    due: W1–6
+  - id: WP3
+    gate: Gold corpus & accuracy scoring
+    section: plan §6 WP3
+    threshold: "Symbol P≥98% / R≥95%; Edge P≥95% / R≥90%; Source-Anchor P≥99%; correct abstention ≥95%; high-confidence false statements ≤1%; ≥90/100 sealed tasks pass; Kappa ≥0.85."
+    current: "UNKNOWN — ontology not frozen; gold corpus not built; scorers not run."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: EVAL
+    next_action: "Freeze the ontology, build the gold corpus, version the thresholds, then score."
+    due: W2–10
+  - id: WP4
+    gate: Measured accuracy & performance fixes
+    section: plan §6 WP4
+    threshold: "Cold index p50 ≤90s / p95 ≤120s; peak RSS ≤2GB; DB ≤300MB; progress-stall p95 ≤2s; warm search p95 ≤100ms; caller/callee/impact p95 ≤200ms; agent context p95 ≤500ms; freshness p95 ≤2s; full/incremental parity 100% — over two consecutive full runs."
+    current: "UNKNOWN — no measured performance baseline exists (blocked on WP2)."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG
+    next_action: "Establish the WP2 baseline, then drive fixes test-first against these KPIs."
+    due: W5–12
+  - id: WP5
+    gate: Security
+    section: plan §6 WP5
+    threshold: "Zero open Critical / High / in-scope Medium findings; path & secret suites 100% green; checksums, SBOM and attestation for every artifact."
+    current: "UNKNOWN — threat model not authored; external pentest not commissioned."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: SEC
+    next_action: "Author the threat model; commission the external pentest; run it W9–10; retest by W14."
+    due: W4–14
+  - id: WP6
+    gate: Reliability & 90-day RC
+    section: plan §6 WP6
+    threshold: "After 90 consecutive days: scheduled first-attempt pass ≥99%; flake rerun <1%; no unexplained red >48h; release reproduction 10/10; restore/upgrade/rollback 3/3 each; recovery/crash-fault suite 100% green."
+    current: "UNKNOWN — the focused-RC 90-day clock has not started."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: SEC/DevOps
+    next_action: "Publish the focused RC from the green candidate and start the 90-day clock."
+    due: W14–27
+  - id: WP7
+    gate: Extensibility test
+    section: plan §6 WP7
+    threshold: "≥3/4 independent developers solve all tasks; parser ≤4h, analyzer ≤2h, adapter ≤4h; ≤2 production files changed per task; no stable-op change; conformance & regression 100% green."
+    current: "UNKNOWN — the blinded extensibility task has not been defined or run."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG
+    next_action: "Define the blinded parser/analyzer/adapter task; recruit 4 independent devs; run W11–13."
+    due: W11–13
+  - id: WP8
+    gate: Product discovery, onboarding & retention
+    section: plan §6 WP8
+    threshold: "≥80% complete install → index → first cited answer unaided; TTFV median ≤5min / p90 ≤15min; SUS ≥80; ≥20 external orgs onboarded; ≥12/20 active in ≥6 of 8 weeks; ≥90% real tasks succeed."
+    current: "UNKNOWN — no usability study, no org onboarding, no retention data."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: PROD
+    next_action: "Freeze the research protocol; run the 25-user unattended journey; onboard external orgs."
+    due: W1–24
+  - id: WP9
+    gate: ICP, pilots & business evidence
+    section: plan §6 WP9
+    threshold: "30 documented ICP interviews (≥20 with the core job in their top-3); buyer & budget owner identified; 5–10 design partners; ≥5 paid pilots; ≥3 renewals or paid expansions; support ≤4h/org/week; contribution margin ≥70%; one channel yields 3 paid pilots; modelled CAC payback ≤12 months."
+    current: "UNKNOWN — no interviews, design partners, pilots or renewals recorded."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: GTM
+    next_action: "Run the first 10 ICP interviews; qualify design partners; sell the standardized pilot."
+    due: W1–28
+  - id: WP10
+    gate: Evidence freeze & independent audit
+    section: plan §6 WP10
+    threshold: "Arithmetic mean ≥9.0, no dimension <8.5, Security & DevOps each ≥9.0, no open High/Critical — six independent reviewers on the same frozen artifact + Evidence Pack."
+    current: "UNKNOWN — no audit; six reviewers not contracted; Evidence Pack not frozen."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: Program Lead / AUDIT
+    next_action: "Contract six independent reviewers by W20; freeze the Evidence Pack; run the audit."
+    due: W24–32
+
+  # ── §5 milestone exit gates (M0–M5) ─────────────────────────────────────────
+  - id: M0
+    gate: Wahrheit und Scope — exit gate
+    section: plan §5 M0
+    threshold: "No claim contradicts the artifact or PRD; candidate, claims and the measurement contract are frozen."
+    current: "UNKNOWN — Day-10 M0 Go/No-Go not yet held. Candidate frozen (SW-116); planning authority consolidated (SW-117); claims sweep (SW-118) and this index (SW-119) in flight."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG Lead
+    next_action: "Land SW-118/SW-119 on merged main, then hold the M0 Go/No-Go."
+    due: W0–2
+  - id: M1
+    gate: Baseline — exit gate
+    section: plan §5 M1
+    threshold: "A reproducible accuracy/performance raw baseline: identical SHA, runner, pins and raw data."
+    current: "UNKNOWN — M0 not exited; no baseline run."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG
+    next_action: "Complete WP2 on the candidate; publish the raw baseline."
+    due: W2–6
+  - id: M2
+    gate: Accuracy/Performance — exit gate
+    section: plan §5 M2
+    threshold: "Gold corpus and all technical KPI gates green; all PRD accuracy/performance limits met."
+    current: "UNKNOWN — no gold corpus, no measured KPIs."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG / EVAL
+    next_action: "Close WP3 and WP4; two consecutive full runs meet every gate."
+    due: W4–12
+  - id: M3
+    gate: Security & RC — exit gate
+    section: plan §5 M3
+    threshold: "Pentest findings closed, RC started; no open High/Critical; the 90-day clock is running."
+    current: "UNKNOWN — no pentest; RC clock not started."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: SEC/DevOps
+    next_action: "Close WP5; start the WP6 RC clock."
+    due: W6–14
+  - id: M4
+    gate: Product/Business — exit gate
+    section: plan §5 M4
+    threshold: "Retention, pilots and renewals proven; all product/business gates met."
+    current: "UNKNOWN — no product or business evidence."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: PROD / GTM
+    next_action: "Close WP8 and WP9."
+    due: W1–28
+  - id: M5
+    gate: Audit — exit gate
+    section: plan §5 M5
+    threshold: "Independent evaluation of the same artifact: mean ≥9.0, no dimension <8.5."
+    current: "UNKNOWN — no audit run."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: AUDIT
+    next_action: "Close WP10."
+    due: W28–32
