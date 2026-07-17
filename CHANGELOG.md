@@ -5,6 +5,25 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Reading these notes: stability tiers
+
+**[`docs/stability-tiers.md`](docs/stability-tiers.md) is the canonical definition**
+of graphi's GA / Preview / Labs / Source-only tiers and of how they map onto the
+CI-enforced [coverage matrix](docs/coverage-matrix.md). Two things follow for this
+file:
+
+- **Shipping ≠ supported.** An entry below announcing a capability records that it
+  landed, **not** that it is GA. Only the 12 frozen operations, on **Go**, over
+  **CLI + MCP stdio**, are GA. Every non-Go language is Preview; HTTP, the daemon,
+  the web UI, the TUI, VS Code, the GitHub Action, refactorings, taint, memory, the
+  wiki and semantic search are Labs.
+- **Entries are historical and are not rewritten.** Each describes the state at its
+  release date; where an older entry's tier language differs from today's, the
+  canonical file wins. In particular, the `[experimental]` description prefix
+  introduced in v0.1.3 was **superseded by `[labs]`** at the Focused Core RC
+  (v0.5.0) — the artifact emits `[labs] ` today (`surfaces/mcp/tools.go`). Tool
+  *names* have never carried a tier tag; they are frozen wire identifiers.
+
 ## [Unreleased]
 
 ### Added

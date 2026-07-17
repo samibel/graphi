@@ -10,6 +10,21 @@
 > Reconciled 2026-07-15. The generated
 > [`coverage-matrix.md`](coverage-matrix.md) remains authoritative.
 
+> **This is an inventory, not a promise.** Listing a capability here says graphi
+> *ships* it — not that it is supported. **[`docs/stability-tiers.md`](stability-tiers.md)
+> is the canonical definition** of the GA / Preview / Labs / Source-only tiers and
+> of how they map onto this matrix's `stable` / `labs` / `disabled` values.
+>
+> In short: **GA** is the 12 frozen operations, on **Go**, over **CLI + MCP stdio**.
+> Every non-Go language is **Preview**. Everything else in this catalogue — HTTP,
+> the daemon, the web UI, the TUI, VS Code, the GitHub Action, refactorings, taint,
+> memory and semantic search — is **Labs**; the wiki (`engine/wiki`) is
+> **Source-only**, reachable from no surface. Note that the matrix's `tier`
+> field answers only *"is this one of the 12 frozen operations?"*, which is why the
+> `go`, `cli` and `mcp` rows read `tier: labs` despite being the whole GA scope;
+> see [`stability-tiers.md`](stability-tiers.md) for why that is structural rather
+> than a demotion.
+
 ## Contents
 
 - [Epic roadmap](#epic-roadmap)
