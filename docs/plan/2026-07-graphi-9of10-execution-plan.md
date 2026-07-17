@@ -484,7 +484,7 @@ geschlossen.
   Produktthese neu entscheiden.
 - Kein bezahlter Pilot: kein SaaS, Billing, SSO oder RBAC bauen.
 - <12 retained Teams oder <3 Renewals: kein 9/10-Audit deklarieren.
-- Kein reproduzierbarer A/B-Test: kein Graphify-Vergleich veröffentlichen.
+- Kein reproduzierbarer A/B-Test: keinen Graphify-Vergleich veröffentlichen.
 
 ## 10. P50-/P80-Entscheidungspunkte
 
