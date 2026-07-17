@@ -57,7 +57,7 @@
       </a>
       <nav class="nav" aria-label="Primary navigation">
         <a href="index.html">Overview</a>
-        <a href="index.html#benchmarks">Benchmarks</a>
+        <a href="index.html#benchmarks">Evidence</a>
         <a href="index.html#install">Install</a>
         <a href="tutorial.html" class="is-active" aria-current="page">Tutorial</a>
       </nav>
@@ -124,10 +124,10 @@
               <table class="doc-table">
                 <thead><tr><th>Benefit</th><th>What it means for you</th></tr></thead>
                 <tbody>
-                  <tr><td><strong>Fewer tokens</strong></td><td>Instead of reading whole files, only the relevant symbol + evidence comes back. graphi even keeps a <strong>USD savings ledger</strong>.</td></tr>
-                  <tr><td><strong>Exact, not guessed</strong></td><td>Deterministic graph with stable IDs — no probabilistic RAG.</td></tr>
-                  <tr><td><strong>Trustworthy</strong></td><td>Every edge carries <strong>provenance</strong>: a <code>confidence_tier</code> (heuristic/derived/confirmed) + reason + evidence (<code>file:line</code>).</td></tr>
-                  <tr><td><strong>Fast &amp; fresh</strong></td><td>Hot daemon with a resident graph, cold-start P95 &lt; 100&nbsp;ms, incrementally fresh.</td></tr>
+                  <tr><td><strong>Fewer tokens</strong></td><td>Instead of reading whole files, only the relevant symbol + evidence comes back. graphi meters this per session and keeps a <strong>USD savings ledger</strong> you can read back — we publish no headline savings figure, because the ratio depends on your repo and your questions.</td></tr>
+                  <tr><td><strong>Exact, not guessed</strong></td><td>Deterministic graph with stable IDs.</td></tr>
+                  <tr><td><strong>Trustworthy</strong></td><td>Every edge carries <strong>provenance</strong>: a <code>confidence_tier</code> (heuristic/derived/confirmed) + reason + evidence (<code>file:line</code>). Only Go reaches <code>confirmed</code>; Preview languages stay <code>heuristic</code>.</td></tr>
+                  <tr><td><strong>Fresh</strong></td><td>Incremental re-indexing keeps the graph current as you edit; an optional hot daemon (Labs) keeps it resident. Index and query timings depend on your repository — the only published numbers are the fixture baselines in <code>bench/bench-budget.yml</code>.</td></tr>
                   <tr><td><strong>Local-first</strong></td><td>Not a byte leaves the machine: zero outbound network traffic, no telemetry, CGo-free, a single binary.</td></tr>
                 </tbody>
               </table>
@@ -177,7 +177,8 @@ scripts/build-release-webui.sh</code></pre></div>
               <li><strong>One engine, many surfaces</strong> — CLI, Unix-socket daemon, MCP-stdio server, loopback HTTP/SSE, TUI, web UI and VS Code extension all answer from the <strong>same</strong> engine → answers are byte-identical and can never drift apart.</li>
               <li><strong>Local-first</strong> — zero outbound network traffic, no telemetry, loopback-only. Provable with <code>graphi privacy-audit</code>.</li>
             </ul>
-            <p><strong>Language coverage (default tier, CGo-free):</strong> Go (with type-checker-confirmed edges), TypeScript/TSX/JSX/JavaScript, <strong>Python, Java, Kotlin, C#</strong>, Ruby, PHP, Lua, C, C++, Rust, Bash, SQL plus JSON/CSS/YAML/TOML/Markdown/HCL (the latter intra-file only). For your <strong>Spring Boot / Java world</strong>, Java is fully covered.</p>
+            <p><strong>Language coverage (default tier, CGo-free):</strong> Go, TypeScript/TSX/JSX/JavaScript, Python, Java, Kotlin, C#, Ruby, PHP, Lua, C, C++, Rust, Bash, SQL plus JSON/CSS/YAML/TOML/Markdown/HCL (the latter intra-file only).</p>
+            <div class="doc-note"><span class="doc-note__k">Tiers</span><p><strong>Go is GA, everything else is Preview.</strong> Go is the only language inside graphi's GA promise, and the only one that gets type-checker-<strong>confirmed</strong> edges via <code>go/types</code>. Every other language above — <strong>including the Java used in this tutorial's Spring Boot example</strong> — is <strong>Preview</strong>: it ships, it runs the same GA operations, and it resolves cross-file references at the <code>heuristic</code> tier with <code>file:line</code> evidence, but it is outside the GA promise and its accuracy is unproven. Preview is a real capability, not a stub — but it is not something we stand behind. See <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p></div>
           </div>
         </section>
 
@@ -237,6 +238,7 @@ graphi daemon stop -socket /tmp/graphi.sock</code></pre></div>
           <h2 class="doc-section__h"><span class="doc-section__num">05</span>Real example: Spring Boot project (PetClinic)</h2>
           <div class="doc-prose">
             <p>All outputs below come from a real run against <a href="https://github.com/spring-projects/spring-petclinic" target="_blank" rel="noopener">Spring PetClinic</a> (48 Java files, classic controller/repository/entity structure).</p>
+            <div class="doc-note"><span class="doc-note__k">Preview</span><p><strong>This example runs on Preview, not GA.</strong> Java is a <strong>Preview</strong> language: the GA operations work on it, but its edges are <code>heuristic</code>-tier only (never <code>confirmed</code>), unresolved or ambiguous references are dropped rather than guessed, and its accuracy is unproven. Go is the only GA language. This example is here because Spring Boot is a realistic shape to explore — not because Java carries the GA promise.</p></div>
 
             <h3>Step 1 — index</h3>
             <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Copy command">Copy</button><pre><code data-lang="bash">git clone --depth 1 https://github.com/spring-projects/spring-petclinic.git
@@ -316,14 +318,22 @@ graphi setup
             <p>And <code>tools/list</code> returns, among others, <code>callers</code>, <code>callees</code>, <code>references</code>, <code>definition</code>, <code>neighborhood</code>, <code>implementers</code>, <code>implements</code>, <code>overrides</code>, <code>subtypes</code>, <code>supertypes</code>, <code>search</code> — each with a JSON schema that expects <code>symbol</code> (the node_id).</p>
 
             <h3>6.3 The toolbox the agent gets</h3>
-            <p>All tools are <strong>read-only</strong> by default:</p>
+            <p>All tools are <strong>read-only</strong> by default. By default the MCP server
+            advertises only the <strong>11 GA tools</strong> below — everything marked
+            <strong>[labs]</strong> requires an explicit <code>graphi mcp -labs</code> and is
+            <em>not</em> part of the GA promise. Labs tool descriptions carry a <code>[labs]</code>
+            prefix at runtime; tool <em>names</em> never do. Tier definitions:
+            <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p>
             <ul>
-              <li><strong>Structure:</strong> <code>callers</code>, <code>callees</code>, <code>references</code>, <code>definition</code>, <code>neighborhood</code>, <code>implementers</code>, <code>implements</code>, <code>overrides</code>, <code>subtypes</code>, <code>supertypes</code></li>
-              <li><strong>Search:</strong> <code>search</code>, <code>search_semantic</code>, <code>compound</code> (Cypher-like)</li>
-              <li><strong>Patterns:</strong> <code>search_ast</code>, <code>find_clones</code></li>
-              <li><strong>Analysis:</strong> <code>analyze</code> (e.g. <code>analyzer: "impact"</code>), <code>analyze_taint</code>, <code>analyze_pdg</code>, <code>analyze_interproc</code>, <code>analyze_contracts</code>, <code>analyze_githistory</code></li>
-              <li><strong>PR review (experimental):</strong> <code>analyze_pr_risk</code>, <code>triage_prs</code>, <code>suggest_reviewers</code>, <code>compare_branches</code>, <code>critique_review</code>, <code>pr_comment</code> and more</li>
-              <li><strong>Edit (opt-in) &amp; readout:</strong> <code>refactor_preview</code>, <code>refactor</code>, <code>undo</code>, <code>savings</code></li>
+              <li><strong>Structure (GA):</strong> <code>callers</code>, <code>callees</code>, <code>references</code>, <code>definition</code>, <code>neighborhood</code></li>
+              <li><strong>Context &amp; risk (GA):</strong> <code>agent_brief</code>, <code>related_files</code>, <code>explain_symbol</code>, <code>change_risk</code>, <code>impact</code></li>
+              <li><strong>Search (GA):</strong> <code>search</code> (lexical / symbol)</li>
+              <li><strong>Type hierarchy [labs]:</strong> <code>implementers</code>, <code>implements</code>, <code>overrides</code>, <code>subtypes</code>, <code>supertypes</code></li>
+              <li><strong>Search extras [labs]:</strong> <code>search_semantic</code>, <code>compound</code> (Cypher-like)</li>
+              <li><strong>Patterns [labs]:</strong> <code>search_ast</code>, <code>find_clones</code></li>
+              <li><strong>Analysis [labs]:</strong> <code>analyze</code> (the generic selector), <code>analyze_taint</code>, <code>analyze_pdg</code>, <code>analyze_interproc</code>, <code>analyze_contracts</code>, <code>analyze_githistory</code></li>
+              <li><strong>PR review [labs]:</strong> <code>analyze_pr_risk</code>, <code>triage_prs</code>, <code>suggest_reviewers</code>, <code>compare_branches</code>, <code>critique_review</code>, <code>pr_comment</code> and more</li>
+              <li><strong>Edit (opt-in) &amp; readout [labs]:</strong> <code>refactor_preview</code>, <code>refactor</code>, <code>undo</code>, <code>savings</code></li>
             </ul>
 
             <h3>6.4 Typical agent prompts (applied to a repo)</h3>
