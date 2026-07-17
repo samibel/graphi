@@ -74,6 +74,9 @@ The commands remeasure the behavior and the gates hard-fail when their declared
 boundaries regress. Exact table values are historical snapshots and may move
 inside those budgets; they are not pinned as byte-exact performance claims. The
 design and per-package details are in
-[`docs/plan/2026-07-produkt-brief-agent-pipeline.md`](plan/2026-07-produkt-brief-agent-pipeline.md)
+[`docs/plan/superseded/2026-07-produkt-brief-agent-pipeline.md`](plan/superseded/2026-07-produkt-brief-agent-pipeline.md)
 and the gate scorecard in
-[`docs/plan/wp00-red-gates.md`](plan/wp00-red-gates.md).
+[`docs/plan/superseded/wp00-red-gates.md`](plan/superseded/wp00-red-gates.md). Both were
+superseded on 2026-07-17 (SW-117) by
+[`docs/plan/2026-07-graphi-9of10-execution-plan.md`](plan/2026-07-graphi-9of10-execution-plan.md)
+and are kept as the archived record of that design, not as current instruction.

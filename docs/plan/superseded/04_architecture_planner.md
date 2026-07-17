@@ -1,3 +1,16 @@
+> **SUPERSEDED — dieser Plan ist nicht mehr gültig und darf nicht als Anweisung gelesen werden.**
+>
+> **Ersetzt durch:** [`docs/plan/2026-07-graphi-9of10-execution-plan.md`](../2026-07-graphi-9of10-execution-plan.md)
+> — die einzige Planungsautorität für graphi.
+> **Superseded am:** 2026-07-17 (Story SW-117, Milestone M0).
+>
+> Archiviert, nicht gelöscht: der Text unten ist unverändert und dokumentiert
+> Entscheidungen, die einmal real waren. Er wird nicht mehr gepflegt, und
+> Widersprüche zu anderen archivierten Plänen werden bewusst nicht aufgelöst.
+> Querverweise auf andere Pläne zeigen auf Dateien, die ebenfalls unter
+> `docs/plan/superseded/` liegen; wo sie noch alte Pfade (`temp/plan/…`,
+> `docs/plan/…`) nennen, ist der Pfad historisch, nicht aktuell.
+
 # Architekturplan: Graphi konsolidieren, Grenzen neu bauen
 
 > **Status: NORMATIVE ARCHITECTURE ANNEX.** Zielarchitektur, Invarianten, Verträge, Migrationsseams und Risiken bleiben verbindliche Referenz. Der eigene Backlog, kritische Pfad, Aufwand und Schedule sind durch `00_master_execution_plan.md` superseded.

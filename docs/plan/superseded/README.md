@@ -1,3 +1,18 @@
+> **SUPERSEDED — dieser Index ist nicht mehr gültig.**
+>
+> **Ersetzt durch:** [`docs/plan/2026-07-graphi-9of10-execution-plan.md`](../2026-07-graphi-9of10-execution-plan.md)
+> — die einzige Planungsautorität für graphi.
+> **Superseded am:** 2026-07-17 (Story SW-117, Milestone M0).
+>
+> Dies ist der historische Index der acht Pläne, die früher unter `temp/plan/`
+> lagen. **Alle acht sind superseded** und liegen jetzt neben dieser Datei unter
+> `docs/plan/superseded/`. Die Tabelle unten stuft `00_master_execution_plan.md`
+> als „ACTIVE / AUTHORITATIVE“ ein und nennt eine „verbindliche Lesereihenfolge“:
+> beides gilt nicht mehr. Kein Dokument, das dieser Index nennt, ist noch
+> verbindlich; verbindlich ist allein der oben verlinkte Plan.
+>
+> Der Text unten bleibt als Dokumentation der damaligen Konsolidierung unverändert.
+
 # Plan-Index und Konsolidierungsreview
 
 ## Ergebnis des Gesamt-Reviews
