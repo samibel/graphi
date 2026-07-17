@@ -60,7 +60,7 @@
       <nav class="nav" aria-label="Primary navigation">
         <a href="#what">What it is</a>
         <a href="#features">Features</a>
-        <a href="#benchmarks">Benchmarks</a>
+        <a href="#benchmarks">Evidence</a>
         <a href="#languages">Languages</a>
         <a href="#local-first">Local-first</a>
         <a href="#install">Install</a>
@@ -95,7 +95,7 @@
             <a class="btn btn--primary" href="#install">Install</a>
             <a class="btn btn--ghost" href="https://github.com/samibel/graphi" target="_blank" rel="noopener">View on GitHub</a>
           </div>
-          <p class="hero__receipt"><span class="star" aria-hidden="true">★</span> open source · Apache-2.0 · 38 MCP tools · 22 languages</p>
+          <p class="hero__receipt"><span class="star" aria-hidden="true">★</span> open source · Apache-2.0 · 12 GA operations over CLI + MCP stdio · Go GA, 21 further languages in Preview</p>
         </div>
 
         <!-- Terminal window -->
@@ -195,125 +195,53 @@
       </figure>
     </section>
 
-    <!-- BENCHMARKS / PROOF -->
+    <!-- EVIDENCE -->
     <section class="section" id="benchmarks">
       <div class="container">
         <div class="section__head section__head--center">
-          <span class="eyebrow"><span class="eyebrow__num">04</span>Benchmarks &amp; evidence</span>
-          <h2>Measured on real code. Proven with statistics.</h2>
-          <p class="prose" style="margin-inline:auto">graphi's token savings, benchmarked across <strong>37 agent query pairs</strong> on <strong>four real open-source repositories</strong> — not a synthetic fixture. Both sides counted on graphi's own frozen ruler; every headline figure passes a two-sided significance test.</p>
+          <span class="eyebrow"><span class="eyebrow__num">04</span>Evidence</span>
+          <h2>Measured, or not claimed at all.</h2>
+          <p class="prose" style="margin-inline:auto">graphi reports only numbers a checked-in, re-runnable gate produces. Anything else &mdash; accuracy across languages, real-world speed, savings on <em>your</em> repo, or any comparison to another tool &mdash; is <strong>UNKNOWN</strong> until independently measured, and UNKNOWN counts as not passed.</p>
         </div>
-
-        <div class="proof-hero glow-card">
-          <div class="proof-hero__figure">
-            <span class="proof-hero__num">99.4%</span>
-            <span class="proof-hero__cap">across 37 query pairs</span>
-          </div>
-          <div class="proof-hero__body">
-            <h3>Fewer context tokens per agent question.</h3>
-            <p>For the same set of code-intelligence questions across Gin, Click, Express and Got, graphi answered in <strong>~106 tokens</strong> where a whole-file-read baseline spent <strong>~16,485</strong> — about <strong>155× less context</strong>. Over the full run: <strong>3,918</strong> tokens vs. <strong>609,931</strong>.</p>
-            <div class="proof-hero__meta">
-              <span class="chip chip--ok">p &lt; 0.05 · significant</span>
-              <span class="chip">Welch's t-test · two-sided</span>
-              <span class="chip">4 repos · Go · Python · JS · TS</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stat-grid">
-          <div class="stat glow-card">
-            <span class="stat__v">96%</span>
-            <span class="stat__k">Fewer context bytes returned</span>
-            <span class="stat__sub">6,336 vs 162,278 B / query</span>
-          </div>
-          <div class="stat glow-card">
-            <span class="stat__v">81%</span>
-            <span class="stat__k">Fewer files the agent opens</span>
-            <span class="stat__sub">1.0 vs 5.4 files / query</span>
-          </div>
-          <div class="stat stat--primary glow-card">
-            <span class="stat__tag">Primary KPI</span>
-            <span class="stat__v">99.4%</span>
-            <span class="stat__k">Fewer context tokens</span>
-            <span class="stat__sub">106 vs 16,485 tokens / query</span>
-          </div>
-          <div class="stat glow-card">
-            <span class="stat__v">99.4%</span>
-            <span class="stat__k">Lower input cost</span>
-            <span class="stat__sub">proportional to context tokens</span>
-          </div>
-        </div>
-        <p class="chain-note">The causal chain — <b>fewer bytes</b> → <b>fewer files read</b> → <b>fewer tokens</b> → <b>lower cost</b>. Per-query means, whole-file-read-v1 baseline.</p>
 
         <div class="proof-cols">
           <article class="proof-card glow-card">
             <div class="proof-card__head">
-              <h3>Savings by repository</h3>
-              <span class="proof-card__tag">37 pairs</span>
+              <h3>Engine performance budgets</h3>
+              <span class="proof-card__tag">checked-in gate</span>
             </div>
             <div class="gate-wrap">
               <table class="gate">
                 <thead>
-                  <tr><th>Repository</th><th class="num">Pairs</th><th class="num">Tokens saved</th><th class="num">Mean tokens</th></tr>
+                  <tr><th>Metric</th><th class="num">Pinned baseline</th><th class="num">Budget</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td class="metric">Gin · Go</td><td class="num">11</td><td class="num measured">99.0%</td><td class="num">215 → 22,611</td></tr>
-                  <tr><td class="metric">Click · Python</td><td class="num">9</td><td class="num measured">99.5%</td><td class="num">125 → 25,292</td></tr>
-                  <tr><td class="metric">Express · JS</td><td class="num">6</td><td class="num measured">97.9%</td><td class="num">28 → 1,319</td></tr>
-                  <tr><td class="metric">Got · TS</td><td class="num">11</td><td class="num measured">99.8%</td><td class="num">24 → 11,425</td></tr>
+                  <tr><td class="metric">cold_start_p95</td><td class="num measured">294 ms</td><td class="num">400 ms</td></tr>
+                  <tr><td class="metric">full_index</td><td class="num measured">120 ms</td><td class="num">300 ms</td></tr>
+                  <tr><td class="metric">freshness_lag</td><td class="num measured">50 ms</td><td class="num">2000 ms</td></tr>
+                  <tr><td class="metric">binary_size</td><td class="num measured">32.5 MB</td><td class="num">34.25 MB</td></tr>
                 </tbody>
               </table>
             </div>
-            <p class="bars__foot">Mean tokens per query, graphi ON → whole-file-read baseline. Every repository drops by roughly two orders of magnitude.</p>
+            <p class="bars__foot">Source: <code>bench/bench-budget.yml</code>, baseline <code>2026-07-16-v050-hardening</code>, reproduced by <code>go run ./cmd/bench -budget bench/bench-budget.yml</code>. These are baselines over a <strong>frozen synthetic fixture</strong> on go1.26.5/linux-amd64 &mdash; a regression tripwire, <strong>not</strong> a prediction of how fast graphi indexes your repository.</p>
           </article>
 
           <article class="proof-card glow-card">
             <div class="proof-card__head">
-              <h3>Engine performance gate</h3>
-              <span class="proof-card__tag">gate PASS</span>
+              <h3>Token savings: measured per session, not promised</h3>
+              <span class="proof-card__tag">no headline number</span>
             </div>
-            <div class="gate-wrap">
-              <table class="gate">
-                <thead>
-                  <tr><th>Metric</th><th class="num">Measured</th><th class="num">Budget</th><th class="num">Status</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td class="metric">cold_start_p95</td><td class="num measured">7.87 ms</td><td class="num">400 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
-                  <tr><td class="metric">full_index</td><td class="num measured">3.83 ms</td><td class="num">300 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
-                  <tr><td class="metric">freshness_lag</td><td class="num measured">4.43 ms</td><td class="num">2000 ms</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
-                  <tr><td class="metric">binary_size</td><td class="num measured">30.5 MB</td><td class="num">32.5 MB</td><td class="num"><span class="pass-pill">PASS</span></td></tr>
-                </tbody>
-              </table>
+            <p>graphi meters every call against a frozen whole-file-read baseline, prices it from an embedded table (no network), clamps it with an anti-gaming cap, and writes it to a durable ledger you can read back with <code>graphi savings</code>.</p>
+            <p>We publish <strong>no headline savings percentage</strong>. The ratio depends entirely on your repository and your questions, and graphi ships no benchmark artifact that would let a reader reproduce such a figure. The mechanism is honest by construction: when a baseline cannot be determined, <code>BaselineAvailable = false</code> and zero savings are reported; when graphi uses <em>more</em> context than the baseline, the negative number is reported raw rather than hidden.</p>
+            <div class="artifact-list" aria-label="Savings provenance">
+              <span class="artifact">engine/meter &middot; whole-file-read-v1</span>
+              <span class="artifact">engine/price &middot; prices-v1</span>
+              <span class="artifact">local-first &middot; zero egress</span>
             </div>
-            <p class="bars__foot">Index speed and footprint, 15 samples per metric — a single CGo-free static binary.</p>
           </article>
         </div>
 
-        <div class="repro">
-          <div class="repro__body">
-            <h3>Honest by construction.</h3>
-            <p>Both sides are metered on the identical ruler — graphi's frozen <code>whole-file-read-v1</code> method in <code>engine/meter</code>. Query pairs that return no cited artifacts are excluded rather than scored with a fabricated baseline, which is why 37 of 48 authored queries are included.</p>
-            <div class="artifact-list" aria-label="Benchmark provenance">
-              <span class="artifact">engine/meter · whole-file-read-v1</span>
-              <span class="artifact">engine/price · prices-v1</span>
-              <span class="artifact">local-first · zero egress</span>
-            </div>
-          </div>
-          <div class="terminal" aria-hidden="true">
-            <div class="terminal__bar">
-              <span class="terminal__dot"></span><span class="terminal__dot"></span><span class="terminal__dot"></span>
-              <span class="terminal__title">~/graphi</span>
-            </div>
-            <pre class="terminal__body"><code><span class="ln"><span class="prompt">$</span> graphi index <span class="tok">gin click express got</span></span>
-<span class="ln muted">✓ 4 repos · 37 query pairs indexed</span>
-<span class="ln muted"># whole-file-read-v1 baseline · claude-sonnet pricing</span>
-<span class="ln out">context tokens   3,918   vs  609,931   <span class="dim">99.4% ↓</span></span>
-<span class="ln out">files read       1.0     vs  5.4       <span class="dim">81%  ↓</span></span>
-<span class="ln out">significance     p &lt; 0.05  <span class="dim">(Welch's t-test)</span></span></code></pre>
-          </div>
-        </div>
-
-        <p class="fine-print fine-print--center">Benchmarked against four real OSS repositories — Gin, Click, Express, Got — over 37 of 48 authored query pairs (empty-result pairs excluded). Token counts use graphi's frozen whole-file-read-v1 ruler on both sides; significance by two-sided Welch's t-test (p &lt; 0.05). Input cost is shown proportionally to context tokens.</p>
+        <p class="fine-print fine-print--center">What graphi does <strong>not</strong> claim: no accuracy rate on any language, no indexing speed on real repositories, no savings percentage, and no comparison against any competing tool. A &ldquo;faster or more accurate than X&rdquo; claim would require a public, matched-corpus benchmark on identical hardware with task-level correctness labels. No such benchmark exists today, so no such claim is made. Tier definitions: <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p>
       </div>
     </section>
 
@@ -322,13 +250,14 @@
       <div class="container">
         <div class="section__head">
           <span class="eyebrow"><span class="eyebrow__num">05</span>Features</span>
-          <h2>38 MCP tools over one engine — grouped by task.</h2>
+          <h2>12 GA operations over one engine — plus an opt-in Labs catalog.</h2>
+          <p class="prose">The default MCP profile advertises <strong>11 tools</strong> (the 12 GA operations minus lifecycle-only <code>index</code>). <code>graphi mcp -labs</code> opens the maximal <strong>43-tool</strong> registry — 32 Labs additions, capability-gated, and not part of the GA promise. Tiers are defined in <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p>
         </div>
 
         <div class="feature-groups">
           <article class="fgroup fgroup--wide glow-card">
             <span class="fgroup__idx" aria-hidden="true">01</span>
-            <h3 class="fgroup__title">Structural queries</h3>
+            <h3 class="fgroup__title">Structural queries <span class="fgroup__tier">GA + labs</span></h3>
             <p class="fgroup__lede">Relationships and type hierarchy for any symbol.</p>
             <ul class="fgroup__list" role="list">
               <li><code>callers</code> · who calls a symbol</li>
@@ -336,27 +265,27 @@
               <li><code>references</code> · every reference</li>
               <li><code>definition</code> · where it's defined</li>
               <li><code>neighborhood</code> · immediate neighborhood</li>
-              <li><code>implementers</code> · <code>implements</code> · <code>overrides</code></li>
-              <li><code>subtypes</code> · <code>supertypes</code> · <code>compound</code></li>
+              <li class="labs"><code>implementers</code> · <code>implements</code> · <code>overrides</code> <span class="tier-tag">labs</span></li>
+              <li class="labs"><code>subtypes</code> · <code>supertypes</code> · <code>compound</code> <span class="tier-tag">labs</span></li>
             </ul>
           </article>
 
           <article class="fgroup fgroup--wide glow-card">
             <span class="fgroup__idx" aria-hidden="true">02</span>
-            <h3 class="fgroup__title">Impact &amp; semantics</h3>
+            <h3 class="fgroup__title">Impact &amp; semantics <span class="fgroup__tier">GA + labs</span></h3>
             <p class="fgroup__lede">Reachability, call paths and concept resolution.</p>
             <ul class="fgroup__list" role="list">
               <li><code>impact</code> · blast radius of a change</li>
-              <li><code>call-chain</code> · call path between two symbols</li>
-              <li><code>concept</code> · natural language → graph location</li>
-              <li><code>metrics</code> · hubs, bridges, centrality</li>
-              <li><code>batched</code> · everything combined in one call</li>
+              <li class="labs"><code>call-chain</code> · call path between two symbols <span class="tier-tag">labs</span></li>
+              <li class="labs"><code>concept</code> · natural language → graph location <span class="tier-tag">labs</span></li>
+              <li class="labs"><code>metrics</code> · hubs, bridges, centrality <span class="tier-tag">labs</span></li>
+              <li class="labs"><code>batched</code> · everything combined in one call <span class="tier-tag">labs</span></li>
             </ul>
           </article>
 
           <article class="fgroup glow-card">
             <span class="fgroup__idx" aria-hidden="true">03</span>
-            <h3 class="fgroup__title">Deep analysis</h3>
+            <h3 class="fgroup__title">Deep analysis <span class="fgroup__tier">labs</span></h3>
             <p class="fgroup__lede">Taint, dependence graph and history signals.</p>
             <ul class="fgroup__list" role="list">
               <li><code>taint</code> · propagation from sources to sinks</li>
@@ -369,19 +298,19 @@
 
           <article class="fgroup glow-card">
             <span class="fgroup__idx" aria-hidden="true">04</span>
-            <h3 class="fgroup__title">Pattern queries</h3>
+            <h3 class="fgroup__title">Pattern queries <span class="fgroup__tier">GA + labs</span></h3>
             <p class="fgroup__lede">Find patterns and duplicates in the graph.</p>
             <ul class="fgroup__list" role="list">
-              <li><code>search_ast</code> · AST pattern search</li>
-              <li><code>find_clones</code> · clone detection</li>
+              <li class="labs"><code>search_ast</code> · AST pattern search <span class="tier-tag">labs</span></li>
+              <li class="labs"><code>find_clones</code> · clone detection <span class="tier-tag">labs</span></li>
               <li><code>search</code> · lexical symbol search</li>
-              <li><code>search_semantic</code> · optional embedding search</li>
+              <li class="labs"><code>search_semantic</code> · optional embedding search <span class="tier-tag">labs</span></li>
             </ul>
           </article>
 
           <article class="fgroup glow-card">
             <span class="fgroup__idx" aria-hidden="true">05</span>
-            <h3 class="fgroup__title">Edits &amp; code actions</h3>
+            <h3 class="fgroup__title">Edits &amp; code actions <span class="fgroup__tier">labs</span></h3>
             <p class="fgroup__lede">Reference-correct refactors with a fail-safe.</p>
             <ul class="fgroup__list" role="list">
               <li><code>refactor_preview</code> · preview before applying</li>
@@ -395,7 +324,7 @@
 
           <article class="fgroup glow-card">
             <span class="fgroup__idx" aria-hidden="true">06</span>
-            <h3 class="fgroup__title">PR review</h3>
+            <h3 class="fgroup__title">PR review <span class="fgroup__tier">labs</span></h3>
             <p class="fgroup__lede">Deterministic, LLM-free review signals.</p>
             <ul class="fgroup__list" role="list">
               <li><code>pr-risk</code> · per-region risk score</li>
@@ -410,7 +339,7 @@
 
           <article class="fgroup glow-card">
             <span class="fgroup__idx" aria-hidden="true">07</span>
-            <h3 class="fgroup__title">Memory &amp; skills</h3>
+            <h3 class="fgroup__title">Memory &amp; skills <span class="fgroup__tier">labs</span></h3>
             <p class="fgroup__lede">Local agent memory, all on your machine.</p>
             <ul class="fgroup__list" role="list">
               <li><code>memory</code> · per-scope / notebook / tag</li>
@@ -421,7 +350,7 @@
 
           <article class="fgroup glow-card">
             <span class="fgroup__idx" aria-hidden="true">08</span>
-            <h3 class="fgroup__title">Live IDE &amp; watcher</h3>
+            <h3 class="fgroup__title">Live IDE &amp; watcher <span class="fgroup__tier">labs</span></h3>
             <p class="fgroup__lede">Live transport, overlays and incremental indexing.</p>
             <ul class="fgroup__list" role="list">
               <li>MCP streamable-HTTP with stdio envelope parity</li>
@@ -443,9 +372,9 @@
       <div class="container">
         <div class="section__head">
           <span class="eyebrow"><span class="eyebrow__num">06</span>Language support</span>
-          <h2>Two stdlib parsers plus 20 pure-Go grammars.</h2>
+          <h2>Go is GA. Every other language is Preview.</h2>
         </div>
-        <p class="prose prose--tight">The default tier is CGo-free. Go gets a type-checker-<strong>proven</strong> confirmed tier via <code>go/types</code>; every other language runs through per-language resolvers at the heuristic tier with file:line evidence.</p>
+        <p class="prose prose--tight"><strong>Go is the only GA language.</strong> The 21 languages below it are <strong>Preview</strong>: they ship, they are usable, and they run the same 12 GA operations — but they are outside the GA promise and their accuracy is unproven. Concretely: Go gets a type-checker-<strong>proven</strong> <code>confirmed</code> tier via <code>go/types</code>, while every Preview language runs through per-language resolvers at the <code>heuristic</code> tier only, with file:line evidence and never <code>confirmed</code>. The default tier is CGo-free. See <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p>
       </div>
       <div class="marquee" data-dir="ltr">
         <ul class="marquee__track" role="list">
@@ -453,7 +382,7 @@
           <li class="lang">TypeScript</li>
           <li class="lang">TSX / JSX</li>
           <li class="lang">JavaScript</li>
-          <li class="lang lang--star">Python</li>
+          <li class="lang">Python</li>
           <li class="lang">Ruby</li>
           <li class="lang">PHP</li>
           <li class="lang">Lua</li>
@@ -464,7 +393,7 @@
           <li class="lang" aria-hidden="true">TypeScript</li>
           <li class="lang" aria-hidden="true">TSX / JSX</li>
           <li class="lang" aria-hidden="true">JavaScript</li>
-          <li class="lang lang--star" aria-hidden="true">Python</li>
+          <li class="lang" aria-hidden="true">Python</li>
           <li class="lang" aria-hidden="true">Ruby</li>
           <li class="lang" aria-hidden="true">PHP</li>
           <li class="lang" aria-hidden="true">Lua</li>
