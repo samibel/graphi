@@ -1,5 +1,31 @@
 # Graphi 9/10 — ausführbarer 32-Wochen-Plan
 
+> ## Autoritätsvermerk (SW-117, 2026-07-17)
+>
+> **Dieses Dokument ist seit dem Candidate-Freeze die einzige Planungsautorität für
+> graphi.** Es ersetzt die zwölf zuvor konkurrierenden Pläne, die unter
+> `docs/plan/superseded/` archiviert sind. Im Konfliktfall gewinnt dieses Dokument.
+>
+> **Candidate-Freeze:** Der maßgebliche Candidate ist
+> `4e72637d3c2c0dc7d32142a590d46c0c62c10733`, festgehalten in
+> [`docs/decisions/2026-07-m0-candidate-freeze.md`](../decisions/2026-07-m0-candidate-freeze.md)
+> (SW-116). **Nicht** der unten stehende `Ausgangs-SHA: e285822` — der stammt aus der
+> Zeit vor dem Freeze; `release-dag.yml` trägt eine einzige `github.sha` durch
+> gate → build → SBOM → publish, weshalb ein Candidate auf einem Feature-Branch keine
+> Attestation tragen kann. Das Entscheidungsdokument ist auf diesen Punkt maßgeblich.
+>
+> **Zur fehlenden PRD:** WP0 nennt als erstes Ergebnis „eine freigegebene PRD als
+> einzige Planungsautorität“. Diese PRD existiert nirgends — weder in einem der beiden
+> Checkouts noch in der Git-History oder im Stash; sie war immer nur Prompt-Text. Bis
+> sie geschrieben ist, trägt dieser Plan die Autorität. Das Verfassen der PRD ist als
+> datierter Backlog-Eintrag im Scrum-Portfolio festgehalten (Story SW-117). Eine
+> Rekonstruktion der PRD aus dem Plan, der sie zitiert, wurde bewusst verworfen: sie
+> würde genau die Autorität erfinden, die M0 wahrheitsfähig machen soll.
+>
+> **Status und Datum unten** beziehen sich auf die ursprüngliche Fassung. Der Inhalt
+> dieses Plans ist seit dem Carry aus `~/Documents/Graphi` unverändert; dieser Vermerk
+> ist die einzige Ergänzung.
+
 **Status:** Proposed
 
 **Datum:** 2026-07-16
