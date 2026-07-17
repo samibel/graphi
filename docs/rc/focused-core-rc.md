@@ -5,7 +5,12 @@
 > **Stand:** 15. Juli 2026, Branch `claude/plan-feedback-f5khoi` (12 Story-Commits
 > auf `main` @ `ed454de`; SW-109…SW-111, SW-113 bereits gemergt).
 > **Autorität:** Master-Execution-Plan (WBS SW-109…SW-124, Gates G0–G5);
-> Ausführungsordnung: `docs/plan/2026-07-rc-endgame-pipeline.md`.
+> Ausführungsordnung: [`docs/plan/superseded/2026-07-rc-endgame-pipeline.md`](../plan/superseded/2026-07-rc-endgame-pipeline.md).
+> **Hinweis (SW-117, 2026-07-17):** Beide hier genannten Ordnungen — der
+> Master-Execution-Plan und die RC-Endgame-Pipeline — sind seit dem Candidate-Freeze
+> superseded und unter `docs/plan/superseded/` archiviert. Sie erklären, wie dieses
+> Dossier entstanden ist; verbindlich für die weitere Planung ist allein
+> [`docs/plan/2026-07-graphi-9of10-execution-plan.md`](../plan/2026-07-graphi-9of10-execution-plan.md).
 
 ## 1. Was dieses Dossier ist
 
