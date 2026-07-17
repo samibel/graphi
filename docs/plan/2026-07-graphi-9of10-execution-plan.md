@@ -392,7 +392,7 @@ Gate:
 - ein Kanal erzeugt drei bezahlte Piloten;
 - modellierter CAC Payback ≤12 Monate.
 
-### WP10 — Evidence Freeze und unabhängiger Audit
+### WP10 — Evidence Freeze und unabhängiges Audit
 
 **Owner:** Program Lead; Prüfung durch AUDIT
 
