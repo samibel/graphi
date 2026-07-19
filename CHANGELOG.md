@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-19
+
 ### Added
 - The M0 candidate is frozen and recorded in
   `docs/decisions/2026-07-m0-candidate-freeze.md`: the candidate is the merge
