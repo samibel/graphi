@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-19
+
 ### Added
 - The M0 candidate is frozen and recorded in
   `docs/decisions/2026-07-m0-candidate-freeze.md`: the candidate is the merge
@@ -40,6 +42,12 @@ file:
   not passed. The record also carries the change-control rule: the candidate SHA
   moves only for a documented blocker fix, and every move must list the
   measurements it invalidates. Linked from `docs/rc/focused-core-rc.md` §1.
+- `docs/README.md`: a documentation map for the `docs/` tree. It separates user
+  documentation, architecture/contributor documentation, and the
+  machine-written, CI-wired files (coverage matrix, capability manifest,
+  release scorecard, eval and RC evidence, ratchet baselines), and marks the
+  CI-wired paths that must not be moved or hand-edited because Go code and
+  workflows hard-code them.
 
 ### Changed
 - Root `.gitignore` and `.graphi/taint.json` loading is root-confined and

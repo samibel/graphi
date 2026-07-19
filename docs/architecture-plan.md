@@ -77,17 +77,14 @@ surfaces (CLI · daemon · MCP · HTTP · TUI · web · extensions)
 
 The parse boundary is an **open/closed registry** (`core/parse`): callers extend
 language coverage purely by calling `Register` with a new `Parser` — no existing
-parser code is edited. See [parse-registry.md](parse-registry.md),
-[tier1-languages.md](tier1-languages.md), and
-[symbol-extractor-seam.md](symbol-extractor-seam.md).
+parser code is edited.
 
 - **Default tier (CGo-free, shipped).** [`RegisterDefaults`](../core/parse/defaults.go)
   wires two stdlib parsers (Go, JSON) plus 20 subset-tagged pure-Go
   `gotreesitter` grammars — **22 shipped languages, one `r.Register(...)` line
   each** (the 23rd, `html`, is in the coverage matrix as ⏳ planned;
   `graphi-broad` opts into it later). The Go path uses the reference
-  AST→graph extractor ([extract_go.go](../core/parse/extract_go.go),
-  [typescript-extractor.md](typescript-extractor.md)).
+  AST→graph extractor ([extract_go.go](../core/parse/extract_go.go)).
 - **Opt-in `graphi-broad` (CGO).** The broad grammar set plugs into the same seam
   behind a build tag; the hard CGo-free gate is exempted for that flavor only. See
   [graphi-broad.md](graphi-broad.md).
@@ -159,16 +156,13 @@ it all real?"* — the closing piece of the project's end-to-end traceability st
 
 ## 6. Per-subsystem documentation index
 
-- **Parsing / languages:** [parse-registry.md](parse-registry.md) ·
-  [tier1-languages.md](tier1-languages.md) ·
-  [typescript-extractor.md](typescript-extractor.md) ·
-  [symbol-extractor-seam.md](symbol-extractor-seam.md) ·
-  [graphi-broad.md](graphi-broad.md) · [default-tier-security.md](default-tier-security.md)
+- **Parsing / languages:** [graphi-broad.md](graphi-broad.md) ·
+  [default-tier-security.md](default-tier-security.md)
 - **CI & local-first:** [ci/](ci) · [setup-privacy.md](setup-privacy.md)
 - **Token-savings:** [ledger/](ledger) · [meter/](meter) · [price/](price) · [savings/](savings)
 - **Edits / context:** [edit/](edit) · [context/](context)
 - **Surfaces:** [surfaces-http.md](surfaces-http.md) · [surfaces-tui.md](surfaces-tui.md) ·
   [surfaces-web.md](surfaces-web.md) · [surfaces-vscode.md](surfaces-vscode.md) ·
   [surfaces-wiki.md](surfaces-wiki.md)
-- **Decisions:** [adr/](adr) · [ep009-consolidation.md](ep009-consolidation.md)
+- **Decisions:** [adr/](adr)
 - **Inventory & status:** [coverage-matrix.md](coverage-matrix.md) · [FEATURES.md](FEATURES.md)
