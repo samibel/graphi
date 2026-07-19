@@ -10,7 +10,7 @@ binary budget or tracing how the current numbers were derived.
 
 EP-009 (FU-2) fanned grammar work out across parallel language workers (SW-053..056),
 each measuring its own per-language binary delta against a planning envelope in
-[`bench/lang-budget.md`](../bench/lang-budget.md). SW-057 is the **closing convergence
+[`bench/lang-budget.md`](../../bench/lang-budget.md). SW-057 is the **closing convergence
 slice** that runs after all workers merge. It sums the real shipped total **once**,
 re-pins the enforced budget gate against that total, flips the OQ1/FU-2 status, and
 reconciles the docs that drifted during the fan-out.
@@ -35,7 +35,7 @@ Two things were wrong before this slice and are fixed here:
 2. **The gate was measuring the wrong binary.** The `cmd/bench` harness built the measured
    binary with **no tags**, so it stat'd the **all-206** default embed (~46 MB), not the
    shipped subset-tagged build. SW-057 wires
-   [`internal/release.DefaultGrammarSubsetTags`](../internal/release/build.go) into the
+   [`internal/release.DefaultGrammarSubsetTags`](../../internal/release/build.go) into the
    bench harness (`internal/bench` now builds the measured binary subset-tagged), so the
    gate enforces the **subset model** that the shipped binary actually uses.
 
@@ -86,7 +86,7 @@ flowchart TD
 
 - **Default tier:** Go + JSON (stdlib, no blob) + **20** subset-tagged pure-Go grammars.
   Full per-language blob deltas are mirrored in
-  [`bench/lang-budget.md`](../bench/lang-budget.md) (the frozen single source of truth).
+  [`bench/lang-budget.md`](../../bench/lang-budget.md) (the frozen single source of truth).
 - **HTML deferred** — not shipped (subset-isolation blocker; its scanner core is
   co-located with `grammar_subset_blade` upstream).
 - **Dockerfile / Protobuf / GraphQL** — removed from the committed tier-1 set (re-plan

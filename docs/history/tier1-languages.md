@@ -7,7 +7,7 @@ clones the TypeScript reference recipe over the remaining frozen tier-1 language
 
 See also: [`typescript-extractor.md`](typescript-extractor.md) (the reference
 recipe), [`symbol-extractor-seam.md`](symbol-extractor-seam.md) (the foundation
-seam), and [`../bench/lang-budget.md`](../bench/lang-budget.md) (the frozen
+seam), and [`bench/lang-budget.md`](../../bench/lang-budget.md) (the frozen
 language list and measured blob-size deltas).
 
 ## Before
@@ -87,7 +87,7 @@ builds green under `CGO_ENABLED=0`, and passes `internal/cgoconformance` with no
 offender named. Measured size: **18,979,778 B (~18.1 MB)**, well under the
 **< 50 MB** whole-binary hard gate (the marginal cost over the TypeScript-only
 subset is only ~3.3 MiB of parse tables; the ~3.13 MB pure-Go runtime was already
-paid for). See [`../bench/lang-budget.md`](../bench/lang-budget.md) for the
+paid for). See [`bench/lang-budget.md`](../../bench/lang-budget.md) for the
 per-blob deltas.
 
 ### Reasoning
@@ -113,4 +113,4 @@ landed in this tier to keep the default subset build green; re-evaluate when
 upstream splits the HTML scanner core into an html-gated file. This is a
 build-packaging deferral (subset-isolation), distinct from the `graphi-broad`
 CGO-only-grammar deferral path. See
-[`../bench/lang-budget.md`](../bench/lang-budget.md) for the full note.
+[`bench/lang-budget.md`](../../bench/lang-budget.md) for the full note.

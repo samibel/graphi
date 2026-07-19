@@ -143,8 +143,8 @@ reference each become an inert selector `PendingRef` with correct `file:line` an
 
 The curated tier-1 language list (the pure-Go **`gotreesitter`** runtime plus its
 embedded grammar blobs, selected via subset build tags) and the per-worker
-binary-budget model are frozen in [`bench/lang-budget.md`](../bench/lang-budget.md),
-the single source of truth (see also [`docs/coverage-matrix.md`](coverage-matrix.md) for the
+binary-budget model are frozen in [`bench/lang-budget.md`](../../bench/lang-budget.md),
+the single source of truth (see also [`docs/coverage-matrix.md`](../coverage-matrix.md) for the
 registry). Languages whose only grammar is CGO-only (`go-sitter-forest`), or whose
 extractor is out of tier-1 scope, are deferred to the opt-in `graphi-broad` CGO
 build. `bench/bench-budget.yml` backs the budget table with data.

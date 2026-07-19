@@ -8,7 +8,7 @@
 > Entscheidungen, die einmal real waren. Er wird nicht mehr gepflegt, und
 > Widersprüche zu anderen archivierten Plänen werden bewusst nicht aufgelöst.
 > Querverweise auf andere Pläne zeigen auf Dateien, die ebenfalls unter
-> `docs/plan/superseded/` liegen; wo sie noch alte Pfade (`temp/plan/…`,
+> `docs/plan/superseded/` liegen; wo sie noch alte Pfade (`temp/plan/…`, `temp/review/…`,
 > `docs/plan/…`) nennen, ist der Pfad historisch, nicht aktuell.
 
 # Technischer Rebuild-Plan: Graphi

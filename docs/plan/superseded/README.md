@@ -12,6 +12,8 @@
 > verbindlich; verbindlich ist allein der oben verlinkte Plan.
 >
 > Der Text unten bleibt als Dokumentation der damaligen Konsolidierung unverändert.
+> Die unten zitierten Experten-Reviews (`temp/review/…`) liegen inzwischen unter
+> [`docs/plan/reviews/`](../reviews/); der alte Pfad ist historisch, nicht aktuell.
 
 # Plan-Index und Konsolidierungsreview
 

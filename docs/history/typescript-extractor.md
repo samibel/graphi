@@ -23,7 +23,7 @@ JSONParser.Parse ─▶ (structural tree only, no extraction)
 MapTreeSitter   ──▶ (proven, but no grammar consumer yet)
 ```
 
-The frozen tier-1 list in [`bench/lang-budget.md`](../bench/lang-budget.md) named
+The frozen tier-1 list in [`bench/lang-budget.md`](../../bench/lang-budget.md) named
 TypeScript as the first curated grammar (row 3), but no third-party grammar dependency
 existed in `go.mod`.
 
@@ -130,7 +130,7 @@ The corrected size model — one ~3.13 MB one-time pure-Go runtime (paid once, f
 all languages) plus a ~119 KiB per-language blob, governed by the whole-binary
 **< 50 MB** ceiling — and both re-recorded size numbers (subset ≈ +3.10 MiB;
 all-206 ≈ +24.5 MiB, cautionary only) live in
-[`bench/lang-budget.md`](../bench/lang-budget.md) ("Measured deltas (SW-053 —
+[`bench/lang-budget.md`](../../bench/lang-budget.md) ("Measured deltas (SW-053 —
 TypeScript, first curated grammar)"). The old ≤ 1.0 MB per-language envelope is
 superseded; a later story re-pins `bench-budget.yml` against the subset-tagged
 total.
