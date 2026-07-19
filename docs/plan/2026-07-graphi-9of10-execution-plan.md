@@ -3,8 +3,9 @@
 > ## Autoritätsvermerk (SW-117, 2026-07-17)
 >
 > **Dieses Dokument ist seit dem Candidate-Freeze die einzige Planungsautorität für
-> graphi.** Es ersetzt die zwölf zuvor konkurrierenden Pläne, die unter
-> `docs/plan/superseded/` archiviert sind. Im Konfliktfall gewinnt dieses Dokument.
+> graphi.** Es ersetzt die zwölf zuvor konkurrierenden Pläne, die inzwischen aus dem
+> Repository entfernt wurden (auffindbar über die Git-Historie). Im Konfliktfall
+> gewinnt dieses Dokument.
 >
 > **Candidate-Freeze:** Der maßgebliche Candidate ist
 > `4e72637d3c2c0dc7d32142a590d46c0c62c10733`, festgehalten in

@@ -1,8 +1,8 @@
 # graphi documentation map
 
-This folder mixes four different kinds of files on purpose — user docs,
-contributor docs, machine-written evidence, and project planning. This index
-says which is which, so the difference stays visible.
+This folder mixes three different kinds of files on purpose — user docs,
+contributor docs, and machine-written evidence. This index says which is
+which, so the difference stays visible.
 
 ## User & product documentation
 
@@ -28,7 +28,6 @@ says which is which, so the difference stays visible.
 | [adr/](adr) | Architecture decision records |
 | [decisions/](decisions) | Project decision records (cited by the RC evidence index) |
 | [build/](build) · [ci/](ci) · [context/](context) · [edit/](edit) · [ledger/](ledger) · [meter/](meter) · [price/](price) · [savings/](savings) | Per-subsystem docs |
-| [history/](history) | Historical before/after engineering change records — see its README |
 
 ## Machine-written / CI-wired files — do not move or hand-edit
 
@@ -48,6 +47,7 @@ them breaks gates; the generated ones are overwritten on the next run.
 
 | Doc | What it is |
 |---|---|
-| [plan/2026-07-graphi-9of10-execution-plan.md](plan/2026-07-graphi-9of10-execution-plan.md) | The **single active planning authority** |
-| [plan/reviews/](plan/reviews) | The seven external expert reviews (July 2026 snapshot) the plans were built on |
-| [plan/superseded/](plan/superseded) | Archived earlier plans — kept verbatim, no longer binding |
+| [plan/2026-07-graphi-9of10-execution-plan.md](plan/2026-07-graphi-9of10-execution-plan.md) | The **single active planning authority**, cited by the RC evidence gate (`internal/evidence`) |
+
+Earlier plans, PRDs, expert reviews, and per-slice engineering records have been
+removed from the tree; they remain reachable through git history only.

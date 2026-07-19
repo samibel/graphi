@@ -49,8 +49,7 @@ The default tier ships **pure-Go, CGo-free** parsers only (`CGO_ENABLED=0 go bui
 below is the curated high-value coverage delivered through the `parse.Parser` /
 `SymbolExtractor` seam. It is derived from ADR 0001, the EP-009 re-plan, and **frozen** for
 EP-009 fan-out. (This is the single frozen-list source; it is also mirrored in
-[`docs/history/ep009-consolidation.md`](../docs/history/ep009-consolidation.md) and the epic registry at
-[`docs/coverage-matrix.md`](../docs/coverage-matrix.md).)
+the epic registry at [`docs/coverage-matrix.md`](../docs/coverage-matrix.md).)
 
 | #  | Language        | Default tier (pure-Go) | Status                  |
 |----|-----------------|------------------------|-------------------------|
