@@ -14,7 +14,10 @@ An AI coding agent that greps and re-reads your whole codebase on every question
 is slow, expensive, and still guessing. graphi indexes the repo once into a
 graph — symbols as nodes, calls/references/imports as edges — and answers
 "who calls this," "what breaks if I change it," and "how are these two
-functions connected" in one round-trip, entirely on your machine.
+functions connected" in one round-trip, entirely on your machine. Structural
+answers cover the symbols your repo defines: stdlib and third-party targets
+are recorded, but deliberately not navigable (see
+[docs/external-nodes.md](docs/external-nodes.md)).
 
 ---
 
@@ -211,7 +214,7 @@ graphi grows from a structural core into semantic and deep analysis. Each capabi
 ### Core code graph
 
 - **Parse to graph** — turn a repository into a canonical node/edge model with deterministic ids and provenance on every edge.
-- **Structural queries** — callers, callees, references, definition, and neighborhood for any symbol.
+- **Structural queries** — callers, callees, references, definition, and neighborhood for any symbol defined in your repo.
 - **Lexical & symbol search** — fast full-text search across symbols and source.
 - **Semantic search (optional, OFF by default)** — embedding-based search that is **off until you explicitly configure an embedder**; the default binary ships **no embedder** and degrades gracefully (see [Semantic search](#semantic-search-optional-off-by-default)).
 - **Incremental indexing** — only changed files are re-parsed; the graph stays fresh as you edit.
@@ -372,7 +375,7 @@ credits the broad lane's zero-egress guarantee.
 Run with `graphi analyze <analyzer>`. **`impact` is the only GA operation here**; the
 generic `analyze` dispatcher and every other analyzer below are Labs:
 
-- **`impact`** — blast-radius reachability. Default direction `reverse` = dependents (who is affected if this symbol changes — the rdeps convention); `forward` = dependencies (what this symbol relies on).
+- **`impact`** — blast-radius reachability over in-repo symbols (external targets are terminal by design, see [docs/external-nodes.md](docs/external-nodes.md)). Default direction `reverse` = dependents (who is affected if this symbol changes — the rdeps convention); `forward` = dependencies (what this symbol relies on).
 - **`call-chain`** — reconstruct the call path(s) connecting two symbols.
 - **`concept`** — resolve a natural-language concept term to the graph locations that implement it.
 - **`metrics`** — graph metrics that surface hubs, bridges, and high-centrality symbols.
@@ -555,7 +558,8 @@ The broad flavor requires a C toolchain and is **opt-in only** — read the resi
 security limitation above before enabling it on untrusted source.
 
 ```bash
-# Broad CGO flavor: 257-grammar go-sitter-forest over the same contract.
+# Broad CGO flavor: go-sitter-forest grammars over the same contract
+# (registered one per line; the reference build currently wires zig).
 # Requires a C toolchain; intended for trusted / CI input only.
 CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
 ```

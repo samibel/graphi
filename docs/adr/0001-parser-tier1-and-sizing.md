@@ -1,6 +1,9 @@
 # ADR 0001 — Parser Tier-1 Set and CGO_ENABLED=0 Sizing (SW-001)
 
 - Status: Accepted (PoC / sizing record)
+- Status note (2026-07): the broad flavor currently wires one grammar (`zig`);
+  the 257-grammar figure below describes the upstream collection, not what is
+  shipped. See `graphi-broad.md`.
 - Date: 2026-06-19
 - Story: SW-001 — Pluggable Parser Registry with Curated CGo-Free Tier-1 Language Set
 - Epic: EP-001

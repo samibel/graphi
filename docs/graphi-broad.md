@@ -1,8 +1,11 @@
 # The opt-in `graphi-broad` CGO flavor
 
-This document covers the opt-in `graphi-broad` CGO flavor: broad 257-grammar
-coverage over the *same* `SymbolExtractor` contract the pure-Go default tier
-uses, build-tag isolated so the default build stays provably unaffected. It is
+This document covers the opt-in `graphi-broad` CGO flavor: access to the
+~257-grammar `go-sitter-forest` collection through a one-line-per-grammar
+registration seam — the reference build currently wires **one** grammar
+(`zig`, pinned in `go.mod`) — over the *same* `SymbolExtractor` contract the
+pure-Go default tier uses, build-tag isolated so the default build stays
+provably unaffected. It is
 intended for contributors or operators deciding whether to enable the broad
 flavor, and it is the companion to
 [`default-tier-security.md`](default-tier-security.md), which owns the
@@ -17,7 +20,7 @@ default-tier firewall this flavor must never cross.
 
 | Aspect | Before SW-056 | After SW-056 |
 |---|---|---|
-| **Language coverage** | Default **pure-Go tier only** (curated tier-1 `gotreesitter` grammars). | Adds the opt-in `graphi-broad` flavor wiring the **257-grammar `go-sitter-forest`** set (native C tree-sitter via `go-tree-sitter-bare`) over the **same** `SymbolExtractor` contract. |
+| **Language coverage** | Default **pure-Go tier only** (curated tier-1 `gotreesitter` grammars). | Adds the opt-in `graphi-broad` flavor wiring `go-sitter-forest` grammars per registration line (native C tree-sitter via `go-tree-sitter-bare`; currently `zig`, expandable toward the ~257-grammar collection) over the **same** `SymbolExtractor` contract. |
 | **Build** | `CGO_ENABLED=0 go build ./...` — no C toolchain. | Unchanged default; **plus** `CGO_ENABLED=1 go build -tags graphi_broad ./...` for the broad flavor. The forest backend is reached **only** via `RegisterBroad` in a `//go:build graphi_broad` file; `RegisterDefaults` is byte-identical. |
 | **Default-build isolation** | CGo-free default graph, firewall in place. | **Unchanged and re-proven** with `go-sitter-forest` now in `go.mod`: `parse.AssertPureGoDefaults` + the static `go-sitter-forest`-unreachable import-graph scan stay green; `go list -deps ./cmd/graphi` contains no forest/bare package. |
 | **Supply chain** | Forest **not pinned** in `go.sum`. | `go-sitter-forest/zig` + `go-tree-sitter-bare` **version-pinned** in `go.mod`/`go.sum` (one online pass), `go mod verify`'d, license-verified MIT at the pinned path; the lane builds **offline** (`GOPROXY=off` + `-mod=readonly`) thereafter. |
