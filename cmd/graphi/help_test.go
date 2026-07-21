@@ -71,7 +71,7 @@ func TestPrintSubcommandHelp(t *testing.T) {
 // correct in CLI help: stable operations render WITHOUT the [labs] marker; Labs
 // subcommands render WITH it. Stability is derived from mcp.StableOperations.
 func TestStabilityMarker(t *testing.T) {
-	stable := []string{"index", "search", "explain-symbol", "related-files", "change-risk", "agent-brief", "query", "callers", "definition", "impact"}
+	stable := []string{"index", "sync", "rebuild", "status", "search", "explain-symbol", "related-files", "change-risk", "agent-brief", "query", "callers", "definition", "impact"}
 	for _, n := range stable {
 		if !subcommandIsStable(n) {
 			t.Errorf("%q should be a stable operation (SCOPE-01)", n)
@@ -80,7 +80,7 @@ func TestStabilityMarker(t *testing.T) {
 			t.Errorf("stable %q must not carry the labs marker", n)
 		}
 	}
-	labs := []string{"analyze", "taint", "refactor", "memory", "distill", "skillgen", "triage-prs", "http", "daemon", "tui", "implementers", "supertypes"}
+	labs := []string{"analyze", "taint", "refactor", "memory", "distill", "skillgen", "triage-prs", "http", "daemon", "tui", "implementers", "supertypes", "snapshot", "compare"}
 	for _, n := range labs {
 		if subcommandIsStable(n) {
 			t.Errorf("%q should be Labs, not stable (SCOPE-01)", n)

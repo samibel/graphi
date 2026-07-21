@@ -672,6 +672,36 @@ capabilities:
     tier: labs
     epic: "-"
     note: "graph-level diff of two graphi SQLite snapshots (paths, not git refs)"
+  - id: sync
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "flagless incremental update of the auto-managed per-repo graph (facade over the stable index lifecycle; branch-switch aware; matrix row labs because the stable-12 set is frozen)"
+  - id: rebuild
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "flagless cold full re-index of the auto-managed per-repo graph (facade over the stable index lifecycle's --full pass)"
+  - id: status
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "read-only freshness report (repo/branch/drift/last-sync, --json; exit 0 current, 1 actionable, 2 error); opens store + sidecar mode=ro and never creates state"
+  - id: snapshot
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "list/freeze/delete named per-repo graph states under <state>/snapshots (atomic tmp+rename builds; input to `graphi compare`)"
+  - id: compare
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "name-based wrapper over compare-branches: resolves snapshot names plus the reserved `current` (live store) to paths; byte-identical diff output"
   - id: compound
     category: cli-subcommand
     status: shipped

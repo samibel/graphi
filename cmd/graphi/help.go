@@ -47,9 +47,34 @@ var subcommandHelp = map[string]subHelp{
 		`graphi find-clones -db graph.db '{"threshold":0.9}'`,
 	},
 	"index": {
-		"ingest a repo into a durable store (warm-starts on an unchanged repo; --full forces a cold pass; optional --semantic embedding pass)",
-		"graphi index -root <repo> [-db path] [-meta dir] [--full] [--semantic]",
+		"ingest a repo into a durable store (advanced long form of sync/rebuild; --full forces a cold pass; optional --semantic embedding pass)",
+		"graphi index [-root <repo>] [-db path] [-meta dir] [--full] [--semantic]",
 		"graphi index -root . -db ~/.graphi/graph.db -meta ~/.graphi/meta",
+	},
+	"sync": {
+		"bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch)",
+		"graphi sync [-root <repo>] [-db path] [-meta dir] [-profile name]",
+		"git switch feature/login && graphi sync",
+	},
+	"rebuild": {
+		"re-index the repo from scratch (cold full pass — for a damaged index, after an upgrade, or when doctor recommends it)",
+		"graphi rebuild [-root <repo>] [-db path] [-meta dir] [-profile name]",
+		"graphi rebuild",
+	},
+	"status": {
+		"report whether the graph matches the checked-out code (read-only; exit 0 current, 1 actionable, 2 error)",
+		"graphi status [--json] [-root <repo>] [-db path] [-meta dir]",
+		"graphi status --json",
+	},
+	"snapshot": {
+		"list, freeze, or delete named graph states of this repo (for graphi compare)",
+		"graphi snapshot [<name> | -rm <name>] [-root <repo>]",
+		"graphi snapshot main",
+	},
+	"compare": {
+		"diff two named graph states (snapshot names, or 'current' for the live graph)",
+		"graphi compare <base> <head> [-root <repo>]",
+		"graphi compare main current",
 	},
 	"savings": {
 		"session token-savings readout from a ledger a prior MCP/daemon session wrote",
@@ -245,7 +270,14 @@ const labsHelpMarker = "[labs] "
 // definition|neighborhood) are all stable. Everything else — including the
 // generic `analyze` dispatcher and the type-hierarchy query verbs — is Labs.
 func subcommandIsStable(name string) bool {
-	if name == "query" {
+	switch name {
+	case "query":
+		return true
+	case "sync", "rebuild", "status":
+		// Everyday facades over the frozen stable `index` lifecycle operation:
+		// they add no new engine capability, so they render unmarked like index
+		// itself (the change-risk precedent — the coverage-matrix rows stay
+		// tier: labs because the stable-12 set is frozen).
 		return true
 	}
 	return mcp.IsStableOperation(strings.ReplaceAll(name, "-", "_"))
@@ -319,7 +351,9 @@ func printHelp() {
 	fmt.Print("graphi: run with no arguments to index the current repo and open the local UI in your browser.\n")
 	fmt.Print("\nStability taxonomy (SCOPE-01): 🟢 Stable — the 12 frozen product operations, on Go, over CLI + MCP stdio (this is the GA scope); 🧪 Labs — kept in-tree, not a stable promise. On a non-Go language a Stable operation is Preview, not GA. Canonical tiers: docs/stability-tiers.md. Full matrix: docs/coverage-matrix.md.\n")
 	fmt.Print("\nStable operations:\n")
-	fmt.Print("  graphi index                index the current repo into a durable graph store\n")
+	fmt.Print("  graphi sync                 update the graph to match the checked-out code (run after a branch switch)\n")
+	fmt.Print("  graphi status               is the graph current? (read-only; --json)\n")
+	fmt.Print("  graphi rebuild              re-index the repo from scratch\n")
 	fmt.Print("  graphi search <query>       lexical / symbol search over the graph\n")
 	fmt.Print("  graphi callers <symbol>     who calls a symbol (also: callees, references, definition, neighborhood)\n")
 	fmt.Print("  graphi impact <symbol>      blast radius of a change\n")
@@ -328,6 +362,8 @@ func printHelp() {
 	fmt.Print("  graphi change-risk <t>      evidence-based local blast-radius estimate\n")
 	fmt.Print("  graphi agent-brief          bounded, cited task-start context packet\n")
 	fmt.Print("\nLabs & tooling (not a stable promise):\n")
+	fmt.Print("  graphi snapshot [<name>]    list or freeze named graph states of this repo\n")
+	fmt.Print("  graphi compare <a> <b>      diff two named graph states ('current' = live graph)\n")
 	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")
 	fmt.Print("  graphi setup                register graphi's MCP server in local MCP clients\n")
 	fmt.Print("  graphi upgrade -print       print the upgrade command without running it\n")
@@ -335,8 +371,9 @@ func printHelp() {
 	fmt.Print("  graphi claude               register graphi's MCP server in Claude Code\n")
 	fmt.Print("  graphi analyze <name> ...   run a Labs analyzer (taint, pdg, contracts, …)\n")
 	fmt.Print("\nAdvanced (long forms):\n")
+	fmt.Print("  graphi index [-root <repo>] [-db path] [-meta dir] [--full]   (explicit-path form of sync/rebuild)\n")
 	fmt.Print("  graphi query <op> -symbol <id> [-depth N]\n")
 	fmt.Print("  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
 	fmt.Print("\nDetails on any subcommand:  graphi help <subcommand>   (or: graphi <subcommand> --help)\n")
-	fmt.Printf("registered languages (Go is GA; every other language is Preview — see docs/stability-tiers.md): %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
+	fmt.Printf("registered languages (Go is GA; every other language is Preview — see docs/stability-tiers.md): %v\nsubcommands: sync, rebuild, status, snapshot, compare, query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
 }
