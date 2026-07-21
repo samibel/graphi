@@ -26,6 +26,48 @@ file:
 
 ## [Unreleased]
 
+### Added
+- Everyday lifecycle verbs over the auto-managed per-repo store, so normal use
+  needs no `-root`/`-db`/`-meta` knowledge: `graphi sync` (flagless incremental
+  update; announces `Branch switch detected: main → feature/login` after a
+  checkout and summarizes the delta as added/changed/removed), `graphi rebuild`
+  (explicit cold full pass), and `graphi status` (strictly read-only freshness
+  report — repo, branch, drift, last sync — with `--json` and the exit-code
+  contract 0 = current, 1 = actionable, 2 = error, so `graphi status || graphi
+  sync` scripts cleanly). All three are facades over the stable `index`
+  lifecycle; their coverage-matrix rows are `tier: labs` because the stable-12
+  set is frozen.
+- `[labs]` Named graph snapshots: `graphi snapshot <name>` freezes the
+  checked-out worktree as a one-shot full index under
+  `~/.graphi/<fingerprint>/snapshots/` (atomic tmp+rename build; branch names
+  sanitize, `feature/login` → `feature-login`); bare `graphi snapshot` lists
+  (with each snapshot's frozen branch@commit), `-rm <name>` deletes. `graphi
+  compare <base> <head>` diffs two snapshots by name — or the reserved
+  `current` for the live store — delegating to the `compare-branches` engine
+  pass for byte-identical output; a missing name is an error listing what
+  exists, never an empty-store diff.
+- Sync metadata: every successful ingest (sync/rebuild/index, bare `graphi`,
+  MCP session open) stamps `sync.last_time` / `sync.branch` / `sync.commit`
+  into the store's `kv_meta`, resolved by the new stdlib-only
+  `internal/gitinfo` (reads `.git` directly — worktrees, packed-refs, detached
+  HEAD; no `git` subprocess, no cgo). Bare `graphi` now opens with a
+  `graphi: repo <root> (main @ 1a2b3c4)` banner plus the branch-switch notice.
+- Read-only open paths backing `graphi status`:
+  `graphstore.OpenSQLiteReadOnly` and `ingest.NewReadOnly` (mode=ro +
+  query_only, no schema writes, mutating entry points fail with
+  `ErrReadOnly`), plus `ingest.DriftDetail` splitting the drift set into
+  added/modified/deleted (`DriftSetWithProgress` is now a byte-identical
+  wrapper over it).
+
+### Changed
+- `graphi index` without `-root` no longer errors inside a repository: it
+  detects the cwd repo and (when `-db`/`-meta` are also omitted) targets the
+  auto-managed per-repo store, exactly like `graphi sync`. The explicit-root
+  contract is unchanged byte-for-byte, including the in-memory default without
+  `-db`; after an explicit-root run a TTY-only stderr tip points at
+  `sync`/`rebuild`. `graphi help` leads with the lifecycle verbs and moves the
+  `index` long form under "Advanced".
+
 ## [0.5.1] - 2026-07-19
 
 ### Added

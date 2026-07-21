@@ -118,6 +118,33 @@ No flags, no database path, no port to pick — auto-discovery hides all of that
 On first run, graphi also offers (once, interactively) to connect Claude Code;
 in a non-interactive shell it prints a hint instead.
 
+#### Keeping the graph current
+
+The graph re-syncs automatically every time graphi starts (bare `graphi`, a new
+MCP session). Between starts, three verbs cover the whole lifecycle — no paths,
+no flags:
+
+```bash
+graphi sync      # pull in changes since the last sync (incremental)
+graphi status    # is the graph current? exit 0 = yes, 1 = run sync (--json for agents)
+graphi rebuild   # re-index from scratch (damaged index, or after an upgrade)
+```
+
+`sync` compares file hashes and re-processes only changed, added, or deleted
+files — after a branch switch it announces `Branch switch detected:
+main → feature/login` and updates just the difference. A full rebuild is never
+needed for branch switches; graphi keeps ONE graph per repository (under
+`~/.graphi/<fingerprint>/`) that always tracks whatever is checked out.
+
+To keep a branch's graph around for comparison, freeze it (Labs):
+
+```bash
+graphi snapshot main             # freeze the current checkout under a name
+git switch feature/login && graphi sync
+graphi compare main current      # graph-level diff: frozen main vs live graph
+graphi snapshot                  # list snapshots (-rm <name> deletes)
+```
+
 ### 2. Short verbs
 
 Once indexed, ask structural and analysis questions with one-word verbs — no
@@ -195,6 +222,12 @@ graphi http -addr 127.0.0.1:8080 -root ./my-repo
 ```
 
 ### 5.2 Persistent (SQLite, reusable by CLI / MCP / daemon)
+
+> The zero-flag path already persists: `graphi sync` (and bare `graphi`, and
+> every MCP session) maintains an auto-managed store at
+> `~/.graphi/<fingerprint>/db.sqlite` that CLI queries discover automatically.
+> Reach for an explicit `-db` only when you want to control WHERE the store
+> lives (CI artifacts, several stores per repo, network shares).
 
 Pass `-db <path>` to persist the graph into a CGo-free SQLite store. Build it
 once, then reuse it from any surface without re-ingesting.
@@ -559,6 +592,12 @@ It runs a real CGo-free scan and a canary egress guard and prints a verdict:
 ## 9. Subcommand reference
 
 ```text
+graphi sync    [-root r] [-db p] [-meta d]           Update the graph to match the checked-out code (incremental)
+graphi status  [--json] [-root r] [-db p] [-meta d]  Read-only freshness report (exit 0 current / 1 actionable / 2 error)
+graphi rebuild [-root r] [-db p] [-meta d]           Re-index the repo from scratch (cold full pass)
+graphi snapshot [<name> | -rm <name>]                List / freeze / delete named graph states (Labs)
+graphi compare <base> <head>                         Diff two named graph states; 'current' = live graph (Labs)
+graphi index  [-root r] [-db p] [-meta d] [--full]   Advanced explicit-path form of sync/rebuild
 graphi parse <file>                                  Parse one file, print metadata
 graphi query <op> -symbol <id> [-depth N]            callers|callees|references|definition|neighborhood|
                                                      implementers|implements|overrides|subtypes|supertypes

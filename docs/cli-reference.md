@@ -12,7 +12,12 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 
 | Subcommand | Tier | Purpose |
 |---|---|---|
-| `graphi index -root <repo> [--full] [--semantic]` | **GA** | Ingest a repo into a durable store (warm-starts on an unchanged repo; `--full` forces a cold pass). |
+| `graphi sync` | **GA** (facade) | Bring the auto-managed graph up to date with the checked-out code — incremental, flagless, branch-switch aware. The everyday form of `index`. |
+| `graphi rebuild` | **GA** (facade) | Re-index the repo from scratch (cold full pass). The everyday form of `index --full`. |
+| `graphi status [--json]` | **GA** (facade) | Read-only freshness report: repo, branch, drift, last sync. Exit 0 current, 1 actionable, 2 error — `graphi status \|\| graphi sync` scripts cleanly. |
+| `graphi snapshot [<name> \| -rm <name>]` | labs | List, freeze, or delete named graph states of this repo (input to `graphi compare`). |
+| `graphi compare <base> <head>` | labs | Diff two named graph states (snapshot names, or `current` for the live graph); byte-identical to `compare-branches` on the resolved paths. |
+| `graphi index [-root <repo>] [--full] [--semantic]` | **GA** | Advanced long form of `sync`/`rebuild` with explicit paths: ingest a repo into a durable store (warm-starts on an unchanged repo; `--full` forces a cold pass). Without `-root` it targets the cwd repo's auto-managed store like `sync`. |
 | `graphi callers\|callees\|references\|definition\|neighborhood <symbol>` | **GA** | Short verbs for the structural GA operations. |
 | `graphi impact <symbol>` | **GA** | Blast radius of a change (fixed dispatcher; the generic `analyze` selector is Labs). |
 | `graphi explain-symbol <symbol>` | **GA** | Compact, cited symbol identity summary. |
