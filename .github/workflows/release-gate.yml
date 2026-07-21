@@ -19,6 +19,7 @@ jobs:
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
+          cache: true
 
       # Keep dependency-fetch diagnostics outside testgate's strict go test
       # producer stream, matching the dedicated test-gate workflow.
