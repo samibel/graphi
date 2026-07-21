@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // StateDir returns the root directory under which graphi keeps its per-repo
@@ -218,4 +219,40 @@ func DiscoverSocket(cwd, override string) (string, error) {
 		return "", err
 	}
 	return p.Socket, nil
+}
+
+// SnapshotsDir is the per-repo directory holding named graph snapshots
+// (`graphi snapshot <name>` → <dir>/snapshots/<name>.sqlite).
+func (p Paths) SnapshotsDir() string { return filepath.Join(p.Dir, "snapshots") }
+
+// SnapshotPath returns the snapshot DB path for an already-sanitized name.
+func SnapshotPath(p Paths, name string) string {
+	return filepath.Join(p.SnapshotsDir(), name+".sqlite")
+}
+
+// SnapshotName sanitizes a user-supplied snapshot name into a safe filename
+// stem: path separators become "-" (so branch names like feature/login work
+// unquoted), then the result must match [A-Za-z0-9._-]{1,100} with no leading
+// "-" or "." and must not be the reserved ref "current" (which `graphi
+// compare` resolves to the live per-repo store). Distinct raw names may
+// sanitize to the same stem (a/b vs a-b) — accepted and documented.
+func SnapshotName(raw string) (string, error) {
+	name := strings.ReplaceAll(raw, "/", "-")
+	name = strings.ReplaceAll(name, "\\", "-")
+	switch {
+	case name == "":
+		return "", fmt.Errorf("state: empty snapshot name")
+	case len(name) > 100:
+		return "", fmt.Errorf("state: snapshot name longer than 100 characters")
+	case name == "current":
+		return "", fmt.Errorf("state: %q is reserved for the live graph", name)
+	case name[0] == '-' || name[0] == '.':
+		return "", fmt.Errorf("state: snapshot name %q may not start with %q", name, string(name[0]))
+	}
+	for _, c := range name {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '.' && c != '_' && c != '-' {
+			return "", fmt.Errorf("state: snapshot name %q contains unsupported character %q", name, string(c))
+		}
+	}
+	return name, nil
 }

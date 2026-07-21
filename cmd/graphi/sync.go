@@ -150,6 +150,13 @@ func printBranchSwitch(ctx context.Context, w io.Writer, store graphstore.Graphs
 	}
 }
 
+// lastSyncShort renders a stored (branch, commit) sync stamp the way
+// gitinfo.Short renders a live HEAD. The stamp does not persist detachedness,
+// so a commit without a branch is rendered as detached.
+func lastSyncShort(branch, commit string) string {
+	return gitinfo.Info{Branch: branch, Commit: commit, Detached: branch == "" && commit != ""}.Short()
+}
+
 // syncSummary is the durable stdout line describing what `graphi sync` did.
 func syncSummary(s rtime.SyncStats) string {
 	switch {

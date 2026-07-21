@@ -224,8 +224,8 @@ func renderStatusHuman(w io.Writer, r statusReport) {
 		if t, err := time.Parse(time.RFC3339, r.LastSync.Time); err == nil {
 			syncedLine = t.UTC().Format("2006-01-02 15:04 MST")
 		}
-		if r.LastSync.Branch != "" {
-			syncedLine += " on " + (gitinfo.Info{Branch: r.LastSync.Branch, Commit: r.LastSync.Commit}).Short()
+		if short := lastSyncShort(r.LastSync.Branch, r.LastSync.Commit); short != "" {
+			syncedLine += " on " + short
 		}
 		fmt.Fprintf(w, "synced:  %s\n", syncedLine)
 	}
