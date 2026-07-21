@@ -89,7 +89,8 @@
             graphi parses a repository into a deterministic, provenance-backed
             <strong>code graph</strong> — symbols as nodes, calls/references/imports as edges — and
             answers <em>“who calls this”</em>, <em>“what breaks if I change it”</em> and
-            <em>“how are two functions connected”</em> in a single round-trip. Entirely on your machine.
+            <em>“how are two functions connected”</em> in a single round-trip — for the
+            symbols your repo defines. Entirely on your machine.
           </p>
           <div class="hero__ctas">
             <a class="btn btn--primary" href="#install">Install</a>
@@ -258,11 +259,11 @@
           <article class="fgroup fgroup--wide glow-card">
             <span class="fgroup__idx" aria-hidden="true">01</span>
             <h3 class="fgroup__title">Structural queries <span class="fgroup__tier">GA + labs</span></h3>
-            <p class="fgroup__lede">Relationships and type hierarchy for any symbol.</p>
+            <p class="fgroup__lede">Relationships and type hierarchy for any symbol your repo defines.</p>
             <ul class="fgroup__list" role="list">
               <li><code>callers</code> · who calls a symbol</li>
               <li><code>callees</code> · what it calls</li>
-              <li><code>references</code> · every reference</li>
+              <li><code>references</code> · every in-repo reference</li>
               <li><code>definition</code> · where it's defined</li>
               <li><code>neighborhood</code> · immediate neighborhood</li>
               <li class="labs"><code>implementers</code> · <code>implements</code> · <code>overrides</code> <span class="tier-tag">labs</span></li>
@@ -275,7 +276,7 @@
             <h3 class="fgroup__title">Impact &amp; semantics <span class="fgroup__tier">GA + labs</span></h3>
             <p class="fgroup__lede">Reachability, call paths and concept resolution.</p>
             <ul class="fgroup__list" role="list">
-              <li><code>impact</code> · blast radius of a change</li>
+              <li><code>impact</code> · in-repo blast radius of a change</li>
               <li class="labs"><code>call-chain</code> · call path between two symbols <span class="tier-tag">labs</span></li>
               <li class="labs"><code>concept</code> · natural language → graph location <span class="tier-tag">labs</span></li>
               <li class="labs"><code>metrics</code> · hubs, bridges, centrality <span class="tier-tag">labs</span></li>

@@ -11,6 +11,9 @@ which, so the difference stays visible.
 | [HOWTO.md](HOWTO.md) | Install, index a repo, use every surface — start here |
 | [FEATURES.md](FEATURES.md) | Complete catalogue of MCP tools, CLI subcommands, HTTP endpoints, analyzers |
 | [stability-tiers.md](stability-tiers.md) | **Canonical** definition of the GA / Preview / Labs / Source-only tiers |
+| [language-support.md](language-support.md) | Per-language coverage table and how cross-file resolution works, language by language |
+| [cli-reference.md](cli-reference.md) | Every CLI subcommand with its stability tier |
+| [semantic-search.md](semantic-search.md) | The optional, off-by-default embedding search: how to enable it, what stays guaranteed |
 | [query-language.md](query-language.md) | Query language reference |
 | [agent-workflows.md](agent-workflows.md) | Recommended MCP call order for AI agents, per-client examples |
 | [setup-privacy.md](setup-privacy.md) | `graphi setup` + `graphi privacy-audit` |
@@ -23,6 +26,7 @@ which, so the difference stays visible.
 | Doc | What it is |
 |---|---|
 | [architecture-plan.md](architecture-plan.md) | The single design entry point: layers, data flow, CI gates |
+| [external-nodes.md](external-nodes.md) | **Canonical** WP-03 contract: what external (stdlib/third-party) nodes are and why structural queries exclude them |
 | [graphi-broad.md](graphi-broad.md) | The opt-in CGO grammar flavor |
 | [default-tier-security.md](default-tier-security.md) | Security controls behind the CGo-free / zero-egress default tier |
 | [adr/](adr) | Architecture decision records |
@@ -38,7 +42,7 @@ them breaks gates; the generated ones are overwritten on the next run.
 |---|---|
 | [coverage-matrix.md](coverage-matrix.md) | Generated from [coverage-matrix.yaml](coverage-matrix.yaml) by `go run ./cmd/coverage -generate`; drift fails CI (`internal/coverage`) |
 | [capability-manifest.json](capability-manifest.json) | Generated alongside the coverage matrix |
-| [release-scorecard.md](release-scorecard.md) / [release-scorecard.json](release-scorecard.json) | Published by the release gate (`cmd/release-gate`) |
+| release-scorecard.md / release-scorecard.json | Published fresh by the release gate (`cmd/release-gate -publish`) on each CI run; not checked in — checked-in run evidence lives under [eval/](eval) |
 | [eval-baseline.json](eval-baseline.json) · [mcp-tool-baseline.json](mcp-tool-baseline.json) | Ratchet baselines read by `cmd/eval` / `cmd/release-gate` |
 | [eval/](eval) | Hero protocol, budgets, and checked-in run evidence (`eval-full.yml` CI) |
 | [rc/](rc) | RC evidence index — [rc/evidence-index.md](rc/evidence-index.md) is generated from [rc/evidence-index.yaml](rc/evidence-index.yaml) by `go run ./cmd/evidence` |

@@ -22,6 +22,7 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
+          cache: true
       - name: Run bench harness (warn-only trend)
         run: |
           CGO_ENABLED=0 go test ./internal/bench/... -run TestBench -v -count=1 | tee bench-nightly.log || echo "::warning::bench harness reported issues (warn-only)"

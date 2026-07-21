@@ -17,6 +17,12 @@ on:
   push:
     branches: [main]
   pull_request:
+    # Docs/site-only changes cannot affect the built binary this smoke
+    # exercises; skip the network-heavy real-repo clones for them.
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "site/**"
   schedule:
     # Nightly: catches breakage from the environment side (runner image, git,
     # upstream tag deletion) even when no PR is in flight.

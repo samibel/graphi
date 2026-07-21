@@ -182,6 +182,7 @@ func Publish(result GateResult, docsDir, version, commit string) error {
 	report.Scorecard = result.Scorecard
 	report.UXMetrics = result.UX
 	report.Target = 90.0
+	report.SelfReported = true
 	if err := evalreport.WriteJSON(report, filepath.Join(docsDir, "release-scorecard.json")); err != nil {
 		return err
 	}

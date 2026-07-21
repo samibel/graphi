@@ -29,6 +29,7 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
+          cache: true
       - name: Build graphi (CGo-free)
         run: go build -o /tmp/graphi ./cmd/graphi
       # The live exercise must run with CAP_SYS_ADMIN to unshare a network
@@ -48,6 +49,7 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
+          cache: true
       # Run the audit's tripwire test under netns. The test asserts that a
       # deliberate non-loopback dial under real isolation yields a FAIL verdict
       # (red gate) — proving the deny-egress harness actually denies egress.

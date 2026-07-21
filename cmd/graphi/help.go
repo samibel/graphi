@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
 
@@ -308,4 +309,34 @@ func runHelp(args []string, w io.Writer) int {
 		fmt.Fprintf(w, "  %-18s %s%s\n", n, stabilityMarker(n), subcommandHelp[n].synopsis)
 	}
 	return 1
+}
+
+// printHelp prints the help blurb. Bare `graphi` now runs the zero-config
+// index+serve flow (SW-067); the original SW-001 help text is preserved here
+// under `graphi help`, prefixed with a line documenting the new default.
+func printHelp() {
+	reg := parse.NewDefaultRegistry()
+	fmt.Print("graphi: run with no arguments to index the current repo and open the local UI in your browser.\n")
+	fmt.Print("\nStability taxonomy (SCOPE-01): 🟢 Stable — the 12 frozen product operations, on Go, over CLI + MCP stdio (this is the GA scope); 🧪 Labs — kept in-tree, not a stable promise. On a non-Go language a Stable operation is Preview, not GA. Canonical tiers: docs/stability-tiers.md. Full matrix: docs/coverage-matrix.md.\n")
+	fmt.Print("\nStable operations:\n")
+	fmt.Print("  graphi index                index the current repo into a durable graph store\n")
+	fmt.Print("  graphi search <query>       lexical / symbol search over the graph\n")
+	fmt.Print("  graphi callers <symbol>     who calls a symbol (also: callees, references, definition, neighborhood)\n")
+	fmt.Print("  graphi impact <symbol>      blast radius of a change\n")
+	fmt.Print("  graphi explain-symbol <s>   compact, cited symbol identity summary\n")
+	fmt.Print("  graphi related-files <t>    ranked, cited read-first file list\n")
+	fmt.Print("  graphi change-risk <t>      evidence-based local blast-radius estimate\n")
+	fmt.Print("  graphi agent-brief          bounded, cited task-start context packet\n")
+	fmt.Print("\nLabs & tooling (not a stable promise):\n")
+	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")
+	fmt.Print("  graphi setup                register graphi's MCP server in local MCP clients\n")
+	fmt.Print("  graphi upgrade -print       print the upgrade command without running it\n")
+	fmt.Print("  graphi ui                   index this repo and open the local UI\n")
+	fmt.Print("  graphi claude               register graphi's MCP server in Claude Code\n")
+	fmt.Print("  graphi analyze <name> ...   run a Labs analyzer (taint, pdg, contracts, …)\n")
+	fmt.Print("\nAdvanced (long forms):\n")
+	fmt.Print("  graphi query <op> -symbol <id> [-depth N]\n")
+	fmt.Print("  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
+	fmt.Print("\nDetails on any subcommand:  graphi help <subcommand>   (or: graphi <subcommand> --help)\n")
+	fmt.Printf("registered languages (Go is GA; every other language is Preview — see docs/stability-tiers.md): %v\nsubcommands: query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
 }

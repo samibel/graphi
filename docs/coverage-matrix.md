@@ -15,6 +15,12 @@ missing capability, a phantom "shipped" entry, or a live capability marked
 FROZEN to exactly the 12 operations below; the guard fails the build if a 13th
 row is tagged stable or one is dropped.
 
+> **`tier` is not GA.** The `tier` column answers exactly one machine question —
+> *is this row one of the 12 frozen operations?* Parser and surface rows are
+> structurally ineligible for `stable`, so `go`, `cli`, and `mcp` read `labs`
+> despite being the entire GA scope. GA is a prose tier defined in
+> [`stability-tiers.md`](stability-tiers.md).
+
 **The 12 stable operations (frozen):** `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `impact`, `neighborhood`, `references`, `related_files`, `search`.
 
 **MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **43-tool** union (32 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.

@@ -83,6 +83,10 @@ type Report struct {
 	// UXMetrics carries the measured web-suite inputs behind the ux area score
 	// (vitest run; see cmd/release-gate).
 	UXMetrics *UXMetrics `json:"ux_metrics,omitempty"`
+	// SelfReported marks a published gate result as self-measured, in-repo
+	// evidence — never an independent audit, rating, or certification. Set by
+	// cmd/release-gate's Publish so the caveat travels with the artifact.
+	SelfReported bool `json:"self_reported,omitempty"`
 }
 
 // UXMetrics is the measured evidence behind the ux score: the web test suite
@@ -214,10 +218,11 @@ func WriteJSON(r Report, path string) error {
 func WriteMarkdown(r Report, path string) error {
 	const tmpl = `# Eval Report
 
-> Internal evaluation evidence stamped with the reported revision. Only a clean,
-> fully resolved commit SHA is commit-bound; '+dirty' or 'unknown' identifies
-> non-citable development evidence. This score is not an independent project
-> rating, production-readiness certification, or competitor benchmark.
+> Self-measured, in-repo evaluation evidence stamped with the reported
+> revision — a historical snapshot of one run. Only a clean, fully resolved
+> commit SHA is commit-bound; '+dirty' or 'unknown' identifies non-citable
+> development evidence. This score is not an independent project rating,
+> production-readiness certification, or competitor benchmark.
 
 **Timestamp:** {{.Header.Timestamp}}
 **Version:** {{.Header.Version}}

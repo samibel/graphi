@@ -57,6 +57,23 @@ CGO_ENABLED=0 go build ./...
 CGO_ENABLED=0 go test ./...
 ```
 
+### 2.3 Optional build flavors
+
+```bash
+# Bundled web UI (webui_embed): builds web/dist, copies it into the gitignored
+# embed dir, and builds with the tag. The default build is UI-free and serves a
+# small notice page at / instead.
+scripts/build-release-webui.sh
+# (equivalent to: cd web && npm ci && npm run build; cp -R web/dist
+#  surfaces/http/webui/dist; CGO_ENABLED=0 go build -tags webui_embed ./cmd/graphi)
+
+# Broad CGO flavor: go-sitter-forest grammars over the same contract
+# (registered one per line; the reference build currently wires zig).
+# Requires a C toolchain; intended for trusted / CI input only — read the
+# residual-security warning in graphi-broad.md first.
+CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
+```
+
 ---
 
 ## 3. Core concepts (30 seconds)
