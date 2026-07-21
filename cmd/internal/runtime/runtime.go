@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
@@ -173,8 +174,10 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 
 	// D3 (sync-before-serve, the U1 default): the session is READY — recovered
 	// and ingested — before OpenSession returns, so a successful construction
-	// already means every stable operation answers over the real graph.
-	if err := WarmOrFullIngest(ctx, ing, root, opts.Progress); err != nil {
+	// already means every stable operation answers over the real graph. SyncRepo
+	// additionally stamps the sync metadata, so `graphi status` sees MCP-driven
+	// syncs too.
+	if _, err := SyncRepo(ctx, ing, store, root, opts.Progress); err != nil {
 		rt.Close()
 		return nil, fmt.Errorf("session ingest: %w", err)
 	}
@@ -250,6 +253,18 @@ func NewSearchService(store graphstore.Graphstore, metaDir string) *search.Servi
 	return svc.WithSemantic(reg, index, store)
 }
 
+// SyncStats describes what a warm-or-full ingest actually did, for the
+// user-facing summary lines of `graphi sync` and the branch banners.
+type SyncStats struct {
+	// Full is true when the pass took (or fell back to) the full re-index; the
+	// per-class counts below are then zero — a full pass has no delta to split.
+	Full bool
+	// Checked is the number of files hash-walked on the warm path.
+	Checked int
+	// Added/Changed/Removed split the warm-path delta by drift class.
+	Added, Changed, Removed int
+}
+
 // WarmOrFullIngest brings the per-repo state up to date the cheap way when it
 // can: a store already filled under the CURRENT ingest semantics is only
 // drift-checked (hash walk), and just the changed/deleted files — plus their
@@ -262,6 +277,12 @@ func NewSearchService(store graphstore.Graphstore, metaDir string) *search.Servi
 // mode. Cold stores and stores stamped by an older binary take the full pass,
 // which re-certifies them.
 func WarmOrFullIngest(ctx context.Context, ing *ingest.Ingester, root string, progress func(ingest.ProgressEvent)) error {
+	_, err := warmOrFullIngestStats(ctx, ing, root, progress)
+	return err
+}
+
+// warmOrFullIngestStats is WarmOrFullIngest returning what the pass did.
+func warmOrFullIngestStats(ctx context.Context, ing *ingest.Ingester, root string, progress func(ingest.ProgressEvent)) (SyncStats, error) {
 	emit := func(ev ingest.ProgressEvent) {
 		if progress != nil {
 			progress(ev)
@@ -275,12 +296,12 @@ func WarmOrFullIngest(ctx context.Context, ing *ingest.Ingester, root string, pr
 	// through to the tolerant full pass below, which re-certifies from scratch.
 	if err := ing.RecoverWithRoot(ctx, root); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: crash recovery failed (%v) — re-indexing from scratch\n", err)
-		return ing.IngestAll(ctx, root)
+		return SyncStats{Full: true}, ing.IngestAll(ctx, root)
 	}
 	if _, ok, err := ing.CanWarmStart(ctx, root); err == nil && ok {
 		emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift})
 		var totalChecked int
-		changed, deleted, derr := ing.DriftSetWithProgress(ctx, root, func(checked int) {
+		drift, derr := ing.DriftDetail(ctx, root, func(checked int) {
 			totalChecked = checked
 			if checked%64 == 0 {
 				emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: checked})
@@ -288,16 +309,42 @@ func WarmOrFullIngest(ctx context.Context, ing *ingest.Ingester, root string, pr
 		})
 		if derr == nil {
 			emit(ingest.ProgressEvent{Phase: ingest.PhaseDrift, Done: totalChecked})
-			delta := append(changed, deleted...)
-			if len(delta) == 0 {
-				return nil // up to date — the summary comes from the renderer
+			stats := SyncStats{Checked: totalChecked, Added: len(drift.Added), Changed: len(drift.Modified), Removed: len(drift.Deleted)}
+			if drift.Total() == 0 {
+				return stats, nil // up to date — the summary comes from the renderer
 			}
+			delta := append(append(append([]string{}, drift.Added...), drift.Modified...), drift.Deleted...)
 			uerr := ing.IngestChangedWithProgress(ctx, root, delta, progress)
 			if uerr == nil {
-				return nil
+				return stats, nil
 			}
 			fmt.Fprintf(os.Stderr, "graphi: warm start failed (%v) — re-indexing from scratch\n", uerr)
 		}
 	}
-	return ing.IngestAll(ctx, root)
+	return SyncStats{Full: true}, ing.IngestAll(ctx, root)
+}
+
+// SyncRepo is the canonical "bring the graph up to date" pass shared by
+// `graphi sync`, `graphi index`, bare `graphi`, and MCP session open: crash
+// recovery → warm-or-full ingest → sync-metadata stamp. The stamp is written
+// only after a successful ingest, so LastSync never reports a time whose
+// graph didn't actually commit.
+func SyncRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Graphstore, root string, progress func(ingest.ProgressEvent)) (SyncStats, error) {
+	stats, err := warmOrFullIngestStats(ctx, ing, root, progress)
+	if err != nil {
+		return stats, err
+	}
+	if err := StampSyncMetadata(ctx, store, root, time.Now()); err != nil {
+		return stats, err
+	}
+	return stats, nil
+}
+
+// RebuildRepo is the canonical full re-index pass behind `graphi rebuild` and
+// `graphi index --full`: an unconditional cold IngestAll plus the sync stamp.
+func RebuildRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Graphstore, root string) error {
+	if err := ing.IngestAll(ctx, root); err != nil {
+		return err
+	}
+	return StampSyncMetadata(ctx, store, root, time.Now())
 }
