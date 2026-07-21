@@ -169,7 +169,7 @@ build). Setup and the guarantees that hold either way:
 | **No telemetry** | Nothing is reported anywhere — no usage data, no phone-home. |
 | **No accounts, no external services** | A single static binary; nothing to sign up for. |
 | **CGo-free default build** | Builds anywhere Go does, with no C toolchain required. |
-| **Single static binary** | One self-contained executable, easy to drop into any environment. |
+| **Single static binary** | One self-contained executable (~32 MB as shipped; the size is budget-gated in CI), easy to drop into any environment. |
 
 The Stable default tier runs with no accounts and no outbound network access.
 Explicitly configured Labs/forge or embedder features may contact their
