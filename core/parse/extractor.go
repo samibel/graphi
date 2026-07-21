@@ -39,21 +39,13 @@ const (
 	// languages (Java, Kotlin) so a single file→package `imports` edge replaces
 	// the cross-module file→file import fan-out.
 	KindPackage = "package"
-	// KindExternal is the node kind for an INTERNED external-symbol node (WP-03).
-	// Unlike the six per-file symbol kinds, an external node is minted by the
-	// LINKER (not a parser) for an unresolved cross-package call/reference whose
-	// target lives outside the repo (stdlib / 3rd-party, e.g. "os/exec.Command",
-	// "os.ReadFile", "db.Query"). It is keyed by its qualified external symbol name
-	// with an EMPTY source path and zero line/column, so every callsite across
-	// every file that names the same external symbol mints the byte-identical
-	// NodeId — the node is interned by construction (one node per unique QN, never
-	// per callsite). Its provenance/evidence lives on the incident heuristic-tier
-	// calls/references EDGE, never on the node. External nodes are explicitly
-	// second-class: heuristic tier by construction (never confirmed), carry no
-	// outgoing edges (terminal), and are EXCLUDED from every structural query
-	// surface (search, callers/callees/references, neighborhood, impact). They
-	// exist so name-keyed analyses (the taint analyzer's sinks/sources) have a real
-	// graph node to match against instead of a dropped, invisible reference.
+	// KindExternal is the node kind for an INTERNED external-symbol node
+	// (WP-03): minted by the LINKER (never a parser) for a cross-package
+	// call/reference whose target lives outside the repo (stdlib/3rd-party),
+	// keyed by qualified name with an empty source path so every callsite
+	// mints the byte-identical NodeId. External nodes are second-class by
+	// design: heuristic tier, terminal, and excluded from every structural
+	// query surface. See docs/external-nodes.md for the full contract.
 	KindExternal = "external"
 )
 
@@ -71,16 +63,13 @@ const (
 	EdgeImports = "imports"
 )
 
-// SymbolExtractor is the language-neutral extraction seam (SW-052). It is a NEW,
-// narrower contract layered OVER the existing Parser/ParseResult boundary — it does
-// NOT rename or replace Parser. A Parser produces a normalized ParseResult whose
-// Root is a backend-specific AST handle; a SymbolExtractor turns that handle into
-// the shared node/edge vocabulary plus the inert PendingRefs the linker resolves.
-//
-// Separating the two responsibilities lets each later language worker write a
-// grammar query and an Extract mapping without touching graph plumbing or any other
-// language's parser. The Go path (goSymbolExtractor) is the reference implementation
-// and threads the existing *goAST (which already carries the FileSet) through root.
+// SymbolExtractor is the language-neutral extraction seam (SW-052), layered
+// over the Parser/ParseResult boundary (it does not replace Parser): a Parser
+// produces a ParseResult whose Root is a backend-specific AST handle; a
+// SymbolExtractor turns that handle into the shared node/edge vocabulary plus
+// the inert PendingRefs the linker resolves. This lets each language worker
+// write an Extract mapping without touching graph plumbing or other parsers;
+// goSymbolExtractor is the reference implementation.
 //
 // Contract:
 //   - Extract MUST be deterministic: identical (filename, root) yields byte-
