@@ -23,6 +23,7 @@ which, so the difference stays visible.
 | Doc | What it is |
 |---|---|
 | [architecture-plan.md](architecture-plan.md) | The single design entry point: layers, data flow, CI gates |
+| [external-nodes.md](external-nodes.md) | **Canonical** WP-03 contract: what external (stdlib/third-party) nodes are and why structural queries exclude them |
 | [graphi-broad.md](graphi-broad.md) | The opt-in CGO grammar flavor |
 | [default-tier-security.md](default-tier-security.md) | Security controls behind the CGo-free / zero-egress default tier |
 | [adr/](adr) | Architecture decision records |
