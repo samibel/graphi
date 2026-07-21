@@ -8,7 +8,10 @@ in this repository. Third-party Go modules pulled in at build time (see go.mod /
 go.sum) remain governed by their own licenses.
 
 The optional, build-tag-gated `graphi-broad` flavor (`-tags graphi_broad`,
-CGO_ENABLED=1) links the go-sitter-forest Tree-sitter grammar set. Those grammars
+CGO_ENABLED=1) links go-sitter-forest Tree-sitter grammars. Those grammars
 and the Tree-sitter runtime are distributed under their respective upstream
 licenses (predominantly MIT/Apache-2.0); consult the corresponding modules in
-go.sum for the authoritative terms. graphi does not relicense them.
+go.sum for the authoritative terms. graphi does not relicense them. The
+authoritative version pin is go.mod (currently the go-sitter-forest/zig
+grammar subpackage); build provenance is recorded in
+internal/release/provenance.go.
