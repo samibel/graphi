@@ -83,6 +83,10 @@ type Ingester struct {
 	// ignore caches the opt-in index-scope config per root (see ignore.go).
 	ignore ignoreState
 
+	// readOnly marks an observer built by NewReadOnly: the meta sidecar is
+	// opened mode=ro and every mutating entry point fails with ErrReadOnly.
+	readOnly bool
+
 	// test hooks
 	failAfterDirtyMark error
 	scheduleHook       func(relPath string)

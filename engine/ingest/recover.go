@@ -10,6 +10,9 @@ import (
 // Recover reprocesses any units that were marked dirty but not cleared (e.g.
 // after a crash). It returns nil when the dirty set is empty.
 func (i *Ingester) Recover(ctx context.Context) error {
+	if err := i.guardReadOnly(); err != nil {
+		return err
+	}
 	rows, err := i.meta.QueryContext(ctx, "SELECT path FROM dirty_units")
 	if err != nil {
 		return fmt.Errorf("ingest: recover query dirty: %w", err)
@@ -43,6 +46,9 @@ func (i *Ingester) Recover(ctx context.Context) error {
 // re-ingested through the provenance-aware path; rows with no edit context
 // (full-ingest leftovers) are re-ingested without provenance.
 func (i *Ingester) RecoverWithRoot(ctx context.Context, root string) error {
+	if err := i.guardReadOnly(); err != nil {
+		return err
+	}
 	rows, err := i.meta.QueryContext(ctx, "SELECT path, edit_id, op_type, recorded_at FROM dirty_units")
 	if err != nil {
 		return fmt.Errorf("ingest: recover query dirty: %w", err)

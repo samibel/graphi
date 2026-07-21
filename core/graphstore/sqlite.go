@@ -106,6 +106,49 @@ func OpenSQLite(dbPath string) (*SQLiteStore, error) {
 	return s, nil
 }
 
+// OpenSQLiteReadOnly opens an EXISTING store without modifying its content:
+// mode=ro (never creates a missing database) plus query_only on every pooled
+// connection, no schema init, no migrations, no file-mode tightening. It backs
+// strictly-observational surfaces (`graphi status`, snapshot listings). Reads
+// work as usual; every write method fails with SQLite's readonly error. Note
+// that reading a WAL-mode database still creates the transient -wal/-shm
+// coordination sidecars when absent (empty WAL, shared-memory index) — the
+// database content itself is never touched. immutable=1 would avoid even
+// that, but it is unsafe while a concurrent writer (daemon) may commit.
+func OpenSQLiteReadOnly(dbPath string) (*SQLiteStore, error) {
+	if strings.TrimSpace(dbPath) == "" {
+		return nil, errors.New("graphstore: empty sqlite path")
+	}
+	if _, err := os.Stat(dbPath); err != nil {
+		return nil, fmt.Errorf("graphstore: open read-only: %w", err)
+	}
+	dsn := fmt.Sprintf("file:%s?mode=ro&_pragma=query_only(1)&_pragma=busy_timeout(5000)",
+		filepath.ToSlash(dbPath))
+	db, err := sql.Open(sqliteDriverName, dsn)
+	if err != nil {
+		return nil, fmt.Errorf("graphstore: open sqlite read-only: %w", err)
+	}
+	s := &SQLiteStore{db: db, path: dbPath}
+	// Probe with a harmless query so a corrupt/non-SQLite file fails here, not
+	// on the first caller read.
+	var one int
+	if err := db.QueryRowContext(context.Background(), "SELECT 1").Scan(&one); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("graphstore: read-only probe: %w", err)
+	}
+	return s, nil
+}
+
+// CountNodes reports the durable node count directly from SQLite, bypassing the
+// hot cache so read-only observers don't pay a full cache build.
+func (s *SQLiteStore) CountNodes(ctx context.Context) (int, error) {
+	var n int
+	if err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM nodes").Scan(&n); err != nil {
+		return 0, fmt.Errorf("graphstore: count nodes: %w", err)
+	}
+	return n, nil
+}
+
 // TightenDBFileModes chmods a SQLite database file and its -wal/-shm sidecars
 // to 0600 when they exist with wider permissions (PRIV-01). The main file's
 // failure is an error; absent sidecars are fine (SQLite creates them lazily,

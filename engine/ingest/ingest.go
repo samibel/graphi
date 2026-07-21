@@ -33,6 +33,9 @@ type fileUnit struct {
 // IngestAll performs a full ingestion of root, parsing every file and
 // rebuilding the cache and reverse-dependency index from scratch.
 func (i *Ingester) IngestAll(ctx context.Context, root string) error {
+	if err := i.guardReadOnly(); err != nil {
+		return err
+	}
 	i.resetSkips()
 	// Validate every repository-controlled semantics config before walking,
 	// parsing, or persisting source. stampSemanticsTx recomputes the value at the
@@ -327,44 +330,76 @@ func (i *Ingester) DriftSet(ctx context.Context, root string) (changed, deleted 
 // DriftSetWithProgress is DriftSet with a per-file walk callback (running
 // count of files checked), so an interactive warm start can animate the
 // change scan. The watcher's reconcile path keeps using DriftSet (nil
-// callback) and stays silent.
+// callback) and stays silent. changed is the sorted union of DriftDetail's
+// Added and Modified sets, byte-identical to the pre-DriftDetail behavior.
 func (i *Ingester) DriftSetWithProgress(ctx context.Context, root string, onFile func(checked int)) (changed, deleted []string, err error) {
-	units, err := i.walk(root, onFile)
+	d, err := i.DriftDetail(ctx, root, onFile)
 	if err != nil {
 		return nil, nil, err
+	}
+	changed = append(append([]string{}, d.Added...), d.Modified...)
+	sort.Strings(changed)
+	return changed, d.Deleted, nil
+}
+
+// Drift is the classified change set between the on-disk tree and the content
+// cache: paths with no cache entry (Added), a differing content hash
+// (Modified), and cached paths no longer on disk (Deleted). Each slice is
+// sorted.
+type Drift struct {
+	Added    []string
+	Modified []string
+	Deleted  []string
+}
+
+// Total is the number of drifted paths across all three classes.
+func (d Drift) Total() int { return len(d.Added) + len(d.Modified) + len(d.Deleted) }
+
+// DriftDetail is DriftSet with the changed set split into Added vs Modified,
+// for user-facing summaries ("3 added, 9 changed, 2 removed"). It shares
+// DriftSet's read-only contract: it mutates neither the graph nor the cache,
+// so a read-only Ingester (NewReadOnly) may call it freely.
+func (i *Ingester) DriftDetail(ctx context.Context, root string, onFile func(checked int)) (Drift, error) {
+	units, err := i.walk(root, onFile)
+	if err != nil {
+		return Drift{}, err
 	}
 	cached := make(map[string]string)
 	rows, err := i.meta.QueryContext(ctx, "SELECT path, content_hash FROM file_content_cache")
 	if err != nil {
-		return nil, nil, fmt.Errorf("ingest: drift query cache: %w", err)
+		return Drift{}, fmt.Errorf("ingest: drift query cache: %w", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var p, h string
 		if err := rows.Scan(&p, &h); err != nil {
-			return nil, nil, fmt.Errorf("ingest: drift scan cache: %w", err)
+			return Drift{}, fmt.Errorf("ingest: drift scan cache: %w", err)
 		}
 		cached[p] = h
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return Drift{}, err
 	}
 
+	var d Drift
 	present := make(map[string]struct{}, len(units))
 	for _, u := range units {
 		present[u.relPath] = struct{}{}
-		if h, ok := cached[u.relPath]; !ok || h != u.hash {
-			changed = append(changed, u.relPath)
+		if h, ok := cached[u.relPath]; !ok {
+			d.Added = append(d.Added, u.relPath)
+		} else if h != u.hash {
+			d.Modified = append(d.Modified, u.relPath)
 		}
 	}
 	for p := range cached {
 		if _, ok := present[p]; !ok {
-			deleted = append(deleted, p)
+			d.Deleted = append(d.Deleted, p)
 		}
 	}
-	sort.Strings(changed)
-	sort.Strings(deleted)
-	return changed, deleted, nil
+	sort.Strings(d.Added)
+	sort.Strings(d.Modified)
+	sort.Strings(d.Deleted)
+	return d, nil
 }
 
 // IngestChangedWithProvenance is the provenance-aware incremental ingest entry
@@ -398,6 +433,9 @@ func (i *Ingester) IngestChangedWithProvenance(ctx context.Context, root string,
 // only (the interactive warm-start path); every background caller passes nil,
 // so watcher and edit-applier ingests never draw on anyone's terminal.
 func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []string, prov *EditProvenance, precomputed map[string]*ParsedFile, prog func(ProgressEvent)) error {
+	if err := i.guardReadOnly(); err != nil {
+		return err
+	}
 	i.resetSkips()
 	units, err := i.walk(root, nil)
 	if err != nil {
