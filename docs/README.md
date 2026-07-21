@@ -11,6 +11,9 @@ which, so the difference stays visible.
 | [HOWTO.md](HOWTO.md) | Install, index a repo, use every surface — start here |
 | [FEATURES.md](FEATURES.md) | Complete catalogue of MCP tools, CLI subcommands, HTTP endpoints, analyzers |
 | [stability-tiers.md](stability-tiers.md) | **Canonical** definition of the GA / Preview / Labs / Source-only tiers |
+| [language-support.md](language-support.md) | Per-language coverage table and how cross-file resolution works, language by language |
+| [cli-reference.md](cli-reference.md) | Every CLI subcommand with its stability tier |
+| [semantic-search.md](semantic-search.md) | The optional, off-by-default embedding search: how to enable it, what stays guaranteed |
 | [query-language.md](query-language.md) | Query language reference |
 | [agent-workflows.md](agent-workflows.md) | Recommended MCP call order for AI agents, per-client examples |
 | [setup-privacy.md](setup-privacy.md) | `graphi setup` + `graphi privacy-audit` |
