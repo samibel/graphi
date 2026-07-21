@@ -17,6 +17,7 @@ import (
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/gitinfo"
 	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
@@ -63,8 +64,10 @@ func isHeadless(goos string, getenv func(string) string) bool {
 // surface runHTTP builds. The caller is responsible for srv.Serve(ln) and for
 // invoking cleanup. The construction shape mirrors runHTTP exactly.
 // progress, when non-nil, receives ingest progress events (rendered by the
-// caller; see cmd/graphi/progress.go).
-func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent)) (srv *httpsrv.Server, ln net.Listener, url string, c client.Client, store graphstore.Graphstore, cleanup func(), notRepo bool, err error) {
+// caller; see cmd/graphi/progress.go). banner receives the repo/branch
+// headline and any branch-switch notice before the sync runs (io.Discard for
+// silent callers).
+func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent), banner io.Writer) (srv *httpsrv.Server, ln net.Listener, url string, c client.Client, store graphstore.Graphstore, cleanup func(), notRepo bool, err error) {
 	cleanup = func() {}
 	root, ok := state.DetectRepo(cwd)
 	if !ok {
@@ -94,7 +97,13 @@ func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent)) (srv *http
 	ing.WithProgress(progress)
 	cleanup = func() { _ = ing.Close(); _ = store.Close() }
 
-	if err = rtime.WarmOrFullIngest(context.Background(), ing, root, progress); err != nil {
+	// Branch-aware startup context: which repo/branch the graph is about to
+	// track, and whether the user switched branches since the last sync.
+	info, gitOK := gitinfo.Head(root)
+	fmt.Fprintf(banner, "graphi: repo %s\n", repoHeadline(root, info, gitOK))
+	printBranchSwitch(context.Background(), banner, store, info, gitOK)
+
+	if _, err = rtime.SyncRepo(context.Background(), ing, store, root, progress); err != nil {
 		cleanup()
 		cleanup = func() {}
 		return nil, nil, "", nil, nil, cleanup, false, err
@@ -122,7 +131,7 @@ func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent)) (srv *http
 func runZeroConfig() int {
 	cwd, _ := os.Getwd()
 	prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
-	srv, ln, url, c, _, cleanup, notRepo, err := setupZeroConfig(cwd, prog.Handle)
+	srv, ln, url, c, _, cleanup, notRepo, err := setupZeroConfig(cwd, prog.Handle, os.Stdout)
 	prog.Finish(err)
 	defer cleanup()
 	if notRepo {
