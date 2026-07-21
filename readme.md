@@ -444,9 +444,11 @@ removed MCP tool, or a Tier-1 regression.
 That number is a synthetic in-repository release gate, **not** a credible
 overall 9/10 project rating. It does not prove production adoption, external
 security, language-wide accuracy, commercial viability, or superiority over a
-competitor. Those claims remain **UNKNOWN** until independently measured. Any
-`docs/release-scorecard.{json,md}` file is a historical snapshot; its embedded
-commit must match the candidate before it can be cited as current evidence.
+competitor. Those claims remain **UNKNOWN** until independently measured. The gate publishes
+`docs/release-scorecard.{json,md}` fresh on each run (they are not checked
+in, and carry `"self_reported": true`); a scorecard's embedded commit must
+match the candidate before it can be cited as current evidence. Checked-in
+run evidence lives under `docs/eval/runs/`.
 A “faster or more accurate than Graphify” claim additionally requires a public,
 matched-corpus benchmark with identical hardware, cold/warm methodology, and
 task-level correctness labels. No such claim is made here today.

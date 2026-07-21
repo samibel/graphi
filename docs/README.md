@@ -39,7 +39,7 @@ them breaks gates; the generated ones are overwritten on the next run.
 |---|---|
 | [coverage-matrix.md](coverage-matrix.md) | Generated from [coverage-matrix.yaml](coverage-matrix.yaml) by `go run ./cmd/coverage -generate`; drift fails CI (`internal/coverage`) |
 | [capability-manifest.json](capability-manifest.json) | Generated alongside the coverage matrix |
-| [release-scorecard.md](release-scorecard.md) / [release-scorecard.json](release-scorecard.json) | Published by the release gate (`cmd/release-gate`) |
+| release-scorecard.md / release-scorecard.json | Published fresh by the release gate (`cmd/release-gate -publish`) on each CI run; not checked in — checked-in run evidence lives under [eval/](eval) |
 | [eval-baseline.json](eval-baseline.json) · [mcp-tool-baseline.json](mcp-tool-baseline.json) | Ratchet baselines read by `cmd/eval` / `cmd/release-gate` |
 | [eval/](eval) | Hero protocol, budgets, and checked-in run evidence (`eval-full.yml` CI) |
 | [rc/](rc) | RC evidence index — [rc/evidence-index.md](rc/evidence-index.md) is generated from [rc/evidence-index.yaml](rc/evidence-index.yaml) by `go run ./cmd/evidence` |
