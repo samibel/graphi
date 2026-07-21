@@ -45,10 +45,11 @@ func runPrComment(args []string) int {
 // "forge unavailable" error (local-first: no network without explicit config).
 func runListPRs(args []string) int {
 	dbPath, socket, _ := extractFlags(args)
-	c := makeForgeClient(dbPath, socket)
+	c, cleanup := makeForgeClient(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.RunListPRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: list-prs: %v\n", err)
 		return 1
@@ -61,10 +62,11 @@ func runListPRs(args []string) int {
 // egress (forge.FromEnv); ranking is a zero-egress pass over the local graph.
 func runTriagePRs(args []string) int {
 	dbPath, socket, _ := extractFlags(args)
-	c := makeForgeClient(dbPath, socket)
+	c, cleanup := makeForgeClient(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.RunTriagePRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: triage-prs: %v\n", err)
 		return 1
@@ -77,10 +79,11 @@ func runTriagePRs(args []string) int {
 // (forge.FromEnv); conflict detection is a zero-egress pass over the local graph.
 func runConflictsPRs(args []string) int {
 	dbPath, socket, _ := extractFlags(args)
-	c := makeForgeClient(dbPath, socket)
+	c, cleanup := makeForgeClient(dbPath, socket)
 	if c == nil {
 		return 1
 	}
+	defer cleanup()
 	if err := cli.RunConflictsPRs(context.Background(), c, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: conflicts-prs: %v\n", err)
 		return 1
@@ -225,20 +228,20 @@ func (m *snapshotMaterializer) Close() {
 // PR-enumeration boundary (SW-105). The forge is resolved from the environment;
 // when no token is present the forge stays unwired and the triage surface reports
 // the typed unavailable error rather than dialing anything (local-first default).
-func makeForgeClient(dbPath, socket string) client.Client {
+func makeForgeClient(dbPath, socket string) (client.Client, func()) {
 	if socket != "" {
 		// The daemon path has no forge RPC yet; it reports forge-unavailable.
-		return daemon.NewClient(socket, "")
+		return daemon.NewClient(socket, ""), func() {}
 	}
 	store, err := openStore(dbPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
-		return nil
+		return nil, func() {}
 	}
 	asvc := analysis.NewDefaultService(store)
 	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 	if gh, ferr := forge.FromEnv(); ferr == nil && gh != nil {
 		d = d.WithForge(gh)
 	}
-	return d
+	return d, func() { _ = store.Close() }
 }
