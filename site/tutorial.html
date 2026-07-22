@@ -190,6 +190,7 @@ scripts/build-release-webui.sh</code></pre></div>
             <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Copy command">Copy</button><pre><code data-lang="bash">mkdir -p ~/.graphi
 graphi index -root . -db ~/.graphi/graph.db</code></pre></div>
             <p>This creates a persistent SQLite store (<code>graph.db</code>) that every further query reads from.</p>
+            <div class="doc-note"><span class="doc-note__k">Everyday</span><p>Outside this tutorial you don't need any of these flags: <code>graphi sync</code> keeps an <strong>auto-managed</strong> per-repo store (<code>~/.graphi/&lt;fingerprint&gt;/db.sqlite</code>) matching whatever is checked out — run it after a branch switch, check freshness with <code>graphi status</code>, and force a clean pass with <code>graphi rebuild</code>. Queries run from inside the repo discover that store automatically. This tutorial passes an explicit <code>-db</code> so every step names its store and works from any directory.</p></div>
 
             <h3>4.2 Find symbols (<code>search</code>)</h3>
             <p>Search gives you the <strong>node_id</strong> that every structural query expects as <code>-symbol</code>:</p>
@@ -296,8 +297,9 @@ graphi index: ingested ./spring-petclinic</code></pre></div>
             <p>graphi talks to agents over <strong>MCP (stdio, JSON-RPC)</strong>. That turns “the agent reads through the repo” into “the agent asks the graph”.</p>
 
             <h3>6.1 Setup in one command</h3>
-            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Copy command">Copy</button><pre><code data-lang="bash"># 1) build the graph
-graphi index -root . -db ~/.graphi/graph.db
+            <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Copy command">Copy</button><pre><code data-lang="bash"># 1) prime the graph (optional — an MCP session syncs the repo's
+#    auto-managed store on start anyway; this just makes it instant)
+cd your-repo &amp;&amp; graphi sync
 
 # 2) register graphi with every detected local MCP client
 graphi setup
@@ -466,7 +468,7 @@ graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.d
             <ul>
               <li><strong>Spring Data proxy methods:</strong> interface methods like <code>findByLastNameStartingWith</code> (which Spring implements at runtime) often have <strong>no</strong> <code>callers</code>/<code>references</code> edges, because the call goes through a dynamic proxy. graphi then honestly reports <code>outcome: "empty"</code> instead of guessing. → For DI/proxy-heavy calls, query the <strong>concrete</strong> implementation methods.</li>
               <li><strong>Cross-file resolution is <code>heuristic</code> for non-Go:</strong> for Java/TS/Python etc., cross-file edges are heuristic (with evidence), never <code>confirmed</code>. Always read the confidence tier along with it.</li>
-              <li><strong><code>compare-branches</code> does not take git refs:</strong> it compares two graphi SQLite snapshots (<code>-base</code>/<code>-head</code> = paths to <code>graphi index</code> outputs), not <code>main</code>/<code>feature</code> directly.</li>
+              <li><strong>Branch comparison works over frozen states, not git refs:</strong> <code>graphi snapshot &lt;name&gt;</code> freezes the currently checked-out code under a name, and <code>graphi compare &lt;base&gt; &lt;head&gt;</code> diffs two names (the reserved <code>current</code> means the live graph) — so check out each branch, snapshot it, then compare. The raw form <code>compare-branches -base/-head</code> takes explicit SQLite paths and never resolves <code>main</code>/<code>feature</code> from git itself.</li>
               <li><strong><code>safe-delete</code> only removes the declaration line:</strong> for multi-line bodies, check the diff.</li>
               <li><strong><code>graphi-broad</code> (CGO) is not memory-isolated:</strong> for trusted/CI sources only. A C-grammar crash isn’t caught by Go’s safety mechanisms.</li>
               <li><strong>Semantic search is off by default:</strong> without a configured embedder, <code>search -semantic</code> returns a typed “unavailable” response (no error, no network). Details and enabling in section 9.</li>
@@ -480,12 +482,12 @@ graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.d
           <div class="doc-prose">
             <p>For your context (Spring Boot services, deep code analysis, MCP, repo comparisons):</p>
             <ol>
-              <li><strong>Once per repo:</strong> <code>graphi index -root . -db ~/.graphi/&lt;repo&gt;.db</code></li>
+              <li><strong>Once per repo:</strong> <code>cd</code> into the repo and run <code>graphi sync</code> — it builds and maintains the auto-managed store that flagless queries and MCP sessions discover. (Explicit form: <code>graphi index -root . -db ~/.graphi/&lt;repo&gt;.db</code>.)</li>
               <li><strong>Wire up agents:</strong> <code>graphi setup --client claude</code> (or <code>all</code>), restart claude.</li>
               <li><strong>Before every refactor:</strong> have the agent run <code>callers</code> + <code>analyze impact -direction reverse</code> on the target symbol → blast radius with evidence.</li>
               <li><strong>Understand unfamiliar code:</strong> <code>search</code> → <code>neighborhood</code> → <code>analyze concept</code>.</li>
               <li><strong>For DI/proxy code:</strong> query concrete implementations instead of interface methods.</li>
-              <li><strong>Keep it fresh:</strong> graphi indexes incrementally; for continuous use, start the daemon.</li>
+              <li><strong>Keep it fresh:</strong> <code>graphi sync</code> after a branch switch (it detects the switch and re-processes only the difference); <code>graphi status</code> tells you whether anything is stale. For continuous use, start the daemon.</li>
               <li><strong>Prove the value:</strong> check <code>graphi savings</code> regularly — it makes the token savings visible.</li>
               <li><strong>Prove local-first (e.g. for compliance):</strong> <code>graphi privacy-audit</code>.</li>
             </ol>
@@ -499,7 +501,16 @@ graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.d
             <div class="codeblock"><span class="codeblock__lang">bash</span><button type="button" class="copy-btn" aria-label="Copy cheat sheet">Copy</button><pre><code data-lang="bash"># BUILD
 CGO_ENABLED=0 go build -o graphi ./cmd/graphi
 
-# INDEX
+# KEEP THE GRAPH CURRENT (auto-managed per-repo store; run inside the repo)
+graphi sync        # incremental update — run after a branch switch
+graphi status      # is the graph current? exit 0 = yes, 1 = run sync (--json)
+graphi rebuild     # full re-index from scratch
+
+# FREEZE + DIFF BRANCH STATES (labs)
+graphi snapshot main            # freeze the current checkout under a name
+graphi compare main current     # diff a snapshot against the live graph
+
+# INDEX (explicit paths — advanced form of sync/rebuild)
 graphi index -root . -db ~/.graphi/graph.db
 
 # SEARCH (returns node_id)

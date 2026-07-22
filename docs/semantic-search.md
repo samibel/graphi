@@ -41,7 +41,9 @@ export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434
 export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx
 
 # Then embed the graph and query (share one durable store + meta sidecar so the
-# generated vectors survive between the index and search invocations):
+# generated vectors survive between the index and search invocations; these are
+# explicit teaching paths — graphi's auto-managed store lives at
+# ~/.graphi/<fingerprint>/db.sqlite and `graphi sync` maintains it for you):
 mkdir -p ~/.graphi
 graphi index --semantic -root ./my-repo -db ~/.graphi/graph.db -meta ~/.graphi/meta
 graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.db -meta ~/.graphi/meta

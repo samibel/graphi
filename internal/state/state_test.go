@@ -4,8 +4,46 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestSnapshotName_SanitizeAndReject(t *testing.T) {
+	good := map[string]string{
+		"main":          "main",
+		"feature/login": "feature-login",
+		"a\\b":          "a-b",
+		"v1.2_rc-3":     "v1.2_rc-3",
+	}
+	for raw, want := range good {
+		got, err := SnapshotName(raw)
+		if err != nil || got != want {
+			t.Errorf("SnapshotName(%q) = (%q, %v), want (%q, nil)", raw, got, err, want)
+		}
+	}
+	bad := []string{"", "current", ".", "..", "/leading", "-leading", ".hidden", "spa ce", "emoji✨", strings.Repeat("x", 101)}
+	for _, raw := range bad {
+		if got, err := SnapshotName(raw); err == nil {
+			t.Errorf("SnapshotName(%q) = %q, want error", raw, got)
+		}
+	}
+}
+
+func TestSnapshotPath_Layout(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	p, err := Resolve(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(p.Dir, "snapshots", "main.sqlite")
+	if got := SnapshotPath(p, "main"); got != want {
+		t.Fatalf("SnapshotPath = %q, want %q", got, want)
+	}
+}
 
 func TestStateDir_XDGAndHomeFallback(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", "/tmp/xdgstate")

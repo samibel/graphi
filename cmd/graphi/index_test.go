@@ -82,10 +82,30 @@ func TestRunIndex_SemanticGracefulSkipWhenUnconfigured(t *testing.T) {
 	}
 }
 
-// `graphi index` requires -root.
+// `graphi index` without -root still errors when cwd is not a repository.
 func TestRunIndex_RequiresRoot(t *testing.T) {
-	if code := runIndex([]string{"--semantic"}); code == 0 {
-		t.Fatal("runIndex without -root exit = 0, want non-zero")
+	if code := runIndexAt(t.TempDir(), []string{"--semantic"}); code == 0 {
+		t.Fatal("runIndex without -root outside a repo exit = 0, want non-zero")
+	}
+}
+
+// `graphi index` without -root inside a repo now behaves like `graphi sync`:
+// it detects the repo and targets the auto-managed per-repo state store.
+func TestRunIndex_NoRootAutoSyncsInsideRepo(t *testing.T) {
+	stateHome := t.TempDir()
+	t.Setenv("XDG_STATE_HOME", stateHome)
+	t.Setenv("GRAPHI_EMBEDDER", "")
+	repo := writeGoRepo(t)
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	if code := runIndexAt(repo, nil); code != 0 {
+		t.Fatalf("runIndex (no -root, inside repo) exit = %d, want 0", code)
+	}
+	matches, err := filepath.Glob(filepath.Join(stateHome, "graphi", "*", "db.sqlite"))
+	if err != nil || len(matches) != 1 {
+		t.Fatalf("auto-managed state DB matches = %v (err %v), want exactly one", matches, err)
 	}
 }
 

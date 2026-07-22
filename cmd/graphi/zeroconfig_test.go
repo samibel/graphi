@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -76,7 +78,7 @@ func TestSetupZeroConfig_RepoServesLoopbackAndIndexes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv, ln, url, c, store, cleanup, notRepo, err := setupZeroConfig(repo, nil)
+	srv, ln, url, c, store, cleanup, notRepo, err := setupZeroConfig(repo, nil, io.Discard)
 	if err != nil {
 		t.Fatalf("setupZeroConfig: %v", err)
 	}
@@ -150,7 +152,7 @@ func TestSetupZeroConfig_WarmStart(t *testing.T) {
 			if ev.Phase == ingest.PhaseDrift {
 				lastDriftDone = ev.Done
 			}
-		})
+		}, io.Discard)
 		if err != nil || notRepo || srv == nil {
 			t.Fatalf("setupZeroConfig: err=%v notRepo=%v", err, notRepo)
 		}
@@ -206,10 +208,65 @@ func TestSetupZeroConfig_WarmStart(t *testing.T) {
 	}
 }
 
+// TestSetupZeroConfig_Banner pins the branch-aware startup context: a git
+// checkout announces repo + branch (and a branch switch since the last sync),
+// while a marker-only repo (bare .git dir without HEAD) stays branch-silent.
+func TestSetupZeroConfig_Banner(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	repo := writeGoRepo(t)
+	gitRepo(t, repo, "main")
+
+	var banner bytes.Buffer
+	srv, ln, _, _, _, cleanup, notRepo, err := setupZeroConfig(repo, nil, &banner)
+	if err != nil || notRepo || srv == nil {
+		t.Fatalf("setupZeroConfig: err=%v notRepo=%v", err, notRepo)
+	}
+	_ = ln.Close()
+	cleanup()
+	if !strings.Contains(banner.String(), "graphi: repo "+repo+" (main @ 1a2b3c4)") {
+		t.Fatalf("banner missing repo/branch line, got: %s", banner.String())
+	}
+	if strings.Contains(banner.String(), "Branch switch detected") {
+		t.Fatalf("first start reported a branch switch: %s", banner.String())
+	}
+
+	// Switch branches; the next start announces it.
+	if err := os.WriteFile(filepath.Join(repo, ".git", "HEAD"), []byte("ref: refs/heads/feature/login\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	banner.Reset()
+	srv, ln, _, _, _, cleanup, notRepo, err = setupZeroConfig(repo, nil, &banner)
+	if err != nil || notRepo || srv == nil {
+		t.Fatalf("setupZeroConfig (second): err=%v notRepo=%v", err, notRepo)
+	}
+	_ = ln.Close()
+	cleanup()
+	if !strings.Contains(banner.String(), "Branch switch detected: main → feature/login") {
+		t.Fatalf("banner missing branch-switch line, got: %s", banner.String())
+	}
+
+	// A marker-only repo (no HEAD) prints the repo line without git context.
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	plain := writeGoRepo(t)
+	if err := os.MkdirAll(filepath.Join(plain, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	banner.Reset()
+	srv, ln, _, _, _, cleanup, notRepo, err = setupZeroConfig(plain, nil, &banner)
+	if err != nil || notRepo || srv == nil {
+		t.Fatalf("setupZeroConfig (plain): err=%v notRepo=%v", err, notRepo)
+	}
+	_ = ln.Close()
+	cleanup()
+	if !strings.Contains(banner.String(), "graphi: repo "+plain+"\n") || strings.Contains(banner.String(), "(") {
+		t.Fatalf("marker-only banner should have no git context, got: %s", banner.String())
+	}
+}
+
 func TestSetupZeroConfig_NotARepo(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	bare := t.TempDir() // no .git/go.work/go.mod marker
-	srv, ln, url, c, store, cleanup, notRepo, err := setupZeroConfig(bare, nil)
+	srv, ln, url, c, store, cleanup, notRepo, err := setupZeroConfig(bare, nil, io.Discard)
 	defer cleanup()
 	if err != nil {
 		t.Fatalf("setupZeroConfig (not a repo) returned error: %v", err)

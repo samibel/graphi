@@ -25,7 +25,7 @@ row is tagged stable or one is dropped.
 
 **MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **43-tool** union (32 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **143**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **148**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -143,7 +143,7 @@ Total capabilities: **143**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | 🧪 labs | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | 🧪 labs | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (42)
+## CLI subcommands (47)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -151,6 +151,7 @@ Total capabilities: **143**. See [`architecture-plan.md`](architecture-plan.md) 
 | `analyze` | 🧪 labs | ✅ shipped | - | run a registered analyzer over the graph |
 | `change-risk` | 🧪 labs | ✅ shipped | EP-020 | evidence-based local blast-radius estimate (low/medium/high/unknown) for a symbol, path, or unified diff; byte-parity with the change_risk MCP tool |
 | `claude` | 🧪 labs | ✅ shipped | - | short-verb alias for `setup` (register the MCP server) |
+| `compare` | 🧪 labs | ✅ shipped | - | name-based wrapper over compare-branches: resolves snapshot names plus the reserved `current` (live store) to paths; byte-identical diff output |
 | `compare-branches` | 🧪 labs | ✅ shipped | - | graph-level diff of two graphi SQLite snapshots (paths, not git refs) |
 | `compound` | 🧪 labs | ✅ shipped | - | compound / Cypher-style graph query |
 | `conflicts-prs` | 🧪 labs | ✅ shipped | - | inter-PR conflict detection |
@@ -172,6 +173,7 @@ Total capabilities: **143**. See [`architecture-plan.md`](architecture-plan.md) 
 | `pr-comment` | 🧪 labs | ✅ shipped | - | sticky PR comment + optional risk-threshold merge gate |
 | `privacy-audit` | 🧪 labs | ✅ shipped | - | local-first proof (CGo scan + canary egress guard) |
 | `query` | 🧪 labs | ✅ shipped | - | structural query (callers\|callees\|references\|definition\|neighborhood) |
+| `rebuild` | 🧪 labs | ✅ shipped | - | flagless cold full re-index of the auto-managed per-repo graph (facade over the stable index lifecycle's --full pass) |
 | `refactor` | 🧪 labs | ✅ shipped | - | commit a rename refactor through the edit saga |
 | `refactor-preview` | 🧪 labs | ✅ shipped | - | impact-set preview of a refactor, no mutation |
 | `related-files` | 🧪 labs | ✅ shipped | EP-020 | ranked, cited read-first file list; byte-parity with the related_files MCP tool |
@@ -182,7 +184,10 @@ Total capabilities: **143**. See [`architecture-plan.md`](architecture-plan.md) 
 | `setup` | 🧪 labs | ✅ shipped | - | register the MCP stdio server into local MCP clients' configs |
 | `setup-embedder` | 🧪 labs | ✅ shipped | - | print the opt-in semantic-search instructions (offline) |
 | `skillgen` | 🧪 labs | ✅ shipped | - | deterministic skill generation |
+| `snapshot` | 🧪 labs | ✅ shipped | - | list/freeze/delete named per-repo graph states under <state>/snapshots (atomic tmp+rename builds; input to `graphi compare`) |
+| `status` | 🧪 labs | ✅ shipped | - | read-only freshness report (repo/branch/drift/last-sync, --json; exit 0 current, 1 actionable, 2 error); opens store + sidecar mode=ro and never creates state |
 | `suggest-reviewers` | 🧪 labs | ✅ shipped | - | ranked candidate-reviewer recommender |
+| `sync` | 🧪 labs | ✅ shipped | - | flagless incremental update of the auto-managed per-repo graph (facade over the stable index lifecycle; branch-switch aware; matrix row labs because the stable-12 set is frozen) |
 | `triage-prs` | 🧪 labs | ✅ shipped | - | graph-derived multi-PR triage ranking |
 | `tui` | 🧪 labs | ✅ shipped | - | interactive terminal surface |
 | `ui` | 🧪 labs | ✅ shipped | - | short-verb alias for the zero-config index+serve flow |

@@ -58,9 +58,9 @@ graphi talks to agents over **MCP (stdio)**. One command is enough — it regist
 # 1) Build graphi (CGo-free, a single binary)
 CGO_ENABLED=0 go build -o graphi ./cmd/graphi
 
-# 2) Build a queryable graph of this repo (persistent SQLite db)
-mkdir -p ~/.graphi
-./graphi index -root . -db ~/.graphi/graph.db
+# 2) Build a queryable graph of this repo (auto-managed per-repo store —
+#    the same store a graphi MCP session discovers and keeps in sync)
+./graphi sync
 
 # 3) Register graphi as an MCP server in the Claude CLI
 ./graphi setup

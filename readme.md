@@ -53,6 +53,11 @@ selection.
 ### Everyday use
 
 ```bash
+# Keep the graph matching your checked-out code
+graphi sync                  # pull in changes (run it after a branch switch)
+graphi status                # is the graph current? (exit 0 yes / 1 run sync)
+graphi rebuild               # re-index from scratch (recovery / after upgrades)
+
 # Short verbs over the symbol under your cursor
 graphi callers <symbol>      # who calls it
 graphi impact  <symbol>      # what a change to it affects
@@ -60,9 +65,18 @@ graphi ui                    # explicitly serve the graph + open the browser
 graphi claude                # wire graphi into Claude Code (MCP)
 graphi setup                 # wire every detected local MCP client (Claude Code, Copilot, Cursor, Windsurf, Claude Desktop)
 
+# Freeze and diff branch states (Labs)
+graphi snapshot main         # freeze the current checkout under a name
+graphi compare main current  # graph-level diff: snapshot vs live graph
+
 # Update to the latest release (user-initiated; never automatic)
 graphi upgrade
 ```
+
+`graphi` keeps the graph in sync automatically whenever it starts (bare
+`graphi`, an MCP session, `graphi sync`); it stores one graph per repository
+under `~/.graphi/<fingerprint>/`, always tracking whatever is checked out —
+no flags, paths, or branch bookkeeping required.
 
 ## Measured, not asserted
 
@@ -181,7 +195,9 @@ runnable: `graphi privacy-audit`.
 | Command | Tier | What it does |
 |---|---|---|
 | `graphi` | labs | Zero-config: index the current repo and open the web UI |
-| `graphi index -root <repo>` | **GA** | Build/refresh the durable graph store |
+| `graphi sync` · `status` · `rebuild` | **GA** (facade) | Keep the graph matching the checked-out code (incremental / read-only report / full re-index) |
+| `graphi snapshot` · `compare` | labs | Freeze named graph states and diff them |
+| `graphi index [-root <repo>]` | **GA** | Build/refresh a graph store with explicit paths (advanced form of `sync`/`rebuild`) |
 | `graphi callers\|callees\|references\|definition\|neighborhood <symbol>` | **GA** | Structural queries |
 | `graphi impact <symbol>` | **GA** | Blast radius of a change (in-repo) |
 | `graphi search <query>` | **GA** | Lexical / symbol search |

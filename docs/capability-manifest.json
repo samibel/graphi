@@ -222,6 +222,13 @@
       "note": "short-verb alias for `setup` (register the MCP server)"
     },
     {
+      "id": "compare",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "name-based wrapper over compare-branches: resolves snapshot names plus the reserved `current` (live store) to paths; byte-identical diff output"
+    },
+    {
       "id": "compare-branches",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -371,6 +378,13 @@
       "note": "structural query (callers|callees|references|definition|neighborhood)"
     },
     {
+      "id": "rebuild",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "flagless cold full re-index of the auto-managed per-repo graph (facade over the stable index lifecycle's --full pass)"
+    },
+    {
       "id": "refactor",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -442,11 +456,32 @@
       "note": "deterministic skill generation"
     },
     {
+      "id": "snapshot",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "list/freeze/delete named per-repo graph states under \u003cstate\u003e/snapshots (atomic tmp+rename builds; input to `graphi compare`)"
+    },
+    {
+      "id": "status",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "read-only freshness report (repo/branch/drift/last-sync, --json; exit 0 current, 1 actionable, 2 error); opens store + sidecar mode=ro and never creates state"
+    },
+    {
       "id": "suggest-reviewers",
       "category": "cli-subcommand",
       "status": "shipped",
       "tier": "labs",
       "note": "ranked candidate-reviewer recommender"
+    },
+    {
+      "id": "sync",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "flagless incremental update of the auto-managed per-repo graph (facade over the stable index lifecycle; branch-switch aware; matrix row labs because the stable-12 set is frozen)"
     },
     {
       "id": "triage-prs",

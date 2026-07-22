@@ -56,6 +56,19 @@ func main() {
 		os.Exit(runFindClones(os.Args[2:]))
 	case "index":
 		os.Exit(runIndex(os.Args[2:]))
+	case "sync":
+		// Everyday lifecycle verbs (flagless facades over the index machinery):
+		// sync = incremental update, rebuild = cold full pass, status = read-only
+		// freshness probe, snapshot/compare = named frozen states.
+		os.Exit(runSync(os.Args[2:]))
+	case "rebuild":
+		os.Exit(runRebuild(os.Args[2:]))
+	case "status":
+		os.Exit(runStatus(os.Args[2:]))
+	case "snapshot":
+		os.Exit(runSnapshot(os.Args[2:]))
+	case "compare":
+		os.Exit(runCompare(os.Args[2:]))
 	case "savings":
 		os.Exit(runSavings(os.Args[2:]))
 	case "memory":

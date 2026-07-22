@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -14,7 +15,6 @@ import (
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/embed"
-	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/search"
@@ -190,6 +190,12 @@ func startCPUProfile(path string) func() {
 }
 
 func runIndex(args []string) int {
+	return runIndexAt(getwd(), args)
+}
+
+// runIndexAt is runIndex with an injectable cwd (the anchor for the omitted
+// -root default), so tests can pin the no-repo behavior without chdir.
+func runIndexAt(cwd string, args []string) int {
 	// Order-independent flag parsing: --semantic is a bool toggle; -root/-db/-meta
 	// each take a value (space- or =-separated). Unknown tokens are ignored.
 	semantic := false
@@ -228,8 +234,19 @@ func runIndex(args []string) int {
 			}
 		}
 	}
-	if root == "" {
-		fmt.Fprintln(os.Stderr, "graphi: -root <repo> is required for index")
+	// An omitted -root detects the cwd repo and (when -db/-meta are also
+	// omitted) targets the auto-managed per-repo store — i.e. bare
+	// `graphi index` now behaves exactly like `graphi sync`. An explicit -root
+	// keeps the historical contract byte-for-byte, including the in-memory
+	// store default when no -db is given.
+	explicitRoot := root != ""
+	target, terr := resolveIngestTarget(cwd, root, dbPath, metaDir, true)
+	if errors.Is(terr, errNotARepo) {
+		fmt.Fprintln(os.Stderr, "graphi: -root <repo> is required for index (or cd into a repo — see 'graphi sync')")
+		return 1
+	}
+	if terr != nil {
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", terr)
 		return 1
 	}
 
@@ -242,43 +259,32 @@ func runIndex(args []string) int {
 	defer stopProfile()
 
 	ctx := context.Background()
-	store, err := openStore(dbPath)
+	store, ing, prog, cleanup, err := openIngestSession(target.dbPath, target.metaDir, prof)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
+		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
 		return 1
 	}
-	defer func() { _ = store.Close() }()
-
-	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: ingest: %v\n", err)
-		return 1
-	}
-	defer func() { _ = ing.Close() }()
-	ing.WithProfile(prof)
-	if isTerminal(os.Stderr) {
-		ing.WithHeartbeatMode(ingest.HeartbeatTTY)
-	} else {
-		ing.WithHeartbeatMode(ingest.HeartbeatNonTTY)
-	}
-	prog := newIngestProgress(os.Stderr, isTerminal(os.Stderr))
-	ing.WithProgress(prog.Handle)
+	defer cleanup()
 	// Warm start by default (same cheap drift-check path bare `graphi` uses):
 	// on an unchanged repo the second `graphi index` is a hash walk, not a full
 	// re-parse. --full forces the cold pass (e.g. after a graphi upgrade whose
-	// semantics stamp did not change, or to re-certify a store).
+	// semantics stamp did not change, or to re-certify a store). Both paths
+	// stamp the sync metadata `graphi status` reads.
 	var ierr error
 	if full {
-		ierr = ing.IngestAll(ctx, root)
+		ierr = rtime.RebuildRepo(ctx, ing, store, target.root)
 	} else {
-		ierr = rtime.WarmOrFullIngest(ctx, ing, root, prog.Handle)
+		_, ierr = rtime.SyncRepo(ctx, ing, store, target.root, prog.Handle)
 	}
 	prog.Finish(ierr)
 	if ierr != nil {
 		fmt.Fprintf(os.Stderr, "graphi: index: %v\n", ierr)
 		return 1
 	}
-	fmt.Printf("graphi index: ingested %s\n", root)
+	fmt.Printf("graphi index: ingested %s\n", target.root)
+	if hint := indexHintLine(explicitRoot, isTerminal(os.Stderr)); hint != "" {
+		fmt.Fprintln(os.Stderr, hint)
+	}
 
 	if !semantic {
 		return 0 // default path: no embed, no dial
