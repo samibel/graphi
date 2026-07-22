@@ -337,8 +337,13 @@ func (i *Ingester) DriftSetWithProgress(ctx context.Context, root string, onFile
 	if err != nil {
 		return nil, nil, err
 	}
-	changed = append(append([]string{}, d.Added...), d.Modified...)
-	sort.Strings(changed)
+	// Preserve the pre-DriftDetail nil-identity: an empty drift returns a nil
+	// slice, not an allocated empty one.
+	if total := len(d.Added) + len(d.Modified); total > 0 {
+		changed = make([]string, 0, total)
+		changed = append(append(changed, d.Added...), d.Modified...)
+		sort.Strings(changed)
+	}
 	return changed, d.Deleted, nil
 }
 
