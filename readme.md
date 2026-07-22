@@ -4,6 +4,12 @@
 
 <h1 align="center">graphi</h1>
 
+<p align="center">
+  <a href="https://samibel.github.io/graphi/"><strong>Website</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://samibel.github.io/graphi/tutorial.html"><strong>Hands-on tutorial</strong></a>
+</p>
+
 > Local-first, CGo-free code-intelligence engine. Parse a repository into a deterministic, provenance-backed code graph and answer structural and semantic questions over an agent-first **MCP (stdio)** + **CLI** surface — without a single byte leaving your machine.
 
 [![CGo-free](https://img.shields.io/badge/build-CGo--free-success)](#the-local-first-contract)
