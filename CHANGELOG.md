@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-22
+
 ### Added
 - Everyday lifecycle verbs over the auto-managed per-repo store, so normal use
   needs no `-root`/`-db`/`-meta` knowledge: `graphi sync` (flagless incremental
