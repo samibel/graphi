@@ -75,7 +75,15 @@ gate (publish-lock → layerguard → one authoritative release-gate [testgate +
   complete only when its asset names exactly match `cmd/release
   -list-release-assets` and the complete `SHA256SUMS` verifies every binary,
   the SPDX SBOM, and the capability manifest. Draft/tag-only states are
-  resumable. A published release is immutable by policy: missing tags,
+  resumable. A draft is working state, not public evidence: when a draft's
+  `target_commitish` names a superseded candidate SHA while the tag is absent
+  or already peels to the gated SHA, the publish preflight deletes the stale
+  draft by immutable release id and recreates it at the gated SHA, so an
+  interrupted candidate can never wedge every later one. A stale *tag* from an
+  interrupted candidate is public git state and is never auto-deleted: it
+  fails closed and requires manual removal, after which the next `main` push
+  reaps the leftover draft automatically. A published release is immutable by
+  policy: missing tags,
   unexpected bytes, missing assets, or invalid provenance fail closed and
   require an explicit manual incident repair. Automation never unpublishes or
   overwrites it. A fully valid release may re-enter only for read-only
@@ -110,7 +118,10 @@ gate (publish-lock → layerguard → one authoritative release-gate [testgate +
   to the gated SHA. `gh release create` always uses `--verify-tag`, so it cannot
   silently create a tag before those controls. The workflow then creates or
   resumes a draft, replaces its assets, and downloads them for byte comparison
-  before the public `draft=false` transition. The tag peel and draft state are
+  before the public `draft=false` transition. The draft lookup immediately
+  after creation polls the eventually consistent release-list endpoint with a
+  bounded retry — a read-after-write race here once failed a fully green
+  candidate (v0.6.0, 2026-07-22) half a second after its draft was created. The tag peel and draft state are
   revalidated immediately before that transition, preventing a tag move during
   upload from becoming public first and failing only afterward. An interruption
   after tagging leaves a resumable tag-only state; one after draft creation

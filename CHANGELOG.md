@@ -70,6 +70,16 @@ file:
   `sync`/`rebuild`. `graphi help` leads with the lifecycle verbs and moves the
   `index` long form under "Advanced".
 
+### Fixed
+- The release DAG no longer wedges on the unpublished draft of a superseded
+  candidate: when the tag is absent or already peels to the gated SHA, the
+  publish preflight deletes the stale draft by immutable release id and
+  recreates it at the gated SHA (a stale *tag* still fails closed and needs
+  manual removal). The draft lookup right after `gh release create` now polls
+  the eventually consistent release list with a bounded retry instead of
+  failing a fully green candidate on a read-after-write race — the failure
+  that interrupted the first v0.6.0 publish attempt.
+
 ## [0.5.1] - 2026-07-19
 
 ### Added

@@ -9,9 +9,10 @@
 #              that exact web-embedded flavor/version → release matrix)
 #       → sbom (SPDX SBOM of the release binaries + capability manifest)
 #         → publish (assemble/checksum/verify complete asset set → attest +
-#                    verify provenance → verify/push the tag at the EXACT gated
-#                    SHA → create/resume draft with --verify-tag → upload +
-#                    byte-verify → publish + re-verify → Homebrew/Scoop)
+#                    verify provenance → reap a stale superseded draft →
+#                    verify/push the tag at the EXACT gated SHA → create/resume
+#                    draft with --verify-tag → upload + byte-verify →
+#                    publish + re-verify → Homebrew/Scoop)
 #
 # Design invariants (asserted statically by cmd/publish-lock/workflow_test.go):
 #   - publish `needs:` every prior stage — a red gate can NEVER yield a tag or
@@ -256,12 +257,17 @@ jobs:
               echo "::notice::$TAG is already published at $peeled_sha; bump CHANGELOG before the next release"
               exit 0
             fi
-            if { [ "$draft" = true ] || [ "$has_tag" != true ]; } && [ "$target" != "$GITHUB_SHA" ]; then
-              echo "::error::$TAG release targets $target; expected planned gated SHA $GITHUB_SHA"
-              exit 1
-            fi
             if [ "$draft" = true ]; then
-              state=draft
+              if [ "$target" = "$GITHUB_SHA" ]; then
+                state=draft
+              else
+                # The mismatched-tag cases exited above, so here the tag is
+                # absent or already peels to GITHUB_SHA. An unpublished draft
+                # bound to a superseded candidate SHA is working state, not
+                # public evidence: the publish preflight deletes and recreates
+                # it at the gated SHA instead of wedging every later candidate.
+                state=stale-draft
+              fi
             elif [ "$has_tag" != true ]; then
               echo "::error::$TAG is published but its tag is missing; published releases are never mutated automatically"
               exit 1
@@ -487,8 +493,16 @@ jobs:
             draft=$(jq -r '.draft' "$release_json")
             target=$(jq -r '.target_commitish' "$release_json")
             if [ "$draft" = true ] && [ "$target" != "$GITHUB_SHA" ]; then
-              echo "::error::$TAG draft targets $target, planned gated SHA is $GITHUB_SHA"
-              exit 1
+              # The tag guard above already exited unless the tag is absent or
+              # peels to the gated SHA, so nothing public references this
+              # draft: it is the unpublished remnant of a superseded candidate
+              # (e.g. an interrupted run whose stale tag was manually removed).
+              # Delete it by immutable release id; the steps below recreate
+              # the draft at the gated SHA.
+              release_id=$(jq -r '.id' "$release_json")
+              echo "::notice::$TAG draft targets superseded candidate $target; deleting stale draft $release_id, recreating at gated SHA $GITHUB_SHA"
+              gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$release_id"
+              release_exists=false
             fi
             if [ "$draft" != true ]; then
               if [ "$has_tag" != true ]; then
@@ -591,11 +605,24 @@ jobs:
             gh release create "$TAG" --verify-tag --draft --title "$TAG" --generate-notes --target "$GITHUB_SHA"
           fi
 
+          # The release list is eventually consistent: the draft created a
+          # moment ago (or the stale draft preflight just deleted) may not be
+          # reflected immediately. Poll briefly for exactly one $TAG release
+          # instead of failing a green candidate on a read-after-write race.
           release_json=$(mktemp)
           release_pages=$(mktemp)
-          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" >"$release_pages"
-          release_count=$(jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | length' "$release_pages")
-          [ "$release_count" -eq 1 ]
+          release_count=0
+          for attempt in 1 2 3 4 5 6; do
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" >"$release_pages"
+            release_count=$(jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | length' "$release_pages")
+            [ "$release_count" -eq 1 ] && break
+            echo "release list attempt $attempt saw $release_count $TAG releases; retrying"
+            sleep 10
+          done
+          if [ "$release_count" -ne 1 ]; then
+            echo "::error::expected exactly one $TAG release after draft creation, saw $release_count"
+            exit 1
+          fi
           jq --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)][0]' "$release_pages" >"$release_json"
           if [ "$(jq -r '.draft' "$release_json")" != true ]; then
             echo "::error::$TAG must be a draft while assets are replaced"
