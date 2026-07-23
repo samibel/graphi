@@ -143,6 +143,38 @@ func TestReleaseDAG_DraftsAreDiscoveredAndHistoricalReleaseIsSkipped(t *testing.
 	}
 }
 
+// TestReleaseDAG_StaleDraftIsReapedOnlyBehindTheTagGuard pins the recovery
+// path for an unpublished draft left behind by a superseded candidate (an
+// interrupted run whose stale tag was manually removed): the publish preflight
+// deletes it by immutable release id and recreates it at the gated SHA — but
+// only AFTER the tag guard proved the tag is absent or peels to that SHA, and
+// only for a draft, never a published release. The post-create draft lookup
+// polls the eventually consistent release list instead of failing a green
+// candidate on a read-after-write race.
+func TestReleaseDAG_StaleDraftIsReapedOnlyBehindTheTagGuard(t *testing.T) {
+	yaml := readDAG(t)
+	const reapCmd = `gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$release_id"`
+	publish := jobBlock(t, yaml, "publish")
+	tagGuard := strings.Index(publish, `$TAG peels to $peeled_sha, planned gated SHA is $GITHUB_SHA`)
+	reap := strings.Index(publish, reapCmd)
+	if tagGuard < 0 || reap < 0 || tagGuard >= reap {
+		t.Fatalf("stale-draft deletion must live in publish, after the preflight tag guard (guard=%d reap=%d)", tagGuard, reap)
+	}
+	if n := strings.Count(yaml, reapCmd); n != 1 {
+		t.Fatalf("exactly one whole-release deletion (the preflight stale-draft reap) is allowed, got %d", n)
+	}
+	for _, fragment := range []string{
+		`if [ "$draft" = true ] && [ "$target" != "$GITHUB_SHA" ]; then`,
+		"deleting stale draft",
+		"state=stale-draft",
+		"expected exactly one $TAG release after draft creation",
+	} {
+		if !strings.Contains(yaml, fragment) {
+			t.Fatalf("stale-draft recovery contract missing %q", fragment)
+		}
+	}
+}
+
 func TestReleaseDAG_ExistingRemoteAssetsNeedValidProvenanceBeforeReuse(t *testing.T) {
 	yaml := readDAG(t)
 	for _, fragment := range []string{
