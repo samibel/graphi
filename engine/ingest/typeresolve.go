@@ -98,15 +98,16 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 		files[u.relPath] = read.src
 	}
 
-	nodes, err := i.store.Nodes(ctx, graphstore.Query{})
-	if err != nil {
-		return nil, fmt.Errorf("ingest: typeresolve read nodes: %w", err)
-	}
-	committed := make(map[model.NodeId]struct{}, len(nodes))
-	dirOf := make(map[model.NodeId]string, len(nodes))
-	for _, n := range nodes {
+	// Stream the committed node set straight from the durable layer into the
+	// two derived maps — no whole-graph slice, no cache mirror.
+	committed := make(map[model.NodeId]struct{})
+	dirOf := make(map[model.NodeId]string)
+	if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
 		committed[n.ID()] = struct{}{}
 		dirOf[n.ID()] = path.Dir(n.SourcePath())
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("ingest: typeresolve read nodes: %w", err)
 	}
 
 	res, err := typeresolve.Resolve(files, committed)
@@ -126,22 +127,28 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 	}
 
 	// Sweep stale confirmed edges of checked units (see the contract above).
-	allEdges, err := i.store.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return nil, fmt.Errorf("ingest: typeresolve read edges: %w", err)
-	}
-	for _, e := range allEdges {
+	// Stream the edge scan and collect only the STALE ids; deletes run after
+	// the cursor closes (collect-then-delete, matching linkFiles), in the same
+	// EdgeId-ascending order the old slice iteration used.
+	var stale []model.EdgeId
+	if err := graphstore.ForEachEdge(ctx, i.store, func(e model.Edge) error {
 		if e.Tier() != model.TierConfirmed || !typeresolveKind(e.Kind()) {
-			continue
+			return nil
 		}
 		if _, current := fresh[e.ID()]; current {
-			continue
+			return nil
 		}
 		if _, checked := checkedDirs[dirOf[e.From()]]; !checked {
-			continue // degraded or unknown unit: degradation never deletes knowledge
+			return nil // degraded or unknown unit: degradation never deletes knowledge
 		}
-		if err := w.DeleteEdge(ctx, e.ID()); err != nil {
-			return nil, fmt.Errorf("ingest: typeresolve delete stale confirmed edge %s: %w", e.ID(), err)
+		stale = append(stale, e.ID())
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("ingest: typeresolve read edges: %w", err)
+	}
+	for _, id := range stale {
+		if err := w.DeleteEdge(ctx, id); err != nil {
+			return nil, fmt.Errorf("ingest: typeresolve delete stale confirmed edge %s: %w", id, err)
 		}
 	}
 

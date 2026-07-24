@@ -105,14 +105,16 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		// orphans. Deriving the prior set from the authoritative store makes a
 		// full pass converge to the fresh-index bytes from ANY partial state.
 		// For an uninterrupted store the two sets are identical, so bytes are
-		// unchanged on the happy path.
-		priorNodes, err := i.store.Nodes(ctx, graphstore.Query{})
+		// unchanged on the happy path. NodeIDsOf reads ids straight from the
+		// durable layer (same ascending order as the old full listing) without
+		// reconstructing a node or building the whole-graph hot cache.
+		priorIDs, err := graphstore.NodeIDsOf(ctx, i.store)
 		if err != nil {
 			return fmt.Errorf("ingest: list prior store nodes: %w", err)
 		}
-		priorNodeIDs := make([]string, 0, len(priorNodes))
-		for _, n := range priorNodes {
-			priorNodeIDs = append(priorNodeIDs, string(n.ID()))
+		priorNodeIDs := make([]string, 0, len(priorIDs))
+		for _, id := range priorIDs {
+			priorNodeIDs = append(priorNodeIDs, string(id))
 		}
 
 		if _, err := tx.ExecContext(ctx, "DELETE FROM file_content_cache"); err != nil {
@@ -195,12 +197,17 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 
 		// Translate import-path forward refs into the directory key space so the
 		// incremental cascade can look them up by directory (BLOCK-1). The index
-		// is built from the now-fully-committed node set.
-		nodes, err := i.store.Nodes(ctx, graphstore.Query{})
-		if err != nil {
+		// is built from the now-fully-committed node set, streamed straight from
+		// the durable layer (same canonical order as the old full listing) so no
+		// whole-graph slice or cache mirror is ever materialized.
+		ib := link.NewIndexBuilder()
+		if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
+			ib.Add(n)
+			return nil
+		}); err != nil {
 			return fmt.Errorf("ingest: read nodes for reverse deps: %w", err)
 		}
-		idx := link.BuildIndex(nodes)
+		idx := ib.Build()
 		dirRefs := make(map[string][]string, len(refs))
 		for file, targets := range refs {
 			dirRefs[file] = reverseDepKeys(idx, targets)
@@ -642,11 +649,14 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		// import-path → directory translation (BLOCK-1) resolves target packages
 		// against the full committed node set rather than a partial mid-loop view.
 		if len(fwdByFile) > 0 {
-			nodes, err := i.store.Nodes(ctx, graphstore.Query{})
-			if err != nil {
+			ib := link.NewIndexBuilder()
+			if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
+				ib.Add(n)
+				return nil
+			}); err != nil {
 				return fmt.Errorf("ingest: read nodes for reverse deps: %w", err)
 			}
-			idx := link.BuildIndex(nodes)
+			idx := ib.Build()
 			files := make([]string, 0, len(fwdByFile))
 			for f := range fwdByFile {
 				files = append(files, f)
