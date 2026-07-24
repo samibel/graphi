@@ -29,6 +29,11 @@ type Ingester struct {
 	meta   *sql.DB
 	linker *link.Linker
 
+	// metaDir is the durable sidecar directory ("" = in-memory sidecar). It
+	// identifies one logical store's state on disk, so cross-process
+	// coordination (the runtime's ingest lock) can key on it.
+	metaDir string
+
 	// profile selects the speed/depth trade-off for this ingest pass.
 	profile profile.Profile
 
@@ -181,11 +186,11 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 	if strings.Contains(dbPath, "?") {
 		sep = "&"
 	}
-	db, err := sql.Open("sqlite", dbPath+sep+"_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)"+extraPragma)
+	db, err := sql.Open("sqlite", dbPath+sep+"_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)"+extraPragma)
 	if err != nil {
 		return nil, fmt.Errorf("ingest: open meta db: %w", err)
 	}
-	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now()}
+	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), metaDir: metaDir, bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now()}
 	// Apply the fail-closed recursion-depth bound to the shared parse path
 	// (process-wide; core/parse reads it per Extract). Size + timeout are enforced
 	// at this ingest boundary directly.
@@ -206,6 +211,12 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 	}
 	return i, nil
 }
+
+// MetaDir returns the durable sidecar directory this Ingester was constructed
+// with, or "" for an in-memory sidecar. It names one logical store's on-disk
+// state and is therefore the key the runtime's cross-process ingest lock
+// serializes on.
+func (i *Ingester) MetaDir() string { return i.metaDir }
 
 // SkipReason categorizes why a file was skipped fail-closed.
 type SkipReason string

@@ -77,7 +77,7 @@ func OpenSQLite(dbPath string) (*SQLiteStore, error) {
 	// cache_size(-64000) = 64 MB page cache and temp_store(MEMORY) keep bulk
 	// passes off disk; both are per-connection tuning only — durability
 	// semantics (WAL + synchronous=NORMAL at commit) are unchanged.
-	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)&_pragma=synchronous(NORMAL)&_pragma=cache_size(-64000)&_pragma=temp_store(MEMORY)",
+	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=synchronous(NORMAL)&_pragma=cache_size(-64000)&_pragma=temp_store(MEMORY)",
 		filepath.ToSlash(dbPath))
 
 	db, err := sql.Open(sqliteDriverName, dsn)

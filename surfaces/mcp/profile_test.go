@@ -229,13 +229,13 @@ func TestCapabilityCatalog_RecomputedWhenBinderRebinds(t *testing.T) {
 	})
 	defer server.Close()
 
-	if err := server.bind(context.Background(), []string{"first"}); err != nil {
+	if err := server.bind(context.Background(), []string{"first"}, true); err != nil {
 		t.Fatal(err)
 	}
 	if containsTool(descriptorNames(server.toolDescriptors()), ToolAgentBrief) {
 		t.Fatal("first binding advertised its unsupported agent_brief capability")
 	}
-	if err := server.bind(context.Background(), []string{"second"}); err != nil {
+	if err := server.bind(context.Background(), []string{"second"}, true); err != nil {
 		t.Fatal(err)
 	}
 	if !containsTool(descriptorNames(server.toolDescriptors()), ToolAgentBrief) {

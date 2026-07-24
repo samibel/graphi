@@ -78,7 +78,7 @@ func OpenSQLiteVectorTable(ctx context.Context, metaDir, embedderID string, dim 
 		return nil, fmt.Errorf("embed: empty meta dir")
 	}
 	dbPath := filepath.Join(metaDir, "ingest-meta.db")
-	db, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite", dbPath+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)")
 	if err != nil {
 		return nil, fmt.Errorf("embed: open meta db: %w", err)
 	}
