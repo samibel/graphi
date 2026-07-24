@@ -75,6 +75,14 @@ file:
     the single-write PutNode/DeleteNode paths, whose owner-keyed deletes
     walked the whole UNINDEXED search table.
 
+### Security
+- Web client: upgraded to `react-router` 8.3.0 (dropping the retired
+  `react-router-dom` wrapper) and React 19, clearing GHSA-qwww-vcr4-c8h2
+  (RSC-mode CSRF in react-router 7.12–8.2) — the last high advisory the npm
+  production audit flagged. No route or component behavior changes; the
+  web test suite and the wiki link-rewrite preservation contract are
+  unchanged.
+
 ### Fixed
 - The filesystem watcher (`graphi daemon`/`serve`) no longer registers
   fsnotify watches under `node_modules`, `.git`, `vendor` and the rest of
