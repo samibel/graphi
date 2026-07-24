@@ -67,8 +67,19 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	// exactly the SW-101 discipline the watcher path already relies on.
 	// Per-file progress is emitted from the pool drain (calling goroutine,
 	// completion order), so Done stays monotonic and Path names real files.
-	parsed, err := i.parseUnitsParallel(ctx, root, units, func(done int, path string) {
-		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: done, Total: len(units), Path: path})
+	//
+	// The drain also runs the per-file intra-proc taint analysis and releases
+	// each Go AST as soon as its file completes (analyzeParsedTaint), so live
+	// ASTs stay bounded by the pool width instead of accumulating repo-wide.
+	// The taint config is loaded up front, but a load error is deliberately
+	// NOT surfaced here: it is carried to analyzeAndPersistIntraProcTaint
+	// below, which preserves the old fail-after-graph-commit ordering.
+	taintCfg, taintCfgErr := intraProcTaintConfig(root)
+	parsed, err := i.parseUnitsParallel(ctx, root, units, func(done, k int, pf *ParsedFile) {
+		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: done, Total: len(units), Path: units[k].relPath})
+		if taintCfgErr == nil {
+			i.analyzeParsedTaint(taintCfg, pf)
+		}
 	})
 	if err != nil {
 		return err
@@ -239,14 +250,16 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	}); err != nil {
 		return err
 	}
-	// WP-05b-2: intra-procedural taint dataflow. Run the pure per-function
-	// source→sink analysis over every parsed Go file and persist the complete,
-	// canonical findings set to durable store metadata. It runs AFTER the graph
-	// transaction commits and writes only metadata (never nodes/edges), so it is
-	// deterministic and byte-parity safe — graphstore Snapshot serializes
-	// nodes/edges only, never metadata. The taint dispatch adapter reads these
-	// back so `graphi analyze taint` surfaces the flows.
-	if err := i.analyzeAndPersistIntraProcTaint(ctx, root, parsed); err != nil {
+	// WP-05b-2: intra-procedural taint dataflow. The per-file source→sink
+	// analysis already ran in the parse drain (which then released each Go
+	// AST); this persists the complete, canonical findings set to durable
+	// store metadata — or surfaces the config load error captured before the
+	// parse. It runs AFTER the graph transaction commits and writes only
+	// metadata (never nodes/edges), so it is deterministic and byte-parity
+	// safe — graphstore Snapshot serializes nodes/edges only, never metadata.
+	// The taint dispatch adapter reads these back so `graphi analyze taint`
+	// surfaces the flows.
+	if err := i.analyzeAndPersistIntraProcTaint(ctx, taintCfgErr, parsed); err != nil {
 		return err
 	}
 

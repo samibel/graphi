@@ -20,27 +20,46 @@ import (
 // closed rather than silently reverting to defaults.
 func intraProcTaintConfig(root string) (taint.Config, error) { return taint.LoadConfig(root) }
 
-// analyzeAndPersistIntraProcTaint runs the pure per-function intra-procedural
-// taint analysis over every parsed Go file of a FULL pass and replaces the
-// persisted findings with the complete, canonical set. It is a pure function of
-// the parsed file contents (deterministic) and writes ONLY graphstore metadata,
-// so it never perturbs the node/edge graph (byte-parity safe: Snapshot omits
-// metadata).
-func (i *Ingester) analyzeAndPersistIntraProcTaint(ctx context.Context, root string, parsed []*ParsedFile) error {
-	cfg, err := intraProcTaintConfig(root)
-	if err != nil {
-		return err
+// analyzeParsedTaint runs the pure per-function intra-procedural taint
+// analysis for ONE full-pass ParsedFile and then releases its Go AST: past
+// this point the analysis was the only full-pass consumer of a Go result's
+// Root (see parseUnit's non-Go release), so retaining the go/ast+FileSet any
+// longer only held the whole repo's Go forest resident until the end-of-pass
+// persist. Called from the parse drain (calling goroutine, serial), bounding
+// live Go ASTs to the pool width. Non-Go and skipped results are no-ops.
+func (i *Ingester) analyzeParsedTaint(cfg taint.Config, pf *ParsedFile) {
+	if pf == nil || pf.result == nil {
+		return
+	}
+	file, fset, ok := parse.GoAST(pf.result)
+	if !ok {
+		return
+	}
+	pf.taint = intraproctaint.Analyze(file, fset, cfg)
+	pf.result.Root = nil
+}
+
+// analyzeAndPersistIntraProcTaint replaces the persisted intra-procedural
+// taint findings of a FULL pass with the complete, canonical set concatenated
+// from the per-file findings the parse drain computed (analyzeParsedTaint).
+// The output is a pure function of the parsed file contents (deterministic:
+// per-file findings are canonically ordered and Encode re-sorts the union)
+// and writes ONLY graphstore metadata, so it never perturbs the node/edge
+// graph (byte-parity safe: Snapshot omits metadata). cfgErr — the config load
+// error captured BEFORE the parse phase — is surfaced here, after the graph
+// transaction commits, preserving the exact failure point of the old
+// load-at-the-end behavior (a malformed .graphi/taint.json fails the pass
+// closed without rolling back the committed graph).
+func (i *Ingester) analyzeAndPersistIntraProcTaint(ctx context.Context, cfgErr error, parsed []*ParsedFile) error {
+	if cfgErr != nil {
+		return cfgErr
 	}
 	var findings []taint.Finding
 	for _, pf := range parsed {
-		if pf == nil || pf.result == nil {
+		if pf == nil {
 			continue
 		}
-		file, fset, ok := parse.GoAST(pf.result)
-		if !ok {
-			continue
-		}
-		findings = append(findings, intraproctaint.Analyze(file, fset, cfg)...)
+		findings = append(findings, pf.taint...)
 	}
 	return i.storeIntraProcTaint(ctx, findings)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/analysis/taint"
 	"github.com/samibel/graphi/engine/link"
 )
 
@@ -37,6 +38,15 @@ type ParsedFile struct {
 	// nondeterministic); it forces a serial re-parse so output stays
 	// byte-identical to a full single-threaded parse.
 	skipped bool
+	// taint holds the per-file intra-procedural taint findings computed by the
+	// FULL pass's parse drain (analyzeParsedTaint), which releases the Go AST
+	// right after — retaining every file's go/ast+FileSet until the end-of-pass
+	// persist held the whole repo's Go forest resident at once. Analyze returns
+	// canonically ordered per-file findings and the persist re-sorts, so
+	// concatenating these in units order is byte-identical to the old
+	// analyze-at-the-end loop. Never set on the incremental path, whose
+	// refresh analyzes live parse results instead.
+	taint []taint.Finding
 }
 
 // ParseFile reads and PURELY parses the file at repo-relative relPath under root
