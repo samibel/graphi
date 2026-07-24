@@ -140,9 +140,9 @@ func TestIngestAll_FailsClosedOnMidPassTaintConfigEdit(t *testing.T) {
 	]
 }`
 	repo := writeRepoIngest(t, map[string]string{
-		"go.mod":                   "module demo\n\ngo 1.21\n",
-		"app/a.go":                 "package app\n\nfunc A() int { return 1 }\n",
-		"app/b.py":                 "def b():\n    return 2\n",
+		"go.mod":                                 "module demo\n\ngo 1.21\n",
+		"app/a.go":                               "package app\n\nfunc A() int { return 1 }\n",
+		"app/b.py":                               "def b():\n    return 2\n",
 		taint.ConfigDir + "/" + taint.ConfigFile: cfgV1,
 	})
 	store := graphstore.NewMemStore()
