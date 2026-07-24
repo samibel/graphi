@@ -10,7 +10,7 @@
 // (size-1) communities are ordinary community pages under the Decision-2
 // interpretation of AC-5's "uncategorized".
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import { WikiMarkdown } from "./WikiMarkdown";
 import { fetchWikiPage, WikiPageNotFoundError } from "./wikiClient";
 import { cachedPage } from "./wikiCache";

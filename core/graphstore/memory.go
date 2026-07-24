@@ -531,3 +531,65 @@ func (m *MemStore) Close() error {
 	m.byPath = nil
 	return nil
 }
+
+// ---- GraphScanner (streaming bulk reads) ----
+//
+// MemStore holds the whole graph in memory by construction, so its scans
+// snapshot the sorted element set under the read lock and then release it
+// before invoking callbacks — the capability's value here is contract parity
+// with the SQLite backend (same order, same fn-error semantics), not memory
+// bounding, and not holding the lock across fn keeps callback code free to
+// read the store.
+
+// NodeIDs implements GraphScanner: every node id in ascending order.
+func (m *MemStore) NodeIDs(ctx context.Context) ([]model.NodeId, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	m.mu.RLock()
+	if m.closed {
+		m.mu.RUnlock()
+		return nil, ErrClosed
+	}
+	ids := make([]model.NodeId, 0, len(m.nodes))
+	for id := range m.nodes {
+		ids = append(ids, id)
+	}
+	m.mu.RUnlock()
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	return ids, nil
+}
+
+// ScanNodes implements GraphScanner: every node in canonical NodeId order.
+func (m *MemStore) ScanNodes(ctx context.Context, fn func(model.Node) error) error {
+	nodes, err := m.Nodes(ctx, Query{})
+	if err != nil {
+		return err
+	}
+	for _, n := range nodes {
+		if err := fn(n); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ScanEdges implements GraphScanner: every edge in canonical EdgeId order.
+func (m *MemStore) ScanEdges(ctx context.Context, fn func(model.Edge) error) error {
+	edges, err := m.Edges(ctx, Query{})
+	if err != nil {
+		return err
+	}
+	for _, e := range edges {
+		if err := fn(e); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Interface conformance for the optional scan capability.
+var (
+	_ GraphScanner = (*MemStore)(nil)
+	_ GraphScanner = (*SQLiteStore)(nil)
+)

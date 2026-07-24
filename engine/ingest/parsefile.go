@@ -11,16 +11,10 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/analysis/taint"
 	"github.com/samibel/graphi/engine/link"
 )
 
-// parseAndCommit parses one file, writes its nodes/intra-file edges to
-// graphstore, and returns the node IDs, the edge IDs it committed (the
-// side-channel edge key set), the list of files it references (forward refs),
-// and the deferred link inputs (pending refs + imports) for the post-node-commit
-// linker pass. Cross-file edges are NOT emitted here — they are emitted by
-// linkFiles after every file's nodes are committed (the ordering constraint that
-// motivated SW-050).
 // ParsedFile is the isolated, immutable output of the SW-101 PURE parse phase
 // for one file: the canonical repo-relative path, the deterministic content hash
 // of the bytes that were parsed, and the parse result (nil when the file was
@@ -44,6 +38,24 @@ type ParsedFile struct {
 	// nondeterministic); it forces a serial re-parse so output stays
 	// byte-identical to a full single-threaded parse.
 	skipped bool
+	// readFailed marks a unit whose on-demand re-read failed BETWEEN walk and
+	// parse (vanished, or grew past the bound — e.g. an editor's write-rename
+	// save racing the pass). Such a unit must be treated as if the walk had
+	// never seen it: writing a cache row for it would record the WALK-time
+	// hash against content that was never committed, permanently masking the
+	// file from drift detection (full pass) or orphaning its prior nodes
+	// (incremental pass, whose cache row would drop the old node_ids without
+	// deleting the nodes).
+	readFailed bool
+	// taint holds the per-file intra-procedural taint findings computed by the
+	// FULL pass's parse drain (analyzeParsedTaint), which releases the Go AST
+	// right after — retaining every file's go/ast+FileSet until the end-of-pass
+	// persist held the whole repo's Go forest resident at once. Analyze returns
+	// canonically ordered per-file findings and the persist re-sorts, so
+	// concatenating these in units order is byte-identical to the old
+	// analyze-at-the-end loop. Never set on the incremental path, whose
+	// refresh analyzes live parse results instead.
+	taint []taint.Finding
 }
 
 // ParseFile reads and PURELY parses the file at repo-relative relPath under root
@@ -87,18 +99,42 @@ func (i *Ingester) ParseFile(ctx context.Context, root, relPath string) (*Parsed
 	}
 	abs := filepath.Join(root, filepath.FromSlash(rel))
 	u := fileUnit{path: abs, relPath: rel, src: read.src, hash: hashBytes(read.src)}
-	pf, err := i.parseUnit(ctx, u)
+	pf, err := i.parseUnit(ctx, nil, u)
 	if err != nil {
 		return nil, err
 	}
 	return pf, nil
 }
 
-// parseUnit is the PURE parse phase for one already-read file unit: it calls the
-// language parser and applies the fail-closed resource-bound skip policy, but
-// performs NO graphstore mutation. It is safe for concurrent use. commitParsed
-// is its serialized counterpart.
-func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, error) {
+// parseUnit is the PURE parse phase for one file unit: it calls the language
+// parser and applies the fail-closed resource-bound skip policy, but performs
+// NO graphstore mutation. It is safe for concurrent use. commitParsed is its
+// serialized counterpart.
+//
+// A unit arriving from walk() carries no bytes (src == nil): parseUnit reads
+// the file itself through rootHandle — an *os.Root is documented
+// goroutine-safe, so the parse pool shares one handle — and the bytes go out
+// of scope with this call, bounding resident source to the pool width instead
+// of the whole repo. The hash is refreshed from the bytes actually read, so
+// ParsedFile.Hash (and the content-cache row derived from it via pfHash) can
+// never disagree with the parsed output when a file changes between walk and
+// parse. Callers that already hold the bytes (ParseFile) pass src non-nil and
+// may pass a nil rootHandle.
+func (i *Ingester) parseUnit(ctx context.Context, rootHandle *os.Root, u fileUnit) (*ParsedFile, error) {
+	if u.src == nil {
+		read := readRootedRegularFile(rootHandle, u.relPath, i.bounds.MaxFileSize)
+		if read.reason != "" {
+			// Mirrors the walk-time skip policy: fail closed per file (a file
+			// that vanished or grew past the bound between walk and parse),
+			// never abort the pass. readFailed additionally tells the commit
+			// loops to leave the file's cache/dirty state untouched — see the
+			// field comment.
+			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: read.reason, Size: read.size})
+			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true, readFailed: true}, nil
+		}
+		u.src = read.src
+		u.hash = hashBytes(read.src)
+	}
 	// SW-055 AC#6: fail-closed parse timeout. Bound the wall-clock time a single
 	// Parse may consume on untrusted input; on expiry the parse is abandoned.
 	parseCtx := ctx
@@ -159,26 +195,27 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 	// Imports/References are complete without the AST. Past this point the
 	// only consumer of res.Root in this package is parse.GoAST (the taint
 	// pass), so every non-Go backend handle — a tree-sitter tree is routinely
-	// 10-40x its source size — is dead weight. Dropping it here frees each
-	// tree as soon as its parse finishes; retaining it made a full pass hold
-	// every file's tree simultaneously until the END of the pipeline, which
-	// on large polyglot workspaces alone reached tens of GB of peak RSS.
+	// 10-40x its source size — is dead weight. Releasing it here frees each
+	// tree as soon as its parse finishes (through ReleaseRoot, which also
+	// closes the graphi-broad CGO tree the GC alone can never free);
+	// retaining it made a full pass hold every file's tree simultaneously
+	// until the END of the pipeline, which on large polyglot workspaces
+	// alone reached tens of GB of peak RSS.
 	if _, _, ok := parse.GoAST(res); !ok {
-		res.Root = nil
+		parse.ReleaseRoot(res)
 	}
 	return &ParsedFile{RelPath: u.relPath, Hash: u.hash, result: res}, nil
 }
 
-// parseAndCommit parses one file and commits it serially (parse + apply fused),
-// preserving the original IngestAll / ingestChanged behavior. The SW-101 parallel
-// path instead splits these: parseUnit/ParseFile (pure, poolable) then
-// commitParsed (serialized, canonical order).
-func (i *Ingester) parseAndCommit(ctx context.Context, w graphstore.Writer, u fileUnit) ([]string, []string, []string, *link.FileRefs, error) {
-	pf, err := i.parseUnit(ctx, u)
-	if err != nil {
-		return nil, nil, nil, nil, err
+// pfHash is the content hash to record for a committed unit: the hash of the
+// bytes the worker actually parsed when parseUnit read the file itself, else
+// the walk-time hash. Keeps the content-cache row consistent with the
+// committed parse output across a walk/parse race.
+func pfHash(pf *ParsedFile, u fileUnit) string {
+	if pf != nil && pf.Hash != "" {
+		return pf.Hash
 	}
-	return i.commitParsed(ctx, w, u, pf)
+	return u.hash
 }
 
 // commitParsed is the SERIALIZED apply phase: it writes the (pre)computed parse

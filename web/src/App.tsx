@@ -7,7 +7,7 @@
 //
 // All API-derived strings still render as escaped React text (S3) — wiki bodies
 // go through WikiMarkdown with raw HTML hard-disabled; no dangerouslySetInnerHTML.
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes } from "react-router";
 import { GraphPage } from "./GraphPage";
 import { WikiIndexPage } from "./WikiIndexPage";
 import { WikiCommunityPage } from "./WikiCommunityPage";

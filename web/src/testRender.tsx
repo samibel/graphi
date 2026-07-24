@@ -3,7 +3,7 @@
 // MemoryRouter, flushing effects via act(). Returns the container + an unmount.
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router";
 import type { ReactElement, ReactNode } from "react";
 
 export interface Rendered {

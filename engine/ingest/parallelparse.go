@@ -2,6 +2,8 @@ package ingest
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"runtime"
 	"sync"
 )
@@ -11,16 +13,25 @@ import (
 // belongs to units[k]). It mutates no graph state — parseUnit is the pure
 // SW-101 parse phase — so worker scheduling cannot influence the committed
 // graph: the caller applies results serially in the units order exactly as
-// before. onDone, when non-nil, is invoked from the CALLING goroutine (never
-// a worker) once per completed unit with the running completion count and
-// that unit's repo-relative path, so progress reporting keeps its
-// single-goroutine contract. The first hard parse error cancels the pool and
-// is returned; per-file skip diagnostics remain fail-closed non-errors.
-func (i *Ingester) parseUnitsParallel(ctx context.Context, units []fileUnit, onDone func(done int, path string)) ([]*ParsedFile, error) {
+// before. Units carry no bytes; each worker reads its file through one shared
+// root handle inside parseUnit, so resident source is bounded by the pool
+// width. onDone, when non-nil, is invoked from the CALLING goroutine (never
+// a worker) once per completed unit with the running completion count, the
+// unit's index k (units[k]/pf just completed), and its ParsedFile — the seam
+// where IngestAll runs the per-file taint analysis and releases the Go AST,
+// so progress reporting AND the release keep the single-goroutine contract.
+// The first hard parse error cancels the pool and is returned; per-file skip
+// diagnostics remain fail-closed non-errors.
+func (i *Ingester) parseUnitsParallel(ctx context.Context, root string, units []fileUnit, onDone func(done, k int, pf *ParsedFile)) ([]*ParsedFile, error) {
 	results := make([]*ParsedFile, len(units))
 	if len(units) == 0 {
 		return results, nil
 	}
+	rootHandle, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: open root: %w", err)
+	}
+	defer rootHandle.Close()
 	workers := runtime.GOMAXPROCS(0)
 	if i.parseWorkers > 0 {
 		workers = i.parseWorkers
@@ -30,13 +41,13 @@ func (i *Ingester) parseUnitsParallel(ctx context.Context, units []fileUnit, onD
 	}
 	if workers <= 1 {
 		for k, u := range units {
-			pf, err := i.parseUnit(ctx, u)
+			pf, err := i.parseUnit(ctx, rootHandle, u)
 			if err != nil {
 				return nil, err
 			}
 			results[k] = pf
 			if onDone != nil {
-				onDone(k+1, u.relPath)
+				onDone(k+1, k, pf)
 			}
 		}
 		return results, nil
@@ -69,7 +80,7 @@ func (i *Ingester) parseUnitsParallel(ctx context.Context, units []fileUnit, onD
 				if hook := i.parseScheduleHook(); hook != nil {
 					hook(units[k].relPath)
 				}
-				pf, err := i.parseUnit(ctx, units[k])
+				pf, err := i.parseUnit(ctx, rootHandle, units[k])
 				if err != nil {
 					fail(err)
 					return
@@ -103,7 +114,7 @@ func (i *Ingester) parseUnitsParallel(ctx context.Context, units []fileUnit, onD
 	for k := range completions {
 		done++
 		if onDone != nil {
-			onDone(done, units[k].relPath)
+			onDone(done, k, results[k])
 		}
 	}
 	errMu.Lock()

@@ -60,31 +60,59 @@ func typeresolveKind(kind string) bool {
 //
 // Returns the ids of the edges it put, so the incremental site can funnel
 // them into the edit-provenance side-channel like the linker's edges.
-func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, units []fileUnit) ([]string, error) {
+func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, root string, units []fileUnit) ([]string, error) {
 	if typeresolveDisabled() || i.profile == profile.Fast {
 		return nil, nil
 	}
-	files := make(map[string][]byte, len(units))
 	hasGo := false
 	for _, u := range units {
-		files[u.relPath] = u.src
 		if strings.HasSuffix(u.relPath, ".go") && !strings.HasSuffix(u.relPath, "_test.go") {
 			hasGo = true
+			break
 		}
 	}
 	if !hasGo {
 		return nil, nil // non-Go repo: no units to check, skip the store scans
 	}
-
-	nodes, err := i.store.Nodes(ctx, graphstore.Query{})
+	// Re-read only what the resolver consumes: Go sources (including _test.go,
+	// whose PATHS steer GroupPackages' skip bookkeeping) and go.mod. Units
+	// carry no bytes, and the old whole-unit-list map held every file of the
+	// repo — assets included — resident for the entire pass.
+	rootHandle, err := os.OpenRoot(root)
 	if err != nil {
-		return nil, fmt.Errorf("ingest: typeresolve read nodes: %w", err)
+		return nil, fmt.Errorf("ingest: typeresolve open root: %w", err)
 	}
-	committed := make(map[model.NodeId]struct{}, len(nodes))
-	dirOf := make(map[model.NodeId]string, len(nodes))
-	for _, n := range nodes {
+	defer rootHandle.Close()
+	files := make(map[string][]byte)
+	for _, u := range units {
+		if u.relPath != "go.mod" && !strings.HasSuffix(u.relPath, ".go") {
+			continue
+		}
+		read := readRootedRegularFile(rootHandle, u.relPath, i.bounds.MaxFileSize)
+		if read.reason != "" {
+			// A file the walk just saw failed to re-read (vanished or grew
+			// mid-pass). Missing INPUT must not shrink the fresh edge set
+			// while units still check "non-degraded": most destructively, a
+			// missing go.mod blanks the module path, every unit still checks
+			// clean against stub imports, and the stale-confirmed sweep below
+			// would then delete EVERY cross-package confirmed edge. Skip the
+			// whole pass instead — degradation never deletes knowledge; the
+			// next pass re-runs it over a stable tree.
+			return nil, nil
+		}
+		files[u.relPath] = read.src
+	}
+
+	// Stream the committed node set straight from the durable layer into the
+	// two derived maps — no whole-graph slice, no cache mirror.
+	committed := make(map[model.NodeId]struct{})
+	dirOf := make(map[model.NodeId]string)
+	if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
 		committed[n.ID()] = struct{}{}
 		dirOf[n.ID()] = path.Dir(n.SourcePath())
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("ingest: typeresolve read nodes: %w", err)
 	}
 
 	res, err := typeresolve.Resolve(files, committed)
@@ -104,22 +132,28 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, uni
 	}
 
 	// Sweep stale confirmed edges of checked units (see the contract above).
-	allEdges, err := i.store.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return nil, fmt.Errorf("ingest: typeresolve read edges: %w", err)
-	}
-	for _, e := range allEdges {
+	// Stream the edge scan and collect only the STALE ids; deletes run after
+	// the cursor closes (collect-then-delete, matching linkFiles), in the same
+	// EdgeId-ascending order the old slice iteration used.
+	var stale []model.EdgeId
+	if err := graphstore.ForEachEdge(ctx, i.store, func(e model.Edge) error {
 		if e.Tier() != model.TierConfirmed || !typeresolveKind(e.Kind()) {
-			continue
+			return nil
 		}
 		if _, current := fresh[e.ID()]; current {
-			continue
+			return nil
 		}
 		if _, checked := checkedDirs[dirOf[e.From()]]; !checked {
-			continue // degraded or unknown unit: degradation never deletes knowledge
+			return nil // degraded or unknown unit: degradation never deletes knowledge
 		}
-		if err := w.DeleteEdge(ctx, e.ID()); err != nil {
-			return nil, fmt.Errorf("ingest: typeresolve delete stale confirmed edge %s: %w", e.ID(), err)
+		stale = append(stale, e.ID())
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("ingest: typeresolve read edges: %w", err)
+	}
+	for _, id := range stale {
+		if err := w.DeleteEdge(ctx, id); err != nil {
+			return nil, fmt.Errorf("ingest: typeresolve delete stale confirmed edge %s: %w", id, err)
 		}
 	}
 

@@ -132,7 +132,13 @@ graphi rebuild   # re-index from scratch (damaged index, or after an upgrade)
 
 `sync` compares file hashes and re-processes only changed, added, or deleted
 files — after a branch switch it announces `Branch switch detected:
-main → feature/login` and updates just the difference. A full rebuild is never
+main → feature/login` and updates just the difference. With no `-root` it
+binds the nearest **enclosing** repo marker (`.git`, `go.work`, `go.mod`)
+walking up from your current directory — when that root is an ancestor of
+where you stand, it says so on stderr (`graphi: indexing repository root …
+(detected from …; pass -root to override)`) before indexing, so a `sync` from
+deep inside a monorepo (or under a git-tracked `$HOME`) never silently
+full-indexes a tree you didn't mean. A full rebuild is never
 needed for branch switches; graphi keeps ONE graph per repository (under
 `~/.graphi/<fingerprint>/`) that always tracks whatever is checked out.
 
@@ -586,6 +592,9 @@ It runs a real CGo-free scan and a canary egress guard and prints a verdict:
 | Web client shows a version-mismatch banner | The backend’s schema version differs from the one the client was built against — rebuild the web client (`npm run gen:types && npm run build`). |
 | `privacy-audit` reports UNVERIFIED locally | Expected off-Linux / unprivileged — it fails closed. The CI Linux job is the live proof. |
 | Claude Code doesn’t see graphi’s tools | Re-run `graphi setup`, then fully restart Claude Code. |
+| `graphi index`/`sync` eats RAM until macOS shows “your system has run out of application memory” | A pre-v0.6.1 binary held every file’s parse tree in memory at once. **Upgrade**: re-run the install script and confirm `graphi version` reports ≥ 0.6.1, then restart any MCP client (e.g. Claude Desktop) so it relaunches `graphi mcp` on the new binary. Current builds bound ingest memory by the worker-pool width, not the repo size. |
+| `graphi sync` indexes far more than the project you’re in | With no `-root`, sync walks UP from the current directory to the nearest `.git`/`go.work`/`go.mod` and indexes that whole root (a git-tracked `$HOME` is the classic trap). It now prints `graphi: indexing repository root … (detected from …)` when that happens — run it from the intended project or pass `-root <repo>`. |
+| Indexing a huge repo is memory-tight even on current builds | `GRAPHI_NO_TYPERESOLVE=1` skips the whole-module go/types pass, or use `-profile fast` (skips it too, plus low-value import edges). |
 
 ---
 

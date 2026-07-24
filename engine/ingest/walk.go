@@ -35,6 +35,15 @@ func isIgnoredDirName(name string) bool {
 	return ignoredDirNames[strings.ToLower(name)]
 }
 
+// IsIgnoredDirName reports whether a directory basename is one walk() always
+// prunes (node_modules, .git, vendor, ...). Exported so engine/watch can prune
+// the same set when registering fsnotify watches: without it the watcher
+// registers a watch (and, on macOS kqueue, an open file descriptor) for every
+// directory under a dependency tree the ingest would never read.
+func IsIgnoredDirName(name string) bool {
+	return isIgnoredDirName(name)
+}
+
 // pathHasIgnoredDir reports whether any path segment of the slash-separated,
 // repo-relative rel is an ignored directory name. walk() prunes ignoredDirNames
 // at the directory level via filepath.SkipDir and never descends into them in
@@ -55,8 +64,10 @@ func pathHasIgnoredDir(rel string) bool {
 
 // walk returns all source files under root, sorted deterministically.
 // onFile, when non-nil, is invoked with the running count after each file is
-// read into the unit list (progress reporting for the full-ingest path only;
-// other callers pass nil).
+// hashed into the unit list (progress reporting for the full-ingest path only;
+// other callers pass nil). Units carry path metadata and the content hash but
+// NOT the file bytes: retaining src here kept the entire repo's source
+// resident for the whole pass (see fileUnit).
 func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, error) {
 	root, err := filepath.Abs(root)
 	if err != nil {
@@ -110,7 +121,6 @@ func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, e
 		units = append(units, fileUnit{
 			path:    path,
 			relPath: rel,
-			src:     read.src,
 			hash:    hashBytes(read.src),
 		})
 		if onFile != nil {

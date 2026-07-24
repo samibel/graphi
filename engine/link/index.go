@@ -82,11 +82,17 @@ const packageKind = "package"
 // and make drop-point 1 non-deterministic). BuildIndex simply skips them.
 const externalKind = "external"
 
-// BuildIndex constructs a SymbolIndex from a committed node set. It is pure and
-// deterministic: identical input (in any order) yields an index that resolves
-// identically. Resolution is O(1) per lookup (no caller×candidate scans).
-func BuildIndex(nodes []model.Node) *SymbolIndex {
-	idx := &SymbolIndex{
+// IndexBuilder incrementally constructs a SymbolIndex from a streamed node
+// set, so a caller iterating the store (graphstore.ForEachNode) never has to
+// materialize the whole []model.Node first. Add must see each committed node
+// exactly once; Build finalizes the derived tables and returns the index.
+// Feeding nodes in the store's canonical NodeId order reproduces BuildIndex
+// over a full listing exactly.
+type IndexBuilder struct{ idx *SymbolIndex }
+
+// NewIndexBuilder returns an empty builder.
+func NewIndexBuilder() *IndexBuilder {
+	return &IndexBuilder{idx: &SymbolIndex{
 		byDir:             map[string]map[string]model.NodeId{},
 		dirAmbiguous:      map[string]map[string]struct{}{},
 		byClause:          map[string]map[string]map[string]model.NodeId{},
@@ -95,59 +101,67 @@ func BuildIndex(nodes []model.Node) *SymbolIndex {
 		clauseByDir:       map[string]string{},
 		packageNodeByPath: map[string]model.NodeId{},
 		methodDirs:        map[string][]string{},
+	}}
+}
+
+// Add indexes one committed node (BuildIndex's per-node step).
+func (b *IndexBuilder) Add(n model.Node) {
+	idx := b.idx
+	sp := n.SourcePath() // already normalized POSIX repo-relative
+	dir := posixDir(sp)
+	if n.Kind() == packageKind {
+		// Interned package node (WP-01): index by its full package path and
+		// keep it OUT of the symbol tables so it can never resolve a symbol.
+		idx.packageNodeByPath[n.QualifiedName()] = n.ID()
+		return
 	}
-	for _, n := range nodes {
-		sp := n.SourcePath() // already normalized POSIX repo-relative
-		dir := posixDir(sp)
-		if n.Kind() == packageKind {
-			// Interned package node (WP-01): index by its full package path and
-			// keep it OUT of the symbol tables so it can never resolve a symbol.
-			idx.packageNodeByPath[n.QualifiedName()] = n.ID()
-			continue
-		}
-		if n.Kind() == externalKind {
-			// Interned external node (WP-03): a linker artifact, never a resolution
-			// target. Skipping it keeps drop-point 1/2 deterministic across passes.
-			continue
-		}
-		if n.Kind() == fileKind {
-			idx.fileNodeByPath[sp] = n.ID()
-			idx.fileNodesByDir[dir] = append(idx.fileNodesByDir[dir], n.ID())
-			continue
-		}
-		clause, bare := splitQN(n.QualifiedName())
-		if bare == "" {
-			continue
-		}
-		if clause != "" {
-			idx.clauseByDir[dir] = clause
-		}
-
-		// Same-package (directory) table with ambiguity tracking.
-		if idx.byDir[dir] == nil {
-			idx.byDir[dir] = map[string]model.NodeId{}
-		}
-		if existing, ok := idx.byDir[dir][bare]; ok && existing != n.ID() {
-			if idx.dirAmbiguous[dir] == nil {
-				idx.dirAmbiguous[dir] = map[string]struct{}{}
-			}
-			idx.dirAmbiguous[dir][bare] = struct{}{}
-		} else if !ok {
-			idx.byDir[dir][bare] = n.ID()
-		}
-
-		// Package-clause table for cross-package resolution.
-		if clause != "" {
-			if idx.byClause[clause] == nil {
-				idx.byClause[clause] = map[string]map[string]model.NodeId{}
-			}
-			if idx.byClause[clause][dir] == nil {
-				idx.byClause[clause][dir] = map[string]model.NodeId{}
-			}
-			idx.byClause[clause][dir][bare] = n.ID()
-		}
+	if n.Kind() == externalKind {
+		// Interned external node (WP-03): a linker artifact, never a resolution
+		// target. Skipping it keeps drop-point 1/2 deterministic across passes.
+		return
+	}
+	if n.Kind() == fileKind {
+		idx.fileNodeByPath[sp] = n.ID()
+		idx.fileNodesByDir[dir] = append(idx.fileNodesByDir[dir], n.ID())
+		return
+	}
+	clause, bare := splitQN(n.QualifiedName())
+	if bare == "" {
+		return
+	}
+	if clause != "" {
+		idx.clauseByDir[dir] = clause
 	}
 
+	// Same-package (directory) table with ambiguity tracking.
+	if idx.byDir[dir] == nil {
+		idx.byDir[dir] = map[string]model.NodeId{}
+	}
+	if existing, ok := idx.byDir[dir][bare]; ok && existing != n.ID() {
+		if idx.dirAmbiguous[dir] == nil {
+			idx.dirAmbiguous[dir] = map[string]struct{}{}
+		}
+		idx.dirAmbiguous[dir][bare] = struct{}{}
+	} else if !ok {
+		idx.byDir[dir][bare] = n.ID()
+	}
+
+	// Package-clause table for cross-package resolution.
+	if clause != "" {
+		if idx.byClause[clause] == nil {
+			idx.byClause[clause] = map[string]map[string]model.NodeId{}
+		}
+		if idx.byClause[clause][dir] == nil {
+			idx.byClause[clause][dir] = map[string]model.NodeId{}
+		}
+		idx.byClause[clause][dir][bare] = n.ID()
+	}
+}
+
+// Build finalizes the derived tables and returns the index. The builder must
+// not be reused after Build.
+func (b *IndexBuilder) Build() *SymbolIndex {
+	idx := b.idx
 	// Build the receiverMethod reverse index (WP-02). A dir participates in
 	// uniqueMethodInDir only through byClause[clauseByDir[dir]][dir], so index
 	// exactly those (dir, bareName) pairs. This is the SAME predicate
@@ -163,6 +177,17 @@ func BuildIndex(nodes []model.Node) *SymbolIndex {
 		}
 	}
 	return idx
+}
+
+// BuildIndex constructs a SymbolIndex from a committed node set. It is pure and
+// deterministic: identical input (in any order) yields an index that resolves
+// identically. Resolution is O(1) per lookup (no caller×candidate scans).
+func BuildIndex(nodes []model.Node) *SymbolIndex {
+	b := NewIndexBuilder()
+	for _, n := range nodes {
+		b.Add(n)
+	}
+	return b.Build()
 }
 
 // sameDir resolves a bare name within the caller's own directory (same-package).

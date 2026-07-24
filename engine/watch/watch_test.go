@@ -3,6 +3,8 @@ package watch
 import (
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -90,6 +92,77 @@ func TestWatcher_EmitsCreateModifyDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitFor(Deleted, "a.go")
+}
+
+// TestWatcher_PrunesIgnoredDirs asserts the watcher registers no fsnotify watch
+// under the always-pruned directory names (node_modules, vendor, ...) — neither
+// for directories present at start nor for ones created while watching. On
+// macOS every watched path holds an open kqueue file descriptor, so watching a
+// dependency tree the ingest never reads exhausts FDs on large repos.
+func TestWatcher_PrunesIgnoredDirs(t *testing.T) {
+	root := t.TempDir()
+	for _, d := range []string{
+		filepath.Join("node_modules", "a", "b"),
+		filepath.Join("vendor", "x"),
+		"src",
+	} {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	w, err := newWatcher(root, nil)
+	if err != nil {
+		t.Fatalf("newWatcher: %v", err)
+	}
+	defer w.Close()
+
+	assertWatchList := func(wantSub, forbidden []string) {
+		t.Helper()
+		list := w.fsw.WatchList()
+		got := make(map[string]bool, len(list))
+		for _, p := range list {
+			got[p] = true
+		}
+		for _, sub := range wantSub {
+			if !got[filepath.Join(root, sub)] {
+				t.Errorf("expected %q to be watched; watch list: %v", sub, list)
+			}
+		}
+		for _, sub := range forbidden {
+			full := filepath.Join(root, sub)
+			for _, p := range list {
+				if p == full || strings.HasPrefix(p, full+string(filepath.Separator)) {
+					t.Errorf("ignored dir %q (or child %q) is watched", sub, p)
+				}
+			}
+		}
+	}
+
+	assertWatchList([]string{"src"}, []string{"node_modules", "vendor"})
+	if !slices.Contains(w.fsw.WatchList(), root) {
+		t.Errorf("root itself must be watched; watch list: %v", w.fsw.WatchList())
+	}
+
+	// Directories created while watching: a non-ignored name is added, an
+	// ignored one is not.
+	if err := os.Mkdir(filepath.Join(root, "lib"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(root, "__pycache__"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.After(3 * time.Second)
+	for !slices.Contains(w.fsw.WatchList(), filepath.Join(root, "lib")) {
+		select {
+		case <-deadline:
+			t.Fatalf("timed out waiting for lib/ to be watched; watch list: %v", w.fsw.WatchList())
+		case <-time.After(15 * time.Millisecond):
+		}
+	}
+	// lib/ being watched proves the created-dir events were processed; the
+	// ignored sibling created before it must still be absent.
+	assertWatchList([]string{"lib"}, []string{"__pycache__"})
 }
 
 // TestWatcher_AddsNewSubdirOnCreate covers R-4: a newly created subdirectory is

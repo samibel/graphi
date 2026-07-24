@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	rtime "github.com/samibel/graphi/cmd/internal/runtime"
 	"github.com/samibel/graphi/core/graphstore"
@@ -21,10 +22,14 @@ var errNotARepo = errors.New("not a repository")
 
 // ingestTarget is the resolved (root, store, sidecar) triple an ingest verb
 // operates on. autoManaged marks the zero-flag path: the per-repo state layout
-// under ~/.graphi (SW-068) rather than caller-supplied paths.
+// under ~/.graphi (SW-068) rather than caller-supplied paths. detected marks a
+// root that came from walking UP from cwd (state.DetectRepo) rather than an
+// explicit -root flag — the case where the verb may silently bind a much
+// larger tree than the user is standing in.
 type ingestTarget struct {
 	root, dbPath, metaDir string
 	autoManaged           bool
+	detected              bool
 }
 
 // resolveIngestTarget picks the repository root and store/meta paths for an
@@ -41,7 +46,7 @@ func resolveIngestTarget(cwd, root, dbPath, metaDir string, legacyStore bool) (i
 		}
 		root = detected
 	}
-	t := ingestTarget{root: root, dbPath: dbPath, metaDir: metaDir}
+	t := ingestTarget{root: root, dbPath: dbPath, metaDir: metaDir, detected: !explicit}
 	if dbPath != "" || metaDir != "" || (explicit && legacyStore) {
 		return t, nil
 	}
@@ -108,6 +113,27 @@ func parseIngestVerbFlags(args []string) (root, dbPath, metaDir string, profileF
 		}
 	}
 	return root, dbPath, metaDir, profileFlag
+}
+
+// detectedRootNotice is the one-line stderr notice printed BEFORE an ingest
+// verb runs against a root it detected by walking UP from cwd: the nearest
+// enclosing .git/go.work/go.mod may sit far above where the user is standing
+// (classic footgun: a git-tracked $HOME), and the verb would then silently
+// full-index that entire tree. Deliberately NOT TTY-gated — the scripted case
+// is exactly where the surprise index bites hardest. Empty string when cwd
+// IS the root (nothing surprising) or the root was explicit.
+func detectedRootNotice(t ingestTarget, cwd string) string {
+	if !t.detected || filepath.Clean(t.root) == filepath.Clean(cwd) {
+		return ""
+	}
+	return fmt.Sprintf("graphi: indexing repository root %s (detected from %s; pass -root to override)", t.root, cwd)
+}
+
+// printDetectedRootNotice writes detectedRootNotice to stderr when non-empty.
+func printDetectedRootNotice(t ingestTarget, cwd string) {
+	if notice := detectedRootNotice(t, cwd); notice != "" {
+		fmt.Fprintln(os.Stderr, notice)
+	}
 }
 
 // indexHintLine is the one-line stderr nudge printed after a successful
@@ -192,6 +218,7 @@ func runSyncAt(cwd string, args []string, stdout io.Writer) int {
 		fmt.Fprintf(os.Stderr, "graphi: sync: %v\n", err)
 		return 1
 	}
+	printDetectedRootNotice(target, cwd)
 	prof, err := profile.ResolveProfile(profileFlag, os.Getenv(profile.EnvName))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)
@@ -241,6 +268,7 @@ func runRebuildAt(cwd string, args []string, stdout io.Writer) int {
 		fmt.Fprintf(os.Stderr, "graphi: rebuild: %v\n", err)
 		return 1
 	}
+	printDetectedRootNotice(target, cwd)
 	prof, err := profile.ResolveProfile(profileFlag, os.Getenv(profile.EnvName))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: %v\n", err)

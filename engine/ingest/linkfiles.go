@@ -20,13 +20,13 @@ import (
 //
 // fileRefs are the link inputs of the (re)processed files. ownedNodeIDs is the
 // set of node IDs belonging to those files. parserEdges is the set of edge IDs
-// parseAndCommit just (re)committed for those files THIS pass (its res.Edges:
+// commitParsed just (re)committed for those files THIS pass (its res.Edges:
 // defines + any edge a parser resolves itself, including cross-file edges some
 // parsers emit directly); they are current-by-construction and must be kept.
 //
 // The sweep removes STALE from-owned linker-kind edges before re-linking: a
 // calls/references/imports edge whose From is owned but which was NOT
-// (re)committed by parseAndCommit this pass is deleted, then the linker re-emits
+// (re)committed by commitParsed this pass is deleted, then the linker re-emits
 // the still-valid ones. Deleting even when To is also owned (BLOCK-2) is required
 // because an identity-preserving caller edit keeps the From NodeId, so
 // DeleteNode's incident-edge cascade never fires and the stale edge would
@@ -58,40 +58,52 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 		return nil, nil
 	}
 
-	nodes, err := i.store.Nodes(ctx, graphstore.Query{})
-	if err != nil {
+	// Build the symbol index streamed straight from the committed node set —
+	// same canonical NodeId order as the old full listing, but no whole-graph
+	// slice and no cache mirror is ever materialized.
+	ib := link.NewIndexBuilder()
+	if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
+		ib.Add(n)
+		return nil
+	}); err != nil {
 		return nil, fmt.Errorf("ingest: link read nodes: %w", err)
 	}
+	idx := ib.Build()
 
-	// Remove stale from-owned linker edges before re-linking.
-	// WP-08 (deferred): decouple this stale-edge sweep from the full-edge read —
-	// scanning every committed edge to find from-owned ones is O(edges) per pass.
-	allEdges, err := i.store.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return nil, fmt.Errorf("ingest: link read edges: %w", err)
-	}
-	for _, e := range allEdges {
+	// Remove stale from-owned linker edges before re-linking. The scan streams
+	// every committed edge and collects only the STALE ids (memory scales with
+	// the sweep set, not the graph); deletion runs after the cursor closes —
+	// never write through the batch while a scan is in flight. Deletion order
+	// (EdgeId ascending, the scan order) matches the old slice iteration.
+	// WP-08 (deferred): decouple this stale-edge sweep from the full-edge scan —
+	// touching every committed edge to find from-owned ones is O(edges) per pass.
+	var stale []model.EdgeId
+	if err := graphstore.ForEachEdge(ctx, i.store, func(e model.Edge) error {
 		if _, fromOwned := ownedNodeIDs[string(e.From())]; !fromOwned {
-			continue
+			return nil
 		}
 		// Only the linker's own edge kinds are swept here.
 		if e.Kind() != "calls" && e.Kind() != "references" && e.Kind() != "imports" &&
 			e.Kind() != "implements" && e.Kind() != "inherits" && e.Kind() != "overrides" {
-			continue
+			return nil
 		}
-		// Keep any edge parseAndCommit just (re)committed for these files this pass
+		// Keep any edge commitParsed just (re)committed for these files this pass
 		// — it is current, not stale. This covers intra-file edges AND any
 		// cross-file edge a parser resolves itself (res.Edges). Everything else
 		// from-owned of a linker kind is a stale linker edge from a prior pass.
 		if _, fresh := parserEdges[string(e.ID())]; fresh {
-			continue
+			return nil
 		}
-		if err := w.DeleteEdge(ctx, e.ID()); err != nil {
-			return nil, fmt.Errorf("ingest: delete stale cross-file edge %s: %w", e.ID(), err)
+		stale = append(stale, e.ID())
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("ingest: link read edges: %w", err)
+	}
+	for _, id := range stale {
+		if err := w.DeleteEdge(ctx, id); err != nil {
+			return nil, fmt.Errorf("ingest: delete stale cross-file edge %s: %w", id, err)
 		}
 	}
-
-	idx := link.BuildIndex(nodes)
 
 	// FU-5: dispatch the linker per language. Group the (re)processed files by
 	// their Language and call Link once per language against the SHARED index
@@ -220,28 +232,28 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 // linkFiles). A shared external node is protected by construction: any other file
 // that still references it keeps a surviving incident edge, so it is not an orphan.
 func (i *Ingester) sweepOrphanExternalNodes(ctx context.Context) error {
-	nodes, err := i.store.Nodes(ctx, graphstore.Query{})
-	if err != nil {
-		return fmt.Errorf("ingest: orphan sweep read nodes: %w", err)
-	}
+	// Both scans stream from the durable layer; resident memory scales with the
+	// external-node set, never the whole graph.
 	external := map[model.NodeId]struct{}{}
-	for _, n := range nodes {
+	if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
 		if n.Kind() == "external" {
 			external[n.ID()] = struct{}{}
 		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("ingest: orphan sweep read nodes: %w", err)
 	}
 	if len(external) == 0 {
 		return nil
 	}
-	edges, err := i.store.Edges(ctx, graphstore.Query{})
-	if err != nil {
-		return fmt.Errorf("ingest: orphan sweep read edges: %w", err)
-	}
 	// Any external node incident to any edge (as From or To — external nodes are
 	// terminal, so in practice only To) is live; remove it from the orphan set.
-	for _, e := range edges {
+	if err := graphstore.ForEachEdge(ctx, i.store, func(e model.Edge) error {
 		delete(external, e.To())
 		delete(external, e.From())
+		return nil
+	}); err != nil {
+		return fmt.Errorf("ingest: orphan sweep read edges: %w", err)
 	}
 	if len(external) == 0 {
 		return nil

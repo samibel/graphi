@@ -87,12 +87,27 @@ func (p *forestParser) Extensions() []string { return p.spec.extensions }
 func (p *forestParser) Runtime() Runtime { return RuntimeCGOForest }
 
 // forestAST is the graphi-broad backend root handle threaded through the
-// SymbolExtractor `root any` contract. It carries the bare-runtime root Node value,
-// the source bytes, and the resolved *sitter.Language.
+// SymbolExtractor `root any` contract. It carries the bare-runtime root Node
+// value, the OWNING *sitter.Tree (the root Node is only a view into it), the
+// source bytes, and the resolved *sitter.Language.
 type forestAST struct {
 	root sitter.Node
+	tree *sitter.Tree
 	src  []byte
 	lang *sitter.Language
+}
+
+// Close releases the C tree backing this AST (parse.ReleaseRoot's seam). The
+// bare runtime registers NO finalizer on trees — only an explicit Close
+// reaches ts_tree_delete — so a dropped forestAST without Close leaks the
+// whole C tree (routinely 10-40x the source size) permanently. Idempotent
+// (Tree.Close is once-guarded) and nil-safe. The root Node must not be used
+// after Close.
+func (a *forestAST) Close() {
+	if a == nil || a.tree == nil {
+		return
+	}
+	a.tree.Close()
 }
 
 // Parse implements Parser. It runs the CGO tree-sitter parse, then maps the bare
@@ -111,11 +126,28 @@ func (p *forestParser) Parse(ctx context.Context, filename string, src []byte) (
 	}()
 
 	lang := p.spec.getLang()
-	root, perr := sitter.Parse(ctx, src, lang)
+	// Parse explicitly (not the sitter.Parse shortcut, which returns only the
+	// root Node and DROPS the owning Tree): the Tree handle must survive on
+	// the forestAST so Close can reach ts_tree_delete — without it every parse
+	// leaks its C tree, the runtime registers no finalizer on trees.
+	parser := sitter.NewParser()
+	parser.SetLanguage(lang)
+	tree, perr := parser.ParseString(ctx, nil, src)
 	if perr != nil {
 		return nil, fmt.Errorf("parse: %s (graphi-broad) error in %q: %w", p.spec.language, filename, perr)
 	}
-	ast := &forestAST{root: root, src: src, lang: lang}
+	ast := &forestAST{root: tree.RootNode(), tree: tree, src: src, lang: lang}
+	// Until the result is handed to the caller, this function owns the tree:
+	// the extraction-error return and the recover() path above would otherwise
+	// strand the C tree forever (no finalizer ever reclaims it). This defer is
+	// registered AFTER the recover defer, so on a panic it closes the tree
+	// FIRST, then the recover converts the panic into an error return.
+	owned := true
+	defer func() {
+		if owned {
+			ast.Close()
+		}
+	}()
 
 	extractor := p.extractor
 	if extractor == nil {
@@ -126,6 +158,7 @@ func (p *forestParser) Parse(ctx context.Context, filename string, src []byte) (
 		return nil, fmt.Errorf("parse: %s (graphi-broad) extraction in %q: %w", p.spec.language, filename, xerr)
 	}
 
+	owned = false // the caller releases via parse.ReleaseRoot from here on
 	return &ParseResult{
 		Meta: SourceMeta{
 			Path: filename, Language: p.spec.language,

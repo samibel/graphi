@@ -189,7 +189,13 @@ func SQLiteFactory(dir string) (Graphstore, error) {
 //	    NodeMeta: source annotations + flags). Added non-destructively via ALTER
 //	    TABLE ADD COLUMN (default ''), so a pre-existing nodes table is migrated
 //	    in place rather than re-created.
-const graphstoreSchemaVersion = 3
+//	4 : deterministic FTS rowids — every `search` row is keyed by
+//	    ftsNodeRowid(owner_id) instead of an auto-assigned rowid, so FTS
+//	    delete/replace needs no per-batch rowid map (whose seed re-scanned the
+//	    whole search table at every BeginBatch) and no owner-keyed full-table
+//	    scan. migrateFTSRowids rebuilds a pre-v4 search table in place from
+//	    `nodes`; graph bytes/snapshots are unaffected (FTS is derived state).
+const graphstoreSchemaVersion = 4
 
 // initSchema creates the base tables and the (node-only) FTS5 index. Edge
 // provenance is stored compactly: the highly-repetitive `reason` string is
@@ -284,11 +290,89 @@ CREATE TABLE IF NOT EXISTS kv_meta (
 	if _, err := s.db.ExecContext(ctx, ddl); err != nil {
 		return fmt.Errorf("graphstore: init schema (FTS5 may be unavailable): %w", err)
 	}
+	// Re-key a pre-v4 search table to deterministic rowids. Runs after the DDL
+	// (so the tables exist on a fresh DB) and before the stamp below (so it can
+	// still observe the store's prior version).
+	if err := s.migrateFTSRowids(ctx); err != nil {
+		return err
+	}
 	// Stamp the layout version (informational; read by the doctor and by future
 	// migrations). user_version takes no bound parameter, so the compile-time
 	// constant is formatted directly.
 	if _, err := s.db.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", graphstoreSchemaVersion)); err != nil {
 		return fmt.Errorf("graphstore: stamp schema version: %w", err)
+	}
+	return nil
+}
+
+// migrateFTSRowids rebuilds the `search` table with deterministic rowids
+// (ftsNodeRowid) for a store written before schema version 4, whose rows
+// carry auto-assigned rowids. The rebuild is content-neutral: `search` is
+// derived state (Snapshot never serializes it, SearchNodes joins on
+// owner_id), so graph bytes and warm-start validity are untouched — no
+// re-index is required. A fresh DB (empty tables) does the same work on zero
+// rows. Runs in one transaction so a failure leaves the old table intact.
+func (s *SQLiteStore) migrateFTSRowids(ctx context.Context) error {
+	var ver int
+	if err := s.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&ver); err != nil {
+		return fmt.Errorf("graphstore: read schema version: %w", err)
+	}
+	if ver >= 4 {
+		return nil
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("graphstore: begin fts rowid migration: %w", err)
+	}
+	rollback := func() { _ = tx.Rollback() }
+	if _, err := tx.ExecContext(ctx, "DELETE FROM search"); err != nil {
+		rollback()
+		return fmt.Errorf("graphstore: clear pre-v4 search: %w", err)
+	}
+	rows, err := tx.QueryContext(ctx, "SELECT id, qualified_name FROM nodes")
+	if err != nil {
+		rollback()
+		return fmt.Errorf("graphstore: read nodes for fts rebuild: %w", err)
+	}
+	type searchRow struct {
+		rowid int64
+		id    string
+		text  string
+	}
+	// Materialize before re-inserting: SQLite tolerates writes with an open
+	// cursor poorly across drivers, and a node-id + name pair set is small.
+	var pending []searchRow
+	for rows.Next() {
+		var id, qn string
+		if err := rows.Scan(&id, &qn); err != nil {
+			rows.Close()
+			rollback()
+			return fmt.Errorf("graphstore: scan node for fts rebuild: %w", err)
+		}
+		rowid, err := ftsNodeRowid(model.NodeId(id))
+		if err != nil {
+			rows.Close()
+			rollback()
+			return err
+		}
+		pending = append(pending, searchRow{rowid: rowid, id: id, text: qn})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		rollback()
+		return fmt.Errorf("graphstore: iterate nodes for fts rebuild: %w", err)
+	}
+	rows.Close()
+	for _, r := range pending {
+		if _, err := tx.ExecContext(ctx,
+			"INSERT INTO search (rowid, owner_kind, owner_id, text) VALUES (?, 'node', ?, ?)",
+			r.rowid, r.id, r.text); err != nil {
+			rollback()
+			return fmt.Errorf("graphstore: rebuild fts row for %s: %w", r.id, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("graphstore: commit fts rowid migration: %w", err)
 	}
 	return nil
 }
@@ -595,7 +679,12 @@ func (s *SQLiteStore) DeleteNode(ctx context.Context, id model.NodeId) error {
 		_ = tx.Rollback()
 		return fmt.Errorf("graphstore: delete incident edges: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx, "DELETE FROM search WHERE owner_kind='node' AND owner_id=?", string(id)); err != nil {
+	rowid, err := ftsNodeRowid(id)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM search WHERE rowid=?", rowid); err != nil {
 		_ = tx.Rollback()
 		return fmt.Errorf("graphstore: delete node fts: %w", err)
 	}
@@ -704,13 +793,19 @@ ON CONFLICT(id) DO UPDATE SET
 		string(n.ID()), n.Kind(), n.QualifiedName(), n.SourcePath(), n.Line(), n.Column(), metaJSON); err != nil {
 		return fmt.Errorf("graphstore: upsert node: %w", err)
 	}
-	// Refresh FTS row for this node (delete-then-insert keeps it idempotent).
-	if _, err := tx.ExecContext(ctx, "DELETE FROM search WHERE owner_kind='node' AND owner_id=?", string(n.ID())); err != nil {
+	// Refresh FTS row for this node. Deterministic-rowid delete-then-insert
+	// keeps it idempotent AND rowid-keyed — owner_id is UNINDEXED, so the old
+	// owner-keyed DELETE was a full search-table scan per upsert.
+	rowid, err := ftsNodeRowid(n.ID())
+	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM search WHERE rowid=?", rowid); err != nil {
 		return fmt.Errorf("graphstore: fts5 clear node: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx,
-		"INSERT INTO search (owner_kind, owner_id, text) VALUES ('node', ?, ?)",
-		string(n.ID()), n.QualifiedName()); err != nil {
+		"INSERT INTO search (rowid, owner_kind, owner_id, text) VALUES (?, 'node', ?, ?)",
+		rowid, string(n.ID()), n.QualifiedName()); err != nil {
 		return fmt.Errorf("graphstore: fts5 index node: %w", err)
 	}
 	return nil

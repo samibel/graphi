@@ -12,16 +12,19 @@ import (
 
 // BeginBatch opens a native batched write session: one SQLite transaction,
 // statements prepared once, the single-writer mutex held for the session's
-// lifetime. Two in-memory indexes make the per-row cost flat:
+// lifetime. Per-row cost stays flat without seeding any whole-graph state at
+// open (three batches per ingest pass each paid O(all nodes + all FTS rows)
+// at BeginBatch — even a one-file watcher commit):
 //
-//   - exists: the committed node-id set ∪ batch-local puts, maintained on every
-//     PutNode/DeleteNode, so PutEdge's endpoint check (ErrUnknownEdgeEndpoint)
-//     needs no per-edge SELECT and sees nodes put earlier in the SAME batch.
-//   - ftsRowid: owner → FTS rowid. The `search` table keys its rows by an
-//     UNINDEXED owner_id, so `DELETE ... WHERE owner_id=?` is a full-table scan
-//     — per row, that made a cold index O(N²) in FTS work. The batch deletes by
-//     rowid instead (O(log n) always, new or re-put), keeping the map current
-//     from each insert's LastInsertId.
+//   - exists memoizes POSITIVE endpoint knowledge only: batch-local puts plus
+//     committed nodes verified by an indexed point probe inside the tx (which
+//     therefore also observes this batch's deletes), so PutEdge's endpoint
+//     check (ErrUnknownEdgeEndpoint) costs at most one probe per distinct
+//     endpoint and sees nodes put earlier in the SAME batch.
+//   - FTS rowids are deterministic (ftsNodeRowid: the NodeId's hex value), so
+//     delete/insert are rowid-keyed with no per-batch rowid map. The `search`
+//     table keys its rows by an UNINDEXED owner_id — `DELETE ... WHERE
+//     owner_id=?` would be a full-table scan per row, O(N²) on a cold index.
 //
 // On Commit the hot cache is evicted rather than replayed: the next read
 // rebuilds it from SQLite in one scan, which is provably consistent and costs
@@ -42,11 +45,10 @@ func (s *SQLiteStore) BeginBatch(ctx context.Context) (Batch, error) {
 
 // sqliteBatch is the SQLiteStore Batch. It owns writeMu until done.
 type sqliteBatch struct {
-	s        *SQLiteStore
-	tx       *sql.Tx
-	done     bool
-	exists   map[model.NodeId]struct{}
-	ftsRowid map[ftsOwner]int64
+	s      *SQLiteStore
+	tx     *sql.Tx
+	done   bool
+	exists map[model.NodeId]struct{} // positive endpoint memo: puts + verified probes
 
 	// internCache memoizes reason/evidence text → dictionary id within the batch
 	// tx, so the repetitive provenance strings that dominate a cold index intern
@@ -57,17 +59,12 @@ type sqliteBatch struct {
 	stmtEdgeUpsert   *sql.Stmt
 	stmtReasonIns    *sql.Stmt // INSERT OR IGNORE INTO reasons(text) VALUES(?)
 	stmtReasonSel    *sql.Stmt // SELECT id FROM reasons WHERE text=?
+	stmtNodeExists   *sql.Stmt // SELECT 1 FROM nodes WHERE id=?
 	stmtFTSDelete    *sql.Stmt // by rowid
-	stmtFTSInsert    *sql.Stmt
+	stmtFTSInsert    *sql.Stmt // explicit deterministic rowid
 	stmtNodeDelete   *sql.Stmt
 	stmtEdgeDelete   *sql.Stmt
 	stmtEdgesDelEndp *sql.Stmt // DELETE FROM edges WHERE from_id=? OR to_id=?
-}
-
-// ftsOwner keys the rowid map by (owner_kind, owner_id).
-type ftsOwner struct {
-	kind string
-	id   string
 }
 
 func (b *sqliteBatch) init(ctx context.Context) error {
@@ -103,10 +100,13 @@ ON CONFLICT(id) DO UPDATE SET
 		return fmt.Errorf("graphstore: prepare reason select: %w", err)
 	}
 	b.internCache = make(map[string]int64)
+	if b.stmtNodeExists, err = prep("SELECT 1 FROM nodes WHERE id=?"); err != nil {
+		return fmt.Errorf("graphstore: prepare node exists: %w", err)
+	}
 	if b.stmtFTSDelete, err = prep("DELETE FROM search WHERE rowid=?"); err != nil {
 		return fmt.Errorf("graphstore: prepare fts delete: %w", err)
 	}
-	if b.stmtFTSInsert, err = prep("INSERT INTO search (owner_kind, owner_id, text) VALUES (?, ?, ?)"); err != nil {
+	if b.stmtFTSInsert, err = prep("INSERT INTO search (rowid, owner_kind, owner_id, text) VALUES (?, ?, ?, ?)"); err != nil {
 		return fmt.Errorf("graphstore: prepare fts insert: %w", err)
 	}
 	if b.stmtNodeDelete, err = prep("DELETE FROM nodes WHERE id=?"); err != nil {
@@ -119,81 +119,59 @@ ON CONFLICT(id) DO UPDATE SET
 		return fmt.Errorf("graphstore: prepare incident delete: %w", err)
 	}
 
-	// Seed the endpoint set from committed state (batch-local puts extend it).
+	// The endpoint memo starts empty: committed nodes are verified lazily by
+	// endpointExists' indexed probe, batch-local puts extend it directly.
 	b.exists = make(map[model.NodeId]struct{})
-	rows, err := tx.QueryContext(ctx, "SELECT id FROM nodes")
-	if err != nil {
-		return fmt.Errorf("graphstore: seed node set: %w", err)
-	}
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			rows.Close()
-			return fmt.Errorf("graphstore: scan node id: %w", err)
-		}
-		b.exists[model.NodeId(id)] = struct{}{}
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return err
-	}
-	rows.Close()
-
-	// Seed the FTS rowid index (one scan per batch instead of one per write).
-	b.ftsRowid = make(map[ftsOwner]int64)
-	rows, err = tx.QueryContext(ctx, "SELECT rowid, owner_kind, owner_id FROM search")
-	if err != nil {
-		return fmt.Errorf("graphstore: seed fts rowids: %w", err)
-	}
-	for rows.Next() {
-		var rowid int64
-		var kind, id string
-		if err := rows.Scan(&rowid, &kind, &id); err != nil {
-			rows.Close()
-			return fmt.Errorf("graphstore: scan fts rowid: %w", err)
-		}
-		b.ftsRowid[ftsOwner{kind, id}] = rowid
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return err
-	}
-	rows.Close()
 	return nil
 }
 
-// refreshFTS replaces the owner's FTS row: rowid-keyed delete of the previous
-// row (if any) + insert, keeping the rowid map current from LastInsertId.
-func (b *sqliteBatch) refreshFTS(ctx context.Context, kind, id, text string) error {
-	key := ftsOwner{kind, id}
-	if rowid, ok := b.ftsRowid[key]; ok {
-		if _, err := b.stmtFTSDelete.ExecContext(ctx, rowid); err != nil {
-			return fmt.Errorf("graphstore: fts5 clear %s: %w", kind, err)
-		}
+// endpointExists reports whether id is a live node endpoint: batch-local puts
+// and previously verified ids answer from the memo; otherwise one indexed
+// point probe inside the tx decides (and a hit is memoized). Probing the tx —
+// not the committed snapshot — means an id deleted earlier in this batch
+// correctly reads as gone (DeleteNode also evicts it from the memo).
+func (b *sqliteBatch) endpointExists(ctx context.Context, id model.NodeId) (bool, error) {
+	if _, ok := b.exists[id]; ok {
+		return true, nil
 	}
-	res, err := b.stmtFTSInsert.ExecContext(ctx, kind, id, text)
+	var one int
+	err := b.stmtNodeExists.QueryRowContext(ctx, string(id)).Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
 	if err != nil {
+		return false, fmt.Errorf("graphstore: check endpoint: %w", err)
+	}
+	b.exists[id] = struct{}{}
+	return true, nil
+}
+
+// refreshFTS replaces the owner's FTS row: deterministic-rowid delete of the
+// previous row (a no-op when absent) + insert under the same rowid.
+func (b *sqliteBatch) refreshFTS(ctx context.Context, kind, id, text string) error {
+	rowid, err := ftsNodeRowid(model.NodeId(id))
+	if err != nil {
+		return err
+	}
+	if _, err := b.stmtFTSDelete.ExecContext(ctx, rowid); err != nil {
+		return fmt.Errorf("graphstore: fts5 clear %s: %w", kind, err)
+	}
+	if _, err := b.stmtFTSInsert.ExecContext(ctx, rowid, kind, id, text); err != nil {
 		return fmt.Errorf("graphstore: fts5 index %s: %w", kind, err)
 	}
-	rowid, err := res.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("graphstore: fts5 rowid: %w", err)
-	}
-	b.ftsRowid[key] = rowid
 	return nil
 }
 
-// deleteFTS removes the owner's FTS row if present (rowid-keyed).
+// deleteFTS removes the owner's FTS row if present (deterministic rowid; the
+// delete is an idempotent no-op when no row exists).
 func (b *sqliteBatch) deleteFTS(ctx context.Context, kind, id string) error {
-	key := ftsOwner{kind, id}
-	rowid, ok := b.ftsRowid[key]
-	if !ok {
-		return nil
+	rowid, err := ftsNodeRowid(model.NodeId(id))
+	if err != nil {
+		return err
 	}
 	if _, err := b.stmtFTSDelete.ExecContext(ctx, rowid); err != nil {
 		return fmt.Errorf("graphstore: fts5 delete %s: %w", kind, err)
 	}
-	delete(b.ftsRowid, key)
 	return nil
 }
 
@@ -238,11 +216,14 @@ func (b *sqliteBatch) PutEdge(ctx context.Context, e model.Edge) error {
 	if b.done {
 		return ErrClosed
 	}
-	if _, ok := b.exists[e.From()]; !ok {
-		return ErrUnknownEdgeEndpoint
-	}
-	if _, ok := b.exists[e.To()]; !ok {
-		return ErrUnknownEdgeEndpoint
+	for _, endpoint := range [2]model.NodeId{e.From(), e.To()} {
+		ok, err := b.endpointExists(ctx, endpoint)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return ErrUnknownEdgeEndpoint
+		}
 	}
 	evJSON, err := json.Marshal(e.Evidence())
 	if err != nil {
@@ -332,8 +313,8 @@ func (b *sqliteBatch) Rollback() error {
 func (b *sqliteBatch) close() {
 	for _, st := range []*sql.Stmt{
 		b.stmtNodeUpsert, b.stmtEdgeUpsert, b.stmtReasonIns, b.stmtReasonSel,
-		b.stmtFTSDelete, b.stmtFTSInsert, b.stmtNodeDelete, b.stmtEdgeDelete,
-		b.stmtEdgesDelEndp,
+		b.stmtNodeExists, b.stmtFTSDelete, b.stmtFTSInsert, b.stmtNodeDelete,
+		b.stmtEdgeDelete, b.stmtEdgesDelEndp,
 	} {
 		if st != nil {
 			_ = st.Close()
