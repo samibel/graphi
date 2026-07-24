@@ -13,6 +13,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"sort"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -22,7 +23,12 @@ import (
 	"github.com/samibel/graphi/engine/link"
 )
 
-// fileUnit is the internal representation of one source file during ingestion.
+// fileUnit identifies one walked file: its absolute and repo-relative paths
+// plus the content hash of the bytes the walk saw. src is populated only
+// transiently — by ParseFile's own read, or inside parseUnit's on-demand
+// re-read whose result never outlives the parse — and NEVER by walk():
+// retaining every file's bytes on the unit list held the whole repo's source
+// resident for the entire pass.
 type fileUnit struct {
 	path    string
 	relPath string
@@ -61,7 +67,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	// exactly the SW-101 discipline the watcher path already relies on.
 	// Per-file progress is emitted from the pool drain (calling goroutine,
 	// completion order), so Done stays monotonic and Path names real files.
-	parsed, err := i.parseUnitsParallel(ctx, units, func(done int, path string) {
+	parsed, err := i.parseUnitsParallel(ctx, root, units, func(done int, path string) {
 		i.notifyProgress(ctx, ProgressEvent{Phase: PhaseParse, Done: done, Total: len(units), Path: path})
 	})
 	if err != nil {
@@ -140,7 +146,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			if err != nil {
 				return err
 			}
-			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs, fr != nil); err != nil {
+			if err := i.upsertCacheTx(ctx, tx, u.relPath, pfHash(parsed[k], u), nodeIDs, fr != nil); err != nil {
 				return err
 			}
 			refs[u.relPath] = fwd
@@ -219,7 +225,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			return err
 		}
 		open = trBatch
-		if _, err := i.typeresolvePass(ctx, trBatch, units); err != nil {
+		if _, err := i.typeresolvePass(ctx, trBatch, root, units); err != nil {
 			return err
 		}
 		open = nil
@@ -446,6 +452,13 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	if err != nil {
 		return err
 	}
+	// Serial re-parse fallbacks below read their bytes on demand (units carry
+	// none); one root handle serves the whole pass.
+	rootHandle, err := os.OpenRoot(root)
+	if err != nil {
+		return fmt.Errorf("ingest: open root: %w", err)
+	}
+	defer rootHandle.Close()
 
 	// Collect explicitly changed paths + cascade-affected dependents.
 	toProcess := make(map[string]struct{})
@@ -562,7 +575,7 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if p, ok := precomputed[u.relPath]; ok && p != nil && !p.skipped && p.result != nil && p.Hash == u.hash {
 				pf = p
 			} else {
-				pf, err = i.parseUnit(ctx, u)
+				pf, err = i.parseUnit(ctx, rootHandle, u)
 				if err != nil {
 					return err
 				}
@@ -574,7 +587,7 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if pf != nil && pf.result != nil {
 				parsedResults[u.relPath] = pf.result
 			}
-			if err := i.upsertCacheTx(ctx, tx, u.relPath, u.hash, nodeIDs, fr != nil); err != nil {
+			if err := i.upsertCacheTx(ctx, tx, u.relPath, pfHash(pf, u), nodeIDs, fr != nil); err != nil {
 				return err
 			}
 			fwdByFile[u.relPath] = fwd
@@ -734,7 +747,7 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 				return err
 			}
 			open = trBatch
-			trIDs, err := i.typeresolvePass(ctx, trBatch, units)
+			trIDs, err := i.typeresolvePass(ctx, trBatch, root, units)
 			if err != nil {
 				return err
 			}

@@ -20,13 +20,13 @@ import (
 //
 // fileRefs are the link inputs of the (re)processed files. ownedNodeIDs is the
 // set of node IDs belonging to those files. parserEdges is the set of edge IDs
-// parseAndCommit just (re)committed for those files THIS pass (its res.Edges:
+// commitParsed just (re)committed for those files THIS pass (its res.Edges:
 // defines + any edge a parser resolves itself, including cross-file edges some
 // parsers emit directly); they are current-by-construction and must be kept.
 //
 // The sweep removes STALE from-owned linker-kind edges before re-linking: a
 // calls/references/imports edge whose From is owned but which was NOT
-// (re)committed by parseAndCommit this pass is deleted, then the linker re-emits
+// (re)committed by commitParsed this pass is deleted, then the linker re-emits
 // the still-valid ones. Deleting even when To is also owned (BLOCK-2) is required
 // because an identity-preserving caller edit keeps the From NodeId, so
 // DeleteNode's incident-edge cascade never fires and the stale edge would
@@ -79,7 +79,7 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 			e.Kind() != "implements" && e.Kind() != "inherits" && e.Kind() != "overrides" {
 			continue
 		}
-		// Keep any edge parseAndCommit just (re)committed for these files this pass
+		// Keep any edge commitParsed just (re)committed for these files this pass
 		// — it is current, not stale. This covers intra-file edges AND any
 		// cross-file edge a parser resolves itself (res.Edges). Everything else
 		// from-owned of a linker kind is a stale linker edge from a prior pass.

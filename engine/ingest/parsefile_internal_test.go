@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -32,9 +33,14 @@ func checkout() int { return 1 }
 	if err != nil {
 		t.Fatalf("walk: %v", err)
 	}
+	rootHandle, err := os.OpenRoot(repo)
+	if err != nil {
+		t.Fatalf("open root: %v", err)
+	}
+	defer rootHandle.Close()
 	byRel := make(map[string]*ParsedFile, len(units))
 	for _, u := range units {
-		pf, err := i.parseUnit(context.Background(), u)
+		pf, err := i.parseUnit(context.Background(), rootHandle, u)
 		if err != nil {
 			t.Fatalf("parseUnit %s: %v", u.relPath, err)
 		}

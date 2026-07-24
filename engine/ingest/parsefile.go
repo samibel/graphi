@@ -14,13 +14,6 @@ import (
 	"github.com/samibel/graphi/engine/link"
 )
 
-// parseAndCommit parses one file, writes its nodes/intra-file edges to
-// graphstore, and returns the node IDs, the edge IDs it committed (the
-// side-channel edge key set), the list of files it references (forward refs),
-// and the deferred link inputs (pending refs + imports) for the post-node-commit
-// linker pass. Cross-file edges are NOT emitted here — they are emitted by
-// linkFiles after every file's nodes are committed (the ordering constraint that
-// motivated SW-050).
 // ParsedFile is the isolated, immutable output of the SW-101 PURE parse phase
 // for one file: the canonical repo-relative path, the deterministic content hash
 // of the bytes that were parsed, and the parse result (nil when the file was
@@ -87,18 +80,40 @@ func (i *Ingester) ParseFile(ctx context.Context, root, relPath string) (*Parsed
 	}
 	abs := filepath.Join(root, filepath.FromSlash(rel))
 	u := fileUnit{path: abs, relPath: rel, src: read.src, hash: hashBytes(read.src)}
-	pf, err := i.parseUnit(ctx, u)
+	pf, err := i.parseUnit(ctx, nil, u)
 	if err != nil {
 		return nil, err
 	}
 	return pf, nil
 }
 
-// parseUnit is the PURE parse phase for one already-read file unit: it calls the
-// language parser and applies the fail-closed resource-bound skip policy, but
-// performs NO graphstore mutation. It is safe for concurrent use. commitParsed
-// is its serialized counterpart.
-func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, error) {
+// parseUnit is the PURE parse phase for one file unit: it calls the language
+// parser and applies the fail-closed resource-bound skip policy, but performs
+// NO graphstore mutation. It is safe for concurrent use. commitParsed is its
+// serialized counterpart.
+//
+// A unit arriving from walk() carries no bytes (src == nil): parseUnit reads
+// the file itself through rootHandle — an *os.Root is documented
+// goroutine-safe, so the parse pool shares one handle — and the bytes go out
+// of scope with this call, bounding resident source to the pool width instead
+// of the whole repo. The hash is refreshed from the bytes actually read, so
+// ParsedFile.Hash (and the content-cache row derived from it via pfHash) can
+// never disagree with the parsed output when a file changes between walk and
+// parse. Callers that already hold the bytes (ParseFile) pass src non-nil and
+// may pass a nil rootHandle.
+func (i *Ingester) parseUnit(ctx context.Context, rootHandle *os.Root, u fileUnit) (*ParsedFile, error) {
+	if u.src == nil {
+		read := readRootedRegularFile(rootHandle, u.relPath, i.bounds.MaxFileSize)
+		if read.reason != "" {
+			// Mirrors the walk-time skip policy: fail closed per file (a file
+			// that vanished or grew past the bound between walk and parse),
+			// never abort the pass.
+			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: read.reason, Size: read.size})
+			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
+		}
+		u.src = read.src
+		u.hash = hashBytes(read.src)
+	}
 	// SW-055 AC#6: fail-closed parse timeout. Bound the wall-clock time a single
 	// Parse may consume on untrusted input; on expiry the parse is abandoned.
 	parseCtx := ctx
@@ -169,16 +184,15 @@ func (i *Ingester) parseUnit(ctx context.Context, u fileUnit) (*ParsedFile, erro
 	return &ParsedFile{RelPath: u.relPath, Hash: u.hash, result: res}, nil
 }
 
-// parseAndCommit parses one file and commits it serially (parse + apply fused),
-// preserving the original IngestAll / ingestChanged behavior. The SW-101 parallel
-// path instead splits these: parseUnit/ParseFile (pure, poolable) then
-// commitParsed (serialized, canonical order).
-func (i *Ingester) parseAndCommit(ctx context.Context, w graphstore.Writer, u fileUnit) ([]string, []string, []string, *link.FileRefs, error) {
-	pf, err := i.parseUnit(ctx, u)
-	if err != nil {
-		return nil, nil, nil, nil, err
+// pfHash is the content hash to record for a committed unit: the hash of the
+// bytes the worker actually parsed when parseUnit read the file itself, else
+// the walk-time hash. Keeps the content-cache row consistent with the
+// committed parse output across a walk/parse race.
+func pfHash(pf *ParsedFile, u fileUnit) string {
+	if pf != nil && pf.Hash != "" {
+		return pf.Hash
 	}
-	return i.commitParsed(ctx, w, u, pf)
+	return u.hash
 }
 
 // commitParsed is the SERIALIZED apply phase: it writes the (pre)computed parse

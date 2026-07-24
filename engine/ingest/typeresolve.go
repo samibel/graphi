@@ -60,20 +60,42 @@ func typeresolveKind(kind string) bool {
 //
 // Returns the ids of the edges it put, so the incremental site can funnel
 // them into the edit-provenance side-channel like the linker's edges.
-func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, units []fileUnit) ([]string, error) {
+func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, root string, units []fileUnit) ([]string, error) {
 	if typeresolveDisabled() || i.profile == profile.Fast {
 		return nil, nil
 	}
-	files := make(map[string][]byte, len(units))
 	hasGo := false
 	for _, u := range units {
-		files[u.relPath] = u.src
 		if strings.HasSuffix(u.relPath, ".go") && !strings.HasSuffix(u.relPath, "_test.go") {
 			hasGo = true
+			break
 		}
 	}
 	if !hasGo {
 		return nil, nil // non-Go repo: no units to check, skip the store scans
+	}
+	// Re-read only what the resolver consumes: Go sources (including _test.go,
+	// whose PATHS steer GroupPackages' skip bookkeeping) and go.mod. Units
+	// carry no bytes, and the old whole-unit-list map held every file of the
+	// repo — assets included — resident for the entire pass. A file that fails
+	// to re-read mid-pass (vanished, grew past the bound) is simply absent
+	// from the map: the resolver under-approximates on missing input, the
+	// same degradation class as any walk-vs-disk race.
+	rootHandle, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: typeresolve open root: %w", err)
+	}
+	defer rootHandle.Close()
+	files := make(map[string][]byte)
+	for _, u := range units {
+		if u.relPath != "go.mod" && !strings.HasSuffix(u.relPath, ".go") {
+			continue
+		}
+		read := readRootedRegularFile(rootHandle, u.relPath, i.bounds.MaxFileSize)
+		if read.reason != "" {
+			continue
+		}
+		files[u.relPath] = read.src
 	}
 
 	nodes, err := i.store.Nodes(ctx, graphstore.Query{})

@@ -64,8 +64,10 @@ func pathHasIgnoredDir(rel string) bool {
 
 // walk returns all source files under root, sorted deterministically.
 // onFile, when non-nil, is invoked with the running count after each file is
-// read into the unit list (progress reporting for the full-ingest path only;
-// other callers pass nil).
+// hashed into the unit list (progress reporting for the full-ingest path only;
+// other callers pass nil). Units carry path metadata and the content hash but
+// NOT the file bytes: retaining src here kept the entire repo's source
+// resident for the whole pass (see fileUnit).
 func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, error) {
 	root, err := filepath.Abs(root)
 	if err != nil {
@@ -119,7 +121,6 @@ func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, e
 		units = append(units, fileUnit{
 			path:    path,
 			relPath: rel,
-			src:     read.src,
 			hash:    hashBytes(read.src),
 		})
 		if onFile != nil {
