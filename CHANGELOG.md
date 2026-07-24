@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-24
+
 ### Fixed
 - MCP session open no longer stalls the client while it indexes: the
   repository binding (recover → warm/full ingest) now runs off the protocol
