@@ -26,6 +26,16 @@ file:
 
 ## [Unreleased]
 
+### Fixed
+- Full-ingest peak memory no longer scales with the whole repo's parse
+  forest: the parse phase now releases every non-Go backend AST (tree-sitter
+  trees are routinely 10-40x their source size) as soon as extraction has
+  produced the file's nodes/edges/refs, instead of retaining every file's
+  tree until the end of the pipeline. Go ASTs are still kept for the
+  go/types and taint passes. On large polyglot workspaces the old behavior
+  alone drove `graphi index` to tens of GB of RSS (macOS "your system has
+  run out of application memory"); committed graph bytes are unchanged.
+
 ## [0.6.0] - 2026-07-22
 
 ### Added
