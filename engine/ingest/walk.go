@@ -35,6 +35,15 @@ func isIgnoredDirName(name string) bool {
 	return ignoredDirNames[strings.ToLower(name)]
 }
 
+// IsIgnoredDirName reports whether a directory basename is one walk() always
+// prunes (node_modules, .git, vendor, ...). Exported so engine/watch can prune
+// the same set when registering fsnotify watches: without it the watcher
+// registers a watch (and, on macOS kqueue, an open file descriptor) for every
+// directory under a dependency tree the ingest would never read.
+func IsIgnoredDirName(name string) bool {
+	return isIgnoredDirName(name)
+}
+
 // pathHasIgnoredDir reports whether any path segment of the slash-separated,
 // repo-relative rel is an ignored directory name. walk() prunes ignoredDirNames
 // at the directory level via filepath.SkipDir and never descends into them in

@@ -9,6 +9,8 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/samibel/graphi/engine/ingest"
 )
 
 // EventKind classifies a raw filesystem event into the three logical operations
@@ -108,6 +110,14 @@ func (w *watcher) addTree(dir string) error {
 		if !d.IsDir() {
 			return nil
 		}
+		// Prune the same directory set the ingest walk never descends into
+		// (node_modules, .git, vendor, ...). The dir passed to addTree itself is
+		// exempt — mirroring walk()'s rel=="." exemption — so an explicitly
+		// rooted tree is still watched. Ignored-file events can then no longer
+		// arrive at all; ParseFile's pathHasIgnoredDir stays as defense in depth.
+		if path != dir && ingest.IsIgnoredDirName(d.Name()) {
+			return filepath.SkipDir
+		}
 		if addErr := w.fsw.Add(path); addErr != nil && !os.IsNotExist(addErr) {
 			return fmt.Errorf("watch: add %s: %w", path, addErr)
 		}
@@ -150,10 +160,14 @@ func (w *watcher) loop() {
 }
 
 func (w *watcher) handle(ev fsnotify.Event) {
-	// A newly created directory must be watched (fsnotify is non-recursive).
+	// A newly created directory must be watched (fsnotify is non-recursive) —
+	// unless it is an always-pruned name (a fresh node_modules/.git/vendor/...),
+	// which the ingest walk would never read and so must not be watched either.
 	if ev.Op.Has(fsnotify.Create) {
 		if info, err := os.Stat(ev.Name); err == nil && info.IsDir() {
-			_ = w.addTree(ev.Name)
+			if !ingest.IsIgnoredDirName(filepath.Base(ev.Name)) {
+				_ = w.addTree(ev.Name)
+			}
 			return // directory creation itself is not a file change
 		}
 	}
