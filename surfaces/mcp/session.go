@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/samibel/graphi/surfaces/client"
 )
@@ -63,19 +64,17 @@ func (s *Server) initialize(ctx context.Context, raw json.RawMessage, supportsSe
 	if binder == nil {
 		return nil // explicitly bound -db/-daemon and in-process test servers
 	}
+	// A bidirectional (stdio) transport binds with the bounded grace wait — a
+	// cold full index must never stall initialize into the client's startup
+	// timeout. HTTP has no later exchange to surface a deferred bind error on,
+	// so it keeps the synchronous wait.
 	if supplied {
-		if err := s.bind(ctx, roots); err != nil {
-			return &rpcError{Code: -32002, Message: "repository binding failed: " + err.Error()}
-		}
-		return nil
+		return s.bind(ctx, roots, !supportsServerRequests)
 	}
 	if rootsCapable {
 		return nil // requestRootsIfNeeded runs after notifications/initialized
 	}
-	if err := s.bind(ctx, nil); err != nil {
-		return &rpcError{Code: -32002, Message: "repository binding failed: " + err.Error()}
-	}
-	return nil
+	return s.bind(ctx, nil, !supportsServerRequests)
 }
 
 func initializeRoots(p initializeParams) ([]string, bool, error) {
@@ -200,30 +199,54 @@ func isWindowsSeparator(b byte) bool {
 	return b == '/' || b == '\\'
 }
 
-func (s *Server) bind(ctx context.Context, roots []string) error {
+// startBind launches the binder on its own goroutine and returns a channel
+// closed when that attempt completes. The binder may run a cold full index
+// for minutes; nothing it does may block the protocol loop, and nothing the
+// protocol loop does may be required for it to finish (so waiting on the
+// returned channel can never deadlock). A second call while an attempt is in
+// flight joins that attempt instead of stacking another ingest.
+func (s *Server) startBind(parent context.Context, roots []string) (<-chan struct{}, *rpcError) {
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
-		return errors.New("MCP session is closed")
+		return nil, &rpcError{Code: -32002, Message: "MCP session is closed"}
 	}
-	binder := s.binder
-	s.awaitingRoots = false
-	s.bindErr = nil
-	s.mu.Unlock()
-	if binder == nil {
+	if s.binder == nil {
+		s.mu.Unlock()
 		if s.bound.Load() != nil {
-			return nil
+			return nil, nil
 		}
-		return errors.New("no repository binder configured")
+		return nil, &rpcError{Code: -32002, Message: "no repository binder configured"}
 	}
+	if s.bindInFlight {
+		done := s.bindDone
+		s.mu.Unlock()
+		return done, nil
+	}
+	s.bindInFlight = true
+	s.bindErr = nil
+	s.awaitingRoots = false
+	gen := s.bindGen
+	ctx, cancel := context.WithCancel(parent)
+	s.bindCancel = cancel
+	done := make(chan struct{})
+	s.bindDone = done
+	s.mu.Unlock()
+	go func() {
+		defer close(done)
+		defer cancel()
+		s.runBind(ctx, gen, roots)
+	}()
+	return done, nil
+}
 
-	binding, err := binder(ctx, roots)
+// runBind executes one binding attempt and publishes its outcome — unless the
+// session was closed or the roots changed while the binder ran (gen mismatch),
+// in which case the late Binding is closed and discarded, never stored.
+func (s *Server) runBind(ctx context.Context, gen uint64, roots []string) {
+	binding, err := s.binder(ctx, roots)
 	if err == nil && binding.Client == nil {
 		err = errors.New("repository binder returned no client")
-	}
-	if err != nil {
-		s.failBinding(err)
-		return err
 	}
 	if binding.Close == nil {
 		binding.Close = func() {}
@@ -231,23 +254,77 @@ func (s *Server) bind(ctx context.Context, roots []string) error {
 
 	s.dispatch.Lock()
 	s.mu.Lock()
-	if s.closed {
+	if s.closed || gen != s.bindGen {
 		s.mu.Unlock()
 		s.dispatch.Unlock()
-		binding.Close()
-		return errors.New("MCP session is closed")
+		if err == nil {
+			binding.Close()
+		}
+		return
 	}
+	s.bindInFlight = false
+	s.bindCancel = nil
 	oldCleanup := s.cleanup
-	s.cleanup = binding.Close
-	s.bindErr = nil
-	s.awaitingRoots = false
-	s.bound.Store(&boundClient{client: binding.Client, stable: client.AsStable(binding.Client)})
+	if err != nil {
+		s.cleanup = nil
+		s.bindErr = err
+		s.bound.Store(nil)
+	} else {
+		s.cleanup = binding.Close
+		s.bindErr = nil
+		s.bound.Store(&boundClient{client: binding.Client, stable: client.AsStable(binding.Client)})
+	}
 	s.mu.Unlock()
 	s.dispatch.Unlock()
 	if oldCleanup != nil {
 		oldCleanup()
 	}
-	return nil
+}
+
+// bind brings the session toward a bound repository without letting a slow
+// binder stall the protocol. It waits up to the server's bind grace: a warm
+// store finishes well inside it and keeps the historical synchronous contract
+// (including a binding failure reported directly on this request), while a
+// cold full index keeps preparing in the background — tool calls fail closed
+// with a retryable "still indexing" message until it lands. sync forces an
+// unbounded wait for transports without a bidirectional stream (HTTP), whose
+// sessions have no later request to pick the error up from.
+func (s *Server) bind(ctx context.Context, roots []string, sync bool) *rpcError {
+	done, rerr := s.startBind(ctx, roots)
+	if rerr != nil || done == nil {
+		return rerr
+	}
+	if !sync {
+		grace := s.bindGrace
+		if grace <= 0 {
+			return nil
+		}
+		timer := time.NewTimer(grace)
+		defer timer.Stop()
+		select {
+		case <-done:
+		case <-timer.C:
+			return nil // still indexing; the session answers without stalling
+		case <-ctx.Done():
+			return nil
+		}
+	} else {
+		select {
+		case <-done:
+		case <-ctx.Done():
+			return &rpcError{Code: -32002, Message: "repository binding cancelled: " + ctx.Err().Error()}
+		}
+	}
+	if s.bound.Load() != nil {
+		return nil
+	}
+	s.mu.Lock()
+	err := s.bindErr
+	s.mu.Unlock()
+	if err == nil {
+		err = errors.New("repository binding did not complete")
+	}
+	return &rpcError{Code: -32002, Message: "repository binding failed: " + err.Error()}
 }
 
 func (s *Server) failBinding(err error) {
@@ -268,7 +345,7 @@ func (s *Server) failBinding(err error) {
 func (s *Server) requestRootsIfNeeded() *rpcServerRequest {
 	s.dispatch.Lock()
 	s.mu.Lock()
-	if s.closed || !s.rootsCapable || s.awaitingRoots || s.bound.Load() != nil {
+	if s.closed || !s.rootsCapable || s.awaitingRoots || s.bindInFlight || s.bound.Load() != nil {
 		s.mu.Unlock()
 		s.dispatch.Unlock()
 		return nil
@@ -297,10 +374,20 @@ func (s *Server) invalidateRootsChanged() {
 	cleanup := s.cleanup
 	s.cleanup = nil
 	s.awaitingRoots = false
+	// Invalidate any in-flight background binding: bump the generation so its
+	// late result is discarded by runBind, and cancel it so a running ingest
+	// stops instead of burning CPU for a session that must restart anyway.
+	s.bindGen++
+	cancel := s.bindCancel
+	s.bindCancel = nil
+	s.bindInFlight = false
 	s.bindErr = errors.New("client repository roots changed; restart the MCP session")
 	s.bound.Store(nil)
 	s.mu.Unlock()
 	s.dispatch.Unlock()
+	if cancel != nil {
+		cancel()
+	}
 	if cleanup != nil {
 		cleanup()
 	}
@@ -334,5 +421,5 @@ func (s *Server) handleRootsResponse(ctx context.Context, req rpcRequest) {
 		s.failBinding(err)
 		return
 	}
-	_ = s.bind(ctx, paths) // bind records the error for the next client request
+	_ = s.bind(ctx, paths, false) // bind records the error for a later client request
 }

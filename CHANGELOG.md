@@ -26,6 +26,29 @@ file:
 
 ## [Unreleased]
 
+### Fixed
+- MCP session open no longer stalls the client while it indexes: the
+  repository binding (recover → warm/full ingest) now runs off the protocol
+  loop, initialize answers within a short grace window, and tool calls fail
+  closed with a retryable "still indexing" message until the session is
+  ready. Previously a cold full index ran synchronously inside initialize;
+  clients whose startup timeout expired killed and restarted the server,
+  aborting and restarting the index each round — a kill/re-index spiral that
+  could occupy a machine indefinitely. Closing the session (or a roots
+  change) now cancels an in-flight index instead of letting it run for a
+  session nobody serves.
+- Concurrent sessions on the same repository share one index pass: the
+  open → recover → warm/full ingest sequence of the auto-managed per-repo
+  store is serialized under a cross-process SQLite lock
+  (`ingest.lock.db` next to the sidecar), so N auto-started `graphi mcp`
+  processes no longer each run a simultaneous full index of the same
+  workspace — the winner indexes, waiters warm-start over the certified
+  store. `graphi sync`/`rebuild`/`index` take the same lock.
+- SQLite open DSNs apply `busy_timeout` BEFORE `journal_mode(WAL)`
+  (graphstore, ingest sidecar, vector store): the WAL transition on a fresh
+  database previously ran with no busy handler and could fail spuriously
+  with SQLITE_BUSY when two processes opened the same state concurrently.
+
 ## [0.6.0] - 2026-07-22
 
 ### Added

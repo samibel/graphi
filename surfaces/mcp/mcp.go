@@ -19,6 +19,7 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
@@ -113,7 +114,30 @@ type Server struct {
 	rootsSequence  uint64
 	closed         bool
 	closeOnce      sync.Once
+
+	// Async binding state (stdio only). A cold zero-config session runs a FULL
+	// repository index inside the binder; running that synchronously inside
+	// initialize stalled the client past its startup timeout, and clients
+	// respond by killing and restarting the server — each restart aborting and
+	// restarting the index (the kill/re-index spiral). bindInFlight marks a
+	// binder running off the protocol loop; bindDone is closed when that
+	// attempt finishes; bindCancel aborts its ingest on Close/roots-change;
+	// bindGen invalidates a stale attempt's result (its Binding is closed and
+	// discarded, never stored). bindGrace is how long lifecycle requests wait
+	// for the binder before answering without it — long enough that a warm
+	// store keeps the pre-async synchronous behavior, short enough that a cold
+	// full index can never stall the protocol.
+	bindInFlight bool
+	bindDone     chan struct{}
+	bindCancel   context.CancelFunc
+	bindGen      uint64
+	bindGrace    time.Duration
 }
+
+// defaultBindGrace keeps warm sessions synchronous (a drift-checked store
+// binds in well under this) while bounding how long any protocol request can
+// stall on a cold full index.
+const defaultBindGrace = 2 * time.Second
 
 // NewServer constructs an MCP server over an in-process query service.
 // If searchSvc is non-nil, the search tool is also advertised.
@@ -135,18 +159,31 @@ func NewServerWithClient(c client.Client, opts ...ServerOption) *Server {
 
 // NewServerWithBinder constructs an initially-unbound MCP server. The binder is
 // invoked from the protocol lifecycle, never before initialize: legacy
-// rootUri/inline roots bind synchronously during initialize, roots-capable
-// clients are queried with roots/list after initialized, and only clients that
-// advertise neither use the binder's nil-roots fallback.
+// rootUri/inline roots bind during initialize, roots-capable clients are
+// queried with roots/list after initialized, and only clients that advertise
+// neither use the binder's nil-roots fallback. On the stdio transport the
+// binder runs OFF the protocol loop: initialize waits at most bindGrace for
+// it, so a cold full index prepares in the background instead of stalling the
+// client into a kill/restart spiral; tools fail closed with a retryable
+// "still indexing" error until the session is ready.
 func NewServerWithBinder(bind BindFunc, opts ...ServerOption) *Server {
-	s := &Server{binder: bind}
+	s := &Server{binder: bind, bindGrace: defaultBindGrace}
 	for _, opt := range opts {
 		opt(s)
 	}
 	return s
 }
 
-// Close releases the currently bound repository session exactly once.
+// WithBindGrace overrides how long protocol requests wait for an in-flight
+// repository binding before answering without it (test seam; 0 = fully
+// asynchronous).
+func WithBindGrace(d time.Duration) ServerOption {
+	return func(s *Server) { s.bindGrace = d }
+}
+
+// Close releases the currently bound repository session exactly once. An
+// in-flight background binding is cancelled (aborting its ingest); its late
+// result is detected via s.closed and discarded by runBind.
 func (s *Server) Close() {
 	s.closeOnce.Do(func() {
 		s.dispatch.Lock()
@@ -155,8 +192,13 @@ func (s *Server) Close() {
 		s.closed = true
 		cleanup := s.cleanup
 		s.cleanup = nil
+		cancel := s.bindCancel
+		s.bindCancel = nil
 		s.bound.Store(nil)
 		s.mu.Unlock()
+		if cancel != nil {
+			cancel()
+		}
 		if cleanup != nil {
 			cleanup()
 		}
@@ -322,6 +364,8 @@ func (s *Server) repositoryUnavailable() *rpcError {
 	defer s.mu.Unlock()
 	message := "repository is not bound"
 	switch {
+	case s.bindInFlight:
+		message += ": the session is still indexing the repository; retry in a moment"
 	case s.awaitingRoots:
 		message += ": waiting for the client's roots/list response"
 	case s.bindErr != nil:

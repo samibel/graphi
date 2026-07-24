@@ -18,9 +18,12 @@ package runtime
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -150,6 +153,19 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 		return nil, fmt.Errorf("ensure session state: %w", err)
 	}
 
+	// The ingest lock is taken BEFORE the store/sidecar even open: on a fresh
+	// state dir, concurrent schema creation races SQLite's deadlock avoidance
+	// (an in-transaction lock upgrade returns SQLITE_BUSY without consulting
+	// busy_timeout), so serializing only the ingest would still let a second
+	// session's open fail spuriously. Under the lock the whole open → recover
+	// → ingest sequence is single-flight per repo state; the waiter then opens
+	// an already-initialized store and warm-starts over the certified graph.
+	release, err := acquireIngestLock(ctx, p.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("acquire ingest lock: %w", err)
+	}
+	defer release()
+
 	rt := newRuntime()
 	rt.Root = root
 	store, err := graphstore.OpenSQLite(p.DB)
@@ -174,10 +190,11 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 
 	// D3 (sync-before-serve, the U1 default): the session is READY — recovered
 	// and ingested — before OpenSession returns, so a successful construction
-	// already means every stable operation answers over the real graph. SyncRepo
-	// additionally stamps the sync metadata, so `graphi status` sees MCP-driven
-	// syncs too.
-	if _, err := SyncRepo(ctx, ing, store, root, opts.Progress); err != nil {
+	// already means every stable operation answers over the real graph. The
+	// sync additionally stamps the sync metadata, so `graphi status` sees
+	// MCP-driven syncs too. The unlocked variant is used because this session
+	// already holds the ingest lock (taken above, around store construction).
+	if _, err := syncRepoLocked(ctx, ing, store, root, opts.Progress); err != nil {
 		rt.Close()
 		return nil, fmt.Errorf("session ingest: %w", err)
 	}
@@ -328,8 +345,24 @@ func warmOrFullIngestStats(ctx context.Context, ing *ingest.Ingester, root strin
 // `graphi sync`, `graphi index`, bare `graphi`, and MCP session open: crash
 // recovery → warm-or-full ingest → sync-metadata stamp. The stamp is written
 // only after a successful ingest, so LastSync never reports a time whose
-// graph didn't actually commit.
+// graph didn't actually commit. The whole pass runs under the cross-process
+// ingest lock: concurrently opened sessions on the same logical store (e.g.
+// several MCP clients auto-starting `graphi mcp` for one workspace) wait for
+// the first pass instead of each launching their own full index, and the
+// waiter then warm-starts over the store the winner just certified.
 func SyncRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Graphstore, root string, progress func(ingest.ProgressEvent)) (SyncStats, error) {
+	release, err := acquireIngestLock(ctx, ing.MetaDir())
+	if err != nil {
+		return SyncStats{}, fmt.Errorf("acquire ingest lock: %w", err)
+	}
+	defer release()
+	return syncRepoLocked(ctx, ing, store, root, progress)
+}
+
+// syncRepoLocked is SyncRepo's body without lock acquisition, for callers
+// that already hold the ingest lock (OpenSession takes it around store
+// construction; taking it twice from one process would self-deadlock).
+func syncRepoLocked(ctx context.Context, ing *ingest.Ingester, store graphstore.Graphstore, root string, progress func(ingest.ProgressEvent)) (SyncStats, error) {
 	stats, err := warmOrFullIngestStats(ctx, ing, root, progress)
 	if err != nil {
 		return stats, err
@@ -341,10 +374,78 @@ func SyncRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Graphs
 }
 
 // RebuildRepo is the canonical full re-index pass behind `graphi rebuild` and
-// `graphi index --full`: an unconditional cold IngestAll plus the sync stamp.
+// `graphi index --full`: an unconditional cold IngestAll plus the sync stamp,
+// serialized under the same cross-process ingest lock as SyncRepo.
 func RebuildRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Graphstore, root string) error {
+	release, err := acquireIngestLock(ctx, ing.MetaDir())
+	if err != nil {
+		return fmt.Errorf("acquire ingest lock: %w", err)
+	}
+	defer release()
 	if err := ing.IngestAll(ctx, root); err != nil {
 		return err
 	}
 	return StampSyncMetadata(ctx, store, root, time.Now())
+}
+
+// acquireIngestLock serializes warm/full ingest passes over one logical store
+// ACROSS PROCESSES. The lock is a dedicated SQLite database next to the
+// ingester's durable sidecar, held via BEGIN IMMEDIATE for the duration of the
+// pass: SQLite's file locking is portable across every release platform and
+// needs no new dependency. Without it, N auto-started sessions (MCP clients,
+// shells) racing on a cold or just-updated store each run their own full
+// index of the same workspace simultaneously — N times the parse cost and
+// peak memory. With it, one process indexes while the rest wait, then
+// warm-start over the certified result. An empty metaDir (in-memory sidecar,
+// tests) has no on-disk identity to contend on and takes no lock.
+func acquireIngestLock(ctx context.Context, metaDir string) (release func(), err error) {
+	if metaDir == "" {
+		return func() {}, nil
+	}
+	// busy_timeout makes each acquisition attempt block INSIDE SQLite for up
+	// to 5s; the loop below re-checks ctx between attempts, so a waiter can
+	// still be cancelled while the winner's full index runs for minutes.
+	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(5000)", filepath.ToSlash(filepath.Join(metaDir, "ingest.lock.db")))
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("open ingest lock: %w", err)
+	}
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("open ingest lock connection: %w", err)
+	}
+	waiting := false
+	for {
+		_, err = conn.ExecContext(ctx, "BEGIN IMMEDIATE")
+		if err == nil {
+			break
+		}
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			_ = conn.Close()
+			_ = db.Close()
+			return nil, ctxErr
+		}
+		if !isLockBusy(err) {
+			_ = conn.Close()
+			_ = db.Close()
+			return nil, fmt.Errorf("acquire ingest lock: %w", err)
+		}
+		if !waiting {
+			waiting = true
+			fmt.Fprintln(os.Stderr, "graphi: another graphi process is indexing this repository — waiting for it to finish")
+		}
+	}
+	return func() {
+		_, _ = conn.ExecContext(context.Background(), "ROLLBACK")
+		_ = conn.Close()
+		_ = db.Close()
+	}, nil
+}
+
+// isLockBusy reports whether err is SQLite's held-by-another-connection
+// signal (SQLITE_BUSY/SQLITE_LOCKED families) rather than a real failure.
+func isLockBusy(err error) bool {
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "busy") || strings.Contains(msg, "locked")
 }
