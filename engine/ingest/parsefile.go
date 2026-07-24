@@ -184,12 +184,14 @@ func (i *Ingester) parseUnit(ctx context.Context, rootHandle *os.Root, u fileUni
 	// Imports/References are complete without the AST. Past this point the
 	// only consumer of res.Root in this package is parse.GoAST (the taint
 	// pass), so every non-Go backend handle — a tree-sitter tree is routinely
-	// 10-40x its source size — is dead weight. Dropping it here frees each
-	// tree as soon as its parse finishes; retaining it made a full pass hold
-	// every file's tree simultaneously until the END of the pipeline, which
-	// on large polyglot workspaces alone reached tens of GB of peak RSS.
+	// 10-40x its source size — is dead weight. Releasing it here frees each
+	// tree as soon as its parse finishes (through ReleaseRoot, which also
+	// closes the graphi-broad CGO tree the GC alone can never free);
+	// retaining it made a full pass hold every file's tree simultaneously
+	// until the END of the pipeline, which on large polyglot workspaces
+	// alone reached tens of GB of peak RSS.
 	if _, _, ok := parse.GoAST(res); !ok {
-		res.Root = nil
+		parse.ReleaseRoot(res)
 	}
 	return &ParsedFile{RelPath: u.relPath, Hash: u.hash, result: res}, nil
 }

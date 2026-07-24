@@ -36,7 +36,7 @@ func (i *Ingester) analyzeParsedTaint(cfg taint.Config, pf *ParsedFile) {
 		return
 	}
 	pf.taint = intraproctaint.Analyze(file, fset, cfg)
-	pf.result.Root = nil
+	parse.ReleaseRoot(pf.result)
 }
 
 // analyzeAndPersistIntraProcTaint replaces the persisted intra-procedural
