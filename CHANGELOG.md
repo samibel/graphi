@@ -26,12 +26,14 @@ file:
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-07-24
+
 > **If graphi ate your machine's memory** (macOS "your system has run out of
 > application memory" during `graphi index`/`sync`, or a runaway `graphi mcp`
 > spawned by an MCP client): that incident class is fixed in **v0.6.1** and
-> hardened further below. What to do as a user:
+> hardened further in this release. What to do as a user:
 > 1. Re-run the install script (`curl -fsSL …/install.sh | sh`) and confirm
->    `graphi version` reports **≥ 0.6.1**.
+>    `graphi version` reports **≥ 0.6.2**.
 > 2. Fully restart MCP clients (e.g. Claude Desktop) so they relaunch
 >    `graphi mcp` on the new binary.
 > 3. Note that a bare `graphi sync` indexes the nearest **enclosing**
