@@ -249,6 +249,7 @@ func runIndexAt(cwd string, args []string) int {
 		fmt.Fprintf(os.Stderr, "graphi: %v\n", terr)
 		return 1
 	}
+	printDetectedRootNotice(target, cwd)
 
 	prof, err := profile.ResolveProfile(profileFlag, os.Getenv(profile.EnvName))
 	if err != nil {

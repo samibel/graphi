@@ -143,3 +143,55 @@ func TestIndexHintLine(t *testing.T) {
 		}
 	}
 }
+
+// TestDetectedRootNotice pins the ancestor-root warning: an ingest verb run
+// from a SUBDIRECTORY of a detected repo announces the root it is about to
+// index (the nearest enclosing .git may sit far above cwd — e.g. a
+// git-tracked $HOME — and the verb would otherwise silently full-index that
+// entire tree), while an explicit -root or cwd == root stays silent.
+func TestDetectedRootNotice(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	repo := t.TempDir()
+	gitRepo(t, repo, "main")
+	sub := filepath.Join(repo, "services", "api")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Detected from a subdirectory: the notice names both root and cwd.
+	target, err := resolveIngestTarget(sub, "", "", "", false)
+	if err != nil {
+		t.Fatalf("resolveIngestTarget from subdir: %v", err)
+	}
+	if !target.detected {
+		t.Fatal("a root found via DetectRepo must be flagged detected")
+	}
+	notice := detectedRootNotice(target, sub)
+	if !strings.Contains(notice, target.root) || !strings.Contains(notice, sub) {
+		t.Fatalf("notice %q must name the detected root %q and the cwd %q", notice, target.root, sub)
+	}
+	if !strings.Contains(notice, "-root") {
+		t.Fatalf("notice %q must mention the -root override", notice)
+	}
+
+	// cwd IS the detected root: nothing surprising, no notice.
+	atRoot, err := resolveIngestTarget(repo, "", "", "", false)
+	if err != nil {
+		t.Fatalf("resolveIngestTarget at root: %v", err)
+	}
+	if got := detectedRootNotice(atRoot, repo); got != "" {
+		t.Fatalf("notice at the root itself = %q, want \"\"", got)
+	}
+
+	// Explicit -root: the user chose it, no notice — from any cwd.
+	explicit, err := resolveIngestTarget(sub, repo, "", "", false)
+	if err != nil {
+		t.Fatalf("resolveIngestTarget explicit: %v", err)
+	}
+	if explicit.detected {
+		t.Fatal("an explicit -root must not be flagged detected")
+	}
+	if got := detectedRootNotice(explicit, sub); got != "" {
+		t.Fatalf("notice for explicit -root = %q, want \"\"", got)
+	}
+}

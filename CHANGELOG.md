@@ -26,6 +26,58 @@ file:
 
 ## [Unreleased]
 
+### Changed
+- Full-ingest peak memory is now bounded by the working set instead of the
+  repository size, completing the v0.6.1 AST fix along every remaining axis;
+  committed graph bytes are unchanged on all of them:
+  - The walk no longer reads every file's contents up front: units carry
+    path + content hash only, and each parse worker reads its file on demand
+    through a shared root handle, so resident source is bounded by the
+    parse-pool width instead of the whole repo. The typeresolve pass re-reads
+    only what it consumes (`*.go` and `go.mod`); the drift scan
+    (`graphi sync`/`status` warm path) no longer loads any file bytes at all.
+  - Go ASTs are released as soon as each file's intra-procedural taint
+    analysis completes (now run per file from the parse drain), instead of
+    every file's go/ast + FileSet staying resident until the end-of-pass
+    taint persist. Findings bytes and the malformed-config failure point are
+    unchanged.
+  - Ingest reads stream straight from SQLite via new optional GraphScanner
+    store ports (`NodeIDs`/`ScanNodes`/`ScanEdges` with package-level
+    fallbacks), so the pipeline no longer materializes whole-graph
+    node/edge slices — and never (re)builds the store's whole-graph hot
+    cache, which every per-phase batch commit used to evict and the next
+    read used to rebuild, several times per pass. The linker's symbol index
+    is built streaming (`link.IndexBuilder`); stale-edge sweeps collect ids
+    during the scan and delete after it.
+  - Batched write sessions no longer seed whole-graph state at open
+    (previously the full node-id set plus every FTS rowid, per batch, three
+    batches per pass): edge-endpoint checks memoize lazily off an indexed
+    point probe, and FTS rows are keyed by a rowid derived from the NodeId
+    (graphstore schema v4; a pre-v4 `search` table is rebuilt in place on
+    first open — FTS is derived state, so snapshots and warm-start validity
+    are unaffected). This also removes the O(table)-per-write FTS scans on
+    the single-write PutNode/DeleteNode paths, whose owner-keyed deletes
+    walked the whole UNINDEXED search table.
+
+### Fixed
+- The filesystem watcher (`graphi daemon`/`serve`) no longer registers
+  fsnotify watches under `node_modules`, `.git`, `vendor` and the rest of
+  the ingest walk's always-pruned directory set — on macOS every watched
+  path holds an open kqueue file descriptor, so dependency-heavy repos
+  exhausted file descriptors and memory for trees the index never reads.
+  Directories created under those names while watching are skipped too.
+- The opt-in graphi-broad (CGO) flavor no longer leaks every parsed file's
+  C tree: the parse retains the owning tree handle and the ingest pipeline
+  releases it explicitly (`parse.ReleaseRoot`) once extraction is done —
+  the bare tree-sitter runtime registers no finalizer on trees, so the Go
+  GC alone never returned that memory. The pure-Go default build is
+  unaffected.
+- `graphi sync`/`rebuild`/`index` announce the repository root they detected
+  when it is an ancestor of the current directory ("indexing repository
+  root <root> (detected from <cwd>; pass -root to override)"), instead of
+  silently full-indexing the nearest enclosing `.git`/`go.work`/`go.mod`
+  tree — which could be a git-tracked `$HOME`.
+
 ## [0.6.1] - 2026-07-24
 
 ### Fixed
