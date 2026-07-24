@@ -50,9 +50,24 @@ func (i *Ingester) analyzeParsedTaint(cfg taint.Config, pf *ParsedFile) {
 // transaction commits, preserving the exact failure point of the old
 // load-at-the-end behavior (a malformed .graphi/taint.json fails the pass
 // closed without rolling back the committed graph).
-func (i *Ingester) analyzeAndPersistIntraProcTaint(ctx context.Context, cfgErr error, parsed []*ParsedFile) error {
+//
+// analyzedHash is the ContentHash of the config snapshot the drain analyzed
+// with. The config is re-loaded HERE — the point the old code loaded it, and
+// moments after stampSemanticsTx certified the store against the config's
+// current on-disk state — and a mismatch fails the pass closed: persisting
+// findings computed under a config that no longer matches the semantics stamp
+// would certify stale findings. The failed pass leaves the full-pass recovery
+// marker open, so the next run re-indexes under the new config consistently.
+func (i *Ingester) analyzeAndPersistIntraProcTaint(ctx context.Context, root string, cfgErr error, analyzedHash string, parsed []*ParsedFile) error {
 	if cfgErr != nil {
 		return cfgErr
+	}
+	cfg, err := intraProcTaintConfig(root)
+	if err != nil {
+		return err
+	}
+	if cfg.ContentHash != analyzedHash {
+		return fmt.Errorf("ingest: taint config changed during the pass; re-run to index under the new config")
 	}
 	var findings []taint.Finding
 	for _, pf := range parsed {

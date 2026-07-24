@@ -26,6 +26,22 @@ file:
 
 ## [Unreleased]
 
+> **If graphi ate your machine's memory** (macOS "your system has run out of
+> application memory" during `graphi index`/`sync`, or a runaway `graphi mcp`
+> spawned by an MCP client): that incident class is fixed in **v0.6.1** and
+> hardened further below. What to do as a user:
+> 1. Re-run the install script (`curl -fsSL …/install.sh | sh`) and confirm
+>    `graphi version` reports **≥ 0.6.1**.
+> 2. Fully restart MCP clients (e.g. Claude Desktop) so they relaunch
+>    `graphi mcp` on the new binary.
+> 3. Note that a bare `graphi sync` indexes the nearest **enclosing**
+>    `.git`/`go.work`/`go.mod` root above your current directory — not the
+>    `-db` you may have passed to an earlier `graphi index` run. Run it inside
+>    the intended project or pass `-root` (current builds print the detected
+>    root before indexing).
+> 4. On very large repos, `GRAPHI_NO_TYPERESOLVE=1` or `-profile fast` skip
+>    the whole-module go/types pass if memory is still tight.
+
 ### Changed
 - Full-ingest peak memory is now bounded by the working set instead of the
   repository size, completing the v0.6.1 AST fix along every remaining axis;

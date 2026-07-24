@@ -137,6 +137,17 @@ func (p *forestParser) Parse(ctx context.Context, filename string, src []byte) (
 		return nil, fmt.Errorf("parse: %s (graphi-broad) error in %q: %w", p.spec.language, filename, perr)
 	}
 	ast := &forestAST{root: tree.RootNode(), tree: tree, src: src, lang: lang}
+	// Until the result is handed to the caller, this function owns the tree:
+	// the extraction-error return and the recover() path above would otherwise
+	// strand the C tree forever (no finalizer ever reclaims it). This defer is
+	// registered AFTER the recover defer, so on a panic it closes the tree
+	// FIRST, then the recover converts the panic into an error return.
+	owned := true
+	defer func() {
+		if owned {
+			ast.Close()
+		}
+	}()
 
 	extractor := p.extractor
 	if extractor == nil {
@@ -147,6 +158,7 @@ func (p *forestParser) Parse(ctx context.Context, filename string, src []byte) (
 		return nil, fmt.Errorf("parse: %s (graphi-broad) extraction in %q: %w", p.spec.language, filename, xerr)
 	}
 
+	owned = false // the caller releases via parse.ReleaseRoot from here on
 	return &ParseResult{
 		Meta: SourceMeta{
 			Path: filename, Language: p.spec.language,

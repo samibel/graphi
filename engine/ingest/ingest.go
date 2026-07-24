@@ -155,6 +155,13 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		owned := make(map[string]struct{})
 		parserEdges := make(map[string]struct{})
 		for k, u := range units {
+			// A unit whose re-read failed between walk and parse is treated as
+			// if the walk had never seen it: no cache row (the table was
+			// cleared above, so drift will re-surface the file when it
+			// reappears), no refs entry — exactly a walk-time skip's footprint.
+			if parsed[k] != nil && parsed[k].readFailed {
+				continue
+			}
 			nodeIDs, edgeIDs, fwd, fr, err := i.commitParsed(ctx, batch, u, parsed[k])
 			if err != nil {
 				return err
@@ -266,7 +273,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	// safe — graphstore Snapshot serializes nodes/edges only, never metadata.
 	// The taint dispatch adapter reads these back so `graphi analyze taint`
 	// surfaces the flows.
-	if err := i.analyzeAndPersistIntraProcTaint(ctx, taintCfgErr, parsed); err != nil {
+	if err := i.analyzeAndPersistIntraProcTaint(ctx, root, taintCfgErr, taintCfg.ContentHash, parsed); err != nil {
 		return err
 	}
 
@@ -599,6 +606,20 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 				if err != nil {
 					return err
 				}
+			}
+			// A re-read failure between walk and parse leaves the file's
+			// cache row, node ownership, and dirty flag untouched: the prior
+			// committed state stays consistent (nothing was committed for the
+			// new content), and the still-dirty flag makes crash recovery
+			// re-process the file on the next pass. Overwriting the cache row
+			// here would drop the old node_ids without deleting the nodes —
+			// permanently breaking full-vs-incremental parity.
+			if pf != nil && pf.readFailed {
+				if prog != nil {
+					progDone++
+					prog(ProgressEvent{Phase: PhaseParse, Done: progDone, Total: progTotal, Path: u.relPath})
+				}
+				continue
 			}
 			nodeIDs, edgeIDs, fwd, fr, err := i.commitParsed(ctx, batch, u, pf)
 			if err != nil {

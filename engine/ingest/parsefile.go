@@ -38,6 +38,15 @@ type ParsedFile struct {
 	// nondeterministic); it forces a serial re-parse so output stays
 	// byte-identical to a full single-threaded parse.
 	skipped bool
+	// readFailed marks a unit whose on-demand re-read failed BETWEEN walk and
+	// parse (vanished, or grew past the bound — e.g. an editor's write-rename
+	// save racing the pass). Such a unit must be treated as if the walk had
+	// never seen it: writing a cache row for it would record the WALK-time
+	// hash against content that was never committed, permanently masking the
+	// file from drift detection (full pass) or orphaning its prior nodes
+	// (incremental pass, whose cache row would drop the old node_ids without
+	// deleting the nodes).
+	readFailed bool
 	// taint holds the per-file intra-procedural taint findings computed by the
 	// FULL pass's parse drain (analyzeParsedTaint), which releases the Go AST
 	// right after — retaining every file's go/ast+FileSet until the end-of-pass
@@ -117,9 +126,11 @@ func (i *Ingester) parseUnit(ctx context.Context, rootHandle *os.Root, u fileUni
 		if read.reason != "" {
 			// Mirrors the walk-time skip policy: fail closed per file (a file
 			// that vanished or grew past the bound between walk and parse),
-			// never abort the pass.
+			// never abort the pass. readFailed additionally tells the commit
+			// loops to leave the file's cache/dirty state untouched — see the
+			// field comment.
 			i.recordSkip(SkipDiagnostic{Path: u.relPath, Reason: read.reason, Size: read.size})
-			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true}, nil
+			return &ParsedFile{RelPath: u.relPath, Hash: u.hash, skipped: true, readFailed: true}, nil
 		}
 		u.src = read.src
 		u.hash = hashBytes(read.src)

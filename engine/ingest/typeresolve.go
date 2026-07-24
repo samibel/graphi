@@ -77,10 +77,7 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 	// Re-read only what the resolver consumes: Go sources (including _test.go,
 	// whose PATHS steer GroupPackages' skip bookkeeping) and go.mod. Units
 	// carry no bytes, and the old whole-unit-list map held every file of the
-	// repo — assets included — resident for the entire pass. A file that fails
-	// to re-read mid-pass (vanished, grew past the bound) is simply absent
-	// from the map: the resolver under-approximates on missing input, the
-	// same degradation class as any walk-vs-disk race.
+	// repo — assets included — resident for the entire pass.
 	rootHandle, err := os.OpenRoot(root)
 	if err != nil {
 		return nil, fmt.Errorf("ingest: typeresolve open root: %w", err)
@@ -93,7 +90,15 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 		}
 		read := readRootedRegularFile(rootHandle, u.relPath, i.bounds.MaxFileSize)
 		if read.reason != "" {
-			continue
+			// A file the walk just saw failed to re-read (vanished or grew
+			// mid-pass). Missing INPUT must not shrink the fresh edge set
+			// while units still check "non-degraded": most destructively, a
+			// missing go.mod blanks the module path, every unit still checks
+			// clean against stub imports, and the stale-confirmed sweep below
+			// would then delete EVERY cross-package confirmed edge. Skip the
+			// whole pass instead — degradation never deletes knowledge; the
+			// next pass re-runs it over a stable tree.
+			return nil, nil
 		}
 		files[u.relPath] = read.src
 	}
