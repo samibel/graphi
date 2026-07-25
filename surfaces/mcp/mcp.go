@@ -139,6 +139,14 @@ type Server struct {
 	bindGen      uint64
 	bindGrace    time.Duration
 
+	// bindStatus, when set, renders a live one-line description of the
+	// in-flight binding for the retryable -32002 errors (which repository is
+	// being indexed, which phase, how long). Owned by the composition root —
+	// the surface stays decoupled from the ingest engine. Called with s.mu
+	// HELD: it must be fast, must not block, and must never call back into
+	// the Server. An empty return falls back to the static message.
+	bindStatus func() string
+
 	// optimisticList records that tools/list was answered from the static
 	// profile catalog while the binding was still in flight; when the bind
 	// outcome publishes, runBind emits notifications/tools/list_changed so the
@@ -195,6 +203,12 @@ func NewServerWithBinder(bind BindFunc, opts ...ServerOption) *Server {
 // asynchronous).
 func WithBindGrace(d time.Duration) ServerOption {
 	return func(s *Server) { s.bindGrace = d }
+}
+
+// WithBindStatus installs a live bind-status renderer for the retryable
+// -32002 "not bound yet" errors. See Server.bindStatus for the contract.
+func WithBindStatus(fn func() string) ServerOption {
+	return func(s *Server) { s.bindStatus = fn }
 }
 
 // Close releases the currently bound repository session exactly once. An
@@ -420,7 +434,17 @@ func (s *Server) unavailableErrorLocked() *rpcError {
 	message := "repository is not bound"
 	switch {
 	case s.bindInFlight:
-		message += ": the session is still indexing the repository; retry in a moment"
+		// The stable retryable shape is prefix + detail + "; retry in a
+		// moment"; only the detail varies (live phase/progress when the
+		// composition root installed a bindStatus renderer).
+		detail := ""
+		if s.bindStatus != nil {
+			detail = s.bindStatus()
+		}
+		if detail == "" {
+			detail = "the session is still indexing the repository"
+		}
+		message += ": " + detail + "; retry in a moment"
 	case s.awaitingRoots:
 		message += ": waiting for the client's roots/list response"
 	case s.bindErr != nil:
