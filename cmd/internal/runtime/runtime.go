@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +35,7 @@ import (
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/ingestlock"
 	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/daemon"
@@ -59,6 +59,32 @@ type Options struct {
 	Socket string
 	// Progress, when non-nil, receives ingest progress events.
 	Progress func(ingest.ProgressEvent)
+	// Status, when non-nil, receives coarse OpenSession lifecycle observations
+	// that Progress cannot express (root resolution, ingest-lock contention).
+	// Called synchronously from the opening goroutine: handlers must be fast
+	// and non-blocking.
+	Status func(BindEvent)
+}
+
+// BindEventKind classifies coarse OpenSession lifecycle observations.
+type BindEventKind string
+
+const (
+	// BindRootResolved fires once, after repository-root resolution succeeds.
+	BindRootResolved BindEventKind = "root-resolved"
+	// BindLockWaiting fires on every failed ingest-lock acquisition attempt
+	// (roughly one per busy_timeout window) while another process holds the
+	// lock for the same repository state.
+	BindLockWaiting BindEventKind = "lock-waiting"
+	// BindLockAcquired fires when the lock is taken after at least one
+	// BindLockWaiting (an uncontended acquisition emits nothing).
+	BindLockAcquired BindEventKind = "lock-acquired"
+)
+
+// BindEvent is one OpenSession lifecycle observation.
+type BindEvent struct {
+	Kind BindEventKind
+	Root string
 }
 
 // ErrNoRepository is returned when a zero-config session cannot bind a real
@@ -144,6 +170,12 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	if err != nil {
 		return nil, err
 	}
+	emitStatus := func(ev BindEvent) {
+		if opts.Status != nil {
+			opts.Status(ev)
+		}
+	}
+	emitStatus(BindEvent{Kind: BindRootResolved, Root: root})
 
 	p, err := state.Resolve(root)
 	if err != nil {
@@ -160,11 +192,18 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	// session's open fail spuriously. Under the lock the whole open → recover
 	// → ingest sequence is single-flight per repo state; the waiter then opens
 	// an already-initialized store and warm-starts over the certified graph.
-	release, err := acquireIngestLock(ctx, p.Meta)
+	waited := false
+	release, err := acquireIngestLock(ctx, p.Meta, func() {
+		waited = true
+		emitStatus(BindEvent{Kind: BindLockWaiting, Root: root})
+	})
 	if err != nil {
 		return nil, fmt.Errorf("acquire ingest lock: %w", err)
 	}
 	defer release()
+	if waited {
+		emitStatus(BindEvent{Kind: BindLockAcquired, Root: root})
+	}
 
 	rt := newRuntime()
 	rt.Root = root
@@ -351,7 +390,7 @@ func warmOrFullIngestStats(ctx context.Context, ing *ingest.Ingester, root strin
 // the first pass instead of each launching their own full index, and the
 // waiter then warm-starts over the store the winner just certified.
 func SyncRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Graphstore, root string, progress func(ingest.ProgressEvent)) (SyncStats, error) {
-	release, err := acquireIngestLock(ctx, ing.MetaDir())
+	release, err := acquireIngestLock(ctx, ing.MetaDir(), nil)
 	if err != nil {
 		return SyncStats{}, fmt.Errorf("acquire ingest lock: %w", err)
 	}
@@ -377,7 +416,7 @@ func syncRepoLocked(ctx context.Context, ing *ingest.Ingester, store graphstore.
 // `graphi index --full`: an unconditional cold IngestAll plus the sync stamp,
 // serialized under the same cross-process ingest lock as SyncRepo.
 func RebuildRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Graphstore, root string) error {
-	release, err := acquireIngestLock(ctx, ing.MetaDir())
+	release, err := acquireIngestLock(ctx, ing.MetaDir(), nil)
 	if err != nil {
 		return fmt.Errorf("acquire ingest lock: %w", err)
 	}
@@ -387,6 +426,12 @@ func RebuildRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Gra
 	}
 	return StampSyncMetadata(ctx, store, root, time.Now())
 }
+
+// ingestLockBusyTimeoutMS bounds how long ONE acquisition attempt blocks
+// inside SQLite before the loop re-checks ctx and notifies onBusy. A package
+// var so tests can shrink the waiter cadence without holding a lock for
+// seconds.
+var ingestLockBusyTimeoutMS = 5000
 
 // acquireIngestLock serializes warm/full ingest passes over one logical store
 // ACROSS PROCESSES. The lock is a dedicated SQLite database next to the
@@ -398,14 +443,19 @@ func RebuildRepo(ctx context.Context, ing *ingest.Ingester, store graphstore.Gra
 // peak memory. With it, one process indexes while the rest wait, then
 // warm-start over the certified result. An empty metaDir (in-memory sidecar,
 // tests) has no on-disk identity to contend on and takes no lock.
-func acquireIngestLock(ctx context.Context, metaDir string) (release func(), err error) {
+//
+// onBusy, when non-nil, is invoked once per failed (busy) acquisition attempt
+// and OWNS user-facing rendering of the waiting state; the historical one-shot
+// stderr line is printed only for nil-onBusy callers (the CLI verbs), so their
+// output stays byte-identical.
+func acquireIngestLock(ctx context.Context, metaDir string, onBusy func()) (release func(), err error) {
 	if metaDir == "" {
 		return func() {}, nil
 	}
-	// busy_timeout makes each acquisition attempt block INSIDE SQLite for up
-	// to 5s; the loop below re-checks ctx between attempts, so a waiter can
-	// still be cancelled while the winner's full index runs for minutes.
-	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(5000)", filepath.ToSlash(filepath.Join(metaDir, "ingest.lock.db")))
+	// busy_timeout makes each acquisition attempt block INSIDE SQLite; the
+	// loop below re-checks ctx between attempts, so a waiter can still be
+	// cancelled while the winner's full index runs for minutes.
+	dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(%d)", filepath.ToSlash(ingestlock.Path(metaDir)), ingestLockBusyTimeoutMS)
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open ingest lock: %w", err)
@@ -426,12 +476,14 @@ func acquireIngestLock(ctx context.Context, metaDir string) (release func(), err
 			_ = db.Close()
 			return nil, ctxErr
 		}
-		if !isLockBusy(err) {
+		if !ingestlock.IsBusy(err) {
 			_ = conn.Close()
 			_ = db.Close()
 			return nil, fmt.Errorf("acquire ingest lock: %w", err)
 		}
-		if !waiting {
+		if onBusy != nil {
+			onBusy()
+		} else if !waiting {
 			waiting = true
 			fmt.Fprintln(os.Stderr, "graphi: another graphi process is indexing this repository — waiting for it to finish")
 		}
@@ -441,11 +493,4 @@ func acquireIngestLock(ctx context.Context, metaDir string) (release func(), err
 		_ = conn.Close()
 		_ = db.Close()
 	}, nil
-}
-
-// isLockBusy reports whether err is SQLite's held-by-another-connection
-// signal (SQLITE_BUSY/SQLITE_LOCKED families) rather than a real failure.
-func isLockBusy(err error) bool {
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "busy") || strings.Contains(msg, "locked")
 }
