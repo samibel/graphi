@@ -133,5 +133,16 @@ func (m mcpConfigReader) Plan(client doctor.MCPClient, binary string) (doctor.MC
 	return doctor.MCPPlanAction(act), nil
 }
 
+// Contending implements doctor.MCPContentionReader: it lists this client's
+// zero-config graphi entries so the mcp check can warn when several of them
+// would contend on one repository's ingest lock.
+func (m mcpConfigReader) Contending(client doctor.MCPClient) ([]string, error) {
+	c, ok := mcpconfig.ClientByID(client.ID)
+	if !ok {
+		return nil, fmt.Errorf("unknown client %q", client.ID)
+	}
+	return c.ContendingGraphiServers()
+}
+
 // releaseInfoAdapter adapts releaseinfo.Info to doctor.ReleaseInfo if needed.
 // realEnv.Release already returns the value, so this is not used directly.

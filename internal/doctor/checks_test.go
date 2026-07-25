@@ -261,3 +261,35 @@ func TestRenderersWriteOnlyToWriter(t *testing.T) {
 }
 
 func contains(s, substr string) bool { return strings.Contains(s, substr) }
+
+// fakeContendingMCPConfig implements both MCPConfigReader and the optional
+// MCPContentionReader, reporting two zero-config graphi entries.
+type fakeContendingMCPConfig struct{ fakeMCPConfig }
+
+func (fakeContendingMCPConfig) Contending(client MCPClient) ([]string, error) {
+	return []string{"graphi", "graphi-mars"}, nil
+}
+
+type fakeContendingEnv struct{ fakeEnv }
+
+func (fakeContendingEnv) MCPConfig() MCPConfigReader { return fakeContendingMCPConfig{} }
+
+// TestMCPCheckWarnsOnContendingEntries pins the duplicate-entry warning: two
+// zero-config graphi entries in one client config downgrade the mcp check to
+// warn, name both entries, and the action says keep-one-or-pin. Readers
+// without the optional interface (fakeMCPConfig, pinned by TestMCPCheckNoOp)
+// stay unaffected.
+func TestMCPCheckWarnsOnContendingEntries(t *testing.T) {
+	res := MCPCheck("/bin/graphi").Run(context.Background(), fakeContendingEnv{})
+	if res.Status != StatusWarn {
+		t.Fatalf("expected warn for contending entries, got %q: %s", res.Status, res.Message)
+	}
+	for _, want := range []string{"graphi, graphi-mars", "contend on its ingest lock"} {
+		if !strings.Contains(res.Message, want) {
+			t.Fatalf("message missing %q: %s", want, res.Message)
+		}
+	}
+	if !strings.Contains(res.Action, "keep one zero-config graphi entry") {
+		t.Fatalf("action not actionable: %s", res.Action)
+	}
+}

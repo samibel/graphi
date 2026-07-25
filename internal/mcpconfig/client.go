@@ -3,6 +3,8 @@ package mcpconfig
 import (
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
 // Client is a local MCP client graphi can register itself into. The mcpconfig
@@ -67,6 +69,72 @@ func (c Client) Apply(binary string, args []string, dryRun bool) (Result, error)
 		return Result{}, err
 	}
 	return applyKey(path, c.ServersKey, "graphi", GraphiEntry(binary, args), dryRun)
+}
+
+// ContendingGraphiServers returns the names (sorted) of server entries in this
+// client's config that spawn a graphi binary in ZERO-CONFIG mcp mode — no
+// `-db`/`-daemon` pin, so each spawned process resolves its repository from
+// its own environment. Two or more such entries (e.g. a hand-added
+// "graphi-myrepo" next to the setup-managed "graphi") resolve the SAME
+// repository and contend on its cross-process ingest lock: one indexes, the
+// rest block, and every one of them reports "repository is not bound" until
+// the winner finishes. A missing config yields an empty list.
+func (c Client) ContendingGraphiServers() ([]string, error) {
+	path, err := c.pathFn()
+	if err != nil {
+		return nil, err
+	}
+	doc, err := Load(path)
+	if err != nil {
+		return nil, err
+	}
+	servers, _ := doc[c.ServersKey].(map[string]any)
+	var names []string
+	for name, raw := range servers {
+		entry, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		command, _ := entry["command"].(string)
+		if !isGraphiCommand(command) {
+			continue
+		}
+		if graphiEntryIsPinned(entry) {
+			continue
+		}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
+// isGraphiCommand reports whether a config entry's command launches a graphi
+// binary. The basename split accepts both path separators regardless of host
+// OS — a config file records the path style of the machine it was written on,
+// and being lenient here can only add a WARNING, never change behavior.
+func isGraphiCommand(command string) bool {
+	name := strings.ToLower(command)
+	if i := strings.LastIndexAny(name, `/\`); i >= 0 {
+		name = name[i+1:]
+	}
+	return strings.TrimSuffix(name, ".exe") == "graphi"
+}
+
+// graphiEntryIsPinned reports whether the entry's args attach to an explicit
+// store or daemon (`-db`/`-daemon`, single or double dash, with or without
+// `=value`) — a pinned server performs no repository detection and therefore
+// never contends on an auto-resolved repo's ingest lock.
+func graphiEntryIsPinned(entry map[string]any) bool {
+	args, _ := entry["args"].([]any)
+	for _, a := range args {
+		s, _ := a.(string)
+		s = strings.TrimPrefix(s, "-")
+		s = strings.TrimPrefix(s, "-")
+		if s == "db" || s == "daemon" || strings.HasPrefix(s, "db=") || strings.HasPrefix(s, "daemon=") {
+			return true
+		}
+	}
+	return false
 }
 
 // Clients returns the known local MCP clients, in stable order. Claude Code is
