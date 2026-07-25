@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -62,13 +63,24 @@ func pathHasIgnoredDir(rel string) bool {
 	return false
 }
 
-// walk returns all source files under root, sorted deterministically.
+// walkCancelCheckEvery paces the walk's cancellation checks: every N visited
+// entries (files AND directories, so a tree of pruned dirs still terminates)
+// the ctx is consulted. Frequent enough that a cancelled bind releases the
+// cross-process ingest lock promptly; sparse enough to stay off the hot path.
+const walkCancelCheckEvery = 256
+
+// walk returns all source files under root, sorted deterministically. The
+// walk honors ctx cancellation (checked every walkCancelCheckEvery entries):
+// it runs before any durable write, so an aborted walk leaves no state behind
+// — but it may run for minutes on a huge or slow tree while holding the
+// cross-process ingest lock, and a cancelled session must release that lock
+// instead of blocking every sibling process.
 // onFile, when non-nil, is invoked with the running count after each file is
 // hashed into the unit list (progress reporting for the full-ingest path only;
 // other callers pass nil). Units carry path metadata and the content hash but
 // NOT the file bytes: retaining src here kept the entire repo's source
 // resident for the whole pass (see fileUnit).
-func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, error) {
+func (i *Ingester) walk(ctx context.Context, root string, onFile func(discovered int)) ([]fileUnit, error) {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return nil, fmt.Errorf("ingest: abs root: %w", err)
@@ -88,9 +100,16 @@ func (i *Ingester) walk(root string, onFile func(discovered int)) ([]fileUnit, e
 	}
 
 	var units []fileUnit
+	visited := 0
 	err = fs.WalkDir(rootHandle.FS(), ".", func(rel string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		visited++
+		if visited%walkCancelCheckEvery == 0 {
+			if cerr := ctx.Err(); cerr != nil {
+				return fmt.Errorf("ingest: walk cancelled: %w", cerr)
+			}
 		}
 		if d.IsDir() {
 			if rel == "." {

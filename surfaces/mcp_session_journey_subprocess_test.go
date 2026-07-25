@@ -4,18 +4,21 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/internal/ingestlock"
 	"github.com/samibel/graphi/internal/state"
 )
 
@@ -475,4 +478,200 @@ func copyTree(src, dst string) error {
 		}
 		return os.WriteFile(target, data, 0o644)
 	})
+}
+
+// lockJourneyResponse decodes one interactive JSON-RPC line with a typed
+// error (the batch-mode rpcResponse keeps Error raw).
+type lockJourneyResponse struct {
+	ID     int             `json:"id"`
+	Result json.RawMessage `json:"result"`
+	Error  *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+// TestSessionProfile_MCPWaitsBehindForeignIngestLock pins the cross-process
+// contention surface END TO END, deterministically: the TEST process plays
+// the "other graphi" by pre-creating the per-repo state dir and holding the
+// ingest lock exactly the way runtime.acquireIngestLock does. The `graphi
+// mcp` subprocess must (1) answer initialize within the bind grace, (2) fail
+// tool calls with the retryable -32002 whose detail names the WAITING state
+// and the contended root — not the misleading "still indexing" — and print
+// the waiting announcement on stderr, then (3) converge to real answers once
+// the lock is released, with no restart. Before v0.6.5 the same scenario
+// yielded a static "still indexing" forever on every server bound to the
+// repo (two MCP entries pointing at one repo is the common trigger).
+func TestSessionProfile_MCPWaitsBehindForeignIngestLock(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skipf("go toolchain unavailable: %v", err)
+	}
+	root := moduleRoot(t)
+	work := t.TempDir()
+	bin := filepath.Join(work, "graphi")
+	build := exec.Command("go", "build", "-o", bin, "./cmd/graphi")
+	build.Dir = root
+	build.Env = append(os.Environ(), "CGO_ENABLED=0")
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build graphi: %v\n%s", err, out)
+	}
+
+	repo := filepath.Join(work, "repo")
+	if err := copyTree(filepath.Join(root, "corpus", "fixtures", "go"), repo); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	repo, err := filepath.EvalSymlinks(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateHome := filepath.Join(work, "xdg-state")
+	t.Setenv("XDG_STATE_HOME", stateHome)
+
+	detected, ok := state.DetectRepo(repo)
+	if !ok {
+		t.Fatalf("fixture repo %q not detectable", repo)
+	}
+	paths, err := state.Resolve(detected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := state.Ensure(paths); err != nil {
+		t.Fatal(err)
+	}
+	lockDB, err := sql.Open("sqlite", "file:"+filepath.ToSlash(ingestlock.Path(paths.Meta))+"?_pragma=busy_timeout(0)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lockDB.Close()
+	lockConn, err := lockDB.Conn(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lockConn.Close()
+	if _, err := lockConn.ExecContext(context.Background(), "BEGIN IMMEDIATE"); err != nil {
+		t.Fatalf("hold ingest lock: %v", err)
+	}
+	released := false
+	defer func() {
+		if !released {
+			_, _ = lockConn.ExecContext(context.Background(), "ROLLBACK")
+		}
+	}()
+
+	cmd := exec.Command(bin, "mcp")
+	cmd.Dir = work // outside the repo: the initialize rootUri is authoritative
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "XDG_STATE_HOME="+stateHome)
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = stdin.Close()
+		if cmd.ProcessState == nil {
+			_ = cmd.Process.Kill()
+		}
+	}()
+
+	reader := bufio.NewReader(stdout)
+	send := func(line string) {
+		t.Helper()
+		if _, err := io.WriteString(stdin, line+"\n"); err != nil {
+			t.Fatalf("write %s: %v (stderr: %s)", line, err, stderr.String())
+		}
+	}
+	// readResponse skips interleaved server notifications (no id) such as
+	// notifications/tools/list_changed.
+	readResponse := func(wantID int) lockJourneyResponse {
+		t.Helper()
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				t.Fatalf("read response %d: %v (stderr: %s)", wantID, err, stderr.String())
+			}
+			var resp lockJourneyResponse
+			if json.Unmarshal([]byte(line), &resp) != nil || resp.ID != wantID {
+				continue
+			}
+			return resp
+		}
+	}
+
+	send(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"rootUri":"file://` + repo + `"}}`)
+	if resp := readResponse(1); resp.Error != nil {
+		t.Fatalf("initialize failed behind a foreign ingest lock: %+v (stderr: %s)", resp.Error, stderr.String())
+	}
+
+	// Phase 1: the retryable -32002 must converge on the WAITING detail (the
+	// first busy observation lands after one busy_timeout window, so poll).
+	wantWaiting := "waiting for another graphi process indexing " + detected
+	deadline := time.Now().Add(60 * time.Second)
+	id := 2
+	for {
+		send(`{"jsonrpc":"2.0","id":` + strconv.Itoa(id) + `,"method":"tools/call","params":{"name":"search","arguments":{"symbol":"Hello"}}}`)
+		resp := readResponse(id)
+		id++
+		if resp.Error == nil {
+			t.Fatalf("tools/call succeeded while another process held the ingest lock (stderr: %s)", stderr.String())
+		}
+		if resp.Error.Code != -32002 {
+			t.Fatalf("tools/call error code = %d, want -32002 (%q)", resp.Error.Code, resp.Error.Message)
+		}
+		if strings.Contains(resp.Error.Message, wantWaiting) {
+			if !strings.HasPrefix(resp.Error.Message, "repository is not bound: ") ||
+				!strings.HasSuffix(resp.Error.Message, "; retry in a moment") {
+				t.Fatalf("waiting error lost the retryable shape: %q", resp.Error.Message)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("error detail never reported the lock wait; last: %q (stderr: %s)", resp.Error.Message, stderr.String())
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	// Phase 2: release the lock; the SAME session must index and serve real
+	// answers — no restart, no manual intervention.
+	if _, err := lockConn.ExecContext(context.Background(), "ROLLBACK"); err != nil {
+		t.Fatalf("release ingest lock: %v", err)
+	}
+	released = true
+	deadline = time.Now().Add(90 * time.Second)
+	for {
+		send(`{"jsonrpc":"2.0","id":` + strconv.Itoa(id) + `,"method":"tools/call","params":{"name":"search","arguments":{"symbol":"Hello"}}}`)
+		resp := readResponse(id)
+		id++
+		if resp.Error == nil && bytes.Contains(resp.Result, []byte("Hello")) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("session never served after the lock was released; last: %+v (stderr: %s)", resp.Error, stderr.String())
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	_ = stdin.Close()
+	if err := cmd.Wait(); err != nil {
+		t.Fatalf("graphi mcp exit: %v (stderr: %s)", err, stderr.String())
+	}
+	for _, want := range []string{
+		"graphi: mcp: binding repository root " + detected,
+		"graphi: mcp: waiting for another graphi process indexing " + detected,
+		"graphi: mcp: ingest lock acquired — continuing",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("stderr missing %q, got:\n%s", want, stderr.String())
+		}
+	}
 }
