@@ -52,6 +52,13 @@ func runDoctor(args []string) int {
 	reg.Register(doctor.PATHCheck())
 	reg.Register(doctor.MCPCheck(exe))
 	reg.Register(doctor.DBCheck())
+	indexRoot, indexMeta := "", ""
+	if root, ok := state.DetectRepo(getwd()); ok {
+		if p, perr := state.Resolve(root); perr == nil {
+			indexRoot, indexMeta = root, p.Meta
+		}
+	}
+	reg.Register(doctor.IndexCheck(indexRoot, indexMeta))
 	reg.Register(doctor.PrivacyCheck())
 	reg.Register(doctor.LocalFirstCheck())
 

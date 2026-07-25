@@ -14,6 +14,7 @@ import (
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/internal/gitinfo"
+	"github.com/samibel/graphi/internal/ingestlock"
 	"github.com/samibel/graphi/internal/state"
 )
 
@@ -55,6 +56,12 @@ type statusIndexState struct {
 	Exists        bool `json:"exists"`
 	WarmStartable bool `json:"warm_startable"`
 	FilesCached   int  `json:"files_cached"`
+	// FullPassInProgress reports the sidecar's full-pass recovery marker;
+	// LockHeld reports whether another process currently holds the
+	// cross-process ingest lock. Together they split "index running right
+	// now" from "previous index crashed". Additive under schema_version 1.
+	FullPassInProgress bool `json:"full_pass_in_progress"`
+	LockHeld           bool `json:"lock_held"`
 }
 
 type statusDrift struct {
@@ -152,7 +159,22 @@ func runStatusAt(cwd string, args []string, stdout io.Writer) int {
 	if werr != nil || !warmOK {
 		// Incomplete pass, older-binary semantics, or a generation mismatch: the
 		// store needs a full pass, and drift over an untrusted cache is noise.
-		report.Recommendation = "run 'graphi rebuild' to re-certify the graph"
+		// The marker + lock probe split the actionable sub-states; both degrade
+		// silently so status keeps working on a partially readable state dir.
+		if marker, merr := ro.FullPassInProgress(ctx); merr == nil {
+			report.Index.FullPassInProgress = marker
+		}
+		if lock, lerr := ingestlock.Probe(ctx, metaDir); lerr == nil {
+			report.Index.LockHeld = lock == ingestlock.StateHeld
+		}
+		switch {
+		case report.Index.FullPassInProgress && report.Index.LockHeld:
+			report.Recommendation = "wait for the running index to finish — another graphi process is building it"
+		case report.Index.FullPassInProgress:
+			report.Recommendation = "run 'graphi index' to rebuild now with visible progress (the previous index did not complete)"
+		default:
+			report.Recommendation = "run 'graphi rebuild' to re-certify the graph"
+		}
 		return emitStatus(stdout, report, asJSON)
 	}
 	report.Index.WarmStartable = true
@@ -235,6 +257,10 @@ func renderStatusHuman(w io.Writer, r statusReport) {
 		fmt.Fprintln(w, "status:  current")
 	case !r.Index.Exists:
 		fmt.Fprintln(w, "status:  no graph for this repository yet")
+	case !r.Index.WarmStartable && r.Index.FullPassInProgress && r.Index.LockHeld:
+		fmt.Fprintln(w, "status:  indexing in progress — another graphi process is building this index")
+	case !r.Index.WarmStartable && r.Index.FullPassInProgress:
+		fmt.Fprintln(w, "status:  previous index did not complete — the next sync will re-run the full pass")
 	case !r.Index.WarmStartable:
 		fmt.Fprintln(w, "status:  index needs a rebuild (incomplete, or built by another graphi version)")
 	default:

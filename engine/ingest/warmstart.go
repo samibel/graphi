@@ -210,6 +210,16 @@ func (i *Ingester) finishFullPass(ctx context.Context, generation string) error 
 	})
 }
 
+// FullPassInProgress reports whether an unfinished full pass left its
+// recovery marker in the sidecar (see beginFullPass/finishFullPass). It is a
+// pure read and works on read-only ingesters, so observers (`graphi status`)
+// can distinguish "a pass is open right now / crashed" from the other
+// cannot-warm-start causes CanWarmStart folds together.
+func (i *Ingester) FullPassInProgress(ctx context.Context) (bool, error) {
+	_, found, err := i.semanticsValue(ctx, fullPassInProgressKey)
+	return found, err
+}
+
 func (i *Ingester) semanticsValue(ctx context.Context, key string) (value string, found bool, err error) {
 	err = i.meta.QueryRowContext(ctx, "SELECT value FROM ingest_semantics WHERE key = ?", key).Scan(&value)
 	if errors.Is(err, sql.ErrNoRows) {
