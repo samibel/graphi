@@ -61,6 +61,12 @@ type rpcServerRequest struct {
 	Method  string `json:"method"`
 }
 
+// rpcServerNotification is an MCP server→client notification (no id).
+type rpcServerNotification struct {
+	JSONRPC string `json:"jsonrpc"`
+	Method  string `json:"method"`
+}
+
 // Binding is one repository-scoped client plus its owned cleanup. The MCP
 // surface does not know how stores, ingesters, or sidecars are composed; cmd's
 // runtime composition root supplies that implementation.
@@ -132,6 +138,16 @@ type Server struct {
 	bindCancel   context.CancelFunc
 	bindGen      uint64
 	bindGrace    time.Duration
+
+	// optimisticList records that tools/list was answered from the static
+	// profile catalog while the binding was still in flight; when the bind
+	// outcome publishes, runBind emits notifications/tools/list_changed so the
+	// client re-lists against the real (capability-narrowed) catalog. Guarded
+	// by mu; toolsChanged is drained by the stdio Serve loop (buffered, so a
+	// transport that never drains it — HTTP, in-process tests — cannot block
+	// the signaler).
+	optimisticList bool
+	toolsChanged   chan struct{}
 }
 
 // defaultBindGrace keeps warm sessions synchronous (a drift-checked store
@@ -149,7 +165,7 @@ func NewServer(q *query.Service, searchSvc *search.Service, opts ...ServerOption
 // (in-process or daemon). The stable view is the same client, narrowed to the
 // consumer-owned ports (CAP-01).
 func NewServerWithClient(c client.Client, opts ...ServerOption) *Server {
-	s := &Server{}
+	s := &Server{toolsChanged: make(chan struct{}, 1)}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -167,7 +183,7 @@ func NewServerWithClient(c client.Client, opts ...ServerOption) *Server {
 // client into a kill/restart spiral; tools fail closed with a retryable
 // "still indexing" error until the session is ready.
 func NewServerWithBinder(bind BindFunc, opts ...ServerOption) *Server {
-	s := &Server{binder: bind, bindGrace: defaultBindGrace}
+	s := &Server{binder: bind, bindGrace: defaultBindGrace, toolsChanged: make(chan struct{}, 1)}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -251,6 +267,14 @@ func (s *Server) Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 		select {
 		case <-ctx.Done():
 			return nil
+		case <-s.toolsChanged:
+			// The repository binding landed after tools/list was served from the
+			// optimistic catalog: tell the client to re-list so it converges on
+			// the bound (capability-narrowed) catalog — or on the real bind error.
+			if err := enc.Encode(rpcServerNotification{JSONRPC: "2.0", Method: "notifications/tools/list_changed"}); err != nil {
+				return err
+			}
+			continue
 		case event = <-events:
 		}
 		if event.done {
@@ -317,7 +341,7 @@ func (s *Server) handleForTransport(ctx context.Context, req rpcRequest, support
 		}
 		resp.Result = map[string]any{
 			"protocolVersion": protocolVersion,
-			"capabilities":    map[string]any{"tools": map[string]any{}},
+			"capabilities":    map[string]any{"tools": map[string]any{"listChanged": true}},
 			"serverInfo":      map[string]any{"name": "graphi-query", "version": "1"},
 		}
 	case "notifications/initialized", "initialized":
@@ -327,7 +351,7 @@ func (s *Server) handleForTransport(ctx context.Context, req rpcRequest, support
 		return resp, true, nil
 	case "tools/list":
 		s.dispatch.RLock()
-		if rerr := s.repositoryUnavailable(); rerr != nil {
+		if rerr := s.toolsListUnavailable(); rerr != nil {
 			resp.Error = rerr
 		} else {
 			resp.Result = map[string]any{"tools": s.toolDescriptors()}
@@ -356,12 +380,43 @@ func (s *Server) handleForTransport(ctx context.Context, req rpcRequest, support
 	return resp, false, nil
 }
 
+// repositoryUnavailable gates tools/call: executing a tool needs the bound
+// repository, so every unbound state fails closed (retryably so while the
+// binding is still in flight).
 func (s *Server) repositoryUnavailable() *rpcError {
 	if s.bound.Load() != nil {
 		return nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.unavailableErrorLocked()
+}
+
+// toolsListUnavailable gates tools/list. Listing executes nothing against the
+// repository and the catalog is profile-static, so a session merely WAITING
+// for its binding — cold full index in flight, roots handshake pending —
+// serves the optimistic catalog instead of failing: MCP clients typically
+// list tools exactly once at session start and treat an error as a dead
+// server, so failing here turned a minutes-long first index into a
+// permanently "failed" server in the client's eyes. runBind emits
+// notifications/tools/list_changed once the bind outcome publishes, so an
+// optimistically served catalog is re-listed against the bound
+// (capability-narrowed) one. States no later bind outcome will repair —
+// binding failed, roots changed, not initialized — keep failing closed.
+func (s *Server) toolsListUnavailable() *rpcError {
+	if s.bound.Load() != nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.bindInFlight || s.awaitingRoots {
+		s.optimisticList = true // a list_changed must chase this catalog
+		return nil
+	}
+	return s.unavailableErrorLocked()
+}
+
+func (s *Server) unavailableErrorLocked() *rpcError {
 	message := "repository is not bound"
 	switch {
 	case s.bindInFlight:

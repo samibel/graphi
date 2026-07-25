@@ -131,7 +131,14 @@ var deepAnalyzerDescriptors = []map[string]any{
 func (s *Server) toolDescriptors() []map[string]any {
 	binding := s.bound.Load()
 	if binding == nil {
-		return nil
+		// Optimistic catalog for a session whose binding is still in flight:
+		// profile membership is static, only the binding-specific capability
+		// narrowing must wait for the bound client. Not cached — the bound
+		// catalog replaces it, announced via notifications/tools/list_changed.
+		if s.labs {
+			return maximalToolDescriptors()
+		}
+		return stableToolDescriptors()
 	}
 	s.catalogMu.Lock()
 	defer s.catalogMu.Unlock()
