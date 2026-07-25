@@ -1,0 +1,163 @@
+package embed_test
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+
+	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/embed"
+)
+
+// recordingEmbedder wraps the deterministic mock and records every Embed
+// call's input size; failOnCall (1-based) makes that call error, so tests can
+// pin the chunked failure path.
+type recordingEmbedder struct {
+	inner      embed.Embedder
+	calls      [][]string
+	failOnCall int
+}
+
+func (r *recordingEmbedder) ID() string { return r.inner.ID() }
+func (r *recordingEmbedder) Dim() int   { return r.inner.Dim() }
+func (r *recordingEmbedder) Embed(ctx context.Context, texts []string) ([][]float32, error) {
+	r.calls = append(r.calls, append([]string(nil), texts...))
+	if r.failOnCall > 0 && len(r.calls) == r.failOnCall {
+		return nil, errors.New("injected embed failure")
+	}
+	return r.inner.Embed(ctx, texts)
+}
+
+func progressNodes(t *testing.T, n int) []model.Node {
+	t.Helper()
+	nodes := make([]model.Node, 0, n)
+	for i := 0; i < n; i++ {
+		nd, err := model.NewNode("function", fmt.Sprintf("pkg.Fn%03d", i), "pkg/f.go", i+1, 1)
+		if err != nil {
+			t.Fatalf("NewNode: %v", err)
+		}
+		nodes = append(nodes, nd)
+	}
+	return nodes
+}
+
+// TestGenerateAndPersistWithProgress_ChunksAndReports pins the progress seam:
+// the pass embeds in chunks that cover every text in node order, and
+// onProgress climbs monotonically to a final (total, total) — the contract
+// the CLI renderer relies on. Result and index contents must be identical to
+// the unchunked wrapper (GenerateAndPersist over the same registry).
+func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
+	ctx := context.Background()
+	const n = 150 // > 2 chunks at the internal chunk size
+	nodes := progressNodes(t, n)
+
+	rec := &recordingEmbedder{inner: embed.NewMockEmbedder(8)}
+	reg := embed.NewRegistry()
+	reg.Register(rec)
+
+	var steps [][2]int
+	table := embed.NewMemVectorTable()
+	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.NewIndex(), table, func(done, total int) {
+		steps = append(steps, [2]int{done, total})
+	})
+	if err != nil {
+		t.Fatalf("GenerateAndPersistWithProgress: %v", err)
+	}
+	if res.Embedded != n {
+		t.Fatalf("Embedded = %d, want %d", res.Embedded, n)
+	}
+
+	// Chunks cover all texts, in order, with no overlap.
+	var covered int
+	for _, call := range rec.calls {
+		for i, text := range call {
+			want := embed.NodeText(nodes[covered+i])
+			if text != want {
+				t.Fatalf("chunked text %d = %q, want %q (order must match node order)", covered+i, text, want)
+			}
+		}
+		covered += len(call)
+	}
+	if covered != n {
+		t.Fatalf("chunks covered %d texts, want %d", covered, n)
+	}
+	if len(rec.calls) < 2 {
+		t.Fatalf("expected multiple chunks for %d nodes, got %d call(s)", n, len(rec.calls))
+	}
+
+	// Progress is monotonic, one step per chunk, ending at (total, total).
+	if len(steps) != len(rec.calls) {
+		t.Fatalf("progress steps = %d, want one per chunk (%d)", len(steps), len(rec.calls))
+	}
+	prev := 0
+	for _, s := range steps {
+		if s[1] != n {
+			t.Fatalf("progress total = %d, want %d", s[1], n)
+		}
+		if s[0] <= prev {
+			t.Fatalf("progress not monotonic: %d after %d", s[0], prev)
+		}
+		prev = s[0]
+	}
+	if prev != n {
+		t.Fatalf("final progress = %d, want %d", prev, n)
+	}
+
+	// Byte-compat with the plain wrapper: same persisted vectors per node.
+	reg2 := embed.NewRegistry()
+	reg2.Register(embed.NewMockEmbedder(8))
+	table2 := embed.NewMemVectorTable()
+	if _, err := embed.GenerateAndPersist(ctx, reg2, nodes, embed.NewIndex(), table2); err != nil {
+		t.Fatalf("GenerateAndPersist: %v", err)
+	}
+	got, err := table.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load chunked: %v", err)
+	}
+	want, err := table2.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load plain: %v", err)
+	}
+	if len(got) != len(want) || len(got) != n {
+		t.Fatalf("persisted vectors: chunked=%d plain=%d, want %d", len(got), len(want), n)
+	}
+	for i := range got {
+		if got[i].NodeID != want[i].NodeID {
+			t.Fatalf("row %d: chunked node %s vs plain %s", i, got[i].NodeID, want[i].NodeID)
+		}
+		for d := range got[i].Values {
+			if got[i].Values[d] != want[i].Values[d] {
+				t.Fatalf("node %s: chunked vector diverges from plain at dim %d", got[i].NodeID, d)
+			}
+		}
+	}
+}
+
+// TestGenerateAndPersistWithProgress_ChunkFailurePropagates pins the failure
+// contract: an embed error in a later chunk surfaces as an error (earlier
+// chunks' vectors are already persisted — derived state a re-run overwrites).
+func TestGenerateAndPersistWithProgress_ChunkFailurePropagates(t *testing.T) {
+	ctx := context.Background()
+	nodes := progressNodes(t, 150)
+	rec := &recordingEmbedder{inner: embed.NewMockEmbedder(8), failOnCall: 2}
+	reg := embed.NewRegistry()
+	reg.Register(rec)
+
+	var steps int
+	table := embed.NewMemVectorTable()
+	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.NewIndex(), table, func(done, total int) { steps++ })
+	if err == nil {
+		t.Fatal("want the injected chunk failure to propagate")
+	}
+	if steps != 1 {
+		t.Fatalf("progress steps before failure = %d, want exactly 1 (the successful first chunk)", steps)
+	}
+	rows, lerr := table.Load(ctx)
+	if lerr != nil {
+		t.Fatalf("Load: %v", lerr)
+	}
+	if len(rows) == 0 || len(rows) >= len(nodes) {
+		t.Fatalf("persisted rows after chunk-2 failure = %d, want the first chunk only (0 < n < %d)", len(rows), len(nodes))
+	}
+}

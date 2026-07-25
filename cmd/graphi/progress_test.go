@@ -300,3 +300,61 @@ func TestIngestProgress_NoTimingsWithoutEnv(t *testing.T) {
 		t.Fatalf("timings printed without GRAPHI_TIMINGS:\n%q", buf.String())
 	}
 }
+
+// TestEmbedProgress_NonTTYMilestones pins the sparse non-TTY contract of the
+// semantic embedding renderer: one line per completed 25% bucket, at most 4
+// lines total, no escape sequences.
+func TestEmbedProgress_NonTTYMilestones(t *testing.T) {
+	var buf bytes.Buffer
+	p := newEmbedProgress(&buf, false)
+	total := 800
+	for done := 64; done < total; done += 64 {
+		p.Handle(done, total)
+	}
+	p.Handle(total, total)
+	p.Finish()
+
+	out := buf.String()
+	if strings.Contains(out, "\x1b[") || strings.Contains(out, "\r") {
+		t.Fatalf("non-TTY output must carry no escapes: %q", out)
+	}
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 4 {
+		t.Fatalf("non-TTY milestone lines = %d, want 4:\n%s", len(lines), out)
+	}
+	for _, want := range []string{"25%", "50%", "75%", "100% (800/800)"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("milestones missing %q:\n%s", want, out)
+		}
+	}
+}
+
+// TestEmbedProgress_TTYInPlace pins the TTY contract: throttled in-place
+// redraws (CR + erase-line, no newline) and a clean Finish that erases the
+// status line so the summary prints on an empty line.
+func TestEmbedProgress_TTYInPlace(t *testing.T) {
+	var buf bytes.Buffer
+	clk := &fakeClock{t: time.Unix(1700000000, 0)}
+	p := newEmbedProgress(&buf, true)
+	p.now = clk.now
+
+	p.Handle(64, 800)  // first draw
+	p.Handle(128, 800) // throttled: same instant, must not draw
+	clk.advance(redrawMinGap)
+	p.Handle(192, 800) // draws again
+	p.Finish()
+
+	out := buf.String()
+	if strings.Contains(out, "\n") {
+		t.Fatalf("TTY renderer must never emit a newline: %q", out)
+	}
+	if got := strings.Count(out, "\r\x1b[2K"); got != 3 { // 2 draws + Finish clear
+		t.Fatalf("in-place redraw sequences = %d, want 3 (throttle must swallow the middle step): %q", got, out)
+	}
+	if !strings.Contains(out, "embedding nodes 192/800") {
+		t.Fatalf("last draw missing from output: %q", out)
+	}
+	if strings.Contains(out, "embedding nodes 128/800") {
+		t.Fatalf("throttled step leaked into output: %q", out)
+	}
+}

@@ -303,3 +303,59 @@ func truncatePathLeft(path string, max int) string {
 func (p *ingestProgress) elapsed() string {
 	return p.now().Sub(p.start).Truncate(100 * time.Millisecond).String()
 }
+
+// embedProgress renders the `graphi index --semantic` embedding-generation
+// pass. The pass previously printed NOTHING between the ingest summary and
+// its final "embedded N nodes" line — on thousands of nodes through a
+// per-text HTTP embedder that silence reads as a hang. Same conventions as
+// ingestProgress: on a TTY one throttled in-place status line, on a non-TTY
+// sparse 25%-bucket milestone lines. Handle is the onProgress func passed to
+// embed.GenerateAndPersistWithProgress (invoked serially from the calling
+// goroutine); Finish clears the TTY line so the summary prints cleanly.
+type embedProgress struct {
+	w   io.Writer
+	tty bool
+
+	lastDraw   time.Time
+	frame      int
+	lastBucket int // non-TTY: last 25%-bucket announced (0 = none)
+	drew       bool
+	now        func() time.Time
+}
+
+func newEmbedProgress(w io.Writer, tty bool) *embedProgress {
+	return &embedProgress{w: w, tty: tty, now: time.Now}
+}
+
+// Handle renders one (done, total) progress step. Serial by contract (the
+// generation pass calls it from one goroutine), so no lock is needed.
+func (p *embedProgress) Handle(done, total int) {
+	if total <= 0 {
+		return
+	}
+	if !p.tty {
+		// Milestone lines only: one per completed 25% bucket, max 4 lines.
+		bucket := done * 4 / total
+		if bucket > p.lastBucket {
+			p.lastBucket = bucket
+			fmt.Fprintf(p.w, "graphi: embedding nodes… %d%% (%d/%d)\n", bucket*25, done, total)
+		}
+		return
+	}
+	if done < total && p.now().Sub(p.lastDraw) < redrawMinGap {
+		return
+	}
+	p.lastDraw = p.now()
+	p.frame = (p.frame + 1) % len(spinnerFrames)
+	fmt.Fprintf(p.w, "\r\x1b[2K%c embedding nodes %d/%d (%d%%)",
+		spinnerFrames[p.frame], done, total, done*100/total)
+	p.drew = true
+}
+
+// Finish clears the in-place line (TTY only; idempotent).
+func (p *embedProgress) Finish() {
+	if p.tty && p.drew {
+		fmt.Fprint(p.w, "\r\x1b[2K")
+		p.drew = false
+	}
+}

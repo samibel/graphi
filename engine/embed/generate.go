@@ -50,6 +50,30 @@ type GenerateResult struct {
 // be nil to skip the respective sink (e.g. persist-only or in-memory-only), but
 // the normal index pass supplies both.
 func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, index VectorIndex, table VectorTable) (GenerateResult, error) {
+	return GenerateAndPersistWithProgress(ctx, reg, nodes, index, table, nil)
+}
+
+// embedChunkSize bounds how many node texts each Embed call carries. It sets
+// the progress-callback granularity AND caps the in-flight vector slice to a
+// chunk (the whole-set call held every vector of the repo simultaneously).
+// Small enough that a slow per-text embedder (Ollama does one HTTP round-trip
+// per text) reports progress every few seconds; large enough that the chunk
+// bookkeeping is noise.
+const embedChunkSize = 64
+
+// GenerateAndPersistWithProgress is GenerateAndPersist with a progress seam:
+// onProgress (nil-safe) is invoked from THIS goroutine after each embedded and
+// persisted chunk with the running (done, total) node counts — the final call
+// is (total, total). The embedding-generation pass previously produced no
+// output between its start and its summary line, which on thousands of nodes
+// via a per-text HTTP embedder reads as a hang.
+//
+// Chunking changes one failure-path detail, deliberately: an Embed error in
+// chunk k leaves the vectors of chunks < k already persisted (the whole-set
+// call persisted nothing on an embed error). Vector rows are derived state
+// keyed by NodeId — a re-run overwrites them idempotently — so partial
+// progress is strictly recoverable.
+func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []model.Node, index VectorIndex, table VectorTable, onProgress func(done, total int)) (GenerateResult, error) {
 	if reg == nil || !reg.Configured() {
 		return GenerateResult{Configured: false}, nil // graceful skip: no embed, no dial, no write
 	}
@@ -66,25 +90,33 @@ func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, 
 	for i, n := range nodes {
 		texts[i] = NodeText(n)
 	}
-	vecs, err := emb.Embed(ctx, texts)
-	if err != nil {
-		return GenerateResult{}, fmt.Errorf("embed: generate: %w", err)
-	}
-	if len(vecs) != len(nodes) {
-		return GenerateResult{}, fmt.Errorf("embed: embedder returned %d vectors for %d nodes", len(vecs), len(nodes))
-	}
-
-	for i, n := range nodes {
-		id := n.ID()
-		if index != nil {
-			index.Put(id, vecs[i])
+	for start := 0; start < len(nodes); start += embedChunkSize {
+		end := start + embedChunkSize
+		if end > len(nodes) {
+			end = len(nodes)
 		}
-		if table != nil {
-			if err := table.Upsert(ctx, Vector{NodeID: id, Values: vecs[i]}); err != nil {
-				return GenerateResult{}, err
+		vecs, err := emb.Embed(ctx, texts[start:end])
+		if err != nil {
+			return GenerateResult{}, fmt.Errorf("embed: generate: %w", err)
+		}
+		if len(vecs) != end-start {
+			return GenerateResult{}, fmt.Errorf("embed: embedder returned %d vectors for %d nodes", len(vecs), end-start)
+		}
+		for i, n := range nodes[start:end] {
+			id := n.ID()
+			if index != nil {
+				index.Put(id, vecs[i])
 			}
+			if table != nil {
+				if err := table.Upsert(ctx, Vector{NodeID: id, Values: vecs[i]}); err != nil {
+					return GenerateResult{}, err
+				}
+			}
+			res.Embedded++
 		}
-		res.Embedded++
+		if onProgress != nil {
+			onProgress(end, len(nodes))
+		}
 	}
 	return res, nil
 }
