@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-07-25
+
 ### Changed
 - `graphi index --semantic` reports embedding progress instead of going
   silent between the ingest summary and its final "embedded N nodes" line —
