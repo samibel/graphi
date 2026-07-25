@@ -55,8 +55,29 @@ func runMCP(args []string) int {
 		srv = mcp.NewServerWithClient(rt.Client, options...)
 	} else {
 		cwd := getwd()
+		// The bind status feeds the retryable -32002 errors a live description
+		// (phase, per-file progress, lock waits) instead of a static "still
+		// indexing"; the stderr renderers land in the MCP client's log pane.
+		// Progress is forced non-TTY: milestone lines, not escape redraws.
+		status := newMCPBindStatus()
+		options = append(options, mcp.WithBindStatus(status.Render))
 		srv = mcp.NewServerWithBinder(func(ctx context.Context, roots []string) (mcp.Binding, error) {
-			rt, err := rtime.OpenSession(ctx, rtime.Options{Cwd: cwd, Roots: roots})
+			status.BeginAttempt()
+			prog := newIngestProgress(os.Stderr, false)
+			rt, err := rtime.OpenSession(ctx, rtime.Options{
+				Cwd:   cwd,
+				Roots: roots,
+				Progress: func(ev ingest.ProgressEvent) {
+					prog.Handle(ev)
+					status.HandleProgress(ev)
+				},
+				Status: func(ev rtime.BindEvent) {
+					status.HandleEvent(ev)
+					status.announceBindEvent(os.Stderr, ev)
+				},
+			})
+			prog.Finish(err)
+			status.Clear()
 			if err != nil {
 				return mcp.Binding{}, err
 			}
