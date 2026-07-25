@@ -165,6 +165,7 @@ func MCPCheck(binary string) Check {
 			}
 			clients := cfg.Clients()
 			var lines []string
+			var contention []string
 			worst := StatusPass
 			for _, c := range clients {
 				res := runMCPClientCheck(c, binary, cfg)
@@ -172,15 +173,56 @@ func MCPCheck(binary string) Check {
 					worst = res.Status
 				}
 				lines = append(lines, fmt.Sprintf("%s: %s", c.Display, res.Message))
+				if warn := runMCPContentionCheck(c, cfg); warn != "" {
+					if statusOrder(StatusWarn) > statusOrder(worst) {
+						worst = StatusWarn
+					}
+					contention = append(contention, fmt.Sprintf("%s: %s", c.Display, warn))
+				}
 			}
 			sort.Strings(lines)
 			msg := "all clients registered and current"
+			action := "re-run `graphi setup` to update registrations"
 			if worst != StatusPass {
 				msg = "one or more MCP clients need attention"
 			}
-			return ResultWithAction("mcp", "mcp", msg, worst, "re-run `graphi setup` to update registrations")
+			if len(contention) > 0 {
+				sort.Strings(contention)
+				msg += " — " + strings.Join(contention, "; ")
+				action = "keep one zero-config graphi entry per client; pin extras with 'graphi mcp -db <path>' or remove them"
+			}
+			return ResultWithAction("mcp", "mcp", msg, worst, action)
 		},
 	}
+}
+
+// MCPContentionReader is the OPTIONAL extension of MCPConfigReader that can
+// enumerate zero-config graphi entries per client (see
+// mcpconfig.Client.ContendingGraphiServers). It is a separate interface so
+// existing MCPConfigReader implementations (test fakes) keep compiling; the
+// contention check simply skips readers that do not implement it.
+type MCPContentionReader interface {
+	Contending(client MCPClient) ([]string, error)
+}
+
+// runMCPContentionCheck renders the duplicate-entry warning for one client, or
+// "" when there is nothing to warn about. Two zero-config graphi entries in
+// one client config (e.g. "graphi" plus a hand-added "graphi-myrepo") spawn
+// separate processes that resolve the SAME repository and contend on its
+// ingest lock — one indexes, the rest report "repository is not bound" until
+// it finishes. Config-read errors stay silent here; runMCPClientCheck already
+// reports them.
+func runMCPContentionCheck(client MCPClient, cfg MCPConfigReader) string {
+	reader, ok := cfg.(MCPContentionReader)
+	if !ok {
+		return ""
+	}
+	names, err := reader.Contending(client)
+	if err != nil || len(names) < 2 {
+		return ""
+	}
+	return fmt.Sprintf("%d zero-config graphi entries (%s) will resolve the same repository and contend on its ingest lock",
+		len(names), strings.Join(names, ", "))
 }
 
 func runMCPClientCheck(client MCPClient, binary string, cfg MCPConfigReader) CheckResult {

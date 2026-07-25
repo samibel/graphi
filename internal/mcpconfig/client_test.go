@@ -183,3 +183,51 @@ func TestRegistry_KnownClientsAndKeys(t *testing.T) {
 		t.Errorf("ClientByID(nope) should be false")
 	}
 }
+
+// TestClient_ContendingGraphiServers pins the duplicate-entry detection: only
+// zero-config graphi entries count (a -db/-daemon pin attaches to an explicit
+// store and never contends; non-graphi commands are ignored), names come back
+// sorted, and a missing config yields an empty list.
+func TestClient_ContendingGraphiServers(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	doc := map[string]any{
+		"mcpServers": map[string]any{
+			"graphi":       map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": []any{"mcp"}},
+			"graphi-mars":  map[string]any{"type": "stdio", "command": "/Users/x/.local/bin/graphi", "args": []any{"mcp"}},
+			"graphi-win":   map[string]any{"type": "stdio", "command": `C:\tools\graphi.EXE`, "args": []any{"mcp"}},
+			"graphi-db":    map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": []any{"mcp", "-db", "/x/db.sqlite"}},
+			"graphi-db-eq": map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": []any{"mcp", "--db=/x/db.sqlite"}},
+			"graphi-sock":  map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": []any{"mcp", "-daemon", "/tmp/g.sock"}},
+			"other":        map[string]any{"type": "stdio", "command": "/usr/bin/other-tool", "args": []any{"serve"}},
+		},
+	}
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	c := fakeClient("claude", "mcpServers", path)
+	names, err := c.ContendingGraphiServers()
+	if err != nil {
+		t.Fatalf("ContendingGraphiServers: %v", err)
+	}
+	want := []string{"graphi", "graphi-mars", "graphi-win"}
+	if len(names) != len(want) {
+		t.Fatalf("contending = %v, want %v", names, want)
+	}
+	for i := range want {
+		if names[i] != want[i] {
+			t.Fatalf("contending = %v, want %v", names, want)
+		}
+	}
+
+	missing := fakeClient("claude", "mcpServers", filepath.Join(dir, "absent.json"))
+	names, err = missing.ContendingGraphiServers()
+	if err != nil || len(names) != 0 {
+		t.Fatalf("missing config: names=%v err=%v, want empty, nil", names, err)
+	}
+}
