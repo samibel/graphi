@@ -2,6 +2,8 @@ package ingest
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -28,7 +30,7 @@ func checkout() int { return 1 }
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	units, err := i.walk(repo, nil)
+	units, err := i.walk(context.Background(), repo, nil)
 	if err != nil {
 		t.Fatalf("walk: %v", err)
 	}
@@ -63,5 +65,35 @@ func checkout() int { return 1 }
 	}
 	if !haveGoFn || !havePyFn {
 		t.Fatalf("full pass over metadata-only units lost nodes (go=%v py=%v, %d nodes total)", haveGoFn, havePyFn, len(nodes))
+	}
+}
+
+// TestWalk_CancelledContextAborts pins the walk's cancellation contract: the
+// walk runs while the cross-process ingest lock is held, so a cancelled
+// session (client restart, roots change) must abort it — and thereby release
+// the lock — instead of scanning a huge tree to completion. The check fires
+// every walkCancelCheckEvery entries, so the fixture tree is made larger than
+// one check window.
+func TestWalk_CancelledContextAborts(t *testing.T) {
+	files := make(map[string]string, 2*walkCancelCheckEvery)
+	for n := range 2 * walkCancelCheckEvery {
+		files[fmt.Sprintf("pkg%02d/f%04d.py", n%16, n)] = "def f():\n    return 1\n"
+	}
+	repo := writeRepoIngest(t, files)
+	store := graphstore.NewMemStore()
+	t.Cleanup(func() { _ = store.Close() })
+	i, err := New(store, NewNotebookParser(parse.NewDefaultRegistry()), t.TempDir())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	units, err := i.walk(ctx, repo, nil)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("walk with a cancelled ctx returned %v, want context.Canceled", err)
+	}
+	if units != nil {
+		t.Fatalf("cancelled walk returned %d units, want none", len(units))
 	}
 }

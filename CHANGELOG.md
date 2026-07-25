@@ -26,6 +26,49 @@ file:
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-07-25
+
+### Fixed
+- MCP tool calls during a long first index no longer return a static,
+  uninformative -32002 forever. The retryable error now reports live state:
+  the resolved repository root, the ingest phase with per-file progress and
+  elapsed time (`repository is not bound: indexing <root>: parse 1234/5678
+  files (3m10s elapsed); retry in a moment`) — or, when ANOTHER graphi
+  process holds the cross-process ingest lock for the same repository (the
+  common trigger: two MCP server entries pointing at one repo, where one
+  indexes and the other silently queued forever), `waiting for another
+  graphi process indexing <root> (waited 2m5s)`. The MCP server also
+  announces the resolved root and prints the CLI's milestone progress lines
+  on stderr, so client log panes show what is happening instead of nothing.
+  The -32002 code, the `repository is not bound: ` prefix and the `; retry
+  in a moment` suffix are unchanged, so clients that match the retryable
+  shape keep working.
+- A roots-change during an in-flight bind no longer lets the replacement
+  bind race its cancelled predecessor's still-held ingest lock: the new
+  attempt joins the old one before opening a session, and an attempt
+  cancelled during that join resolves to a bind error instead of reporting
+  "still indexing" forever. The ingest walk is now cancellation-aware, so an
+  aborted bind releases the ingest lock promptly instead of scanning a huge
+  tree to completion first.
+- `graphi doctor` (new `index` check) and `graphi status` now read the
+  full-pass recovery marker and probe the ingest lock non-destructively,
+  distinguishing "another graphi process is indexing right now — wait" from
+  "a previous index did not complete — rebuild". Both previously conflated
+  the two into "run `graphi index`" / "needs a rebuild", advice that would
+  just queue behind the same lock while an index was running. `graphi
+  status --json` gains the additive `index.full_pass_in_progress` and
+  `index.lock_held` fields.
+
+### Notes
+- The per-repo state dir (`~/.graphi/<fingerprint>/` or
+  `$XDG_STATE_HOME/graphi/<fingerprint>/`; `repo.json` maps a fingerprint
+  back to its repository) contains `meta/ingest.lock.db`: a lock-only SQLite
+  database holding NO data. It only serializes concurrent indexes of one
+  repository; deleting it is safe whenever no graphi process is running, and
+  after a crash nothing needs deleting — the OS releases the lock with the
+  process, and it is the full-pass recovery marker (cleared by one completed
+  `graphi index`) that persists instead.
+
 ## [0.6.4] - 2026-07-25
 
 ### Added

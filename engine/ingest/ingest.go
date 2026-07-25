@@ -51,7 +51,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		return err
 	}
 	i.notifyProgress(ctx, ProgressEvent{Phase: PhaseWalk})
-	units, err := i.walk(root, func(discovered int) {
+	units, err := i.walk(ctx, root, func(discovered int) {
 		if discovered%64 == 0 {
 			i.notifyProgress(ctx, ProgressEvent{Phase: PhaseWalk, Done: discovered})
 		}
@@ -398,7 +398,7 @@ func (d Drift) Total() int { return len(d.Added) + len(d.Modified) + len(d.Delet
 // DriftSet's read-only contract: it mutates neither the graph nor the cache,
 // so a read-only Ingester (NewReadOnly) may call it freely.
 func (i *Ingester) DriftDetail(ctx context.Context, root string, onFile func(checked int)) (Drift, error) {
-	units, err := i.walk(root, onFile)
+	units, err := i.walk(ctx, root, onFile)
 	if err != nil {
 		return Drift{}, err
 	}
@@ -475,7 +475,7 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		return err
 	}
 	i.resetSkips()
-	units, err := i.walk(root, nil)
+	units, err := i.walk(ctx, root, nil)
 	if err != nil {
 		return err
 	}

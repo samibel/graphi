@@ -229,15 +229,66 @@ func (s *Server) startBind(parent context.Context, roots []string) (<-chan struc
 	gen := s.bindGen
 	ctx, cancel := context.WithCancel(parent)
 	s.bindCancel = cancel
+	// A roots-change cancels the previous attempt but its binder may still be
+	// unwinding — holding the cross-process ingest lock. Joining prev before
+	// running the binder keeps at most one OpenSession per server alive, so a
+	// replacement bind can never queue behind its own predecessor's lock.
+	prev := s.bindDone
 	done := make(chan struct{})
 	s.bindDone = done
 	s.mu.Unlock()
 	go func() {
 		defer close(done)
 		defer cancel()
+		if prev != nil {
+			select {
+			case <-prev:
+				// The predecessor's binder returned; any Runtime it built is
+				// closed and its ingest lock released.
+			case <-ctx.Done():
+				s.publishBindFailure(gen, ctx.Err())
+				return
+			}
+		}
 		s.runBind(ctx, gen, roots)
 	}()
 	return done, nil
+}
+
+// publishBindFailure resolves one binding attempt to its error outcome under
+// the same generation discipline as runBind: a stale attempt (session closed
+// or roots changed while it ran) publishes nothing. Without this, an attempt
+// abandoned before its binder ever ran (cancelled while joining a
+// predecessor) would leave bindInFlight true forever.
+func (s *Server) publishBindFailure(gen uint64, err error) {
+	s.dispatch.Lock()
+	s.mu.Lock()
+	if s.closed || gen != s.bindGen {
+		s.mu.Unlock()
+		s.dispatch.Unlock()
+		return
+	}
+	s.bindInFlight = false
+	s.bindCancel = nil
+	oldCleanup := s.cleanup
+	s.cleanup = nil
+	s.bindErr = err
+	s.bound.Store(nil)
+	notify := s.optimisticList
+	s.optimisticList = false
+	s.mu.Unlock()
+	s.dispatch.Unlock()
+	if oldCleanup != nil {
+		oldCleanup()
+	}
+	if notify {
+		// An optimistically served catalog must be chased by a re-list even on
+		// failure, so the client surfaces the real bind error.
+		select {
+		case s.toolsChanged <- struct{}{}:
+		default:
+		}
+	}
 }
 
 // runBind executes one binding attempt and publishes its outcome — unless the
@@ -251,29 +302,25 @@ func (s *Server) runBind(ctx context.Context, gen uint64, roots []string) {
 	if binding.Close == nil {
 		binding.Close = func() {}
 	}
+	if err != nil {
+		s.publishBindFailure(gen, err)
+		return
+	}
 
 	s.dispatch.Lock()
 	s.mu.Lock()
 	if s.closed || gen != s.bindGen {
 		s.mu.Unlock()
 		s.dispatch.Unlock()
-		if err == nil {
-			binding.Close()
-		}
+		binding.Close()
 		return
 	}
 	s.bindInFlight = false
 	s.bindCancel = nil
 	oldCleanup := s.cleanup
-	if err != nil {
-		s.cleanup = nil
-		s.bindErr = err
-		s.bound.Store(nil)
-	} else {
-		s.cleanup = binding.Close
-		s.bindErr = nil
-		s.bound.Store(&boundClient{client: binding.Client, stable: client.AsStable(binding.Client)})
-	}
+	s.cleanup = binding.Close
+	s.bindErr = nil
+	s.bound.Store(&boundClient{client: binding.Client, stable: client.AsStable(binding.Client)})
 	notify := s.optimisticList
 	s.optimisticList = false
 	s.mu.Unlock()
@@ -388,6 +435,9 @@ func (s *Server) invalidateRootsChanged() {
 	// Invalidate any in-flight background binding: bump the generation so its
 	// late result is discarded by runBind, and cancel it so a running ingest
 	// stops instead of burning CPU for a session that must restart anyway.
+	// bindDone deliberately keeps pointing at the cancelled attempt's channel:
+	// the next startBind joins it, so a replacement bind cannot race the
+	// predecessor's still-held ingest lock.
 	s.bindGen++
 	cancel := s.bindCancel
 	s.bindCancel = nil

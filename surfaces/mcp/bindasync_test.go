@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -143,6 +144,191 @@ func TestSessionBinding_ToolsListChangedAfterBind(t *testing.T) {
 	_ = inW.Close()
 	if err := <-serveErr; err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestSessionBinding_BindStatusRendersLiveDetail pins the WithBindStatus
+// seam: while a bind is in flight, the retryable -32002 renders the
+// composition root's live detail between the stable prefix and suffix; an
+// empty detail falls back to the historical static message, so servers
+// without the seam (and clients matching the old text) see byte-identical
+// errors.
+func TestSessionBinding_BindStatusRendersLiveDetail(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		detail string
+		want   string
+	}{
+		{
+			name:   "live detail",
+			detail: "indexing /work/mono: parse 1234/5678 files (3m10s elapsed)",
+			want:   "repository is not bound: indexing /work/mono: parse 1234/5678 files (3m10s elapsed); retry in a moment",
+		},
+		{
+			name:   "empty detail falls back to the static message",
+			detail: "",
+			want:   "repository is not bound: the session is still indexing the repository; retry in a moment",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := NewServerWithBinder(func(ctx context.Context, _ []string) (Binding, error) {
+				<-ctx.Done()
+				return Binding{}, ctx.Err()
+			}, WithBindGrace(0), WithBindStatus(func() string { return tc.detail }))
+			defer server.Close()
+
+			resp, _, _ := server.handle(context.Background(), rpcRequest{
+				JSONRPC: "2.0",
+				ID:      json.RawMessage("1"),
+				Method:  "initialize",
+				Params:  json.RawMessage(`{"rootUri":"file:///fixture/repo"}`),
+			})
+			if resp.Error != nil {
+				t.Fatalf("initialize error: %+v", resp.Error)
+			}
+			resp, _, _ = server.handle(context.Background(), toolsCallSearch(t, "2"))
+			if resp.Error == nil {
+				t.Fatal("tools/call during an in-flight bind must fail closed")
+			}
+			if resp.Error.Code != -32002 {
+				t.Fatalf("error code = %d, want -32002", resp.Error.Code)
+			}
+			if resp.Error.Message != tc.want {
+				t.Fatalf("error message = %q, want %q", resp.Error.Message, tc.want)
+			}
+		})
+	}
+}
+
+// TestSessionBinding_RebindWaitsForCancelledPredecessor pins the re-bind
+// ordering fix: a roots-change cancels the in-flight attempt, but its binder
+// may keep unwinding while it still holds the cross-process ingest lock. The
+// replacement attempt must JOIN that predecessor instead of starting a second
+// OpenSession that queues behind its own process's lock.
+func TestSessionBinding_RebindWaitsForCancelledPredecessor(t *testing.T) {
+	var (
+		calls           atomic.Int32
+		binder1Returned atomic.Bool
+		overlap         atomic.Bool
+	)
+	release1 := make(chan struct{})
+	server := NewServerWithBinder(func(ctx context.Context, _ []string) (Binding, error) {
+		switch calls.Add(1) {
+		case 1:
+			<-ctx.Done() // the roots change cancels this attempt...
+			<-release1   // ...but the binder keeps unwinding (e.g. a held ingest lock)
+			binder1Returned.Store(true)
+			return Binding{}, ctx.Err()
+		default:
+			if !binder1Returned.Load() {
+				overlap.Store(true)
+			}
+			return Binding{Client: allToolsClient{}}, nil
+		}
+	}, WithBindGrace(0))
+	defer server.Close()
+
+	ctx := context.Background()
+	resp, _, _ := server.handle(ctx, rpcRequest{
+		JSONRPC: "2.0",
+		ID:      json.RawMessage("1"),
+		Method:  "initialize",
+		Params:  json.RawMessage(`{"rootUri":"file:///fixture/repo"}`),
+	})
+	if resp.Error != nil {
+		t.Fatalf("initialize error: %+v", resp.Error)
+	}
+	server.handle(ctx, rpcRequest{JSONRPC: "2.0", Method: "notifications/roots/list_changed"})
+	resp, _, _ = server.handle(ctx, rpcRequest{
+		JSONRPC: "2.0",
+		ID:      json.RawMessage("2"),
+		Method:  "initialize",
+		Params:  json.RawMessage(`{"rootUri":"file:///fixture/repo"}`),
+	})
+	if resp.Error != nil {
+		t.Fatalf("re-initialize error: %+v", resp.Error)
+	}
+
+	// The replacement attempt must not run its binder while the predecessor is
+	// still unwinding.
+	time.Sleep(50 * time.Millisecond)
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("binder invoked %d times while the predecessor was still unwinding, want 1", got)
+	}
+
+	close(release1)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		resp, _, _ = server.handle(ctx, toolsCallSearch(t, "3"))
+		if resp.Error == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("session never bound after the predecessor unwound: %+v", resp.Error)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if overlap.Load() {
+		t.Fatal("replacement binder ran before the cancelled predecessor returned")
+	}
+}
+
+// TestSessionBinding_CancelDuringJoinResolvesAttempt pins publishBindFailure:
+// an attempt cancelled while still JOINING its predecessor (its own binder
+// never ran) must resolve the session to a bind error instead of leaving
+// bindInFlight true — and therefore "still indexing" — forever.
+func TestSessionBinding_CancelDuringJoinResolvesAttempt(t *testing.T) {
+	var calls atomic.Int32
+	release1 := make(chan struct{})
+	server := NewServerWithBinder(func(ctx context.Context, _ []string) (Binding, error) {
+		calls.Add(1)
+		<-ctx.Done()
+		<-release1
+		return Binding{}, ctx.Err()
+	}, WithBindGrace(0))
+	defer server.Close()
+	defer close(release1)
+
+	serveCtx, cancelServe := context.WithCancel(context.Background())
+	resp, _, _ := server.handle(serveCtx, rpcRequest{
+		JSONRPC: "2.0",
+		ID:      json.RawMessage("1"),
+		Method:  "initialize",
+		Params:  json.RawMessage(`{"rootUri":"file:///fixture/repo"}`),
+	})
+	if resp.Error != nil {
+		t.Fatalf("initialize error: %+v", resp.Error)
+	}
+	server.handle(serveCtx, rpcRequest{JSONRPC: "2.0", Method: "notifications/roots/list_changed"})
+	resp, _, _ = server.handle(serveCtx, rpcRequest{
+		JSONRPC: "2.0",
+		ID:      json.RawMessage("2"),
+		Method:  "initialize",
+		Params:  json.RawMessage(`{"rootUri":"file:///fixture/repo"}`),
+	})
+	if resp.Error != nil {
+		t.Fatalf("re-initialize error: %+v", resp.Error)
+	}
+
+	// Cancel the serve context while the replacement attempt is still joining
+	// its predecessor; its binder must never run and the attempt must resolve.
+	cancelServe()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		resp, _, _ = server.handle(context.Background(), toolsCallSearch(t, "3"))
+		if resp.Error != nil && !strings.Contains(resp.Error.Message, "still indexing") {
+			if !strings.Contains(resp.Error.Message, "context canceled") {
+				t.Fatalf("resolved bind error = %q, want a context cancellation", resp.Error.Message)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("cancelled joining attempt never resolved: %+v", resp.Error)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("binder ran %d times, want 1 (the joining attempt's binder must never start)", got)
 	}
 }
 

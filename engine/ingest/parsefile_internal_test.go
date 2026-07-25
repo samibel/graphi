@@ -30,7 +30,7 @@ func checkout() int { return 1 }
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	units, err := i.walk(repo, nil)
+	units, err := i.walk(context.Background(), repo, nil)
 	if err != nil {
 		t.Fatalf("walk: %v", err)
 	}
@@ -103,7 +103,7 @@ func vulnSQLiDirect(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	units, err := i.walk(repo, nil)
+	units, err := i.walk(context.Background(), repo, nil)
 	if err != nil {
 		t.Fatalf("walk: %v", err)
 	}
