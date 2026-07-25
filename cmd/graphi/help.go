@@ -208,7 +208,7 @@ var subcommandHelp = map[string]subHelp{
 	},
 	"setup": {
 		"register graphi's MCP stdio server into local MCP clients' configs",
-		"graphi setup [--client claude|copilot|cursor|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path]",
+		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path]",
 		"graphi setup --dry-run",
 	},
 	"setup-embedder": {

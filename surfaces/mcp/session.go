@@ -274,10 +274,21 @@ func (s *Server) runBind(ctx context.Context, gen uint64, roots []string) {
 		s.bindErr = nil
 		s.bound.Store(&boundClient{client: binding.Client, stable: client.AsStable(binding.Client)})
 	}
+	notify := s.optimisticList
+	s.optimisticList = false
 	s.mu.Unlock()
 	s.dispatch.Unlock()
 	if oldCleanup != nil {
 		oldCleanup()
+	}
+	if notify {
+		// The client holds the optimistic pre-bind catalog; tell it to re-list.
+		// Non-blocking: the channel is buffered and only the stdio Serve loop
+		// drains it.
+		select {
+		case s.toolsChanged <- struct{}{}:
+		default:
+		}
 	}
 }
 

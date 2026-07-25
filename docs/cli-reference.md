@@ -33,7 +33,7 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi daemon start\|stop\|status [-socket path] [-db path]` | labs | Manage the hot-index Unix-socket daemon. |
 | `graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo] [-meta dir]` | labs | Read-only HTTP REST + SSE surface (loopback-only). |
 | `graphi tui [-db path] [-daemon socket]` | labs | Interactive terminal surface (select / neighbors / blast / search). |
-| `graphi setup [--client claude\|copilot\|cursor\|windsurf\|claude-desktop\|all] [--dry-run] [--binary path] [--config path]` | labs | Register graphi's MCP stdio server into local MCP clients' configs (idempotent, atomic, offline). Default `--client all` wires Claude Code plus every other detected local client. Cloud agents (Devin, the Copilot coding agent) run remotely and can't reach a local stdio server, so they are out of scope. |
+| `graphi setup [--client claude\|copilot\|cursor\|devin\|windsurf\|claude-desktop\|all] [--dry-run] [--binary path] [--config path]` | labs | Register graphi's MCP stdio server into local MCP clients' configs (idempotent, atomic, offline). Default `--client all` wires Claude Code plus every other detected local client. Purely cloud-sandboxed agents (the Copilot coding agent's remote runner) can't reach a local stdio server and stay out of scope; locally-installed agent CLIs that spawn stdio servers (Devin CLI) are supported. |
 | `graphi search-ast [-limit N] <json-pattern>` | labs | Structural AST pattern query. |
 | `graphi find-clones [<json-config>]` | labs | Clone detection. |
 | `graphi diagnose [-db path] [<kind>...]` | labs | Graph-derived diagnostics + suggested code-actions. |

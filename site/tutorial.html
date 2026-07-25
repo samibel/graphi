@@ -303,7 +303,7 @@ cd your-repo &amp;&amp; graphi sync
 
 # 2) register graphi with every detected local MCP client
 graphi setup
-#   Default --client all: Claude Code, Copilot, Cursor, Windsurf, Claude Desktop
+#   Default --client all: Claude Code, Copilot, Cursor, Devin CLI, Windsurf, Claude Desktop
 #   Claude Code only:  graphi setup --client claude
 #   Dry run (no writes):  graphi setup --dry-run
 
@@ -534,7 +534,7 @@ graphi query callers -daemon /tmp/graphi.sock -symbol &lt;id&gt;
 graphi daemon stop  -socket /tmp/graphi.sock
 
 # MCP / AGENTS
-graphi setup [--client claude|copilot|cursor|windsurf|claude-desktop|all] [--dry-run]
+graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run]
 graphi mcp -db ~/.graphi/graph.db      # manual, for any MCP client
 
 # OTHER SURFACES

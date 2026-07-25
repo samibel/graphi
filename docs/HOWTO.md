@@ -510,11 +510,12 @@ plus every other local client that looks installed:
 | Claude Code | `~/.claude.json` (or `$CLAUDE_CONFIG_PATH`) | `mcpServers` |
 | GitHub Copilot (VS Code) | `<user-config>/Code/User/mcp.json` | `servers` |
 | Cursor | `~/.cursor/mcp.json` | `mcpServers` |
+| Devin CLI | `~/.config/devin/config.json` | `mcpServers` |
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` | `mcpServers` |
 | Claude Desktop | `<user-config>/Claude/claude_desktop_config.json` | `mcpServers` |
 
-> **Cloud agents are out of scope.** Devin and the GitHub Copilot *coding agent*
-> run in a remote sandbox and cannot reach a local stdio graphi — reaching it
+> **Purely cloud-sandboxed agents are out of scope.** The GitHub Copilot *coding
+> agent* runs in a remote sandbox and cannot reach a local stdio graphi — reaching it
 > would also break the zero-egress contract. They need graphi installed
 > *inside* their environment via a separate, repo-side setup step, not this
 > command.

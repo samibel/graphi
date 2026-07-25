@@ -26,6 +26,33 @@ file:
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-07-25
+
+### Added
+- `graphi setup` can now register the MCP server into the **Devin CLI**
+  (`--client devin`, config at `~/.config/devin/config.json`; included in the
+  default `--client all` sweep when detected). The former blanket "cloud
+  agents are out of scope" note is narrowed: purely cloud-sandboxed agents
+  still are, but locally-installed agent CLIs that spawn stdio servers are
+  supported.
+
+### Fixed
+- MCP `tools/list` no longer fails while the session's first (cold) index is
+  still running. Since v0.6.1 the index runs off the protocol loop and tool
+  *calls* fail closed with a retryable -32002 "still indexing" — but
+  `tools/list` failed the same way, and MCP clients (Claude Code, Claude
+  Desktop, Devin CLI, …) list tools exactly once at session start and treat
+  that error as a dead server: on any repository whose first index outlives
+  the client's startup listing, the server was shown as permanently "failed
+  to list tools" even though it was healthy and indexing. The catalog is
+  profile-static and needs no repository, so `tools/list` now serves it
+  during the bind (initialize advertises `tools.listChanged`, and
+  `notifications/tools/list_changed` is emitted once the binding lands — or
+  fails — so the client re-lists and converges on the bound,
+  capability-narrowed catalog, or surfaces the real bind error). Tool calls
+  during indexing keep the retryable fail-closed contract, and a session
+  whose binding has genuinely failed still fails `tools/list` closed.
+
 ## [0.6.3] - 2026-07-25
 
 ### Changed
