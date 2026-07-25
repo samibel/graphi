@@ -69,7 +69,7 @@ graphi callers <symbol>      # who calls it
 graphi impact  <symbol>      # what a change to it affects
 graphi ui                    # explicitly serve the graph + open the browser
 graphi claude                # wire graphi into Claude Code (MCP)
-graphi setup                 # wire every detected local MCP client (Claude Code, Copilot, Cursor, Windsurf, Claude Desktop)
+graphi setup                 # wire every detected local MCP client (Claude Code, Copilot, Cursor, Devin CLI, Windsurf, Claude Desktop)
 
 # Freeze and diff branch states (Labs)
 graphi snapshot main         # freeze the current checkout under a name

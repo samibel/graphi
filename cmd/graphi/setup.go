@@ -16,7 +16,7 @@ import (
 // configs in one command (SW-044, generalized). Idempotent, non-destructive,
 // atomic; --dry-run previews without writing. Offline.
 //
-//	graphi setup [--client claude|copilot|cursor|windsurf|claude-desktop|all]
+//	graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all]
 //	             [--dry-run] [--binary path] [--config path]
 //
 // Default (--client all): always target Claude Code (created if absent, matching

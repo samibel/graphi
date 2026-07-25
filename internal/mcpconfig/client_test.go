@@ -163,6 +163,7 @@ func TestRegistry_KnownClientsAndKeys(t *testing.T) {
 		"claude":         "mcpServers",
 		"copilot":        "servers",
 		"cursor":         "mcpServers",
+		"devin":          "mcpServers",
 		"windsurf":       "mcpServers",
 		"claude-desktop": "mcpServers",
 	}

@@ -26,6 +26,14 @@ file:
 
 ## [Unreleased]
 
+### Added
+- `graphi setup` can now register the MCP server into the **Devin CLI**
+  (`--client devin`, config at `~/.config/devin/config.json`; included in the
+  default `--client all` sweep when detected). The former blanket "cloud
+  agents are out of scope" note is narrowed: purely cloud-sandboxed agents
+  still are, but locally-installed agent CLIs that spawn stdio servers are
+  supported.
+
 ## [0.6.3] - 2026-07-25
 
 ### Changed

@@ -13,9 +13,10 @@ import (
 // "servers" for VS Code). The server entry shape (ServerEntry) is shared.
 //
 // Every adapter targets the GLOBAL/user-level config that a locally-running
-// stdio server can be reached from. Cloud agents (Devin, the GitHub Copilot
-// coding agent) run in a remote sandbox and cannot reach a local stdio graphi,
-// so they are deliberately NOT clients here.
+// stdio server can be reached from. Purely cloud-sandboxed agents (the GitHub
+// Copilot coding agent's remote runner) cannot reach a local stdio graphi and
+// are deliberately NOT clients here — but locally-installed agent CLIs that
+// spawn stdio servers themselves (Devin CLI) are.
 type Client struct {
 	ID         string // stable identifier, e.g. "claude", "cursor"
 	Display    string // human label, e.g. "Claude Code"
@@ -75,6 +76,7 @@ func Clients() []Client {
 		{ID: "claude", Display: "Claude Code", ServersKey: "mcpServers", pathFn: ConfigPath},
 		{ID: "copilot", Display: "GitHub Copilot (VS Code)", ServersKey: "servers", pathFn: vscodeConfigPath},
 		{ID: "cursor", Display: "Cursor", ServersKey: "mcpServers", pathFn: cursorConfigPath},
+		{ID: "devin", Display: "Devin CLI", ServersKey: "mcpServers", pathFn: devinConfigPath},
 		{ID: "windsurf", Display: "Windsurf", ServersKey: "mcpServers", pathFn: windsurfConfigPath},
 		{ID: "claude-desktop", Display: "Claude Desktop", ServersKey: "mcpServers", pathFn: claudeDesktopConfigPath},
 	}
@@ -128,6 +130,11 @@ func vscodeConfigPath() (string, error) { return configJoin("Code", "User", "mcp
 
 // cursorConfigPath is Cursor's global MCP config.
 func cursorConfigPath() (string, error) { return homeJoin(".cursor", "mcp.json") }
+
+// devinConfigPath is the Devin CLI's config. Devin uses an XDG-style fixed
+// ~/.config dotdir on every platform (NOT os.UserConfigDir, which would map to
+// ~/Library/Application Support on macOS).
+func devinConfigPath() (string, error) { return homeJoin(".config", "devin", "config.json") }
 
 // windsurfConfigPath is Windsurf's (Codeium) global MCP config.
 func windsurfConfigPath() (string, error) { return homeJoin(".codeium", "windsurf", "mcp_config.json") }
