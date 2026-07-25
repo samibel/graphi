@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-07-25
+
 ### Added
 - `graphi setup` can now register the MCP server into the **Devin CLI**
   (`--client devin`, config at `~/.config/devin/config.json`; included in the
