@@ -142,6 +142,18 @@ full-indexes a tree you didn't mean. A full rebuild is never
 needed for branch switches; graphi keeps ONE graph per repository (under
 `~/.graphi/<fingerprint>/`) that always tracks whatever is checked out.
 
+Inside that per-repo state dir (`$XDG_STATE_HOME/graphi/<fingerprint>/` when
+set), `repo.json` records which repository the fingerprint belongs to,
+`db.sqlite` is the graph, and `meta/` holds the ingest sidecar
+(`ingest-meta.db`) plus `ingest.lock.db` — a lock-only SQLite database with
+NO data in it that serializes concurrent indexes of the same repository
+(e.g. two MCP clients auto-starting `graphi mcp` for one workspace: one
+indexes, the others wait and then warm-start). The lock dies with the
+process holding it, so nothing needs cleaning up after a crash; deleting
+`meta/ingest.lock.db*` is safe whenever no graphi process is running.
+`graphi doctor` (the `index` check) and `graphi status` report whether an
+index is running right now or a previous one did not complete.
+
 To keep a branch's graph around for comparison, freeze it (Labs):
 
 ```bash
