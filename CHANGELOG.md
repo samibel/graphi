@@ -26,6 +26,30 @@ file:
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-07-25
+
+### Fixed
+- A zero-config MCP session no longer silently binds the user's HOME
+  directory (or the filesystem root) as the repository. A dotfiles `.git`
+  (or a stray `go.mod`) directly in `$HOME` makes the upward marker walk
+  land there whenever an MCP client spawns `graphi mcp` outside the project
+  (observed with the Devin CLI launching from the home directory) — the
+  session then starts indexing the entire home tree, which effectively
+  never finishes and holds the cross-process ingest lock the whole time.
+  Auto-detection now fails closed with an actionable error ("refusing to
+  auto-bind your home directory …"); with multiple client roots, a
+  home-resolving candidate is skipped and a later real repository still
+  binds. Explicit intent keeps working: `graphi mcp -db <path>` pins a
+  store, CLI verbs take `-root`, and `GRAPHI_ALLOW_HOME_ROOT=1` opts a
+  deliberately home-rooted setup back in.
+- `graphi doctor`'s `mcp` check now warns when one client config contains
+  several zero-config graphi entries (e.g. a hand-added `graphi-myrepo`
+  next to the setup-managed `graphi`): each spawns its own process, they
+  resolve the SAME repository, and all but the indexing winner sit blocked
+  on its ingest lock reporting "repository is not bound". The warning
+  names the entries; entries pinned with `-db`/`-daemon` never contend and
+  are not flagged.
+
 ## [0.6.5] - 2026-07-25
 
 ### Fixed
