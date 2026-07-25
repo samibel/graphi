@@ -316,7 +316,14 @@ func runIndexAt(cwd string, args []string) int {
 		fmt.Fprintf(os.Stderr, "graphi: index --semantic: open vectors table: %v\n", err)
 		return 1
 	}
-	res, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.NewIndex(), table)
+	// Announce the second phase up front and stream its progress: the
+	// generation pass runs one HTTP round-trip per node text on the Ollama
+	// backend, so on a real repo it takes minutes — silence here reads as a
+	// hang (a user killed exactly this pass believing it dead).
+	fmt.Fprintf(os.Stderr, "graphi: embedding %d nodes via %s…\n", len(nodes), emb.ID())
+	eprog := newEmbedProgress(os.Stderr, isTerminal(os.Stderr))
+	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.NewIndex(), table, eprog.Handle)
+	eprog.Finish()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: index --semantic: %v\n", err)
 		return 1

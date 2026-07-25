@@ -26,6 +26,20 @@ file:
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-07-25
+
+### Changed
+- `graphi index --semantic` reports embedding progress instead of going
+  silent between the ingest summary and its final "embedded N nodes" line —
+  on a real repo the generation pass runs one embedder round-trip per node
+  and takes minutes, which read as a hang. It now announces the phase up
+  front ("embedding N nodes via …"), renders a throttled in-place status
+  line on a TTY (sparse 25%-milestone lines otherwise), and embeds in
+  chunks — which also bounds the in-flight vector memory to a chunk instead
+  of the whole repo. Persisted vectors are unchanged; on an embed error,
+  already-completed chunks now remain persisted (derived state a re-run
+  overwrites) instead of all-or-nothing.
+
 ## [0.6.2] - 2026-07-24
 
 > **If graphi ate your machine's memory** (macOS "your system has run out of
