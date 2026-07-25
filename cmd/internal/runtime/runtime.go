@@ -249,19 +249,80 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 // when present: choosing the process cwd after a client explicitly supplied an
 // empty or unrelated root set would cross workspace boundaries. With no
 // transport roots (nil), legacy/non-roots-capable clients retain the cwd walk.
+// Either way the detected root passes guardAutoRoot: auto-binding the user's
+// home directory (or the filesystem root) is always an accident.
 func resolveRepositoryRoot(opts Options) (string, error) {
 	if opts.Roots != nil {
+		var guardErr error
 		for _, candidate := range opts.Roots {
-			if root, ok := state.DetectRepo(candidate); ok {
-				return root, nil
+			root, ok := state.DetectRepo(candidate)
+			if !ok {
+				continue
 			}
+			if err := guardAutoRoot(root); err != nil {
+				// A later candidate may still be a real repository; remember
+				// the refusal so an all-refused set surfaces the useful error.
+				if guardErr == nil {
+					guardErr = err
+				}
+				continue
+			}
+			return root, nil
+		}
+		if guardErr != nil {
+			return "", guardErr
 		}
 		return "", fmt.Errorf("%w: none of %d client root(s) contains .git, go.work, or go.mod", ErrNoRepository, len(opts.Roots))
 	}
-	if root, ok := state.DetectRepo(opts.Cwd); ok {
-		return root, nil
+	root, ok := state.DetectRepo(opts.Cwd)
+	if !ok {
+		return "", fmt.Errorf("%w: cwd %q contains no .git, go.work, or go.mod", ErrNoRepository, opts.Cwd)
 	}
-	return "", fmt.Errorf("%w: cwd %q contains no .git, go.work, or go.mod", ErrNoRepository, opts.Cwd)
+	if err := guardAutoRoot(root); err != nil {
+		return "", err
+	}
+	return root, nil
+}
+
+// EnvAllowHomeRoot opts a session into deliberately binding the user's home
+// directory as the repository root (e.g. a genuinely home-rooted dotfiles
+// setup someone wants indexed).
+const EnvAllowHomeRoot = "GRAPHI_ALLOW_HOME_ROOT"
+
+// guardAutoRoot refuses the roots that auto-detection lands on ONLY by
+// accident: the user's home directory and the filesystem root. A dotfiles
+// `.git` (or a stray go.mod) directly in $HOME makes every upward walk from
+// anywhere under it resolve to $HOME once no nearer marker exists — an MCP
+// client that spawns `graphi mcp` outside the project (observed: Devin CLI
+// launching from the home directory) then silently starts indexing the entire
+// home tree, which never finishes and holds the ingest lock the whole time.
+// Explicit intent still works: `-db` pins a store (Attach path, no detection),
+// CLI verbs take `-root`, and GRAPHI_ALLOW_HOME_ROOT=1 overrides outright.
+func guardAutoRoot(root string) error {
+	if os.Getenv(EnvAllowHomeRoot) == "1" {
+		return nil
+	}
+	clean := filepath.Clean(root)
+	if clean == filepath.Dir(clean) {
+		return fmt.Errorf("%w: refusing to auto-bind the filesystem root %q as the repository; run from inside a repository, supply explicit MCP roots, or pin the session with 'graphi mcp -db <path>'", ErrNoRepository, clean)
+	}
+	if home, err := os.UserHomeDir(); err == nil && sameDir(clean, home) {
+		return fmt.Errorf("%w: refusing to auto-bind your home directory %q as the repository — a repository marker (.git, go.work, or go.mod) directly in it makes the upward walk land there, and indexing it would scan your entire home tree; run from inside a repository, supply explicit MCP roots, pin the session with 'graphi mcp -db <path>', or set %s=1 to index the home directory deliberately", ErrNoRepository, clean, EnvAllowHomeRoot)
+	}
+	return nil
+}
+
+// sameDir compares two directory paths after cleaning, falling back to a
+// symlink-resolved comparison (macOS /var vs /private/var style aliases) when
+// the literal paths differ.
+func sameDir(a, b string) bool {
+	a, b = filepath.Clean(a), filepath.Clean(b)
+	if a == b {
+		return true
+	}
+	ra, errA := filepath.EvalSymlinks(a)
+	rb, errB := filepath.EvalSymlinks(b)
+	return errA == nil && errB == nil && ra == rb
 }
 
 // OpenStore opens the durable SQLite store at dbPath, or an in-memory store
