@@ -358,6 +358,46 @@ func TestDiscoverDB_AbsentReturnsEmptyAndOverrideWins(t *testing.T) {
 	}
 }
 
+func TestDiscoverMeta_AbsentReturnsEmptyAndOverrideWins(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	// No sidecar present → "".
+	got, err := DiscoverMeta(repo, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "" {
+		t.Fatalf("DiscoverMeta with no sidecar = %q, want \"\"", got)
+	}
+
+	// Override always wins, regardless of on-disk state.
+	if got, _ := DiscoverMeta(repo, "/explicit/meta"); got != "/explicit/meta" {
+		t.Fatalf("override DiscoverMeta = %q, want /explicit/meta", got)
+	}
+
+	// An ensured meta dir WITHOUT the ingest-meta.db sidecar still yields "":
+	// only a dir engine/ingest actually wrote into is worth reloading from.
+	p, _ := Resolve(repo)
+	if err := Ensure(p); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := DiscoverMeta(repo, ""); got != "" {
+		t.Fatalf("DiscoverMeta with empty meta dir = %q, want \"\"", got)
+	}
+
+	// Create the sidecar file → discovered.
+	if err := os.WriteFile(filepath.Join(p.Meta, "ingest-meta.db"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := DiscoverMeta(repo, ""); got != p.Meta {
+		t.Fatalf("DiscoverMeta with sidecar present = %q, want %q", got, p.Meta)
+	}
+}
+
 func TestDiscoverSocket_OverridePrecedence(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	repo := t.TempDir()

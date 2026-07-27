@@ -26,6 +26,18 @@ file:
 
 ## [Unreleased]
 
+### Fixed
+- Flagless `graphi search -semantic` (and `search-ast` / `find-clones`) now
+  discovers the per-repo ingest meta sidecar the same way it already
+  discovered the store, so the durable vectors written by a flagless
+  `graphi index --semantic` are actually reloaded. Previously the meta dir
+  came only from the `-meta` flag: default discovery found the auto-managed
+  `db.sqlite` but reloaded no vectors, and a semantic query silently
+  returned zero hits unless `-meta ~/.graphi/<fingerprint>/meta` was spelled
+  out by hand. Discovery is read-only (`state.DiscoverMeta` returns the dir
+  only when its `ingest-meta.db` already exists) and an explicit `-meta`
+  still wins unchanged.
+
 ## [0.6.6] - 2026-07-25
 
 ### Fixed
