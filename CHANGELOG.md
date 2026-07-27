@@ -28,6 +28,33 @@ file:
 
 ### Added
 
+- **The reference scenario exists — `docs/eval/reference-scenario.json` (new).** Every
+  performance number in the P0 measurement contract was scoped to "the defined
+  reference scenario", and that scenario was defined nowhere: "cold index p50 ≤ 90 s"
+  without a named repository and a named machine is a number, not a claim, and a gate
+  that cannot fail cannot pass either. The contract now exists as data. **Exactly one**
+  runner class is the reference — `ubuntu-latest`, the class every existing gate
+  workflow already uses — documented with CPU, RAM, OS, kernel, Go version, filesystem
+  and the *cold* cache protocol. The development machine is declared a **comparison**
+  class and labelled as such: its numbers are never reported as reference values and
+  never freeze a budget. Each of the ten performance gates is mapped **by name** to a
+  repository from the v3 corpus (`grpc-go` v1.60.1, the largest non-stress entry —
+  `kubernetes` stays the stress target under the program-wide 4 GB peak-RSS stop rule,
+  not under the gates), the 8 GB-host OOM gate has a **method** (cgroup v2
+  `MemoryMax=8G`, `MemorySwapMax=0`, the imposed limit read back and recorded, with
+  `oom_kill`/137/kernel-log as the failure signal) instead of a statement of intent,
+  and the scope limitation travels inline so a consumer reading only the JSON cannot
+  publish the gates as universal guarantees. Loader, fail-closed validator and drift
+  tests: `cmd/eval/refscenario.go`, `cmd/eval/refscenario_test.go`. A gate pointing at
+  a repository that is not pinned in `corpus/manifest.json` is a test failure.
+- **`go run ./cmd/eval -check-reference-scenario`** validates that contract against the
+  corpus manifest and the budget artifact and prints the gate→repository map; `eval-full.yml`
+  runs it before it measures anything. `cmd/eval -full-run` takes `-reference-scenario`,
+  stamps each report with the runner class's declared **role** (`runner_role`,
+  `reference_scenario`, `scenario_source` in `internal/evalreport.FullRunReport`), and
+  **fails closed on a runner class the contract does not declare** — numbers from an
+  unnamed machine no longer sit beside reference values with equal standing.
+
 - **Go-depth evaluation corpus — `corpus/manifest.json` v3.** The corpus now pins
   **six Go repositories** (uuid, lo, cobra, gin, grpc-go, kubernetes) instead of one,
   each to a release tag **and** a full 40-character commit sha, with the ten required
@@ -43,6 +70,23 @@ file:
   kubernetes checkout costs ~3 min and ~9 GB peak RSS — a working set no hosted runner
   should absorb on a schedule. PR wall-clock is unchanged: every new entry is tier 3
   or 4.
+
+### Changed
+
+- **The dead hero budgets are labelled instead of implied.** `docs/eval/hero-budgets.json`
+  is now `schema_version: 3` and declares itself `historical: true` / `ratcheting: false`
+  with a recorded `historical_reason`; `cmd/eval` rejects an artifact that claims both,
+  omits the reason, or still carries the old schema. Historical does **not** mean
+  disabled — the ceilings are still enforced fail-closed for cobra, flask and guava,
+  and a missing, malformed or wrong-runner-class budget is still a failure, not a skip.
+  Re-baselining is blocked on the re-frozen candidate and a comparable measurement, and
+  the file says so rather than looking like a ratchet.
+- **Removed the all-zero latency budgets.** `hero_suite.measured_max_latency_ms_per_op`
+  held `0` for all twelve Stable operations, because the historical run measured every
+  hero task below the millisecond floor. Nothing read the map, and a zero budget that
+  silently counts as met is worse than no budget: it renders green. It is gone,
+  replaced by `latency_signal: "none"`, and `cmd/eval` now rejects **any** numeric zero
+  anywhere in a budget artifact.
 
 ## [0.6.7] - 2026-07-27
 

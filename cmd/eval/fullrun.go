@@ -57,8 +57,21 @@ const fullRunNotes = "in-process session model: engine services over one open SQ
 
 // runFullRun executes the full measurement for one manifest entry and writes
 // the report to outPath. Returns the process exit code.
-func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPath string) int {
+//
+// scenarioPath, when set, is the SW-123 reference-scenario contract: the run
+// is validated against it and stamped with the runner class's declared ROLE,
+// so a comparison-class report can never be mistaken for reference evidence.
+// A runner class the contract does not declare fails the run closed — that is
+// how numbers from unnamed machines stop sitting beside reference values with
+// equal standing.
+func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPath, scenarioPath string) int {
 	ctx := context.Background()
+
+	runnerRole, isReference, err := resolveRunnerRole(scenarioPath, manifestPath, runnerClass, repoName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: %v\n", err)
+		return 2
+	}
 
 	m, err := corpus.LoadManifest(manifestPath)
 	if err != nil {
@@ -110,12 +123,19 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 	}
 
 	report := evalreport.FullRunReport{
-		Header:      evalreport.NewHeader("0.0.0-dev", resolveCommit()),
-		RunnerClass: runnerClass,
-		Notes:       fullRunNotes,
-		Repo:        run,
+		Header:            evalreport.NewHeader("0.0.0-dev", resolveCommit()),
+		RunnerClass:       runnerClass,
+		RunnerRole:        runnerRole,
+		ReferenceScenario: isReference,
+		ScenarioSource:    scenarioPath,
+		Notes:             fullRunNotes,
+		Repo:              run,
 	}
 	report.Header.CorpusVersion = manifestVersion(manifestPath)
+	if scenarioPath != "" && !isReference {
+		fmt.Fprintf(os.Stderr, "eval: NOTE - %s on runner class %s (%s) is NOT the reference scenario; these numbers are not reference evidence and freeze no budget\n",
+			repoName, runnerClass, runnerRole)
+	}
 
 	if outPath == "" {
 		outPath = "eval-full-" + repoName + ".json"
@@ -133,6 +153,37 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 	fmt.Fprintf(os.Stderr, "eval: PASS - full run over %s (index %dms, rss %dMB, db %dB)\n",
 		repoName, run.Index.WallclockMS, run.Index.PeakRSSMB, run.Index.DBSizeBytes)
 	return 0
+}
+
+// resolveRunnerRole validates the reference-scenario contract and resolves the
+// declared role of runnerClass. An empty scenarioPath means "no contract
+// supplied" (the hermetic fixture path, and the pre-SW-123 behavior); anything
+// else is enforced fail-closed.
+func resolveRunnerRole(scenarioPath, manifestPath, runnerClass, repoName string) (role string, isReference bool, err error) {
+	if scenarioPath == "" {
+		return "", false, nil
+	}
+	rs, err := loadReferenceScenario(scenarioPath)
+	if err != nil {
+		return "", false, fmt.Errorf("reference scenario: %w", err)
+	}
+	repos, err := corpusRepoNames(manifestPath)
+	if err != nil {
+		return "", false, fmt.Errorf("corpus manifest: %w", err)
+	}
+	if err := validateReferenceScenario(rs, repos); err != nil {
+		return "", false, fmt.Errorf("reference scenario %s: %w", scenarioPath, err)
+	}
+	role, ok := rs.classRole(runnerClass)
+	if !ok {
+		declared := make([]string, 0, len(rs.RunnerClasses))
+		for _, c := range rs.RunnerClasses {
+			declared = append(declared, c.ID+"("+c.Role+")")
+		}
+		return "", false, fmt.Errorf("runner class %q is not declared in %s (declared: %s); an undeclared machine's numbers must not stand beside reference values",
+			runnerClass, scenarioPath, strings.Join(declared, ", "))
+	}
+	return role, role == roleReference && repoName == rs.ReferenceScenario.Repo, nil
 }
 
 // manifestVersion re-reads the manifest's version stamp (LoadManifest does not

@@ -21,6 +21,18 @@ type FullRunReport struct {
 	// (e.g. "ubuntu-latest"). Budgets are only ever frozen from runs on the
 	// reference runner class; anything else is a smoke run.
 	RunnerClass string `json:"runner_class"`
+	// RunnerRole is the class's DECLARED role in the SW-123 reference-scenario
+	// contract — "reference" or "comparison". It is empty only when no
+	// contract was supplied. Recording the role beside the class is what stops
+	// a comparison run from later reading as reference evidence just because
+	// its class name looked plausible.
+	RunnerRole string `json:"runner_role,omitempty"`
+	// ReferenceScenario is true only when BOTH the runner class is the
+	// reference class AND the measured repository is the reference scenario.
+	// Only such a run may be read against the PRD §12.2 gates.
+	ReferenceScenario bool `json:"reference_scenario"`
+	// ScenarioSource is the contract this run was validated against.
+	ScenarioSource string `json:"scenario_source,omitempty"`
 	// Notes documents the measurement model (in-process session, sample
 	// sizes) so a reader can interpret the numbers without the source.
 	Notes string      `json:"notes,omitempty"`

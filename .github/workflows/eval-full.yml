@@ -41,8 +41,12 @@ jobs:
         # target) is deliberately NOT here yet: -budgets is fail-closed, so a
         # repo missing from hero-budgets.json's real_repos.selection fails the
         # run, and those budgets are historical ceilings from a retired
-        # harness. SW-123 names the runner class and re-baselines them; the Go
-        # entries join this matrix in that same reviewed change. Until then the
+        # harness. SW-123 named the runner class and the reference scenario
+        # (docs/eval/reference-scenario.json, grpc-go on ubuntu-latest) and
+        # marked the budgets historical/non-ratcheting, but it deliberately
+        # took NO measurement, so no Go entry has a budget yet. Re-baselining
+        # is SW-124's job, against the candidate SW-121 re-freezes; the Go
+        # entries join this matrix in that reviewed change. Until then the
         # nightly corpus.yml tier-3 run exercises them. See corpus/README.md.
         repo: [cobra, flask, guava]
     env:
@@ -53,6 +57,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      # SW-123: validate the measurement contract BEFORE measuring anything —
+      # a contract that no longer matches the pinned corpus would otherwise be
+      # discovered after a 30-minute guava job.
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
       - name: full measurement run (${{ matrix.repo }})
         run: |
           go run ./cmd/eval \
@@ -60,6 +69,7 @@ jobs:
             -full-run "${{ matrix.repo }}" \
             -runner-class ubuntu-latest \
             -budgets docs/eval/hero-budgets.json \
+            -reference-scenario docs/eval/reference-scenario.json \
             -out "eval-full-${{ matrix.repo }}.json"
       # The raw report also goes to the job log (and step summary): the run
       # page is then self-documenting, and the evidence stays retrievable via

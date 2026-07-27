@@ -26,6 +26,7 @@ func TestFullRun_HermeticFixture_ProducesCompleteEvidence(t *testing.T) {
 		"test",
 		outPath,
 		"",
+		"",
 	)
 	if code != 0 {
 		t.Fatalf("runFullRun exit code = %d, want 0", code)
@@ -113,8 +114,45 @@ func TestRenderedAndContractOutcomeFailClosed(t *testing.T) {
 
 func TestFullRun_UnknownRepoIsAUsageError(t *testing.T) {
 	root := repoRoot(t)
-	code := runFullRun(filepath.Join(root, "corpus", "manifest.json"), "no-such-repo", t.TempDir(), "test", filepath.Join(t.TempDir(), "r.json"), "")
+	code := runFullRun(filepath.Join(root, "corpus", "manifest.json"), "no-such-repo", t.TempDir(), "test", filepath.Join(t.TempDir(), "r.json"), "", "")
 	if code != 2 {
 		t.Fatalf("exit code = %d, want 2 (usage error)", code)
+	}
+}
+
+// SW-123 (AC-1/AC-2/AC-6): with the contract supplied, an undeclared runner
+// class fails the run closed, and a declared comparison class runs but is
+// stamped as NOT the reference scenario.
+func TestFullRun_ReferenceScenarioContractLabelsTheRunnerClass(t *testing.T) {
+	root := repoRoot(t)
+	manifest := filepath.Join(root, "corpus", "manifest.json")
+	scenario := filepath.Join(root, "docs", "eval", "reference-scenario.json")
+
+	code := runFullRun(manifest, "tier1-fixture-hero-go", t.TempDir(), "not-a-declared-class", filepath.Join(t.TempDir(), "r.json"), "", scenario)
+	if code != 2 {
+		t.Fatalf("undeclared runner class exit code = %d, want 2 (fail closed)", code)
+	}
+
+	outPath := filepath.Join(t.TempDir(), "comparison.json")
+	code = runFullRun(manifest, "tier1-fixture-hero-go", t.TempDir(), "local-sandbox", outPath, "", scenario)
+	if code != 0 {
+		t.Fatalf("comparison-class run exit code = %d, want 0", code)
+	}
+	raw, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rep evalreport.FullRunReport
+	if err := json.Unmarshal(raw, &rep); err != nil {
+		t.Fatal(err)
+	}
+	if rep.RunnerRole != "comparison" {
+		t.Errorf("runner_role = %q, want %q", rep.RunnerRole, "comparison")
+	}
+	if rep.ReferenceScenario {
+		t.Error("a comparison-class run over a tier-1 fixture must never be stamped as the reference scenario")
+	}
+	if rep.ScenarioSource == "" {
+		t.Error("scenario_source must record the contract the run was validated against")
 	}
 }

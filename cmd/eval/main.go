@@ -58,14 +58,27 @@ func main() {
 	runnerClass := flag.String("runner-class", "local", "machine class stamped into the full-run report (CI passes ubuntu-latest; budgets are only frozen from the reference class)")
 	budgets := flag.String("budgets", "", "full-run budget manifest to enforce fail-closed (for example docs/eval/hero-budgets.json)")
 
+	// SW-123 (P0-A4) reference-scenario contract flags.
+	referenceScenarioPath := flag.String("reference-scenario", "", "reference-scenario contract to validate the run against (for example "+defaultReferenceScenarioPath+"); when set, an undeclared -runner-class fails closed")
+	checkReferenceScenario := flag.Bool("check-reference-scenario", false, "validate the reference-scenario contract against the corpus manifest and the budget artifact, then exit")
+
 	flag.Parse()
+
+	if *checkReferenceScenario {
+		os.Exit(runReferenceScenarioCheck(
+			orDefault(*referenceScenarioPath, defaultReferenceScenarioPath),
+			orDefault(*manifest, defaultCorpusManifestPath),
+			orDefault(*budgets, defaultBudgetsPath),
+			os.Stdout,
+		))
+	}
 
 	if *fullRun != "" {
 		if *manifest == "" {
 			fmt.Fprintln(os.Stderr, "eval: -full-run requires -manifest")
 			os.Exit(2)
 		}
-		os.Exit(runFullRun(*manifest, *fullRun, *workDir, *runnerClass, *out, *budgets))
+		os.Exit(runFullRun(*manifest, *fullRun, *workDir, *runnerClass, *out, *budgets, *referenceScenarioPath))
 	}
 
 	if *manifest != "" {
@@ -102,6 +115,15 @@ func main() {
 	}
 	fmt.Fprintf(os.Stderr, "%s PASS (aggregate=%.2fx, claim %s, threshold=%.0fx)\n",
 		rep.Name, rep.AggregateRatio, verdict, rep.ClaimThreshold)
+}
+
+// orDefault falls back to the checked-in artifact path when a flag is unset,
+// so the operator check needs no arguments to be meaningful.
+func orDefault(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
 }
 
 // resolveCommit records the exact Git revision and marks a dirty worktree so a

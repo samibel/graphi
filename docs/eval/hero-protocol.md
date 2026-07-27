@@ -7,9 +7,13 @@
 > current run.
 > **Suite:** `corpus/hero/` (20 tasks) · **Gates:** `cmd/eval/hero_test.go`,
 > `cmd/eval/fullrun_test.go`
-> **Budgets:** `docs/eval/hero-budgets.json` (historical numeric compatibility
-> ceilings; not validated post-change ratchets until a new current-harness
-> `ubuntu-latest` run is pinned)
+> **Budgets:** `docs/eval/hero-budgets.json` — schema v3, declared
+> `historical: true` / `ratcheting: false`. Still enforced fail-closed; never a
+> comparable post-change ratchet.
+> **Measurement contract:** `docs/eval/reference-scenario.json` (SW-123) —
+> the reference runner class, the reference scenario, and every PRD §12.2 gate
+> mapped by name to a pinned repository. Check it with
+> `go run ./cmd/eval -check-reference-scenario`.
 
 ## What the hero suite is
 
@@ -46,11 +50,38 @@ function returning `empty` is an accuracy failure.
   cross-file behaviors (cross-file callers, `related_files` ranking,
   type-usage references) that a single-file fixture cannot express.
 
-## Runner class and budgets (ADR 0003 U5)
+## Runner class and budgets (ADR 0003 U5 · SW-123)
 
 Reference runner: **`ubuntu-latest`** (GitHub-hosted, linux, `CGO_ENABLED=0`)
 — the same class every existing gate workflow uses. Local runs are smoke, CI
 runs are evidence.
+
+Since **SW-123** that is no longer only prose. `docs/eval/reference-scenario.json`
+is the machine-readable measurement contract, and it is validated by
+`cmd/eval/refscenario_test.go` on every PR:
+
+- **exactly one** runner class carries `role: reference` — `ubuntu-latest`,
+  documented with CPU, RAM, OS, kernel, Go version, filesystem and the *cold*
+  cache protocol (FR-8's acceptance criterion);
+- the second class, `local-sandbox` (Apple M2 Max / macOS), is declared
+  `role: comparison`. Its numbers are never reported as reference values and
+  never freeze a budget;
+- every **PRD §12.2** gate is mapped by name to a repository from
+  `corpus/manifest.json` — a mapping pointing at a repository that is not
+  pinned is a test failure;
+- the reference scenario itself is **`grpc-go` v1.60.1**, the largest
+  non-stress repository in the corpus. `kubernetes` is the FR-2 *stress
+  target*, deliberately not the reference — it is bound by the program-wide
+  4 GB peak-RSS stop rule, not by the §12.2 gates;
+- the 8 GB-host OOM gate has a method (cgroup v2 `MemoryMax=8G`,
+  `MemorySwapMax=0`, limit read back and recorded, `oom_kill`/137/kernel-log as
+  the failure signal), not a statement of intent;
+- FR-8's scope limitation travels inside the artifact, so a consumer reading
+  only the JSON cannot publish the gates as universal guarantees.
+
+`cmd/eval -full-run -reference-scenario …` validates the contract before it
+measures anything and stamps the run with the class's declared **role**; a
+runner class the contract does not declare fails the run closed.
 
 Absolute latency/rows budgets are **not invented**: `corpus/hero` tasks carry
 no `max_latency_ms` (enforced by `TestHeroSuite_FailureClassesRepresented`).
@@ -59,13 +90,25 @@ The first reproducible reference run supplied the numeric limits now stored in
 CLI validates runner class, repo selection, metric presence, and every threshold
 fail-closed, recording checks inside each JSON report.
 
-Those numbers are currently **compatibility ceilings**, not comparable
-baseline+ratchet pairs. The historical harness did not measure the same workload:
+Those numbers are **historical compatibility ceilings**, not comparable
+baseline+ratchet pairs, and since SW-123 the file *says so in machine-readable
+form* (`schema_version: 3`, `historical: true`, `ratcheting: false`, plus the
+`historical_reason`). `cmd/eval` rejects a budget artifact that claims both, or
+that omits the reason. The historical harness did not measure the same workload:
 it omitted `impact` from the structural pool, did not require semantic checks for
 all 12 Stable operations, used the earlier symbol sample, and sampled MAXRSS only
 immediately after `IngestAll`. The current harness adds degree-stratified sampling,
 all-12 semantic coverage, and a second MAXRSS sample after the Stable suite. A new
-run on the current commit is required to establish ratchets under that method.
+run on the re-frozen candidate (SW-121) measured by SW-124 is required to
+establish ratchets under that method.
+
+SW-123 also **removed** the file's `measured_max_latency_ms_per_op` map. It held
+`0` for all twelve Stable operations — the historical run measured every hero
+task below the millisecond floor — and nothing read it. A zero budget that
+silently counts as met is worse than no budget, because it renders green;
+`hero_suite.latency_signal: "none"` now states the absence instead of implying a
+limit, and `cmd/eval` rejects **any** numeric zero anywhere in the budget
+artifact.
 
 ## Pinned real repositories (EVAL-02 selection)
 
@@ -107,7 +150,8 @@ neither read nor writable from a `-scenarios` run.
 
 ```sh
 go run ./cmd/eval -manifest corpus/manifest.json -full-run <repo> \
-  -runner-class ubuntu-latest -budgets docs/eval/hero-budgets.json
+  -runner-class ubuntu-latest -budgets docs/eval/hero-budgets.json \
+  -reference-scenario docs/eval/reference-scenario.json
 ```
 measures ONE repo per process (peak RSS stays attributable): shallow-clone at
 the pinned ref with fail-closed SHA verification → cold full index (wallclock,
