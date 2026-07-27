@@ -35,9 +35,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CGO_ENABLED: "0"
-      # Tier 3 (nightly/manual large repos, e.g. the guava JVM monorepo) is
-      # excluded from the push/PR gate so its cost never lands on every PR;
-      # the nightly schedule and manual dispatch run the full corpus.
+      # Tier 3 (nightly/manual large repos, e.g. the guava JVM monorepo and the
+      # v3 Go corpus) is excluded from the push/PR gate so its cost never lands
+      # on every PR; the nightly schedule and manual dispatch run it.
+      # Tier 4 (manual-only stress targets — kubernetes: ~3m index, ~9 GB peak
+      # RSS) is excluded even here, on purpose: it is run by hand with
+      # `-tier 4`, never on a schedule. Raising this cap to 4 would put a
+      # 15k-file index on the nightly runner. See corpus/README.md.
       MAX_TIER: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '3' || '2' }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

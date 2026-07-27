@@ -35,7 +35,7 @@ func run() int {
 	workdir := flag.String("workdir", "", "work dir for clones and stores (default: a temp dir)")
 	report := flag.String("report", "", "when set, write the machine-readable JSON report here")
 	timeout := flag.Duration("entry-timeout", 10*time.Minute, "per-repository timeout")
-	tier := flag.Int("tier", 0, "run only entries with this exact tier (1-3)")
+	tier := flag.Int("tier", 0, "run only entries with this exact tier (1-4; 4 = manual-only stress targets)")
 	maxTier := flag.Int("max-tier", 0, "run only entries with tier <= this value")
 	flag.Parse()
 

@@ -36,6 +36,14 @@ jobs:
       matrix:
         # Mirrors the EVAL-02 selection in docs/eval/hero-budgets.json:
         # Go (typeresolve acceptance target), Python, Java/JVM monorepo.
+        #
+        # The v3 Go corpus (uuid, lo, gin, grpc-go, and the kubernetes stress
+        # target) is deliberately NOT here yet: -budgets is fail-closed, so a
+        # repo missing from hero-budgets.json's real_repos.selection fails the
+        # run, and those budgets are historical ceilings from a retired
+        # harness. SW-123 names the runner class and re-baselines them; the Go
+        # entries join this matrix in that same reviewed change. Until then the
+        # nightly corpus.yml tier-3 run exercises them. See corpus/README.md.
         repo: [cobra, flask, guava]
     env:
       CGO_ENABLED: "0"
