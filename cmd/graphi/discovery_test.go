@@ -50,6 +50,41 @@ func TestResolveSession_DefaultDiscovery(t *testing.T) {
 	}
 }
 
+// TestResolveSessionMeta_DiscoversOnlyExistingSidecar verifies the meta-dir
+// counterpart of default discovery: "" while no ingest-meta.db sidecar exists
+// for the cwd repo (so search verbs never create state or reload from an
+// unwritten dir), then the per-repo meta dir once the ingest verbs have
+// written the sidecar — which is what lets `graphi index --semantic` and
+// `graphi search -semantic` compose with no flags.
+func TestResolveSessionMeta_DiscoversOnlyExistingSidecar(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	// No sidecar yet → no meta dir (today's behavior, zero regression).
+	if got := resolveSessionMeta(repo); got != "" {
+		t.Fatalf("resolveSessionMeta with no sidecar = %q, want \"\"", got)
+	}
+
+	p, err := state.Resolve(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := state.Ensure(p); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p.Meta, "ingest-meta.db"), []byte{}, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := resolveSessionMeta(repo); got != p.Meta {
+		t.Fatalf("resolveSessionMeta with sidecar = %q, want %q", got, p.Meta)
+	}
+}
+
 // TestResolveSession_OverridesWin verifies explicit overrides bypass discovery.
 func TestResolveSession_OverridesWin(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", t.TempDir())

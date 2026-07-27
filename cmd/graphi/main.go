@@ -248,6 +248,21 @@ func resolveSession(cwd, dbOverride, socketOverride string) (db, socket string) 
 	return db, socket
 }
 
+// resolveSessionMeta complements resolveSession for the verbs that take a
+// -meta sidecar (search/search-ast/find-clones, whose semantic layer reloads
+// durable vectors from it): with no explicit -meta it discovers the per-repo
+// sidecar dir the flagless ingest verbs write, ONLY when that sidecar already
+// exists (state.DiscoverMeta), so `graphi index --semantic` + `graphi search
+// -semantic` compose without any flags. Discovery errors are swallowed → "",
+// keeping the default path resilient and offline.
+func resolveSessionMeta(cwd string) string {
+	metaDir, err := state.DiscoverMeta(cwd, "")
+	if err != nil {
+		return ""
+	}
+	return metaDir
+}
+
 // getwd returns the current working directory, or "." on error, so default
 // discovery degrades gracefully rather than failing.
 func getwd() string {

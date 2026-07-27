@@ -207,6 +207,27 @@ func DiscoverDB(cwd, override string) (string, error) {
 	return p.DB, nil
 }
 
+// DiscoverMeta returns the ingest meta sidecar dir to use. An explicit
+// override wins unchanged. Otherwise it resolves the per-repo layout and
+// returns the meta dir ONLY IF its ingest-meta.db sidecar already exists —
+// the file engine/ingest creates inside the meta dir — so read-only callers
+// (e.g. `graphi search -semantic`, which reloads durable vectors from it)
+// never create state, and repos without a sidecar keep today's no-meta
+// behavior.
+func DiscoverMeta(cwd, override string) (string, error) {
+	if override != "" {
+		return override, nil
+	}
+	p, err := Resolve(cwd)
+	if err != nil {
+		return "", err
+	}
+	if _, err := os.Stat(filepath.Join(p.Meta, "ingest-meta.db")); err != nil {
+		return "", nil //nolint:nilerr // absent sidecar → fall back, not an error
+	}
+	return p.Meta, nil
+}
+
 // DiscoverSocket returns the daemon socket path to use. An explicit override
 // wins unchanged; otherwise it returns the per-repo socket path (whether or not
 // a daemon is currently listening on it).

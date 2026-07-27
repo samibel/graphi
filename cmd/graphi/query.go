@@ -94,6 +94,9 @@ func runSearch(args []string) int {
 	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
 	if dbPath == "" && socket == "" {
 		dbPath, socket = resolveSession(getwd(), "", "")
+		if metaDir == "" {
+			metaDir = resolveSessionMeta(getwd())
+		}
 	}
 	c, cleanup := makeClientOrOpenMeta(dbPath, socket, metaDir)
 	if c == nil {
@@ -115,6 +118,9 @@ func runSearchAST(args []string) int {
 	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
 	if dbPath == "" && socket == "" {
 		dbPath, socket = resolveSession(getwd(), "", "")
+		if metaDir == "" {
+			metaDir = resolveSessionMeta(getwd())
+		}
 	}
 	c, cleanup := makeClientOrOpenMeta(dbPath, socket, metaDir)
 	if c == nil {
@@ -135,6 +141,9 @@ func runFindClones(args []string) int {
 	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
 	if dbPath == "" && socket == "" {
 		dbPath, socket = resolveSession(getwd(), "", "")
+		if metaDir == "" {
+			metaDir = resolveSessionMeta(getwd())
+		}
 	}
 	c, cleanup := makeClientOrOpenMeta(dbPath, socket, metaDir)
 	if c == nil {
