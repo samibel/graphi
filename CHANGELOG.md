@@ -26,6 +26,24 @@ file:
 
 ## [Unreleased]
 
+### Added
+
+- **Go-depth evaluation corpus — `corpus/manifest.json` v3.** The corpus now pins
+  **six Go repositories** (uuid, lo, cobra, gin, grpc-go, kubernetes) instead of one,
+  each to a release tag **and** a full 40-character commit sha, with the ten required
+  stratification properties mapped by name to a specific repository (or recorded as an
+  explicit gap) in a new `stratification` block. `kubernetes` v1.29.0 is the stress
+  target: **15 718 Go files**, measured from a real clone, not estimated — every entry
+  carries a `measured` census with the date and the exact command behind the numbers.
+  License and permitted use are now recorded per repository and **required** for any
+  entry the harness clones. Rationale per repository: **`corpus/README.md`** (new).
+- **Corpus tier 4 — manual-only stress targets.** `corpus.yml` still caps its nightly
+  run at `-max-tier 3`, so tier 4 runs only on an explicit `-tier 4` (or through
+  `cmd/eval -full-run`, which selects by name). Measured reason: indexing the pinned
+  kubernetes checkout costs ~3 min and ~9 GB peak RSS — a working set no hosted runner
+  should absorb on a schedule. PR wall-clock is unchanged: every new entry is tier 3
+  or 4.
+
 ## [0.6.7] - 2026-07-27
 
 ### Fixed
