@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-07-27
+
 ### Fixed
 - Flagless `graphi search -semantic` (and `search-ast` / `find-clones`) now
   discovers the per-repo ingest meta sidecar the same way it already
