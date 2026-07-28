@@ -1,5 +1,38 @@
 # Decision: the frozen P0 candidate — tagged release v0.6.7 at `fb3bf03` (SW-121)
 
+> ## ⛔ SUPERSEDED (SW-131, 2026-07-28) — do not cite as the current candidate
+>
+> **This record is history. It is kept, not deleted, and must not be quoted as naming the
+> authoritative P0 candidate.** The candidate is now the published, tagged and attested
+> release **`v0.7.0` on `5815db5b053c2bb1bf3119cdb9939c1dea03cc45`**, recorded in
+> [`2026-07-p0-candidate-freeze-v070.md`](2026-07-p0-candidate-freeze-v070.md) (SW-131).
+>
+> **Why it moved — the §9 blocker, in §9's own terms.** Not drift, not convenience:
+> `fb3bf03` is **unmeasurable by construction**, for two independent mechanical reasons.
+> (1) The P0 harness does not exist at this SHA — `git ls-tree fb3bf03 cmd/eval/` returns
+> 11 entries, and `coldseries.go`, `querylatency.go`, `incremental.go`, `stalls.go` and
+> `rawexport.go` are all absent. (2) The harness has no external-binary path — all 13
+> `flag.String`s in `cmd/eval/main.go` accept no `graphi` executable, and
+> `cmd/eval/fullrun.go` links the product packages in and times `ing.IngestAll`
+> in-process — so it cannot be pointed at this candidate either; running it from `main`
+> instead sets `candidateMatch = false`, which forces every §12.2 gate to UNKNOWN before a
+> threshold is ever compared. A candidate that no harness can measure defeats the purpose
+> of freezing it, and that is a documented blocker fix under §9.1.
+>
+> **What was lost: nothing measured.** At the time of the move no evidence row read `PASS`
+> and none carried an `evidence_uri`, so no measurement, benchmark or score was
+> invalidated — only statements *about* the candidate. Those rows (WP2, M0) remain `STALE`
+> and now name **this** record as what they were stated against; see the successor's §10.
+>
+> **What did not change.** The product tree is byte-identical between `fb3bf03` and
+> `5815db5` — `engine`, `core`, `surfaces`, `cmd/graphi`, `go.mod` and `go.sum` have the
+> same git tree hashes at both SHAs (successor §11). That is the reason the move is
+> **sound**; it is **not** evidence about performance, accuracy or any §12.2 gate.
+>
+> Everything below is preserved verbatim as the record of the v0.6.7 freeze. The §9
+> change-control rule it states is **not** superseded — it is inherited unchanged by the
+> successor, and it is the rule under which this move was made.
+
 This is the artifact every P0 measurement is bound to. It supersedes
 [`2026-07-m0-candidate-freeze.md`](2026-07-m0-candidate-freeze.md), whose candidate
 `4e72637` was never published and whose release digest therefore reads `UNKNOWN`.
@@ -7,8 +40,9 @@ If you are about to measure, benchmark, audit, or make a claim about graphi unde
 P0, this file names what you are measuring — and, just as importantly, what it does
 **not** contain.
 
-**Status:** accepted · **Date:** 2026-07-28 · **Story:** SW-121 · **Risk:** high ·
-**Sign-off:** PENDING (see §8)
+**Status:** **superseded** by [`2026-07-p0-candidate-freeze-v070.md`](2026-07-p0-candidate-freeze-v070.md)
+(SW-131, 2026-07-28) · **Date:** 2026-07-28 · **Story:** SW-121 · **Risk:** high ·
+**Sign-off:** PENDING (see §8) — never granted; this record was superseded before the gate
 
 ---
 

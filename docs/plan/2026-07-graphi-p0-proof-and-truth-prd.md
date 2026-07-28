@@ -1759,14 +1759,20 @@ P0 ist abgeschlossen, wenn:
       Review-Korrekturen (§0).
 - [x] Owner und Reviewer benannt sind. — Graphi Maintainer, solo; Rollensubstitution nach
       §8.8 ausgewiesen (Open Question 4).
-- [x] Candidate SHA festgelegt ist. — SW-121: `fb3bf03`, Tag `v0.6.7`
-      (`docs/decisions/2026-07-p0-candidate-freeze.md`).
-- [x] Release Digest vorliegt. — SW-121: acht Asset-Digests des veröffentlichten
+- [x] Candidate SHA festgelegt ist. — SW-131: `5815db5`, Tag `v0.7.0`
+      (`docs/decisions/2026-07-p0-candidate-freeze-v070.md`). Löst SW-121s `fb3bf03` /
+      `v0.6.7` durch dokumentierten Blocker-Fix ab: jener Candidate war
+      konstruktionsbedingt nicht messbar (P0-Harness bei der SHA nicht vorhanden; kein
+      Pfad für ein externes Binary). Produktbaum zwischen beiden SHAs byte-identisch —
+      Begründung der Unbedenklichkeit, keine Messaussage.
+- [x] Release Digest vorliegt. — SW-131: acht Asset-Digests des veröffentlichten
       Releases, nicht mehr `UNKNOWN`; Referenzplattform `graphi-linux-amd64`
-      `sha256:6fd561c2…b94`. Bit-für-bit aus dem eingefrorenen SHA nachgebaut.
-- [x] SBOM und Attestation vorliegen. — SW-121: SPDX-SBOM und SLSA-v1-Provenance als
-      Assets desselben Release-Runs (30278205371), an Workflow-Identität und
-      Source-Digest `fb3bf03` gebunden; alle acht Assets verifizieren.
+      `sha256:f91aa839…9d25`. Alle fünf Plattform-Binaries bit-für-bit aus dem
+      eingefrorenen SHA nachgebaut (tagloser Clone, kein linked worktree).
+- [x] SBOM und Attestation vorliegen. — SW-131: SPDX-SBOM und SLSA-v1-Provenance als
+      Assets desselben Release-Runs (30363482852), an Workflow-Identität und
+      Source-Digest `5815db5` gebunden; alle acht Assets verifizieren, Negativkontrolle
+      mit `fb3bf03` schlägt fehl (Exit 1).
 - [ ] fünf reale Go-Repositories gepinnt sind.
 - [ ] ein 10k-Stressziel gepinnt ist.
 - [ ] Runnerklasse dokumentiert ist.

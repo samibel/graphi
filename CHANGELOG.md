@@ -26,6 +26,43 @@ file:
 
 ## [Unreleased]
 
+### Changed
+
+- **The P0 candidate moved to v0.7.0 at `5815db5` — the first candidate its own
+  measurement harness can actually run against —
+  `docs/decisions/2026-07-p0-candidate-freeze-v070.md` (new).** The previous candidate
+  (**v0.6.7 at `fb3bf03`**, frozen one day earlier and announced under `[0.7.0]` below)
+  was a properly published, tagged and attested release, and was still **unmeasurable by
+  construction**. Two independent mechanical reasons, either of which alone is fatal: the
+  P0 harness **does not exist at that SHA** (`git ls-tree fb3bf03 cmd/eval/` returns 11
+  entries — `coldseries.go`, `querylatency.go`, `incremental.go`, `stalls.go` and
+  `rawexport.go` are all absent), and the harness has **no external-binary path** (all 13
+  `flag.String`s in `cmd/eval/main.go` accept no `graphi` executable; `fullrun.go` links
+  the product packages in and times `ing.IngestAll` in-process), so it cannot be pointed
+  at the candidate either — running it from `main` sets `candidateMatch = false`, which
+  forces every §12.2 gate to `UNKNOWN` before a threshold is ever compared. A candidate no
+  harness can measure defeats the purpose of freezing one, which is a documented blocker
+  fix under the freeze record's §9 — *not* "`main` has moved on", which that rule
+  explicitly rejects.
+
+  The move is unusually safe, and the record says why without overclaiming: the **product
+  tree is byte-identical** between the two candidates — `engine`, `core`, `surfaces`,
+  `cmd/graphi`, `go.mod` and `go.sum` have the same git tree hashes at both SHAs, and the
+  entire difference is measurement code, corpus data, docs and CI. The new candidate ships
+  the *same product*; it differs only in carrying the instruments that can measure it.
+  That is the argument for **soundness** and is explicitly **not** evidence about
+  performance, accuracy or any gate — every §12.2 gate remains `UNKNOWN`.
+
+  Nothing measured was invalidated, because nothing had been measured: at the time of the
+  move no evidence row read `PASS` and none carried an `evidence_uri`. The rows that named
+  the old candidate in prose (**WP2**, **M0**) stay `STALE` and now name what superseded
+  them — they are re-marked, never silently re-pointed. `docs/decisions/2026-07-p0-candidate-freeze.md`
+  is marked **superseded** rather than deleted, and its §9 change-control rule is inherited
+  unchanged. All five published v0.7.0 binaries were rebuilt **bit-for-bit** from the
+  frozen SHA on a different host OS, and all eight assets verify against the release
+  workflow identity and source digest `5815db5` — with the superseded candidate as a
+  negative control that correctly fails.
+
 ## [0.7.0] - 2026-07-28
 
 ### Added

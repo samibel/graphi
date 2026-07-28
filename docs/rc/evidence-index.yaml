@@ -23,15 +23,24 @@
 # does not — and is NEVER re-pointed at the new candidate without being re-measured.
 
 candidate:
-  # Cited from SW-121's freeze record, not restated. The two must never disagree.
-  # The P0 candidate is the PUBLISHED, tagged, attested release v0.6.7 — not the
-  # never-published 4e72637 that SW-116 froze (that record is now superseded, and
-  # the rows it touched read STALE below).
-  source: docs/decisions/2026-07-p0-candidate-freeze.md
-  sha: fb3bf037e9b7fe05eda50514189caeff4c06679d
+  # Cited from SW-131's freeze record, not restated. The two must never disagree.
+  # The P0 candidate is the PUBLISHED, tagged, attested release v0.7.0 at 5815db5.
+  #
+  # It replaced v0.6.7 at fb3bf03 (SW-121) under the §9 change-control rule — a
+  # documented blocker fix, not drift: fb3bf03 is UNMEASURABLE BY CONSTRUCTION.
+  # The P0 harness does not exist at that SHA (git ls-tree fb3bf03 cmd/eval/ = 11
+  # entries; coldseries/querylatency/incremental/stalls/rawexport.go all absent),
+  # and the harness has no external-binary path (all 13 flag.Strings in
+  # cmd/eval/main.go accept no graphi executable; fullrun.go times ing.IngestAll
+  # in-process), so it cannot be pointed at that candidate either — running it
+  # from main sets candidateMatch=false, forcing every §12.2 gate to UNKNOWN.
+  # Before it, SW-116's never-published 4e72637. Both records are superseded and
+  # kept; the rows they touched read STALE below and are NOT re-pointed.
+  source: docs/decisions/2026-07-p0-candidate-freeze-v070.md
+  sha: 5815db5b053c2bb1bf3119cdb9939c1dea03cc45
   # graphi-linux-amd64, the reference platform. The index schema carries ONE digest
   # scalar; all eight published asset digests are in the freeze record §3.
-  release_digest: "sha256:6fd561c27a728a8c4085afe80e9b592c2f3019a27ccfb1861d6cb13d29b21b94 (graphi-linux-amd64, v0.6.7)"
+  release_digest: "sha256:f91aa839c5f246f3d20330bfb0771a2f11cc035859121661692a4b2429399d25 (graphi-linux-amd64, v0.7.0)"
 
 gates:
   # ── §6 per-work-package gates (WP0–WP10) ────────────────────────────────────
@@ -39,7 +48,7 @@ gates:
     gate: Program Control & Evidence Contract
     section: plan §6 WP0
     threshold: "Every 9/10 claim traces to a versioned raw artifact; no hand-maintained green without evidence."
-    current: "UNKNOWN — Evidence Pack not assembled. This index and the candidate change-control record stand up part of the deliverable; the P0 PRD now lives in-repo (SW-120, docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md) and the change-control record is SW-121's freeze record, which supersedes SW-116's. Not a measurement, so not STALE — but nothing here is proven either."
+    current: "UNKNOWN — Evidence Pack not assembled. This index and the candidate change-control record stand up part of the deliverable; the P0 PRD now lives in-repo (SW-120, docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md) and the change-control record is now SW-131's freeze record (docs/decisions/2026-07-p0-candidate-freeze-v070.md, candidate v0.7.0 at 5815db5), which supersedes SW-121's, which superseded SW-116's. Not a measurement, so not STALE — but nothing here is proven either."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
@@ -61,12 +70,12 @@ gates:
     gate: Candidate & reproducible technical baseline
     section: plan §6 WP2
     threshold: "An independent engineer reproduces the baseline with a documented command and the same artifact; deviations and measurement uncertainty are visible."
-    current: "STALE — this row was stated against the superseded candidate 4e72637 (SW-116), from which nothing was ever published. The candidate is now the tagged release v0.6.7 at fb3bf03 (SW-121, docs/decisions/2026-07-p0-candidate-freeze.md). No baseline has been run on it either; the row is NOT re-pointed, it is re-measured by SW-130."
+    current: "STALE — twice over, and never measured on any candidate. Stated first against 4e72637 (SW-116, never published), then against v0.6.7 at fb3bf03 (SW-121). Both are superseded: fb3bf03 was unmeasurable by construction — the P0 harness does not exist at that SHA and has no external-binary path — so no baseline was ever run on it. The candidate is now the tagged release v0.7.0 at 5815db5 (SW-131, docs/decisions/2026-07-p0-candidate-freeze-v070.md), the first candidate that coexists with its instruments. This row is NOT re-pointed at it; it is re-measured by SW-130, which SW-131 unblocks. Two candidate moves have brought this row no closer to passing."
     status: STALE
     evidence_uri: ""
     sha: ""
     owner: ENG
-    next_action: "Run the P0 baseline on the re-frozen candidate fb3bf03 over the pinned Go repos (SW-124…SW-130); store raw data."
+    next_action: "Run the P0 baseline on the re-frozen candidate 5815db5 (v0.7.0) over the pinned Go repos (SW-130); store raw data."
     due: W1–6
   - id: WP3
     gate: Gold corpus & accuracy scoring
@@ -162,12 +171,12 @@ gates:
     gate: Wahrheit und Scope — exit gate
     section: plan §5 M0
     threshold: "No claim contradicts the artifact or PRD; candidate, claims and the measurement contract are frozen."
-    current: "STALE — this row's 'candidate frozen (SW-116)' referred to 4e72637, which is superseded: the candidate is now the tagged release v0.6.7 at fb3bf03 (SW-121, docs/decisions/2026-07-p0-candidate-freeze.md). The Day-10 M0 Go/No-Go was never held, so the exit gate is unproven on either candidate; planning authority consolidated (SW-117), claims sweep (SW-118) and this index (SW-119) landed."
+    current: "STALE — this row's 'candidate frozen (SW-116)' referred to 4e72637, then to v0.6.7 at fb3bf03 (SW-121); both are superseded. fb3bf03 was unmeasurable by construction (harness absent at that SHA; no external-binary path), which is the documented §9 blocker that moved the candidate to the tagged release v0.7.0 at 5815db5 (SW-131, docs/decisions/2026-07-p0-candidate-freeze-v070.md). The Day-10 M0 Go/No-Go was never held, so the exit gate is unproven on all three candidates; planning authority consolidated (SW-117), claims sweep (SW-118) and this index (SW-119) landed. NOT re-pointed — the Go/No-Go must actually be held."
     status: STALE
     evidence_uri: ""
     sha: ""
     owner: ENG Lead
-    next_action: "Hold the M0 Go/No-Go against the re-frozen candidate fb3bf03."
+    next_action: "Hold the M0 Go/No-Go against the re-frozen candidate 5815db5 (v0.7.0)."
     due: W0–2
   - id: M1
     gate: Baseline — exit gate
