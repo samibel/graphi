@@ -209,6 +209,11 @@ jobs:
           set -uo pipefail
           mkdir -p "${RUNNER_TEMP}/out"
           start=$(date +%s)
+          # GitHub's default shell is `bash -e`: without this the step would
+          # abort on a non-zero harness exit and the run cost AC-9 asks for
+          # would be lost on exactly the runs that need explaining. The exit
+          # status is preserved and re-raised below.
+          set +e
           "${RUNNER_TEMP}/eval" \
             -manifest corpus/manifest.json \
             -full-run "${{ matrix.repo }}" \
@@ -222,6 +227,7 @@ jobs:
             -export-raw "${RUNNER_TEMP}/out/runs/cold-index" \
             -out "${RUNNER_TEMP}/out/eval-cold-${{ matrix.repo }}.json"
           status=$?
+          set -e
           end=$(date +%s)
           # AC-9: the harness's OWN wall-clock, with compilation, checkout and
           # toolchain setup outside it. The job clock is not this number.
@@ -317,6 +323,11 @@ jobs:
           set -uo pipefail
           mkdir -p "${RUNNER_TEMP}/out"
           start=$(date +%s)
+          # GitHub's default shell is `bash -e`: without this the step would
+          # abort on a non-zero harness exit and the run cost AC-9 asks for
+          # would be lost on exactly the runs that need explaining. The exit
+          # status is preserved and re-raised below.
+          set +e
           "${RUNNER_TEMP}/eval" \
             -manifest corpus/manifest.json \
             -full-run "${{ matrix.repo }}" \
@@ -328,6 +339,7 @@ jobs:
             -export-raw "${RUNNER_TEMP}/out/runs/query-latency" \
             -out "${RUNNER_TEMP}/out/eval-query-${{ matrix.repo }}.json"
           status=$?
+          set -e
           end=$(date +%s)
           printf '{"job":"query-latency-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
             "${{ matrix.repo }}" "$((end - start))" "$status" \
@@ -417,6 +429,11 @@ jobs:
           set -uo pipefail
           mkdir -p "${RUNNER_TEMP}/out"
           start=$(date +%s)
+          # GitHub's default shell is `bash -e`: without this the step would
+          # abort on a non-zero harness exit and the run cost AC-9 asks for
+          # would be lost on exactly the runs that need explaining. The exit
+          # status is preserved and re-raised below.
+          set +e
           "${RUNNER_TEMP}/eval" \
             -manifest corpus/manifest.json \
             -full-run "${{ matrix.repo }}" \
@@ -428,6 +445,7 @@ jobs:
             -export-raw "${RUNNER_TEMP}/out/runs/freshness" \
             -out "${RUNNER_TEMP}/out/eval-freshness-${{ matrix.repo }}.json"
           status=$?
+          set -e
           end=$(date +%s)
           printf '{"job":"freshness-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
             "${{ matrix.repo }}" "$((end - start))" "$status" \
@@ -519,6 +537,11 @@ jobs:
           set -uo pipefail
           mkdir -p "${RUNNER_TEMP}/out"
           start=$(date +%s)
+          # GitHub's default shell is `bash -e`: without this the step would
+          # abort on a non-zero harness exit and the run cost AC-9 asks for
+          # would be lost on exactly the runs that need explaining. The exit
+          # status is preserved and re-raised below.
+          set +e
           "${RUNNER_TEMP}/eval" \
             -manifest corpus/manifest.json \
             -full-run "${{ matrix.repo }}" \
@@ -530,6 +553,7 @@ jobs:
             -export-raw "${RUNNER_TEMP}/out/runs/progress-stalls" \
             -out "${RUNNER_TEMP}/out/eval-stalls-${{ matrix.repo }}.json"
           status=$?
+          set -e
           end=$(date +%s)
           printf '{"job":"progress-stall-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
             "${{ matrix.repo }}" "$((end - start))" "$status" \
