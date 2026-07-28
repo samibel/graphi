@@ -41,9 +41,16 @@ import (
 	"github.com/samibel/graphi/internal/evalreport"
 )
 
-// Warm-measurement sample caps. They bound the wallclock of the largest repo
-// (guava) while keeping enough samples for a meaningful p95; the concrete ops
-// and counts are recorded in the report so runs are interpretable.
+// DEFAULT-PATH warm sample counts. They bound the wallclock of the largest
+// repo (guava) and are what `-full-run` executes when no FR-8 floor is asked
+// for; the concrete ops and counts are recorded in the report so runs are
+// interpretable.
+//
+// SW-125 did NOT re-tune these. FR-8's 1000-executions-per-class floor is
+// requested explicitly with -query-executions and runs through eval-full.yml;
+// leaving the default counts alone is what keeps the PR path unchanged (AC-8),
+// and query_latency.sufficient reports honestly that a default run is below
+// the floor rather than letting the two look alike.
 const (
 	fullRunSymbolSample    = 25 // symbols driven through the structural ops
 	fullRunSearchIters     = 20 // timed iterations per manifest search query
@@ -53,7 +60,10 @@ const (
 
 const fullRunNotes = "in-process session model: engine services over one open SQLite store; " +
 	"cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; " +
-	"degree-stratified symbol sample; all 12 stable operations covered; warm p95 pooled per op class over the recorded warm_ops/warm_samples"
+	"deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; " +
+	"all 12 stable operations covered with an explicit operation-to-class mapping; " +
+	"warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every " +
+	"individual measurement retained in query_latency.operations[].samples_us"
 
 // fullRunOptions is one full-run invocation. It is a struct rather than a
 // positional list because SW-124 adds the cold-state protocol to what was
@@ -71,6 +81,17 @@ type fullRunOptions struct {
 	// the timed index (SW-124 AC-1). It is a request, not a claim: what the
 	// protocol actually achieved is recorded in the run's ColdState.
 	dropCaches bool
+	// queryExecutions is SW-125's FR-8 floor request: at least this many timed
+	// executions per query class AND per §12.2 gate pool. 0 is the default
+	// path — the historical fixed sample counts, byte-unchanged — which the
+	// report then honestly marks as undersampled rather than gate-ready.
+	queryExecutions int
+	// candidatePath is the evidence index the frozen candidate is cited from,
+	// used to decide whether this run's numbers are about the candidate at all.
+	// It is read only when a reference-scenario contract is supplied, i.e. only
+	// when there are gates to read; an unreadable index makes every gate
+	// UNKNOWN rather than failing the measurement.
+	candidatePath string
 }
 
 // runFullRun executes the full measurement for one manifest entry and writes
@@ -122,6 +143,19 @@ func runFullRun(o fullRunOptions) int {
 		defer os.RemoveAll(workDir)
 	}
 
+	// The contract, when one was supplied, is already validated by
+	// resolveRunnerClass; it is re-read here because SW-125's execution plan
+	// needs the gates' operation pools BEFORE anything is measured — the number
+	// of executions a run performs is decided by what the gates will be read
+	// over, not discovered afterwards.
+	var contract *referenceScenario
+	if o.scenarioPath != "" {
+		if rs, err := loadReferenceScenario(o.scenarioPath); err == nil {
+			contract = &rs
+		}
+	}
+	plan := newQueryLatencyPlan(o.queryExecutions, contract)
+
 	run := fullRepoRun(ctx, *entry, filepath.Dir(o.manifestPath), workDir, coldProtocol{
 		drop:             o.dropCaches,
 		requiredProtocol: class.CacheState,
@@ -130,7 +164,34 @@ func runFullRun(o fullRunOptions) int {
 		// that did not drop the cache is therefore not cold BY ITS OWN
 		// DECLARATION, and says so rather than being quietly published.
 		dropRequired: class.Role == roleReference,
-	})
+	}, plan)
+
+	// SW-125: read the §12.2 warm-latency gates against what was measured. The
+	// provenance facts are final by now, and every one of them can only make a
+	// gate UNKNOWN — none of them can turn a missed threshold into a pass.
+	measuredSHA := resolveCommit()
+	if run.QueryLatency != nil {
+		prov := queryGateProvenance{
+			repo:              o.repoName,
+			runnerClass:       o.runnerClass,
+			runnerRole:        class.Role,
+			referenceScenario: isReference,
+			measuredSHA:       measuredSHA,
+			worktreeDirty:     strings.HasSuffix(measuredSHA, "+dirty"),
+		}
+		if o.scenarioPath != "" {
+			sha, source, err := loadCandidateSHA(o.candidatePath)
+			switch {
+			case err != nil:
+				prov.candidateError = err.Error()
+			default:
+				prov.candidateSHA, prov.candidateSource = sha, source
+				prov.candidateMatch = !prov.worktreeDirty && strings.EqualFold(strings.TrimSuffix(measuredSHA, "+dirty"), sha)
+			}
+		}
+		run.QueryLatency.Gates = readQueryGates(o.scenarioPath, run.QueryLatency, prov)
+		run.QueryLatency.Status = queryLatencyStatus(run.QueryLatency)
+	}
 	if o.budgetPath != "" {
 		run.BudgetSource = o.budgetPath
 		if run.Pass {
@@ -150,7 +211,7 @@ func runFullRun(o fullRunOptions) int {
 	}
 
 	report := evalreport.FullRunReport{
-		Header:            evalreport.NewHeader("0.0.0-dev", resolveCommit()),
+		Header:            evalreport.NewHeader("0.0.0-dev", measuredSHA),
 		RunnerClass:       o.runnerClass,
 		RunnerRole:        class.Role,
 		ReferenceScenario: isReference,
@@ -174,14 +235,43 @@ func runFullRun(o fullRunOptions) int {
 		return 2
 	}
 	fmt.Fprintf(os.Stderr, "eval: wrote full-run report to %s\n", outPath)
+	printQueryLatencySummary(os.Stderr, run.QueryLatency)
 
 	if !run.Pass {
 		fmt.Fprintf(os.Stderr, "eval: FAIL - full run over %s: %s\n", o.repoName, strings.Join(run.Failures, "; "))
 		return 1
 	}
+	// A FAILED §12.2 warm gate fails the run. UNKNOWN does not: following
+	// `cmd/evidence -check` and SW-124's series, an UNKNOWN row is honest
+	// reporting rather than a broken job, and it cannot be mistaken for green
+	// because the artifact and the summary above both say UNKNOWN.
+	if run.QueryLatency != nil && run.QueryLatency.Status == evalreport.StatusFail {
+		fmt.Fprintf(os.Stderr, "eval: FAIL - query-latency gate over %s\n", o.repoName)
+		return 1
+	}
 	fmt.Fprintf(os.Stderr, "eval: PASS - full run over %s (index %dms, rss %dMB, db %dB)\n",
 		o.repoName, run.Index.WallclockMS, run.Index.PeakRSSMB, run.Index.DBSizeBytes)
 	return 0
+}
+
+// printQueryLatencySummary makes the measurement readable in the job log: what
+// was executed, whether it met FR-8's floor, and how every gate read.
+func printQueryLatencySummary(w *os.File, s *evalreport.QueryLatencySeries) {
+	if s == nil {
+		return
+	}
+	fmt.Fprintf(w, "eval: query latency over %s — %d timed executions, floor %d per class (sufficient=%v)\n",
+		s.Repo, s.TotalExecutions, s.Minimum, s.Sufficient)
+	for _, c := range s.Classes {
+		fmt.Fprintf(w, "eval:   class %-12s n=%-6d p50 %.2f ms  p95 %.2f ms  (sufficient=%v)\n",
+			c.Class, c.N, float64(c.P50US)/1000, float64(c.P95US)/1000, c.Sufficient)
+	}
+	for _, g := range s.Gates {
+		fmt.Fprintf(w, "eval:   gate %-26s %-8s %s\n", g.ID, g.Status, g.Reason)
+	}
+	for _, warning := range s.Warnings {
+		fmt.Fprintf(w, "eval:   WARNING %s\n", warning)
+	}
 }
 
 // resolveRunnerClass validates the reference-scenario contract and resolves the
@@ -232,7 +322,12 @@ func manifestVersion(path string) int {
 // fullRepoRun performs clone → cold-state preparation → index → warm
 // measurement for one entry. Every failure is recorded in the returned run;
 // fatal stages stop the pipeline.
-func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir string, cp coldProtocol) evalreport.FullRepoRun {
+//
+// plan is SW-125's query-latency plan: how large the symbol sample is and how
+// many timed executions each operation runs. It is resolved by the caller
+// before any measurement so the artifact can state what the run intended to
+// measure, not only what it happened to produce.
+func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir string, cp coldProtocol, plan queryLatencyPlan) evalreport.FullRepoRun {
 	run := evalreport.FullRepoRun{Name: e.Name, Ref: e.Ref, Tier: e.Tier}
 	fail := func(stage string, err error) evalreport.FullRepoRun {
 		run.Failures = append(run.Failures, fmt.Sprintf("%s: %v", stage, err))
@@ -304,8 +399,8 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	run.Index.Nodes, run.Index.Edges, run.Index.Files = stats.TotalNodes, stats.TotalEdges, len(stats.Files)
 
-	// 3. Warm per-op-class p95 over the same open store, driven through the
-	// same FixtureEngine the hero suite uses.
+	// 3. Warm query-latency measurement over the same open store, driven
+	// through the same FixtureEngine the hero suite uses.
 	eng := scenario.NewFixtureEngine(resolve.Deps{Query: query.New(store), Search: search.New(store)})
 	eng.RepoRoot = repoDir
 	eng.ProjectName = e.Name
@@ -313,7 +408,7 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	if !ok {
 		return fail("sample", fmt.Errorf("DegreeSamplePort unavailable"))
 	}
-	sampleNodes, err := sampler.DegreeStratifiedSymbols(ctx, fullRunSymbolSample)
+	sampleNodes, err := sampler.DegreeStratifiedSymbols(ctx, plan.symbolSample)
 	if err != nil {
 		return fail("sample", err)
 	}
@@ -321,8 +416,25 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		return fail("sample", fmt.Errorf("index produced no function/method symbols to measure"))
 	}
 
+	// SW-125 AC-5: the sample is published verbatim, in order, with a digest,
+	// so a second run can be shown to have measured the same question. The
+	// determinism is the store's — DegreeStratifiedSymbols is a total order
+	// over a fixed graph — and this is where it becomes checkable.
+	symbolIDs := make([]string, 0, len(sampleNodes))
+	for _, n := range sampleNodes {
+		symbolIDs = append(symbolIDs, string(n.ID()))
+	}
+	agentSymbols := min(plan.agentSymbols, len(symbolIDs))
+	symbolSample := evalreport.QuerySymbolSample{
+		Requested:    plan.symbolSample,
+		Returned:     len(symbolIDs),
+		Method:       querySampleMethod,
+		Digest:       evalreport.SampleDigest(symbolIDs),
+		SymbolIDs:    symbolIDs,
+		AgentSymbols: agentSymbols,
+	}
+
 	perOp := map[string][]time.Duration{}
-	opClass := map[string]string{}
 	stableChecks := map[string]*evalreport.StableOperationCheck{}
 	checkFor := func(op, requirement string) *evalreport.StableOperationCheck {
 		check := stableChecks[op]
@@ -352,25 +464,26 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		check.Pass = false
 		return false
 	}
-	timeOp := func(class, op, requirement string, allowed []string, invoke func() (string, error)) {
-		start := time.Now()
-		outcome, err := invoke()
-		d := time.Since(start)
-		if err != nil {
-			check := checkFor(op, requirement)
-			check.Samples++
-			check.Outcomes["error"]++
-			if check.Pass {
-				run.Failures = append(run.Failures, fmt.Sprintf("warm %s: %v", op, err))
+	// observe is the semantic gate every timed execution passes through: a
+	// measurement counts only after the response resolved to an
+	// operation-appropriate outcome, because a fast wrong answer is not a fast
+	// answer. The rule and its wording predate SW-125; only its call site moved
+	// out of the (now deleted) timeOp closure, so that timing lives in
+	// executeWarmOperation where the untimed/timed boundary is explicit.
+	observe := func(op string) func(warmExecution, string, error) bool {
+		return func(x warmExecution, outcome string, err error) bool {
+			if err != nil {
+				check := checkFor(op, x.requirement)
+				check.Samples++
+				check.Outcomes["error"]++
+				if check.Pass {
+					run.Failures = append(run.Failures, fmt.Sprintf("warm %s: %v", op, err))
+				}
+				check.Pass = false
+				return false
 			}
-			check.Pass = false
-			return
+			return recordOutcome(op, x.requirement, outcome, x.allowed...)
 		}
-		if !recordOutcome(op, requirement, outcome, allowed...) {
-			return
-		}
-		perOp[op] = append(perOp[op], d)
-		opClass[op] = class
 	}
 
 	indexOutcome := "empty"
@@ -379,35 +492,12 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	recordOutcome(scenario.OpIndex, "successful ingest with non-empty node and file inventory", indexOutcome, "found")
 
-	for _, sampled := range sampleNodes {
-		ref := string(sampled.ID())
-		for _, op := range []string{scenario.OpDefinition, scenario.OpCallers, scenario.OpCallees, scenario.OpReferences} {
-			op := op
-			allowed := []string{"found", "empty"}
-			requirement := "resolved symbol; found or legitimately empty"
-			if op == scenario.OpDefinition {
-				allowed = []string{"found"}
-				requirement = "resolved symbol with at least one definition"
-			}
-			timeOp("structural", op, requirement, allowed, func() (string, error) {
-				lines, _, err := eng.Invoke(op, map[string]string{"symbol": ref})
-				return renderedOutcome(lines), err
-			})
-		}
-		timeOp("structural", scenario.OpNeighborhood, "resolved symbol; bounded neighborhood outcome", []string{"found", "empty"}, func() (string, error) {
-			lines, _, err := eng.Invoke(scenario.OpNeighborhood, map[string]string{"symbol": ref, "depth": "1"})
-			return renderedOutcome(lines), err
-		})
-		timeOp("structural", scenario.OpImpact, "resolved symbol; bounded impact outcome", []string{"found", "empty"}, func() (string, error) {
-			lines, _, err := eng.Invoke(scenario.OpImpact, map[string]string{"symbol": ref, "direction": "reverse", "max_nodes": "256"})
-			return renderedOutcome(lines), err
-		})
-	}
-
+	// The manifest's search promises are asserted ONCE, untimed, before any
+	// measurement — the promise is a property of the index, not something worth
+	// re-checking a thousand times, and asserting it here keeps it out of the
+	// timed region (AC-6).
 	for _, s := range e.Searches {
 		q := s.Query
-		// Untimed assertion pass first (fail-closed on the manifest promise),
-		// then pure timed iterations so the p95 measures nothing but the op.
 		lines, _, err := eng.Invoke(scenario.OpSearch, map[string]string{"query": q})
 		if err != nil {
 			run.Failures = append(run.Failures, fmt.Sprintf("search %q: %v", q, err))
@@ -420,18 +510,6 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		if s.ExpectNonEmpty && !found {
 			run.Failures = append(run.Failures, fmt.Sprintf("search %q: expected non-empty, got none", q))
 		}
-		for range fullRunSearchIters {
-			allowed := []string{"found", "empty"}
-			requirement := "valid search outcome"
-			if s.ExpectNonEmpty {
-				allowed = []string{"found"}
-				requirement = "manifest-promised non-empty search"
-			}
-			timeOp("search", scenario.OpSearch, requirement, allowed, func() (string, error) {
-				lines, _, err := eng.Invoke(scenario.OpSearch, map[string]string{"query": q})
-				return renderedOutcome(lines), err
-			})
-		}
 	}
 
 	for _, assertion := range e.ConfirmedEdges {
@@ -442,43 +520,38 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		}
 	}
 
-	agentSample := sampleNodes
-	if len(agentSample) > fullRunAgentToolSample {
-		agentSample = agentSample[:fullRunAgentToolSample]
+	// The measured operations, built once and then driven by the plan. Building
+	// them declaratively is what makes "all twelve stable operations are
+	// covered" checkable against the taxonomy instead of against a reading of
+	// the loop below.
+	warmOps := buildWarmOperations(ctx, eng, e, symbolIDs, agentSymbols)
+	for i := range warmOps {
+		warmOps[i].executions = plan.executionsFor(warmOps[i].op, len(symbolIDs), agentSymbols, len(e.Searches))
+		warmOps[i].warmup = plan.warmup
 	}
-	for _, sampled := range agentSample {
-		ref := string(sampled.ID())
-		for _, op := range []string{scenario.OpExplainSymbol, scenario.OpChangeRisk, scenario.OpRelatedFiles} {
-			op := op
-			allowed := []string{"found"}
-			requirement := "resolved target with a valid found envelope"
-			if op == scenario.OpRelatedFiles {
-				allowed = []string{"found", "empty"}
-				requirement = "resolved target; found or legitimately empty related-file set"
-			}
-			timeOp("agent_tools", op, requirement, allowed, func() (string, error) {
-				result, err := eng.InvokeContract(ctx, op, map[string]string{"symbol": ref})
-				return contractOutcome(result, err)
-			})
-		}
-	}
-	for i := 0; i < fullRunBriefIters; i++ {
-		topic := string(sampleNodes[i%len(sampleNodes)].ID())
-		timeOp("agent_tools", scenario.OpAgentBrief, "resolved topic with a valid found/partial project brief", []string{"found", "partial"}, func() (string, error) {
-			result, err := eng.InvokeContract(ctx, scenario.OpAgentBrief, map[string]string{"topic": topic})
-			return contractOutcome(result, err)
-		})
+	sort.Slice(warmOps, func(i, j int) bool { return warmOps[i].op < warmOps[j].op })
+
+	warmupOf := map[string]int{}
+	for _, w := range warmOps {
+		warmupOf[w.op] = w.warmup
+		perOp[w.op] = append(perOp[w.op], executeWarmOperation(w, observe(w.op))...)
 	}
 
 	run.WarmP95US = map[string]int64{}
 	run.WarmP95USPerOp = map[string]int64{}
+	run.WarmP50US = map[string]int64{}
+	run.WarmP50USPerOp = map[string]int64{}
 	run.WarmSamples = map[string]int{}
 	run.WarmOps = map[string][]string{}
 	classes := map[string][]time.Duration{}
 	classOps := map[string]map[string]struct{}{}
 	for op, ds := range perOp {
+		if len(ds) == 0 {
+			continue
+		}
 		run.WarmP95USPerOp[op] = p95US(ds)
-		class := opClass[op]
+		run.WarmP50USPerOp[op] = p50US(ds)
+		class := queryClassOf[op]
 		classes[class] = append(classes[class], ds...)
 		if classOps[class] == nil {
 			classOps[class] = map[string]struct{}{}
@@ -487,9 +560,12 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	for class, ds := range classes {
 		run.WarmP95US[class] = p95US(ds)
+		run.WarmP50US[class] = p50US(ds)
 		run.WarmSamples[class] = len(ds)
 		run.WarmOps[class] = sortedKeys(classOps[class])
 	}
+	run.QueryLatency = buildQueryLatencySeries(e.Name, plan, symbolSample, perOp, warmupOf)
+
 	stableNames := make([]string, 0, len(stableChecks))
 	for op := range stableChecks {
 		stableNames = append(stableNames, op)
@@ -633,6 +709,13 @@ func peakRSSMB() int64 {
 // unexplainable gate result rather than as a test failure.
 func p95US(ds []time.Duration) int64 {
 	return percentileUS(ds, 95)
+}
+
+// p50US is SW-125's half of the same arithmetic: PRD §12.2 gates on p50 as
+// well as p95, and both go through percentileUS so they cannot disagree about
+// what nearest rank means for an even sample count.
+func p50US(ds []time.Duration) int64 {
+	return percentileUS(ds, 50)
 }
 
 func percentileUS(ds []time.Duration, p int) int64 {

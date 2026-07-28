@@ -155,6 +155,67 @@ jobs:
           name: eval-cold-grpc-go
           path: eval-cold-grpc-go.json
 
+  # SW-125 (P0-C2): FR-8's query-latency measurement over THE reference
+  # scenario. At least 1000 timed executions per query class AND per PRD §12.2
+  # gate pool, reported as p50 AND p95 per class and per operation, with every
+  # individual measurement retained in the artifact.
+  #
+  # Deliberately its own job, and deliberately NOT in the matrix above: the
+  # matrix enforces the historical per-repo ceilings for cobra/flask/guava and
+  # stays at the default warm sample counts, while this one is read against the
+  # PRD §12.2 gates in docs/eval/reference-scenario.json. It passes no budget
+  # artifact for the same reason the cold series does not — grpc-go has no
+  # budget entry, and the budget flag is fail-closed.
+  #
+  # One cold index, then a long warm session: the executions are warm by
+  # construction (they run over the store the index built, after per-operation
+  # warmups), which is what the §12.2 warm rows are about.
+  #
+  # A gate here reads UNKNOWN — never PASS — unless the run is the reference
+  # scenario on the reference class, from the frozen candidate, with every
+  # gated pool above the 1000-execution floor.
+  query-latency-series:
+    name: query latency (reference scenario, >=1000 executions per class)
+    runs-on: ubuntu-latest
+    # One clone and one index, then ~4500 timed operations plus warmups. Far
+    # cheaper than the ten-run cold series, comfortably above the single-run
+    # matrix job.
+    timeout-minutes: 90
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
+      - name: at least 1000 executions per query class over the reference scenario
+        run: |
+          go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -full-run grpc-go \
+            -query-executions 1000 \
+            -runner-class ubuntu-latest \
+            -reference-scenario docs/eval/reference-scenario.json \
+            -candidate docs/rc/evidence-index.yaml \
+            -workdir "${RUNNER_TEMP}/query-latency" \
+            -out eval-query-grpc-go.json
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== EVAL-QUERY-LATENCY-BEGIN grpc-go ==="
+          cat eval-query-grpc-go.json
+          echo "=== EVAL-QUERY-LATENCY-END grpc-go ==="
+          { echo '```json'; cat eval-query-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eval-query-grpc-go
+          path: eval-query-grpc-go.json
+
   hero-suite:
     name: hero suite (20 tasks, tier-1 fixtures)
     runs-on: ubuntu-latest

@@ -80,11 +80,26 @@ type FullRepoRun struct {
 	// a class regression is attributable (e.g. ADR 0003 U2: whether agent_brief
 	// or explain_symbol dominates the agent_tools class).
 	WarmP95USPerOp map[string]int64 `json:"warm_p95_us_per_op"`
+	// WarmP50US and WarmP50USPerOp are SW-125 (AC-3): PRD §12.2 gates on p50
+	// as well as p95, and a schema that carries only the tail cannot answer
+	// half the gate. They sit beside the p95 maps rather than replacing them —
+	// the budget artifact and the committed historical runs read those keys.
+	WarmP50US      map[string]int64 `json:"warm_p50_us,omitempty"`
+	WarmP50USPerOp map[string]int64 `json:"warm_p50_us_per_op,omitempty"`
 	// WarmSamples is the number of timed invocations pooled per class.
 	WarmSamples map[string]int `json:"warm_samples"`
 	// WarmOps lists the concrete operations pooled into each class, so the
 	// class p95 is interpretable and re-runnable.
 	WarmOps map[string][]string `json:"warm_ops"`
+	// QueryLatency is SW-125's full query-latency evidence: the FR-8 execution
+	// floor and whether it was met, p50 and p95 per class AND per operation,
+	// the explicit operation → class mapping over the frozen 12, the
+	// deterministic symbol sample, and every individual measurement.
+	//
+	// It is a pointer and absent by default for the same reason ColdSeries is:
+	// a report produced without a warm measurement (an aborted run) must not
+	// carry an empty distribution that reads as zero latency.
+	QueryLatency *QueryLatencySeries `json:"query_latency,omitempty"`
 
 	// Searches are the manifest's expect_nonempty smoke assertions re-checked
 	// against this run's index.
