@@ -21,6 +21,40 @@
 # docs/eval/hero-budgets.json as ratchets in the same reviewed PR, citing
 # this workflow run.
 #
+# SW-130 (P0-C7): the four measurement jobs below MEASURE THE FROZEN CANDIDATE,
+# not the branch they were dispatched from. Three changes make that true, and
+# every one of them is load-bearing:
+#
+#  1. They check the candidate SHA out. The harness's provenance rule
+#     (cmd/eval/fullrun.go, coldseries.go) sets `candidate_match` only when
+#     `git rev-parse HEAD` EQUALS the SHA the evidence index cites, and forces
+#     every PRD §12.2 gate to UNKNOWN when it does not. A run from a branch tip
+#     therefore measures nothing readable, however green it looks.
+#  2. They read the candidate CITATION from the dispatched ref, copied out of
+#     the tree before the tree moves. A commit cannot contain its own hash, so
+#     the freeze record naming a SHA never exists AT that SHA — the citation is
+#     an external fact about the artifact, which is exactly what `-candidate`
+#     is documented to take.
+#  3. Every output goes to RUNNER_TEMP, never into the checkout. An untracked
+#     file in the worktree sets `worktree_dirty`, and a dirty worktree forces
+#     the same blanket UNKNOWN. That includes the harness binary itself.
+#
+# They also BUILD the harness and run the built binary (AC-1: not `go run` from
+# the working tree). Compilation inside a measured step does not corrupt a
+# number — the timed windows are in-process, around `ing.IngestAll` — but it
+# does inflate the step clock AC-9 reads the run cost off, so it is moved into
+# its own step and the harness's own wall-clock is recorded per job.
+#
+# The matrix is the FIVE pinned Go repositories of corpus/manifest.json v3
+# (SW-122) at tier <= 3. kubernetes is deliberately absent: it is the tier-4
+# FR-2 stress target, manual-only by the corpus policy, and the
+# reference-scenario contract names it explicitly as a non-reference scenario
+# bound by the §17 stop rule instead. Only grpc-go can turn a §12.2 gate green
+# or red — the contract scopes every gate to the reference scenario — so the
+# other four repositories publish measurements whose gates read UNKNOWN with
+# that reason named. They are measured anyway because the baseline claim is
+# about the pinned Go corpus, not about one repository.
+#
 # DELIBERATELY a separate workflow (like corpus.yml): it clones public
 # repositories, so it needs the network and never joins the zero-egress
 # canary posture. Scheduled weekly + manual dispatch; not a PR gate — the
@@ -120,44 +154,82 @@ jobs:
   #
   # A gate here reads UNKNOWN — never PASS — unless the run is the reference
   # scenario on the reference class, from the frozen candidate, with all ten
-  # runs completed. That is expected to be the state until SW-121 re-freezes
-  # the candidate, and it is visible in the artifact rather than assumed away.
+  # runs completed. SW-130 makes the candidate condition satisfiable by
+  # checking the candidate out (see the header); the scenario condition is
+  # structural, so the four non-reference matrix members report UNKNOWN with
+  # that reason named rather than being left out.
   cold-index-series:
-    name: cold-index series (reference scenario, 10 runs)
+    name: cold-index series (${{ matrix.repo }}, 10 runs)
     runs-on: ubuntu-latest
     # Ten cold indexes plus a clone each, plus the constrained OOM run. The
     # matrix job's 45 minutes is per single run; this is an order of magnitude
     # more work.
     timeout-minutes: 180
+    strategy:
+      # One repository's failure must not cancel the other four: a partial
+      # baseline that says which repositories were measured is evidence, and a
+      # cancelled one is not.
+      fail-fast: false
+      matrix:
+        repo: [uuid, lo, cobra, gin, grpc-go]
     env:
       CGO_ENABLED: "0"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # The candidate SHA is checked out below, so the shallow default is
+          # not enough.
+          fetch-depth: 0
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
       - name: check the reference-scenario contract
         run: go run ./cmd/eval -check-reference-scenario
+      - name: check out the frozen P0 candidate
+        id: candidate
+        run: |
+          set -euo pipefail
+          sha="$(awk '/^candidate:/{c=1;next} c && /^[^[:space:]#]/{exit} c && $1=="sha:"{print $2; exit}' docs/rc/evidence-index.yaml)"
+          test -n "$sha"
+          cp docs/rc/evidence-index.yaml "${RUNNER_TEMP}/candidate-index.yaml"
+          git checkout --quiet --detach "$sha"
+          test "$(git rev-parse HEAD)" = "$sha"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "measuring candidate $sha" >> "$GITHUB_STEP_SUMMARY"
       # Built once, deliberately: -cold-runs re-invokes this same binary per
       # run, so building here keeps compilation out of every measured window
-      # and puts one auditable executable in the run record.
-      - name: build the eval harness
-        run: go build -o ./bin/eval ./cmd/eval
-      - name: ten cold runs over the reference scenario
+      # and puts one auditable executable in the run record. It is built
+      # OUTSIDE the checkout so the worktree stays clean.
+      - name: build the eval harness from the candidate
+        run: go build -o "${RUNNER_TEMP}/eval" ./cmd/eval
+      - name: ten cold runs over ${{ matrix.repo }}
         run: |
-          ./bin/eval \
+          set -uo pipefail
+          mkdir -p "${RUNNER_TEMP}/out"
+          start=$(date +%s)
+          "${RUNNER_TEMP}/eval" \
             -manifest corpus/manifest.json \
-            -full-run grpc-go \
+            -full-run "${{ matrix.repo }}" \
             -cold-runs 10 \
             -drop-caches \
             -oom-check \
             -runner-class ubuntu-latest \
             -reference-scenario docs/eval/reference-scenario.json \
-            -candidate docs/rc/evidence-index.yaml \
+            -candidate "${RUNNER_TEMP}/candidate-index.yaml" \
             -workdir "${RUNNER_TEMP}/cold-series" \
-            -export-raw runs/cold-index \
-            -out eval-cold-grpc-go.json
+            -export-raw "${RUNNER_TEMP}/out/runs/cold-index" \
+            -out "${RUNNER_TEMP}/out/eval-cold-${{ matrix.repo }}.json"
+          status=$?
+          end=$(date +%s)
+          # AC-9: the harness's OWN wall-clock, with compilation, checkout and
+          # toolchain setup outside it. The job clock is not this number.
+          printf '{"job":"cold-index-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
+            "${{ matrix.repo }}" "$((end - start))" "$status" \
+            > "${RUNNER_TEMP}/out/cost-cold-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/out/cost-cold-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
       # SW-128 (P0-C5): reproduce every published number from the raw samples
       # the step above exported. It runs `if: always()` on purpose — a run whose
       # gates went red still has to be internally consistent, and a report that
@@ -166,22 +238,23 @@ jobs:
       # of them is allowed to be silent.
       - name: reproduce the published numbers from the raw samples
         if: always()
-        run: ./bin/eval -aggregate runs/cold-index
+        run: |
+          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/out/runs/cold-index"
       - name: print raw evidence
         if: always()
         run: |
-          echo "=== EVAL-COLD-SERIES-BEGIN grpc-go ==="
-          cat eval-cold-grpc-go.json
-          echo "=== EVAL-COLD-SERIES-END grpc-go ==="
-          { echo '```json'; cat eval-cold-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          echo "=== EVAL-COLD-SERIES-BEGIN ${{ matrix.repo }} ==="
+          cat "${RUNNER_TEMP}/out/eval-cold-${{ matrix.repo }}.json"
+          echo "=== EVAL-COLD-SERIES-END ${{ matrix.repo }} ==="
       - name: upload raw evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: eval-cold-grpc-go
+          name: eval-cold-${{ matrix.repo }}
           path: |
-            eval-cold-grpc-go.json
-            runs/cold-index
+            ${{ runner.temp }}/out/eval-cold-${{ matrix.repo }}.json
+            ${{ runner.temp }}/out/cost-cold-${{ matrix.repo }}.json
+            ${{ runner.temp }}/out/runs/cold-index
 
   # SW-125 (P0-C2): FR-8's query-latency measurement over THE reference
   # scenario. At least 1000 timed executions per query class AND per PRD §12.2
@@ -203,52 +276,83 @@ jobs:
   # scenario on the reference class, from the frozen candidate, with every
   # gated pool above the 1000-execution floor.
   query-latency-series:
-    name: query latency (reference scenario, >=1000 executions per class)
+    name: query latency (${{ matrix.repo }}, >=1000 executions per class)
     runs-on: ubuntu-latest
     # One clone and one index, then ~4500 timed operations plus warmups. Far
     # cheaper than the ten-run cold series, comfortably above the single-run
     # matrix job.
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [uuid, lo, cobra, gin, grpc-go]
     env:
       CGO_ENABLED: "0"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
       - name: check the reference-scenario contract
         run: go run ./cmd/eval -check-reference-scenario
-      - name: at least 1000 executions per query class over the reference scenario
+      - name: check out the frozen P0 candidate
+        id: candidate
         run: |
-          go run ./cmd/eval \
+          set -euo pipefail
+          sha="$(awk '/^candidate:/{c=1;next} c && /^[^[:space:]#]/{exit} c && $1=="sha:"{print $2; exit}' docs/rc/evidence-index.yaml)"
+          test -n "$sha"
+          cp docs/rc/evidence-index.yaml "${RUNNER_TEMP}/candidate-index.yaml"
+          git checkout --quiet --detach "$sha"
+          test "$(git rev-parse HEAD)" = "$sha"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "measuring candidate $sha" >> "$GITHUB_STEP_SUMMARY"
+      - name: build the eval harness from the candidate
+        run: go build -o "${RUNNER_TEMP}/eval" ./cmd/eval
+      - name: at least 1000 executions per query class over ${{ matrix.repo }}
+        run: |
+          set -uo pipefail
+          mkdir -p "${RUNNER_TEMP}/out"
+          start=$(date +%s)
+          "${RUNNER_TEMP}/eval" \
             -manifest corpus/manifest.json \
-            -full-run grpc-go \
+            -full-run "${{ matrix.repo }}" \
             -query-executions 1000 \
             -runner-class ubuntu-latest \
             -reference-scenario docs/eval/reference-scenario.json \
-            -candidate docs/rc/evidence-index.yaml \
+            -candidate "${RUNNER_TEMP}/candidate-index.yaml" \
             -workdir "${RUNNER_TEMP}/query-latency" \
-            -export-raw runs/query-latency \
-            -out eval-query-grpc-go.json
+            -export-raw "${RUNNER_TEMP}/out/runs/query-latency" \
+            -out "${RUNNER_TEMP}/out/eval-query-${{ matrix.repo }}.json"
+          status=$?
+          end=$(date +%s)
+          printf '{"job":"query-latency-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
+            "${{ matrix.repo }}" "$((end - start))" "$status" \
+            > "${RUNNER_TEMP}/out/cost-query-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/out/cost-query-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
       - name: reproduce the published numbers from the raw samples
         if: always()
-        run: go run ./cmd/eval -aggregate runs/query-latency
+        run: |
+          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/out/runs/query-latency"
       - name: print raw evidence
         if: always()
         run: |
-          echo "=== EVAL-QUERY-LATENCY-BEGIN grpc-go ==="
-          cat eval-query-grpc-go.json
-          echo "=== EVAL-QUERY-LATENCY-END grpc-go ==="
-          { echo '```json'; cat eval-query-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          echo "=== EVAL-QUERY-LATENCY-BEGIN ${{ matrix.repo }} ==="
+          cat "${RUNNER_TEMP}/out/eval-query-${{ matrix.repo }}.json"
+          echo "=== EVAL-QUERY-LATENCY-END ${{ matrix.repo }} ==="
       - name: upload raw evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: eval-query-grpc-go
+          name: eval-query-${{ matrix.repo }}
           path: |
-            eval-query-grpc-go.json
-            runs/query-latency
+            ${{ runner.temp }}/out/eval-query-${{ matrix.repo }}.json
+            ${{ runner.temp }}/out/cost-query-${{ matrix.repo }}.json
+            ${{ runner.temp }}/out/runs/query-latency
 
   # SW-126 (P0-C3): FR-8's freshness and incremental-update measurement over THE
   # reference scenario. At least 100 incremental changes as a DEFINED,
@@ -272,52 +376,83 @@ jobs:
   # scenario on the reference class, from the frozen candidate, with at least
   # 100 completed changes covering every required class.
   freshness-series:
-    name: freshness (reference scenario, >=100 incremental changes)
+    name: freshness (${{ matrix.repo }}, >=100 incremental changes)
     runs-on: ubuntu-latest
     # One clone and one cold index, then 100 incremental re-ingests of a large
     # Go repository plus a convergence probe each. Cheaper than the ten-run cold
     # series, dearer than the single-run matrix job.
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [uuid, lo, cobra, gin, grpc-go]
     env:
       CGO_ENABLED: "0"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
       - name: check the reference-scenario contract
         run: go run ./cmd/eval -check-reference-scenario
-      - name: at least 100 incremental changes over the reference scenario
+      - name: check out the frozen P0 candidate
+        id: candidate
         run: |
-          go run ./cmd/eval \
+          set -euo pipefail
+          sha="$(awk '/^candidate:/{c=1;next} c && /^[^[:space:]#]/{exit} c && $1=="sha:"{print $2; exit}' docs/rc/evidence-index.yaml)"
+          test -n "$sha"
+          cp docs/rc/evidence-index.yaml "${RUNNER_TEMP}/candidate-index.yaml"
+          git checkout --quiet --detach "$sha"
+          test "$(git rev-parse HEAD)" = "$sha"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "measuring candidate $sha" >> "$GITHUB_STEP_SUMMARY"
+      - name: build the eval harness from the candidate
+        run: go build -o "${RUNNER_TEMP}/eval" ./cmd/eval
+      - name: at least 100 incremental changes over ${{ matrix.repo }}
+        run: |
+          set -uo pipefail
+          mkdir -p "${RUNNER_TEMP}/out"
+          start=$(date +%s)
+          "${RUNNER_TEMP}/eval" \
             -manifest corpus/manifest.json \
-            -full-run grpc-go \
+            -full-run "${{ matrix.repo }}" \
             -incremental-changes 100 \
             -runner-class ubuntu-latest \
             -reference-scenario docs/eval/reference-scenario.json \
-            -candidate docs/rc/evidence-index.yaml \
+            -candidate "${RUNNER_TEMP}/candidate-index.yaml" \
             -workdir "${RUNNER_TEMP}/freshness" \
-            -export-raw runs/freshness \
-            -out eval-freshness-grpc-go.json
+            -export-raw "${RUNNER_TEMP}/out/runs/freshness" \
+            -out "${RUNNER_TEMP}/out/eval-freshness-${{ matrix.repo }}.json"
+          status=$?
+          end=$(date +%s)
+          printf '{"job":"freshness-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
+            "${{ matrix.repo }}" "$((end - start))" "$status" \
+            > "${RUNNER_TEMP}/out/cost-freshness-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/out/cost-freshness-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
       - name: reproduce the published numbers from the raw samples
         if: always()
-        run: go run ./cmd/eval -aggregate runs/freshness
+        run: |
+          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/out/runs/freshness"
       - name: print raw evidence
         if: always()
         run: |
-          echo "=== EVAL-FRESHNESS-BEGIN grpc-go ==="
-          cat eval-freshness-grpc-go.json
-          echo "=== EVAL-FRESHNESS-END grpc-go ==="
-          { echo '```json'; cat eval-freshness-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          echo "=== EVAL-FRESHNESS-BEGIN ${{ matrix.repo }} ==="
+          cat "${RUNNER_TEMP}/out/eval-freshness-${{ matrix.repo }}.json"
+          echo "=== EVAL-FRESHNESS-END ${{ matrix.repo }} ==="
       - name: upload raw evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: eval-freshness-grpc-go
+          name: eval-freshness-${{ matrix.repo }}
           path: |
-            eval-freshness-grpc-go.json
-            runs/freshness
+            ${{ runner.temp }}/out/eval-freshness-${{ matrix.repo }}.json
+            ${{ runner.temp }}/out/cost-freshness-${{ matrix.repo }}.json
+            ${{ runner.temp }}/out/runs/freshness
 
   # SW-127 (P0-C4): PRD 12.2's progress-stall gate over THE reference scenario.
   # The intervals between consecutive ingest.ProgressEvents during the cold full
@@ -344,51 +479,82 @@ jobs:
   # that emitted NO progress is the one case that is not merely unknown: it
   # fails, here, loudly.
   progress-stall-series:
-    name: progress stalls (reference scenario, cold index)
+    name: progress stalls (${{ matrix.repo }}, cold index)
     runs-on: ubuntu-latest
     # One clone and one cold index of a large Go repository, plus a timestamp
     # per progress event. Comparable to a single matrix run.
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [uuid, lo, cobra, gin, grpc-go]
     env:
       CGO_ENABLED: "0"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
       - name: check the reference-scenario contract
         run: go run ./cmd/eval -check-reference-scenario
-      - name: measure progress stalls over the reference scenario
+      - name: check out the frozen P0 candidate
+        id: candidate
         run: |
-          go run ./cmd/eval \
+          set -euo pipefail
+          sha="$(awk '/^candidate:/{c=1;next} c && /^[^[:space:]#]/{exit} c && $1=="sha:"{print $2; exit}' docs/rc/evidence-index.yaml)"
+          test -n "$sha"
+          cp docs/rc/evidence-index.yaml "${RUNNER_TEMP}/candidate-index.yaml"
+          git checkout --quiet --detach "$sha"
+          test "$(git rev-parse HEAD)" = "$sha"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "measuring candidate $sha" >> "$GITHUB_STEP_SUMMARY"
+      - name: build the eval harness from the candidate
+        run: go build -o "${RUNNER_TEMP}/eval" ./cmd/eval
+      - name: measure progress stalls over ${{ matrix.repo }}
+        run: |
+          set -uo pipefail
+          mkdir -p "${RUNNER_TEMP}/out"
+          start=$(date +%s)
+          "${RUNNER_TEMP}/eval" \
             -manifest corpus/manifest.json \
-            -full-run grpc-go \
+            -full-run "${{ matrix.repo }}" \
             -drop-caches \
             -runner-class ubuntu-latest \
             -reference-scenario docs/eval/reference-scenario.json \
-            -candidate docs/rc/evidence-index.yaml \
+            -candidate "${RUNNER_TEMP}/candidate-index.yaml" \
             -workdir "${RUNNER_TEMP}/progress-stalls" \
-            -export-raw runs/progress-stalls \
-            -out eval-stalls-grpc-go.json
+            -export-raw "${RUNNER_TEMP}/out/runs/progress-stalls" \
+            -out "${RUNNER_TEMP}/out/eval-stalls-${{ matrix.repo }}.json"
+          status=$?
+          end=$(date +%s)
+          printf '{"job":"progress-stall-series","repo":"%s","harness_seconds":%s,"exit":%s}\n' \
+            "${{ matrix.repo }}" "$((end - start))" "$status" \
+            > "${RUNNER_TEMP}/out/cost-stalls-${{ matrix.repo }}.json"
+          cat "${RUNNER_TEMP}/out/cost-stalls-${{ matrix.repo }}.json" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
       - name: reproduce the published numbers from the raw samples
         if: always()
-        run: go run ./cmd/eval -aggregate runs/progress-stalls
+        run: |
+          "${RUNNER_TEMP}/eval" -aggregate "${RUNNER_TEMP}/out/runs/progress-stalls"
       - name: print raw evidence
         if: always()
         run: |
-          echo "=== EVAL-STALLS-BEGIN grpc-go ==="
-          cat eval-stalls-grpc-go.json
-          echo "=== EVAL-STALLS-END grpc-go ==="
-          { echo '```json'; cat eval-stalls-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          echo "=== EVAL-STALLS-BEGIN ${{ matrix.repo }} ==="
+          cat "${RUNNER_TEMP}/out/eval-stalls-${{ matrix.repo }}.json"
+          echo "=== EVAL-STALLS-END ${{ matrix.repo }} ==="
       - name: upload raw evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: eval-stalls-grpc-go
+          name: eval-stalls-${{ matrix.repo }}
           path: |
-            eval-stalls-grpc-go.json
-            runs/progress-stalls
+            ${{ runner.temp }}/out/eval-stalls-${{ matrix.repo }}.json
+            ${{ runner.temp }}/out/cost-stalls-${{ matrix.repo }}.json
+            ${{ runner.temp }}/out/runs/progress-stalls
 
   hero-suite:
     name: hero suite (20 tasks, tier-1 fixtures)
