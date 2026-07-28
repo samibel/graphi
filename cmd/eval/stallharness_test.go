@@ -198,10 +198,18 @@ func TestStallHarness_ASuppressedEmitterDoesNotComeOutGreen(t *testing.T) {
 // reported maximum. The delay is injected around the handler so the silence is a
 // real wall-clock gap in the real event stream, not a scripted clock.
 //
-// One-sided assertion on purpose: the observed gap can only be LONGER than the
-// injected delay, never shorter, so a loaded runner cannot make this flake.
+// The maximum assertion below is one-sided and cannot flake: the observed gap can
+// only be LONGER than the injected delay, never shorter. The anti-smearing check
+// is NOT one-sided, and the original 150 ms threshold made it flaky — under
+// `-race` on a loaded runner an *ambient* gap can also cross 150 ms, which counts
+// as a second interval without anything having smeared (observed on main at
+// 2e1e186: "2 interval(s) exceed the injected 150ms delay, want exactly 1"). The
+// injected delay is therefore held an order of magnitude above the natural gaps
+// these fixture trees produce (tens of milliseconds), so the count discriminates
+// smearing rather than runner load. It costs ~1.35 s of wall clock and buys the
+// signal-to-noise margin the assertion always assumed but never had.
 func TestStallHarness_ADelayedEmitterSurfacesInTheMaximum(t *testing.T) {
-	const delay = 150 * time.Millisecond
+	const delay = 1500 * time.Millisecond
 	delayed := false
 	wrap := func(inner func(ingest.ProgressEvent)) func(ingest.ProgressEvent) {
 		return func(ev ingest.ProgressEvent) {
