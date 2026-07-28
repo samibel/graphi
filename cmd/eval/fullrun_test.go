@@ -19,15 +19,13 @@ func TestFullRun_HermeticFixture_ProducesCompleteEvidence(t *testing.T) {
 	root := repoRoot(t)
 	outPath := filepath.Join(t.TempDir(), "report.json")
 
-	code := runFullRun(
-		filepath.Join(root, "corpus", "manifest.json"),
-		"tier1-fixture-hero-go",
-		t.TempDir(),
-		"test",
-		outPath,
-		"",
-		"",
-	)
+	code := runFullRun(fullRunOptions{
+		manifestPath: filepath.Join(root, "corpus", "manifest.json"),
+		repoName:     "tier1-fixture-hero-go",
+		workDir:      t.TempDir(),
+		runnerClass:  "test",
+		outPath:      outPath,
+	})
 	if code != 0 {
 		t.Fatalf("runFullRun exit code = %d, want 0", code)
 	}
@@ -114,7 +112,13 @@ func TestRenderedAndContractOutcomeFailClosed(t *testing.T) {
 
 func TestFullRun_UnknownRepoIsAUsageError(t *testing.T) {
 	root := repoRoot(t)
-	code := runFullRun(filepath.Join(root, "corpus", "manifest.json"), "no-such-repo", t.TempDir(), "test", filepath.Join(t.TempDir(), "r.json"), "", "")
+	code := runFullRun(fullRunOptions{
+		manifestPath: filepath.Join(root, "corpus", "manifest.json"),
+		repoName:     "no-such-repo",
+		workDir:      t.TempDir(),
+		runnerClass:  "test",
+		outPath:      filepath.Join(t.TempDir(), "r.json"),
+	})
 	if code != 2 {
 		t.Fatalf("exit code = %d, want 2 (usage error)", code)
 	}
@@ -128,13 +132,27 @@ func TestFullRun_ReferenceScenarioContractLabelsTheRunnerClass(t *testing.T) {
 	manifest := filepath.Join(root, "corpus", "manifest.json")
 	scenario := filepath.Join(root, "docs", "eval", "reference-scenario.json")
 
-	code := runFullRun(manifest, "tier1-fixture-hero-go", t.TempDir(), "not-a-declared-class", filepath.Join(t.TempDir(), "r.json"), "", scenario)
+	code := runFullRun(fullRunOptions{
+		manifestPath: manifest,
+		repoName:     "tier1-fixture-hero-go",
+		workDir:      t.TempDir(),
+		runnerClass:  "not-a-declared-class",
+		outPath:      filepath.Join(t.TempDir(), "r.json"),
+		scenarioPath: scenario,
+	})
 	if code != 2 {
 		t.Fatalf("undeclared runner class exit code = %d, want 2 (fail closed)", code)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "comparison.json")
-	code = runFullRun(manifest, "tier1-fixture-hero-go", t.TempDir(), "local-sandbox", outPath, "", scenario)
+	code = runFullRun(fullRunOptions{
+		manifestPath: manifest,
+		repoName:     "tier1-fixture-hero-go",
+		workDir:      t.TempDir(),
+		runnerClass:  "local-sandbox",
+		outPath:      outPath,
+		scenarioPath: scenario,
+	})
 	if code != 0 {
 		t.Fatalf("comparison-class run exit code = %d, want 0", code)
 	}
