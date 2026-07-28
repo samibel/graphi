@@ -20,6 +20,11 @@ package main
 //     distribution over too few samples is not the distribution asked for;
 //   - a missing measurement reads UNKNOWN, never PASS.
 //
+// The first two are PROVENANCE rules and apply to every gate in this file,
+// the OOM gate included — it has its own measurement method, but not its own
+// exemption from being about the candidate. The third is a DISTRIBUTION rule
+// and applies only to the gates read off a percentile; see coldGateBlockers.
+//
 // UNKNOWN is not a PASS (PRD §8.2) and is never silently upgraded.
 
 import (
@@ -88,21 +93,58 @@ func readColdGates(scenarioPath string, series evalreport.ColdRunSeries) ([]eval
 		}}, nil
 	}
 
-	blocker := coldGatePrecondition(series)
+	blockers := coldGateBlockersFor(series)
 	var gates []evalreport.GateResult
 	for _, g := range rs.Gates {
 		if g.MeasuredBy != "SW-124" {
 			continue
 		}
-		gates = append(gates, evaluateColdGate(g, series, blocker))
+		gates = append(gates, evaluateColdGate(g, series, blockers))
 	}
 	return gates, evaluateStopRule(rs.StopRule, series)
 }
 
-// coldGatePrecondition returns the reason this series cannot answer a §12.2
-// gate at all, or "" when it can. It is computed once so every gate reports the
-// same reason rather than each deriving its own.
-func coldGatePrecondition(series evalreport.ColdRunSeries) string {
+// coldGateBlockers are the reasons this series cannot answer a §12.2 gate,
+// split by WHAT each one disqualifies. They are computed once so every gate
+// reports the same reason rather than each deriving its own.
+//
+// provenance disqualifies EVERY gate, the OOM gate included: it says the
+// measurement is not about the reference scenario, or not about the frozen
+// candidate. A gate result about the wrong artifact is not evidence for the
+// candidate whatever that gate measures, and a measurement method of its own
+// is not an exemption from that.
+//
+// distribution additionally disqualifies the gates that are read off a
+// percentile of the cold series. It deliberately does NOT reach the OOM gate:
+// that gate is one constrained run, not a distribution, so refusing it for
+// "FR-8's distribution was not produced" would attach a reason that is not
+// true of it — and a gate blocked for a reason that does not apply is its own
+// small dishonesty.
+type coldGateBlockers struct {
+	provenance   string
+	distribution string
+}
+
+func coldGateBlockersFor(series evalreport.ColdRunSeries) coldGateBlockers {
+	return coldGateBlockers{
+		provenance:   coldGateProvenanceBlocker(series),
+		distribution: coldGateDistributionBlocker(series),
+	}
+}
+
+// forDistribution is the blocker a percentile-derived gate must obey:
+// provenance first, since "these numbers are about something else" outranks
+// "there are not enough of them".
+func (b coldGateBlockers) forDistribution() string {
+	if b.provenance != "" {
+		return b.provenance
+	}
+	return b.distribution
+}
+
+// coldGateProvenanceBlocker returns the reason this series' numbers are not
+// about the thing §12.2 is scoped to, or "" when they are.
+func coldGateProvenanceBlocker(series evalreport.ColdRunSeries) string {
 	switch {
 	case !series.ReferenceScenario:
 		return fmt.Sprintf("this run is %s on runner class %s (%s), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only",
@@ -112,14 +154,21 @@ func coldGatePrecondition(series evalreport.ColdRunSeries) string {
 	case !series.CandidateMatch:
 		return fmt.Sprintf("measured revision %s is not the frozen candidate %s; a gate result about a different artifact is not evidence for the candidate",
 			series.MeasuredSHA, series.CandidateSHA)
-	case !series.Sufficient:
+	}
+	return ""
+}
+
+// coldGateDistributionBlocker returns the reason this series' distribution is
+// not the one FR-8 asked for, or "" when it is.
+func coldGateDistributionBlocker(series evalreport.ColdRunSeries) string {
+	if !series.Sufficient {
 		return fmt.Sprintf("only %d of the required %d cold runs completed (%d aborted); FR-8's distribution was not produced",
 			series.RunsCompleted, series.MinimumRuns, series.RunsAborted)
 	}
 	return ""
 }
 
-func evaluateColdGate(g gateMapping, series evalreport.ColdRunSeries, blocker string) evalreport.GateResult {
+func evaluateColdGate(g gateMapping, series evalreport.ColdRunSeries, blockers coldGateBlockers) evalreport.GateResult {
 	result := evalreport.GateResult{
 		ID:         g.ID,
 		PRDMetric:  g.PRDMetric,
@@ -130,9 +179,15 @@ func evaluateColdGate(g gateMapping, series evalreport.ColdRunSeries, blocker st
 	}
 	if g.ID == oomGateID {
 		// The OOM gate has its own method and its own verdict; it is surfaced
-		// here so the gate list is complete, never re-derived.
-		result.Status = series.OOMCheck.Status
-		result.Reason = series.OOMCheck.Reason
+		// here so the gate list is complete, never re-derived. What it does
+		// NOT have is its own provenance rule: an OOM result measured off the
+		// reference scenario or off the frozen candidate is no more evidence
+		// about the candidate than a cold-index percentile would be, so the
+		// same blocker is applied to it here — independently of runOOMCheck,
+		// so a series assembled by any other route cannot route around it.
+		oom := applyOOMProvenance(series.OOMCheck, blockers.provenance)
+		result.Status = oom.Status
+		result.Reason = oom.Reason
 		return result
 	}
 
@@ -146,7 +201,7 @@ func evaluateColdGate(g gateMapping, series evalreport.ColdRunSeries, blocker st
 		result.Reason = fmt.Sprintf("the contract declares unit %q but the harness measures %q; a threshold whose unit moved cannot be read against an old conversion", g.Unit, binding.unit)
 		return result
 	}
-	if blocker != "" {
+	if blocker := blockers.forDistribution(); blocker != "" {
 		result.Reason = blocker
 		return result
 	}
@@ -236,7 +291,15 @@ type oomObservation struct {
 // could not be exercised. Every path out of this function that is not a real,
 // verified, completed, signal-free run yields UNKNOWN — "not exercised" is
 // never a PASS (AC-4).
-func runOOMCheck(ctx context.Context, o coldSeriesOptions, workDir string, execRun coldRunExecutor) evalreport.OOMResult {
+//
+// provenance is the series-level reason the numbers are not about the frozen
+// candidate on the reference scenario, or "" when they are. The check is still
+// EXERCISED when it is non-empty — a constrained run that proves the cgroup
+// plumbing works is worth having, and the raw observations it produces are
+// kept either way — but its verdict is downgraded to UNKNOWN, because the
+// contract binds this gate to the reference scenario and §8.2 forbids calling
+// a result about a different artifact a PASS.
+func runOOMCheck(ctx context.Context, o coldSeriesOptions, workDir string, execRun coldRunExecutor, provenance string) evalreport.OOMResult {
 	result := evalreport.OOMResult{GateID: oomGateID, Status: evalreport.StatusUnknown}
 
 	if o.scenarioPath == "" {
@@ -279,7 +342,35 @@ func runOOMCheck(ctx context.Context, o coldSeriesOptions, workDir string, execR
 		indexCompleted: sample.Status == evalreport.ColdRunCompleted,
 		kernelLog:      collectKernelOOM(ctx, exit.pid),
 	}
-	return evaluateOOM(result, obs)
+	return applyOOMProvenance(evaluateOOM(result, obs), provenance)
+}
+
+// applyOOMProvenance downgrades an OOM verdict that is not about the frozen
+// candidate on the reference scenario. The four percentile-derived gates get
+// this from coldGateBlockers; the OOM gate computes its own verdict, so the
+// same rule has to be applied to that verdict rather than inherited by it.
+//
+// A blocked verdict becomes UNKNOWN whatever it was. A PASS about the wrong
+// artifact is exactly the failure mode this band exists to remove; a FAIL
+// about the wrong artifact is not evidence about the candidate either, and
+// letting one through would make the gate's meaning depend on which way it
+// happened to land. Nothing is hidden by the downgrade: the observed verdict
+// is named in the reason, and every raw observation (limit_verified,
+// run_completed, exit_code, failure_signals, the run itself) stays in the
+// record, so evaluateOOM's result is recomputable from the artifact.
+//
+// It is idempotent — an already-UNKNOWN result is returned untouched, so
+// applying it in both runOOMCheck and evaluateColdGate cannot double-wrap a
+// reason.
+func applyOOMProvenance(result evalreport.OOMResult, provenance string) evalreport.OOMResult {
+	if provenance == "" || result.Status == evalreport.StatusUnknown {
+		return result
+	}
+	observed := result.Status
+	result.Status = evalreport.StatusUnknown
+	result.Reason = fmt.Sprintf("%s — so this gate is UNKNOWN, not %s; the constrained run itself observed %s: %s",
+		provenance, observed, observed, result.Reason)
+	return result
 }
 
 // evaluateOOM applies the contract's rules, in the contract's order:

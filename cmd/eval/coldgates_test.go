@@ -9,11 +9,29 @@ package main
 // scope, "the gate works" would itself be an unverifiable claim.
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/internal/evalreport"
 )
+
+// passingOOMCheck is the verdict evaluateOOM produces for a genuinely clean
+// constrained run: a verified 8 GB limit, a completed run, no failure signal.
+// It exists so a test can ask what the GATE does with a PASS, which is the
+// only case where the provenance rule can change an answer.
+func passingOOMCheck() evalreport.OOMResult {
+	return evalreport.OOMResult{
+		GateID:                oomGateID,
+		Status:                evalreport.StatusPass,
+		RequiredLimitBytes:    oomLimit,
+		ObservedMemoryMax:     "8589934592",
+		ObservedMemorySwapMax: "0",
+		LimitVerified:         true,
+		RunCompleted:          true,
+		Reason:                "the run completed under a verified 8589934592-byte limit with no swap, and all three failure signals were collected and absent",
+	}
+}
 
 func referenceSeries(aggregates map[string]evalreport.Aggregate) evalreport.ColdRunSeries {
 	return evalreport.ColdRunSeries{
@@ -58,7 +76,7 @@ func TestEvaluateColdGate_ThresholdsAndUnitConversion(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.gate.ID, func(t *testing.T) {
-			got := evaluateColdGate(tc.gate, series, "")
+			got := evaluateColdGate(tc.gate, series, coldGateBlockers{})
 			if got.Status != tc.want {
 				t.Fatalf("status = %s (%s), want %s", got.Status, got.Reason, tc.want)
 			}
@@ -81,7 +99,7 @@ func TestEvaluateColdGate_FailsWhenExceeded(t *testing.T) {
 	series := referenceSeries(map[string]evalreport.Aggregate{
 		evalreport.MetricIndexWallclockMS: agg(evalreport.MetricIndexWallclockMS, 95_000, 130_000, 130_000),
 	})
-	got := evaluateColdGate(gateMapping{ID: "cold_index_p50", Threshold: 90, Unit: "s", Comparison: "lte"}, series, "")
+	got := evaluateColdGate(gateMapping{ID: "cold_index_p50", Threshold: 90, Unit: "s", Comparison: "lte"}, series, coldGateBlockers{})
 	if got.Status != evalreport.StatusFail {
 		t.Fatalf("status = %s, want FAIL for a 95 s p50 against a 90 s threshold", got.Status)
 	}
@@ -92,7 +110,7 @@ func TestEvaluateColdGate_FailsWhenExceeded(t *testing.T) {
 
 // A measurement that was never taken is UNKNOWN, not a pass on a zero.
 func TestEvaluateColdGate_MissingAggregateIsUnknownNotZero(t *testing.T) {
-	got := evaluateColdGate(gateMapping{ID: "db_size", Threshold: 300, Unit: "MB", Comparison: "lte"}, referenceSeries(nil), "")
+	got := evaluateColdGate(gateMapping{ID: "db_size", Threshold: 300, Unit: "MB", Comparison: "lte"}, referenceSeries(nil), coldGateBlockers{})
 	if got.Status != evalreport.StatusUnknown {
 		t.Fatalf("status = %s, want UNKNOWN — a 0 MB DB would otherwise pass a 300 MB ceiling", got.Status)
 	}
@@ -107,7 +125,7 @@ func TestEvaluateColdGate_RefusesAUnitItDoesNotMeasure(t *testing.T) {
 	series := referenceSeries(map[string]evalreport.Aggregate{
 		evalreport.MetricIndexWallclockMS: agg(evalreport.MetricIndexWallclockMS, 45_000, 89_000, 89_000),
 	})
-	got := evaluateColdGate(gateMapping{ID: "cold_index_p50", Threshold: 90000, Unit: "ms", Comparison: "lte"}, series, "")
+	got := evaluateColdGate(gateMapping{ID: "cold_index_p50", Threshold: 90000, Unit: "ms", Comparison: "lte"}, series, coldGateBlockers{})
 	if got.Status != evalreport.StatusUnknown {
 		t.Fatalf("status = %s, want UNKNOWN when the declared unit is not the measured one", got.Status)
 	}
@@ -119,33 +137,205 @@ func TestEvaluateColdGate_RefusesAUnitItDoesNotMeasure(t *testing.T) {
 // The four preconditions, in priority order. Each one is a distinct reason a
 // number cannot answer a PRD §12.2 gate, and each has to be stated rather than
 // collapsed into a bare UNKNOWN.
+//
+// `provenance` says the numbers are about the wrong thing and blocks EVERY
+// gate; `distribution` says there are not enough of them and blocks only the
+// percentile-derived gates. Which class each blocker falls into is asserted
+// here because that classification is the whole load-bearing part.
 func TestColdGatePrecondition_EachBlockerIsNamed(t *testing.T) {
 	cases := []struct {
-		name    string
-		mutate  func(*evalreport.ColdRunSeries)
-		wantSub string
+		name          string
+		mutate        func(*evalreport.ColdRunSeries)
+		wantSub       string
+		wantClass     string // "provenance" or "distribution"
+		wantOOMStatus string
 	}{
-		{"not the reference scenario", func(s *evalreport.ColdRunSeries) { s.ReferenceScenario = false }, "not the reference scenario"},
-		{"dirty worktree", func(s *evalreport.ColdRunSeries) { s.WorktreeDirty = true }, "dirty worktree"},
-		{"not the candidate", func(s *evalreport.ColdRunSeries) { s.CandidateMatch = false }, "not the frozen candidate"},
-		{"too few runs", func(s *evalreport.ColdRunSeries) { s.Sufficient = false; s.RunsCompleted = 7 }, "only 7 of the required 10"},
+		{"not the reference scenario", func(s *evalreport.ColdRunSeries) { s.ReferenceScenario = false },
+			"not the reference scenario", "provenance", evalreport.StatusUnknown},
+		{"dirty worktree", func(s *evalreport.ColdRunSeries) { s.WorktreeDirty = true },
+			"dirty worktree", "provenance", evalreport.StatusUnknown},
+		{"not the candidate", func(s *evalreport.ColdRunSeries) { s.CandidateMatch = false },
+			"not the frozen candidate", "provenance", evalreport.StatusUnknown},
+		// FR-8's sample count is a claim about the DISTRIBUTION. The OOM gate
+		// is one constrained run, so it must not inherit a reason that is not
+		// true of it.
+		{"too few runs", func(s *evalreport.ColdRunSeries) { s.Sufficient = false; s.RunsCompleted = 7 },
+			"only 7 of the required 10", "distribution", evalreport.StatusPass},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			s := referenceSeries(nil)
+			// A genuinely clean constrained run, so a gate that reads UNKNOWN
+			// below does so because of the blocker and nothing else.
+			s.OOMCheck = passingOOMCheck()
 			tc.mutate(&s)
-			got := coldGatePrecondition(s)
-			if !strings.Contains(got, tc.wantSub) {
+
+			blockers := coldGateBlockersFor(s)
+			if got := blockers.forDistribution(); !strings.Contains(got, tc.wantSub) {
 				t.Fatalf("precondition = %q, want it to mention %q", got, tc.wantSub)
 			}
-			gate := evaluateColdGate(gateMapping{ID: "cold_index_p50", Threshold: 90, Unit: "s", Comparison: "lte"}, s, got)
+			switch tc.wantClass {
+			case "provenance":
+				if !strings.Contains(blockers.provenance, tc.wantSub) {
+					t.Errorf("provenance blocker = %q, want it to mention %q", blockers.provenance, tc.wantSub)
+				}
+			case "distribution":
+				if blockers.provenance != "" {
+					t.Errorf("provenance blocker = %q, want empty: this series' numbers are about the right thing", blockers.provenance)
+				}
+				if !strings.Contains(blockers.distribution, tc.wantSub) {
+					t.Errorf("distribution blocker = %q, want it to mention %q", blockers.distribution, tc.wantSub)
+				}
+			}
+
+			gate := evaluateColdGate(gateMapping{ID: "cold_index_p50", Threshold: 90, Unit: "s", Comparison: "lte"}, s, blockers)
 			if gate.Status != evalreport.StatusUnknown {
 				t.Errorf("gate status = %s, want UNKNOWN", gate.Status)
 			}
+			oom := evaluateColdGate(gateMapping{ID: oomGateID, Threshold: 0, Unit: "oom_kills", Comparison: "lte"}, s, blockers)
+			if oom.Status != tc.wantOOMStatus {
+				t.Errorf("oom gate status = %s (%s), want %s", oom.Status, oom.Reason, tc.wantOOMStatus)
+			}
 		})
 	}
-	if got := coldGatePrecondition(referenceSeries(nil)); got != "" {
-		t.Fatalf("a complete reference series must have no blocker, got %q", got)
+	clean := coldGateBlockersFor(referenceSeries(nil))
+	if clean.provenance != "" || clean.distribution != "" {
+		t.Fatalf("a complete reference series must have no blocker, got %+v", clean)
+	}
+}
+
+// The defect this test exists for: the OOM gate used to be surfaced straight
+// out of series.OOMCheck, BEFORE the blocker was consulted, so a clean
+// constrained run on a comparison runner / a dirty tree / a non-candidate
+// revision published `"status": "PASS"` in series.Gates while every other §12.2
+// gate correctly read UNKNOWN. A gate row is what SW-128's aggregator reads
+// per gate; PASS there for evidence that is not about the candidate is exactly
+// what this band exists to prevent.
+func TestEvaluateColdGate_OOMGateObeysTheProvenanceBlocker(t *testing.T) {
+	oomGate := gateMapping{ID: oomGateID, PRDMetric: "OOM on an 8 GB host (PRD 12.2)", Threshold: 0, Unit: "oom_kills", Comparison: "lte"}
+
+	cases := []struct {
+		name   string
+		mutate func(*evalreport.ColdRunSeries)
+	}{
+		{"comparison runner class", func(s *evalreport.ColdRunSeries) {
+			s.ReferenceScenario = false
+			s.RunnerClass, s.RunnerRole = "local-sandbox", roleComparison
+		}},
+		{"dirty worktree", func(s *evalreport.ColdRunSeries) { s.WorktreeDirty = true; s.MeasuredSHA = "abc123+dirty" }},
+		{"revision other than the frozen candidate", func(s *evalreport.ColdRunSeries) {
+			s.CandidateMatch = false
+			s.MeasuredSHA = "deadbee"
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := referenceSeries(nil)
+			s.OOMCheck = passingOOMCheck()
+			tc.mutate(&s)
+
+			got := evaluateColdGate(oomGate, s, coldGateBlockersFor(s))
+			if got.Status != evalreport.StatusUnknown {
+				t.Fatalf("oom gate = %s (%s), want UNKNOWN: a PASS here is a gate result about the wrong artifact", got.Status, got.Reason)
+			}
+			if !strings.Contains(got.Reason, "the constrained run itself observed PASS") {
+				t.Errorf("reason = %q, want the underlying observation named rather than discarded", got.Reason)
+			}
+		})
+	}
+
+	// And the fix must not nail the gate to UNKNOWN: a clean run, on the
+	// reference scenario, from the candidate, still passes.
+	s := referenceSeries(nil)
+	s.OOMCheck = passingOOMCheck()
+	if got := evaluateColdGate(oomGate, s, coldGateBlockersFor(s)); got.Status != evalreport.StatusPass {
+		t.Fatalf("oom gate = %s (%s) on a clean reference series, want PASS", got.Status, got.Reason)
+	}
+}
+
+// The same rule applied to the standalone `oom_check` object, which is a
+// separate field in the artifact from the gate row and would otherwise still
+// read PASS on its own.
+func TestApplyOOMProvenance(t *testing.T) {
+	const blocker = "measured revision deadbee is not the frozen candidate abc123"
+
+	t.Run("no blocker leaves the verdict alone", func(t *testing.T) {
+		got := applyOOMProvenance(passingOOMCheck(), "")
+		if got.Status != evalreport.StatusPass {
+			t.Fatalf("status = %s, want the verdict untouched", got.Status)
+		}
+	})
+
+	t.Run("a blocked PASS becomes UNKNOWN and keeps its observations", func(t *testing.T) {
+		in := passingOOMCheck()
+		got := applyOOMProvenance(in, blocker)
+		if got.Status != evalreport.StatusUnknown {
+			t.Fatalf("status = %s, want UNKNOWN", got.Status)
+		}
+		if !strings.Contains(got.Reason, blocker) || !strings.Contains(got.Reason, "observed PASS") {
+			t.Errorf("reason = %q, want both the blocker and the observed verdict", got.Reason)
+		}
+		if !got.LimitVerified || !got.RunCompleted || got.ObservedMemoryMax != in.ObservedMemoryMax {
+			t.Errorf("the raw observations were lost in the downgrade: %+v", got)
+		}
+	})
+
+	t.Run("a blocked FAIL becomes UNKNOWN too", func(t *testing.T) {
+		in := passingOOMCheck()
+		in.Status, in.Reason = evalreport.StatusFail, "OOM kill observed — oom_kill=1"
+		in.FailureSignals = []string{"cgroup memory.events oom_kill: oom_kill=1"}
+		got := applyOOMProvenance(in, blocker)
+		if got.Status != evalreport.StatusUnknown {
+			t.Fatalf("status = %s, want UNKNOWN: a kill on a different artifact is not evidence about the candidate either", got.Status)
+		}
+		if len(got.FailureSignals) != 1 || !strings.Contains(got.Reason, "oom_kill=1") {
+			t.Errorf("the observed kill was hidden rather than reclassified: %+v", got)
+		}
+	})
+
+	t.Run("it is idempotent", func(t *testing.T) {
+		once := applyOOMProvenance(passingOOMCheck(), blocker)
+		twice := applyOOMProvenance(once, blocker)
+		if twice.Reason != once.Reason || twice.Status != once.Status {
+			t.Fatalf("applying the blocker twice double-wrapped the reason:\n once: %q\n twice: %q", once.Reason, twice.Reason)
+		}
+	})
+}
+
+// readColdGates over the REAL contract file: the gate list the artifact
+// carries, not a hand-built mapping.
+func TestReadColdGates_OOMRowCannotPassOffTheCandidate(t *testing.T) {
+	scenario := filepath.Join(repoRoot(t), "docs", "eval", "reference-scenario.json")
+
+	find := func(gates []evalreport.GateResult) evalreport.GateResult {
+		t.Helper()
+		for _, g := range gates {
+			if g.ID == oomGateID {
+				return g
+			}
+		}
+		t.Fatal("the OOM gate is missing from the gate list")
+		return evalreport.GateResult{}
+	}
+
+	clean := referenceSeries(map[string]evalreport.Aggregate{
+		evalreport.MetricIndexWallclockMS: agg(evalreport.MetricIndexWallclockMS, 45_000, 89_000, 89_000),
+		evalreport.MetricStablePeakRSSMB:  agg(evalreport.MetricStablePeakRSSMB, 1024, 1536, 1536),
+	})
+	clean.OOMCheck = passingOOMCheck()
+	gates, _ := readColdGates(scenario, clean)
+	if got := find(gates); got.Status != evalreport.StatusPass {
+		t.Fatalf("oom gate = %s (%s) on a clean candidate series, want PASS", got.Status, got.Reason)
+	}
+
+	offCandidate := clean
+	offCandidate.CandidateMatch = false
+	offCandidate.MeasuredSHA = "deadbeef"
+	gates, _ = readColdGates(scenario, offCandidate)
+	for _, g := range gates {
+		if g.Status == evalreport.StatusPass {
+			t.Errorf("gate %s = PASS off the frozen candidate; no §12.2 gate may pass on evidence about another artifact", g.ID)
+		}
 	}
 }
 

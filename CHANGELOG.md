@@ -64,7 +64,11 @@ file:
   the revision that measured it, and the series cites the frozen candidate from the
   evidence index. A series measured on anything else — including a dirty worktree —
   is marked as such, and its gates read UNKNOWN: a gate result about an artifact
-  nobody installs is not evidence about the candidate.
+  nobody installs is not evidence about the candidate. That applies to **every**
+  gate including the OOM one, which has a measurement method of its own but no
+  exemption of its own — a clean constrained run measured off the reference
+  scenario, off the candidate, or from a dirty tree reads UNKNOWN with the observed
+  result named beside the reason, never PASS.
 - Gates are read from the reference-scenario contract rather than restated, and the
   weekly `eval-full` workflow gained a `cold-index-series` job that runs the ten
   reference-scenario runs and the OOM check. The PR path is untouched: the default

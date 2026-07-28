@@ -50,9 +50,10 @@ const defaultCandidateIndexPath = "docs/rc/evidence-index.yaml"
 // coldSeriesNotes explains the artifact to a reader who has only the JSON.
 const coldSeriesNotes = "SW-124 cold-index series: N independent cold runs, ONE PROCESS PER RUN (getrusage MAXRSS is a " +
 	"process-lifetime peak, so in-process repetition would publish run 1's peak for every later run). `repo` is one named " +
-	"sample kept for comparability with single-run reports; every distributional claim is in `cold_series`. Gates are read " +
-	"ONLY when the run is the reference scenario on the reference class, from the frozen candidate, with at least " +
-	"minimum_runs completed runs — otherwise they are UNKNOWN, which is not a PASS (PRD §8.2)."
+	"sample kept for comparability with single-run reports; every distributional claim is in `cold_series`. NO gate — the " +
+	"OOM gate included — is read unless the run is the reference scenario on the reference class and from the frozen " +
+	"candidate; the percentile gates additionally require at least minimum_runs completed runs. Otherwise they are " +
+	"UNKNOWN, which is not a PASS (PRD §8.2)."
 
 type coldSeriesOptions struct {
 	manifestPath  string
@@ -178,7 +179,11 @@ func runColdSeries(o coldSeriesOptions, newExecutor coldRunExecutorFactory) int 
 	series.Sufficient = series.RunsCompleted >= series.MinimumRuns
 	series.Aggregates = evalreport.RecomputeColdAggregates(series.Runs)
 
-	series.OOMCheck = runOOMCheck(ctx, o, workDir, execRun)
+	// The provenance blocker is computed before the OOM check runs, from the
+	// fields that are already final at this point (reference scenario, dirty
+	// worktree, candidate match), so the OOM verdict is subject to the same
+	// "is this about the candidate at all" rule as every other gate.
+	series.OOMCheck = runOOMCheck(ctx, o, workDir, execRun, coldGateProvenanceBlocker(series))
 	series.Gates, series.StopRule = readColdGates(o.scenarioPath, series)
 	series.Status = coldSeriesStatus(&series)
 	series.Notes = coldSeriesNotes

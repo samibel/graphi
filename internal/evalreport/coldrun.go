@@ -259,7 +259,10 @@ type ColdRunSeries struct {
 // AggregateMethodNote documents the derivation inline, so the artifact explains
 // its own arithmetic.
 const AggregateMethodNote = "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the COMPLETED runs only, ascending; " +
-	"aborted runs contribute to runs_aborted and never to a distribution. " +
+	"aborted runs contribute to runs_aborted and never to a distribution. A completed run's node and edge COUNTS are " +
+	"sampled even when they are zero (a degenerate repository is a measurement); the metrics a completed run always " +
+	"produces (wallclock, RSS, db size) and the bytes-per-edge RATIO treat a zero as an absent field, so `n` below " +
+	"runs_completed always means a run did not report the metric. " +
 	"Every value here is reproducible from `runs` with evalreport.RecomputeColdAggregates."
 
 // Cold-series aggregate metric keys. They are constants because SW-128's
@@ -336,31 +339,49 @@ func percentileRank(n, p int) int {
 // Only completed runs contribute. A metric with no samples is absent from the
 // map rather than present with a zero — an absent distribution and a measured
 // zero are different claims.
+//
+// Which is also why the presence predicates below are per-metric rather than a
+// blanket `value > 0`. For a COUNT that a completed index really can produce as
+// zero — nodes and edges over a degenerate repository — zero is a measurement
+// and is counted, so `n` reconciles with runs_completed. For the metrics where
+// a zero can only mean the field was never populated (a process always has an
+// RSS, a store file always has bytes, a completed run always has a wallclock)
+// the zero is treated as absent, and for a RATIO over zero edges there is no
+// measurement to have. The distinction is the point: `n` below runs_completed
+// now always means "this run did not report it", never "it reported a zero".
 func RecomputeColdAggregates(runs []ColdRunSample) map[string]Aggregate {
+	// measured marks a value that a completed run always produces, so a zero
+	// there is a missing field rather than an observation.
+	measured := func(v int64) (float64, bool) { return float64(v), v > 0 }
+	// counted marks a value a completed run reports even when it is zero.
+	counted := func(v int) (float64, bool) { return float64(v), true }
+
 	units := []struct {
 		metric string
 		unit   string
 		value  func(ColdRunSample) (float64, bool)
 	}{
 		{MetricIndexWallclockMS, "ms", func(r ColdRunSample) (float64, bool) {
-			return float64(r.Index.WallclockMS), r.Index.WallclockMS > 0
+			return measured(r.Index.WallclockMS)
 		}},
 		{MetricIndexPeakRSSMB, "MB", func(r ColdRunSample) (float64, bool) {
-			return float64(r.Index.PeakRSSMB), r.Index.PeakRSSMB > 0
+			return measured(r.Index.PeakRSSMB)
 		}},
 		{MetricStablePeakRSSMB, "MB", func(r ColdRunSample) (float64, bool) {
-			return float64(r.StablePeakRSSMB), r.StablePeakRSSMB > 0
+			return measured(r.StablePeakRSSMB)
 		}},
 		{MetricDBSizeBytes, "bytes", func(r ColdRunSample) (float64, bool) {
-			return float64(r.Index.DBSizeBytes), r.Index.DBSizeBytes > 0
+			return measured(r.Index.DBSizeBytes)
 		}},
 		{MetricNodes, "nodes", func(r ColdRunSample) (float64, bool) {
-			return float64(r.Index.Nodes), r.Index.Nodes > 0
+			return counted(r.Index.Nodes)
 		}},
 		{MetricEdges, "edges", func(r ColdRunSample) (float64, bool) {
-			return float64(r.Index.Edges), r.Index.Edges > 0
+			return counted(r.Index.Edges)
 		}},
 		{MetricBytesPerEdge, "bytes/edge", func(r ColdRunSample) (float64, bool) {
+			// A ratio over zero edges is undefined, not small: BytesPerEdge
+			// returns 0 for exactly that case, and it stays absent.
 			return r.BytesPerEdge, r.BytesPerEdge > 0
 		}},
 	}

@@ -177,17 +177,35 @@ func TestRecomputeColdAggregates_AbortedRunsNeverEnterTheDistribution(t *testing
 
 // A metric nobody measured is absent, not zero: "no distribution" and
 // "a measured zero" are different claims and must not render alike.
-func TestRecomputeColdAggregates_UnmeasuredMetricIsAbsentNotZero(t *testing.T) {
+//
+// The distinction runs BOTH ways, which is the point of this test. A completed
+// run that indexed a degenerate repository really did measure zero edges, and
+// that zero is a sample — dropping it would make `n` silently disagree with
+// runs_completed and hide the degenerate repository behind an absence. A
+// ratio over those zero edges, by contrast, is undefined and stays absent.
+func TestRecomputeColdAggregates_MeasuredZeroIsNotAnAbsentMetric(t *testing.T) {
 	runs := []ColdRunSample{completedSample(1, 100, 300, 400, 2000, 10, 0)}
 	agg := RecomputeColdAggregates(runs)
-	if _, ok := agg[MetricEdges]; ok {
-		t.Error("edges aggregate present for a run that produced no edges")
+
+	edges, ok := agg[MetricEdges]
+	if !ok {
+		t.Fatal("edges aggregate absent for a completed run that measured zero edges — a measured zero is a sample")
+	}
+	if edges.N != 1 || edges.Min != 0 || edges.P50 != 0 || edges.P95 != 0 || edges.Max != 0 {
+		t.Errorf("edges aggregate = %+v, want one sample of zero", edges)
 	}
 	if _, ok := agg[MetricBytesPerEdge]; ok {
 		t.Error("bytes_per_edge present without edges — a ratio over zero edges is not a measurement")
 	}
 	if _, ok := agg[MetricIndexWallclockMS]; !ok {
 		t.Error("wallclock aggregate should still be present")
+	}
+
+	// An ABORTED run is a different claim again: it measured nothing at all,
+	// so it contributes no zero to any distribution.
+	aborted := RecomputeColdAggregates([]ColdRunSample{{Run: 1, Status: ColdRunAborted, Error: "clone failed"}})
+	if len(aborted) != 0 {
+		t.Errorf("an aborted run produced aggregates %+v; it measured nothing", aborted)
 	}
 }
 
