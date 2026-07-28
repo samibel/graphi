@@ -11,8 +11,8 @@ import (
 // candidateProvenance is a run that is about the frozen candidate on the
 // reference scenario — the only state in which a §12.2 gate may read anything
 // other than UNKNOWN.
-func candidateProvenance() queryGateProvenance {
-	return queryGateProvenance{
+func candidateProvenance() gateProvenance {
+	return gateProvenance{
 		repo: "grpc-go", runnerClass: "ubuntu-latest", runnerRole: roleReference,
 		referenceScenario: true,
 		measuredSHA:       "4e72637",
@@ -89,23 +89,23 @@ func TestEvaluateQueryGate_ProvenanceBlockersMakeEveryGateUnknown(t *testing.T) 
 
 	cases := []struct {
 		name string
-		mut  func(*queryGateProvenance)
+		mut  func(*gateProvenance)
 		want string
 	}{
-		{"comparison runner class", func(p *queryGateProvenance) {
+		{"comparison runner class", func(p *gateProvenance) {
 			p.referenceScenario = false
 			p.runnerClass, p.runnerRole = "local-sandbox", roleComparison
 		}, "not the reference scenario"},
-		{"dirty worktree", func(p *queryGateProvenance) {
+		{"dirty worktree", func(p *gateProvenance) {
 			p.worktreeDirty = true
 			p.measuredSHA = "4e72637+dirty"
 			p.candidateMatch = false
 		}, "dirty worktree"},
-		{"revision other than the frozen candidate", func(p *queryGateProvenance) {
+		{"revision other than the frozen candidate", func(p *gateProvenance) {
 			p.measuredSHA = "deadbee"
 			p.candidateMatch = false
 		}, "not the frozen candidate"},
-		{"candidate could not be cited", func(p *queryGateProvenance) {
+		{"candidate could not be cited", func(p *gateProvenance) {
 			p.candidateError = "read docs/rc/evidence-index.yaml: no such file"
 			p.candidateMatch = false
 		}, "could not be cited"},

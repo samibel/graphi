@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // TestMeasureSignal pins the ground-truth diagnostics measurement: exactly
 // one true positive survives the default gates, nothing false, no unsafe
@@ -62,5 +65,38 @@ func TestMeasurePerformance(t *testing.T) {
 	}
 	if m.Score != 100 {
 		t.Fatalf("performance score %v, want 100", m.Score)
+	}
+}
+
+// SW-126 AC-5: the fixture path is DELIMITED from the P0 path. Every check this
+// file produces carries the fixture prefix, so a fixture number can never be
+// quoted as a reference-scenario one — `db_size` and `incremental_update` are
+// both PRD §12.2 concepts, and two identically named measurements over two
+// completely different subjects is the conflation this story removes.
+func TestMeasurePerformance_ChecksAreScopedToTheFixture(t *testing.T) {
+	m, err := measurePerformanceAt("../../corpus/fixtures/go")
+	if err != nil {
+		t.Fatalf("measurePerformance: %v", err)
+	}
+	for _, c := range m.Checks {
+		if !strings.HasPrefix(c.Name, fixtureCheckPrefix) {
+			t.Errorf("check %q is not scoped to the fixture: a PR-gate smoke number must not be readable as P0 evidence", c.Name)
+		}
+	}
+	var incremental bool
+	for _, c := range m.Checks {
+		if c.Name == fixtureCheckPrefix+"incremental_update" {
+			incremental = true
+		}
+	}
+	if !incremental {
+		t.Error("the fixture incremental check is gone; SW-126 keeps it for the PR gate, it only stops it being P0 evidence")
+	}
+	// And the fixture path measures no freshness at all — freshness is the
+	// change-to-answer interval, which a single re-ingest call cannot produce.
+	for _, c := range m.Checks {
+		if strings.Contains(c.Name, "freshness") {
+			t.Errorf("check %q claims a freshness measurement the fixture path does not make", c.Name)
+		}
 	}
 }

@@ -76,6 +76,11 @@ func main() {
 	// eval-full.yml.
 	queryExecutions := flag.Int("query-executions", 0, "minimum timed executions per query class AND per PRD §12.2 gate pool (FR-8 wants at least "+strconv.Itoa(evalreport.QueryExecutionMinimum)+"); 0 = the default warm sample counts, unchanged")
 
+	// SW-126 (P0-C3) freshness/incremental flag. 0 is the default path: the
+	// phase does not run at all, because it MUTATES the measured checkout. The
+	// >=100-change runs are requested explicitly and go through eval-full.yml.
+	incrementalChanges := flag.Int("incremental-changes", 0, "run this many incremental changes against the measured checkout and report incremental-update and freshness p50/p95 (FR-8 wants at least "+strconv.Itoa(evalreport.IncrementalChangeMinimum)+"); 0 = not measured, and the checkout is left untouched")
+
 	flag.Parse()
 
 	if *checkReferenceScenario {
@@ -111,16 +116,17 @@ func main() {
 			}, execColdRun))
 		}
 		os.Exit(runFullRun(fullRunOptions{
-			manifestPath:    *manifest,
-			repoName:        *fullRun,
-			workDir:         *workDir,
-			runnerClass:     *runnerClass,
-			outPath:         *out,
-			budgetPath:      *budgets,
-			scenarioPath:    *referenceScenarioPath,
-			dropCaches:      *dropCaches,
-			queryExecutions: *queryExecutions,
-			candidatePath:   *candidatePath,
+			manifestPath:       *manifest,
+			repoName:           *fullRun,
+			workDir:            *workDir,
+			runnerClass:        *runnerClass,
+			outPath:            *out,
+			budgetPath:         *budgets,
+			scenarioPath:       *referenceScenarioPath,
+			dropCaches:         *dropCaches,
+			queryExecutions:    *queryExecutions,
+			incrementalChanges: *incrementalChanges,
+			candidatePath:      *candidatePath,
 		}))
 	}
 
