@@ -28,11 +28,19 @@ mit dem dokumentierten Lock-Handgriff.
 > publiziert ist — und die Change-Control-Regel (Plan §2.3/WP0). Dieses Dossier
 > beschreibt den Stand v0.5.0 @ `65713de`.
 >
-> **Abgelöst (SW-121, 2026-07-28):** `4e72637` ist **nicht mehr** der Candidate. Der
-> maßgebliche Candidate ist das veröffentlichte Release **`v0.6.7` auf `fb3bf03`** —
-> [`docs/decisions/2026-07-p0-candidate-freeze.md`](../decisions/2026-07-p0-candidate-freeze.md).
+> **Abgelöst (SW-131, 2026-07-28):** weder `4e72637` noch `fb3bf03` ist der Candidate. Der
+> maßgebliche Candidate ist das veröffentlichte Release **`v0.7.0` auf `5815db5`** —
+> [`docs/decisions/2026-07-p0-candidate-freeze-v070.md`](../decisions/2026-07-p0-candidate-freeze-v070.md).
 > Jede Messung dieses Programms ist an **diese** SHA gebunden; Aussagen, die gegen
-> `4e72637` getroffen wurden, sind **STALE** (`docs/rc/evidence-index.yaml`).
+> `4e72637` oder `fb3bf03` getroffen wurden, sind **STALE**
+> (`docs/rc/evidence-index.yaml`) und werden nicht umgehängt.
+>
+> Zwischenschritt zur Historie: SW-121 hatte `v0.6.7` auf `fb3bf03` gesetzt. Dieser
+> Candidate ist durch einen dokumentierten Blocker-Fix abgelöst worden — er ist
+> **konstruktionsbedingt nicht messbar** (P0-Harness bei dieser SHA nicht vorhanden; kein
+> Pfad für ein externes Binary, daher `candidateMatch = false` → jedes §12.2-Gate UNKNOWN).
+> Der Produktbaum ist zwischen `fb3bf03` und `5815db5` byte-identisch; das begründet die
+> Unbedenklichkeit des Wechsels und ist **keine** Messaussage.
 
 ## 2. Gate-Checkliste
 

@@ -8,15 +8,33 @@
 > **einer** Ausnahme: innerhalb des P0-Scope (M0–M2) gewinnt die P0-PRD, siehe den Vermerk
 > „Zur PRD“ weiter unten. Sie ist die einzige zugelassene Präzisierung, kein zweiter Plan.
 >
-> **Candidate-Freeze — neu gesetzt (SW-121, 2026-07-28).** Der maßgebliche Candidate ist
-> das **veröffentlichte, getaggte und attestierte Release `v0.6.7` auf
-> `fb3bf037e9b7fe05eda50514189caeff4c06679d`**, festgehalten in
-> [`docs/decisions/2026-07-p0-candidate-freeze.md`](../decisions/2026-07-p0-candidate-freeze.md)
-> (SW-121). Der zuvor hier genannte `4e72637` (SW-116) ist **abgelöst**: aus ihm wurde nie
-> etwas veröffentlicht, sein Release-Digest blieb `UNKNOWN`, und UNKNOWN zählt als nicht
-> bestanden (§2.4). Sein Entscheidungsdokument bleibt als Historie erhalten, ist aber als
-> *superseded* markiert und darf nicht mehr als aktueller Candidate zitiert werden; alle
-> daran gebundenen Evidenzzeilen stehen auf **STALE** (`docs/rc/evidence-index.yaml`).
+> **Candidate-Freeze — neu gesetzt (SW-131, 2026-07-28).** Der maßgebliche Candidate ist
+> das **veröffentlichte, getaggte und attestierte Release `v0.7.0` auf
+> `5815db5b053c2bb1bf3119cdb9939c1dea03cc45`**, festgehalten in
+> [`docs/decisions/2026-07-p0-candidate-freeze-v070.md`](../decisions/2026-07-p0-candidate-freeze-v070.md)
+> (SW-131).
+>
+> Der zuvor hier genannte `fb3bf03` / `v0.6.7` (SW-121) ist **abgelöst** — nicht wegen
+> Drift, sondern durch einen dokumentierten Blocker-Fix nach §2.3: dieser Candidate ist
+> **konstruktionsbedingt nicht messbar**. Die P0-Harness existiert bei dieser SHA nicht
+> (`git ls-tree fb3bf03 cmd/eval/` liefert 11 Einträge; `coldseries.go`,
+> `querylatency.go`, `incremental.go`, `stalls.go` und `rawexport.go` fehlen sämtlich),
+> und die Harness besitzt keinen Pfad für ein externes Binary (alle 13 `flag.String` in
+> `cmd/eval/main.go` nehmen kein `graphi`-Executable entgegen; `fullrun.go` misst
+> `ing.IngestAll` in-process) — sie lässt sich also auch nicht auf den Candidate richten.
+> Ein Lauf aus `main` heraus setzt `candidateMatch = false` und zwingt jedes §12.2-Gate
+> auf UNKNOWN, bevor überhaupt ein Schwellwert verglichen wird. Bei `5815db5` existieren
+> Candidate und Instrumente erstmals gemeinsam. Der Produktbaum (`engine`, `core`,
+> `surfaces`, `cmd/graphi`, `go.mod`, `go.sum`) ist zwischen beiden SHAs **byte-identisch**
+> — das begründet die *Unbedenklichkeit* des Wechsels und ist **keine** Aussage über
+> Performance, Genauigkeit oder irgendein §12.2-Gate.
+>
+> Davor war `4e72637` (SW-116) gesetzt; aus ihm wurde nie etwas veröffentlicht, sein
+> Release-Digest blieb `UNKNOWN`, und UNKNOWN zählt als nicht bestanden (§2.4). Beide
+> Entscheidungsdokumente bleiben als Historie erhalten, sind aber als *superseded*
+> markiert und dürfen nicht mehr als aktueller Candidate zitiert werden; alle daran
+> gebundenen Evidenzzeilen stehen auf **STALE** (`docs/rc/evidence-index.yaml`) und werden
+> **nicht** stillschweigend auf den neuen Candidate umgehängt.
 > **Nicht** der unten stehende `Ausgangs-SHA: e285822` — der stammt aus der
 > Zeit vor dem Freeze; `release-dag.yml` trägt eine einzige `github.sha` durch
 > gate → build → SBOM → publish, weshalb ein Candidate auf einem Feature-Branch keine
