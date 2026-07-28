@@ -52,6 +52,12 @@ type FullRunReport struct {
 	// from inside that process (Linux cgroup v2 only). It is what makes the
 	// SW-123 OOM method verifiable rather than merely intended.
 	Cgroup *CgroupLimits `json:"cgroup,omitempty"`
+	// Profiles is SW-129: the profile sets a MISSED GATE produced, each naming
+	// the gate it answers for. Absent on a green run by construction — the
+	// profiler is never started when nothing was missed (AC-4) — so an empty
+	// field here is the same statement as "no gate was exceeded", and a fix
+	// citing a profile can be traced back to the run that motivated it (AC-6).
+	Profiles []ProfileSet `json:"profiles,omitempty"`
 }
 
 // FullRepoRun is the per-repository measurement set.

@@ -81,7 +81,8 @@ jobs:
             -runner-class ubuntu-latest \
             -budgets docs/eval/hero-budgets.json \
             -reference-scenario docs/eval/reference-scenario.json \
-            -out "eval-full-${{ matrix.repo }}.json"
+            -out "eval-full-${{ matrix.repo }}.json" \
+            -profile-dir "profiles-${{ matrix.repo }}"
       # The raw report also goes to the job log (and step summary): the run
       # page is then self-documenting, and the evidence stays retrievable via
       # the logs API even where artifact-storage domains are unreachable.
@@ -97,7 +98,14 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eval-full-${{ matrix.repo }}
-          path: eval-full-${{ matrix.repo }}.json
+          # SW-129: this job enforces the historical per-repo ceilings, so it is
+          # the likeliest place a budget is exceeded — and a profile that CI
+          # discards may as well not have been produced. The directory is absent
+          # on a green run (nothing is profiled when nothing is missed), which is
+          # why the upload does not require it to exist.
+          path: |
+            eval-full-${{ matrix.repo }}.json
+            profiles-${{ matrix.repo }}
 
   # SW-124 (P0-C1): FR-8's repeated cold-index measurement over THE reference
   # scenario. Ten cold runs, one process per run (getrusage MAXRSS is a

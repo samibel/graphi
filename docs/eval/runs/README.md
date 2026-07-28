@@ -20,17 +20,29 @@ share a directory; two classes never do. The name is produced by
 ├── environment.json    the machine and the provenance the run was produced under
 ├── report.json         the PUBLISHED aggregate — percentiles, gates, verdicts
 ├── aggregate.json      the reproduction: every published number, recomputed
-└── raw/
-    ├── cold-index.json       SW-124 — one record per cold run
-    ├── query-latency.json    SW-125 — every timed execution, plus pool membership
-    ├── incremental.json      SW-126 — one record per change
-    └── progress-stalls.json  SW-127 — one record per interval between events
+├── raw/
+│   ├── cold-index.json       SW-124 — one record per cold run
+│   ├── query-latency.json    SW-125 — every timed execution, plus pool membership
+│   ├── incremental.json      SW-126 — one record per change
+│   └── progress-stalls.json  SW-127 — one record per interval between events
+└── profiles/                 SW-129 — present ONLY when a gate was missed
+    ├── profiles.json         which gate each set answers for, with digests
+    └── <scenario>/           cpu.pprof, heap.pprof, allocs.pprof, io.pprof
 ```
 
 The split is the point. **`raw/` carries samples and nothing derived** — no
 percentile, no aggregate, no verdict. That is what makes checking `report.json`
 against it a real check rather than a comparison of a number with a file that
 already contains it.
+
+`profiles/` is absent from a green run, and its absence is a statement: the
+profiler is never started when no gate was missed, because a harness that
+profiled every run would distort the numbers it exists to establish. When it is
+present, `run.json` and `report.json` both point at it, each set naming the gate
+it answers for — that is the citation PRD §8.5 asks a fix to make. The profiles
+come from a diagnostic **re-execution** of the affected scenario, and `io.pprof`
+is the runtime block profile; both caveats, and how to read the files, are in
+[`../hero-protocol.md`](../hero-protocol.md).
 
 ## Reproducing the numbers
 

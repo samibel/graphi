@@ -88,6 +88,13 @@ func main() {
 	exportRaw := flag.String("export-raw", "", "after the run, write a raw-sample run directory here — individual measurements, the environment and the published report side by side; \""+exportAuto+"\" uses the "+evalreport.RunsRoot+"/<date>-<runner-class> convention")
 	aggregate := flag.String("aggregate", "", "recompute every published metric in this run directory from its raw samples and diff them; exit 1 on a discrepancy, 3 when the run is incomplete, 0 only when it is publishable")
 
+	// SW-129 (P0-C6) profiling automation. ON by default and costing a green
+	// run nothing: the profiler is never started unless a gate was missed, so
+	// the measurement cannot be distorted by the thing that explains it.
+	profileOnMiss := flag.Bool("profile-on-miss", true, "when a performance gate is MISSED, re-run the affected scenario under the CPU, heap, allocation and I/O profilers "+
+		"and write the profiles beside that run's raw data (PRD §8.5: a fix cites the profile of the run that motivated it). A green run profiles nothing")
+	profileDir := flag.String("profile-dir", "", "write profile sets here instead of the run directory's "+evalreport.ProfileDir+"/ subdirectory")
+
 	flag.Parse()
 
 	if *aggregate != "" {
@@ -125,6 +132,8 @@ func main() {
 				dropCaches:    *dropCaches,
 				oomCheck:      *oomCheck,
 				exportRaw:     *exportRaw,
+				profileOnMiss: *profileOnMiss,
+				profileDir:    *profileDir,
 			}, execColdRun))
 		}
 		os.Exit(runFullRun(fullRunOptions{
@@ -140,6 +149,8 @@ func main() {
 			incrementalChanges: *incrementalChanges,
 			candidatePath:      *candidatePath,
 			exportRaw:          *exportRaw,
+			profileOnMiss:      *profileOnMiss,
+			profileDir:         *profileDir,
 		}))
 	}
 

@@ -313,6 +313,12 @@ type RunIndex struct {
 	// from a list nobody counts.
 	Raw []RawFileRef `json:"raw"`
 
+	// Profiles points at the SW-129 profile sets a missed gate produced in this
+	// run directory. It is a reference list rather than a copy — the sets
+	// themselves live in `report` and in profiles/profiles.json — so the index
+	// stays a table of contents.
+	Profiles []ProfileSetRef `json:"profiles,omitempty"`
+
 	Environment RunEnvironment `json:"environment"`
 	Notes       string         `json:"notes,omitempty"`
 }
