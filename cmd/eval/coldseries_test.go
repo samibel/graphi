@@ -377,3 +377,52 @@ func TestColdSeries_OOMGateIsUnknownWhenNotExercised(t *testing.T) {
 		t.Errorf("oom gate row = %q, want UNKNOWN", oomGate.Status)
 	}
 }
+
+// The child must be told which candidate it is measuring. Without the flag it
+// falls back to defaultCandidateIndexPath — the in-tree evidence index — which
+// is the WRONG file exactly when it matters: measuring a candidate means
+// checking it out, and a release is cut before the freeze record that names it,
+// so at the candidate's own SHA the in-tree index still cites its predecessor.
+// A candidate cannot cite itself. The child would then compare its HEAD against
+// the previous candidate, find a mismatch, and report every gate UNKNOWN for a
+// run that is genuinely about the frozen artifact.
+//
+// Regression: observed in CI run 30377165970, where the warm gates inside the
+// cold-index job read "measured revision 5815db5… is not the frozen candidate
+// fb3bf03…" while the parent's own gates, which DID receive -candidate, read
+// candidate_match true over the same runs.
+func TestColdRunArgv_ForwardsTheCandidateToTheChild(t *testing.T) {
+	o := baseOptions(t, "hero-go", "local-sandbox", 1)
+	argv := coldRunArgv("/tmp/eval", o, t.TempDir(), filepath.Join(t.TempDir(), "run.json"), 0)
+
+	idx := -1
+	for i, a := range argv {
+		if a == "-candidate" {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		t.Fatalf("child argv carries no -candidate; it would fall back to the in-tree index and mis-cite the candidate.\nargv: %v", argv)
+	}
+	if idx+1 >= len(argv) {
+		t.Fatalf("-candidate is the last argument and has no value: %v", argv)
+	}
+	if got := argv[idx+1]; got != o.candidatePath {
+		t.Errorf("child -candidate = %q, want the parent's %q — the two must cite the same file", got, o.candidatePath)
+	}
+}
+
+// A series with no candidate path must not pass a bare, valueless -candidate to
+// the child: that would make the child parse the NEXT flag as the path.
+func TestColdRunArgv_OmitsTheCandidateFlagWhenThereIsNoPath(t *testing.T) {
+	o := baseOptions(t, "hero-go", "local-sandbox", 1)
+	o.candidatePath = ""
+	argv := coldRunArgv("/tmp/eval", o, t.TempDir(), filepath.Join(t.TempDir(), "run.json"), 0)
+
+	for _, a := range argv {
+		if a == "-candidate" {
+			t.Fatalf("argv carries -candidate with no path to give it: %v", argv)
+		}
+	}
+}
