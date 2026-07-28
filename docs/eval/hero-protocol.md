@@ -247,3 +247,82 @@ P0 risk register names.
 not decide whether the numbers are *good* — the PRD §12.2 gates already do that,
 in the harness, and a reproduced FAIL is still a FAIL. Nor does it re-measure:
 `-aggregate` reads a directory and never runs an index.
+
+## Profiles, and the rule that a fix cites one (SW-129)
+
+FR-8 carries two acceptance criteria that only work together — *a missed
+performance gate produces profiles* and *no optimisation without a profile* —
+and PRD §8.5 states the process rule: every production fix starts from a
+gold-corpus error, a regression test, **a reproducible profile**, or a clear
+security finding.
+
+**The rule.** A change that responds to a §12.2 gate — an index made faster,
+memory brought down, a stall removed — **cites the profile from the run whose
+gate it responds to**: the run directory, the gate id, and the profile file. Not
+a profile taken later on a developer laptop, and not a plausible explanation. If
+the profile does not exist, the fix has no evidence yet, and producing one is the
+first step of the work rather than the last.
+
+That rule is affordable only because the profile is a by-product of the failure
+rather than a follow-up task, which is what the automation below is for.
+
+**What happens on a miss.** Any `-full-run` (single or `-cold-runs N`) reads its
+gates, and if any of them FAILED it immediately re-runs the affected scenario
+under four profilers and writes them into the same run directory as the raw
+samples:
+
+```
+docs/eval/runs/2026-07-28-ubuntu-latest/
+└── profiles/
+    ├── profiles.json          which gate each set answers for, with digests
+    └── cold_index/
+        ├── cpu.pprof          CPU time
+        ├── heap.pprof         live objects, after a forced GC
+        ├── allocs.pprof       total allocations (runtime.MemProfileRate sampling)
+        └── io.pprof           the block profile — see the caveat below
+```
+
+One directory per affected scenario (`cold_index`, `query_latency`,
+`incremental`, `progress_stalls`). Read any of them with:
+
+```sh
+go tool pprof docs/eval/runs/2026-07-28-ubuntu-latest/profiles/cold_index/cpu.pprof
+```
+
+`report.json` and `run.json` both reference the sets, each naming the gate it
+answers for and the threshold it missed, so "which profile explains this FAIL"
+is answerable from the artifact alone.
+
+**Off on the normal path.** A green run profiles **nothing**: the profiler is
+not merely written to a discarded file, it is never started, no directory is
+created and no runtime sampling rate is touched. A harness that profiled every
+run would distort the numbers it exists to establish. The automation can be
+turned off with `-profile-on-miss=false` — the cold series passes exactly that
+to its child runs, because the series profiles a missed gate once, itself —
+and a run that misses a gate with profiling off says so in the log.
+
+**Two caveats, stated rather than assumed.**
+
+1. **The profiles come from a diagnostic re-execution, not from the measured
+   run.** AC-4 forbids profiling the measurement, so the profiler starts only
+   after a gate has been read as missed and re-runs that scenario on the same
+   machine, the same checkout and the same binary. It localises where the cost
+   is; it is not a replay of the exact execution that missed the gate. The
+   scenario's setup — cloning, and the index a query or freshness scenario needs
+   first — happens outside the profile window, so a warm-latency profile never
+   contains the ingest that made the queries possible.
+2. **`io.pprof` is the runtime *block profile*.** Go has no file-I/O profile:
+   the runtime does not attribute blocking syscalls to a pprof profile. The
+   block profile shows goroutine blocking on channels and locks — where an
+   ingest worker pool's waiting on I/O becomes observable — and the run's real
+   block-device counters (`getrusage` `ru_inblock`/`ru_oublock`) are published
+   beside it in `io_counters` rather than inferred from it.
+
+**A failed capture is not a green run.** If the profiles cannot be produced —
+an unwritable path, a scenario that cannot be re-executed — the set is recorded
+as incomplete, the reason is printed, and the run exits non-zero. "No profile"
+and "no problem" must not look alike in CI.
+
+**Scope.** This is measurement infrastructure only: nothing here runs in the
+shipped binary, and interpreting the profiles or acting on them is WP4 work with
+its own stories.

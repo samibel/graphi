@@ -104,6 +104,13 @@ type fullRunOptions struct {
 	// Writing it is a separate, opt-in step: a PR-path run has no business
 	// creating a directory under docs/eval/runs/.
 	exportRaw string
+	// profileOnMiss is SW-129's automation: when a gate is missed, re-run the
+	// affected scenario under the profilers. It defaults to ON, and it costs a
+	// green run nothing — the profiler is never started when nothing was
+	// missed. profileDir overrides where the sets go; empty means the run
+	// directory's profiles/ subdirectory.
+	profileOnMiss bool
+	profileDir    string
 }
 
 // runFullRun executes the full measurement for one manifest entry and writes
@@ -258,6 +265,41 @@ func runFullRun(o fullRunOptions) int {
 	if outPath == "" {
 		outPath = "eval-full-" + o.repoName + ".json"
 	}
+
+	// SW-129: the gates are final, so this is the first moment a missed gate is
+	// a fact. Profiling happens HERE — before the report is written, so the
+	// profile references travel in the artifact rather than in a second pass —
+	// and it does nothing at all unless something was missed (AC-4).
+	date := time.Now().UTC().Format("2006-01-02")
+	profileRoot, canonical, err := resolveProfileRoot(o.profileDir, o.exportRaw, outPath, o.runnerClass, date)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: %v\n", err)
+		return 2
+	}
+	repoDir, _ := measuredCheckoutDir(*entry, filepath.Dir(o.manifestPath), workDir)
+	report.Profiles = profileMissedGates(ctx, profileRunInput{
+		root:    profileRoot,
+		repo:    o.repoName,
+		enabled: o.profileOnMiss,
+		build: profileWorkloadBuilderFor(profileWorkloadInput{
+			repo:        o.repoName,
+			repoDir:     repoDir,
+			scratch:     workDir,
+			manifestDir: filepath.Dir(o.manifestPath),
+			entry:       *entry,
+			plan:        plan,
+			changes:     o.incrementalChanges,
+		}),
+	}, report, os.Stderr)
+	if len(report.Profiles) > 0 && !canonical {
+		fmt.Fprintf(os.Stderr, "eval: NOTE - the profiles went to %s; the convention is <run-dir>/%s, which needs -export-raw\n",
+			profileRoot, evalreport.ProfileDir)
+	}
+	profileBroken, profilesFailed := profileFailure(report.Profiles)
+	if profilesFailed {
+		fmt.Fprintf(os.Stderr, "eval: FAIL - profile generation: %s\n", profileBroken)
+	}
+
 	if err := evalreport.WriteFullRunJSON(report, outPath); err != nil {
 		fmt.Fprintf(os.Stderr, "eval: write report: %v\n", err)
 		return 2
@@ -276,11 +318,13 @@ func runFullRun(o fullRunOptions) int {
 			runnerRole:      class.Role,
 			repo:            o.repoName,
 			workDir:         workDir,
+			date:            date,
 			candidateSHA:    prov.candidateSHA,
 			candidateSource: prov.candidateSource,
 			measuredSHA:     measuredSHA,
 			candidateMatch:  prov.candidateMatch,
 			worktreeDirty:   prov.worktreeDirty,
+			profiles:        report.Profiles,
 		}, report)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "eval: export raw samples: %v\n", err)
@@ -318,6 +362,13 @@ func runFullRun(o fullRunOptions) int {
 		} else {
 			fmt.Fprintf(os.Stderr, "eval: FAIL - progress-stall gate over %s\n", o.repoName)
 		}
+		return 1
+	}
+	// SW-129 AC-5. Reached only when every gate the run could read passed —
+	// which today implies nothing was profiled — but the rule is enforced here
+	// rather than inherited from the coincidence, so a run whose profiles could
+	// not be produced can never exit 0.
+	if profilesFailed {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "eval: PASS - full run over %s (index %dms, rss %dMB, db %dB)\n",
@@ -413,10 +464,11 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	// 1. Materialize the tree: shallow-clone URL entries at the pinned ref and
 	// verify the SHA pin fail-closed; local path entries resolve against the
 	// repo root (hermetic smoke path).
-	var repoDir string
-	switch {
-	case e.URL != "":
-		repoDir = filepath.Join(workDir, e.Name)
+	repoDir, err := measuredCheckoutDir(e, manifestDir, workDir)
+	if err != nil {
+		return fail("entry", err)
+	}
+	if e.URL != "" {
 		cloneStart := time.Now()
 		if err := cloneAt(ctx, e.URL, e.Ref, repoDir); err != nil {
 			return fail("clone", err)
@@ -430,10 +482,6 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		if e.SHA != "" && !strings.EqualFold(e.SHA, head[:min(len(e.SHA), len(head))]) {
 			return fail("pin", fmt.Errorf("checkout HEAD %s does not match pinned sha %s (tag re-pointed?)", head, e.SHA))
 		}
-	case e.Path != "":
-		repoDir = filepath.Join(filepath.Dir(manifestDir), filepath.FromSlash(e.Path))
-	default:
-		return fail("entry", fmt.Errorf("neither url nor path set"))
 	}
 
 	// 2. Cold full index into a fresh on-disk SQLite store (the shipped

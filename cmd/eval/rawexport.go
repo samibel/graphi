@@ -57,24 +57,41 @@ type exportOptions struct {
 	measuredSHA     string
 	candidateMatch  bool
 	worktreeDirty   bool
+
+	// profiles are SW-129's profile sets, when a missed gate produced any. They
+	// are referenced from the run index rather than copied into it: the sets
+	// themselves travel in the published report, which sits in this same
+	// directory.
+	profiles []evalreport.ProfileSet
+}
+
+// resolveExportDir applies the AC-4 path convention. It is separate from the
+// export itself because SW-129's profiles have to land in the SAME directory as
+// the raw samples, and two places computing that path would eventually disagree
+// about which run a profile belongs to.
+func resolveExportDir(target, runnerClass, date string) (string, error) {
+	if target == exportAuto {
+		if date == "" {
+			date = time.Now().UTC().Format("2006-01-02")
+		}
+		dir := evalreport.RunDirPath(date, runnerClass)
+		if dir == "" {
+			return "", fmt.Errorf("-export-raw %s needs a runner class to name the directory with", exportAuto)
+		}
+		return dir, nil
+	}
+	if strings.TrimSpace(target) == "" {
+		return "", fmt.Errorf("-export-raw needs a directory (or %q for the %s/<date>-<runner-class> convention)", exportAuto, evalreport.RunsRoot)
+	}
+	return target, nil
 }
 
 // exportRunDir writes the complete run directory and returns the path it wrote
 // together with the raw sets it wrote there.
 func exportRunDir(o exportOptions, report evalreport.FullRunReport) (string, map[string]evalreport.RawSampleSet, error) {
-	dir := o.target
-	if dir == exportAuto {
-		date := o.date
-		if date == "" {
-			date = time.Now().UTC().Format("2006-01-02")
-		}
-		dir = evalreport.RunDirPath(date, o.runnerClass)
-		if dir == "" {
-			return "", nil, fmt.Errorf("-export-raw %s needs a runner class to name the directory with", exportAuto)
-		}
-	}
-	if strings.TrimSpace(dir) == "" {
-		return "", nil, fmt.Errorf("-export-raw needs a directory (or %q for the %s/<date>-<runner-class> convention)", exportAuto, evalreport.RunsRoot)
+	dir, err := resolveExportDir(o.target, o.runnerClass, o.date)
+	if err != nil {
+		return "", nil, err
 	}
 
 	env := captureEnvironment(environmentInput{
@@ -103,6 +120,7 @@ func exportRunDir(o exportOptions, report evalreport.FullRunReport) (string, map
 		RunnerClass: o.runnerClass,
 		Repo:        o.repo,
 		Report:      "report.json",
+		Profiles:    evalreport.ProfileRefs(o.profiles),
 		Environment: env,
 	}
 	if index.Date == "" {

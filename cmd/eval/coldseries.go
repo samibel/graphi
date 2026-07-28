@@ -69,6 +69,15 @@ type coldSeriesOptions struct {
 	oomCheck      bool
 	// exportRaw is SW-128's raw-sample run directory, or "" for no export.
 	exportRaw string
+	// profileOnMiss and profileDir are SW-129. The SERIES owns the profiling,
+	// not its children: each child run's tree is deleted the moment that run
+	// finishes, so a child's profiles would be written beside a directory that
+	// no longer exists — and ten children profiling the same missed gate would
+	// produce nine redundant re-runs. Children are therefore launched with
+	// profiling off (see execColdRun) and this process profiles the assembled
+	// series once.
+	profileOnMiss bool
+	profileDir    string
 }
 
 // coldRunExit is what the operating system said about one child run.
@@ -217,6 +226,46 @@ func runColdSeries(o coldSeriesOptions, newExecutor coldRunExecutorFactory) int 
 	if outPath == "" {
 		outPath = "eval-cold-" + o.repoName + ".json"
 	}
+
+	// SW-129: the series' gates are final here, so a missed one is a fact and
+	// the scenario behind it is re-executed under the profilers. Nothing runs
+	// when nothing was missed (AC-4). The checkout is gone by now — each run's
+	// tree is removed as it completes — so the workload materialises the same
+	// pinned ref again; that is the same tree by construction, and it is done
+	// outside the profile window.
+	date := time.Now().UTC().Format("2006-01-02")
+	profileRoot, canonical, err := resolveProfileRoot(o.profileDir, o.exportRaw, outPath, o.runnerClass, date)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: %v\n", err)
+		return 2
+	}
+	entry, entryErr := lookupCorpusEntry(o.manifestPath, o.repoName)
+	report.Profiles = profileMissedGates(ctx, profileRunInput{
+		root:    profileRoot,
+		repo:    o.repoName,
+		enabled: o.profileOnMiss,
+		build: func(series string) (profileWorkload, error) {
+			if entryErr != nil {
+				return profileWorkload{}, fmt.Errorf("the measured tree cannot be reproduced: %w", entryErr)
+			}
+			return profileWorkloadBuilderFor(profileWorkloadInput{
+				repo:        o.repoName,
+				scratch:     workDir,
+				manifestDir: filepath.Dir(o.manifestPath),
+				entry:       entry,
+				plan:        newQueryLatencyPlan(0, nil),
+			})(series)
+		},
+	}, report, os.Stderr)
+	if len(report.Profiles) > 0 && !canonical {
+		fmt.Fprintf(os.Stderr, "eval: NOTE - the profiles went to %s; the convention is <run-dir>/%s, which needs -export-raw\n",
+			profileRoot, evalreport.ProfileDir)
+	}
+	profileBroken, profilesFailed := profileFailure(report.Profiles)
+	if profilesFailed {
+		fmt.Fprintf(os.Stderr, "eval: FAIL - profile generation: %s\n", profileBroken)
+	}
+
 	if err := evalreport.WriteFullRunJSON(report, outPath); err != nil {
 		fmt.Fprintf(os.Stderr, "eval: write report: %v\n", err)
 		return 2
@@ -233,11 +282,13 @@ func runColdSeries(o coldSeriesOptions, newExecutor coldRunExecutorFactory) int 
 			runnerRole:      class.Role,
 			repo:            o.repoName,
 			workDir:         workDir,
+			date:            date,
 			candidateSHA:    series.CandidateSHA,
 			candidateSource: series.CandidateSource,
 			measuredSHA:     series.MeasuredSHA,
 			candidateMatch:  series.CandidateMatch,
 			worktreeDirty:   series.WorktreeDirty,
+			profiles:        report.Profiles,
 		}, report)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "eval: export raw samples: %v\n", err)
@@ -249,6 +300,10 @@ func runColdSeries(o coldSeriesOptions, newExecutor coldRunExecutorFactory) int 
 	printColdSeriesSummary(os.Stderr, &series)
 
 	if series.Status == evalreport.StatusFail {
+		return 1
+	}
+	// SW-129 AC-5: profiles that could not be produced never leave a green run.
+	if profilesFailed {
 		return 1
 	}
 	return 0
@@ -403,26 +458,7 @@ func execColdRun(o coldSeriesOptions, workDir string) coldRunExecutor {
 		if err := os.MkdirAll(runWorkDir, 0o755); err != nil {
 			return evalreport.FullRunReport{}, coldRunExit{}, fmt.Errorf("run %d workdir: %w", run, err)
 		}
-		argv := []string{
-			self,
-			"-manifest", o.manifestPath,
-			"-full-run", o.repoName,
-			"-runner-class", o.runnerClass,
-			"-workdir", runWorkDir,
-			"-out", outPath,
-		}
-		if o.scenarioPath != "" {
-			argv = append(argv, "-reference-scenario", o.scenarioPath)
-		}
-		if o.budgetPath != "" {
-			argv = append(argv, "-budgets", o.budgetPath)
-		}
-		if o.dropCaches {
-			argv = append(argv, "-drop-caches")
-		}
-		if limitBytes > 0 {
-			argv = append(imposeMemoryLimit(limitBytes), argv...)
-		}
+		argv := coldRunArgv(self, o, runWorkDir, outPath, limitBytes)
 
 		cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 		cmd.Stderr = os.Stderr
@@ -453,6 +489,38 @@ func execColdRun(o coldSeriesOptions, workDir string) coldRunExecutor {
 		}
 		return report, exit, nil
 	}
+}
+
+// coldRunArgv is the command one child run is executed as. It is a function of
+// its own so the rules encoded in it — which flags a child inherits, and which
+// it must NOT — are assertable without spawning a process.
+func coldRunArgv(self string, o coldSeriesOptions, runWorkDir, outPath string, limitBytes int64) []string {
+	argv := []string{
+		self,
+		"-manifest", o.manifestPath,
+		"-full-run", o.repoName,
+		"-runner-class", o.runnerClass,
+		"-workdir", runWorkDir,
+		"-out", outPath,
+		// SW-129: the series profiles a missed gate ONCE, itself. A child's
+		// tree is deleted the moment that child finishes, so its profiles would
+		// describe a directory that no longer exists — and ten children reading
+		// the same missed gate would pay for nine redundant re-runs.
+		"-profile-on-miss=false",
+	}
+	if o.scenarioPath != "" {
+		argv = append(argv, "-reference-scenario", o.scenarioPath)
+	}
+	if o.budgetPath != "" {
+		argv = append(argv, "-budgets", o.budgetPath)
+	}
+	if o.dropCaches {
+		argv = append(argv, "-drop-caches")
+	}
+	if limitBytes > 0 {
+		argv = append(imposeMemoryLimit(limitBytes), argv...)
+	}
+	return argv
 }
 
 // classifyExit turns a *exec.ExitError into (code, signal). A signalled child
