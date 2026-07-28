@@ -100,6 +100,18 @@ type FullRepoRun struct {
 	// a report produced without a warm measurement (an aborted run) must not
 	// carry an empty distribution that reads as zero latency.
 	QueryLatency *QueryLatencySeries `json:"query_latency,omitempty"`
+	// Incremental is SW-126's freshness and incremental-update evidence: a
+	// defined, reproducible sequence of at least 100 changes over the pinned
+	// repository, with incremental-update and freshness p50/p95 and every
+	// individual measurement retained.
+	//
+	// A pointer and absent by default, for the same reason ColdSeries and
+	// QueryLatency are: a run that measured no changes must not carry an empty
+	// distribution that reads as instant freshness. It is measured only when
+	// asked for (-incremental-changes), because applying a hundred changes
+	// MUTATES the measured checkout and would change what every other number in
+	// this report means.
+	Incremental *IncrementalSeries `json:"incremental,omitempty"`
 
 	// Searches are the manifest's expect_nonempty smoke assertions re-checked
 	// against this run's index.

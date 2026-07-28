@@ -216,6 +216,69 @@ jobs:
           name: eval-query-grpc-go
           path: eval-query-grpc-go.json
 
+  # SW-126 (P0-C3): FR-8's freshness and incremental-update measurement over THE
+  # reference scenario. At least 100 incremental changes as a DEFINED,
+  # reproducible sequence — add, modify, delete and a change that touches
+  # cross-package edges — reported as incremental-update p50/p95 and freshness
+  # p50/p95, with every individual measurement retained in the artifact.
+  #
+  # Deliberately its own job, and deliberately not folded into any of the
+  # others: this is the ONLY job that MUTATES the cloned checkout. Applying a
+  # hundred changes to the tree changes what a cold-index wallclock, a peak RSS
+  # or a DB size measured in the same process would mean, so the harness runs it
+  # last within the run and the run is not shared with a measurement that would
+  # be contaminated by it.
+  #
+  # No budget artifact is passed, for the same reason as the cold and
+  # query-latency series: grpc-go has no entry in the fail-closed budget
+  # selection, and this job is read against the PRD §12.2 `freshness_p95` gate
+  # in docs/eval/reference-scenario.json.
+  #
+  # The gate reads UNKNOWN — never PASS — unless the run is the reference
+  # scenario on the reference class, from the frozen candidate, with at least
+  # 100 completed changes covering every required class.
+  freshness-series:
+    name: freshness (reference scenario, >=100 incremental changes)
+    runs-on: ubuntu-latest
+    # One clone and one cold index, then 100 incremental re-ingests of a large
+    # Go repository plus a convergence probe each. Cheaper than the ten-run cold
+    # series, dearer than the single-run matrix job.
+    timeout-minutes: 120
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
+      - name: at least 100 incremental changes over the reference scenario
+        run: |
+          go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -full-run grpc-go \
+            -incremental-changes 100 \
+            -runner-class ubuntu-latest \
+            -reference-scenario docs/eval/reference-scenario.json \
+            -candidate docs/rc/evidence-index.yaml \
+            -workdir "${RUNNER_TEMP}/freshness" \
+            -out eval-freshness-grpc-go.json
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== EVAL-FRESHNESS-BEGIN grpc-go ==="
+          cat eval-freshness-grpc-go.json
+          echo "=== EVAL-FRESHNESS-END grpc-go ==="
+          { echo '```json'; cat eval-freshness-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eval-freshness-grpc-go
+          path: eval-freshness-grpc-go.json
+
   hero-suite:
     name: hero suite (20 tasks, tier-1 fixtures)
     runs-on: ubuntu-latest

@@ -18,6 +18,21 @@ import (
 	"github.com/samibel/graphi/internal/evalreport"
 )
 
+// THIS FILE IS THE PR-GATE SMOKE PATH, NOT P0 EVIDENCE (SW-126 AC-5).
+//
+// Everything below runs against a COPY of the tiny pinned tier-1 fixture: it is
+// fast, deterministic, hermetic, and it belongs in the PR gate. It is not, and
+// must not be presented as, a measurement of the PRD §12.2 performance gates:
+//
+//   - `fixture_incremental_update` is ONE change, timed ONCE, over a synthetic
+//     fixture. FR-8 asks for at least 100 changes over a pinned real repository
+//     with p50 and p95 — that is cmd/eval/incremental.go, reported under
+//     `incremental` in the full-run artifact, and read against the contract's
+//     `freshness_p95` gate. The two must never be quoted as the same number,
+//     which is why this check carries the `fixture_` prefix.
+//   - freshness is not measured here at all. A single re-ingest call says
+//     nothing about when a query answers the new state.
+//
 // Tier-1 performance budgets, from the performance-scale PRD's small-repo
 // targets (index < 10 s, query < 100 ms) plus the agent-first response budget
 // for MCP tools and a bounded incremental-update target. These gate the tiny
@@ -35,11 +50,20 @@ const (
 // perfFixture is the pinned tier-1 fixture the budgets run against.
 const perfFixture = "corpus/fixtures/go"
 
+// fixtureCheckPrefix marks every check produced here as a fixture measurement.
+// It is a constant so the "this is not P0 evidence" claim is mechanical: a test
+// asserts every check name carries it, which is what stops a fixture number
+// from ever being quoted beside a reference-scenario one.
+const fixtureCheckPrefix = "fixture_"
+
 // measurePerformance runs the tier-1 performance budget checks: full index
 // time into a real SQLite store, resulting DB size, median structural-query
 // latency, median agent-tool (explain_symbol) latency, and incremental-update
 // latency. Score = passed checks / total checks * 100, with every measured
 // value recorded in the report.
+//
+// Fixture scope only — see the file comment. The P0 performance baseline is
+// cmd/eval -full-run over a pinned corpus repository.
 func measurePerformance() (evalreport.PerfMetrics, error) {
 	return measurePerformanceAt(perfFixture)
 }
@@ -147,9 +171,15 @@ func measurePerformanceAt(fixtureDir string) (evalreport.PerfMetrics, error) {
 	return m, nil
 }
 
+// check builds one fixture budget check. It applies fixtureCheckPrefix here
+// rather than at the call sites so no future check can be added without it:
+// `db_size` and `incremental_update` are also PRD §12.2 concepts measured over
+// the reference scenario, and two identically named numbers from a synthetic
+// fixture and from a pinned repository is exactly the conflation SW-126 exists
+// to remove.
 func check(name string, measured, budget float64, unit string) evalreport.PerfCheck {
 	return evalreport.PerfCheck{
-		Name:     name,
+		Name:     fixtureCheckPrefix + name,
 		Measured: measured,
 		Budget:   budget,
 		Unit:     unit,

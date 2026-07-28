@@ -86,6 +86,12 @@ type fullRunOptions struct {
 	// path — the historical fixed sample counts, byte-unchanged — which the
 	// report then honestly marks as undersampled rather than gate-ready.
 	queryExecutions int
+	// incrementalChanges is SW-126's FR-8 floor request: run this many
+	// incremental changes against the measured checkout and report freshness and
+	// incremental-update percentiles. 0 is the default path, where the phase does
+	// not run at all — it MUTATES the checkout, so a run that performs it is
+	// measuring a different tree from the one every other number describes.
+	incrementalChanges int
 	// candidatePath is the evidence index the frozen candidate is cited from,
 	// used to decide whether this run's numbers are about the candidate at all.
 	// It is read only when a reference-scenario contract is supplied, i.e. only
@@ -164,33 +170,41 @@ func runFullRun(o fullRunOptions) int {
 		// that did not drop the cache is therefore not cold BY ITS OWN
 		// DECLARATION, and says so rather than being quietly published.
 		dropRequired: class.Role == roleReference,
-	}, plan)
+	}, plan, o.incrementalChanges)
 
 	// SW-125: read the §12.2 warm-latency gates against what was measured. The
 	// provenance facts are final by now, and every one of them can only make a
 	// gate UNKNOWN — none of them can turn a missed threshold into a pass.
 	measuredSHA := resolveCommit()
+	prov := gateProvenance{
+		repo:              o.repoName,
+		runnerClass:       o.runnerClass,
+		runnerRole:        class.Role,
+		referenceScenario: isReference,
+		measuredSHA:       measuredSHA,
+		worktreeDirty:     strings.HasSuffix(measuredSHA, "+dirty"),
+	}
+	if o.scenarioPath != "" {
+		sha, source, err := loadCandidateSHA(o.candidatePath)
+		switch {
+		case err != nil:
+			prov.candidateError = err.Error()
+		default:
+			prov.candidateSHA, prov.candidateSource = sha, source
+			prov.candidateMatch = !prov.worktreeDirty && strings.EqualFold(strings.TrimSuffix(measuredSHA, "+dirty"), sha)
+		}
+	}
 	if run.QueryLatency != nil {
-		prov := queryGateProvenance{
-			repo:              o.repoName,
-			runnerClass:       o.runnerClass,
-			runnerRole:        class.Role,
-			referenceScenario: isReference,
-			measuredSHA:       measuredSHA,
-			worktreeDirty:     strings.HasSuffix(measuredSHA, "+dirty"),
-		}
-		if o.scenarioPath != "" {
-			sha, source, err := loadCandidateSHA(o.candidatePath)
-			switch {
-			case err != nil:
-				prov.candidateError = err.Error()
-			default:
-				prov.candidateSHA, prov.candidateSource = sha, source
-				prov.candidateMatch = !prov.worktreeDirty && strings.EqualFold(strings.TrimSuffix(measuredSHA, "+dirty"), sha)
-			}
-		}
 		run.QueryLatency.Gates = readQueryGates(o.scenarioPath, run.QueryLatency, prov)
 		run.QueryLatency.Status = queryLatencyStatus(run.QueryLatency)
+	}
+	// SW-126: the freshness gate reads the SAME provenance value. One run has one
+	// answer to "is this about the frozen candidate on the reference scenario",
+	// and two harnesses computing it separately would eventually disagree about
+	// which is authoritative.
+	if run.Incremental != nil {
+		run.Incremental.Gates = readFreshnessGates(o.scenarioPath, run.Incremental, prov)
+		run.Incremental.Status = incrementalStatus(run.Incremental)
 	}
 	if o.budgetPath != "" {
 		run.BudgetSource = o.budgetPath
@@ -236,6 +250,7 @@ func runFullRun(o fullRunOptions) int {
 	}
 	fmt.Fprintf(os.Stderr, "eval: wrote full-run report to %s\n", outPath)
 	printQueryLatencySummary(os.Stderr, run.QueryLatency)
+	printIncrementalSummary(os.Stderr, run.Incremental)
 
 	if !run.Pass {
 		fmt.Fprintf(os.Stderr, "eval: FAIL - full run over %s: %s\n", o.repoName, strings.Join(run.Failures, "; "))
@@ -247,6 +262,10 @@ func runFullRun(o fullRunOptions) int {
 	// because the artifact and the summary above both say UNKNOWN.
 	if run.QueryLatency != nil && run.QueryLatency.Status == evalreport.StatusFail {
 		fmt.Fprintf(os.Stderr, "eval: FAIL - query-latency gate over %s\n", o.repoName)
+		return 1
+	}
+	if run.Incremental != nil && run.Incremental.Status == evalreport.StatusFail {
+		fmt.Fprintf(os.Stderr, "eval: FAIL - freshness gate over %s\n", o.repoName)
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "eval: PASS - full run over %s (index %dms, rss %dMB, db %dB)\n",
@@ -327,7 +346,12 @@ func manifestVersion(path string) int {
 // many timed executions each operation runs. It is resolved by the caller
 // before any measurement so the artifact can state what the run intended to
 // measure, not only what it happened to produce.
-func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir string, cp coldProtocol, plan queryLatencyPlan) evalreport.FullRepoRun {
+//
+// incrementalChanges is SW-126's requested change count, and 0 means the phase
+// does not run. It is LAST in the pipeline for a reason: it is the only stage
+// that mutates the checkout, so every other measurement in this report is taken
+// over the pinned tree exactly as cloned.
+func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir string, cp coldProtocol, plan queryLatencyPlan, incrementalChanges int) evalreport.FullRepoRun {
 	run := evalreport.FullRepoRun{Name: e.Name, Ref: e.Ref, Tier: e.Tier}
 	fail := func(stage string, err error) evalreport.FullRepoRun {
 		run.Failures = append(run.Failures, fmt.Sprintf("%s: %v", stage, err))
@@ -576,7 +600,51 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	run.StablePeakRSSMB = peakRSSMB()
 
-	// 4. DB size after a clean close (WAL checkpointed into the main file).
+	// 4. SW-126's freshness and incremental measurement, LAST because it is the
+	// only stage that mutates the checkout: everything above measured the pinned
+	// tree exactly as cloned. It runs only when explicitly requested, so the
+	// default and PR paths are byte-unchanged.
+	//
+	// A setup failure is recorded as a run failure rather than silently skipped —
+	// a run asked for a hundred changes and produced none must not look like a
+	// run that was never asked.
+	if incrementalChanges > 0 && e.URL == "" {
+		// AC-5, fail closed. A local-path manifest entry is indexed IN PLACE —
+		// repoDir is the checked-in fixture directory, not a copy — so applying
+		// changes here would rewrite the repository's own pinned fixtures. It
+		// would also be the wrong measurement: FR-8's incremental evidence is
+		// over a pinned real repository, and the fixture path belongs to the PR
+		// gate (cmd/eval/perf.go). Both reasons point the same way, so the
+		// harness refuses rather than measuring the cheaper wrong thing.
+		run.Failures = append(run.Failures, fmt.Sprintf(
+			"incremental: %q is a local-path fixture entry indexed in place; the freshness measurement applies changes to the "+
+				"tree and must only run against a cloned pinned repository (the fixture incremental smoke check lives in perf.go)", e.Name))
+	} else if incrementalChanges > 0 {
+		series, err := measureIncremental(ctx, incrementalSetup{
+			repo:     e.Name,
+			root:     repoDir,
+			store:    store,
+			ing:      ing,
+			querySvc: eng.Deps.Query,
+			searcher: eng.Deps.Search,
+			changes:  incrementalChanges,
+		})
+		if err != nil {
+			run.Failures = append(run.Failures, "incremental: "+err.Error())
+		} else {
+			run.Incremental = series
+			// The store now holds this run's own changes, so the DB size stat
+			// below is no longer a cold-index sample. Saying so in the artifact is
+			// what keeps a mutated run's db_size from being read as one — the
+			// db_size gate is measured by the cold series, which never requests
+			// changes, and a guard test keeps it that way.
+			series.Warnings = append(series.Warnings, fmt.Sprintf(
+				"this run applied %d change(s) to the checkout before index.db_size_bytes was measured: that figure is NOT a cold-index DB-size sample for this report",
+				len(series.Changes)))
+		}
+	}
+
+	// 5. DB size after a clean close (WAL checkpointed into the main file).
 	if err := store.Close(); err != nil {
 		return fail("close store", err)
 	}

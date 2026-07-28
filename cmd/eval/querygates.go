@@ -29,10 +29,15 @@ import (
 	"github.com/samibel/graphi/internal/evalreport"
 )
 
-// queryGateProvenance is everything about THIS run that decides whether its
+// gateProvenance is everything about THIS run that decides whether its
 // numbers are about the thing §12.2 is scoped to. It is assembled by the caller
 // from facts that are already final before any gate is read.
-type queryGateProvenance struct {
+//
+// It is deliberately harness-agnostic — SW-126's freshness gate reads the same
+// value through the same blocker(). "Is this run about the frozen candidate on
+// the reference scenario" is one question with one answer per run, and two
+// copies of it would eventually disagree about which is authoritative.
+type gateProvenance struct {
 	repo              string
 	runnerClass       string
 	runnerRole        string
@@ -50,7 +55,7 @@ type queryGateProvenance struct {
 
 // blocker returns the reason this run's numbers are not about the frozen
 // candidate on the reference scenario, or "" when they are.
-func (p queryGateProvenance) blocker() string {
+func (p gateProvenance) blocker() string {
 	switch {
 	case !p.referenceScenario:
 		return fmt.Sprintf("this run is %s on runner class %s (%s), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only",
@@ -75,7 +80,7 @@ const queryGateUnit = "ms"
 // readQueryGates evaluates the §12.2 gates the contract assigns to this story
 // against the measured pools. Without a contract there are no thresholds to
 // read against, and the measurement stays ungated rather than inventing any.
-func readQueryGates(scenarioPath string, series *evalreport.QueryLatencySeries, prov queryGateProvenance) []evalreport.GateResult {
+func readQueryGates(scenarioPath string, series *evalreport.QueryLatencySeries, prov gateProvenance) []evalreport.GateResult {
 	if scenarioPath == "" || series == nil {
 		return nil
 	}
