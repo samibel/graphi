@@ -171,7 +171,7 @@ gates:
     gate: Wahrheit und Scope — exit gate
     section: plan §5 M0
     threshold: "No claim contradicts the artifact or PRD; candidate, claims and the measurement contract are frozen."
-    current: "STALE — this row's 'candidate frozen (SW-116)' referred to 4e72637, then to v0.6.7 at fb3bf03 (SW-121); both are superseded. fb3bf03 was unmeasurable by construction (harness absent at that SHA; no external-binary path), which is the documented §9 blocker that moved the candidate to the tagged release v0.7.0 at 5815db5 (SW-131, docs/decisions/2026-07-p0-candidate-freeze-v070.md). The Day-10 M0 Go/No-Go was never held, so the exit gate is unproven on all three candidates; planning authority consolidated (SW-117), claims sweep (SW-118) and this index (SW-119) landed. NOT re-pointed — the Go/No-Go must actually be held."
+    current: "STALE — this row's 'candidate frozen (SW-116)' referred to 4e72637, then to v0.6.7 at fb3bf03 (SW-121); both are superseded. fb3bf03 was unmeasurable by construction (harness absent at that SHA; no external-binary path), which is the documented §9 blocker that moved the candidate to the tagged release v0.7.0 at 5815db5 (SW-131, docs/decisions/2026-07-p0-candidate-freeze-v070.md). The Day-10 M0 Go/No-Go was never held, so the exit gate is unproven on all three candidates; planning authority consolidated (SW-117), claims sweep (SW-118) and this index (SW-119) landed. NOT re-pointed — the Go/No-Go must actually be held. Two candidate moves have brought this row no closer to passing."
     status: STALE
     evidence_uri: ""
     sha: ""
