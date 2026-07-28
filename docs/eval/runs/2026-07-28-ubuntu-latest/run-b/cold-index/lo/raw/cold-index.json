@@ -1,0 +1,491 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "lo",
+  "collected": true,
+  "samples": 10,
+  "environment": {
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cpu_count": 4,
+    "ram_bytes": 16766423040,
+    "os": "linux",
+    "arch": "amd64",
+    "kernel": "6.17.0-1020-azure",
+    "go_version": "go1.26.5",
+    "filesystem": "ext4",
+    "filesystem_path": "/home/runner/work/_temp/cold-series",
+    "cache_state": "dropped",
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:39:58Z",
+      "clone_ms": 450,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-01/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-01/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 462,
+        "peak_rss_mb": 274,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 275,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:01Z",
+      "clone_ms": 563,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-02/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-02/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 465,
+        "peak_rss_mb": 278,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 278,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:02Z",
+      "clone_ms": 580,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-03/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-03/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 464,
+        "peak_rss_mb": 266,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 266,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-03.json"
+    },
+    {
+      "run": 4,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:04Z",
+      "clone_ms": 758,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-04/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-04/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 452,
+        "peak_rss_mb": 276,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 276,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-04.json"
+    },
+    {
+      "run": 5,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:06Z",
+      "clone_ms": 751,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-05/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-05/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 461,
+        "peak_rss_mb": 266,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 266,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-05.json"
+    },
+    {
+      "run": 6,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:07Z",
+      "clone_ms": 779,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-06/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-06/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 469,
+        "peak_rss_mb": 278,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 278,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-06.json"
+    },
+    {
+      "run": 7,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:09Z",
+      "clone_ms": 591,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-07/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-07/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 456,
+        "peak_rss_mb": 276,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 277,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-07.json"
+    },
+    {
+      "run": 8,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:10Z",
+      "clone_ms": 588,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-08/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-08/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 455,
+        "peak_rss_mb": 275,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 276,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-08.json"
+    },
+    {
+      "run": 9,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:12Z",
+      "clone_ms": 569,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-09/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-09/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 470,
+        "peak_rss_mb": 276,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 276,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-09.json"
+    },
+    {
+      "run": 10,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+      "started_at": "2026-07-28T16:40:13Z",
+      "clone_ms": 564,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-10/lo.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-10/lo-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 460,
+        "peak_rss_mb": 266,
+        "db_size_bytes": 397312,
+        "nodes": 523,
+        "edges": 704,
+        "files": 24
+      },
+      "stable_peak_rss_mb": 266,
+      "bytes_per_edge": 564.3636363636364,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": true,
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-10.json"
+    }
+  ]
+}

@@ -1,0 +1,406 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "progress_stalls",
+  "repo": "cobra",
+  "collected": true,
+  "samples": 75,
+  "environment": {
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cpu_count": 4,
+    "ram_bytes": 16766423040,
+    "os": "linux",
+    "arch": "amd64",
+    "kernel": "6.17.0-1020-azure",
+    "go_version": "go1.26.5",
+    "filesystem": "ext4",
+    "filesystem_path": "/home/runner/work/_temp/query-latency",
+    "cache_state": "not_dropped",
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "intervals": [
+    {
+      "seq": 1,
+      "phase": "walk",
+      "us": 5655
+    },
+    {
+      "seq": 2,
+      "phase": "parse",
+      "us": 125
+    },
+    {
+      "seq": 3,
+      "phase": "parse",
+      "us": 1899
+    },
+    {
+      "seq": 4,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 5,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 6,
+      "phase": "parse",
+      "us": 71
+    },
+    {
+      "seq": 7,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 8,
+      "phase": "parse",
+      "us": 1493
+    },
+    {
+      "seq": 9,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 10,
+      "phase": "parse",
+      "us": 134
+    },
+    {
+      "seq": 11,
+      "phase": "parse",
+      "us": 22
+    },
+    {
+      "seq": 12,
+      "phase": "parse",
+      "us": 308
+    },
+    {
+      "seq": 13,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 14,
+      "phase": "parse",
+      "us": 1555
+    },
+    {
+      "seq": 15,
+      "phase": "parse",
+      "us": 91
+    },
+    {
+      "seq": 16,
+      "phase": "parse",
+      "us": 1345
+    },
+    {
+      "seq": 17,
+      "phase": "parse",
+      "us": 2297
+    },
+    {
+      "seq": 18,
+      "phase": "parse",
+      "us": 2313
+    },
+    {
+      "seq": 19,
+      "phase": "parse",
+      "us": 1186
+    },
+    {
+      "seq": 20,
+      "phase": "parse",
+      "us": 1460
+    },
+    {
+      "seq": 21,
+      "phase": "parse",
+      "us": 61
+    },
+    {
+      "seq": 22,
+      "phase": "parse",
+      "us": 949
+    },
+    {
+      "seq": 23,
+      "phase": "parse",
+      "us": 1560
+    },
+    {
+      "seq": 24,
+      "phase": "parse",
+      "us": 344
+    },
+    {
+      "seq": 25,
+      "phase": "parse",
+      "us": 1002
+    },
+    {
+      "seq": 26,
+      "phase": "parse",
+      "us": 4556
+    },
+    {
+      "seq": 27,
+      "phase": "parse",
+      "us": 8897
+    },
+    {
+      "seq": 28,
+      "phase": "parse",
+      "us": 5
+    },
+    {
+      "seq": 29,
+      "phase": "parse",
+      "us": 44
+    },
+    {
+      "seq": 30,
+      "phase": "parse",
+      "us": 8884
+    },
+    {
+      "seq": 31,
+      "phase": "parse",
+      "us": 1061
+    },
+    {
+      "seq": 32,
+      "phase": "parse",
+      "us": 1018
+    },
+    {
+      "seq": 33,
+      "phase": "parse",
+      "us": 37
+    },
+    {
+      "seq": 34,
+      "phase": "parse",
+      "us": 808
+    },
+    {
+      "seq": 35,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 36,
+      "phase": "parse",
+      "us": 56
+    },
+    {
+      "seq": 37,
+      "phase": "parse",
+      "us": 697
+    },
+    {
+      "seq": 38,
+      "phase": "parse",
+      "us": 3068
+    },
+    {
+      "seq": 39,
+      "phase": "parse",
+      "us": 271
+    },
+    {
+      "seq": 40,
+      "phase": "parse",
+      "us": 251
+    },
+    {
+      "seq": 41,
+      "phase": "parse",
+      "us": 449
+    },
+    {
+      "seq": 42,
+      "phase": "parse",
+      "us": 254
+    },
+    {
+      "seq": 43,
+      "phase": "parse",
+      "us": 42
+    },
+    {
+      "seq": 44,
+      "phase": "parse",
+      "us": 467
+    },
+    {
+      "seq": 45,
+      "phase": "parse",
+      "us": 282
+    },
+    {
+      "seq": 46,
+      "phase": "parse",
+      "us": 90
+    },
+    {
+      "seq": 47,
+      "phase": "parse",
+      "us": 238
+    },
+    {
+      "seq": 48,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 49,
+      "phase": "parse",
+      "us": 478
+    },
+    {
+      "seq": 50,
+      "phase": "parse",
+      "us": 80
+    },
+    {
+      "seq": 51,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 52,
+      "phase": "parse",
+      "us": 33
+    },
+    {
+      "seq": 53,
+      "phase": "parse",
+      "us": 275
+    },
+    {
+      "seq": 54,
+      "phase": "parse",
+      "us": 4418
+    },
+    {
+      "seq": 55,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 56,
+      "phase": "parse",
+      "us": 28276
+    },
+    {
+      "seq": 57,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 58,
+      "phase": "parse",
+      "us": 8030
+    },
+    {
+      "seq": 59,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 60,
+      "phase": "parse",
+      "us": 34109
+    },
+    {
+      "seq": 61,
+      "phase": "parse",
+      "us": 5834
+    },
+    {
+      "seq": 62,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 63,
+      "phase": "parse",
+      "us": 19785
+    },
+    {
+      "seq": 64,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 65,
+      "phase": "parse",
+      "us": 199
+    },
+    {
+      "seq": 66,
+      "phase": "parse",
+      "us": 1466
+    },
+    {
+      "seq": 67,
+      "phase": "parse",
+      "us": 63416
+    },
+    {
+      "seq": 68,
+      "phase": "parse",
+      "us": 66451
+    },
+    {
+      "seq": 69,
+      "phase": "write",
+      "us": 1055
+    },
+    {
+      "seq": 70,
+      "phase": "link",
+      "us": 88888
+    },
+    {
+      "seq": 71,
+      "phase": "fts",
+      "us": 1030
+    },
+    {
+      "seq": 72,
+      "phase": "link",
+      "us": 79349
+    },
+    {
+      "seq": 73,
+      "phase": "resolve",
+      "us": 1713
+    },
+    {
+      "seq": 74,
+      "phase": "checkpoint",
+      "us": 53910
+    },
+    {
+      "seq": 75,
+      "phase": "done",
+      "us": 8008
+    }
+  ]
+}

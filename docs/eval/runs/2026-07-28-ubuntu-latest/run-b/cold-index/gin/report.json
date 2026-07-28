@@ -1,0 +1,2318 @@
+{
+  "header": {
+    "timestamp": "2026-07-28T16:40:34Z",
+    "version": "0.0.0-dev",
+    "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "os": "linux",
+    "arch": "amd64",
+    "corpus_version": 3
+  },
+  "runner_class": "ubuntu-latest",
+  "runner_role": "reference",
+  "reference_scenario": false,
+  "scenario_source": "docs/eval/reference-scenario.json",
+  "notes": "in-process session model: engine services over one open SQLite store; cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; all 12 stable operations covered with an explicit operation-to-class mapping; warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every individual measurement retained in query_latency.operations[].samples_us; the cold index is watched for silence through the shipped ingest progress hook — see `stalls`, which is present on every run and reads FAIL when the index emitted no progress",
+  "repo": {
+    "name": "gin",
+    "ref": "v1.9.1",
+    "sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+    "tier": 3,
+    "clone_ms": 543,
+    "index": {
+      "wallclock_ms": 1137,
+      "peak_rss_mb": 557,
+      "db_size_bytes": 2355200,
+      "nodes": 1890,
+      "edges": 6794,
+      "files": 109
+    },
+    "cold": {
+      "store_path": "/home/runner/work/_temp/cold-series/run-01/gin.db",
+      "meta_path": "/home/runner/work/_temp/cold-series/run-01/gin-meta",
+      "store_preexisting": false,
+      "meta_preexisting": false,
+      "page_cache": "dropped",
+      "page_cache_command": [
+        "sudo",
+        "-n",
+        "sh",
+        "-c",
+        "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+      ],
+      "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+      "drop_required": true,
+      "verified": true
+    },
+    "warm_p95_us": {
+      "agent_tools": 38166,
+      "search": 504,
+      "structural": 580
+    },
+    "warm_p95_us_per_op": {
+      "agent_brief": 39745,
+      "callees": 226,
+      "callers": 234,
+      "change_risk": 335,
+      "definition": 159,
+      "explain_symbol": 444,
+      "impact": 13260,
+      "neighborhood": 410,
+      "references": 115,
+      "related_files": 1549,
+      "search": 504
+    },
+    "warm_p50_us": {
+      "agent_tools": 307,
+      "search": 467,
+      "structural": 151
+    },
+    "warm_p50_us_per_op": {
+      "agent_brief": 38166,
+      "callees": 162,
+      "callers": 117,
+      "change_risk": 217,
+      "definition": 119,
+      "explain_symbol": 352,
+      "impact": 183,
+      "neighborhood": 257,
+      "references": 82,
+      "related_files": 266,
+      "search": 467
+    },
+    "warm_samples": {
+      "agent_tools": 31,
+      "search": 40,
+      "structural": 150
+    },
+    "warm_ops": {
+      "agent_tools": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ],
+      "search": [
+        "search"
+      ],
+      "structural": [
+        "callees",
+        "callers",
+        "definition",
+        "impact",
+        "neighborhood",
+        "references"
+      ]
+    },
+    "query_latency": {
+      "repo": "gin",
+      "minimum_executions_per_class": 1000,
+      "requested_executions_per_class": 0,
+      "total_executions": 221,
+      "class_of": {
+        "agent_brief": "agent_tools",
+        "callees": "structural",
+        "callers": "structural",
+        "change_risk": "agent_tools",
+        "definition": "structural",
+        "explain_symbol": "agent_tools",
+        "impact": "structural",
+        "index": "lifecycle",
+        "neighborhood": "structural",
+        "references": "structural",
+        "related_files": "agent_tools",
+        "search": "search"
+      },
+      "stable_operations": [
+        "agent_brief",
+        "callees",
+        "callers",
+        "change_risk",
+        "definition",
+        "explain_symbol",
+        "impact",
+        "index",
+        "neighborhood",
+        "references",
+        "related_files",
+        "search"
+      ],
+      "operations": [
+        {
+          "operation": "agent_brief",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 3,
+            "min_us": 38158,
+            "p50_us": 38166,
+            "p95_us": 39745,
+            "max_us": 39745
+          },
+          "samples_us": [
+            39745,
+            38158,
+            38166
+          ]
+        },
+        {
+          "operation": "callees",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 82,
+            "p50_us": 162,
+            "p95_us": 226,
+            "max_us": 226
+          },
+          "samples_us": [
+            182,
+            128,
+            217,
+            201,
+            226,
+            199,
+            174,
+            202,
+            183,
+            226,
+            152,
+            176,
+            146,
+            147,
+            162,
+            213,
+            162,
+            151,
+            157,
+            159,
+            102,
+            134,
+            130,
+            82,
+            121
+          ]
+        },
+        {
+          "operation": "callers",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 81,
+            "p50_us": 117,
+            "p95_us": 234,
+            "max_us": 1328
+          },
+          "samples_us": [
+            1328,
+            234,
+            96,
+            198,
+            154,
+            86,
+            117,
+            89,
+            125,
+            84,
+            175,
+            91,
+            124,
+            155,
+            117,
+            109,
+            126,
+            121,
+            89,
+            81,
+            149,
+            127,
+            81,
+            115,
+            98
+          ]
+        },
+        {
+          "operation": "change_risk",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 9,
+            "min_us": 178,
+            "p50_us": 217,
+            "p95_us": 335,
+            "max_us": 335
+          },
+          "samples_us": [
+            335,
+            221,
+            243,
+            223,
+            217,
+            188,
+            178,
+            201,
+            185
+          ]
+        },
+        {
+          "operation": "definition",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 115,
+            "p50_us": 119,
+            "p95_us": 159,
+            "max_us": 183
+          },
+          "samples_us": [
+            155,
+            125,
+            119,
+            120,
+            115,
+            118,
+            118,
+            116,
+            159,
+            119,
+            124,
+            123,
+            119,
+            117,
+            116,
+            118,
+            183,
+            124,
+            118,
+            119,
+            116,
+            118,
+            117,
+            117,
+            159
+          ]
+        },
+        {
+          "operation": "explain_symbol",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 9,
+            "min_us": 294,
+            "p50_us": 352,
+            "p95_us": 444,
+            "max_us": 444
+          },
+          "samples_us": [
+            379,
+            374,
+            444,
+            342,
+            352,
+            294,
+            310,
+            422,
+            319
+          ]
+        },
+        {
+          "operation": "impact",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 151,
+            "p50_us": 183,
+            "p95_us": 13260,
+            "max_us": 18630
+          },
+          "samples_us": [
+            13260,
+            2228,
+            160,
+            569,
+            302,
+            153,
+            151,
+            155,
+            5303,
+            166,
+            427,
+            153,
+            8323,
+            431,
+            155,
+            183,
+            299,
+            324,
+            156,
+            183,
+            580,
+            18630,
+            168,
+            164,
+            159
+          ]
+        },
+        {
+          "operation": "index",
+          "class": "lifecycle",
+          "measured": false,
+          "warmup_executions": 0,
+          "note": "lifecycle-only: `index` is the ingest lifecycle operation, not a query. Its cost is the cold-index wallclock measured by SW-124, so it carries no query-latency samples, no 1000-execution floor and no PRD §12.2 query gate. It is listed here so all twelve stable operations are visibly accounted for."
+        },
+        {
+          "operation": "neighborhood",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 193,
+            "p50_us": 257,
+            "p95_us": 410,
+            "max_us": 1452
+          },
+          "samples_us": [
+            1452,
+            410,
+            328,
+            298,
+            317,
+            275,
+            267,
+            307,
+            264,
+            259,
+            255,
+            276,
+            234,
+            236,
+            221,
+            257,
+            233,
+            224,
+            214,
+            211,
+            260,
+            207,
+            203,
+            193,
+            231
+          ]
+        },
+        {
+          "operation": "references",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 78,
+            "p50_us": 82,
+            "p95_us": 115,
+            "max_us": 121
+          },
+          "samples_us": [
+            84,
+            81,
+            80,
+            81,
+            82,
+            82,
+            82,
+            82,
+            121,
+            115,
+            82,
+            80,
+            84,
+            83,
+            79,
+            82,
+            81,
+            79,
+            80,
+            80,
+            79,
+            112,
+            83,
+            80,
+            78
+          ]
+        },
+        {
+          "operation": "related_files",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 229,
+            "p50_us": 266,
+            "p95_us": 1549,
+            "max_us": 1549
+          },
+          "samples_us": [
+            1549,
+            350,
+            335,
+            307,
+            266,
+            253,
+            243,
+            274,
+            229,
+            229
+          ]
+        },
+        {
+          "operation": "search",
+          "class": "search",
+          "measured": true,
+          "gated_by": [
+            "warm_search_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 40,
+            "min_us": 422,
+            "p50_us": 467,
+            "p95_us": 504,
+            "max_us": 511
+          },
+          "samples_us": [
+            511,
+            488,
+            482,
+            463,
+            490,
+            451,
+            478,
+            446,
+            481,
+            456,
+            489,
+            423,
+            502,
+            436,
+            502,
+            434,
+            504,
+            424,
+            501,
+            431,
+            503,
+            422,
+            488,
+            430,
+            510,
+            429,
+            495,
+            433,
+            477,
+            447,
+            467,
+            475,
+            470,
+            445,
+            467,
+            462,
+            467,
+            443,
+            464,
+            427
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 31,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 31,
+          "min_us": 178,
+          "p50_us": 307,
+          "p95_us": 38166,
+          "max_us": 39745
+        },
+        {
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 422,
+          "p50_us": 467,
+          "p95_us": 504,
+          "max_us": 511
+        },
+        {
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "definition",
+            "impact",
+            "neighborhood",
+            "references"
+          ],
+          "executions": 150,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 150,
+          "min_us": 78,
+          "p50_us": 151,
+          "p95_us": 580,
+          "max_us": 18630
+        }
+      ],
+      "pools": [
+        {
+          "gate_id": "agent_context_p95",
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 31,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 31,
+          "min_us": 178,
+          "p50_us": 307,
+          "p95_us": 38166,
+          "max_us": 39745
+        },
+        {
+          "gate_id": "caller_callee_impact_p95",
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "impact"
+          ],
+          "executions": 75,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 75,
+          "min_us": 81,
+          "p50_us": 157,
+          "p95_us": 5303,
+          "max_us": 18630
+        },
+        {
+          "gate_id": "warm_search_p95",
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 422,
+          "p50_us": 467,
+          "p95_us": 504,
+          "max_us": 511
+        }
+      ],
+      "symbol_sample": {
+        "requested": 25,
+        "returned": 25,
+        "method": "core/graphstore DegreeSamplePort.DegreeStratifiedSymbols over the indexed store: candidates are the function and method nodes, ordered by incident degree DESC then node id ASC, one picked per quantile bucket. That is a total order over a fixed graph, so the same graph yields the same ordered sample; the structural operations walk this list in order and the agent-context operations take its first agent_symbols entries.",
+        "digest": "59c84157a8c3184600a5bee59046fef56eea07cec0c3bb3e3fc1caa40371a7d1",
+        "symbol_ids": [
+          "c5b04254b4d91ce0",
+          "00592f918c539ca4",
+          "4faae360878effdf",
+          "4732de26c1595326",
+          "34672d775e29408f",
+          "38be2d5c135b7ca3",
+          "17155f00be1898cc",
+          "874a930349e9facf",
+          "ea7a5ec03be70499",
+          "70fcdf2dd183343a",
+          "fb98377757b84f02",
+          "96633e3a2f10aba4",
+          "0874934e090201b1",
+          "9c04778260dc0f70",
+          "0dd1b63c35dedcf5",
+          "56fe9aa3e22ebcfe",
+          "a7f1e26aeb5d8cfc",
+          "f3019fde7ab6ecb9",
+          "3b9ea7896191b601",
+          "a8189b3dc0b29777",
+          "fe4aa214679ae42d",
+          "4e1ccd0352b21982",
+          "a3a9e93d057d9816",
+          "18bb6f626a2bf0b9",
+          "abeb3005653698fe"
+        ],
+        "agent_symbols": 10
+      },
+      "sufficient": false,
+      "gates": [
+        {
+          "id": "warm_search_p95",
+          "prd_metric": "Warm Search p95 (PRD 12.2)",
+          "threshold": 100,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.warm_search_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is gin on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "caller_callee_impact_p95",
+          "prd_metric": "Caller/Callee/Impact p95 (PRD 12.2)",
+          "threshold": 200,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.caller_callee_impact_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is gin on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "agent_context_p95",
+          "prd_metric": "Agent Context p95 (PRD 12.2)",
+          "threshold": 500,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.agent_context_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is gin on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "warnings": [
+        "class agent_tools ran 31 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class search ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool agent_context_p95 ran 31 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool warm_search_p95 ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS"
+      ],
+      "status": "UNKNOWN",
+      "timing_method": "The timed region contains the operation invocation and NOTHING else. Clone, index, store open, engine construction and the symbol sample all happen before any measurement; per-execution argument assembly (choosing the symbol or query for execution i, building the argument map) happens in an UNTIMED prepare step; and each operation runs warmup_executions untimed invocations before the first timed one. Warmup measurements are discarded, never pooled. Latency is time.Since around the invocation, recorded in microseconds.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-execution samples, ascending — the same implementation the cold series uses, so p50 and p95 cannot disagree about even sample counts. A class statistic pools its operations' samples; a pool statistic pools exactly the operations the SW-123 contract assigns to that gate. Every value here is reproducible from `operations[].samples_us` with evalreport.RecomputeQueryLatency.",
+      "notes": "SW-125 query-latency measurement: warm operations over ONE open store in the session model, driven through a deterministic degree-stratified symbol sample that is published verbatim so two runs are comparable. FR-8's floor is minimum_executions_per_class; a class below it is marked sufficient=false and every gate read over it is UNKNOWN, never PASS (PRD §8.2). No gate is read at all unless the run is the reference scenario on the reference class and from the frozen candidate."
+    },
+    "stalls": {
+      "repo": "gin",
+      "events_observed": 130,
+      "minimum_events": 2,
+      "observable": true,
+      "index_wallclock_us": 1137365,
+      "lead_in_us": 1704,
+      "lead_in_measured": true,
+      "tail_us": 0,
+      "tail_measured": true,
+      "heartbeat_mode": "non-tty",
+      "stalls": {
+        "n": 129,
+        "min_us": 0,
+        "p50_us": 695,
+        "p95_us": 65642,
+        "max_us": 203812
+      },
+      "per_phase": [
+        {
+          "phase": "checkpoint",
+          "stats": {
+            "n": 1,
+            "min_us": 89713,
+            "p50_us": 89713,
+            "p95_us": 89713,
+            "max_us": 89713
+          }
+        },
+        {
+          "phase": "done",
+          "stats": {
+            "n": 1,
+            "min_us": 3453,
+            "p50_us": 3453,
+            "p95_us": 3453,
+            "max_us": 3453
+          }
+        },
+        {
+          "phase": "fts",
+          "stats": {
+            "n": 1,
+            "min_us": 1631,
+            "p50_us": 1631,
+            "p95_us": 1631,
+            "max_us": 1631
+          }
+        },
+        {
+          "phase": "link",
+          "stats": {
+            "n": 3,
+            "min_us": 21000,
+            "p50_us": 105863,
+            "p95_us": 163049,
+            "max_us": 163049
+          }
+        },
+        {
+          "phase": "parse",
+          "stats": {
+            "n": 120,
+            "min_us": 0,
+            "p50_us": 428,
+            "p95_us": 10626,
+            "max_us": 203812
+          }
+        },
+        {
+          "phase": "resolve",
+          "stats": {
+            "n": 1,
+            "min_us": 2518,
+            "p50_us": 2518,
+            "p95_us": 2518,
+            "max_us": 2518
+          }
+        },
+        {
+          "phase": "walk",
+          "stats": {
+            "n": 1,
+            "min_us": 13721,
+            "p50_us": 13721,
+            "p95_us": 13721,
+            "max_us": 13721
+          }
+        },
+        {
+          "phase": "write",
+          "stats": {
+            "n": 1,
+            "min_us": 1452,
+            "p50_us": 1452,
+            "p95_us": 1452,
+            "max_us": 1452
+          }
+        }
+      ],
+      "intervals": [
+        {
+          "seq": 1,
+          "phase": "walk",
+          "us": 13721
+        },
+        {
+          "seq": 2,
+          "phase": "parse",
+          "us": 10626
+        },
+        {
+          "seq": 3,
+          "phase": "parse",
+          "us": 8089
+        },
+        {
+          "seq": 4,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 5,
+          "phase": "parse",
+          "us": 1581
+        },
+        {
+          "seq": 6,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 7,
+          "phase": "parse",
+          "us": 287
+        },
+        {
+          "seq": 8,
+          "phase": "parse",
+          "us": 1337
+        },
+        {
+          "seq": 9,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 10,
+          "phase": "parse",
+          "us": 230
+        },
+        {
+          "seq": 11,
+          "phase": "parse",
+          "us": 20473
+        },
+        {
+          "seq": 12,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 13,
+          "phase": "parse",
+          "us": 4934
+        },
+        {
+          "seq": 14,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 15,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 16,
+          "phase": "parse",
+          "us": 65642
+        },
+        {
+          "seq": 17,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 18,
+          "phase": "parse",
+          "us": 1055
+        },
+        {
+          "seq": 19,
+          "phase": "parse",
+          "us": 1555
+        },
+        {
+          "seq": 20,
+          "phase": "parse",
+          "us": 507
+        },
+        {
+          "seq": 21,
+          "phase": "parse",
+          "us": 238
+        },
+        {
+          "seq": 22,
+          "phase": "parse",
+          "us": 5190
+        },
+        {
+          "seq": 23,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 24,
+          "phase": "parse",
+          "us": 4392
+        },
+        {
+          "seq": 25,
+          "phase": "parse",
+          "us": 726
+        },
+        {
+          "seq": 26,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 27,
+          "phase": "parse",
+          "us": 376
+        },
+        {
+          "seq": 28,
+          "phase": "parse",
+          "us": 1656
+        },
+        {
+          "seq": 29,
+          "phase": "parse",
+          "us": 1391
+        },
+        {
+          "seq": 30,
+          "phase": "parse",
+          "us": 1610
+        },
+        {
+          "seq": 31,
+          "phase": "parse",
+          "us": 1411
+        },
+        {
+          "seq": 32,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 33,
+          "phase": "parse",
+          "us": 283
+        },
+        {
+          "seq": 34,
+          "phase": "parse",
+          "us": 415
+        },
+        {
+          "seq": 35,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 36,
+          "phase": "parse",
+          "us": 421
+        },
+        {
+          "seq": 37,
+          "phase": "parse",
+          "us": 1071
+        },
+        {
+          "seq": 38,
+          "phase": "parse",
+          "us": 435
+        },
+        {
+          "seq": 39,
+          "phase": "parse",
+          "us": 156
+        },
+        {
+          "seq": 40,
+          "phase": "parse",
+          "us": 325
+        },
+        {
+          "seq": 41,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 42,
+          "phase": "parse",
+          "us": 128
+        },
+        {
+          "seq": 43,
+          "phase": "parse",
+          "us": 871
+        },
+        {
+          "seq": 44,
+          "phase": "parse",
+          "us": 331
+        },
+        {
+          "seq": 45,
+          "phase": "parse",
+          "us": 177
+        },
+        {
+          "seq": 46,
+          "phase": "parse",
+          "us": 278
+        },
+        {
+          "seq": 47,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 48,
+          "phase": "parse",
+          "us": 4260
+        },
+        {
+          "seq": 49,
+          "phase": "parse",
+          "us": 1253
+        },
+        {
+          "seq": 50,
+          "phase": "parse",
+          "us": 96
+        },
+        {
+          "seq": 51,
+          "phase": "parse",
+          "us": 127
+        },
+        {
+          "seq": 52,
+          "phase": "parse",
+          "us": 24063
+        },
+        {
+          "seq": 53,
+          "phase": "parse",
+          "us": 10242
+        },
+        {
+          "seq": 54,
+          "phase": "parse",
+          "us": 1075
+        },
+        {
+          "seq": 55,
+          "phase": "parse",
+          "us": 1052
+        },
+        {
+          "seq": 56,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 57,
+          "phase": "parse",
+          "us": 141
+        },
+        {
+          "seq": 58,
+          "phase": "parse",
+          "us": 203812
+        },
+        {
+          "seq": 59,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 60,
+          "phase": "parse",
+          "us": 4447
+        },
+        {
+          "seq": 61,
+          "phase": "parse",
+          "us": 449
+        },
+        {
+          "seq": 62,
+          "phase": "parse",
+          "us": 2908
+        },
+        {
+          "seq": 63,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 64,
+          "phase": "parse",
+          "us": 7413
+        },
+        {
+          "seq": 65,
+          "phase": "parse",
+          "us": 3614
+        },
+        {
+          "seq": 66,
+          "phase": "parse",
+          "us": 264
+        },
+        {
+          "seq": 67,
+          "phase": "parse",
+          "us": 1909
+        },
+        {
+          "seq": 68,
+          "phase": "parse",
+          "us": 3072
+        },
+        {
+          "seq": 69,
+          "phase": "parse",
+          "us": 4173
+        },
+        {
+          "seq": 70,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 71,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 72,
+          "phase": "parse",
+          "us": 869
+        },
+        {
+          "seq": 73,
+          "phase": "parse",
+          "us": 749
+        },
+        {
+          "seq": 74,
+          "phase": "parse",
+          "us": 235
+        },
+        {
+          "seq": 75,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 76,
+          "phase": "parse",
+          "us": 178
+        },
+        {
+          "seq": 77,
+          "phase": "parse",
+          "us": 1123
+        },
+        {
+          "seq": 78,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 79,
+          "phase": "parse",
+          "us": 158
+        },
+        {
+          "seq": 80,
+          "phase": "parse",
+          "us": 2152
+        },
+        {
+          "seq": 81,
+          "phase": "parse",
+          "us": 3377
+        },
+        {
+          "seq": 82,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 83,
+          "phase": "parse",
+          "us": 306
+        },
+        {
+          "seq": 84,
+          "phase": "parse",
+          "us": 931
+        },
+        {
+          "seq": 85,
+          "phase": "parse",
+          "us": 2778
+        },
+        {
+          "seq": 86,
+          "phase": "parse",
+          "us": 428
+        },
+        {
+          "seq": 87,
+          "phase": "parse",
+          "us": 1064
+        },
+        {
+          "seq": 88,
+          "phase": "parse",
+          "us": 401
+        },
+        {
+          "seq": 89,
+          "phase": "parse",
+          "us": 1345
+        },
+        {
+          "seq": 90,
+          "phase": "parse",
+          "us": 425
+        },
+        {
+          "seq": 91,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 92,
+          "phase": "parse",
+          "us": 251
+        },
+        {
+          "seq": 93,
+          "phase": "parse",
+          "us": 560
+        },
+        {
+          "seq": 94,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 95,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 96,
+          "phase": "parse",
+          "us": 265
+        },
+        {
+          "seq": 97,
+          "phase": "parse",
+          "us": 3369
+        },
+        {
+          "seq": 98,
+          "phase": "parse",
+          "us": 2056
+        },
+        {
+          "seq": 99,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 100,
+          "phase": "parse",
+          "us": 336
+        },
+        {
+          "seq": 101,
+          "phase": "parse",
+          "us": 778
+        },
+        {
+          "seq": 102,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 103,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 104,
+          "phase": "parse",
+          "us": 887
+        },
+        {
+          "seq": 105,
+          "phase": "parse",
+          "us": 6970
+        },
+        {
+          "seq": 106,
+          "phase": "parse",
+          "us": 717
+        },
+        {
+          "seq": 107,
+          "phase": "parse",
+          "us": 3213
+        },
+        {
+          "seq": 108,
+          "phase": "parse",
+          "us": 247
+        },
+        {
+          "seq": 109,
+          "phase": "parse",
+          "us": 137
+        },
+        {
+          "seq": 110,
+          "phase": "parse",
+          "us": 1438
+        },
+        {
+          "seq": 111,
+          "phase": "parse",
+          "us": 240
+        },
+        {
+          "seq": 112,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 113,
+          "phase": "parse",
+          "us": 59
+        },
+        {
+          "seq": 114,
+          "phase": "parse",
+          "us": 6343
+        },
+        {
+          "seq": 115,
+          "phase": "parse",
+          "us": 1165
+        },
+        {
+          "seq": 116,
+          "phase": "parse",
+          "us": 1206
+        },
+        {
+          "seq": 117,
+          "phase": "parse",
+          "us": 695
+        },
+        {
+          "seq": 118,
+          "phase": "parse",
+          "us": 411
+        },
+        {
+          "seq": 119,
+          "phase": "parse",
+          "us": 819
+        },
+        {
+          "seq": 120,
+          "phase": "parse",
+          "us": 159747
+        },
+        {
+          "seq": 121,
+          "phase": "parse",
+          "us": 111370
+        },
+        {
+          "seq": 122,
+          "phase": "write",
+          "us": 1452
+        },
+        {
+          "seq": 123,
+          "phase": "link",
+          "us": 163049
+        },
+        {
+          "seq": 124,
+          "phase": "fts",
+          "us": 1631
+        },
+        {
+          "seq": 125,
+          "phase": "link",
+          "us": 105863
+        },
+        {
+          "seq": 126,
+          "phase": "link",
+          "us": 21000
+        },
+        {
+          "seq": 127,
+          "phase": "resolve",
+          "us": 2518
+        },
+        {
+          "seq": 128,
+          "phase": "checkpoint",
+          "us": 89713
+        },
+        {
+          "seq": 129,
+          "phase": "done",
+          "us": 3453
+        }
+      ],
+      "gates": [
+        {
+          "id": "progress_stall_p95",
+          "prd_metric": "Longest progress stall p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "stalls.stalls.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is gin on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "status": "UNKNOWN",
+      "stall_definition": "A STALL is silence: the wall-clock interval between two CONSECUTIVE ingest.ProgressEvents delivered to the harness's progress handler during the cold full index. One interval per adjacent pair of events, attributed to the phase of the event that ENDED it. It is deliberately the interval a consumer of the event stream experiences — the thing a user reads as a hang — and not the duration of any underlying work: a phase that takes a minute while emitting progress throughout is slow, not stalled, and `context/standards.md` asks for exactly that distinction.",
+      "boundary_handling": "The two BOUNDARY intervals are measured and published but are NOT stalls, and are excluded from the distribution by definition. `lead_in_us` is index start -\u003e first event: there is no preceding event, so counting it would report one enormous stall on every run and swamp the p95 with an artefact of where the clock was started. `tail_us` is last event -\u003e index end: a successful pass ends with a terminal `done` event, so it is normally near zero. Both are published rather than dropped, and a boundary longer than the longest recorded stall raises a warning — the largest silence in the run being outside the distribution is something a reader must be told, not spared.",
+      "timing_method": "One clock, read once per event inside the progress handler, and nothing else in the handler: the handler stores a timestamp difference and returns. Events are delivered SYNCHRONOUSLY from the ingesting goroutine (engine/ingest documents this), so an expensive handler would insert itself into the very silence it is measuring; the derivation — percentiles, per-phase pools, warnings — happens after the index has finished. The window is the same one index.wallclock_ms is measured over, so the parts reconcile against the whole.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained intervals, ascending — the same implementation the cold, query-latency and freshness series use. `n` is the number of gaps, which is one less than events_observed. Boundary intervals contribute to neither the pooled nor any per-phase distribution. Every value here is reproducible from `intervals` with evalreport.RecomputeStalls. Every interval is TRUNCATED to whole microseconds, so `lead_in_us` + the intervals + `tail_us` reconciles with `index_wallclock_us` to within one microsecond per interval and is never larger than it — a gap of more than that means a part of the window went unaccounted for, not that the arithmetic rounded.",
+      "scope_limitation": "This measures the COLD FULL INDEX only, through the shipped ingest.Ingester.WithProgress hook — the same hook the graphi CLI's renderer consumes. It makes no statement about the incremental path (SW-126 measures that), about filesystem-watch detection, or about a phase that is slow while still emitting progress. Clock-driven heartbeats are part of the shipped event stream and are counted as events, which is correct for this gate: the gate is about the index going SILENT, and a heartbeating phase is not silent.",
+      "notes": "SW-127 progress-stall measurement: the intervals between consecutive ingest.ProgressEvents during the cold full index, reported as p95 AND maximum with every individual interval retained. It is a REGRESSION GUARD as much as a number: a run that emits no progress reads FAIL, never `0 stalls, passed`. No PRD §12.2 gate is read unless the run is the reference scenario on the reference class and from the frozen candidate; otherwise it is UNKNOWN, which is not a PASS (PRD §8.2) — and a silent run is not rescued into a PASS by any of that."
+    },
+    "searches": [
+      {
+        "query": "Engine",
+        "matches": 25,
+        "pass": true
+      },
+      {
+        "query": "RouterGroup",
+        "matches": 25,
+        "pass": true
+      }
+    ],
+    "stable_peak_rss_mb": 572,
+    "stable_checks": [
+      {
+        "operation": "agent_brief",
+        "requirement": "resolved topic with a valid found/partial project brief",
+        "samples": 3,
+        "outcomes": {
+          "found": 3
+        },
+        "pass": true
+      },
+      {
+        "operation": "callees",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 7,
+          "found": 18
+        },
+        "pass": true
+      },
+      {
+        "operation": "callers",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 13,
+          "found": 12
+        },
+        "pass": true
+      },
+      {
+        "operation": "change_risk",
+        "requirement": "resolved target with a valid found envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": false
+      },
+      {
+        "operation": "definition",
+        "requirement": "resolved symbol with at least one definition",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "explain_symbol",
+        "requirement": "resolved target with a valid found envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": false
+      },
+      {
+        "operation": "impact",
+        "requirement": "resolved symbol; bounded impact outcome",
+        "samples": 25,
+        "outcomes": {
+          "empty": 13,
+          "found": 12
+        },
+        "pass": true
+      },
+      {
+        "operation": "index",
+        "requirement": "successful ingest with non-empty node and file inventory",
+        "samples": 1,
+        "outcomes": {
+          "found": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "neighborhood",
+        "requirement": "resolved symbol; bounded neighborhood outcome",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "references",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 24,
+          "found": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "related_files",
+        "requirement": "resolved target; found or legitimately empty related-file set",
+        "samples": 10,
+        "outcomes": {
+          "empty": 1,
+          "found": 9
+        },
+        "pass": true
+      },
+      {
+        "operation": "search",
+        "requirement": "manifest-promised non-empty search",
+        "samples": 40,
+        "outcomes": {
+          "found": 40
+        },
+        "pass": true
+      }
+    ],
+    "pass": false,
+    "failures": [
+      "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+      "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+    ]
+  },
+  "repo_run_index": 1,
+  "cold_series": {
+    "repo": "gin",
+    "runs_requested": 10,
+    "runs_completed": 10,
+    "runs_aborted": 0,
+    "minimum_runs": 10,
+    "sufficient": true,
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "reference_scenario": false,
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "runs": [
+      {
+        "run": 1,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:07Z",
+        "clone_ms": 543,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-01/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-01/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1137,
+          "peak_rss_mb": 557,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 572,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-01.json"
+      },
+      {
+        "run": 2,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:11Z",
+        "clone_ms": 587,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-02/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-02/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1107,
+          "peak_rss_mb": 547,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 548,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-02.json"
+      },
+      {
+        "run": 3,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:14Z",
+        "clone_ms": 650,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-03/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-03/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1128,
+          "peak_rss_mb": 549,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 550,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-03.json"
+      },
+      {
+        "run": 4,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:16Z",
+        "clone_ms": 619,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-04/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-04/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1131,
+          "peak_rss_mb": 557,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 572,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-04.json"
+      },
+      {
+        "run": 5,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:18Z",
+        "clone_ms": 640,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-05/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-05/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1164,
+          "peak_rss_mb": 495,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 495,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-05.json"
+      },
+      {
+        "run": 6,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:21Z",
+        "clone_ms": 648,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-06/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-06/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1148,
+          "peak_rss_mb": 558,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 572,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-06.json"
+      },
+      {
+        "run": 7,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:24Z",
+        "clone_ms": 655,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-07/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-07/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1171,
+          "peak_rss_mb": 565,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 580,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-07.json"
+      },
+      {
+        "run": 8,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:26Z",
+        "clone_ms": 654,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-08/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-08/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1127,
+          "peak_rss_mb": 523,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 524,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-08.json"
+      },
+      {
+        "run": 9,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:29Z",
+        "clone_ms": 604,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-09/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-09/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1146,
+          "peak_rss_mb": 558,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 572,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-09.json"
+      },
+      {
+        "run": 10,
+        "status": "completed",
+        "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+        "runner_class": "ubuntu-latest",
+        "repo_sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+        "started_at": "2026-07-28T16:40:31Z",
+        "clone_ms": 610,
+        "cold": {
+          "store_path": "/home/runner/work/_temp/cold-series/run-10/gin.db",
+          "meta_path": "/home/runner/work/_temp/cold-series/run-10/gin-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "dropped",
+          "page_cache_command": [
+            "sudo",
+            "-n",
+            "sh",
+            "-c",
+            "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+          ],
+          "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+          "drop_required": true,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 1163,
+          "peak_rss_mb": 562,
+          "db_size_bytes": 2355200,
+          "nodes": 1890,
+          "edges": 6794,
+          "files": 109
+        },
+        "stable_peak_rss_mb": 576,
+        "bytes_per_edge": 346.6588166028849,
+        "cgroup": {
+          "available": true,
+          "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+          "memory_max": "max",
+          "memory_swap_max": "max",
+          "oom_kill": 0,
+          "oom_kill_collected": true
+        },
+        "run_pass": false,
+        "run_failures": [
+          "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+          "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+        ],
+        "report_path": "/home/runner/work/_temp/cold-series/cold-run-10.json"
+      }
+    ],
+    "aggregates": {
+      "bytes_per_edge": {
+        "metric": "bytes_per_edge",
+        "unit": "bytes/edge",
+        "n": 10,
+        "min": 346.6588166028849,
+        "p50": 346.6588166028849,
+        "p95": 346.6588166028849,
+        "max": 346.6588166028849
+      },
+      "db_size_bytes": {
+        "metric": "db_size_bytes",
+        "unit": "bytes",
+        "n": 10,
+        "min": 2355200,
+        "p50": 2355200,
+        "p95": 2355200,
+        "max": 2355200
+      },
+      "edges": {
+        "metric": "edges",
+        "unit": "edges",
+        "n": 10,
+        "min": 6794,
+        "p50": 6794,
+        "p95": 6794,
+        "max": 6794
+      },
+      "index_peak_rss_mb": {
+        "metric": "index_peak_rss_mb",
+        "unit": "MB",
+        "n": 10,
+        "min": 495,
+        "p50": 557,
+        "p95": 565,
+        "max": 565
+      },
+      "index_wallclock_ms": {
+        "metric": "index_wallclock_ms",
+        "unit": "ms",
+        "n": 10,
+        "min": 1107,
+        "p50": 1137,
+        "p95": 1171,
+        "max": 1171
+      },
+      "nodes": {
+        "metric": "nodes",
+        "unit": "nodes",
+        "n": 10,
+        "min": 1890,
+        "p50": 1890,
+        "p95": 1890,
+        "max": 1890
+      },
+      "stable_peak_rss_mb": {
+        "metric": "stable_peak_rss_mb",
+        "unit": "MB",
+        "n": 10,
+        "min": 495,
+        "p50": 572,
+        "p95": 580,
+        "max": 580
+      }
+    },
+    "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the COMPLETED runs only, ascending; aborted runs contribute to runs_aborted and never to a distribution. A completed run's node and edge COUNTS are sampled even when they are zero (a degenerate repository is a measurement); the metrics a completed run always produces (wallclock, RSS, db size) and the bytes-per-edge RATIO treat a zero as an absent field, so `n` below runs_completed always means a run did not report the metric. Every value here is reproducible from `runs` with evalreport.RecomputeColdAggregates.",
+    "gates": [
+      {
+        "id": "cold_index_p50",
+        "prd_metric": "Cold Index p50 (PRD 12.2)",
+        "threshold": 90,
+        "unit": "s",
+        "comparison": "lte",
+        "aggregate": "index_wallclock_ms.p50",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "this run is gin on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+      },
+      {
+        "id": "cold_index_p95",
+        "prd_metric": "Cold Index p95 (PRD 12.2)",
+        "threshold": 120,
+        "unit": "s",
+        "comparison": "lte",
+        "aggregate": "index_wallclock_ms.p95",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "this run is gin on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+      },
+      {
+        "id": "peak_rss",
+        "prd_metric": "Peak RSS, reference scenario (PRD 12.2; see the 4 GB stop rule in PRD 17)",
+        "threshold": 2,
+        "unit": "GB",
+        "comparison": "lte",
+        "aggregate": "stable_peak_rss_mb.max",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "this run is gin on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+      },
+      {
+        "id": "oom_8gb_host",
+        "prd_metric": "OOM on an 8 GB host (PRD 12.2)",
+        "threshold": 0,
+        "unit": "oom_kills",
+        "comparison": "lte",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "the OOM gate binds \"grpc-go\" but this series measured \"gin\"; the gate is scoped to the reference scenario"
+      },
+      {
+        "id": "db_size",
+        "prd_metric": "DB size, reference scenario (PRD 12.2)",
+        "threshold": 300,
+        "unit": "MB",
+        "comparison": "lte",
+        "aggregate": "db_size_bytes.max",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "this run is gin on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+      }
+    ],
+    "stop_rule": {
+      "id": "peak_rss_stop_rule",
+      "threshold_gb": 4,
+      "observed_peak_gb": 0.56640625,
+      "triggered": false,
+      "status": "PASS",
+      "reason": "observed peak 0.57 GB is within the 4 GB stop rule over 10 runs"
+    },
+    "oom_check": {
+      "gate_id": "oom_8gb_host",
+      "status": "UNKNOWN",
+      "reason": "the OOM gate binds \"grpc-go\" but this series measured \"gin\"; the gate is scoped to the reference scenario",
+      "method": "cgroup v2, the ubuntu-24.04 image's default hierarchy: run the cold-index measurement inside `sudo systemd-run --scope --collect --property=MemoryMax=8G --property=MemorySwapMax=0 -- \u003cmeasurement command\u003e`. MemorySwapMax=0 matters: with swap available the process would be throttled instead of killed, and the check would pass for the wrong reason.",
+      "required_limit_bytes": 8589934592,
+      "limit_verified": false,
+      "run_completed": false,
+      "exit_code": 0
+    },
+    "status": "UNKNOWN",
+    "notes": "SW-124 cold-index series: N independent cold runs, ONE PROCESS PER RUN (getrusage MAXRSS is a process-lifetime peak, so in-process repetition would publish run 1's peak for every later run). `repo` is one named sample kept for comparability with single-run reports; every distributional claim is in `cold_series`. NO gate — the OOM gate included — is read unless the run is the reference scenario on the reference class and from the frozen candidate; the percentile gates additionally require at least minimum_runs completed runs. Otherwise they are UNKNOWN, which is not a PASS (PRD §8.2)."
+  },
+  "cgroup": {
+    "available": true,
+    "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+    "memory_max": "max",
+    "memory_swap_max": "max",
+    "oom_kill": 0,
+    "oom_kill_collected": true
+  }
+}

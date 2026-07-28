@@ -107,6 +107,19 @@ incomplete is not publishable, however cleanly its arithmetic reproduces.
 
 ## Existing directories
 
+`2026-07-28-ubuntu-latest/` is the **published P0 baseline** (SW-130): two
+complete runs on the frozen candidate v0.7.0 at `5815db5`, over the five pinned
+Go repositories, with raw samples, environment capture, in-CI reproduction and
+the profiles the one missed gate produced. Start at its `README.md`, and read
+the numbers in `p0-baseline.md`.
+
+It deviates from the one-directory-per-run shape above in one visible way, and
+the reason is in the workflow rather than in the convention: the four
+measurement families run as separate CI jobs on separate machines, so each
+exports its own run directory. They are grouped `run-<a|b>/<family>/<repo>/`,
+and each of those leaf directories is a run directory exactly as described
+above — `-aggregate` reads any of them directly.
+
 `2026-07-15-local-sandbox/` and `2026-07-15-ubuntu-latest/` predate this
 convention. They hold aggregates only — no `raw/`, no environment capture and
 no reproduction — which is exactly the gap SW-128 closes; see their own READMEs

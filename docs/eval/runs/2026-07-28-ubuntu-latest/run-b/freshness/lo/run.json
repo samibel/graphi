@@ -1,0 +1,61 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "scorer_version": "p0-aggregate/1",
+  "date": "2026-07-28",
+  "runner_class": "ubuntu-latest",
+  "repo": "lo",
+  "report": "report.json",
+  "raw": [
+    {
+      "series": "cold_index",
+      "file": "raw/cold-index.json",
+      "sha256": "",
+      "collected": false,
+      "samples": 0
+    },
+    {
+      "series": "query_latency",
+      "file": "raw/query-latency.json",
+      "sha256": "3704578ccfe79a46003d1008bf3cf00d8c3683766a3c08f948924d3da8d0d38f",
+      "collected": true,
+      "samples": 223
+    },
+    {
+      "series": "incremental",
+      "file": "raw/incremental.json",
+      "sha256": "8165881fb95195357d2ed3d13b6192baa3417a80ebb83ac7063a29c8d5b10c98",
+      "collected": true,
+      "samples": 100
+    },
+    {
+      "series": "progress_stalls",
+      "file": "raw/progress-stalls.json",
+      "sha256": "0c99cb62bb4d224a4d0770e146bd59d5c788225d93509aefa9a836d7b235c85c",
+      "collected": true,
+      "samples": 38
+    }
+  ],
+  "environment": {
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_count": 4,
+    "ram_bytes": 16766423040,
+    "os": "linux",
+    "arch": "amd64",
+    "kernel": "6.17.0-1020-azure",
+    "go_version": "go1.26.5",
+    "filesystem": "ext4",
+    "filesystem_path": "/home/runner/work/_temp/freshness",
+    "cache_state": "not_dropped",
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "notes": "SW-128 raw-sample export: `report` is the published aggregate; `raw/` holds the individual measurements it was derived from, in a format that carries samples and membership lists only — no percentile travels in a raw file, so reproducing the report from it is a real check rather than a comparison of a number with itself. Run `go run ./cmd/eval -aggregate \u003cthis directory\u003e` to recompute every published metric from `raw/` and diff it against `report`: a discrepancy exits non-zero, and so does a run whose raw data or environment is incomplete. `format_version` versions the file shape and `harness_version` the measurement method — a directory whose raw files disagree about either is refused rather than averaged (PRD risk 9)."
+}

@@ -162,10 +162,23 @@ driven through the same `engine/scenario.FixtureEngine` the hero suite uses.
 Raw evidence: `internal/evalreport.FullRunReport` JSON. Hermetic gate:
 `cmd/eval/fullrun_test.go` (local fixture, no network).
 
-**Workflow:** `.github/workflows/eval-full.yml` — matrix over cobra/flask/guava
-on `ubuntu-latest` (the reference runner class) + the hero-suite job; weekly
-schedule + manual dispatch; never a PR gate (the hero suite's PR gate is
-`cmd/eval/hero_test.go` inside testgate).
+**Workflow:** `.github/workflows/eval-full.yml` — the historical-ceiling matrix
+over cobra/flask/guava on `ubuntu-latest` (the reference runner class), the
+hero-suite job, and (SW-124…SW-130) four measurement jobs over the five pinned
+Go repositories; weekly schedule + manual dispatch; never a PR gate (the hero
+suite's PR gate is `cmd/eval/hero_test.go` inside testgate).
+
+The four measurement jobs differ from the matrix job in three ways that matter,
+and all three exist so their numbers can be read at all (SW-130):
+
+- they **check the frozen candidate out** and build the harness from it, because
+  the harness forces every PRD §12.2 gate to UNKNOWN when the measured revision
+  is not the cited candidate;
+- they take the candidate **citation** from the dispatched ref, copied out of the
+  tree before the tree moves — a commit cannot contain its own hash, so the
+  freeze record naming a SHA never exists at that SHA;
+- they write **every output outside the checkout**, because an untracked file
+  sets `worktree_dirty` and triggers the same blanket UNKNOWN.
 
 **Evidence and required re-baseline:**
 
@@ -326,3 +339,69 @@ and "no problem" must not look alike in CI.
 **Scope.** This is measurement infrastructure only: nothing here runs in the
 shipped binary, and interpreting the profiles or acting on them is WP4 work with
 its own stories.
+
+## The published baseline, and what a complete run costs (SW-130)
+
+Everything above is instruments. The first measurement they produced is
+[`runs/2026-07-28-ubuntu-latest/`](runs/2026-07-28-ubuntu-latest/) — two
+complete runs on the frozen candidate **v0.7.0 at `5815db5`**, over the five
+pinned Go repositories, with the report in `p0-baseline.md` / `p0-baseline.json`
+and every sample beside it.
+
+**Method — how a run is made readable.** A §12.2 gate is only read when
+`candidate_match` is true, i.e. when `git rev-parse HEAD` equals the SHA the
+evidence index cites and the worktree is clean. Three things follow, and each
+measurement job does all three:
+
+1. **Check the candidate out**, and build the harness from that checkout. The
+   built binary is what runs — never `go run` from a working tree.
+2. **Take the candidate citation from the dispatched ref**, copied out of the
+   tree *before* the tree moves onto the candidate. A commit cannot contain its
+   own hash, so the freeze record naming a SHA never exists at that SHA; the
+   citation is an external fact about the artifact, which is what `-candidate`
+   is for.
+3. **Write every output outside the checkout.** An untracked file — a report, a
+   run directory, or the harness binary itself — sets `worktree_dirty`, and a
+   dirty worktree forces the same blanket UNKNOWN as a wrong revision.
+
+**What a complete run costs.** This is the figure that constrains scheduling for
+every later P0 band, and it is read from the harness's own accounting rather
+than off the CI job clock: each measurement step stamps a timestamp immediately
+before invoking the built binary and immediately after it returns, so checkout,
+toolchain setup, the candidate checkout and the compile all sit outside the
+window. The per-job figures are in `p0-baseline.json` under `run_cost`; the
+headline is in the table below.
+
+A complete run has **two** costs and they are not interchangeable:
+
+- **Runner cost** — the sum over all twenty measurement jobs. This is what one
+  complete run consumes in runner capacity.
+- **Critical path** — the longest single job. This is what an operator waits,
+  because the twenty jobs are independent and run in parallel.
+
+| Run | Runner cost (sum of 20 jobs) | Critical path (longest job) | CI job clock, for contrast |
+|---|---|---|---|
+| run-a — dispatch [30377165970](https://github.com/samibel/graphi/actions/runs/30377165970) | **1070 s** (17 m 50 s) | **455 s** (7 m 35 s) — freshness/grpc-go | 511 s (8 m 31 s) |
+| run-b — dispatch [30379259481](https://github.com/samibel/graphi/actions/runs/30379259481) | **1094 s** (18 m 14 s) | **457 s** (7 m 37 s) — freshness/grpc-go | 554 s (9 m 14 s) |
+| both runs, as PRD §16 requires | **2164 s** (36 m 04 s) | — | 1065 s (17 m 45 s) |
+
+The two costs answer different questions. **2164 harness-seconds** is what the
+PRD's "two consecutive complete runs" consumes in runner capacity; **~7 m 37 s**
+is what an operator actually waits, because the twenty jobs are independent and
+GitHub runs them in parallel. The critical path is the same job in both runs —
+freshness over grpc-go — which is also the only job holding a failing gate, so
+the slowest thing to measure and the thing most in need of a fix are one and the
+same.
+
+The last column is the CI job clock and is shown only so the two are not
+confused. It is larger than the runner cost per run for a different reason than
+one might expect: it is the *elapsed* time of the whole dispatch, twenty jobs
+wide, not a sum. Neither column may be substituted for the other.
+
+The GitHub job clock is deliberately *not* the number quoted: it additionally
+contains checkout, toolchain setup and the compile, and before SW-130 three of
+the four measurement jobs ran `go run ./cmd/eval` inside the measured step, so
+the compile sat inside the step being timed. It never fell inside a *measured
+window* — those are in-process, around `ing.IngestAll` and around each timed
+operation — so no published number was ever corrupted by it; it only inflated
+the step clock, which is why the cost is taken from the harness instead.

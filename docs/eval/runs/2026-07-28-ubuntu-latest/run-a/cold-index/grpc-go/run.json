@@ -1,0 +1,61 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "scorer_version": "p0-aggregate/1",
+  "date": "2026-07-28",
+  "runner_class": "ubuntu-latest",
+  "repo": "grpc-go",
+  "report": "report.json",
+  "raw": [
+    {
+      "series": "cold_index",
+      "file": "raw/cold-index.json",
+      "sha256": "dc70684c0e6e15b7353493bbdfae74b17f5d53f120644843e2563c40de34511c",
+      "collected": true,
+      "samples": 10
+    },
+    {
+      "series": "query_latency",
+      "file": "raw/query-latency.json",
+      "sha256": "310ff7f59002d4d8fce53fc6bef44c207b6702aea400363f5133c88fa9175602",
+      "collected": true,
+      "samples": 220
+    },
+    {
+      "series": "incremental",
+      "file": "raw/incremental.json",
+      "sha256": "",
+      "collected": false,
+      "samples": 0
+    },
+    {
+      "series": "progress_stalls",
+      "file": "raw/progress-stalls.json",
+      "sha256": "4245a69d6e60a6c4dcd55d73e4a405e2fcb6723946f768460cca818835d5866d",
+      "collected": true,
+      "samples": 1088
+    }
+  ],
+  "environment": {
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "cpu_count": 4,
+    "ram_bytes": 16765386752,
+    "os": "linux",
+    "arch": "amd64",
+    "kernel": "6.17.0-1020-azure",
+    "go_version": "go1.26.5",
+    "filesystem": "ext4",
+    "filesystem_path": "/home/runner/work/_temp/cold-series",
+    "cache_state": "dropped",
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "notes": "SW-128 raw-sample export: `report` is the published aggregate; `raw/` holds the individual measurements it was derived from, in a format that carries samples and membership lists only — no percentile travels in a raw file, so reproducing the report from it is a real check rather than a comparison of a number with itself. Run `go run ./cmd/eval -aggregate \u003cthis directory\u003e` to recompute every published metric from `raw/` and diff it against `report`: a discrepancy exits non-zero, and so does a run whose raw data or environment is incomplete. `format_version` versions the file shape and `harness_version` the measurement method — a directory whose raw files disagree about either is refused rather than averaged (PRD risk 9)."
+}

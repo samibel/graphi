@@ -1,0 +1,1820 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "scorer_version": "p0-aggregate/1",
+  "repo": "cobra",
+  "runner_class": "ubuntu-latest",
+  "environment": {
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cpu_count": 4,
+    "ram_bytes": 16766423040,
+    "os": "linux",
+    "arch": "amd64",
+    "kernel": "6.17.0-1020-azure",
+    "go_version": "go1.26.5",
+    "filesystem": "ext4",
+    "filesystem_path": "/home/runner/work/_temp/cold-series",
+    "cache_state": "dropped",
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "environment_complete": true,
+  "series": [
+    {
+      "series": "cold_index",
+      "published": true,
+      "raw_present": true,
+      "raw_collected": true,
+      "raw_samples": 10,
+      "metrics": 37,
+      "reproduced": 37,
+      "discrepant": 0,
+      "unknown": 0,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "published": true,
+      "raw_present": true,
+      "raw_collected": true,
+      "raw_samples": 216,
+      "metrics": 91,
+      "reproduced": 91,
+      "discrepant": 0,
+      "unknown": 0,
+      "status": "PASS"
+    },
+    {
+      "series": "incremental",
+      "published": false,
+      "raw_present": false,
+      "raw_collected": false,
+      "raw_samples": 0,
+      "metrics": 0,
+      "reproduced": 0,
+      "discrepant": 0,
+      "unknown": 0,
+      "status": "UNKNOWN"
+    },
+    {
+      "series": "progress_stalls",
+      "published": true,
+      "raw_present": true,
+      "raw_collected": true,
+      "raw_samples": 75,
+      "metrics": 45,
+      "reproduced": 45,
+      "discrepant": 0,
+      "unknown": 0,
+      "status": "PASS"
+    }
+  ],
+  "metrics": [
+    {
+      "series": "cold_index",
+      "metric": "cold_index.bytes_per_edge.n",
+      "unit": "samples",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.bytes_per_edge.min",
+      "unit": "bytes/edge",
+      "published": 344.74179743223965,
+      "recomputed": 344.74179743223965,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.bytes_per_edge.p50",
+      "unit": "bytes/edge",
+      "published": 344.74179743223965,
+      "recomputed": 344.74179743223965,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.bytes_per_edge.p95",
+      "unit": "bytes/edge",
+      "published": 344.74179743223965,
+      "recomputed": 344.74179743223965,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.bytes_per_edge.max",
+      "unit": "bytes/edge",
+      "published": 344.74179743223965,
+      "recomputed": 344.74179743223965,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.db_size_bytes.n",
+      "unit": "samples",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.db_size_bytes.min",
+      "unit": "bytes",
+      "published": 1449984,
+      "recomputed": 1449984,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.db_size_bytes.p50",
+      "unit": "bytes",
+      "published": 1449984,
+      "recomputed": 1449984,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.db_size_bytes.p95",
+      "unit": "bytes",
+      "published": 1449984,
+      "recomputed": 1449984,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.db_size_bytes.max",
+      "unit": "bytes",
+      "published": 1449984,
+      "recomputed": 1449984,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.edges.n",
+      "unit": "samples",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.edges.min",
+      "unit": "edges",
+      "published": 4206,
+      "recomputed": 4206,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.edges.p50",
+      "unit": "edges",
+      "published": 4206,
+      "recomputed": 4206,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.edges.p95",
+      "unit": "edges",
+      "published": 4206,
+      "recomputed": 4206,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.edges.max",
+      "unit": "edges",
+      "published": 4206,
+      "recomputed": 4206,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_peak_rss_mb.n",
+      "unit": "samples",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_peak_rss_mb.min",
+      "unit": "MB",
+      "published": 262,
+      "recomputed": 262,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_peak_rss_mb.p50",
+      "unit": "MB",
+      "published": 274,
+      "recomputed": 274,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_peak_rss_mb.p95",
+      "unit": "MB",
+      "published": 280,
+      "recomputed": 280,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_peak_rss_mb.max",
+      "unit": "MB",
+      "published": 280,
+      "recomputed": 280,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_wallclock_ms.n",
+      "unit": "samples",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_wallclock_ms.min",
+      "unit": "ms",
+      "published": 529,
+      "recomputed": 529,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_wallclock_ms.p50",
+      "unit": "ms",
+      "published": 548,
+      "recomputed": 548,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_wallclock_ms.p95",
+      "unit": "ms",
+      "published": 616,
+      "recomputed": 616,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.index_wallclock_ms.max",
+      "unit": "ms",
+      "published": 616,
+      "recomputed": 616,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.nodes.n",
+      "unit": "samples",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.nodes.min",
+      "unit": "nodes",
+      "published": 938,
+      "recomputed": 938,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.nodes.p50",
+      "unit": "nodes",
+      "published": 938,
+      "recomputed": 938,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.nodes.p95",
+      "unit": "nodes",
+      "published": 938,
+      "recomputed": 938,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.nodes.max",
+      "unit": "nodes",
+      "published": 938,
+      "recomputed": 938,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.stable_peak_rss_mb.n",
+      "unit": "samples",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.stable_peak_rss_mb.min",
+      "unit": "MB",
+      "published": 263,
+      "recomputed": 263,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.stable_peak_rss_mb.p50",
+      "unit": "MB",
+      "published": 274,
+      "recomputed": 274,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.stable_peak_rss_mb.p95",
+      "unit": "MB",
+      "published": 281,
+      "recomputed": 281,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.stable_peak_rss_mb.max",
+      "unit": "MB",
+      "published": 281,
+      "recomputed": 281,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.runs_completed",
+      "unit": "runs",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "cold_index",
+      "metric": "cold_index.runs_aborted",
+      "unit": "runs",
+      "published": 0,
+      "recomputed": 0,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.agent_brief.n",
+      "unit": "samples",
+      "published": 3,
+      "recomputed": 3,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.agent_brief.min_us",
+      "unit": "us",
+      "published": 24183,
+      "recomputed": 24183,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.agent_brief.p50_us",
+      "unit": "us",
+      "published": 24703,
+      "recomputed": 24703,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.agent_brief.p95_us",
+      "unit": "us",
+      "published": 26929,
+      "recomputed": 26929,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.agent_brief.max_us",
+      "unit": "us",
+      "published": 26929,
+      "recomputed": 26929,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callees.n",
+      "unit": "samples",
+      "published": 25,
+      "recomputed": 25,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callees.min_us",
+      "unit": "us",
+      "published": 82,
+      "recomputed": 82,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callees.p50_us",
+      "unit": "us",
+      "published": 168,
+      "recomputed": 168,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callees.p95_us",
+      "unit": "us",
+      "published": 228,
+      "recomputed": 228,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callees.max_us",
+      "unit": "us",
+      "published": 269,
+      "recomputed": 269,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callers.n",
+      "unit": "samples",
+      "published": 25,
+      "recomputed": 25,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callers.min_us",
+      "unit": "us",
+      "published": 79,
+      "recomputed": 79,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callers.p50_us",
+      "unit": "us",
+      "published": 91,
+      "recomputed": 91,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callers.p95_us",
+      "unit": "us",
+      "published": 269,
+      "recomputed": 269,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.callers.max_us",
+      "unit": "us",
+      "published": 1631,
+      "recomputed": 1631,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.change_risk.n",
+      "unit": "samples",
+      "published": 7,
+      "recomputed": 7,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.change_risk.min_us",
+      "unit": "us",
+      "published": 181,
+      "recomputed": 181,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.change_risk.p50_us",
+      "unit": "us",
+      "published": 230,
+      "recomputed": 230,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.change_risk.p95_us",
+      "unit": "us",
+      "published": 322,
+      "recomputed": 322,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.change_risk.max_us",
+      "unit": "us",
+      "published": 322,
+      "recomputed": 322,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.definition.n",
+      "unit": "samples",
+      "published": 25,
+      "recomputed": 25,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.definition.min_us",
+      "unit": "us",
+      "published": 116,
+      "recomputed": 116,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.definition.p50_us",
+      "unit": "us",
+      "published": 122,
+      "recomputed": 122,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.definition.p95_us",
+      "unit": "us",
+      "published": 154,
+      "recomputed": 154,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.definition.max_us",
+      "unit": "us",
+      "published": 160,
+      "recomputed": 160,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.explain_symbol.n",
+      "unit": "samples",
+      "published": 6,
+      "recomputed": 6,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.explain_symbol.min_us",
+      "unit": "us",
+      "published": 304,
+      "recomputed": 304,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.explain_symbol.p50_us",
+      "unit": "us",
+      "published": 373,
+      "recomputed": 373,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.explain_symbol.p95_us",
+      "unit": "us",
+      "published": 444,
+      "recomputed": 444,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.explain_symbol.max_us",
+      "unit": "us",
+      "published": 444,
+      "recomputed": 444,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.impact.n",
+      "unit": "samples",
+      "published": 25,
+      "recomputed": 25,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.impact.min_us",
+      "unit": "us",
+      "published": 149,
+      "recomputed": 149,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.impact.p50_us",
+      "unit": "us",
+      "published": 185,
+      "recomputed": 185,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.impact.p95_us",
+      "unit": "us",
+      "published": 30613,
+      "recomputed": 30613,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.impact.max_us",
+      "unit": "us",
+      "published": 31922,
+      "recomputed": 31922,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.neighborhood.n",
+      "unit": "samples",
+      "published": 25,
+      "recomputed": 25,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.neighborhood.min_us",
+      "unit": "us",
+      "published": 264,
+      "recomputed": 264,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.neighborhood.p50_us",
+      "unit": "us",
+      "published": 337,
+      "recomputed": 337,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.neighborhood.p95_us",
+      "unit": "us",
+      "published": 517,
+      "recomputed": 517,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.neighborhood.max_us",
+      "unit": "us",
+      "published": 1920,
+      "recomputed": 1920,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.references.n",
+      "unit": "samples",
+      "published": 25,
+      "recomputed": 25,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.references.min_us",
+      "unit": "us",
+      "published": 82,
+      "recomputed": 82,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.references.p50_us",
+      "unit": "us",
+      "published": 124,
+      "recomputed": 124,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.references.p95_us",
+      "unit": "us",
+      "published": 166,
+      "recomputed": 166,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.references.max_us",
+      "unit": "us",
+      "published": 167,
+      "recomputed": 167,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.related_files.n",
+      "unit": "samples",
+      "published": 10,
+      "recomputed": 10,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.related_files.min_us",
+      "unit": "us",
+      "published": 246,
+      "recomputed": 246,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.related_files.p50_us",
+      "unit": "us",
+      "published": 291,
+      "recomputed": 291,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.related_files.p95_us",
+      "unit": "us",
+      "published": 1809,
+      "recomputed": 1809,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.related_files.max_us",
+      "unit": "us",
+      "published": 1809,
+      "recomputed": 1809,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.search.n",
+      "unit": "samples",
+      "published": 40,
+      "recomputed": 40,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.search.min_us",
+      "unit": "us",
+      "published": 236,
+      "recomputed": 236,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.search.p50_us",
+      "unit": "us",
+      "published": 332,
+      "recomputed": 332,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.search.p95_us",
+      "unit": "us",
+      "published": 1154,
+      "recomputed": 1154,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.operation.search.max_us",
+      "unit": "us",
+      "published": 1159,
+      "recomputed": 1159,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.agent_tools.n",
+      "unit": "samples",
+      "published": 26,
+      "recomputed": 26,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.agent_tools.min_us",
+      "unit": "us",
+      "published": 181,
+      "recomputed": 181,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.agent_tools.p50_us",
+      "unit": "us",
+      "published": 308,
+      "recomputed": 308,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.agent_tools.p95_us",
+      "unit": "us",
+      "published": 24703,
+      "recomputed": 24703,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.agent_tools.max_us",
+      "unit": "us",
+      "published": 26929,
+      "recomputed": 26929,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.agent_tools.executions",
+      "unit": "executions",
+      "published": 26,
+      "recomputed": 26,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.search.n",
+      "unit": "samples",
+      "published": 40,
+      "recomputed": 40,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.search.min_us",
+      "unit": "us",
+      "published": 236,
+      "recomputed": 236,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.search.p50_us",
+      "unit": "us",
+      "published": 332,
+      "recomputed": 332,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.search.p95_us",
+      "unit": "us",
+      "published": 1154,
+      "recomputed": 1154,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.search.max_us",
+      "unit": "us",
+      "published": 1159,
+      "recomputed": 1159,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.search.executions",
+      "unit": "executions",
+      "published": 40,
+      "recomputed": 40,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.structural.n",
+      "unit": "samples",
+      "published": 150,
+      "recomputed": 150,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.structural.min_us",
+      "unit": "us",
+      "published": 79,
+      "recomputed": 79,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.structural.p50_us",
+      "unit": "us",
+      "published": 155,
+      "recomputed": 155,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.structural.p95_us",
+      "unit": "us",
+      "published": 1525,
+      "recomputed": 1525,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.structural.max_us",
+      "unit": "us",
+      "published": 31922,
+      "recomputed": 31922,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.class.structural.executions",
+      "unit": "executions",
+      "published": 150,
+      "recomputed": 150,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.agent_context_p95.n",
+      "unit": "samples",
+      "published": 26,
+      "recomputed": 26,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.agent_context_p95.min_us",
+      "unit": "us",
+      "published": 181,
+      "recomputed": 181,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.agent_context_p95.p50_us",
+      "unit": "us",
+      "published": 308,
+      "recomputed": 308,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.agent_context_p95.p95_us",
+      "unit": "us",
+      "published": 24703,
+      "recomputed": 24703,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.agent_context_p95.max_us",
+      "unit": "us",
+      "published": 26929,
+      "recomputed": 26929,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.agent_context_p95.executions",
+      "unit": "executions",
+      "published": 26,
+      "recomputed": 26,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.caller_callee_impact_p95.n",
+      "unit": "samples",
+      "published": 75,
+      "recomputed": 75,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.caller_callee_impact_p95.min_us",
+      "unit": "us",
+      "published": 79,
+      "recomputed": 79,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.caller_callee_impact_p95.p50_us",
+      "unit": "us",
+      "published": 164,
+      "recomputed": 164,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.caller_callee_impact_p95.p95_us",
+      "unit": "us",
+      "published": 29273,
+      "recomputed": 29273,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.caller_callee_impact_p95.max_us",
+      "unit": "us",
+      "published": 31922,
+      "recomputed": 31922,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.caller_callee_impact_p95.executions",
+      "unit": "executions",
+      "published": 75,
+      "recomputed": 75,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.warm_search_p95.n",
+      "unit": "samples",
+      "published": 40,
+      "recomputed": 40,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.warm_search_p95.min_us",
+      "unit": "us",
+      "published": 236,
+      "recomputed": 236,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.warm_search_p95.p50_us",
+      "unit": "us",
+      "published": 332,
+      "recomputed": 332,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.warm_search_p95.p95_us",
+      "unit": "us",
+      "published": 1154,
+      "recomputed": 1154,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.warm_search_p95.max_us",
+      "unit": "us",
+      "published": 1159,
+      "recomputed": 1159,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "query_latency",
+      "metric": "query_latency.pool.warm_search_p95.executions",
+      "unit": "executions",
+      "published": 40,
+      "recomputed": 40,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.pooled.n",
+      "unit": "samples",
+      "published": 75,
+      "recomputed": 75,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.pooled.min_us",
+      "unit": "us",
+      "published": 0,
+      "recomputed": 0,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.pooled.p50_us",
+      "unit": "us",
+      "published": 710,
+      "recomputed": 710,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.pooled.p95_us",
+      "unit": "us",
+      "published": 53123,
+      "recomputed": 53123,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.pooled.max_us",
+      "unit": "us",
+      "published": 90552,
+      "recomputed": 90552,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.checkpoint.n",
+      "unit": "samples",
+      "published": 1,
+      "recomputed": 1,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.checkpoint.min_us",
+      "unit": "us",
+      "published": 53123,
+      "recomputed": 53123,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.checkpoint.p50_us",
+      "unit": "us",
+      "published": 53123,
+      "recomputed": 53123,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.checkpoint.p95_us",
+      "unit": "us",
+      "published": 53123,
+      "recomputed": 53123,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.checkpoint.max_us",
+      "unit": "us",
+      "published": 53123,
+      "recomputed": 53123,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.done.n",
+      "unit": "samples",
+      "published": 1,
+      "recomputed": 1,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.done.min_us",
+      "unit": "us",
+      "published": 7833,
+      "recomputed": 7833,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.done.p50_us",
+      "unit": "us",
+      "published": 7833,
+      "recomputed": 7833,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.done.p95_us",
+      "unit": "us",
+      "published": 7833,
+      "recomputed": 7833,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.done.max_us",
+      "unit": "us",
+      "published": 7833,
+      "recomputed": 7833,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.fts.n",
+      "unit": "samples",
+      "published": 1,
+      "recomputed": 1,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.fts.min_us",
+      "unit": "us",
+      "published": 986,
+      "recomputed": 986,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.fts.p50_us",
+      "unit": "us",
+      "published": 986,
+      "recomputed": 986,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.fts.p95_us",
+      "unit": "us",
+      "published": 986,
+      "recomputed": 986,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.fts.max_us",
+      "unit": "us",
+      "published": 986,
+      "recomputed": 986,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.link.n",
+      "unit": "samples",
+      "published": 2,
+      "recomputed": 2,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.link.min_us",
+      "unit": "us",
+      "published": 81294,
+      "recomputed": 81294,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.link.p50_us",
+      "unit": "us",
+      "published": 81294,
+      "recomputed": 81294,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.link.p95_us",
+      "unit": "us",
+      "published": 90552,
+      "recomputed": 90552,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.link.max_us",
+      "unit": "us",
+      "published": 90552,
+      "recomputed": 90552,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.parse.n",
+      "unit": "samples",
+      "published": 67,
+      "recomputed": 67,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.parse.min_us",
+      "unit": "us",
+      "published": 0,
+      "recomputed": 0,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.parse.p50_us",
+      "unit": "us",
+      "published": 423,
+      "recomputed": 423,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.parse.p95_us",
+      "unit": "us",
+      "published": 27870,
+      "recomputed": 27870,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.parse.max_us",
+      "unit": "us",
+      "published": 79108,
+      "recomputed": 79108,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.resolve.n",
+      "unit": "samples",
+      "published": 1,
+      "recomputed": 1,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.resolve.min_us",
+      "unit": "us",
+      "published": 1657,
+      "recomputed": 1657,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.resolve.p50_us",
+      "unit": "us",
+      "published": 1657,
+      "recomputed": 1657,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.resolve.p95_us",
+      "unit": "us",
+      "published": 1657,
+      "recomputed": 1657,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.resolve.max_us",
+      "unit": "us",
+      "published": 1657,
+      "recomputed": 1657,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.walk.n",
+      "unit": "samples",
+      "published": 1,
+      "recomputed": 1,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.walk.min_us",
+      "unit": "us",
+      "published": 20317,
+      "recomputed": 20317,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.walk.p50_us",
+      "unit": "us",
+      "published": 20317,
+      "recomputed": 20317,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.walk.p95_us",
+      "unit": "us",
+      "published": 20317,
+      "recomputed": 20317,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.walk.max_us",
+      "unit": "us",
+      "published": 20317,
+      "recomputed": 20317,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.write.n",
+      "unit": "samples",
+      "published": 1,
+      "recomputed": 1,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.write.min_us",
+      "unit": "us",
+      "published": 1263,
+      "recomputed": 1263,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.write.p50_us",
+      "unit": "us",
+      "published": 1263,
+      "recomputed": 1263,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.write.p95_us",
+      "unit": "us",
+      "published": 1263,
+      "recomputed": 1263,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    },
+    {
+      "series": "progress_stalls",
+      "metric": "progress_stalls.phase.write.max_us",
+      "unit": "us",
+      "published": 1263,
+      "recomputed": 1263,
+      "has_published": true,
+      "has_raw": true,
+      "status": "PASS"
+    }
+  ],
+  "metrics_checked": 173,
+  "metrics_reproduced": 173,
+  "metrics_discrepant": 0,
+  "metrics_unknown": 0,
+  "complete": true,
+  "publishable": true,
+  "status": "PASS",
+  "method": "Every statistic in `report` is recomputed from `raw/` through the same exported derivations the harnesses used to produce it (RecomputeColdAggregates, RecomputeQueryLatency, RecomputeIncremental, RecomputeStalls) and compared EXACTLY. Exactly, not within a tolerance: every percentile in this tree is a nearest-rank OBSERVED sample rather than an interpolation, so two correct derivations over the same samples agree bit for bit and a tolerance would only be somewhere for drift to hide. A metric whose raw samples are absent reads UNKNOWN and is never counted as reproduced.",
+  "notes": "SW-128 aggregate reproduction: the published report checked against the raw measurements it claims to be derived from. `publishable` is the conjunction a P0 baseline needs — every published metric reproduced from raw data AND the run environment fully captured. A DISCREPANCY (a published number that does not follow from its samples) is a failure; UNKNOWN (a number nobody can check, or a machine nobody documented) is not a failure and is not a pass either, per PRD §8.2. The two are counted separately and never merged."
+}

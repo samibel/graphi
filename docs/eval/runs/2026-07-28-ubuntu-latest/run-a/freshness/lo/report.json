@@ -1,0 +1,2621 @@
+{
+  "header": {
+    "timestamp": "2026-07-28T16:13:44Z",
+    "version": "0.0.0-dev",
+    "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "os": "linux",
+    "arch": "amd64",
+    "corpus_version": 3
+  },
+  "runner_class": "ubuntu-latest",
+  "runner_role": "reference",
+  "reference_scenario": false,
+  "scenario_source": "docs/eval/reference-scenario.json",
+  "notes": "in-process session model: engine services over one open SQLite store; cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; all 12 stable operations covered with an explicit operation-to-class mapping; warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every individual measurement retained in query_latency.operations[].samples_us; the cold index is watched for silence through the shipped ingest progress hook — see `stalls`, which is present on every run and reads FAIL when the index emitted no progress",
+  "repo": {
+    "name": "lo",
+    "ref": "v1.39.0",
+    "sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+    "tier": 3,
+    "clone_ms": 477,
+    "index": {
+      "wallclock_ms": 482,
+      "peak_rss_mb": 272,
+      "db_size_bytes": 495616,
+      "nodes": 523,
+      "edges": 704,
+      "files": 24
+    },
+    "cold": {
+      "store_path": "/home/runner/work/_temp/freshness/lo.db",
+      "meta_path": "/home/runner/work/_temp/freshness/lo-meta",
+      "store_preexisting": false,
+      "meta_preexisting": false,
+      "page_cache": "not_dropped",
+      "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+      "drop_required": true,
+      "verified": false,
+      "reason": "the runner class declares a drop-caches protocol and the page cache was not_dropped"
+    },
+    "warm_p95_us": {
+      "agent_tools": 5351,
+      "search": 272,
+      "structural": 230
+    },
+    "warm_p95_us_per_op": {
+      "agent_brief": 5482,
+      "callees": 195,
+      "callers": 180,
+      "change_risk": 281,
+      "definition": 156,
+      "explain_symbol": 341,
+      "impact": 787,
+      "neighborhood": 249,
+      "references": 102,
+      "related_files": 235,
+      "search": 272
+    },
+    "warm_p50_us": {
+      "agent_tools": 215,
+      "search": 210,
+      "structural": 117
+    },
+    "warm_p50_us_per_op": {
+      "agent_brief": 5351,
+      "callees": 85,
+      "callers": 81,
+      "change_risk": 160,
+      "definition": 117,
+      "explain_symbol": 274,
+      "impact": 155,
+      "neighborhood": 189,
+      "references": 81,
+      "related_files": 183,
+      "search": 210
+    },
+    "warm_samples": {
+      "agent_tools": 33,
+      "search": 40,
+      "structural": 150
+    },
+    "warm_ops": {
+      "agent_tools": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ],
+      "search": [
+        "search"
+      ],
+      "structural": [
+        "callees",
+        "callers",
+        "definition",
+        "impact",
+        "neighborhood",
+        "references"
+      ]
+    },
+    "query_latency": {
+      "repo": "lo",
+      "minimum_executions_per_class": 1000,
+      "requested_executions_per_class": 0,
+      "total_executions": 223,
+      "class_of": {
+        "agent_brief": "agent_tools",
+        "callees": "structural",
+        "callers": "structural",
+        "change_risk": "agent_tools",
+        "definition": "structural",
+        "explain_symbol": "agent_tools",
+        "impact": "structural",
+        "index": "lifecycle",
+        "neighborhood": "structural",
+        "references": "structural",
+        "related_files": "agent_tools",
+        "search": "search"
+      },
+      "stable_operations": [
+        "agent_brief",
+        "callees",
+        "callers",
+        "change_risk",
+        "definition",
+        "explain_symbol",
+        "impact",
+        "index",
+        "neighborhood",
+        "references",
+        "related_files",
+        "search"
+      ],
+      "operations": [
+        {
+          "operation": "agent_brief",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 3,
+            "min_us": 5263,
+            "p50_us": 5351,
+            "p95_us": 5482,
+            "max_us": 5482
+          },
+          "samples_us": [
+            5351,
+            5482,
+            5263
+          ]
+        },
+        {
+          "operation": "callees",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 78,
+            "p50_us": 85,
+            "p95_us": 195,
+            "max_us": 250
+          },
+          "samples_us": [
+            89,
+            87,
+            250,
+            167,
+            195,
+            91,
+            120,
+            119,
+            85,
+            82,
+            80,
+            118,
+            83,
+            144,
+            87,
+            119,
+            79,
+            80,
+            78,
+            80,
+            82,
+            80,
+            81,
+            79,
+            78
+          ]
+        },
+        {
+          "operation": "callers",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 78,
+            "p50_us": 81,
+            "p95_us": 180,
+            "max_us": 200
+          },
+          "samples_us": [
+            200,
+            180,
+            90,
+            82,
+            80,
+            117,
+            126,
+            81,
+            79,
+            78,
+            81,
+            82,
+            81,
+            79,
+            119,
+            81,
+            80,
+            112,
+            87,
+            81,
+            78,
+            80,
+            79,
+            78,
+            79
+          ]
+        },
+        {
+          "operation": "change_risk",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 142,
+            "p50_us": 160,
+            "p95_us": 281,
+            "max_us": 281
+          },
+          "samples_us": [
+            281,
+            215,
+            167,
+            160,
+            152,
+            200,
+            164,
+            148,
+            142,
+            145
+          ]
+        },
+        {
+          "operation": "definition",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 113,
+            "p50_us": 117,
+            "p95_us": 156,
+            "max_us": 173
+          },
+          "samples_us": [
+            118,
+            156,
+            124,
+            117,
+            114,
+            117,
+            115,
+            173,
+            134,
+            154,
+            124,
+            117,
+            117,
+            117,
+            114,
+            116,
+            113,
+            156,
+            116,
+            113,
+            120,
+            114,
+            113,
+            113,
+            123
+          ]
+        },
+        {
+          "operation": "explain_symbol",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 211,
+            "p50_us": 274,
+            "p95_us": 341,
+            "max_us": 341
+          },
+          "samples_us": [
+            327,
+            341,
+            334,
+            276,
+            274,
+            279,
+            241,
+            245,
+            211,
+            229
+          ]
+        },
+        {
+          "operation": "impact",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 148,
+            "p50_us": 155,
+            "p95_us": 787,
+            "max_us": 2117
+          },
+          "samples_us": [
+            2117,
+            787,
+            157,
+            155,
+            152,
+            290,
+            186,
+            155,
+            150,
+            153,
+            152,
+            150,
+            201,
+            155,
+            295,
+            153,
+            149,
+            172,
+            160,
+            151,
+            151,
+            149,
+            148,
+            150,
+            179
+          ]
+        },
+        {
+          "operation": "index",
+          "class": "lifecycle",
+          "measured": false,
+          "warmup_executions": 0,
+          "note": "lifecycle-only: `index` is the ingest lifecycle operation, not a query. Its cost is the cold-index wallclock measured by SW-124, so it carries no query-latency samples, no 1000-execution floor and no PRD §12.2 query gate. It is listed here so all twelve stable operations are visibly accounted for."
+        },
+        {
+          "operation": "neighborhood",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 150,
+            "p50_us": 189,
+            "p95_us": 249,
+            "max_us": 257
+          },
+          "samples_us": [
+            257,
+            230,
+            249,
+            221,
+            206,
+            207,
+            211,
+            228,
+            196,
+            187,
+            188,
+            188,
+            227,
+            192,
+            189,
+            196,
+            161,
+            186,
+            155,
+            152,
+            151,
+            150,
+            153,
+            182,
+            154
+          ]
+        },
+        {
+          "operation": "references",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 78,
+            "p50_us": 81,
+            "p95_us": 102,
+            "max_us": 117
+          },
+          "samples_us": [
+            81,
+            80,
+            81,
+            81,
+            90,
+            81,
+            79,
+            81,
+            117,
+            79,
+            80,
+            80,
+            81,
+            81,
+            82,
+            79,
+            78,
+            78,
+            79,
+            99,
+            102,
+            81,
+            79,
+            79,
+            79
+          ]
+        },
+        {
+          "operation": "related_files",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 169,
+            "p50_us": 183,
+            "p95_us": 235,
+            "max_us": 235
+          },
+          "samples_us": [
+            216,
+            235,
+            206,
+            201,
+            183,
+            181,
+            219,
+            169,
+            171,
+            169
+          ]
+        },
+        {
+          "operation": "search",
+          "class": "search",
+          "measured": true,
+          "gated_by": [
+            "warm_search_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 40,
+            "min_us": 177,
+            "p50_us": 210,
+            "p95_us": 272,
+            "max_us": 293
+          },
+          "samples_us": [
+            293,
+            199,
+            278,
+            194,
+            272,
+            190,
+            246,
+            182,
+            262,
+            204,
+            246,
+            183,
+            242,
+            210,
+            238,
+            179,
+            239,
+            200,
+            250,
+            178,
+            238,
+            177,
+            264,
+            183,
+            237,
+            183,
+            238,
+            208,
+            239,
+            179,
+            238,
+            210,
+            250,
+            179,
+            235,
+            177,
+            261,
+            180,
+            237,
+            177
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 33,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 33,
+          "min_us": 142,
+          "p50_us": 215,
+          "p95_us": 5351,
+          "max_us": 5482
+        },
+        {
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 177,
+          "p50_us": 210,
+          "p95_us": 272,
+          "max_us": 293
+        },
+        {
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "definition",
+            "impact",
+            "neighborhood",
+            "references"
+          ],
+          "executions": 150,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 150,
+          "min_us": 78,
+          "p50_us": 117,
+          "p95_us": 230,
+          "max_us": 2117
+        }
+      ],
+      "pools": [
+        {
+          "gate_id": "agent_context_p95",
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 33,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 33,
+          "min_us": 142,
+          "p50_us": 215,
+          "p95_us": 5351,
+          "max_us": 5482
+        },
+        {
+          "gate_id": "caller_callee_impact_p95",
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "impact"
+          ],
+          "executions": 75,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 75,
+          "min_us": 78,
+          "p50_us": 117,
+          "p95_us": 290,
+          "max_us": 2117
+        },
+        {
+          "gate_id": "warm_search_p95",
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 177,
+          "p50_us": 210,
+          "p95_us": 272,
+          "max_us": 293
+        }
+      ],
+      "symbol_sample": {
+        "requested": 25,
+        "returned": 25,
+        "method": "core/graphstore DegreeSamplePort.DegreeStratifiedSymbols over the indexed store: candidates are the function and method nodes, ordered by incident degree DESC then node id ASC, one picked per quantile bucket. That is a total order over a fixed graph, so the same graph yields the same ordered sample; the structural operations walk this list in order and the agent-context operations take its first agent_symbols entries.",
+        "digest": "e87232aed2690306ee02162baa184ec1cb46401e390725f0a8eae30662d61ab3",
+        "symbol_ids": [
+          "157e274519ed831b",
+          "3aad5daff19b0bcc",
+          "453487915bb9519a",
+          "cb9a23127f23f7e6",
+          "3fb38b859f36b125",
+          "c32495177611e034",
+          "ff9a726db7b381e5",
+          "2646db1412b16569",
+          "3690d3f582193903",
+          "4d9889c50cd093b0",
+          "6154a27306059427",
+          "7446a27d968b6e94",
+          "966f4010c41fe8ed",
+          "b3933c4e73584975",
+          "d05995454d1a38f6",
+          "e1f46f9716ffa4d0",
+          "00c624951d3d85b1",
+          "1d0e63e4ffc5a5ea",
+          "35e7a2f7e9df1add",
+          "551c99b60f37ece8",
+          "6ce9fdcb89f1d6b5",
+          "8af6452f52b26ed7",
+          "a0fb546af7aefe84",
+          "b9fa939f77cea73c",
+          "dc14a8dfe6b5bc44"
+        ],
+        "agent_symbols": 10
+      },
+      "sufficient": false,
+      "gates": [
+        {
+          "id": "warm_search_p95",
+          "prd_metric": "Warm Search p95 (PRD 12.2)",
+          "threshold": 100,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.warm_search_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is lo on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "caller_callee_impact_p95",
+          "prd_metric": "Caller/Callee/Impact p95 (PRD 12.2)",
+          "threshold": 200,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.caller_callee_impact_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is lo on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "agent_context_p95",
+          "prd_metric": "Agent Context p95 (PRD 12.2)",
+          "threshold": 500,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.agent_context_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is lo on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "warnings": [
+        "class agent_tools ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class search ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool agent_context_p95 ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool warm_search_p95 ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS"
+      ],
+      "status": "UNKNOWN",
+      "timing_method": "The timed region contains the operation invocation and NOTHING else. Clone, index, store open, engine construction and the symbol sample all happen before any measurement; per-execution argument assembly (choosing the symbol or query for execution i, building the argument map) happens in an UNTIMED prepare step; and each operation runs warmup_executions untimed invocations before the first timed one. Warmup measurements are discarded, never pooled. Latency is time.Since around the invocation, recorded in microseconds.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-execution samples, ascending — the same implementation the cold series uses, so p50 and p95 cannot disagree about even sample counts. A class statistic pools its operations' samples; a pool statistic pools exactly the operations the SW-123 contract assigns to that gate. Every value here is reproducible from `operations[].samples_us` with evalreport.RecomputeQueryLatency.",
+      "notes": "SW-125 query-latency measurement: warm operations over ONE open store in the session model, driven through a deterministic degree-stratified symbol sample that is published verbatim so two runs are comparable. FR-8's floor is minimum_executions_per_class; a class below it is marked sufficient=false and every gate read over it is UNKNOWN, never PASS (PRD §8.2). No gate is read at all unless the run is the reference scenario on the reference class and from the frozen candidate."
+    },
+    "incremental": {
+      "repo": "lo",
+      "changes_requested": 100,
+      "minimum_changes": 100,
+      "changes_completed": 100,
+      "changes_failed": 0,
+      "sufficient": true,
+      "classes_covered": false,
+      "sequence": {
+        "steps": 100,
+        "cycle_length": 4,
+        "method": "A fixed four-step cycle over the indexed Go source files in canonical (sorted, repo-relative POSIX) order: (1) MODIFY file[c] by appending one exported function; (2) ADD a new file beside it in the same package containing one exported function; (3) CROSS_PACKAGE — modify a file whose symbols have inbound edges from other directories, rotating over the qualifying targets; (4) DELETE the file step 2 added in this same cycle. c advances by one per cycle, so a long run walks the whole file list. The sequence is a pure function of the sorted file list, the cross-package targets and the requested count: no randomness, no wall-clock, no map iteration.",
+        "digest": "de7e287e18eee294cc5a8d8da3cd8e864163bd22468f37b014d562b63c59804a",
+        "source_files": 17,
+        "cross_package": {
+          "satisfied": false,
+          "reason": "none of the 50 highest-degree symbols inspected had an inbound edge from another directory; this repository exposes no cross-package edges to the harness",
+          "method": "candidates are core/graphstore DegreeSamplePort.DegreeStratifiedSymbols (degree DESC, node id ASC — a total order over a fixed graph); a candidate qualifies when engine/query callers+references return at least one neighbour whose source file is in a DIFFERENT directory, which in Go is a different package. The qualifying count and example neighbour paths are published per target.",
+          "examined": 50
+        }
+      },
+      "coverage": [
+        {
+          "class": "add",
+          "steps": 33,
+          "required": true
+        },
+        {
+          "class": "modify",
+          "steps": 34,
+          "required": true
+        },
+        {
+          "class": "delete",
+          "steps": 33,
+          "required": true
+        },
+        {
+          "class": "cross_package",
+          "steps": 0,
+          "required": true
+        }
+      ],
+      "changes": [
+        {
+          "step": 1,
+          "class": "modify",
+          "path": "channel.go",
+          "symbol": "GraphiEvalStep0001",
+          "expect": "the appended function GraphiEvalStep0001 is answerable by a search",
+          "status": "completed",
+          "update_us": 61712,
+          "update_measured": true,
+          "freshness_us": 62113,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 2,
+          "class": "add",
+          "path": "graphi_eval_step0002.go",
+          "symbol": "GraphiEvalStep0002",
+          "expect": "the added file's function GraphiEvalStep0002 is answerable by a search",
+          "status": "completed",
+          "update_us": 32460,
+          "update_measured": true,
+          "freshness_us": 32858,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 3,
+          "class": "delete",
+          "path": "graphi_eval_step0002.go",
+          "symbol": "GraphiEvalStep0002",
+          "expect": "the deleted file's function GraphiEvalStep0002 is no longer answerable",
+          "status": "completed",
+          "update_us": 25930,
+          "update_measured": true,
+          "freshness_us": 26210,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 4,
+          "class": "modify",
+          "path": "concurrency.go",
+          "symbol": "GraphiEvalStep0004",
+          "expect": "the appended function GraphiEvalStep0004 is answerable by a search",
+          "status": "completed",
+          "update_us": 58926,
+          "update_measured": true,
+          "freshness_us": 59242,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 5,
+          "class": "add",
+          "path": "graphi_eval_step0005.go",
+          "symbol": "GraphiEvalStep0005",
+          "expect": "the added file's function GraphiEvalStep0005 is answerable by a search",
+          "status": "completed",
+          "update_us": 31901,
+          "update_measured": true,
+          "freshness_us": 32239,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 6,
+          "class": "delete",
+          "path": "graphi_eval_step0005.go",
+          "symbol": "GraphiEvalStep0005",
+          "expect": "the deleted file's function GraphiEvalStep0005 is no longer answerable",
+          "status": "completed",
+          "update_us": 25297,
+          "update_measured": true,
+          "freshness_us": 25533,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 7,
+          "class": "modify",
+          "path": "condition.go",
+          "symbol": "GraphiEvalStep0007",
+          "expect": "the appended function GraphiEvalStep0007 is answerable by a search",
+          "status": "completed",
+          "update_us": 81772,
+          "update_measured": true,
+          "freshness_us": 82033,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 8,
+          "class": "add",
+          "path": "graphi_eval_step0008.go",
+          "symbol": "GraphiEvalStep0008",
+          "expect": "the added file's function GraphiEvalStep0008 is answerable by a search",
+          "status": "completed",
+          "update_us": 32681,
+          "update_measured": true,
+          "freshness_us": 32945,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 9,
+          "class": "delete",
+          "path": "graphi_eval_step0008.go",
+          "symbol": "GraphiEvalStep0008",
+          "expect": "the deleted file's function GraphiEvalStep0008 is no longer answerable",
+          "status": "completed",
+          "update_us": 26295,
+          "update_measured": true,
+          "freshness_us": 26721,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 10,
+          "class": "modify",
+          "path": "constraints.go",
+          "symbol": "GraphiEvalStep0010",
+          "expect": "the appended function GraphiEvalStep0010 is answerable by a search",
+          "status": "completed",
+          "update_us": 33762,
+          "update_measured": true,
+          "freshness_us": 34120,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 11,
+          "class": "add",
+          "path": "graphi_eval_step0011.go",
+          "symbol": "GraphiEvalStep0011",
+          "expect": "the added file's function GraphiEvalStep0011 is answerable by a search",
+          "status": "completed",
+          "update_us": 33448,
+          "update_measured": true,
+          "freshness_us": 33767,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 12,
+          "class": "delete",
+          "path": "graphi_eval_step0011.go",
+          "symbol": "GraphiEvalStep0011",
+          "expect": "the deleted file's function GraphiEvalStep0011 is no longer answerable",
+          "status": "completed",
+          "update_us": 25717,
+          "update_measured": true,
+          "freshness_us": 25943,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 13,
+          "class": "modify",
+          "path": "errors.go",
+          "symbol": "GraphiEvalStep0013",
+          "expect": "the appended function GraphiEvalStep0013 is answerable by a search",
+          "status": "completed",
+          "update_us": 62091,
+          "update_measured": true,
+          "freshness_us": 62490,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 14,
+          "class": "add",
+          "path": "graphi_eval_step0014.go",
+          "symbol": "GraphiEvalStep0014",
+          "expect": "the added file's function GraphiEvalStep0014 is answerable by a search",
+          "status": "completed",
+          "update_us": 33610,
+          "update_measured": true,
+          "freshness_us": 33909,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 15,
+          "class": "delete",
+          "path": "graphi_eval_step0014.go",
+          "symbol": "GraphiEvalStep0014",
+          "expect": "the deleted file's function GraphiEvalStep0014 is no longer answerable",
+          "status": "completed",
+          "update_us": 26523,
+          "update_measured": true,
+          "freshness_us": 26789,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 16,
+          "class": "modify",
+          "path": "find.go",
+          "symbol": "GraphiEvalStep0016",
+          "expect": "the appended function GraphiEvalStep0016 is answerable by a search",
+          "status": "completed",
+          "update_us": 65194,
+          "update_measured": true,
+          "freshness_us": 65473,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 17,
+          "class": "add",
+          "path": "graphi_eval_step0017.go",
+          "symbol": "GraphiEvalStep0017",
+          "expect": "the added file's function GraphiEvalStep0017 is answerable by a search",
+          "status": "completed",
+          "update_us": 32091,
+          "update_measured": true,
+          "freshness_us": 32346,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 18,
+          "class": "delete",
+          "path": "graphi_eval_step0017.go",
+          "symbol": "GraphiEvalStep0017",
+          "expect": "the deleted file's function GraphiEvalStep0017 is no longer answerable",
+          "status": "completed",
+          "update_us": 25647,
+          "update_measured": true,
+          "freshness_us": 25844,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 19,
+          "class": "modify",
+          "path": "func.go",
+          "symbol": "GraphiEvalStep0019",
+          "expect": "the appended function GraphiEvalStep0019 is answerable by a search",
+          "status": "completed",
+          "update_us": 59882,
+          "update_measured": true,
+          "freshness_us": 60118,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 20,
+          "class": "add",
+          "path": "graphi_eval_step0020.go",
+          "symbol": "GraphiEvalStep0020",
+          "expect": "the added file's function GraphiEvalStep0020 is answerable by a search",
+          "status": "completed",
+          "update_us": 31297,
+          "update_measured": true,
+          "freshness_us": 31539,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 21,
+          "class": "delete",
+          "path": "graphi_eval_step0020.go",
+          "symbol": "GraphiEvalStep0020",
+          "expect": "the deleted file's function GraphiEvalStep0020 is no longer answerable",
+          "status": "completed",
+          "update_us": 25239,
+          "update_measured": true,
+          "freshness_us": 25410,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 22,
+          "class": "modify",
+          "path": "intersect.go",
+          "symbol": "GraphiEvalStep0022",
+          "expect": "the appended function GraphiEvalStep0022 is answerable by a search",
+          "status": "completed",
+          "update_us": 61642,
+          "update_measured": true,
+          "freshness_us": 61903,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 23,
+          "class": "add",
+          "path": "graphi_eval_step0023.go",
+          "symbol": "GraphiEvalStep0023",
+          "expect": "the added file's function GraphiEvalStep0023 is answerable by a search",
+          "status": "completed",
+          "update_us": 32582,
+          "update_measured": true,
+          "freshness_us": 32935,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 24,
+          "class": "delete",
+          "path": "graphi_eval_step0023.go",
+          "symbol": "GraphiEvalStep0023",
+          "expect": "the deleted file's function GraphiEvalStep0023 is no longer answerable",
+          "status": "completed",
+          "update_us": 26590,
+          "update_measured": true,
+          "freshness_us": 26829,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 25,
+          "class": "modify",
+          "path": "map.go",
+          "symbol": "GraphiEvalStep0025",
+          "expect": "the appended function GraphiEvalStep0025 is answerable by a search",
+          "status": "completed",
+          "update_us": 61131,
+          "update_measured": true,
+          "freshness_us": 61362,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 26,
+          "class": "add",
+          "path": "graphi_eval_step0026.go",
+          "symbol": "GraphiEvalStep0026",
+          "expect": "the added file's function GraphiEvalStep0026 is answerable by a search",
+          "status": "completed",
+          "update_us": 32707,
+          "update_measured": true,
+          "freshness_us": 33019,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 27,
+          "class": "delete",
+          "path": "graphi_eval_step0026.go",
+          "symbol": "GraphiEvalStep0026",
+          "expect": "the deleted file's function GraphiEvalStep0026 is no longer answerable",
+          "status": "completed",
+          "update_us": 25471,
+          "update_measured": true,
+          "freshness_us": 25763,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 28,
+          "class": "modify",
+          "path": "math.go",
+          "symbol": "GraphiEvalStep0028",
+          "expect": "the appended function GraphiEvalStep0028 is answerable by a search",
+          "status": "completed",
+          "update_us": 64670,
+          "update_measured": true,
+          "freshness_us": 64958,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 29,
+          "class": "add",
+          "path": "graphi_eval_step0029.go",
+          "symbol": "GraphiEvalStep0029",
+          "expect": "the added file's function GraphiEvalStep0029 is answerable by a search",
+          "status": "completed",
+          "update_us": 35074,
+          "update_measured": true,
+          "freshness_us": 35427,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 30,
+          "class": "delete",
+          "path": "graphi_eval_step0029.go",
+          "symbol": "GraphiEvalStep0029",
+          "expect": "the deleted file's function GraphiEvalStep0029 is no longer answerable",
+          "status": "completed",
+          "update_us": 26663,
+          "update_measured": true,
+          "freshness_us": 26915,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 31,
+          "class": "modify",
+          "path": "parallel/slice.go",
+          "symbol": "GraphiEvalStep0031",
+          "expect": "the appended function GraphiEvalStep0031 is answerable by a search",
+          "status": "completed",
+          "update_us": 33366,
+          "update_measured": true,
+          "freshness_us": 33721,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 32,
+          "class": "add",
+          "path": "parallel/graphi_eval_step0032.go",
+          "symbol": "GraphiEvalStep0032",
+          "expect": "the added file's function GraphiEvalStep0032 is answerable by a search",
+          "status": "completed",
+          "update_us": 32667,
+          "update_measured": true,
+          "freshness_us": 32996,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 33,
+          "class": "delete",
+          "path": "parallel/graphi_eval_step0032.go",
+          "symbol": "GraphiEvalStep0032",
+          "expect": "the deleted file's function GraphiEvalStep0032 is no longer answerable",
+          "status": "completed",
+          "update_us": 26776,
+          "update_measured": true,
+          "freshness_us": 27018,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 34,
+          "class": "modify",
+          "path": "retry.go",
+          "symbol": "GraphiEvalStep0034",
+          "expect": "the appended function GraphiEvalStep0034 is answerable by a search",
+          "status": "completed",
+          "update_us": 69568,
+          "update_measured": true,
+          "freshness_us": 69856,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 35,
+          "class": "add",
+          "path": "graphi_eval_step0035.go",
+          "symbol": "GraphiEvalStep0035",
+          "expect": "the added file's function GraphiEvalStep0035 is answerable by a search",
+          "status": "completed",
+          "update_us": 32739,
+          "update_measured": true,
+          "freshness_us": 33031,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 36,
+          "class": "delete",
+          "path": "graphi_eval_step0035.go",
+          "symbol": "GraphiEvalStep0035",
+          "expect": "the deleted file's function GraphiEvalStep0035 is no longer answerable",
+          "status": "completed",
+          "update_us": 26252,
+          "update_measured": true,
+          "freshness_us": 26451,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 37,
+          "class": "modify",
+          "path": "slice.go",
+          "symbol": "GraphiEvalStep0037",
+          "expect": "the appended function GraphiEvalStep0037 is answerable by a search",
+          "status": "completed",
+          "update_us": 60826,
+          "update_measured": true,
+          "freshness_us": 61066,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 38,
+          "class": "add",
+          "path": "graphi_eval_step0038.go",
+          "symbol": "GraphiEvalStep0038",
+          "expect": "the added file's function GraphiEvalStep0038 is answerable by a search",
+          "status": "completed",
+          "update_us": 32202,
+          "update_measured": true,
+          "freshness_us": 32460,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 39,
+          "class": "delete",
+          "path": "graphi_eval_step0038.go",
+          "symbol": "GraphiEvalStep0038",
+          "expect": "the deleted file's function GraphiEvalStep0038 is no longer answerable",
+          "status": "completed",
+          "update_us": 28883,
+          "update_measured": true,
+          "freshness_us": 29110,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 40,
+          "class": "modify",
+          "path": "string.go",
+          "symbol": "GraphiEvalStep0040",
+          "expect": "the appended function GraphiEvalStep0040 is answerable by a search",
+          "status": "completed",
+          "update_us": 67352,
+          "update_measured": true,
+          "freshness_us": 67669,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 41,
+          "class": "add",
+          "path": "graphi_eval_step0041.go",
+          "symbol": "GraphiEvalStep0041",
+          "expect": "the added file's function GraphiEvalStep0041 is answerable by a search",
+          "status": "completed",
+          "update_us": 32370,
+          "update_measured": true,
+          "freshness_us": 32634,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 42,
+          "class": "delete",
+          "path": "graphi_eval_step0041.go",
+          "symbol": "GraphiEvalStep0041",
+          "expect": "the deleted file's function GraphiEvalStep0041 is no longer answerable",
+          "status": "completed",
+          "update_us": 26121,
+          "update_measured": true,
+          "freshness_us": 26329,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 43,
+          "class": "modify",
+          "path": "tuples.go",
+          "symbol": "GraphiEvalStep0043",
+          "expect": "the appended function GraphiEvalStep0043 is answerable by a search",
+          "status": "completed",
+          "update_us": 63663,
+          "update_measured": true,
+          "freshness_us": 63986,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 44,
+          "class": "add",
+          "path": "graphi_eval_step0044.go",
+          "symbol": "GraphiEvalStep0044",
+          "expect": "the added file's function GraphiEvalStep0044 is answerable by a search",
+          "status": "completed",
+          "update_us": 32596,
+          "update_measured": true,
+          "freshness_us": 32928,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 45,
+          "class": "delete",
+          "path": "graphi_eval_step0044.go",
+          "symbol": "GraphiEvalStep0044",
+          "expect": "the deleted file's function GraphiEvalStep0044 is no longer answerable",
+          "status": "completed",
+          "update_us": 29047,
+          "update_measured": true,
+          "freshness_us": 29230,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 46,
+          "class": "modify",
+          "path": "type_manipulation.go",
+          "symbol": "GraphiEvalStep0046",
+          "expect": "the appended function GraphiEvalStep0046 is answerable by a search",
+          "status": "completed",
+          "update_us": 61522,
+          "update_measured": true,
+          "freshness_us": 61797,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 47,
+          "class": "add",
+          "path": "graphi_eval_step0047.go",
+          "symbol": "GraphiEvalStep0047",
+          "expect": "the added file's function GraphiEvalStep0047 is answerable by a search",
+          "status": "completed",
+          "update_us": 32733,
+          "update_measured": true,
+          "freshness_us": 33023,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 48,
+          "class": "delete",
+          "path": "graphi_eval_step0047.go",
+          "symbol": "GraphiEvalStep0047",
+          "expect": "the deleted file's function GraphiEvalStep0047 is no longer answerable",
+          "status": "completed",
+          "update_us": 25817,
+          "update_measured": true,
+          "freshness_us": 26007,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 49,
+          "class": "modify",
+          "path": "types.go",
+          "symbol": "GraphiEvalStep0049",
+          "expect": "the appended function GraphiEvalStep0049 is answerable by a search",
+          "status": "completed",
+          "update_us": 64944,
+          "update_measured": true,
+          "freshness_us": 65228,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 50,
+          "class": "add",
+          "path": "graphi_eval_step0050.go",
+          "symbol": "GraphiEvalStep0050",
+          "expect": "the added file's function GraphiEvalStep0050 is answerable by a search",
+          "status": "completed",
+          "update_us": 32043,
+          "update_measured": true,
+          "freshness_us": 32398,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 51,
+          "class": "delete",
+          "path": "graphi_eval_step0050.go",
+          "symbol": "GraphiEvalStep0050",
+          "expect": "the deleted file's function GraphiEvalStep0050 is no longer answerable",
+          "status": "completed",
+          "update_us": 28828,
+          "update_measured": true,
+          "freshness_us": 29008,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 52,
+          "class": "modify",
+          "path": "channel.go",
+          "symbol": "GraphiEvalStep0052",
+          "expect": "the appended function GraphiEvalStep0052 is answerable by a search",
+          "status": "completed",
+          "update_us": 64195,
+          "update_measured": true,
+          "freshness_us": 64469,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 53,
+          "class": "add",
+          "path": "graphi_eval_step0053.go",
+          "symbol": "GraphiEvalStep0053",
+          "expect": "the added file's function GraphiEvalStep0053 is answerable by a search",
+          "status": "completed",
+          "update_us": 32110,
+          "update_measured": true,
+          "freshness_us": 32368,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 54,
+          "class": "delete",
+          "path": "graphi_eval_step0053.go",
+          "symbol": "GraphiEvalStep0053",
+          "expect": "the deleted file's function GraphiEvalStep0053 is no longer answerable",
+          "status": "completed",
+          "update_us": 26867,
+          "update_measured": true,
+          "freshness_us": 27055,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 55,
+          "class": "modify",
+          "path": "concurrency.go",
+          "symbol": "GraphiEvalStep0055",
+          "expect": "the appended function GraphiEvalStep0055 is answerable by a search",
+          "status": "completed",
+          "update_us": 60366,
+          "update_measured": true,
+          "freshness_us": 60650,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 56,
+          "class": "add",
+          "path": "graphi_eval_step0056.go",
+          "symbol": "GraphiEvalStep0056",
+          "expect": "the added file's function GraphiEvalStep0056 is answerable by a search",
+          "status": "completed",
+          "update_us": 39528,
+          "update_measured": true,
+          "freshness_us": 39849,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 57,
+          "class": "delete",
+          "path": "graphi_eval_step0056.go",
+          "symbol": "GraphiEvalStep0056",
+          "expect": "the deleted file's function GraphiEvalStep0056 is no longer answerable",
+          "status": "completed",
+          "update_us": 27288,
+          "update_measured": true,
+          "freshness_us": 27468,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 58,
+          "class": "modify",
+          "path": "condition.go",
+          "symbol": "GraphiEvalStep0058",
+          "expect": "the appended function GraphiEvalStep0058 is answerable by a search",
+          "status": "completed",
+          "update_us": 77341,
+          "update_measured": true,
+          "freshness_us": 77645,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 59,
+          "class": "add",
+          "path": "graphi_eval_step0059.go",
+          "symbol": "GraphiEvalStep0059",
+          "expect": "the added file's function GraphiEvalStep0059 is answerable by a search",
+          "status": "completed",
+          "update_us": 33991,
+          "update_measured": true,
+          "freshness_us": 34292,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 60,
+          "class": "delete",
+          "path": "graphi_eval_step0059.go",
+          "symbol": "GraphiEvalStep0059",
+          "expect": "the deleted file's function GraphiEvalStep0059 is no longer answerable",
+          "status": "completed",
+          "update_us": 28052,
+          "update_measured": true,
+          "freshness_us": 28300,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 61,
+          "class": "modify",
+          "path": "constraints.go",
+          "symbol": "GraphiEvalStep0061",
+          "expect": "the appended function GraphiEvalStep0061 is answerable by a search",
+          "status": "completed",
+          "update_us": 32715,
+          "update_measured": true,
+          "freshness_us": 33005,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 62,
+          "class": "add",
+          "path": "graphi_eval_step0062.go",
+          "symbol": "GraphiEvalStep0062",
+          "expect": "the added file's function GraphiEvalStep0062 is answerable by a search",
+          "status": "completed",
+          "update_us": 37157,
+          "update_measured": true,
+          "freshness_us": 37408,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 63,
+          "class": "delete",
+          "path": "graphi_eval_step0062.go",
+          "symbol": "GraphiEvalStep0062",
+          "expect": "the deleted file's function GraphiEvalStep0062 is no longer answerable",
+          "status": "completed",
+          "update_us": 27312,
+          "update_measured": true,
+          "freshness_us": 27508,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 64,
+          "class": "modify",
+          "path": "errors.go",
+          "symbol": "GraphiEvalStep0064",
+          "expect": "the appended function GraphiEvalStep0064 is answerable by a search",
+          "status": "completed",
+          "update_us": 61699,
+          "update_measured": true,
+          "freshness_us": 61979,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 65,
+          "class": "add",
+          "path": "graphi_eval_step0065.go",
+          "symbol": "GraphiEvalStep0065",
+          "expect": "the added file's function GraphiEvalStep0065 is answerable by a search",
+          "status": "completed",
+          "update_us": 32768,
+          "update_measured": true,
+          "freshness_us": 33043,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 66,
+          "class": "delete",
+          "path": "graphi_eval_step0065.go",
+          "symbol": "GraphiEvalStep0065",
+          "expect": "the deleted file's function GraphiEvalStep0065 is no longer answerable",
+          "status": "completed",
+          "update_us": 27896,
+          "update_measured": true,
+          "freshness_us": 28101,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 67,
+          "class": "modify",
+          "path": "find.go",
+          "symbol": "GraphiEvalStep0067",
+          "expect": "the appended function GraphiEvalStep0067 is answerable by a search",
+          "status": "completed",
+          "update_us": 63290,
+          "update_measured": true,
+          "freshness_us": 63525,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 68,
+          "class": "add",
+          "path": "graphi_eval_step0068.go",
+          "symbol": "GraphiEvalStep0068",
+          "expect": "the added file's function GraphiEvalStep0068 is answerable by a search",
+          "status": "completed",
+          "update_us": 40403,
+          "update_measured": true,
+          "freshness_us": 40632,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 69,
+          "class": "delete",
+          "path": "graphi_eval_step0068.go",
+          "symbol": "GraphiEvalStep0068",
+          "expect": "the deleted file's function GraphiEvalStep0068 is no longer answerable",
+          "status": "completed",
+          "update_us": 26713,
+          "update_measured": true,
+          "freshness_us": 26890,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 70,
+          "class": "modify",
+          "path": "func.go",
+          "symbol": "GraphiEvalStep0070",
+          "expect": "the appended function GraphiEvalStep0070 is answerable by a search",
+          "status": "completed",
+          "update_us": 61854,
+          "update_measured": true,
+          "freshness_us": 62163,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 71,
+          "class": "add",
+          "path": "graphi_eval_step0071.go",
+          "symbol": "GraphiEvalStep0071",
+          "expect": "the added file's function GraphiEvalStep0071 is answerable by a search",
+          "status": "completed",
+          "update_us": 32763,
+          "update_measured": true,
+          "freshness_us": 33034,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 72,
+          "class": "delete",
+          "path": "graphi_eval_step0071.go",
+          "symbol": "GraphiEvalStep0071",
+          "expect": "the deleted file's function GraphiEvalStep0071 is no longer answerable",
+          "status": "completed",
+          "update_us": 26698,
+          "update_measured": true,
+          "freshness_us": 26901,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 73,
+          "class": "modify",
+          "path": "intersect.go",
+          "symbol": "GraphiEvalStep0073",
+          "expect": "the appended function GraphiEvalStep0073 is answerable by a search",
+          "status": "completed",
+          "update_us": 71578,
+          "update_measured": true,
+          "freshness_us": 71904,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 74,
+          "class": "add",
+          "path": "graphi_eval_step0074.go",
+          "symbol": "GraphiEvalStep0074",
+          "expect": "the added file's function GraphiEvalStep0074 is answerable by a search",
+          "status": "completed",
+          "update_us": 34110,
+          "update_measured": true,
+          "freshness_us": 34350,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 75,
+          "class": "delete",
+          "path": "graphi_eval_step0074.go",
+          "symbol": "GraphiEvalStep0074",
+          "expect": "the deleted file's function GraphiEvalStep0074 is no longer answerable",
+          "status": "completed",
+          "update_us": 26615,
+          "update_measured": true,
+          "freshness_us": 26780,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 76,
+          "class": "modify",
+          "path": "map.go",
+          "symbol": "GraphiEvalStep0076",
+          "expect": "the appended function GraphiEvalStep0076 is answerable by a search",
+          "status": "completed",
+          "update_us": 62846,
+          "update_measured": true,
+          "freshness_us": 63139,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 77,
+          "class": "add",
+          "path": "graphi_eval_step0077.go",
+          "symbol": "GraphiEvalStep0077",
+          "expect": "the added file's function GraphiEvalStep0077 is answerable by a search",
+          "status": "completed",
+          "update_us": 36184,
+          "update_measured": true,
+          "freshness_us": 36424,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 78,
+          "class": "delete",
+          "path": "graphi_eval_step0077.go",
+          "symbol": "GraphiEvalStep0077",
+          "expect": "the deleted file's function GraphiEvalStep0077 is no longer answerable",
+          "status": "completed",
+          "update_us": 26791,
+          "update_measured": true,
+          "freshness_us": 26971,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 79,
+          "class": "modify",
+          "path": "math.go",
+          "symbol": "GraphiEvalStep0079",
+          "expect": "the appended function GraphiEvalStep0079 is answerable by a search",
+          "status": "completed",
+          "update_us": 70865,
+          "update_measured": true,
+          "freshness_us": 71165,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 80,
+          "class": "add",
+          "path": "graphi_eval_step0080.go",
+          "symbol": "GraphiEvalStep0080",
+          "expect": "the added file's function GraphiEvalStep0080 is answerable by a search",
+          "status": "completed",
+          "update_us": 33749,
+          "update_measured": true,
+          "freshness_us": 34035,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 81,
+          "class": "delete",
+          "path": "graphi_eval_step0080.go",
+          "symbol": "GraphiEvalStep0080",
+          "expect": "the deleted file's function GraphiEvalStep0080 is no longer answerable",
+          "status": "completed",
+          "update_us": 27181,
+          "update_measured": true,
+          "freshness_us": 27423,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 82,
+          "class": "modify",
+          "path": "parallel/slice.go",
+          "symbol": "GraphiEvalStep0082",
+          "expect": "the appended function GraphiEvalStep0082 is answerable by a search",
+          "status": "completed",
+          "update_us": 35496,
+          "update_measured": true,
+          "freshness_us": 35785,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 83,
+          "class": "add",
+          "path": "parallel/graphi_eval_step0083.go",
+          "symbol": "GraphiEvalStep0083",
+          "expect": "the added file's function GraphiEvalStep0083 is answerable by a search",
+          "status": "completed",
+          "update_us": 33930,
+          "update_measured": true,
+          "freshness_us": 34193,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 84,
+          "class": "delete",
+          "path": "parallel/graphi_eval_step0083.go",
+          "symbol": "GraphiEvalStep0083",
+          "expect": "the deleted file's function GraphiEvalStep0083 is no longer answerable",
+          "status": "completed",
+          "update_us": 27847,
+          "update_measured": true,
+          "freshness_us": 28110,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 85,
+          "class": "modify",
+          "path": "retry.go",
+          "symbol": "GraphiEvalStep0085",
+          "expect": "the appended function GraphiEvalStep0085 is answerable by a search",
+          "status": "completed",
+          "update_us": 71185,
+          "update_measured": true,
+          "freshness_us": 71456,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 86,
+          "class": "add",
+          "path": "graphi_eval_step0086.go",
+          "symbol": "GraphiEvalStep0086",
+          "expect": "the added file's function GraphiEvalStep0086 is answerable by a search",
+          "status": "completed",
+          "update_us": 34316,
+          "update_measured": true,
+          "freshness_us": 34562,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 87,
+          "class": "delete",
+          "path": "graphi_eval_step0086.go",
+          "symbol": "GraphiEvalStep0086",
+          "expect": "the deleted file's function GraphiEvalStep0086 is no longer answerable",
+          "status": "completed",
+          "update_us": 30357,
+          "update_measured": true,
+          "freshness_us": 30540,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 88,
+          "class": "modify",
+          "path": "slice.go",
+          "symbol": "GraphiEvalStep0088",
+          "expect": "the appended function GraphiEvalStep0088 is answerable by a search",
+          "status": "completed",
+          "update_us": 63736,
+          "update_measured": true,
+          "freshness_us": 64037,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 89,
+          "class": "add",
+          "path": "graphi_eval_step0089.go",
+          "symbol": "GraphiEvalStep0089",
+          "expect": "the added file's function GraphiEvalStep0089 is answerable by a search",
+          "status": "completed",
+          "update_us": 33236,
+          "update_measured": true,
+          "freshness_us": 33561,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 90,
+          "class": "delete",
+          "path": "graphi_eval_step0089.go",
+          "symbol": "GraphiEvalStep0089",
+          "expect": "the deleted file's function GraphiEvalStep0089 is no longer answerable",
+          "status": "completed",
+          "update_us": 27192,
+          "update_measured": true,
+          "freshness_us": 27367,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 91,
+          "class": "modify",
+          "path": "string.go",
+          "symbol": "GraphiEvalStep0091",
+          "expect": "the appended function GraphiEvalStep0091 is answerable by a search",
+          "status": "completed",
+          "update_us": 74939,
+          "update_measured": true,
+          "freshness_us": 75304,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 92,
+          "class": "add",
+          "path": "graphi_eval_step0092.go",
+          "symbol": "GraphiEvalStep0092",
+          "expect": "the added file's function GraphiEvalStep0092 is answerable by a search",
+          "status": "completed",
+          "update_us": 34554,
+          "update_measured": true,
+          "freshness_us": 34800,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 93,
+          "class": "delete",
+          "path": "graphi_eval_step0092.go",
+          "symbol": "GraphiEvalStep0092",
+          "expect": "the deleted file's function GraphiEvalStep0092 is no longer answerable",
+          "status": "completed",
+          "update_us": 26472,
+          "update_measured": true,
+          "freshness_us": 26663,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 94,
+          "class": "modify",
+          "path": "tuples.go",
+          "symbol": "GraphiEvalStep0094",
+          "expect": "the appended function GraphiEvalStep0094 is answerable by a search",
+          "status": "completed",
+          "update_us": 65569,
+          "update_measured": true,
+          "freshness_us": 65872,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 95,
+          "class": "add",
+          "path": "graphi_eval_step0095.go",
+          "symbol": "GraphiEvalStep0095",
+          "expect": "the added file's function GraphiEvalStep0095 is answerable by a search",
+          "status": "completed",
+          "update_us": 33540,
+          "update_measured": true,
+          "freshness_us": 33813,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 96,
+          "class": "delete",
+          "path": "graphi_eval_step0095.go",
+          "symbol": "GraphiEvalStep0095",
+          "expect": "the deleted file's function GraphiEvalStep0095 is no longer answerable",
+          "status": "completed",
+          "update_us": 27728,
+          "update_measured": true,
+          "freshness_us": 27937,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 97,
+          "class": "modify",
+          "path": "type_manipulation.go",
+          "symbol": "GraphiEvalStep0097",
+          "expect": "the appended function GraphiEvalStep0097 is answerable by a search",
+          "status": "completed",
+          "update_us": 67153,
+          "update_measured": true,
+          "freshness_us": 67418,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 98,
+          "class": "add",
+          "path": "graphi_eval_step0098.go",
+          "symbol": "GraphiEvalStep0098",
+          "expect": "the added file's function GraphiEvalStep0098 is answerable by a search",
+          "status": "completed",
+          "update_us": 32596,
+          "update_measured": true,
+          "freshness_us": 32848,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 99,
+          "class": "delete",
+          "path": "graphi_eval_step0098.go",
+          "symbol": "GraphiEvalStep0098",
+          "expect": "the deleted file's function GraphiEvalStep0098 is no longer answerable",
+          "status": "completed",
+          "update_us": 26853,
+          "update_measured": true,
+          "freshness_us": 27051,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 100,
+          "class": "modify",
+          "path": "types.go",
+          "symbol": "GraphiEvalStep0100",
+          "expect": "the appended function GraphiEvalStep0100 is answerable by a search",
+          "status": "completed",
+          "update_us": 66199,
+          "update_measured": true,
+          "freshness_us": 66480,
+          "freshness_measured": true,
+          "probes": 1
+        }
+      ],
+      "update": {
+        "n": 100,
+        "min_us": 25239,
+        "p50_us": 32739,
+        "p95_us": 70865,
+        "max_us": 81772
+      },
+      "freshness": {
+        "n": 100,
+        "min_us": 25410,
+        "p50_us": 33031,
+        "p95_us": 71165,
+        "max_us": 82033
+      },
+      "per_class": [
+        {
+          "class": "add",
+          "changes": 33,
+          "update": {
+            "n": 33,
+            "min_us": 31297,
+            "p50_us": 32763,
+            "p95_us": 39528,
+            "max_us": 40403
+          },
+          "freshness": {
+            "n": 33,
+            "min_us": 31539,
+            "p50_us": 33034,
+            "p95_us": 39849,
+            "max_us": 40632
+          }
+        },
+        {
+          "class": "modify",
+          "changes": 34,
+          "update": {
+            "n": 34,
+            "min_us": 32715,
+            "p50_us": 63290,
+            "p95_us": 77341,
+            "max_us": 81772
+          },
+          "freshness": {
+            "n": 34,
+            "min_us": 33005,
+            "p50_us": 63525,
+            "p95_us": 77645,
+            "max_us": 82033
+          }
+        },
+        {
+          "class": "delete",
+          "changes": 33,
+          "update": {
+            "n": 33,
+            "min_us": 25239,
+            "p50_us": 26713,
+            "p95_us": 29047,
+            "max_us": 30357
+          },
+          "freshness": {
+            "n": 33,
+            "min_us": 25410,
+            "p50_us": 26915,
+            "p95_us": 29230,
+            "max_us": 30540
+          }
+        }
+      ],
+      "gates": [
+        {
+          "id": "freshness_p95",
+          "prd_metric": "Freshness p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "incremental.freshness.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is lo on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "warnings": [
+        "the sequence did not complete a change in every required class (add, modify, delete, cross_package): it is not the change sequence FR-8 describes",
+        "no cross-package change class: none of the 50 highest-degree symbols inspected had an inbound edge from another directory; this repository exposes no cross-package edges to the harness",
+        "this run applied 100 change(s) to the checkout before index.db_size_bytes was measured: that figure is NOT a cold-index DB-size sample for this report"
+      ],
+      "status": "UNKNOWN",
+      "freshness_definition": "FRESH is reached at the first query that answers the NEW state. The clock starts the instant the file change is durably on disk (the write or unlink has returned) and stops at the first convergence probe that observes the change: for an added, modified or cross-package change, the symbol the change introduces is answerable by a search; for a delete, the symbol the removed file defined is no longer answerable. Freshness therefore CONTAINS the incremental update — update_us is the ingest call, freshness_us is change-to-answer — and freshness_us \u003e= update_us holds for every completed change.",
+      "timing_method": "Two clocks per change, both around the operation and nothing else. update_us is time.Since around the incremental ingest call for the changed path — building the edit content, writing it and choosing the next step all happen outside it. freshness_us starts immediately after the file mutation returns and stops at the probe that observed the new state, so it contains the update plus any waiting the harness did. No warmup: an incremental update is a cold-by-nature event and repeating it to warm it up would measure something a user never experiences.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-change samples, ascending — the same implementation the cold series and the query-latency series use. A change contributes to the update distribution when update_measured is true and to the freshness distribution when freshness_measured is true; the two counts differ exactly by the changes whose update completed but which never converged. Failed changes are counted in changes_failed and retained in `changes`, never removed. Every value here is reproducible from `changes` with evalreport.RecomputeIncremental.",
+      "scope_limitation": "The harness drives the incremental update EXPLICITLY, in the `graphi sync` shape: change the file, run the incremental ingest, query. It therefore EXCLUDES filesystem-watch detection latency — the interval between a write and engine/watch noticing it — which this story does not measure and does not alter (AC-8). A daemon-driven freshness figure would be this one plus watch detection, never less.",
+      "notes": "SW-126 freshness and incremental measurement: a DEFINED, reproducible change sequence — not random mutation — executed against a pinned corpus repository, reporting incremental-update and freshness p50 and p95 with every individual measurement retained. The tier-1 fixture path in cmd/eval/perf.go is a PR-gate smoke check over a copied fixture and is NOT this measurement; it is never P0 evidence. No gate is read unless the run is the reference scenario on the reference class and from the frozen candidate, with at least minimum_changes completed changes and every required change class exercised. Otherwise it is UNKNOWN, which is not a PASS (PRD §8.2)."
+    },
+    "stalls": {
+      "repo": "lo",
+      "events_observed": 39,
+      "minimum_events": 2,
+      "observable": true,
+      "index_wallclock_us": 482111,
+      "lead_in_us": 217,
+      "lead_in_measured": true,
+      "tail_us": 0,
+      "tail_measured": true,
+      "heartbeat_mode": "non-tty",
+      "stalls": {
+        "n": 38,
+        "min_us": 0,
+        "p50_us": 663,
+        "p95_us": 46638,
+        "max_us": 342447
+      },
+      "per_phase": [
+        {
+          "phase": "checkpoint",
+          "stats": {
+            "n": 1,
+            "min_us": 21780,
+            "p50_us": 21780,
+            "p95_us": 21780,
+            "max_us": 21780
+          }
+        },
+        {
+          "phase": "done",
+          "stats": {
+            "n": 1,
+            "min_us": 4252,
+            "p50_us": 4252,
+            "p95_us": 4252,
+            "max_us": 4252
+          }
+        },
+        {
+          "phase": "fts",
+          "stats": {
+            "n": 1,
+            "min_us": 595,
+            "p50_us": 595,
+            "p95_us": 595,
+            "max_us": 595
+          }
+        },
+        {
+          "phase": "link",
+          "stats": {
+            "n": 2,
+            "min_us": 7502,
+            "p50_us": 7502,
+            "p95_us": 46638,
+            "max_us": 46638
+          }
+        },
+        {
+          "phase": "parse",
+          "stats": {
+            "n": 31,
+            "min_us": 0,
+            "p50_us": 537,
+            "p95_us": 33485,
+            "max_us": 342447
+          }
+        },
+        {
+          "phase": "resolve",
+          "stats": {
+            "n": 1,
+            "min_us": 356,
+            "p50_us": 356,
+            "p95_us": 356,
+            "max_us": 356
+          }
+        },
+        {
+          "phase": "write",
+          "stats": {
+            "n": 1,
+            "min_us": 1127,
+            "p50_us": 1127,
+            "p95_us": 1127,
+            "max_us": 1127
+          }
+        }
+      ],
+      "intervals": [
+        {
+          "seq": 1,
+          "phase": "parse",
+          "us": 2204
+        },
+        {
+          "seq": 2,
+          "phase": "parse",
+          "us": 1676
+        },
+        {
+          "seq": 3,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 4,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 5,
+          "phase": "parse",
+          "us": 978
+        },
+        {
+          "seq": 6,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 7,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 8,
+          "phase": "parse",
+          "us": 126
+        },
+        {
+          "seq": 9,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 10,
+          "phase": "parse",
+          "us": 798
+        },
+        {
+          "seq": 11,
+          "phase": "parse",
+          "us": 1714
+        },
+        {
+          "seq": 12,
+          "phase": "parse",
+          "us": 251
+        },
+        {
+          "seq": 13,
+          "phase": "parse",
+          "us": 105
+        },
+        {
+          "seq": 14,
+          "phase": "parse",
+          "us": 663
+        },
+        {
+          "seq": 15,
+          "phase": "parse",
+          "us": 1459
+        },
+        {
+          "seq": 16,
+          "phase": "parse",
+          "us": 441
+        },
+        {
+          "seq": 17,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 18,
+          "phase": "parse",
+          "us": 537
+        },
+        {
+          "seq": 19,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 20,
+          "phase": "parse",
+          "us": 1374
+        },
+        {
+          "seq": 21,
+          "phase": "parse",
+          "us": 743
+        },
+        {
+          "seq": 22,
+          "phase": "parse",
+          "us": 1749
+        },
+        {
+          "seq": 23,
+          "phase": "parse",
+          "us": 191
+        },
+        {
+          "seq": 24,
+          "phase": "parse",
+          "us": 282
+        },
+        {
+          "seq": 25,
+          "phase": "parse",
+          "us": 2795
+        },
+        {
+          "seq": 26,
+          "phase": "parse",
+          "us": 199
+        },
+        {
+          "seq": 27,
+          "phase": "parse",
+          "us": 3355
+        },
+        {
+          "seq": 28,
+          "phase": "parse",
+          "us": 1816
+        },
+        {
+          "seq": 29,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 30,
+          "phase": "parse",
+          "us": 33485
+        },
+        {
+          "seq": 31,
+          "phase": "parse",
+          "us": 342447
+        },
+        {
+          "seq": 32,
+          "phase": "write",
+          "us": 1127
+        },
+        {
+          "seq": 33,
+          "phase": "link",
+          "us": 46638
+        },
+        {
+          "seq": 34,
+          "phase": "fts",
+          "us": 595
+        },
+        {
+          "seq": 35,
+          "phase": "link",
+          "us": 7502
+        },
+        {
+          "seq": 36,
+          "phase": "resolve",
+          "us": 356
+        },
+        {
+          "seq": 37,
+          "phase": "checkpoint",
+          "us": 21780
+        },
+        {
+          "seq": 38,
+          "phase": "done",
+          "us": 4252
+        }
+      ],
+      "gates": [
+        {
+          "id": "progress_stall_p95",
+          "prd_metric": "Longest progress stall p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "stalls.stalls.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is lo on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "status": "UNKNOWN",
+      "stall_definition": "A STALL is silence: the wall-clock interval between two CONSECUTIVE ingest.ProgressEvents delivered to the harness's progress handler during the cold full index. One interval per adjacent pair of events, attributed to the phase of the event that ENDED it. It is deliberately the interval a consumer of the event stream experiences — the thing a user reads as a hang — and not the duration of any underlying work: a phase that takes a minute while emitting progress throughout is slow, not stalled, and `context/standards.md` asks for exactly that distinction.",
+      "boundary_handling": "The two BOUNDARY intervals are measured and published but are NOT stalls, and are excluded from the distribution by definition. `lead_in_us` is index start -\u003e first event: there is no preceding event, so counting it would report one enormous stall on every run and swamp the p95 with an artefact of where the clock was started. `tail_us` is last event -\u003e index end: a successful pass ends with a terminal `done` event, so it is normally near zero. Both are published rather than dropped, and a boundary longer than the longest recorded stall raises a warning — the largest silence in the run being outside the distribution is something a reader must be told, not spared.",
+      "timing_method": "One clock, read once per event inside the progress handler, and nothing else in the handler: the handler stores a timestamp difference and returns. Events are delivered SYNCHRONOUSLY from the ingesting goroutine (engine/ingest documents this), so an expensive handler would insert itself into the very silence it is measuring; the derivation — percentiles, per-phase pools, warnings — happens after the index has finished. The window is the same one index.wallclock_ms is measured over, so the parts reconcile against the whole.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained intervals, ascending — the same implementation the cold, query-latency and freshness series use. `n` is the number of gaps, which is one less than events_observed. Boundary intervals contribute to neither the pooled nor any per-phase distribution. Every value here is reproducible from `intervals` with evalreport.RecomputeStalls. Every interval is TRUNCATED to whole microseconds, so `lead_in_us` + the intervals + `tail_us` reconciles with `index_wallclock_us` to within one microsecond per interval and is never larger than it — a gap of more than that means a part of the window went unaccounted for, not that the arithmetic rounded.",
+      "scope_limitation": "This measures the COLD FULL INDEX only, through the shipped ingest.Ingester.WithProgress hook — the same hook the graphi CLI's renderer consumes. It makes no statement about the incremental path (SW-126 measures that), about filesystem-watch detection, or about a phase that is slow while still emitting progress. Clock-driven heartbeats are part of the shipped event stream and are counted as events, which is correct for this gate: the gate is about the index going SILENT, and a heartbeating phase is not silent.",
+      "notes": "SW-127 progress-stall measurement: the intervals between consecutive ingest.ProgressEvents during the cold full index, reported as p95 AND maximum with every individual interval retained. It is a REGRESSION GUARD as much as a number: a run that emits no progress reads FAIL, never `0 stalls, passed`. No PRD §12.2 gate is read unless the run is the reference scenario on the reference class and from the frozen candidate; otherwise it is UNKNOWN, which is not a PASS (PRD §8.2) — and a silent run is not rescued into a PASS by any of that."
+    },
+    "searches": [
+      {
+        "query": "Map",
+        "matches": 13,
+        "pass": true
+      },
+      {
+        "query": "Filter",
+        "matches": 4,
+        "pass": true
+      }
+    ],
+    "stable_peak_rss_mb": 273,
+    "stable_checks": [
+      {
+        "operation": "agent_brief",
+        "requirement": "resolved topic with a valid found/partial project brief",
+        "samples": 3,
+        "outcomes": {
+          "found": 3
+        },
+        "pass": true
+      },
+      {
+        "operation": "callees",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 17,
+          "found": 8
+        },
+        "pass": true
+      },
+      {
+        "operation": "callers",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 21,
+          "found": 4
+        },
+        "pass": true
+      },
+      {
+        "operation": "change_risk",
+        "requirement": "resolved target with a valid found envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 10
+        },
+        "pass": true
+      },
+      {
+        "operation": "definition",
+        "requirement": "resolved symbol with at least one definition",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "explain_symbol",
+        "requirement": "resolved target with a valid found envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 10
+        },
+        "pass": true
+      },
+      {
+        "operation": "impact",
+        "requirement": "resolved symbol; bounded impact outcome",
+        "samples": 25,
+        "outcomes": {
+          "empty": 21,
+          "found": 4
+        },
+        "pass": true
+      },
+      {
+        "operation": "index",
+        "requirement": "successful ingest with non-empty node and file inventory",
+        "samples": 1,
+        "outcomes": {
+          "found": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "neighborhood",
+        "requirement": "resolved symbol; bounded neighborhood outcome",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "references",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "related_files",
+        "requirement": "resolved target; found or legitimately empty related-file set",
+        "samples": 10,
+        "outcomes": {
+          "empty": 2,
+          "found": 8
+        },
+        "pass": true
+      },
+      {
+        "operation": "search",
+        "requirement": "manifest-promised non-empty search",
+        "samples": 40,
+        "outcomes": {
+          "found": 40
+        },
+        "pass": true
+      }
+    ],
+    "pass": true
+  },
+  "cgroup": {
+    "available": true,
+    "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+    "memory_max": "max",
+    "memory_swap_max": "max",
+    "oom_kill": 0,
+    "oom_kill_collected": true
+  }
+}

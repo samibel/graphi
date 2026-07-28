@@ -1,0 +1,377 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "query_latency",
+  "repo": "lo",
+  "collected": true,
+  "samples": 223,
+  "environment": {
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cpu_count": 4,
+    "ram_bytes": 16766423040,
+    "os": "linux",
+    "arch": "amd64",
+    "kernel": "6.17.0-1020-azure",
+    "go_version": "go1.26.5",
+    "filesystem": "ext4",
+    "filesystem_path": "/home/runner/work/_temp/cold-series",
+    "cache_state": "dropped",
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "query_operations": [
+    {
+      "operation": "agent_brief",
+      "class": "agent_tools",
+      "samples_us": [
+        5298,
+        5327,
+        5553
+      ]
+    },
+    {
+      "operation": "callees",
+      "class": "structural",
+      "samples_us": [
+        88,
+        83,
+        235,
+        203,
+        154,
+        91,
+        121,
+        118,
+        83,
+        83,
+        80,
+        121,
+        115,
+        118,
+        83,
+        116,
+        80,
+        81,
+        78,
+        77,
+        77,
+        79,
+        79,
+        122,
+        83
+      ]
+    },
+    {
+      "operation": "callers",
+      "class": "structural",
+      "samples_us": [
+        207,
+        179,
+        88,
+        91,
+        107,
+        122,
+        79,
+        81,
+        79,
+        79,
+        78,
+        80,
+        80,
+        83,
+        117,
+        104,
+        83,
+        78,
+        78,
+        81,
+        80,
+        81,
+        78,
+        78,
+        80
+      ]
+    },
+    {
+      "operation": "change_risk",
+      "class": "agent_tools",
+      "samples_us": [
+        249,
+        211,
+        163,
+        156,
+        150,
+        214,
+        155,
+        141,
+        144,
+        142
+      ]
+    },
+    {
+      "operation": "definition",
+      "class": "structural",
+      "samples_us": [
+        144,
+        131,
+        118,
+        116,
+        117,
+        116,
+        114,
+        111,
+        116,
+        143,
+        116,
+        117,
+        119,
+        116,
+        117,
+        123,
+        116,
+        143,
+        117,
+        118,
+        112,
+        117,
+        113,
+        111,
+        114
+      ]
+    },
+    {
+      "operation": "explain_symbol",
+      "class": "agent_tools",
+      "samples_us": [
+        324,
+        300,
+        320,
+        275,
+        275,
+        270,
+        248,
+        238,
+        200,
+        200
+      ]
+    },
+    {
+      "operation": "impact",
+      "class": "structural",
+      "samples_us": [
+        2097,
+        764,
+        161,
+        161,
+        149,
+        324,
+        151,
+        162,
+        150,
+        150,
+        148,
+        178,
+        150,
+        148,
+        296,
+        151,
+        176,
+        151,
+        150,
+        151,
+        152,
+        148,
+        161,
+        203,
+        148
+      ]
+    },
+    {
+      "operation": "neighborhood",
+      "class": "structural",
+      "samples_us": [
+        263,
+        265,
+        222,
+        224,
+        211,
+        206,
+        237,
+        193,
+        193,
+        196,
+        215,
+        199,
+        186,
+        192,
+        190,
+        191,
+        203,
+        153,
+        154,
+        149,
+        151,
+        148,
+        184,
+        151,
+        154
+      ]
+    },
+    {
+      "operation": "references",
+      "class": "structural",
+      "samples_us": [
+        82,
+        91,
+        82,
+        82,
+        83,
+        111,
+        81,
+        80,
+        80,
+        79,
+        81,
+        79,
+        98,
+        81,
+        82,
+        78,
+        105,
+        90,
+        82,
+        80,
+        81,
+        80,
+        79,
+        79,
+        79
+      ]
+    },
+    {
+      "operation": "related_files",
+      "class": "agent_tools",
+      "samples_us": [
+        271,
+        211,
+        195,
+        215,
+        215,
+        195,
+        186,
+        169,
+        169,
+        175
+      ]
+    },
+    {
+      "operation": "search",
+      "class": "search",
+      "samples_us": [
+        261,
+        192,
+        247,
+        215,
+        246,
+        183,
+        256,
+        213,
+        249,
+        181,
+        241,
+        178,
+        267,
+        180,
+        237,
+        178,
+        264,
+        254,
+        251,
+        183,
+        265,
+        186,
+        240,
+        180,
+        237,
+        205,
+        244,
+        177,
+        245,
+        181,
+        269,
+        177,
+        234,
+        178,
+        263,
+        181,
+        236,
+        179,
+        239,
+        202
+      ]
+    }
+  ],
+  "query_pools": [
+    {
+      "id": "agent_tools",
+      "kind": "class",
+      "operations": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ]
+    },
+    {
+      "id": "search",
+      "kind": "class",
+      "operations": [
+        "search"
+      ]
+    },
+    {
+      "id": "structural",
+      "kind": "class",
+      "operations": [
+        "callees",
+        "callers",
+        "definition",
+        "impact",
+        "neighborhood",
+        "references"
+      ]
+    },
+    {
+      "id": "agent_context_p95",
+      "kind": "gate_pool",
+      "operations": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ]
+    },
+    {
+      "id": "caller_callee_impact_p95",
+      "kind": "gate_pool",
+      "operations": [
+        "callees",
+        "callers",
+        "impact"
+      ]
+    },
+    {
+      "id": "warm_search_p95",
+      "kind": "gate_pool",
+      "operations": [
+        "search"
+      ]
+    }
+  ]
+}
