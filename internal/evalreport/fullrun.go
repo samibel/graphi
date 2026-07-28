@@ -37,6 +37,21 @@ type FullRunReport struct {
 	// sizes) so a reader can interpret the numbers without the source.
 	Notes string      `json:"notes,omitempty"`
 	Repo  FullRepoRun `json:"repo"`
+	// RepoRunIndex says WHICH run of a cold series `Repo` is (1-based), and is
+	// absent for the single-run path. Without it a reader of a repeated
+	// measurement could mistake one arbitrary sample for the result; with it,
+	// `repo` stays a comparable single sample and every distributional claim
+	// lives in ColdSeries.
+	RepoRunIndex int `json:"repo_run_index,omitempty"`
+	// ColdSeries is SW-124's repeated cold-index measurement. It is a pointer
+	// and absent by default: the single-run report shape the PR path and the
+	// committed historical runs use is byte-unchanged when no series was asked
+	// for.
+	ColdSeries *ColdRunSeries `json:"cold_series,omitempty"`
+	// Cgroup is the memory limit the measuring process itself ran under, read
+	// from inside that process (Linux cgroup v2 only). It is what makes the
+	// SW-123 OOM method verifiable rather than merely intended.
+	Cgroup *CgroupLimits `json:"cgroup,omitempty"`
 }
 
 // FullRepoRun is the per-repository measurement set.
@@ -50,6 +65,11 @@ type FullRepoRun struct {
 	CloneMS int64  `json:"clone_ms,omitempty"`
 
 	Index IndexMetrics `json:"index"`
+	// Cold is the per-run evidence that this index really was cold: a store
+	// that did not pre-exist and a page cache in the state the runner class
+	// declares. SW-124 (AC-1) — coldness is verified per run, not assumed from
+	// the fact that a fresh temp directory was requested.
+	Cold ColdState `json:"cold"`
 
 	// WarmP95US is the p95 latency in MICROSECONDS per operation class
 	// (structural, search, agent_tools) over the warm, already-indexed store

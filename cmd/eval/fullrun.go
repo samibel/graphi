@@ -55,32 +55,50 @@ const fullRunNotes = "in-process session model: engine services over one open SQ
 	"cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; " +
 	"degree-stratified symbol sample; all 12 stable operations covered; warm p95 pooled per op class over the recorded warm_ops/warm_samples"
 
+// fullRunOptions is one full-run invocation. It is a struct rather than a
+// positional list because SW-124 adds the cold-state protocol to what was
+// already seven strings, and a misordered pair of paths is a silent wrong
+// measurement rather than a compile error.
+type fullRunOptions struct {
+	manifestPath string
+	repoName     string
+	workDir      string
+	runnerClass  string
+	outPath      string
+	budgetPath   string
+	scenarioPath string
+	// dropCaches asks for the page cache to be dropped between the clone and
+	// the timed index (SW-124 AC-1). It is a request, not a claim: what the
+	// protocol actually achieved is recorded in the run's ColdState.
+	dropCaches bool
+}
+
 // runFullRun executes the full measurement for one manifest entry and writes
-// the report to outPath. Returns the process exit code.
+// the report to o.outPath. Returns the process exit code.
 //
-// scenarioPath, when set, is the SW-123 reference-scenario contract: the run
+// o.scenarioPath, when set, is the SW-123 reference-scenario contract: the run
 // is validated against it and stamped with the runner class's declared ROLE,
 // so a comparison-class report can never be mistaken for reference evidence.
 // A runner class the contract does not declare fails the run closed — that is
 // how numbers from unnamed machines stop sitting beside reference values with
 // equal standing.
-func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPath, scenarioPath string) int {
+func runFullRun(o fullRunOptions) int {
 	ctx := context.Background()
 
-	runnerRole, isReference, err := resolveRunnerRole(scenarioPath, manifestPath, runnerClass, repoName)
+	class, isReference, err := resolveRunnerClass(o.scenarioPath, o.manifestPath, o.runnerClass, o.repoName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "eval: %v\n", err)
 		return 2
 	}
 
-	m, err := corpus.LoadManifest(manifestPath)
+	m, err := corpus.LoadManifest(o.manifestPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "eval: load manifest: %v\n", err)
 		return 2
 	}
 	var entry *corpus.Entry
 	for i := range m.Entries {
-		if m.Entries[i].Name == repoName {
+		if m.Entries[i].Name == o.repoName {
 			entry = &m.Entries[i]
 			break
 		}
@@ -90,10 +108,11 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 		for _, e := range m.Entries {
 			names = append(names, e.Name)
 		}
-		fmt.Fprintf(os.Stderr, "eval: -full-run %q not in manifest (have: %s)\n", repoName, strings.Join(names, ", "))
+		fmt.Fprintf(os.Stderr, "eval: -full-run %q not in manifest (have: %s)\n", o.repoName, strings.Join(names, ", "))
 		return 2
 	}
 
+	workDir := o.workDir
 	if workDir == "" {
 		workDir, err = os.MkdirTemp("", "graphi-eval-full")
 		if err != nil {
@@ -103,11 +122,19 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 		defer os.RemoveAll(workDir)
 	}
 
-	run := fullRepoRun(ctx, *entry, filepath.Dir(manifestPath), workDir)
-	if budgetPath != "" {
-		run.BudgetSource = budgetPath
+	run := fullRepoRun(ctx, *entry, filepath.Dir(o.manifestPath), workDir, coldProtocol{
+		drop:             o.dropCaches,
+		requiredProtocol: class.CacheState,
+		// The reference class declares a drop-caches protocol; the comparison
+		// class declares its cache state uncontrolled. A reference-class run
+		// that did not drop the cache is therefore not cold BY ITS OWN
+		// DECLARATION, and says so rather than being quietly published.
+		dropRequired: class.Role == roleReference,
+	})
+	if o.budgetPath != "" {
+		run.BudgetSource = o.budgetPath
 		if run.Pass {
-			checks, err := checkFullRunBudgets(budgetPath, runnerClass, run)
+			checks, err := checkFullRunBudgets(o.budgetPath, o.runnerClass, run)
 			if err != nil {
 				run.Failures = append(run.Failures, "budgets: "+err.Error())
 			} else {
@@ -124,21 +151,23 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 
 	report := evalreport.FullRunReport{
 		Header:            evalreport.NewHeader("0.0.0-dev", resolveCommit()),
-		RunnerClass:       runnerClass,
-		RunnerRole:        runnerRole,
+		RunnerClass:       o.runnerClass,
+		RunnerRole:        class.Role,
 		ReferenceScenario: isReference,
-		ScenarioSource:    scenarioPath,
+		ScenarioSource:    o.scenarioPath,
 		Notes:             fullRunNotes,
 		Repo:              run,
+		Cgroup:            observedCgroupLimits(),
 	}
-	report.Header.CorpusVersion = manifestVersion(manifestPath)
-	if scenarioPath != "" && !isReference {
+	report.Header.CorpusVersion = manifestVersion(o.manifestPath)
+	if o.scenarioPath != "" && !isReference {
 		fmt.Fprintf(os.Stderr, "eval: NOTE - %s on runner class %s (%s) is NOT the reference scenario; these numbers are not reference evidence and freeze no budget\n",
-			repoName, runnerClass, runnerRole)
+			o.repoName, o.runnerClass, class.Role)
 	}
 
+	outPath := o.outPath
 	if outPath == "" {
-		outPath = "eval-full-" + repoName + ".json"
+		outPath = "eval-full-" + o.repoName + ".json"
 	}
 	if err := evalreport.WriteFullRunJSON(report, outPath); err != nil {
 		fmt.Fprintf(os.Stderr, "eval: write report: %v\n", err)
@@ -147,43 +176,47 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 	fmt.Fprintf(os.Stderr, "eval: wrote full-run report to %s\n", outPath)
 
 	if !run.Pass {
-		fmt.Fprintf(os.Stderr, "eval: FAIL - full run over %s: %s\n", repoName, strings.Join(run.Failures, "; "))
+		fmt.Fprintf(os.Stderr, "eval: FAIL - full run over %s: %s\n", o.repoName, strings.Join(run.Failures, "; "))
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "eval: PASS - full run over %s (index %dms, rss %dMB, db %dB)\n",
-		repoName, run.Index.WallclockMS, run.Index.PeakRSSMB, run.Index.DBSizeBytes)
+		o.repoName, run.Index.WallclockMS, run.Index.PeakRSSMB, run.Index.DBSizeBytes)
 	return 0
 }
 
-// resolveRunnerRole validates the reference-scenario contract and resolves the
-// declared role of runnerClass. An empty scenarioPath means "no contract
-// supplied" (the hermetic fixture path, and the pre-SW-123 behavior); anything
-// else is enforced fail-closed.
-func resolveRunnerRole(scenarioPath, manifestPath, runnerClass, repoName string) (role string, isReference bool, err error) {
+// resolveRunnerClass validates the reference-scenario contract and resolves the
+// declared runner class. An empty scenarioPath means "no contract supplied"
+// (the hermetic fixture path, and the pre-SW-123 behavior); anything else is
+// enforced fail-closed.
+//
+// It returns the whole class rather than only its role because SW-124 needs the
+// class's DECLARED cache-state protocol to say whether a run met it.
+func resolveRunnerClass(scenarioPath, manifestPath, runnerClassID, repoName string) (class runnerClass, isReference bool, err error) {
 	if scenarioPath == "" {
-		return "", false, nil
+		return runnerClass{}, false, nil
 	}
 	rs, err := loadReferenceScenario(scenarioPath)
 	if err != nil {
-		return "", false, fmt.Errorf("reference scenario: %w", err)
+		return runnerClass{}, false, fmt.Errorf("reference scenario: %w", err)
 	}
 	repos, err := corpusRepoNames(manifestPath)
 	if err != nil {
-		return "", false, fmt.Errorf("corpus manifest: %w", err)
+		return runnerClass{}, false, fmt.Errorf("corpus manifest: %w", err)
 	}
 	if err := validateReferenceScenario(rs, repos); err != nil {
-		return "", false, fmt.Errorf("reference scenario %s: %w", scenarioPath, err)
+		return runnerClass{}, false, fmt.Errorf("reference scenario %s: %w", scenarioPath, err)
 	}
-	role, ok := rs.classRole(runnerClass)
-	if !ok {
-		declared := make([]string, 0, len(rs.RunnerClasses))
-		for _, c := range rs.RunnerClasses {
-			declared = append(declared, c.ID+"("+c.Role+")")
+	for _, c := range rs.RunnerClasses {
+		if c.ID == runnerClassID {
+			return c, c.Role == roleReference && repoName == rs.ReferenceScenario.Repo, nil
 		}
-		return "", false, fmt.Errorf("runner class %q is not declared in %s (declared: %s); an undeclared machine's numbers must not stand beside reference values",
-			runnerClass, scenarioPath, strings.Join(declared, ", "))
 	}
-	return role, role == roleReference && repoName == rs.ReferenceScenario.Repo, nil
+	declared := make([]string, 0, len(rs.RunnerClasses))
+	for _, c := range rs.RunnerClasses {
+		declared = append(declared, c.ID+"("+c.Role+")")
+	}
+	return runnerClass{}, false, fmt.Errorf("runner class %q is not declared in %s (declared: %s); an undeclared machine's numbers must not stand beside reference values",
+		runnerClassID, scenarioPath, strings.Join(declared, ", "))
 }
 
 // manifestVersion re-reads the manifest's version stamp (LoadManifest does not
@@ -196,9 +229,10 @@ func manifestVersion(path string) int {
 	return v
 }
 
-// fullRepoRun performs clone → index → warm measurement for one entry. Every
-// failure is recorded in the returned run; fatal stages stop the pipeline.
-func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir string) evalreport.FullRepoRun {
+// fullRepoRun performs clone → cold-state preparation → index → warm
+// measurement for one entry. Every failure is recorded in the returned run;
+// fatal stages stop the pipeline.
+func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir string, cp coldProtocol) evalreport.FullRepoRun {
 	run := evalreport.FullRepoRun{Name: e.Name, Ref: e.Ref, Tier: e.Tier}
 	fail := func(stage string, err error) evalreport.FullRepoRun {
 		run.Failures = append(run.Failures, fmt.Sprintf("%s: %v", stage, err))
@@ -234,12 +268,20 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	// 2. Cold full index into a fresh on-disk SQLite store (the shipped
 	// session backend), timed; index-only peak RSS sampled immediately afterwards.
 	dbPath := filepath.Join(workDir, e.Name+".db")
+	metaDir := filepath.Join(workDir, e.Name+"-meta")
+
+	// 2a. Produce and VERIFY coldness before the store is opened — after the
+	// clone, because a clone re-warms the page cache with exactly the files
+	// about to be indexed, and dropping the cache before it would measure a
+	// warm index while claiming a cold one.
+	run.Cold = prepareCold(ctx, cp, dbPath, metaDir)
+
 	store, err := graphstore.OpenSQLite(dbPath)
 	if err != nil {
 		return fail("open store", err)
 	}
 	defer store.Close()
-	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), filepath.Join(workDir, e.Name+"-meta"))
+	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
 	if err != nil {
 		return fail("ingest.New", err)
 	}
@@ -583,15 +625,22 @@ func peakRSSMB() int64 {
 // p95US returns the 95th-percentile latency in microseconds (nearest-rank).
 // Microseconds, not milliseconds: the selective-read stable ops are routinely
 // sub-millisecond even on real repos, and a 0ms budget cannot ratchet.
+//
+// SW-124 moved the arithmetic into internal/evalreport so the cold-run p50 and
+// this p95 are literally the same nearest-rank implementation. Two percentile
+// functions in one harness is one definition too many: they would eventually
+// disagree about even sample counts, and the disagreement would show up as an
+// unexplainable gate result rather than as a test failure.
 func p95US(ds []time.Duration) int64 {
-	if len(ds) == 0 {
-		return 0
+	return percentileUS(ds, 95)
+}
+
+func percentileUS(ds []time.Duration, p int) int64 {
+	us := make([]int64, len(ds))
+	for i, d := range ds {
+		us[i] = d.Microseconds()
 	}
-	sorted := make([]time.Duration, len(ds))
-	copy(sorted, ds)
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
-	rank := (95*len(sorted) + 99) / 100 // ceil(0.95n), 1-based
-	return sorted[rank-1].Microseconds()
+	return evalreport.PercentileInt64(us, p)
 }
 
 func sortedKeys(set map[string]struct{}) []string {

@@ -28,6 +28,48 @@ file:
 
 ### Added
 
+- **Cold indexing is now measured ten times, not once — `-cold-runs` (new).**
+  `cmd/eval -full-run` measured a single cold index and reported it as though one
+  sample were a result. A distribution cannot be derived from one number, and the
+  measurement contract asks for at least ten runs reported as **p50 and p95**.
+  `-cold-runs N` repeats the existing measurement N times, **one process per run** —
+  peak RSS is a process-lifetime figure, so repeating inside one process would have
+  republished the first run's peak for every later run and called the result a
+  distribution. Every individual sample is kept in the report next to the
+  aggregates, and one exported function derives the aggregates from those samples,
+  so every published number can be recomputed from the raw data rather than taken on
+  trust. Wallclock, peak RSS, DB size, nodes, edges and bytes-per-edge are all
+  captured per run and aggregated.
+- **"Cold" is now produced and verified per run, not assumed.** Each run records
+  whether its store and ingest metadata really were absent beforehand, and what state
+  the page cache was actually in — with `-drop-caches` running the reference class's
+  declared protocol between the clone and the timed index (dropping it *before* the
+  clone would have warmed the cache with exactly the files about to be measured). A
+  run on the reference class that did not reach its own declared protocol is recorded
+  as **not verified cold** instead of being published as a cold number.
+- **The 8 GB OOM gate has a measurement point for the first time — `-oom-check`.** It
+  was previously neither passing nor failing: it was unmeasured, which means UNKNOWN.
+  The run is now executed under the contract's imposed 8 GB cgroup v2 limit with swap
+  disabled, the limit is **read back from inside the constrained process** and
+  compared to the exact byte figure, and three failure signals (the cgroup `oom_kill`
+  counter, a SIGKILL/137 exit, a kernel OOM record for the measured pid) are
+  collected. A pass requires a verified limit, a completed run, and all three signals
+  observed and absent — a limit that could not be verified, or a signal nobody
+  managed to look at, reads **UNKNOWN**, never PASS.
+- **Aborted runs stay visible.** A run that produced no cold-index measurement is
+  counted, named and kept in the report; it never silently drops out of the
+  distribution. A run whose *warm* checks failed still contributes its cold sample,
+  with its own verdict attached — the cold measurement is valid regardless.
+- **Runs are tied to the frozen candidate.** Every run carries the runner class and
+  the revision that measured it, and the series cites the frozen candidate from the
+  evidence index. A series measured on anything else — including a dirty worktree —
+  is marked as such, and its gates read UNKNOWN: a gate result about an artifact
+  nobody installs is not evidence about the candidate.
+- Gates are read from the reference-scenario contract rather than restated, and the
+  weekly `eval-full` workflow gained a `cold-index-series` job that runs the ten
+  reference-scenario runs and the OOM check. The PR path is untouched: the default
+  invocation is still exactly one run, and a guard test keeps the repetition flag out
+  of the PR gate and the per-repo compatibility runs.
 - **The reference scenario exists — `docs/eval/reference-scenario.json` (new).** Every
   performance number in the P0 measurement contract was scoped to "the defined
   reference scenario", and that scenario was defined nowhere: "cold index p50 ≤ 90 s"

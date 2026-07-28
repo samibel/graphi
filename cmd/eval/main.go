@@ -62,6 +62,13 @@ func main() {
 	referenceScenarioPath := flag.String("reference-scenario", "", "reference-scenario contract to validate the run against (for example "+defaultReferenceScenarioPath+"); when set, an undeclared -runner-class fails closed")
 	checkReferenceScenario := flag.Bool("check-reference-scenario", false, "validate the reference-scenario contract against the corpus manifest and the budget artifact, then exit")
 
+	// SW-124 (P0-C1) cold-run series flags. The defaults are the pre-SW-124
+	// behaviour exactly: one run, no cache protocol, no OOM check.
+	coldRuns := flag.Int("cold-runs", 1, "repeat the cold index this many times, one process per run, and report p50/p95 with every sample kept (FR-8 wants at least 10); 1 = the single-run path, unchanged")
+	dropCaches := flag.Bool("drop-caches", false, "drop the page cache between the clone and the timed index (the reference runner class's declared cold protocol; linux, needs root or passwordless sudo)")
+	oomCheck := flag.Bool("oom-check", false, "additionally run the reference scenario under the contract's imposed 8 GB memory limit and report the OOM gate; without it the gate is UNKNOWN, never PASS")
+	candidatePath := flag.String("candidate", defaultCandidateIndexPath, "evidence index the frozen candidate SHA is cited from; a series measured on another revision is marked as such")
+
 	flag.Parse()
 
 	if *checkReferenceScenario {
@@ -78,7 +85,34 @@ func main() {
 			fmt.Fprintln(os.Stderr, "eval: -full-run requires -manifest")
 			os.Exit(2)
 		}
-		os.Exit(runFullRun(*manifest, *fullRun, *workDir, *runnerClass, *out, *budgets, *referenceScenarioPath))
+		// Anything other than exactly 1 goes to the series path, so a
+		// nonsensical count (0, negative) fails closed there with a message
+		// instead of silently degrading to a single run.
+		if *coldRuns != 1 {
+			os.Exit(runColdSeries(coldSeriesOptions{
+				manifestPath:  *manifest,
+				repoName:      *fullRun,
+				workDir:       *workDir,
+				runnerClass:   *runnerClass,
+				outPath:       *out,
+				budgetPath:    *budgets,
+				scenarioPath:  *referenceScenarioPath,
+				candidatePath: *candidatePath,
+				runs:          *coldRuns,
+				dropCaches:    *dropCaches,
+				oomCheck:      *oomCheck,
+			}, execColdRun))
+		}
+		os.Exit(runFullRun(fullRunOptions{
+			manifestPath: *manifest,
+			repoName:     *fullRun,
+			workDir:      *workDir,
+			runnerClass:  *runnerClass,
+			outPath:      *out,
+			budgetPath:   *budgets,
+			scenarioPath: *referenceScenarioPath,
+			dropCaches:   *dropCaches,
+		}))
 	}
 
 	if *manifest != "" {
