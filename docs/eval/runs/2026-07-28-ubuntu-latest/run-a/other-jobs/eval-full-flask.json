@@ -1,0 +1,2281 @@
+{
+  "header": {
+    "timestamp": "2026-07-28T16:13:39Z",
+    "version": "0.0.0-dev",
+    "commit": "afa1b686de381dd455ab08e4bf33aaf9420d6aab",
+    "os": "linux",
+    "arch": "amd64",
+    "corpus_version": 3
+  },
+  "runner_class": "ubuntu-latest",
+  "runner_role": "reference",
+  "reference_scenario": false,
+  "scenario_source": "docs/eval/reference-scenario.json",
+  "notes": "in-process session model: engine services over one open SQLite store; cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; all 12 stable operations covered with an explicit operation-to-class mapping; warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every individual measurement retained in query_latency.operations[].samples_us; the cold index is watched for silence through the shipped ingest progress hook — see `stalls`, which is present on every run and reads FAIL when the index emitted no progress",
+  "repo": {
+    "name": "flask",
+    "ref": "3.0.0",
+    "sha": "735a4701d6d5e848241e7d7535db898efb62d400",
+    "tier": 1,
+    "clone_ms": 313,
+    "index": {
+      "wallclock_ms": 401,
+      "peak_rss_mb": 260,
+      "db_size_bytes": 1011712,
+      "nodes": 1058,
+      "edges": 2220,
+      "files": 106
+    },
+    "cold": {
+      "store_path": "/tmp/graphi-eval-full3631199236/flask.db",
+      "meta_path": "/tmp/graphi-eval-full3631199236/flask-meta",
+      "store_preexisting": false,
+      "meta_preexisting": false,
+      "page_cache": "not_dropped",
+      "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+      "drop_required": true,
+      "verified": false,
+      "reason": "the runner class declares a drop-caches protocol and the page cache was not_dropped"
+    },
+    "warm_p95_us": {
+      "agent_tools": 14444,
+      "search": 1866,
+      "structural": 190
+    },
+    "warm_p95_us_per_op": {
+      "agent_brief": 14823,
+      "callees": 116,
+      "callers": 124,
+      "change_risk": 137,
+      "definition": 115,
+      "explain_symbol": 253,
+      "impact": 559,
+      "neighborhood": 198,
+      "references": 78,
+      "related_files": 417,
+      "search": 1866
+    },
+    "warm_p50_us": {
+      "agent_tools": 140,
+      "search": 1768,
+      "structural": 88
+    },
+    "warm_p50_us_per_op": {
+      "agent_brief": 14444,
+      "callees": 77,
+      "callers": 63,
+      "change_risk": 125,
+      "definition": 88,
+      "explain_symbol": 206,
+      "impact": 120,
+      "neighborhood": 137,
+      "references": 62,
+      "related_files": 131,
+      "search": 1768
+    },
+    "warm_samples": {
+      "agent_tools": 31,
+      "search": 20,
+      "structural": 150
+    },
+    "warm_ops": {
+      "agent_tools": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ],
+      "search": [
+        "search"
+      ],
+      "structural": [
+        "callees",
+        "callers",
+        "definition",
+        "impact",
+        "neighborhood",
+        "references"
+      ]
+    },
+    "query_latency": {
+      "repo": "flask",
+      "minimum_executions_per_class": 1000,
+      "requested_executions_per_class": 0,
+      "total_executions": 201,
+      "class_of": {
+        "agent_brief": "agent_tools",
+        "callees": "structural",
+        "callers": "structural",
+        "change_risk": "agent_tools",
+        "definition": "structural",
+        "explain_symbol": "agent_tools",
+        "impact": "structural",
+        "index": "lifecycle",
+        "neighborhood": "structural",
+        "references": "structural",
+        "related_files": "agent_tools",
+        "search": "search"
+      },
+      "stable_operations": [
+        "agent_brief",
+        "callees",
+        "callers",
+        "change_risk",
+        "definition",
+        "explain_symbol",
+        "impact",
+        "index",
+        "neighborhood",
+        "references",
+        "related_files",
+        "search"
+      ],
+      "operations": [
+        {
+          "operation": "agent_brief",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 3,
+            "min_us": 14424,
+            "p50_us": 14444,
+            "p95_us": 14823,
+            "max_us": 14823
+          },
+          "samples_us": [
+            14823,
+            14444,
+            14424
+          ]
+        },
+        {
+          "operation": "callees",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 60,
+            "p50_us": 77,
+            "p95_us": 116,
+            "max_us": 190
+          },
+          "samples_us": [
+            70,
+            190,
+            103,
+            116,
+            96,
+            63,
+            109,
+            93,
+            85,
+            89,
+            112,
+            87,
+            87,
+            89,
+            62,
+            61,
+            63,
+            62,
+            60,
+            61,
+            61,
+            60,
+            60,
+            61,
+            77
+          ]
+        },
+        {
+          "operation": "callers",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 61,
+            "p50_us": 63,
+            "p95_us": 124,
+            "max_us": 341
+          },
+          "samples_us": [
+            341,
+            71,
+            111,
+            65,
+            124,
+            119,
+            66,
+            63,
+            64,
+            62,
+            62,
+            65,
+            68,
+            63,
+            62,
+            61,
+            61,
+            63,
+            81,
+            62,
+            63,
+            63,
+            63,
+            61,
+            61
+          ]
+        },
+        {
+          "operation": "change_risk",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 9,
+            "min_us": 102,
+            "p50_us": 125,
+            "p95_us": 137,
+            "max_us": 137
+          },
+          "samples_us": [
+            125,
+            137,
+            116,
+            125,
+            133,
+            112,
+            126,
+            106,
+            102
+          ]
+        },
+        {
+          "operation": "definition",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 85,
+            "p50_us": 88,
+            "p95_us": 115,
+            "max_us": 121
+          },
+          "samples_us": [
+            87,
+            89,
+            88,
+            87,
+            90,
+            90,
+            121,
+            91,
+            87,
+            87,
+            88,
+            87,
+            86,
+            94,
+            88,
+            95,
+            87,
+            115,
+            87,
+            88,
+            85,
+            87,
+            86,
+            88,
+            88
+          ]
+        },
+        {
+          "operation": "explain_symbol",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 9,
+            "min_us": 180,
+            "p50_us": 206,
+            "p95_us": 253,
+            "max_us": 253
+          },
+          "samples_us": [
+            219,
+            250,
+            206,
+            209,
+            205,
+            204,
+            253,
+            186,
+            180
+          ]
+        },
+        {
+          "operation": "impact",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 116,
+            "p50_us": 120,
+            "p95_us": 559,
+            "max_us": 2633
+          },
+          "samples_us": [
+            2633,
+            148,
+            559,
+            121,
+            227,
+            353,
+            121,
+            118,
+            118,
+            118,
+            117,
+            133,
+            121,
+            123,
+            117,
+            118,
+            116,
+            118,
+            120,
+            136,
+            124,
+            117,
+            117,
+            118,
+            119
+          ]
+        },
+        {
+          "operation": "index",
+          "class": "lifecycle",
+          "measured": false,
+          "warmup_executions": 0,
+          "note": "lifecycle-only: `index` is the ingest lifecycle operation, not a query. Its cost is the cold-index wallclock measured by SW-124, so it carries no query-latency samples, no 1000-execution floor and no PRD §12.2 query gate. It is listed here so all twelve stable operations are visibly accounted for."
+        },
+        {
+          "operation": "neighborhood",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 110,
+            "p50_us": 137,
+            "p95_us": 198,
+            "max_us": 444
+          },
+          "samples_us": [
+            444,
+            198,
+            161,
+            165,
+            159,
+            150,
+            152,
+            145,
+            140,
+            137,
+            163,
+            138,
+            135,
+            138,
+            116,
+            111,
+            113,
+            118,
+            132,
+            113,
+            112,
+            110,
+            115,
+            112,
+            110
+          ]
+        },
+        {
+          "operation": "references",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 60,
+            "p50_us": 62,
+            "p95_us": 78,
+            "max_us": 80
+          },
+          "samples_us": [
+            61,
+            62,
+            80,
+            64,
+            61,
+            61,
+            61,
+            63,
+            61,
+            62,
+            61,
+            66,
+            61,
+            61,
+            62,
+            63,
+            61,
+            63,
+            78,
+            63,
+            62,
+            63,
+            60,
+            60,
+            62
+          ]
+        },
+        {
+          "operation": "related_files",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 116,
+            "p50_us": 131,
+            "p95_us": 417,
+            "max_us": 417
+          },
+          "samples_us": [
+            417,
+            152,
+            140,
+            131,
+            131,
+            133,
+            161,
+            120,
+            116,
+            119
+          ]
+        },
+        {
+          "operation": "search",
+          "class": "search",
+          "measured": true,
+          "gated_by": [
+            "warm_search_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 20,
+            "min_us": 1741,
+            "p50_us": 1768,
+            "p95_us": 1866,
+            "max_us": 1886
+          },
+          "samples_us": [
+            1866,
+            1793,
+            1777,
+            1769,
+            1886,
+            1792,
+            1781,
+            1762,
+            1768,
+            1751,
+            1758,
+            1748,
+            1841,
+            1797,
+            1768,
+            1750,
+            1741,
+            1800,
+            1756,
+            1767
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 31,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 31,
+          "min_us": 102,
+          "p50_us": 140,
+          "p95_us": 14444,
+          "max_us": 14823
+        },
+        {
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 20,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 20,
+          "min_us": 1741,
+          "p50_us": 1768,
+          "p95_us": 1866,
+          "max_us": 1886
+        },
+        {
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "definition",
+            "impact",
+            "neighborhood",
+            "references"
+          ],
+          "executions": 150,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 150,
+          "min_us": 60,
+          "p50_us": 88,
+          "p95_us": 190,
+          "max_us": 2633
+        }
+      ],
+      "pools": [
+        {
+          "gate_id": "agent_context_p95",
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 31,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 31,
+          "min_us": 102,
+          "p50_us": 140,
+          "p95_us": 14444,
+          "max_us": 14823
+        },
+        {
+          "gate_id": "caller_callee_impact_p95",
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "impact"
+          ],
+          "executions": 75,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 75,
+          "min_us": 60,
+          "p50_us": 89,
+          "p95_us": 341,
+          "max_us": 2633
+        },
+        {
+          "gate_id": "warm_search_p95",
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 20,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 20,
+          "min_us": 1741,
+          "p50_us": 1768,
+          "p95_us": 1866,
+          "max_us": 1886
+        }
+      ],
+      "symbol_sample": {
+        "requested": 25,
+        "returned": 25,
+        "method": "core/graphstore DegreeSamplePort.DegreeStratifiedSymbols over the indexed store: candidates are the function and method nodes, ordered by incident degree DESC then node id ASC, one picked per quantile bucket. That is a total order over a fixed graph, so the same graph yields the same ordered sample; the structural operations walk this list in order and the agent-context operations take its first agent_symbols entries.",
+        "digest": "e2a73b565169536cea3485fadc54037cfe56c45c0bf2334c5ea1dbe8a0e31892",
+        "symbol_ids": [
+          "550bce63f20139ea",
+          "14d14c700440e1e4",
+          "d3474c7583196a06",
+          "24079ecb38d8db0c",
+          "6b239694652d626f",
+          "a6077e2061317d0c",
+          "e48ddf247bdd73c9",
+          "17d9a6c65116e0ab",
+          "2d48cc1c317f8906",
+          "5a5a8016a346c73e",
+          "7ce5be59bc66acf8",
+          "ab9057437ce3d046",
+          "c5f722f36f687fa0",
+          "f218d5ac0cbeaece",
+          "0ebe9734bd3d9944",
+          "21d87cc5c881d53e",
+          "37eb802a8d43cb6f",
+          "4e932c9b9753a458",
+          "66174443b51d9ea4",
+          "777fbb90295c1ed7",
+          "8ab245dc3bee00ef",
+          "9f2595611045f01c",
+          "bc0d6f1fa0f3c57c",
+          "d3cc2bf5c548f14b",
+          "ea2155280fbe15f5"
+        ],
+        "agent_symbols": 10
+      },
+      "sufficient": false,
+      "gates": [
+        {
+          "id": "warm_search_p95",
+          "prd_metric": "Warm Search p95 (PRD 12.2)",
+          "threshold": 100,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.warm_search_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is flask on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "caller_callee_impact_p95",
+          "prd_metric": "Caller/Callee/Impact p95 (PRD 12.2)",
+          "threshold": 200,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.caller_callee_impact_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is flask on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "agent_context_p95",
+          "prd_metric": "Agent Context p95 (PRD 12.2)",
+          "threshold": 500,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.agent_context_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is flask on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "warnings": [
+        "class agent_tools ran 31 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class search ran 20 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool agent_context_p95 ran 31 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool warm_search_p95 ran 20 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS"
+      ],
+      "status": "UNKNOWN",
+      "timing_method": "The timed region contains the operation invocation and NOTHING else. Clone, index, store open, engine construction and the symbol sample all happen before any measurement; per-execution argument assembly (choosing the symbol or query for execution i, building the argument map) happens in an UNTIMED prepare step; and each operation runs warmup_executions untimed invocations before the first timed one. Warmup measurements are discarded, never pooled. Latency is time.Since around the invocation, recorded in microseconds.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-execution samples, ascending — the same implementation the cold series uses, so p50 and p95 cannot disagree about even sample counts. A class statistic pools its operations' samples; a pool statistic pools exactly the operations the SW-123 contract assigns to that gate. Every value here is reproducible from `operations[].samples_us` with evalreport.RecomputeQueryLatency.",
+      "notes": "SW-125 query-latency measurement: warm operations over ONE open store in the session model, driven through a deterministic degree-stratified symbol sample that is published verbatim so two runs are comparable. FR-8's floor is minimum_executions_per_class; a class below it is marked sufficient=false and every gate read over it is UNKNOWN, never PASS (PRD §8.2). No gate is read at all unless the run is the reference scenario on the reference class and from the frozen candidate."
+    },
+    "stalls": {
+      "repo": "flask",
+      "events_observed": 261,
+      "minimum_events": 2,
+      "observable": true,
+      "index_wallclock_us": 401350,
+      "lead_in_us": 280,
+      "lead_in_measured": true,
+      "tail_us": 0,
+      "tail_measured": true,
+      "heartbeat_mode": "non-tty",
+      "stalls": {
+        "n": 260,
+        "min_us": 0,
+        "p50_us": 72,
+        "p95_us": 6875,
+        "max_us": 86412
+      },
+      "per_phase": [
+        {
+          "phase": "checkpoint",
+          "stats": {
+            "n": 1,
+            "min_us": 253,
+            "p50_us": 253,
+            "p95_us": 253,
+            "max_us": 253
+          }
+        },
+        {
+          "phase": "done",
+          "stats": {
+            "n": 1,
+            "min_us": 5471,
+            "p50_us": 5471,
+            "p95_us": 5471,
+            "max_us": 5471
+          }
+        },
+        {
+          "phase": "fts",
+          "stats": {
+            "n": 1,
+            "min_us": 1173,
+            "p50_us": 1173,
+            "p95_us": 1173,
+            "max_us": 1173
+          }
+        },
+        {
+          "phase": "link",
+          "stats": {
+            "n": 4,
+            "min_us": 8801,
+            "p50_us": 11418,
+            "p95_us": 86412,
+            "max_us": 86412
+          }
+        },
+        {
+          "phase": "parse",
+          "stats": {
+            "n": 248,
+            "min_us": 0,
+            "p50_us": 60,
+            "p95_us": 5537,
+            "max_us": 13878
+          }
+        },
+        {
+          "phase": "resolve",
+          "stats": {
+            "n": 1,
+            "min_us": 1373,
+            "p50_us": 1373,
+            "p95_us": 1373,
+            "max_us": 1373
+          }
+        },
+        {
+          "phase": "walk",
+          "stats": {
+            "n": 3,
+            "min_us": 5642,
+            "p50_us": 6463,
+            "p95_us": 6852,
+            "max_us": 6852
+          }
+        },
+        {
+          "phase": "write",
+          "stats": {
+            "n": 1,
+            "min_us": 1159,
+            "p50_us": 1159,
+            "p95_us": 1159,
+            "max_us": 1159
+          }
+        }
+      ],
+      "intervals": [
+        {
+          "seq": 1,
+          "phase": "walk",
+          "us": 5642
+        },
+        {
+          "seq": 2,
+          "phase": "walk",
+          "us": 6463
+        },
+        {
+          "seq": 3,
+          "phase": "walk",
+          "us": 6852
+        },
+        {
+          "seq": 4,
+          "phase": "parse",
+          "us": 7548
+        },
+        {
+          "seq": 5,
+          "phase": "parse",
+          "us": 293
+        },
+        {
+          "seq": 6,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 7,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 8,
+          "phase": "parse",
+          "us": 3872
+        },
+        {
+          "seq": 9,
+          "phase": "parse",
+          "us": 4022
+        },
+        {
+          "seq": 10,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 11,
+          "phase": "parse",
+          "us": 1281
+        },
+        {
+          "seq": 12,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 13,
+          "phase": "parse",
+          "us": 1441
+        },
+        {
+          "seq": 14,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 15,
+          "phase": "parse",
+          "us": 489
+        },
+        {
+          "seq": 16,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 17,
+          "phase": "parse",
+          "us": 861
+        },
+        {
+          "seq": 18,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 19,
+          "phase": "parse",
+          "us": 230
+        },
+        {
+          "seq": 20,
+          "phase": "parse",
+          "us": 149
+        },
+        {
+          "seq": 21,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 22,
+          "phase": "parse",
+          "us": 33
+        },
+        {
+          "seq": 23,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 24,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 25,
+          "phase": "parse",
+          "us": 563
+        },
+        {
+          "seq": 26,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 27,
+          "phase": "parse",
+          "us": 287
+        },
+        {
+          "seq": 28,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 29,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 30,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 31,
+          "phase": "parse",
+          "us": 98
+        },
+        {
+          "seq": 32,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 33,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 34,
+          "phase": "parse",
+          "us": 85
+        },
+        {
+          "seq": 35,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 36,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 37,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 38,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 39,
+          "phase": "parse",
+          "us": 164
+        },
+        {
+          "seq": 40,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 41,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 42,
+          "phase": "parse",
+          "us": 142
+        },
+        {
+          "seq": 43,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 44,
+          "phase": "parse",
+          "us": 215
+        },
+        {
+          "seq": 45,
+          "phase": "parse",
+          "us": 146
+        },
+        {
+          "seq": 46,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 47,
+          "phase": "parse",
+          "us": 62
+        },
+        {
+          "seq": 48,
+          "phase": "parse",
+          "us": 140
+        },
+        {
+          "seq": 49,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 50,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 51,
+          "phase": "parse",
+          "us": 5976
+        },
+        {
+          "seq": 52,
+          "phase": "parse",
+          "us": 495
+        },
+        {
+          "seq": 53,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 54,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 55,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 56,
+          "phase": "parse",
+          "us": 165
+        },
+        {
+          "seq": 57,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 58,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 59,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 60,
+          "phase": "parse",
+          "us": 161
+        },
+        {
+          "seq": 61,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 62,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 63,
+          "phase": "parse",
+          "us": 33
+        },
+        {
+          "seq": 64,
+          "phase": "parse",
+          "us": 91
+        },
+        {
+          "seq": 65,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 66,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 67,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 68,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 69,
+          "phase": "parse",
+          "us": 136
+        },
+        {
+          "seq": 70,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 71,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 72,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 73,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 74,
+          "phase": "parse",
+          "us": 130
+        },
+        {
+          "seq": 75,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 76,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 77,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 78,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 79,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 80,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 81,
+          "phase": "parse",
+          "us": 136
+        },
+        {
+          "seq": 82,
+          "phase": "parse",
+          "us": 230
+        },
+        {
+          "seq": 83,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 84,
+          "phase": "parse",
+          "us": 158
+        },
+        {
+          "seq": 85,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 86,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 87,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 88,
+          "phase": "parse",
+          "us": 103
+        },
+        {
+          "seq": 89,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 90,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 91,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 92,
+          "phase": "parse",
+          "us": 99
+        },
+        {
+          "seq": 93,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 94,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 95,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 96,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 97,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 98,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 99,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 100,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 101,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 102,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 103,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 104,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 105,
+          "phase": "parse",
+          "us": 164
+        },
+        {
+          "seq": 106,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 107,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 108,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 109,
+          "phase": "parse",
+          "us": 173
+        },
+        {
+          "seq": 110,
+          "phase": "parse",
+          "us": 96
+        },
+        {
+          "seq": 111,
+          "phase": "parse",
+          "us": 787
+        },
+        {
+          "seq": 112,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 113,
+          "phase": "parse",
+          "us": 1738
+        },
+        {
+          "seq": 114,
+          "phase": "parse",
+          "us": 2004
+        },
+        {
+          "seq": 115,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 116,
+          "phase": "parse",
+          "us": 1887
+        },
+        {
+          "seq": 117,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 118,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 119,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 120,
+          "phase": "parse",
+          "us": 141
+        },
+        {
+          "seq": 121,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 122,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 123,
+          "phase": "parse",
+          "us": 181
+        },
+        {
+          "seq": 124,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 125,
+          "phase": "parse",
+          "us": 1756
+        },
+        {
+          "seq": 126,
+          "phase": "parse",
+          "us": 963
+        },
+        {
+          "seq": 127,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 128,
+          "phase": "parse",
+          "us": 245
+        },
+        {
+          "seq": 129,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 130,
+          "phase": "parse",
+          "us": 59
+        },
+        {
+          "seq": 131,
+          "phase": "parse",
+          "us": 374
+        },
+        {
+          "seq": 132,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 133,
+          "phase": "parse",
+          "us": 2907
+        },
+        {
+          "seq": 134,
+          "phase": "parse",
+          "us": 1799
+        },
+        {
+          "seq": 135,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 136,
+          "phase": "parse",
+          "us": 3429
+        },
+        {
+          "seq": 137,
+          "phase": "parse",
+          "us": 987
+        },
+        {
+          "seq": 138,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 139,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 140,
+          "phase": "parse",
+          "us": 185
+        },
+        {
+          "seq": 141,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 142,
+          "phase": "parse",
+          "us": 122
+        },
+        {
+          "seq": 143,
+          "phase": "parse",
+          "us": 1475
+        },
+        {
+          "seq": 144,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 145,
+          "phase": "parse",
+          "us": 2442
+        },
+        {
+          "seq": 146,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 147,
+          "phase": "parse",
+          "us": 4115
+        },
+        {
+          "seq": 148,
+          "phase": "parse",
+          "us": 5178
+        },
+        {
+          "seq": 149,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 150,
+          "phase": "parse",
+          "us": 2763
+        },
+        {
+          "seq": 151,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 152,
+          "phase": "parse",
+          "us": 92
+        },
+        {
+          "seq": 153,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 154,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 155,
+          "phase": "parse",
+          "us": 99
+        },
+        {
+          "seq": 156,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 157,
+          "phase": "parse",
+          "us": 44
+        },
+        {
+          "seq": 158,
+          "phase": "parse",
+          "us": 86
+        },
+        {
+          "seq": 159,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 160,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 161,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 162,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 163,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 164,
+          "phase": "parse",
+          "us": 2735
+        },
+        {
+          "seq": 165,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 166,
+          "phase": "parse",
+          "us": 3113
+        },
+        {
+          "seq": 167,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 168,
+          "phase": "parse",
+          "us": 3172
+        },
+        {
+          "seq": 169,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 170,
+          "phase": "parse",
+          "us": 11374
+        },
+        {
+          "seq": 171,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 172,
+          "phase": "parse",
+          "us": 2829
+        },
+        {
+          "seq": 173,
+          "phase": "parse",
+          "us": 4811
+        },
+        {
+          "seq": 174,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 175,
+          "phase": "parse",
+          "us": 2409
+        },
+        {
+          "seq": 176,
+          "phase": "parse",
+          "us": 12329
+        },
+        {
+          "seq": 177,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 178,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 179,
+          "phase": "parse",
+          "us": 4647
+        },
+        {
+          "seq": 180,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 181,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 182,
+          "phase": "parse",
+          "us": 9815
+        },
+        {
+          "seq": 183,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 184,
+          "phase": "parse",
+          "us": 6875
+        },
+        {
+          "seq": 185,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 186,
+          "phase": "parse",
+          "us": 716
+        },
+        {
+          "seq": 187,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 188,
+          "phase": "parse",
+          "us": 4016
+        },
+        {
+          "seq": 189,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 190,
+          "phase": "parse",
+          "us": 1355
+        },
+        {
+          "seq": 191,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 192,
+          "phase": "parse",
+          "us": 444
+        },
+        {
+          "seq": 193,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 194,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 195,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 196,
+          "phase": "parse",
+          "us": 109
+        },
+        {
+          "seq": 197,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 198,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 199,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 200,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 201,
+          "phase": "parse",
+          "us": 53
+        },
+        {
+          "seq": 202,
+          "phase": "parse",
+          "us": 1509
+        },
+        {
+          "seq": 203,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 204,
+          "phase": "parse",
+          "us": 917
+        },
+        {
+          "seq": 205,
+          "phase": "parse",
+          "us": 2056
+        },
+        {
+          "seq": 206,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 207,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 208,
+          "phase": "parse",
+          "us": 280
+        },
+        {
+          "seq": 209,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 210,
+          "phase": "parse",
+          "us": 550
+        },
+        {
+          "seq": 211,
+          "phase": "parse",
+          "us": 1542
+        },
+        {
+          "seq": 212,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 213,
+          "phase": "parse",
+          "us": 2766
+        },
+        {
+          "seq": 214,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 215,
+          "phase": "parse",
+          "us": 853
+        },
+        {
+          "seq": 216,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 217,
+          "phase": "parse",
+          "us": 3949
+        },
+        {
+          "seq": 218,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 219,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 220,
+          "phase": "parse",
+          "us": 2546
+        },
+        {
+          "seq": 221,
+          "phase": "parse",
+          "us": 1355
+        },
+        {
+          "seq": 222,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 223,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 224,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 225,
+          "phase": "parse",
+          "us": 2047
+        },
+        {
+          "seq": 226,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 227,
+          "phase": "parse",
+          "us": 5459
+        },
+        {
+          "seq": 228,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 229,
+          "phase": "parse",
+          "us": 13878
+        },
+        {
+          "seq": 230,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 231,
+          "phase": "parse",
+          "us": 5648
+        },
+        {
+          "seq": 232,
+          "phase": "parse",
+          "us": 7212
+        },
+        {
+          "seq": 233,
+          "phase": "parse",
+          "us": 7386
+        },
+        {
+          "seq": 234,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 235,
+          "phase": "parse",
+          "us": 7314
+        },
+        {
+          "seq": 236,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 237,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 238,
+          "phase": "parse",
+          "us": 4985
+        },
+        {
+          "seq": 239,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 240,
+          "phase": "parse",
+          "us": 5537
+        },
+        {
+          "seq": 241,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 242,
+          "phase": "parse",
+          "us": 4990
+        },
+        {
+          "seq": 243,
+          "phase": "parse",
+          "us": 7572
+        },
+        {
+          "seq": 244,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 245,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 246,
+          "phase": "parse",
+          "us": 3536
+        },
+        {
+          "seq": 247,
+          "phase": "parse",
+          "us": 100
+        },
+        {
+          "seq": 248,
+          "phase": "parse",
+          "us": 186
+        },
+        {
+          "seq": 249,
+          "phase": "parse",
+          "us": 2239
+        },
+        {
+          "seq": 250,
+          "phase": "parse",
+          "us": 961
+        },
+        {
+          "seq": 251,
+          "phase": "parse",
+          "us": 1042
+        },
+        {
+          "seq": 252,
+          "phase": "write",
+          "us": 1159
+        },
+        {
+          "seq": 253,
+          "phase": "link",
+          "us": 86412
+        },
+        {
+          "seq": 254,
+          "phase": "fts",
+          "us": 1173
+        },
+        {
+          "seq": 255,
+          "phase": "link",
+          "us": 11418
+        },
+        {
+          "seq": 256,
+          "phase": "link",
+          "us": 27503
+        },
+        {
+          "seq": 257,
+          "phase": "link",
+          "us": 8801
+        },
+        {
+          "seq": 258,
+          "phase": "resolve",
+          "us": 1373
+        },
+        {
+          "seq": 259,
+          "phase": "checkpoint",
+          "us": 253
+        },
+        {
+          "seq": 260,
+          "phase": "done",
+          "us": 5471
+        }
+      ],
+      "gates": [
+        {
+          "id": "progress_stall_p95",
+          "prd_metric": "Longest progress stall p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "stalls.stalls.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is flask on runner class ubuntu-latest (reference), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "status": "UNKNOWN",
+      "stall_definition": "A STALL is silence: the wall-clock interval between two CONSECUTIVE ingest.ProgressEvents delivered to the harness's progress handler during the cold full index. One interval per adjacent pair of events, attributed to the phase of the event that ENDED it. It is deliberately the interval a consumer of the event stream experiences — the thing a user reads as a hang — and not the duration of any underlying work: a phase that takes a minute while emitting progress throughout is slow, not stalled, and `context/standards.md` asks for exactly that distinction.",
+      "boundary_handling": "The two BOUNDARY intervals are measured and published but are NOT stalls, and are excluded from the distribution by definition. `lead_in_us` is index start -\u003e first event: there is no preceding event, so counting it would report one enormous stall on every run and swamp the p95 with an artefact of where the clock was started. `tail_us` is last event -\u003e index end: a successful pass ends with a terminal `done` event, so it is normally near zero. Both are published rather than dropped, and a boundary longer than the longest recorded stall raises a warning — the largest silence in the run being outside the distribution is something a reader must be told, not spared.",
+      "timing_method": "One clock, read once per event inside the progress handler, and nothing else in the handler: the handler stores a timestamp difference and returns. Events are delivered SYNCHRONOUSLY from the ingesting goroutine (engine/ingest documents this), so an expensive handler would insert itself into the very silence it is measuring; the derivation — percentiles, per-phase pools, warnings — happens after the index has finished. The window is the same one index.wallclock_ms is measured over, so the parts reconcile against the whole.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained intervals, ascending — the same implementation the cold, query-latency and freshness series use. `n` is the number of gaps, which is one less than events_observed. Boundary intervals contribute to neither the pooled nor any per-phase distribution. Every value here is reproducible from `intervals` with evalreport.RecomputeStalls. Every interval is TRUNCATED to whole microseconds, so `lead_in_us` + the intervals + `tail_us` reconciles with `index_wallclock_us` to within one microsecond per interval and is never larger than it — a gap of more than that means a part of the window went unaccounted for, not that the arithmetic rounded.",
+      "scope_limitation": "This measures the COLD FULL INDEX only, through the shipped ingest.Ingester.WithProgress hook — the same hook the graphi CLI's renderer consumes. It makes no statement about the incremental path (SW-126 measures that), about filesystem-watch detection, or about a phase that is slow while still emitting progress. Clock-driven heartbeats are part of the shipped event stream and are counted as events, which is correct for this gate: the gate is about the index going SILENT, and a heartbeating phase is not silent.",
+      "notes": "SW-127 progress-stall measurement: the intervals between consecutive ingest.ProgressEvents during the cold full index, reported as p95 AND maximum with every individual interval retained. It is a REGRESSION GUARD as much as a number: a run that emits no progress reads FAIL, never `0 stalls, passed`. No PRD §12.2 gate is read unless the run is the reference scenario on the reference class and from the frozen candidate; otherwise it is UNKNOWN, which is not a PASS (PRD §8.2) — and a silent run is not rescued into a PASS by any of that."
+    },
+    "searches": [
+      {
+        "query": "Flask",
+        "matches": 24,
+        "pass": true
+      }
+    ],
+    "stable_peak_rss_mb": 260,
+    "budget_source": "docs/eval/hero-budgets.json",
+    "stable_checks": [
+      {
+        "operation": "agent_brief",
+        "requirement": "resolved topic with a valid found/partial project brief",
+        "samples": 3,
+        "outcomes": {
+          "found": 3
+        },
+        "pass": true
+      },
+      {
+        "operation": "callees",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 19,
+          "found": 6
+        },
+        "pass": true
+      },
+      {
+        "operation": "callers",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 21,
+          "found": 4
+        },
+        "pass": true
+      },
+      {
+        "operation": "change_risk",
+        "requirement": "resolved target with a valid found envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": false
+      },
+      {
+        "operation": "definition",
+        "requirement": "resolved symbol with at least one definition",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "explain_symbol",
+        "requirement": "resolved target with a valid found envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": false
+      },
+      {
+        "operation": "impact",
+        "requirement": "resolved symbol; bounded impact outcome",
+        "samples": 25,
+        "outcomes": {
+          "empty": 21,
+          "found": 4
+        },
+        "pass": true
+      },
+      {
+        "operation": "index",
+        "requirement": "successful ingest with non-empty node and file inventory",
+        "samples": 1,
+        "outcomes": {
+          "found": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "neighborhood",
+        "requirement": "resolved symbol; bounded neighborhood outcome",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "references",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "related_files",
+        "requirement": "resolved target; found or legitimately empty related-file set",
+        "samples": 10,
+        "outcomes": {
+          "empty": 4,
+          "found": 6
+        },
+        "pass": true
+      },
+      {
+        "operation": "search",
+        "requirement": "manifest-promised non-empty search",
+        "samples": 20,
+        "outcomes": {
+          "found": 20
+        },
+        "pass": true
+      }
+    ],
+    "pass": false,
+    "failures": [
+      "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+      "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope"
+    ]
+  },
+  "cgroup": {
+    "available": true,
+    "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+    "memory_max": "max",
+    "memory_swap_max": "max",
+    "oom_kill": 0,
+    "oom_kill_collected": true
+  }
+}

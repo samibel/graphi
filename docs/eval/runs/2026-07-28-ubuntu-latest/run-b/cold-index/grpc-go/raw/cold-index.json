@@ -1,0 +1,541 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "grpc-go",
+  "collected": true,
+  "samples": 10,
+  "environment": {
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_count": 4,
+    "ram_bytes": 16766423040,
+    "os": "linux",
+    "arch": "amd64",
+    "kernel": "6.17.0-1020-azure",
+    "go_version": "go1.26.5",
+    "filesystem": "ext4",
+    "filesystem_path": "/home/runner/work/_temp/cold-series",
+    "cache_state": "dropped",
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:39:58Z",
+      "clone_ms": 585,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-01/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-01/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 16747,
+        "peak_rss_mb": 655,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 673,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:40:23Z",
+      "clone_ms": 842,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-02/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-02/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 18170,
+        "peak_rss_mb": 590,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 607,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:40:46Z",
+      "clone_ms": 1260,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-03/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-03/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 18064,
+        "peak_rss_mb": 610,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 628,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-03.json"
+    },
+    {
+      "run": 4,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:41:09Z",
+      "clone_ms": 840,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-04/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-04/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 16964,
+        "peak_rss_mb": 652,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 670,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-04.json"
+    },
+    {
+      "run": 5,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:41:30Z",
+      "clone_ms": 766,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-05/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-05/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 16939,
+        "peak_rss_mb": 642,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 660,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-05.json"
+    },
+    {
+      "run": 6,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:41:51Z",
+      "clone_ms": 1385,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-06/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-06/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 17013,
+        "peak_rss_mb": 662,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 680,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-06.json"
+    },
+    {
+      "run": 7,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:42:13Z",
+      "clone_ms": 991,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-07/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-07/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 16899,
+        "peak_rss_mb": 662,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 680,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-07.json"
+    },
+    {
+      "run": 8,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:42:34Z",
+      "clone_ms": 670,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-08/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-08/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 16860,
+        "peak_rss_mb": 602,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 620,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-08.json"
+    },
+    {
+      "run": 9,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:42:55Z",
+      "clone_ms": 671,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-09/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-09/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 16584,
+        "peak_rss_mb": 660,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 679,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-09.json"
+    },
+    {
+      "run": 10,
+      "status": "completed",
+      "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+      "runner_class": "ubuntu-latest",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-07-28T16:43:16Z",
+      "clone_ms": 1706,
+      "cold": {
+        "store_path": "/home/runner/work/_temp/cold-series/run-10/grpc-go.db",
+        "meta_path": "/home/runner/work/_temp/cold-series/run-10/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "dropped",
+        "page_cache_command": [
+          "sudo",
+          "-n",
+          "sh",
+          "-c",
+          "sync \u0026\u0026 sysctl -w vm.drop_caches=3"
+        ],
+        "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+        "drop_required": true,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 18735,
+        "peak_rss_mb": 656,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 674,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": true,
+        "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+        "memory_max": "max",
+        "memory_swap_max": "max",
+        "oom_kill": 0,
+        "oom_kill_collected": true
+      },
+      "run_pass": false,
+      "run_failures": [
+        "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+        "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+      ],
+      "report_path": "/home/runner/work/_temp/cold-series/cold-run-10.json"
+    }
+  ]
+}

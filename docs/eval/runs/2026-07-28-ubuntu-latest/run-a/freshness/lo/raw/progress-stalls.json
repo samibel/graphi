@@ -1,0 +1,221 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "progress_stalls",
+  "repo": "lo",
+  "collected": true,
+  "samples": 38,
+  "environment": {
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cpu_count": 4,
+    "ram_bytes": 16766423040,
+    "os": "linux",
+    "arch": "amd64",
+    "kernel": "6.17.0-1020-azure",
+    "go_version": "go1.26.5",
+    "filesystem": "ext4",
+    "filesystem_path": "/home/runner/work/_temp/freshness",
+    "cache_state": "not_dropped",
+    "runner_class": "ubuntu-latest",
+    "runner_role": "reference",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "intervals": [
+    {
+      "seq": 1,
+      "phase": "parse",
+      "us": 2204
+    },
+    {
+      "seq": 2,
+      "phase": "parse",
+      "us": 1676
+    },
+    {
+      "seq": 3,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 4,
+      "phase": "parse",
+      "us": 24
+    },
+    {
+      "seq": 5,
+      "phase": "parse",
+      "us": 978
+    },
+    {
+      "seq": 6,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 7,
+      "phase": "parse",
+      "us": 28
+    },
+    {
+      "seq": 8,
+      "phase": "parse",
+      "us": 126
+    },
+    {
+      "seq": 9,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 10,
+      "phase": "parse",
+      "us": 798
+    },
+    {
+      "seq": 11,
+      "phase": "parse",
+      "us": 1714
+    },
+    {
+      "seq": 12,
+      "phase": "parse",
+      "us": 251
+    },
+    {
+      "seq": 13,
+      "phase": "parse",
+      "us": 105
+    },
+    {
+      "seq": 14,
+      "phase": "parse",
+      "us": 663
+    },
+    {
+      "seq": 15,
+      "phase": "parse",
+      "us": 1459
+    },
+    {
+      "seq": 16,
+      "phase": "parse",
+      "us": 441
+    },
+    {
+      "seq": 17,
+      "phase": "parse",
+      "us": 81
+    },
+    {
+      "seq": 18,
+      "phase": "parse",
+      "us": 537
+    },
+    {
+      "seq": 19,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 20,
+      "phase": "parse",
+      "us": 1374
+    },
+    {
+      "seq": 21,
+      "phase": "parse",
+      "us": 743
+    },
+    {
+      "seq": 22,
+      "phase": "parse",
+      "us": 1749
+    },
+    {
+      "seq": 23,
+      "phase": "parse",
+      "us": 191
+    },
+    {
+      "seq": 24,
+      "phase": "parse",
+      "us": 282
+    },
+    {
+      "seq": 25,
+      "phase": "parse",
+      "us": 2795
+    },
+    {
+      "seq": 26,
+      "phase": "parse",
+      "us": 199
+    },
+    {
+      "seq": 27,
+      "phase": "parse",
+      "us": 3355
+    },
+    {
+      "seq": 28,
+      "phase": "parse",
+      "us": 1816
+    },
+    {
+      "seq": 29,
+      "phase": "parse",
+      "us": 101
+    },
+    {
+      "seq": 30,
+      "phase": "parse",
+      "us": 33485
+    },
+    {
+      "seq": 31,
+      "phase": "parse",
+      "us": 342447
+    },
+    {
+      "seq": 32,
+      "phase": "write",
+      "us": 1127
+    },
+    {
+      "seq": 33,
+      "phase": "link",
+      "us": 46638
+    },
+    {
+      "seq": 34,
+      "phase": "fts",
+      "us": 595
+    },
+    {
+      "seq": 35,
+      "phase": "link",
+      "us": 7502
+    },
+    {
+      "seq": 36,
+      "phase": "resolve",
+      "us": 356
+    },
+    {
+      "seq": 37,
+      "phase": "checkpoint",
+      "us": 21780
+    },
+    {
+      "seq": 38,
+      "phase": "done",
+      "us": 4252
+    }
+  ]
+}

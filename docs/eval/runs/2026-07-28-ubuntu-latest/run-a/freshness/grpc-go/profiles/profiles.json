@@ -1,0 +1,74 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "trigger": "missed_gate",
+  "sets": [
+    {
+      "format_version": 1,
+      "harness_version": "p0-perf/1",
+      "series": "incremental",
+      "repo": "grpc-go",
+      "trigger": "missed_gate",
+      "gates": [
+        {
+          "id": "freshness_p95",
+          "prd_metric": "Freshness p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "measured": 6.314923,
+          "has_measurement": true,
+          "status": "FAIL",
+          "reason": "6.315 s \u003e 2.000 s over 100 converged change(s) of 100 completed"
+        }
+      ],
+      "scenario": "10 changes driven through the same apply → incremental-update → converge loop the freshness harness measures (a diagnostic subset of the measured sequence, not the FR-8 floor); the index the changes are applied to is built before the profiler starts",
+      "dir": "profiles/incremental",
+      "started_at": "2026-07-28T16:20:10Z",
+      "duration_ms": 64453,
+      "artifacts": [
+        {
+          "kind": "cpu",
+          "file": "profiles/incremental/cpu.pprof",
+          "mechanism": "runtime/pprof CPU profile (pprof.StartCPUProfile) covering the re-executed scenario and nothing else",
+          "sha256": "63b198b7d26a57ced217e95610d483faa6e14bcc3823f3916931faf7642116bd",
+          "bytes": 142592,
+          "written": true
+        },
+        {
+          "kind": "heap",
+          "file": "profiles/incremental/heap.pprof",
+          "mechanism": "runtime/pprof \"heap\" profile — live objects, written after an explicit runtime.GC() at the end of the scenario, so retained memory is what it shows",
+          "sha256": "62f11ec0f938600347cc0239a23d1b9db0933b8df7ce44997fd2a5e14008e7d2",
+          "bytes": 369772,
+          "written": true
+        },
+        {
+          "kind": "allocs",
+          "file": "profiles/incremental/allocs.pprof",
+          "mechanism": "runtime/pprof \"allocs\" profile — total allocations sampled at runtime.MemProfileRate (the default rate; the harness does not raise it, so this is a sample and not a census)",
+          "sha256": "dbaddfdc5f4c98e1c10ea32d118128a078db0135b17c14c431a79d8d57c28ee3",
+          "bytes": 370962,
+          "written": true
+        },
+        {
+          "kind": "io",
+          "file": "profiles/incremental/io.pprof",
+          "mechanism": "runtime/pprof \"block\" profile at rate 1. Go has NO file-I/O profile: the runtime does not attribute blocking syscalls to a pprof profile, so this shows goroutine blocking on channels and locks — where an ingest worker pool's waiting on I/O becomes observable — and the run's real I/O counters are published beside it in `io_counters` rather than being inferred from it",
+          "sha256": "7724abed5316dd914a1ad3c1e59ee08163d104b097f7ee231bef67d0fc33f21d",
+          "bytes": 1853,
+          "written": true
+        }
+      ],
+      "io_counters": {
+        "block_input_ops": 0,
+        "block_output_ops": 1315600,
+        "available": true,
+        "source": "getrusage(RUSAGE_SELF) ru_inblock/ru_oublock, delta across the profiled scenario",
+        "note": "block-device operations only: a read served from the page cache costs no ru_inblock, and some platforms (macOS among them) report zero for both. A zero here is not a claim that no I/O happened."
+      },
+      "complete": true,
+      "method": "The measured run was NOT profiled: profiling is off on the normal path, because a harness that profiles every run distorts the numbers it exists to establish (FR-8 / SW-129 AC-4). These profiles come from a DIAGNOSTIC RE-EXECUTION of the scenario whose gate was missed — same machine, same checkout, same binary, immediately after the gate was read — so they localise where the cost is, and they are not a replay of the exact execution that missed the gate. Read them with `go tool pprof \u003cfile\u003e`."
+    }
+  ],
+  "notes": "SW-129 profile sets: one directory per scenario whose gate was missed, each holding the CPU, heap, allocation and I/O profiles of a diagnostic RE-RUN of that scenario (the measured run itself is never profiled). Every set names the gate it answers for, with the threshold and the measured value, so a fix can cite the profile of the run that motivated it (PRD §8.5). Open any file with `go tool pprof`."
+}

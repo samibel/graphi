@@ -1,0 +1,8020 @@
+{
+  "header": {
+    "timestamp": "2026-07-28T16:47:31Z",
+    "version": "0.0.0-dev",
+    "commit": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "os": "linux",
+    "arch": "amd64",
+    "corpus_version": 3
+  },
+  "runner_class": "ubuntu-latest",
+  "runner_role": "reference",
+  "reference_scenario": true,
+  "scenario_source": "docs/eval/reference-scenario.json",
+  "notes": "in-process session model: engine services over one open SQLite store; cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; all 12 stable operations covered with an explicit operation-to-class mapping; warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every individual measurement retained in query_latency.operations[].samples_us; the cold index is watched for silence through the shipped ingest progress hook — see `stalls`, which is present on every run and reads FAIL when the index emitted no progress",
+  "repo": {
+    "name": "grpc-go",
+    "ref": "v1.60.1",
+    "sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+    "tier": 3,
+    "clone_ms": 648,
+    "index": {
+      "wallclock_ms": 21580,
+      "peak_rss_mb": 593,
+      "db_size_bytes": 41267200,
+      "nodes": 14896,
+      "edges": 99736,
+      "files": 919
+    },
+    "cold": {
+      "store_path": "/home/runner/work/_temp/freshness/grpc-go.db",
+      "meta_path": "/home/runner/work/_temp/freshness/grpc-go-meta",
+      "store_preexisting": false,
+      "meta_preexisting": false,
+      "page_cache": "not_dropped",
+      "required_protocol": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync \u0026\u0026 sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+      "drop_required": true,
+      "verified": false,
+      "reason": "the runner class declares a drop-caches protocol and the page cache was not_dropped"
+    },
+    "warm_p95_us": {
+      "agent_tools": 633768,
+      "search": 5001,
+      "structural": 473
+    },
+    "warm_p95_us_per_op": {
+      "agent_brief": 635799,
+      "callees": 224,
+      "callers": 149,
+      "change_risk": 406,
+      "definition": 121,
+      "explain_symbol": 366,
+      "impact": 36371,
+      "neighborhood": 590,
+      "references": 95,
+      "related_files": 517,
+      "search": 5001
+    },
+    "warm_p50_us": {
+      "agent_tools": 282,
+      "search": 681,
+      "structural": 98
+    },
+    "warm_p50_us_per_op": {
+      "agent_brief": 633768,
+      "callees": 98,
+      "callers": 72,
+      "change_risk": 201,
+      "definition": 92,
+      "explain_symbol": 308,
+      "impact": 144,
+      "neighborhood": 267,
+      "references": 65,
+      "related_files": 262,
+      "search": 681
+    },
+    "warm_samples": {
+      "agent_tools": 30,
+      "search": 40,
+      "structural": 150
+    },
+    "warm_ops": {
+      "agent_tools": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ],
+      "search": [
+        "search"
+      ],
+      "structural": [
+        "callees",
+        "callers",
+        "definition",
+        "impact",
+        "neighborhood",
+        "references"
+      ]
+    },
+    "query_latency": {
+      "repo": "grpc-go",
+      "minimum_executions_per_class": 1000,
+      "requested_executions_per_class": 0,
+      "total_executions": 220,
+      "class_of": {
+        "agent_brief": "agent_tools",
+        "callees": "structural",
+        "callers": "structural",
+        "change_risk": "agent_tools",
+        "definition": "structural",
+        "explain_symbol": "agent_tools",
+        "impact": "structural",
+        "index": "lifecycle",
+        "neighborhood": "structural",
+        "references": "structural",
+        "related_files": "agent_tools",
+        "search": "search"
+      },
+      "stable_operations": [
+        "agent_brief",
+        "callees",
+        "callers",
+        "change_risk",
+        "definition",
+        "explain_symbol",
+        "impact",
+        "index",
+        "neighborhood",
+        "references",
+        "related_files",
+        "search"
+      ],
+      "operations": [
+        {
+          "operation": "agent_brief",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 3,
+            "min_us": 633107,
+            "p50_us": 633768,
+            "p95_us": 635799,
+            "max_us": 635799
+          },
+          "samples_us": [
+            633768,
+            635799,
+            633107
+          ]
+        },
+        {
+          "operation": "callees",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 65,
+            "p50_us": 98,
+            "p95_us": 224,
+            "max_us": 241
+          },
+          "samples_us": [
+            72,
+            206,
+            224,
+            217,
+            181,
+            162,
+            241,
+            140,
+            150,
+            147,
+            95,
+            98,
+            162,
+            78,
+            99,
+            67,
+            97,
+            68,
+            69,
+            98,
+            108,
+            68,
+            67,
+            65,
+            65
+          ]
+        },
+        {
+          "operation": "callers",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 65,
+            "p50_us": 72,
+            "p95_us": 149,
+            "max_us": 3034
+          },
+          "samples_us": [
+            3034,
+            117,
+            110,
+            69,
+            96,
+            79,
+            72,
+            99,
+            149,
+            114,
+            68,
+            67,
+            94,
+            120,
+            69,
+            97,
+            65,
+            65,
+            67,
+            67,
+            89,
+            69,
+            68,
+            65,
+            65
+          ]
+        },
+        {
+          "operation": "change_risk",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 9,
+            "min_us": 164,
+            "p50_us": 201,
+            "p95_us": 406,
+            "max_us": 406
+          },
+          "samples_us": [
+            406,
+            256,
+            234,
+            225,
+            186,
+            164,
+            176,
+            201,
+            183
+          ]
+        },
+        {
+          "operation": "definition",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 88,
+            "p50_us": 92,
+            "p95_us": 121,
+            "max_us": 133
+          },
+          "samples_us": [
+            89,
+            93,
+            92,
+            90,
+            90,
+            91,
+            88,
+            121,
+            91,
+            90,
+            92,
+            92,
+            93,
+            92,
+            90,
+            90,
+            90,
+            117,
+            133,
+            99,
+            100,
+            95,
+            95,
+            90,
+            91
+          ]
+        },
+        {
+          "operation": "explain_symbol",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 9,
+            "min_us": 253,
+            "p50_us": 308,
+            "p95_us": 366,
+            "max_us": 366
+          },
+          "samples_us": [
+            291,
+            366,
+            356,
+            306,
+            253,
+            339,
+            284,
+            322,
+            308
+          ]
+        },
+        {
+          "operation": "impact",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 121,
+            "p50_us": 144,
+            "p95_us": 36371,
+            "max_us": 43952
+          },
+          "samples_us": [
+            43952,
+            159,
+            248,
+            123,
+            269,
+            127,
+            122,
+            350,
+            689,
+            241,
+            451,
+            130,
+            238,
+            36371,
+            194,
+            6184,
+            132,
+            131,
+            125,
+            130,
+            121,
+            144,
+            125,
+            125,
+            122
+          ]
+        },
+        {
+          "operation": "index",
+          "class": "lifecycle",
+          "measured": false,
+          "warmup_executions": 0,
+          "note": "lifecycle-only: `index` is the ingest lifecycle operation, not a query. Its cost is the cold-index wallclock measured by SW-124, so it carries no query-latency samples, no 1000-execution floor and no PRD §12.2 query gate. It is listed here so all twelve stable operations are visibly accounted for."
+        },
+        {
+          "operation": "neighborhood",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 147,
+            "p50_us": 267,
+            "p95_us": 590,
+            "max_us": 3970
+          },
+          "samples_us": [
+            3970,
+            590,
+            473,
+            386,
+            383,
+            324,
+            265,
+            294,
+            267,
+            336,
+            318,
+            345,
+            286,
+            430,
+            241,
+            190,
+            176,
+            172,
+            221,
+            172,
+            171,
+            157,
+            165,
+            147,
+            178
+          ]
+        },
+        {
+          "operation": "references",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 62,
+            "p50_us": 65,
+            "p95_us": 95,
+            "max_us": 166
+          },
+          "samples_us": [
+            65,
+            66,
+            93,
+            66,
+            65,
+            66,
+            66,
+            67,
+            64,
+            65,
+            166,
+            71,
+            66,
+            64,
+            62,
+            95,
+            63,
+            67,
+            65,
+            62,
+            62,
+            62,
+            62,
+            62,
+            87
+          ]
+        },
+        {
+          "operation": "related_files",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 9,
+            "min_us": 189,
+            "p50_us": 262,
+            "p95_us": 517,
+            "max_us": 517
+          },
+          "samples_us": [
+            517,
+            369,
+            349,
+            282,
+            259,
+            262,
+            229,
+            194,
+            189
+          ]
+        },
+        {
+          "operation": "search",
+          "class": "search",
+          "measured": true,
+          "gated_by": [
+            "warm_search_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 40,
+            "min_us": 509,
+            "p50_us": 681,
+            "p95_us": 5001,
+            "max_us": 5195
+          },
+          "samples_us": [
+            509,
+            5195,
+            562,
+            4870,
+            590,
+            4883,
+            557,
+            4733,
+            558,
+            4686,
+            585,
+            4661,
+            574,
+            4673,
+            567,
+            4981,
+            681,
+            5089,
+            652,
+            5001,
+            561,
+            4626,
+            543,
+            4530,
+            538,
+            4589,
+            571,
+            4535,
+            571,
+            4517,
+            566,
+            4698,
+            604,
+            4560,
+            574,
+            4588,
+            540,
+            4519,
+            595,
+            4894
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 30,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 30,
+          "min_us": 164,
+          "p50_us": 282,
+          "p95_us": 633768,
+          "max_us": 635799
+        },
+        {
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 509,
+          "p50_us": 681,
+          "p95_us": 5001,
+          "max_us": 5195
+        },
+        {
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "definition",
+            "impact",
+            "neighborhood",
+            "references"
+          ],
+          "executions": 150,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 150,
+          "min_us": 62,
+          "p50_us": 98,
+          "p95_us": 473,
+          "max_us": 43952
+        }
+      ],
+      "pools": [
+        {
+          "gate_id": "agent_context_p95",
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 30,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 30,
+          "min_us": 164,
+          "p50_us": 282,
+          "p95_us": 633768,
+          "max_us": 635799
+        },
+        {
+          "gate_id": "caller_callee_impact_p95",
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "impact"
+          ],
+          "executions": 75,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 75,
+          "min_us": 65,
+          "p50_us": 120,
+          "p95_us": 3034,
+          "max_us": 43952
+        },
+        {
+          "gate_id": "warm_search_p95",
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 509,
+          "p50_us": 681,
+          "p95_us": 5001,
+          "max_us": 5195
+        }
+      ],
+      "symbol_sample": {
+        "requested": 25,
+        "returned": 25,
+        "method": "core/graphstore DegreeSamplePort.DegreeStratifiedSymbols over the indexed store: candidates are the function and method nodes, ordered by incident degree DESC then node id ASC, one picked per quantile bucket. That is a total order over a fixed graph, so the same graph yields the same ordered sample; the structural operations walk this list in order and the agent-context operations take its first agent_symbols entries.",
+        "digest": "a0d82f4f8c44004e4c5c4ed6e22c74e167d1b53c990dc1849abe67c2e2f24cee",
+        "symbol_ids": [
+          "669df777c13a3dea",
+          "d28957c960ee5987",
+          "276bb0e1994557e3",
+          "93b6246f4e097e0e",
+          "bd70454f08a78f44",
+          "fc87b08397659bb8",
+          "c4ce5787aeb67cc7",
+          "1cca67e8bdb8caa4",
+          "43f4778b6d6f7116",
+          "3b0c009beb14d5ac",
+          "13410e0aff2e8417",
+          "b725380c4e634eb8",
+          "3d5284b581c4210d",
+          "b8e6459847d8b844",
+          "3c69d7dea1240174",
+          "cb659017972128fc",
+          "255681fbd3f86a94",
+          "5cbf1d43d15abd56",
+          "9133ef10ec6cec15",
+          "c40b69756dcf36d6",
+          "f8c5b9c5bf2f8131",
+          "35d359840022cf66",
+          "735c291b2a209def",
+          "bb60b8106efc785e",
+          "f9482791c6522e28"
+        ],
+        "agent_symbols": 10
+      },
+      "sufficient": false,
+      "gates": [
+        {
+          "id": "warm_search_p95",
+          "prd_metric": "Warm Search p95 (PRD 12.2)",
+          "threshold": 100,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.warm_search_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "only 40 timed executions were pooled over search, below FR-8's floor of 1000; a percentile over an undersampled pool is not the measurement the PRD asked for"
+        },
+        {
+          "id": "caller_callee_impact_p95",
+          "prd_metric": "Caller/Callee/Impact p95 (PRD 12.2)",
+          "threshold": 200,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.caller_callee_impact_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "only 75 timed executions were pooled over callees/callers/impact, below FR-8's floor of 1000; a percentile over an undersampled pool is not the measurement the PRD asked for"
+        },
+        {
+          "id": "agent_context_p95",
+          "prd_metric": "Agent Context p95 (PRD 12.2)",
+          "threshold": 500,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.agent_context_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "only 30 timed executions were pooled over agent_brief/change_risk/explain_symbol/related_files, below FR-8's floor of 1000; a percentile over an undersampled pool is not the measurement the PRD asked for"
+        }
+      ],
+      "warnings": [
+        "class agent_tools ran 30 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class search ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool agent_context_p95 ran 30 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool warm_search_p95 ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS"
+      ],
+      "status": "UNKNOWN",
+      "timing_method": "The timed region contains the operation invocation and NOTHING else. Clone, index, store open, engine construction and the symbol sample all happen before any measurement; per-execution argument assembly (choosing the symbol or query for execution i, building the argument map) happens in an UNTIMED prepare step; and each operation runs warmup_executions untimed invocations before the first timed one. Warmup measurements are discarded, never pooled. Latency is time.Since around the invocation, recorded in microseconds.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-execution samples, ascending — the same implementation the cold series uses, so p50 and p95 cannot disagree about even sample counts. A class statistic pools its operations' samples; a pool statistic pools exactly the operations the SW-123 contract assigns to that gate. Every value here is reproducible from `operations[].samples_us` with evalreport.RecomputeQueryLatency.",
+      "notes": "SW-125 query-latency measurement: warm operations over ONE open store in the session model, driven through a deterministic degree-stratified symbol sample that is published verbatim so two runs are comparable. FR-8's floor is minimum_executions_per_class; a class below it is marked sufficient=false and every gate read over it is UNKNOWN, never PASS (PRD §8.2). No gate is read at all unless the run is the reference scenario on the reference class and from the frozen candidate."
+    },
+    "incremental": {
+      "repo": "grpc-go",
+      "changes_requested": 100,
+      "minimum_changes": 100,
+      "changes_completed": 100,
+      "changes_failed": 0,
+      "sufficient": true,
+      "classes_covered": true,
+      "sequence": {
+        "steps": 100,
+        "cycle_length": 4,
+        "method": "A fixed four-step cycle over the indexed Go source files in canonical (sorted, repo-relative POSIX) order: (1) MODIFY file[c] by appending one exported function; (2) ADD a new file beside it in the same package containing one exported function; (3) CROSS_PACKAGE — modify a file whose symbols have inbound edges from other directories, rotating over the qualifying targets; (4) DELETE the file step 2 added in this same cycle. c advances by one per cycle, so a long run walks the whole file list. The sequence is a pure function of the sorted file list, the cross-package targets and the requested count: no randomness, no wall-clock, no map iteration.",
+        "digest": "5aa55a068758b554960a13c540d663a18465bd66931b15c754fd6e508d79c871",
+        "source_files": 542,
+        "cross_package": {
+          "satisfied": true,
+          "method": "candidates are core/graphstore DegreeSamplePort.DegreeStratifiedSymbols (degree DESC, node id ASC — a total order over a fixed graph); a candidate qualifies when engine/query callers+references return at least one neighbour whose source file is in a DIFFERENT directory, which in Go is a different package. The qualifying count and example neighbour paths are published per target.",
+          "targets": [
+            {
+              "path": "interop/grpc_testing/test_grpc.pb.go",
+              "symbol": "grpc_testing.NewTestServiceClient",
+              "inbound_from_other_dirs": 69,
+              "example_sources": [
+                "test/roundrobin_test.go",
+                "test/xds/xds_client_integration_test.go",
+                "xds/internal/balancer/outlierdetection/e2e_test/outlierdetection_test.go"
+              ]
+            },
+            {
+              "path": "interop/test_utils.go",
+              "symbol": "interop.DoOauth2TokenCreds",
+              "inbound_from_other_dirs": 1,
+              "example_sources": [
+                "interop/client/client.go"
+              ]
+            },
+            {
+              "path": "credentials/alts/alts.go",
+              "symbol": "alts.NewClientCreds",
+              "inbound_from_other_dirs": 5,
+              "example_sources": [
+                "credentials/google/google.go",
+                "interop/alts/client/client.go",
+                "interop/client/client.go"
+              ]
+            },
+            {
+              "path": "xds/internal/xdsclient/xdsresource/route_config_resource_type.go",
+              "symbol": "xdsresource.WatchRouteConfig",
+              "inbound_from_other_dirs": 3,
+              "example_sources": [
+                "xds/csds/csds_e2e_test.go",
+                "xds/internal/server/rds_handler.go",
+                "xds/internal/xdsclient/clientimpl_watchers.go"
+              ]
+            },
+            {
+              "path": "internal/syscall/syscall_linux.go",
+              "symbol": "syscall.GetTCPUserTimeout",
+              "inbound_from_other_dirs": 1,
+              "example_sources": [
+                "internal/transport/keepalive_test.go"
+              ]
+            }
+          ],
+          "examined": 48
+        }
+      },
+      "coverage": [
+        {
+          "class": "add",
+          "steps": 25,
+          "required": true
+        },
+        {
+          "class": "modify",
+          "steps": 25,
+          "required": true
+        },
+        {
+          "class": "delete",
+          "steps": 25,
+          "required": true
+        },
+        {
+          "class": "cross_package",
+          "steps": 25,
+          "required": true
+        }
+      ],
+      "changes": [
+        {
+          "step": 1,
+          "class": "modify",
+          "path": "admin/admin.go",
+          "symbol": "GraphiEvalStep0001",
+          "expect": "the appended function GraphiEvalStep0001 is answerable by a search",
+          "status": "completed",
+          "update_us": 2887725,
+          "update_measured": true,
+          "freshness_us": 2888073,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 2,
+          "class": "add",
+          "path": "admin/graphi_eval_step0002.go",
+          "symbol": "GraphiEvalStep0002",
+          "expect": "the added file's function GraphiEvalStep0002 is answerable by a search",
+          "status": "completed",
+          "update_us": 3389352,
+          "update_measured": true,
+          "freshness_us": 3389663,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 3,
+          "class": "cross_package",
+          "path": "interop/grpc_testing/test_grpc.pb.go",
+          "symbol": "GraphiEvalStep0003",
+          "expect": "the appended function GraphiEvalStep0003 is answerable after re-linking a file with 69 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 5021348,
+          "update_measured": true,
+          "freshness_us": 5021662,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 4,
+          "class": "delete",
+          "path": "admin/graphi_eval_step0002.go",
+          "symbol": "GraphiEvalStep0002",
+          "expect": "the deleted file's function GraphiEvalStep0002 is no longer answerable",
+          "status": "completed",
+          "update_us": 2872050,
+          "update_measured": true,
+          "freshness_us": 2872382,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 5,
+          "class": "modify",
+          "path": "admin/test/utils.go",
+          "symbol": "GraphiEvalStep0005",
+          "expect": "the appended function GraphiEvalStep0005 is answerable by a search",
+          "status": "completed",
+          "update_us": 2856548,
+          "update_measured": true,
+          "freshness_us": 2857000,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 6,
+          "class": "add",
+          "path": "admin/test/graphi_eval_step0006.go",
+          "symbol": "GraphiEvalStep0006",
+          "expect": "the added file's function GraphiEvalStep0006 is answerable by a search",
+          "status": "completed",
+          "update_us": 3361289,
+          "update_measured": true,
+          "freshness_us": 3361759,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 7,
+          "class": "cross_package",
+          "path": "interop/test_utils.go",
+          "symbol": "GraphiEvalStep0007",
+          "expect": "the appended function GraphiEvalStep0007 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 2999335,
+          "update_measured": true,
+          "freshness_us": 2999735,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 8,
+          "class": "delete",
+          "path": "admin/test/graphi_eval_step0006.go",
+          "symbol": "GraphiEvalStep0006",
+          "expect": "the deleted file's function GraphiEvalStep0006 is no longer answerable",
+          "status": "completed",
+          "update_us": 2932509,
+          "update_measured": true,
+          "freshness_us": 2932753,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 9,
+          "class": "modify",
+          "path": "attributes/attributes.go",
+          "symbol": "GraphiEvalStep0009",
+          "expect": "the appended function GraphiEvalStep0009 is answerable by a search",
+          "status": "completed",
+          "update_us": 5275332,
+          "update_measured": true,
+          "freshness_us": 5275710,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 10,
+          "class": "add",
+          "path": "attributes/graphi_eval_step0010.go",
+          "symbol": "GraphiEvalStep0010",
+          "expect": "the added file's function GraphiEvalStep0010 is answerable by a search",
+          "status": "completed",
+          "update_us": 3749958,
+          "update_measured": true,
+          "freshness_us": 3750397,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 11,
+          "class": "cross_package",
+          "path": "credentials/alts/alts.go",
+          "symbol": "GraphiEvalStep0011",
+          "expect": "the appended function GraphiEvalStep0011 is answerable after re-linking a file with 5 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 2880046,
+          "update_measured": true,
+          "freshness_us": 2880400,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 12,
+          "class": "delete",
+          "path": "attributes/graphi_eval_step0010.go",
+          "symbol": "GraphiEvalStep0010",
+          "expect": "the deleted file's function GraphiEvalStep0010 is no longer answerable",
+          "status": "completed",
+          "update_us": 4857085,
+          "update_measured": true,
+          "freshness_us": 4857317,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 13,
+          "class": "modify",
+          "path": "authz/audit/audit_logger.go",
+          "symbol": "GraphiEvalStep0013",
+          "expect": "the appended function GraphiEvalStep0013 is answerable by a search",
+          "status": "completed",
+          "update_us": 2942746,
+          "update_measured": true,
+          "freshness_us": 2943100,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 14,
+          "class": "add",
+          "path": "authz/audit/graphi_eval_step0014.go",
+          "symbol": "GraphiEvalStep0014",
+          "expect": "the added file's function GraphiEvalStep0014 is answerable by a search",
+          "status": "completed",
+          "update_us": 2898831,
+          "update_measured": true,
+          "freshness_us": 2899242,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 15,
+          "class": "cross_package",
+          "path": "xds/internal/xdsclient/xdsresource/route_config_resource_type.go",
+          "symbol": "GraphiEvalStep0015",
+          "expect": "the appended function GraphiEvalStep0015 is answerable after re-linking a file with 3 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3979004,
+          "update_measured": true,
+          "freshness_us": 3979466,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 16,
+          "class": "delete",
+          "path": "authz/audit/graphi_eval_step0014.go",
+          "symbol": "GraphiEvalStep0014",
+          "expect": "the deleted file's function GraphiEvalStep0014 is no longer answerable",
+          "status": "completed",
+          "update_us": 3074637,
+          "update_measured": true,
+          "freshness_us": 3074946,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 17,
+          "class": "modify",
+          "path": "authz/audit/stdout/stdout_logger.go",
+          "symbol": "GraphiEvalStep0017",
+          "expect": "the appended function GraphiEvalStep0017 is answerable by a search",
+          "status": "completed",
+          "update_us": 2988823,
+          "update_measured": true,
+          "freshness_us": 2989139,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 18,
+          "class": "add",
+          "path": "authz/audit/stdout/graphi_eval_step0018.go",
+          "symbol": "GraphiEvalStep0018",
+          "expect": "the added file's function GraphiEvalStep0018 is answerable by a search",
+          "status": "completed",
+          "update_us": 3009745,
+          "update_measured": true,
+          "freshness_us": 3010204,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 19,
+          "class": "cross_package",
+          "path": "internal/syscall/syscall_linux.go",
+          "symbol": "GraphiEvalStep0019",
+          "expect": "the appended function GraphiEvalStep0019 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3311564,
+          "update_measured": true,
+          "freshness_us": 3312009,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 20,
+          "class": "delete",
+          "path": "authz/audit/stdout/graphi_eval_step0018.go",
+          "symbol": "GraphiEvalStep0018",
+          "expect": "the deleted file's function GraphiEvalStep0018 is no longer answerable",
+          "status": "completed",
+          "update_us": 3031634,
+          "update_measured": true,
+          "freshness_us": 3032027,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 21,
+          "class": "modify",
+          "path": "authz/grpc_authz_server_interceptors.go",
+          "symbol": "GraphiEvalStep0021",
+          "expect": "the appended function GraphiEvalStep0021 is answerable by a search",
+          "status": "completed",
+          "update_us": 3002809,
+          "update_measured": true,
+          "freshness_us": 3003147,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 22,
+          "class": "add",
+          "path": "authz/graphi_eval_step0022.go",
+          "symbol": "GraphiEvalStep0022",
+          "expect": "the added file's function GraphiEvalStep0022 is answerable by a search",
+          "status": "completed",
+          "update_us": 2996530,
+          "update_measured": true,
+          "freshness_us": 2996901,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 23,
+          "class": "cross_package",
+          "path": "interop/grpc_testing/test_grpc.pb.go",
+          "symbol": "GraphiEvalStep0023",
+          "expect": "the appended function GraphiEvalStep0023 is answerable after re-linking a file with 69 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 5331487,
+          "update_measured": true,
+          "freshness_us": 5332062,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 24,
+          "class": "delete",
+          "path": "authz/graphi_eval_step0022.go",
+          "symbol": "GraphiEvalStep0022",
+          "expect": "the deleted file's function GraphiEvalStep0022 is no longer answerable",
+          "status": "completed",
+          "update_us": 2973059,
+          "update_measured": true,
+          "freshness_us": 2973449,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 25,
+          "class": "modify",
+          "path": "authz/rbac_translator.go",
+          "symbol": "GraphiEvalStep0025",
+          "expect": "the appended function GraphiEvalStep0025 is answerable by a search",
+          "status": "completed",
+          "update_us": 3003276,
+          "update_measured": true,
+          "freshness_us": 3003797,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 26,
+          "class": "add",
+          "path": "authz/graphi_eval_step0026.go",
+          "symbol": "GraphiEvalStep0026",
+          "expect": "the added file's function GraphiEvalStep0026 is answerable by a search",
+          "status": "completed",
+          "update_us": 2892247,
+          "update_measured": true,
+          "freshness_us": 2892650,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 27,
+          "class": "cross_package",
+          "path": "interop/test_utils.go",
+          "symbol": "GraphiEvalStep0027",
+          "expect": "the appended function GraphiEvalStep0027 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3002201,
+          "update_measured": true,
+          "freshness_us": 3002662,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 28,
+          "class": "delete",
+          "path": "authz/graphi_eval_step0026.go",
+          "symbol": "GraphiEvalStep0026",
+          "expect": "the deleted file's function GraphiEvalStep0026 is no longer answerable",
+          "status": "completed",
+          "update_us": 3101268,
+          "update_measured": true,
+          "freshness_us": 3101615,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 29,
+          "class": "modify",
+          "path": "backoff.go",
+          "symbol": "GraphiEvalStep0029",
+          "expect": "the appended function GraphiEvalStep0029 is answerable by a search",
+          "status": "completed",
+          "update_us": 7247143,
+          "update_measured": true,
+          "freshness_us": 7247748,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 30,
+          "class": "add",
+          "path": "graphi_eval_step0030.go",
+          "symbol": "GraphiEvalStep0030",
+          "expect": "the added file's function GraphiEvalStep0030 is answerable by a search",
+          "status": "completed",
+          "update_us": 6485714,
+          "update_measured": true,
+          "freshness_us": 6486238,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 31,
+          "class": "cross_package",
+          "path": "credentials/alts/alts.go",
+          "symbol": "GraphiEvalStep0031",
+          "expect": "the appended function GraphiEvalStep0031 is answerable after re-linking a file with 5 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3170742,
+          "update_measured": true,
+          "freshness_us": 3171207,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 32,
+          "class": "delete",
+          "path": "graphi_eval_step0030.go",
+          "symbol": "GraphiEvalStep0030",
+          "expect": "the deleted file's function GraphiEvalStep0030 is no longer answerable",
+          "status": "completed",
+          "update_us": 6291005,
+          "update_measured": true,
+          "freshness_us": 6291382,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 33,
+          "class": "modify",
+          "path": "backoff/backoff.go",
+          "symbol": "GraphiEvalStep0033",
+          "expect": "the appended function GraphiEvalStep0033 is answerable by a search",
+          "status": "completed",
+          "update_us": 6999874,
+          "update_measured": true,
+          "freshness_us": 7000265,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 34,
+          "class": "add",
+          "path": "backoff/graphi_eval_step0034.go",
+          "symbol": "GraphiEvalStep0034",
+          "expect": "the added file's function GraphiEvalStep0034 is answerable by a search",
+          "status": "completed",
+          "update_us": 7106136,
+          "update_measured": true,
+          "freshness_us": 7106473,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 35,
+          "class": "cross_package",
+          "path": "xds/internal/xdsclient/xdsresource/route_config_resource_type.go",
+          "symbol": "GraphiEvalStep0035",
+          "expect": "the appended function GraphiEvalStep0035 is answerable after re-linking a file with 3 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 4022224,
+          "update_measured": true,
+          "freshness_us": 4022675,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 36,
+          "class": "delete",
+          "path": "backoff/graphi_eval_step0034.go",
+          "symbol": "GraphiEvalStep0034",
+          "expect": "the deleted file's function GraphiEvalStep0034 is no longer answerable",
+          "status": "completed",
+          "update_us": 7275410,
+          "update_measured": true,
+          "freshness_us": 7275835,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 37,
+          "class": "modify",
+          "path": "balancer/balancer.go",
+          "symbol": "GraphiEvalStep0037",
+          "expect": "the appended function GraphiEvalStep0037 is answerable by a search",
+          "status": "completed",
+          "update_us": 4478973,
+          "update_measured": true,
+          "freshness_us": 4479590,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 38,
+          "class": "add",
+          "path": "balancer/graphi_eval_step0038.go",
+          "symbol": "GraphiEvalStep0038",
+          "expect": "the added file's function GraphiEvalStep0038 is answerable by a search",
+          "status": "completed",
+          "update_us": 4304978,
+          "update_measured": true,
+          "freshness_us": 4305537,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 39,
+          "class": "cross_package",
+          "path": "internal/syscall/syscall_linux.go",
+          "symbol": "GraphiEvalStep0039",
+          "expect": "the appended function GraphiEvalStep0039 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3224372,
+          "update_measured": true,
+          "freshness_us": 3224976,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 40,
+          "class": "delete",
+          "path": "balancer/graphi_eval_step0038.go",
+          "symbol": "GraphiEvalStep0038",
+          "expect": "the deleted file's function GraphiEvalStep0038 is no longer answerable",
+          "status": "completed",
+          "update_us": 4573639,
+          "update_measured": true,
+          "freshness_us": 4574025,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 41,
+          "class": "modify",
+          "path": "balancer/base/balancer.go",
+          "symbol": "GraphiEvalStep0041",
+          "expect": "the appended function GraphiEvalStep0041 is answerable by a search",
+          "status": "completed",
+          "update_us": 3417214,
+          "update_measured": true,
+          "freshness_us": 3417821,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 42,
+          "class": "add",
+          "path": "balancer/base/graphi_eval_step0042.go",
+          "symbol": "GraphiEvalStep0042",
+          "expect": "the added file's function GraphiEvalStep0042 is answerable by a search",
+          "status": "completed",
+          "update_us": 4329273,
+          "update_measured": true,
+          "freshness_us": 4329713,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 43,
+          "class": "cross_package",
+          "path": "interop/grpc_testing/test_grpc.pb.go",
+          "symbol": "GraphiEvalStep0043",
+          "expect": "the appended function GraphiEvalStep0043 is answerable after re-linking a file with 69 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 5496895,
+          "update_measured": true,
+          "freshness_us": 5497397,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 44,
+          "class": "delete",
+          "path": "balancer/base/graphi_eval_step0042.go",
+          "symbol": "GraphiEvalStep0042",
+          "expect": "the deleted file's function GraphiEvalStep0042 is no longer answerable",
+          "status": "completed",
+          "update_us": 4250649,
+          "update_measured": true,
+          "freshness_us": 4251050,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 45,
+          "class": "modify",
+          "path": "balancer/base/base.go",
+          "symbol": "GraphiEvalStep0045",
+          "expect": "the appended function GraphiEvalStep0045 is answerable by a search",
+          "status": "completed",
+          "update_us": 3170448,
+          "update_measured": true,
+          "freshness_us": 3170905,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 46,
+          "class": "add",
+          "path": "balancer/base/graphi_eval_step0046.go",
+          "symbol": "GraphiEvalStep0046",
+          "expect": "the added file's function GraphiEvalStep0046 is answerable by a search",
+          "status": "completed",
+          "update_us": 4186419,
+          "update_measured": true,
+          "freshness_us": 4186979,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 47,
+          "class": "cross_package",
+          "path": "interop/test_utils.go",
+          "symbol": "GraphiEvalStep0047",
+          "expect": "the appended function GraphiEvalStep0047 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3058814,
+          "update_measured": true,
+          "freshness_us": 3059270,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 48,
+          "class": "delete",
+          "path": "balancer/base/graphi_eval_step0046.go",
+          "symbol": "GraphiEvalStep0046",
+          "expect": "the deleted file's function GraphiEvalStep0046 is no longer answerable",
+          "status": "completed",
+          "update_us": 7562759,
+          "update_measured": true,
+          "freshness_us": 7563047,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 49,
+          "class": "modify",
+          "path": "balancer/conn_state_evaluator.go",
+          "symbol": "GraphiEvalStep0049",
+          "expect": "the appended function GraphiEvalStep0049 is answerable by a search",
+          "status": "completed",
+          "update_us": 4677586,
+          "update_measured": true,
+          "freshness_us": 4678161,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 50,
+          "class": "add",
+          "path": "balancer/graphi_eval_step0050.go",
+          "symbol": "GraphiEvalStep0050",
+          "expect": "the added file's function GraphiEvalStep0050 is answerable by a search",
+          "status": "completed",
+          "update_us": 4552254,
+          "update_measured": true,
+          "freshness_us": 4552758,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 51,
+          "class": "cross_package",
+          "path": "credentials/alts/alts.go",
+          "symbol": "GraphiEvalStep0051",
+          "expect": "the appended function GraphiEvalStep0051 is answerable after re-linking a file with 5 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3097388,
+          "update_measured": true,
+          "freshness_us": 3097760,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 52,
+          "class": "delete",
+          "path": "balancer/graphi_eval_step0050.go",
+          "symbol": "GraphiEvalStep0050",
+          "expect": "the deleted file's function GraphiEvalStep0050 is no longer answerable",
+          "status": "completed",
+          "update_us": 4761336,
+          "update_measured": true,
+          "freshness_us": 4761737,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 53,
+          "class": "modify",
+          "path": "balancer/grpclb/grpc_lb_v1/load_balancer.pb.go",
+          "symbol": "GraphiEvalStep0053",
+          "expect": "the appended function GraphiEvalStep0053 is answerable by a search",
+          "status": "completed",
+          "update_us": 3199337,
+          "update_measured": true,
+          "freshness_us": 3199841,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 54,
+          "class": "add",
+          "path": "balancer/grpclb/grpc_lb_v1/graphi_eval_step0054.go",
+          "symbol": "GraphiEvalStep0054",
+          "expect": "the added file's function GraphiEvalStep0054 is answerable by a search",
+          "status": "completed",
+          "update_us": 3100398,
+          "update_measured": true,
+          "freshness_us": 3100942,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 55,
+          "class": "cross_package",
+          "path": "xds/internal/xdsclient/xdsresource/route_config_resource_type.go",
+          "symbol": "GraphiEvalStep0055",
+          "expect": "the appended function GraphiEvalStep0055 is answerable after re-linking a file with 3 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 4066022,
+          "update_measured": true,
+          "freshness_us": 4066554,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 56,
+          "class": "delete",
+          "path": "balancer/grpclb/grpc_lb_v1/graphi_eval_step0054.go",
+          "symbol": "GraphiEvalStep0054",
+          "expect": "the deleted file's function GraphiEvalStep0054 is no longer answerable",
+          "status": "completed",
+          "update_us": 3125476,
+          "update_measured": true,
+          "freshness_us": 3125837,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 57,
+          "class": "modify",
+          "path": "balancer/grpclb/grpc_lb_v1/load_balancer_grpc.pb.go",
+          "symbol": "GraphiEvalStep0057",
+          "expect": "the appended function GraphiEvalStep0057 is answerable by a search",
+          "status": "completed",
+          "update_us": 3151247,
+          "update_measured": true,
+          "freshness_us": 3151657,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 58,
+          "class": "add",
+          "path": "balancer/grpclb/grpc_lb_v1/graphi_eval_step0058.go",
+          "symbol": "GraphiEvalStep0058",
+          "expect": "the added file's function GraphiEvalStep0058 is answerable by a search",
+          "status": "completed",
+          "update_us": 3062673,
+          "update_measured": true,
+          "freshness_us": 3063247,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 59,
+          "class": "cross_package",
+          "path": "internal/syscall/syscall_linux.go",
+          "symbol": "GraphiEvalStep0059",
+          "expect": "the appended function GraphiEvalStep0059 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3201153,
+          "update_measured": true,
+          "freshness_us": 3201725,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 60,
+          "class": "delete",
+          "path": "balancer/grpclb/grpc_lb_v1/graphi_eval_step0058.go",
+          "symbol": "GraphiEvalStep0058",
+          "expect": "the deleted file's function GraphiEvalStep0058 is no longer answerable",
+          "status": "completed",
+          "update_us": 3036671,
+          "update_measured": true,
+          "freshness_us": 3037042,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 61,
+          "class": "modify",
+          "path": "balancer/grpclb/grpclb.go",
+          "symbol": "GraphiEvalStep0061",
+          "expect": "the appended function GraphiEvalStep0061 is answerable by a search",
+          "status": "completed",
+          "update_us": 2959458,
+          "update_measured": true,
+          "freshness_us": 2960032,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 62,
+          "class": "add",
+          "path": "balancer/grpclb/graphi_eval_step0062.go",
+          "symbol": "GraphiEvalStep0062",
+          "expect": "the added file's function GraphiEvalStep0062 is answerable by a search",
+          "status": "completed",
+          "update_us": 3251935,
+          "update_measured": true,
+          "freshness_us": 3252632,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 63,
+          "class": "cross_package",
+          "path": "interop/grpc_testing/test_grpc.pb.go",
+          "symbol": "GraphiEvalStep0063",
+          "expect": "the appended function GraphiEvalStep0063 is answerable after re-linking a file with 69 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 5304569,
+          "update_measured": true,
+          "freshness_us": 5305073,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 64,
+          "class": "delete",
+          "path": "balancer/grpclb/graphi_eval_step0062.go",
+          "symbol": "GraphiEvalStep0062",
+          "expect": "the deleted file's function GraphiEvalStep0062 is no longer answerable",
+          "status": "completed",
+          "update_us": 3347573,
+          "update_measured": true,
+          "freshness_us": 3347889,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 65,
+          "class": "modify",
+          "path": "balancer/grpclb/grpclb_config.go",
+          "symbol": "GraphiEvalStep0065",
+          "expect": "the appended function GraphiEvalStep0065 is answerable by a search",
+          "status": "completed",
+          "update_us": 3126777,
+          "update_measured": true,
+          "freshness_us": 3127292,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 66,
+          "class": "add",
+          "path": "balancer/grpclb/graphi_eval_step0066.go",
+          "symbol": "GraphiEvalStep0066",
+          "expect": "the added file's function GraphiEvalStep0066 is answerable by a search",
+          "status": "completed",
+          "update_us": 3306248,
+          "update_measured": true,
+          "freshness_us": 3306814,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 67,
+          "class": "cross_package",
+          "path": "interop/test_utils.go",
+          "symbol": "GraphiEvalStep0067",
+          "expect": "the appended function GraphiEvalStep0067 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3152948,
+          "update_measured": true,
+          "freshness_us": 3153399,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 68,
+          "class": "delete",
+          "path": "balancer/grpclb/graphi_eval_step0066.go",
+          "symbol": "GraphiEvalStep0066",
+          "expect": "the deleted file's function GraphiEvalStep0066 is no longer answerable",
+          "status": "completed",
+          "update_us": 4075048,
+          "update_measured": true,
+          "freshness_us": 4075444,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 69,
+          "class": "modify",
+          "path": "balancer/grpclb/grpclb_picker.go",
+          "symbol": "GraphiEvalStep0069",
+          "expect": "the appended function GraphiEvalStep0069 is answerable by a search",
+          "status": "completed",
+          "update_us": 3081857,
+          "update_measured": true,
+          "freshness_us": 3082373,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 70,
+          "class": "add",
+          "path": "balancer/grpclb/graphi_eval_step0070.go",
+          "symbol": "GraphiEvalStep0070",
+          "expect": "the added file's function GraphiEvalStep0070 is answerable by a search",
+          "status": "completed",
+          "update_us": 3031657,
+          "update_measured": true,
+          "freshness_us": 3032053,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 71,
+          "class": "cross_package",
+          "path": "credentials/alts/alts.go",
+          "symbol": "GraphiEvalStep0071",
+          "expect": "the appended function GraphiEvalStep0071 is answerable after re-linking a file with 5 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3209542,
+          "update_measured": true,
+          "freshness_us": 3210040,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 72,
+          "class": "delete",
+          "path": "balancer/grpclb/graphi_eval_step0070.go",
+          "symbol": "GraphiEvalStep0070",
+          "expect": "the deleted file's function GraphiEvalStep0070 is no longer answerable",
+          "status": "completed",
+          "update_us": 3985880,
+          "update_measured": true,
+          "freshness_us": 3986182,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 73,
+          "class": "modify",
+          "path": "balancer/grpclb/grpclb_remote_balancer.go",
+          "symbol": "GraphiEvalStep0073",
+          "expect": "the appended function GraphiEvalStep0073 is answerable by a search",
+          "status": "completed",
+          "update_us": 3115249,
+          "update_measured": true,
+          "freshness_us": 3115785,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 74,
+          "class": "add",
+          "path": "balancer/grpclb/graphi_eval_step0074.go",
+          "symbol": "GraphiEvalStep0074",
+          "expect": "the added file's function GraphiEvalStep0074 is answerable by a search",
+          "status": "completed",
+          "update_us": 3407733,
+          "update_measured": true,
+          "freshness_us": 3408311,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 75,
+          "class": "cross_package",
+          "path": "xds/internal/xdsclient/xdsresource/route_config_resource_type.go",
+          "symbol": "GraphiEvalStep0075",
+          "expect": "the appended function GraphiEvalStep0075 is answerable after re-linking a file with 3 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 4168531,
+          "update_measured": true,
+          "freshness_us": 4169006,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 76,
+          "class": "delete",
+          "path": "balancer/grpclb/graphi_eval_step0074.go",
+          "symbol": "GraphiEvalStep0074",
+          "expect": "the deleted file's function GraphiEvalStep0074 is no longer answerable",
+          "status": "completed",
+          "update_us": 4050160,
+          "update_measured": true,
+          "freshness_us": 4050640,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 77,
+          "class": "modify",
+          "path": "balancer/grpclb/grpclb_util.go",
+          "symbol": "GraphiEvalStep0077",
+          "expect": "the appended function GraphiEvalStep0077 is answerable by a search",
+          "status": "completed",
+          "update_us": 3073663,
+          "update_measured": true,
+          "freshness_us": 3074332,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 78,
+          "class": "add",
+          "path": "balancer/grpclb/graphi_eval_step0078.go",
+          "symbol": "GraphiEvalStep0078",
+          "expect": "the added file's function GraphiEvalStep0078 is answerable by a search",
+          "status": "completed",
+          "update_us": 2936251,
+          "update_measured": true,
+          "freshness_us": 2936786,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 79,
+          "class": "cross_package",
+          "path": "internal/syscall/syscall_linux.go",
+          "symbol": "GraphiEvalStep0079",
+          "expect": "the appended function GraphiEvalStep0079 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3987688,
+          "update_measured": true,
+          "freshness_us": 3988290,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 80,
+          "class": "delete",
+          "path": "balancer/grpclb/graphi_eval_step0078.go",
+          "symbol": "GraphiEvalStep0078",
+          "expect": "the deleted file's function GraphiEvalStep0078 is no longer answerable",
+          "status": "completed",
+          "update_us": 2972300,
+          "update_measured": true,
+          "freshness_us": 2972708,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 81,
+          "class": "modify",
+          "path": "balancer/grpclb/state/state.go",
+          "symbol": "GraphiEvalStep0081",
+          "expect": "the appended function GraphiEvalStep0081 is answerable by a search",
+          "status": "completed",
+          "update_us": 3203039,
+          "update_measured": true,
+          "freshness_us": 3203640,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 82,
+          "class": "add",
+          "path": "balancer/grpclb/state/graphi_eval_step0082.go",
+          "symbol": "GraphiEvalStep0082",
+          "expect": "the added file's function GraphiEvalStep0082 is answerable by a search",
+          "status": "completed",
+          "update_us": 3098567,
+          "update_measured": true,
+          "freshness_us": 3099124,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 83,
+          "class": "cross_package",
+          "path": "interop/grpc_testing/test_grpc.pb.go",
+          "symbol": "GraphiEvalStep0083",
+          "expect": "the appended function GraphiEvalStep0083 is answerable after re-linking a file with 69 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 5403204,
+          "update_measured": true,
+          "freshness_us": 5403601,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 84,
+          "class": "delete",
+          "path": "balancer/grpclb/state/graphi_eval_step0082.go",
+          "symbol": "GraphiEvalStep0082",
+          "expect": "the deleted file's function GraphiEvalStep0082 is no longer answerable",
+          "status": "completed",
+          "update_us": 3776293,
+          "update_measured": true,
+          "freshness_us": 3776712,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 85,
+          "class": "modify",
+          "path": "balancer/leastrequest/leastrequest.go",
+          "symbol": "GraphiEvalStep0085",
+          "expect": "the appended function GraphiEvalStep0085 is answerable by a search",
+          "status": "completed",
+          "update_us": 3219782,
+          "update_measured": true,
+          "freshness_us": 3220336,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 86,
+          "class": "add",
+          "path": "balancer/leastrequest/graphi_eval_step0086.go",
+          "symbol": "GraphiEvalStep0086",
+          "expect": "the added file's function GraphiEvalStep0086 is answerable by a search",
+          "status": "completed",
+          "update_us": 2983292,
+          "update_measured": true,
+          "freshness_us": 2983880,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 87,
+          "class": "cross_package",
+          "path": "interop/test_utils.go",
+          "symbol": "GraphiEvalStep0087",
+          "expect": "the appended function GraphiEvalStep0087 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3002437,
+          "update_measured": true,
+          "freshness_us": 3002964,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 88,
+          "class": "delete",
+          "path": "balancer/leastrequest/graphi_eval_step0086.go",
+          "symbol": "GraphiEvalStep0086",
+          "expect": "the deleted file's function GraphiEvalStep0086 is no longer answerable",
+          "status": "completed",
+          "update_us": 2948124,
+          "update_measured": true,
+          "freshness_us": 2948459,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 89,
+          "class": "modify",
+          "path": "balancer/rls/balancer.go",
+          "symbol": "GraphiEvalStep0089",
+          "expect": "the appended function GraphiEvalStep0089 is answerable by a search",
+          "status": "completed",
+          "update_us": 3113101,
+          "update_measured": true,
+          "freshness_us": 3113885,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 90,
+          "class": "add",
+          "path": "balancer/rls/graphi_eval_step0090.go",
+          "symbol": "GraphiEvalStep0090",
+          "expect": "the added file's function GraphiEvalStep0090 is answerable by a search",
+          "status": "completed",
+          "update_us": 3102005,
+          "update_measured": true,
+          "freshness_us": 3102550,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 91,
+          "class": "cross_package",
+          "path": "credentials/alts/alts.go",
+          "symbol": "GraphiEvalStep0091",
+          "expect": "the appended function GraphiEvalStep0091 is answerable after re-linking a file with 5 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3234420,
+          "update_measured": true,
+          "freshness_us": 3234846,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 92,
+          "class": "delete",
+          "path": "balancer/rls/graphi_eval_step0090.go",
+          "symbol": "GraphiEvalStep0090",
+          "expect": "the deleted file's function GraphiEvalStep0090 is no longer answerable",
+          "status": "completed",
+          "update_us": 3063932,
+          "update_measured": true,
+          "freshness_us": 3064329,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 93,
+          "class": "modify",
+          "path": "balancer/rls/cache.go",
+          "symbol": "GraphiEvalStep0093",
+          "expect": "the appended function GraphiEvalStep0093 is answerable by a search",
+          "status": "completed",
+          "update_us": 3034876,
+          "update_measured": true,
+          "freshness_us": 3035387,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 94,
+          "class": "add",
+          "path": "balancer/rls/graphi_eval_step0094.go",
+          "symbol": "GraphiEvalStep0094",
+          "expect": "the added file's function GraphiEvalStep0094 is answerable by a search",
+          "status": "completed",
+          "update_us": 3217802,
+          "update_measured": true,
+          "freshness_us": 3218366,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 95,
+          "class": "cross_package",
+          "path": "xds/internal/xdsclient/xdsresource/route_config_resource_type.go",
+          "symbol": "GraphiEvalStep0095",
+          "expect": "the appended function GraphiEvalStep0095 is answerable after re-linking a file with 3 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3853896,
+          "update_measured": true,
+          "freshness_us": 3854484,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 96,
+          "class": "delete",
+          "path": "balancer/rls/graphi_eval_step0094.go",
+          "symbol": "GraphiEvalStep0094",
+          "expect": "the deleted file's function GraphiEvalStep0094 is no longer answerable",
+          "status": "completed",
+          "update_us": 3033043,
+          "update_measured": true,
+          "freshness_us": 3033419,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 97,
+          "class": "modify",
+          "path": "balancer/rls/child_policy.go",
+          "symbol": "GraphiEvalStep0097",
+          "expect": "the appended function GraphiEvalStep0097 is answerable by a search",
+          "status": "completed",
+          "update_us": 3090070,
+          "update_measured": true,
+          "freshness_us": 3090577,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 98,
+          "class": "add",
+          "path": "balancer/rls/graphi_eval_step0098.go",
+          "symbol": "GraphiEvalStep0098",
+          "expect": "the added file's function GraphiEvalStep0098 is answerable by a search",
+          "status": "completed",
+          "update_us": 3007855,
+          "update_measured": true,
+          "freshness_us": 3008633,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 99,
+          "class": "cross_package",
+          "path": "internal/syscall/syscall_linux.go",
+          "symbol": "GraphiEvalStep0099",
+          "expect": "the appended function GraphiEvalStep0099 is answerable after re-linking a file with 1 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 4081929,
+          "update_measured": true,
+          "freshness_us": 4082527,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 100,
+          "class": "delete",
+          "path": "balancer/rls/graphi_eval_step0098.go",
+          "symbol": "GraphiEvalStep0098",
+          "expect": "the deleted file's function GraphiEvalStep0098 is no longer answerable",
+          "status": "completed",
+          "update_us": 3069249,
+          "update_measured": true,
+          "freshness_us": 3069662,
+          "freshness_measured": true,
+          "probes": 1
+        }
+      ],
+      "update": {
+        "n": 100,
+        "min_us": 2856548,
+        "p50_us": 3199337,
+        "p95_us": 6485714,
+        "max_us": 7562759
+      },
+      "freshness": {
+        "n": 100,
+        "min_us": 2857000,
+        "p50_us": 3199841,
+        "p95_us": 6486238,
+        "max_us": 7563047
+      },
+      "per_class": [
+        {
+          "class": "add",
+          "changes": 25,
+          "update": {
+            "n": 25,
+            "min_us": 2892247,
+            "p50_us": 3217802,
+            "p95_us": 6485714,
+            "max_us": 7106136
+          },
+          "freshness": {
+            "n": 25,
+            "min_us": 2892650,
+            "p50_us": 3218366,
+            "p95_us": 6486238,
+            "max_us": 7106473
+          }
+        },
+        {
+          "class": "modify",
+          "changes": 25,
+          "update": {
+            "n": 25,
+            "min_us": 2856548,
+            "p50_us": 3115249,
+            "p95_us": 6999874,
+            "max_us": 7247143
+          },
+          "freshness": {
+            "n": 25,
+            "min_us": 2857000,
+            "p50_us": 3115785,
+            "p95_us": 7000265,
+            "max_us": 7247748
+          }
+        },
+        {
+          "class": "delete",
+          "changes": 25,
+          "update": {
+            "n": 25,
+            "min_us": 2872050,
+            "p50_us": 3125476,
+            "p95_us": 7275410,
+            "max_us": 7562759
+          },
+          "freshness": {
+            "n": 25,
+            "min_us": 2872382,
+            "p50_us": 3125837,
+            "p95_us": 7275835,
+            "max_us": 7563047
+          }
+        },
+        {
+          "class": "cross_package",
+          "changes": 25,
+          "update": {
+            "n": 25,
+            "min_us": 2880046,
+            "p50_us": 3311564,
+            "p95_us": 5403204,
+            "max_us": 5496895
+          },
+          "freshness": {
+            "n": 25,
+            "min_us": 2880400,
+            "p50_us": 3312009,
+            "p95_us": 5403601,
+            "max_us": 5497397
+          }
+        }
+      ],
+      "gates": [
+        {
+          "id": "freshness_p95",
+          "prd_metric": "Freshness p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "incremental.freshness.p95_us",
+          "measured": 6.486238,
+          "has_measurement": true,
+          "status": "FAIL",
+          "reason": "6.486 s \u003e 2.000 s over 100 converged change(s) of 100 completed"
+        }
+      ],
+      "warnings": [
+        "this run applied 100 change(s) to the checkout before index.db_size_bytes was measured: that figure is NOT a cold-index DB-size sample for this report"
+      ],
+      "status": "FAIL",
+      "freshness_definition": "FRESH is reached at the first query that answers the NEW state. The clock starts the instant the file change is durably on disk (the write or unlink has returned) and stops at the first convergence probe that observes the change: for an added, modified or cross-package change, the symbol the change introduces is answerable by a search; for a delete, the symbol the removed file defined is no longer answerable. Freshness therefore CONTAINS the incremental update — update_us is the ingest call, freshness_us is change-to-answer — and freshness_us \u003e= update_us holds for every completed change.",
+      "timing_method": "Two clocks per change, both around the operation and nothing else. update_us is time.Since around the incremental ingest call for the changed path — building the edit content, writing it and choosing the next step all happen outside it. freshness_us starts immediately after the file mutation returns and stops at the probe that observed the new state, so it contains the update plus any waiting the harness did. No warmup: an incremental update is a cold-by-nature event and repeating it to warm it up would measure something a user never experiences.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-change samples, ascending — the same implementation the cold series and the query-latency series use. A change contributes to the update distribution when update_measured is true and to the freshness distribution when freshness_measured is true; the two counts differ exactly by the changes whose update completed but which never converged. Failed changes are counted in changes_failed and retained in `changes`, never removed. Every value here is reproducible from `changes` with evalreport.RecomputeIncremental.",
+      "scope_limitation": "The harness drives the incremental update EXPLICITLY, in the `graphi sync` shape: change the file, run the incremental ingest, query. It therefore EXCLUDES filesystem-watch detection latency — the interval between a write and engine/watch noticing it — which this story does not measure and does not alter (AC-8). A daemon-driven freshness figure would be this one plus watch detection, never less.",
+      "notes": "SW-126 freshness and incremental measurement: a DEFINED, reproducible change sequence — not random mutation — executed against a pinned corpus repository, reporting incremental-update and freshness p50 and p95 with every individual measurement retained. The tier-1 fixture path in cmd/eval/perf.go is a PR-gate smoke check over a copied fixture and is NOT this measurement; it is never P0 evidence. No gate is read unless the run is the reference scenario on the reference class and from the frozen candidate, with at least minimum_changes completed changes and every required change class exercised. Otherwise it is UNKNOWN, which is not a PASS (PRD §8.2)."
+    },
+    "stalls": {
+      "repo": "grpc-go",
+      "events_observed": 1089,
+      "minimum_events": 2,
+      "observable": true,
+      "index_wallclock_us": 21580025,
+      "lead_in_us": 70,
+      "lead_in_measured": true,
+      "tail_us": 1,
+      "tail_measured": true,
+      "heartbeat_mode": "non-tty",
+      "stalls": {
+        "n": 1088,
+        "min_us": 0,
+        "p50_us": 308,
+        "p95_us": 4799,
+        "max_us": 15016740
+      },
+      "per_phase": [
+        {
+          "phase": "checkpoint",
+          "stats": {
+            "n": 1,
+            "min_us": 1839243,
+            "p50_us": 1839243,
+            "p95_us": 1839243,
+            "max_us": 1839243
+          }
+        },
+        {
+          "phase": "done",
+          "stats": {
+            "n": 1,
+            "min_us": 8777,
+            "p50_us": 8777,
+            "p95_us": 8777,
+            "max_us": 8777
+          }
+        },
+        {
+          "phase": "fts",
+          "stats": {
+            "n": 1,
+            "min_us": 45735,
+            "p50_us": 45735,
+            "p95_us": 45735,
+            "max_us": 45735
+          }
+        },
+        {
+          "phase": "link",
+          "stats": {
+            "n": 16,
+            "min_us": 54326,
+            "p50_us": 123885,
+            "p95_us": 1718916,
+            "max_us": 1718916
+          }
+        },
+        {
+          "phase": "parse",
+          "stats": {
+            "n": 1050,
+            "min_us": 0,
+            "p50_us": 287,
+            "p95_us": 2580,
+            "max_us": 15016740
+          }
+        },
+        {
+          "phase": "resolve",
+          "stats": {
+            "n": 2,
+            "min_us": 0,
+            "p50_us": 0,
+            "p95_us": 87996,
+            "max_us": 87996
+          }
+        },
+        {
+          "phase": "walk",
+          "stats": {
+            "n": 16,
+            "min_us": 3964,
+            "p50_us": 5226,
+            "p95_us": 6510,
+            "max_us": 6510
+          }
+        },
+        {
+          "phase": "write",
+          "stats": {
+            "n": 1,
+            "min_us": 1987,
+            "p50_us": 1987,
+            "p95_us": 1987,
+            "max_us": 1987
+          }
+        }
+      ],
+      "intervals": [
+        {
+          "seq": 1,
+          "phase": "walk",
+          "us": 3993
+        },
+        {
+          "seq": 2,
+          "phase": "walk",
+          "us": 5226
+        },
+        {
+          "seq": 3,
+          "phase": "walk",
+          "us": 6388
+        },
+        {
+          "seq": 4,
+          "phase": "walk",
+          "us": 5419
+        },
+        {
+          "seq": 5,
+          "phase": "walk",
+          "us": 6247
+        },
+        {
+          "seq": 6,
+          "phase": "walk",
+          "us": 5402
+        },
+        {
+          "seq": 7,
+          "phase": "walk",
+          "us": 3964
+        },
+        {
+          "seq": 8,
+          "phase": "walk",
+          "us": 4963
+        },
+        {
+          "seq": 9,
+          "phase": "walk",
+          "us": 5904
+        },
+        {
+          "seq": 10,
+          "phase": "walk",
+          "us": 4363
+        },
+        {
+          "seq": 11,
+          "phase": "walk",
+          "us": 4929
+        },
+        {
+          "seq": 12,
+          "phase": "walk",
+          "us": 4799
+        },
+        {
+          "seq": 13,
+          "phase": "walk",
+          "us": 4087
+        },
+        {
+          "seq": 14,
+          "phase": "walk",
+          "us": 5246
+        },
+        {
+          "seq": 15,
+          "phase": "walk",
+          "us": 6510
+        },
+        {
+          "seq": 16,
+          "phase": "walk",
+          "us": 6075
+        },
+        {
+          "seq": 17,
+          "phase": "parse",
+          "us": 2434
+        },
+        {
+          "seq": 18,
+          "phase": "parse",
+          "us": 2787
+        },
+        {
+          "seq": 19,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 20,
+          "phase": "parse",
+          "us": 577
+        },
+        {
+          "seq": 21,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 22,
+          "phase": "parse",
+          "us": 2840
+        },
+        {
+          "seq": 23,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 24,
+          "phase": "parse",
+          "us": 1721
+        },
+        {
+          "seq": 25,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 26,
+          "phase": "parse",
+          "us": 949
+        },
+        {
+          "seq": 27,
+          "phase": "parse",
+          "us": 2198
+        },
+        {
+          "seq": 28,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 29,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 30,
+          "phase": "parse",
+          "us": 285
+        },
+        {
+          "seq": 31,
+          "phase": "parse",
+          "us": 15042
+        },
+        {
+          "seq": 32,
+          "phase": "parse",
+          "us": 4191
+        },
+        {
+          "seq": 33,
+          "phase": "parse",
+          "us": 8600
+        },
+        {
+          "seq": 34,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 35,
+          "phase": "parse",
+          "us": 31757
+        },
+        {
+          "seq": 36,
+          "phase": "parse",
+          "us": 13391
+        },
+        {
+          "seq": 37,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 38,
+          "phase": "parse",
+          "us": 4313
+        },
+        {
+          "seq": 39,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 40,
+          "phase": "parse",
+          "us": 8079
+        },
+        {
+          "seq": 41,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 42,
+          "phase": "parse",
+          "us": 2261
+        },
+        {
+          "seq": 43,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 44,
+          "phase": "parse",
+          "us": 1203
+        },
+        {
+          "seq": 45,
+          "phase": "parse",
+          "us": 89
+        },
+        {
+          "seq": 46,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 47,
+          "phase": "parse",
+          "us": 2269
+        },
+        {
+          "seq": 48,
+          "phase": "parse",
+          "us": 2601
+        },
+        {
+          "seq": 49,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 50,
+          "phase": "parse",
+          "us": 141
+        },
+        {
+          "seq": 51,
+          "phase": "parse",
+          "us": 485
+        },
+        {
+          "seq": 52,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 53,
+          "phase": "parse",
+          "us": 647
+        },
+        {
+          "seq": 54,
+          "phase": "parse",
+          "us": 724
+        },
+        {
+          "seq": 55,
+          "phase": "parse",
+          "us": 313
+        },
+        {
+          "seq": 56,
+          "phase": "parse",
+          "us": 805
+        },
+        {
+          "seq": 57,
+          "phase": "parse",
+          "us": 475
+        },
+        {
+          "seq": 58,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 59,
+          "phase": "parse",
+          "us": 1008
+        },
+        {
+          "seq": 60,
+          "phase": "parse",
+          "us": 205
+        },
+        {
+          "seq": 61,
+          "phase": "parse",
+          "us": 511
+        },
+        {
+          "seq": 62,
+          "phase": "parse",
+          "us": 1433
+        },
+        {
+          "seq": 63,
+          "phase": "parse",
+          "us": 218
+        },
+        {
+          "seq": 64,
+          "phase": "parse",
+          "us": 996
+        },
+        {
+          "seq": 65,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 66,
+          "phase": "parse",
+          "us": 607
+        },
+        {
+          "seq": 67,
+          "phase": "parse",
+          "us": 593
+        },
+        {
+          "seq": 68,
+          "phase": "parse",
+          "us": 510
+        },
+        {
+          "seq": 69,
+          "phase": "parse",
+          "us": 103
+        },
+        {
+          "seq": 70,
+          "phase": "parse",
+          "us": 206
+        },
+        {
+          "seq": 71,
+          "phase": "parse",
+          "us": 660
+        },
+        {
+          "seq": 72,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 73,
+          "phase": "parse",
+          "us": 106
+        },
+        {
+          "seq": 74,
+          "phase": "parse",
+          "us": 679
+        },
+        {
+          "seq": 75,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 76,
+          "phase": "parse",
+          "us": 290
+        },
+        {
+          "seq": 77,
+          "phase": "parse",
+          "us": 617
+        },
+        {
+          "seq": 78,
+          "phase": "parse",
+          "us": 461
+        },
+        {
+          "seq": 79,
+          "phase": "parse",
+          "us": 180
+        },
+        {
+          "seq": 80,
+          "phase": "parse",
+          "us": 406
+        },
+        {
+          "seq": 81,
+          "phase": "parse",
+          "us": 530
+        },
+        {
+          "seq": 82,
+          "phase": "parse",
+          "us": 356
+        },
+        {
+          "seq": 83,
+          "phase": "parse",
+          "us": 576
+        },
+        {
+          "seq": 84,
+          "phase": "parse",
+          "us": 542
+        },
+        {
+          "seq": 85,
+          "phase": "parse",
+          "us": 185
+        },
+        {
+          "seq": 86,
+          "phase": "parse",
+          "us": 1773
+        },
+        {
+          "seq": 87,
+          "phase": "parse",
+          "us": 3015
+        },
+        {
+          "seq": 88,
+          "phase": "parse",
+          "us": 124
+        },
+        {
+          "seq": 89,
+          "phase": "parse",
+          "us": 5089
+        },
+        {
+          "seq": 90,
+          "phase": "parse",
+          "us": 2032
+        },
+        {
+          "seq": 91,
+          "phase": "parse",
+          "us": 402
+        },
+        {
+          "seq": 92,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 93,
+          "phase": "parse",
+          "us": 376
+        },
+        {
+          "seq": 94,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 95,
+          "phase": "parse",
+          "us": 141
+        },
+        {
+          "seq": 96,
+          "phase": "parse",
+          "us": 546
+        },
+        {
+          "seq": 97,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 98,
+          "phase": "parse",
+          "us": 520
+        },
+        {
+          "seq": 99,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 100,
+          "phase": "parse",
+          "us": 949
+        },
+        {
+          "seq": 101,
+          "phase": "parse",
+          "us": 117
+        },
+        {
+          "seq": 102,
+          "phase": "parse",
+          "us": 187
+        },
+        {
+          "seq": 103,
+          "phase": "parse",
+          "us": 287
+        },
+        {
+          "seq": 104,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 105,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 106,
+          "phase": "parse",
+          "us": 291
+        },
+        {
+          "seq": 107,
+          "phase": "parse",
+          "us": 443
+        },
+        {
+          "seq": 108,
+          "phase": "parse",
+          "us": 112
+        },
+        {
+          "seq": 109,
+          "phase": "parse",
+          "us": 455
+        },
+        {
+          "seq": 110,
+          "phase": "parse",
+          "us": 440
+        },
+        {
+          "seq": 111,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 112,
+          "phase": "parse",
+          "us": 284
+        },
+        {
+          "seq": 113,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 114,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 115,
+          "phase": "parse",
+          "us": 1370
+        },
+        {
+          "seq": 116,
+          "phase": "parse",
+          "us": 142
+        },
+        {
+          "seq": 117,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 118,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 119,
+          "phase": "parse",
+          "us": 1202
+        },
+        {
+          "seq": 120,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 121,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 122,
+          "phase": "parse",
+          "us": 143
+        },
+        {
+          "seq": 123,
+          "phase": "parse",
+          "us": 715
+        },
+        {
+          "seq": 124,
+          "phase": "parse",
+          "us": 133
+        },
+        {
+          "seq": 125,
+          "phase": "parse",
+          "us": 264
+        },
+        {
+          "seq": 126,
+          "phase": "parse",
+          "us": 606
+        },
+        {
+          "seq": 127,
+          "phase": "parse",
+          "us": 882
+        },
+        {
+          "seq": 128,
+          "phase": "parse",
+          "us": 455
+        },
+        {
+          "seq": 129,
+          "phase": "parse",
+          "us": 1271
+        },
+        {
+          "seq": 130,
+          "phase": "parse",
+          "us": 147
+        },
+        {
+          "seq": 131,
+          "phase": "parse",
+          "us": 144
+        },
+        {
+          "seq": 132,
+          "phase": "parse",
+          "us": 1675
+        },
+        {
+          "seq": 133,
+          "phase": "parse",
+          "us": 244
+        },
+        {
+          "seq": 134,
+          "phase": "parse",
+          "us": 117
+        },
+        {
+          "seq": 135,
+          "phase": "parse",
+          "us": 223
+        },
+        {
+          "seq": 136,
+          "phase": "parse",
+          "us": 659
+        },
+        {
+          "seq": 137,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 138,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 139,
+          "phase": "parse",
+          "us": 582
+        },
+        {
+          "seq": 140,
+          "phase": "parse",
+          "us": 151
+        },
+        {
+          "seq": 141,
+          "phase": "parse",
+          "us": 150
+        },
+        {
+          "seq": 142,
+          "phase": "parse",
+          "us": 742
+        },
+        {
+          "seq": 143,
+          "phase": "parse",
+          "us": 335
+        },
+        {
+          "seq": 144,
+          "phase": "parse",
+          "us": 716
+        },
+        {
+          "seq": 145,
+          "phase": "parse",
+          "us": 1059
+        },
+        {
+          "seq": 146,
+          "phase": "parse",
+          "us": 667
+        },
+        {
+          "seq": 147,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 148,
+          "phase": "parse",
+          "us": 159
+        },
+        {
+          "seq": 149,
+          "phase": "parse",
+          "us": 675
+        },
+        {
+          "seq": 150,
+          "phase": "parse",
+          "us": 2036
+        },
+        {
+          "seq": 151,
+          "phase": "parse",
+          "us": 513
+        },
+        {
+          "seq": 152,
+          "phase": "parse",
+          "us": 424
+        },
+        {
+          "seq": 153,
+          "phase": "parse",
+          "us": 155
+        },
+        {
+          "seq": 154,
+          "phase": "parse",
+          "us": 1044
+        },
+        {
+          "seq": 155,
+          "phase": "parse",
+          "us": 432
+        },
+        {
+          "seq": 156,
+          "phase": "parse",
+          "us": 1258
+        },
+        {
+          "seq": 157,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 158,
+          "phase": "parse",
+          "us": 361
+        },
+        {
+          "seq": 159,
+          "phase": "parse",
+          "us": 2736
+        },
+        {
+          "seq": 160,
+          "phase": "parse",
+          "us": 397
+        },
+        {
+          "seq": 161,
+          "phase": "parse",
+          "us": 514
+        },
+        {
+          "seq": 162,
+          "phase": "parse",
+          "us": 1810
+        },
+        {
+          "seq": 163,
+          "phase": "parse",
+          "us": 1425
+        },
+        {
+          "seq": 164,
+          "phase": "parse",
+          "us": 1764
+        },
+        {
+          "seq": 165,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 166,
+          "phase": "parse",
+          "us": 302
+        },
+        {
+          "seq": 167,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 168,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 169,
+          "phase": "parse",
+          "us": 1267
+        },
+        {
+          "seq": 170,
+          "phase": "parse",
+          "us": 1662
+        },
+        {
+          "seq": 171,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 172,
+          "phase": "parse",
+          "us": 393
+        },
+        {
+          "seq": 173,
+          "phase": "parse",
+          "us": 146
+        },
+        {
+          "seq": 174,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 175,
+          "phase": "parse",
+          "us": 990
+        },
+        {
+          "seq": 176,
+          "phase": "parse",
+          "us": 406
+        },
+        {
+          "seq": 177,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 178,
+          "phase": "parse",
+          "us": 1414
+        },
+        {
+          "seq": 179,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 180,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 181,
+          "phase": "parse",
+          "us": 723
+        },
+        {
+          "seq": 182,
+          "phase": "parse",
+          "us": 2745
+        },
+        {
+          "seq": 183,
+          "phase": "parse",
+          "us": 509
+        },
+        {
+          "seq": 184,
+          "phase": "parse",
+          "us": 89
+        },
+        {
+          "seq": 185,
+          "phase": "parse",
+          "us": 748
+        },
+        {
+          "seq": 186,
+          "phase": "parse",
+          "us": 564
+        },
+        {
+          "seq": 187,
+          "phase": "parse",
+          "us": 1250
+        },
+        {
+          "seq": 188,
+          "phase": "parse",
+          "us": 196
+        },
+        {
+          "seq": 189,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 190,
+          "phase": "parse",
+          "us": 768
+        },
+        {
+          "seq": 191,
+          "phase": "parse",
+          "us": 449
+        },
+        {
+          "seq": 192,
+          "phase": "parse",
+          "us": 1630
+        },
+        {
+          "seq": 193,
+          "phase": "parse",
+          "us": 530
+        },
+        {
+          "seq": 194,
+          "phase": "parse",
+          "us": 843
+        },
+        {
+          "seq": 195,
+          "phase": "parse",
+          "us": 738
+        },
+        {
+          "seq": 196,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 197,
+          "phase": "parse",
+          "us": 123
+        },
+        {
+          "seq": 198,
+          "phase": "parse",
+          "us": 1184
+        },
+        {
+          "seq": 199,
+          "phase": "parse",
+          "us": 174
+        },
+        {
+          "seq": 200,
+          "phase": "parse",
+          "us": 347
+        },
+        {
+          "seq": 201,
+          "phase": "parse",
+          "us": 340
+        },
+        {
+          "seq": 202,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 203,
+          "phase": "parse",
+          "us": 774
+        },
+        {
+          "seq": 204,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 205,
+          "phase": "parse",
+          "us": 189
+        },
+        {
+          "seq": 206,
+          "phase": "parse",
+          "us": 451
+        },
+        {
+          "seq": 207,
+          "phase": "parse",
+          "us": 459
+        },
+        {
+          "seq": 208,
+          "phase": "parse",
+          "us": 241
+        },
+        {
+          "seq": 209,
+          "phase": "parse",
+          "us": 99
+        },
+        {
+          "seq": 210,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 211,
+          "phase": "parse",
+          "us": 351
+        },
+        {
+          "seq": 212,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 213,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 214,
+          "phase": "parse",
+          "us": 299
+        },
+        {
+          "seq": 215,
+          "phase": "parse",
+          "us": 368
+        },
+        {
+          "seq": 216,
+          "phase": "parse",
+          "us": 615
+        },
+        {
+          "seq": 217,
+          "phase": "parse",
+          "us": 302
+        },
+        {
+          "seq": 218,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 219,
+          "phase": "parse",
+          "us": 221
+        },
+        {
+          "seq": 220,
+          "phase": "parse",
+          "us": 1192
+        },
+        {
+          "seq": 221,
+          "phase": "parse",
+          "us": 88
+        },
+        {
+          "seq": 222,
+          "phase": "parse",
+          "us": 128
+        },
+        {
+          "seq": 223,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 224,
+          "phase": "parse",
+          "us": 849
+        },
+        {
+          "seq": 225,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 226,
+          "phase": "parse",
+          "us": 731
+        },
+        {
+          "seq": 227,
+          "phase": "parse",
+          "us": 505
+        },
+        {
+          "seq": 228,
+          "phase": "parse",
+          "us": 812
+        },
+        {
+          "seq": 229,
+          "phase": "parse",
+          "us": 499
+        },
+        {
+          "seq": 230,
+          "phase": "parse",
+          "us": 1184
+        },
+        {
+          "seq": 231,
+          "phase": "parse",
+          "us": 1123
+        },
+        {
+          "seq": 232,
+          "phase": "parse",
+          "us": 428
+        },
+        {
+          "seq": 233,
+          "phase": "parse",
+          "us": 430
+        },
+        {
+          "seq": 234,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 235,
+          "phase": "parse",
+          "us": 350
+        },
+        {
+          "seq": 236,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 237,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 238,
+          "phase": "parse",
+          "us": 792
+        },
+        {
+          "seq": 239,
+          "phase": "parse",
+          "us": 220
+        },
+        {
+          "seq": 240,
+          "phase": "parse",
+          "us": 137
+        },
+        {
+          "seq": 241,
+          "phase": "parse",
+          "us": 279
+        },
+        {
+          "seq": 242,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 243,
+          "phase": "parse",
+          "us": 91
+        },
+        {
+          "seq": 244,
+          "phase": "parse",
+          "us": 191
+        },
+        {
+          "seq": 245,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 246,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 247,
+          "phase": "parse",
+          "us": 1731
+        },
+        {
+          "seq": 248,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 249,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 250,
+          "phase": "parse",
+          "us": 665
+        },
+        {
+          "seq": 251,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 252,
+          "phase": "parse",
+          "us": 5874
+        },
+        {
+          "seq": 253,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 254,
+          "phase": "parse",
+          "us": 534
+        },
+        {
+          "seq": 255,
+          "phase": "parse",
+          "us": 3636
+        },
+        {
+          "seq": 256,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 257,
+          "phase": "parse",
+          "us": 887
+        },
+        {
+          "seq": 258,
+          "phase": "parse",
+          "us": 3372
+        },
+        {
+          "seq": 259,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 260,
+          "phase": "parse",
+          "us": 303
+        },
+        {
+          "seq": 261,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 262,
+          "phase": "parse",
+          "us": 207
+        },
+        {
+          "seq": 263,
+          "phase": "parse",
+          "us": 463
+        },
+        {
+          "seq": 264,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 265,
+          "phase": "parse",
+          "us": 88
+        },
+        {
+          "seq": 266,
+          "phase": "parse",
+          "us": 453
+        },
+        {
+          "seq": 267,
+          "phase": "parse",
+          "us": 196
+        },
+        {
+          "seq": 268,
+          "phase": "parse",
+          "us": 910
+        },
+        {
+          "seq": 269,
+          "phase": "parse",
+          "us": 144
+        },
+        {
+          "seq": 270,
+          "phase": "parse",
+          "us": 320
+        },
+        {
+          "seq": 271,
+          "phase": "parse",
+          "us": 328
+        },
+        {
+          "seq": 272,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 273,
+          "phase": "parse",
+          "us": 656
+        },
+        {
+          "seq": 274,
+          "phase": "parse",
+          "us": 113
+        },
+        {
+          "seq": 275,
+          "phase": "parse",
+          "us": 380
+        },
+        {
+          "seq": 276,
+          "phase": "parse",
+          "us": 2016
+        },
+        {
+          "seq": 277,
+          "phase": "parse",
+          "us": 4448
+        },
+        {
+          "seq": 278,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 279,
+          "phase": "parse",
+          "us": 514
+        },
+        {
+          "seq": 280,
+          "phase": "parse",
+          "us": 796
+        },
+        {
+          "seq": 281,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 282,
+          "phase": "parse",
+          "us": 429
+        },
+        {
+          "seq": 283,
+          "phase": "parse",
+          "us": 5887
+        },
+        {
+          "seq": 284,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 285,
+          "phase": "parse",
+          "us": 623
+        },
+        {
+          "seq": 286,
+          "phase": "parse",
+          "us": 13276
+        },
+        {
+          "seq": 287,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 288,
+          "phase": "parse",
+          "us": 481
+        },
+        {
+          "seq": 289,
+          "phase": "parse",
+          "us": 8463
+        },
+        {
+          "seq": 290,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 291,
+          "phase": "parse",
+          "us": 843
+        },
+        {
+          "seq": 292,
+          "phase": "parse",
+          "us": 601
+        },
+        {
+          "seq": 293,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 294,
+          "phase": "parse",
+          "us": 348
+        },
+        {
+          "seq": 295,
+          "phase": "parse",
+          "us": 3029
+        },
+        {
+          "seq": 296,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 297,
+          "phase": "parse",
+          "us": 467
+        },
+        {
+          "seq": 298,
+          "phase": "parse",
+          "us": 3817
+        },
+        {
+          "seq": 299,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 300,
+          "phase": "parse",
+          "us": 1255
+        },
+        {
+          "seq": 301,
+          "phase": "parse",
+          "us": 10037
+        },
+        {
+          "seq": 302,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 303,
+          "phase": "parse",
+          "us": 620
+        },
+        {
+          "seq": 304,
+          "phase": "parse",
+          "us": 1030
+        },
+        {
+          "seq": 305,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 306,
+          "phase": "parse",
+          "us": 395
+        },
+        {
+          "seq": 307,
+          "phase": "parse",
+          "us": 1896
+        },
+        {
+          "seq": 308,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 309,
+          "phase": "parse",
+          "us": 447
+        },
+        {
+          "seq": 310,
+          "phase": "parse",
+          "us": 1345
+        },
+        {
+          "seq": 311,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 312,
+          "phase": "parse",
+          "us": 501
+        },
+        {
+          "seq": 313,
+          "phase": "parse",
+          "us": 480
+        },
+        {
+          "seq": 314,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 315,
+          "phase": "parse",
+          "us": 276
+        },
+        {
+          "seq": 316,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 317,
+          "phase": "parse",
+          "us": 1217
+        },
+        {
+          "seq": 318,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 319,
+          "phase": "parse",
+          "us": 554
+        },
+        {
+          "seq": 320,
+          "phase": "parse",
+          "us": 992
+        },
+        {
+          "seq": 321,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 322,
+          "phase": "parse",
+          "us": 968
+        },
+        {
+          "seq": 323,
+          "phase": "parse",
+          "us": 1469
+        },
+        {
+          "seq": 324,
+          "phase": "parse",
+          "us": 2841
+        },
+        {
+          "seq": 325,
+          "phase": "parse",
+          "us": 112
+        },
+        {
+          "seq": 326,
+          "phase": "parse",
+          "us": 574
+        },
+        {
+          "seq": 327,
+          "phase": "parse",
+          "us": 103
+        },
+        {
+          "seq": 328,
+          "phase": "parse",
+          "us": 1815
+        },
+        {
+          "seq": 329,
+          "phase": "parse",
+          "us": 452
+        },
+        {
+          "seq": 330,
+          "phase": "parse",
+          "us": 151
+        },
+        {
+          "seq": 331,
+          "phase": "parse",
+          "us": 402
+        },
+        {
+          "seq": 332,
+          "phase": "parse",
+          "us": 5496
+        },
+        {
+          "seq": 333,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 334,
+          "phase": "parse",
+          "us": 414
+        },
+        {
+          "seq": 335,
+          "phase": "parse",
+          "us": 775
+        },
+        {
+          "seq": 336,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 337,
+          "phase": "parse",
+          "us": 5849
+        },
+        {
+          "seq": 338,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 339,
+          "phase": "parse",
+          "us": 709
+        },
+        {
+          "seq": 340,
+          "phase": "parse",
+          "us": 748
+        },
+        {
+          "seq": 341,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 342,
+          "phase": "parse",
+          "us": 5521
+        },
+        {
+          "seq": 343,
+          "phase": "parse",
+          "us": 4975
+        },
+        {
+          "seq": 344,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 345,
+          "phase": "parse",
+          "us": 407
+        },
+        {
+          "seq": 346,
+          "phase": "parse",
+          "us": 1204
+        },
+        {
+          "seq": 347,
+          "phase": "parse",
+          "us": 189
+        },
+        {
+          "seq": 348,
+          "phase": "parse",
+          "us": 503
+        },
+        {
+          "seq": 349,
+          "phase": "parse",
+          "us": 3215
+        },
+        {
+          "seq": 350,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 351,
+          "phase": "parse",
+          "us": 2628
+        },
+        {
+          "seq": 352,
+          "phase": "parse",
+          "us": 1710
+        },
+        {
+          "seq": 353,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 354,
+          "phase": "parse",
+          "us": 1529
+        },
+        {
+          "seq": 355,
+          "phase": "parse",
+          "us": 1539
+        },
+        {
+          "seq": 356,
+          "phase": "parse",
+          "us": 169
+        },
+        {
+          "seq": 357,
+          "phase": "parse",
+          "us": 568
+        },
+        {
+          "seq": 358,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 359,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 360,
+          "phase": "parse",
+          "us": 470
+        },
+        {
+          "seq": 361,
+          "phase": "parse",
+          "us": 838
+        },
+        {
+          "seq": 362,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 363,
+          "phase": "parse",
+          "us": 984
+        },
+        {
+          "seq": 364,
+          "phase": "parse",
+          "us": 559
+        },
+        {
+          "seq": 365,
+          "phase": "parse",
+          "us": 1302
+        },
+        {
+          "seq": 366,
+          "phase": "parse",
+          "us": 1429
+        },
+        {
+          "seq": 367,
+          "phase": "parse",
+          "us": 1197
+        },
+        {
+          "seq": 368,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 369,
+          "phase": "parse",
+          "us": 194
+        },
+        {
+          "seq": 370,
+          "phase": "parse",
+          "us": 33
+        },
+        {
+          "seq": 371,
+          "phase": "parse",
+          "us": 377
+        },
+        {
+          "seq": 372,
+          "phase": "parse",
+          "us": 153
+        },
+        {
+          "seq": 373,
+          "phase": "parse",
+          "us": 142
+        },
+        {
+          "seq": 374,
+          "phase": "parse",
+          "us": 390
+        },
+        {
+          "seq": 375,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 376,
+          "phase": "parse",
+          "us": 205
+        },
+        {
+          "seq": 377,
+          "phase": "parse",
+          "us": 282
+        },
+        {
+          "seq": 378,
+          "phase": "parse",
+          "us": 87
+        },
+        {
+          "seq": 379,
+          "phase": "parse",
+          "us": 652
+        },
+        {
+          "seq": 380,
+          "phase": "parse",
+          "us": 148
+        },
+        {
+          "seq": 381,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 382,
+          "phase": "parse",
+          "us": 423
+        },
+        {
+          "seq": 383,
+          "phase": "parse",
+          "us": 114
+        },
+        {
+          "seq": 384,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 385,
+          "phase": "parse",
+          "us": 244
+        },
+        {
+          "seq": 386,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 387,
+          "phase": "parse",
+          "us": 882
+        },
+        {
+          "seq": 388,
+          "phase": "parse",
+          "us": 163
+        },
+        {
+          "seq": 389,
+          "phase": "parse",
+          "us": 737
+        },
+        {
+          "seq": 390,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 391,
+          "phase": "parse",
+          "us": 824
+        },
+        {
+          "seq": 392,
+          "phase": "parse",
+          "us": 1284
+        },
+        {
+          "seq": 393,
+          "phase": "parse",
+          "us": 341
+        },
+        {
+          "seq": 394,
+          "phase": "parse",
+          "us": 526
+        },
+        {
+          "seq": 395,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 396,
+          "phase": "parse",
+          "us": 153
+        },
+        {
+          "seq": 397,
+          "phase": "parse",
+          "us": 879
+        },
+        {
+          "seq": 398,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 399,
+          "phase": "parse",
+          "us": 944
+        },
+        {
+          "seq": 400,
+          "phase": "parse",
+          "us": 198
+        },
+        {
+          "seq": 401,
+          "phase": "parse",
+          "us": 361
+        },
+        {
+          "seq": 402,
+          "phase": "parse",
+          "us": 1151
+        },
+        {
+          "seq": 403,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 404,
+          "phase": "parse",
+          "us": 95
+        },
+        {
+          "seq": 405,
+          "phase": "parse",
+          "us": 549
+        },
+        {
+          "seq": 406,
+          "phase": "parse",
+          "us": 114
+        },
+        {
+          "seq": 407,
+          "phase": "parse",
+          "us": 645
+        },
+        {
+          "seq": 408,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 409,
+          "phase": "parse",
+          "us": 898
+        },
+        {
+          "seq": 410,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 411,
+          "phase": "parse",
+          "us": 625
+        },
+        {
+          "seq": 412,
+          "phase": "parse",
+          "us": 883
+        },
+        {
+          "seq": 413,
+          "phase": "parse",
+          "us": 176
+        },
+        {
+          "seq": 414,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 415,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 416,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 417,
+          "phase": "parse",
+          "us": 277
+        },
+        {
+          "seq": 418,
+          "phase": "parse",
+          "us": 44
+        },
+        {
+          "seq": 419,
+          "phase": "parse",
+          "us": 195
+        },
+        {
+          "seq": 420,
+          "phase": "parse",
+          "us": 373
+        },
+        {
+          "seq": 421,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 422,
+          "phase": "parse",
+          "us": 220
+        },
+        {
+          "seq": 423,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 424,
+          "phase": "parse",
+          "us": 749
+        },
+        {
+          "seq": 425,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 426,
+          "phase": "parse",
+          "us": 241
+        },
+        {
+          "seq": 427,
+          "phase": "parse",
+          "us": 793
+        },
+        {
+          "seq": 428,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 429,
+          "phase": "parse",
+          "us": 242
+        },
+        {
+          "seq": 430,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 431,
+          "phase": "parse",
+          "us": 25
+        },
+        {
+          "seq": 432,
+          "phase": "parse",
+          "us": 150
+        },
+        {
+          "seq": 433,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 434,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 435,
+          "phase": "parse",
+          "us": 199
+        },
+        {
+          "seq": 436,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 437,
+          "phase": "parse",
+          "us": 130
+        },
+        {
+          "seq": 438,
+          "phase": "parse",
+          "us": 239
+        },
+        {
+          "seq": 439,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 440,
+          "phase": "parse",
+          "us": 115
+        },
+        {
+          "seq": 441,
+          "phase": "parse",
+          "us": 379
+        },
+        {
+          "seq": 442,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 443,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 444,
+          "phase": "parse",
+          "us": 294
+        },
+        {
+          "seq": 445,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 446,
+          "phase": "parse",
+          "us": 393
+        },
+        {
+          "seq": 447,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 448,
+          "phase": "parse",
+          "us": 62
+        },
+        {
+          "seq": 449,
+          "phase": "parse",
+          "us": 308
+        },
+        {
+          "seq": 450,
+          "phase": "parse",
+          "us": 506
+        },
+        {
+          "seq": 451,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 452,
+          "phase": "parse",
+          "us": 136
+        },
+        {
+          "seq": 453,
+          "phase": "parse",
+          "us": 191
+        },
+        {
+          "seq": 454,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 455,
+          "phase": "parse",
+          "us": 217
+        },
+        {
+          "seq": 456,
+          "phase": "parse",
+          "us": 106
+        },
+        {
+          "seq": 457,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 458,
+          "phase": "parse",
+          "us": 237
+        },
+        {
+          "seq": 459,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 460,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 461,
+          "phase": "parse",
+          "us": 193
+        },
+        {
+          "seq": 462,
+          "phase": "parse",
+          "us": 44
+        },
+        {
+          "seq": 463,
+          "phase": "parse",
+          "us": 604
+        },
+        {
+          "seq": 464,
+          "phase": "parse",
+          "us": 100
+        },
+        {
+          "seq": 465,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 466,
+          "phase": "parse",
+          "us": 1756
+        },
+        {
+          "seq": 467,
+          "phase": "parse",
+          "us": 592
+        },
+        {
+          "seq": 468,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 469,
+          "phase": "parse",
+          "us": 1532
+        },
+        {
+          "seq": 470,
+          "phase": "parse",
+          "us": 146
+        },
+        {
+          "seq": 471,
+          "phase": "parse",
+          "us": 529
+        },
+        {
+          "seq": 472,
+          "phase": "parse",
+          "us": 143
+        },
+        {
+          "seq": 473,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 474,
+          "phase": "parse",
+          "us": 748
+        },
+        {
+          "seq": 475,
+          "phase": "parse",
+          "us": 338
+        },
+        {
+          "seq": 476,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 477,
+          "phase": "parse",
+          "us": 220
+        },
+        {
+          "seq": 478,
+          "phase": "parse",
+          "us": 440
+        },
+        {
+          "seq": 479,
+          "phase": "parse",
+          "us": 115
+        },
+        {
+          "seq": 480,
+          "phase": "parse",
+          "us": 1195
+        },
+        {
+          "seq": 481,
+          "phase": "parse",
+          "us": 179
+        },
+        {
+          "seq": 482,
+          "phase": "parse",
+          "us": 435
+        },
+        {
+          "seq": 483,
+          "phase": "parse",
+          "us": 612
+        },
+        {
+          "seq": 484,
+          "phase": "parse",
+          "us": 334
+        },
+        {
+          "seq": 485,
+          "phase": "parse",
+          "us": 880
+        },
+        {
+          "seq": 486,
+          "phase": "parse",
+          "us": 453
+        },
+        {
+          "seq": 487,
+          "phase": "parse",
+          "us": 305
+        },
+        {
+          "seq": 488,
+          "phase": "parse",
+          "us": 423
+        },
+        {
+          "seq": 489,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 490,
+          "phase": "parse",
+          "us": 434
+        },
+        {
+          "seq": 491,
+          "phase": "parse",
+          "us": 610
+        },
+        {
+          "seq": 492,
+          "phase": "parse",
+          "us": 1317
+        },
+        {
+          "seq": 493,
+          "phase": "parse",
+          "us": 190
+        },
+        {
+          "seq": 494,
+          "phase": "parse",
+          "us": 760
+        },
+        {
+          "seq": 495,
+          "phase": "parse",
+          "us": 161
+        },
+        {
+          "seq": 496,
+          "phase": "parse",
+          "us": 218
+        },
+        {
+          "seq": 497,
+          "phase": "parse",
+          "us": 320
+        },
+        {
+          "seq": 498,
+          "phase": "parse",
+          "us": 173
+        },
+        {
+          "seq": 499,
+          "phase": "parse",
+          "us": 180
+        },
+        {
+          "seq": 500,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 501,
+          "phase": "parse",
+          "us": 817
+        },
+        {
+          "seq": 502,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 503,
+          "phase": "parse",
+          "us": 395
+        },
+        {
+          "seq": 504,
+          "phase": "parse",
+          "us": 268
+        },
+        {
+          "seq": 505,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 506,
+          "phase": "parse",
+          "us": 185
+        },
+        {
+          "seq": 507,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 508,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 509,
+          "phase": "parse",
+          "us": 318
+        },
+        {
+          "seq": 510,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 511,
+          "phase": "parse",
+          "us": 341
+        },
+        {
+          "seq": 512,
+          "phase": "parse",
+          "us": 286
+        },
+        {
+          "seq": 513,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 514,
+          "phase": "parse",
+          "us": 595
+        },
+        {
+          "seq": 515,
+          "phase": "parse",
+          "us": 162
+        },
+        {
+          "seq": 516,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 517,
+          "phase": "parse",
+          "us": 385
+        },
+        {
+          "seq": 518,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 519,
+          "phase": "parse",
+          "us": 281
+        },
+        {
+          "seq": 520,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 521,
+          "phase": "parse",
+          "us": 88
+        },
+        {
+          "seq": 522,
+          "phase": "parse",
+          "us": 413
+        },
+        {
+          "seq": 523,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 524,
+          "phase": "parse",
+          "us": 881
+        },
+        {
+          "seq": 525,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 526,
+          "phase": "parse",
+          "us": 324
+        },
+        {
+          "seq": 527,
+          "phase": "parse",
+          "us": 403
+        },
+        {
+          "seq": 528,
+          "phase": "parse",
+          "us": 204
+        },
+        {
+          "seq": 529,
+          "phase": "parse",
+          "us": 573
+        },
+        {
+          "seq": 530,
+          "phase": "parse",
+          "us": 336
+        },
+        {
+          "seq": 531,
+          "phase": "parse",
+          "us": 835
+        },
+        {
+          "seq": 532,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 533,
+          "phase": "parse",
+          "us": 985
+        },
+        {
+          "seq": 534,
+          "phase": "parse",
+          "us": 531
+        },
+        {
+          "seq": 535,
+          "phase": "parse",
+          "us": 1131
+        },
+        {
+          "seq": 536,
+          "phase": "parse",
+          "us": 4385
+        },
+        {
+          "seq": 537,
+          "phase": "parse",
+          "us": 2976
+        },
+        {
+          "seq": 538,
+          "phase": "parse",
+          "us": 2126
+        },
+        {
+          "seq": 539,
+          "phase": "parse",
+          "us": 378
+        },
+        {
+          "seq": 540,
+          "phase": "parse",
+          "us": 905
+        },
+        {
+          "seq": 541,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 542,
+          "phase": "parse",
+          "us": 409
+        },
+        {
+          "seq": 543,
+          "phase": "parse",
+          "us": 178
+        },
+        {
+          "seq": 544,
+          "phase": "parse",
+          "us": 1171
+        },
+        {
+          "seq": 545,
+          "phase": "parse",
+          "us": 1027
+        },
+        {
+          "seq": 546,
+          "phase": "parse",
+          "us": 315
+        },
+        {
+          "seq": 547,
+          "phase": "parse",
+          "us": 205
+        },
+        {
+          "seq": 548,
+          "phase": "parse",
+          "us": 358
+        },
+        {
+          "seq": 549,
+          "phase": "parse",
+          "us": 92
+        },
+        {
+          "seq": 550,
+          "phase": "parse",
+          "us": 478
+        },
+        {
+          "seq": 551,
+          "phase": "parse",
+          "us": 2034
+        },
+        {
+          "seq": 552,
+          "phase": "parse",
+          "us": 219
+        },
+        {
+          "seq": 553,
+          "phase": "parse",
+          "us": 1329
+        },
+        {
+          "seq": 554,
+          "phase": "parse",
+          "us": 1269
+        },
+        {
+          "seq": 555,
+          "phase": "parse",
+          "us": 264
+        },
+        {
+          "seq": 556,
+          "phase": "parse",
+          "us": 176
+        },
+        {
+          "seq": 557,
+          "phase": "parse",
+          "us": 4611
+        },
+        {
+          "seq": 558,
+          "phase": "parse",
+          "us": 242
+        },
+        {
+          "seq": 559,
+          "phase": "parse",
+          "us": 737
+        },
+        {
+          "seq": 560,
+          "phase": "parse",
+          "us": 304
+        },
+        {
+          "seq": 561,
+          "phase": "parse",
+          "us": 276
+        },
+        {
+          "seq": 562,
+          "phase": "parse",
+          "us": 1523
+        },
+        {
+          "seq": 563,
+          "phase": "parse",
+          "us": 144
+        },
+        {
+          "seq": 564,
+          "phase": "parse",
+          "us": 1155
+        },
+        {
+          "seq": 565,
+          "phase": "parse",
+          "us": 726
+        },
+        {
+          "seq": 566,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 567,
+          "phase": "parse",
+          "us": 899
+        },
+        {
+          "seq": 568,
+          "phase": "parse",
+          "us": 1684
+        },
+        {
+          "seq": 569,
+          "phase": "parse",
+          "us": 210
+        },
+        {
+          "seq": 570,
+          "phase": "parse",
+          "us": 4052
+        },
+        {
+          "seq": 571,
+          "phase": "parse",
+          "us": 2580
+        },
+        {
+          "seq": 572,
+          "phase": "parse",
+          "us": 227
+        },
+        {
+          "seq": 573,
+          "phase": "parse",
+          "us": 167
+        },
+        {
+          "seq": 574,
+          "phase": "parse",
+          "us": 1379
+        },
+        {
+          "seq": 575,
+          "phase": "parse",
+          "us": 284
+        },
+        {
+          "seq": 576,
+          "phase": "parse",
+          "us": 1069
+        },
+        {
+          "seq": 577,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 578,
+          "phase": "parse",
+          "us": 930
+        },
+        {
+          "seq": 579,
+          "phase": "parse",
+          "us": 1252
+        },
+        {
+          "seq": 580,
+          "phase": "parse",
+          "us": 474
+        },
+        {
+          "seq": 581,
+          "phase": "parse",
+          "us": 295
+        },
+        {
+          "seq": 582,
+          "phase": "parse",
+          "us": 2041
+        },
+        {
+          "seq": 583,
+          "phase": "parse",
+          "us": 9682
+        },
+        {
+          "seq": 584,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 585,
+          "phase": "parse",
+          "us": 289
+        },
+        {
+          "seq": 586,
+          "phase": "parse",
+          "us": 387
+        },
+        {
+          "seq": 587,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 588,
+          "phase": "parse",
+          "us": 8429
+        },
+        {
+          "seq": 589,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 590,
+          "phase": "parse",
+          "us": 709
+        },
+        {
+          "seq": 591,
+          "phase": "parse",
+          "us": 3106
+        },
+        {
+          "seq": 592,
+          "phase": "parse",
+          "us": 704
+        },
+        {
+          "seq": 593,
+          "phase": "parse",
+          "us": 221
+        },
+        {
+          "seq": 594,
+          "phase": "parse",
+          "us": 1256
+        },
+        {
+          "seq": 595,
+          "phase": "parse",
+          "us": 183
+        },
+        {
+          "seq": 596,
+          "phase": "parse",
+          "us": 98
+        },
+        {
+          "seq": 597,
+          "phase": "parse",
+          "us": 946
+        },
+        {
+          "seq": 598,
+          "phase": "parse",
+          "us": 2538
+        },
+        {
+          "seq": 599,
+          "phase": "parse",
+          "us": 1189
+        },
+        {
+          "seq": 600,
+          "phase": "parse",
+          "us": 739
+        },
+        {
+          "seq": 601,
+          "phase": "parse",
+          "us": 1538
+        },
+        {
+          "seq": 602,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 603,
+          "phase": "parse",
+          "us": 1585
+        },
+        {
+          "seq": 604,
+          "phase": "parse",
+          "us": 5774
+        },
+        {
+          "seq": 605,
+          "phase": "parse",
+          "us": 2656
+        },
+        {
+          "seq": 606,
+          "phase": "parse",
+          "us": 526
+        },
+        {
+          "seq": 607,
+          "phase": "parse",
+          "us": 1188
+        },
+        {
+          "seq": 608,
+          "phase": "parse",
+          "us": 1244
+        },
+        {
+          "seq": 609,
+          "phase": "parse",
+          "us": 563
+        },
+        {
+          "seq": 610,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 611,
+          "phase": "parse",
+          "us": 169
+        },
+        {
+          "seq": 612,
+          "phase": "parse",
+          "us": 524
+        },
+        {
+          "seq": 613,
+          "phase": "parse",
+          "us": 142
+        },
+        {
+          "seq": 614,
+          "phase": "parse",
+          "us": 1004
+        },
+        {
+          "seq": 615,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 616,
+          "phase": "parse",
+          "us": 941
+        },
+        {
+          "seq": 617,
+          "phase": "parse",
+          "us": 151
+        },
+        {
+          "seq": 618,
+          "phase": "parse",
+          "us": 404
+        },
+        {
+          "seq": 619,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 620,
+          "phase": "parse",
+          "us": 905
+        },
+        {
+          "seq": 621,
+          "phase": "parse",
+          "us": 194
+        },
+        {
+          "seq": 622,
+          "phase": "parse",
+          "us": 292
+        },
+        {
+          "seq": 623,
+          "phase": "parse",
+          "us": 219
+        },
+        {
+          "seq": 624,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 625,
+          "phase": "parse",
+          "us": 230
+        },
+        {
+          "seq": 626,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 627,
+          "phase": "parse",
+          "us": 64
+        },
+        {
+          "seq": 628,
+          "phase": "parse",
+          "us": 347
+        },
+        {
+          "seq": 629,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 630,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 631,
+          "phase": "parse",
+          "us": 696
+        },
+        {
+          "seq": 632,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 633,
+          "phase": "parse",
+          "us": 348
+        },
+        {
+          "seq": 634,
+          "phase": "parse",
+          "us": 274
+        },
+        {
+          "seq": 635,
+          "phase": "parse",
+          "us": 166
+        },
+        {
+          "seq": 636,
+          "phase": "parse",
+          "us": 2266
+        },
+        {
+          "seq": 637,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 638,
+          "phase": "parse",
+          "us": 916
+        },
+        {
+          "seq": 639,
+          "phase": "parse",
+          "us": 434
+        },
+        {
+          "seq": 640,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 641,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 642,
+          "phase": "parse",
+          "us": 88
+        },
+        {
+          "seq": 643,
+          "phase": "parse",
+          "us": 182
+        },
+        {
+          "seq": 644,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 645,
+          "phase": "parse",
+          "us": 326
+        },
+        {
+          "seq": 646,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 647,
+          "phase": "parse",
+          "us": 87
+        },
+        {
+          "seq": 648,
+          "phase": "parse",
+          "us": 416
+        },
+        {
+          "seq": 649,
+          "phase": "parse",
+          "us": 177
+        },
+        {
+          "seq": 650,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 651,
+          "phase": "parse",
+          "us": 158
+        },
+        {
+          "seq": 652,
+          "phase": "parse",
+          "us": 910
+        },
+        {
+          "seq": 653,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 654,
+          "phase": "parse",
+          "us": 392
+        },
+        {
+          "seq": 655,
+          "phase": "parse",
+          "us": 1615
+        },
+        {
+          "seq": 656,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 657,
+          "phase": "parse",
+          "us": 306
+        },
+        {
+          "seq": 658,
+          "phase": "parse",
+          "us": 1252
+        },
+        {
+          "seq": 659,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 660,
+          "phase": "parse",
+          "us": 721
+        },
+        {
+          "seq": 661,
+          "phase": "parse",
+          "us": 280
+        },
+        {
+          "seq": 662,
+          "phase": "parse",
+          "us": 292
+        },
+        {
+          "seq": 663,
+          "phase": "parse",
+          "us": 477
+        },
+        {
+          "seq": 664,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 665,
+          "phase": "parse",
+          "us": 765
+        },
+        {
+          "seq": 666,
+          "phase": "parse",
+          "us": 378
+        },
+        {
+          "seq": 667,
+          "phase": "parse",
+          "us": 627
+        },
+        {
+          "seq": 668,
+          "phase": "parse",
+          "us": 1027
+        },
+        {
+          "seq": 669,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 670,
+          "phase": "parse",
+          "us": 557
+        },
+        {
+          "seq": 671,
+          "phase": "parse",
+          "us": 642
+        },
+        {
+          "seq": 672,
+          "phase": "parse",
+          "us": 1831
+        },
+        {
+          "seq": 673,
+          "phase": "parse",
+          "us": 1369
+        },
+        {
+          "seq": 674,
+          "phase": "parse",
+          "us": 600
+        },
+        {
+          "seq": 675,
+          "phase": "parse",
+          "us": 166
+        },
+        {
+          "seq": 676,
+          "phase": "parse",
+          "us": 570
+        },
+        {
+          "seq": 677,
+          "phase": "parse",
+          "us": 1329
+        },
+        {
+          "seq": 678,
+          "phase": "parse",
+          "us": 181
+        },
+        {
+          "seq": 679,
+          "phase": "parse",
+          "us": 1548
+        },
+        {
+          "seq": 680,
+          "phase": "parse",
+          "us": 428
+        },
+        {
+          "seq": 681,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 682,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 683,
+          "phase": "parse",
+          "us": 451
+        },
+        {
+          "seq": 684,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 685,
+          "phase": "parse",
+          "us": 401
+        },
+        {
+          "seq": 686,
+          "phase": "parse",
+          "us": 3446
+        },
+        {
+          "seq": 687,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 688,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 689,
+          "phase": "parse",
+          "us": 211
+        },
+        {
+          "seq": 690,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 691,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 692,
+          "phase": "parse",
+          "us": 158
+        },
+        {
+          "seq": 693,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 694,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 695,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 696,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 697,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 698,
+          "phase": "parse",
+          "us": 165
+        },
+        {
+          "seq": 699,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 700,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 701,
+          "phase": "parse",
+          "us": 184
+        },
+        {
+          "seq": 702,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 703,
+          "phase": "parse",
+          "us": 40
+        },
+        {
+          "seq": 704,
+          "phase": "parse",
+          "us": 138
+        },
+        {
+          "seq": 705,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 706,
+          "phase": "parse",
+          "us": 89
+        },
+        {
+          "seq": 707,
+          "phase": "parse",
+          "us": 188
+        },
+        {
+          "seq": 708,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 709,
+          "phase": "parse",
+          "us": 5542
+        },
+        {
+          "seq": 710,
+          "phase": "parse",
+          "us": 370
+        },
+        {
+          "seq": 711,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 712,
+          "phase": "parse",
+          "us": 100
+        },
+        {
+          "seq": 713,
+          "phase": "parse",
+          "us": 181
+        },
+        {
+          "seq": 714,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 715,
+          "phase": "parse",
+          "us": 91
+        },
+        {
+          "seq": 716,
+          "phase": "parse",
+          "us": 186
+        },
+        {
+          "seq": 717,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 718,
+          "phase": "parse",
+          "us": 115
+        },
+        {
+          "seq": 719,
+          "phase": "parse",
+          "us": 192
+        },
+        {
+          "seq": 720,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 721,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 722,
+          "phase": "parse",
+          "us": 171
+        },
+        {
+          "seq": 723,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 724,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 725,
+          "phase": "parse",
+          "us": 154
+        },
+        {
+          "seq": 726,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 727,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 728,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 729,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 730,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 731,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 732,
+          "phase": "parse",
+          "us": 82
+        },
+        {
+          "seq": 733,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 734,
+          "phase": "parse",
+          "us": 71
+        },
+        {
+          "seq": 735,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 736,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 737,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 738,
+          "phase": "parse",
+          "us": 175
+        },
+        {
+          "seq": 739,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 740,
+          "phase": "parse",
+          "us": 967
+        },
+        {
+          "seq": 741,
+          "phase": "parse",
+          "us": 384
+        },
+        {
+          "seq": 742,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 743,
+          "phase": "parse",
+          "us": 547
+        },
+        {
+          "seq": 744,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 745,
+          "phase": "parse",
+          "us": 560
+        },
+        {
+          "seq": 746,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 747,
+          "phase": "parse",
+          "us": 991
+        },
+        {
+          "seq": 748,
+          "phase": "parse",
+          "us": 1616
+        },
+        {
+          "seq": 749,
+          "phase": "parse",
+          "us": 216
+        },
+        {
+          "seq": 750,
+          "phase": "parse",
+          "us": 364
+        },
+        {
+          "seq": 751,
+          "phase": "parse",
+          "us": 393
+        },
+        {
+          "seq": 752,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 753,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 754,
+          "phase": "parse",
+          "us": 303
+        },
+        {
+          "seq": 755,
+          "phase": "parse",
+          "us": 3063
+        },
+        {
+          "seq": 756,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 757,
+          "phase": "parse",
+          "us": 931
+        },
+        {
+          "seq": 758,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 759,
+          "phase": "parse",
+          "us": 644
+        },
+        {
+          "seq": 760,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 761,
+          "phase": "parse",
+          "us": 473
+        },
+        {
+          "seq": 762,
+          "phase": "parse",
+          "us": 442
+        },
+        {
+          "seq": 763,
+          "phase": "parse",
+          "us": 743
+        },
+        {
+          "seq": 764,
+          "phase": "parse",
+          "us": 95
+        },
+        {
+          "seq": 765,
+          "phase": "parse",
+          "us": 788
+        },
+        {
+          "seq": 766,
+          "phase": "parse",
+          "us": 2416
+        },
+        {
+          "seq": 767,
+          "phase": "parse",
+          "us": 1026
+        },
+        {
+          "seq": 768,
+          "phase": "parse",
+          "us": 2568
+        },
+        {
+          "seq": 769,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 770,
+          "phase": "parse",
+          "us": 1077
+        },
+        {
+          "seq": 771,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 772,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 773,
+          "phase": "parse",
+          "us": 994
+        },
+        {
+          "seq": 774,
+          "phase": "parse",
+          "us": 689
+        },
+        {
+          "seq": 775,
+          "phase": "parse",
+          "us": 1503
+        },
+        {
+          "seq": 776,
+          "phase": "parse",
+          "us": 211
+        },
+        {
+          "seq": 777,
+          "phase": "parse",
+          "us": 658
+        },
+        {
+          "seq": 778,
+          "phase": "parse",
+          "us": 2427
+        },
+        {
+          "seq": 779,
+          "phase": "parse",
+          "us": 906
+        },
+        {
+          "seq": 780,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 781,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 782,
+          "phase": "parse",
+          "us": 5307
+        },
+        {
+          "seq": 783,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 784,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 785,
+          "phase": "parse",
+          "us": 1323
+        },
+        {
+          "seq": 786,
+          "phase": "parse",
+          "us": 148
+        },
+        {
+          "seq": 787,
+          "phase": "parse",
+          "us": 315
+        },
+        {
+          "seq": 788,
+          "phase": "parse",
+          "us": 2048
+        },
+        {
+          "seq": 789,
+          "phase": "parse",
+          "us": 1261
+        },
+        {
+          "seq": 790,
+          "phase": "parse",
+          "us": 418
+        },
+        {
+          "seq": 791,
+          "phase": "parse",
+          "us": 2545
+        },
+        {
+          "seq": 792,
+          "phase": "parse",
+          "us": 375
+        },
+        {
+          "seq": 793,
+          "phase": "parse",
+          "us": 2480
+        },
+        {
+          "seq": 794,
+          "phase": "parse",
+          "us": 487
+        },
+        {
+          "seq": 795,
+          "phase": "parse",
+          "us": 1021
+        },
+        {
+          "seq": 796,
+          "phase": "parse",
+          "us": 251
+        },
+        {
+          "seq": 797,
+          "phase": "parse",
+          "us": 1847
+        },
+        {
+          "seq": 798,
+          "phase": "parse",
+          "us": 2696
+        },
+        {
+          "seq": 799,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 800,
+          "phase": "parse",
+          "us": 10896
+        },
+        {
+          "seq": 801,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 802,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 803,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 804,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 805,
+          "phase": "parse",
+          "us": 12348
+        },
+        {
+          "seq": 806,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 807,
+          "phase": "parse",
+          "us": 1769
+        },
+        {
+          "seq": 808,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 809,
+          "phase": "parse",
+          "us": 581
+        },
+        {
+          "seq": 810,
+          "phase": "parse",
+          "us": 699
+        },
+        {
+          "seq": 811,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 812,
+          "phase": "parse",
+          "us": 904
+        },
+        {
+          "seq": 813,
+          "phase": "parse",
+          "us": 2462
+        },
+        {
+          "seq": 814,
+          "phase": "parse",
+          "us": 755
+        },
+        {
+          "seq": 815,
+          "phase": "parse",
+          "us": 2880
+        },
+        {
+          "seq": 816,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 817,
+          "phase": "parse",
+          "us": 2562
+        },
+        {
+          "seq": 818,
+          "phase": "parse",
+          "us": 915
+        },
+        {
+          "seq": 819,
+          "phase": "parse",
+          "us": 852
+        },
+        {
+          "seq": 820,
+          "phase": "parse",
+          "us": 202
+        },
+        {
+          "seq": 821,
+          "phase": "parse",
+          "us": 207
+        },
+        {
+          "seq": 822,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 823,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 824,
+          "phase": "parse",
+          "us": 195
+        },
+        {
+          "seq": 825,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 826,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 827,
+          "phase": "parse",
+          "us": 1011
+        },
+        {
+          "seq": 828,
+          "phase": "parse",
+          "us": 172
+        },
+        {
+          "seq": 829,
+          "phase": "parse",
+          "us": 162
+        },
+        {
+          "seq": 830,
+          "phase": "parse",
+          "us": 251
+        },
+        {
+          "seq": 831,
+          "phase": "parse",
+          "us": 463
+        },
+        {
+          "seq": 832,
+          "phase": "parse",
+          "us": 1746
+        },
+        {
+          "seq": 833,
+          "phase": "parse",
+          "us": 1228
+        },
+        {
+          "seq": 834,
+          "phase": "parse",
+          "us": 774
+        },
+        {
+          "seq": 835,
+          "phase": "parse",
+          "us": 247
+        },
+        {
+          "seq": 836,
+          "phase": "parse",
+          "us": 161
+        },
+        {
+          "seq": 837,
+          "phase": "parse",
+          "us": 994
+        },
+        {
+          "seq": 838,
+          "phase": "parse",
+          "us": 574
+        },
+        {
+          "seq": 839,
+          "phase": "parse",
+          "us": 766
+        },
+        {
+          "seq": 840,
+          "phase": "parse",
+          "us": 787
+        },
+        {
+          "seq": 841,
+          "phase": "parse",
+          "us": 978
+        },
+        {
+          "seq": 842,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 843,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 844,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 845,
+          "phase": "parse",
+          "us": 123
+        },
+        {
+          "seq": 846,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 847,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 848,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 849,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 850,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 851,
+          "phase": "parse",
+          "us": 134
+        },
+        {
+          "seq": 852,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 853,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 854,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 855,
+          "phase": "parse",
+          "us": 127
+        },
+        {
+          "seq": 856,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 857,
+          "phase": "parse",
+          "us": 53
+        },
+        {
+          "seq": 858,
+          "phase": "parse",
+          "us": 119
+        },
+        {
+          "seq": 859,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 860,
+          "phase": "parse",
+          "us": 57
+        },
+        {
+          "seq": 861,
+          "phase": "parse",
+          "us": 116
+        },
+        {
+          "seq": 862,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 863,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 864,
+          "phase": "parse",
+          "us": 118
+        },
+        {
+          "seq": 865,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 866,
+          "phase": "parse",
+          "us": 278
+        },
+        {
+          "seq": 867,
+          "phase": "parse",
+          "us": 307
+        },
+        {
+          "seq": 868,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 869,
+          "phase": "parse",
+          "us": 487
+        },
+        {
+          "seq": 870,
+          "phase": "parse",
+          "us": 446
+        },
+        {
+          "seq": 871,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 872,
+          "phase": "parse",
+          "us": 509
+        },
+        {
+          "seq": 873,
+          "phase": "parse",
+          "us": 1927
+        },
+        {
+          "seq": 874,
+          "phase": "parse",
+          "us": 1183
+        },
+        {
+          "seq": 875,
+          "phase": "parse",
+          "us": 901
+        },
+        {
+          "seq": 876,
+          "phase": "parse",
+          "us": 780
+        },
+        {
+          "seq": 877,
+          "phase": "parse",
+          "us": 40
+        },
+        {
+          "seq": 878,
+          "phase": "parse",
+          "us": 1145
+        },
+        {
+          "seq": 879,
+          "phase": "parse",
+          "us": 1524
+        },
+        {
+          "seq": 880,
+          "phase": "parse",
+          "us": 2392
+        },
+        {
+          "seq": 881,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 882,
+          "phase": "parse",
+          "us": 540
+        },
+        {
+          "seq": 883,
+          "phase": "parse",
+          "us": 3042
+        },
+        {
+          "seq": 884,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 885,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 886,
+          "phase": "parse",
+          "us": 2132
+        },
+        {
+          "seq": 887,
+          "phase": "parse",
+          "us": 656
+        },
+        {
+          "seq": 888,
+          "phase": "parse",
+          "us": 354
+        },
+        {
+          "seq": 889,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 890,
+          "phase": "parse",
+          "us": 120
+        },
+        {
+          "seq": 891,
+          "phase": "parse",
+          "us": 1297
+        },
+        {
+          "seq": 892,
+          "phase": "parse",
+          "us": 91
+        },
+        {
+          "seq": 893,
+          "phase": "parse",
+          "us": 472
+        },
+        {
+          "seq": 894,
+          "phase": "parse",
+          "us": 177
+        },
+        {
+          "seq": 895,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 896,
+          "phase": "parse",
+          "us": 348
+        },
+        {
+          "seq": 897,
+          "phase": "parse",
+          "us": 1320
+        },
+        {
+          "seq": 898,
+          "phase": "parse",
+          "us": 341
+        },
+        {
+          "seq": 899,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 900,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 901,
+          "phase": "parse",
+          "us": 1839
+        },
+        {
+          "seq": 902,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 903,
+          "phase": "parse",
+          "us": 180
+        },
+        {
+          "seq": 904,
+          "phase": "parse",
+          "us": 567
+        },
+        {
+          "seq": 905,
+          "phase": "parse",
+          "us": 472
+        },
+        {
+          "seq": 906,
+          "phase": "parse",
+          "us": 764
+        },
+        {
+          "seq": 907,
+          "phase": "parse",
+          "us": 2252
+        },
+        {
+          "seq": 908,
+          "phase": "parse",
+          "us": 913
+        },
+        {
+          "seq": 909,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 910,
+          "phase": "parse",
+          "us": 2542
+        },
+        {
+          "seq": 911,
+          "phase": "parse",
+          "us": 1764
+        },
+        {
+          "seq": 912,
+          "phase": "parse",
+          "us": 90
+        },
+        {
+          "seq": 913,
+          "phase": "parse",
+          "us": 199
+        },
+        {
+          "seq": 914,
+          "phase": "parse",
+          "us": 103
+        },
+        {
+          "seq": 915,
+          "phase": "parse",
+          "us": 520
+        },
+        {
+          "seq": 916,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 917,
+          "phase": "parse",
+          "us": 609
+        },
+        {
+          "seq": 918,
+          "phase": "parse",
+          "us": 779
+        },
+        {
+          "seq": 919,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 920,
+          "phase": "parse",
+          "us": 1045
+        },
+        {
+          "seq": 921,
+          "phase": "parse",
+          "us": 501
+        },
+        {
+          "seq": 922,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 923,
+          "phase": "parse",
+          "us": 1465
+        },
+        {
+          "seq": 924,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 925,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 926,
+          "phase": "parse",
+          "us": 368
+        },
+        {
+          "seq": 927,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 928,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 929,
+          "phase": "parse",
+          "us": 215
+        },
+        {
+          "seq": 930,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 931,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 932,
+          "phase": "parse",
+          "us": 193
+        },
+        {
+          "seq": 933,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 934,
+          "phase": "parse",
+          "us": 103
+        },
+        {
+          "seq": 935,
+          "phase": "parse",
+          "us": 456
+        },
+        {
+          "seq": 936,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 937,
+          "phase": "parse",
+          "us": 245
+        },
+        {
+          "seq": 938,
+          "phase": "parse",
+          "us": 722
+        },
+        {
+          "seq": 939,
+          "phase": "parse",
+          "us": 134
+        },
+        {
+          "seq": 940,
+          "phase": "parse",
+          "us": 287
+        },
+        {
+          "seq": 941,
+          "phase": "parse",
+          "us": 667
+        },
+        {
+          "seq": 942,
+          "phase": "parse",
+          "us": 901
+        },
+        {
+          "seq": 943,
+          "phase": "parse",
+          "us": 328
+        },
+        {
+          "seq": 944,
+          "phase": "parse",
+          "us": 544
+        },
+        {
+          "seq": 945,
+          "phase": "parse",
+          "us": 167
+        },
+        {
+          "seq": 946,
+          "phase": "parse",
+          "us": 1969
+        },
+        {
+          "seq": 947,
+          "phase": "parse",
+          "us": 435
+        },
+        {
+          "seq": 948,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 949,
+          "phase": "parse",
+          "us": 234
+        },
+        {
+          "seq": 950,
+          "phase": "parse",
+          "us": 113
+        },
+        {
+          "seq": 951,
+          "phase": "parse",
+          "us": 444
+        },
+        {
+          "seq": 952,
+          "phase": "parse",
+          "us": 175
+        },
+        {
+          "seq": 953,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 954,
+          "phase": "parse",
+          "us": 498
+        },
+        {
+          "seq": 955,
+          "phase": "parse",
+          "us": 279
+        },
+        {
+          "seq": 956,
+          "phase": "parse",
+          "us": 149
+        },
+        {
+          "seq": 957,
+          "phase": "parse",
+          "us": 385
+        },
+        {
+          "seq": 958,
+          "phase": "parse",
+          "us": 791
+        },
+        {
+          "seq": 959,
+          "phase": "parse",
+          "us": 138
+        },
+        {
+          "seq": 960,
+          "phase": "parse",
+          "us": 392
+        },
+        {
+          "seq": 961,
+          "phase": "parse",
+          "us": 350
+        },
+        {
+          "seq": 962,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 963,
+          "phase": "parse",
+          "us": 515
+        },
+        {
+          "seq": 964,
+          "phase": "parse",
+          "us": 337
+        },
+        {
+          "seq": 965,
+          "phase": "parse",
+          "us": 91
+        },
+        {
+          "seq": 966,
+          "phase": "parse",
+          "us": 424
+        },
+        {
+          "seq": 967,
+          "phase": "parse",
+          "us": 352
+        },
+        {
+          "seq": 968,
+          "phase": "parse",
+          "us": 1209
+        },
+        {
+          "seq": 969,
+          "phase": "parse",
+          "us": 77
+        },
+        {
+          "seq": 970,
+          "phase": "parse",
+          "us": 255
+        },
+        {
+          "seq": 971,
+          "phase": "parse",
+          "us": 649
+        },
+        {
+          "seq": 972,
+          "phase": "parse",
+          "us": 1006
+        },
+        {
+          "seq": 973,
+          "phase": "parse",
+          "us": 883
+        },
+        {
+          "seq": 974,
+          "phase": "parse",
+          "us": 2700
+        },
+        {
+          "seq": 975,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 976,
+          "phase": "parse",
+          "us": 247
+        },
+        {
+          "seq": 977,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 978,
+          "phase": "parse",
+          "us": 516
+        },
+        {
+          "seq": 979,
+          "phase": "parse",
+          "us": 339
+        },
+        {
+          "seq": 980,
+          "phase": "parse",
+          "us": 348
+        },
+        {
+          "seq": 981,
+          "phase": "parse",
+          "us": 204
+        },
+        {
+          "seq": 982,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 983,
+          "phase": "parse",
+          "us": 253
+        },
+        {
+          "seq": 984,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 985,
+          "phase": "parse",
+          "us": 1307
+        },
+        {
+          "seq": 986,
+          "phase": "parse",
+          "us": 528
+        },
+        {
+          "seq": 987,
+          "phase": "parse",
+          "us": 445
+        },
+        {
+          "seq": 988,
+          "phase": "parse",
+          "us": 937
+        },
+        {
+          "seq": 989,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 990,
+          "phase": "parse",
+          "us": 292
+        },
+        {
+          "seq": 991,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 992,
+          "phase": "parse",
+          "us": 671
+        },
+        {
+          "seq": 993,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 994,
+          "phase": "parse",
+          "us": 242
+        },
+        {
+          "seq": 995,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 996,
+          "phase": "parse",
+          "us": 191
+        },
+        {
+          "seq": 997,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 998,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 999,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 1000,
+          "phase": "parse",
+          "us": 98
+        },
+        {
+          "seq": 1001,
+          "phase": "parse",
+          "us": 679
+        },
+        {
+          "seq": 1002,
+          "phase": "parse",
+          "us": 219
+        },
+        {
+          "seq": 1003,
+          "phase": "parse",
+          "us": 220
+        },
+        {
+          "seq": 1004,
+          "phase": "parse",
+          "us": 204
+        },
+        {
+          "seq": 1005,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 1006,
+          "phase": "parse",
+          "us": 425
+        },
+        {
+          "seq": 1007,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 1008,
+          "phase": "parse",
+          "us": 90
+        },
+        {
+          "seq": 1009,
+          "phase": "parse",
+          "us": 1098
+        },
+        {
+          "seq": 1010,
+          "phase": "parse",
+          "us": 156
+        },
+        {
+          "seq": 1011,
+          "phase": "parse",
+          "us": 630
+        },
+        {
+          "seq": 1012,
+          "phase": "parse",
+          "us": 1470
+        },
+        {
+          "seq": 1013,
+          "phase": "parse",
+          "us": 1602
+        },
+        {
+          "seq": 1014,
+          "phase": "parse",
+          "us": 620
+        },
+        {
+          "seq": 1015,
+          "phase": "parse",
+          "us": 1323
+        },
+        {
+          "seq": 1016,
+          "phase": "parse",
+          "us": 2049
+        },
+        {
+          "seq": 1017,
+          "phase": "parse",
+          "us": 530
+        },
+        {
+          "seq": 1018,
+          "phase": "parse",
+          "us": 1219
+        },
+        {
+          "seq": 1019,
+          "phase": "parse",
+          "us": 255
+        },
+        {
+          "seq": 1020,
+          "phase": "parse",
+          "us": 1555
+        },
+        {
+          "seq": 1021,
+          "phase": "parse",
+          "us": 277
+        },
+        {
+          "seq": 1022,
+          "phase": "parse",
+          "us": 390
+        },
+        {
+          "seq": 1023,
+          "phase": "parse",
+          "us": 741
+        },
+        {
+          "seq": 1024,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 1025,
+          "phase": "parse",
+          "us": 570
+        },
+        {
+          "seq": 1026,
+          "phase": "parse",
+          "us": 218
+        },
+        {
+          "seq": 1027,
+          "phase": "parse",
+          "us": 11
+        },
+        {
+          "seq": 1028,
+          "phase": "parse",
+          "us": 608
+        },
+        {
+          "seq": 1029,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 1030,
+          "phase": "parse",
+          "us": 447
+        },
+        {
+          "seq": 1031,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 1032,
+          "phase": "parse",
+          "us": 1056
+        },
+        {
+          "seq": 1033,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 1034,
+          "phase": "parse",
+          "us": 439
+        },
+        {
+          "seq": 1035,
+          "phase": "parse",
+          "us": 729
+        },
+        {
+          "seq": 1036,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 1037,
+          "phase": "parse",
+          "us": 721
+        },
+        {
+          "seq": 1038,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 1039,
+          "phase": "parse",
+          "us": 339
+        },
+        {
+          "seq": 1040,
+          "phase": "parse",
+          "us": 519
+        },
+        {
+          "seq": 1041,
+          "phase": "parse",
+          "us": 462
+        },
+        {
+          "seq": 1042,
+          "phase": "parse",
+          "us": 102
+        },
+        {
+          "seq": 1043,
+          "phase": "parse",
+          "us": 406
+        },
+        {
+          "seq": 1044,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 1045,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 1046,
+          "phase": "parse",
+          "us": 485
+        },
+        {
+          "seq": 1047,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 1048,
+          "phase": "parse",
+          "us": 165
+        },
+        {
+          "seq": 1049,
+          "phase": "parse",
+          "us": 375
+        },
+        {
+          "seq": 1050,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 1051,
+          "phase": "parse",
+          "us": 486
+        },
+        {
+          "seq": 1052,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 1053,
+          "phase": "parse",
+          "us": 3903
+        },
+        {
+          "seq": 1054,
+          "phase": "parse",
+          "us": 383
+        },
+        {
+          "seq": 1055,
+          "phase": "parse",
+          "us": 1262
+        },
+        {
+          "seq": 1056,
+          "phase": "parse",
+          "us": 1190
+        },
+        {
+          "seq": 1057,
+          "phase": "parse",
+          "us": 364
+        },
+        {
+          "seq": 1058,
+          "phase": "parse",
+          "us": 1040
+        },
+        {
+          "seq": 1059,
+          "phase": "parse",
+          "us": 512
+        },
+        {
+          "seq": 1060,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 1061,
+          "phase": "parse",
+          "us": 1571
+        },
+        {
+          "seq": 1062,
+          "phase": "parse",
+          "us": 453
+        },
+        {
+          "seq": 1063,
+          "phase": "parse",
+          "us": 308
+        },
+        {
+          "seq": 1064,
+          "phase": "parse",
+          "us": 469
+        },
+        {
+          "seq": 1065,
+          "phase": "parse",
+          "us": 1787
+        },
+        {
+          "seq": 1066,
+          "phase": "parse",
+          "us": 15016740
+        },
+        {
+          "seq": 1067,
+          "phase": "write",
+          "us": 1987
+        },
+        {
+          "seq": 1068,
+          "phase": "link",
+          "us": 1718916
+        },
+        {
+          "seq": 1069,
+          "phase": "fts",
+          "us": 45735
+        },
+        {
+          "seq": 1070,
+          "phase": "link",
+          "us": 62096
+        },
+        {
+          "seq": 1071,
+          "phase": "link",
+          "us": 152440
+        },
+        {
+          "seq": 1072,
+          "phase": "link",
+          "us": 147882
+        },
+        {
+          "seq": 1073,
+          "phase": "link",
+          "us": 123885
+        },
+        {
+          "seq": 1074,
+          "phase": "link",
+          "us": 96816
+        },
+        {
+          "seq": 1075,
+          "phase": "link",
+          "us": 120931
+        },
+        {
+          "seq": 1076,
+          "phase": "link",
+          "us": 60458
+        },
+        {
+          "seq": 1077,
+          "phase": "link",
+          "us": 54326
+        },
+        {
+          "seq": 1078,
+          "phase": "link",
+          "us": 121044
+        },
+        {
+          "seq": 1079,
+          "phase": "link",
+          "us": 114079
+        },
+        {
+          "seq": 1080,
+          "phase": "link",
+          "us": 172977
+        },
+        {
+          "seq": 1081,
+          "phase": "link",
+          "us": 343367
+        },
+        {
+          "seq": 1082,
+          "phase": "link",
+          "us": 164635
+        },
+        {
+          "seq": 1083,
+          "phase": "link",
+          "us": 155205
+        },
+        {
+          "seq": 1084,
+          "phase": "link",
+          "us": 138038
+        },
+        {
+          "seq": 1085,
+          "phase": "resolve",
+          "us": 87996
+        },
+        {
+          "seq": 1086,
+          "phase": "resolve",
+          "us": 0
+        },
+        {
+          "seq": 1087,
+          "phase": "checkpoint",
+          "us": 1839243
+        },
+        {
+          "seq": 1088,
+          "phase": "done",
+          "us": 8777
+        }
+      ],
+      "gates": [
+        {
+          "id": "progress_stall_p95",
+          "prd_metric": "Longest progress stall p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "stalls.stalls.p95_us",
+          "measured": 0.004799,
+          "has_measurement": true,
+          "status": "PASS",
+          "reason": "0.005 s \u003c= 2.000 s over 1088 interval(s) between 1089 progress event(s); longest stall 15.017 s"
+        }
+      ],
+      "status": "PASS",
+      "stall_definition": "A STALL is silence: the wall-clock interval between two CONSECUTIVE ingest.ProgressEvents delivered to the harness's progress handler during the cold full index. One interval per adjacent pair of events, attributed to the phase of the event that ENDED it. It is deliberately the interval a consumer of the event stream experiences — the thing a user reads as a hang — and not the duration of any underlying work: a phase that takes a minute while emitting progress throughout is slow, not stalled, and `context/standards.md` asks for exactly that distinction.",
+      "boundary_handling": "The two BOUNDARY intervals are measured and published but are NOT stalls, and are excluded from the distribution by definition. `lead_in_us` is index start -\u003e first event: there is no preceding event, so counting it would report one enormous stall on every run and swamp the p95 with an artefact of where the clock was started. `tail_us` is last event -\u003e index end: a successful pass ends with a terminal `done` event, so it is normally near zero. Both are published rather than dropped, and a boundary longer than the longest recorded stall raises a warning — the largest silence in the run being outside the distribution is something a reader must be told, not spared.",
+      "timing_method": "One clock, read once per event inside the progress handler, and nothing else in the handler: the handler stores a timestamp difference and returns. Events are delivered SYNCHRONOUSLY from the ingesting goroutine (engine/ingest documents this), so an expensive handler would insert itself into the very silence it is measuring; the derivation — percentiles, per-phase pools, warnings — happens after the index has finished. The window is the same one index.wallclock_ms is measured over, so the parts reconcile against the whole.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained intervals, ascending — the same implementation the cold, query-latency and freshness series use. `n` is the number of gaps, which is one less than events_observed. Boundary intervals contribute to neither the pooled nor any per-phase distribution. Every value here is reproducible from `intervals` with evalreport.RecomputeStalls. Every interval is TRUNCATED to whole microseconds, so `lead_in_us` + the intervals + `tail_us` reconciles with `index_wallclock_us` to within one microsecond per interval and is never larger than it — a gap of more than that means a part of the window went unaccounted for, not that the arithmetic rounded.",
+      "scope_limitation": "This measures the COLD FULL INDEX only, through the shipped ingest.Ingester.WithProgress hook — the same hook the graphi CLI's renderer consumes. It makes no statement about the incremental path (SW-126 measures that), about filesystem-watch detection, or about a phase that is slow while still emitting progress. Clock-driven heartbeats are part of the shipped event stream and are counted as events, which is correct for this gate: the gate is about the index going SILENT, and a heartbeating phase is not silent.",
+      "notes": "SW-127 progress-stall measurement: the intervals between consecutive ingest.ProgressEvents during the cold full index, reported as p95 AND maximum with every individual interval retained. It is a REGRESSION GUARD as much as a number: a run that emits no progress reads FAIL, never `0 stalls, passed`. No PRD §12.2 gate is read unless the run is the reference scenario on the reference class and from the frozen candidate; otherwise it is UNKNOWN, which is not a PASS (PRD §8.2) — and a silent run is not rescued into a PASS by any of that."
+    },
+    "searches": [
+      {
+        "query": "ClientConn",
+        "matches": 25,
+        "pass": true
+      },
+      {
+        "query": "Server",
+        "matches": 25,
+        "pass": true
+      }
+    ],
+    "stable_peak_rss_mb": 593,
+    "stable_checks": [
+      {
+        "operation": "agent_brief",
+        "requirement": "resolved topic with a valid found/partial project brief",
+        "samples": 3,
+        "outcomes": {
+          "found": 3
+        },
+        "pass": true
+      },
+      {
+        "operation": "callees",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 13,
+          "found": 12
+        },
+        "pass": true
+      },
+      {
+        "operation": "callers",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 16,
+          "found": 9
+        },
+        "pass": true
+      },
+      {
+        "operation": "change_risk",
+        "requirement": "resolved target with a valid found envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": false
+      },
+      {
+        "operation": "definition",
+        "requirement": "resolved symbol with at least one definition",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "explain_symbol",
+        "requirement": "resolved target with a valid found envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": false
+      },
+      {
+        "operation": "impact",
+        "requirement": "resolved symbol; bounded impact outcome",
+        "samples": 25,
+        "outcomes": {
+          "empty": 15,
+          "found": 10
+        },
+        "pass": true
+      },
+      {
+        "operation": "index",
+        "requirement": "successful ingest with non-empty node and file inventory",
+        "samples": 1,
+        "outcomes": {
+          "found": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "neighborhood",
+        "requirement": "resolved symbol; bounded neighborhood outcome",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "references",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 23,
+          "found": 2
+        },
+        "pass": true
+      },
+      {
+        "operation": "related_files",
+        "requirement": "resolved target; found or legitimately empty related-file set",
+        "samples": 10,
+        "outcomes": {
+          "empty": 1,
+          "found": 8,
+          "partial": 1
+        },
+        "pass": false
+      },
+      {
+        "operation": "search",
+        "requirement": "manifest-promised non-empty search",
+        "samples": 40,
+        "outcomes": {
+          "found": 40
+        },
+        "pass": true
+      }
+    ],
+    "pass": false,
+    "failures": [
+      "stable change_risk returned outcome \"partial\"; require resolved target with a valid found envelope",
+      "stable explain_symbol returned outcome \"partial\"; require resolved target with a valid found envelope",
+      "stable related_files returned outcome \"partial\"; require resolved target; found or legitimately empty related-file set"
+    ]
+  },
+  "cgroup": {
+    "available": true,
+    "path": "/sys/fs/cgroup/system.slice/hosted-compute-agent.service",
+    "memory_max": "max",
+    "memory_swap_max": "max",
+    "oom_kill": 0,
+    "oom_kill_collected": true
+  },
+  "profiles": [
+    {
+      "format_version": 1,
+      "harness_version": "p0-perf/1",
+      "series": "incremental",
+      "repo": "grpc-go",
+      "trigger": "missed_gate",
+      "gates": [
+        {
+          "id": "freshness_p95",
+          "prd_metric": "Freshness p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "measured": 6.486238,
+          "has_measurement": true,
+          "status": "FAIL",
+          "reason": "6.486 s \u003e 2.000 s over 100 converged change(s) of 100 completed"
+        }
+      ],
+      "scenario": "10 changes driven through the same apply → incremental-update → converge loop the freshness harness measures (a diagnostic subset of the measured sequence, not the FR-8 floor); the index the changes are applied to is built before the profiler starts",
+      "dir": "profiles/incremental",
+      "started_at": "2026-07-28T16:47:31Z",
+      "duration_ms": 56686,
+      "artifacts": [
+        {
+          "kind": "cpu",
+          "file": "profiles/incremental/cpu.pprof",
+          "mechanism": "runtime/pprof CPU profile (pprof.StartCPUProfile) covering the re-executed scenario and nothing else",
+          "sha256": "4e685166e39942bea2af1a495162788194442464ad49da478080dfe2d519c1dc",
+          "bytes": 125859,
+          "written": true
+        },
+        {
+          "kind": "heap",
+          "file": "profiles/incremental/heap.pprof",
+          "mechanism": "runtime/pprof \"heap\" profile — live objects, written after an explicit runtime.GC() at the end of the scenario, so retained memory is what it shows",
+          "sha256": "272ca48fc7d8b9513b2e8a5e454558640c7e5478d56daa34da239435665f1396",
+          "bytes": 360730,
+          "written": true
+        },
+        {
+          "kind": "allocs",
+          "file": "profiles/incremental/allocs.pprof",
+          "mechanism": "runtime/pprof \"allocs\" profile — total allocations sampled at runtime.MemProfileRate (the default rate; the harness does not raise it, so this is a sample and not a census)",
+          "sha256": "91b16bd4017ff5cefe02706b66e7a41002313e6a51019f699a5d3113a1b7aa61",
+          "bytes": 362050,
+          "written": true
+        },
+        {
+          "kind": "io",
+          "file": "profiles/incremental/io.pprof",
+          "mechanism": "runtime/pprof \"block\" profile at rate 1. Go has NO file-I/O profile: the runtime does not attribute blocking syscalls to a pprof profile, so this shows goroutine blocking on channels and locks — where an ingest worker pool's waiting on I/O becomes observable — and the run's real I/O counters are published beside it in `io_counters` rather than being inferred from it",
+          "sha256": "bd27b8102c9b8d7b0aa7761e19ed6ca1e8f4171e54d8d574719c77d4ce54ff73",
+          "bytes": 1454,
+          "written": true
+        }
+      ],
+      "io_counters": {
+        "block_input_ops": 0,
+        "block_output_ops": 1048032,
+        "available": true,
+        "source": "getrusage(RUSAGE_SELF) ru_inblock/ru_oublock, delta across the profiled scenario",
+        "note": "block-device operations only: a read served from the page cache costs no ru_inblock, and some platforms (macOS among them) report zero for both. A zero here is not a claim that no I/O happened."
+      },
+      "complete": true,
+      "method": "The measured run was NOT profiled: profiling is off on the normal path, because a harness that profiles every run distorts the numbers it exists to establish (FR-8 / SW-129 AC-4). These profiles come from a DIAGNOSTIC RE-EXECUTION of the scenario whose gate was missed — same machine, same checkout, same binary, immediately after the gate was read — so they localise where the cost is, and they are not a replay of the exact execution that missed the gate. Read them with `go tool pprof \u003cfile\u003e`."
+    }
+  ]
+}

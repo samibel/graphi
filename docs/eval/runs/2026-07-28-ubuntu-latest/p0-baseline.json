@@ -1,0 +1,304 @@
+{
+  "report": "p0-baseline",
+  "format_version": 1,
+  "story": "SW-130",
+  "spec": "specs/p0-candidate-and-performance-baseline.md",
+  "published": "2026-07-28",
+  "harness_version": "p0-perf/1",
+  "scorer_version": "p0-aggregate/1",
+  "runner_class": "ubuntu-latest",
+  "runner_role": "reference",
+  "candidate": {
+    "release": "v0.7.0",
+    "sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "candidate_match": true,
+    "worktree_dirty": false,
+    "note": "Both runs checked this SHA out and built the harness from it; the built binary is what ran. `candidate_match` is true in every environment.json of both runs, so every PRD 12.2 gate below is a statement about this artifact and not about a branch tip."
+  },
+  "reference_scenario": {
+    "repo": "grpc-go",
+    "ref": "v1.60.1",
+    "sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+    "source": "docs/eval/reference-scenario.json",
+    "runner_class": "ubuntu-latest"
+  },
+  "scope_limitation": {
+    "requirement": "PRD FR-8",
+    "statement": "Every gate verdict in this report holds for the reference scenario only — grpc-go v1.60.1 indexed on the ubuntu-latest runner class, measured by harness p0-perf/1. It is NOT a universal guarantee. It says nothing about other repositories, other languages, other runner classes, other build flavors, other workloads, or a user's machine.",
+    "other_repositories": "uuid, lo, cobra and gin are measured and published in full beside grpc-go, and every PRD 12.2 gate over them reads UNKNOWN with that reason named — the measurement contract scopes the gates to the reference scenario. Their measurements are evidence about the pinned Go corpus, not gate verdicts.",
+    "build_flavor": "The harness links the product packages into itself. The published release assets are built with 22 build tags and -trimpath. The measured SOURCE is the candidate's, byte for byte; the measured BUILD is not the release build."
+  },
+  "runs": [
+    {
+      "id": "run-a",
+      "role": "first complete run",
+      "workflow_run": 30377165970,
+      "url": "https://github.com/samibel/graphi/actions/runs/30377165970",
+      "dispatched_ref": "main",
+      "dispatched_sha": "afa1b686de381dd455ab08e4bf33aaf9420d6aab",
+      "started": "2026-07-28T16:12:53Z",
+      "completed": "2026-07-28T16:21:24Z",
+      "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+      "cpu_count": 4,
+      "ram_bytes": 16765386752,
+      "kernel": "6.17.0-1020-azure",
+      "go_version": "go1.26.5",
+      "filesystem": "ext4",
+      "cache_state": "dropped",
+      "path": "run-a/"
+    },
+    {
+      "id": "run-b",
+      "role": "second complete run, clean runner (FR-9 substitute for a second person)",
+      "workflow_run": 30379259481,
+      "url": "https://github.com/samibel/graphi/actions/runs/30379259481",
+      "dispatched_ref": "main",
+      "dispatched_sha": "afa1b686de381dd455ab08e4bf33aaf9420d6aab",
+      "started": "2026-07-28T16:39:17Z",
+      "completed": "2026-07-28T16:48:31Z",
+      "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+      "cpu_count": 4,
+      "ram_bytes": 16765386752,
+      "kernel": "6.17.0-1020-azure",
+      "go_version": "go1.26.5",
+      "filesystem": "ext4",
+      "cache_state": "dropped",
+      "path": "run-b/"
+    }
+  ],
+  "substitutions": [
+    {
+      "requirement": "PRD FR-9 / PRD 16 — two consecutive complete runs, independently reproduced",
+      "original": "reproduction by a second person on their own machine",
+      "substitute": "a second, freshly provisioned GitHub-hosted runner (run-b), dispatched after run-a completed",
+      "permitted_by": "FR-9 explicitly allows 'another person OR a clean runner'; spec decision 3 requires the substitution to be named wherever the gate is reported",
+      "weaker_because": "one operator dispatched both runs from the same repository state with the same workflow. It rules out machine-local state — run-b landed on different silicon (AMD EPYC 9V74 vs Intel Xeon Platinum 8573C) and reproduced every verdict — but it does NOT rule out a shared defect in the harness, the workflow or the operator's method, which is what a second person would independently probe.",
+      "never_report_as": "independent reproduction by a second person"
+    }
+  ],
+  "gates": [
+    {
+      "id": "cold_index_p50",
+      "prd_metric": "Cold Index p50 (PRD 12.2)",
+      "threshold": 90,
+      "unit": "s",
+      "comparison": "lte",
+      "verdict": "PASS",
+      "agreed": true,
+      "run_a": {"measured": 19.83, "status": "PASS", "reason": "19.830 s <= 90.000 s over 10 runs"},
+      "run_b": {"measured": 16.939, "status": "PASS", "reason": "16.939 s <= 90.000 s over 10 runs"},
+      "source": "cold-index/grpc-go/report.json .cold_series.gates",
+      "samples": "10 completed cold runs per run, 0 aborted"
+    },
+    {
+      "id": "cold_index_p95",
+      "prd_metric": "Cold Index p95 (PRD 12.2)",
+      "threshold": 120,
+      "unit": "s",
+      "comparison": "lte",
+      "verdict": "PASS",
+      "agreed": true,
+      "run_a": {"measured": 20.368, "status": "PASS", "reason": "20.368 s <= 120.000 s over 10 runs"},
+      "run_b": {"measured": 18.735, "status": "PASS", "reason": "18.735 s <= 120.000 s over 10 runs"},
+      "source": "cold-index/grpc-go/report.json .cold_series.gates",
+      "samples": "10 completed cold runs per run, 0 aborted"
+    },
+    {
+      "id": "peak_rss",
+      "prd_metric": "Peak RSS, reference scenario (PRD 12.2; see the 4 GB stop rule in PRD 17)",
+      "threshold": 2,
+      "unit": "GB",
+      "comparison": "lte",
+      "verdict": "PASS",
+      "agreed": true,
+      "run_a": {"measured": 0.669921875, "status": "PASS", "reason": "0.670 GB <= 2.000 GB over 10 runs"},
+      "run_b": {"measured": 0.6640625, "status": "PASS", "reason": "0.664 GB <= 2.000 GB over 10 runs"},
+      "source": "cold-index/grpc-go/report.json .cold_series.gates",
+      "stop_rule": "PRD 17's 4 GB stop rule did not trigger in either run (observed peak 0.67 GB / 0.66 GB)"
+    },
+    {
+      "id": "oom_8gb_host",
+      "prd_metric": "OOM on an 8 GB host (PRD 12.2)",
+      "threshold": 0,
+      "unit": "oom_kills",
+      "comparison": "lte",
+      "verdict": "PASS",
+      "agreed": true,
+      "run_a": {"status": "PASS", "reason": "the run completed under a verified 8589934592-byte limit with no swap, and all three failure signals were collected and absent"},
+      "run_b": {"status": "PASS", "reason": "the run completed under a verified 8589934592-byte limit with no swap, and all three failure signals were collected and absent"},
+      "source": "cold-index/grpc-go/report.json .cold_series.oom_check",
+      "method": "cgroup v2 scope with MemoryMax=8589934592 and MemorySwapMax=0. MemorySwapMax=0 is load-bearing: with swap available the process would be throttled instead of killed and the check would pass for the wrong reason. The limit was read back from the cgroup and verified, and all three failure signals (oom_kill counter, exit status, completion) were collected and absent."
+    },
+    {
+      "id": "db_size",
+      "prd_metric": "DB size, reference scenario (PRD 12.2)",
+      "threshold": 300,
+      "unit": "MB",
+      "comparison": "lte",
+      "verdict": "PASS",
+      "agreed": true,
+      "run_a": {"measured": 32.6875, "status": "PASS", "reason": "32.688 MB <= 300.000 MB over 10 runs"},
+      "run_b": {"measured": 32.6875, "status": "PASS", "reason": "32.688 MB <= 300.000 MB over 10 runs"},
+      "source": "cold-index/grpc-go/report.json .cold_series.gates",
+      "note": "identical to the byte across all 20 cold indexes of both runs (34275328 B) — the index is deterministic in size for a fixed input"
+    },
+    {
+      "id": "progress_stall_p95",
+      "prd_metric": "Longest progress stall p95 (PRD 12.2)",
+      "threshold": 2,
+      "unit": "s",
+      "comparison": "lte",
+      "verdict": "PASS",
+      "agreed": true,
+      "run_a": {"measured": 0.006443, "status": "PASS", "reason": "0.006 s <= 2.000 s over 1088 interval(s) between 1089 progress event(s); longest stall 15.529 s"},
+      "run_b": {"measured": 0.005611, "status": "PASS", "reason": "0.006 s <= 2.000 s over 1088 interval(s) between 1089 progress event(s); longest stall 15.358 s"},
+      "source": "progress-stalls/grpc-go/report.json .repo.stalls.gates",
+      "caveat": {
+        "severity": "the passing verdict is technically correct and practically misleading",
+        "longest_stall_s": {"run_a": 15.529339, "run_b": 15.357756},
+        "detail": "The gate is a p95 over 1088 inter-event intervals, and 1050 of those intervals are in the `parse` phase where the median gap is ~0.3 ms. The distribution is so dominated by short gaps that a single 15.5-second silence cannot move the 95th percentile: p95 reads 0.006 s while the worst observed silence is ~2600x the 2 s threshold. A user watching the index would experience that 15.5 s as a hang. The gate as specified in PRD 12.2 is met; the property a reader assumes it protects is not.",
+        "recorded_as": "backlog — a p95-only stall gate hides the tail it exists to catch"
+      }
+    },
+    {
+      "id": "warm_search_p95",
+      "prd_metric": "Warm Search p95 (PRD 12.2)",
+      "threshold": 100,
+      "unit": "ms",
+      "comparison": "lte",
+      "verdict": "PASS",
+      "agreed": true,
+      "run_a": {"measured": 3.591, "status": "PASS", "reason": "3.591 ms <= 100.000 ms over 1000 executions of search"},
+      "run_b": {"measured": 4.521, "status": "PASS", "reason": "4.521 ms <= 100.000 ms over 1000 executions of search"},
+      "source": "query-latency/grpc-go/report.json .repo.query_latency.gates",
+      "samples": "1000 timed executions per run, meeting FR-8's floor exactly"
+    },
+    {
+      "id": "caller_callee_impact_p95",
+      "prd_metric": "Caller/Callee/Impact p95 (PRD 12.2)",
+      "threshold": 200,
+      "unit": "ms",
+      "comparison": "lte",
+      "verdict": "PASS",
+      "agreed": true,
+      "run_a": {"measured": 0.999, "status": "PASS", "reason": "0.999 ms <= 200.000 ms over 1002 executions of callees/callers/impact"},
+      "run_b": {"measured": 1.657, "status": "PASS", "reason": "1.657 ms <= 200.000 ms over 1002 executions of callees/callers/impact"},
+      "source": "query-latency/grpc-go/report.json .repo.query_latency.gates",
+      "samples": "1002 timed executions per run"
+    },
+    {
+      "id": "agent_context_p95",
+      "prd_metric": "Agent Context p95 (PRD 12.2)",
+      "threshold": 500,
+      "unit": "ms",
+      "comparison": "lte",
+      "verdict": "UNKNOWN",
+      "agreed": true,
+      "run_a": {"status": "UNKNOWN", "pooled_executions": 975, "required": 1000, "reason": "only 975 timed executions were pooled over agent_brief/change_risk/explain_symbol/related_files, below FR-8's floor of 1000; a percentile over an undersampled pool is not the measurement the PRD asked for"},
+      "run_b": {"status": "UNKNOWN", "pooled_executions": 975, "required": 1000, "reason": "only 975 timed executions were pooled over agent_brief/change_risk/explain_symbol/related_files, below FR-8's floor of 1000; a percentile over an undersampled pool is not the measurement the PRD asked for"},
+      "source": "query-latency/grpc-go/report.json .repo.query_latency.gates",
+      "cause": "Not a sampling accident and not runner noise: the shortfall is exactly 25 of 1000 in BOTH runs. change_risk, explain_symbol and related_files return outcome \"partial\" on this corpus — the same three operations named in every cold run's `run_failures` — and a partial result is not counted as a timed execution. The defect is deterministic and reproducible; it costs 25 executions per 1000 and is what stands between this gate and a verdict.",
+      "unknown_is_not_pass": "PRD 8.2 — UNKNOWN is not a PASS. This gate has no verdict. The underlying pool's p95 was 471.250 ms in run-a, which is below the 500 ms threshold, and that number is deliberately NOT published as a verdict: a percentile over an undersampled pool is not the measurement the PRD asked for, and quoting it as if it were would be exactly the substitution this story exists to remove.",
+      "recorded_as": "backlog — the `partial` defect costs 25 of 1000 agent-tool executions"
+    },
+    {
+      "id": "freshness_p95",
+      "prd_metric": "Freshness p95 (PRD 12.2)",
+      "threshold": 2,
+      "unit": "s",
+      "comparison": "lte",
+      "verdict": "FAIL",
+      "agreed": true,
+      "run_a": {"measured": 6.314923, "status": "FAIL", "reason": "6.315 s > 2.000 s over 100 converged change(s) of 100 completed"},
+      "run_b": {"measured": 6.486238, "status": "FAIL", "reason": "6.486 s > 2.000 s over 100 converged change(s) of 100 completed"},
+      "source": "freshness/grpc-go/report.json .repo.incremental.gates",
+      "samples": "100 of 100 requested incremental changes applied and converged in both runs — the FAIL is over a complete, sufficient sample, not a truncated one",
+      "exceeds_threshold_by": "3.16x (run-a), 3.24x (run-b)",
+      "profiles": "CPU, heap, allocation and block profiles were captured automatically by SW-129 on the missed gate and are committed at run-a/freshness/grpc-go/profiles/incremental/ and run-b/freshness/grpc-go/profiles/incremental/. They come from a diagnostic RE-EXECUTION of the scenario immediately after the gate was read — same machine, same binary — not from the measured run itself, which is never profiled.",
+      "published_as_fail": "PRD 17 / AC-8. No threshold was moved, no scenario eased and no repository dropped. This is the first honest freshness number the project has.",
+      "recorded_as": "backlog — WP4 work; fixing it is explicitly out of scope for SW-130"
+    }
+  ],
+  "gate_summary": {
+    "total": 10,
+    "pass": 8,
+    "fail": 1,
+    "unknown": 1,
+    "omitted": 0,
+    "verdicts_agreed_between_runs": 10,
+    "note": "All ten PRD 12.2 gates carry a verdict; none is omitted and no 'not measured' is left as absence (AC-4). Both runs agree on all ten verdicts."
+  },
+  "deviations_between_runs": {
+    "verdict_deviations": "none — all ten gates reach the same verdict in both runs",
+    "magnitude_deviations": [
+      {"gate": "cold_index_p50", "run_a": 19.83, "run_b": 16.939, "delta_pct": -14.6, "explanation": "different host CPU: run-a landed on Intel Xeon Platinum 8573C, run-b on AMD EPYC 9V74. Both are within the ubuntu-latest runner class, whose hardware GitHub does not pin. Both are ~4.5x inside a 90 s threshold, so the spread changes no verdict."},
+      {"gate": "cold_index_p95", "run_a": 20.368, "run_b": 18.735, "delta_pct": -8.0, "explanation": "same cause as cold_index_p50"},
+      {"gate": "warm_search_p95", "run_a": 3.591, "run_b": 4.521, "delta_pct": 25.9, "explanation": "same cause, opposite direction — the AMD host indexed faster but served warm search slower. Both are >20x inside a 100 ms threshold."},
+      {"gate": "caller_callee_impact_p95", "run_a": 0.999, "run_b": 1.657, "delta_pct": 65.9, "explanation": "largest relative spread in the report, and the least consequential: both figures are ~120-200x inside a 200 ms threshold, where sub-millisecond percentiles are dominated by scheduler noise."},
+      {"gate": "freshness_p95", "run_a": 6.314923, "run_b": 6.486238, "delta_pct": 2.7, "explanation": "the failing gate is the most stable number in the report — 2.7% apart across two machines. The failure is a property of the artifact, not of the runner."},
+      {"gate": "progress_stall_p95", "run_a": 0.006443, "run_b": 0.005611, "delta_pct": -12.9, "explanation": "both round to 0.006 s; the longest observed stall (15.529 s / 15.358 s) is 1.1% apart, i.e. the tail is as reproducible as the percentile."},
+      {"gate": "peak_rss", "run_a": 0.669921875, "run_b": 0.6640625, "delta_pct": -0.9, "explanation": "essentially identical"},
+      {"gate": "db_size", "run_a": 32.6875, "run_b": 32.6875, "delta_pct": 0.0, "explanation": "identical to the byte — deterministic"}
+    ],
+    "not_smoothed": "No deviation was averaged, discarded or reconciled by hand (FR-9). Both runs are published whole and separately; every number above is read from its own run directory."
+  },
+  "run_cost": {
+    "requirement": "SW-130 AC-9",
+    "source": "the harness's own accounting — each measurement step stamps a timestamp immediately before invoking the built binary and immediately after it returns, emitted per job as cost/<family>-<repo>.json with field harness_seconds",
+    "explicitly_not": "the CI job clock, which additionally contains checkout, toolchain setup, the candidate checkout and the compile",
+    "unit": "seconds",
+    "per_run": [
+      {
+        "run": "run-a",
+        "runner_cost_harness_seconds": 1070,
+        "critical_path_harness_seconds": 455,
+        "critical_path_job": "freshness-series/grpc-go",
+        "by_family": {"cold-index-series": 342, "freshness-series": 518, "query-latency-series": 172, "progress-stall-series": 38},
+        "ci_job_clock_seconds": 511,
+        "ci_job_clock_label": "elapsed wall-clock of the whole 20-job dispatch, measured from the GitHub run's createdAt to updatedAt — shown for contrast only, NOT the AC-9 figure"
+      },
+      {
+        "run": "run-b",
+        "runner_cost_harness_seconds": 1094,
+        "critical_path_harness_seconds": 457,
+        "critical_path_job": "freshness-series/grpc-go",
+        "by_family": {"cold-index-series": 322, "freshness-series": 519, "query-latency-series": 215, "progress-stall-series": 38},
+        "ci_job_clock_seconds": 554,
+        "ci_job_clock_label": "elapsed wall-clock of the whole 20-job dispatch — shown for contrast only, NOT the AC-9 figure"
+      }
+    ],
+    "both_runs": {
+      "runner_cost_harness_seconds": 2164,
+      "runner_cost_human": "36 m 04 s of runner capacity",
+      "operator_wait_human": "~7 m 37 s per run, because the twenty jobs are independent and run in parallel",
+      "interpretation": "PRD 16's 'two consecutive complete runs' costs 2164 harness-seconds of runner capacity but only ~9 minutes of an operator's wall-clock per run. The critical path is freshness over grpc-go in both runs — the slowest job to measure is also the only one holding a failing gate."
+    },
+    "coverage": "20 of 20 measurement jobs emitted a cost file in each run. The non-baseline jobs of the same dispatch (the historical-ceiling matrix over cobra/flask/guava and the hero suite) do not emit one and are not counted; they are not part of the 12.2 baseline.",
+    "recoverable": true
+  },
+  "reproduction": {
+    "command": "go run ./cmd/eval -aggregate <run-directory>",
+    "in_ci": "every measurement job reproduced its own published numbers from its raw samples before uploading, in the same job that produced them",
+    "verified_at_publish": "all 40 leaf run directories (2 runs x 4 families x 5 repositories) were re-aggregated at publish time from the committed raw data; every one exited 0 — every published metric recomputed from raw/ with 0 discrepancies",
+    "exit_codes": {"0": "reproduced and environment documented", "1": "discrepancy", "2": "unreadable/version mismatch", "3": "incomplete"}
+  },
+  "raw_data": {
+    "convention": "docs/eval/runs/<date>-<runner-class>/ (SW-128), documented in docs/eval/runs/README.md",
+    "grouping": "run-<a|b>/<family>/<repo>/ — the four measurement families run as separate CI jobs on separate machines, so each exports its own run directory. Each leaf is a run directory exactly as the convention describes: run.json, environment.json, report.json, aggregate.json, raw/, and profiles/ where a gate was missed.",
+    "contents": "raw/ carries samples and membership lists only — no percentile, no aggregate, no verdict — which is what makes the reproduction a real check rather than a comparison of a number with itself."
+  },
+  "what_this_does_not_establish": [
+    "Nothing about accuracy — no gold corpus, no scorer, no precision/recall. That is P0-B and is deferred.",
+    "Nothing about full-vs-incremental parity — a PRD 12.3 reliability gate, deferred to P0-D. The incremental series measures freshness, not parity.",
+    "Nothing about the stress target — kubernetes is tier 4, manual-only, and bound by the PRD 17 4 GB stop rule rather than a 12.2 gate. Its stop-rule status remains UNKNOWN.",
+    "Nothing about the released binaries' build flavor — the measured source is the candidate's byte for byte, but the harness build carries none of the release's 22 build tags or -trimpath.",
+    "No budget was re-baselined — docs/eval/hero-budgets.json still carries the retired harness's historical ceilings. Replacing them is a reviewed decision about thresholds, and this story deliberately moves none."
+  ],
+  "follow_ups_recorded_not_fixed": [
+    {"id": "freshness_p95 FAIL", "where": "backlog.md", "band": "WP4", "summary": "freshness p95 is 6.3-6.5 s against a 2 s gate, ~3.2x over, reproducible across two machines; profiles are committed beside the failing run"},
+    {"id": "stall tail hidden by p95", "where": "backlog.md", "summary": "progress_stall_p95 passes at 0.006 s while the longest observed silence is 15.5 s; a p95 over 1088 intervals cannot see a single long stall"},
+    {"id": "coldRunArgv drops -candidate", "where": "backlog.md", "summary": "cmd/eval/coldseries.go:497 does not forward -candidate to child cold-runs, so the secondary gate families inside a cold-series report compare against the superseded candidate citation and read UNKNOWN naming fb3bf03. No published gate is affected — the cold-series gate family is computed in the parent, and the query/stall gates are published from their own dedicated jobs — but the child reports carry misleading UNKNOWN reasons."},
+    {"id": "partial outcome costs 25/1000", "where": "backlog.md", "summary": "change_risk, explain_symbol and related_files return outcome \"partial\" on this corpus, costing exactly 25 of 1000 pooled agent-tool executions and leaving agent_context_p95 UNKNOWN in both runs"}
+  ]
+}
