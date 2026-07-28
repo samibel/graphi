@@ -1,12 +1,36 @@
 # Decision: the frozen M0 candidate — merge SHA + release digest (SW-116)
 
+> ## ⚠️ SUPERSEDED — this candidate is no longer the one anything is measured against
+>
+> **Superseded on 2026-07-28 by
+> [`2026-07-p0-candidate-freeze.md`](2026-07-p0-candidate-freeze.md) (SW-121)**, which
+> freezes the P0 candidate on the **published, tagged, attested release `v0.6.7` at
+> `fb3bf03`** — with a real binary digest, an SBOM and SLSA provenance, none of which
+> the candidate below ever had.
+>
+> **Why it moved.** The candidate below, `4e72637`, was 99 commits and 8 tags behind
+> `main` and, as §"Release digest" honestly records, **nothing was ever published from
+> it**: its published release digest is `UNKNOWN`, and UNKNOWN counts as not passed
+> (plan §2.4). Measuring it would have proven the quality of an artifact no user
+> installs.
+>
+> **This file is kept, not deleted.** It remains the authoritative record of what was
+> frozen between 2026-07-16 and 2026-07-28, of the reproducible build digest genuinely
+> bound to `4e72637`, and of the change-control rule that made the move legible. Its
+> facts were true when written and are not rewritten here.
+>
+> **Do not cite it as the current candidate.** Any measurement, benchmark, gate row or
+> claim stated against `4e72637` is **STALE** (see the successor's §9–§10 for the rule
+> and the list). Cite the successor instead.
+
 This is the record of the artifact every later measurement in the 9/10 program is bound
 to. It exists so that "the candidate" is a versioned, retrievable fact rather than a
 number quoted from memory: one SHA, one digest statement, and the rule that governs
 moving it. If you are about to measure, benchmark, audit, or make a claim about graphi,
 this file names what you are measuring.
 
-**Status:** accepted · **Date:** 2026-07-16 · **Story:** SW-116 · **Risk:** high
+**Status:** superseded (was: accepted) · **Date:** 2026-07-16 · **Superseded:** 2026-07-28
+by SW-121 · **Story:** SW-116 · **Risk:** high
 
 ## Context
 
@@ -81,6 +105,11 @@ new release, i.e. a *new* SHA, and therefore a new candidate. Under §2.3 that i
 candidate move, not a free upgrade. Deciding whether the program needs a published digest
 at all (versus the reproducible digest below) is an M1/WP2 question — see WP2's *"Candidate-SHA
 und Release-Digest festlegen"* — and out of M0's scope.
+
+> **Resolved (2026-07-28).** Exactly that happened: `CHANGELOG.md` gained `[0.6.7]`,
+> `release-dag.yml` published v0.6.7 from the *new* SHA `fb3bf03`, and P0 re-froze on
+> it under §2.3's change-control rule — see
+> [`2026-07-p0-candidate-freeze.md`](2026-07-p0-candidate-freeze.md).
 
 Per plan §2.4 — *"UNKNOWN zählt als nicht bestanden"* — this UNKNOWN counts as **not
 passed**, not as a pass pending paperwork. SW-119's dashboard must render it that way.
