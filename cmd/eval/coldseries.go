@@ -67,6 +67,8 @@ type coldSeriesOptions struct {
 	runs          int
 	dropCaches    bool
 	oomCheck      bool
+	// exportRaw is SW-128's raw-sample run directory, or "" for no export.
+	exportRaw string
 }
 
 // coldRunExit is what the operating system said about one child run.
@@ -220,6 +222,30 @@ func runColdSeries(o coldSeriesOptions, newExecutor coldRunExecutorFactory) int 
 		return 2
 	}
 	fmt.Fprintf(os.Stderr, "eval: wrote cold-run series to %s\n", outPath)
+
+	// SW-128, exported before the verdict for the same reason the single-run
+	// path does it: an aborted or failing series is when the individual samples
+	// matter most.
+	if o.exportRaw != "" {
+		dir, sets, err := exportRunDir(exportOptions{
+			target:          o.exportRaw,
+			runnerClass:     o.runnerClass,
+			runnerRole:      class.Role,
+			repo:            o.repoName,
+			workDir:         workDir,
+			candidateSHA:    series.CandidateSHA,
+			candidateSource: series.CandidateSource,
+			measuredSHA:     series.MeasuredSHA,
+			candidateMatch:  series.CandidateMatch,
+			worktreeDirty:   series.WorktreeDirty,
+		}, report)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "eval: export raw samples: %v\n", err)
+			return 2
+		}
+		printExportSummary(os.Stderr, dir, sets)
+	}
+
 	printColdSeriesSummary(os.Stderr, &series)
 
 	if series.Status == evalreport.StatusFail {

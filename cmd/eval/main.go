@@ -81,7 +81,18 @@ func main() {
 	// >=100-change runs are requested explicitly and go through eval-full.yml.
 	incrementalChanges := flag.Int("incremental-changes", 0, "run this many incremental changes against the measured checkout and report incremental-update and freshness p50/p95 (FR-8 wants at least "+strconv.Itoa(evalreport.IncrementalChangeMinimum)+"); 0 = not measured, and the checkout is left untouched")
 
+	// SW-128 (P0-C5) raw-sample export and the aggregator that reproduces the
+	// report from it. Both are off by default: the export writes a directory,
+	// which a PR-path run has no business creating, and the aggregator is a
+	// mode of its own rather than a step of a measurement.
+	exportRaw := flag.String("export-raw", "", "after the run, write a raw-sample run directory here — individual measurements, the environment and the published report side by side; \""+exportAuto+"\" uses the "+evalreport.RunsRoot+"/<date>-<runner-class> convention")
+	aggregate := flag.String("aggregate", "", "recompute every published metric in this run directory from its raw samples and diff them; exit 1 on a discrepancy, 3 when the run is incomplete, 0 only when it is publishable")
+
 	flag.Parse()
+
+	if *aggregate != "" {
+		os.Exit(runAggregate(*aggregate, *out, os.Stderr))
+	}
 
 	if *checkReferenceScenario {
 		os.Exit(runReferenceScenarioCheck(
@@ -113,6 +124,7 @@ func main() {
 				runs:          *coldRuns,
 				dropCaches:    *dropCaches,
 				oomCheck:      *oomCheck,
+				exportRaw:     *exportRaw,
 			}, execColdRun))
 		}
 		os.Exit(runFullRun(fullRunOptions{
@@ -127,6 +139,7 @@ func main() {
 			queryExecutions:    *queryExecutions,
 			incrementalChanges: *incrementalChanges,
 			candidatePath:      *candidatePath,
+			exportRaw:          *exportRaw,
 		}))
 	}
 

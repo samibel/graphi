@@ -100,6 +100,10 @@ type fullRunOptions struct {
 	// when there are gates to read; an unreadable index makes every gate
 	// UNKNOWN rather than failing the measurement.
 	candidatePath string
+	// exportRaw is SW-128's raw-sample run directory, or "" for no export.
+	// Writing it is a separate, opt-in step: a PR-path run has no business
+	// creating a directory under docs/eval/runs/.
+	exportRaw string
 }
 
 // runFullRun executes the full measurement for one manifest entry and writes
@@ -259,6 +263,32 @@ func runFullRun(o fullRunOptions) int {
 		return 2
 	}
 	fmt.Fprintf(os.Stderr, "eval: wrote full-run report to %s\n", outPath)
+
+	// SW-128: the raw-sample export runs BEFORE the verdict returns, so a run
+	// whose gates failed still leaves its individual measurements behind. The
+	// samples of a failed run are exactly what SW-129's profiling and any
+	// post-mortem need; discarding them because the verdict was red would throw
+	// away the evidence at the moment it became interesting.
+	if o.exportRaw != "" {
+		dir, sets, err := exportRunDir(exportOptions{
+			target:          o.exportRaw,
+			runnerClass:     o.runnerClass,
+			runnerRole:      class.Role,
+			repo:            o.repoName,
+			workDir:         workDir,
+			candidateSHA:    prov.candidateSHA,
+			candidateSource: prov.candidateSource,
+			measuredSHA:     measuredSHA,
+			candidateMatch:  prov.candidateMatch,
+			worktreeDirty:   prov.worktreeDirty,
+		}, report)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "eval: export raw samples: %v\n", err)
+			return 2
+		}
+		printExportSummary(os.Stderr, dir, sets)
+	}
+
 	printQueryLatencySummary(os.Stderr, run.QueryLatency)
 	printIncrementalSummary(os.Stderr, run.Incremental)
 	printStallSummary(os.Stderr, run.Stalls)
