@@ -192,6 +192,37 @@ file:
   **fails closed on a runner class the contract does not declare** — numbers from an
   unnamed machine no longer sit beside reference values with equal standing.
 
+- **The P0 candidate is frozen on a real, published artifact —
+  `docs/decisions/2026-07-p0-candidate-freeze.md` (new).** The previous candidate
+  (`4e72637`, 2026-07-16) was 99 commits and 8 tags behind `main` and, as its own
+  record honestly said, **nothing was ever published from it** — its release digest
+  read `UNKNOWN`. Measuring it would have proven the quality of an artifact nobody
+  installs. P0 is now frozen on **v0.6.7 at `fb3bf03`**: a tagged, published release
+  with eight recorded asset digests, an SPDX SBOM and SLSA build provenance, all bound
+  to that one SHA by the release DAG's attestation. Every field the measurement
+  contract requires is recorded — SHA, tag, version, digest, build command, Go
+  version, `CGO_ENABLED`, build tags, target platforms, SBOM and attestation
+  references, dates, owner — read back from the published artifact rather than
+  transcribed. The record also states what the candidate does **not** contain.
+  **Reproducibility is demonstrated, not asserted:** all five published platform
+  binaries were rebuilt **bit-for-bit** from the frozen SHA on a different OS and
+  architecture, and the two non-obvious preconditions (a *tagless* checkout, and a
+  real clone rather than a linked `git worktree` — either one changes every digest)
+  are written down so the next person's correct build does not look like a failure.
+  `docs/decisions/2026-07-m0-candidate-freeze.md` is marked **superseded**, not
+  deleted, and the two documents that still *pointed* at the dead candidate — the
+  execution plan's authority note and the RC dossier — now name the new one, so
+  "one candidate, one truth" holds across the repository rather than only in the
+  decision record. No release was cut, tagged or published to produce this record.
+- **`STALE` is a first-class evidence-index status.** A candidate move used to leave
+  dependent rows reading `UNKNOWN`, which cannot be told apart from a gate nobody ever
+  measured — so the row would quietly inherit the new candidate. `STALE` (the
+  measurement contract's fourth status, beside PASS/FAIL/UNKNOWN) says it out loud:
+  like `UNKNOWN` it counts as **not passed**, and `go run ./cmd/evidence -check` now
+  **rejects a `STALE` row that does not name what superseded it**, so the marking can
+  never be silent. The two rows that spoke about the old candidate are marked STALE
+  and re-measured, never re-pointed; the rows that never referred to a candidate are
+  deliberately left `UNKNOWN`, and the record says which and why.
 - **Go-depth evaluation corpus — `corpus/manifest.json` v3.** The corpus now pins
   **six Go repositories** (uuid, lo, cobra, gin, grpc-go, kubernetes) instead of one,
   each to a release tag **and** a full 40-character commit sha, with the ten required

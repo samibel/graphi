@@ -1759,9 +1759,14 @@ P0 ist abgeschlossen, wenn:
       Review-Korrekturen (§0).
 - [x] Owner und Reviewer benannt sind. — Graphi Maintainer, solo; Rollensubstitution nach
       §8.8 ausgewiesen (Open Question 4).
-- [ ] Candidate SHA festgelegt ist.
-- [ ] Release Digest vorliegt.
-- [ ] SBOM und Attestation vorliegen.
+- [x] Candidate SHA festgelegt ist. — SW-121: `fb3bf03`, Tag `v0.6.7`
+      (`docs/decisions/2026-07-p0-candidate-freeze.md`).
+- [x] Release Digest vorliegt. — SW-121: acht Asset-Digests des veröffentlichten
+      Releases, nicht mehr `UNKNOWN`; Referenzplattform `graphi-linux-amd64`
+      `sha256:6fd561c2…b94`. Bit-für-bit aus dem eingefrorenen SHA nachgebaut.
+- [x] SBOM und Attestation vorliegen. — SW-121: SPDX-SBOM und SLSA-v1-Provenance als
+      Assets desselben Release-Runs (30278205371), an Workflow-Identität und
+      Source-Digest `fb3bf03` gebunden; alle acht Assets verifizieren.
 - [ ] fünf reale Go-Repositories gepinnt sind.
 - [ ] ein 10k-Stressziel gepinnt ist.
 - [ ] Runnerklasse dokumentiert ist.

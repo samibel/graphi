@@ -8,13 +8,20 @@
 > **einer** Ausnahme: innerhalb des P0-Scope (M0–M2) gewinnt die P0-PRD, siehe den Vermerk
 > „Zur PRD“ weiter unten. Sie ist die einzige zugelassene Präzisierung, kein zweiter Plan.
 >
-> **Candidate-Freeze:** Der maßgebliche Candidate ist
-> `4e72637d3c2c0dc7d32142a590d46c0c62c10733`, festgehalten in
-> [`docs/decisions/2026-07-m0-candidate-freeze.md`](../decisions/2026-07-m0-candidate-freeze.md)
-> (SW-116). **Nicht** der unten stehende `Ausgangs-SHA: e285822` — der stammt aus der
+> **Candidate-Freeze — neu gesetzt (SW-121, 2026-07-28).** Der maßgebliche Candidate ist
+> das **veröffentlichte, getaggte und attestierte Release `v0.6.7` auf
+> `fb3bf037e9b7fe05eda50514189caeff4c06679d`**, festgehalten in
+> [`docs/decisions/2026-07-p0-candidate-freeze.md`](../decisions/2026-07-p0-candidate-freeze.md)
+> (SW-121). Der zuvor hier genannte `4e72637` (SW-116) ist **abgelöst**: aus ihm wurde nie
+> etwas veröffentlicht, sein Release-Digest blieb `UNKNOWN`, und UNKNOWN zählt als nicht
+> bestanden (§2.4). Sein Entscheidungsdokument bleibt als Historie erhalten, ist aber als
+> *superseded* markiert und darf nicht mehr als aktueller Candidate zitiert werden; alle
+> daran gebundenen Evidenzzeilen stehen auf **STALE** (`docs/rc/evidence-index.yaml`).
+> **Nicht** der unten stehende `Ausgangs-SHA: e285822` — der stammt aus der
 > Zeit vor dem Freeze; `release-dag.yml` trägt eine einzige `github.sha` durch
 > gate → build → SBOM → publish, weshalb ein Candidate auf einem Feature-Branch keine
-> Attestation tragen kann. Das Entscheidungsdokument ist auf diesen Punkt maßgeblich.
+> Attestation tragen kann. Das jeweils gültige Entscheidungsdokument ist auf diesen Punkt
+> maßgeblich.
 >
 > **Zur PRD — erledigt (SW-120, 2026-07-27).** Der ursprüngliche Vermerk hielt fest, dass
 > die von WP0 geforderte „freigegebene PRD als einzige Planungsautorität“ nirgends

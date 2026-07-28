@@ -25,9 +25,14 @@ mit dem dokumentierten Lock-Handgriff.
 > (`4e72637` — der Merge-Commit von #55 auf `main`, **nicht** `e285822`), der
 > zugehörige Digest samt Provenienz — der **veröffentlichte** Release-Digest ist
 > für diese SHA **UNKNOWN**, da v0.5.0 bereits am Eltern-Commit `65713de`
-> publiziert ist — und die Change-Control-Regel (Plan §2.3/WP0). Jede Messung
-> dieses Programms ist an diese SHA gebunden; dieses Dossier beschreibt den
-> Stand v0.5.0 @ `65713de`.
+> publiziert ist — und die Change-Control-Regel (Plan §2.3/WP0). Dieses Dossier
+> beschreibt den Stand v0.5.0 @ `65713de`.
+>
+> **Abgelöst (SW-121, 2026-07-28):** `4e72637` ist **nicht mehr** der Candidate. Der
+> maßgebliche Candidate ist das veröffentlichte Release **`v0.6.7` auf `fb3bf03`** —
+> [`docs/decisions/2026-07-p0-candidate-freeze.md`](../decisions/2026-07-p0-candidate-freeze.md).
+> Jede Messung dieses Programms ist an **diese** SHA gebunden; Aussagen, die gegen
+> `4e72637` getroffen wurden, sind **STALE** (`docs/rc/evidence-index.yaml`).
 
 ## 2. Gate-Checkliste
 
