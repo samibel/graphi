@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -69,6 +70,12 @@ func main() {
 	oomCheck := flag.Bool("oom-check", false, "additionally run the reference scenario under the contract's imposed 8 GB memory limit and report the OOM gate; without it the gate is UNKNOWN, never PASS")
 	candidatePath := flag.String("candidate", defaultCandidateIndexPath, "evidence index the frozen candidate SHA is cited from; a series measured on another revision is marked as such")
 
+	// SW-125 (P0-C2) query-latency flag. 0 is the default path: the historical
+	// fixed warm sample counts, unchanged, reported honestly as below FR-8's
+	// floor. The 1000-execution runs are requested explicitly and go through
+	// eval-full.yml.
+	queryExecutions := flag.Int("query-executions", 0, "minimum timed executions per query class AND per PRD §12.2 gate pool (FR-8 wants at least "+strconv.Itoa(evalreport.QueryExecutionMinimum)+"); 0 = the default warm sample counts, unchanged")
+
 	flag.Parse()
 
 	if *checkReferenceScenario {
@@ -104,14 +111,16 @@ func main() {
 			}, execColdRun))
 		}
 		os.Exit(runFullRun(fullRunOptions{
-			manifestPath: *manifest,
-			repoName:     *fullRun,
-			workDir:      *workDir,
-			runnerClass:  *runnerClass,
-			outPath:      *out,
-			budgetPath:   *budgets,
-			scenarioPath: *referenceScenarioPath,
-			dropCaches:   *dropCaches,
+			manifestPath:    *manifest,
+			repoName:        *fullRun,
+			workDir:         *workDir,
+			runnerClass:     *runnerClass,
+			outPath:         *out,
+			budgetPath:      *budgets,
+			scenarioPath:    *referenceScenarioPath,
+			dropCaches:      *dropCaches,
+			queryExecutions: *queryExecutions,
+			candidatePath:   *candidatePath,
 		}))
 	}
 

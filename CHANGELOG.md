@@ -28,6 +28,54 @@ file:
 
 ### Added
 
+- **Query latency is now measured at the contract's scale — `-query-executions` (new).**
+  The warm half of `cmd/eval -full-run` reported a p95 per operation class over a
+  sample size chosen by wall-clock pragmatism — around 30 executions for the
+  structural class — while the measurement contract asks for **at least 1000
+  executions per query class**. Nothing recorded whether that floor was met, so a p95
+  over 30 executions and a p95 over 1000 landed in the same field and looked identical
+  to every consumer. `-query-executions N` now plans enough timed executions that every
+  query class *and* every individual performance gate's operation pool clears the
+  floor: a class target alone would leave the caller/callee/impact gate reading a
+  percentile over roughly half the executions it needs, however green the class looked.
+- **p50 as well as p95, per class and per operation.** The performance gates are stated
+  on both, and the report carried only the tail. `warm_p50_us` and `warm_p50_us_per_op`
+  now sit beside the existing p95 maps (which are unchanged, so the budget artifact and
+  the committed historical runs still read), and both come from the one nearest-rank
+  implementation the cold series already uses — a p50 and a p95 that disagreed about
+  even sample counts would show up as an unexplainable gate result rather than a test
+  failure.
+- **Undersampling is a visible state, not a silent one.** Every class and every gate
+  pool publishes its execution count beside the floor it is read against. A pool below
+  the floor makes its gates **UNKNOWN** — never PASS — even when the measured latency is
+  comfortably inside the threshold, and the reason names the count it got and the floor
+  it missed.
+- **Every individual measurement is retained.** Each operation keeps its full list of
+  per-execution latencies, and one exported function derives every published class,
+  pool and operation statistic from nothing but those samples, so a number that
+  disagrees with its own raw data is a test failure rather than a discrepancy nobody
+  can see.
+- **The symbol sample is deterministic and published verbatim.** Two runs over
+  different symbol samples are not two runs of the same measurement, and the
+  measurement contract asks for two consecutive green runs. The ordered sampled symbol
+  ids now travel in the report with a digest over them, so a drift between two runs is
+  one string comparison; a test indexes the same tree twice from scratch and requires
+  an identical sample.
+- **The operation → query-class mapping is stated, not inferred.** All twelve stable
+  operations appear in the report with an explicit class, and `index` is declared
+  **lifecycle-only** — it is the ingest lifecycle operation, its cost is the cold-index
+  wallclock, and it carries no query-latency samples, no execution floor and no query
+  gate. A drift test fails the build if the mapping and the frozen twelve diverge.
+- **Timing covers the operation and nothing else.** Argument assembly and symbol
+  selection moved into an untimed prepare step, each operation runs warmup executions
+  that are invoked and discarded before the first timed one, and the warmup count is
+  recorded per operation. A test inflates the setup cost and requires the reported
+  latency to be unchanged.
+- The weekly `eval-full` workflow gained a `query-latency-series` job that runs the
+  full-scale measurement over the reference scenario. The PR path is untouched: the
+  default invocation keeps the historical warm sample counts exactly, reports itself as
+  below the floor rather than looking like a full-scale run, and a guard test keeps the
+  new flag out of the PR gate and the per-repo compatibility runs.
 - **Cold indexing is now measured ten times, not once — `-cold-runs` (new).**
   `cmd/eval -full-run` measured a single cold index and reported it as though one
   sample were a result. A distribution cannot be derived from one number, and the
