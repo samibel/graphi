@@ -6,6 +6,14 @@
 # in-process session — raw evidence as internal/evalreport JSON artifacts.
 # Plus the 20-task hero suite (SW-122) over the hermetic tier-1 fixtures.
 #
+# SW-128 (P0-C5): every reference-scenario job additionally exports a RAW
+# run directory (`-export-raw`) and immediately reproduces its own published
+# numbers from it (`-aggregate`). The export is uploaded with the report, so an
+# artifact never arrives without the samples it was derived from, and the
+# reproduction step means a report that contradicts its own raw data turns the
+# job red at the moment it is produced rather than at the moment somebody tries
+# to publish it.
+#
 # ubuntu-latest is the REFERENCE RUNNER CLASS (docs/eval/hero-protocol.md):
 # only numbers recorded here freeze the ADR 0003 U5 budgets. Procedure after
 # a green run: download the artifacts, commit them under
@@ -140,7 +148,17 @@ jobs:
             -reference-scenario docs/eval/reference-scenario.json \
             -candidate docs/rc/evidence-index.yaml \
             -workdir "${RUNNER_TEMP}/cold-series" \
+            -export-raw runs/cold-index \
             -out eval-cold-grpc-go.json
+      # SW-128 (P0-C5): reproduce every published number from the raw samples
+      # the step above exported. It runs `if: always()` on purpose — a run whose
+      # gates went red still has to be internally consistent, and a report that
+      # contradicts its own samples is a different, worse defect than a missed
+      # threshold. Exit 1 = discrepancy, 3 = incomplete, 0 = publishable; none
+      # of them is allowed to be silent.
+      - name: reproduce the published numbers from the raw samples
+        if: always()
+        run: ./bin/eval -aggregate runs/cold-index
       - name: print raw evidence
         if: always()
         run: |
@@ -153,7 +171,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eval-cold-grpc-go
-          path: eval-cold-grpc-go.json
+          path: |
+            eval-cold-grpc-go.json
+            runs/cold-index
 
   # SW-125 (P0-C2): FR-8's query-latency measurement over THE reference
   # scenario. At least 1000 timed executions per query class AND per PRD §12.2
@@ -201,7 +221,11 @@ jobs:
             -reference-scenario docs/eval/reference-scenario.json \
             -candidate docs/rc/evidence-index.yaml \
             -workdir "${RUNNER_TEMP}/query-latency" \
+            -export-raw runs/query-latency \
             -out eval-query-grpc-go.json
+      - name: reproduce the published numbers from the raw samples
+        if: always()
+        run: go run ./cmd/eval -aggregate runs/query-latency
       - name: print raw evidence
         if: always()
         run: |
@@ -214,7 +238,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eval-query-grpc-go
-          path: eval-query-grpc-go.json
+          path: |
+            eval-query-grpc-go.json
+            runs/query-latency
 
   # SW-126 (P0-C3): FR-8's freshness and incremental-update measurement over THE
   # reference scenario. At least 100 incremental changes as a DEFINED,
@@ -264,7 +290,11 @@ jobs:
             -reference-scenario docs/eval/reference-scenario.json \
             -candidate docs/rc/evidence-index.yaml \
             -workdir "${RUNNER_TEMP}/freshness" \
+            -export-raw runs/freshness \
             -out eval-freshness-grpc-go.json
+      - name: reproduce the published numbers from the raw samples
+        if: always()
+        run: go run ./cmd/eval -aggregate runs/freshness
       - name: print raw evidence
         if: always()
         run: |
@@ -277,7 +307,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eval-freshness-grpc-go
-          path: eval-freshness-grpc-go.json
+          path: |
+            eval-freshness-grpc-go.json
+            runs/freshness
 
   # SW-127 (P0-C4): PRD 12.2's progress-stall gate over THE reference scenario.
   # The intervals between consecutive ingest.ProgressEvents during the cold full
@@ -329,7 +361,11 @@ jobs:
             -reference-scenario docs/eval/reference-scenario.json \
             -candidate docs/rc/evidence-index.yaml \
             -workdir "${RUNNER_TEMP}/progress-stalls" \
+            -export-raw runs/progress-stalls \
             -out eval-stalls-grpc-go.json
+      - name: reproduce the published numbers from the raw samples
+        if: always()
+        run: go run ./cmd/eval -aggregate runs/progress-stalls
       - name: print raw evidence
         if: always()
         run: |
@@ -342,7 +378,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eval-stalls-grpc-go
-          path: eval-stalls-grpc-go.json
+          path: |
+            eval-stalls-grpc-go.json
+            runs/progress-stalls
 
   hero-suite:
     name: hero suite (20 tasks, tier-1 fixtures)

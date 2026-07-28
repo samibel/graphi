@@ -186,3 +186,64 @@ schedule + manual dispatch; never a PR gate (the hero suite's PR gate is
    reports, verify all 12 semantic checks and the post-suite RSS metric, then
    replace the provisional limits with reviewed comparable ratchets. Historical
    JSON remains unchanged.
+
+## Raw samples, environment capture, and reproducing the numbers (SW-128)
+
+Everything above produces *aggregates*. FR-9 asks for the individual
+measurements too, for the environment they were produced in, and for the
+aggregates to be **reproducible from the raw data**. That is a directory
+convention plus one command.
+
+**Export.** Any `-full-run` (single or `-cold-runs N`) can write a run directory:
+
+```sh
+go run ./cmd/eval -manifest corpus/manifest.json -full-run grpc-go \
+  -runner-class ubuntu-latest \
+  -reference-scenario docs/eval/reference-scenario.json \
+  -candidate docs/rc/evidence-index.yaml \
+  -export-raw auto
+```
+
+`auto` applies the SW-128 path convention — `docs/eval/runs/<date>-<runner-class>/`,
+the same shape the historical runs already use — and an explicit path is for CI.
+The layout and its rules are documented in
+[`docs/eval/runs/README.md`](runs/README.md).
+
+**The separation that matters.** `raw/` holds four sample-only files, one per
+harness (SW-124…SW-127): cold runs, timed query executions with their pool
+membership, incremental changes, and progress-stall intervals. They carry **no
+percentile, no aggregate and no verdict**. The published report keeps its own
+shape unchanged. Reproducing one from the other is therefore a real check
+rather than a comparison of a number with a file that already contains it.
+
+**Reproduce.**
+
+```sh
+go run ./cmd/eval -aggregate docs/eval/runs/2026-07-28-ubuntu-latest
+```
+
+Every statistic the report publishes is recomputed from `raw/` through the same
+exported derivations the harnesses used (`RecomputeColdAggregates`,
+`RecomputeQueryLatency`, `RecomputeIncremental`, `RecomputeStalls`) and compared
+**exactly** — every percentile in this tree is a nearest-rank *observed sample*,
+never an interpolation, so two correct derivations agree bit for bit and a
+tolerance would only be somewhere for drift to hide. Exit `0` publishable,
+`1` discrepancy, `2` unreadable, `3` incomplete.
+
+**Environment.** `environment.json` records CPU, RAM, OS, kernel, Go version,
+filesystem and observed page-cache state, plus runner class, frozen candidate
+SHA, and the harness and scorer versions. A probe that fails leaves the field
+**absent** with the reason recorded; `aggregate.json` renders it `UNKNOWN`. An
+empty `kernel` never reads as a documented kernel, and a run whose environment is
+incomplete is not publishable however cleanly its arithmetic reproduces.
+
+**Method versioning.** Raw files carry `format_version` (the file shape) and
+`harness_version` (the measurement method). A directory whose raw files disagree
+about the harness version is **refused**, not warned about: an old and a new
+methodology are not one measurement, and averaging them is the silent drift the
+P0 risk register names.
+
+**Scope.** The aggregator checks that a report follows from its samples. It does
+not decide whether the numbers are *good* — the PRD §12.2 gates already do that,
+in the harness, and a reproduced FAIL is still a FAIL. Nor does it re-measure:
+`-aggregate` reads a directory and never runs an index.

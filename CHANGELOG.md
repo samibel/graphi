@@ -28,6 +28,49 @@ file:
 
 ### Added
 
+- **Published performance numbers are now reproducible from the raw measurements — `-export-raw` and `-aggregate` (new).**
+  The committed evidence runs held aggregates and nothing else: a `warm_p95_us`, a
+  `peak_rss_mb`, a `db_size_bytes`. Nothing can be recomputed from a p95, so every
+  published figure had to be taken on trust. A measurement run can now export a **run
+  directory** — `docs/eval/runs/<date>-<runner-class>/`, the shape the historical runs
+  already use — holding the individual measurements from all four performance harnesses
+  beside the report they produced, and `-aggregate <dir>` recomputes **every** published
+  statistic from those samples and diffs them.
+- **The raw format carries samples and nothing derived.** The harnesses already retained
+  their individual measurements, but inside the same structure as the percentiles derived
+  from them — checking one against the other would have been comparing a number with a
+  file that already contained it. The exported `raw/` files carry measurements plus the
+  pool-membership lists a recomputation needs, and no percentile, aggregate or verdict.
+- **A discrepancy is an error, not a rounding note.** The comparison is exact: every
+  percentile in the tree is a nearest-rank *observed sample* rather than an interpolation,
+  so two correct derivations over the same samples agree bit for bit, and a tolerance
+  would only be somewhere for drift to hide. A report edited away from its samples — by
+  hand, by a half-finished refactor, or by two runs' files landing in one directory —
+  turns the job red at the moment it is produced.
+- **The run environment is captured, and a gap in it reads as a gap.** CPU, RAM, OS,
+  kernel, Go version, filesystem and observed page-cache state are recorded alongside the
+  runner class, the frozen candidate SHA and the harness and scorer versions. A probe
+  that fails leaves the field **absent** with the reason recorded, and it renders
+  `UNKNOWN`: an empty `kernel` never reads as a documented kernel. A run whose environment
+  is incomplete is not publishable however cleanly its arithmetic reproduces.
+- **Missing raw data makes a metric UNKNOWN, and an unpublishable run says so in its exit
+  code.** `-aggregate` exits `0` only when every published metric reproduced *and* the
+  environment is documented; `1` on a discrepancy, `3` when the run is incomplete, `2`
+  when the directory cannot be read. `3` is deliberately not `1` — "the number is wrong"
+  and "the number cannot be checked" are different facts, and merging them would let a
+  real discrepancy be triaged as a flaky job.
+- **Raw format and measurement method are versioned separately.** `format_version` pins
+  the file shape and `harness_version` the measurement method. A directory whose raw
+  files disagree about the harness version is refused rather than warned about: an old and
+  a new methodology are not one measurement, and averaging them silently is exactly the
+  risk this versioning exists to remove.
+- **Every reference-scenario CI job now exports and reproduces its own numbers.** The
+  four `eval-full.yml` jobs that produce candidate evidence export their raw samples and
+  immediately check that their report follows from them, `if: always()` — a run whose
+  gates went red still has to be internally consistent, and that is when a contradiction
+  between report and samples matters most. The exported directory is uploaded with the
+  report, so an artifact never arrives without the data behind it.
+
 - **Query latency is now measured at the contract's scale — `-query-executions` (new).**
   The warm half of `cmd/eval -full-run` reported a p95 per operation class over a
   sample size chosen by wall-clock pragmatism — around 30 executions for the
