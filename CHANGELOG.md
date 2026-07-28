@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-28
+
 ### Added
 
 - **Published performance numbers are now reproducible from the raw measurements — `-export-raw` and `-aggregate` (new).**
