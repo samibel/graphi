@@ -511,6 +511,18 @@ func coldRunArgv(self string, o coldSeriesOptions, runWorkDir, outPath string, l
 	if o.scenarioPath != "" {
 		argv = append(argv, "-reference-scenario", o.scenarioPath)
 	}
+	// The child must be told WHICH candidate it is measuring, exactly as the
+	// parent was. Without this it falls back to defaultCandidateIndexPath —
+	// the in-tree docs/rc/evidence-index.yaml — which is the wrong file the
+	// moment the caller checks the candidate out to measure it: a release is
+	// cut BEFORE the freeze record that names it, so at the candidate's own
+	// SHA the in-tree index still cites its PREDECESSOR. A candidate cannot
+	// cite itself. The child then compares its HEAD against the previous
+	// candidate, finds a mismatch, and reports every gate UNKNOWN for a run
+	// that is in fact about the frozen artifact.
+	if o.candidatePath != "" {
+		argv = append(argv, "-candidate", o.candidatePath)
+	}
 	if o.budgetPath != "" {
 		argv = append(argv, "-budgets", o.budgetPath)
 	}
