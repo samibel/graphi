@@ -279,6 +279,71 @@ jobs:
           name: eval-freshness-grpc-go
           path: eval-freshness-grpc-go.json
 
+  # SW-127 (P0-C4): PRD 12.2's progress-stall gate over THE reference scenario.
+  # The intervals between consecutive ingest.ProgressEvents during the cold full
+  # index, reported as p95 AND the longest stall, with every interval retained.
+  #
+  # The measurement itself is not requested by a flag — it rides on every
+  # -full-run, because a regression guard that has to be asked for does not
+  # guard. This job exists for the SCENARIO: PRD 12.2 is scoped to the reference
+  # repository, and stalls are a property of a large tree, not of the tier-1
+  # fixtures the PR path indexes in milliseconds.
+  #
+  # Deliberately its own single-run job rather than folded into the cold series:
+  # that job keeps only one child report, so nine of its ten stall series would
+  # never reach an artifact.
+  #
+  # Page cache dropped for the same reason the cold series drops it — a warm
+  # cache is where stalls go to hide.
+  #
+  # No budget artifact, like the other reference-scenario jobs: grpc-go has no
+  # entry in the fail-closed budget selection.
+  #
+  # The gate reads UNKNOWN — never PASS — unless the run is the reference
+  # scenario on the reference class and from the frozen candidate. A cold index
+  # that emitted NO progress is the one case that is not merely unknown: it
+  # fails, here, loudly.
+  progress-stall-series:
+    name: progress stalls (reference scenario, cold index)
+    runs-on: ubuntu-latest
+    # One clone and one cold index of a large Go repository, plus a timestamp
+    # per progress event. Comparable to a single matrix run.
+    timeout-minutes: 60
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
+      - name: measure progress stalls over the reference scenario
+        run: |
+          go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -full-run grpc-go \
+            -drop-caches \
+            -runner-class ubuntu-latest \
+            -reference-scenario docs/eval/reference-scenario.json \
+            -candidate docs/rc/evidence-index.yaml \
+            -workdir "${RUNNER_TEMP}/progress-stalls" \
+            -out eval-stalls-grpc-go.json
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== EVAL-STALLS-BEGIN grpc-go ==="
+          cat eval-stalls-grpc-go.json
+          echo "=== EVAL-STALLS-END grpc-go ==="
+          { echo '```json'; cat eval-stalls-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eval-stalls-grpc-go
+          path: eval-stalls-grpc-go.json
+
   hero-suite:
     name: hero suite (20 tasks, tier-1 fixtures)
     runs-on: ubuntu-latest

@@ -112,6 +112,18 @@ type FullRepoRun struct {
 	// MUTATES the measured checkout and would change what every other number in
 	// this report means.
 	Incremental *IncrementalSeries `json:"incremental,omitempty"`
+	// Stalls is SW-127's progress-stall evidence over the COLD INDEX: the
+	// intervals between consecutive ingest.ProgressEvents, reported as p95 and
+	// maximum, with every individual interval retained and the two boundary
+	// intervals named rather than folded in.
+	//
+	// A pointer and absent by default, for the same reason the three series
+	// above are — but here the reason is sharper. An absent series means the
+	// cold index never completed, so nothing was watched; a PRESENT series with
+	// an empty distribution means the index ran and stayed SILENT, which is a
+	// FAILURE (see StallSilenceNote). Collapsing the two into one empty value
+	// would let the defect this gate exists to catch render as clean.
+	Stalls *StallSeries `json:"stalls,omitempty"`
 
 	// Searches are the manifest's expect_nonempty smoke assertions re-checked
 	// against this run's index.

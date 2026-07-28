@@ -63,7 +63,9 @@ const fullRunNotes = "in-process session model: engine services over one open SQ
 	"deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; " +
 	"all 12 stable operations covered with an explicit operation-to-class mapping; " +
 	"warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every " +
-	"individual measurement retained in query_latency.operations[].samples_us"
+	"individual measurement retained in query_latency.operations[].samples_us; " +
+	"the cold index is watched for silence through the shipped ingest progress hook — see `stalls`, which is " +
+	"present on every run and reads FAIL when the index emitted no progress"
 
 // fullRunOptions is one full-run invocation. It is a struct rather than a
 // positional list because SW-124 adds the cold-state protocol to what was
@@ -206,6 +208,14 @@ func runFullRun(o fullRunOptions) int {
 		run.Incremental.Gates = readFreshnessGates(o.scenarioPath, run.Incremental, prov)
 		run.Incremental.Status = incrementalStatus(run.Incremental)
 	}
+	// SW-127: the stall gate reads the same provenance value, for the same
+	// reason. Its status is computed even without a contract, because an
+	// unobservable index is a failure whether or not there is a threshold to read
+	// it against.
+	if run.Stalls != nil {
+		run.Stalls.Gates = readStallGates(o.scenarioPath, run.Stalls, prov)
+		run.Stalls.Status = stallStatus(run.Stalls)
+	}
 	if o.budgetPath != "" {
 		run.BudgetSource = o.budgetPath
 		if run.Pass {
@@ -251,6 +261,7 @@ func runFullRun(o fullRunOptions) int {
 	fmt.Fprintf(os.Stderr, "eval: wrote full-run report to %s\n", outPath)
 	printQueryLatencySummary(os.Stderr, run.QueryLatency)
 	printIncrementalSummary(os.Stderr, run.Incremental)
+	printStallSummary(os.Stderr, run.Stalls)
 
 	if !run.Pass {
 		fmt.Fprintf(os.Stderr, "eval: FAIL - full run over %s: %s\n", o.repoName, strings.Join(run.Failures, "; "))
@@ -266,6 +277,17 @@ func runFullRun(o fullRunOptions) int {
 	}
 	if run.Incremental != nil && run.Incremental.Status == evalreport.StatusFail {
 		fmt.Fprintf(os.Stderr, "eval: FAIL - freshness gate over %s\n", o.repoName)
+		return 1
+	}
+	// SW-127. This is the regression guard the story exists for: an index that
+	// went quiet turns the run red HERE, not in a report nobody reads.
+	if run.Stalls != nil && run.Stalls.Status == evalreport.StatusFail {
+		if !run.Stalls.Observable {
+			fmt.Fprintf(os.Stderr, "eval: FAIL - the cold index over %s emitted %d progress event(s): %s\n",
+				o.repoName, run.Stalls.Events, evalreport.StallSilenceNote)
+		} else {
+			fmt.Fprintf(os.Stderr, "eval: FAIL - progress-stall gate over %s\n", o.repoName)
+		}
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "eval: PASS - full run over %s (index %dms, rss %dMB, db %dB)\n",
@@ -406,12 +428,38 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	defer ing.Close()
 
+	// SW-127: watch the cold index for silence. The observer is attached through
+	// the SHIPPED progress hook — the same one the graphi CLI's renderer uses —
+	// so this story adds nothing to engine/ingest (AC-7); the heartbeat cadence
+	// is set explicitly rather than inherited, because the cadence is part of
+	// what the event stream means and an unstated default is not evidence.
+	//
+	// It is ALWAYS on, unlike the query-execution floor and the change sequence:
+	// it mutates nothing, costs a timestamp per event, and its whole purpose is
+	// to be a standing regression guard. A guard that has to be requested does
+	// not guard.
+	stalls := newStallObserver()
+	ing.WithHeartbeatMode(ingest.HeartbeatNonTTY).WithProgress(stalls.observe)
+
 	indexStart := time.Now()
-	if err := ing.IngestAll(ctx, repoDir); err != nil {
+	stalls.begin(indexStart)
+	err = ing.IngestAll(ctx, repoDir)
+	indexEnd := time.Now()
+	stalls.end(indexEnd)
+	if err != nil {
+		// No stall series: an index that did not finish produced no cold-index
+		// measurement, and a partial silence profile would be read as one.
 		return fail("index", err)
 	}
-	run.Index.WallclockMS = time.Since(indexStart).Milliseconds()
+	run.Index.WallclockMS = indexEnd.Sub(indexStart).Milliseconds()
 	run.Index.PeakRSSMB = peakRSSMB()
+	run.Stalls = stalls.series(e.Name, string(ingest.HeartbeatNonTTY))
+	if failure, silent := stallRunFailure(run.Stalls); silent {
+		// A silent index is a failure of the RUN, not only of its gate: the cold
+		// series files a child by its own verdict, and a run that indexed without
+		// ever saying so must not be filed as clean.
+		run.Failures = append(run.Failures, failure)
+	}
 
 	aggregate, ok := any(store).(graphstore.BriefAggregatePort)
 	if !ok {
