@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "notes": "SW-123 (P0-A4). The machine-readable P0 measurement contract: ONE reference runner class, ONE reference scenario repository, and every PRD 12.2 performance gate mapped BY NAME to an entry of corpus/manifest.json (v3, SW-122). This file measures nothing — it is the contract measurements are read against, so the harness stories (SW-124 … SW-130) read it instead of each restating a threshold, a repository, or a runner class. Loader, validator and drift tests: cmd/eval/refscenario.go and cmd/eval/refscenario_test.go; operator check: `go run ./cmd/eval -check-reference-scenario`. Changing a threshold here is a PRD change, not a harness change.",
+  "scope_limitation": "Every gate in this file holds ONLY for the reference scenario named below, measured on the reference runner class named below. It is NOT a universal guarantee for arbitrary repositories, other runner classes, other build flavors, or other workloads (PRD FR-8, 12.2, NFR-6). A measurement taken on the comparison class is never a reference value and never freezes a budget. The only claim that binds every measured scenario is the 4 GB peak-RSS STOP RULE (PRD 17) recorded under `stop_rule` — and a stop rule is not a gate.",
+  "runner_classes": [
+    {
+      "id": "ubuntu-latest",
+      "role": "reference",
+      "os": "Ubuntu 24.04 LTS (GitHub-hosted runner image `ubuntu-24.04`)",
+      "arch": "x64 (amd64)",
+      "cpu": "4 vCPU, x86-64. The concrete host CPU model varies between Azure VM generations and is therefore captured per run rather than declared here; the vCPU count is the contractual figure.",
+      "cpu_cores": 4,
+      "ram_gb": 16,
+      "kernel": "The runner image's default Linux kernel. The image label pins the distribution, not the kernel patch level, so the exact `uname -srv` string is captured into every run record and published with the numbers.",
+      "go_version": "go 1.26.5 — pinned by go.mod and installed by actions/setup-go with `go-version-file: go.mod`, so the toolchain is pinned by the repository rather than by the runner image.",
+      "filesystem": "ext4 on the runner's 14 GB SSD-backed OS disk; the checkout, the eval work directory and the measured SQLite store all live on it. Confirmed per run with `findmnt -no FSTYPE` over the work directory.",
+      "cache_state": "Cold is produced, not assumed: each job runs on a freshly provisioned VM (no reuse between jobs), and each timed cold index is preceded by `sync && sudo sysctl -w vm.drop_caches=3`. Warm figures are the same process's later invocations over the store the cold pass built. The Go build and module caches are populated by actions/setup-go BEFORE any measurement, so compilation never falls inside a measured window.",
+      "source": "Hardware figures (4 vCPU / 16 GB RAM / 14 GB SSD for public repositories): GitHub Actions runner reference, https://docs.github.com/en/actions/reference/runners/github-hosted-runners. Image mapping (`ubuntu-latest` → `ubuntu-24.04`, x64): https://github.com/actions/runner-images. Both read 2026-07-27. Go version: go.mod at the measured commit.",
+      "verification": "SW-128's environment capture records the observed CPU model and core count, MemTotal, `uname -srv`, `go version` and the work-directory filesystem into every run record. A captured value that contradicts this declaration invalidates the run rather than being published beside it.",
+      "evidence": "docs/eval/runs/2026-07-15-ubuntu-latest/ — historical evidence on this class, produced by the previous harness; retained as provenance, not as a comparable baseline.",
+      "notes": "`ubuntu-latest` is the class every existing graphi gate workflow already runs on (lint, testgate, layerguard, coverage-matrix, eval, eval-full, release-dag), so declaring it the reference makes the reference the machine the project actually uses rather than a machine invented for P0. PRD Open Question 3 is answered here. It is also the FR-9 solo substitute for independent reproduction: a clean hosted runner replaces 'reproduced by another person', and that substitution is recorded rather than reported as the original gate."
+    },
+    {
+      "id": "local-sandbox",
+      "role": "comparison",
+      "os": "macOS 26.5.2 (build 25F84)",
+      "arch": "arm64",
+      "cpu": "Apple M2 Max — 12 logical cores (8 performance + 4 efficiency)",
+      "cpu_cores": 12,
+      "ram_gb": 64,
+      "kernel": "Darwin 25.5.0",
+      "go_version": "go1.26.5 darwin/arm64",
+      "filesystem": "APFS on the internal NVMe (case-insensitive)",
+      "cache_state": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+      "source": "Captured on the machine 2026-07-27: `sysctl -n machdep.cpu.brand_string hw.ncpu hw.perflevel0.logicalcpu hw.perflevel1.logicalcpu hw.memsize`, `uname -srm`, `sw_vers`, `df /`, `go version`.",
+      "evidence": "docs/eval/runs/2026-07-15-local-sandbox/ — labelled PRELIMINARY at the time and still not reference evidence.",
+      "notes": "COMPARISON CLASS ONLY. Its numbers are never reported as reference values, never satisfy a PRD 12.2 gate, and never freeze a budget. It exists to answer 'does this reproduce off CI at all', on a machine that differs from the reference in architecture (arm64 vs x64), core count (12 vs 4), memory (64 GB vs 16 GB), OS and filesystem — so a divergence between the two classes is expected and is not evidence of a regression."
+    }
+  ],
+  "reference_scenario": {
+    "repo": "grpc-go",
+    "corpus_manifest": "corpus/manifest.json",
+    "rationale": "grpc-go v1.60.1 is the largest NON-STRESS repository in the v3 corpus (831 Go files over 277 package directories, 11 go.mod files, 49 generated files, 287 test files — four of the ten FR-2 stratification properties). It is Go, which is where P0's depth claims are made; it is tier 3, so the nightly corpus job already exercises the pin; and it is affordable enough that ten cold runs plus 1000 query executions per class fit inside one hosted-runner job. The FR-2 stress target (kubernetes, tier 4) is deliberately NOT the reference scenario: PRD 17 names the 10k stress target as a subject of the program-wide stop rule, i.e. explicitly a non-reference scenario, and a 45-minute tier-4 clone-and-index cannot carry a repeated gate.",
+    "headroom": "Stated honestly: the PRD's 90 s / 120 s cold-index and 2 GB peak-RSS thresholds have large headroom over a repository of this size, so a green reference gate is evidence about grpc-go and nothing else. It says nothing about the stress target — that is the stop rule's job, and `stop_rule.observations` already records an unconfirmed peak above the stop-rule threshold. Whether the thresholds should be tightened once real numbers exist is a PRD decision for after SW-130, not a harness decision: this artifact locates the PRD's thresholds, it does not move them."
+  },
+  "gates": [
+    {
+      "id": "cold_index_p50",
+      "prd_metric": "Cold Index p50 (PRD 12.2)",
+      "threshold": 90,
+      "unit": "s",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "measured_by": "SW-124",
+      "notes": "Median of ten cold runs (FR-8 minimum run count), each preceded by the reference class's drop-caches protocol."
+    },
+    {
+      "id": "cold_index_p95",
+      "prd_metric": "Cold Index p95 (PRD 12.2)",
+      "threshold": 120,
+      "unit": "s",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "measured_by": "SW-124",
+      "notes": "Nearest-rank p95 over the same ten cold runs; with n=10 it is the maximum, which is recorded as a property of the sample size, not hidden."
+    },
+    {
+      "id": "peak_rss",
+      "prd_metric": "Peak RSS, reference scenario (PRD 12.2; see the 4 GB stop rule in PRD 17)",
+      "threshold": 2,
+      "unit": "GB",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "measured_by": "SW-124",
+      "notes": "getrusage MAXRSS over the whole measured process, sampled after the stable-operation suite — not only after IngestAll, which is how the historical 11821 MB guava sample became unattributable."
+    },
+    {
+      "id": "oom_8gb_host",
+      "prd_metric": "OOM on an 8 GB host (PRD 12.2)",
+      "threshold": 0,
+      "unit": "oom_kills",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "measured_by": "SW-124",
+      "notes": "The only gate whose threshold is legitimately zero: it counts kills, and zero kills IS the assertion. The method is in `oom_check`; the validator rejects a zero threshold on every other (magnitude) gate."
+    },
+    {
+      "id": "db_size",
+      "prd_metric": "DB size, reference scenario (PRD 12.2)",
+      "threshold": 300,
+      "unit": "MB",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "measured_by": "SW-124",
+      "notes": "On-disk size of the SQLite store after a clean close (WAL checkpointed into the main file), as cmd/eval -full-run already measures it."
+    },
+    {
+      "id": "progress_stall_p95",
+      "prd_metric": "Longest progress stall p95 (PRD 12.2)",
+      "threshold": 2,
+      "unit": "s",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "measured_by": "SW-127",
+      "notes": "Measured over ingest.ProgressEvent inter-arrival times during the cold index; a stall is silence between events, which is what a user experiences as a hang."
+    },
+    {
+      "id": "warm_search_p95",
+      "prd_metric": "Warm Search p95 (PRD 12.2)",
+      "threshold": 100,
+      "unit": "ms",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "operations": ["search"],
+      "measured_by": "SW-125",
+      "notes": "Query-latency class `search`. FR-8 requires at least 1000 executions per query class."
+    },
+    {
+      "id": "caller_callee_impact_p95",
+      "prd_metric": "Caller/Callee/Impact p95 (PRD 12.2)",
+      "threshold": 200,
+      "unit": "ms",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "operations": ["callers", "callees", "impact"],
+      "measured_by": "SW-125",
+      "notes": "Query-latency class `structural`, restricted to the three operations the PRD names. The harness also pools definition/references/neighborhood into `structural`; those are measured and published but carry no 12.2 gate — see `measured_not_gated`."
+    },
+    {
+      "id": "agent_context_p95",
+      "prd_metric": "Agent Context p95 (PRD 12.2)",
+      "threshold": 500,
+      "unit": "ms",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "operations": ["agent_brief", "explain_symbol", "change_risk", "related_files"],
+      "measured_by": "SW-125",
+      "notes": "Query-latency class `agent_tools`, the harness's existing pool for the agent-context operations."
+    },
+    {
+      "id": "freshness_p95",
+      "prd_metric": "Freshness p95 (PRD 12.2)",
+      "threshold": 2,
+      "unit": "s",
+      "comparison": "lte",
+      "repo": "grpc-go",
+      "measured_by": "SW-126",
+      "notes": "Time from a file change to that change being answerable, over at least 100 incremental changes (FR-8)."
+    }
+  ],
+  "oom_check": {
+    "gate_id": "oom_8gb_host",
+    "repo": "grpc-go",
+    "host": "The reference runner class itself (ubuntu-latest, 16 GB). No 8 GB machine exists in the class, so the 8 GB limit is IMPOSED on the measured process rather than obtained by choosing a smaller host — which also removes the confound of a second, undocumented machine.",
+    "limit_bytes": 8589934592,
+    "impose": "cgroup v2, the ubuntu-24.04 image's default hierarchy: run the cold-index measurement inside `sudo systemd-run --scope --collect --property=MemoryMax=8G --property=MemorySwapMax=0 -- <measurement command>`. MemorySwapMax=0 matters: with swap available the process would be throttled instead of killed, and the check would pass for the wrong reason.",
+    "verify": "Before the measured work starts, read back the scope's own cgroup files — `memory.max` and `memory.swap.max` — and record both byte values verbatim in the run record. A `memory.max` that is not exactly 8589934592, or a `memory.swap.max` other than 0, INVALIDATES the check (recorded as UNKNOWN); it never passes it. The recorded values are published with the result so a reader can confirm the limit was real.",
+    "failure_signal": "The gate FAILS if any of: the scope's `memory.events` reports `oom_kill > 0` after the run; the measured process exits with 137 / SIGKILL; or the kernel log records an OOM kill for it. All three are captured and published. A PASS requires a verified 8 GB limit AND a completed run AND all three signals absent — 'nothing was observed' on an unverified limit is UNKNOWN, not PASS (PRD 8.2).",
+    "notes": "This gate binds the REFERENCE SCENARIO only (PRD 12.2, Open Question 12). It makes no statement about the stress target: kubernetes is bound by the program-wide 4 GB stop rule in `stop_rule`, which is strictly wider than this gate and never a milder substitute for it."
+  },
+  "stop_rule": {
+    "id": "peak_rss_stop_rule",
+    "threshold_gb": 4,
+    "applies_to": "Every measured scenario, without exception — the reference scenario, every non-reference repository, and the FR-2 stress target (kubernetes).",
+    "relation": "Strictly wider than the 2 GB peak-RSS gate and never a milder alternative to it (PRD FR-8). The reference scenario can break its 2 GB gate without triggering the stop rule, and the stop rule can trigger while the reference scenario holds its gate.",
+    "effect": "Scale claims stop: graphi publishes no scaling statement about large repositories until the value is explained or fixed. The 12.2 gate is not replaced or relaxed by this.",
+    "observations": [
+      {
+        "repo": "kubernetes",
+        "runner_class": "local-sandbox",
+        "peak_rss_gb": 9,
+        "source": "corpus/manifest.json, kubernetes entry notes (SW-122, 2026-07-27): a measured full index cost ~3m16s wall and ~9 GB peak RSS on the comparison class, v0.6.7 dev build.",
+        "status": "UNCONFIRMED — a single run, on the COMPARISON class, before the P0 harness existed. It is recorded here because a number above the stop-rule threshold must not go unrecorded, not because it decides anything. SW-124 measures it on the reference class; until then the stop rule's status for kubernetes is UNKNOWN, which per PRD 8.2 is not a PASS."
+      }
+    ]
+  },
+  "budgets": {
+    "path": "docs/eval/hero-budgets.json",
+    "historical": true,
+    "ratcheting": false,
+    "reason": "The values are compatibility ceilings copied from a retired harness (run 29418826616, commit 71353f9, 2026-07-15) that measured a different workload: it omitted `impact` from the structural pool, required no semantic checks across all 12 stable operations, used a different symbol sample, and sampled MAXRSS immediately after IngestAll rather than after the stable-operation suite. They therefore cannot be compared to a current measurement, and SW-123 marks them historical instead of pretending otherwise. Its all-zero hero latency map — which carried no signal yet rendered as met — was REMOVED by SW-123, and cmd/eval now rejects any zero anywhere in the budget artifact.",
+    "rebaseline_blocked_on": "SW-121 (re-freeze the candidate on a tagged release) and SW-124 (produce comparable numbers on the reference class). Re-baselining before both would freeze ceilings from an artifact no user installs, measured by a harness whose numbers nothing reproduces.",
+    "still_gating": "Historical does NOT mean disabled: cmd/eval -full-run still enforces these ceilings fail-closed for cobra, flask and guava, and a missing, malformed, wrong-runner-class or zero-valued budget is still a failure, not a skip."
+  },
+  "measured_not_gated": [
+    "definition p50/p95 — measured (FR-8), no PRD 12.2 gate row",
+    "references p50/p95 — measured (FR-8), no PRD 12.2 gate row",
+    "neighborhood p50/p95 — measured (FR-8), no PRD 12.2 gate row",
+    "warm start — measured (FR-8), no PRD 12.2 gate row",
+    "nodes, edges, bytes per edge — measured (FR-8), no PRD 12.2 gate row",
+    "incremental update p50/p95 — measured (FR-8); the gated companion is freshness_p95",
+    "full-vs-incremental parity — NOT a performance metric: a reliability gate in PRD 12.3 / FR-7, deferred to the P0-D band"
+  ]
+}

@@ -6,6 +6,14 @@
 # in-process session — raw evidence as internal/evalreport JSON artifacts.
 # Plus the 20-task hero suite (SW-122) over the hermetic tier-1 fixtures.
 #
+# SW-128 (P0-C5): every reference-scenario job additionally exports a RAW
+# run directory (`-export-raw`) and immediately reproduces its own published
+# numbers from it (`-aggregate`). The export is uploaded with the report, so an
+# artifact never arrives without the samples it was derived from, and the
+# reproduction step means a report that contradicts its own raw data turns the
+# job red at the moment it is produced rather than at the moment somebody tries
+# to publish it.
+#
 # ubuntu-latest is the REFERENCE RUNNER CLASS (docs/eval/hero-protocol.md):
 # only numbers recorded here freeze the ADR 0003 U5 budgets. Procedure after
 # a green run: download the artifacts, commit them under
@@ -36,6 +44,21 @@ jobs:
       matrix:
         # Mirrors the EVAL-02 selection in docs/eval/hero-budgets.json:
         # Go (typeresolve acceptance target), Python, Java/JVM monorepo.
+        #
+        # The v3 Go corpus (uuid, lo, gin, grpc-go, and the kubernetes stress
+        # target) is deliberately NOT here: -budgets is fail-closed, so a repo
+        # missing from hero-budgets.json's real_repos.selection fails the run,
+        # and those budgets are historical ceilings from a retired harness.
+        # SW-123 named the runner class and the reference scenario
+        # (docs/eval/reference-scenario.json, grpc-go on ubuntu-latest) and
+        # marked the budgets historical/non-ratcheting.
+        #
+        # SW-124 measures the reference scenario in the separate
+        # `cold-index-series` job below, WITHOUT -budgets: it is read against
+        # the contract's PRD §12.2 gates, not against retired ceilings.
+        # Re-baselining hero-budgets.json still waits for a candidate (SW-121)
+        # and a published baseline (SW-130). This job stays SINGLE-RUN, and a
+        # guard test asserts the repetition flag never appears in it.
         repo: [cobra, flask, guava]
     env:
       CGO_ENABLED: "0"
@@ -45,6 +68,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      # SW-123: validate the measurement contract BEFORE measuring anything —
+      # a contract that no longer matches the pinned corpus would otherwise be
+      # discovered after a 30-minute guava job.
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
       - name: full measurement run (${{ matrix.repo }})
         run: |
           go run ./cmd/eval \
@@ -52,7 +80,9 @@ jobs:
             -full-run "${{ matrix.repo }}" \
             -runner-class ubuntu-latest \
             -budgets docs/eval/hero-budgets.json \
-            -out "eval-full-${{ matrix.repo }}.json"
+            -reference-scenario docs/eval/reference-scenario.json \
+            -out "eval-full-${{ matrix.repo }}.json" \
+            -profile-dir "profiles-${{ matrix.repo }}"
       # The raw report also goes to the job log (and step summary): the run
       # page is then self-documenting, and the evidence stays retrievable via
       # the logs API even where artifact-storage domains are unreachable.
@@ -68,7 +98,297 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eval-full-${{ matrix.repo }}
-          path: eval-full-${{ matrix.repo }}.json
+          # SW-129: this job enforces the historical per-repo ceilings, so it is
+          # the likeliest place a budget is exceeded — and a profile that CI
+          # discards may as well not have been produced. The directory is absent
+          # on a green run (nothing is profiled when nothing is missed), which is
+          # why the upload does not require it to exist.
+          path: |
+            eval-full-${{ matrix.repo }}.json
+            profiles-${{ matrix.repo }}
+
+  # SW-124 (P0-C1): FR-8's repeated cold-index measurement over THE reference
+  # scenario. Ten cold runs, one process per run (getrusage MAXRSS is a
+  # process-lifetime peak, so in-process repetition would republish run 1's
+  # peak), reported as p50 AND p95 with every sample kept in the artifact.
+  #
+  # Deliberately separate from the matrix job above: that one enforces the
+  # historical per-repo ceilings for cobra/flask/guava and stays single-run,
+  # while this one is read against the PRD §12.2 gates in
+  # docs/eval/reference-scenario.json and passes no -budgets (grpc-go has no
+  # budget entry, and -budgets is fail-closed).
+  #
+  # A gate here reads UNKNOWN — never PASS — unless the run is the reference
+  # scenario on the reference class, from the frozen candidate, with all ten
+  # runs completed. That is expected to be the state until SW-121 re-freezes
+  # the candidate, and it is visible in the artifact rather than assumed away.
+  cold-index-series:
+    name: cold-index series (reference scenario, 10 runs)
+    runs-on: ubuntu-latest
+    # Ten cold indexes plus a clone each, plus the constrained OOM run. The
+    # matrix job's 45 minutes is per single run; this is an order of magnitude
+    # more work.
+    timeout-minutes: 180
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
+      # Built once, deliberately: -cold-runs re-invokes this same binary per
+      # run, so building here keeps compilation out of every measured window
+      # and puts one auditable executable in the run record.
+      - name: build the eval harness
+        run: go build -o ./bin/eval ./cmd/eval
+      - name: ten cold runs over the reference scenario
+        run: |
+          ./bin/eval \
+            -manifest corpus/manifest.json \
+            -full-run grpc-go \
+            -cold-runs 10 \
+            -drop-caches \
+            -oom-check \
+            -runner-class ubuntu-latest \
+            -reference-scenario docs/eval/reference-scenario.json \
+            -candidate docs/rc/evidence-index.yaml \
+            -workdir "${RUNNER_TEMP}/cold-series" \
+            -export-raw runs/cold-index \
+            -out eval-cold-grpc-go.json
+      # SW-128 (P0-C5): reproduce every published number from the raw samples
+      # the step above exported. It runs `if: always()` on purpose — a run whose
+      # gates went red still has to be internally consistent, and a report that
+      # contradicts its own samples is a different, worse defect than a missed
+      # threshold. Exit 1 = discrepancy, 3 = incomplete, 0 = publishable; none
+      # of them is allowed to be silent.
+      - name: reproduce the published numbers from the raw samples
+        if: always()
+        run: ./bin/eval -aggregate runs/cold-index
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== EVAL-COLD-SERIES-BEGIN grpc-go ==="
+          cat eval-cold-grpc-go.json
+          echo "=== EVAL-COLD-SERIES-END grpc-go ==="
+          { echo '```json'; cat eval-cold-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eval-cold-grpc-go
+          path: |
+            eval-cold-grpc-go.json
+            runs/cold-index
+
+  # SW-125 (P0-C2): FR-8's query-latency measurement over THE reference
+  # scenario. At least 1000 timed executions per query class AND per PRD §12.2
+  # gate pool, reported as p50 AND p95 per class and per operation, with every
+  # individual measurement retained in the artifact.
+  #
+  # Deliberately its own job, and deliberately NOT in the matrix above: the
+  # matrix enforces the historical per-repo ceilings for cobra/flask/guava and
+  # stays at the default warm sample counts, while this one is read against the
+  # PRD §12.2 gates in docs/eval/reference-scenario.json. It passes no budget
+  # artifact for the same reason the cold series does not — grpc-go has no
+  # budget entry, and the budget flag is fail-closed.
+  #
+  # One cold index, then a long warm session: the executions are warm by
+  # construction (they run over the store the index built, after per-operation
+  # warmups), which is what the §12.2 warm rows are about.
+  #
+  # A gate here reads UNKNOWN — never PASS — unless the run is the reference
+  # scenario on the reference class, from the frozen candidate, with every
+  # gated pool above the 1000-execution floor.
+  query-latency-series:
+    name: query latency (reference scenario, >=1000 executions per class)
+    runs-on: ubuntu-latest
+    # One clone and one index, then ~4500 timed operations plus warmups. Far
+    # cheaper than the ten-run cold series, comfortably above the single-run
+    # matrix job.
+    timeout-minutes: 90
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
+      - name: at least 1000 executions per query class over the reference scenario
+        run: |
+          go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -full-run grpc-go \
+            -query-executions 1000 \
+            -runner-class ubuntu-latest \
+            -reference-scenario docs/eval/reference-scenario.json \
+            -candidate docs/rc/evidence-index.yaml \
+            -workdir "${RUNNER_TEMP}/query-latency" \
+            -export-raw runs/query-latency \
+            -out eval-query-grpc-go.json
+      - name: reproduce the published numbers from the raw samples
+        if: always()
+        run: go run ./cmd/eval -aggregate runs/query-latency
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== EVAL-QUERY-LATENCY-BEGIN grpc-go ==="
+          cat eval-query-grpc-go.json
+          echo "=== EVAL-QUERY-LATENCY-END grpc-go ==="
+          { echo '```json'; cat eval-query-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eval-query-grpc-go
+          path: |
+            eval-query-grpc-go.json
+            runs/query-latency
+
+  # SW-126 (P0-C3): FR-8's freshness and incremental-update measurement over THE
+  # reference scenario. At least 100 incremental changes as a DEFINED,
+  # reproducible sequence — add, modify, delete and a change that touches
+  # cross-package edges — reported as incremental-update p50/p95 and freshness
+  # p50/p95, with every individual measurement retained in the artifact.
+  #
+  # Deliberately its own job, and deliberately not folded into any of the
+  # others: this is the ONLY job that MUTATES the cloned checkout. Applying a
+  # hundred changes to the tree changes what a cold-index wallclock, a peak RSS
+  # or a DB size measured in the same process would mean, so the harness runs it
+  # last within the run and the run is not shared with a measurement that would
+  # be contaminated by it.
+  #
+  # No budget artifact is passed, for the same reason as the cold and
+  # query-latency series: grpc-go has no entry in the fail-closed budget
+  # selection, and this job is read against the PRD §12.2 `freshness_p95` gate
+  # in docs/eval/reference-scenario.json.
+  #
+  # The gate reads UNKNOWN — never PASS — unless the run is the reference
+  # scenario on the reference class, from the frozen candidate, with at least
+  # 100 completed changes covering every required class.
+  freshness-series:
+    name: freshness (reference scenario, >=100 incremental changes)
+    runs-on: ubuntu-latest
+    # One clone and one cold index, then 100 incremental re-ingests of a large
+    # Go repository plus a convergence probe each. Cheaper than the ten-run cold
+    # series, dearer than the single-run matrix job.
+    timeout-minutes: 120
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
+      - name: at least 100 incremental changes over the reference scenario
+        run: |
+          go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -full-run grpc-go \
+            -incremental-changes 100 \
+            -runner-class ubuntu-latest \
+            -reference-scenario docs/eval/reference-scenario.json \
+            -candidate docs/rc/evidence-index.yaml \
+            -workdir "${RUNNER_TEMP}/freshness" \
+            -export-raw runs/freshness \
+            -out eval-freshness-grpc-go.json
+      - name: reproduce the published numbers from the raw samples
+        if: always()
+        run: go run ./cmd/eval -aggregate runs/freshness
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== EVAL-FRESHNESS-BEGIN grpc-go ==="
+          cat eval-freshness-grpc-go.json
+          echo "=== EVAL-FRESHNESS-END grpc-go ==="
+          { echo '```json'; cat eval-freshness-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eval-freshness-grpc-go
+          path: |
+            eval-freshness-grpc-go.json
+            runs/freshness
+
+  # SW-127 (P0-C4): PRD 12.2's progress-stall gate over THE reference scenario.
+  # The intervals between consecutive ingest.ProgressEvents during the cold full
+  # index, reported as p95 AND the longest stall, with every interval retained.
+  #
+  # The measurement itself is not requested by a flag — it rides on every
+  # -full-run, because a regression guard that has to be asked for does not
+  # guard. This job exists for the SCENARIO: PRD 12.2 is scoped to the reference
+  # repository, and stalls are a property of a large tree, not of the tier-1
+  # fixtures the PR path indexes in milliseconds.
+  #
+  # Deliberately its own single-run job rather than folded into the cold series:
+  # that job keeps only one child report, so nine of its ten stall series would
+  # never reach an artifact.
+  #
+  # Page cache dropped for the same reason the cold series drops it — a warm
+  # cache is where stalls go to hide.
+  #
+  # No budget artifact, like the other reference-scenario jobs: grpc-go has no
+  # entry in the fail-closed budget selection.
+  #
+  # The gate reads UNKNOWN — never PASS — unless the run is the reference
+  # scenario on the reference class and from the frozen candidate. A cold index
+  # that emitted NO progress is the one case that is not merely unknown: it
+  # fails, here, loudly.
+  progress-stall-series:
+    name: progress stalls (reference scenario, cold index)
+    runs-on: ubuntu-latest
+    # One clone and one cold index of a large Go repository, plus a timestamp
+    # per progress event. Comparable to a single matrix run.
+    timeout-minutes: 60
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: check the reference-scenario contract
+        run: go run ./cmd/eval -check-reference-scenario
+      - name: measure progress stalls over the reference scenario
+        run: |
+          go run ./cmd/eval \
+            -manifest corpus/manifest.json \
+            -full-run grpc-go \
+            -drop-caches \
+            -runner-class ubuntu-latest \
+            -reference-scenario docs/eval/reference-scenario.json \
+            -candidate docs/rc/evidence-index.yaml \
+            -workdir "${RUNNER_TEMP}/progress-stalls" \
+            -export-raw runs/progress-stalls \
+            -out eval-stalls-grpc-go.json
+      - name: reproduce the published numbers from the raw samples
+        if: always()
+        run: go run ./cmd/eval -aggregate runs/progress-stalls
+      - name: print raw evidence
+        if: always()
+        run: |
+          echo "=== EVAL-STALLS-BEGIN grpc-go ==="
+          cat eval-stalls-grpc-go.json
+          echo "=== EVAL-STALLS-END grpc-go ==="
+          { echo '```json'; cat eval-stalls-grpc-go.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eval-stalls-grpc-go
+          path: |
+            eval-stalls-grpc-go.json
+            runs/progress-stalls
 
   hero-suite:
     name: hero suite (20 tasks, tier-1 fixtures)

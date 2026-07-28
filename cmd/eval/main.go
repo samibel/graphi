@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -58,14 +59,99 @@ func main() {
 	runnerClass := flag.String("runner-class", "local", "machine class stamped into the full-run report (CI passes ubuntu-latest; budgets are only frozen from the reference class)")
 	budgets := flag.String("budgets", "", "full-run budget manifest to enforce fail-closed (for example docs/eval/hero-budgets.json)")
 
+	// SW-123 (P0-A4) reference-scenario contract flags.
+	referenceScenarioPath := flag.String("reference-scenario", "", "reference-scenario contract to validate the run against (for example "+defaultReferenceScenarioPath+"); when set, an undeclared -runner-class fails closed")
+	checkReferenceScenario := flag.Bool("check-reference-scenario", false, "validate the reference-scenario contract against the corpus manifest and the budget artifact, then exit")
+
+	// SW-124 (P0-C1) cold-run series flags. The defaults are the pre-SW-124
+	// behaviour exactly: one run, no cache protocol, no OOM check.
+	coldRuns := flag.Int("cold-runs", 1, "repeat the cold index this many times, one process per run, and report p50/p95 with every sample kept (FR-8 wants at least 10); 1 = the single-run path, unchanged")
+	dropCaches := flag.Bool("drop-caches", false, "drop the page cache between the clone and the timed index (the reference runner class's declared cold protocol; linux, needs root or passwordless sudo)")
+	oomCheck := flag.Bool("oom-check", false, "additionally run the reference scenario under the contract's imposed 8 GB memory limit and report the OOM gate; without it the gate is UNKNOWN, never PASS")
+	candidatePath := flag.String("candidate", defaultCandidateIndexPath, "evidence index the frozen candidate SHA is cited from; a series measured on another revision is marked as such")
+
+	// SW-125 (P0-C2) query-latency flag. 0 is the default path: the historical
+	// fixed warm sample counts, unchanged, reported honestly as below FR-8's
+	// floor. The 1000-execution runs are requested explicitly and go through
+	// eval-full.yml.
+	queryExecutions := flag.Int("query-executions", 0, "minimum timed executions per query class AND per PRD §12.2 gate pool (FR-8 wants at least "+strconv.Itoa(evalreport.QueryExecutionMinimum)+"); 0 = the default warm sample counts, unchanged")
+
+	// SW-126 (P0-C3) freshness/incremental flag. 0 is the default path: the
+	// phase does not run at all, because it MUTATES the measured checkout. The
+	// >=100-change runs are requested explicitly and go through eval-full.yml.
+	incrementalChanges := flag.Int("incremental-changes", 0, "run this many incremental changes against the measured checkout and report incremental-update and freshness p50/p95 (FR-8 wants at least "+strconv.Itoa(evalreport.IncrementalChangeMinimum)+"); 0 = not measured, and the checkout is left untouched")
+
+	// SW-128 (P0-C5) raw-sample export and the aggregator that reproduces the
+	// report from it. Both are off by default: the export writes a directory,
+	// which a PR-path run has no business creating, and the aggregator is a
+	// mode of its own rather than a step of a measurement.
+	exportRaw := flag.String("export-raw", "", "after the run, write a raw-sample run directory here — individual measurements, the environment and the published report side by side; \""+exportAuto+"\" uses the "+evalreport.RunsRoot+"/<date>-<runner-class> convention")
+	aggregate := flag.String("aggregate", "", "recompute every published metric in this run directory from its raw samples and diff them; exit 1 on a discrepancy, 3 when the run is incomplete, 0 only when it is publishable")
+
+	// SW-129 (P0-C6) profiling automation. ON by default and costing a green
+	// run nothing: the profiler is never started unless a gate was missed, so
+	// the measurement cannot be distorted by the thing that explains it.
+	profileOnMiss := flag.Bool("profile-on-miss", true, "when a performance gate is MISSED, re-run the affected scenario under the CPU, heap, allocation and I/O profilers "+
+		"and write the profiles beside that run's raw data (PRD §8.5: a fix cites the profile of the run that motivated it). A green run profiles nothing")
+	profileDir := flag.String("profile-dir", "", "write profile sets here instead of the run directory's "+evalreport.ProfileDir+"/ subdirectory")
+
 	flag.Parse()
+
+	if *aggregate != "" {
+		os.Exit(runAggregate(*aggregate, *out, os.Stderr))
+	}
+
+	if *checkReferenceScenario {
+		os.Exit(runReferenceScenarioCheck(
+			orDefault(*referenceScenarioPath, defaultReferenceScenarioPath),
+			orDefault(*manifest, defaultCorpusManifestPath),
+			orDefault(*budgets, defaultBudgetsPath),
+			os.Stdout,
+		))
+	}
 
 	if *fullRun != "" {
 		if *manifest == "" {
 			fmt.Fprintln(os.Stderr, "eval: -full-run requires -manifest")
 			os.Exit(2)
 		}
-		os.Exit(runFullRun(*manifest, *fullRun, *workDir, *runnerClass, *out, *budgets))
+		// Anything other than exactly 1 goes to the series path, so a
+		// nonsensical count (0, negative) fails closed there with a message
+		// instead of silently degrading to a single run.
+		if *coldRuns != 1 {
+			os.Exit(runColdSeries(coldSeriesOptions{
+				manifestPath:  *manifest,
+				repoName:      *fullRun,
+				workDir:       *workDir,
+				runnerClass:   *runnerClass,
+				outPath:       *out,
+				budgetPath:    *budgets,
+				scenarioPath:  *referenceScenarioPath,
+				candidatePath: *candidatePath,
+				runs:          *coldRuns,
+				dropCaches:    *dropCaches,
+				oomCheck:      *oomCheck,
+				exportRaw:     *exportRaw,
+				profileOnMiss: *profileOnMiss,
+				profileDir:    *profileDir,
+			}, execColdRun))
+		}
+		os.Exit(runFullRun(fullRunOptions{
+			manifestPath:       *manifest,
+			repoName:           *fullRun,
+			workDir:            *workDir,
+			runnerClass:        *runnerClass,
+			outPath:            *out,
+			budgetPath:         *budgets,
+			scenarioPath:       *referenceScenarioPath,
+			dropCaches:         *dropCaches,
+			queryExecutions:    *queryExecutions,
+			incrementalChanges: *incrementalChanges,
+			candidatePath:      *candidatePath,
+			exportRaw:          *exportRaw,
+			profileOnMiss:      *profileOnMiss,
+			profileDir:         *profileDir,
+		}))
 	}
 
 	if *manifest != "" {
@@ -102,6 +188,15 @@ func main() {
 	}
 	fmt.Fprintf(os.Stderr, "%s PASS (aggregate=%.2fx, claim %s, threshold=%.0fx)\n",
 		rep.Name, rep.AggregateRatio, verdict, rep.ClaimThreshold)
+}
+
+// orDefault falls back to the checked-in artifact path when a flag is unset,
+// so the operator check needs no arguments to be meaningful.
+func orDefault(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
 }
 
 // resolveCommit records the exact Git revision and marks a dirty worktree so a

@@ -48,6 +48,47 @@ type ConfirmedEdge struct {
 	Min         int    `json:"min"`
 }
 
+// FileCensus is the file count of one repository, MEASURED from a real clone
+// at the pinned SHA — never estimated from repository metadata. It is the
+// evidence behind corpus-size claims (FR-2's >=10,000-source-file stress
+// target), so Method records the exact command that produced the numbers and
+// MeasuredAt when, making the census reproducible by anyone re-cloning the pin.
+type FileCensus struct {
+	// GoFiles is the number of tracked *.go files at the pinned SHA. This is
+	// the STRICTEST reading of "source files" — it counts no docs, YAML or
+	// vendored assets — and is what the stress threshold is asserted on.
+	GoFiles int `json:"go_files"`
+	// TrackedFiles is every tracked file at the pinned SHA (context for
+	// GoFiles, not a substitute for it).
+	TrackedFiles int `json:"tracked_files"`
+	// GoModules is the number of go.mod files (the multi-module property).
+	GoModules int `json:"go_modules,omitempty"`
+	// MeasuredAt is the ISO date the census was taken.
+	MeasuredAt string `json:"measured_at"`
+	// Method is the exact command sequence behind the numbers.
+	Method string `json:"method"`
+}
+
+// StressMinGoFiles is the FR-2 stress-target threshold: an entry declaring
+// Stress must MEASURE at least this many Go files, so "stress target" can
+// never become a label an ordinary repository wears.
+const StressMinGoFiles = 10000
+
+// PropertyMapping maps one FR-2 stratification property to the repository that
+// carries it. A property no selected repository covers is recorded as an
+// explicit Gap with a reason — omitting it silently is what this type exists to
+// prevent.
+type PropertyMapping struct {
+	Property string `json:"property"`
+	// Repo is the entry name carrying the property; empty only when Gap.
+	Repo string `json:"repo,omitempty"`
+	// Gap marks the property as uncovered; Evidence must then say why.
+	Gap bool `json:"gap,omitempty"`
+	// Evidence is the measured justification ("11 go.mod files"), or, for a
+	// gap, why no repository carries it.
+	Evidence string `json:"evidence"`
+}
+
 // Entry is one corpus repository. Exactly one of URL or Path must be set:
 // URL entries are shallow-cloned at Ref (a tag or branch) by the runner —
 // the workflow context; Path entries point at an already-materialized local
@@ -72,8 +113,31 @@ type Entry struct {
 	// ConfirmedEdges are optional confirmed-tier assertions (see ConfirmedEdge).
 	ConfirmedEdges []ConfirmedEdge `json:"confirmed_edges,omitempty"`
 	// Tier is the corpus tier: 1 = PR gate (local fixtures), 2 = pinned SHAs,
-	// 3 = nightly/manual large repos. Defaults to 1 for backward compatibility.
+	// 3 = nightly/manual large repos, 4 = manual-only stress targets (never
+	// scheduled: corpus.yml caps the nightly run at tier 3, so a tier-4 entry
+	// runs only under an explicit `-tier 4` or through cmd/eval -full-run).
+	// Defaults to 1 for backward compatibility.
 	Tier int `json:"tier,omitempty"`
+	// Language is the entry's primary language ("go", "python", …). It makes
+	// the corpus's language composition auditable instead of inferred from
+	// repository names.
+	Language string `json:"language,omitempty"`
+	// License is the SPDX identifier of the repository's license and
+	// PermittedUse states why this corpus may use it (FR-2 requires both to be
+	// documented). Required on URL entries — a repository whose terms are not
+	// written down must not be cloned by an evaluation.
+	License      string `json:"license,omitempty"`
+	PermittedUse string `json:"permitted_use,omitempty"`
+	// Properties are the FR-2 stratification properties this entry carries;
+	// Manifest.Stratification is the authoritative property -> repo map and
+	// this is the per-entry view of it.
+	Properties []string `json:"properties,omitempty"`
+	// Measured is the file census taken from a real clone at SHA.
+	Measured *FileCensus `json:"measured,omitempty"`
+	// Stress declares this entry the FR-2 stress target. It is fail-closed:
+	// the declaration is only accepted with a census of at least
+	// StressMinGoFiles Go files.
+	Stress bool `json:"stress,omitempty"`
 	// BudgetMS is the declared wall-clock budget for this entry in milliseconds.
 	// It is surfaced in the report as warn-only metadata.
 	BudgetMS int64 `json:"budget_ms,omitempty"`
@@ -90,9 +154,15 @@ type TierBudget struct {
 
 // Manifest is the checked-in corpus definition (corpus/manifest.json).
 type Manifest struct {
-	Notes       string       `json:"notes,omitempty"`
-	Entries     []Entry      `json:"entries"`
-	TierBudgets []TierBudget `json:"tier_budgets,omitempty"`
+	// Version is the manifest schema stamp (cmd/eval records it in every
+	// report header so a measurement always names the corpus it ran against).
+	Version int    `json:"version,omitempty"`
+	Notes   string `json:"notes,omitempty"`
+	// Stratification maps each required corpus property to the repository
+	// carrying it, or records it as an explicit gap.
+	Stratification []PropertyMapping `json:"stratification,omitempty"`
+	Entries        []Entry           `json:"entries"`
+	TierBudgets    []TierBudget      `json:"tier_budgets,omitempty"`
 }
 
 // LoadManifest reads and validates the manifest at path.
@@ -118,8 +188,8 @@ func LoadManifest(path string) (Manifest, error) {
 		if e.URL != "" && e.Ref == "" {
 			return Manifest{}, fmt.Errorf("corpus: entry %q has a url but no ref (pin a release tag)", e.Name)
 		}
-		if e.Tier != 0 && (e.Tier < 1 || e.Tier > 3) {
-			return Manifest{}, fmt.Errorf("corpus: entry %q has invalid tier %d (must be 1, 2, or 3)", e.Name, e.Tier)
+		if e.Tier != 0 && (e.Tier < 1 || e.Tier > 4) {
+			return Manifest{}, fmt.Errorf("corpus: entry %q has invalid tier %d (must be 1, 2, 3, or 4)", e.Name, e.Tier)
 		}
 		if e.Tier == 0 {
 			// Default to tier 1 for backward compatibility. Mutate by index:
@@ -134,6 +204,23 @@ func LoadManifest(path string) (Manifest, error) {
 		}
 		if e.SHA != "" && !validShortSHA(e.SHA) {
 			return Manifest{}, fmt.Errorf("corpus: entry %q sha %q must be >=12 hex chars (a git sha prefix)", e.Name, e.SHA)
+		}
+		if e.URL != "" && e.License == "" {
+			return Manifest{}, fmt.Errorf("corpus: entry %q has a url but no license (a repository whose terms are undocumented must not be cloned)", e.Name)
+		}
+		if e.URL != "" && e.Language == "" {
+			return Manifest{}, fmt.Errorf("corpus: entry %q has a url but no language (the corpus composition must be auditable)", e.Name)
+		}
+		if err := validateCensus(e); err != nil {
+			return Manifest{}, err
+		}
+		if e.Stress {
+			if e.Measured == nil {
+				return Manifest{}, fmt.Errorf("corpus: entry %q declares stress without a measured census (the size claim needs evidence)", e.Name)
+			}
+			if e.Measured.GoFiles < StressMinGoFiles {
+				return Manifest{}, fmt.Errorf("corpus: entry %q declares stress with %d measured go files, need >= %d", e.Name, e.Measured.GoFiles, StressMinGoFiles)
+			}
 		}
 		nonEmpty := false
 		for _, s := range e.Searches {
@@ -159,7 +246,67 @@ func LoadManifest(path string) (Manifest, error) {
 			}
 		}
 	}
+	if err := validateStratification(m); err != nil {
+		return Manifest{}, err
+	}
 	return m, nil
+}
+
+// validateCensus keeps a recorded file count honest: counts must be positive
+// and carry the date and command that produced them, so the number can be
+// re-derived from the pin instead of trusted.
+func validateCensus(e Entry) error {
+	c := e.Measured
+	if c == nil {
+		return nil
+	}
+	if c.GoFiles < 0 || c.TrackedFiles <= 0 {
+		return fmt.Errorf("corpus: entry %q measured census must count at least one tracked file", e.Name)
+	}
+	if c.GoFiles > c.TrackedFiles {
+		return fmt.Errorf("corpus: entry %q measured %d go files of %d tracked files (impossible)", e.Name, c.GoFiles, c.TrackedFiles)
+	}
+	if c.MeasuredAt == "" || c.Method == "" {
+		return fmt.Errorf("corpus: entry %q measured census needs measured_at and method (an unattributed count is an estimate)", e.Name)
+	}
+	return nil
+}
+
+// validateStratification pins the property map to reality: every mapping names
+// a property, and points either at an entry that exists in this manifest or at
+// an explicitly justified gap. A typo'd repository name would otherwise read as
+// coverage the corpus does not have.
+func validateStratification(m Manifest) error {
+	known := make(map[string]bool, len(m.Entries))
+	for _, e := range m.Entries {
+		known[e.Name] = true
+	}
+	seen := make(map[string]bool, len(m.Stratification))
+	for i, p := range m.Stratification {
+		if p.Property == "" {
+			return fmt.Errorf("corpus: stratification %d has no property name", i)
+		}
+		if seen[p.Property] {
+			return fmt.Errorf("corpus: stratification property %q is mapped twice", p.Property)
+		}
+		seen[p.Property] = true
+		if p.Evidence == "" {
+			return fmt.Errorf("corpus: stratification property %q has no evidence", p.Property)
+		}
+		if p.Gap {
+			if p.Repo != "" {
+				return fmt.Errorf("corpus: stratification property %q is marked as a gap but names repo %q", p.Property, p.Repo)
+			}
+			continue
+		}
+		if p.Repo == "" {
+			return fmt.Errorf("corpus: stratification property %q names no repo and is not marked as a gap", p.Property)
+		}
+		if !known[p.Repo] {
+			return fmt.Errorf("corpus: stratification property %q names unknown repo %q", p.Property, p.Repo)
+		}
+	}
+	return nil
 }
 
 // validShortSHA reports whether s is a plausible git sha prefix: >=12 and

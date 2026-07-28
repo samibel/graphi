@@ -38,19 +38,30 @@ const (
 	EvidenceMDPath   = "docs/rc/evidence-index.md"
 )
 
-// Gate status values. These are exactly the plan §7 dashboard states. A blank
-// status normalizes to StatusUnknown at load, so a new gate starts honest.
+// Gate status values. These are exactly the plan §7 dashboard states plus the
+// P0 PRD's fourth state (§12 "Statuswerte": PASS | FAIL | UNKNOWN | STALE). A
+// blank status normalizes to StatusUnknown at load, so a new gate starts honest.
+//
+// StatusStale exists because a candidate move (PRD FR-1: "Alle betroffenen
+// Evidenzen werden als STALE markiert") must be visible in the row itself. The
+// alternative — leaving such a row UNKNOWN — is not wrong but is silent: it
+// cannot be told apart from a gate that was never measured, and the row would
+// quietly inherit the new candidate. STALE never passes and, per Check below,
+// must name what superseded it.
 const (
 	StatusPass    = "PASS"
 	StatusFail    = "FAIL"
 	StatusUnknown = "UNKNOWN"
+	StatusStale   = "STALE"
 )
 
-// Candidate cites the frozen candidate from SW-116's record rather than restating
-// it. ReleaseDigest mirrors that record: where no published digest is bound to the
-// candidate it reads UNKNOWN, and the dashboard must not disagree with SW-116.
+// Candidate cites the frozen candidate from its freeze record rather than
+// restating it. ReleaseDigest mirrors that record: where no published digest is
+// bound to the candidate it reads UNKNOWN, and the dashboard must never disagree
+// with the record it cites. Source names the record, so moving the candidate is a
+// source-data edit, not a code change.
 type Candidate struct {
-	Source        string // the SW-116 record this is cited from
+	Source        string // the freeze record this is cited from
 	SHA           string // candidate merge SHA
 	ReleaseDigest string // published release digest, or UNKNOWN (never blank)
 }

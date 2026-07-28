@@ -41,9 +41,16 @@ import (
 	"github.com/samibel/graphi/internal/evalreport"
 )
 
-// Warm-measurement sample caps. They bound the wallclock of the largest repo
-// (guava) while keeping enough samples for a meaningful p95; the concrete ops
-// and counts are recorded in the report so runs are interpretable.
+// DEFAULT-PATH warm sample counts. They bound the wallclock of the largest
+// repo (guava) and are what `-full-run` executes when no FR-8 floor is asked
+// for; the concrete ops and counts are recorded in the report so runs are
+// interpretable.
+//
+// SW-125 did NOT re-tune these. FR-8's 1000-executions-per-class floor is
+// requested explicitly with -query-executions and runs through eval-full.yml;
+// leaving the default counts alone is what keeps the PR path unchanged (AC-8),
+// and query_latency.sufficient reports honestly that a default run is below
+// the floor rather than letting the two look alike.
 const (
 	fullRunSymbolSample    = 25 // symbols driven through the structural ops
 	fullRunSearchIters     = 20 // timed iterations per manifest search query
@@ -53,21 +60,85 @@ const (
 
 const fullRunNotes = "in-process session model: engine services over one open SQLite store; " +
 	"cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; " +
-	"degree-stratified symbol sample; all 12 stable operations covered; warm p95 pooled per op class over the recorded warm_ops/warm_samples"
+	"deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; " +
+	"all 12 stable operations covered with an explicit operation-to-class mapping; " +
+	"warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every " +
+	"individual measurement retained in query_latency.operations[].samples_us; " +
+	"the cold index is watched for silence through the shipped ingest progress hook — see `stalls`, which is " +
+	"present on every run and reads FAIL when the index emitted no progress"
+
+// fullRunOptions is one full-run invocation. It is a struct rather than a
+// positional list because SW-124 adds the cold-state protocol to what was
+// already seven strings, and a misordered pair of paths is a silent wrong
+// measurement rather than a compile error.
+type fullRunOptions struct {
+	manifestPath string
+	repoName     string
+	workDir      string
+	runnerClass  string
+	outPath      string
+	budgetPath   string
+	scenarioPath string
+	// dropCaches asks for the page cache to be dropped between the clone and
+	// the timed index (SW-124 AC-1). It is a request, not a claim: what the
+	// protocol actually achieved is recorded in the run's ColdState.
+	dropCaches bool
+	// queryExecutions is SW-125's FR-8 floor request: at least this many timed
+	// executions per query class AND per §12.2 gate pool. 0 is the default
+	// path — the historical fixed sample counts, byte-unchanged — which the
+	// report then honestly marks as undersampled rather than gate-ready.
+	queryExecutions int
+	// incrementalChanges is SW-126's FR-8 floor request: run this many
+	// incremental changes against the measured checkout and report freshness and
+	// incremental-update percentiles. 0 is the default path, where the phase does
+	// not run at all — it MUTATES the checkout, so a run that performs it is
+	// measuring a different tree from the one every other number describes.
+	incrementalChanges int
+	// candidatePath is the evidence index the frozen candidate is cited from,
+	// used to decide whether this run's numbers are about the candidate at all.
+	// It is read only when a reference-scenario contract is supplied, i.e. only
+	// when there are gates to read; an unreadable index makes every gate
+	// UNKNOWN rather than failing the measurement.
+	candidatePath string
+	// exportRaw is SW-128's raw-sample run directory, or "" for no export.
+	// Writing it is a separate, opt-in step: a PR-path run has no business
+	// creating a directory under docs/eval/runs/.
+	exportRaw string
+	// profileOnMiss is SW-129's automation: when a gate is missed, re-run the
+	// affected scenario under the profilers. It defaults to ON, and it costs a
+	// green run nothing — the profiler is never started when nothing was
+	// missed. profileDir overrides where the sets go; empty means the run
+	// directory's profiles/ subdirectory.
+	profileOnMiss bool
+	profileDir    string
+}
 
 // runFullRun executes the full measurement for one manifest entry and writes
-// the report to outPath. Returns the process exit code.
-func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPath string) int {
+// the report to o.outPath. Returns the process exit code.
+//
+// o.scenarioPath, when set, is the SW-123 reference-scenario contract: the run
+// is validated against it and stamped with the runner class's declared ROLE,
+// so a comparison-class report can never be mistaken for reference evidence.
+// A runner class the contract does not declare fails the run closed — that is
+// how numbers from unnamed machines stop sitting beside reference values with
+// equal standing.
+func runFullRun(o fullRunOptions) int {
 	ctx := context.Background()
 
-	m, err := corpus.LoadManifest(manifestPath)
+	class, isReference, err := resolveRunnerClass(o.scenarioPath, o.manifestPath, o.runnerClass, o.repoName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: %v\n", err)
+		return 2
+	}
+
+	m, err := corpus.LoadManifest(o.manifestPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "eval: load manifest: %v\n", err)
 		return 2
 	}
 	var entry *corpus.Entry
 	for i := range m.Entries {
-		if m.Entries[i].Name == repoName {
+		if m.Entries[i].Name == o.repoName {
 			entry = &m.Entries[i]
 			break
 		}
@@ -77,10 +148,11 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 		for _, e := range m.Entries {
 			names = append(names, e.Name)
 		}
-		fmt.Fprintf(os.Stderr, "eval: -full-run %q not in manifest (have: %s)\n", repoName, strings.Join(names, ", "))
+		fmt.Fprintf(os.Stderr, "eval: -full-run %q not in manifest (have: %s)\n", o.repoName, strings.Join(names, ", "))
 		return 2
 	}
 
+	workDir := o.workDir
 	if workDir == "" {
 		workDir, err = os.MkdirTemp("", "graphi-eval-full")
 		if err != nil {
@@ -90,11 +162,75 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 		defer os.RemoveAll(workDir)
 	}
 
-	run := fullRepoRun(ctx, *entry, filepath.Dir(manifestPath), workDir)
-	if budgetPath != "" {
-		run.BudgetSource = budgetPath
+	// The contract, when one was supplied, is already validated by
+	// resolveRunnerClass; it is re-read here because SW-125's execution plan
+	// needs the gates' operation pools BEFORE anything is measured — the number
+	// of executions a run performs is decided by what the gates will be read
+	// over, not discovered afterwards.
+	var contract *referenceScenario
+	if o.scenarioPath != "" {
+		if rs, err := loadReferenceScenario(o.scenarioPath); err == nil {
+			contract = &rs
+		}
+	}
+	plan := newQueryLatencyPlan(o.queryExecutions, contract)
+
+	run := fullRepoRun(ctx, *entry, filepath.Dir(o.manifestPath), workDir, coldProtocol{
+		drop:             o.dropCaches,
+		requiredProtocol: class.CacheState,
+		// The reference class declares a drop-caches protocol; the comparison
+		// class declares its cache state uncontrolled. A reference-class run
+		// that did not drop the cache is therefore not cold BY ITS OWN
+		// DECLARATION, and says so rather than being quietly published.
+		dropRequired: class.Role == roleReference,
+	}, plan, o.incrementalChanges)
+
+	// SW-125: read the §12.2 warm-latency gates against what was measured. The
+	// provenance facts are final by now, and every one of them can only make a
+	// gate UNKNOWN — none of them can turn a missed threshold into a pass.
+	measuredSHA := resolveCommit()
+	prov := gateProvenance{
+		repo:              o.repoName,
+		runnerClass:       o.runnerClass,
+		runnerRole:        class.Role,
+		referenceScenario: isReference,
+		measuredSHA:       measuredSHA,
+		worktreeDirty:     strings.HasSuffix(measuredSHA, "+dirty"),
+	}
+	if o.scenarioPath != "" {
+		sha, source, err := loadCandidateSHA(o.candidatePath)
+		switch {
+		case err != nil:
+			prov.candidateError = err.Error()
+		default:
+			prov.candidateSHA, prov.candidateSource = sha, source
+			prov.candidateMatch = !prov.worktreeDirty && strings.EqualFold(strings.TrimSuffix(measuredSHA, "+dirty"), sha)
+		}
+	}
+	if run.QueryLatency != nil {
+		run.QueryLatency.Gates = readQueryGates(o.scenarioPath, run.QueryLatency, prov)
+		run.QueryLatency.Status = queryLatencyStatus(run.QueryLatency)
+	}
+	// SW-126: the freshness gate reads the SAME provenance value. One run has one
+	// answer to "is this about the frozen candidate on the reference scenario",
+	// and two harnesses computing it separately would eventually disagree about
+	// which is authoritative.
+	if run.Incremental != nil {
+		run.Incremental.Gates = readFreshnessGates(o.scenarioPath, run.Incremental, prov)
+		run.Incremental.Status = incrementalStatus(run.Incremental)
+	}
+	// SW-127: the stall gate reads the same provenance value, for the same
+	// reason. Its status is computed even without a contract, because an
+	// unobservable index is a failure whether or not there is a threshold to read
+	// it against.
+	if run.Stalls != nil {
+		run.Stalls.Gates = readStallGates(o.scenarioPath, run.Stalls, prov)
+		run.Stalls.Status = stallStatus(run.Stalls)
+	}
+	if o.budgetPath != "" {
+		run.BudgetSource = o.budgetPath
 		if run.Pass {
-			checks, err := checkFullRunBudgets(budgetPath, runnerClass, run)
+			checks, err := checkFullRunBudgets(o.budgetPath, o.runnerClass, run)
 			if err != nil {
 				run.Failures = append(run.Failures, "budgets: "+err.Error())
 			} else {
@@ -110,29 +246,189 @@ func runFullRun(manifestPath, repoName, workDir, runnerClass, outPath, budgetPat
 	}
 
 	report := evalreport.FullRunReport{
-		Header:      evalreport.NewHeader("0.0.0-dev", resolveCommit()),
-		RunnerClass: runnerClass,
-		Notes:       fullRunNotes,
-		Repo:        run,
+		Header:            evalreport.NewHeader("0.0.0-dev", measuredSHA),
+		RunnerClass:       o.runnerClass,
+		RunnerRole:        class.Role,
+		ReferenceScenario: isReference,
+		ScenarioSource:    o.scenarioPath,
+		Notes:             fullRunNotes,
+		Repo:              run,
+		Cgroup:            observedCgroupLimits(),
 	}
-	report.Header.CorpusVersion = manifestVersion(manifestPath)
+	report.Header.CorpusVersion = manifestVersion(o.manifestPath)
+	if o.scenarioPath != "" && !isReference {
+		fmt.Fprintf(os.Stderr, "eval: NOTE - %s on runner class %s (%s) is NOT the reference scenario; these numbers are not reference evidence and freeze no budget\n",
+			o.repoName, o.runnerClass, class.Role)
+	}
 
+	outPath := o.outPath
 	if outPath == "" {
-		outPath = "eval-full-" + repoName + ".json"
+		outPath = "eval-full-" + o.repoName + ".json"
 	}
+
+	// SW-129: the gates are final, so this is the first moment a missed gate is
+	// a fact. Profiling happens HERE — before the report is written, so the
+	// profile references travel in the artifact rather than in a second pass —
+	// and it does nothing at all unless something was missed (AC-4).
+	date := time.Now().UTC().Format("2006-01-02")
+	profileRoot, canonical, err := resolveProfileRoot(o.profileDir, o.exportRaw, outPath, o.runnerClass, date)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "eval: %v\n", err)
+		return 2
+	}
+	repoDir, _ := measuredCheckoutDir(*entry, filepath.Dir(o.manifestPath), workDir)
+	report.Profiles = profileMissedGates(ctx, profileRunInput{
+		root:    profileRoot,
+		repo:    o.repoName,
+		enabled: o.profileOnMiss,
+		build: profileWorkloadBuilderFor(profileWorkloadInput{
+			repo:        o.repoName,
+			repoDir:     repoDir,
+			scratch:     workDir,
+			manifestDir: filepath.Dir(o.manifestPath),
+			entry:       *entry,
+			plan:        plan,
+			changes:     o.incrementalChanges,
+		}),
+	}, report, os.Stderr)
+	if len(report.Profiles) > 0 && !canonical {
+		fmt.Fprintf(os.Stderr, "eval: NOTE - the profiles went to %s; the convention is <run-dir>/%s, which needs -export-raw\n",
+			profileRoot, evalreport.ProfileDir)
+	}
+	profileBroken, profilesFailed := profileFailure(report.Profiles)
+	if profilesFailed {
+		fmt.Fprintf(os.Stderr, "eval: FAIL - profile generation: %s\n", profileBroken)
+	}
+
 	if err := evalreport.WriteFullRunJSON(report, outPath); err != nil {
 		fmt.Fprintf(os.Stderr, "eval: write report: %v\n", err)
 		return 2
 	}
 	fmt.Fprintf(os.Stderr, "eval: wrote full-run report to %s\n", outPath)
 
+	// SW-128: the raw-sample export runs BEFORE the verdict returns, so a run
+	// whose gates failed still leaves its individual measurements behind. The
+	// samples of a failed run are exactly what SW-129's profiling and any
+	// post-mortem need; discarding them because the verdict was red would throw
+	// away the evidence at the moment it became interesting.
+	if o.exportRaw != "" {
+		dir, sets, err := exportRunDir(exportOptions{
+			target:          o.exportRaw,
+			runnerClass:     o.runnerClass,
+			runnerRole:      class.Role,
+			repo:            o.repoName,
+			workDir:         workDir,
+			date:            date,
+			candidateSHA:    prov.candidateSHA,
+			candidateSource: prov.candidateSource,
+			measuredSHA:     measuredSHA,
+			candidateMatch:  prov.candidateMatch,
+			worktreeDirty:   prov.worktreeDirty,
+			profiles:        report.Profiles,
+		}, report)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "eval: export raw samples: %v\n", err)
+			return 2
+		}
+		printExportSummary(os.Stderr, dir, sets)
+	}
+
+	printQueryLatencySummary(os.Stderr, run.QueryLatency)
+	printIncrementalSummary(os.Stderr, run.Incremental)
+	printStallSummary(os.Stderr, run.Stalls)
+
 	if !run.Pass {
-		fmt.Fprintf(os.Stderr, "eval: FAIL - full run over %s: %s\n", repoName, strings.Join(run.Failures, "; "))
+		fmt.Fprintf(os.Stderr, "eval: FAIL - full run over %s: %s\n", o.repoName, strings.Join(run.Failures, "; "))
+		return 1
+	}
+	// A FAILED §12.2 warm gate fails the run. UNKNOWN does not: following
+	// `cmd/evidence -check` and SW-124's series, an UNKNOWN row is honest
+	// reporting rather than a broken job, and it cannot be mistaken for green
+	// because the artifact and the summary above both say UNKNOWN.
+	if run.QueryLatency != nil && run.QueryLatency.Status == evalreport.StatusFail {
+		fmt.Fprintf(os.Stderr, "eval: FAIL - query-latency gate over %s\n", o.repoName)
+		return 1
+	}
+	if run.Incremental != nil && run.Incremental.Status == evalreport.StatusFail {
+		fmt.Fprintf(os.Stderr, "eval: FAIL - freshness gate over %s\n", o.repoName)
+		return 1
+	}
+	// SW-127. This is the regression guard the story exists for: an index that
+	// went quiet turns the run red HERE, not in a report nobody reads.
+	if run.Stalls != nil && run.Stalls.Status == evalreport.StatusFail {
+		if !run.Stalls.Observable {
+			fmt.Fprintf(os.Stderr, "eval: FAIL - the cold index over %s emitted %d progress event(s): %s\n",
+				o.repoName, run.Stalls.Events, evalreport.StallSilenceNote)
+		} else {
+			fmt.Fprintf(os.Stderr, "eval: FAIL - progress-stall gate over %s\n", o.repoName)
+		}
+		return 1
+	}
+	// SW-129 AC-5. Reached only when every gate the run could read passed —
+	// which today implies nothing was profiled — but the rule is enforced here
+	// rather than inherited from the coincidence, so a run whose profiles could
+	// not be produced can never exit 0.
+	if profilesFailed {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "eval: PASS - full run over %s (index %dms, rss %dMB, db %dB)\n",
-		repoName, run.Index.WallclockMS, run.Index.PeakRSSMB, run.Index.DBSizeBytes)
+		o.repoName, run.Index.WallclockMS, run.Index.PeakRSSMB, run.Index.DBSizeBytes)
 	return 0
+}
+
+// printQueryLatencySummary makes the measurement readable in the job log: what
+// was executed, whether it met FR-8's floor, and how every gate read.
+func printQueryLatencySummary(w *os.File, s *evalreport.QueryLatencySeries) {
+	if s == nil {
+		return
+	}
+	fmt.Fprintf(w, "eval: query latency over %s — %d timed executions, floor %d per class (sufficient=%v)\n",
+		s.Repo, s.TotalExecutions, s.Minimum, s.Sufficient)
+	for _, c := range s.Classes {
+		fmt.Fprintf(w, "eval:   class %-12s n=%-6d p50 %.2f ms  p95 %.2f ms  (sufficient=%v)\n",
+			c.Class, c.N, float64(c.P50US)/1000, float64(c.P95US)/1000, c.Sufficient)
+	}
+	for _, g := range s.Gates {
+		fmt.Fprintf(w, "eval:   gate %-26s %-8s %s\n", g.ID, g.Status, g.Reason)
+	}
+	for _, warning := range s.Warnings {
+		fmt.Fprintf(w, "eval:   WARNING %s\n", warning)
+	}
+}
+
+// resolveRunnerClass validates the reference-scenario contract and resolves the
+// declared runner class. An empty scenarioPath means "no contract supplied"
+// (the hermetic fixture path, and the pre-SW-123 behavior); anything else is
+// enforced fail-closed.
+//
+// It returns the whole class rather than only its role because SW-124 needs the
+// class's DECLARED cache-state protocol to say whether a run met it.
+func resolveRunnerClass(scenarioPath, manifestPath, runnerClassID, repoName string) (class runnerClass, isReference bool, err error) {
+	if scenarioPath == "" {
+		return runnerClass{}, false, nil
+	}
+	rs, err := loadReferenceScenario(scenarioPath)
+	if err != nil {
+		return runnerClass{}, false, fmt.Errorf("reference scenario: %w", err)
+	}
+	repos, err := corpusRepoNames(manifestPath)
+	if err != nil {
+		return runnerClass{}, false, fmt.Errorf("corpus manifest: %w", err)
+	}
+	if err := validateReferenceScenario(rs, repos); err != nil {
+		return runnerClass{}, false, fmt.Errorf("reference scenario %s: %w", scenarioPath, err)
+	}
+	for _, c := range rs.RunnerClasses {
+		if c.ID == runnerClassID {
+			return c, c.Role == roleReference && repoName == rs.ReferenceScenario.Repo, nil
+		}
+	}
+	declared := make([]string, 0, len(rs.RunnerClasses))
+	for _, c := range rs.RunnerClasses {
+		declared = append(declared, c.ID+"("+c.Role+")")
+	}
+	return runnerClass{}, false, fmt.Errorf("runner class %q is not declared in %s (declared: %s); an undeclared machine's numbers must not stand beside reference values",
+		runnerClassID, scenarioPath, strings.Join(declared, ", "))
 }
 
 // manifestVersion re-reads the manifest's version stamp (LoadManifest does not
@@ -145,9 +441,20 @@ func manifestVersion(path string) int {
 	return v
 }
 
-// fullRepoRun performs clone → index → warm measurement for one entry. Every
-// failure is recorded in the returned run; fatal stages stop the pipeline.
-func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir string) evalreport.FullRepoRun {
+// fullRepoRun performs clone → cold-state preparation → index → warm
+// measurement for one entry. Every failure is recorded in the returned run;
+// fatal stages stop the pipeline.
+//
+// plan is SW-125's query-latency plan: how large the symbol sample is and how
+// many timed executions each operation runs. It is resolved by the caller
+// before any measurement so the artifact can state what the run intended to
+// measure, not only what it happened to produce.
+//
+// incrementalChanges is SW-126's requested change count, and 0 means the phase
+// does not run. It is LAST in the pipeline for a reason: it is the only stage
+// that mutates the checkout, so every other measurement in this report is taken
+// over the pinned tree exactly as cloned.
+func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir string, cp coldProtocol, plan queryLatencyPlan, incrementalChanges int) evalreport.FullRepoRun {
 	run := evalreport.FullRepoRun{Name: e.Name, Ref: e.Ref, Tier: e.Tier}
 	fail := func(stage string, err error) evalreport.FullRepoRun {
 		run.Failures = append(run.Failures, fmt.Sprintf("%s: %v", stage, err))
@@ -157,10 +464,11 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	// 1. Materialize the tree: shallow-clone URL entries at the pinned ref and
 	// verify the SHA pin fail-closed; local path entries resolve against the
 	// repo root (hermetic smoke path).
-	var repoDir string
-	switch {
-	case e.URL != "":
-		repoDir = filepath.Join(workDir, e.Name)
+	repoDir, err := measuredCheckoutDir(e, manifestDir, workDir)
+	if err != nil {
+		return fail("entry", err)
+	}
+	if e.URL != "" {
 		cloneStart := time.Now()
 		if err := cloneAt(ctx, e.URL, e.Ref, repoDir); err != nil {
 			return fail("clone", err)
@@ -174,32 +482,62 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		if e.SHA != "" && !strings.EqualFold(e.SHA, head[:min(len(e.SHA), len(head))]) {
 			return fail("pin", fmt.Errorf("checkout HEAD %s does not match pinned sha %s (tag re-pointed?)", head, e.SHA))
 		}
-	case e.Path != "":
-		repoDir = filepath.Join(filepath.Dir(manifestDir), filepath.FromSlash(e.Path))
-	default:
-		return fail("entry", fmt.Errorf("neither url nor path set"))
 	}
 
 	// 2. Cold full index into a fresh on-disk SQLite store (the shipped
 	// session backend), timed; index-only peak RSS sampled immediately afterwards.
 	dbPath := filepath.Join(workDir, e.Name+".db")
+	metaDir := filepath.Join(workDir, e.Name+"-meta")
+
+	// 2a. Produce and VERIFY coldness before the store is opened — after the
+	// clone, because a clone re-warms the page cache with exactly the files
+	// about to be indexed, and dropping the cache before it would measure a
+	// warm index while claiming a cold one.
+	run.Cold = prepareCold(ctx, cp, dbPath, metaDir)
+
 	store, err := graphstore.OpenSQLite(dbPath)
 	if err != nil {
 		return fail("open store", err)
 	}
 	defer store.Close()
-	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), filepath.Join(workDir, e.Name+"-meta"))
+	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
 	if err != nil {
 		return fail("ingest.New", err)
 	}
 	defer ing.Close()
 
+	// SW-127: watch the cold index for silence. The observer is attached through
+	// the SHIPPED progress hook — the same one the graphi CLI's renderer uses —
+	// so this story adds nothing to engine/ingest (AC-7); the heartbeat cadence
+	// is set explicitly rather than inherited, because the cadence is part of
+	// what the event stream means and an unstated default is not evidence.
+	//
+	// It is ALWAYS on, unlike the query-execution floor and the change sequence:
+	// it mutates nothing, costs a timestamp per event, and its whole purpose is
+	// to be a standing regression guard. A guard that has to be requested does
+	// not guard.
+	stalls := newStallObserver()
+	ing.WithHeartbeatMode(ingest.HeartbeatNonTTY).WithProgress(stalls.observe)
+
 	indexStart := time.Now()
-	if err := ing.IngestAll(ctx, repoDir); err != nil {
+	stalls.begin(indexStart)
+	err = ing.IngestAll(ctx, repoDir)
+	indexEnd := time.Now()
+	stalls.end(indexEnd)
+	if err != nil {
+		// No stall series: an index that did not finish produced no cold-index
+		// measurement, and a partial silence profile would be read as one.
 		return fail("index", err)
 	}
-	run.Index.WallclockMS = time.Since(indexStart).Milliseconds()
+	run.Index.WallclockMS = indexEnd.Sub(indexStart).Milliseconds()
 	run.Index.PeakRSSMB = peakRSSMB()
+	run.Stalls = stalls.series(e.Name, string(ingest.HeartbeatNonTTY))
+	if failure, silent := stallRunFailure(run.Stalls); silent {
+		// A silent index is a failure of the RUN, not only of its gate: the cold
+		// series files a child by its own verdict, and a run that indexed without
+		// ever saying so must not be filed as clean.
+		run.Failures = append(run.Failures, failure)
+	}
 
 	aggregate, ok := any(store).(graphstore.BriefAggregatePort)
 	if !ok {
@@ -211,8 +549,8 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	run.Index.Nodes, run.Index.Edges, run.Index.Files = stats.TotalNodes, stats.TotalEdges, len(stats.Files)
 
-	// 3. Warm per-op-class p95 over the same open store, driven through the
-	// same FixtureEngine the hero suite uses.
+	// 3. Warm query-latency measurement over the same open store, driven
+	// through the same FixtureEngine the hero suite uses.
 	eng := scenario.NewFixtureEngine(resolve.Deps{Query: query.New(store), Search: search.New(store)})
 	eng.RepoRoot = repoDir
 	eng.ProjectName = e.Name
@@ -220,7 +558,7 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	if !ok {
 		return fail("sample", fmt.Errorf("DegreeSamplePort unavailable"))
 	}
-	sampleNodes, err := sampler.DegreeStratifiedSymbols(ctx, fullRunSymbolSample)
+	sampleNodes, err := sampler.DegreeStratifiedSymbols(ctx, plan.symbolSample)
 	if err != nil {
 		return fail("sample", err)
 	}
@@ -228,8 +566,25 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		return fail("sample", fmt.Errorf("index produced no function/method symbols to measure"))
 	}
 
+	// SW-125 AC-5: the sample is published verbatim, in order, with a digest,
+	// so a second run can be shown to have measured the same question. The
+	// determinism is the store's — DegreeStratifiedSymbols is a total order
+	// over a fixed graph — and this is where it becomes checkable.
+	symbolIDs := make([]string, 0, len(sampleNodes))
+	for _, n := range sampleNodes {
+		symbolIDs = append(symbolIDs, string(n.ID()))
+	}
+	agentSymbols := min(plan.agentSymbols, len(symbolIDs))
+	symbolSample := evalreport.QuerySymbolSample{
+		Requested:    plan.symbolSample,
+		Returned:     len(symbolIDs),
+		Method:       querySampleMethod,
+		Digest:       evalreport.SampleDigest(symbolIDs),
+		SymbolIDs:    symbolIDs,
+		AgentSymbols: agentSymbols,
+	}
+
 	perOp := map[string][]time.Duration{}
-	opClass := map[string]string{}
 	stableChecks := map[string]*evalreport.StableOperationCheck{}
 	checkFor := func(op, requirement string) *evalreport.StableOperationCheck {
 		check := stableChecks[op]
@@ -259,25 +614,26 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		check.Pass = false
 		return false
 	}
-	timeOp := func(class, op, requirement string, allowed []string, invoke func() (string, error)) {
-		start := time.Now()
-		outcome, err := invoke()
-		d := time.Since(start)
-		if err != nil {
-			check := checkFor(op, requirement)
-			check.Samples++
-			check.Outcomes["error"]++
-			if check.Pass {
-				run.Failures = append(run.Failures, fmt.Sprintf("warm %s: %v", op, err))
+	// observe is the semantic gate every timed execution passes through: a
+	// measurement counts only after the response resolved to an
+	// operation-appropriate outcome, because a fast wrong answer is not a fast
+	// answer. The rule and its wording predate SW-125; only its call site moved
+	// out of the (now deleted) timeOp closure, so that timing lives in
+	// executeWarmOperation where the untimed/timed boundary is explicit.
+	observe := func(op string) func(warmExecution, string, error) bool {
+		return func(x warmExecution, outcome string, err error) bool {
+			if err != nil {
+				check := checkFor(op, x.requirement)
+				check.Samples++
+				check.Outcomes["error"]++
+				if check.Pass {
+					run.Failures = append(run.Failures, fmt.Sprintf("warm %s: %v", op, err))
+				}
+				check.Pass = false
+				return false
 			}
-			check.Pass = false
-			return
+			return recordOutcome(op, x.requirement, outcome, x.allowed...)
 		}
-		if !recordOutcome(op, requirement, outcome, allowed...) {
-			return
-		}
-		perOp[op] = append(perOp[op], d)
-		opClass[op] = class
 	}
 
 	indexOutcome := "empty"
@@ -286,35 +642,12 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	recordOutcome(scenario.OpIndex, "successful ingest with non-empty node and file inventory", indexOutcome, "found")
 
-	for _, sampled := range sampleNodes {
-		ref := string(sampled.ID())
-		for _, op := range []string{scenario.OpDefinition, scenario.OpCallers, scenario.OpCallees, scenario.OpReferences} {
-			op := op
-			allowed := []string{"found", "empty"}
-			requirement := "resolved symbol; found or legitimately empty"
-			if op == scenario.OpDefinition {
-				allowed = []string{"found"}
-				requirement = "resolved symbol with at least one definition"
-			}
-			timeOp("structural", op, requirement, allowed, func() (string, error) {
-				lines, _, err := eng.Invoke(op, map[string]string{"symbol": ref})
-				return renderedOutcome(lines), err
-			})
-		}
-		timeOp("structural", scenario.OpNeighborhood, "resolved symbol; bounded neighborhood outcome", []string{"found", "empty"}, func() (string, error) {
-			lines, _, err := eng.Invoke(scenario.OpNeighborhood, map[string]string{"symbol": ref, "depth": "1"})
-			return renderedOutcome(lines), err
-		})
-		timeOp("structural", scenario.OpImpact, "resolved symbol; bounded impact outcome", []string{"found", "empty"}, func() (string, error) {
-			lines, _, err := eng.Invoke(scenario.OpImpact, map[string]string{"symbol": ref, "direction": "reverse", "max_nodes": "256"})
-			return renderedOutcome(lines), err
-		})
-	}
-
+	// The manifest's search promises are asserted ONCE, untimed, before any
+	// measurement — the promise is a property of the index, not something worth
+	// re-checking a thousand times, and asserting it here keeps it out of the
+	// timed region (AC-6).
 	for _, s := range e.Searches {
 		q := s.Query
-		// Untimed assertion pass first (fail-closed on the manifest promise),
-		// then pure timed iterations so the p95 measures nothing but the op.
 		lines, _, err := eng.Invoke(scenario.OpSearch, map[string]string{"query": q})
 		if err != nil {
 			run.Failures = append(run.Failures, fmt.Sprintf("search %q: %v", q, err))
@@ -327,18 +660,6 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		if s.ExpectNonEmpty && !found {
 			run.Failures = append(run.Failures, fmt.Sprintf("search %q: expected non-empty, got none", q))
 		}
-		for range fullRunSearchIters {
-			allowed := []string{"found", "empty"}
-			requirement := "valid search outcome"
-			if s.ExpectNonEmpty {
-				allowed = []string{"found"}
-				requirement = "manifest-promised non-empty search"
-			}
-			timeOp("search", scenario.OpSearch, requirement, allowed, func() (string, error) {
-				lines, _, err := eng.Invoke(scenario.OpSearch, map[string]string{"query": q})
-				return renderedOutcome(lines), err
-			})
-		}
 	}
 
 	for _, assertion := range e.ConfirmedEdges {
@@ -349,43 +670,38 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 		}
 	}
 
-	agentSample := sampleNodes
-	if len(agentSample) > fullRunAgentToolSample {
-		agentSample = agentSample[:fullRunAgentToolSample]
+	// The measured operations, built once and then driven by the plan. Building
+	// them declaratively is what makes "all twelve stable operations are
+	// covered" checkable against the taxonomy instead of against a reading of
+	// the loop below.
+	warmOps := buildWarmOperations(ctx, eng, e, symbolIDs, agentSymbols)
+	for i := range warmOps {
+		warmOps[i].executions = plan.executionsFor(warmOps[i].op, len(symbolIDs), agentSymbols, len(e.Searches))
+		warmOps[i].warmup = plan.warmup
 	}
-	for _, sampled := range agentSample {
-		ref := string(sampled.ID())
-		for _, op := range []string{scenario.OpExplainSymbol, scenario.OpChangeRisk, scenario.OpRelatedFiles} {
-			op := op
-			allowed := []string{"found"}
-			requirement := "resolved target with a valid found envelope"
-			if op == scenario.OpRelatedFiles {
-				allowed = []string{"found", "empty"}
-				requirement = "resolved target; found or legitimately empty related-file set"
-			}
-			timeOp("agent_tools", op, requirement, allowed, func() (string, error) {
-				result, err := eng.InvokeContract(ctx, op, map[string]string{"symbol": ref})
-				return contractOutcome(result, err)
-			})
-		}
-	}
-	for i := 0; i < fullRunBriefIters; i++ {
-		topic := string(sampleNodes[i%len(sampleNodes)].ID())
-		timeOp("agent_tools", scenario.OpAgentBrief, "resolved topic with a valid found/partial project brief", []string{"found", "partial"}, func() (string, error) {
-			result, err := eng.InvokeContract(ctx, scenario.OpAgentBrief, map[string]string{"topic": topic})
-			return contractOutcome(result, err)
-		})
+	sort.Slice(warmOps, func(i, j int) bool { return warmOps[i].op < warmOps[j].op })
+
+	warmupOf := map[string]int{}
+	for _, w := range warmOps {
+		warmupOf[w.op] = w.warmup
+		perOp[w.op] = append(perOp[w.op], executeWarmOperation(w, observe(w.op))...)
 	}
 
 	run.WarmP95US = map[string]int64{}
 	run.WarmP95USPerOp = map[string]int64{}
+	run.WarmP50US = map[string]int64{}
+	run.WarmP50USPerOp = map[string]int64{}
 	run.WarmSamples = map[string]int{}
 	run.WarmOps = map[string][]string{}
 	classes := map[string][]time.Duration{}
 	classOps := map[string]map[string]struct{}{}
 	for op, ds := range perOp {
+		if len(ds) == 0 {
+			continue
+		}
 		run.WarmP95USPerOp[op] = p95US(ds)
-		class := opClass[op]
+		run.WarmP50USPerOp[op] = p50US(ds)
+		class := queryClassOf[op]
 		classes[class] = append(classes[class], ds...)
 		if classOps[class] == nil {
 			classOps[class] = map[string]struct{}{}
@@ -394,9 +710,12 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	for class, ds := range classes {
 		run.WarmP95US[class] = p95US(ds)
+		run.WarmP50US[class] = p50US(ds)
 		run.WarmSamples[class] = len(ds)
 		run.WarmOps[class] = sortedKeys(classOps[class])
 	}
+	run.QueryLatency = buildQueryLatencySeries(e.Name, plan, symbolSample, perOp, warmupOf)
+
 	stableNames := make([]string, 0, len(stableChecks))
 	for op := range stableChecks {
 		stableNames = append(stableNames, op)
@@ -407,7 +726,51 @@ func fullRepoRun(ctx context.Context, e corpus.Entry, manifestDir, workDir strin
 	}
 	run.StablePeakRSSMB = peakRSSMB()
 
-	// 4. DB size after a clean close (WAL checkpointed into the main file).
+	// 4. SW-126's freshness and incremental measurement, LAST because it is the
+	// only stage that mutates the checkout: everything above measured the pinned
+	// tree exactly as cloned. It runs only when explicitly requested, so the
+	// default and PR paths are byte-unchanged.
+	//
+	// A setup failure is recorded as a run failure rather than silently skipped —
+	// a run asked for a hundred changes and produced none must not look like a
+	// run that was never asked.
+	if incrementalChanges > 0 && e.URL == "" {
+		// AC-5, fail closed. A local-path manifest entry is indexed IN PLACE —
+		// repoDir is the checked-in fixture directory, not a copy — so applying
+		// changes here would rewrite the repository's own pinned fixtures. It
+		// would also be the wrong measurement: FR-8's incremental evidence is
+		// over a pinned real repository, and the fixture path belongs to the PR
+		// gate (cmd/eval/perf.go). Both reasons point the same way, so the
+		// harness refuses rather than measuring the cheaper wrong thing.
+		run.Failures = append(run.Failures, fmt.Sprintf(
+			"incremental: %q is a local-path fixture entry indexed in place; the freshness measurement applies changes to the "+
+				"tree and must only run against a cloned pinned repository (the fixture incremental smoke check lives in perf.go)", e.Name))
+	} else if incrementalChanges > 0 {
+		series, err := measureIncremental(ctx, incrementalSetup{
+			repo:     e.Name,
+			root:     repoDir,
+			store:    store,
+			ing:      ing,
+			querySvc: eng.Deps.Query,
+			searcher: eng.Deps.Search,
+			changes:  incrementalChanges,
+		})
+		if err != nil {
+			run.Failures = append(run.Failures, "incremental: "+err.Error())
+		} else {
+			run.Incremental = series
+			// The store now holds this run's own changes, so the DB size stat
+			// below is no longer a cold-index sample. Saying so in the artifact is
+			// what keeps a mutated run's db_size from being read as one — the
+			// db_size gate is measured by the cold series, which never requests
+			// changes, and a guard test keeps it that way.
+			series.Warnings = append(series.Warnings, fmt.Sprintf(
+				"this run applied %d change(s) to the checkout before index.db_size_bytes was measured: that figure is NOT a cold-index DB-size sample for this report",
+				len(series.Changes)))
+		}
+	}
+
+	// 5. DB size after a clean close (WAL checkpointed into the main file).
 	if err := store.Close(); err != nil {
 		return fail("close store", err)
 	}
@@ -532,15 +895,29 @@ func peakRSSMB() int64 {
 // p95US returns the 95th-percentile latency in microseconds (nearest-rank).
 // Microseconds, not milliseconds: the selective-read stable ops are routinely
 // sub-millisecond even on real repos, and a 0ms budget cannot ratchet.
+//
+// SW-124 moved the arithmetic into internal/evalreport so the cold-run p50 and
+// this p95 are literally the same nearest-rank implementation. Two percentile
+// functions in one harness is one definition too many: they would eventually
+// disagree about even sample counts, and the disagreement would show up as an
+// unexplainable gate result rather than as a test failure.
 func p95US(ds []time.Duration) int64 {
-	if len(ds) == 0 {
-		return 0
+	return percentileUS(ds, 95)
+}
+
+// p50US is SW-125's half of the same arithmetic: PRD §12.2 gates on p50 as
+// well as p95, and both go through percentileUS so they cannot disagree about
+// what nearest rank means for an even sample count.
+func p50US(ds []time.Duration) int64 {
+	return percentileUS(ds, 50)
+}
+
+func percentileUS(ds []time.Duration, p int) int64 {
+	us := make([]int64, len(ds))
+	for i, d := range ds {
+		us[i] = d.Microseconds()
 	}
-	sorted := make([]time.Duration, len(ds))
-	copy(sorted, ds)
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
-	rank := (95*len(sorted) + 99) / 100 // ceil(0.95n), 1-based
-	return sorted[rank-1].Microseconds()
+	return evalreport.PercentileInt64(us, p)
 }
 
 func sortedKeys(set map[string]struct{}) []string {

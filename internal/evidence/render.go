@@ -5,8 +5,9 @@ import (
 	"strings"
 )
 
-// statusBadge maps a gate status to its legend glyph. UNKNOWN is deliberately
-// given a distinct, un-green glyph so it can never be mistaken for a pass.
+// statusBadge maps a gate status to its legend glyph. UNKNOWN and STALE are
+// deliberately given distinct, un-green glyphs so neither can be mistaken for a
+// pass.
 func statusBadge(status string) string {
 	switch status {
 	case StatusPass:
@@ -15,6 +16,8 @@ func statusBadge(status string) string {
 		return "❌ FAIL"
 	case StatusUnknown:
 		return "❔ UNKNOWN"
+	case StatusStale:
+		return "⚠️ STALE"
 	default:
 		return status
 	}
@@ -45,22 +48,27 @@ func RenderMarkdown(idx Index) string {
 		"as not passed** — never blank, never omitted, never inferred from a green CI job. Most rows are " +
 		"UNKNOWN today, and that is the point: the gap is the artifact.\n\n")
 
-	// Candidate block — cited from SW-116's record, not restated. Where SW-116
-	// records the release digest as UNKNOWN, this says UNKNOWN too.
+	// Candidate block — cited from the freeze record named in the source, not
+	// restated. Where that record says the release digest is UNKNOWN, this says
+	// UNKNOWN too; the two must never disagree. The record is named by the data,
+	// not hard-coded here, so a candidate move is a one-line source edit.
 	b.WriteString("**Candidate** — cited from ")
-	b.WriteString(fmt.Sprintf("[`%s`](../decisions/%s) (SW-116):\n\n", idx.Candidate.Source, lastPath(idx.Candidate.Source)))
+	b.WriteString(fmt.Sprintf("[`%s`](%s):\n\n", idx.Candidate.Source, docsRelative(idx.Candidate.Source)))
 	b.WriteString(fmt.Sprintf("- Candidate SHA: `%s`\n", mdInline(idx.Candidate.SHA)))
 	b.WriteString(fmt.Sprintf("- Published release digest: **%s**", mdInline(idx.Candidate.ReleaseDigest)))
 	if strings.EqualFold(idx.Candidate.ReleaseDigest, StatusUnknown) {
-		b.WriteString(" — no published release, tag or attestation is bound to the candidate (SW-116). " +
+		b.WriteString(" — no published release, tag or attestation is bound to the candidate. " +
 			"UNKNOWN counts as not passed (plan §2.4); do not borrow an adjacent commit's digest.")
 	}
 	b.WriteString("\n\n")
 
-	b.WriteString("**Status legend:** ✅ PASS · ❌ FAIL · ❔ UNKNOWN. A blank cell (—) means the plan " +
-		"names no value for that column.\n\n")
+	b.WriteString("**Status legend:** ✅ PASS · ❌ FAIL · ❔ UNKNOWN · ⚠️ STALE. A blank cell (—) means " +
+		"the plan names no value for that column. **STALE** (PRD §12) means the row was stated or " +
+		"measured against a *superseded* candidate: like UNKNOWN it counts as not passed, and unlike " +
+		"UNKNOWN it says so out loud instead of letting the row quietly inherit the new candidate. A " +
+		"STALE row must name what superseded it; `-check` rejects one that does not.\n\n")
 
-	b.WriteString("| Gate | Threshold | Current | PASS/FAIL/UNKNOWN | Evidence URI | SHA/Digest | Owner | Next action | Due date |\n")
+	b.WriteString("| Gate | Threshold | Current | PASS/FAIL/UNKNOWN/STALE | Evidence URI | SHA/Digest | Owner | Next action | Due date |\n")
 	b.WriteString("|---|---|---|---|---|---|---|---|---|\n")
 	for _, g := range idx.Gates {
 		gateCell := fmt.Sprintf("**%s** — %s (%s)", mdCell(g.ID), mdCell(g.Gate), mdCell(g.Section))
@@ -96,10 +104,12 @@ func mdInline(s string) string {
 	return s
 }
 
-// lastPath returns the final path element of a slash-separated path.
-func lastPath(p string) string {
-	if i := strings.LastIndexByte(p, '/'); i >= 0 {
-		return p[i+1:]
+// docsRelative turns a repo-relative docs path into a link relative to the
+// rendered dashboard, which lives at docs/rc/. A path outside docs/ is left
+// alone rather than guessed at.
+func docsRelative(p string) string {
+	if rest, ok := strings.CutPrefix(p, "docs/"); ok {
+		return "../" + rest
 	}
 	return p
 }

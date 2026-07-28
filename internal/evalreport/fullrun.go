@@ -21,10 +21,43 @@ type FullRunReport struct {
 	// (e.g. "ubuntu-latest"). Budgets are only ever frozen from runs on the
 	// reference runner class; anything else is a smoke run.
 	RunnerClass string `json:"runner_class"`
+	// RunnerRole is the class's DECLARED role in the SW-123 reference-scenario
+	// contract — "reference" or "comparison". It is empty only when no
+	// contract was supplied. Recording the role beside the class is what stops
+	// a comparison run from later reading as reference evidence just because
+	// its class name looked plausible.
+	RunnerRole string `json:"runner_role,omitempty"`
+	// ReferenceScenario is true only when BOTH the runner class is the
+	// reference class AND the measured repository is the reference scenario.
+	// Only such a run may be read against the PRD §12.2 gates.
+	ReferenceScenario bool `json:"reference_scenario"`
+	// ScenarioSource is the contract this run was validated against.
+	ScenarioSource string `json:"scenario_source,omitempty"`
 	// Notes documents the measurement model (in-process session, sample
 	// sizes) so a reader can interpret the numbers without the source.
 	Notes string      `json:"notes,omitempty"`
 	Repo  FullRepoRun `json:"repo"`
+	// RepoRunIndex says WHICH run of a cold series `Repo` is (1-based), and is
+	// absent for the single-run path. Without it a reader of a repeated
+	// measurement could mistake one arbitrary sample for the result; with it,
+	// `repo` stays a comparable single sample and every distributional claim
+	// lives in ColdSeries.
+	RepoRunIndex int `json:"repo_run_index,omitempty"`
+	// ColdSeries is SW-124's repeated cold-index measurement. It is a pointer
+	// and absent by default: the single-run report shape the PR path and the
+	// committed historical runs use is byte-unchanged when no series was asked
+	// for.
+	ColdSeries *ColdRunSeries `json:"cold_series,omitempty"`
+	// Cgroup is the memory limit the measuring process itself ran under, read
+	// from inside that process (Linux cgroup v2 only). It is what makes the
+	// SW-123 OOM method verifiable rather than merely intended.
+	Cgroup *CgroupLimits `json:"cgroup,omitempty"`
+	// Profiles is SW-129: the profile sets a MISSED GATE produced, each naming
+	// the gate it answers for. Absent on a green run by construction — the
+	// profiler is never started when nothing was missed (AC-4) — so an empty
+	// field here is the same statement as "no gate was exceeded", and a fix
+	// citing a profile can be traced back to the run that motivated it (AC-6).
+	Profiles []ProfileSet `json:"profiles,omitempty"`
 }
 
 // FullRepoRun is the per-repository measurement set.
@@ -38,6 +71,11 @@ type FullRepoRun struct {
 	CloneMS int64  `json:"clone_ms,omitempty"`
 
 	Index IndexMetrics `json:"index"`
+	// Cold is the per-run evidence that this index really was cold: a store
+	// that did not pre-exist and a page cache in the state the runner class
+	// declares. SW-124 (AC-1) — coldness is verified per run, not assumed from
+	// the fact that a fresh temp directory was requested.
+	Cold ColdState `json:"cold"`
 
 	// WarmP95US is the p95 latency in MICROSECONDS per operation class
 	// (structural, search, agent_tools) over the warm, already-indexed store
@@ -48,11 +86,50 @@ type FullRepoRun struct {
 	// a class regression is attributable (e.g. ADR 0003 U2: whether agent_brief
 	// or explain_symbol dominates the agent_tools class).
 	WarmP95USPerOp map[string]int64 `json:"warm_p95_us_per_op"`
+	// WarmP50US and WarmP50USPerOp are SW-125 (AC-3): PRD §12.2 gates on p50
+	// as well as p95, and a schema that carries only the tail cannot answer
+	// half the gate. They sit beside the p95 maps rather than replacing them —
+	// the budget artifact and the committed historical runs read those keys.
+	WarmP50US      map[string]int64 `json:"warm_p50_us,omitempty"`
+	WarmP50USPerOp map[string]int64 `json:"warm_p50_us_per_op,omitempty"`
 	// WarmSamples is the number of timed invocations pooled per class.
 	WarmSamples map[string]int `json:"warm_samples"`
 	// WarmOps lists the concrete operations pooled into each class, so the
 	// class p95 is interpretable and re-runnable.
 	WarmOps map[string][]string `json:"warm_ops"`
+	// QueryLatency is SW-125's full query-latency evidence: the FR-8 execution
+	// floor and whether it was met, p50 and p95 per class AND per operation,
+	// the explicit operation → class mapping over the frozen 12, the
+	// deterministic symbol sample, and every individual measurement.
+	//
+	// It is a pointer and absent by default for the same reason ColdSeries is:
+	// a report produced without a warm measurement (an aborted run) must not
+	// carry an empty distribution that reads as zero latency.
+	QueryLatency *QueryLatencySeries `json:"query_latency,omitempty"`
+	// Incremental is SW-126's freshness and incremental-update evidence: a
+	// defined, reproducible sequence of at least 100 changes over the pinned
+	// repository, with incremental-update and freshness p50/p95 and every
+	// individual measurement retained.
+	//
+	// A pointer and absent by default, for the same reason ColdSeries and
+	// QueryLatency are: a run that measured no changes must not carry an empty
+	// distribution that reads as instant freshness. It is measured only when
+	// asked for (-incremental-changes), because applying a hundred changes
+	// MUTATES the measured checkout and would change what every other number in
+	// this report means.
+	Incremental *IncrementalSeries `json:"incremental,omitempty"`
+	// Stalls is SW-127's progress-stall evidence over the COLD INDEX: the
+	// intervals between consecutive ingest.ProgressEvents, reported as p95 and
+	// maximum, with every individual interval retained and the two boundary
+	// intervals named rather than folded in.
+	//
+	// A pointer and absent by default, for the same reason the three series
+	// above are — but here the reason is sharper. An absent series means the
+	// cold index never completed, so nothing was watched; a PRESENT series with
+	// an empty distribution means the index ran and stayed SILENT, which is a
+	// FAILURE (see StallSilenceNote). Collapsing the two into one empty value
+	// would let the defect this gate exists to catch render as clean.
+	Stalls *StallSeries `json:"stalls,omitempty"`
 
 	// Searches are the manifest's expect_nonempty smoke assertions re-checked
 	// against this run's index.

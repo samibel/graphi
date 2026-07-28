@@ -2,26 +2,49 @@
 
 > ## Autoritätsvermerk (SW-117, 2026-07-17)
 >
-> **Dieses Dokument ist seit dem Candidate-Freeze die einzige Planungsautorität für
-> graphi.** Es ersetzt die zwölf zuvor konkurrierenden Pläne, die inzwischen aus dem
-> Repository entfernt wurden (auffindbar über die Git-Historie). Im Konfliktfall
-> gewinnt dieses Dokument.
+> **Dieses Dokument ist seit dem Candidate-Freeze die Planungsautorität für graphi.** Es
+> ersetzt die zwölf zuvor konkurrierenden Pläne, die inzwischen aus dem Repository entfernt
+> wurden (auffindbar über die Git-Historie). Im Konfliktfall gewinnt dieses Dokument — mit
+> **einer** Ausnahme: innerhalb des P0-Scope (M0–M2) gewinnt die P0-PRD, siehe den Vermerk
+> „Zur PRD“ weiter unten. Sie ist die einzige zugelassene Präzisierung, kein zweiter Plan.
 >
-> **Candidate-Freeze:** Der maßgebliche Candidate ist
-> `4e72637d3c2c0dc7d32142a590d46c0c62c10733`, festgehalten in
-> [`docs/decisions/2026-07-m0-candidate-freeze.md`](../decisions/2026-07-m0-candidate-freeze.md)
-> (SW-116). **Nicht** der unten stehende `Ausgangs-SHA: e285822` — der stammt aus der
+> **Candidate-Freeze — neu gesetzt (SW-121, 2026-07-28).** Der maßgebliche Candidate ist
+> das **veröffentlichte, getaggte und attestierte Release `v0.6.7` auf
+> `fb3bf037e9b7fe05eda50514189caeff4c06679d`**, festgehalten in
+> [`docs/decisions/2026-07-p0-candidate-freeze.md`](../decisions/2026-07-p0-candidate-freeze.md)
+> (SW-121). Der zuvor hier genannte `4e72637` (SW-116) ist **abgelöst**: aus ihm wurde nie
+> etwas veröffentlicht, sein Release-Digest blieb `UNKNOWN`, und UNKNOWN zählt als nicht
+> bestanden (§2.4). Sein Entscheidungsdokument bleibt als Historie erhalten, ist aber als
+> *superseded* markiert und darf nicht mehr als aktueller Candidate zitiert werden; alle
+> daran gebundenen Evidenzzeilen stehen auf **STALE** (`docs/rc/evidence-index.yaml`).
+> **Nicht** der unten stehende `Ausgangs-SHA: e285822` — der stammt aus der
 > Zeit vor dem Freeze; `release-dag.yml` trägt eine einzige `github.sha` durch
 > gate → build → SBOM → publish, weshalb ein Candidate auf einem Feature-Branch keine
-> Attestation tragen kann. Das Entscheidungsdokument ist auf diesen Punkt maßgeblich.
+> Attestation tragen kann. Das jeweils gültige Entscheidungsdokument ist auf diesen Punkt
+> maßgeblich.
 >
-> **Zur fehlenden PRD:** WP0 nennt als erstes Ergebnis „eine freigegebene PRD als
-> einzige Planungsautorität“. Diese PRD existiert nirgends — weder in einem der beiden
-> Checkouts noch in der Git-History oder im Stash; sie war immer nur Prompt-Text. Bis
-> sie geschrieben ist, trägt dieser Plan die Autorität. Das Verfassen der PRD ist als
-> datierter Backlog-Eintrag im Scrum-Portfolio festgehalten (Story SW-117). Eine
-> Rekonstruktion der PRD aus dem Plan, der sie zitiert, wurde bewusst verworfen: sie
-> würde genau die Autorität erfinden, die M0 wahrheitsfähig machen soll.
+> **Zur PRD — erledigt (SW-120, 2026-07-27).** Der ursprüngliche Vermerk hielt fest, dass
+> die von WP0 geforderte „freigegebene PRD als einzige Planungsautorität“ nirgends
+> existierte — weder in einem der beiden Checkouts noch in der Git-History oder im Stash;
+> sie war immer nur Prompt-Text. **Dieser Zustand ist beendet.** Für die Phase P0 liegt sie
+> jetzt im Repository:
+> [`docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md`](2026-07-graphi-p0-proof-and-truth-prd.md).
+>
+> Sie ist **keine Ablösung dieses Plans, sondern eine Präzisierung der Meilensteine
+> M0–M2**. Die Autoritätsregel lautet: **innerhalb des P0-Scope** (M0, M1, M2 und die daran
+> hängenden WP0–WP4) gewinnt die PRD; **außerhalb davon** (M3–M5, WP5–WP10, Zeitplan,
+> Rollenmodell, Programmstruktur) gewinnt dieser Plan. Eine Präzisierung darf ein Gate
+> dieses Plans nicht aufweichen: wo beide eine Zahl nennen, ist die PRD-Zahl gleich oder
+> strenger. Die PRD führt **kein eigenes Gate-Vokabular**; sie referenziert die WP0–WP10 /
+> M0–M5-Zeilen-IDs aus [`docs/rc/evidence-index.yaml`](../rc/evidence-index.yaml).
+>
+> Die damalige Ablehnung bleibt gültig und wurde nicht umgangen: die PRD wurde **nicht** aus
+> diesem Plan rekonstruiert, sondern eigenständig verfasst und vor der Übernahme gegen das
+> Repository bei `fb3bf03` geprüft; die dabei gefundenen Widersprüche sind in §0 der PRD
+> aufgeführt und behoben.
+>
+> Für die Phasen jenseits von P0 existiert weiterhin keine PRD; dort trägt dieser Plan die
+> Autorität unverändert allein.
 >
 > **Status und Datum unten** beziehen sich auf die ursprüngliche Fassung. Der Inhalt
 > dieses Plans ist seit dem Carry aus `~/Documents/Graphi` unverändert; dieser Vermerk

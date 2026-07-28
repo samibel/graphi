@@ -7,9 +7,13 @@
 > current run.
 > **Suite:** `corpus/hero/` (20 tasks) · **Gates:** `cmd/eval/hero_test.go`,
 > `cmd/eval/fullrun_test.go`
-> **Budgets:** `docs/eval/hero-budgets.json` (historical numeric compatibility
-> ceilings; not validated post-change ratchets until a new current-harness
-> `ubuntu-latest` run is pinned)
+> **Budgets:** `docs/eval/hero-budgets.json` — schema v3, declared
+> `historical: true` / `ratcheting: false`. Still enforced fail-closed; never a
+> comparable post-change ratchet.
+> **Measurement contract:** `docs/eval/reference-scenario.json` (SW-123) —
+> the reference runner class, the reference scenario, and every PRD §12.2 gate
+> mapped by name to a pinned repository. Check it with
+> `go run ./cmd/eval -check-reference-scenario`.
 
 ## What the hero suite is
 
@@ -46,11 +50,38 @@ function returning `empty` is an accuracy failure.
   cross-file behaviors (cross-file callers, `related_files` ranking,
   type-usage references) that a single-file fixture cannot express.
 
-## Runner class and budgets (ADR 0003 U5)
+## Runner class and budgets (ADR 0003 U5 · SW-123)
 
 Reference runner: **`ubuntu-latest`** (GitHub-hosted, linux, `CGO_ENABLED=0`)
 — the same class every existing gate workflow uses. Local runs are smoke, CI
 runs are evidence.
+
+Since **SW-123** that is no longer only prose. `docs/eval/reference-scenario.json`
+is the machine-readable measurement contract, and it is validated by
+`cmd/eval/refscenario_test.go` on every PR:
+
+- **exactly one** runner class carries `role: reference` — `ubuntu-latest`,
+  documented with CPU, RAM, OS, kernel, Go version, filesystem and the *cold*
+  cache protocol (FR-8's acceptance criterion);
+- the second class, `local-sandbox` (Apple M2 Max / macOS), is declared
+  `role: comparison`. Its numbers are never reported as reference values and
+  never freeze a budget;
+- every **PRD §12.2** gate is mapped by name to a repository from
+  `corpus/manifest.json` — a mapping pointing at a repository that is not
+  pinned is a test failure;
+- the reference scenario itself is **`grpc-go` v1.60.1**, the largest
+  non-stress repository in the corpus. `kubernetes` is the FR-2 *stress
+  target*, deliberately not the reference — it is bound by the program-wide
+  4 GB peak-RSS stop rule, not by the §12.2 gates;
+- the 8 GB-host OOM gate has a method (cgroup v2 `MemoryMax=8G`,
+  `MemorySwapMax=0`, limit read back and recorded, `oom_kill`/137/kernel-log as
+  the failure signal), not a statement of intent;
+- FR-8's scope limitation travels inside the artifact, so a consumer reading
+  only the JSON cannot publish the gates as universal guarantees.
+
+`cmd/eval -full-run -reference-scenario …` validates the contract before it
+measures anything and stamps the run with the class's declared **role**; a
+runner class the contract does not declare fails the run closed.
 
 Absolute latency/rows budgets are **not invented**: `corpus/hero` tasks carry
 no `max_latency_ms` (enforced by `TestHeroSuite_FailureClassesRepresented`).
@@ -59,13 +90,25 @@ The first reproducible reference run supplied the numeric limits now stored in
 CLI validates runner class, repo selection, metric presence, and every threshold
 fail-closed, recording checks inside each JSON report.
 
-Those numbers are currently **compatibility ceilings**, not comparable
-baseline+ratchet pairs. The historical harness did not measure the same workload:
+Those numbers are **historical compatibility ceilings**, not comparable
+baseline+ratchet pairs, and since SW-123 the file *says so in machine-readable
+form* (`schema_version: 3`, `historical: true`, `ratcheting: false`, plus the
+`historical_reason`). `cmd/eval` rejects a budget artifact that claims both, or
+that omits the reason. The historical harness did not measure the same workload:
 it omitted `impact` from the structural pool, did not require semantic checks for
 all 12 Stable operations, used the earlier symbol sample, and sampled MAXRSS only
 immediately after `IngestAll`. The current harness adds degree-stratified sampling,
 all-12 semantic coverage, and a second MAXRSS sample after the Stable suite. A new
-run on the current commit is required to establish ratchets under that method.
+run on the re-frozen candidate (SW-121) measured by SW-124 is required to
+establish ratchets under that method.
+
+SW-123 also **removed** the file's `measured_max_latency_ms_per_op` map. It held
+`0` for all twelve Stable operations — the historical run measured every hero
+task below the millisecond floor — and nothing read it. A zero budget that
+silently counts as met is worse than no budget, because it renders green;
+`hero_suite.latency_signal: "none"` now states the absence instead of implying a
+limit, and `cmd/eval` rejects **any** numeric zero anywhere in the budget
+artifact.
 
 ## Pinned real repositories (EVAL-02 selection)
 
@@ -107,7 +150,8 @@ neither read nor writable from a `-scenarios` run.
 
 ```sh
 go run ./cmd/eval -manifest corpus/manifest.json -full-run <repo> \
-  -runner-class ubuntu-latest -budgets docs/eval/hero-budgets.json
+  -runner-class ubuntu-latest -budgets docs/eval/hero-budgets.json \
+  -reference-scenario docs/eval/reference-scenario.json
 ```
 measures ONE repo per process (peak RSS stays attributable): shallow-clone at
 the pinned ref with fail-closed SHA verification → cold full index (wallclock,
@@ -142,3 +186,143 @@ schedule + manual dispatch; never a PR gate (the hero suite's PR gate is
    reports, verify all 12 semantic checks and the post-suite RSS metric, then
    replace the provisional limits with reviewed comparable ratchets. Historical
    JSON remains unchanged.
+
+## Raw samples, environment capture, and reproducing the numbers (SW-128)
+
+Everything above produces *aggregates*. FR-9 asks for the individual
+measurements too, for the environment they were produced in, and for the
+aggregates to be **reproducible from the raw data**. That is a directory
+convention plus one command.
+
+**Export.** Any `-full-run` (single or `-cold-runs N`) can write a run directory:
+
+```sh
+go run ./cmd/eval -manifest corpus/manifest.json -full-run grpc-go \
+  -runner-class ubuntu-latest \
+  -reference-scenario docs/eval/reference-scenario.json \
+  -candidate docs/rc/evidence-index.yaml \
+  -export-raw auto
+```
+
+`auto` applies the SW-128 path convention — `docs/eval/runs/<date>-<runner-class>/`,
+the same shape the historical runs already use — and an explicit path is for CI.
+The layout and its rules are documented in
+[`docs/eval/runs/README.md`](runs/README.md).
+
+**The separation that matters.** `raw/` holds four sample-only files, one per
+harness (SW-124…SW-127): cold runs, timed query executions with their pool
+membership, incremental changes, and progress-stall intervals. They carry **no
+percentile, no aggregate and no verdict**. The published report keeps its own
+shape unchanged. Reproducing one from the other is therefore a real check
+rather than a comparison of a number with a file that already contains it.
+
+**Reproduce.**
+
+```sh
+go run ./cmd/eval -aggregate docs/eval/runs/2026-07-28-ubuntu-latest
+```
+
+Every statistic the report publishes is recomputed from `raw/` through the same
+exported derivations the harnesses used (`RecomputeColdAggregates`,
+`RecomputeQueryLatency`, `RecomputeIncremental`, `RecomputeStalls`) and compared
+**exactly** — every percentile in this tree is a nearest-rank *observed sample*,
+never an interpolation, so two correct derivations agree bit for bit and a
+tolerance would only be somewhere for drift to hide. Exit `0` publishable,
+`1` discrepancy, `2` unreadable, `3` incomplete.
+
+**Environment.** `environment.json` records CPU, RAM, OS, kernel, Go version,
+filesystem and observed page-cache state, plus runner class, frozen candidate
+SHA, and the harness and scorer versions. A probe that fails leaves the field
+**absent** with the reason recorded; `aggregate.json` renders it `UNKNOWN`. An
+empty `kernel` never reads as a documented kernel, and a run whose environment is
+incomplete is not publishable however cleanly its arithmetic reproduces.
+
+**Method versioning.** Raw files carry `format_version` (the file shape) and
+`harness_version` (the measurement method). A directory whose raw files disagree
+about the harness version is **refused**, not warned about: an old and a new
+methodology are not one measurement, and averaging them is the silent drift the
+P0 risk register names.
+
+**Scope.** The aggregator checks that a report follows from its samples. It does
+not decide whether the numbers are *good* — the PRD §12.2 gates already do that,
+in the harness, and a reproduced FAIL is still a FAIL. Nor does it re-measure:
+`-aggregate` reads a directory and never runs an index.
+
+## Profiles, and the rule that a fix cites one (SW-129)
+
+FR-8 carries two acceptance criteria that only work together — *a missed
+performance gate produces profiles* and *no optimisation without a profile* —
+and PRD §8.5 states the process rule: every production fix starts from a
+gold-corpus error, a regression test, **a reproducible profile**, or a clear
+security finding.
+
+**The rule.** A change that responds to a §12.2 gate — an index made faster,
+memory brought down, a stall removed — **cites the profile from the run whose
+gate it responds to**: the run directory, the gate id, and the profile file. Not
+a profile taken later on a developer laptop, and not a plausible explanation. If
+the profile does not exist, the fix has no evidence yet, and producing one is the
+first step of the work rather than the last.
+
+That rule is affordable only because the profile is a by-product of the failure
+rather than a follow-up task, which is what the automation below is for.
+
+**What happens on a miss.** Any `-full-run` (single or `-cold-runs N`) reads its
+gates, and if any of them FAILED it immediately re-runs the affected scenario
+under four profilers and writes them into the same run directory as the raw
+samples:
+
+```
+docs/eval/runs/2026-07-28-ubuntu-latest/
+└── profiles/
+    ├── profiles.json          which gate each set answers for, with digests
+    └── cold_index/
+        ├── cpu.pprof          CPU time
+        ├── heap.pprof         live objects, after a forced GC
+        ├── allocs.pprof       total allocations (runtime.MemProfileRate sampling)
+        └── io.pprof           the block profile — see the caveat below
+```
+
+One directory per affected scenario (`cold_index`, `query_latency`,
+`incremental`, `progress_stalls`). Read any of them with:
+
+```sh
+go tool pprof docs/eval/runs/2026-07-28-ubuntu-latest/profiles/cold_index/cpu.pprof
+```
+
+`report.json` and `run.json` both reference the sets, each naming the gate it
+answers for and the threshold it missed, so "which profile explains this FAIL"
+is answerable from the artifact alone.
+
+**Off on the normal path.** A green run profiles **nothing**: the profiler is
+not merely written to a discarded file, it is never started, no directory is
+created and no runtime sampling rate is touched. A harness that profiled every
+run would distort the numbers it exists to establish. The automation can be
+turned off with `-profile-on-miss=false` — the cold series passes exactly that
+to its child runs, because the series profiles a missed gate once, itself —
+and a run that misses a gate with profiling off says so in the log.
+
+**Two caveats, stated rather than assumed.**
+
+1. **The profiles come from a diagnostic re-execution, not from the measured
+   run.** AC-4 forbids profiling the measurement, so the profiler starts only
+   after a gate has been read as missed and re-runs that scenario on the same
+   machine, the same checkout and the same binary. It localises where the cost
+   is; it is not a replay of the exact execution that missed the gate. The
+   scenario's setup — cloning, and the index a query or freshness scenario needs
+   first — happens outside the profile window, so a warm-latency profile never
+   contains the ingest that made the queries possible.
+2. **`io.pprof` is the runtime *block profile*.** Go has no file-I/O profile:
+   the runtime does not attribute blocking syscalls to a pprof profile. The
+   block profile shows goroutine blocking on channels and locks — where an
+   ingest worker pool's waiting on I/O becomes observable — and the run's real
+   block-device counters (`getrusage` `ru_inblock`/`ru_oublock`) are published
+   beside it in `io_counters` rather than inferred from it.
+
+**A failed capture is not a green run.** If the profiles cannot be produced —
+an unwritable path, a scenario that cannot be re-executed — the set is recorded
+as incomplete, the reason is printed, and the run exits non-zero. "No profile"
+and "no problem" must not look alike in CI.
+
+**Scope.** This is measurement infrastructure only: nothing here runs in the
+shipped binary, and interpreting the profiles or acting on them is WP4 work with
+its own stories.

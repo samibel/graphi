@@ -14,13 +14,24 @@
 # no explicit status defaults to UNKNOWN, so a new gate starts honest. Almost every
 # row is UNKNOWN today, and that is the point: the gap is the artifact. Turning a
 # row green is M1+ measurement work, not this story.
+#
+# STALE (PRD §12 "Statuswerte": PASS | FAIL | UNKNOWN | STALE) is the fourth state:
+# the row WAS stated or measured, but against a candidate that has since been
+# superseded. Like UNKNOWN it counts as NOT passed; unlike UNKNOWN it says so out
+# loud instead of letting the row quietly inherit the new candidate. A STALE row
+# must name what superseded it in its `current` field — `-check` rejects one that
+# does not — and is NEVER re-pointed at the new candidate without being re-measured.
 
 candidate:
-  # Cited from SW-116's record, not restated. Where SW-116 records the published
-  # release digest as UNKNOWN, this says UNKNOWN too — the two must not disagree.
-  source: docs/decisions/2026-07-m0-candidate-freeze.md
-  sha: 4e72637d3c2c0dc7d32142a590d46c0c62c10733
-  release_digest: UNKNOWN
+  # Cited from SW-121's freeze record, not restated. The two must never disagree.
+  # The P0 candidate is the PUBLISHED, tagged, attested release v0.6.7 — not the
+  # never-published 4e72637 that SW-116 froze (that record is now superseded, and
+  # the rows it touched read STALE below).
+  source: docs/decisions/2026-07-p0-candidate-freeze.md
+  sha: fb3bf037e9b7fe05eda50514189caeff4c06679d
+  # graphi-linux-amd64, the reference platform. The index schema carries ONE digest
+  # scalar; all eight published asset digests are in the freeze record §3.
+  release_digest: "sha256:6fd561c27a728a8c4085afe80e9b592c2f3019a27ccfb1861d6cb13d29b21b94 (graphi-linux-amd64, v0.6.7)"
 
 gates:
   # ── §6 per-work-package gates (WP0–WP10) ────────────────────────────────────
@@ -28,12 +39,12 @@ gates:
     gate: Program Control & Evidence Contract
     section: plan §6 WP0
     threshold: "Every 9/10 claim traces to a versioned raw artifact; no hand-maintained green without evidence."
-    current: "UNKNOWN — PRD absent (deferred to backlog); Evidence Pack not assembled. This index + the SW-116 change-control record stand up part of the deliverable."
+    current: "UNKNOWN — Evidence Pack not assembled. This index and the candidate change-control record stand up part of the deliverable; the P0 PRD now lives in-repo (SW-120, docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md) and the change-control record is SW-121's freeze record, which supersedes SW-116's. Not a measurement, so not STALE — but nothing here is proven either."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
     owner: ENG Lead
-    next_action: "Assemble the Evidence Pack; author the PRD (backlog); keep this dashboard weekly."
+    next_action: "Assemble the Evidence Pack; keep this dashboard weekly."
     due: W0–2 (weekly after)
   - id: WP1
     gate: GA scope & claims cleaned
@@ -50,12 +61,12 @@ gates:
     gate: Candidate & reproducible technical baseline
     section: plan §6 WP2
     threshold: "An independent engineer reproduces the baseline with a documented command and the same artifact; deviations and measurement uncertainty are visible."
-    current: "UNKNOWN — no eval-full baseline has been run on the candidate SHA / release binary."
-    status: UNKNOWN
+    current: "STALE — this row was stated against the superseded candidate 4e72637 (SW-116), from which nothing was ever published. The candidate is now the tagged release v0.6.7 at fb3bf03 (SW-121, docs/decisions/2026-07-p0-candidate-freeze.md). No baseline has been run on it either; the row is NOT re-pointed, it is re-measured by SW-130."
+    status: STALE
     evidence_uri: ""
     sha: ""
     owner: ENG
-    next_action: "Run eval-full on the candidate SHA over the pinned real Go repos; store raw data."
+    next_action: "Run the P0 baseline on the re-frozen candidate fb3bf03 over the pinned Go repos (SW-124…SW-130); store raw data."
     due: W1–6
   - id: WP3
     gate: Gold corpus & accuracy scoring
@@ -151,12 +162,12 @@ gates:
     gate: Wahrheit und Scope — exit gate
     section: plan §5 M0
     threshold: "No claim contradicts the artifact or PRD; candidate, claims and the measurement contract are frozen."
-    current: "UNKNOWN — Day-10 M0 Go/No-Go not yet held. Candidate frozen (SW-116); planning authority consolidated (SW-117); claims sweep (SW-118) and this index (SW-119) in flight."
-    status: UNKNOWN
+    current: "STALE — this row's 'candidate frozen (SW-116)' referred to 4e72637, which is superseded: the candidate is now the tagged release v0.6.7 at fb3bf03 (SW-121, docs/decisions/2026-07-p0-candidate-freeze.md). The Day-10 M0 Go/No-Go was never held, so the exit gate is unproven on either candidate; planning authority consolidated (SW-117), claims sweep (SW-118) and this index (SW-119) landed."
+    status: STALE
     evidence_uri: ""
     sha: ""
     owner: ENG Lead
-    next_action: "Land SW-118/SW-119 on merged main, then hold the M0 Go/No-Go."
+    next_action: "Hold the M0 Go/No-Go against the re-frozen candidate fb3bf03."
     due: W0–2
   - id: M1
     gate: Baseline — exit gate

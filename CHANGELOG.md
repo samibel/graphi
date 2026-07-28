@@ -26,6 +26,236 @@ file:
 
 ## [Unreleased]
 
+### Added
+
+- **Published performance numbers are now reproducible from the raw measurements — `-export-raw` and `-aggregate` (new).**
+  The committed evidence runs held aggregates and nothing else: a `warm_p95_us`, a
+  `peak_rss_mb`, a `db_size_bytes`. Nothing can be recomputed from a p95, so every
+  published figure had to be taken on trust. A measurement run can now export a **run
+  directory** — `docs/eval/runs/<date>-<runner-class>/`, the shape the historical runs
+  already use — holding the individual measurements from all four performance harnesses
+  beside the report they produced, and `-aggregate <dir>` recomputes **every** published
+  statistic from those samples and diffs them.
+- **The raw format carries samples and nothing derived.** The harnesses already retained
+  their individual measurements, but inside the same structure as the percentiles derived
+  from them — checking one against the other would have been comparing a number with a
+  file that already contained it. The exported `raw/` files carry measurements plus the
+  pool-membership lists a recomputation needs, and no percentile, aggregate or verdict.
+- **A discrepancy is an error, not a rounding note.** The comparison is exact: every
+  percentile in the tree is a nearest-rank *observed sample* rather than an interpolation,
+  so two correct derivations over the same samples agree bit for bit, and a tolerance
+  would only be somewhere for drift to hide. A report edited away from its samples — by
+  hand, by a half-finished refactor, or by two runs' files landing in one directory —
+  turns the job red at the moment it is produced.
+- **The run environment is captured, and a gap in it reads as a gap.** CPU, RAM, OS,
+  kernel, Go version, filesystem and observed page-cache state are recorded alongside the
+  runner class, the frozen candidate SHA and the harness and scorer versions. A probe
+  that fails leaves the field **absent** with the reason recorded, and it renders
+  `UNKNOWN`: an empty `kernel` never reads as a documented kernel. A run whose environment
+  is incomplete is not publishable however cleanly its arithmetic reproduces.
+- **Missing raw data makes a metric UNKNOWN, and an unpublishable run says so in its exit
+  code.** `-aggregate` exits `0` only when every published metric reproduced *and* the
+  environment is documented; `1` on a discrepancy, `3` when the run is incomplete, `2`
+  when the directory cannot be read. `3` is deliberately not `1` — "the number is wrong"
+  and "the number cannot be checked" are different facts, and merging them would let a
+  real discrepancy be triaged as a flaky job.
+- **Raw format and measurement method are versioned separately.** `format_version` pins
+  the file shape and `harness_version` the measurement method. A directory whose raw
+  files disagree about the harness version is refused rather than warned about: an old and
+  a new methodology are not one measurement, and averaging them silently is exactly the
+  risk this versioning exists to remove.
+- **Every reference-scenario CI job now exports and reproduces its own numbers.** The
+  four `eval-full.yml` jobs that produce candidate evidence export their raw samples and
+  immediately check that their report follows from them, `if: always()` — a run whose
+  gates went red still has to be internally consistent, and that is when a contradiction
+  between report and samples matters most. The exported directory is uploaded with the
+  report, so an artifact never arrives without the data behind it.
+
+- **Query latency is now measured at the contract's scale — `-query-executions` (new).**
+  The warm half of `cmd/eval -full-run` reported a p95 per operation class over a
+  sample size chosen by wall-clock pragmatism — around 30 executions for the
+  structural class — while the measurement contract asks for **at least 1000
+  executions per query class**. Nothing recorded whether that floor was met, so a p95
+  over 30 executions and a p95 over 1000 landed in the same field and looked identical
+  to every consumer. `-query-executions N` now plans enough timed executions that every
+  query class *and* every individual performance gate's operation pool clears the
+  floor: a class target alone would leave the caller/callee/impact gate reading a
+  percentile over roughly half the executions it needs, however green the class looked.
+- **p50 as well as p95, per class and per operation.** The performance gates are stated
+  on both, and the report carried only the tail. `warm_p50_us` and `warm_p50_us_per_op`
+  now sit beside the existing p95 maps (which are unchanged, so the budget artifact and
+  the committed historical runs still read), and both come from the one nearest-rank
+  implementation the cold series already uses — a p50 and a p95 that disagreed about
+  even sample counts would show up as an unexplainable gate result rather than a test
+  failure.
+- **Undersampling is a visible state, not a silent one.** Every class and every gate
+  pool publishes its execution count beside the floor it is read against. A pool below
+  the floor makes its gates **UNKNOWN** — never PASS — even when the measured latency is
+  comfortably inside the threshold, and the reason names the count it got and the floor
+  it missed.
+- **Every individual measurement is retained.** Each operation keeps its full list of
+  per-execution latencies, and one exported function derives every published class,
+  pool and operation statistic from nothing but those samples, so a number that
+  disagrees with its own raw data is a test failure rather than a discrepancy nobody
+  can see.
+- **The symbol sample is deterministic and published verbatim.** Two runs over
+  different symbol samples are not two runs of the same measurement, and the
+  measurement contract asks for two consecutive green runs. The ordered sampled symbol
+  ids now travel in the report with a digest over them, so a drift between two runs is
+  one string comparison; a test indexes the same tree twice from scratch and requires
+  an identical sample.
+- **The operation → query-class mapping is stated, not inferred.** All twelve stable
+  operations appear in the report with an explicit class, and `index` is declared
+  **lifecycle-only** — it is the ingest lifecycle operation, its cost is the cold-index
+  wallclock, and it carries no query-latency samples, no execution floor and no query
+  gate. A drift test fails the build if the mapping and the frozen twelve diverge.
+- **Timing covers the operation and nothing else.** Argument assembly and symbol
+  selection moved into an untimed prepare step, each operation runs warmup executions
+  that are invoked and discarded before the first timed one, and the warmup count is
+  recorded per operation. A test inflates the setup cost and requires the reported
+  latency to be unchanged.
+- The weekly `eval-full` workflow gained a `query-latency-series` job that runs the
+  full-scale measurement over the reference scenario. The PR path is untouched: the
+  default invocation keeps the historical warm sample counts exactly, reports itself as
+  below the floor rather than looking like a full-scale run, and a guard test keeps the
+  new flag out of the PR gate and the per-repo compatibility runs.
+- **Cold indexing is now measured ten times, not once — `-cold-runs` (new).**
+  `cmd/eval -full-run` measured a single cold index and reported it as though one
+  sample were a result. A distribution cannot be derived from one number, and the
+  measurement contract asks for at least ten runs reported as **p50 and p95**.
+  `-cold-runs N` repeats the existing measurement N times, **one process per run** —
+  peak RSS is a process-lifetime figure, so repeating inside one process would have
+  republished the first run's peak for every later run and called the result a
+  distribution. Every individual sample is kept in the report next to the
+  aggregates, and one exported function derives the aggregates from those samples,
+  so every published number can be recomputed from the raw data rather than taken on
+  trust. Wallclock, peak RSS, DB size, nodes, edges and bytes-per-edge are all
+  captured per run and aggregated.
+- **"Cold" is now produced and verified per run, not assumed.** Each run records
+  whether its store and ingest metadata really were absent beforehand, and what state
+  the page cache was actually in — with `-drop-caches` running the reference class's
+  declared protocol between the clone and the timed index (dropping it *before* the
+  clone would have warmed the cache with exactly the files about to be measured). A
+  run on the reference class that did not reach its own declared protocol is recorded
+  as **not verified cold** instead of being published as a cold number.
+- **The 8 GB OOM gate has a measurement point for the first time — `-oom-check`.** It
+  was previously neither passing nor failing: it was unmeasured, which means UNKNOWN.
+  The run is now executed under the contract's imposed 8 GB cgroup v2 limit with swap
+  disabled, the limit is **read back from inside the constrained process** and
+  compared to the exact byte figure, and three failure signals (the cgroup `oom_kill`
+  counter, a SIGKILL/137 exit, a kernel OOM record for the measured pid) are
+  collected. A pass requires a verified limit, a completed run, and all three signals
+  observed and absent — a limit that could not be verified, or a signal nobody
+  managed to look at, reads **UNKNOWN**, never PASS.
+- **Aborted runs stay visible.** A run that produced no cold-index measurement is
+  counted, named and kept in the report; it never silently drops out of the
+  distribution. A run whose *warm* checks failed still contributes its cold sample,
+  with its own verdict attached — the cold measurement is valid regardless.
+- **Runs are tied to the frozen candidate.** Every run carries the runner class and
+  the revision that measured it, and the series cites the frozen candidate from the
+  evidence index. A series measured on anything else — including a dirty worktree —
+  is marked as such, and its gates read UNKNOWN: a gate result about an artifact
+  nobody installs is not evidence about the candidate. That applies to **every**
+  gate including the OOM one, which has a measurement method of its own but no
+  exemption of its own — a clean constrained run measured off the reference
+  scenario, off the candidate, or from a dirty tree reads UNKNOWN with the observed
+  result named beside the reason, never PASS.
+- Gates are read from the reference-scenario contract rather than restated, and the
+  weekly `eval-full` workflow gained a `cold-index-series` job that runs the ten
+  reference-scenario runs and the OOM check. The PR path is untouched: the default
+  invocation is still exactly one run, and a guard test keeps the repetition flag out
+  of the PR gate and the per-repo compatibility runs.
+- **The reference scenario exists — `docs/eval/reference-scenario.json` (new).** Every
+  performance number in the P0 measurement contract was scoped to "the defined
+  reference scenario", and that scenario was defined nowhere: "cold index p50 ≤ 90 s"
+  without a named repository and a named machine is a number, not a claim, and a gate
+  that cannot fail cannot pass either. The contract now exists as data. **Exactly one**
+  runner class is the reference — `ubuntu-latest`, the class every existing gate
+  workflow already uses — documented with CPU, RAM, OS, kernel, Go version, filesystem
+  and the *cold* cache protocol. The development machine is declared a **comparison**
+  class and labelled as such: its numbers are never reported as reference values and
+  never freeze a budget. Each of the ten performance gates is mapped **by name** to a
+  repository from the v3 corpus (`grpc-go` v1.60.1, the largest non-stress entry —
+  `kubernetes` stays the stress target under the program-wide 4 GB peak-RSS stop rule,
+  not under the gates), the 8 GB-host OOM gate has a **method** (cgroup v2
+  `MemoryMax=8G`, `MemorySwapMax=0`, the imposed limit read back and recorded, with
+  `oom_kill`/137/kernel-log as the failure signal) instead of a statement of intent,
+  and the scope limitation travels inline so a consumer reading only the JSON cannot
+  publish the gates as universal guarantees. Loader, fail-closed validator and drift
+  tests: `cmd/eval/refscenario.go`, `cmd/eval/refscenario_test.go`. A gate pointing at
+  a repository that is not pinned in `corpus/manifest.json` is a test failure.
+- **`go run ./cmd/eval -check-reference-scenario`** validates that contract against the
+  corpus manifest and the budget artifact and prints the gate→repository map; `eval-full.yml`
+  runs it before it measures anything. `cmd/eval -full-run` takes `-reference-scenario`,
+  stamps each report with the runner class's declared **role** (`runner_role`,
+  `reference_scenario`, `scenario_source` in `internal/evalreport.FullRunReport`), and
+  **fails closed on a runner class the contract does not declare** — numbers from an
+  unnamed machine no longer sit beside reference values with equal standing.
+
+- **The P0 candidate is frozen on a real, published artifact —
+  `docs/decisions/2026-07-p0-candidate-freeze.md` (new).** The previous candidate
+  (`4e72637`, 2026-07-16) was 99 commits and 8 tags behind `main` and, as its own
+  record honestly said, **nothing was ever published from it** — its release digest
+  read `UNKNOWN`. Measuring it would have proven the quality of an artifact nobody
+  installs. P0 is now frozen on **v0.6.7 at `fb3bf03`**: a tagged, published release
+  with eight recorded asset digests, an SPDX SBOM and SLSA build provenance, all bound
+  to that one SHA by the release DAG's attestation. Every field the measurement
+  contract requires is recorded — SHA, tag, version, digest, build command, Go
+  version, `CGO_ENABLED`, build tags, target platforms, SBOM and attestation
+  references, dates, owner — read back from the published artifact rather than
+  transcribed. The record also states what the candidate does **not** contain.
+  **Reproducibility is demonstrated, not asserted:** all five published platform
+  binaries were rebuilt **bit-for-bit** from the frozen SHA on a different OS and
+  architecture, and the two non-obvious preconditions (a *tagless* checkout, and a
+  real clone rather than a linked `git worktree` — either one changes every digest)
+  are written down so the next person's correct build does not look like a failure.
+  `docs/decisions/2026-07-m0-candidate-freeze.md` is marked **superseded**, not
+  deleted, and the two documents that still *pointed* at the dead candidate — the
+  execution plan's authority note and the RC dossier — now name the new one, so
+  "one candidate, one truth" holds across the repository rather than only in the
+  decision record. No release was cut, tagged or published to produce this record.
+- **`STALE` is a first-class evidence-index status.** A candidate move used to leave
+  dependent rows reading `UNKNOWN`, which cannot be told apart from a gate nobody ever
+  measured — so the row would quietly inherit the new candidate. `STALE` (the
+  measurement contract's fourth status, beside PASS/FAIL/UNKNOWN) says it out loud:
+  like `UNKNOWN` it counts as **not passed**, and `go run ./cmd/evidence -check` now
+  **rejects a `STALE` row that does not name what superseded it**, so the marking can
+  never be silent. The two rows that spoke about the old candidate are marked STALE
+  and re-measured, never re-pointed; the rows that never referred to a candidate are
+  deliberately left `UNKNOWN`, and the record says which and why.
+- **Go-depth evaluation corpus — `corpus/manifest.json` v3.** The corpus now pins
+  **six Go repositories** (uuid, lo, cobra, gin, grpc-go, kubernetes) instead of one,
+  each to a release tag **and** a full 40-character commit sha, with the ten required
+  stratification properties mapped by name to a specific repository (or recorded as an
+  explicit gap) in a new `stratification` block. `kubernetes` v1.29.0 is the stress
+  target: **15 718 Go files**, measured from a real clone, not estimated — every entry
+  carries a `measured` census with the date and the exact command behind the numbers.
+  License and permitted use are now recorded per repository and **required** for any
+  entry the harness clones. Rationale per repository: **`corpus/README.md`** (new).
+- **Corpus tier 4 — manual-only stress targets.** `corpus.yml` still caps its nightly
+  run at `-max-tier 3`, so tier 4 runs only on an explicit `-tier 4` (or through
+  `cmd/eval -full-run`, which selects by name). Measured reason: indexing the pinned
+  kubernetes checkout costs ~3 min and ~9 GB peak RSS — a working set no hosted runner
+  should absorb on a schedule. PR wall-clock is unchanged: every new entry is tier 3
+  or 4.
+
+### Changed
+
+- **The dead hero budgets are labelled instead of implied.** `docs/eval/hero-budgets.json`
+  is now `schema_version: 3` and declares itself `historical: true` / `ratcheting: false`
+  with a recorded `historical_reason`; `cmd/eval` rejects an artifact that claims both,
+  omits the reason, or still carries the old schema. Historical does **not** mean
+  disabled — the ceilings are still enforced fail-closed for cobra, flask and guava,
+  and a missing, malformed or wrong-runner-class budget is still a failure, not a skip.
+  Re-baselining is blocked on the re-frozen candidate and a comparable measurement, and
+  the file says so rather than looking like a ratchet.
+- **Removed the all-zero latency budgets.** `hero_suite.measured_max_latency_ms_per_op`
+  held `0` for all twelve Stable operations, because the historical run measured every
+  hero task below the millisecond floor. Nothing read the map, and a zero budget that
+  silently counts as met is worse than no budget: it renders green. It is gone,
+  replaced by `latency_signal: "none"`, and `cmd/eval` now rejects **any** numeric zero
+  anywhere in a budget artifact.
+
 ## [0.6.7] - 2026-07-27
 
 ### Fixed

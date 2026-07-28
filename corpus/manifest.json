@@ -1,12 +1,77 @@
 {
- "version": 2,
- "notes": "Real-repository smoke corpus (internal/corpus). Six repos cover the historical first-contact bug classes (non-source assets, symlinked layouts, JSON fixtures) plus language spread: Go (also the future typeresolve proving ground), Python, Ruby, TypeScript, JavaScript+JSON, and a Java/JVM Maven monorepo (guava, tier 3 — nightly/manual, excluded from the PR gate via -max-tier 2). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars — recorded from the first green CI run, 2026-07-02; guava recorded via git ls-remote refs/tags/v33.0.0 on 2026-07-14, a lightweight tag whose object IS the commit). If an upstream tag is ever re-pointed, the pin step fails closed. Adding a repository is a data change here, never a code change.",
+ "version": 3,
+ "notes": "Real-repository corpus (internal/corpus). v3 gives the corpus GO DEPTH: six pinned Go repositories (uuid, lo, cobra, gin, grpc-go, kubernetes) carry the P0 FR-2 stratification, beside the five non-Go repositories kept for cross-language regression detection (flask, sinatra, ky, express, guava). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars — the Go entries pin the FULL 40-char commit sha). If an upstream tag is ever re-pointed, the pin step fails closed. Every count under `measured` was taken from a real clone at the pinned sha on the recorded date, never from repository metadata; `go_files` is the strict count the stress threshold is asserted on. Tiers: 1 = PR gate (local fixtures), 2 = pinned SHAs, 3 = nightly/manual, 4 = manual-only stress (corpus.yml caps the scheduled run at -max-tier 3, so tier 4 never runs on a schedule or a PR). Adding a repository is a data change here, never a code change. Per-repository selection rationale: corpus/README.md.",
+ "stratification": [
+  {
+   "property": "small library",
+   "repo": "uuid",
+   "evidence": "21 Go files in a single package, 31 tracked files — the smallest real repository in the corpus."
+  },
+  {
+   "property": "mid-size CLI application",
+   "repo": "cobra",
+   "evidence": "36 Go files in 2 packages; the CLI framework plus its doc generator, with 17 test files."
+  },
+  {
+   "property": "web or API service",
+   "repo": "gin",
+   "evidence": "92 Go files in 7 packages; HTTP router, middleware chain, binding and render subpackages."
+  },
+  {
+   "property": "multi-package repository",
+   "repo": "grpc-go",
+   "evidence": "831 Go files spread over 277 directories containing Go source."
+  },
+  {
+   "property": "large repository or monorepo",
+   "repo": "kubernetes",
+   "evidence": "15718 Go files over 3611 package directories; staging/ alone holds 5899 of them as separately published modules."
+  },
+  {
+   "property": "generics",
+   "repo": "lo",
+   "evidence": "13 of 17 Go files declare type-parameterised functions over any/comparable constraints."
+  },
+  {
+   "property": "multiple go.mod",
+   "repo": "grpc-go",
+   "evidence": "11 go.mod files (root plus examples, interop, security, stats and cmd submodules). Asserted on grpc-go rather than kubernetes (34 go.mod) because grpc-go runs on the nightly tier, so the property is exercised without the stress target."
+  },
+  {
+   "property": "build tags",
+   "repo": "gin",
+   "evidence": "16 Go files carry //go:build constraints (nomsgpack, jsoniter, sonic, go1.20+ variants)."
+  },
+  {
+   "property": "generated code",
+   "repo": "grpc-go",
+   "evidence": "49 Go files carry the \"Code generated ... DO NOT EDIT\" marker (protobuf and grpc plugin output)."
+  },
+  {
+   "property": "tests and benchmarks",
+   "repo": "grpc-go",
+   "evidence": "287 _test.go files, 13 of which declare Benchmark functions."
+  }
+ ],
  "entries": [
   {
    "name": "cobra",
    "url": "https://github.com/spf13/cobra",
    "ref": "v1.8.0",
-   "sha": "a0a6ae020bb3",
+   "sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+   "language": "go",
+   "license": "Apache-2.0",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only — no source is redistributed.",
+   "properties": [
+    "mid-size CLI application"
+   ],
+   "measured": {
+    "go_files": 36,
+    "tracked_files": 66,
+    "go_modules": 1,
+    "measured_at": "2026-07-27",
+    "method": "git clone --depth 1 --branch v1.8.0; git ls-files '*.go' | wc -l and git ls-files | wc -l at the pinned sha"
+   },
    "searches": [
     {
      "query": "Execute",
@@ -24,13 +89,176 @@
      "min": 1
     }
    ],
-   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() — a receiver-method dispatch the name heuristic cannot prove — and the go/types pass must carry it at the confirmed tier."
+   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() — a receiver-method dispatch the name heuristic cannot prove — and the go/types pass must carry it at the confirmed tier. v3 widened the sha pin from the 12-char prefix to the full commit sha; the tag and the assertion are unchanged."
+  },
+  {
+   "name": "uuid",
+   "url": "https://github.com/google/uuid",
+   "ref": "v1.6.0",
+   "sha": "0f11ee6918f41a04c201eceeadf612a377bc7fbc",
+   "tier": 3,
+   "language": "go",
+   "license": "BSD-3-Clause",
+   "permitted_use": "Public repository under BSD-3-Clause; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "small library"
+   ],
+   "measured": {
+    "go_files": 21,
+    "tracked_files": 31,
+    "go_modules": 1,
+    "measured_at": "2026-07-27",
+    "method": "git clone --depth 1 --branch v1.6.0; git ls-files '*.go' | wc -l and git ls-files | wc -l at the pinned sha"
+   },
+   "searches": [
+    {
+     "query": "UUID",
+     "expect_nonempty": true
+    },
+    {
+     "query": "NewRandom",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Small single-package Go library — the floor of the size range, and the case where a whole repository fits inside one index pass. Tier 3: never on the PR gate."
+  },
+  {
+   "name": "lo",
+   "url": "https://github.com/samber/lo",
+   "ref": "v1.39.0",
+   "sha": "5777c5a3ee09f852d55a5bb5f585fcaeb5a0aedb",
+   "tier": 3,
+   "language": "go",
+   "license": "MIT",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "generics"
+   ],
+   "measured": {
+    "go_files": 17,
+    "tracked_files": 30,
+    "go_modules": 1,
+    "measured_at": "2026-07-27",
+    "method": "git clone --depth 1 --branch v1.39.0; git ls-files '*.go' | wc -l and git ls-files | wc -l at the pinned sha"
+   },
+   "searches": [
+    {
+     "query": "Map",
+     "expect_nonempty": true
+    },
+    {
+     "query": "Filter",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Generics-first Go library: nearly every exported function is type-parameterised, so a resolver that ignores type parameters degrades visibly here rather than silently. Tier 3: never on the PR gate."
+  },
+  {
+   "name": "gin",
+   "url": "https://github.com/gin-gonic/gin",
+   "ref": "v1.9.1",
+   "sha": "4ea0e648e38a63d6caff14100f5eab5c50912bcd",
+   "tier": 3,
+   "language": "go",
+   "license": "MIT",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "web or API service",
+    "build tags"
+   ],
+   "measured": {
+    "go_files": 92,
+    "tracked_files": 119,
+    "go_modules": 1,
+    "measured_at": "2026-07-27",
+    "method": "git clone --depth 1 --branch v1.9.1; git ls-files '*.go' | wc -l and git ls-files | wc -l at the pinned sha"
+   },
+   "searches": [
+    {
+     "query": "Engine",
+     "expect_nonempty": true
+    },
+    {
+     "query": "RouterGroup",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Web/API service shape (router, middleware chain, binding, render) and the corpus's build-tag carrier: 16 files sit behind //go:build constraints, so a pass that ignores tags either drops or double-counts symbols. Tier 3: never on the PR gate. The second search asserts RouterGroup rather than the more obvious Context: `graphi search Context` returns no matches on ANY indexed repository (observed on gin and kubernetes, 2026-07-27) — a search-side observation recorded in SW-122, not a property of this repository."
+  },
+  {
+   "name": "grpc-go",
+   "url": "https://github.com/grpc/grpc-go",
+   "ref": "v1.60.1",
+   "sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+   "tier": 3,
+   "language": "go",
+   "license": "Apache-2.0",
+   "permitted_use": "Public repository under Apache-2.0; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "multi-package repository",
+    "multiple go.mod",
+    "generated code",
+    "tests and benchmarks"
+   ],
+   "measured": {
+    "go_files": 831,
+    "tracked_files": 1056,
+    "go_modules": 11,
+    "measured_at": "2026-07-27",
+    "method": "git clone --depth 1 --branch v1.60.1; git ls-files '*.go' | wc -l, git ls-files | wc -l and git ls-files '*go.mod' | wc -l at the pinned sha"
+   },
+   "searches": [
+    {
+     "query": "ClientConn",
+     "expect_nonempty": true
+    },
+    {
+     "query": "Server",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "The workhorse of the Go corpus: 277 Go package directories, 11 go.mod files, 49 generated protobuf files and 287 test files carry four of the ten stratification properties at a size the nightly run can still afford (index measured in seconds, not minutes). Tier 3: never on the PR gate."
+  },
+  {
+   "name": "kubernetes",
+   "url": "https://github.com/kubernetes/kubernetes",
+   "ref": "v1.29.0",
+   "sha": "3f7a50f38688eb332e2a1b013678c6435d539ae6",
+   "tier": 4,
+   "stress": true,
+   "language": "go",
+   "license": "Apache-2.0",
+   "permitted_use": "Public repository under Apache-2.0; read-only shallow clone by an operator or a manually dispatched job, measurements only, no redistribution.",
+   "properties": [
+    "large repository or monorepo"
+   ],
+   "measured": {
+    "go_files": 15718,
+    "tracked_files": 24944,
+    "go_modules": 34,
+    "measured_at": "2026-07-27",
+    "method": "git clone --depth 1 --branch v1.29.0; git ls-files '*.go' | wc -l, git ls-files | wc -l and git ls-files '*go.mod' | wc -l at the pinned sha"
+   },
+   "searches": [
+    {
+     "query": "Pod",
+     "expect_nonempty": true
+    },
+    {
+     "query": "Kubelet",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "The FR-2 stress target: 15718 Go files (>= the 10000 threshold) across 3611 package directories and 34 modules. Tier 4 — deliberately outside BOTH the PR gate and the nightly schedule: a measured full index costs ~3m16s wall and ~9 GB peak RSS on an 8-core laptop (2026-07-27, v0.6.7 dev build), which no hosted runner should absorb on a schedule. Run it explicitly: `go run ./cmd/corpus -manifest corpus/manifest.json -tier 4` or `go run ./cmd/eval -full-run kubernetes` once SW-123 has named a runner class and SW-124 the budgets."
   },
   {
    "name": "flask",
    "url": "https://github.com/pallets/flask",
    "ref": "3.0.0",
    "sha": "735a4701d6d5",
+   "language": "python",
+   "license": "BSD-3-Clause",
+   "permitted_use": "Public repository under BSD-3-Clause; read-only shallow clone in CI, measurements only, no redistribution.",
    "searches": [
     {
      "query": "Flask",
@@ -44,6 +272,9 @@
    "url": "https://github.com/sinatra/sinatra",
    "ref": "v4.0.0",
    "sha": "b626e2d82c23",
+   "language": "ruby",
+   "license": "MIT",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
    "searches": [
     {
      "query": "Base",
@@ -57,6 +288,9 @@
    "url": "https://github.com/sindresorhus/ky",
    "ref": "v1.2.0",
    "sha": "38ac18bc1ac3",
+   "language": "typescript",
+   "license": "MIT",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
    "searches": [
     {
      "query": "request",
@@ -70,6 +304,9 @@
    "url": "https://github.com/expressjs/express",
    "ref": "4.18.2",
    "sha": "8368dc178af1",
+   "language": "javascript",
+   "license": "MIT",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
    "searches": [
     {
      "query": "Router",
@@ -84,6 +321,9 @@
    "ref": "v33.0.0",
    "sha": "2214c63670fc",
    "tier": 3,
+   "language": "java",
+   "license": "Apache-2.0",
+   "permitted_use": "Public repository under Apache-2.0; read-only shallow clone in CI, measurements only, no redistribution.",
    "searches": [
     {
      "query": "ImmutableList",
@@ -100,6 +340,7 @@
    "name": "tier1-fixture-go",
    "path": "corpus/fixtures/go",
    "tier": 1,
+   "language": "go",
    "budget_ms": 5000,
    "scenario_ref": "go-sample",
    "searches": [
@@ -114,6 +355,7 @@
    "name": "tier1-fixture-hero-go",
    "path": "corpus/fixtures/hero-go",
    "tier": 1,
+   "language": "go",
    "scenario_ref": "hero",
    "searches": [
     {

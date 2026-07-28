@@ -1,7 +1,11 @@
 {
-  "schema_version": 2,
-  "notes": "Provisional compatibility ceilings copied from the cited historical reference run. cmd/eval enforces them fail-closed when -budgets is supplied, but the current harness measures a different workload (all 12 Stable operations, degree-stratified symbols, semantic checks, post-Stable-suite MAXRSS). They are not comparable post-change ratchets. Replace them only from a new current-harness ubuntu-latest run on the current commit; never rewrite historical reports.",
+  "schema_version": 3,
+  "notes": "HISTORICAL compatibility ceilings copied from the cited retired-harness run. cmd/eval enforces them fail-closed when -budgets is supplied — historical does not mean disabled — but they are NOT comparable post-change ratchets and must not be read as ones. Replace them only from a new current-harness run on the reference runner class declared in docs/eval/reference-scenario.json, against the re-frozen candidate; never rewrite historical reports. SW-123 (P0-A4) added the explicit historical/ratcheting declaration below and REMOVED the all-zero hero latency map that used to sit in this file.",
   "runner_class": "ubuntu-latest",
+  "historical": true,
+  "ratcheting": false,
+  "historical_reason": "The numbers come from run 29418826616 (commit 71353f9, 2026-07-15) under the previous harness, which measured a different workload: it omitted `impact` from the structural pool, required no semantic checks across all 12 Stable operations, used the earlier symbol sample, and sampled MAXRSS immediately after IngestAll instead of after the Stable-operation suite. A current measurement is therefore not comparable to these values, so they may bound a run but may never ratchet one. Re-baselining is blocked on SW-121 (re-frozen candidate) and SW-124 (comparable numbers on the reference class).",
+  "reference_scenario": "docs/eval/reference-scenario.json — the runner class above must be the reference class declared there (asserted by cmd/eval/refscenario_test.go).",
   "os": "linux",
   "cgo_enabled": false,
   "recorded_from": {
@@ -13,21 +17,8 @@
   "hero_suite": {
     "scenario_dir": "corpus/hero",
     "pass_rate_min": 1.0,
-    "measured_max_latency_ms_per_op": {
-      "index": 0,
-      "search": 0,
-      "definition": 0,
-      "references": 0,
-      "callers": 0,
-      "callees": 0,
-      "neighborhood": 0,
-      "impact": 0,
-      "explain_symbol": 0,
-      "related_files": 0,
-      "change_risk": 0,
-      "agent_brief": 0
-    },
-    "notes": "The historical run measured <1ms (millisecond-granularity floor) for every hero task on the tier-1 fixtures, so these zero values carry no latency ratchet signal. The current correctness gate is the full scenario pass rate; performance requires a new current-harness reference run."
+    "latency_signal": "none",
+    "notes": "SW-123 (P0-A4) REMOVED the `measured_max_latency_ms_per_op` map that used to sit here. It held 0 for all twelve Stable operations, because the historical run measured every hero task below the harness's millisecond-granularity floor on the tier-1 fixtures. Nothing read the map, and a zero budget that silently counts as met is worse than no budget: it renders green. The hero suite's gate is and remains the full scenario pass rate above; hero-task latency has NO budget, and `latency_signal: none` says so instead of a table of zeros implying one. cmd/eval now rejects any numeric zero anywhere in this artifact (cmd/eval/refscenario.go, validateNoSilentZeroBudgets). Per-operation latency gates live in docs/eval/reference-scenario.json against the reference scenario, not here against tier-1 fixtures."
   },
   "real_repos": {
     "selection": ["cobra", "flask", "guava"],

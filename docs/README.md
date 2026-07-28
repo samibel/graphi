@@ -44,14 +44,16 @@ them breaks gates; the generated ones are overwritten on the next run.
 | [capability-manifest.json](capability-manifest.json) | Generated alongside the coverage matrix |
 | release-scorecard.md / release-scorecard.json | Published fresh by the release gate (`cmd/release-gate -publish`) on each CI run; not checked in — checked-in run evidence lives under [eval/](eval) |
 | [eval-baseline.json](eval-baseline.json) · [mcp-tool-baseline.json](mcp-tool-baseline.json) | Ratchet baselines read by `cmd/eval` / `cmd/release-gate` |
-| [eval/](eval) | Hero protocol, budgets, and checked-in run evidence (`eval-full.yml` CI) |
+| [eval/](eval) | Hero protocol, the [reference-scenario contract](eval/reference-scenario.json) (runner class + PRD §12.2 gate→repository map), budgets, and checked-in run evidence (`eval-full.yml` CI) |
 | [rc/](rc) | RC evidence index — [rc/evidence-index.md](rc/evidence-index.md) is generated from [rc/evidence-index.yaml](rc/evidence-index.yaml) by `go run ./cmd/evidence` |
 
 ## Planning — not product documentation
 
 | Doc | What it is |
 |---|---|
-| [plan/2026-07-graphi-9of10-execution-plan.md](plan/2026-07-graphi-9of10-execution-plan.md) | The **single active planning authority**, cited by the RC evidence gate (`internal/evidence`) |
+| [plan/2026-07-graphi-9of10-execution-plan.md](plan/2026-07-graphi-9of10-execution-plan.md) | The **planning authority**, cited by the RC evidence gate (`internal/evidence`). Wins everywhere except inside P0 scope |
+| [plan/2026-07-graphi-p0-proof-and-truth-prd.md](plan/2026-07-graphi-p0-proof-and-truth-prd.md) | The **P0 PRD** — a *precisification of plan milestones M0–M2*, not a replacement. Inside P0 scope the PRD wins; outside it the plan wins. Defines no gate IDs of its own: it reuses the WP0–WP10 / M0–M5 row IDs from [rc/evidence-index.yaml](rc/evidence-index.yaml) |
 
-Earlier plans, PRDs, expert reviews, and per-slice engineering records have been
-removed from the tree; they remain reachable through git history only.
+These two are the only planning documents in the tree, and they are ordered, not
+competing. Earlier plans, PRDs, expert reviews, and per-slice engineering records have
+been removed; they remain reachable through git history only.

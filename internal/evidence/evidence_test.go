@@ -99,6 +99,47 @@ func TestLoad_DefaultsMissingStatusToUnknown(t *testing.T) {
 	}
 }
 
+// SW-121 AC-5: a row whose evidence was tied to a superseded candidate reads
+// STALE. STALE is a legal status (PRD §12 "Statuswerte": PASS | FAIL | UNKNOWN |
+// STALE), needs no evidence of its own, and must never render as PASS.
+func TestCheck_StaleIsALegalNonPassingStatus(t *testing.T) {
+	idx := loadString(t, candidateBlock+`gates:
+  - id: WP2
+    gate: Candidate & reproducible technical baseline
+    section: plan §6 WP2
+    current: "STALE — stated against the superseded candidate 4e72637."
+    status: STALE
+`)
+	if rep := Check(idx); !rep.Pass() {
+		t.Fatalf("STALE is a legal status and needs no evidence of its own, got: %s", rep.Format())
+	}
+	md := RenderMarkdown(idx)
+	if !strings.Contains(md, "| ⚠️ STALE |") {
+		t.Fatalf("a STALE row must render STALE in its status column, got:\n%s", md)
+	}
+	if strings.Contains(md, "| ✅ PASS |") {
+		t.Fatal("a STALE row must never render as PASS")
+	}
+}
+
+// SW-121 AC-5: STALE must not be a silent re-point. A row that claims staleness
+// without saying what superseded it is rejected.
+func TestCheck_StaleWithoutAnExplanationFails(t *testing.T) {
+	idx := loadString(t, candidateBlock+`gates:
+  - id: WP2
+    gate: Candidate & reproducible technical baseline
+    section: plan §6 WP2
+    status: STALE
+`)
+	rep := Check(idx)
+	if rep.Pass() {
+		t.Fatal("expected FAIL: a STALE row must name what superseded it")
+	}
+	if !violationMentions(rep, "WP2", "superseded") {
+		t.Fatalf("expected a 'superseded' violation for WP2, got: %s", rep.Format())
+	}
+}
+
 // AC: an invalid status value is rejected.
 func TestCheck_InvalidStatusFails(t *testing.T) {
 	idx := loadString(t, candidateBlock+`gates:
@@ -214,6 +255,11 @@ func TestCheckedInIndexIsFreshAndHonest(t *testing.T) {
 		case StatusPass:
 			if strings.TrimSpace(g.EvidenceURI) == "" || strings.TrimSpace(g.SHA) == "" {
 				t.Fatalf("gate %s reads PASS without evidence — the exact failure this tool prevents", g.ID)
+			}
+		case StatusStale:
+			// A STALE row must name what superseded it, never re-point silently.
+			if strings.TrimSpace(g.Current) == "" {
+				t.Fatalf("gate %s reads STALE without naming the superseded candidate", g.ID)
 			}
 		case StatusFail, StatusUnknown:
 		default:

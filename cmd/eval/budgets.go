@@ -21,33 +21,82 @@ type fullRepoBudget struct {
 	WarmP95US        map[string]budgetThreshold `json:"warm_p95_us"`
 }
 
+// budgetSchemaVersion is the accepted schema stamp. v3 (SW-123) adds the
+// historical/ratcheting declaration: the file must say out loud whether its
+// numbers are comparable post-change ratchets or historical compatibility
+// ceilings. v2 files are rejected rather than assumed to be ratchets.
+const budgetSchemaVersion = 3
+
 type fullBudgetManifest struct {
 	SchemaVersion int    `json:"schema_version"`
 	RunnerClass   string `json:"runner_class"`
-	RealRepos     struct {
+	// Historical and Ratcheting are the SW-123 (P0-A4) declaration. They are
+	// mutually exclusive: a historical artifact records compatibility ceilings
+	// from a retired harness and cannot ratchet, and HistoricalReason must say
+	// why. Silence here is what let all-zero latency budgets read as green.
+	Historical       bool   `json:"historical"`
+	Ratcheting       bool   `json:"ratcheting"`
+	HistoricalReason string `json:"historical_reason,omitempty"`
+	RealRepos        struct {
 		Selection []string                  `json:"selection"`
 		PerRepo   map[string]fullRepoBudget `json:"per_repo"`
 	} `json:"real_repos"`
 }
 
-// checkFullRunBudgets loads and enforces the checked-in real-repository
-// ratchets. A missing repo, runner mismatch, absent metric, or non-positive
-// threshold is a configuration failure: the gate is fail-closed.
-func checkFullRunBudgets(path, runnerClass string, run evalreport.FullRepoRun) ([]evalreport.PerfCheck, error) {
+// loadBudgetManifest reads, zero-checks and declaration-checks the budget
+// artifact. Every failure mode here is a configuration failure, and every one
+// of them is an error rather than a skip.
+func loadBudgetManifest(path string) (fullBudgetManifest, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", path, err)
+		return fullBudgetManifest{}, fmt.Errorf("read %s: %w", path, err)
 	}
 	var manifest fullBudgetManifest
 	if err := json.Unmarshal(raw, &manifest); err != nil {
-		return nil, fmt.Errorf("parse %s: %w", path, err)
+		return fullBudgetManifest{}, fmt.Errorf("parse %s: %w", path, err)
+	}
+	// SW-123 (AC-5): no threshold in a budget artifact may be a bare zero — a
+	// zero budget renders as met while carrying no signal, which is worse than
+	// having no budget at all.
+	if err := validateNoSilentZeroBudgets(raw); err != nil {
+		return fullBudgetManifest{}, fmt.Errorf("%s: %w", path, err)
+	}
+	if err := validateBudgetDeclaration(manifest); err != nil {
+		return fullBudgetManifest{}, fmt.Errorf("%s: %w", path, err)
+	}
+	return manifest, nil
+}
+
+// validateBudgetDeclaration enforces the SW-123 schema-v3 declaration: the
+// artifact must say whether its numbers are comparable ratchets or historical
+// ceilings, and it cannot claim both.
+func validateBudgetDeclaration(manifest fullBudgetManifest) error {
+	if manifest.SchemaVersion != budgetSchemaVersion {
+		return fmt.Errorf("unsupported schema_version %d (want %d)", manifest.SchemaVersion, budgetSchemaVersion)
+	}
+	if manifest.Historical && manifest.Ratcheting {
+		return fmt.Errorf("budget manifest declares historical and ratcheting; it is one or the other")
+	}
+	if manifest.Historical && manifest.HistoricalReason == "" {
+		return fmt.Errorf("historical budget manifest records no historical_reason")
+	}
+	return nil
+}
+
+// checkFullRunBudgets loads and enforces the checked-in real-repository
+// ceilings. A missing repo, runner mismatch, absent metric, or non-positive
+// threshold is a configuration failure: the gate is fail-closed.
+func checkFullRunBudgets(path, runnerClass string, run evalreport.FullRepoRun) ([]evalreport.PerfCheck, error) {
+	manifest, err := loadBudgetManifest(path)
+	if err != nil {
+		return nil, err
 	}
 	return evaluateFullRunBudgets(manifest, runnerClass, run)
 }
 
 func evaluateFullRunBudgets(manifest fullBudgetManifest, runnerClass string, run evalreport.FullRepoRun) ([]evalreport.PerfCheck, error) {
-	if manifest.SchemaVersion != 2 {
-		return nil, fmt.Errorf("unsupported schema_version %d (want 2)", manifest.SchemaVersion)
+	if err := validateBudgetDeclaration(manifest); err != nil {
+		return nil, err
 	}
 	if manifest.RunnerClass == "" || runnerClass != manifest.RunnerClass {
 		return nil, fmt.Errorf("runner class %q does not match budget runner %q", runnerClass, manifest.RunnerClass)

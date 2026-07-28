@@ -27,6 +27,8 @@ func (r Report) Pass() bool { return len(r.Violations) == 0 }
 // dashboard auditable: every gate cites a plan section, every status is a valid
 // value, and the cited candidate carries an explicit SHA and release digest
 // (UNKNOWN is allowed, blank is not — a blank digest could be read as "fine").
+// A STALE row carries one extra obligation: it must name what superseded it, so
+// a candidate move can never be a silent re-point (PRD FR-1).
 func Check(idx Index) Report {
 	var rep Report
 	add := func(id, reason string) {
@@ -61,8 +63,16 @@ func Check(idx Index) Report {
 		switch g.Status {
 		case StatusPass, StatusFail, StatusUnknown:
 			// valid
+		case StatusStale:
+			// A candidate move must not be a silent re-point (PRD FR-1). A STALE
+			// row has to say, in its own Current cell, which candidate it was
+			// stated against and what superseded it — otherwise the reader cannot
+			// tell it apart from a gate nobody ever measured.
+			if strings.TrimSpace(g.Current) == "" {
+				add(id, "status is STALE but Current is empty — a STALE row must name the candidate it was stated against and the record that superseded it")
+			}
 		default:
-			add(id, fmt.Sprintf("invalid status %q (want PASS, FAIL or UNKNOWN)", g.Status))
+			add(id, fmt.Sprintf("invalid status %q (want PASS, FAIL, UNKNOWN or STALE)", g.Status))
 		}
 
 		// THE honesty rule: a PASS must be backed by a versioned artifact.
@@ -81,7 +91,8 @@ func Check(idx Index) Report {
 // Format renders a deterministic, human-readable report suitable for CI logs.
 func (r Report) Format() string {
 	if r.Pass() {
-		return "evidence-index check PASS — every PASS row carries an Evidence URI and a SHA/Digest; UNKNOWN rows are honest.\n"
+		return "evidence-index check PASS — every PASS row carries an Evidence URI and a SHA/Digest; " +
+			"UNKNOWN rows are honest; every STALE row names what superseded it.\n"
 	}
 	var b strings.Builder
 	b.WriteString("evidence-index check FAILED — the index would render a claim it cannot back:\n")

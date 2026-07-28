@@ -287,11 +287,12 @@ func TestLoadManifest_TierValidation(t *testing.T) {
 	cases := []struct {
 		name, body, wantErr string
 	}{
-		{"tier invalid", `{"entries":[{"name":"x","path":"p","tier":4,"searches":[{"query":"q","expect_nonempty":true}]}]}`, "invalid tier"},
+		{"tier invalid", `{"entries":[{"name":"x","path":"p","tier":5,"searches":[{"query":"q","expect_nonempty":true}]}]}`, "invalid tier"},
+		{"tier4 manual stress ok", `{"entries":[{"name":"x","path":"p","tier":4,"searches":[{"query":"q","expect_nonempty":true}]}]}`, ""},
 		{"tier2 url no sha", `{"entries":[{"name":"x","url":"u","ref":"r","tier":2,"searches":[{"query":"q","expect_nonempty":true}]}]}`, "requires an exact SHA pin"},
 		{"tier3 url no sha", `{"entries":[{"name":"x","url":"u","ref":"r","tier":3,"searches":[{"query":"q","expect_nonempty":true}]}]}`, "requires an exact SHA pin"},
-		{"tier1 url no sha ok", `{"entries":[{"name":"x","url":"u","ref":"r","tier":1,"searches":[{"query":"q","expect_nonempty":true}]}]}`, ""},
-		{"tier2 url with sha ok", `{"entries":[{"name":"x","url":"u","ref":"r","tier":2,"sha":"a0a6ae020bb3","searches":[{"query":"q","expect_nonempty":true}]}]}`, ""},
+		{"tier1 url no sha ok", `{"entries":[{"name":"x","url":"u","ref":"r","tier":1,"language":"go","license":"MIT","searches":[{"query":"q","expect_nonempty":true}]}]}`, ""},
+		{"tier2 url with sha ok", `{"entries":[{"name":"x","url":"u","ref":"r","tier":2,"language":"go","license":"MIT","sha":"a0a6ae020bb3","searches":[{"query":"q","expect_nonempty":true}]}]}`, ""},
 	}
 	for _, c := range cases {
 		_, err := LoadManifest(write(c.body))
@@ -379,6 +380,277 @@ func TestRunner_BudgetPreserved(t *testing.T) {
 	if len(rep.Entries) != 1 || rep.Entries[0].Name != "budgeted" {
 		t.Fatalf("expected budgeted entry to survive filter")
 	}
+}
+
+// TestLoadManifest_CorpusMetadataValidation pins the v3 provenance rules: a
+// cloned repository must document its terms and language, a recorded file
+// census must be attributable, and "stress target" must be earned by a
+// measured count rather than claimed by a label.
+func TestLoadManifest_CorpusMetadataValidation(t *testing.T) {
+	write := func(content string) string {
+		t.Helper()
+		p := filepath.Join(t.TempDir(), "m.json")
+		if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+		return p
+	}
+	const search = `"searches":[{"query":"q","expect_nonempty":true}]`
+	cases := []struct {
+		name, body, wantErr string
+	}{
+		{"url without license", `{"entries":[{"name":"x","url":"u","ref":"r","language":"go",` + search + `}]}`, "no license"},
+		{"url without language", `{"entries":[{"name":"x","url":"u","ref":"r","license":"MIT",` + search + `}]}`, "no language"},
+		{"path entry needs neither", `{"entries":[{"name":"x","path":"p",` + search + `}]}`, ""},
+		{"census without method", `{"entries":[{"name":"x","path":"p","measured":{"go_files":1,"tracked_files":2,"measured_at":"2026-07-27"},` + search + `}]}`, "measured_at and method"},
+		{"census without date", `{"entries":[{"name":"x","path":"p","measured":{"go_files":1,"tracked_files":2,"method":"git ls-files"},` + search + `}]}`, "measured_at and method"},
+		{"census with no files", `{"entries":[{"name":"x","path":"p","measured":{"go_files":0,"tracked_files":0,"measured_at":"d","method":"m"},` + search + `}]}`, "at least one tracked file"},
+		{"census more go than tracked", `{"entries":[{"name":"x","path":"p","measured":{"go_files":9,"tracked_files":2,"measured_at":"d","method":"m"},` + search + `}]}`, "impossible"},
+		{"stress without census", `{"entries":[{"name":"x","path":"p","stress":true,` + search + `}]}`, "without a measured census"},
+		{"stress below threshold", `{"entries":[{"name":"x","path":"p","stress":true,"measured":{"go_files":9999,"tracked_files":20000,"measured_at":"d","method":"m"},` + search + `}]}`, "declares stress with 9999"},
+		{"stress at threshold ok", `{"entries":[{"name":"x","path":"p","stress":true,"measured":{"go_files":10000,"tracked_files":20000,"measured_at":"d","method":"m"},` + search + `}]}`, ""},
+		{"stratification unknown repo", `{"stratification":[{"property":"generics","repo":"nope","evidence":"e"}],"entries":[{"name":"x","path":"p",` + search + `}]}`, "unknown repo"},
+		{"stratification no repo no gap", `{"stratification":[{"property":"generics","evidence":"e"}],"entries":[{"name":"x","path":"p",` + search + `}]}`, "not marked as a gap"},
+		{"stratification gap with repo", `{"stratification":[{"property":"generics","repo":"x","gap":true,"evidence":"e"}],"entries":[{"name":"x","path":"p",` + search + `}]}`, "marked as a gap but names repo"},
+		{"stratification gap without evidence", `{"stratification":[{"property":"generics","gap":true}],"entries":[{"name":"x","path":"p",` + search + `}]}`, "no evidence"},
+		{"stratification duplicate property", `{"stratification":[{"property":"generics","repo":"x","evidence":"e"},{"property":"generics","gap":true,"evidence":"e"}],"entries":[{"name":"x","path":"p",` + search + `}]}`, "mapped twice"},
+		{"stratification explicit gap ok", `{"stratification":[{"property":"generics","gap":true,"evidence":"no selected repository uses type parameters"}],"entries":[{"name":"x","path":"p",` + search + `}]}`, ""},
+	}
+	for _, c := range cases {
+		_, err := LoadManifest(write(c.body))
+		if c.wantErr == "" {
+			if err != nil {
+				t.Errorf("%s: unexpected error: %v", c.name, err)
+			}
+			continue
+		}
+		if err == nil || !strings.Contains(err.Error(), c.wantErr) {
+			t.Errorf("%s: err = %v, want contains %q", c.name, err, c.wantErr)
+		}
+	}
+}
+
+// fr2Properties is the FR-2 stratification list. Every one of them must be
+// mapped by name in the checked-in manifest — to a repository or to an
+// explicit gap.
+var fr2Properties = []string{
+	"small library",
+	"mid-size CLI application",
+	"web or API service",
+	"multi-package repository",
+	"large repository or monorepo",
+	"generics",
+	"multiple go.mod",
+	"build tags",
+	"generated code",
+	"tests and benchmarks",
+}
+
+// TestCheckedInManifest_GoCorpus pins the P0 FR-2 shape of the committed
+// corpus: five or more real Go repositories pinned to a release tag AND a full
+// commit sha, one measured stress target, every stratification property
+// mapped, documented terms, and no new entry on the PR gate.
+func TestCheckedInManifest_GoCorpus(t *testing.T) {
+	m := loadCheckedInManifest(t)
+
+	goRepos := 0
+	for _, e := range m.Entries {
+		if e.URL == "" || e.Language != "go" {
+			continue
+		}
+		goRepos++
+		if e.Ref == "" {
+			t.Errorf("go entry %q has no release-tag ref", e.Name)
+		}
+		if len(e.SHA) != 40 {
+			t.Errorf("go entry %q pins sha %q — FR-2 requires the FULL 40-char commit sha", e.Name, e.SHA)
+		}
+		if e.License == "" || e.PermittedUse == "" {
+			t.Errorf("go entry %q must document license and permitted use", e.Name)
+		}
+		if e.Measured == nil || e.Measured.TrackedFiles == 0 {
+			t.Errorf("go entry %q has no measured file census", e.Name)
+		}
+	}
+	if goRepos < 5 {
+		t.Errorf("corpus has %d pinned Go repositories, FR-2 requires >= 5", goRepos)
+	}
+
+	stress := 0
+	for _, e := range m.Entries {
+		if !e.Stress {
+			continue
+		}
+		stress++
+		if e.Measured.GoFiles < StressMinGoFiles {
+			t.Errorf("stress entry %q measures %d go files, want >= %d", e.Name, e.Measured.GoFiles, StressMinGoFiles)
+		}
+		if e.Tier < 3 {
+			t.Errorf("stress entry %q is tier %d — a stress target must never sit on the PR gate", e.Name, e.Tier)
+		}
+	}
+	if stress == 0 {
+		t.Error("no entry declares stress: FR-2 needs a >=10k-source-file target")
+	}
+
+	mapped := map[string]PropertyMapping{}
+	for _, p := range m.Stratification {
+		mapped[p.Property] = p
+	}
+	for _, want := range fr2Properties {
+		p, ok := mapped[want]
+		if !ok {
+			t.Errorf("stratification property %q is not mapped (map it to a repo or record it as an explicit gap)", want)
+			continue
+		}
+		if p.Gap {
+			t.Logf("stratification property %q is recorded as an explicit gap: %s", want, p.Evidence)
+		}
+	}
+	for got := range mapped {
+		found := false
+		for _, want := range fr2Properties {
+			found = found || got == want
+		}
+		if !found {
+			t.Errorf("stratification maps unknown property %q — FR-2 names the list", got)
+		}
+	}
+}
+
+// TestCheckedInManifest_PRGateUnchanged proves the Go-depth expansion did not
+// grow the PR gate (corpus.yml runs -max-tier 2 on pull requests) and that
+// cobra's confirmed-tier acceptance assertion survived it.
+func TestCheckedInManifest_PRGateUnchanged(t *testing.T) {
+	m := loadCheckedInManifest(t)
+
+	wantPRGate := map[string]bool{
+		"cobra": true, "flask": true, "sinatra": true, "ky": true, "express": true,
+		"tier1-fixture-go": true, "tier1-fixture-hero-go": true,
+	}
+	for _, e := range m.Entries {
+		if e.Tier > 2 {
+			continue
+		}
+		if !wantPRGate[e.Name] {
+			t.Errorf("entry %q runs on the PR gate at tier %d — new corpus entries must be tier 3 or 4", e.Name, e.Tier)
+		}
+	}
+
+	var cobra *Entry
+	for i := range m.Entries {
+		if m.Entries[i].Name == "cobra" {
+			cobra = &m.Entries[i]
+		}
+	}
+	if cobra == nil {
+		t.Fatal("cobra entry disappeared from the corpus")
+	}
+	want := ConfirmedEdge{SymbolQuery: "ExecuteC", Operation: "callers", Min: 1}
+	if len(cobra.ConfirmedEdges) != 1 || cobra.ConfirmedEdges[0] != want {
+		t.Errorf("cobra confirmed_edges = %+v, want exactly %+v (the typeresolve acceptance gate)", cobra.ConfirmedEdges, want)
+	}
+}
+
+func loadCheckedInManifest(t *testing.T) Manifest {
+	t.Helper()
+	root, err := exec.Command("go", "env", "GOMOD").Output()
+	if err != nil {
+		t.Skipf("go env GOMOD unavailable: %v", err)
+	}
+	dir := filepath.Dir(strings.TrimSpace(string(root)))
+	m, err := LoadManifest(filepath.Join(dir, "corpus", "manifest.json"))
+	if err != nil {
+		t.Fatalf("checked-in manifest invalid: %v", err)
+	}
+	return m
+}
+
+// TestRunner_PinFailsClosed proves the pin machinery the new tier-3/4 entries
+// inherit actually BITES: a checkout whose HEAD differs from the recorded sha
+// fails at the pin step before any indexing, and a pinned entry whose HEAD
+// cannot be read fails too — never a warning, never a silent run against
+// whatever the ref points at today.
+func TestRunner_PinFailsClosed(t *testing.T) {
+	repo := writeFixtureRepo(t)
+	head := gitInitCommit(t, repo)
+
+	t.Run("wrong sha", func(t *testing.T) {
+		r := &Runner{Binary: "unused", WorkDir: t.TempDir(), PerEntryTimeout: time.Minute}
+		m := localManifest(repo, []Search{{Query: "hello", ExpectNonEmpty: true}})
+		// A plausible-looking but wrong 40-char pin: exactly the "upstream tag
+		// was re-pointed" case.
+		m.Entries[0].SHA = "0123456789abcdef0123456789abcdef01234567"
+		rep, err := r.Run(context.Background(), m)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if rep.Pass {
+			t.Fatal("run passed although HEAD does not match the pinned sha")
+		}
+		last := rep.Entries[0].Steps[len(rep.Entries[0].Steps)-1]
+		if last.Name != "pin" || last.OK {
+			t.Fatalf("expected a failing pin step, got %+v", rep.Entries[0].Steps)
+		}
+		if !strings.Contains(last.Detail, head) {
+			t.Errorf("pin failure should report the actual HEAD %q, got %q", head, last.Detail)
+		}
+	})
+
+	t.Run("unreadable head", func(t *testing.T) {
+		r := &Runner{Binary: "unused", WorkDir: t.TempDir(), PerEntryTimeout: time.Minute}
+		m := localManifest(t.TempDir(), []Search{{Query: "hello", ExpectNonEmpty: true}})
+		m.Entries[0].SHA = "0123456789abcdef0123456789abcdef01234567"
+		rep, err := r.Run(context.Background(), m)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if rep.Pass {
+			t.Fatal("run passed although the pinned checkout has no readable HEAD")
+		}
+	})
+
+	t.Run("matching sha proceeds past the pin", func(t *testing.T) {
+		r := &Runner{Binary: "unused", WorkDir: t.TempDir(), PerEntryTimeout: time.Minute}
+		m := localManifest(repo, []Search{{Query: "hello", ExpectNonEmpty: true}})
+		m.Entries[0].SHA = head
+		rep, err := r.Run(context.Background(), m)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		// The stub binary path is unusable, so the run still fails — but it must
+		// fail LATER than the pin, proving the pin itself accepted the checkout.
+		for _, s := range rep.Entries[0].Steps {
+			if s.Name == "pin" && !s.OK {
+				t.Fatalf("matching sha rejected at the pin step: %s", s.Detail)
+			}
+		}
+	})
+}
+
+// gitInitCommit turns dir into a git repository with one commit and returns
+// its HEAD sha. Hermetic: no remote, no network, isolated config.
+func gitInitCommit(t *testing.T, dir string) string {
+	t.Helper()
+	env := append(os.Environ(),
+		"GIT_CONFIG_GLOBAL="+filepath.Join(t.TempDir(), "gitconfig"),
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_AUTHOR_NAME=corpus", "GIT_AUTHOR_EMAIL=corpus@example.invalid",
+		"GIT_COMMITTER_NAME=corpus", "GIT_COMMITTER_EMAIL=corpus@example.invalid",
+	)
+	run := func(args ...string) string {
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		cmd.Env = env
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Skipf("git %v unavailable: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	run("init")
+	run("add", "-A")
+	run("commit", "-m", "fixture")
+	return run("rev-parse", "HEAD")
 }
 
 // TestRunner_ScenarioRefReserved proves the scenario_ref field is accepted
