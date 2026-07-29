@@ -1,5 +1,13 @@
 # P0 performance baseline — the first measured numbers for a graphi candidate
 
+> ⚠️ **The instrument that produced these numbers has since been corrected
+> (SW-136).** They remain valid statements about v0.7.0 at `5815db5` and nothing
+> here is deleted or re-pointed — but they are **not** evidence about what graphi
+> measures next, and gate 9's `UNKNOWN` below is now **final** for this candidate
+> rather than pending. Read
+> [`STALENESS-NOTICE.md`](STALENESS-NOTICE.md) before quoting any figure on this
+> page.
+
 **Candidate:** v0.7.0 at `5815db5b053c2bb1bf3119cdb9939c1dea03cc45`
 **Runner class:** `ubuntu-latest` (reference) · **Harness:** `p0-perf/1` · **Scorer:** `p0-aggregate/1`
 **Reference scenario:** grpc-go v1.60.1 at `dbbcf5995...`

@@ -48,7 +48,7 @@ gates:
     gate: Program Control & Evidence Contract
     section: plan §6 WP0
     threshold: "Every 9/10 claim traces to a versioned raw artifact; no hand-maintained green without evidence."
-    current: "UNKNOWN — Evidence Pack not assembled. This index and the candidate change-control record stand up part of the deliverable; the P0 PRD now lives in-repo (SW-120, docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md), the Delta PRD covering only the REMAINING P0 work is registered beside it (SW-132, [docs/plan/2026-07-graphi-p0-completion-delta-prd.md](../plan/2026-07-graphi-p0-completion-delta-prd.md) — supplied verbatim by the product owner and NOT reconstructed, with its SW-132..149 completion checklist at [docs/plan/2026-07-graphi-p0-completion-checklist.md](../plan/2026-07-graphi-p0-completion-checklist.md); registering a plan is bookkeeping, not evidence, so this row does not move), and the change-control record is now SW-131's freeze record (docs/decisions/2026-07-p0-candidate-freeze-v070.md, candidate v0.7.0 at 5815db5), which supersedes SW-121's, which superseded SW-116's. Not a measurement, so not STALE — but nothing here is proven either."
+    current: "UNKNOWN — Evidence Pack not assembled. This index and the candidate change-control record stand up part of the deliverable; the P0 PRD now lives in-repo (SW-120, docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md), the Delta PRD covering only the REMAINING P0 work is registered beside it (SW-132, [docs/plan/2026-07-graphi-p0-completion-delta-prd.md](../plan/2026-07-graphi-p0-completion-delta-prd.md) — supplied verbatim by the product owner and NOT reconstructed, with its SW-132..149 completion checklist at [docs/plan/2026-07-graphi-p0-completion-checklist.md](../plan/2026-07-graphi-p0-completion-checklist.md); registering a plan is bookkeeping, not evidence, so this row does not move), and the change-control record is now SW-131's freeze record (docs/decisions/2026-07-p0-candidate-freeze-v070.md, candidate v0.7.0 at 5815db5), which supersedes SW-121's, which superseded SW-116's. CANDIDATE AUTHORISED TO MOVE, NOT YET MOVED: SW-135 selected Outcome B (docs/decisions/2026-07-p0-candidate-decision.md) — the frozen candidate cannot produce the evidence PRD §12.2 gate 9 requires and cannot be made to, because the agent-tools countability rule discarded 25 of FR-8's 1000 executions deterministically. SW-136 has corrected that defect in measurement code and drafted the successor freeze record (docs/decisions/2026-07-p0-candidate-freeze-v071.md), which is marked PREPARED, NOT IN EFFECT: a freeze record cannot name a release SHA that does not exist yet, so 5815db5 remains the candidate of record until v0.7.1 is published through release-dag.yml and that record is completed. Not a measurement, so not STALE — but nothing here is proven either."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
@@ -75,7 +75,7 @@ gates:
     evidence_uri: "docs/eval/runs/2026-07-28-ubuntu-latest/ (https://github.com/samibel/graphi/actions/runs/30377165970, https://github.com/samibel/graphi/actions/runs/30379259481)"
     sha: 5815db5b053c2bb1bf3119cdb9939c1dea03cc45
     owner: ENG
-    next_action: "Reproduction by a second person remains unmet and is the only way to retire the FR-9 substitute. Drive the WP4 failures (freshness) test-first."
+    next_action: "MARKED STALE WHEN v0.7.1 PUBLISHES. This is P0's only PASS row and the authorised candidate move costs it: SW-135 selected Outcome B and SW-136 has corrected the forcing defect, so once the successor release exists and docs/decisions/2026-07-p0-candidate-freeze-v071.md is completed, this row is re-marked STALE in the same change (that record's §10 holds the prepared text) — re-marked, never re-pointed, and it does not become a PASS about the successor. It still reads PASS today because 5815db5 is still the candidate of record and this measurement was honest about it. Then: a fresh baseline on the successor (SW-143-145). Reproduction by a second person remains unmet and is the only way to retire the FR-9 substitute. Drive the WP4 failures (freshness) test-first."
     due: W1–6
   - id: WP3
     gate: Gold corpus & accuracy scoring
@@ -97,7 +97,7 @@ gates:
     evidence_uri: "docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md (https://github.com/samibel/graphi/actions/runs/30377165970, https://github.com/samibel/graphi/actions/runs/30379259481)"
     sha: 5815db5b053c2bb1bf3119cdb9939c1dea03cc45
     owner: ENG
-    next_action: "WP4: fix freshness p95 test-first against the committed profiles; fix the \"partial\" outcome that costs 25 of 1000 agent-tool executions; decide whether a p95-only stall gate is the right gate given a 15.5 s tail. Then re-run the baseline."
+    next_action: "MARKED STALE WHEN v0.7.1 PUBLISHES, per docs/decisions/2026-07-p0-candidate-freeze-v071.md §10 — a published FAIL is still evidence, and it is still lost as a statement about the successor. DONE (SW-136): the \"partial\" outcome that cost 25 of 1000 agent-tool executions is corrected in cmd/eval/querylatency.go — measurement code only, no product byte changed, and it produces NO number: gate 9 stays UNKNOWN until a fresh baseline runs on the successor candidate. NOT DONE, deliberately: the harness still measures at item cap 10 against a shipped default of 20 (F4, on backlog.md), so a successor baseline is still systematically optimistic relative to the shipped default. STILL OPEN: fix freshness p95 test-first against the committed profiles; decide whether a p95-only stall gate is the right gate given a 15.5 s tail. Then re-run the baseline (SW-143-145)."
     due: W5–12
   - id: WP5
     gate: Security
@@ -171,12 +171,12 @@ gates:
     gate: Wahrheit und Scope — exit gate
     section: plan §5 M0
     threshold: "No claim contradicts the artifact or PRD; candidate, claims and the measurement contract are frozen."
-    current: "STALE — this row's 'candidate frozen (SW-116)' referred to 4e72637, then to v0.6.7 at fb3bf03 (SW-121); both are superseded. fb3bf03 was unmeasurable by construction (harness absent at that SHA; no external-binary path), which is the documented §9 blocker that moved the candidate to the tagged release v0.7.0 at 5815db5 (SW-131, docs/decisions/2026-07-p0-candidate-freeze-v070.md). The Day-10 M0 Go/No-Go was never held, so the exit gate is unproven on all three candidates; planning authority consolidated (SW-117), claims sweep (SW-118) and this index (SW-119) landed. NOT re-pointed — the Go/No-Go must actually be held. Two candidate moves have brought this row no closer to passing."
+    current: "STALE — this row's 'candidate frozen (SW-116)' referred to 4e72637, then to v0.6.7 at fb3bf03 (SW-121); both are superseded. fb3bf03 was unmeasurable by construction (harness absent at that SHA; no external-binary path), which is the documented §9 blocker that moved the candidate to the tagged release v0.7.0 at 5815db5 (SW-131, docs/decisions/2026-07-p0-candidate-freeze-v070.md). A THIRD move is authorised but has not happened: SW-135 selected Outcome B (docs/decisions/2026-07-p0-candidate-decision.md) and SW-136 drafted the successor freeze record (docs/decisions/2026-07-p0-candidate-freeze-v071.md), which reads PREPARED, NOT IN EFFECT until v0.7.1 is published — so this row is still stale against fb3bf03 and 5815db5 is still the candidate of record. The Day-10 M0 Go/No-Go was never held, so the exit gate is unproven on all three candidates; planning authority consolidated (SW-117), claims sweep (SW-118) and this index (SW-119) landed. NOT re-pointed — the Go/No-Go must actually be held. Two candidate moves have brought this row no closer to passing, and a third will not either."
     status: STALE
     evidence_uri: ""
     sha: ""
     owner: ENG Lead
-    next_action: "Hold the M0 Go/No-Go against the re-frozen candidate 5815db5 (v0.7.0)."
+    next_action: "Hold the M0 Go/No-Go — against v0.7.1 once it is published (SW-136), since holding it against 5815db5 now would have to be re-held immediately. Re-marked to name the successor record when the move takes effect; never re-pointed."
     due: W0–2
   - id: M1
     gate: Baseline — exit gate
@@ -187,7 +187,7 @@ gates:
     evidence_uri: "docs/eval/runs/2026-07-28-ubuntu-latest/ — PERFORMANCE HALF ONLY; no accuracy baseline exists"
     sha: 5815db5b053c2bb1bf3119cdb9939c1dea03cc45
     owner: ENG
-    next_action: "Hold the M0 Go/No-Go; build the WP3 gold corpus and scorers to produce the accuracy half of this baseline."
+    next_action: "MARKED STALE WHEN v0.7.1 PUBLISHES, per docs/decisions/2026-07-p0-candidate-freeze-v071.md §10 — the performance half was measured against 5815db5 and the accuracy half was never measured on any candidate, so STALE becomes the honest status for the row as a whole. Hold the M0 Go/No-Go; build the WP3 gold corpus and scorers to produce the accuracy half of this baseline."
     due: W2–6
   - id: M2
     gate: Accuracy/Performance — exit gate
