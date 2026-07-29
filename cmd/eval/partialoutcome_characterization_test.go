@@ -83,30 +83,40 @@ func declaredAllowed(t *testing.T) map[string][]string {
 	return out
 }
 
-// The asymmetry, stated as an assertion. This test does NOT claim the sets are
-// wrong — SW-135 owns that judgement. It claims they differ, inside one pool,
-// for one outcome, which is the fact the diagnosis rests on.
-func TestAgentContextPool_DeclaresPartialCountableForAgentBriefOnly(t *testing.T) {
+// The asymmetry, stated as an assertion — and then corrected.
+//
+// SW-134 wrote this test to pin the asymmetry as it stood: agent_brief counted a
+// "partial", the other three did not, inside one FR-8 pool. It did NOT claim the
+// sets were wrong; SW-135 owned that judgement, made it (Outcome B, D1), and
+// SW-136 corrected the live rule. So the assertion is now the pair: the
+// historical sets HAD the asymmetry — which is why the published baseline reads
+// 975 — and the live sets no longer do.
+//
+// Keeping both halves in one test is deliberate. A characterization baseline
+// that is simply deleted once the behaviour changes leaves nothing to show the
+// change was real, and the historical half is what every replay of the published
+// tallies below depends on. The corrected declarations are asserted exactly, and
+// bounded, by cmd/eval/partialoutcome_regression_test.go.
+func TestAgentContextPool_PartialAsymmetryWasRealAndIsNowCorrected(t *testing.T) {
 	allowed := declaredAllowed(t)
 	for _, op := range agentContextPool {
 		if _, ok := allowed[op]; !ok {
 			t.Fatalf("%s is not a measured warm operation: the agent_context_p95 pool moved", op)
 		}
 	}
-	want := map[string][]string{
-		scenario.OpAgentBrief:    {"found", "partial"},
-		scenario.OpExplainSymbol: {"found"},
-		scenario.OpChangeRisk:    {"found"},
-		scenario.OpRelatedFiles:  {"empty", "found"},
+
+	// The historical half: the rule the published baseline ran under.
+	if slices.Contains(sw134HistoricalAllowed[scenario.OpAgentBrief], "partial") ==
+		slices.Contains(sw134HistoricalAllowed[scenario.OpExplainSymbol], "partial") {
+		t.Errorf("sw134HistoricalAllowed no longer records the asymmetry the diagnosis rests on: %v",
+			sw134HistoricalAllowed)
 	}
-	for op, w := range want {
-		if got := allowed[op]; !slices.Equal(got, w) {
-			t.Errorf("%s allowed = %v, want %v", op, got, w)
+
+	// The live half: SW-136's correction. One pool, one countability rule.
+	for _, op := range agentContextPool {
+		if !slices.Contains(allowed[op], "partial") {
+			t.Errorf("%s allowed = %v: the pool's asymmetry is back", op, allowed[op])
 		}
-	}
-	if slices.Contains(allowed[scenario.OpAgentBrief], "partial") ==
-		slices.Contains(allowed[scenario.OpExplainSymbol], "partial") {
-		t.Errorf("agent_brief and explain_symbol now agree on partial; the pool's asymmetry is gone")
 	}
 }
 
