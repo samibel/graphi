@@ -1,12 +1,18 @@
-# Staleness notice — this baseline was measured by an instrument that has since been corrected
+# Staleness notice — this baseline measures a candidate that has since been superseded
 
-**Status as of 2026-07-29: this directory is NOT yet `STALE`. It is on its way there,
-and this notice says exactly how far along that is.**
+**Status as of 2026-07-29: this directory is `STALE`.** The successor release
+**v0.7.1 at `80d67ed586723ab22704cf7aada316138cb1360e`** is published, tagged and
+attested, and its freeze record
+([`2026-07-p0-candidate-freeze-v071.md`](../../../decisions/2026-07-p0-candidate-freeze-v071.md))
+is complete and in effect. In the same change, evidence rows **WP2**, **WP4** and
+**M1** in `docs/rc/evidence-index.yaml` were marked `STALE`.
 
 Nothing here is deleted, re-labelled, re-run in place, or re-pointed at another
 candidate. Delta PRD §6.1 requires the first honest baseline to be preserved, and a
 baseline that reads FAIL and UNKNOWN is still useful evidence. **Every byte of the
-raw data stays.**
+raw data stays.** `STALE` is a statement about *which candidate these numbers
+describe*, not a judgement on how they were produced: they were measured honestly and
+published correctly, and they remain true about `5815db5`.
 
 ---
 
@@ -15,10 +21,12 @@ raw data stays.**
 | | |
 |---|---|
 | **What this directory measures** | candidate **v0.7.0 at `5815db5b053c2bb1bf3119cdb9939c1dea03cc45`**, runner class `ubuntu-latest`, harness `p0-perf/1` |
-| **Is it still the candidate of record?** | **Yes**, until a successor release is published — [`docs/decisions/2026-07-p0-candidate-freeze-v070.md`](../../../decisions/2026-07-p0-candidate-freeze-v070.md) |
+| **Is it still the candidate of record?** | **No — superseded on 2026-07-29** by **v0.7.1 at `80d67ed`** ([`docs/decisions/2026-07-p0-candidate-freeze-v071.md`](../../../decisions/2026-07-p0-candidate-freeze-v071.md), which supersedes [`…-v070.md`](../../../decisions/2026-07-p0-candidate-freeze-v070.md)) |
 | **Are these numbers still valid statements about v0.7.0?** | **Yes.** They were honestly measured and correctly published, and remain reproducible from the committed raw data by `go run ./cmd/eval -aggregate <run-directory>` |
+| **Are they statements about the current candidate?** | **No.** Not one of the ten verdicts carries across, in either direction |
 | **Is the instrument that produced them still the current one?** | **No.** SW-136 corrected it — see below |
 | **Are these numbers evidence about what graphi will measure next?** | **No.** A corrected instrument is a different instrument |
+| **Does a baseline exist for v0.7.1?** | **No.** None at all, until SW-143–145 run one. The successor candidate has *no* measurements |
 
 ## What changed, and why it matters
 
@@ -51,23 +59,36 @@ The consequence for **this** directory, precisely:
   D1 does not touch. They stay true about `5815db5`. They are **not** carried across
   to any successor candidate — see below.
 
-## What happens next, and what would make this directory `STALE`
+## How this directory became `STALE`
 
 `STALE` (PRD §12) means: measured honestly, but against a candidate that has since
 been **superseded**. Superseding requires a published, tagged, attested successor
-release — not merely a corrected instrument. So:
+release — not merely a corrected instrument. All three steps have now happened, in
+order:
 
-1. **Now.** The correction exists in-tree. The candidate has **not** moved. This
-   notice is the honest marking: *the instrument moved, the candidate has not.*
-2. **When v0.7.1 is published** via `.github/workflows/release-dag.yml`, and its
-   freeze record ([`2026-07-p0-candidate-freeze-v071.md`](../../../decisions/2026-07-p0-candidate-freeze-v071.md),
-   currently **prepared, not in effect**) is completed with the release SHA and
-   digests, this directory becomes evidence about a **superseded** candidate. At that
-   point — in the same change, per the freeze record's §9 rule 3 — evidence rows
-   **WP2**, **WP4** and **M1** in `docs/rc/evidence-index.yaml` are marked `STALE`,
-   and the header of this notice is updated to say so.
-3. **A successor baseline is a separate piece of work** (SW-143–145), and until it
-   runs, the successor candidate has **no measurements at all**.
+1. **The correction landed in-tree** (SW-136), and at that point the candidate had
+   **not** moved. This notice's earlier revision recorded exactly that: *the
+   instrument moved, the candidate has not.* It was deliberately **not** marked
+   `STALE` then, because it would have been false.
+2. **v0.7.1 was published** on 2026-07-29 via `.github/workflows/release-dag.yml`
+   (run [`30473740673`](https://github.com/samibel/graphi/actions/runs/30473740673),
+   `success`), and its freeze record
+   ([`2026-07-p0-candidate-freeze-v071.md`](../../../decisions/2026-07-p0-candidate-freeze-v071.md))
+   was completed with the release SHA `80d67ed586723ab22704cf7aada316138cb1360e`, all
+   eight asset digests cross-checked three ways, attestation verified for all eight
+   assets against a failing negative control, and a tagless rebuild from a real clone
+   reproducing all five published binaries bit-for-bit. **This directory therefore
+   became evidence about a superseded candidate.** In the same change, per the freeze
+   record's §9 rule 3, evidence rows **WP2**, **WP4** and **M1** in
+   `docs/rc/evidence-index.yaml` were marked `STALE` and this notice's header was
+   updated to say so.
+3. **A successor baseline is a separate piece of work** (SW-143–145), and it has
+   **not** run. Until it does, the successor candidate has **no measurements at all**.
+
+**What did not happen, deliberately:** these runs were not deleted, not re-labelled,
+not re-run, and not re-pointed at `80d67ed`. The `sha` on the now-`STALE` index rows
+still reads `5815db5` — it names what was actually measured, and a `STALE` row is
+never re-pointed at a new candidate without being re-measured.
 
 ## The one thing not to conclude
 
@@ -84,6 +105,6 @@ reason.
 
 - [`docs/eval/p0/partial-outcome-diagnosis.md`](../../p0/partial-outcome-diagnosis.md) — SW-134, the proof (F1–F5)
 - [`docs/decisions/2026-07-p0-candidate-decision.md`](../../../decisions/2026-07-p0-candidate-decision.md) — SW-135, Outcome B, D1
-- [`docs/decisions/2026-07-p0-candidate-freeze-v071.md`](../../../decisions/2026-07-p0-candidate-freeze-v071.md) — SW-136, the prepared successor freeze record
-- [`docs/decisions/2026-07-p0-candidate-freeze-v070.md`](../../../decisions/2026-07-p0-candidate-freeze-v070.md) — SW-131, the candidate these numbers are about
+- [`docs/decisions/2026-07-p0-candidate-freeze-v071.md`](../../../decisions/2026-07-p0-candidate-freeze-v071.md) — SW-136, the successor freeze record: **complete and in effect**, candidate v0.7.1 at `80d67ed`
+- [`docs/decisions/2026-07-p0-candidate-freeze-v070.md`](../../../decisions/2026-07-p0-candidate-freeze-v070.md) — SW-131, the **superseded** candidate these numbers are about
 - `cmd/eval/partialoutcome_regression_test.go` — the correction, pinned against these published tallies
