@@ -6,6 +6,7 @@
 **Primärer Scope:** Go, CGo-freies Default-Binary, CLI, MCP stdio, zwölf Stable Operations  
 **Pfad im Repository:** `docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md`  
 **Autorität:** Präzisierung der Plan-Meilensteine M0–M2 — siehe den Autoritätsvermerk unmittelbar unter diesem Kopf.  
+**Delta-PRD (nur die verbleibende P0-Arbeit):** [`docs/plan/2026-07-graphi-p0-completion-delta-prd.md`](2026-07-graphi-p0-completion-delta-prd.md) — registriert durch SW-132 (2026-07-29), wörtlich vom Product Owner geliefert. Zugehörige Checkliste SW-132…SW-149: [`docs/plan/2026-07-graphi-p0-completion-checklist.md`](2026-07-graphi-p0-completion-checklist.md).  
 **Owner:** Graphi Maintainer (Solo-Projekt — eine Person trägt alle Rollen; siehe §8.8 Solo-Substitute). Beantwortet Open Question 4.  
 **Technische Freigabe:** Graphi Maintainer  
 **Review erforderlich durch:** Engineering, Evaluation, Security/DevOps, Product — im Solo-Betrieb dieselbe Person in vier Rollen; wo das Gate eine *unabhängige* Instanz verlangt, greift die Substitutionsregel in §8.8.  
@@ -29,6 +30,16 @@
 > - **Eine Präzisierung darf ein Plan-Gate nicht aufweichen.** Wo beide eine Zahl nennen,
 >   muss die PRD-Zahl gleich oder strenger sein. Ein Widerspruch in der Zahl ist ein
 >   Fehler dieser PRD, kein stillschweigender Freibrief.
+>
+> **Verhältnis zur Delta-PRD (SW-132, 2026-07-29).** Die
+> [Delta-PRD](2026-07-graphi-p0-completion-delta-prd.md) beschreibt ausschließlich die
+> *verbleibende* Arbeit bis zum Abschluss von P0. Sie **ersetzt diese PRD nicht** und
+> eröffnet keinen bereits geschlossenen Punkt neu (ihr §2.1 führt diese Arbeit als
+> ererbten Input). Sie führt **kein neues Gate-Vokabular** ein und verschiebt keine
+> Schwelle: wo sie ein Gate nennt, ist es das Gate dieser PRD. Widerspricht eine Zahl der
+> Delta-PRD einer Zahl dieser PRD, gilt diese PRD und der Widerspruch ist ein Fehler der
+> Delta-PRD. Der Status eines Gates wird weiterhin ausschließlich in
+> [`docs/rc/evidence-index.yaml`](../rc/evidence-index.yaml) gelesen.
 >
 > **Keine eigenen Gate-IDs.** Diese PRD führt kein drittes Gate-Vokabular ein. Wo sie ein
 > Gate benennt, referenziert sie die Zeilen-IDs, die
