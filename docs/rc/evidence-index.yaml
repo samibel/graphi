@@ -48,12 +48,12 @@ gates:
     gate: Program Control & Evidence Contract
     section: plan §6 WP0
     threshold: "Every 9/10 claim traces to a versioned raw artifact; no hand-maintained green without evidence."
-    current: "UNKNOWN — Evidence Pack not assembled. This index and the candidate change-control record stand up part of the deliverable; the P0 PRD now lives in-repo (SW-120, docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md) and the change-control record is now SW-131's freeze record (docs/decisions/2026-07-p0-candidate-freeze-v070.md, candidate v0.7.0 at 5815db5), which supersedes SW-121's, which superseded SW-116's. Not a measurement, so not STALE — but nothing here is proven either."
+    current: "UNKNOWN — Evidence Pack not assembled. This index and the candidate change-control record stand up part of the deliverable; the P0 PRD now lives in-repo (SW-120, docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md), the Delta PRD covering only the REMAINING P0 work is registered beside it (SW-132, [docs/plan/2026-07-graphi-p0-completion-delta-prd.md](../plan/2026-07-graphi-p0-completion-delta-prd.md) — supplied verbatim by the product owner and NOT reconstructed, with its SW-132..149 completion checklist at [docs/plan/2026-07-graphi-p0-completion-checklist.md](../plan/2026-07-graphi-p0-completion-checklist.md); registering a plan is bookkeeping, not evidence, so this row does not move), and the change-control record is now SW-131's freeze record (docs/decisions/2026-07-p0-candidate-freeze-v070.md, candidate v0.7.0 at 5815db5), which supersedes SW-121's, which superseded SW-116's. Not a measurement, so not STALE — but nothing here is proven either."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
     owner: ENG Lead
-    next_action: "Assemble the Evidence Pack; keep this dashboard weekly."
+    next_action: "Assemble the Evidence Pack; keep this dashboard weekly. Resolve the one unmapped story in the Delta PRD's mandatory sequence: SW-133 (authoritative v0.7.0 baseline) has no ticket, and whether SW-130's published baseline discharges it is unverified — its 'query sample floors are met' criterion is visibly open at 975 of 1000."
     due: W0–2 (weekly after)
   - id: WP1
     gate: GA scope & claims cleaned
