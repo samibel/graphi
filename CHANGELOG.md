@@ -26,6 +26,59 @@ file:
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-07-29
+
+**A measurement-code-only correction release.** The product tree is intended to be
+byte-identical to v0.7.0: this release exists so the P0 measurement instrument can
+produce the evidence PRD §12.2 gate 9 requires, not to change what graphi does. No
+shipped operation, tier, threshold or wire identifier moves.
+
+### Fixed
+
+- **The agent-context latency pool no longer discards correct observations —
+  `cmd/eval/querylatency.go` (SW-136).** The countability rule for
+  `explain_symbol`, `change_risk` and `related_files` declared
+  `allowed = ["found"]` (and `["found","empty"]` for `related_files`) while
+  `agent_brief` — the fourth member of the **same** FR-8 pool behind the
+  `agent_context_p95` gate — declared `["found","partial"]`. One percentile was
+  therefore being reported over four operations whose observations had been
+  admitted under two incompatible rules. All four now count `partial`.
+
+  This is a correction, not a loosening. A `partial` **is** a resolved target with
+  a valid envelope: the operation answered and truthfully declared its own
+  truncation — designed, documented, GA-frozen behaviour that
+  `corpus/hero/hero-17-explain-symbol-partial.yaml` asserts. The rejection rule's
+  own justification, *"a fast wrong answer is not a fast answer"*, never applied to
+  it. `not_found`, `ambiguous` and `error` remain uncountable, and no operation
+  outside the pool is touched.
+
+  The exclusion was also **systematic and biased toward the slow tail**: the
+  answers large enough to truncate are the ones with the most items to resolve,
+  rank and assemble, so the retained distribution was missing its heaviest members
+  by construction rather than at random. It cost exactly **25 of FR-8's 1000**
+  executions (16 `explain_symbol`, 5 `related_files`, 4 `change_risk`) in **both**
+  published runs, on **two CPU families**, leaving `agent_context_p95` permanently
+  `UNKNOWN` — a shortfall no number of re-runs at `5815db5` could have closed.
+  Diagnosed in `docs/eval/p0/partial-outcome-diagnosis.md` (SW-134); the decision
+  to move the candidate for it is `docs/decisions/2026-07-p0-candidate-decision.md`
+  (SW-135, Outcome B).
+
+  **This is not a performance improvement and not evidence about gate 9.** Nothing
+  here is a measurement. The recovered executions were never timed into the
+  published pool, and both this correction and the harness's item cap push the
+  measured distribution **upward**, not downward. Gate 9 stays `UNKNOWN` until a
+  fresh baseline runs against this release; anyone expecting a number near the old
+  undersampled 471.250 ms is expecting the wrong thing.
+
+  **Not fixed here, deliberately:** the harness resolves an omitted item cap to
+  **10** while every shipped surface resolves it to `shape.DefaultMaxItems` = **20**
+  (`engine/scenario/fixture.go`), so the instrument still times a configuration no
+  default-configured user runs (F4 in the diagnosis). It is a real
+  measurement-integrity defect, it is on `backlog.md`, and it is **not** what forced
+  this candidate to move — SW-135 named exactly one forcing defect and this release
+  corrects exactly that one, so any change in the next baseline has one possible
+  cause instead of two.
+
 ### Changed
 
 - **The P0 candidate moved to v0.7.0 at `5815db5` — the first candidate its own

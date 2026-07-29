@@ -44,6 +44,28 @@ var agentContextPool = []string{
 	scenario.OpRelatedFiles,
 }
 
+// sw134HistoricalAllowed freezes the agent-context pool's `allowed` sets AS THEY
+// WERE when the published baseline was produced — candidate v0.7.0 at 5815db5,
+// docs/eval/runs/2026-07-28-ubuntu-latest/. It is transcribed from
+// cmd/eval/querylatency.go:430-455 at that SHA and quoted verbatim in
+// docs/eval/p0/partial-outcome-diagnosis.md §2.3.
+//
+// The tests below replay PUBLISHED outcome tallies. Those tallies were produced
+// by the instrument as it was, so the rule they must be replayed through is the
+// rule that was in force — not whatever the live code declares today. Reading
+// the live sets was correct only while the two were identical; SW-136 corrects
+// the live rule (D1), so the historical one is pinned here instead. Freezing it
+// keeps SW-134's diagnosis independently checkable after the correction rather
+// than silently re-interpreting the baseline through a rule it never ran under.
+//
+// It is a historical record and must never be "fixed" to match the live code.
+var sw134HistoricalAllowed = map[string][]string{
+	scenario.OpAgentBrief:    {"found", "partial"},
+	scenario.OpExplainSymbol: {"found"},
+	scenario.OpChangeRisk:    {"found"},
+	scenario.OpRelatedFiles:  {"empty", "found"},
+}
+
 // declaredAllowed returns each measured operation's `allowed` outcome set as
 // buildWarmOperations declares it. prepare touches neither the engine nor the
 // store, so a nil engine is enough to read the declarations — the point is the
@@ -61,30 +83,40 @@ func declaredAllowed(t *testing.T) map[string][]string {
 	return out
 }
 
-// The asymmetry, stated as an assertion. This test does NOT claim the sets are
-// wrong — SW-135 owns that judgement. It claims they differ, inside one pool,
-// for one outcome, which is the fact the diagnosis rests on.
-func TestAgentContextPool_DeclaresPartialCountableForAgentBriefOnly(t *testing.T) {
+// The asymmetry, stated as an assertion — and then corrected.
+//
+// SW-134 wrote this test to pin the asymmetry as it stood: agent_brief counted a
+// "partial", the other three did not, inside one FR-8 pool. It did NOT claim the
+// sets were wrong; SW-135 owned that judgement, made it (Outcome B, D1), and
+// SW-136 corrected the live rule. So the assertion is now the pair: the
+// historical sets HAD the asymmetry — which is why the published baseline reads
+// 975 — and the live sets no longer do.
+//
+// Keeping both halves in one test is deliberate. A characterization baseline
+// that is simply deleted once the behaviour changes leaves nothing to show the
+// change was real, and the historical half is what every replay of the published
+// tallies below depends on. The corrected declarations are asserted exactly, and
+// bounded, by cmd/eval/partialoutcome_regression_test.go.
+func TestAgentContextPool_PartialAsymmetryWasRealAndIsNowCorrected(t *testing.T) {
 	allowed := declaredAllowed(t)
 	for _, op := range agentContextPool {
 		if _, ok := allowed[op]; !ok {
 			t.Fatalf("%s is not a measured warm operation: the agent_context_p95 pool moved", op)
 		}
 	}
-	want := map[string][]string{
-		scenario.OpAgentBrief:    {"found", "partial"},
-		scenario.OpExplainSymbol: {"found"},
-		scenario.OpChangeRisk:    {"found"},
-		scenario.OpRelatedFiles:  {"empty", "found"},
+
+	// The historical half: the rule the published baseline ran under.
+	if slices.Contains(sw134HistoricalAllowed[scenario.OpAgentBrief], "partial") ==
+		slices.Contains(sw134HistoricalAllowed[scenario.OpExplainSymbol], "partial") {
+		t.Errorf("sw134HistoricalAllowed no longer records the asymmetry the diagnosis rests on: %v",
+			sw134HistoricalAllowed)
 	}
-	for op, w := range want {
-		if got := allowed[op]; !slices.Equal(got, w) {
-			t.Errorf("%s allowed = %v, want %v", op, got, w)
+
+	// The live half: SW-136's correction. One pool, one countability rule.
+	for _, op := range agentContextPool {
+		if !slices.Contains(allowed[op], "partial") {
+			t.Errorf("%s allowed = %v: the pool's asymmetry is back", op, allowed[op])
 		}
-	}
-	if slices.Contains(allowed[scenario.OpAgentBrief], "partial") ==
-		slices.Contains(allowed[scenario.OpExplainSymbol], "partial") {
-		t.Errorf("agent_brief and explain_symbol now agree on partial; the pool's asymmetry is gone")
 	}
 }
 
@@ -137,10 +169,15 @@ func rejected(check publishedCheck, allowed []string) (int, []string) {
 
 // AC-4, mechanically: 975 = 1000 - 25, and the 25 is 16 + 5 + 4 + 0.
 //
-// The tallies are the published ones; the allowed sets are the live code's. If
-// either side moves, this fails — which is exactly what a baseline is for.
+// Both sides are historical: the published tallies, and the `allowed` sets that
+// were in force when they were produced (sw134HistoricalAllowed). If either
+// moves, this fails — which is exactly what a baseline is for. SW-136's
+// correction does not touch this arithmetic; the shortfall it explains is a
+// closed fact about v0.7.0 at 5815db5, and stays true after the instrument is
+// corrected. What the corrected rule does to the same tallies is
+// TestPublishedBaseline_CorrectedRuleRecoversAllTwentyFiveExecutions.
 func TestPublishedBaseline_PartialAloneExplainsThe25ExecutionShortfall(t *testing.T) {
-	allowed := declaredAllowed(t)
+	allowed := sw134HistoricalAllowed
 	const referenceRepo = "grpc-go"
 
 	// Per-operation rejected executions, reference scenario, both runs.
@@ -260,10 +297,11 @@ func TestPublishedBaseline_UuidRepeatsItsSampleAndRepeatsItsRejections(t *testin
 	}
 	doubled := 250 - sample.Returned // indices 0..doubled-1 are asked twice
 
-	allowed := declaredAllowed(t)
 	checks := readPublishedReport(t, "run-a", "uuid")
 	for _, op := range []string{scenario.OpExplainSymbol, scenario.OpChangeRisk} {
-		n, _ := rejected(checks[op], allowed[op])
+		// Historical sets: this is a statement about the published run, which was
+		// taken under the pre-SW-136 rule.
+		n, _ := rejected(checks[op], sw134HistoricalAllowed[op])
 		if n == 0 {
 			t.Fatalf("uuid/%s: no rejected executions; this test has nothing to check", op)
 		}

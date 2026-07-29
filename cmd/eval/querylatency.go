@@ -427,12 +427,30 @@ func buildWarmOperations(ctx context.Context, eng *scenario.FixtureEngine, e cor
 		})
 	}
 
+	// SW-136 (D1): "partial" is countable for ALL FOUR members of the
+	// agent_context_p95 pool, not only agent_brief. Before this correction these
+	// three declared allowed=["found"] (and ["found","empty"] for related_files)
+	// while agent_brief — same pool, same gate, same percentile — declared
+	// ["found","partial"], so one number was reported over observations admitted
+	// under two incompatible rules (docs/decisions/2026-07-p0-candidate-decision.md
+	// §2.1, §3.1). It cost exactly 25 of FR-8's 1000 executions in both published
+	// runs, on two CPU families, leaving gate 9 permanently UNKNOWN.
+	//
+	// This does not weaken the rule above ("a fast wrong answer is not a fast
+	// answer"). A "partial" IS a resolved target with a valid envelope: the
+	// operation answered and truthfully declared its own truncation
+	// (engine/agenttools/shape/shape.go:171). It is designed, documented,
+	// GA-frozen behaviour — corpus/hero/hero-17-explain-symbol-partial.yaml
+	// asserts it — so discarding it was discarding a correct observation, and
+	// systematically the slowest ones: the answers large enough to truncate are
+	// the ones with the most items to resolve, rank and assemble. not_found,
+	// ambiguous and error remain uncountable.
 	for _, op := range []string{scenario.OpExplainSymbol, scenario.OpChangeRisk, scenario.OpRelatedFiles} {
-		allowed := []string{"found"}
-		requirement := "resolved target with a valid found envelope"
+		allowed := []string{"found", "partial"}
+		requirement := "resolved target with a valid found or partial envelope"
 		if op == scenario.OpRelatedFiles {
-			allowed = []string{"found", "empty"}
-			requirement = "resolved target; found or legitimately empty related-file set"
+			allowed = []string{"found", "empty", "partial"}
+			requirement = "resolved target; found, partial, or legitimately empty related-file set"
 		}
 		ops = append(ops, warmOperation{
 			op: op, class: evalreport.QueryClassAgentTools,

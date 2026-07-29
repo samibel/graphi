@@ -1,5 +1,10 @@
 # P0 performance baseline — 2026-07-28, runner class `ubuntu-latest`
 
+> ⚠️ **See [`STALENESS-NOTICE.md`](STALENESS-NOTICE.md) first.** The measurement
+> instrument was corrected after this baseline was published (SW-136), and the
+> candidate it measures is on its way to being superseded. The data is preserved
+> in full; what it is evidence *for* has narrowed.
+
 The first measurement of a graphi release candidate against the PRD §12.2
 performance gates. Two complete runs, on the frozen candidate **v0.7.0 at
 `5815db5b053c2bb1bf3119cdb9939c1dea03cc45`**, over the five pinned Go
