@@ -9,10 +9,10 @@
 > published it (`success`, 10m40s).
 >
 > Every field that only a published artifact could supply is now filled from that
-> artifact — read, recomputed and cross-checked, never guessed. **Two things remain
-> outstanding and say so in place:** the **sign-off** (§2, §8 — SW-136 is a build;
-> only the human ship gate signs off) and nothing else. §7 reproducibility **has**
-> been run and is recorded as a result, not an expectation.
+> artifact — read, recomputed and cross-checked, never guessed. **One thing remains
+> outstanding and says so in place:** the **sign-off** (§2, and §8 of the superseded
+> record's convention — SW-136 is a build; only the human ship gate signs off).
+> §7 reproducibility **has** been run and is recorded as a result, not an expectation.
 >
 > **This candidate has no measurements.** [§2.1](#21-what-this-candidate-has-measured-nothing)
 > is the part to read before quoting any number at it.
@@ -144,7 +144,7 @@ Nothing else. In particular **F4 is not corrected** — see [§8](#8-what-this-r
 | **Release date** | **2026-07-29** — tag object `2026-07-29T17:15:31Z`; GitHub release published `2026-07-29T17:15:56Z`, not a draft, not a prerelease, and `repos/samibel/graphi/releases/latest` resolves to `v0.7.1` |
 | **Freeze date** | **2026-07-29** — the date this record was **completed**, which happens to fall on the same day it was drafted and the same day the release published. Not back-dated: the completion commit is this one. |
 | **Owner** | `samibel` — Graphi Maintainer (solo; ENG/EVAL/SEC/PROD are the same person, per the PRD's solo-substitution rule) |
-| **Sign-off** | **OUTSTANDING** — [§8](#8-owner-date-sign-off) of the superseded record's convention. This is **not** a field the published artifact can supply, so completing this record does not complete it: SW-136 is a build, and only the human ship gate signs off. It is stated as outstanding rather than filled. |
+| **Sign-off** | **OUTSTANDING** — §8 of the superseded v0.7.0 record's convention (not §8 of this record, which is ["What this record does not do"](#8-what-this-record-does-not-do)). This is **not** a field the published artifact can supply, so completing this record does not complete it: SW-136 is a build, and only the human ship gate signs off. It is stated as outstanding rather than filled. |
 
 Every field above that a published artifact can supply is now filled from that
 artifact. The single exception is **sign-off**, which no artifact supplies and which
@@ -581,9 +581,10 @@ CGO_ENABLED=0 go run ./cmd/release -dist dist -webui -version v0.7.1
 ```
 
 **Still not verified, and not claimable from any artifact:** the **sign-off**
-([§2](#2-decision--the-successor-p0-candidate-prd-fr-1-field-set),
-[§8](#8-owner-date-sign-off) convention). SW-136 is a build; the human ship gate
-signs off, and this record does not pre-empt it.
+([§2](#2-decision--the-successor-p0-candidate-prd-fr-1-field-set), and §8 of the
+superseded v0.7.0 record's convention — not §8 of this record, which is
+["What this record does not do"](#8-what-this-record-does-not-do)). SW-136 is a build;
+the human ship gate signs off, and this record does not pre-empt it.
 
 **Still not measured, deliberately:** every §12.2 gate on this candidate, including
 gate 9 ([§2.1](#21-what-this-candidate-has-measured-nothing)). Completing a freeze
