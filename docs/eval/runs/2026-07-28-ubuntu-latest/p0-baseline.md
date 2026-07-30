@@ -97,6 +97,39 @@ an undersampled pool is not the measurement the PRD asked for, and quoting it as
 though it were is exactly the substitution P0 exists to remove. The gate stays
 UNKNOWN until the pool is whole.
 
+> **CORRECTION 2026-07-29 (SW-130 review, finding 1) — added, nothing above is
+> rewritten.** The paragraph immediately above quotes **only run-a**. The harness
+> recorded the pooled p95 for **both** runs, and they do not agree about which
+> side of the gate this value falls on:
+>
+> | | pooled n | pooled p95 | vs the 500 ms gate |
+> |---|---|---|---|
+> | run-a | 975 of 1000 | **471.250 ms** | below |
+> | run-b | 975 of 1000 | **601.732 ms** | **above, by 20.3 %** |
+>
+> Run-b is **+27.7 % above run-a** — see the deviations table below, where this
+> gate was also missing. Source for both figures:
+> `run-{a,b}/query-latency/grpc-go/report.json` →
+> `.repo.query_latency.pools[]` (`agent_context_p95`, `p95_us` 471250 / 601732),
+> each independently recomputed from
+> `run-{a,b}/query-latency/grpc-go/raw/query-latency.json` by pooling
+> `agent_brief` (250) + `change_risk` (246) + `explain_symbol` (234) +
+> `related_files` (245) = 975 `samples_us` and taking the nearest rank
+> `ceil(0.95 × 975) = 927`.
+>
+> **Why this correction exists.** As originally written, the sentence supports
+> only one reading — that the UNKNOWN is a conservatively withheld *PASS*. The
+> full data does not support that reading in either direction: on the same
+> undersampled pool, one run is inside the gate and the other is a fifth outside
+> it. **The UNKNOWN may equally be a withheld FAIL.** This is strictly stronger
+> support for having no verdict than the original sentence was.
+>
+> Nothing was hidden from the repository — run-b's 601.732 ms has been in the
+> committed `report.json` since publication. What was missing was its appearance
+> in the prose, in `p0-baseline.json` and in the evidence index. It is added to
+> all three as of this date. The verdict does not change: **UNKNOWN**, and
+> UNKNOWN is not a PASS (PRD §8.2).
+
 ---
 
 ## The PASS that deserves an asterisk: a 15.5-second stall behind a passing p95
@@ -140,6 +173,28 @@ checkout and runs the built binary** — never `go run` from a working tree
 (AC-1) — takes the candidate *citation* from the dispatched ref before the tree
 moves (a commit cannot contain its own hash), and writes every output outside
 the checkout so nothing turns it dirty.
+
+> **CORRECTION 2026-07-29 (SW-130 review, finding 2) — the "(AC-1)" citation
+> above claims more than was delivered.** Added, not rewritten: the *fact*
+> asserted above is true and unchanged — each job did check out `5815db5`, did
+> run `go build -o "${RUNNER_TEMP}/eval" ./cmd/eval`, and did execute that built
+> binary rather than `go run` from a working tree. What is wrong is citing it as
+> satisfying AC-1.
+>
+> **AC-1 as written requires "the release binary of the frozen candidate".** What
+> ran is the **eval harness** with the product packages linked into it. No
+> `graphi` binary was executed, and the harness still has no external-binary path
+> — that is limitation #4 below and it is carried as an open follow-up. SW-131
+> made `candidate_match` true; it fixed **provenance**, not the missing binary
+> path.
+>
+> **The precise reading under which AC-1 is met**, and no stronger: *the run
+> executed a compiled binary, built from a clean checkout of the frozen
+> candidate's own tree, verified byte-identical to it by `candidate_match` — not
+> `go run` from a working tree, and not the published release binary.* Under the
+> literal reading of AC-1 the criterion is **partially met**, with the
+> external-binary path as the open remainder. Nothing measured here changes; what
+> changes is that the record stops claiming the stronger version.
 
 **Every number here recomputes from its raw samples.** Each job reproduced its
 own output in CI at the moment it was produced, and all **40** leaf run
@@ -185,6 +240,71 @@ published whole and separately.
 | freshness_p95 | 6.315 s | 6.486 s | +2.7 % | the failing gate is the *most* stable number here |
 | peak_rss | 0.670 GB | 0.664 GB | −0.9 % | essentially identical |
 | db_size | 32.688 MB | 32.688 MB | 0.0 % | identical to the byte — deterministic |
+| agent_context_p95 (pooled, undersampled) | 471.250 ms | 601.732 ms | **+27.7 %** | **ADDED 2026-07-29 (SW-130 review, finding 1).** The one deviation the original table omitted, and **the only one in the baseline that crosses its own threshold**: run-a is below the 500 ms gate, run-b is 20.3 % above it. Not a verdict either way — the pool is 975 of 1000 in both runs, so gate 9 is UNKNOWN regardless of where the number lands. |
+
+> **CORRECTION 2026-07-29 (SW-130 review, finding 1) — the row above is an
+> addition; the eight rows before it are unchanged.** AC-2 requires deviations
+> between the two runs to be documented and explained rather than smoothed over,
+> and this one was neither documented nor explained. Two points of precision, so
+> the correction is not overstated in the other direction:
+>
+> - **It is not the largest relative deviation in the baseline.**
+>   `caller_callee_impact_p95` at **+65.9 %** is larger, and `warm_search_p95` at
+>   **+25.9 %** is close behind. The published row calling
+>   `caller_callee_impact_p95` "the largest relative spread" remains correct and
+>   is not amended.
+> - **It is the most consequential deviation in the baseline**, because it is the
+>   only one where the two runs disagree about the *verdict-relevant* question —
+>   which side of the threshold the value falls on. Every other gate's spread
+>   moves a number that is 4×–200× inside its gate.
+
+---
+
+## CORRECTION 2026-07-29 (SW-130 review, finding 4) — one job's CPU was stamped on twenty
+
+**Added; no figure above is withdrawn and no verdict changes.** Each run carries a
+single `cpu_model` in `p0-baseline.json`, and the two deviation explanations above
+("Intel vs AMD", "the AMD host indexed faster but searched slower") read it as if
+one machine ran the whole run. It did not. **Each run is 20 independent CI jobs on
+20 freshly provisioned VMs**, and the stamped value is only the `cold-index/grpc-go`
+job's CPU. Read from all 40 `run-{a,b}/*/*/environment.json`:
+
+| | CPU models observed across the run's 20 jobs |
+|---|---|
+| run-a | AMD EPYC 7763 (×13) · AMD EPYC 9V74 (×5) · Intel Xeon Platinum 8573C (×2) — **3 models** |
+| run-b | AMD EPYC 7763 (×11) · AMD EPYC 9V74 (×5) · Intel Xeon Platinum 8573C (×3) · Intel Xeon Platinum 8370C (×1) — **4 models** |
+
+All 40 jobs report 4 vCPUs and kernel `6.17.0-1020-azure`; only the CPU model and
+the reported RAM (within ~5 MB) vary.
+
+Per published gate, the machine that actually produced it:
+
+| Gate(s) | Job | run-a CPU | run-b CPU |
+|---|---|---|---|
+| cold_index_p50 / p95, peak_rss, db_size, oom_8gb_host | `cold-index/grpc-go` | Intel Xeon Platinum 8573C | AMD EPYC 9V74 |
+| warm_search_p95, caller_callee_impact_p95, agent_context_p95 | `query-latency/grpc-go` | AMD EPYC 9V74 | AMD EPYC 7763 |
+| freshness_p95 | `freshness/grpc-go` | AMD EPYC 7763 | AMD EPYC 9V74 |
+| progress_stall_p95 | `progress-stalls/grpc-go` | AMD EPYC 7763 | **AMD EPYC 7763 — the same model in both runs** |
+
+What this changes in the explanations above, stated plainly:
+
+- **"the AMD host indexed faster but searched slower" conflates two machines.**
+  Indexing and searching ran on separate VMs. In run-a the search job was AMD EPYC
+  9V74 — not the Intel host the row implies — and in run-b it was AMD EPYC 7763. The
+  warm-search and caller/callee spreads are *both-AMD, different-model* deltas, not
+  an Intel-versus-AMD delta.
+- **"Intel vs AMD" is accurate for the cold-index gates only** (rows 1–5). It does
+  not hold uniformly: `progress_stall_p95` was measured on the *same* CPU model in
+  both runs, so its −12.9 % spread has no silicon explanation at all.
+- **"two different CPU families" in the FAIL section** is true of `freshness_p95`
+  in the AMD sense — EPYC 7763 (run-a) and EPYC 9V74 (run-b) are different EPYC
+  generations — but it is not the Intel/AMD contrast the per-run stamp suggests.
+
+**This strengthens the FR-9 substitute argument rather than weakening it.** The
+honest claim is not "run-b landed on different silicon" but: *run-b was 20
+independently provisioned machines spanning four CPU models, and it reproduced all
+ten verdicts.* That rules out machine-local state considerably more thoroughly than
+a single-CPU claim does.
 
 ---
 

@@ -17,9 +17,19 @@ establish.
 
 ## What is here
 
+> **CORRECTION 2026-07-29 (SW-130 review, finding 4).** The two CPU models in the
+> tree below are the **`cold-index/grpc-go` job's** CPU, not the run's. Each run is
+> 20 independent jobs on 20 freshly provisioned VMs: run-a spans **3** CPU models
+> (AMD EPYC 7763 ×13, AMD EPYC 9V74 ×5, Intel Xeon Platinum 8573C ×2) and run-b
+> spans **4** (AMD EPYC 7763 ×11, AMD EPYC 9V74 ×5, Intel Xeon Platinum 8573C ×3,
+> Intel Xeon Platinum 8370C ×1). Read per-gate silicon from each job's own
+> `environment.json`, or from the correction table in
+> [`p0-baseline.md`](p0-baseline.md). This makes the FR-9 clean-runner substitute
+> *stronger*, not weaker.
+
 ```
-run-a/                         workflow run 30377165970  (Intel Xeon Platinum 8573C)
-run-b/                         workflow run 30379259481  (AMD EPYC 9V74)
+run-a/                         workflow run 30377165970  (cold-index/grpc-go job: Intel Xeon Platinum 8573C — see correction above)
+run-b/                         workflow run 30379259481  (cold-index/grpc-go job: AMD EPYC 9V74 — see correction above)
   cold-index/<repo>/             SW-124 — ten cold indexes, one process each
   query-latency/<repo>/          SW-125 — >=1000 timed executions per class
   freshness/<repo>/              SW-126 — 100 incremental changes
@@ -56,6 +66,11 @@ publish time. Every one exited `0`.
 - **UNKNOWN — `agent_context_p95`**: 975 of 1000 required executions pooled, in
   *both* runs. The cause is a deterministic `"partial"` outcome from
   `change_risk` / `explain_symbol` / `related_files`, not sampling noise.
+  **(Added 2026-07-29, SW-130 review finding 1:** the undersampled pool's p95 is
+  **471.250 ms in run-a and 601.732 ms in run-b** — the two runs fall on
+  *opposite* sides of the 500 ms gate, a +27.7 % spread. Neither is a verdict.
+  Do not read this UNKNOWN as a withheld PASS; see the correction block in
+  [`p0-baseline.md`](p0-baseline.md).**)**
 - **PASS with an asterisk — `progress_stall_p95`**: 0.006 s against a 2 s gate,
   while the longest observed silence was **15.5 s**. The gate is met as
   specified; the property a reader assumes it protects is not.
@@ -125,6 +140,12 @@ other runner classes, other build flavors or other workloads.
    build tags and `-trimpath`. The measured *source* is the candidate's, byte for
    byte; the *build* is not the release build. Giving the harness a real
    external-binary path is recorded as a follow-up, not done here.
+   **(Added 2026-07-29, SW-130 review finding 2:** this limitation is also the
+   reason SW-130's **AC-1 is only partially met**. AC-1 asked for "the release
+   binary of the frozen candidate"; what ran is a compiled binary of the *eval
+   harness*, built from a clean checkout of the candidate. Nowhere in this
+   directory should "runs the built binary" be read as satisfying AC-1 as
+   written.**)**
 5. **No budget was re-baselined.** `docs/eval/hero-budgets.json` still carries the
    retired harness's historical ceilings. Replacing them is a reviewed decision
    about thresholds, and this story deliberately moves no threshold.

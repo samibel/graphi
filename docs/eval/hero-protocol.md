@@ -364,6 +364,17 @@ measurement job does all three:
    run directory, or the harness binary itself — sets `worktree_dirty`, and a
    dirty worktree forces the same blanket UNKNOWN as a wrong revision.
 
+> **CORRECTION 2026-07-29 (SW-130 review, finding 2) — added, step 1 above is
+> unchanged and still accurate.** "The built binary is what runs" means the
+> **eval harness**, built from the candidate's checkout with the product packages
+> linked into it. It is **not** the `graphi` release binary: the harness has no
+> external-binary path, and the published release assets are built with 22 build
+> tags and `-trimpath` while the harness build carries neither. So the *source*
+> measured is the candidate's, byte for byte; the *build* is not the release
+> build. SW-130's AC-1 asked for "the release binary of the frozen candidate" and
+> this protocol does not deliver that reading — the external-binary path (option
+> C) remains open work. Nothing above should be read as satisfying it.
+
 **What a complete run costs.** This is the figure that constrains scheduling for
 every later P0 band, and it is read from the harness's own accounting rather
 than off the CI job clock: each measurement step stamps a timestamp immediately
