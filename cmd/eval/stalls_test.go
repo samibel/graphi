@@ -265,9 +265,30 @@ func TestStallObserver_RetainsEveryIntervalAndItsStatisticsRecompute(t *testing.
 // synchronously from the ingesting goroutine, so a handler that did real work
 // would insert itself into the silence it is measuring.
 //
-// The bound is deliberately loose — this asserts an ORDER OF MAGNITUDE, not a
-// benchmark figure, so it cannot flake on a loaded CI runner while still failing
-// loudly if someone puts formatting, sorting, locking or I/O in `observe`.
+// NOISE BUDGET (SW-154). The 5 µs bound is an absolute constant compared against
+// a real wall-clock interval, so it needs a stated budget rather than the word
+// "loose". The natural cost it discriminates against, MEASURED over 10 rounds of
+// 200 000 events through this same loop (2026-07-30, darwin/arm64, go1.26.5):
+// 67 ns median / 175 ns max without -race, and 226 ns median / 272 ns max UNDER
+// -race, which is the condition the 2e1e186 flake needed. 5 µs is ~18x the
+// measured worst case, so the bound is kept exactly where it is.
+//
+// What keeps it there is not luck but averaging: perEvent is a MEAN over 200 000
+// events, so lifting a 226 ns average to 5 µs takes 4.774 µs x 200 000 = ~0.955 s
+// of extra time INSIDE the loop, which no single scheduler hiccup or GC pause
+// supplies. That is why this test never flaked while the stall harness's
+// single-interval assertion did.
+//
+// And SW-154's mutation check found that the same averaging bounds what this
+// assertion can claim, which the previous comment overstated. Adding one
+// fmt.Sprintf per event to `observe` moves the mean to 232 ns plain / 2.276 µs
+// under -race — real work in the hot path, and this bound does NOT catch it.
+// What the 5 µs bound catches is per-event work above the ~4.8 µs of headroom:
+// sorting the retained intervals, a real write syscall, a contended lock. The
+// cheap allocating cases are caught by its sibling below,
+// TestStallObserver_ObserveDoesNotAllocatePerEvent, which failed at 3.00
+// allocations per event under that same Sprintf mutation. The pair is the guard;
+// neither half is it alone.
 func TestStallObserver_ObserveStaysOutOfTheHotPath(t *testing.T) {
 	const events = 200_000
 	obs := newStallObserver()
