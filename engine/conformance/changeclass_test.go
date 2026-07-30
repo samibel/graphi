@@ -318,6 +318,17 @@ func (g *graphView) edgeList() string {
 //	             nothing. `apply` and `witness` are a pair: a row whose apply
 //	             could be commented out with the witness still passing proves
 //	             parity over an empty change and is worthless.
+//	knownDefect  non-empty names a TRACKED PRODUCT DEFECT that makes this class
+//	             genuinely non-parity today. It is not a waiver: see the long
+//	             comment on runKnownDefectRow. It must equal the class's
+//	             `known_defect` in docs/rc/parity-classes.yaml, and while it is
+//	             set the drift guard makes it MECHANICALLY IMPOSSIBLE for that
+//	             class to read verdict: "PROVEN".
+//	pin          required exactly when knownDefect is set: the row-level pin of
+//	             the CURRENT DIVERGENT — that is, WRONG — behaviour. It states
+//	             precisely how the incremental graph differs from the full graph
+//	             today, so the defect is published as executable data and any
+//	             change to it, including a FIX, turns the row red.
 //
 // witness returns error rather than bool so a failure names what it expected;
 // a bool witness reports only that something is wrong.
@@ -329,6 +340,8 @@ type changeClassRow struct {
 	seed        map[string]string
 	apply       func(f *fixture)
 	witness     func(g *graphView) error
+	knownDefect string
+	pin         func(inc, full *graphView) error
 }
 
 // baseTree is the fixture every row starts from: a real Go module with a
@@ -396,54 +409,95 @@ func changeClassTable() []changeClassRow {
 		{
 			id:   "delete_file",
 			kind: kindChangeClass,
-			description: "An indexed file is deleted while an importer still imports and calls its package, so the per-file stale-node purge, the dependent cascade and the external-interning path all run. " +
-				"THIS ROW CURRENTLY FAILS, AND THE FAILURE IS A REAL PRODUCT DEFECT — see the PARITY-001 block below it. It is deliberately NOT weakened, skipped or deleted to make the suite green.",
+			description: "A file declaring a symbol that ANOTHER package calls through an intra-module import is deleted, so the per-file stale-node purge, the re-link pass and the " +
+				"external-interning path all run over it. THIS CLASS DOES NOT HOLD TODAY: it carries the tracked defect PARITY-001, so the row PINS the current wrong behaviour instead of " +
+				"asserting parity. Read the PARITY-001 block on `apply` before touching anything here.",
+			knownDefect: "PARITY-001",
 			apply: func(f *fixture) {
-				// PARITY-001 — RECORDED PRODUCT DEFECT, NOT A HARNESS BUG.
-				// FILED: projects/graphi/backlog.md. NOT FIXED IN THIS SLICE.
+				// ==========================================================
+				// PARITY-001 — TRACKED PRODUCT DEFECT, NOT A HARNESS BUG.
+				// Filed: projects/graphi/backlog.md. NOT FIXED HERE.
+				// Scheduled: v0.7.2 batch item 3, behind SW-151's F4 residual
+				// and SW-153's freshness diagnosis. Measure-first stands — do
+				// NOT fix this early, it moves the candidate.
+				// ==========================================================
 				//
-				// Deleting the SOLE file of an intra-module package that an importer
-				// still imports and calls makes incremental diverge from full,
-				// permanently:
+				// PRECONDITION (corrected in review round 1 — the first
+				// statement of it was TOO NARROW and understated the blast
+				// radius). Deleting a file that declares a symbol which another
+				// package calls through an intra-module import makes
+				// incremental diverge from full, permanently.
+				//
+				// It is NOT limited to deleting the sole file of a package. A
+				// probe in which the package SURVIVES via a second file
+				// diverges identically (6 nodes/5 edges vs 7/6), as does one in
+				// which the importer is EXPLICITLY named in the change set.
+				// What matters is only that the deleted file declared a
+				// cross-package callee. Controls that do NOT diverge: deleting
+				// a file nothing references, and deleting a SAME-package
+				// callee's file (an unresolved same-package call mints no
+				// external node, so full has nothing extra either).
+				//
+				// OBSERVED, for the fixture this row uses:
 				//
 				//   full parse        5 nodes / 4 edges
 				//   incremental apply 4 nodes / 3 edges
 				//
-				// Full mints an interned external node `example.com/m/tax.Rate` plus
-				// a heuristic edge `shop.Checkout --calls--> example.com/m/tax.Rate`
-				// (reason: "external calls (unresolved import example.com/m/tax)").
-				// A single incremental apply mints neither: the importer is never
-				// re-linked, so its call is never re-classified from
-				// resolved-intra-module to unresolved-external.
+				// Full mints an interned external node `example.com/m/tax.Rate`
+				// plus a heuristic edge `shop.Checkout --calls-->
+				// example.com/m/tax.Rate` (reason: "external calls (unresolved
+				// import example.com/m/tax)"). One incremental apply mints
+				// neither.
 				//
-				// It is PERMANENT in the shipped path, not eventually-consistent:
+				// CAUSE — PHASE ORDERING, NOT THE DEPENDENT CASCADE. (This too
+				// was corrected in review round 1. The first statement blamed
+				// the dependent cascade / dependentsOf; that is REFUTED, because
+				// putting the importer explicitly in the change set — so it
+				// certainly IS re-parsed and re-linked — diverges identically.
+				// Whoever fixes this must not be sent to dependentsOf, where
+				// there is nothing to fix.)
+				//
+				// engine/ingest/ingest.go:709 calls linkFiles BEFORE the
+				// deleted-path purge at :721-736. linkFiles builds its symbol
+				// index by streaming the LIVE store
+				// (engine/ingest/linkfiles.go:64-71,
+				// graphstore.ForEachNode over i.store), and at that moment the
+				// purge has not run, so `tax.Rate` is STILL A NODE. The linker
+				// therefore resolves the call intra-module and never classifies
+				// it as an unresolved external. Only afterwards does
+				// removeFileTx delete `tax.Rate`, cascading its edges away —
+				// leaving the graph one node and one edge short of full.
+				//
+				// That ordering also explains, exactly, why the SECOND apply
+				// converges: by then `tax.Rate` is already gone, so linkFiles
+				// builds its index without it, resolution fails, and the
+				// external node is minted. The second apply does what the first
+				// should have.
+				//
+				// PERMANENT in the shipped path, not eventually-consistent:
 				// once the delete is applied, DriftSet returns empty and every
-				// further Reconcile is a no-op, so `graphi sync` stays diverged from
-				// `graphi rebuild` until a full rebuild. Verified by driving six
-				// reconciles after the delete — the snapshot never moves.
-				//
-				// A forced SECOND identical apply DOES converge to the full-parse
-				// bytes, which is why this row also fails the FR-7 idempotency
-				// assertion. Both failures are the same defect seen twice.
-				//
-				// Backend-independent (fails byte-identically on MemStore and
-				// SQLite) and not a watcher artifact (reproduces with plain serial
-				// ing.IngestChanged), so it lives in the linker's dependent cascade
-				// for deleted paths.
-				//
-				// WHY IT IS NOT FIXED HERE: a fix is a product-byte change. cmd/eval
-				// links the product packages and times ing.IngestAll in-process, so
-				// changing them moves the v0.7.1 candidate and invalidates every
-				// candidate-dependent evidence row. The owner's ruling is that one
-				// v0.7.2 batches every correction after the F4 residual and the
-				// freshness diagnosis are measured (Delta PRD 6.2). Finding it and
-				// publishing it is in slice; fixing it is not.
+				// further Reconcile is a no-op (verified over six reconciles,
+				// snapshot unmoved), so `graphi sync` stays diverged from
+				// `graphi rebuild` until a full rebuild. Backend-independent
+				// (byte-identical failure on MemStore and SQLite) and not a
+				// watcher artifact (reproduces with plain serial
+				// ing.IngestChanged, and independently through the shipped
+				// DriftDetail -> IngestChanged path graphi sync drives).
 				f.Remove("tax/tax.go")
 			},
 			witness: func(g *graphView) error {
 				return all(
 					g.requireAbsent("tax.Rate"),
 					g.requirePresent("shop.Checkout"), // control: only the deleted file's nodes went
+				)
+			},
+			// pin: the CURRENT WRONG BEHAVIOUR, stated exactly. Not an
+			// expectation — a published defect. If graphi is fixed, this fails
+			// and tells the fixer to restore the parity assertion.
+			pin: func(inc, full *graphView) error {
+				return requireOnlyMissing(inc, full,
+					[]string{"example.com/m/tax.Rate"},
+					[][3]string{{"shop.Checkout", "calls", "example.com/m/tax.Rate"}},
 				)
 			},
 		},
@@ -904,6 +958,11 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 	if row.apply == nil || row.witness == nil {
 		t.Fatalf("class %q has no apply/witness and is not marked deferred", row.id)
 	}
+	if (row.knownDefect == "") != (row.pin == nil) {
+		t.Fatalf("class %q must declare knownDefect and pin together (knownDefect=%q, pin set=%v): a "+
+			"tracked defect with no pin publishes nothing, and a pin with no defect id is untraceable",
+			row.id, row.knownDefect, row.pin != nil)
+	}
 
 	ctx := context.Background()
 	root := t.TempDir()
@@ -928,20 +987,15 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 		t.Fatalf("[%s/%s] full IngestAll: %v", b.name, row.id, err)
 	}
 
-	// (4) The assertion. Snapshot bytes, nothing weaker.
 	incSnap := snapshot(t, incStore)
 	fullSnap := snapshot(t, fullStore)
-	if string(incSnap) != string(fullSnap) {
-		t.Errorf("[%s/%s] PARITY FAIL: incremental != full snapshot bytes.\n"+
-			"class: %s\nchange set: %v\n%s",
-			b.name, row.id, row.description, f.changeSet(),
-			snapshotDiff(t, "incremental", incSnap, "full", fullSnap))
-	}
 
-	// (5) Non-vacuity. Asserted against the INCREMENTAL graph, the path under
-	// test. If this fails while (4) passes, the row proved parity over a change
-	// that did not reach the graph — a vacuous row, which is a harness defect,
-	// not a product defect.
+	// (5) Non-vacuity, FIRST and unconditionally — it is required of every row,
+	// including a knownDefect row. Asserted against the INCREMENTAL graph, the
+	// path under test. A row whose witness fails proved nothing about anything:
+	// the change did not reach the graph. That is a HARNESS defect, not a product
+	// defect, and it is checked before the parity verdict so a vacuous row cannot
+	// hide behind either a green parity assertion or a green pin.
 	g, err := newGraphView(ctx, incStore)
 	if err != nil {
 		t.Fatalf("[%s/%s] read incremental graph: %v", b.name, row.id, err)
@@ -951,8 +1005,159 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 			"produce the graph shape the row claims to exercise: %v", b.name, row.id, err)
 	}
 
+	if row.knownDefect != "" {
+		runKnownDefectRow(t, b, row, inc, root, f, incStore, fullStore, incSnap, fullSnap)
+		return
+	}
+
+	// (4) The assertion. Snapshot bytes, nothing weaker.
+	if string(incSnap) != string(fullSnap) {
+		t.Errorf("[%s/%s] PARITY FAIL: incremental != full snapshot bytes.\n"+
+			"class: %s\nchange set: %v\n%s",
+			b.name, row.id, row.description, f.changeSet(),
+			snapshotDiff(t, "incremental", incSnap, "full", fullSnap))
+	}
+
 	// (6) Idempotency.
 	assertIdempotentReapplication(t, b, row, inc, root, f, incSnap)
+}
+
+// runKnownDefectRow is what a class does INSTEAD of asserting parity, once the
+// owner has accepted that the class genuinely does not hold and has scheduled the
+// correction. Read this before touching it, because the difference between this
+// and a skip is the entire point.
+//
+// A SKIP would delete the evidence. A `-skip` flag on the driver would delete it
+// AND silently license promoting the class's verdict back to PROVEN. This does
+// the opposite of both: it keeps the row executing on every PR, and it PINS THE
+// WRONG BEHAVIOUR AS DATA. Three assertions, each of which fails loudly if the
+// world moves:
+//
+//  1. incremental and full MUST STILL DIFFER. If they converge, the defect is
+//     fixed (or masked) and this row is now lying — it fails, and whoever fixed
+//     it is told to restore the parity assertion and clear known_defect.
+//  2. the difference is EXACTLY what row.pin says. Not "some difference" — the
+//     named missing nodes and edges and nothing else. If the defect changes
+//     shape or grows, the pin fails.
+//  3. re-applying the identical change set converges to the FULL bytes. That is
+//     the same defect seen from the idempotency side, and pinning it records the
+//     most diagnostic fact about the bug: the second apply does what the first
+//     should have.
+//
+// The pin is labelled WRONG everywhere it appears. It is never phrased as an
+// expectation, and the verdict in docs/rc/parity-classes.yaml may not read PROVEN
+// while known_defect is set — TestParityMatrix_DriftGuard/VERDICT enforces that
+// MECHANICALLY, independent of whether this suite is green, which is precisely
+// the trap a green pin would otherwise open.
+func runKnownDefectRow(t *testing.T, b parityBackend, row changeClassRow, inc *incBuild,
+	root string, f *fixture, incStore, fullStore graphstore.Graphstore, incSnap, fullSnap []byte) {
+	t.Helper()
+	ctx := context.Background()
+
+	// (1) The divergence must still exist.
+	if string(incSnap) == string(fullSnap) {
+		t.Errorf("[%s/%s] PINNED DEFECT %s NO LONGER REPRODUCES: incremental and full snapshot bytes "+
+			"now AGREE. This is good news and a required action, not a pass: restore this row's parity "+
+			"assertion, delete its knownDefect and pin, clear `known_defect` in "+
+			"docs/rc/parity-classes.yaml, and re-verdict the class.",
+			b.name, row.id, row.knownDefect)
+		return
+	}
+
+	// (2) …and it must be EXACTLY the shape this row publishes.
+	incView, err := newGraphView(ctx, incStore)
+	if err != nil {
+		t.Fatalf("[%s/%s] read incremental graph: %v", b.name, row.id, err)
+	}
+	fullView, err := newGraphView(ctx, fullStore)
+	if err != nil {
+		t.Fatalf("[%s/%s] read full graph: %v", b.name, row.id, err)
+	}
+	if err := row.pin(incView, fullView); err != nil {
+		t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: the divergence is no longer the one this row "+
+			"publishes, so the recorded reproduction is stale: %v\n%s",
+			b.name, row.id, row.knownDefect, err,
+			snapshotDiff(t, "incremental", incSnap, "full", fullSnap))
+	}
+
+	// (3) The idempotency face of the same defect: the SECOND apply does what the
+	// first should have, so re-application both MOVES the graph and lands on the
+	// full-parse bytes.
+	parsed, err := inc.svc.Pool().ParseBatch(ctx, inc.ing, root, f.parseSet())
+	if err != nil {
+		t.Fatalf("[%s/%s] pinned re-parse: %v", b.name, row.id, err)
+	}
+	if err := inc.ing.ApplyChangedParsed(ctx, root, f.changeSet(), parsed); err != nil {
+		t.Fatalf("[%s/%s] pinned re-apply: %v", b.name, row.id, err)
+	}
+	reapplied := snapshot(t, inc.store)
+	if string(reapplied) == string(incSnap) {
+		t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: re-applying the identical change set no "+
+			"longer moves the graph. The recorded reproduction said the second apply converges; it "+
+			"no longer does.", b.name, row.id, row.knownDefect)
+	}
+	if string(reapplied) != string(fullSnap) {
+		t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: the second apply no longer converges to the "+
+			"full-parse bytes.\n%s", b.name, row.id, row.knownDefect,
+			snapshotDiff(t, "after re-apply", reapplied, "full", fullSnap))
+	}
+
+	t.Logf("PINNED KNOWN DEFECT %s on class %q [%s]: incremental %d nodes / %d edges vs full %d / %d. "+
+		"This row asserts the CURRENT WRONG BEHAVIOUR so the defect stays published and cannot be "+
+		"quietly fixed, quietly worsened, or quietly promoted. It is NOT a parity proof.",
+		row.knownDefect, row.id, b.name,
+		len(incView.nodes), len(incView.edges), len(fullView.nodes), len(fullView.edges))
+}
+
+// requireOnlyMissing is the pin helper: it asserts the full graph carries exactly
+// these extra qualified names and these extra edges relative to the incremental
+// graph, and that the two agree on everything else. "Exactly" is what makes the
+// pin fail when a defect is fixed OR when it grows.
+func requireOnlyMissing(inc, full *graphView, missingNodes []string, missingEdges [][3]string) error {
+	incQN := map[string]bool{}
+	for qn := range inc.byQN {
+		incQN[qn] = true
+	}
+	want := map[string]bool{}
+	for _, qn := range missingNodes {
+		want[qn] = true
+		if incQN[qn] {
+			return fmt.Errorf("node %q is PRESENT in the incremental graph; the pin says it is missing", qn)
+		}
+		if _, ok := full.node(qn); !ok {
+			return fmt.Errorf("node %q is absent from the FULL graph too; the pin describes a divergence that does not exist", qn)
+		}
+	}
+	var unexpected []string
+	for qn := range full.byQN {
+		if !incQN[qn] && !want[qn] {
+			unexpected = append(unexpected, qn)
+		}
+	}
+	for qn := range incQN {
+		if _, ok := full.node(qn); !ok {
+			unexpected = append(unexpected, "(only in incremental) "+qn)
+		}
+	}
+	sort.Strings(unexpected)
+	if len(unexpected) > 0 {
+		return fmt.Errorf("the divergence is wider than the pin: also %v", unexpected)
+	}
+	for _, e := range missingEdges {
+		if _, ok := inc.edge(e[0], e[1], e[2]); ok {
+			return fmt.Errorf("edge %s --%s--> %s is PRESENT in the incremental graph; the pin says it is missing", e[0], e[1], e[2])
+		}
+		if _, ok := full.edge(e[0], e[1], e[2]); !ok {
+			return fmt.Errorf("edge %s --%s--> %s is absent from the FULL graph too; the pin describes a divergence that does not exist", e[0], e[1], e[2])
+		}
+	}
+	if got, want := len(full.edges)-len(inc.edges), len(missingEdges); got != want {
+		return fmt.Errorf("full has %d more edges than incremental; the pin names %d", got, want)
+	}
+	if got, want := len(full.nodes)-len(inc.nodes), len(missingNodes); got != want {
+		return fmt.Errorf("full has %d more nodes than incremental; the pin names %d", got, want)
+	}
+	return nil
 }
 
 // assertIdempotentReapplication is the FR-7 idempotency gate
@@ -1108,14 +1313,6 @@ func splitLines(b []byte) []string {
 		out = append(out, string(b[start:]))
 	}
 	return out
-}
-
-func truncate(s string) string {
-	const max = 400
-	if len(s) <= max {
-		return s
-	}
-	return s[:max] + fmt.Sprintf("… (+%d bytes)", len(s)-max)
 }
 
 // TestChangeClassTable_WitnessesAreNonVacuous is AC-3's non-vacuity proof,

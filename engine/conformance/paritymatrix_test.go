@@ -60,6 +60,7 @@ type parityRow struct {
 	Store       string `yaml:"store"`
 	Assertion   string `yaml:"assertion"`
 	HarnessRow  string `yaml:"harness_row"`
+	KnownDefect string `yaml:"known_defect"`
 	DeferredTo  string `yaml:"deferred_to"`
 	Owner       string `yaml:"owner"`
 	Note        string `yaml:"note"`
@@ -250,12 +251,35 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 		// test_file/test_line/test_name/fixture/store/assertion to point at the
 		// harness row that now proves it."
 		//
-		// The direction's "EXISTS AND PASSES" conjunct is discharged
-		// structurally rather than dynamically: this guard checks EXISTS, and
-		// PASSES is discharged by the suite being green — a table row that fails
-		// makes TestFullVsIncremental_ByteParity red, and a red suite is the
-		// report. A row whose parity genuinely FAILS therefore keeps verdict
-		// ABSENT with the failure recorded in `note`; it does not get promoted.
+		// HOW THE DIRECTION'S "EXISTS AND PASSES" CONJUNCT IS DISCHARGED, stated
+		// precisely because a naive reading of it opens a real trap.
+		//
+		// EXISTS is checked here, mechanically.
+		//
+		// PASSES is NOT checked here — this guard never runs a table row. For an
+		// ordinary row it is discharged DYNAMICALLY, by the suite being green: a
+		// row whose parity assertion fails makes TestFullVsIncremental_ByteParity
+		// red, and a red suite is the report. That discharge is sound only while
+		// "green" actually means "parity held".
+		//
+		// THE TRAP: a knownDefect row is GREEN AND DOES NOT ASSERT PARITY. It pins
+		// the current wrong behaviour instead (runKnownDefectRow). So for such a
+		// row the greenness discharge is VACUOUS — it would license promoting the
+		// class to PROVEN on the strength of a suite that never checked parity at
+		// all. The same hole would open under a bare `-skip`.
+		//
+		// THE CLOSURE: for any row carrying a known_defect, PASSES is not inferred
+		// from anything. The verdict is constrained STRUCTURALLY and
+		// unconditionally — known_defect != "" implies the class may not read
+		// PROVEN, no matter what the suite reports. Promotion is therefore
+		// impossible while the defect is declared, and clearing the declaration is
+		// a deliberate, reviewable edit in two files at once (this YAML and the
+		// harness row), which the cross-check below enforces.
+		//
+		// A class that genuinely fails parity therefore does NOT read ABSENT — it
+		// has a harness row, so ABSENT is rejected two checks down. It reads
+		// PARTIAL, carries its defect id in known_defect, and the details live in
+		// `note`.
 		for _, r := range rows {
 			if r.HarnessRow != harnessRequired {
 				continue
@@ -269,6 +293,21 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 					"update the verdict and the test_file/test_line/test_name/fixture/store/assertion "+
 					"citations in the SAME commit that adds the row", r.ID, r.Verdict, parityClassesPath)
 			}
+			// The closure. Unconditional, and independent of suite state.
+			if r.KnownDefect != "" && r.Verdict == verdictProven {
+				t.Errorf("VERDICT: %q declares known_defect %q, so it may NOT read verdict: %q. A class "+
+					"with a tracked parity defect is not proven, and its harness row pins the defect "+
+					"rather than asserting parity — so a green suite says nothing about this class's "+
+					"parity and cannot be used to promote it.", r.ID, r.KnownDefect, verdictProven)
+			}
+			// The harness and the matrix must agree about the defect, in both
+			// directions, so neither file can be edited alone to slip a promotion
+			// through.
+			if row.knownDefect != r.KnownDefect {
+				t.Errorf("VERDICT: harness row %q declares knownDefect %q but %s declares known_defect %q — "+
+					"a tracked defect must be declared in BOTH files or in neither",
+					r.ID, row.knownDefect, parityClassesPath, r.KnownDefect)
+			}
 			if r.TestFile != harnessTestFile {
 				t.Errorf("VERDICT: %q is proven by the harness table but test_file reads %q; "+
 					"want %q (legacy citations belong in `note` as pre-harness provenance)",
@@ -276,6 +315,14 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 			}
 			if r.TestName != harnessTestName {
 				t.Errorf("VERDICT: %q test_name reads %q; want %q", r.ID, r.TestName, harnessTestName)
+			}
+		}
+		// A deferred row has no harness row to pin anything, so a defect id on one
+		// would name a reproduction that does not exist.
+		for _, r := range rows {
+			if r.HarnessRow == harnessDeferred && r.KnownDefect != "" {
+				t.Errorf("VERDICT: %q is harness_row: %q but declares known_defect %q; a deferred class "+
+					"has no row that could publish the defect", r.ID, harnessDeferred, r.KnownDefect)
 			}
 		}
 	})
@@ -371,6 +418,13 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 			} else if r.Fixture == "" || r.Store == "" || r.Assertion == "" {
 				t.Errorf("VOCABULARY: %q reads verdict: %q so fixture/store/assertion must all be set; "+
 					"got fixture=%q store=%q assertion=%q", r.ID, r.Verdict, r.Fixture, r.Store, r.Assertion)
+			}
+			// known_defect is an open string (a defect id), not a closed set, so
+			// VOCABULARY checks only that it looks like an ID rather than prose —
+			// it is a join key for the backlog entry and the harness row.
+			if r.KnownDefect != "" && strings.ContainsAny(r.KnownDefect, " \t") {
+				t.Errorf("VOCABULARY: %q has known_defect %q; it must be a bare defect id, not prose "+
+					"(the explanation belongs in `note`)", r.ID, r.KnownDefect)
 			}
 			// The m9 rule itself.
 			if r.Store == storeNone &&

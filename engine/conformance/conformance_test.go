@@ -207,6 +207,18 @@ func TestFullVsIncremental_ByteParity(t *testing.T) {
 // EP-017 operations are all Labs; the twelve frozen operations are the product
 // promise. Neither tier's drift may fail the other's gate, and a t.Run boundary
 // is what makes that structural instead of a comment.
+//
+// BACKEND SCOPE, STATED RATHER THAN LEFT TO BE DISCOVERED: this test runs on
+// MemStore ONLY. AC-7's both-backends requirement binds "the full table", and
+// this is not a table row — it is a downstream check on the envelope layer. The
+// reasoning for the restriction, so it can be challenged rather than inherited:
+// an envelope is a pure function of the graph plus the operation, the graph is
+// already proven byte-identical class-by-class on BOTH backends by
+// TestFullVsIncremental_ByteParity, and the snapshot envelope is store-
+// independent (engine/ingest/faultmatrix_test.go:231 relies on that too). A
+// backend can therefore only reach an envelope THROUGH the graph, which is
+// already covered. If that argument is ever wrong, the fix is to parameterize
+// this test over parityBackends() exactly as the table is.
 func TestFullVsIncremental_EnvelopeParity(t *testing.T) {
 	ctx := context.Background()
 	root := t.TempDir()
