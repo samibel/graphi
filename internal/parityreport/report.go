@@ -214,6 +214,17 @@ type StoreCounts struct {
 	Repo string `json:"repo"`
 	// Class is the row whose final tree these counts were taken over.
 	Class string `json:"class"`
+	// Side names WHICH graph was counted: "full" (the fresh rebuild) or
+	// "incremental" (the synced store).
+	//
+	// It exists because the first cut of this harness counted the REBUILD SIDE
+	// ONLY and did not say so — the incremental graph was decoded and never
+	// passed to the counter. No published figure was wrong (both sides read
+	// 0/0), but "orphaned external nodes = 0" was silently a statement about one
+	// of the two graphs the row compares, which is precisely the class of
+	// undisclosed scope this record exists to prevent. Both sides are now
+	// counted and both are labelled.
+	Side string `json:"side"`
 	// OrphanedExternalNodes counts nodes of kind "external" with no inbound
 	// edge. §12.3 requires 0.
 	OrphanedExternalNodes int `json:"orphaned_external_nodes"`

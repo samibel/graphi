@@ -3,7 +3,7 @@
   "harness_version": "parity-matrix/1",
   "provenance": {
     "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
-    "run_sha": "41a54d125b92b6366857472563d415043bd30057",
+    "run_sha": "8bcdc0cc4f129a0077444a7701e06f6a197c32de",
     "statement": "product source byte-identical to v0.7.1 at 80d67ed586723ab22704cf7aada316138cb1360e",
     "product_diff_empty": true,
     "product_diff_detail": "product binary is byte-identical to the candidate (c51e98efb651); the path diff below touches only code the product binary does not link. path diff (informational): engine/conformance/doc.go | 81 ++++++++++++++++++++++++++++++++++++++++-------;  1 file changed, 70 insertions(+), 11 deletions(-)",
@@ -13,7 +13,7 @@
     "runner_class": "darwin-arm64/local-dev",
     "go_version": "go version go1.26.5 darwin/arm64",
     "os_arch": "darwin/arm64",
-    "generated_at": "2026-07-30T16:21:11Z",
+    "generated_at": "2026-07-30T16:47:32Z",
     "harness_version": "parity-matrix/1",
     "schema_version": 1
   },
@@ -82,7 +82,7 @@
       "full_edges": 3918,
       "inc_nodes": 940,
       "inc_edges": 3918,
-      "duration_ms": 4172
+      "duration_ms": 4016
     },
     {
       "id": "modify_file",
@@ -99,7 +99,7 @@
       "full_edges": 3917,
       "inc_nodes": 939,
       "inc_edges": 3917,
-      "duration_ms": 1448
+      "duration_ms": 1358
     },
     {
       "id": "delete_file",
@@ -119,7 +119,7 @@
       "diagnostic": "…:\"doc.manPrintFlags\",\"path\":\"doc/man_docs.go\",\"change_kind\":\"dependencies_changed\"},{\"id\":\"85c07ae539db41d0\",\"kind\":\"function\",\"qualified_name\":\"doc.manPreamble\",\"path\":\"doc/man_docs.go\",\"change_kind\":\"dependencies_changed\"},{\"id\":\"a9b051bc1a0da886\",\"kind\":\"function\",\"qualified_name\":\"doc.manPrintOptions\",\"path\":\"doc/man_docs.go\",\"change_kind\":\"dependencies_changed\"},{\"id\":\"cfddba5cb9ea22dd\",\"kind\":\"function\",\"qualified_name\":\"doc_test.ExampleGenManTree\",\"path\":\"doc/man_examples_test.go\",\"change_kind\":\"signature_contract_change\"},{\"id\":\"f9a05ea597fcd8b8\",\"kind\":\"function\",\"qualified_name\":\"doc_test.ExampleGenMan\",\"path\":\"doc/man_examples_test.go\",\"change_kind\":\"signature_contract_change\"}],\"moved\":[],\"edges_added\":[],\"edges_removed\":[{\"id\":\"15da007ee45b332e\",\"from\":\"85c07ae539db41d0\",\"to\":\"783097d337bba53a\",\"kind\":\"calls\"},{\"id\":\"57f939f8cb348b9f\",\"from\":\"cfddba5cb9ea22dd\",\"to\":\"af38cbea6ac781f1\",\"kind\":\"calls\"},{\"id\":\"a13e92bfe9d41a0f\",\"from\":\"f9a05ea597fcd8b8\",\"to\":\"af38cbea6ac781f1\",\"kind\":\"calls\"},{\"id\":\"c734c54f51f7b10a\",\"from\":\"7fc5d40dd316b1df\",\"to\":\"783097d337bba53a\",\"kind\":\"calls\"},{\"id\":\"c7abadb87182374f\",\"from\":\"a9b051bc1a0da886\",\"to\":\"783097d337bba53a\",\"kind\":\"calls\"}]}",
       "known_defect": "PARITY-001",
       "detail": "SNAPSHOT BYTES DIFFER. incremental 895 nodes / 3784 edges (feadf1b63735); full 897 nodes / 3789 edges (f7e7bdde8cad). Deletes a file declaring a symbol another package calls through an intra-module import — the PARITY-001 precondition. A FAIL here is the EXPECTED, tracked result, not a harness fault.",
-      "duration_ms": 1494
+      "duration_ms": 1389
     },
     {
       "id": "rename_symbol",
@@ -136,7 +136,7 @@
       "full_edges": 3909,
       "inc_nodes": 938,
       "inc_edges": 3909,
-      "duration_ms": 1449
+      "duration_ms": 1349
     },
     {
       "id": "move_symbol",
@@ -153,7 +153,7 @@
       "full_edges": 3917,
       "inc_nodes": 939,
       "inc_edges": 3917,
-      "duration_ms": 1502
+      "duration_ms": 1384
     },
     {
       "id": "rename_package",
@@ -170,7 +170,7 @@
       "full_edges": 3916,
       "inc_nodes": 938,
       "inc_edges": 3916,
-      "duration_ms": 1402
+      "duration_ms": 1283
     },
     {
       "id": "add_call",
@@ -187,7 +187,7 @@
       "full_edges": 3918,
       "inc_nodes": 939,
       "inc_edges": 3918,
-      "duration_ms": 1536
+      "duration_ms": 1374
     },
     {
       "id": "remove_call",
@@ -205,7 +205,7 @@
       "inc_nodes": 938,
       "inc_edges": 3916,
       "detail": "The hard form: the caller keeps its identity and only drops the call, so no node deletion can cascade the edge away and only the stale-edge sweep can converge it.",
-      "duration_ms": 1410
+      "duration_ms": 1343
     },
     {
       "id": "change_interface",
@@ -222,7 +222,7 @@
       "full_edges": 704,
       "inc_nodes": 523,
       "inc_edges": 704,
-      "duration_ms": 3293
+      "duration_ms": 3152
     },
     {
       "id": "add_implementation",
@@ -239,7 +239,7 @@
       "full_edges": 707,
       "inc_nodes": 526,
       "inc_edges": 707,
-      "duration_ms": 1193
+      "duration_ms": 1196
     },
     {
       "id": "remove_implementation",
@@ -258,7 +258,7 @@
       "inc_edges": 6602,
       "diagnostic": "{\"schema_version\":1,\"analyzer_version\":\"compare-branches/1\",\"identity_schema_version\":1,\"outcome\":\"found\",\"added\":[],\"removed\":[],\"changed\":[],\"moved\":[],\"edges_added\":[{\"id\":\"3bf355702d3c36d8\",\"from\":\"3b48f857175ee9d7\",\"to\":\"cf354dbc1c0c852e\",\"kind\":\"imports\"},{\"id\":\"424dc5a8c15407c2\",\"from\":\"b4877ac8092fa713\",\"to\":\"c0a6913ab08f5d07\",\"kind\":\"imports\"},{\"id\":\"7b9c57dfaf97aa5d\",\"from\":\"0b457d259a03f632\",\"to\":\"3ca5a962689af282\",\"kind\":\"imports\"},{\"id\":\"8dc1c6bc0282f185\",\"from\":\"b4877ac8092fa713\",\"to\":\"49e4fa4238a6ac18\",\"kind\":\"imports\"}],\"edges_removed\":[{\"id\":\"a459d757a2ceab66\",\"from\":\"f78822bca8dffeac\",\"to\":\"cf354dbc1c0c852e\",\"kind\":\"imports\"}]}",
       "detail": "SNAPSHOT BYTES DIFFER. incremental 1889 nodes / 6602 edges (282736119bac); full 1889 nodes / 6599 edges (032939e8aab9). ",
-      "duration_ms": 5991
+      "duration_ms": 5740
     },
     {
       "id": "branch_switch",
@@ -285,7 +285,7 @@
       "inc_edges": 6605,
       "diagnostic": "{\"schema_version\":1,\"analyzer_version\":\"compare-branches/1\",\"identity_schema_version\":1,\"outcome\":\"found\",\"added\":[],\"removed\":[],\"changed\":[],\"moved\":[],\"edges_added\":[{\"id\":\"3bf355702d3c36d8\",\"from\":\"3b48f857175ee9d7\",\"to\":\"cf354dbc1c0c852e\",\"kind\":\"imports\"},{\"id\":\"424dc5a8c15407c2\",\"from\":\"b4877ac8092fa713\",\"to\":\"c0a6913ab08f5d07\",\"kind\":\"imports\"},{\"id\":\"7b9c57dfaf97aa5d\",\"from\":\"0b457d259a03f632\",\"to\":\"3ca5a962689af282\",\"kind\":\"imports\"},{\"id\":\"8dc1c6bc0282f185\",\"from\":\"b4877ac8092fa713\",\"to\":\"49e4fa4238a6ac18\",\"kind\":\"imports\"}],\"edges_removed\":[{\"id\":\"a459d757a2ceab66\",\"from\":\"f78822bca8dffeac\",\"to\":\"cf354dbc1c0c852e\",\"kind\":\"imports\"}]}",
       "detail": "SNAPSHOT BYTES DIFFER. incremental 1890 nodes / 6605 edges (0491ce912297); full 1890 nodes / 6602 edges (c5f15db8511f). DEGENERATE BY CONSTRUCTION, and this row says so rather than implying more. No build-constraint evaluation exists anywhere in graphi (engine/typeresolve/pkggraph.go:85 groups by directory and package clause and never inspects //go:build; doc.go:24 and check.go:20 forbid the go/packages machinery that would provide it). To graphi a build-tag edit is a comment-line content change, so this row proves PARITY OVER THE CHANGE and NOTHING about build-tag semantics.",
-      "duration_ms": 1968
+      "duration_ms": 1953
     },
     {
       "id": "replace_generated_file",
@@ -304,7 +304,7 @@
       "inc_edges": 69940,
       "diagnostic": "…9f784f4052e99\",\"from\":\"2e445fec889d6213\",\"to\":\"3f3556421326de13\",\"kind\":\"imports\"},{\"id\":\"854003eba4843423\",\"from\":\"b57e9a18548e2361\",\"to\":\"4e1ac2ebcf41dcf2\",\"kind\":\"imports\"},{\"id\":\"85e408f9bc1346fb\",\"from\":\"be5bd909c97778b0\",\"to\":\"c71b388a4f3c9500\",\"kind\":\"imports\"},{\"id\":\"8fdb860285bbcb02\",\"from\":\"b57e9a18548e2361\",\"to\":\"2a5bf0102423c64d\",\"kind\":\"imports\"},{\"id\":\"c1c992b744ba9027\",\"from\":\"b57e9a18548e2361\",\"to\":\"2e445fec889d6213\",\"kind\":\"imports\"},{\"id\":\"ca6c70566936c46f\",\"from\":\"b57e9a18548e2361\",\"to\":\"e40ac59be06b6a4f\",\"kind\":\"imports\"},{\"id\":\"cb76e61ff4ea918d\",\"from\":\"2e445fec889d6213\",\"to\":\"674dc5887aa2553e\",\"kind\":\"imports\"},{\"id\":\"d98b411a1de1365b\",\"from\":\"b57e9a18548e2361\",\"to\":\"98258d5b0df453c8\",\"kind\":\"imports\"},{\"id\":\"dac1f1872ef699de\",\"from\":\"be5bd909c97778b0\",\"to\":\"c40b59206d6cbca8\",\"kind\":\"imports\"},{\"id\":\"e33f74a3606c03a7\",\"from\":\"be5bd909c97778b0\",\"to\":\"74729ea9bd5cf5a8\",\"kind\":\"imports\"},{\"id\":\"e9fa9079356235b0\",\"from\":\"2e445fec889d6213\",\"to\":\"5bb4f05d1078ddfc\",\"kind\":\"imports\"},{\"id\":\"f01ab6056d83e2b5\",\"from\":\"b57e9a18548e2361\",\"to\":\"11b3fe0cc32c9022\",\"kind\":\"imports\"},{\"id\":\"fdd64754c67c0174\",\"from\":\"6e7436dcdfd6f28f\",\"to\":\"26828b26049d3cad\",\"kind\":\"imports\"}]}",
       "detail": "SNAPSHOT BYTES DIFFER. incremental 14898 nodes / 69940 edges (4fe3e09419fa); full 14898 nodes / 69772 edges (6cb7994b660d). Runs on the manifest's declared generated-code repository, which is also its declared multiple-go.mod repository, so the row additionally exercises a multi-module tree (sub-modules are excluded from the edit model by construction — only the root module is touched).",
-      "duration_ms": 29914
+      "duration_ms": 31863
     },
     {
       "id": "change_external_import",
@@ -321,7 +321,7 @@
       "full_edges": 3918,
       "inc_nodes": 940,
       "inc_edges": 3918,
-      "duration_ms": 1345
+      "duration_ms": 1364
     },
     {
       "id": "interrupted_full_pass",
@@ -344,6 +344,15 @@
     {
       "repo": "cobra",
       "class": "add_file",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "add_file",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -351,6 +360,15 @@
     {
       "repo": "cobra",
       "class": "modify_file",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "modify_file",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -358,6 +376,15 @@
     {
       "repo": "cobra",
       "class": "delete_file",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "delete_file",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -365,6 +392,15 @@
     {
       "repo": "cobra",
       "class": "rename_symbol",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "rename_symbol",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -372,6 +408,15 @@
     {
       "repo": "cobra",
       "class": "move_symbol",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "move_symbol",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -379,6 +424,15 @@
     {
       "repo": "cobra",
       "class": "rename_package",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "rename_package",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -386,6 +440,15 @@
     {
       "repo": "cobra",
       "class": "add_call",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "add_call",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -393,6 +456,15 @@
     {
       "repo": "cobra",
       "class": "remove_call",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "remove_call",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -400,6 +472,15 @@
     {
       "repo": "lo",
       "class": "change_interface",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "lo",
+      "class": "change_interface",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -407,6 +488,15 @@
     {
       "repo": "lo",
       "class": "add_implementation",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "lo",
+      "class": "add_implementation",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -414,6 +504,15 @@
     {
       "repo": "gin",
       "class": "remove_implementation",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "gin",
+      "class": "remove_implementation",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -421,6 +520,15 @@
     {
       "repo": "gin",
       "class": "change_build_tag",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "gin",
+      "class": "change_build_tag",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -428,6 +536,15 @@
     {
       "repo": "grpc-go",
       "class": "replace_generated_file",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "grpc-go",
+      "class": "replace_generated_file",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true
@@ -435,6 +552,15 @@
     {
       "repo": "cobra",
       "class": "change_external_import",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "cobra",
+      "class": "change_external_import",
+      "side": "incremental",
       "orphaned_external_nodes": 0,
       "stale_linker_edges": 0,
       "pass": true

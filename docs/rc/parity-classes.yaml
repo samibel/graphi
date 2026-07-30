@@ -211,6 +211,57 @@
 # SKIP with a pointer to SW-158 rather than reporting a vacuous green.
 #
 # ---------------------------------------------------------------------------
+# TWO FIXTURES, ONE VERDICT FIELD — HOW A HERMETIC PASS AND A REAL-REPO FAIL
+# COEXIST. Added 2026-07-30 by SW-144, review round 1, finding Major 1.
+# ---------------------------------------------------------------------------
+# From SW-144 onwards a class is exercised by TWO harnesses, and they can
+# legitimately disagree:
+#
+#   HERMETIC   engine/conformance's declarative table (SW-157) — the production
+#              Go parser over a t.TempDir() fixture, MemStore and SQLite, run on
+#              every PR.
+#   REAL-REPO  internal/parity + cmd/parity (SW-144) — the BUILT BINARY driven as
+#              a subprocess over pinned clones, run on dispatch and nightly.
+#              Published at docs/rc/parity-matrix-real-repo.md.
+#
+# FOUR CLASSES PASS HERMETICALLY AND FAIL ON REAL REPOSITORIES: modify_file,
+# remove_implementation, change_build_tag and replace_generated_file. All four
+# fail for ONE reason, PARITY-002, and none of them fails because of anything
+# specific to the class.
+#
+# THE RULE, so a reader is never left inferring it:
+#
+#   A ROW MAY NOT READ "PROVEN" WHILE ANY HARNESS FAILS THE CLASS.
+#
+# `verdict` describes proof STRENGTH for the class, not the health of one cited
+# test. A hermetic pass is real evidence and is retained in `note`; it is simply
+# not sufficient, because passing on a two-package fixture says nothing about a
+# 277-package tree. So the four rows read PARTIAL, with the real-repo failure and
+# its reproduction in `note`.
+#
+# WHY THEY DO NOT CARRY `known_defect: "PARITY-002"`, which is the obvious next
+# move and is WRONG here. `known_defect` is cross-checked against the HERMETIC
+# harness row's own `knownDefect` field (paritymatrix_test.go, VERDICT
+# direction), and it means something specific: "the hermetic row for this class
+# PINS the current wrong behaviour instead of asserting parity". That is true of
+# delete_file/PARITY-001 and false of these four — their hermetic rows genuinely
+# assert parity and genuinely pass. Setting the field would either fail the guard
+# or force the hermetic rows to stop asserting parity, which would DELETE working
+# coverage to describe a defect the hermetic fixture cannot reach. PARITY-002 is
+# therefore published in `note`, in the real-repo record and in
+# projects/graphi/backlog.md.
+#
+# AN EARLIER JUSTIFICATION FOR LEAVING THESE FOUR AT "PROVEN" IS RECORDED HERE AS
+# WRONG, because it was wrong in a way worth remembering. SW-144's build argued
+# that `verdict` describes the primary cited (hermetic) proof and that changing it
+# would trip SW-157's drift guard. The FIRST half was a reading, not a rule; the
+# SECOND half was simply FALSE and was disproved by running the guards — PARTIAL
+# with known_defect: "" passes both engine/conformance and internal/parity. A
+# guard constraint was assumed rather than tested, and the assumption made the
+# matrix read greener than reality. If you are about to leave a verdict alone
+# because a guard "would" object, RUN THE GUARD FIRST.
+#
+# ---------------------------------------------------------------------------
 # WHAT THE ROWS SAY
 # ---------------------------------------------------------------------------
 # Exactly 17 rows: 15 change classes (PRD FR-7) + 2 crash conditions (Delta §9).
@@ -302,7 +353,7 @@ parity_classes:
     label: "Datei ändern / modify file"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:814"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1054"
-    verdict: "PROVEN"
+    verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
     test_line: "179"
     test_name: "TestFullVsIncremental_ByteParity"
@@ -313,7 +364,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "SW-144 FOUND THIS CLASS FAILING ON REAL MULTI-PACKAGE SOURCE, 2026-07-30 — PARITY-002. The hermetic row below still holds and still passes; what it does not reach is package depth. The real-repository matrix (docs/rc/parity-matrix-real-repo.md) shows modify_file CONVERGING on cobra (2 packages) and DIVERGING on gin (7 packages): incremental 1891 nodes / 6606 edges against full 1891 / 6603, the extra edges ALL of kind imports, node counts identical. Filed as PARITY-002 in projects/graphi/backlog.md and scheduled for v0.7.2 alongside PARITY-001. NOT FIXED, per the owner's measure-first ruling. This row's verdict and known_defect are deliberately UNCHANGED: verdict describes the PRIMARY CITED PROOF, which is the hermetic harness row, and that row genuinely asserts and passes parity on its fixture; and known_defect must equal the harness row's own declaration, which is empty, or SW-157's VERDICT drift-guard direction fails. THE DEFECT IS THEREFORE PUBLISHED HERE IN `note` AND IN THE REAL-REPO RECORD, NOT BY RE-VERDICTING THIS ROW — read this note, not the verdict, when asking whether modify_file is safe at scale. SUPERSEDED BY THE SW-157 HARNESS. Table row modify_file: an indexed file is rewritten so its node set grows while its existing nodes keep identity; inc-vs-full snapshot bytes on BOTH backends; witness shop.Extra present AND shop.price identity preserved. PRE-HARNESS PROVENANCE, retained: Step 1 rewrites a/a.go (helper body plus a new Extra function). Also byte-proven by engine/ingest/link_e2e_test.go:43 and, at graph-field-dump strength, engine/ingest/typeresolve_test.go:167. SQLite side absent."
+    note: "SW-144 FOUND THIS CLASS FAILING ON REAL MULTI-PACKAGE SOURCE, 2026-07-30 — PARITY-002. The hermetic row below still holds and still passes; what it does not reach is package depth. The real-repository matrix (docs/rc/parity-matrix-real-repo.md) shows modify_file CONVERGING on cobra (2 packages) and DIVERGING on gin (7 packages): incremental 1891 nodes / 6606 edges against full 1891 / 6603, the extra edges ALL of kind imports, node counts identical. Filed as PARITY-002 in projects/graphi/backlog.md and scheduled for v0.7.2 alongside PARITY-001. NOT FIXED, per the owner's measure-first ruling. THIS ROW'S VERDICT IS PROVEN -> PARTIAL, corrected 2026-07-30 in SW-144 review round 1 (finding Major 1). SW-144's build had left it PROVEN, arguing that verdict describes the primary cited HERMETIC proof and that changing it would trip SW-157's drift guard; the second half was simply FALSE and was disproved by running both guards, which pass with PARTIAL and known_defect empty. A class that FAILS on real repositories may not read PROVEN — see the block THE TWO FIXTURES at the head of this file for the rule and for why known_defect stays empty here. The mechanism is an UNDER-DETERMINED REPRESENTATIVE-FILE TARGET for file-to-file imports edges, not anything specific to this class. SUPERSEDED BY THE SW-157 HARNESS. Table row modify_file: an indexed file is rewritten so its node set grows while its existing nodes keep identity; inc-vs-full snapshot bytes on BOTH backends; witness shop.Extra present AND shop.price identity preserved. PRE-HARNESS PROVENANCE, retained: Step 1 rewrites a/a.go (helper body plus a new Extra function). Also byte-proven by engine/ingest/link_e2e_test.go:43 and, at graph-field-dump strength, engine/ingest/typeresolve_test.go:167. SQLite side absent."
 
   - id: "delete_file"
     kind: "change_class"
@@ -464,7 +515,7 @@ parity_classes:
     label: "Implementierung entfernen / remove implementation"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:823"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1063"
-    verdict: "PROVEN"
+    verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
     test_line: "179"
     test_name: "TestFullVsIncremental_ByteParity"
@@ -475,7 +526,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "SW-144: THIS ROW FAILS ON REAL SOURCE, BUT NOT FOR A REASON SPECIFIC TO THIS CLASS — PARITY-002. The real-repository matrix runs it on gin (deleting method Context.Status in context.go, the type surviving with 110 other methods) and gets incremental 1889 nodes / 6602 edges against full 1889 / 6599. The divergence is NOT about removing an implementation: modify_file and change_build_tag on the same repository produce a BYTE-IDENTICAL BranchDiffReport, same five edge ids, so all three are one defect (PARITY-002, filed in projects/graphi/backlog.md, NOT fixed) surfacing three times. See docs/rc/parity-matrix-real-repo.md. verdict and known_defect are deliberately unchanged for the reason stated on modify_file. WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS, FOR BOTH MECHANISMS IN ONE CHANGE SET. Table row remove_implementation deletes the method that made shop.Buf satisfy shop.Sink, so the confirmed-tier go/types method-set edge must vanish, AND deletes the struct embed of shop.Base, so the syntactic inherits edge must vanish - with control assertions that none of the three types was deleted wholesale. Removal is the direction that can leave a stale edge and nothing in the tree covered either mechanism before. Inc-vs-full snapshot bytes on BOTH backends. PRE-HARNESS OBSERVATION, retained: Nothing removes an implementation by either mechanism — no test drops an interface embed, and none removes or breaks a method so a concrete type STOPS satisfying an interface. Removal is the direction that can leave a stale edge, and engine/ingest/hierarchy_e2e_test.go:135's `adds/removes` comment is the reason this looked covered."
+    note: "SW-144: THIS ROW FAILS ON REAL SOURCE, BUT NOT FOR A REASON SPECIFIC TO THIS CLASS — PARITY-002. The real-repository matrix runs it on gin (deleting method Context.Status in context.go, the type surviving with 110 other methods) and gets incremental 1889 nodes / 6602 edges against full 1889 / 6599. The divergence is NOT about removing an implementation: modify_file and change_build_tag on the same repository produce a BYTE-IDENTICAL BranchDiffReport, same five edge ids, so all three are one defect (PARITY-002, filed in projects/graphi/backlog.md, NOT fixed) surfacing three times. See docs/rc/parity-matrix-real-repo.md. VERDICT PROVEN -> PARTIAL, corrected 2026-07-30 in SW-144 review round 1 (Major 1): a class that FAILS on real repositories may not read PROVEN, and both drift guards pass with PARTIAL plus an empty known_defect. See THE TWO FIXTURES at the head of this file. WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS, FOR BOTH MECHANISMS IN ONE CHANGE SET. Table row remove_implementation deletes the method that made shop.Buf satisfy shop.Sink, so the confirmed-tier go/types method-set edge must vanish, AND deletes the struct embed of shop.Base, so the syntactic inherits edge must vanish - with control assertions that none of the three types was deleted wholesale. Removal is the direction that can leave a stale edge and nothing in the tree covered either mechanism before. Inc-vs-full snapshot bytes on BOTH backends. PRE-HARNESS OBSERVATION, retained: Nothing removes an implementation by either mechanism — no test drops an interface embed, and none removes or breaks a method so a concrete type STOPS satisfying an interface. Removal is the direction that can leave a stale edge, and engine/ingest/hierarchy_e2e_test.go:135's `adds/removes` comment is the reason this looked covered."
 
   - id: "branch_switch"
     kind: "change_class"
@@ -500,7 +551,7 @@ parity_classes:
     label: "Build-Tag-Änderung / change build tag"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:825"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1064"
-    verdict: "PROVEN"
+    verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
     test_line: "179"
     test_name: "TestFullVsIncremental_ByteParity"
@@ -511,14 +562,14 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "SW-144 RAN THIS CLASS ON THE MANIFEST'S DECLARED BUILD-TAGS REPOSITORY, 2026-07-30, AND IT FAILS — FOR A REASON THAT HAS NOTHING TO DO WITH BUILD TAGS. The real-repository matrix edits //go:build appengine in gin's context_appengine.go and gets incremental 1890 nodes / 6605 edges against full 1890 / 6602. Do NOT read that as build-tag semantics finally biting: the identical delta appears from modify_file and remove_implementation on the same repository, byte-identical BranchDiffReport and the same five edge ids, so this row is a third sighting of PARITY-002 (filed, NOT fixed) and not a build-tag finding. The degeneracy stated below is UNAFFECTED and still exactly true: graphi evaluates no build constraints, so the edit itself still moves nothing but comment content and line numbers. See docs/rc/parity-matrix-real-repo.md. verdict and known_defect deliberately unchanged, for the reason stated on modify_file. WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS, AND THE ROW IS LABELLED WITH ITS OWN DEGENERACY AS SPEC DECISION 5 REQUIRES. Table row change_build_tag PROVES PARITY OVER THE CHANGE AND PROVES NOTHING ABOUT BUILD-TAG SEMANTICS, and its own description in the harness says so. Because no build-constraint evaluation exists, the ONLY thing a //go:build edit moves is the LINE NUMBERS of the declarations below it - which is exactly what the witness asserts: tagged.Tagged moves from line 3 to line 5, because graphi read the constraint as ordinary leading comment content rather than evaluating it. That is simultaneously an honest non-vacuous witness and the demonstration of the degeneracy. Inc-vs-full snapshot bytes on BOTH backends. PRE-HARNESS OBSERVATION, retained: ABSENT AND DEGENERATE. No test edits a `//go:build` line, and no build-constraint evaluation exists to test: the only `//go:build` in the non-test source of engine/ingest, engine/typeresolve and core/parse is core/parse/broad.go:1, which is graphi's OWN tag on its OWN file, not evaluation of ingested source. GroupPackages (engine/typeresolve/pkggraph.go:85) groups by (directory, package clause) from parser.ImportsOnly bytes and never inspects constraints; engine/typeresolve/doc.go:24 and check.go:20 forbid go/packages, which is where constraint evaluation would come from. The class STAYS (spec decision 5), and any row carrying it MUST state that it proves parity over a comment-line content change and NOTHING about build-tag semantics."
+    note: "SW-144 RAN THIS CLASS ON THE MANIFEST'S DECLARED BUILD-TAGS REPOSITORY, 2026-07-30, AND IT FAILS — FOR A REASON THAT HAS NOTHING TO DO WITH BUILD TAGS. The real-repository matrix edits //go:build appengine in gin's context_appengine.go and gets incremental 1890 nodes / 6605 edges against full 1890 / 6602. Do NOT read that as build-tag semantics finally biting: the identical delta appears from modify_file and remove_implementation on the same repository, byte-identical BranchDiffReport and the same five edge ids, so this row is a third sighting of PARITY-002 (filed, NOT fixed) and not a build-tag finding. The degeneracy stated below is UNAFFECTED and still exactly true: graphi evaluates no build constraints, so the edit itself still moves nothing but comment content and line numbers. INDEED THIS ROW IS THE SHARPEST EVIDENCE FOR PARITY-002's TRIGGER: a COMMENT-ONLY edit is enough to make sync and rebuild disagree, which is what shows the defect is independent of edit CONTENT and not merely of change class. A no-op sync converges, so the trigger is precisely sync re-linking any file at all. See docs/rc/parity-matrix-real-repo.md. VERDICT PROVEN -> PARTIAL, corrected 2026-07-30 in SW-144 review round 1 (Major 1): a class that FAILS on real repositories may not read PROVEN, and both drift guards pass with PARTIAL plus an empty known_defect. See THE TWO FIXTURES at the head of this file. WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS, AND THE ROW IS LABELLED WITH ITS OWN DEGENERACY AS SPEC DECISION 5 REQUIRES. Table row change_build_tag PROVES PARITY OVER THE CHANGE AND PROVES NOTHING ABOUT BUILD-TAG SEMANTICS, and its own description in the harness says so. Because no build-constraint evaluation exists, the ONLY thing a //go:build edit moves is the LINE NUMBERS of the declarations below it - which is exactly what the witness asserts: tagged.Tagged moves from line 3 to line 5, because graphi read the constraint as ordinary leading comment content rather than evaluating it. That is simultaneously an honest non-vacuous witness and the demonstration of the degeneracy. Inc-vs-full snapshot bytes on BOTH backends. PRE-HARNESS OBSERVATION, retained: ABSENT AND DEGENERATE. No test edits a `//go:build` line, and no build-constraint evaluation exists to test: the only `//go:build` in the non-test source of engine/ingest, engine/typeresolve and core/parse is core/parse/broad.go:1, which is graphi's OWN tag on its OWN file, not evaluation of ingested source. GroupPackages (engine/typeresolve/pkggraph.go:85) groups by (directory, package clause) from parser.ImportsOnly bytes and never inspects constraints; engine/typeresolve/doc.go:24 and check.go:20 forbid go/packages, which is where constraint evaluation would come from. The class STAYS (spec decision 5), and any row carrying it MUST state that it proves parity over a comment-line content change and NOTHING about build-tag semantics."
 
   - id: "replace_generated_file"
     kind: "change_class"
     label: "Generated File ersetzen / replace generated file"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:826"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1065"
-    verdict: "PROVEN"
+    verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
     test_line: "179"
     test_name: "TestFullVsIncremental_ByteParity"
@@ -529,7 +580,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "SW-144 CLOSED THE REAL-SOURCE RESIDUAL NAMED BELOW, 2026-07-30, AND IT FAILS — PARITY-002 AT SCALE. The real-repository matrix regenerates grpc-go's balancer/grpclb/grpc_lb_v1/load_balancer.pb.go (one of the manifest's declared 49 DO-NOT-EDIT files) and gets incremental 14898 nodes / 69939 edges against full 14898 / 69772: node counts identical, 167 EXTRA imports edges on the incremental side, every sampled diverging edge of kind imports. Same signature as the three gin rows, two orders of magnitude larger, on the corpus's deepest tree (277 directories containing Go source). Filed as PARITY-002, NOT fixed. A HARNESS BUG HAD TO BE FIXED BEFORE THIS ROW COULD RUN AT ALL, recorded because it was a false negative that blamed the corpus: the marker scan looked only at a file's first 8 lines, which is where the bare convention puts 'Code generated ... DO NOT EDIT.' and NOT where protoc-gen-go puts it (behind a ~13-line Apache licence header), so all 49 files read as non-generated and the class SKIPPED with 'no repository exhibits this structure' while the manifest correctly declared that grpc-go carries it. See docs/rc/parity-matrix-real-repo.md. verdict and known_defect deliberately unchanged, for the reason stated on modify_file. WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS. Table row replace_generated_file replaces a file carrying the Code generated by protoc-gen-go. DO NOT EDIT. marker wholesale with a regenerated body at a new version: one function removed, two added, one type added, one struct widened. Witness: gen.GetD, gen.GetE and gen.Response present, gen.GetA absent, and the surviving symbols keep identity. Inc-vs-full snapshot bytes on BOTH backends. The real-source instance (grpc-go, 49 marked files) remains SW-144 residual. PRE-HARNESS OBSERVATION, retained: No test replaces a generated file. CORRECTED 2026-07-30 (review finding m3): an earlier version of this note inferred that NO generated-file special-casing exists anywhere, which over-generalised from a grep scoped to core/parse and engine/ingest. Detection DOES exist — surfaces/client/direct.go:596 GeneratedMarkerDetector scans file heads for `Code generated ... DO NOT EDIT` and `@generated`, and feeds engine/diagnostic/suppress.go:101, which classifies such a file SuppressionGenerated. The verdict is unaffected and the reason is precise: that detector lives in the DIAGNOSTIC suppression path (dead-code triage), is injected surface-side, and is reached by neither the parse/ingest pipeline nor model.Graph — so it cannot influence snapshot bytes or parity in either direction. Within the ingest/graph path the class genuinely has no special-casing, and that makes it a large-diff, high-symbol-count stress on the ordinary modify path rather than a degenerate row like change_build_tag. owner is SW-157 (the hermetic row the required flag demands); SW-144 owns the RESIDUAL real-source instance — grpc-go, 49 DO-NOT-EDIT files per corpus/manifest.json."
+    note: "SW-144 CLOSED THE REAL-SOURCE RESIDUAL NAMED BELOW, 2026-07-30, AND IT FAILS — PARITY-002 AT SCALE. The real-repository matrix regenerates grpc-go's balancer/grpclb/grpc_lb_v1/load_balancer.pb.go (one of the manifest's declared 49 DO-NOT-EDIT files) and gets incremental 14898 nodes / 69940 edges against full 14898 / 69772: node counts identical, a NET +168 imports edges on the incremental side, every sampled diverging edge of kind imports. Same signature as the three gin rows, two orders of magnitude larger. The divergence is BIDIRECTIONAL rather than purely additive - on gin, 4 edges are incremental-only and 1 is rebuild-only - so a fixer must not look only for a missing sweep. Filed as PARITY-002, NOT fixed. A HARNESS BUG HAD TO BE FIXED BEFORE THIS ROW COULD RUN AT ALL, recorded because it was a false negative that blamed the corpus: the marker scan looked only at a file's first 8 lines, which is where the bare convention puts 'Code generated ... DO NOT EDIT.' and NOT where protoc-gen-go puts it (behind a ~13-line Apache licence header), so all 49 files read as non-generated and the class SKIPPED with 'no repository exhibits this structure' while the manifest correctly declared that grpc-go carries it. See docs/rc/parity-matrix-real-repo.md. VERDICT PROVEN -> PARTIAL, corrected 2026-07-30 in SW-144 review round 1 (Major 1): a class that FAILS on real repositories may not read PROVEN, and both drift guards pass with PARTIAL plus an empty known_defect. See THE TWO FIXTURES at the head of this file. WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS. Table row replace_generated_file replaces a file carrying the Code generated by protoc-gen-go. DO NOT EDIT. marker wholesale with a regenerated body at a new version: one function removed, two added, one type added, one struct widened. Witness: gen.GetD, gen.GetE and gen.Response present, gen.GetA absent, and the surviving symbols keep identity. Inc-vs-full snapshot bytes on BOTH backends. The real-source instance (grpc-go, 49 marked files) remains SW-144 residual. PRE-HARNESS OBSERVATION, retained: No test replaces a generated file. CORRECTED 2026-07-30 (review finding m3): an earlier version of this note inferred that NO generated-file special-casing exists anywhere, which over-generalised from a grep scoped to core/parse and engine/ingest. Detection DOES exist — surfaces/client/direct.go:596 GeneratedMarkerDetector scans file heads for `Code generated ... DO NOT EDIT` and `@generated`, and feeds engine/diagnostic/suppress.go:101, which classifies such a file SuppressionGenerated. The verdict is unaffected and the reason is precise: that detector lives in the DIAGNOSTIC suppression path (dead-code triage), is injected surface-side, and is reached by neither the parse/ingest pipeline nor model.Graph — so it cannot influence snapshot bytes or parity in either direction. Within the ingest/graph path the class genuinely has no special-casing, and that makes it a large-diff, high-symbol-count stress on the ordinary modify path rather than a degenerate row like change_build_tag. owner is SW-157 (the hermetic row the required flag demands); SW-144 owns the RESIDUAL real-source instance — grpc-go, 49 DO-NOT-EDIT files per corpus/manifest.json."
 
   - id: "change_external_import"
     kind: "change_class"

@@ -135,8 +135,8 @@ func printAndScore(rep parityreport.Report) int {
 		if !sc.Pass {
 			status = "FAIL"
 		}
-		fmt.Printf("  §12.3 counts  %-10s %-24s orphaned external nodes=%d stale linker edges=%d  %s\n",
-			sc.Repo, sc.Class, sc.OrphanedExternalNodes, sc.StaleLinkerEdges, status)
+		fmt.Printf("  §12.3 counts  %-10s %-24s %-11s orphaned external nodes=%d stale linker edges=%d  %s\n",
+			sc.Repo, sc.Class, sc.Side, sc.OrphanedExternalNodes, sc.StaleLinkerEdges, status)
 	}
 	fmt.Printf("\n  outcome     %s\n  complete    %v\n  publishable %v\n", rep.Outcome, rep.Complete, rep.Publishable)
 	for _, why := range rep.NotPublishableBecause {

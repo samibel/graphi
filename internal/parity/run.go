@@ -294,9 +294,14 @@ func (r *Runner) runClass(ctx context.Context, res *parityreport.ClassResult, sp
 	res.FullNodes, res.FullEdges = len(fullGraph.Nodes), len(fullGraph.Edges)
 
 	// 6. The two PRD §12.3 store-level counts, over the REAL repository graph
-	//    after this class's change sequence.
-	sc := storeCounts(entry.Name, spec.ID, fullGraph)
-	rep.StoreCounts = append(rep.StoreCounts, sc)
+	//    after this class's change sequence — on BOTH sides.
+	//
+	//    Counting only the rebuild would leave the incremental graph, which is
+	//    the side a defect actually lands on, unmeasured while the report said
+	//    "orphaned external nodes = 0" without qualification.
+	rep.StoreCounts = append(rep.StoreCounts,
+		storeCounts(entry.Name, spec.ID, "full", fullGraph),
+		storeCounts(entry.Name, spec.ID, "incremental", incGraph))
 
 	if bytes.Equal(incBytes, fullBytes) {
 		res.Verdict = parityreport.VerdictPass

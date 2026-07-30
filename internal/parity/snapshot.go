@@ -119,13 +119,17 @@ func digest(b []byte) string {
 //	stale linker edges — an edge whose from or to endpoint is not a node of the
 //	  graph. The snapshot is a closed world, so a dangling endpoint is a linker
 //	  edge that outlived its node.
-func storeCounts(repo, class string, g graphPayload) parityreport.StoreCounts {
+//
+// Both the FULL and the INCREMENTAL graph are counted, and each result carries
+// its Side. Counting only one of them would make "orphaned external nodes = 0" a
+// statement about one of the two graphs the row compares, without saying which.
+func storeCounts(repo, class, side string, g graphPayload) parityreport.StoreCounts {
 	ids := make(map[string]bool, len(g.Nodes))
 	for _, n := range g.Nodes {
 		ids[n.ID] = true
 	}
 	incident := make(map[string]bool, len(g.Nodes))
-	sc := parityreport.StoreCounts{Repo: repo, Class: class}
+	sc := parityreport.StoreCounts{Repo: repo, Class: class, Side: side}
 	for _, e := range g.Edges {
 		incident[e.From] = true
 		incident[e.To] = true

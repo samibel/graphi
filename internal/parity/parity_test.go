@@ -396,24 +396,78 @@ func TestStoreCounts_BiteOnBothConditions(t *testing.T) {
 	add("n1", "function")
 	add("x1", "external")
 	edge("e1", "n1", "x1")
-	if sc := storeCounts("r", "c", g); !sc.Pass || sc.OrphanedExternalNodes != 0 || sc.StaleLinkerEdges != 0 {
+	if sc := storeCounts("r", "c", "full", g); !sc.Pass || sc.OrphanedExternalNodes != 0 || sc.StaleLinkerEdges != 0 {
 		t.Fatalf("clean graph must pass, got %+v", sc)
 	}
 
 	// An external node nobody references is an orphan the sweep missed.
 	add("x2", "external")
-	if sc := storeCounts("r", "c", g); sc.OrphanedExternalNodes != 1 || sc.Pass {
+	if sc := storeCounts("r", "c", "full", g); sc.OrphanedExternalNodes != 1 || sc.Pass {
 		t.Fatalf("orphaned external node not counted: %+v", sc)
 	}
 
 	// An edge whose endpoint is not a node is a linker edge that outlived it.
 	edge("e2", "n1", "gone")
-	sc := storeCounts("r", "c", g)
+	sc := storeCounts("r", "c", "full", g)
 	if sc.StaleLinkerEdges != 1 || sc.Pass {
 		t.Fatalf("stale linker edge not counted: %+v", sc)
 	}
 	if len(sc.StaleSample) == 0 || len(sc.OrphanSample) == 0 {
 		t.Fatalf("a non-zero count must carry a sample so it is actionable: %+v", sc)
+	}
+	if sc.Side != "full" {
+		t.Fatalf("Side must label which graph was counted, got %q", sc.Side)
+	}
+}
+
+// TestStoreCounts_CoverBothSides is the regression test for review finding
+// Major 2. The first cut passed only the rebuild graph to the counter and
+// decoded the incremental graph without ever using it, so
+// "orphaned external nodes = 0" was undisclosed-ly a statement about one of the
+// two graphs the row compares — and the incremental side is the one a parity
+// defect actually lands on. Every executed row must now produce a labelled count
+// for BOTH sides.
+func TestStoreCounts_CoverBothSides(t *testing.T) {
+	if testing.Short() {
+		t.Skip("drives the built binary")
+	}
+	bin := buildGraphi(t)
+	root := writeFixtureModule(t)
+	rows := []ClassRow{
+		{ID: "add_file", Kind: kindChangeClass, Label: "add file", HarnessRow: "required"},
+		{ID: "delete_file", Kind: kindChangeClass, Label: "delete file", HarnessRow: "required", KnownDefect: "PARITY-001"},
+	}
+	m := corpus.Manifest{Entries: []corpus.Entry{{
+		Name: "fixture", Path: root, Tier: 1, Language: "go",
+		Searches: []corpus.Search{{Query: "Checkout", ExpectNonEmpty: true}},
+	}}}
+	r := &Runner{
+		Binary: bin, WorkDir: t.TempDir(), MaxTier: 1, AllowLocal: true,
+		PerClassTimeout: 3 * time.Minute, RunnerClass: "test",
+	}
+	prov := parityreport.NewProvenance("test-sha")
+	prov.WorktreeClean, prov.ProductDiffEmpty = true, true
+	rep, err := r.Run(context.Background(), m, rows, prov)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	sides := map[string]map[string]bool{}
+	for _, sc := range rep.StoreCounts {
+		if sc.Side == "" {
+			t.Errorf("store count for %s carries no Side label: %+v", sc.Class, sc)
+		}
+		if sides[sc.Class] == nil {
+			sides[sc.Class] = map[string]bool{}
+		}
+		sides[sc.Class][sc.Side] = true
+	}
+	if len(sides) == 0 {
+		t.Fatal("no store counts were taken at all")
+	}
+	for class, got := range sides {
+		if !got["full"] || !got["incremental"] {
+			t.Errorf("class %s counted sides %v; both \"full\" and \"incremental\" are required", class, got)
+		}
 	}
 }
 

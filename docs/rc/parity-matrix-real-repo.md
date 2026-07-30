@@ -67,7 +67,7 @@ is therefore deliberately not re-implemented.
 | `remove_implementation` | **FAIL** | gin | inc 1889/6602 vs full 1889/6599 — **PARITY-002** |
 | `branch_switch` | *DEFERRED* | — | SW-158 |
 | `change_build_tag` | **FAIL** | gin | inc 1890/6605 vs full 1890/6602 — **PARITY-002** |
-| `replace_generated_file` | **FAIL** | grpc-go | inc 14898/69939 vs full 14898/69772 — **PARITY-002** |
+| `replace_generated_file` | **FAIL** | grpc-go | inc 14898/**69940** vs full 14898/69772 — **PARITY-002** |
 | `change_external_import` | **PASS** | cobra | |
 | `interrupted_full_pass` | *DEFERRED* | — | SW-158 (crash condition, not a change class) |
 | `restart_and_recovery` | *DEFERRED* | — | SW-158 (crash condition, not a change class) |
@@ -77,15 +77,22 @@ times, not three defects — see §5.
 
 ### The two §12.3 store-level counts
 
-**Orphaned external nodes = 0** and **stale linker edges = 0** on every executed row, over the
-real repository graph after that row's change sequence — counted from the same envelope the
-assertion compared, not inferred from the fixture-level proofs at
+**Orphaned external nodes = 0** and **stale linker edges = 0** on every executed row, **on both
+the rebuild side and the incremental side** — counted from the same envelopes the assertion
+compared, not inferred from the fixture-level proofs at
 `engine/ingest/link_external_lifecycle_e2e_test.go:29` and `link_cascade_test.go:118`.
 
+**Both sides are counted, and each figure is labelled with the side it describes.** That is a
+correction: the first cut of this harness passed only the rebuild graph to the counter and
+decoded the incremental graph without using it, so these counts were undisclosed-ly a statement
+about one of the two graphs a row compares — and the incremental side is the one a parity
+defect actually lands on. No published figure changed when both sides were counted; every side
+of every executed row reads 0/0. The gap was coverage and disclosure, not a wrong number.
+
 **Read that with §5's scope limit.** A stale linker edge here means an edge whose endpoint is
-**not a node in the graph**. PARITY-002's extra edges have valid endpoints, so they are
-invisible to this counter. Zero means *no dangling endpoints*; it does not mean *no edges a
-full pass would have recomputed away*.
+**not a node in the graph**. PARITY-002's extra edges have valid endpoints on both sides, so
+they are invisible to this counter. Zero means *no dangling endpoints*; it does not mean *no
+edges a full pass would have recomputed away*.
 
 ## 4. Repository selection — which class ran where, and why
 
@@ -134,11 +141,17 @@ fixture artifact. **Note for whoever fixes it:** SW-157's review established tha
 
 ### PARITY-002 — new, found by this matrix
 
-**Modifying an existing file in a multi-package repository leaves `graphi sync` carrying
-`imports` edges that `graphi rebuild` does not produce.** Filed in `projects/graphi/backlog.md`.
+**Whenever `graphi sync` re-links a file, the file→file `imports` edge set can settle
+differently from what `graphi rebuild` produces over the identical tree.** Filed in
+`projects/graphi/backlog.md`.
 
 Node counts are identical on both sides in every instance; **every diverging edge is
 `kind: "imports"`**, and no other edge kind and no node ever differs.
+
+**It is bidirectional, not purely additive.** On gin the incremental graph carries **4** edges
+the rebuild does not **and the rebuild carries 1 the incremental does not** — net +3, but a
+one-way "incremental adds edges" reading is wrong and would send a fixer looking only for a
+missing sweep. On grpc-go the net is **+168** (inc 69940 vs full 69772).
 
 **It is one defect, not three, and this is the load-bearing evidence.** The three gin rows are
 three different files and three different edit shapes — appending a function to `auth.go`,
@@ -148,19 +161,48 @@ same five edge ids. One identical delta from three unrelated edits means the div
 to the repository plus an incremental re-link, not to any change class. The matrix reports it
 as three rows only because the matrix is organised by class.
 
-**The trigger is modification, not `sync` itself.** A control run pins the boundary: `add_file`
-on gin **converges**, while `modify_file` on the same clone diverges. cobra converges on
-`modify_file` too, so package depth matters as well — cobra has 2 packages, gin 7, grpc-go 277
-directories containing Go source, where the divergence reaches **167 extra `imports` edges**.
+**The trigger is bounded tightly by two controls, and it is narrower than "modification".**
 
-**It is not PARITY-001:** opposite direction (incremental carries *more*), different edge kind,
-different trigger.
+- A **comment-only** edit triggers it. So it is independent of edit *content*, not merely of
+  change class — nothing about the symbol graph needs to change.
+- A **no-op `sync`** converges. So it is not "running `sync`" either.
 
-**Where to look first, and this is not a root cause.** `imports` edges are package-level while
-the incremental unit of work is the file, so a package's import edge set must be recomputed
-from a set of files of which only some were re-parsed. SW-144's scope was to prove the
-divergence, publish it and file it. PARITY-001's first stated cause was wrong in two ways and
-had to be corrected in review; this record therefore stops at what was observed.
+The trigger is therefore precisely **`sync` re-linking any file at all**. `add_file` on gin
+converges, and cobra converges throughout.
+
+**"Package depth" is a correlate, not the discriminator** — an earlier version of this record
+said otherwise and was wrong. What distinguishes the affected repositories is that they contain
+package directories whose **import target is under-determined**:
+
+- `imports` edges are **file→file**, emitted at `engine/link/resolve_go.go:193` from
+  `idx.packageFileNodes(imp.Path)` — the set of file nodes in the imported directory — at
+  `classSelector`, i.e. the **`heuristic`** tier (`engine/link/link.go` `tierFor`). The code's
+  own comment concedes the shape: it links "to the directory's file node **when uniquely
+  determinable**".
+- gin's `internal/json` holds **four mutually-exclusive build-tag variants all declaring
+  `package json`**, so "the" target file is not unique. graphi evaluates no build constraints,
+  so all four are indexed.
+- gin's `internal/bytesconv` puts a **`_test.go` file up as an import target on both sides**.
+
+Which representative the linker lands on depends on what the index contains when it runs, and a
+re-link sees a different index than a cold pass. **Neither side is absolutely right** — but
+`rebuild` is the reference by definition, so `sync` is what diverges.
+
+**It is not PARITY-001:** different edge kind, different trigger (re-link vs deletion), and
+bidirectional rather than one-way.
+
+**This is a characterisation, not a fix, and not a completed root-cause analysis.** SW-144's
+scope was to prove the divergence, publish it and file it. PARITY-001's first stated cause was
+wrong in two ways and had to be corrected in review, which is why this record states what was
+measured and stops there.
+
+**Independently reproduced without this harness.** SW-144's review cloned gin v1.9.1, drove
+only the built binary and edited by hand — no `internal/parity` in the loop — and reproduced
+the same five edge ids. The review also ruled out the harness's false-positive mode
+structurally rather than by inspection: `internal/parity/run.go:248-270` applies the mutation
+**once** and indexes **the same on-disk tree** on both sides, so a malformed planner would yield
+a malformed tree that both passes see identically and would not, by itself, produce a
+divergence.
 
 ### One near-miss, recorded because false findings are expensive
 
