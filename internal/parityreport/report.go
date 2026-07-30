@@ -28,11 +28,31 @@ import (
 // SchemaVersion versions this report envelope. Bump when a field is added,
 // removed or re-meaned, so a consumer can tell whether what it must parse
 // changed.
-const SchemaVersion = 1
+//
+// 1 -> 2 (SW-158): the three LIFECYCLE rows. ClassResult gained KillPoint,
+// RefA/RefB, Repetitions, DistinctIncDigests, Reproducible, CoverageLimit and
+// Control; Report gained CoverageLimits; and Finalize now scores
+// kind: "crash_condition" rows instead of ignoring them. Every addition is
+// additive, so a schema-1 reader still parses a schema-2 document — but it would
+// silently miss a FAILING recovery row, which is exactly why the version moves.
+const SchemaVersion = 2
 
 // HarnessVersion identifies the harness that produced a report. It is recorded
 // in every report so a verdict can never be attributed to the wrong harness.
-const HarnessVersion = "parity-matrix/1"
+// "/2" is the SW-158 harness: the same change-class rows plus the three
+// lifecycle rows.
+const HarnessVersion = "parity-matrix/2"
+
+// KindChangeClass and KindCrashCondition mirror docs/rc/parity-classes.yaml's
+// `kind` vocabulary as WIRE VALUES. They are declared here because Finalize
+// scores the two kinds differently and must not do so on a bare string literal:
+// FR-7's completeness count is over change classes ONLY, while a crash condition
+// that FAILS must still fail the run. Conflating the two is what produced
+// backlog.md:55's "16 change classes".
+const (
+	KindChangeClass    = "change_class"
+	KindCrashCondition = "crash_condition"
+)
 
 // CandidateSHA is the P0 candidate, v0.7.1. The harness does NOT exist at this
 // SHA, so no report may ever claim it ran there — see Provenance.Statement.
@@ -204,6 +224,122 @@ type ClassResult struct {
 	// Detail is the reason for a FAIL, SKIPPED or ERROR verdict.
 	Detail     string `json:"detail,omitempty"`
 	DurationMS int64  `json:"duration_ms,omitempty"`
+
+	// ------------------------------------------------------------------
+	// LIFECYCLE ROWS (SW-158). Empty on every change-class row.
+	// ------------------------------------------------------------------
+
+	// KillPoint cites the docs/adr/0004-ingest-recovery-disposition.md kill
+	// point(s) this row places its signal at, in the ADR's OWN vocabulary
+	// (K1…K8). AC-4 requires the citation rather than a parallel naming: a row
+	// that invented its own boundary names would make the real-process
+	// complement incomparable with the synthetic matrix it complements.
+	KillPoint string `json:"kill_point,omitempty"`
+	// RefA and RefB are the two git refs a branch-switch row moved between:
+	// A is indexed, B is checked out, and the sync from A to B is what must
+	// converge. Both are recorded (AC-5) because a row naming only its
+	// destination is not reproducible.
+	RefA string `json:"ref_a,omitempty"`
+	RefB string `json:"ref_b,omitempty"`
+	// Repetitions is EVERY execution of this row, not a summary of them.
+	//
+	// A lifecycle row is repeated because a single passing execution is not
+	// evidence of convergence: PARITY-002 is already known to be
+	// non-deterministic on grpc-go (three distinct incremental snapshots over
+	// six executions of one pinned tree), so one green run proves only that
+	// one green run happened. The row's verdict is FAIL if ANY repetition
+	// diverged — a repetition is never retried into green (AC-8).
+	Repetitions []Repetition `json:"repetitions,omitempty"`
+	// DistinctIncDigests counts how many DIFFERENT incremental snapshot
+	// digests the repetitions produced. 1 means the row reproduced; more means
+	// the measurement itself varies and no single figure may be quoted.
+	DistinctIncDigests int `json:"distinct_inc_digests,omitempty"`
+	// DistinctFullDigests is the same count over the fresh-full side, which
+	// separates "the product is non-deterministic on the incremental path"
+	// from "the product is non-deterministic at all".
+	DistinctFullDigests int `json:"distinct_full_digests,omitempty"`
+	// Reproducible is DistinctIncDigests == 1 && DistinctFullDigests == 1 over
+	// at least two repetitions. It is reported alongside the verdict and never
+	// instead of it: a row can be reproducibly FAILING.
+	Reproducible bool `json:"reproducible,omitempty"`
+	// CoverageLimit states, IN THE ROW, why a row could not be exercised here
+	// — a platform with no SIGKILL, for instance. AC-9: a skipped row must
+	// appear as a disclosed limit, never as an absence.
+	CoverageLimit string `json:"coverage_limit,omitempty"`
+	// Control carries an UNINTERRUPTED counterpart of the same journey. It is
+	// DIAGNOSIS, never the verdict: it separates "recovery did not converge"
+	// from "this repository's incremental path does not converge even without a
+	// crash", which are different defects and would otherwise be reported as
+	// one.
+	Control string `json:"control,omitempty"`
+}
+
+// Repetition is ONE execution of a lifecycle row, recorded in full.
+//
+// The whole sample is published rather than an aggregate. An aggregate would
+// hide precisely what the SW-144 matrix already found on grpc-go: that the
+// quantity beneath a stable verdict can itself vary run to run.
+type Repetition struct {
+	// N is the 1-based repetition index.
+	N int `json:"n"`
+	// KillPointID names the harness's kill point (e.g. "parse", "resolve"),
+	// and ADRKillPoint the docs/adr/0004 kill point it lands at.
+	KillPointID  string `json:"kill_point_id,omitempty"`
+	ADRKillPoint string `json:"adr_kill_point,omitempty"`
+	// ObservedPhase is the phase the binary's OWN progress stream had announced
+	// when the signal was sent — the honest answer to "where did the kill
+	// land?", read from outside the process rather than assumed. A row that
+	// cannot say where it killed cannot say what it proved.
+	ObservedPhase string `json:"observed_phase,omitempty"`
+	// KillLanded is false when the pass finished before the marker arrived. It
+	// is never absorbed: a repetition that did not exercise the condition makes
+	// the row an ERROR, because a journey that never crashed cannot be evidence
+	// that a crash recovers.
+	KillLanded bool `json:"kill_landed"`
+	// LockDuringPass and LockAfterKill are internal/ingestlock probe states of
+	// the REAL cross-process ingest lock (meta/ingest.lock.db) taken from this
+	// process while the subprocess was mid-pass and again after it died. "held"
+	// then "free" is the cross-process evidence AC-2 asks for: the lock is a
+	// SQLite file lock that the OS drops with the process, unlike the durable
+	// recovery state, which survives it.
+	LockDuringPass string `json:"lock_during_pass,omitempty"`
+	LockAfterKill  string `json:"lock_after_kill,omitempty"`
+	// CrashedNodes/CrashedEdges are the shape of the store AS THE KILLED
+	// PROCESS LEFT IT, read before anything recovers it. They are the
+	// independent corroboration of the ADR kill-point mapping: a full pass
+	// killed at K1 must have committed no graph batch (0 nodes), while one
+	// killed at K3 must have committed the WRITE and LINK batches (nodes
+	// present). Without them the mapping would rest on the progress stream
+	// alone. CrashedStoreNote carries the reason when the crashed store cannot
+	// be read at all, which is itself a legitimate outcome of a SIGKILL and is
+	// recorded rather than hidden.
+	CrashedNodes     int    `json:"crashed_nodes,omitempty"`
+	CrashedEdges     int    `json:"crashed_edges,omitempty"`
+	CrashedStoreNote string `json:"crashed_store_note,omitempty"`
+	// The two compared envelopes and their shapes.
+	SnapshotIncSHA256  string `json:"snapshot_inc_sha256,omitempty"`
+	SnapshotFullSHA256 string `json:"snapshot_full_sha256,omitempty"`
+	IncNodes           int    `json:"inc_nodes,omitempty"`
+	IncEdges           int    `json:"inc_edges,omitempty"`
+	FullNodes          int    `json:"full_nodes,omitempty"`
+	FullEdges          int    `json:"full_edges,omitempty"`
+	// Equal is the assertion: byte equality of the two envelopes.
+	Equal bool `json:"equal"`
+	// Detail explains a non-Equal or non-Landed repetition.
+	Detail     string `json:"detail,omitempty"`
+	DurationMS int64  `json:"duration_ms,omitempty"`
+}
+
+// CoverageLimit is a run-level disclosure that something the matrix claims to
+// cover was NOT exercised on this run, and why.
+//
+// It exists so AC-9's rule has a place to be true in the machine-readable
+// artifact and not only in the prose: a row that skipped must be findable by a
+// reader who never opens the markdown.
+type CoverageLimit struct {
+	Row      string `json:"row"`
+	Platform string `json:"platform,omitempty"`
+	Reason   string `json:"reason"`
 }
 
 // StoreCounts are the two PRD §12.3 store-level counts, taken over the REAL
@@ -282,6 +418,11 @@ type Report struct {
 	Classes     []ClassResult   `json:"classes"`
 	StoreCounts []StoreCounts   `json:"store_counts"`
 	NotCompared NotComparedNote `json:"not_compared"`
+	// CoverageLimits lists every row that did not run here and why (AC-9). A
+	// non-empty list also makes the run incomplete: the limits are disclosed
+	// AND they cost publishability, so disclosure is not a way to publish
+	// anyway.
+	CoverageLimits []CoverageLimit `json:"coverage_limits,omitempty"`
 
 	// Complete is true only when EVERY declared, non-deferred change class has
 	// a PASS or FAIL verdict. A run with a SKIPPED row is incomplete.
@@ -332,9 +473,19 @@ func (r Report) VerdictSetDigest() string {
 // fail-closed rules live in one auditable function.
 //
 // declaredChangeClasses is the number of kind: "change_class" rows in
-// docs/rc/parity-classes.yaml, passed in so the report cannot silently consider
-// itself complete over a class list it shortened.
-func (r *Report) Finalize(declaredChangeClasses int) {
+// docs/rc/parity-classes.yaml, and declaredCrashConditions the number of
+// kind: "crash_condition" rows. Both are passed in so the report cannot silently
+// consider itself complete over a row list it shortened, and they are passed
+// SEPARATELY because FR-7's completeness count is over change classes only —
+// adding the crash conditions to it is the conflation that produced
+// backlog.md:55's "16 change classes".
+//
+// SW-158 CHANGED THIS FUNCTION IN ONE LOAD-BEARING WAY. Crash-condition rows
+// were previously skipped by the scoring loop entirely, because SW-144 had none
+// that ran: a FAILING recovery row would have left Outcome reading PASS. Every
+// mismatch is blocking (Delta PRD :1092), so the two kinds are now scored — with
+// separate completeness counts and one shared failure signal.
+func (r *Report) Finalize(declaredChangeClasses, declaredCrashConditions int) {
 	r.SchemaVersion = SchemaVersion
 	r.HarnessVersion = HarnessVersion
 	if r.NotCompared.Rationale == "" {
@@ -344,18 +495,28 @@ func (r *Report) Finalize(declaredChangeClasses int) {
 	var reasons []string
 	anyFail, anyError, anySkipped := false, false, false
 	decided, deferred := 0, 0
+	crashDecided, crashDeferred := 0, 0
 	for _, c := range r.Classes {
-		if c.Kind != "change_class" {
+		if c.Kind != KindChangeClass && c.Kind != KindCrashCondition {
 			continue
 		}
+		crash := c.Kind == KindCrashCondition
 		switch c.Verdict {
 		case VerdictPass, VerdictFail:
-			decided++
+			if crash {
+				crashDecided++
+			} else {
+				decided++
+			}
 			if c.Verdict == VerdictFail {
 				anyFail = true
 			}
 		case VerdictDeferred:
-			deferred++
+			if crash {
+				crashDeferred++
+			} else {
+				deferred++
+			}
 		case VerdictSkipped:
 			anySkipped = true
 		case VerdictError:
@@ -363,20 +524,32 @@ func (r *Report) Finalize(declaredChangeClasses int) {
 		}
 	}
 
-	// A run is complete when every declared change class is either decided or
-	// legitimately deferred to another story. Deferral is a DECLARED shape in
+	// A run is complete when every declared row of each kind is either decided
+	// or legitimately deferred to another story. Deferral is a DECLARED shape in
 	// the matrix YAML, not a runtime escape: a row cannot become deferred by
 	// failing to run.
 	//
-	// The count is checked against BOTH the caller's declared total AND the
-	// FR-7 constant. Checking only the caller's total would let a truncated row
-	// list certify itself: two rows out of two would read "complete".
-	r.Complete = declaredChangeClasses >= FR7ChangeClasses &&
-		(decided+deferred == declaredChangeClasses) && !anySkipped && !anyError
+	// The change-class count is checked against BOTH the caller's declared total
+	// AND the FR-7 constant. Checking only the caller's total would let a
+	// truncated row list certify itself: two rows out of two would read
+	// "complete".
+	classesComplete := declaredChangeClasses >= FR7ChangeClasses &&
+		(decided+deferred == declaredChangeClasses)
+	crashComplete := crashDecided+crashDeferred == declaredCrashConditions
+	r.Complete = classesComplete && crashComplete && !anySkipped && !anyError
 	if !r.Complete {
 		reasons = append(reasons, fmt.Sprintf(
-			"incomplete run: %d of %d declared change classes decided, %d deferred, skipped=%v, harness-error=%v (FR-7 requires %d declared classes)",
-			decided, declaredChangeClasses, deferred, anySkipped, anyError, FR7ChangeClasses))
+			"incomplete run: %d of %d declared change classes decided, %d deferred; "+
+				"%d of %d declared crash conditions decided, %d deferred; skipped=%v, harness-error=%v (FR-7 requires %d declared classes)",
+			decided, declaredChangeClasses, deferred,
+			crashDecided, declaredCrashConditions, crashDeferred, anySkipped, anyError, FR7ChangeClasses))
+	}
+	// A disclosed coverage limit is disclosed AND costs publishability. AC-9
+	// requires a platform skip to be visible in the report; it does not make the
+	// run publishable, or "record the limit" would become the cheap way past the
+	// gate.
+	for _, cl := range r.CoverageLimits {
+		reasons = append(reasons, "coverage limit on row "+cl.Row+" ("+cl.Platform+"): "+cl.Reason)
 	}
 	if !r.Provenance.WorktreeClean {
 		reasons = append(reasons, "dirty worktree: "+r.Provenance.WorktreeDirtyDetail)
@@ -411,11 +584,15 @@ func (r *Report) Finalize(declaredChangeClasses int) {
 		r.Outcome = OutcomePass
 	}
 
-	r.GateNote = "This report is the SW-144 half of PRD §12.3 / FR-7. Checklist row 13 is " +
-		"satisfied ONLY by SW-144 AND SW-158 together (adopted decision 4): the recovery, " +
-		"crash-injection and branch-switch rows are SW-158's and are DEFERRED here. Neither " +
-		"story alone may be reported as \"SW-144 done\". This report settles no §12.2 " +
-		"performance gate and publishes no latency, percentile or RSS figure."
+	r.GateNote = "PRD §12.3 / FR-7, both halves. Checklist row 13 is satisfied ONLY by " +
+		"SW-144 AND SW-158 TOGETHER (adopted decision 4) — SW-144 contributed the 15 " +
+		"change-class rows, SW-158 the branch-switch, interrupted-full-pass and " +
+		"restart-and-recovery rows. NEITHER STORY ALONE WAS, OR MAY BE REPORTED AS, " +
+		"\"SW-144 done\". This report settles no §12.2 performance gate and publishes no " +
+		"latency, percentile or RSS figure. It also does NOT claim WP6: that gate's " +
+		"\"recovery/crash-fault suite 100% green\" conjunct (docs/rc/evidence-index.yaml:125-135) " +
+		"is one conjunct of a 90-day threshold whose clock has not started, so these rows are " +
+		"an input to it and never a substitute for it."
 }
 
 // shaPrefixMatch reports whether pinned is a case-insensitive prefix of head —

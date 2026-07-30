@@ -1,27 +1,36 @@
-# Full/incremental parity matrix over pinned real repositories — SW-144
+# Full/incremental parity matrix over pinned real repositories — SW-144 + SW-158
 
-**Status: PUBLISHED FAIL.** 10 of 14 executed change classes PASS; **4 FAIL**, accounted for
-by **two product defects**, both filed and neither fixed.
+**Status: PUBLISHED FAIL, and now COMPLETE.** All **17** declared rows execute — 15 FR-7 change
+classes and 2 Delta §9 crash conditions. **13 PASS, 4 FAIL**, the four accounted for by **two
+product defects**, both filed and neither fixed. Nothing is deferred any more.
 
 | | |
 |---|---|
-| Produced by | `internal/parity` + `cmd/parity`, `.github/workflows/parity.yml` |
+| Produced by | `internal/parity` (+ `lifecycle.go`) + `cmd/parity`, `.github/workflows/parity.yml` |
 | Gate | PRD FR-7 / §12.3 — full/incremental parity, binary, no threshold to negotiate |
 | Provenance | **product source byte-identical to v0.7.1 at `80d67ed586723ab22704cf7aada316138cb1360e`** |
 | Matrix source | `docs/rc/parity-classes.yaml` (15 change classes + 2 crash conditions) |
-| Report artifact | `docs/rc/parity-matrix-run-a.json`, `docs/rc/parity-matrix-run-b.json` |
+| Report artifact | `docs/rc/parity-matrix-complete-run-a.json`, `…-complete-run-b.json` (the complete 17-row matrix, SW-144 + SW-158) |
+| Superseded artifact | `docs/rc/parity-matrix-run-a.json`, `…-run-b.json` — SW-144's own pair, **preserved not deleted**: 14 executed rows with the three lifecycle rows DEFERRED. Every change-class verdict and digest in it reproduces in the complete pair. |
 
 ---
 
-## 1. What this is, and the two things it is not
+## 1. What this is, and the three things it is not
 
 It is the first reading of PRD §12.3's full-vs-incremental parity gate **on real Go**. Every
 parity proof in the tree before it ran over a `t.TempDir()` fixture.
 
-**It is not the whole of checklist row 13.** Row 13 is satisfied **only by SW-144 *and*
-SW-158 together** (adopted decision 4). The recovery, crash-injection and branch-switch rows
-are SW-158's; they are declared `harness_row: deferred` in the matrix source and appear here
-as DEFERRED, not as passes. **Neither story alone may be recorded as "SW-144 done."**
+**Checklist row 13 is satisfied ONLY NOW, and only by both stories.** Row 13 is satisfied
+**by SW-144 *and* SW-158 together** (adopted decision 4) — SW-144 built the harness and the 15
+change-class rows; SW-158 added the branch-switch, interrupted-full-pass and
+restart-and-recovery rows in `internal/parity/lifecycle.go`. **Neither story alone was, or may
+be recorded as, "SW-144 done."** Between the two, this record read four executed classes short
+and three rows DEFERRED, and that state was never the §12.3 recovery gate.
+
+**It is not WP6.** WP6's threshold contains a *"recovery/crash-fault suite 100% green"* conjunct
+(`docs/rc/evidence-index.yaml:125-135`). The three lifecycle rows are an **input** to it. WP6's
+90-day clock has not started, every other conjunct of that threshold is unmeasured, and the row
+is **not moved** by this record.
 
 **It is not a performance measurement.** No latency, no percentile, no RSS figure is produced
 or implied. Parity is a reliability property (PRD `:802-805`); §12.2 is SW-143's.
@@ -45,6 +54,11 @@ on a FAIL to explain it and never decides a row — it is a Labs surface, and a 
 not depend on a Labs analyzer's `BranchDiffSchemaVersion`. A diff showing no deltas while
 snapshot bytes differ would itself be a finding; that combination did not occur in this run.
 
+**Three rows are lifecycle events, not content edits, and are decided differently** — see §6.
+The assertion is the same (snapshot bytes against a fresh full index); what varies is the
+journey that produces the incremental side, and each of those rows publishes **every repetition
+of its journey** rather than one execution.
+
 Byte parity over the envelope is **strictly stronger** than FR-7 `:832`'s enumerated field
 comparison: `model.Graph.Marshal` emits ids, kinds, qualified names, source anchors, meta,
 confidence tiers, confidence, reasons and evidence, canonically sorted. The field-by-field walk
@@ -65,15 +79,16 @@ is therefore deliberately not re-implemented.
 | `change_interface` | **PASS** | lo | |
 | `add_implementation` | **PASS** | lo | |
 | `remove_implementation` | **FAIL** | gin | inc 1889/6602 vs full 1889/6599 — **PARITY-002** |
-| `branch_switch` | *DEFERRED* | — | SW-158 |
+| `branch_switch` | **PASS** | cobra | 3/3 repetitions identical — §6 |
 | `change_build_tag` | **FAIL** | gin | inc 1890/6605 vs full 1890/6602 — **PARITY-002** |
 | `replace_generated_file` | **FAIL** | grpc-go | full 14898/69772 (stable); inc 14898/**69939 (run-a)**, **69940 (run-b)** — **PARITY-002, and the incremental edge count is NON-DETERMINISTIC: see §5** |
 | `change_external_import` | **PASS** | cobra | |
-| `interrupted_full_pass` | *DEFERRED* | — | SW-158 (crash condition, not a change class) |
-| `restart_and_recovery` | *DEFERRED* | — | SW-158 (crash condition, not a change class) |
+| `interrupted_full_pass` | **PASS** | cobra | crash condition, not a change class; 6/6 repetitions identical across ADR **K1** and **K3** — §6 |
+| `restart_and_recovery` | **PASS** | cobra | crash condition, not a change class; 6/6 repetitions identical across ADR **K5→K7** and **K6→K7** — §6 |
 
-**Four failing rows, two defects.** The three PARITY-002 rows are one defect surfacing three
-times, not three defects — see §5.
+**Four failing rows, two defects — and every one of them is a change class.** The three
+PARITY-002 rows are one defect surfacing three times, not three defects — see §5. **All three
+lifecycle rows PASS**, reproducibly, and §6 states exactly what that does and does not prove.
 
 ### The two §12.3 store-level counts
 
@@ -184,7 +199,7 @@ consistent with the under-determined representative-file target described above 
 target set is not unique, which representative is chosen may depend on ordering that is not
 pinned — but consistency is not proof and this record does not claim it.
 
-**It is disclosed here because this record's own standard demands it.** §7 says a row that
+**It is disclosed here because this record's own standard demands it.** §8 says a row that
 differs between two otherwise-identical dispatches is an environment finding **to be
 explained**, never a flake to be retried away. This row differs, and `-verdict-diff` cannot see
 it: that gate compares **verdicts**, and all six executions agree the row FAILs. Deliberately
@@ -222,9 +237,17 @@ package directories whose **import target is under-determined**:
   so all four are indexed.
 - gin's `internal/bytesconv` puts a **`_test.go` file up as an import target on both sides**.
 
-Which representative the linker lands on depends on what the index contains when it runs, and a
-re-link sees a different index than a cold pass. **Neither side is absolutely right** — but
-`rebuild` is the reference by definition, so `sync` is what diverges.
+**The linker does not pick a representative — it fans out over the whole set.**
+`resolve_go.go:188-193` loops `for _, targetFile := range idx.packageFileNodes(imp.Path)` and
+emits **one `imports` edge per file node in the imported directory** (skipping only the
+importing file itself). So what varies between a cold pass and a re-link is not *which* file was
+chosen but *which file nodes were in the index when the loop ran* — and therefore **how many
+edges the loop emitted**. That is why the divergence is counted in edges rather than in
+retargeted endpoints, and why it is bidirectional. (The set semantics are stated correctly at
+the first bullet above; this paragraph previously said "which representative the linker lands
+on", which understated the precision of the mechanism rather than overclaiming it. Corrected in
+SW-158, from SW-144 review round 1, re-raised round 3.) **Neither side is absolutely right** —
+but `rebuild` is the reference by definition, so `sync` is what diverges.
 
 **It is not PARITY-001:** different edge kind, different trigger (re-link vs deletion), and
 bidirectional rather than one-way.
@@ -252,7 +275,142 @@ harness manufacturing dangling references and then measuring them. Completing th
 the row converge, and it now PASSES. A divergence caused by the harness's own edit is the most
 expensive kind of false positive an evidence gate can publish.
 
-## 6. What this does **not** compare
+## 6. The three lifecycle rows — SW-158
+
+Three FR-7 / Delta §9 requirements are **lifecycle events rather than content edits**, so none
+of them is decidable by the change-class machinery: FR-7 `:824`'s `Branch-Wechsel`, and Delta
+§9's `interrupted full pass` and `restart and recovery` (`:1068-1069`). They are driven by
+`internal/parity/lifecycle.go`.
+
+**What they are the complement of, and what they deliberately do not redo.**
+`engine/ingest/faultmatrix_test.go` (SW-118) already kills the pipeline at every cross-DB
+boundary and proves convergence to a never-crashed store's snapshot bytes, and
+`docs/adr/0004-ingest-recovery-disposition.md:32-41` dispositions kill points K1–K8 on that
+evidence. **That layer is settled and is not re-implemented here.** What the ADR does *not*
+claim is real-process, real-repository coverage — it reserves it, at `:92-94`: *"ING-REWRITE
+stays untriggered unless the EVAL-02 real-repo gates surface resource/recovery failures the
+synthetic matrix cannot."* These rows are that reserved complement. **The crash is a real
+`SIGKILL` to a real subprocess**, never an injected in-process fault, and each row cites the
+ADR's own kill points rather than inventing parallel vocabulary.
+
+### How the signal is aimed, and how we know where it landed
+
+The harness may not add a product hook to make a kill easier — that would be a product-byte
+change. The lever is the one the project's standards already require to exist (*"a slow index
+must stay observable and interruptible"*): the binary emits `ingest.ProgressEvent` on its own
+stream, and the harness kills the moment the pass announces the phase it is waiting for.
+
+The mapping is read off `engine/ingest/ingest.go`'s emission order, so it is exact rather than
+approximate — and it is **corroborated independently** by reading the crashed store *before
+anything recovers it*:
+
+| Kill point | Marker | ADR | What the crashed store held (cobra) |
+|---|---|---|---|
+| `parse` (full pass) | first parse milestone; the parse loop completes before the first `BeginBatch` at `:144` | **K1** — before any graph batch | **0 nodes / 0 edges** — nothing committed |
+| `resolve` (full pass) | `PhaseResolve` at `:246`, after the WRITE commit `:200` and the LINK commit `:240` | **K3** — after the LINK batch commit, before TYPERESOLVE | **938 / 3555** — WRITE+LINK durable, the 361 typeresolve edges absent |
+| `parse` (incremental) | `PhaseParse` at `:563`; the phase-1 dirty-mark tx committed at `:531-546`, `BeginBatch` still ahead at `:581` | **K5 → K7** | **938 / 3916** — the baseline, no graph write yet |
+| `link` (incremental) | `PhaseLink` at `:699`, after the durable graph commit at `:665`, inside the still-open meta tx | **K6 → K7** | **939 / 3917** — the graph already **ahead** of the rolled-back meta state |
+
+Those four store shapes are the evidence that the signal landed where the row says it did. The
+progress stream says where the kill was *aimed*; the crashed store says what had actually
+committed when it arrived, and they agree in every repetition of both dispatches.
+
+**K2 is NOT claimed by these rows, and that is stated rather than glossed.** K2 is the window
+between the WRITE batch commit (`:200`) and the LINK batch commit (`:240`). `IngestAll`
+announces `PhaseLink` at `:186` — *before* the WRITE batch commits — and emits nothing further
+until `PhaseResolve` at `:246`, well past the LINK commit. **No observable marker separates
+those two commits from outside the process.** A signal aimed at `PhaseLink` would land somewhere
+in the K1–K2 window, so publishing it as "K2" would be a probabilistic claim dressed as a
+precise one. K2's coverage remains the synthetic `kill-before-batch-2` subtest, and this record
+says so instead of quietly counting it.
+
+### The restart row crosses a real process boundary, and the ingest lock proves it
+
+`restart_and_recovery` is the **K7** seam — *"any crashed incremental followed by a session
+open"*, the kill point that had **zero production callers** before SW-118 wired
+`RecoverWithRoot` into `warmOrFullIngest`. `graphi sync` goes through `SyncRepo` →
+`warmOrFullIngest`, which recovers *before* it trusts the store.
+
+Every repetition probes the **real cross-process ingest lock** (`internal/ingestlock`,
+`meta/ingest.lock.db` — the same package `internal/doctor/indexcheck.go:44` and
+`cmd/graphi/status.go:167` probe with) from outside, twice: **`held` while the subprocess is
+mid-pass, `free` after `SIGKILL` destroys it.** That is what makes this one journey across a
+process boundary rather than two sequential invocations sharing a directory: the lock is OS
+file-locking state that dies with the process, while the durable dirty rows survive it on
+purpose. `held → free` reads in **12 of 12** killed repetitions per dispatch.
+
+### The branch-switch row asserts the graph, not the announcement
+
+`cmd/graphi/sync_test.go:33 TestRunSync_LifecycleAndBranchSwitch` rewrites `.git/HEAD` and
+asserts **one stdout line** — `printBranchSwitch`'s announcement at `cmd/graphi/sync.go:165-169`.
+No file content changes with that switch, so no graph delta exists and no full-vs-incremental
+comparison is attempted. **This row changes the working tree for real**: it indexes at ref A,
+runs `git checkout` to ref B, drives the **shipped verb** `graphi sync`, and asserts snapshot
+bytes against a fresh full index at B. The announcement is still captured — as a *diagnostic* —
+so the two claims are visibly not the same one.
+
+**Both refs are recorded, and neither is invented.** Ref B is the manifest pin
+`v1.8.0 @ a0a6ae020bb3899ff0276067863e50523f897370` (*"Improve API to get flag completion
+function (#2063)"*); ref A is `890302a35f578311404a462b3cdd404f34db3720` (*"Support usage as
+plugin for tools like kubectl (#2018)"*), selected by a deterministic rule — **the nearest
+ancestor of the pin whose diff to the pin touches at least one `.go` file**. Local branch names
+are created *at* those two existing upstream commits; **nothing is committed into the clone**,
+because inventing history would make the row unreproducible.
+
+### Results, as the whole sample
+
+Every lifecycle row publishes **each repetition**, not a summary. That is not ceremony: §5 of
+this record already established that a stable *verdict* can sit on top of a *varying
+measurement*, so one green execution is not evidence of convergence.
+
+| Row | Kill points × repetitions | Verdict | Distinct incremental snapshots | Distinct full snapshots |
+|---|---|---|---|---|
+| `branch_switch` | — × 3 | **PASS** | 1 | 1 |
+| `interrupted_full_pass` | K1, K3 × 3 each = 6 | **PASS** | 1 | 1 |
+| `restart_and_recovery` | K5→K7, K6→K7 × 3 each = 6 | **PASS** | 1 | 1 |
+
+**30 lifecycle journeys across the two dispatches, and every one converged to the byte.** Both
+dispatches produced identical digests for both sides of all three rows. **A row FAILs if any
+single repetition diverges** — there is no majority rule and no retry.
+
+### A control separates recovery from PARITY-002
+
+`restart_and_recovery` must drive an incremental pass, and §5 filed PARITY-002: `graphi sync`
+re-linking any file can settle a different `imports` edge set from `rebuild`. A divergence here
+would therefore have been ambiguous between a recovery defect and that already-filed one. So
+every repetition also runs **the identical journey with no kill** — baseline, same edit, one
+uninterrupted `sync` — and compares. The crashed-and-recovered graph is **byte-identical to the
+uninterrupted control** (`f8ffcf0dd1cb0932…`) in every repetition, so recovery is transparent on
+this row. The control **diagnoses and never decides**; the verdict is always the snapshot bytes
+against the fresh full index.
+
+### Coverage limits — stated, because a limit that is not published is not a limit
+
+1. **K2 has no real-process coverage here** (above). It remains synthetically covered.
+2. **The lifecycle rows run on cobra, at every tier cap.** The selection rule is the smallest
+   in-cap repository, because a lifecycle row tests the *process* and has no source structure to
+   go looking for — which is also what keeps `-max-tier 1` meaningful for AC-11. **The cost is
+   that these rows do not exercise PARITY-002's re-link divergence**, which §5 observed on gin
+   and grpc-go and explicitly *not* on cobra. Their PASS is a statement about the lifecycle
+   journeys, not a counter-example to PARITY-002.
+3. **On a platform with no faithful `SIGKILL`, the two signal rows do not run.** They are then
+   recorded as `SKIPPED` **with the platform and reason in `coverage_limits`**, and the run is
+   `INCOMPLETE` and **refuses to publish** — disclosure costs what it should, so "record the
+   limit" cannot become the cheap way past the gate. This dispatch ran on `darwin/arm64`, where
+   both rows executed; `coverage_limits` is empty in both reports.
+4. **The rows prove the observable property, not a named internal mechanism.** They prove that a
+   real crash followed by a real restart converges to a fresh full index's bytes. They do not
+   isolate *which* internal path did the healing — `cmd/graphi/zeroconfig_recovery_test.go:52`
+   is the test that constructs the specific K7 divergence the drift pass cannot see.
+
+### What this means for ADR 0004's `ING-REWRITE` trigger
+
+ADR 0004's stopping rule says `ING-REWRITE` *"stays untriggered unless the EVAL-02 real-repo
+gates surface resource/recovery failures the synthetic matrix cannot."* **These rows surfaced
+none.** That is recorded here as evidence bearing on the trigger, and **nothing is acted on**:
+extending or amending ADR 0004 is a separate, deliberate act, not a side effect of a green row.
+
+## 7. What this does **not** compare
 
 A "100% parity" line with no stated scope is an overclaim. The comparison unit is the portable
 snapshot envelope, so anything persisted **outside** `model.Graph` is invisible to it:
@@ -275,7 +433,7 @@ Two further scope limits, stated so they are not discovered later:
   over the change and **nothing** about build-tag semantics.
 - **`stale linker edges = 0` counts dangling endpoints only** — see §3.
 
-## 7. Provenance
+## 8. Provenance
 
 **Product source byte-identical to v0.7.1 at `80d67ed586723ab22704cf7aada316138cb1360e`.**
 
@@ -304,9 +462,12 @@ discipline to a reliability gate. Compare with
 `go run ./cmd/parity -verdict-diff run-a.json,run-b.json`. The comparison is over **verdicts**,
 not report bytes: two dispatches legitimately differ in timestamps and durations. **A row that
 differs between two otherwise-identical dispatches is an environment finding to be explained,
-never a flake to be retried away.**
+never a flake to be retried away** — and **§5 is where that obligation is discharged**:
+`replace_generated_file`'s incremental edge count differs between run-a and run-b, and §5
+records the whole sample rather than reconciling it. The cross-reference runs both ways so
+neither half can be read without the other.
 
-## 8. Reproducing it
+## 9. Reproducing it
 
 ```bash
 # The whole matrix (clones cobra, lo, uuid, gin, grpc-go).
@@ -319,9 +480,23 @@ go run ./cmd/parity -manifest corpus/manifest.json -max-tier 1 -report parity-lo
 # One row, for iteration.
 go run ./cmd/parity -manifest corpus/manifest.json -max-tier 3 -classes delete_file
 
+# The three lifecycle rows, each locally runnable on the cheapest tier (cobra).
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 1 -classes branch_switch
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 1 -classes interrupted_full_pass
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 1 -classes restart_and_recovery
+
+# How many times each lifecycle journey runs per kill point (default 3). This can
+# only ever ADD executions to the sample: a row FAILs if ANY repetition diverged,
+# so it can never retry a row into green.
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 1 \
+  -classes restart_and_recovery -lifecycle-repeat 5
+
 # Two dispatches must agree before anything is published.
 go run ./cmd/parity -verdict-diff run-a.json,run-b.json
 ```
+
+The workflow needed **no change** for the lifecycle rows: they are declared rows of the same
+matrix, so a plain dispatch runs them.
 
 Tier 4 (kubernetes, ~3 min index at ~9 GB peak RSS) is **excluded by construction**, not by
 configuration: `internal/parity.MaxSupportedTier` clamps the cap at 3, so no flag value,

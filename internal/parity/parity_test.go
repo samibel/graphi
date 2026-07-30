@@ -101,6 +101,17 @@ func TestSnapshotBoundary_OnlyGraphstoreIsImported(t *testing.T) {
 		"github.com/samibel/graphi/core/model":            true, // transitive, unavoidable
 		"github.com/samibel/graphi/internal/corpus":       true,
 		"github.com/samibel/graphi/internal/parityreport": true,
+		// SW-158, AC-2: the restart-and-recovery row must exercise the REAL
+		// cross-process ingest lock, and internal/ingestlock is the package that
+		// exists so an out-of-process diagnostic can probe it without importing
+		// the runtime composition root — internal/doctor/indexcheck.go:44 and
+		// cmd/graphi/status.go:167 use it for exactly that. It single-sources
+		// the lock filename and busy classification, so probing it here cannot
+		// drift from the runtime that takes it, and re-deriving either in this
+		// package would create the second dialect the package was written to
+		// prevent. It runs NO ingest and opens no graph store, so it does not
+		// touch the instrument boundary above.
+		"github.com/samibel/graphi/internal/ingestlock": true,
 	}
 	for _, d := range strings.Split(string(out), "\n") {
 		d = strings.TrimSpace(d)
@@ -487,14 +498,22 @@ func TestReport_FailsClosed(t *testing.T) {
 		r := parityreport.Report{Provenance: p}
 		for i := 0; i < 15; i++ {
 			r.Classes = append(r.Classes, parityreport.ClassResult{
-				ID: "c" + string(rune('a'+i)), Kind: "change_class", Verdict: parityreport.VerdictPass})
+				ID: "c" + string(rune('a'+i)), Kind: parityreport.KindChangeClass, Verdict: parityreport.VerdictPass})
+		}
+		// The two crash conditions are rows of the matrix too (SW-158), and
+		// Finalize scores them on their own count. A helper that emitted only
+		// change classes would make every subtest below run against a matrix
+		// that is incomplete for an unrelated reason.
+		for _, id := range []string{"interrupted_full_pass", "restart_and_recovery"} {
+			r.Classes = append(r.Classes, parityreport.ClassResult{
+				ID: id, Kind: parityreport.KindCrashCondition, Verdict: parityreport.VerdictPass})
 		}
 		return r
 	}
 
 	t.Run("clean run publishes", func(t *testing.T) {
 		r := clean()
-		r.Finalize(15)
+		r.Finalize(15, 2)
 		if !r.Publishable || r.Outcome != parityreport.OutcomePass {
 			t.Fatalf("clean run must publish as PASS: %+v", r.NotPublishableBecause)
 		}
@@ -504,7 +523,7 @@ func TestReport_FailsClosed(t *testing.T) {
 		r := clean()
 		r.Provenance.WorktreeClean = false
 		r.Provenance.WorktreeDirtyDetail = " M engine/ingest/ingest.go"
-		r.Finalize(15)
+		r.Finalize(15, 2)
 		if r.Publishable {
 			t.Fatal("a dirty worktree must refuse publication")
 		}
@@ -514,7 +533,7 @@ func TestReport_FailsClosed(t *testing.T) {
 		r := clean()
 		r.Provenance.ProductDiffEmpty = false
 		r.Provenance.ProductDiffDetail = "engine/ingest/ingest.go | 2 +-"
-		r.Finalize(15)
+		r.Finalize(15, 2)
 		if r.Publishable {
 			t.Fatal("a non-empty product diff against the candidate must refuse publication")
 		}
@@ -523,7 +542,7 @@ func TestReport_FailsClosed(t *testing.T) {
 	t.Run("missing runner class refuses", func(t *testing.T) {
 		r := clean()
 		r.Provenance.RunnerClass = ""
-		r.Finalize(15)
+		r.Finalize(15, 2)
 		if r.Publishable {
 			t.Fatal("an unattributed run must refuse publication")
 		}
@@ -532,7 +551,7 @@ func TestReport_FailsClosed(t *testing.T) {
 	t.Run("incomplete run refuses and is not a pass", func(t *testing.T) {
 		r := clean()
 		r.Classes[3].Verdict = parityreport.VerdictSkipped
-		r.Finalize(15)
+		r.Finalize(15, 2)
 		if r.Publishable {
 			t.Fatal("a run with a skipped row must refuse publication")
 		}
@@ -544,7 +563,7 @@ func TestReport_FailsClosed(t *testing.T) {
 	t.Run("a FAIL is blocking but still publishable evidence", func(t *testing.T) {
 		r := clean()
 		r.Classes[2].Verdict = parityreport.VerdictFail
-		r.Finalize(15)
+		r.Finalize(15, 2)
 		if r.Outcome != parityreport.OutcomeFail {
 			t.Fatalf("every mismatch is blocking: outcome = %s", r.Outcome)
 		}
@@ -557,7 +576,7 @@ func TestReport_FailsClosed(t *testing.T) {
 		r := clean()
 		r.StoreCounts = append(r.StoreCounts, parityreport.StoreCounts{
 			Repo: "cobra", Class: "delete_file", OrphanedExternalNodes: 2, Pass: false})
-		r.Finalize(15)
+		r.Finalize(15, 2)
 		if r.Outcome != parityreport.OutcomeFail {
 			t.Fatalf("orphaned external nodes must fail the run: %s", r.Outcome)
 		}
@@ -565,8 +584,8 @@ func TestReport_FailsClosed(t *testing.T) {
 
 	t.Run("a shortened class list cannot self-declare complete", func(t *testing.T) {
 		r := clean()
-		r.Classes = r.Classes[:10]
-		r.Finalize(15)
+		r.Classes = append(r.Classes[:10:10], r.Classes[15:]...)
+		r.Finalize(15, 2)
 		if r.Complete || r.Publishable {
 			t.Fatal("ten decided rows must not satisfy a fifteen-class matrix")
 		}
@@ -576,8 +595,8 @@ func TestReport_FailsClosed(t *testing.T) {
 		// The hole this closes: passing the number of rows one happened to run
 		// as the declared total would make any subset "complete".
 		r := clean()
-		r.Classes = r.Classes[:2]
-		r.Finalize(2)
+		r.Classes = append(r.Classes[:2:2], r.Classes[15:]...)
+		r.Finalize(2, 2)
 		if r.Complete || r.Publishable {
 			t.Fatal("two decided rows declared as a two-class matrix must still be incomplete: FR-7 declares 15")
 		}
@@ -587,7 +606,7 @@ func TestReport_FailsClosed(t *testing.T) {
 		r := clean()
 		r.Repos = append(r.Repos, parityreport.RepoRef{
 			Name: "cobra", PinnedSHA: "a0a6ae020bb3", HeadSHA: "ffffffffffffffff"})
-		r.Finalize(15)
+		r.Finalize(15, 2)
 		if r.Publishable {
 			t.Fatal("a manifest pin mismatch must refuse publication")
 		}
