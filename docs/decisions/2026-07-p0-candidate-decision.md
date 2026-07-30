@@ -313,6 +313,39 @@ record, and it is not evidence about the gate.**
   caution, not for confidence — and it is offered here only to close the door on the
   optimistic reading, not to predict a FAIL.
 
+> **CORRECTION 2026-07-30 (SW-130 correction round 1, review finding 1) — added;
+> nothing in §6 above is rewritten or withdrawn.** This section discusses **only
+> run-a's** figure. The harness recorded the pooled p95 for **both** runs, and
+> they fall on **opposite sides of the gate**:
+>
+> | | pooled n | pooled p95 | vs the 500 ms gate |
+> |---|---|---|---|
+> | run-a | 975 of 1000 | **471 250 µs** (471.250 ms) | below |
+> | run-b | 975 of 1000 | **601 732 µs** (601.732 ms) | **above, by 20.3 %** |
+>
+> Source: `run-{a,b}/query-latency/grpc-go/report.json` →
+> `.repo.query_latency.pools[]` (`agent_context_p95`, `p95_us`), each
+> independently recomputed from
+> `run-{a,b}/query-latency/grpc-go/raw/query-latency.json` (pool = `agent_brief`
+> 250 + `change_risk` 246 + `explain_symbol` 234 + `related_files` 245 = 975
+> `samples_us`, nearest rank `ceil(0.95 × 975) = 927`). The run-to-run spread is
+> **+27.7 %**.
+>
+> **This omission originates in SW-130**, whose published `p0-baseline.md`,
+> `p0-baseline.json` and evidence-index WP4 row all quoted run-a alone; this
+> record inherited it. SW-130's own review (2026-07-29) found it independently of
+> SW-135's review, and both are addressed by SW-130 correction round 1.
+>
+> **The omission worked against this record's own argument.** §6's thesis is that
+> the 471.250 ms plays no part and supports no inference about the gate. Run-b is
+> the single strongest piece of evidence for exactly that: on the same
+> undersampled pool, measured 27 minutes later, the value lands a fifth *outside*
+> the threshold. It closes the optimistic reading harder than the `max_us` bullet
+> above does, and it does so without predicting a FAIL either — two readings that
+> disagree about the side of a threshold support no inference in either direction.
+> Nothing in this decision depended on the omitted figure, so no conclusion
+> changes; Outcome B stands on §3's defect (D1), not on any p95.
+
 **A correction to an earlier record.** `backlog.md`, 2026-07-28, says of this gate:
 *“this gate is plausibly a PASS waiting on a bug fix rather than a latency problem.”*
 That phrasing is retired by this decision. It was already qualified there (*“must not be

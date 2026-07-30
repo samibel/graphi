@@ -14,7 +14,8 @@
     "source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
     "candidate_match": true,
     "worktree_dirty": false,
-    "note": "Both runs checked this SHA out and built the harness from it; the built binary is what ran. `candidate_match` is true in every environment.json of both runs, so every PRD 12.2 gate below is a statement about this artifact and not about a branch tip."
+    "note": "Both runs checked this SHA out and built the harness from it; the built binary is what ran. `candidate_match` is true in every environment.json of both runs, so every PRD 12.2 gate below is a statement about this artifact and not about a branch tip.",
+    "ac1_scope_correction_2026_07_29": "ADDED by SW-130 correction round 1 (review finding 2). The note above is accurate and preserved, but it must not be read as satisfying AC-1. AC-1 asked for 'the release binary of the frozen candidate'. The binary that ran is the EVAL HARNESS with the product packages linked into it — no graphi executable was measured, and cmd/eval still has no external-binary path. SW-131 made candidate_match true, i.e. it fixed PROVENANCE, not the missing binary path. The reading AC-1 IS met under, and no stronger: the run executed a compiled binary built from a clean checkout of the frozen candidate's own tree, verified byte-identical to it by candidate_match — not `go run` from a working tree, and not the published release binary. Under the literal reading, AC-1 is PARTIALLY MET with the external-binary path as the open remainder (see follow_ups_recorded_not_fixed and scope_limitation.build_flavor)."
   },
   "reference_scenario": {
     "repo": "grpc-go",
@@ -46,7 +47,24 @@
       "go_version": "go1.26.5",
       "filesystem": "ext4",
       "cache_state": "dropped",
-      "path": "run-a/"
+      "path": "run-a/",
+      "cpu_model_scope_correction_2026_07_29": "ADDED by SW-130 correction round 1 (review finding 4). The cpu_model above is the cold-index/grpc-go JOB's CPU, not the run's. This run is 20 independent jobs on 20 freshly provisioned VMs and spans 3 CPU models. Nothing above is withdrawn; per-job truth is in cpu_models_by_job.",
+      "cpu_models_by_job": {
+        "source": "run-a/<family>/<repo>/environment.json, all 20 read",
+        "distinct_models": 3,
+        "tally": {
+          "AMD EPYC 7763 64-Core Processor": 13,
+          "AMD EPYC 9V74 80-Core Processor": 5,
+          "INTEL(R) XEON(R) PLATINUM 8573C": 2
+        },
+        "gate_bearing_jobs": {
+          "cold-index/grpc-go": "INTEL(R) XEON(R) PLATINUM 8573C",
+          "query-latency/grpc-go": "AMD EPYC 9V74 80-Core Processor",
+          "freshness/grpc-go": "AMD EPYC 7763 64-Core Processor",
+          "progress-stalls/grpc-go": "AMD EPYC 7763 64-Core Processor"
+        },
+        "uniform_across_all_20": "cpu_count 4; kernel 6.17.0-1020-azure; ram_bytes varies by at most ~5 MB"
+      }
     },
     {
       "id": "run-b",
@@ -64,7 +82,26 @@
       "go_version": "go1.26.5",
       "filesystem": "ext4",
       "cache_state": "dropped",
-      "path": "run-b/"
+      "path": "run-b/",
+      "cpu_model_scope_correction_2026_07_29": "ADDED by SW-130 correction round 1 (review finding 4). The cpu_model above is the cold-index/grpc-go JOB's CPU, not the run's. This run is 20 independent jobs on 20 freshly provisioned VMs and spans 4 CPU models. Nothing above is withdrawn; per-job truth is in cpu_models_by_job. Note that progress-stalls/grpc-go landed on the SAME CPU model in both runs, so that gate's run-to-run spread has no silicon explanation; and the query-latency job — which carries warm_search_p95, caller_callee_impact_p95 and agent_context_p95 — was AMD in BOTH runs, so the published 'Intel vs AMD' framing does not apply to it.",
+      "cpu_models_by_job": {
+        "source": "run-b/<family>/<repo>/environment.json, all 20 read",
+        "distinct_models": 4,
+        "tally": {
+          "AMD EPYC 7763 64-Core Processor": 11,
+          "AMD EPYC 9V74 80-Core Processor": 5,
+          "INTEL(R) XEON(R) PLATINUM 8573C": 3,
+          "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz": 1
+        },
+        "gate_bearing_jobs": {
+          "cold-index/grpc-go": "AMD EPYC 9V74 80-Core Processor",
+          "query-latency/grpc-go": "AMD EPYC 7763 64-Core Processor",
+          "freshness/grpc-go": "AMD EPYC 9V74 80-Core Processor",
+          "progress-stalls/grpc-go": "AMD EPYC 7763 64-Core Processor"
+        },
+        "uniform_across_all_20": "cpu_count 4; kernel 6.17.0-1020-azure; ram_bytes varies by at most ~5 MB",
+        "fr9_consequence": "The honest FR-9 statement is stronger than the published one: run-b was 20 independently provisioned machines spanning four CPU models, and it reproduced all ten verdicts. That rules out machine-local state more thoroughly than 'run-b landed on different silicon' does."
+      }
     }
   ],
   "substitutions": [
@@ -200,6 +237,18 @@
       "source": "query-latency/grpc-go/report.json .repo.query_latency.gates",
       "cause": "Not a sampling accident and not runner noise: the shortfall is exactly 25 of 1000 in BOTH runs. change_risk, explain_symbol and related_files return outcome \"partial\" on this corpus — the same three operations named in every cold run's `run_failures` — and a partial result is not counted as a timed execution. The defect is deterministic and reproducible; it costs 25 executions per 1000 and is what stands between this gate and a verdict.",
       "unknown_is_not_pass": "PRD 8.2 — UNKNOWN is not a PASS. This gate has no verdict. The underlying pool's p95 was 471.250 ms in run-a, which is below the 500 ms threshold, and that number is deliberately NOT published as a verdict: a percentile over an undersampled pool is not the measurement the PRD asked for, and quoting it as if it were would be exactly the substitution this story exists to remove.",
+      "unknown_is_not_pass_correction_2026_07_29": "ADDED by SW-130 correction round 1 (review finding 1). The field above is preserved verbatim and quotes ONLY run-a. The harness recorded the pooled p95 for BOTH runs and they fall on OPPOSITE sides of the 500 ms gate: run-a 471.250 ms (below), run-b 601.732 ms (above, by 20.3%). As originally written the sentence supports only the reading that this UNKNOWN is a conservatively withheld PASS. It is not: on the same undersampled pool the two runs disagree about which side of the threshold the value falls on, so the UNKNOWN may equally be a withheld FAIL. This is strictly stronger support for having no verdict. Nothing was hidden from the repository — run-b's figure has been in the committed report.json since publication; what was missing was its appearance in the prose, in this file and in the evidence index. The verdict does not change: UNKNOWN.",
+      "pooled_p95_both_runs_2026_07_29": {
+        "added_by": "SW-130 correction round 1 (review finding 1)",
+        "threshold_ms": 500,
+        "run_a": {"pooled_n": 975, "required": 1000, "pooled_p95_us": 471250, "pooled_p95_ms": 471.25, "vs_threshold": "below"},
+        "run_b": {"pooled_n": 975, "required": 1000, "pooled_p95_us": 601732, "pooled_p95_ms": 601.732, "vs_threshold": "above"},
+        "run_to_run_delta_pct": 27.7,
+        "runs_agree_on_side_of_threshold": false,
+        "is_a_verdict": false,
+        "source": "run-{a,b}/query-latency/grpc-go/report.json .repo.query_latency.pools[] (agent_context_p95).p95_us",
+        "independently_recomputed_from": "run-{a,b}/query-latency/grpc-go/raw/query-latency.json — pooling agent_brief 250 + change_risk 246 + explain_symbol 234 + related_files 245 = 975 samples_us and taking nearest rank ceil(0.95*975)=927; both figures reproduce exactly"
+      },
       "recorded_as": "backlog — the `partial` defect costs 25 of 1000 agent-tool executions"
     },
     {
@@ -239,9 +288,11 @@
       {"gate": "freshness_p95", "run_a": 6.314923, "run_b": 6.486238, "delta_pct": 2.7, "explanation": "the failing gate is the most stable number in the report — 2.7% apart across two machines. The failure is a property of the artifact, not of the runner."},
       {"gate": "progress_stall_p95", "run_a": 0.006443, "run_b": 0.005611, "delta_pct": -12.9, "explanation": "both round to 0.006 s; the longest observed stall (15.529 s / 15.358 s) is 1.1% apart, i.e. the tail is as reproducible as the percentile."},
       {"gate": "peak_rss", "run_a": 0.669921875, "run_b": 0.6640625, "delta_pct": -0.9, "explanation": "essentially identical"},
-      {"gate": "db_size", "run_a": 32.6875, "run_b": 32.6875, "delta_pct": 0.0, "explanation": "identical to the byte — deterministic"}
+      {"gate": "db_size", "run_a": 32.6875, "run_b": 32.6875, "delta_pct": 0.0, "explanation": "identical to the byte — deterministic"},
+      {"gate": "agent_context_p95", "added": "2026-07-29 — SW-130 correction round 1 (review finding 1); the eight entries above are unchanged", "run_a": 471.25, "run_b": 601.732, "unit": "ms", "delta_pct": 27.7, "explanation": "The deviation the original table omitted, and the ONLY one in this baseline that crosses its own threshold: run-a is inside the 500 ms gate, run-b is 20.3% outside it. It is NOT the largest relative spread — caller_callee_impact_p95 (+65.9%) is larger and warm_search_p95 (+25.9%) is close behind, and that published claim stands — but it is the most consequential, because every other gate's spread moves a number that is 4x-200x inside its gate whereas this one changes which side of the gate the value falls on. Not a verdict either way: the pool is 975 of 1000 in both runs, so the gate is UNKNOWN regardless of where the number lands. AC-2 requires deviations between the runs to be documented and explained rather than smoothed over, and this one was neither."}
     ],
-    "not_smoothed": "No deviation was averaged, discarded or reconciled by hand (FR-9). Both runs are published whole and separately; every number above is read from its own run directory."
+    "not_smoothed": "No deviation was averaged, discarded or reconciled by hand (FR-9). Both runs are published whole and separately; every number above is read from its own run directory.",
+    "cpu_attribution_correction_2026_07_29": "ADDED by SW-130 correction round 1 (review finding 4). The 'different host CPU' / 'Intel vs AMD' / 'the AMD host indexed faster but searched slower' explanations above read the per-run cpu_model as if one machine ran the whole run. Each run is 20 jobs on 20 VMs. Indexing (cold-index/grpc-go) and searching (query-latency/grpc-go) ran on SEPARATE machines, so the warm_search_p95 and caller_callee_impact_p95 explanations conflate two hosts: in run-a the search job was AMD EPYC 9V74, in run-b AMD EPYC 7763 — both AMD, so 'Intel vs AMD' does not describe them at all. 'Intel vs AMD' is accurate for the cold-index gates only. progress_stall_p95 ran on the SAME CPU model (AMD EPYC 7763) in both runs, so its -12.9% spread has no silicon explanation. See runs[].cpu_models_by_job for the per-job truth. No verdict changes, and this strengthens rather than weakens the FR-9 substitute argument."
   },
   "run_cost": {
     "requirement": "SW-130 AC-9",
@@ -299,6 +350,24 @@
     {"id": "freshness_p95 FAIL", "where": "backlog.md", "band": "WP4", "summary": "freshness p95 is 6.3-6.5 s against a 2 s gate, ~3.2x over, reproducible across two machines; profiles are committed beside the failing run"},
     {"id": "stall tail hidden by p95", "where": "backlog.md", "summary": "progress_stall_p95 passes at 0.006 s while the longest observed silence is 15.5 s; a p95 over 1088 intervals cannot see a single long stall"},
     {"id": "coldRunArgv drops -candidate", "where": "backlog.md", "summary": "cmd/eval/coldseries.go:497 does not forward -candidate to child cold-runs, so the secondary gate families inside a cold-series report compare against the superseded candidate citation and read UNKNOWN naming fb3bf03. No published gate is affected — the cold-series gate family is computed in the parent, and the query/stall gates are published from their own dedicated jobs — but the child reports carry misleading UNKNOWN reasons."},
-    {"id": "partial outcome costs 25/1000", "where": "backlog.md", "summary": "change_risk, explain_symbol and related_files return outcome \"partial\" on this corpus, costing exactly 25 of 1000 pooled agent-tool executions and leaving agent_context_p95 UNKNOWN in both runs"}
+    {"id": "partial outcome costs 25/1000", "where": "backlog.md", "summary": "change_risk, explain_symbol and related_files return outcome \"partial\" on this corpus, costing exactly 25 of 1000 pooled agent-tool executions and leaving agent_context_p95 UNKNOWN in both runs"},
+    {"id": "no external-binary path (AC-1 remainder)", "added": "2026-07-29 — SW-130 correction round 1 (review finding 2)", "where": "backlog.md / story SW-130", "summary": "cmd/eval has no path that drives a graphi executable; it links the product packages into itself. SW-130's AC-1 asked for 'the release binary of the frozen candidate' and that reading was NOT delivered — what ran is a compiled eval binary built from a clean checkout of the candidate. AC-1 is therefore PARTIALLY MET, with the external-binary path (option C in the story's blocker analysis) as the open remainder. This does not change any measurement; it changes what the record claims."}
+  ],
+  "corrections": [
+    {
+      "round": 1,
+      "date": "2026-07-29",
+      "story": "SW-130",
+      "source": "projects/graphi/stories/SW-130/review.md — retrospective cold review; this work was merged to main without review or approval",
+      "principle": "Delta PRD 6.1 — the first honest baseline is preserved. Every change in this round is ADDITIVE: no published figure, sentence or field was rewritten, deleted or re-labelled, and no run artifact was re-run or re-pointed. Corrections sit adjacent to what they correct and carry this date.",
+      "no_remeasurement": "None. The review independently recomputed all ten gates from the committed raw samples and re-aggregated all 40 leaf run directories (40 PASS / 0 FAIL). The measurement was verified sound; only the prose and the record were wrong.",
+      "items": [
+        {"finding": 1, "severity": "major", "what": "The withheld agent_context_p95 pool was quoted for run-a only (471.250 ms, below the gate). Run-b's 601.732 ms — above the gate — appeared nowhere in p0-baseline.md, p0-baseline.json or the evidence index. Both figures are now stated wherever the value is discussed, together with the fact that the two runs disagree about which side of the 500 ms threshold it falls on. The gate's +27.7% run-to-run deviation was also missing from the AC-2 deviations table and has been added."},
+        {"finding": 2, "severity": "major", "what": "AC-1 was cited against the built-eval-binary fact. AC-1 asks for the release binary of the frozen candidate; the harness has no external-binary path. AC-1 is now recorded as partially met, under the precise reading it does satisfy, with the external-binary path carried as the open remainder."},
+        {"finding": 3, "severity": "major", "what": "Process: this story was merged to main with zero review and no approval. Recorded in the story ticket. Findings 1 and 2 are the direct consequence."},
+        {"finding": 4, "severity": "minor", "what": "The per-run cpu_model is one job's CPU generalised to twenty VMs. Per-job CPU models added for both runs; the deviation explanations that conflated separate machines are annotated. Correcting this strengthens the FR-9 substitute argument."},
+        {"finding": 5, "severity": "minor", "what": "The SW-130 ticket read as though still blocked. Corrected in projects/graphi/stories/SW-130/story.md, not in this file."}
+      ]
+    }
   ]
 }
