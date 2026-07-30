@@ -3,8 +3,18 @@
 # Companion to docs/rc/parity-class-matrix.md (SW-156). The prose document carries
 # the findings and the reasoning; THIS file is what code binds to.
 #
-# matrix_version: 1   (bump when a row is added, removed, or re-kinded — never for
+# matrix_version: 2   (bump when a row is added, removed, or re-kinded — never for
 #                      a verdict change, which is evidence moving, not shape moving)
+#
+#                      BUMPED 1 -> 2 by SW-157 review round 1, for a case the rule
+#                      above did not contemplate: a FIELD was added
+#                      (`known_defect`), which is a SCHEMA change. No row was
+#                      added, removed or re-kinded — the set is still 15 + 2 — so
+#                      none of the three named triggers fired. It is bumped anyway,
+#                      because the version exists so a consumer can tell whether
+#                      what it must parse has changed, and a new field changes
+#                      exactly that. Recorded rather than assumed, so a reviewer who
+#                      disagrees can say so cheaply.
 #
 # ---------------------------------------------------------------------------
 # THE SHAPE, AND WHY IT IS THIS SHAPE
@@ -78,11 +88,43 @@
 #   VERDICT  a row with harness_row: "required" whose harness row EXISTS AND
 #            PASSES must NOT read verdict: "ABSENT". The guard FAILS if it does.
 #            (ADDED 2026-07-30, review round 1, finding m4.)
+#            EXTENDED 2026-07-30 BY SW-157, review round 1, for `known_defect`:
+#            a row with known_defect != "" may NOT read verdict: "PROVEN", the
+#            harness row's own `knownDefect` must equal this field, and a
+#            `deferred` row may not carry one at all.
+#            WHY THE EXTENSION IS LOAD-BEARING, not decoration. This direction's
+#            "EXISTS AND PASSES" conjunct was discharged by the SUITE BEING
+#            GREEN: a class whose parity fails makes the driver red, so a green
+#            suite implied parity held. A known_defect row breaks that inference
+#            — it is green AND it does not assert parity, because it pins the
+#            defect instead. Without the extension, the greenness discharge would
+#            silently license promoting such a class to PROVEN; a bare `-skip`
+#            would open the identical hole. The extension removes the inference
+#            for exactly those rows and constrains the verdict STRUCTURALLY
+#            instead, so promotion is impossible while the defect is declared and
+#            clearing it requires a deliberate edit in this file AND the harness.
 #   OWNER    harness_row: "required" implies owner: "SW-157" — the story that must
 #            produce the row. harness_row: "deferred" implies owner == deferred_to.
 #            Any other combination FAILS the guard, because it means the file
 #            names one story as responsible and asks a different one to deliver.
 #            (ADDED 2026-07-30, review round 1, finding m5.)
+#   VOCABULARY
+#            every closed-set field holds a declared value (kind, verdict,
+#            fixture, store, assertion, harness_row); fixture/store/assertion are
+#            empty EXACTLY when the row reads ABSENT; and store: "none" is ILLEGAL
+#            on any row whose assertion is "snapshot bytes" or "envelope bytes",
+#            because bytes can only come from a store.
+#            (ADDED 2026-07-30 BY SW-157, from SW-156 review finding m9. The .md at
+#            Finding 11 already asserted this validator in the PRESENT TENSE — "The
+#            YAML's validator now also rejects store: none on any row claiming a
+#            byte assertion" — but no validator existed and the rule was not among
+#            the five directions above, so the sentence was true of nothing. Rather
+#            than delete the claim or leave it unbacked, SW-157 implemented it and
+#            generalized it to the obvious superset. It is not a formality: `none`
+#            was introduced by finding m2 for add_implementation, whose primary
+#            proof opened no store at all, and SW-157 moves that row's assertion to
+#            "snapshot bytes" — leaving store: "none" behind would have produced a
+#            self-contradicting row, which is exactly what this direction catches.)
 #
 # `id` is therefore a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed
 # once a harness row binds to it. Change the label, never the id.
@@ -113,6 +155,60 @@
 #
 # `matrix_version` does NOT bump for a verdict change. Verdicts are evidence
 # moving; the version tracks SHAPE — a row added, removed, or re-kinded.
+#
+# ---------------------------------------------------------------------------
+# SW-157 HAS LANDED. WHAT MOVED, 2026-07-30
+# ---------------------------------------------------------------------------
+# The ROW SET is unchanged: no row was added, removed or re-kinded, and the shape
+# is still 15 change classes + 2 crash conditions. matrix_version nevertheless
+# moved 1 -> 2 in review round 1, for the FIELD addition (`known_defect`) — see
+# the note at the top of this file.
+#
+# The declarative table is engine/conformance/changeclass_test.go
+# changeClassTable(); the driver that runs it is engine/conformance/
+# conformance_test.go TestFullVsIncremental_ByteParity, which is what every
+# required class's test_file/test_line/test_name now cite. The guard is
+# TestParityMatrix_DriftGuard, one subtest per direction.
+#
+#   verdict changes, 7 of them:
+#     move_symbol            ABSENT  -> PROVEN
+#     rename_package         ABSENT  -> PROVEN
+#     remove_implementation  ABSENT  -> PROVEN
+#     change_build_tag       ABSENT  -> PROVEN   (degenerate, and the row says so)
+#     replace_generated_file ABSENT  -> PROVEN
+#     add_implementation     PARTIAL -> PROVEN   (method-set mechanism now byte-proven)
+#     delete_file            PROVEN  -> PARTIAL  (a verdict REGRESSION, caused by a
+#                                                 genuine product defect the harness
+#                                                 found: PARITY-001. It also carries
+#                                                 known_defect: "PARITY-001", filed in
+#                                                 projects/graphi/backlog.md and
+#                                                 scheduled as v0.7.2 batch item 3.
+#                                                 NOT fixed in slice, per the owner's
+#                                                 measure-first ruling.)
+#
+#   what review round 1 corrected about that defect, because the first statement of
+#   it was wrong in two ways that would have misled whoever fixes it:
+#     - CAUSE: it is PHASE ORDERING (linkFiles runs before the deleted-path purge
+#       and indexes the live store), NOT the dependent cascade. The original claim
+#       pointed at dependentsOf, where there is nothing to fix.
+#     - PRECONDITION: it is NOT limited to deleting the sole file of a package. Any
+#       deletion of a file declaring a cross-package callee diverges, so the blast
+#       radius is an ordinary refactor shape, not a corner case.
+#
+#   the row for that class no longer asserts parity. It PINS the current wrong
+#   behaviour (engine/conformance runKnownDefectRow), so the suite is green, the
+#   defect stays published as executable data, and a FIX turns the row red rather
+#   than passing silently. The VERDICT direction's extension is what stops that
+#   green from being usable to promote the class.
+#
+#   every required row also moved store "MemStore"/"none" -> "both". The table runs
+#   on MemStore AND SQLite, which no parity proof in this tree did before, and the
+#   comparison unit stayed the portable snapshot envelope so the two are directly
+#   comparable.
+#
+# branch_switch and the two crash conditions are UNCHANGED: still deferred to
+# SW-158, still owned by it, and their table rows are declared placeholders that
+# SKIP with a pointer to SW-158 rather than reporting a vacuous green.
 #
 # ---------------------------------------------------------------------------
 # WHAT THE ROWS SAY
@@ -147,6 +243,20 @@
 #              it; tests using it are cited in `note` as supporting only. See
 #              Finding 9 in the .md.
 # harness_row  required | deferred   (the drift-guard MISSING/VERDICT directions)
+# known_defect the id of a TRACKED PRODUCT DEFECT that makes this class genuinely
+#              non-parity today; "" when the class holds. It is NOT a waiver and
+#              NOT a skip: the harness row for such a class keeps running on every
+#              PR and PINS the current wrong behaviour as executable data, so the
+#              defect stays published and any change to it — including a FIX —
+#              turns the row red and forces this file to be updated. While it is
+#              set the VERDICT direction makes verdict: "PROVEN" mechanically
+#              unreachable for the class, independent of suite state.
+#              READ THIS FIELD, NOT `verdict`, WHEN ASKING HOW BAD A CLASS IS:
+#              `verdict` is a three-value vocabulary about proof strength and
+#              cannot express severity, so a class carrying a wide-blast-radius
+#              defect and one with a narrow documentation gap can both read
+#              PARTIAL. (ADDED 2026-07-30 by SW-157 review round 1, on the owner's
+#              ruling that the expected failure becomes DATA.)
 # deferred_to  story id, when harness_row is "deferred"; "" otherwise
 # owner        the story that must produce the row `harness_row` demands.
 #              Bound by the OWNER direction: required => "SW-157";
@@ -176,15 +286,16 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1053"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "134"
+    test_line: "179"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "Steps 0-2 add a/a.go, b/b.go, c/c.go and nb.ipynb; watcher-driven incremental vs full snapshot bytes. Second independent proof: engine/ingest/link_e2e_test.go:43 adds shop/extra.go on the production parser. SQLite side absent — every change-class proof in the tree is MemStore-only."
+    note: "SUPERSEDED BY THE SW-157 HARNESS. Table row add_file: a new file arrives in a new package, proven inc-vs-full snapshot-byte identical on BOTH MemStore and SQLite, with a non-vacuity witness (util.Helper present) demonstrated red-without-the-change by engine/conformance TestChangeClassTable_WitnessesAreNonVacuous. PRE-HARNESS PROVENANCE, retained: Steps 0-2 add a/a.go, b/b.go, c/c.go and nb.ipynb; watcher-driven incremental vs full snapshot bytes. Second independent proof: engine/ingest/link_e2e_test.go:43 adds shop/extra.go on the production parser. SQLite side absent — every change-class proof in the tree is MemStore-only."
 
   - id: "modify_file"
     kind: "change_class"
@@ -193,32 +304,34 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1054"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "134"
+    test_line: "179"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "Step 1 rewrites a/a.go (helper body plus a new Extra function). Also byte-proven by engine/ingest/link_e2e_test.go:43 and, at graph-field-dump strength, engine/ingest/typeresolve_test.go:167. SQLite side absent."
+    note: "SUPERSEDED BY THE SW-157 HARNESS. Table row modify_file: an indexed file is rewritten so its node set grows while its existing nodes keep identity; inc-vs-full snapshot bytes on BOTH backends; witness shop.Extra present AND shop.price identity preserved. PRE-HARNESS PROVENANCE, retained: Step 1 rewrites a/a.go (helper body plus a new Extra function). Also byte-proven by engine/ingest/link_e2e_test.go:43 and, at graph-field-dump strength, engine/ingest/typeresolve_test.go:167. SQLite side absent."
 
   - id: "delete_file"
     kind: "change_class"
     label: "Datei löschen / delete file"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:815"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1055"
-    verdict: "PROVEN"
+    verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "134"
+    test_line: "179"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: "PARITY-001"
     deferred_to: ""
     owner: "SW-157"
-    note: "Step 3 removes b/b.go. Stronger sibling proofs: engine/ingest/link_e2e_test.go:43 deletes util/util.go, and engine/ingest/link_external_lifecycle_e2e_test.go:29 deletes the SOLE referencer of an interned external node. SQLite side absent."
+    note: "DOWNGRADED FROM PROVEN BY SW-157, AND THE CAUSE IS A GENUINE PRODUCT DEFECT, NOT A WEAKER TEST. Tracked as PARITY-001 (see known_defect), filed in projects/graphi/backlog.md, scheduled as v0.7.2 BATCH ITEM 3 behind SW-151 F4 residual and SW-153 freshness diagnosis. Measure-first stands: do NOT fix it early. THE HARNESS ROW DOES NOT ASSERT PARITY FOR THIS CLASS. It PINS the current wrong behaviour, so the defect is published as executable data and any change to it - including a FIX - turns the row red. PRECONDITION (CORRECTED IN REVIEW ROUND 1 - the first statement was TOO NARROW and understated the blast radius): deleting a file that declares a symbol which ANOTHER package calls through an intra-module import. It is NOT limited to the sole file of a package: a probe where the package SURVIVES via a second file diverges identically (6 nodes/5 edges vs 7/6), and so does one where the importer is EXPLICITLY in the change set. Controls that do NOT diverge: deleting a file nothing references, and deleting a SAME-package callee file (an unresolved same-package call mints no external node, so full has nothing extra either). This is an ordinary refactor shape - removing a function another package uses - so the blast radius is wide, not a corner case. OBSERVED on the harness fixture: FULL parse 5 nodes / 4 edges, ONE INCREMENTAL apply 4 nodes / 3 edges. Full mints an interned external node example.com/m/tax.Rate plus a heuristic calls edge shop.Checkout -> example.com/m/tax.Rate, reason external calls (unresolved import example.com/m/tax); one incremental apply mints neither. CAUSE - PHASE ORDERING, NOT THE DEPENDENT CASCADE (ALSO CORRECTED IN REVIEW ROUND 1; the first statement blamed dependentsOf and is REFUTED, because naming the importer explicitly in the change set - so it certainly IS re-parsed and re-linked - diverges identically. Whoever fixes this must not be sent to dependentsOf, where there is nothing to fix). engine/ingest/ingest.go:709 calls linkFiles BEFORE the deleted-path purge at :721-736. linkFiles builds its symbol index by streaming the LIVE store (engine/ingest/linkfiles.go:64-71, graphstore.ForEachNode over i.store), and the purge has not run yet, so tax.Rate is STILL A NODE; the linker resolves the call intra-module and never classifies it as an unresolved external. removeFileTx then deletes tax.Rate and cascades its edges away, leaving the graph one node and one edge short of full. That ordering also explains exactly why the SECOND apply converges: by then tax.Rate is already gone, linkFiles builds its index without it, resolution fails, and the external node is minted - the second apply does what the first should have. PERMANENT in the shipped path, not eventually-consistent: after the delete DriftSet returns empty and every further Reconcile is a no-op (verified over six reconciles, snapshot unmoved), so graphi sync stays diverged from graphi rebuild until a full rebuild. Backend-independent (byte-identical failure on MemStore and SQLite) and not a watcher or worker-pool artifact (reproduces with plain serial ing.IngestChanged, and independently through the shipped DriftDetail -> IngestChanged path that graphi sync drives). WHY THE VERDICT IS PARTIAL AND NOT SOMETHING STRONGER OR WEAKER, re-justified on the CORRECTED precondition: PROVEN is false; ABSENT is also false and is rejected by the guard, because real coverage exists and passes for the non-referenced sub-shapes (controls above). PARTIAL is the only remaining value in this file vocabulary, and it is no longer asked to carry the severity: known_defect: PARITY-001 does that, and the VERDICT guard direction makes PROVEN MECHANICALLY UNREACHABLE while known_defect is set, independent of whether the suite is green. Read known_defect, not verdict, when asking how bad this is. PRE-HARNESS PROVENANCE, retained: Step 3 removes b/b.go. Stronger sibling proofs: engine/ingest/link_e2e_test.go:43 deletes util/util.go, and engine/ingest/link_external_lifecycle_e2e_test.go:29 deletes the SOLE referencer of an interned external node. SQLite side absent."
 
   - id: "rename_symbol"
     kind: "change_class"
@@ -226,50 +339,53 @@ parity_classes:
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:816"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1056"
     verdict: "PROVEN"
-    test_file: "engine/ingest/link_cascade_test.go"
-    test_line: "30"
-    test_name: "TestLink_CascadeOnly_CrossPackageCalleeRename"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "Strongest available form: cross-package callee rename where ONLY the callee file is reported, so dependentsOf must cascade the importer in. Was a real shipped defect (BLOCK-1). Same-package cross-file rename byte-proven at engine/ingest/link_e2e_test.go:43; non-Go languages at engine/ingest/link_fu5_e2e_test.go:32. engine/ingest/link_e2e_test.go:218 TestLink_RenameOfTarget_OldEdgeAbsent is a SPOT-QUERY substitute and is not the basis of this verdict."
+    note: "SUPERSEDED BY THE SW-157 HARNESS. Table row rename_symbol: a cross-package callee is renamed and its importer updated in ONE change set; inc-vs-full snapshot bytes on BOTH backends; witness tax.Ratio present, tax.Rate absent, and the calls edge re-pointed. PRE-HARNESS PROVENANCE, retained: Strongest available form: cross-package callee rename where ONLY the callee file is reported, so dependentsOf must cascade the importer in. Was a real shipped defect (BLOCK-1). Same-package cross-file rename byte-proven at engine/ingest/link_e2e_test.go:43; non-Go languages at engine/ingest/link_fu5_e2e_test.go:32. engine/ingest/link_e2e_test.go:218 TestLink_RenameOfTarget_OldEdgeAbsent is a SPOT-QUERY substitute and is not the basis of this verdict."
 
   - id: "move_symbol"
     kind: "change_class"
     label: "Symbol verschieben / move symbol"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:817"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1057"
-    verdict: "ABSENT"
-    test_file: ""
-    test_line: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
+    verdict: "PROVEN"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "GENUINELY ZERO COVERAGE — no test relocates a declaration between files or packages. Suspicion to test, not to fix: Go node QNs are package-qualified, so a SAME-PACKAGE move preserves NodeId while changing source_path and line, both of which nodeWire carries (core/model/serialize.go:82). Two files then claim one NodeId inside a single change set, and the source file's per-file stale-node purge runs against a node the destination file now owns — structurally the BLOCK-2 hazard class (engine/ingest/link_cascade_test.go:109-117), which was a real shipped defect."
+    note: "WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS, AND THE SUSPECTED DEFECT DID NOT MATERIALISE. Table row move_symbol performs BOTH directions in one change set: a same-package file-to-file move (shop.price from price.go to moved.go, which preserves the package-qualified NodeId and changes only source_path and line, so two files claim one NodeId inside a single change set and the source file per-file stale-node purge runs against a node the destination file now owns) AND a cross-package move (tax.Rate becomes rate.Rate in a new directory, minting a new identity and cascading the importer). Inc-vs-full snapshot bytes hold on BOTH MemStore and SQLite. Witness: shop.price source_path equals shop/moved.go, rate.Rate present, tax.Rate absent, both calls edges present; demonstrated red-without-the-change. THE PRE-HARNESS SUSPICION IS THEREFORE FALSIFIED FOR THE HERMETIC CASE - the structural BLOCK-2 hazard it names is real code, but it converges here. Residual: real source at scale, SW-144. PRE-HARNESS SUSPICION, retained: GENUINELY ZERO COVERAGE — no test relocates a declaration between files or packages. Suspicion to test, not to fix: Go node QNs are package-qualified, so a SAME-PACKAGE move preserves NodeId while changing source_path and line, both of which nodeWire carries (core/model/serialize.go:82). Two files then claim one NodeId inside a single change set, and the source file's per-file stale-node purge runs against a node the destination file now owns — structurally the BLOCK-2 hazard class (engine/ingest/link_cascade_test.go:109-117), which was a real shipped defect."
 
   - id: "rename_package"
     kind: "change_class"
     label: "Package umbenennen / rename package"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:818"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1058"
-    verdict: "ABSENT"
-    test_file: ""
-    test_line: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
+    verdict: "PROVEN"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "GENUINELY ZERO COVERAGE — no test changes a `package` clause. Nearest neighbours are NOT this class: engine/ingest/typeresolve_test.go:220 renames the MODULE path in go.mod, and engine/ingest/link_e2e_test.go:286 has two same-clause directories but performs no rename. Suspicion to test: GroupPackages (engine/typeresolve/pkggraph.go:85) keys units by (directory, package clause) and marks a directory carrying multiple non-test clauses Degraded, so a rename that touches only some files in a directory passes THROUGH that degraded state, and the degraded-to-undegraded transition must converge."
+    note: "WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS, AND THE SUSPECTED DEFECT DID NOT MATERIALISE HERE EITHER. Table row rename_package changes the DIRECTORY and the PACKAGE CLAUSE together, across both files of the package, and updates the importer import path, all in one change set. Inc-vs-full snapshot bytes hold on BOTH MemStore and SQLite. Witness: levy.Rate and levy.Helper present, tax.Rate and tax.Helper absent, the calls edge re-resolved to levy.Rate; demonstrated red-without-the-change. RESIDUAL, and it is the sub-shape this row deliberately does NOT reach: a PARTIAL rename leaving a directory carrying two different non-test package clauses passes THROUGH the GroupPackages Degraded state, which needs two reconciles and cannot be expressed in the table one-apply-per-row shape. That degraded-to-undegraded transition remains untested and belongs to SW-144 on real source. PRE-HARNESS SUSPICION, retained: GENUINELY ZERO COVERAGE — no test changes a `package` clause. Nearest neighbours are NOT this class: engine/ingest/typeresolve_test.go:220 renames the MODULE path in go.mod, and engine/ingest/link_e2e_test.go:286 has two same-clause directories but performs no rename. Suspicion to test: GroupPackages (engine/typeresolve/pkggraph.go:85) keys units by (directory, package clause) and marks a directory carrying multiple non-test clauses Degraded, so a rename that touches only some files in a directory passes THROUGH that degraded state, and the degraded-to-undegraded transition must converge."
 
   - id: "add_call"
     kind: "change_class"
@@ -277,16 +393,17 @@ parity_classes:
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:819"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1059"
     verdict: "PROVEN"
-    test_file: "engine/ingest/link_e2e_test.go"
-    test_line: "43"
-    test_name: "TestLink_GoldenIncrementalVsFull_RealGo"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "shop/extra.go arrives carrying extra() -> cost(), a new calls edge, and byte parity holds INCLUDING tier/confidence/reason/evidence. engine/ingest/typeresolve_test.go:167 adds calls at the confirmed tier but compares a graph FIELD DUMP, not snapshot bytes, so it supports rather than establishes. SQLite side absent."
+    note: "SUPERSEDED BY THE SW-157 HARNESS. Table row add_call: a new call site appears between two already-indexed symbols; inc-vs-full snapshot bytes on BOTH backends; witness the new calls edge present alongside the pre-existing one. PRE-HARNESS PROVENANCE, retained: shop/extra.go arrives carrying extra() -> cost(), a new calls edge, and byte parity holds INCLUDING tier/confidence/reason/evidence. engine/ingest/typeresolve_test.go:167 adds calls at the confirmed tier but compares a graph FIELD DUMP, not snapshot bytes, so it supports rather than establishes. SQLite side absent."
 
   - id: "remove_call"
     kind: "change_class"
@@ -294,16 +411,17 @@ parity_classes:
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:820"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1060"
     verdict: "PROVEN"
-    test_file: "engine/ingest/link_cascade_test.go"
-    test_line: "118"
-    test_name: "TestLink_CascadeOnly_IdentityPreservingCallerDrop"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "The hard form: the caller drops the call but KEEPS its identity, so DeleteNode never cascades the edge and only the stale-edge sweep can converge it. Doubles as the FR-7 `no stale linker edges` proof. Was a real shipped defect (BLOCK-2). SQLite side absent."
+    note: "SUPERSEDED BY THE SW-157 HARNESS, WHICH KEEPS THE HARD FORM. Table row remove_call has the caller drop the call but KEEP its identity, so DeleteNode never cascades the edge away and only the stale-edge sweep can converge it; inc-vs-full snapshot bytes on BOTH backends. Doubles as the FR-7 no-stale-linker-edges proof at table level. PRE-HARNESS PROVENANCE, retained: The hard form: the caller drops the call but KEEPS its identity, so DeleteNode never cascades the edge and only the stale-edge sweep can converge it. Doubles as the FR-7 `no stale linker edges` proof. Was a real shipped defect (BLOCK-2). SQLite side absent."
 
   - id: "change_interface"
     kind: "change_class"
@@ -311,50 +429,53 @@ parity_classes:
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:821"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1061"
     verdict: "PROVEN"
-    test_file: "engine/ingest/hierarchy_e2e_test.go"
-    test_line: "139"
-    test_name: "TestLink_HierarchyGoldenIncrementalVsFull"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "CORRECTS THE SPEC, which predicted ABSENT: this test declares a new interface `Added` and adds it to Collector's embed set, then asserts incremental-vs-full snapshot bytes incl. implements/inherits provenance, on the production parser. Residual for SW-157, not a downgrade: the body only ADDS an embed. Removing an embed and changing a method SIGNATURE inside an interface are untested, and the test's own doc comment at :135 says `adds/removes` — the comment overstates the body."
+    note: "SUPERSEDED BY THE SW-157 HARNESS, AND THE RESIDUAL SW-156 RECORDED IS NOW CLOSED. Table row change_interface changes the interface in BOTH directions inside one change set: a method is ADDED to Reader and an embed is REMOVED from Collector, so the implements edge set must converge in both directions. The removed edge is confirmed-tier (go/types interface-superset satisfaction), so the row exercises typeresolve and not only the syntactic embed extractor. Inc-vs-full snapshot bytes on BOTH backends. STILL OPEN, and narrower than before: changing a method SIGNATURE inside an interface. PRE-HARNESS PROVENANCE, retained: CORRECTS THE SPEC, which predicted ABSENT: this test declares a new interface `Added` and adds it to Collector's embed set, then asserts incremental-vs-full snapshot bytes incl. implements/inherits provenance, on the production parser. Residual for SW-157, not a downgrade: the body only ADDS an embed. Removing an embed and changing a method SIGNATURE inside an interface are untested, and the test's own doc comment at :135 says `adds/removes` — the comment overstates the body."
 
   - id: "add_implementation"
     kind: "change_class"
     label: "Implementierung hinzufügen / add implementation"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:822"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1062"
-    verdict: "PARTIAL"
-    test_file: "engine/typeresolve/check_test.go"
-    test_line: "207"
-    test_name: "TestResolve_ImplementsProven"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "none"
-    assertion: "spot query"
+    store: "both"
+    assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "Two mechanisms mint `implements` and only one is byte-proven. SYNTACTIC EMBEDDING (core/parse/extract_go.go:33) is covered incrementally by engine/ingest/hierarchy_e2e_test.go:139 at snapshot-byte strength, on MemStore. METHOD-SET SATISFACTION proven by go/types (engine/typeresolve/check.go:498) is covered only by the cited test, which runs ONE full check and asserts an exact SET of derived edge strings — a presence check with no incremental comparison and no store snapshot. store: none is literal, not a shrug — engine/typeresolve contains zero graphstore usage, so the cited test opens no store of any kind (corrected 2026-07-30, review finding m2: this field previously read MemStore, contradicting the note beside it). SUBSTITUTION NAMED: exact-set presence assertion standing in for inc-vs-full byte parity. PARTIAL, per AC-4."
+    note: "WAS PARTIAL; NOW PROVEN BY THE SW-157 HARNESS, WHICH CLOSED EXACTLY THE UNCOVERED MECHANISM. The gap was never the embedding mechanism, which was already byte-proven, but METHOD-SET SATISFACTION, whose only coverage was an exact-set presence assertion with no incremental comparison and no store. Table row add_implementation adds the method that makes shop.Buf satisfy shop.Sink with NO embed involved, and its witness PINS TIER equals confirmed, so the row cannot be satisfied by the syntactic embed path. Inc-vs-full snapshot bytes on BOTH MemStore and SQLite: store therefore moves from none to both and assertion from spot query to snapshot bytes, and the VOCABULARY guard direction added by SW-157 is what would have caught leaving store: none behind. PRE-HARNESS PROVENANCE, retained: Two mechanisms mint `implements` and only one is byte-proven. SYNTACTIC EMBEDDING (core/parse/extract_go.go:33) is covered incrementally by engine/ingest/hierarchy_e2e_test.go:139 at snapshot-byte strength, on MemStore. METHOD-SET SATISFACTION proven by go/types (engine/typeresolve/check.go:498) is covered only by the cited test, which runs ONE full check and asserts an exact SET of derived edge strings — a presence check with no incremental comparison and no store snapshot. store: none is literal, not a shrug — engine/typeresolve contains zero graphstore usage, so the cited test opens no store of any kind (corrected 2026-07-30, review finding m2: this field previously read MemStore, contradicting the note beside it). SUBSTITUTION NAMED: exact-set presence assertion standing in for inc-vs-full byte parity. PARTIAL, per AC-4."
 
   - id: "remove_implementation"
     kind: "change_class"
     label: "Implementierung entfernen / remove implementation"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:823"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1063"
-    verdict: "ABSENT"
-    test_file: ""
-    test_line: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
+    verdict: "PROVEN"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "Nothing removes an implementation by either mechanism — no test drops an interface embed, and none removes or breaks a method so a concrete type STOPS satisfying an interface. Removal is the direction that can leave a stale edge, and engine/ingest/hierarchy_e2e_test.go:135's `adds/removes` comment is the reason this looked covered."
+    note: "WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS, FOR BOTH MECHANISMS IN ONE CHANGE SET. Table row remove_implementation deletes the method that made shop.Buf satisfy shop.Sink, so the confirmed-tier go/types method-set edge must vanish, AND deletes the struct embed of shop.Base, so the syntactic inherits edge must vanish - with control assertions that none of the three types was deleted wholesale. Removal is the direction that can leave a stale edge and nothing in the tree covered either mechanism before. Inc-vs-full snapshot bytes on BOTH backends. PRE-HARNESS OBSERVATION, retained: Nothing removes an implementation by either mechanism — no test drops an interface embed, and none removes or breaks a method so a concrete type STOPS satisfying an interface. Removal is the direction that can leave a stale edge, and engine/ingest/hierarchy_e2e_test.go:135's `adds/removes` comment is the reason this looked covered."
 
   - id: "branch_switch"
     kind: "change_class"
@@ -369,6 +490,7 @@ parity_classes:
     store: ""
     assertion: ""
     harness_row: "deferred"
+    known_defect: ""
     deferred_to: "SW-158"
     owner: "SW-158"
     note: "ABSENT, not PARTIAL, and the distinction is deliberate: cmd/graphi/sync_test.go:33 TestRunSync_LifecycleAndBranchSwitch rewrites .git/HEAD and asserts ONE stdout line, `Branch switch detected: main -> feature/login` (cmd/graphi/sync.go:169 printBranchSwitch). No file CONTENT changes with the switch, so no graph delta exists and no full-vs-incremental comparison is even attempted. The cited test proves a different property, so it is not a weaker proof of this one. Needs a real git repository — SW-158."
@@ -378,34 +500,36 @@ parity_classes:
     label: "Build-Tag-Änderung / change build tag"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:825"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1064"
-    verdict: "ABSENT"
-    test_file: ""
-    test_line: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
+    verdict: "PROVEN"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "ABSENT AND DEGENERATE. No test edits a `//go:build` line, and no build-constraint evaluation exists to test: the only `//go:build` in the non-test source of engine/ingest, engine/typeresolve and core/parse is core/parse/broad.go:1, which is graphi's OWN tag on its OWN file, not evaluation of ingested source. GroupPackages (engine/typeresolve/pkggraph.go:85) groups by (directory, package clause) from parser.ImportsOnly bytes and never inspects constraints; engine/typeresolve/doc.go:24 and check.go:20 forbid go/packages, which is where constraint evaluation would come from. The class STAYS (spec decision 5), and any row carrying it MUST state that it proves parity over a comment-line content change and NOTHING about build-tag semantics."
+    note: "WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS, AND THE ROW IS LABELLED WITH ITS OWN DEGENERACY AS SPEC DECISION 5 REQUIRES. Table row change_build_tag PROVES PARITY OVER THE CHANGE AND PROVES NOTHING ABOUT BUILD-TAG SEMANTICS, and its own description in the harness says so. Because no build-constraint evaluation exists, the ONLY thing a //go:build edit moves is the LINE NUMBERS of the declarations below it - which is exactly what the witness asserts: tagged.Tagged moves from line 3 to line 5, because graphi read the constraint as ordinary leading comment content rather than evaluating it. That is simultaneously an honest non-vacuous witness and the demonstration of the degeneracy. Inc-vs-full snapshot bytes on BOTH backends. PRE-HARNESS OBSERVATION, retained: ABSENT AND DEGENERATE. No test edits a `//go:build` line, and no build-constraint evaluation exists to test: the only `//go:build` in the non-test source of engine/ingest, engine/typeresolve and core/parse is core/parse/broad.go:1, which is graphi's OWN tag on its OWN file, not evaluation of ingested source. GroupPackages (engine/typeresolve/pkggraph.go:85) groups by (directory, package clause) from parser.ImportsOnly bytes and never inspects constraints; engine/typeresolve/doc.go:24 and check.go:20 forbid go/packages, which is where constraint evaluation would come from. The class STAYS (spec decision 5), and any row carrying it MUST state that it proves parity over a comment-line content change and NOTHING about build-tag semantics."
 
   - id: "replace_generated_file"
     kind: "change_class"
     label: "Generated File ersetzen / replace generated file"
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:826"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1065"
-    verdict: "ABSENT"
-    test_file: ""
-    test_line: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
+    verdict: "PROVEN"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "No test replaces a generated file. CORRECTED 2026-07-30 (review finding m3): an earlier version of this note inferred that NO generated-file special-casing exists anywhere, which over-generalised from a grep scoped to core/parse and engine/ingest. Detection DOES exist — surfaces/client/direct.go:596 GeneratedMarkerDetector scans file heads for `Code generated ... DO NOT EDIT` and `@generated`, and feeds engine/diagnostic/suppress.go:101, which classifies such a file SuppressionGenerated. The verdict is unaffected and the reason is precise: that detector lives in the DIAGNOSTIC suppression path (dead-code triage), is injected surface-side, and is reached by neither the parse/ingest pipeline nor model.Graph — so it cannot influence snapshot bytes or parity in either direction. Within the ingest/graph path the class genuinely has no special-casing, and that makes it a large-diff, high-symbol-count stress on the ordinary modify path rather than a degenerate row like change_build_tag. owner is SW-157 (the hermetic row the required flag demands); SW-144 owns the RESIDUAL real-source instance — grpc-go, 49 DO-NOT-EDIT files per corpus/manifest.json."
+    note: "WAS ABSENT; NOW PROVEN BY THE SW-157 HARNESS. Table row replace_generated_file replaces a file carrying the Code generated by protoc-gen-go. DO NOT EDIT. marker wholesale with a regenerated body at a new version: one function removed, two added, one type added, one struct widened. Witness: gen.GetD, gen.GetE and gen.Response present, gen.GetA absent, and the surviving symbols keep identity. Inc-vs-full snapshot bytes on BOTH backends. The real-source instance (grpc-go, 49 marked files) remains SW-144 residual. PRE-HARNESS OBSERVATION, retained: No test replaces a generated file. CORRECTED 2026-07-30 (review finding m3): an earlier version of this note inferred that NO generated-file special-casing exists anywhere, which over-generalised from a grep scoped to core/parse and engine/ingest. Detection DOES exist — surfaces/client/direct.go:596 GeneratedMarkerDetector scans file heads for `Code generated ... DO NOT EDIT` and `@generated`, and feeds engine/diagnostic/suppress.go:101, which classifies such a file SuppressionGenerated. The verdict is unaffected and the reason is precise: that detector lives in the DIAGNOSTIC suppression path (dead-code triage), is injected surface-side, and is reached by neither the parse/ingest pipeline nor model.Graph — so it cannot influence snapshot bytes or parity in either direction. Within the ingest/graph path the class genuinely has no special-casing, and that makes it a large-diff, high-symbol-count stress on the ordinary modify path rather than a degenerate row like change_build_tag. owner is SW-157 (the hermetic row the required flag demands); SW-144 owns the RESIDUAL real-source instance — grpc-go, 49 DO-NOT-EDIT files per corpus/manifest.json."
 
   - id: "change_external_import"
     kind: "change_class"
@@ -413,16 +537,17 @@ parity_classes:
     prd_source: "docs/plan/2026-07-graphi-p0-proof-and-truth-prd.md:827"
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1066"
     verdict: "PROVEN"
-    test_file: "engine/ingest/link_external_lifecycle_e2e_test.go"
-    test_line: "29"
-    test_name: "TestLink_GoExternalNode_InterningLifecycle"
+    test_file: "engine/conformance/conformance_test.go"
+    test_line: "179"
+    test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
+    known_defect: ""
     deferred_to: ""
     owner: "SW-157"
-    note: "Three subtests, all snapshot-byte inc-vs-full: a shared interned external node survives a sibling delete; an orphaned external node is swept when its sole referencer is DELETED (removing the import line outright); and swept when its sole referencer merely STOPS referencing it (os.ReadFile -> os.Getenv). Doubles as the FR-7 `no orphaned external nodes` proof. Residual for SW-157: no subtest ADDS or SWAPS an import path to a different external package, and engine/ingest/typeresolve_test.go:220's go.mod module rename — the nearest proof that import RESOLUTION changes converge — compares a graph field dump, not snapshot bytes."
+    note: "SUPERSEDED BY THE SW-157 HARNESS, AND THE RESIDUAL SW-156 RECORDED IS NOW CLOSED. Table row change_external_import SWAPS an external import for a different external package AND ADDS a second one in the same change set, so one interned external node is orphaned and swept while two are minted - the add-or-swap direction the pre-harness proof never reached. Witness: strconv.Atoi and strings.ToUpper present with kind external, os.ReadFile swept. Inc-vs-full snapshot bytes on BOTH backends. PRE-HARNESS PROVENANCE, retained: Three subtests, all snapshot-byte inc-vs-full: a shared interned external node survives a sibling delete; an orphaned external node is swept when its sole referencer is DELETED (removing the import line outright); and swept when its sole referencer merely STOPS referencing it (os.ReadFile -> os.Getenv). Doubles as the FR-7 `no orphaned external nodes` proof. Residual for SW-157: no subtest ADDS or SWAPS an import path to a different external package, and engine/ingest/typeresolve_test.go:220's go.mod module rename — the nearest proof that import RESOLUTION changes converge — compares a graph field dump, not snapshot bytes."
 
   - id: "interrupted_full_pass"
     kind: "crash_condition"
@@ -437,6 +562,7 @@ parity_classes:
     store: "MemStore"
     assertion: "snapshot bytes"
     harness_row: "deferred"
+    known_defect: ""
     deferred_to: "SW-158"
     owner: "SW-158"
     note: "Kills IngestAll at all three graph-batch boundaries, MUTATES the tree between crash and retry, and asserts snapshot-byte convergence to a fresh index; a guard subtest fails loudly if IngestAll ever grows a fourth batch. CORRECTED 2026-07-30 (review finding m6): this field read `both`, which is false of the CITED test — :160 wraps a passthrough MemStore. SQLite coverage for this condition is real but lives in a SIBLING test in the same file, :231 TestFaultMatrix_FullPass_SQLiteCloseReopen, which runs the same shape on a real SQLite store across a genuine Close/Reopen and compares SQLite bytes against a MemStore reference — additionally proving the snapshot envelope is store-independent. Per this file's rule that every field describes the PRIMARY cited proof, the field now reads MemStore and the SQLite sibling is named here. Dispositioned K1-K3 in docs/adr/0004-ingest-recovery-disposition.md:34-36. Residual: in-process fault injection, never a real process kill — reserved to SW-158 by that ADR at :92-94."
@@ -454,6 +580,7 @@ parity_classes:
     store: "MemStore"
     assertion: "snapshot bytes"
     harness_row: "deferred"
+    known_defect: ""
     deferred_to: "SW-158"
     owner: "SW-158"
     note: "CORRECTED 2026-07-30 (review finding m6): store read `both`, which is false of the cited test — :490 wraps a passthrough MemStore (writeFaultStore over graphstore.NewMemStore). Real SQLite coverage for this condition exists in the sibling :357 named below. K6: a durable graph write lands, the meta transaction rolls back, and replaying the durable dirty rows must converge byte-identically. Reinforced by :357 TestFullPassGeneration_GraphFileRevert on SQLite and by cmd/graphi/zeroconfig_recovery_test.go:52 TestWarmOrFullIngest_ReplaysDirtyUnitsBeforeTrustingTheStore, which constructs the K7 divergence the drift pass CANNOT see (crash between a durable delete and the re-put, then revert the source so disk == cache) and compares snapshot bytes against an uninterrupted reference. K1-K8 dispositioned in docs/adr/0004-ingest-recovery-disposition.md:34-41. engine/ingest/ingest_test.go:137 TestIngest_CrashRecovery is a SPOT-QUERY substitute — it asserts a re-parse COUNT of 1 — and is not the basis of this verdict. Residual: real process boundary — SW-158."
