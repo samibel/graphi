@@ -19,12 +19,39 @@
 # One top-level key. A block sequence of FLAT maps. Every value a scalar. No
 # nested maps, no nested sequences, no multi-line scalars, no anchors.
 #
-# The reason is a hard project constraint, not taste: graphi does NOT depend on a
-# general YAML parser for its checked-in source-of-truth files (gopkg.in/yaml.v3
-# is `// indirect` in go.mod and is not imported by any first-party package).
-# internal/coverage hand-rolls a ~60-line parser over exactly this subset to stay
-# lean and CGo-free. SW-157's drift guard must be able to do the same — so this
-# file stays inside the subset that parser already handles, field-for-field:
+# This is a DELIBERATE COMPATIBILITY CHOICE, not a constraint imposed on us.
+#
+# CORRECTED 2026-07-30 (SW-156 review round 1, finding M1). An earlier version of
+# this comment claimed graphi "does NOT depend on a general YAML parser" and that
+# gopkg.in/yaml.v3 "is not imported by any first-party package". BOTH HALVES WERE
+# FALSE, and the error came from reading go.mod instead of grepping the imports:
+#
+#   - engine/scenario/scenario.go:26 imports gopkg.in/yaml.v3 UNCONDITIONALLY,
+#     with no build tag, in the product tree.
+#   - engine/scenario/scenario.go:259 calls yaml.Unmarshal on checked-in
+#     source-of-truth YAML — the 20 corpus/hero/*.yaml scenarios that drive the
+#     standing hero gate. Exactly this file's job, already precedented.
+#   - `go list -deps ./engine/scenario | grep yaml` returns it.
+#   - The `// indirect` marker at go.mod:47 is STALE. It is not evidence.
+#
+# So yaml.Unmarshal is available and precedented, and SW-157 MAY use it. The
+# subset restriction stays anyway, as a choice, for reasons that survive the
+# correction:
+#
+#   - it costs nothing — this file has no need for nesting, and flat rows are
+#     what a matrix IS;
+#   - it keeps the file readable by cmd/coverage-style parsers as well as by
+#     yaml.Unmarshal, so a future guard can live in either place;
+#   - a flat block list diffs one row per change and cannot grow a nesting bug.
+#
+# RECOMMENDATION TO SW-157, stated plainly so nobody has to infer it: use
+# `yaml.Unmarshal` into a []struct. It is already in the product tree, it is the
+# smaller diff, and it removes a hand-rolled parser from the review surface.
+# Do NOT hand-roll a parser believing you must. Keep this file inside the subset
+# below regardless, so that choice stays reversible.
+#
+# The subset, for whichever parser reads it — it is exactly what
+# internal/coverage/matrix.go:90 parseMatrixYAML accepts:
 #
 #   - a row starts at a `- ` marker and the marker line carries its first field
 #   - fields split on the FIRST colon, so a `path:line` VALUE is safe
@@ -48,6 +75,14 @@
 #            that counts crash conditions among its change classes FAILS the
 #            guard. This is the exact conflation that produced backlog.md:55's
 #            "16 change classes" and it is now mechanically unrepresentable.
+#   VERDICT  a row with harness_row: "required" whose harness row EXISTS AND
+#            PASSES must NOT read verdict: "ABSENT". The guard FAILS if it does.
+#            (ADDED 2026-07-30, review round 1, finding m4.)
+#   OWNER    harness_row: "required" implies owner: "SW-157" — the story that must
+#            produce the row. harness_row: "deferred" implies owner == deferred_to.
+#            Any other combination FAILS the guard, because it means the file
+#            names one story as responsible and asks a different one to deliver.
+#            (ADDED 2026-07-30, review round 1, finding m5.)
 #
 # `id` is therefore a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed
 # once a harness row binds to it. Change the label, never the id.
@@ -55,6 +90,29 @@
 # `harness_row: "deferred"` + `deferred_to:` is how a row stays declared and
 # honest without failing SW-157: the two crash conditions are process-level work
 # reserved to SW-158 by docs/adr/0004-ingest-recovery-disposition.md:92-94.
+#
+# ---------------------------------------------------------------------------
+# THIS FILE GOES STALE THE MOMENT SW-157 LANDS A ROW — the VERDICT direction
+# ---------------------------------------------------------------------------
+# Every verdict here is an observation dated 2026-07-30 at main d9dadf0, BEFORE
+# any harness existed. A row reading ABSENT is a statement about the tree at that
+# moment, and SW-157's whole job is to falsify six of them. Without the VERDICT
+# direction above, `move_symbol` could keep reading ABSENT forever while a passing
+# harness row sat next to it — the file would be lying and nothing would notice.
+# That hole was real and is now closed.
+#
+# THE RULE FOR SW-157, explicitly: the commit that adds a harness row for class X
+# MUST, in the same commit, update X's `verdict` and its `test_file`/`test_line`/
+# `test_name`/`fixture`/`store`/`assertion` to point at the harness row that now
+# proves it. The guard makes forgetting a build failure rather than a slow rot.
+#
+# Note what this implies and is intended: after SW-157, most `test_*` fields stop
+# pointing at scattered legacy tests and point at the harness table instead. The
+# legacy citations do not disappear — they move into `note` as the pre-harness
+# provenance, which is how this inventory stays auditable after it is superseded.
+#
+# `matrix_version` does NOT bump for a verdict change. Verdicts are evidence
+# moving; the version tracks SHAPE — a row added, removed, or re-kinded.
 #
 # ---------------------------------------------------------------------------
 # WHAT THE ROWS SAY
@@ -73,11 +131,28 @@
 # test_line    1-based line of the primary proof's `func Test…`; "" when ABSENT
 # test_name    the Go test name, so `go test -run <name>` re-runs it directly
 # fixture      synthetic stub parser | production Go parser | real pinned repository
-# store        MemStore | SQLite | both
+# store        MemStore | SQLite | both | none
+#              AC-3's vocabulary is MemStore|SQLite|both. `none` was added
+#              2026-07-30 (review round 1, finding m2) for the one row whose
+#              primary proof touches NO graphstore at all: engine/typeresolve has
+#              zero graphstore usage, so `add_implementation` previously recorded
+#              "MemStore" while its own note conceded "no store snapshot". Writing
+#              a store the test never opens is the substitution this file exists
+#              to prevent, so the vocabulary widened by one honest value instead.
 # assertion    snapshot bytes | envelope bytes | spot query
-# harness_row  required | deferred   (the drift-guard direction)
+#              A FOURTH form exists in the tree and is deliberately NOT usable
+#              here: `dumpGraph` (engine/ingest/typeresolve_test.go:64) is a
+#              whole-graph field dump — stronger than a spot query, weaker than
+#              snapshot bytes (it omits node `meta`). No row's VERDICT rests on
+#              it; tests using it are cited in `note` as supporting only. See
+#              Finding 9 in the .md.
+# harness_row  required | deferred   (the drift-guard MISSING/VERDICT directions)
 # deferred_to  story id, when harness_row is "deferred"; "" otherwise
-# owner        the story that closes or owns the residual for this row
+# owner        the story that must produce the row `harness_row` demands.
+#              Bound by the OWNER direction: required => "SW-157";
+#              deferred => equal to deferred_to. Owners of RESIDUAL work (e.g.
+#              SW-144 for a class best exercised on real source) are named in
+#              `note`, never in this field — that conflation was finding m5.
 # note         one-line reason for the verdict / the named substitution / residual
 #
 # VERDICT DISCIPLINE (AC-4), applied uniformly: a row is PROVEN only where the
@@ -85,6 +160,13 @@
 # whose class-covering proof is a spot query or a presence/absence check is
 # PARTIAL with the substitution named in `note`. A substituted assertion is never
 # recorded as the original.
+#
+# Every field describes the row's PRIMARY cited proof, not the best proof that
+# exists anywhere for the class. For a PARTIAL row the primary is the weakest
+# cited proof — the one covering the sub-shape that made the row PARTIAL — so
+# `fixture`/`store`/`assertion` describe THAT test. Stronger partial proofs live
+# in `note`. Reading these fields as "the strongest thing we have" would overstate
+# every PARTIAL row.
 
 parity_classes:
   - id: "add_file"
@@ -250,12 +332,12 @@ parity_classes:
     test_line: "207"
     test_name: "TestResolve_ImplementsProven"
     fixture: "production Go parser"
-    store: "MemStore"
+    store: "none"
     assertion: "spot query"
     harness_row: "required"
     deferred_to: ""
     owner: "SW-157"
-    note: "Two mechanisms mint `implements` and only one is byte-proven. SYNTACTIC EMBEDDING (core/parse/extract_go.go:33) is covered incrementally by engine/ingest/hierarchy_e2e_test.go:139 at snapshot-byte strength. METHOD-SET SATISFACTION proven by go/types (engine/typeresolve/check.go:498) is covered only by the cited test, which runs ONE full check and asserts an exact SET of derived edge strings — a presence check with no incremental comparison and no store snapshot. SUBSTITUTION NAMED: exact-set presence assertion standing in for inc-vs-full byte parity. PARTIAL, per AC-4."
+    note: "Two mechanisms mint `implements` and only one is byte-proven. SYNTACTIC EMBEDDING (core/parse/extract_go.go:33) is covered incrementally by engine/ingest/hierarchy_e2e_test.go:139 at snapshot-byte strength, on MemStore. METHOD-SET SATISFACTION proven by go/types (engine/typeresolve/check.go:498) is covered only by the cited test, which runs ONE full check and asserts an exact SET of derived edge strings — a presence check with no incremental comparison and no store snapshot. store: none is literal, not a shrug — engine/typeresolve contains zero graphstore usage, so the cited test opens no store of any kind (corrected 2026-07-30, review finding m2: this field previously read MemStore, contradicting the note beside it). SUBSTITUTION NAMED: exact-set presence assertion standing in for inc-vs-full byte parity. PARTIAL, per AC-4."
 
   - id: "remove_implementation"
     kind: "change_class"
@@ -322,8 +404,8 @@ parity_classes:
     assertion: ""
     harness_row: "required"
     deferred_to: ""
-    owner: "SW-144"
-    note: "No test replaces a generated file, and no generated-file handling exists in the non-test source of core/parse or engine/ingest — the only `generated` hit is prose in core/parse/broad.go:29 about tree-sitter's own generated C. Unlike change_build_tag this is NOT degenerate: with no special-casing the class is a genuine large-diff, high-symbol-count stress on the ordinary modify path. Best exercised on real source — SW-144 (grpc-go, 49 DO-NOT-EDIT files per corpus/manifest.json) — with a hermetic SW-157 reproducer."
+    owner: "SW-157"
+    note: "No test replaces a generated file. CORRECTED 2026-07-30 (review finding m3): an earlier version of this note inferred that NO generated-file special-casing exists anywhere, which over-generalised from a grep scoped to core/parse and engine/ingest. Detection DOES exist — surfaces/client/direct.go:596 GeneratedMarkerDetector scans file heads for `Code generated ... DO NOT EDIT` and `@generated`, and feeds engine/diagnostic/suppress.go:101, which classifies such a file SuppressionGenerated. The verdict is unaffected and the reason is precise: that detector lives in the DIAGNOSTIC suppression path (dead-code triage), is injected surface-side, and is reached by neither the parse/ingest pipeline nor model.Graph — so it cannot influence snapshot bytes or parity in either direction. Within the ingest/graph path the class genuinely has no special-casing, and that makes it a large-diff, high-symbol-count stress on the ordinary modify path rather than a degenerate row like change_build_tag. owner is SW-157 (the hermetic row the required flag demands); SW-144 owns the RESIDUAL real-source instance — grpc-go, 49 DO-NOT-EDIT files per corpus/manifest.json."
 
   - id: "change_external_import"
     kind: "change_class"
@@ -352,12 +434,12 @@ parity_classes:
     test_line: "160"
     test_name: "TestFaultMatrix_FullPass_KillAtEveryBatchBoundary"
     fixture: "synthetic stub parser"
-    store: "both"
+    store: "MemStore"
     assertion: "snapshot bytes"
     harness_row: "deferred"
     deferred_to: "SW-158"
     owner: "SW-158"
-    note: "Kills IngestAll at all three graph-batch boundaries, MUTATES the tree between crash and retry, and asserts snapshot-byte convergence to a fresh index; a guard subtest fails loudly if IngestAll ever grows a fourth batch. store: both — :160 runs the passthrough MemStore and :231 TestFaultMatrix_FullPass_SQLiteCloseReopen runs the same shape on a real SQLite store across a genuine Close/Reopen, comparing SQLite bytes against a MemStore reference, which also proves the snapshot is store-independent. Dispositioned K1-K3 in docs/adr/0004-ingest-recovery-disposition.md:34-36. Residual: in-process fault injection, never a real process kill — reserved to SW-158 by that ADR at :92-94."
+    note: "Kills IngestAll at all three graph-batch boundaries, MUTATES the tree between crash and retry, and asserts snapshot-byte convergence to a fresh index; a guard subtest fails loudly if IngestAll ever grows a fourth batch. CORRECTED 2026-07-30 (review finding m6): this field read `both`, which is false of the CITED test — :160 wraps a passthrough MemStore. SQLite coverage for this condition is real but lives in a SIBLING test in the same file, :231 TestFaultMatrix_FullPass_SQLiteCloseReopen, which runs the same shape on a real SQLite store across a genuine Close/Reopen and compares SQLite bytes against a MemStore reference — additionally proving the snapshot envelope is store-independent. Per this file's rule that every field describes the PRIMARY cited proof, the field now reads MemStore and the SQLite sibling is named here. Dispositioned K1-K3 in docs/adr/0004-ingest-recovery-disposition.md:34-36. Residual: in-process fault injection, never a real process kill — reserved to SW-158 by that ADR at :92-94."
 
   - id: "restart_and_recovery"
     kind: "crash_condition"
@@ -369,9 +451,9 @@ parity_classes:
     test_line: "490"
     test_name: "TestFaultMatrix_Incremental_KillAfterDurableGraphWrite"
     fixture: "synthetic stub parser"
-    store: "both"
+    store: "MemStore"
     assertion: "snapshot bytes"
     harness_row: "deferred"
     deferred_to: "SW-158"
     owner: "SW-158"
-    note: "K6: a durable graph write lands, the meta transaction rolls back, and replaying the durable dirty rows must converge byte-identically. Reinforced by :357 TestFullPassGeneration_GraphFileRevert on SQLite and by cmd/graphi/zeroconfig_recovery_test.go:52 TestWarmOrFullIngest_ReplaysDirtyUnitsBeforeTrustingTheStore, which constructs the K7 divergence the drift pass CANNOT see (crash between a durable delete and the re-put, then revert the source so disk == cache) and compares snapshot bytes against an uninterrupted reference. K1-K8 dispositioned in docs/adr/0004-ingest-recovery-disposition.md:34-41. engine/ingest/ingest_test.go:137 TestIngest_CrashRecovery is a SPOT-QUERY substitute — it asserts a re-parse COUNT of 1 — and is not the basis of this verdict. Residual: real process boundary — SW-158."
+    note: "CORRECTED 2026-07-30 (review finding m6): store read `both`, which is false of the cited test — :490 wraps a passthrough MemStore (writeFaultStore over graphstore.NewMemStore). Real SQLite coverage for this condition exists in the sibling :357 named below. K6: a durable graph write lands, the meta transaction rolls back, and replaying the durable dirty rows must converge byte-identically. Reinforced by :357 TestFullPassGeneration_GraphFileRevert on SQLite and by cmd/graphi/zeroconfig_recovery_test.go:52 TestWarmOrFullIngest_ReplaysDirtyUnitsBeforeTrustingTheStore, which constructs the K7 divergence the drift pass CANNOT see (crash between a durable delete and the re-put, then revert the source so disk == cache) and compares snapshot bytes against an uninterrupted reference. K1-K8 dispositioned in docs/adr/0004-ingest-recovery-disposition.md:34-41. engine/ingest/ingest_test.go:137 TestIngest_CrashRecovery is a SPOT-QUERY substitute — it asserts a re-parse COUNT of 1 — and is not the basis of this verdict. Residual: real process boundary — SW-158."

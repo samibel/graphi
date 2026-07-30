@@ -7,6 +7,18 @@
 what code binds to; this file carries the reasoning. When the two disagree, the YAML is the
 source of truth for `id`, `kind`, `verdict` and citation, and this file is the bug.
 
+> **Amended 2026-07-30 after independent review, round 1.** All 17 verdicts were independently
+> re-derived and **none changed** — no false PROVEN, no false ABSENT. Seven corrections landed,
+> all of them to *reasoning, precision or field values*, none to a verdict: **M1** a false
+> claim about `gopkg.in/yaml.v3` (*Finding 14*); **m2** a store field naming a store the test
+> never opens (*Finding 11*); **m3** an over-general claim that no generated-file detection
+> exists (*Finding 12*); **m4** a drift-guard contract that did not bind `verdict`
+> (*Finding 13*); **m5** an `owner`/`harness_row` contradiction (*Finding 13*); **m6** two
+> crash rows claiming `store: both` against their own cited primaries (*Finding 8*); **m7** a
+> miscount of uninventoried proofs (*Finding 5*). Each correction is recorded in place with
+> what the earlier version said and why it was wrong, rather than silently overwritten — the
+> same standard this document applies to the documents it audits.
+
 ## Provenance — stated honestly, because the distinction matters
 
 > **Product source is byte-identical to v0.7.1, the candidate of record at
@@ -88,11 +100,11 @@ only one is byte-proven, the row is **PARTIAL** — `add_implementation` is that
 | `add_call` | change class | `:819` · `:1059` | **PROVEN** | `TestLink_GoldenIncrementalVsFull_RealGo` @ `engine/ingest/link_e2e_test.go:43` | production Go parser | MemStore | snapshot bytes | `shop/extra.go` arrives carrying `extra() → cost()`, a new `calls` edge, and byte parity holds **including tier, confidence, reason and evidence**. `typeresolve_test.go:167` adds calls at the *confirmed* tier but compares a graph field dump (*Finding 9*), so it supports rather than establishes |
 | `remove_call` | change class | `:820` · `:1060` | **PROVEN** | `TestLink_CascadeOnly_IdentityPreservingCallerDrop` @ `engine/ingest/link_cascade_test.go:118` | production Go parser | MemStore | snapshot bytes | The hard form: the caller drops the call but **keeps its identity**, so `DeleteNode` never cascades the edge and only the stale-edge sweep can converge. Doubles as the FR-7 *"no stale linker edges"* proof. Was a real shipped defect (BLOCK-2) |
 | `change_interface` | change class | `:821` · `:1061` | **PROVEN** | `TestLink_HierarchyGoldenIncrementalVsFull` @ `engine/ingest/hierarchy_e2e_test.go:139` | production Go parser | MemStore | snapshot bytes | **Corrects the spec, which predicted ABSENT.** The test declares a new interface `Added`, adds it to `Collector`'s embed set, and asserts incremental-vs-full snapshot bytes including `implements`/`inherits` provenance, on the production parser. Residual (not a downgrade): the body only **adds** an embed — removal and method-**signature** change are untested, and the test's own comment at `:135` says *"adds/removes"*, which overstates the body |
-| `add_implementation` | change class | `:822` · `:1062` | **PARTIAL** | `TestResolve_ImplementsProven` @ `engine/typeresolve/check_test.go:207` | production Go parser | MemStore | **spot query** | Two *mechanisms* mint `implements` and only one is byte-proven. **Syntactic embedding** (`core/parse/extract_go.go:33`) is covered incrementally at snapshot-byte strength by `hierarchy_e2e_test.go:139`. **Method-set satisfaction proven by `go/types`** (`engine/typeresolve/check.go:498`) is covered *only* by the cited test, which runs **one full check** and asserts an exact *set* of derived edge strings — no incremental comparison, no store snapshot. **Substitution named:** an exact-set presence assertion standing in for inc-vs-full byte parity |
+| `add_implementation` | change class | `:822` · `:1062` | **PARTIAL** | `TestResolve_ImplementsProven` @ `engine/typeresolve/check_test.go:207` | production Go parser | **none** | **spot query** | Two *mechanisms* mint `implements` and only one is byte-proven. **Syntactic embedding** (`core/parse/extract_go.go:33`) is covered incrementally at snapshot-byte strength by `hierarchy_e2e_test.go:139`, on MemStore. **Method-set satisfaction proven by `go/types`** (`engine/typeresolve/check.go:498`) is covered *only* by the cited test, which runs **one full check** and asserts an exact *set* of derived edge strings — no incremental comparison, no store snapshot. `store: none` is literal: `engine/typeresolve` contains **zero** graphstore usage, so the cited test opens no store at all (*Finding 11*). **Substitution named:** an exact-set presence assertion standing in for inc-vs-full byte parity |
 | `remove_implementation` | change class | `:823` · `:1063` | **ABSENT** | — | — | — | — | Nothing removes an implementation by **either** mechanism: no test drops an interface embed, and none removes or breaks a method so a concrete type *stops* satisfying an interface. Removal is the direction that can leave a stale edge, which makes this the more valuable half of the pair |
 | `branch_switch` | change class | `:824` · `:1067` | **ABSENT** | — | — | — | — | ABSENT, not PARTIAL, deliberately. `TestRunSync_LifecycleAndBranchSwitch` @ `cmd/graphi/sync_test.go:33` rewrites `.git/HEAD` and asserts **one stdout line** — `Branch switch detected: main → feature/login` (`cmd/graphi/sync.go:169` `printBranchSwitch`). No file *content* changes with the switch, so no graph delta exists and no full-vs-incremental comparison is attempted. Needs a real git repository → **SW-158** |
 | `change_build_tag` | change class | `:825` · `:1064` | **ABSENT** | — | — | — | — | ABSENT **and degenerate** — see *Finding 3*. No test edits a `//go:build` line, and there is no build-constraint evaluation to test. The class **stays** in the matrix (spec decision 5) |
-| `replace_generated_file` | change class | `:826` · `:1065` | **ABSENT** | — | — | — | — | No test replaces a generated file, and no generated-file handling exists in the non-test source of `core/parse` or `engine/ingest` (the only `generated` hit is prose at `core/parse/broad.go:29`, about tree-sitter's own generated C). Unlike `change_build_tag` this is **not** degenerate: with no special-casing the class is a genuine large-diff, high-symbol-count stress on the ordinary modify path. Best exercised on real source → **SW-144** (grpc-go, 49 `DO NOT EDIT` files per `corpus/manifest.json`), with a hermetic SW-157 reproducer |
+| `replace_generated_file` | change class | `:826` · `:1065` | **ABSENT** | — | — | — | — | No test replaces a generated file. Generated-file detection **does** exist in the tree, but not on any path that can affect parity — see *Finding 12*, which corrects an over-general claim in this row's first version. Within the ingest/graph path the class has no special-casing, so unlike `change_build_tag` it is **not** degenerate: it is a genuine large-diff, high-symbol-count stress on the ordinary modify path. Hermetic row → **SW-157**; the real-source instance → **SW-144** (grpc-go, 49 `DO NOT EDIT` files per `corpus/manifest.json`) |
 | `change_external_import` | change class | `:827` · `:1066` | **PROVEN** | `TestLink_GoExternalNode_InterningLifecycle` @ `engine/ingest/link_external_lifecycle_e2e_test.go:29` | production Go parser | MemStore | snapshot bytes | Three subtests, each snapshot-byte inc-vs-full: a shared interned external node **survives** a sibling delete; an orphan is **swept** when its sole referencer is deleted (removing the import line outright); and swept when the sole referencer merely **stops** referencing it (`os.ReadFile` → `os.Getenv`). Doubles as the FR-7 *"no orphaned external nodes"* proof. Residual: no subtest **adds or swaps** an import path to a different external package, and the nearest proof that import *resolution* changes converge — `typeresolve_test.go:220` — compares a field dump (*Finding 9*) |
 
 ## Table B — the 2 crash conditions (Delta §9 only)
@@ -105,8 +117,8 @@ precisely the arithmetic that produced "16".
 
 |Condition|Kind|FR-7 · Delta|Verdict|Proof — test name @ `file:line`|Fixture|Store|Assertion|Why this verdict|
 |---|---|---|---|---|---|---|---|---|
-| `interrupted_full_pass` | crash condition | none · `:1068` | **PROVEN** | `TestFaultMatrix_FullPass_KillAtEveryBatchBoundary` @ `engine/ingest/faultmatrix_test.go:160` | synthetic stub parser | **both** | snapshot bytes | Kills `IngestAll` at **all three** graph-batch boundaries, **mutates the tree between crash and retry**, and asserts snapshot-byte convergence to a fresh index; a guard subtest fails loudly if `IngestAll` ever grows a fourth batch. `store: both` because `TestFaultMatrix_FullPass_SQLiteCloseReopen` @ `:231` runs the same shape on a **real SQLite** store across a genuine Close/Reopen — see *Finding 8*. Dispositioned K1–K3 in `docs/adr/0004-ingest-recovery-disposition.md:34-36`. Residual: in-process fault injection, never a real process kill → **SW-158**, which that ADR reserves it to at `:92-94` (*"ING-REWRITE stays untriggered unless the EVAL-02 real-repo gates surface resource/recovery failures the synthetic matrix cannot"*); its own residual scope is at `:72-82` |
-| `restart_and_recovery` | crash condition | none · `:1069` | **PROVEN** | `TestFaultMatrix_Incremental_KillAfterDurableGraphWrite` @ `engine/ingest/faultmatrix_test.go:490` | synthetic stub parser | **both** | snapshot bytes | K6: a durable graph write lands, the meta transaction rolls back, and replaying the durable dirty rows must converge byte-identically. Reinforced by `TestFullPassGeneration_GraphFileRevert` @ `:357` on SQLite, and by `TestWarmOrFullIngest_ReplaysDirtyUnitsBeforeTrustingTheStore` @ `cmd/graphi/zeroconfig_recovery_test.go:52`, which constructs the **K7 divergence the drift pass cannot see** (crash between a durable delete and the re-put, then revert the source so disk == cache) and compares snapshot bytes against an uninterrupted reference. K1–K8 in `docs/adr/0004-ingest-recovery-disposition.md:34-41`. `TestIngest_CrashRecovery` @ `engine/ingest/ingest_test.go:137` is a **spot-query** substitute — it asserts a re-parse *count* of 1 — and is *not* the basis of this verdict. Residual: real process boundary → **SW-158** |
+| `interrupted_full_pass` | crash condition | none · `:1068` | **PROVEN** | `TestFaultMatrix_FullPass_KillAtEveryBatchBoundary` @ `engine/ingest/faultmatrix_test.go:160` | synthetic stub parser | MemStore | snapshot bytes | Kills `IngestAll` at **all three** graph-batch boundaries, **mutates the tree between crash and retry**, and asserts snapshot-byte convergence to a fresh index; a guard subtest fails loudly if `IngestAll` ever grows a fourth batch. The cited test wraps a passthrough **MemStore**; real-SQLite coverage of the same condition is a *sibling* test, `TestFaultMatrix_FullPass_SQLiteCloseReopen` @ `:231` — see *Finding 8*. Dispositioned K1–K3 in `docs/adr/0004-ingest-recovery-disposition.md:34-36`. Residual: in-process fault injection, never a real process kill → **SW-158**, which that ADR reserves it to at `:92-94` (*"ING-REWRITE stays untriggered unless the EVAL-02 real-repo gates surface resource/recovery failures the synthetic matrix cannot"*); its own residual scope is at `:72-82` |
+| `restart_and_recovery` | crash condition | none · `:1069` | **PROVEN** | `TestFaultMatrix_Incremental_KillAfterDurableGraphWrite` @ `engine/ingest/faultmatrix_test.go:490` | synthetic stub parser | MemStore | snapshot bytes | K6: a durable graph write lands, the meta transaction rolls back, and replaying the durable dirty rows must converge byte-identically. Reinforced by `TestFullPassGeneration_GraphFileRevert` @ `:357` on SQLite, and by `TestWarmOrFullIngest_ReplaysDirtyUnitsBeforeTrustingTheStore` @ `cmd/graphi/zeroconfig_recovery_test.go:52`, which constructs the **K7 divergence the drift pass cannot see** (crash between a durable delete and the re-put, then revert the source so disk == cache) and compares snapshot bytes against an uninterrupted reference. K1–K8 in `docs/adr/0004-ingest-recovery-disposition.md:34-41`. `TestIngest_CrashRecovery` @ `engine/ingest/ingest_test.go:137` is a **spot-query** substitute — it asserts a re-parse *count* of 1 — and is *not* the basis of this verdict. Residual: real process boundary → **SW-158** |
 
 ## Tally
 
@@ -250,8 +262,31 @@ work list** than the spec anticipated: `change_interface` needs a *residual* (em
 method-signature change) rather than a from-scratch row, and three classes the spec did not
 list at all — `branch_switch`, `change_build_tag`, `replace_generated_file` — need rows.
 
-Two further test files the seeded inventory did not visit, both carrying real snapshot-byte
-parity proofs: `engine/ingest/hierarchy_e2e_test.go` and `engine/ingest/typeresolve_test.go`.
+**Correction, review round 1 (m7).** The first version of this paragraph said *"two further
+test files … both carrying real snapshot-byte parity proofs"* and named
+`hierarchy_e2e_test.go` and `typeresolve_test.go`. The count was wrong and one of the two was
+mis-classified — `typeresolve_test.go` compares a **field dump**, not snapshot bytes, which
+this document's own *Finding 9* says. The full, enumerated list of inc-vs-full proofs the
+seeded inventory did not visit:
+
+|Test|Assertion|Effect on a verdict|
+|---|---|---|
+|`TestLink_HierarchyGoldenIncrementalVsFull` @ `engine/ingest/hierarchy_e2e_test.go:139`|snapshot bytes|**changed two** — `change_interface` and `add_implementation`|
+|`TestNotebook_IncrementalVsFull` @ `engine/ingest/notebook_test.go:399`|snapshot bytes|none — modifies a sibling `.py` while a notebook stays in the corpus; a mixed-language `modify_file` proof|
+|`TestService_ByteIdenticalThroughService` @ `engine/watch/service_test.go:121`|snapshot bytes|none — add + modify through the **real watch Service** with `Start` and a burst of changes, rather than a direct `Reconcile` call|
+|`TestTyperesolve_FullVsIncrementalByteParity` @ `engine/ingest/typeresolve_test.go:167`|**field dump** (*Finding 9*)|none — supporting only|
+|`TestTyperesolve_GoModChangeParity` @ `engine/ingest/typeresolve_test.go:220`|**field dump** (*Finding 9*)|none — supporting only|
+
+So **three** uninventoried snapshot-byte proofs, not two, plus two field-dump proofs. Only the
+first changed a verdict.
+
+The remaining `engine/ingest` files that call `IngestChanged` were read and carry **no**
+inc-vs-full parity assertion of any kind — `parseerror_test.go`, `readonly_test.go`,
+`storecache_e2e_test.go`, `symlink_test.go`, `taint_config_test.go`. They exercise error
+handling, read-only stores, cache behaviour, symlinks and taint config. `surfaces/parity_test.go`
+also calls `IngestChanged` but proves a different property entirely — **surface** parity, CLI
+vs MCP vs HTTP envelopes for one operation — and is not evidence for any row here.
+
 Also uninventoried: `link_fu5_e2e_test.go:32`, `link_python_e2e_test.go:106`,
 `link_typescript_e2e_test.go:105` and `link_java_pkgnode_e2e_test.go:21` carry
 snapshot-byte inc-vs-full rename proofs on **non-Go** languages. They are recorded as
@@ -311,7 +346,17 @@ SQLite stores: `graphstore.OpenSQLite` at `:246` (`TestFaultMatrix_FullPass_SQLi
 reference store in those tests is a `MemStore` (`:338`, `:472`), so the assertion compares
 **SQLite snapshot bytes against MemStore snapshot bytes** — which additionally proves the
 snapshot envelope is store-independent, exactly as `core/graphstore/snapshot.go:47-52` claims.
-Both crash-condition rows therefore record `store: both`, honestly.
+
+**Correction, review round 1 (m6).** The first version of this document turned that finding
+into `store: both` on **both crash-condition rows**, and that was a step too far. The SQLite
+coverage is real but it lives in *sibling* tests, not in either row's **cited primary**:
+`:160` wraps `batchFaultStore{graphstore.NewMemStore()}` and `:490` wraps
+`writeFaultStore{graphstore.NewMemStore()}`. Both rows now read `store: MemStore`, which is
+what their own `test_name` does, and each names its SQLite sibling in `note`. The rule the
+error violated is now written into the YAML's field documentation: **every field describes the
+row's primary cited proof, not the best proof that exists anywhere for the class.** The
+finding itself is unchanged — the crash conditions *do* have real SQLite coverage, and the
+change classes have none.
 
 `core/graphstore/contract_test.go` reinforces the store-independence claim directly:
 `TestContract_SnapshotLoadRoundTrip` (`:371`), `TestContract_DeleteThenReindexByteIdentical`
@@ -374,6 +419,98 @@ that it is a *distinct* property from full-vs-incremental parity — a system ca
 inc→full and still drift on a redundant re-apply, e.g. by appending rather than replacing
 evidence, or by double-counting a reverse-dependency row.
 
+### Finding 11 — one row's proof touches no store at all, so the store vocabulary needed a fourth value
+
+*Added in review round 1 (m2).* AC-3 asks every PROVEN/PARTIAL row to record a store backend
+from `MemStore | SQLite | both`. `add_implementation`'s primary proof fits none of them:
+`engine/typeresolve` contains **zero** graphstore usage — `grep -rn graphstore engine/typeresolve`
+returns nothing — so `TestResolve_ImplementsProven` runs a `go/types` check and inspects
+derived edge strings without ever opening a store.
+
+The first version recorded `MemStore` there, which contradicted the row's own note conceding
+"no store snapshot" one line later. Rather than write a store the test never opens, the
+vocabulary widened by one honest value: **`none`**. This is the same treatment *Finding 9*
+gives the field-dump assertion form — where a closed vocabulary meets a case it did not
+anticipate, the document records the gap rather than forcing the value. The YAML's validator
+now also rejects `store: none` on any row claiming a byte assertion, since bytes can only come
+from a store.
+
+### Finding 12 — generated-file detection *does* exist; it just cannot reach the parity path
+
+*Added in review round 1 (m3).* The `replace_generated_file` row's first version inferred that
+no generated-file special-casing exists anywhere, from a grep scoped to `core/parse` and
+`engine/ingest`. **The inference over-reached.** Detection exists:
+
+- `surfaces/client/direct.go:596` `GeneratedMarkerDetector(root)` returns a predicate that
+  scans a file's head for `Code generated ... DO NOT EDIT` and `@generated`.
+- It is injected into the engine's suppression config and consumed at
+  `engine/diagnostic/suppress.go:101`, which classifies a matching file `SuppressionGenerated`.
+
+**The verdict is unaffected, and the reason is precise rather than convenient.** That detector
+lives in the **diagnostic suppression** path — dead-code triage, deciding whether to report a
+finding about a symbol — is injected surface-side, and is reached by neither the parse/ingest
+pipeline nor `model.Graph`. It cannot influence snapshot bytes, so it cannot influence parity
+in either direction.
+
+What survives of the original point: **within the ingest and graph path** the class genuinely
+has no special-casing, which is why it is a large-diff, high-symbol-count stress on the
+ordinary modify path rather than a degenerate row like `change_build_tag`. Recorded this way
+because "no such code exists" and "such code exists but cannot reach this path" are different
+claims, and only the second one is true.
+
+### Finding 13 — this inventory goes stale by design, and the drift guard now says so
+
+*Added in review round 1 (m4).* Every verdict here is an observation dated 2026-07-30 at
+`main` @ `d9dadf0`, taken **before any harness existed**. SW-157's entire job is to falsify six
+of the ABSENT rows. The drift-guard contract as first written had **three** directions —
+MISSING, PHANTOM, KIND — and bound `id` and `kind` but **not `verdict`**. A row could
+therefore keep reading `ABSENT` forever while a passing harness row sat beside it: the file
+would be lying and nothing would fail.
+
+That hole is closed. Two directions were added to the contract in
+`docs/rc/parity-classes.yaml`:
+
+- **VERDICT** — a row with `harness_row: "required"` whose harness row exists and passes must
+  not read `verdict: "ABSENT"`. The guard fails if it does.
+- **OWNER** — `harness_row: "required"` implies `owner: "SW-157"`; `harness_row: "deferred"`
+  implies `owner == deferred_to`. Any other pairing fails, because it means the file names one
+  story as responsible and asks a different one to deliver. (This one also fixed a live
+  inconsistency: `replace_generated_file` carried `required` with `owner: SW-144`.)
+
+**The rule for SW-157**, stated in the YAML so it cannot be missed: the commit that adds a
+harness row for class *X* must, in the same commit, update *X*'s `verdict` and its
+`test_file`/`test_line`/`test_name`/`fixture`/`store`/`assertion` to point at the harness row
+that now proves it. Legacy citations move into `note` as pre-harness provenance rather than
+being deleted, so this inventory stays auditable after it is superseded. `matrix_version` does
+not bump for a verdict change — it tracks shape, not evidence.
+
+### Finding 14 — `gopkg.in/yaml.v3` *is* a first-party dependency; the flat-subset shape is a choice, not a constraint
+
+*Added in review round 1 (M1), correcting a false claim of mine.* The first version of
+`docs/rc/parity-classes.yaml` justified its flat, quoted, single-nesting-level shape by
+asserting that graphi does not depend on a general YAML parser and that `gopkg.in/yaml.v3` is
+"not imported by any first-party package". **Both halves were false**, and the error came from
+reading `go.mod` instead of grepping the imports:
+
+- `engine/scenario/scenario.go:26` imports `gopkg.in/yaml.v3` **unconditionally**, no build
+  tag, in the **product tree**.
+- `engine/scenario/scenario.go:259` calls `yaml.Unmarshal` on checked-in source-of-truth YAML —
+  the 20 `corpus/hero/*.yaml` scenarios driving the standing hero gate. That is this file's own
+  job, already precedented in the product.
+- `go list -deps ./engine/scenario | grep yaml` returns it.
+- The `// indirect` marker at `go.mod:47` is **stale**, and a stale marker is not evidence.
+
+The consequence is not cosmetic: the original text instructed SW-157 that a hand-rolled parser
+was **mandatory**. It is not. The subset restriction is kept, but as a **deliberate choice**
+with its real justification — it costs nothing (a matrix has no need for nesting), it keeps the
+file readable by `cmd/coverage`-style parsers *as well as* by `yaml.Unmarshal` so a future
+guard can live in either place, and a flat block list diffs one row per change.
+
+**Recommendation to SW-157, stated plainly rather than left to inference: use
+`yaml.Unmarshal` into a `[]struct`.** It is already in the product tree, it is the smaller
+diff, and it keeps a hand-rolled parser off the review surface. Keep the file inside the flat
+subset regardless, so the choice stays reversible.
+
 ## Scope — what this document deliberately does not do
 
 - **It fixes nothing.** No parity defect and no parity gap is repaired here. An ABSENT row
@@ -406,14 +543,25 @@ evidence, or by double-counting a reverse-dependency row.
 6. `change_external_import` — residual only: add/swap an import path to a different external
    package.
 7. `change_build_tag` — new row, explicitly labelled with its degeneracy (*Finding 3*).
-8. `replace_generated_file` — hermetic reproducer; the real instance is SW-144's.
+8. `replace_generated_file` — hermetic reproducer; the real instance is SW-144's
+   (*Finding 12* for why the existing detector is irrelevant to it).
 9. **Idempotency** — the assertion FR-7 demands and nothing supplies (*Finding 10*).
 10. **Both backends** for all 15 change classes — today every one is MemStore-only
     (*Finding 8*).
 11. Fix the overstated doc comment at `engine/ingest/hierarchy_e2e_test.go:135`
     (*"adds/removes"* → adds), a `_test.go`-only change.
+12. **Update this file's verdicts in the same commit as each harness row** — the VERDICT and
+    OWNER guard directions now make forgetting a build failure (*Finding 13*).
 
-**SW-144** — real pinned repositories, built binary as a subprocess:
+**How to read `parity-classes.yaml`, recommended:** `yaml.Unmarshal` into a `[]struct`. It is
+already in the product tree (`engine/scenario/scenario.go:26`, `:259`), it is the smaller diff,
+and it keeps a hand-rolled parser off the review surface. The file is *also* inside the
+`internal/coverage` flat subset so a `cmd/coverage`-style parser remains an option — that is a
+deliberate compatibility choice, not a constraint (*Finding 14*).
+
+**SW-144** — real pinned repositories, built binary as a subprocess. These are **residual**
+owners: the `owner` field on every `harness_row: "required"` row reads `SW-157`, and SW-144's
+share is named in each row's `note` (*Finding 13*, OWNER direction).
 `replace_generated_file` on grpc-go, `change_build_tag` on gin (the manifest's declared
 repo, 16 files with `//go:build`), the everyday classes on cobra.
 
