@@ -1,0 +1,87 @@
+# Real-repository full/incremental parity matrix (internal/parity, cmd/parity).
+#
+# This is the PRD §12.3 / FR-7 reliability gate measured on REAL Go: every
+# declared change class is applied as a real edit to real source in a pinned
+# clone, and the incrementally-updated graph is compared BYTE FOR BYTE against a
+# fresh full index of the same final tree, via the portable snapshot envelope.
+#
+# DELIBERATELY a separate workflow, for the same reason corpus.yml is: it
+# shallow-clones public repositories, so it needs the network and must never be
+# folded into the zero-egress canary posture (canary.yml / privacy-audit.yml
+# stay hermetic).
+#
+# IT DOES NOT RUN ON PULL REQUESTS, and that is a decision rather than an
+# omission (spec decision 2). The split is:
+#
+#   every PR         `go test ./internal/parity` — HERMETIC harness-logic tests,
+#                    no clones, run inside `go run ./cmd/testgate`.
+#   dispatch/nightly THIS workflow — the real-repo matrix, which is the evidence.
+#
+# Blurring them would put minutes of clone-and-index cost on every PR while
+# making a green PR look like the §12.3 gate. A hermetic test that clones is not
+# hermetic, and a matrix row that runs on a fixture is not evidence.
+#
+# PUBLICATION NEEDS TWO DISPATCHES. §12.4's two-green-runs discipline applies to
+# this reliability gate too: a single run is not published. Dispatch twice and
+# compare the verdict sets with
+# `go run ./cmd/parity -verdict-diff run-a.json,run-b.json`. A row that differs
+# between two otherwise-identical dispatches is an ENVIRONMENT FINDING to be
+# explained — never a flake to be retried away.
+name: parity
+
+on:
+  # Manual dispatch is the publication path.
+  workflow_dispatch:
+    inputs:
+      max_tier:
+        description: "Repository tier cap (1 = cobra only; 3 = the full matrix). Tier 4 is SW-145's named-machine stress target and is excluded by construction."
+        required: false
+        default: "3"
+      classes:
+        description: "Comma-separated class ids to run (leave empty for the whole matrix). A filtered run is never publishable."
+        required: false
+        default: ""
+  schedule:
+    # Nightly: catches breakage from the environment side (runner image, git,
+    # Go toolchain, upstream tag re-pointing) even when no PR is in flight.
+    - cron: '0 4 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  parity-matrix:
+    name: full/incremental parity over pinned real repositories
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CGO_ENABLED: "0"
+      # Same MAX_TIER expression pattern corpus.yml uses. Tier 3 is the ceiling
+      # cmd/parity enforces in code as well (internal/parity.MaxSupportedTier),
+      # so raising this input cannot pull the kubernetes stress target in.
+      MAX_TIER: ${{ github.event_name == 'workflow_dispatch' && inputs.max_tier || '3' }}
+      CLASSES: ${{ github.event_name == 'workflow_dispatch' && inputs.classes || '' }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # The provenance check diffs the product tree against the v0.7.1
+          # candidate SHA, which a shallow checkout cannot reach.
+          fetch-depth: 0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: run the parity matrix
+        run: |
+          go run ./cmd/parity \
+            -manifest corpus/manifest.json \
+            -max-tier "$MAX_TIER" \
+            -classes "$CLASSES" \
+            -runner-class "${{ runner.os }}-${{ runner.arch }}/ubuntu-latest" \
+            -report parity-report.json
+      - name: upload report artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: parity-report
+          path: parity-report.json

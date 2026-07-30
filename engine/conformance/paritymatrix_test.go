@@ -325,6 +325,46 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 					"has no row that could publish the defect", r.ID, harnessDeferred, r.KnownDefect)
 			}
 		}
+
+		// CITATION — added 2026-07-30 by SW-144, closing finding F9 of SW-157's
+		// review. It is ten lines and it shuts a real hole.
+		//
+		// THE ATTACK IT KILLS. Every direction above keys off `harness_row`, and
+		// `harness_row` is a DECLARATION rather than an observation. Five
+		// coordinated edits therefore bought a free PROVEN: set
+		// harness_row: "deferred", set deferred_to and owner to "SW-158", clear
+		// known_defect, and keep verdict: "PROVEN". MISSING skips deferred rows.
+		// VERDICT skips them (`r.HarnessRow != harnessRequired` continues).
+		// OWNER is satisfied because owner == deferred_to. The suite stays green,
+		// the matrix reads PROVEN, and NOTHING RUNS THE CLASS AT ALL.
+		//
+		// THE CLOSURE, and why it is sound rather than merely narrowing. A row
+		// that cites the harness DRIVER is claiming to be proven BY the harness.
+		// Only a row with a harness table row can be, so citing the driver and
+		// declaring `deferred` is a self-contradiction — and it is exactly the
+		// contradiction the forged row must produce, because it wants to keep
+		// PROVEN and PROVEN demands a real citation.
+		//
+		// WHY IT DOES NOT FALSELY ACCUSE THE THREE LEGITIMATE DEFERRED ROWS: none
+		// of them cites this driver. branch_switch is ABSENT and cites nothing at
+		// all; interrupted_full_pass and restart_and_recovery are PROVEN by
+		// engine/ingest/faultmatrix_test.go, a different file, which is precisely
+		// why they may be deferred while still reading PROVEN. The rule passes
+		// all three unchanged and is not a special case for any of them.
+		for _, r := range rows {
+			if r.HarnessRow == harnessRequired {
+				continue
+			}
+			if r.TestFile == harnessTestFile || r.TestName == harnessTestName {
+				t.Errorf("CITATION: %q is harness_row: %q yet cites the harness driver "+
+					"(test_file=%q test_name=%q). A row proven BY the harness must be "+
+					"harness_row: %q — otherwise `deferred` becomes a way to claim a verdict "+
+					"the harness never produced, because MISSING, VERDICT and OWNER all skip "+
+					"deferred rows. Either give the class a real table row and mark it %q, or "+
+					"cite the proof that actually covers it.",
+					r.ID, r.HarnessRow, r.TestFile, r.TestName, harnessRequired, harnessRequired)
+			}
+		}
 	})
 
 	t.Run("OWNER", func(t *testing.T) {
