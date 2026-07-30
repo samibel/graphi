@@ -405,16 +405,25 @@ func interfaceSpecs(gf *GoFile) []*ast.TypeSpec {
 	return out
 }
 
-// hasGeneratedMarker reports whether a file's head carries the conventional
-// "Code generated … DO NOT EDIT." marker. The window is the first 8 lines,
-// which is where the convention places it.
+// hasGeneratedMarker reports whether a file carries the conventional
+// "Code generated … DO NOT EDIT." marker anywhere in its LEADING COMMENT BLOCK —
+// that is, anywhere before the package clause.
+//
+// The window is the package clause and not a fixed line count, and that was a
+// real bug rather than a hypothetical one: a first cut of this function looked
+// only at the first 8 lines, which is where the bare convention puts the marker
+// but NOT where protoc-gen-go puts it. Generated gRPC sources open with a ~13
+// line Apache licence header, so the marker lands around line 15 and every one
+// of grpc-go's 49 generated files read as non-generated. The class SKIPPED with
+// "no repository exhibits this structure" while the manifest correctly declared
+// that grpc-go carries it — a silent false negative that would have published an
+// incomplete matrix as if the corpus were at fault.
 func hasGeneratedMarker(src []byte) bool {
-	lines := bytes.SplitN(src, []byte("\n"), 9)
-	for i, l := range lines {
-		if i >= 8 {
-			break
+	for _, l := range bytes.Split(src, []byte("\n")) {
+		s := strings.TrimSpace(string(l))
+		if strings.HasPrefix(s, "package ") {
+			return false // past the header; the marker convention is header-only
 		}
-		s := string(l)
 		if strings.Contains(s, "Code generated") && strings.Contains(s, "DO NOT EDIT") {
 			return true
 		}
