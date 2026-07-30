@@ -67,7 +67,7 @@ is therefore deliberately not re-implemented.
 | `remove_implementation` | **FAIL** | gin | inc 1889/6602 vs full 1889/6599 — **PARITY-002** |
 | `branch_switch` | *DEFERRED* | — | SW-158 |
 | `change_build_tag` | **FAIL** | gin | inc 1890/6605 vs full 1890/6602 — **PARITY-002** |
-| `replace_generated_file` | **FAIL** | grpc-go | inc 14898/**69940** vs full 14898/69772 — **PARITY-002** |
+| `replace_generated_file` | **FAIL** | grpc-go | full 14898/69772 (stable); inc 14898/**69939 (run-a)**, **69940 (run-b)** — **PARITY-002, and the incremental edge count is NON-DETERMINISTIC: see §5** |
 | `change_external_import` | **PASS** | cobra | |
 | `interrupted_full_pass` | *DEFERRED* | — | SW-158 (crash condition, not a change class) |
 | `restart_and_recovery` | *DEFERRED* | — | SW-158 (crash condition, not a change class) |
@@ -86,8 +86,11 @@ compared, not inferred from the fixture-level proofs at
 correction: the first cut of this harness passed only the rebuild graph to the counter and
 decoded the incremental graph without using it, so these counts were undisclosed-ly a statement
 about one of the two graphs a row compares — and the incremental side is the one a parity
-defect actually lands on. No published figure changed when both sides were counted; every side
-of every executed row reads 0/0. The gap was coverage and disclosure, not a wrong number.
+defect actually lands on. Every side of every executed row reads 0/0, before and after. The gap
+was coverage and disclosure, not a wrong count.
+
+**Republishing did, however, move one figure — `replace_generated_file`'s `inc_edges` — and
+that was not the correction's doing.** It exposed that the number varies between runs. See §5.
 
 **Read that with §5's scope limit.** A stale linker edge here means an edge whose endpoint is
 **not a node in the graph**. PARITY-002's extra edges have valid endpoints on both sides, so
@@ -151,7 +154,42 @@ Node counts are identical on both sides in every instance; **every diverging edg
 **It is bidirectional, not purely additive.** On gin the incremental graph carries **4** edges
 the rebuild does not **and the rebuild carries 1 the incremental does not** — net +3, but a
 one-way "incremental adds edges" reading is wrong and would send a fixer looking only for a
-missing sweep. On grpc-go the net is **+168** (inc 69940 vs full 69772).
+missing sweep. On grpc-go the net is **+167 in run-a and +168 in run-b** — and that difference
+is not rounding, it is the defect's second and worse property.
+
+### PARITY-002's divergence is NON-DETERMINISTIC — observed, not explained
+
+The gin rows reproduce to the byte. **The grpc-go row does not.** Over the identical pinned
+tree and the identical binary:
+
+| Execution | `full_edges` | `inc_edges` |
+|---|---|---|
+| pre-correction run-a | 69772 | 69940 |
+| pre-correction run-b | 69772 | 69940 |
+| published **run-a** | 69772 | **69939** |
+| published **run-b** | 69772 | **69940** |
+| review re-run 1 | 69772 | **69902** |
+| review re-run 2 | 69772 | 69939 |
+
+**Six executions, three distinct incremental snapshots, a spread of at least 38 edges. The full
+side is 69772 every single time.** So `graphi rebuild` is reproducible here and `graphi sync`
+is not, which makes "+168" one sample of a varying quantity rather than the magnitude of the
+defect. **Every figure for this row is therefore attributed to the run that produced it**, and
+no single number should be quoted as *the* size of the divergence.
+
+**This is an observation with its sample, not a characterised mechanism.** Nothing here
+establishes *why* the incremental count varies; that belongs to whoever fixes PARITY-002, and
+it is recorded in `projects/graphi/backlog.md` as evidence rather than repaired here. It is
+consistent with the under-determined representative-file target described above — if the
+target set is not unique, which representative is chosen may depend on ordering that is not
+pinned — but consistency is not proof and this record does not claim it.
+
+**It is disclosed here because this record's own standard demands it.** §7 says a row that
+differs between two otherwise-identical dispatches is an environment finding **to be
+explained**, never a flake to be retried away. This row differs, and `-verdict-diff` cannot see
+it: that gate compares **verdicts**, and all six executions agree the row FAILs. Deliberately
+so — but it means verdict agreement is not evidence of a reproducible measurement, and the
+counts beneath a verdict need reading per run.
 
 **It is one defect, not three, and this is the load-bearing evidence.** The three gin rows are
 three different files and three different edit shapes — appending a function to `auth.go`,
