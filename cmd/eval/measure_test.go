@@ -50,6 +50,25 @@ func TestMeasureSetupTrust(t *testing.T) {
 
 // TestMeasurePerformance runs the tier-1 budget checks against the pinned
 // fixture; every check must hold with wide margin on any healthy machine.
+//
+// NOISE BUDGET (SW-154). "Wide margin" needed a number: four of the five checks
+// compare a REAL wall clock — measurePerformanceAt indexes and re-indexes the
+// fixture for real — against absolute constants in perf.go (budgetIndexMS 10 s,
+// budgetIncrementalMS 5 s, budgetQueryMS 100 ms, budgetMCPToolMS 500 ms). That
+// is the same shape as the 2e1e186 flake, so here is the measured margin, worst
+// of three rounds each (2026-07-30, darwin/arm64, go1.26.5):
+//
+//	check                            plain    -race    budget   margin (-race)
+//	fixture_index_time                6 ms     56 ms     10 s        179x
+//	fixture_incremental_update        3 ms     37 ms      5 s        135x
+//	fixture_query_latency_median      0.071 ms  2.793 ms 100 ms       36x
+//	fixture_mcp_tool_latency_median   0.217 ms  7.100 ms 500 ms       70x
+//
+// The tightest margin is 36x under -race, well over the order of magnitude
+// SW-154 asks for, so no threshold moves. None could move from here in any case:
+// the budgets live in perf.go, non-test measurement code SW-154 must not touch.
+// fixture_db_size is not a wall-clock check at all — 94 208 bytes against 5 MiB,
+// byte-identical on every run.
 func TestMeasurePerformance(t *testing.T) {
 	m, err := measurePerformanceAt("../../corpus/fixtures/go")
 	if err != nil {

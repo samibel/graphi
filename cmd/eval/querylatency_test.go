@@ -12,13 +12,39 @@ import (
 func acceptAll(warmExecution, string, error) bool { return true }
 
 // SW-125 AC-6, directly: the timed region covers the operation and nothing
-// else. The test inflates the SETUP cost by 25 ms per execution while the
-// operation itself costs ~1 ms, and asserts the reported latency is unchanged.
-// If argument assembly ever drifts back inside the clock, every sample here
-// jumps by 25 ms and this fails.
+// else. The test inflates the SETUP cost per execution while the operation
+// itself costs 2 ms, and asserts the reported latency is unchanged. If argument
+// assembly ever drifts back inside the clock, every sample here jumps by
+// setupCost and this fails.
+//
+// NOISE BUDGET (SW-154). The UPPER bound below compares a real wall-clock
+// interval against an absolute constant — the shape that reddened main at
+// 2e1e186. The natural cost it has to discriminate against is the timed region
+// itself: a time.Sleep(opCost) plus whatever the OS scheduler adds to it.
+// MEASURED through this exact code path over 3000 samples on an idle machine
+// (2026-07-30, darwin/arm64, go1.26.5): p50 2.27 ms, p95 2.33 ms, p99 3.05 ms,
+// max 51.14 ms. The previous 25 ms threshold was BELOW an already-observed
+// honest sample — not 12x above it — so this test could redden main by itself,
+// with nothing having regressed, at roughly one sample in a thousand.
+//
+// setupCost is therefore held an order of magnitude above that measured worst
+// case: 600 ms is 11.7x the 51.14 ms max and 197x the 3.05 ms p99. Crossing it
+// honestly now needs a 598 ms scheduling delay on a 2 ms sleep, an order of
+// magnitude worse than anything measured. The measurement is darwin/arm64 while
+// the gate runs on Linux, which is precisely why the threshold sits an order of
+// magnitude above the figure instead of at it.
+//
+// It costs ~2.3 s of wall clock (4 executions x 575 ms of extra setup) and buys
+// the signal-to-noise margin the assertion always assumed but never had — the
+// same trade, and the same remedy, as stallharness_test.go:197-212.
+//
+// The LOWER bound needs no budget and gets none: time.Sleep pauses for AT LEAST
+// its argument, so an honest sample can only be LONGER than opCost. It is
+// one-sided and cannot flake — it fails only if the clock stops covering
+// invoke, which is the defect it exists to catch.
 func TestExecuteWarmOperation_TimesTheOperationNotTheSetup(t *testing.T) {
 	const (
-		setupCost = 25 * time.Millisecond
+		setupCost = 600 * time.Millisecond
 		opCost    = 2 * time.Millisecond
 	)
 	w := warmOperation{
