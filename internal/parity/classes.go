@@ -50,8 +50,9 @@ type ClassRow struct {
 }
 
 const (
-	kindChangeClass = "change_class"
-	harnessDeferred = "deferred"
+	kindChangeClass    = "change_class"
+	kindCrashCondition = "crash_condition"
+	harnessDeferred    = "deferred"
 )
 
 // LoadClasses parses the declared class table.
@@ -76,10 +77,19 @@ func LoadClasses(p string) ([]ClassRow, error) {
 // report's completeness check is derived from THIS, never from len(rows) —
 // counting crash conditions among the change classes is the exact conflation
 // that turned FR-7's 15 into backlog.md:55's "16".
-func CountChangeClasses(rows []ClassRow) int {
+func CountChangeClasses(rows []ClassRow) int { return countKind(rows, kindChangeClass) }
+
+// CountCrashConditions returns the number of kind: "crash_condition" rows. It is
+// deliberately a SECOND counter rather than a flag on the first: the report's
+// completeness check is over each kind separately, so that a crash condition can
+// never be absorbed into FR-7's fifteen and a change class can never be absorbed
+// into the crash conditions.
+func CountCrashConditions(rows []ClassRow) int { return countKind(rows, kindCrashCondition) }
+
+func countKind(rows []ClassRow, kind string) int {
 	n := 0
 	for _, r := range rows {
-		if r.Kind == kindChangeClass {
+		if r.Kind == kind {
 			n++
 		}
 	}

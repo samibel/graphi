@@ -17,6 +17,15 @@
 //	incremental — `graphi rebuild` at the pinned tree, the edit, `graphi sync`
 //	full        — `graphi rebuild` over the SAME final tree into a fresh store
 //
+// Three rows are LIFECYCLE EVENTS rather than content edits and are driven by
+// lifecycle.go instead (SW-158): branch_switch indexes at one git ref, checks out
+// another and syncs; interrupted_full_pass and restart_and_recovery SIGKILL a
+// real graphi subprocess mid-pass and require the next process to converge. Each
+// cites the docs/adr/0004-ingest-recovery-disposition.md kill point it lands on,
+// and each publishes EVERY repetition of its journey rather than one execution —
+// this matrix has already observed a product path whose output varies between
+// otherwise-identical runs, so a single green is not evidence of convergence.
+//
 // The assertion is BYTE EQUALITY of the two portable snapshot envelopes. Byte
 // parity over the envelope is strictly stronger than FR-7 :832's enumerated
 // field comparison, because model.Graph.Marshal emits ids, kinds, qualified
@@ -51,11 +60,15 @@
 //   - Not a performance measurement. It publishes no latency, no percentile and
 //     no RSS figure; parity is a reliability property (PRD :802-805), and §12.2
 //     belongs to SW-143.
-//   - Not the whole of checklist row 13. The recovery, crash-injection and
-//     branch-switch rows are SW-158's, declared `harness_row: deferred` in the
-//     matrix YAML and reported as DEFERRED here. Row 13 is satisfied only by
-//     SW-144 AND SW-158 together, and neither alone may be reported as
+//   - Not the whole of checklist row 13 in either half alone. Row 13 is
+//     satisfied only by SW-144 AND SW-158 TOGETHER — SW-144 built this package
+//     and its fifteen change-class rows, SW-158 added the three lifecycle rows in
+//     lifecycle.go — and NEITHER STORY ALONE WAS, OR MAY BE REPORTED AS,
 //     "SW-144 done" (adopted decision 4).
+//   - Not WP6. The evidence index's WP6 gate has a "recovery/crash-fault suite
+//     100% green" conjunct (docs/rc/evidence-index.yaml:125-135); the lifecycle
+//     rows are an INPUT to it, and its 90-day clock has not started. That row
+//     does not move because these rows ran.
 //   - Not a place to fix a defect it finds. A real inc≠full mismatch is a
 //     product bug; fixing it is a product-byte change that would move the
 //     candidate. In slice: find it, publish the FAIL, file it.

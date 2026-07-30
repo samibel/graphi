@@ -41,6 +41,14 @@ type Runner struct {
 	Classes []string
 	// PerClassTimeout bounds one class row end to end.
 	PerClassTimeout time.Duration
+	// LifecycleRepeat is how many times each lifecycle journey runs per kill
+	// point (0 = DefaultLifecycleRepeat). It exists because ONE PASSING RUN OF A
+	// LIFECYCLE ROW IS NOT EVIDENCE: this matrix has already observed a product
+	// path whose output varies between otherwise-identical executions, so a row
+	// publishes its sample and not a single execution. It cannot be used to
+	// retry a row into green — scoreRepetitions FAILS the row if any repetition
+	// diverged.
+	LifecycleRepeat int
 	// RunnerClass names the machine class. Empty makes the run unpublishable.
 	RunnerClass string
 	// AllowLocal admits manifest entries that point at a LOCAL PATH instead of
@@ -123,16 +131,35 @@ func (r *Runner) Run(ctx context.Context, m corpus.Manifest, rows []ClassRow, pr
 			ID: row.ID, Kind: row.Kind, Label: row.Label,
 			KnownDefect: row.KnownDefect,
 		}
+		// LIFECYCLE ROWS FIRST (SW-158). branch_switch and the two crash
+		// conditions are declared harness_row: "deferred" in the matrix YAML,
+		// and that field is about SW-157's HERMETIC engine/conformance table —
+		// where they remain absent, because a t.TempDir() fixture has neither a
+		// git history nor a process to kill. This harness delivers them, so the
+		// declared id is dispatched to lifecycle.go rather than read as a
+		// deferral. The YAML is unchanged in shape: re-declaring these rows
+		// harness_row: "required" would demand owner: "SW-157" under the OWNER
+		// direction and a row in a table that legitimately has none.
+		if lrow, ok := lifecycleRowByID(row.ID); ok {
+			if len(r.Classes) > 0 && !contains(r.Classes, row.ID) {
+				res.Verdict = parityreport.VerdictSkipped
+				res.Detail = "excluded by the -classes filter; a filtered run is never publishable"
+				rep.Classes = append(rep.Classes, res)
+				continue
+			}
+			r.runLifecycleRow(ctx, &res, lrow, candidates, &rep)
+			rep.Classes = append(rep.Classes, res)
+			continue
+		}
+
 		switch {
 		case row.HarnessRow == harnessDeferred:
 			// A DECLARED deferral, read out of the matrix YAML — never a
-			// runtime escape. branch_switch and the two crash conditions are
-			// process-level work docs/adr/0004-ingest-recovery-disposition.md
-			// reserves to SW-158, and checklist row 13 needs both stories.
+			// runtime escape.
 			res.Verdict = parityreport.VerdictDeferred
 			res.DeferredTo = row.DeferredTo
 			res.Detail = "declared harness_row: deferred in " + ClassesPath +
-				"; owned by " + row.DeferredTo + ". Checklist row 13 is satisfied only by SW-144 + SW-158 together."
+				"; owned by " + row.DeferredTo + "."
 			rep.Classes = append(rep.Classes, res)
 			r.logf("parity: %-24s DEFERRED -> %s", row.ID, row.DeferredTo)
 			continue
@@ -182,7 +209,7 @@ func (r *Runner) Run(ctx context.Context, m corpus.Manifest, rows []ClassRow, pr
 		}
 	}
 
-	rep.Finalize(CountChangeClasses(rows))
+	rep.Finalize(CountChangeClasses(rows), CountCrashConditions(rows))
 	return rep, nil
 }
 

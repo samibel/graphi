@@ -48,6 +48,10 @@ func run() int {
 	classes := flag.String("classes", "", "comma-separated class ids to run (default: all); a filtered run is never publishable")
 	runnerClass := flag.String("runner-class", "", "machine class this run happened on (e.g. ubuntu-latest); required to publish")
 	timeout := flag.Duration("class-timeout", 15*time.Minute, "per-class timeout")
+	lifecycleRepeat := flag.Int("lifecycle-repeat", parity.DefaultLifecycleRepeat,
+		"how many times each lifecycle journey (branch switch, interrupted full pass, restart and recovery) "+
+			"runs per kill point; every repetition is published, and a row FAILS if any of them diverged — "+
+			"this can never retry a row into green")
 	verdictDiff := flag.String("verdict-diff", "", "compare the verdict sets of two reports (a.json,b.json) and exit non-zero if they differ")
 	flag.Parse()
 
@@ -98,6 +102,7 @@ func run() int {
 		Classes:         splitList(*classes),
 		PerClassTimeout: *timeout,
 		RunnerClass:     *runnerClass,
+		LifecycleRepeat: *lifecycleRepeat,
 		Log: func(format string, args ...any) {
 			fmt.Fprintf(os.Stderr, format+"\n", args...)
 		},
@@ -130,6 +135,45 @@ func printAndScore(rep parityreport.Report) int {
 		fmt.Printf("  %-24s %-9s %-10s %s\n", c.ID, c.Verdict, where, firstLine(c.Detail))
 	}
 	fmt.Println()
+	// The lifecycle rows print their WHOLE SAMPLE, not a summary of it. A row
+	// whose repetitions disagree is the finding; collapsing them to one line is
+	// how that finding would be lost.
+	for _, c := range rep.Classes {
+		if len(c.Repetitions) == 0 {
+			continue
+		}
+		fmt.Printf("  %s — %d repetition(s), %d distinct incremental snapshot(s), %d distinct full snapshot(s), reproducible=%v\n",
+			c.ID, len(c.Repetitions), c.DistinctIncDigests, c.DistinctFullDigests, c.Reproducible)
+		if c.RefA != "" || c.RefB != "" {
+			fmt.Printf("      refs        %s  ->  %s\n", c.RefA, c.RefB)
+		}
+		if c.KillPoint != "" {
+			fmt.Printf("      kill point  %s\n", firstLine(c.KillPoint))
+		}
+		for _, rp := range c.Repetitions {
+			eq := "DIFFER"
+			if rp.Equal {
+				eq = "equal "
+			}
+			crashed := fmt.Sprintf("crashed-store %d/%d", rp.CrashedNodes, rp.CrashedEdges)
+			if rp.CrashedStoreNote != "" {
+				crashed = rp.CrashedStoreNote
+			}
+			fmt.Printf("      #%-2d %-12s %-9s %s inc %d/%d full %d/%d  lock %s->%s  %s  %s\n",
+				rp.N, rp.KillPointID, rp.ADRKillPoint, eq, rp.IncNodes, rp.IncEdges,
+				rp.FullNodes, rp.FullEdges, orDash(rp.LockDuringPass), orDash(rp.LockAfterKill),
+				crashed, firstLine(rp.Detail))
+		}
+		if c.Control != "" {
+			fmt.Printf("      control     %s\n", firstLine(c.Control))
+		}
+	}
+	if len(rep.Classes) > 0 {
+		fmt.Println()
+	}
+	for _, cl := range rep.CoverageLimits {
+		fmt.Printf("  COVERAGE LIMIT  %-24s %s: %s\n", cl.Row, cl.Platform, cl.Reason)
+	}
 	for _, sc := range rep.StoreCounts {
 		status := "PASS"
 		if !sc.Pass {
@@ -218,6 +262,13 @@ func exeName(name string) string {
 		return name + ".exe"
 	}
 	return name
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
 }
 
 func orNone(s string) string {
