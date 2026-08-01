@@ -212,6 +212,61 @@ func TestScoreRepetitions_ReportsAVaryingSampleAsVarying(t *testing.T) {
 	}
 }
 
+// TestCorroborateFullPassKill_PublishesTheStoreNotTheAim pins the arbitration
+// rule the signal journey rests on: the marker says where a signal was AIMED,
+// the crashed store says what had committed when it LANDED, and the published
+// kill point is the reconciliation of the two. A SIGKILL is asynchronous — on a
+// small repository the parse loop can finish and the first graph batches can
+// commit between the milestone line entering the pipe and the signal arriving —
+// so a repetition that kept claiming K1 over a store holding committed rows
+// would publish exactly the contradiction
+// TestLifecycleRow_SignalJourneyOnAGitFixture checks for on a real journey.
+func TestCorroborateFullPassKill_PublishesTheStoreNotTheAim(t *testing.T) {
+	kill := func(adr string, nodes, edges int, note string) lifecycleRep {
+		return lifecycleRep{Repetition: parityreport.Repetition{
+			N: 1, KillPointID: "parse", ADRKillPoint: adr, KillLanded: true,
+			CrashedNodes: nodes, CrashedEdges: edges, CrashedStoreNote: note,
+		}}
+	}
+
+	t.Run("a K1 aim contradicted by committed rows is published as the store's window", func(t *testing.T) {
+		rp := kill("K1", 6, 4, "")
+		corroborateFullPassKill(&rp)
+		if rp.ADRKillPoint != "K2-K4" {
+			t.Fatalf("adr_kill_point = %q, want K2-K4", rp.ADRKillPoint)
+		}
+		for _, want := range []string{"AIMED AT K1", "6 nodes / 4 edges"} {
+			if !strings.Contains(rp.Detail, want) {
+				t.Errorf("the reclassification must disclose %q: %s", want, rp.Detail)
+			}
+		}
+	})
+	t.Run("a corroborated K1 stands untouched", func(t *testing.T) {
+		rp := kill("K1", 0, 0, "")
+		corroborateFullPassKill(&rp)
+		if rp.ADRKillPoint != "K1" || rp.Detail != "" {
+			t.Errorf("an empty crashed store corroborates K1; got %q with detail %q", rp.ADRKillPoint, rp.Detail)
+		}
+	})
+	t.Run("an unreadable crashed store leaves the aim standing with its note", func(t *testing.T) {
+		rp := kill("K1", 0, 0, "crashed store unreadable after SIGKILL: locked")
+		corroborateFullPassKill(&rp)
+		if rp.ADRKillPoint != "K1" {
+			t.Errorf("an unverifiable mapping must keep the aim and its note, not invent a window: %q", rp.ADRKillPoint)
+		}
+	})
+	t.Run("K3 cannot be refuted by counts and stands", func(t *testing.T) {
+		// PhaseResolve is emitted after the commits K3 names, and a signal never
+		// lands before its marker — so committed rows are consistent with the
+		// aim, not evidence against it.
+		rp := kill("K3", 6, 7, "")
+		corroborateFullPassKill(&rp)
+		if rp.ADRKillPoint != "K3" {
+			t.Errorf("K3's aim is consistent with committed rows and must stand: %q", rp.ADRKillPoint)
+		}
+	})
+}
+
 // ---------------------------------------------------------------------------
 // AC-9: a platform limit is disclosed AND costs publishability.
 // ---------------------------------------------------------------------------
@@ -567,7 +622,11 @@ func TestLifecycleRow_SignalJourneyOnAGitFixture(t *testing.T) {
 			t.Errorf("#%d: ingest lock after SIGKILL = %q, want \"free\" — the OS must drop it with the process", rp.N, rp.LockAfterKill)
 		}
 		// The ADR mapping, corroborated by the store rather than by the marker
-		// alone: K1 is "before any graph batch", so nothing may have committed.
+		// alone: a PUBLISHED K1 means "before any graph batch", so nothing may
+		// have committed. corroborateFullPassKill is what keeps this true even
+		// on a fixture this small, where the signal can land after the parse
+		// loop finished — such a landing is published as the K2-K4 window the
+		// store supports, never as K1.
 		if rp.ADRKillPoint == "K1" && rp.CrashedStoreNote == "" && rp.CrashedNodes != 0 {
 			t.Errorf("#%d: claims K1 (before any graph batch) but the crashed store holds %d nodes",
 				rp.N, rp.CrashedNodes)

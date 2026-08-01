@@ -71,15 +71,14 @@ const DefaultLifecycleRepeat = 3
 // the docs/adr/0004-ingest-recovery-disposition.md kill point a signal sent at
 // that moment lands on.
 //
-// THE MAPPING IS EXACT, NOT APPROXIMATE, AND HERE IS WHY IT CAN BE. It is read
-// off engine/ingest/ingest.go's emission order, which pins what has and has not
-// committed when a given line appears:
+// THE MAPPING IS READ OFF THE PRODUCT'S EMISSION ORDER, AND IT NAMES WHERE A
+// SIGNAL IS AIMED — NOT WHERE IT IS GUARANTEED TO LAND. engine/ingest/ingest.go
+// pins what has and has not committed at the moment a given line is EMITTED:
 //
 //	FULL PASS (IngestAll)
-//	  :62/:79  PhaseParse  — the parse loop runs to completion BEFORE the first
-//	                         graphstore.BeginBatch at :144, so a signal here is
-//	                         K1 "before any graph batch". No graph batch exists
-//	                         to have committed.
+//	  :62/:79  PhaseParse  — the parse loop is still running and the first
+//	                         graphstore.BeginBatch at :144 is still ahead, so a
+//	                         signal LANDING here is K1 "before any graph batch".
 //	  :246     PhaseResolve — emitted after the WRITE batch commit (:200) AND the
 //	                         LINK batch commit (:240), before the TYPERESOLVE
 //	                         batch begins (:248). That is K3 exactly.
@@ -93,6 +92,24 @@ const DefaultLifecycleRepeat = 3
 //	                         :665 and inside the still-open meta transaction.
 //	                         That is K6 "after a DURABLE graph write mid-phase-2,
 //	                         before the meta commit".
+//
+// THE LANDING IS ASYNCHRONOUS, AND THE CRASHED STORE ARBITRATES WHAT MAY BE
+// CLAIMED. A marker is matched on this side of a pipe while the subprocess
+// keeps running on the other, so between the milestone line entering the pipe
+// and SIGKILL destroying the process a small repository can finish its parse
+// loop and commit its first graph batches. An aim is therefore a lower bound on
+// the landing, never a guarantee of it. That is why every killed full-pass
+// repetition reads the store the dead process left behind (recordCrashedShape)
+// and publishes the RECONCILIATION of aim and store (corroborateFullPassKill):
+// a K1 aim whose crashed store holds committed graph rows is published as the
+// K2-K4 window the store actually supports, never as K1. The arbitration is
+// one-directional because a signal only ever lands AT or AFTER its marker:
+// PhaseResolve is emitted after the commits K3 names, so K3's aim cannot be
+// refuted by the store's counts — a late K3 landing (past the TYPERESOLVE or
+// meta commit) is indistinguishable from outside the process and the record
+// carries the aim. A pass that beats the delivered signal to a clean exit is
+// not published as a crash at all: graphiKillAt reports it as not landed, and
+// the row reads ERROR rather than passing vacuously.
 //
 // K2 IS NOT ADDRESSABLE FROM OUTSIDE THE PROCESS, and the rows say so instead of
 // claiming it. K2 is the window between the WRITE batch commit (:200) and the
@@ -109,7 +126,9 @@ const DefaultLifecycleRepeat = 3
 type killPoint struct {
 	// ID is the harness's name for the moment (recorded per repetition).
 	ID string
-	// ADR is the docs/adr/0004 kill point, in the ADR's own vocabulary.
+	// ADR is the docs/adr/0004 kill point the AIM corresponds to, in the ADR's
+	// own vocabulary. What a repetition PUBLISHES is this aim reconciled against
+	// the crashed store's evidence (corroborateFullPassKill).
 	ADR string
 	// marker recognises the progress line to kill on.
 	marker func(line string) bool
@@ -179,7 +198,10 @@ func lifecycleRows() []lifecycleRow {
 				"K2 (:35) is NOT claimed by this row: IngestAll announces PhaseLink before the " +
 				"WRITE batch commits, so no observable marker separates the WRITE and LINK " +
 				"commits from outside the process. K2 remains covered synthetically by " +
-				"engine/ingest/faultmatrix_test.go kill-before-batch-2.",
+				"engine/ingest/faultmatrix_test.go kill-before-batch-2. A kill point names " +
+				"where a signal is AIMED; a repetition whose crashed store contradicts the aim " +
+				"is published under the store-supported window instead (see each repetition's " +
+				"adr_kill_point).",
 			run: (*Runner).driveInterruptedFullPass,
 		},
 		{
@@ -493,11 +515,12 @@ func (r *Runner) oneInterruptedFullPass(ctx context.Context, env *lifecycleEnv, 
 		return rp
 	}
 	if !k.landed {
-		rp.Detail = "the pass completed before the " + kp.ID + " marker was seen (last phase: " + k.lastPhase + ")"
+		rp.Detail = signalMissDetail(k, kp)
 		return rp
 	}
 
 	recordCrashedShape(&rp, incDB, filepath.Join(env.stateDir, tag, "crashed.snapshot"))
+	corroborateFullPassKill(&rp)
 
 	// 2. Recovery: a second full pass over the crashed store, in a NEW process.
 	if out, err := r.graphi(ctx, env.repoDir, "rebuild", "-root", env.repoDir, "-db", incDB, "-meta", incMeta); err != nil {
@@ -610,8 +633,7 @@ func (r *Runner) oneRestartAndRecovery(ctx context.Context, env *lifecycleEnv, k
 		return rp
 	}
 	if !k.landed {
-		rp.Detail = "the incremental pass completed before the " + kp.ID +
-			" marker was seen (last phase: " + k.lastPhase + "; drift seen: " + fmt.Sprint(k.sawDrift) + ")"
+		rp.Detail = signalMissDetail(k, kp) + " (drift seen: " + fmt.Sprint(k.sawDrift) + ")"
 		return rp
 	}
 
@@ -879,7 +901,10 @@ func hasGoFile(nameList string) bool {
 
 // killObservation is what the harness could actually see about one killed pass.
 type killObservation struct {
-	landed        bool
+	landed bool
+	// completed is set when the signal was sent but the pass exited cleanly
+	// first — the one way landed can be false with the marker having been seen.
+	completed     bool
 	observedPhase string
 	lastPhase     string
 	sawDrift      bool
@@ -950,11 +975,30 @@ func (r *Runner) graphiKillAt(ctx context.Context, cwd, metaDir string, kp killP
 	}
 	_ = pr.Close()
 	// A killed process exits non-zero; that is the expected outcome and not an
-	// error. Only a FAILURE TO KILL is one, and that is what obs.landed reports.
+	// error. An exit status of SUCCESS after the signal was sent is the
+	// opposite: the pass beat the kill to a clean exit, nothing crashed, and the
+	// journey must not be published as one — landed flips back to false and
+	// scoreRepetitions turns it into the row-level ERROR it is.
 	_ = cmd.Wait()
+	if obs.landed && cmd.ProcessState.Success() {
+		obs.landed = false
+		obs.completed = true
+	}
 	obs.output = tail([]byte(buf.String()))
 	obs.lockAfter = probeLock(ctx, metaDir)
 	return obs, nil
+}
+
+// signalMissDetail says which of the two ways a signal can fail to land this
+// journey hit: the marker never arrived, or the pass beat the delivered signal
+// to a clean exit. Both are the same row-level ERROR (scoreRepetitions), but a
+// reader diagnosing the miss needs to know which race to look at.
+func signalMissDetail(k killObservation, kp killPoint) string {
+	if k.completed {
+		return "SIGKILL was sent at the " + kp.ID + " marker but the pass EXITED CLEANLY first — " +
+			"the journey never crashed (last phase: " + k.lastPhase + ")"
+	}
+	return "the pass completed before the " + kp.ID + " marker was seen (last phase: " + k.lastPhase + ")"
 }
 
 // isPhaseLine recognises any of the product's non-TTY progress lines.
@@ -1008,6 +1052,34 @@ func recordCrashedShape(rp *lifecycleRep, dbPath, snapPath string) {
 		return
 	}
 	rp.CrashedNodes, rp.CrashedEdges = len(g.Nodes), len(g.Edges)
+}
+
+// corroborateFullPassKill reconciles a full-pass repetition's AIMED kill point
+// with the committed state its crashed store proves, and publishes the
+// reconciliation rather than the aim when the two disagree.
+//
+// The marker says where the signal was AIMED; the landing is asynchronous (see
+// the kill-point note above). K1's claim — "before any graph batch" — is
+// exactly the claim a crashed store can refute: committed graph rows mean at
+// least the WRITE batch had committed when the process died, which places the
+// landing somewhere in the K2-K4 window. The counts cannot place it more
+// precisely than that from outside the process, so the repetition states the
+// window rather than guessing a point. Nothing here touches the verdict:
+// recovery from a later kill point is still a real recovery, and the snapshot
+// bytes still decide the row. An unreadable crashed store leaves the aim
+// standing WITH its note — the note already discloses that the mapping could
+// not be corroborated.
+func corroborateFullPassKill(rp *lifecycleRep) {
+	if !rp.KillLanded || rp.CrashedStoreNote != "" {
+		return
+	}
+	if rp.ADRKillPoint == "K1" && rp.CrashedNodes != 0 {
+		rp.ADRKillPoint = "K2-K4"
+		rp.Detail = fmt.Sprintf("AIMED AT K1 (the parse milestone) but the store the killed process left "+
+			"behind holds %d nodes / %d edges, so at least the WRITE batch had committed before the "+
+			"signal landed. Published as the K2-K4 window the store supports; the counts cannot "+
+			"discriminate further from outside the process. ", rp.CrashedNodes, rp.CrashedEdges) + rp.Detail
+	}
 }
 
 // compareInto performs THE ASSERTION for a lifecycle repetition: byte equality
