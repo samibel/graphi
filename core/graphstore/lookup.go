@@ -121,6 +121,35 @@ type BriefAggregatePort interface {
 	BriefStats(ctx context.Context, topSymbols int) (BriefStats, error)
 }
 
+// ExternalBoundary is one external boundary node (a linker-minted stdlib /
+// 3rd-party target) ranked by incident edge count.
+type ExternalBoundary struct {
+	QualifiedName string
+	IncidentEdges int
+}
+
+// TrustStats is a bounded trust-shaped aggregate view of a graph: totals,
+// per-kind and per-tier edge counts, and the external boundary surface. It is
+// the store-side foundation for the TrustSnapshot (P1 PRD §13.8/§13.9).
+// TopBoundaries is capped by the caller and is always non-nil.
+type TrustStats struct {
+	NodesTotal    int
+	EdgesTotal    int
+	EdgesByKind   map[string]int
+	EdgesByTier   map[model.ConfidenceTier]int
+	ExternalNodes int
+	ExternalEdges int
+	TopBoundaries []ExternalBoundary
+}
+
+// TrustAggregatePort serves the trust snapshot's genuinely aggregate query
+// without materializing the whole graph. Implementations must return
+// TopBoundaries by incident count descending then qualified name ascending.
+// topN <= 0 returns an empty (non-nil) TopBoundaries.
+type TrustAggregatePort interface {
+	TrustStats(ctx context.Context, topN int) (TrustStats, error)
+}
+
 // DegreeSamplePort returns a deterministic, degree-stratified function/method
 // sample for real-repository evaluation. Candidates are ranked by incident
 // degree descending then NodeId, divided into maxSymbols quantile buckets, and
@@ -140,6 +169,8 @@ var (
 	_ SymbolLookupPort   = (*SQLiteStore)(nil)
 	_ BriefAggregatePort = (*MemStore)(nil)
 	_ BriefAggregatePort = (*SQLiteStore)(nil)
+	_ TrustAggregatePort = (*MemStore)(nil)
+	_ TrustAggregatePort = (*SQLiteStore)(nil)
 	_ DegreeSamplePort   = (*MemStore)(nil)
 	_ DegreeSamplePort   = (*SQLiteStore)(nil)
 )

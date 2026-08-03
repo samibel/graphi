@@ -13,6 +13,7 @@ import (
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/internal/freshness"
 	"github.com/samibel/graphi/internal/gitinfo"
 	"github.com/samibel/graphi/internal/state"
 )
@@ -205,7 +206,7 @@ func describeSnapshot(p state.Paths, name string) string {
 	line := name
 	if store, err := graphstore.OpenSQLiteReadOnly(path); err == nil {
 		ctx := context.Background()
-		if _, branch, commit, ok := rtime.LastSync(ctx, store); ok {
+		if _, branch, commit, ok := freshness.LastSync(ctx, store); ok {
 			if short := lastSyncShort(branch, commit); short != "" {
 				line += "  " + short
 			}

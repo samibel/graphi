@@ -13,6 +13,7 @@ import (
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/internal/freshness"
 	"github.com/samibel/graphi/internal/gitinfo"
 	"github.com/samibel/graphi/internal/state"
 )
@@ -170,7 +171,7 @@ func printBranchSwitch(ctx context.Context, w io.Writer, store graphstore.Graphs
 	if !gitOK || info.Branch == "" {
 		return
 	}
-	_, prevBranch, _, ok := rtime.LastSync(ctx, store)
+	_, prevBranch, _, ok := freshness.LastSync(ctx, store)
 	if ok && prevBranch != "" && prevBranch != info.Branch {
 		fmt.Fprintf(w, "Branch switch detected: %s → %s\n", prevBranch, info.Branch)
 	}
