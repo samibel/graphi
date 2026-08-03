@@ -18,6 +18,7 @@ import (
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/link"
 	"github.com/samibel/graphi/engine/observe"
+	"github.com/samibel/graphi/engine/trust"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
 )
@@ -43,6 +44,15 @@ type Ingester struct {
 	// external materialization is observable. Touched only from the single
 	// ingesting goroutine.
 	lastLinkStats link.Stats
+
+	// lastTypeResolution is the compact trust summary of the most recent
+	// typeresolvePass, folded into the canonical snapshot form at the one
+	// point the full typeresolve.Result exists transiently (P1 trust
+	// snapshot). Reset at pass start (resetTrustSignals) so a pass that
+	// legitimately skips the resolver publishes zero facts, never the
+	// previous pass's. Touched only from the single ingesting goroutine,
+	// like lastLinkStats.
+	lastTypeResolution trust.TypeResolutionFacts
 
 	// bounds are the fail-closed parse-time resource bounds (SW-055 AC#6) applied
 	// to untrusted inputs: max file size (checked on the root-confined descriptor
@@ -297,6 +307,16 @@ func (i *Ingester) resetSkips() {
 	i.skipMu.Lock()
 	i.skipped = nil
 	i.skipMu.Unlock()
+}
+
+// resetTrustSignals clears the remaining per-pass trust-snapshot signals at
+// pass start (alongside resetSkips): linkFiles and typeresolvePass both have
+// legitimate skip paths (nothing reprocessed, non-Go change set, fast
+// profile), and a snapshot collected after such a pass must publish zero
+// facts for them, never a previous pass's leftovers.
+func (i *Ingester) resetTrustSignals() {
+	i.lastLinkStats = link.Stats{}
+	i.lastTypeResolution = trust.TypeResolutionFacts{}
 }
 
 // MetaDB exposes the ingest-meta SQLite sidecar handle so a sibling engine

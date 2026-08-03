@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/samibel/graphi/internal/freshness"
+	"github.com/samibel/graphi/internal/freshness/probe"
 	"github.com/samibel/graphi/internal/gitinfo"
 	"github.com/samibel/graphi/internal/state"
 )
@@ -99,7 +100,7 @@ func runStatusAt(cwd string, args []string, stdout io.Writer) int {
 		}
 		root = detected
 	}
-	facts, err := freshness.Compute(context.Background(), root, dbPath, metaDir)
+	facts, err := probe.Compute(context.Background(), root, dbPath, metaDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: status: %v\n", err)
 		return 2

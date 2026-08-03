@@ -10,6 +10,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/profile"
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/engine/typeresolve"
 )
 
@@ -119,6 +120,10 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 	if err != nil {
 		return nil, fmt.Errorf("ingest: typeresolve: %w", err)
 	}
+	// Retain the compact trust summary at the ONE point the full Result exists;
+	// the Result itself stays transient. Every early return above leaves the
+	// pass-start zero value in place — a skipped resolver claims no facts.
+	i.lastTypeResolution = trust.NewTypeResolutionFacts(res)
 
 	checkedDirs := make(map[string]struct{}, len(res.Units))
 	for _, u := range res.Units {

@@ -43,6 +43,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		return err
 	}
 	i.resetSkips()
+	i.resetTrustSignals()
 	// Validate every repository-controlled semantics config before walking,
 	// parsing, or persisting source. stampSemanticsTx recomputes the value at the
 	// end so a mid-pass config change also fails closed instead of certifying a
@@ -287,6 +288,15 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	if err := i.store.SetMetadata(ctx, "index.profile", string(prof)); err != nil {
 		return fmt.Errorf("ingest: persist profile metadata: %w", err)
 	}
+	// P1 trust snapshot (ADR 0006 D4, PRD §14.4 variant 3): published
+	// post-commit — after every graph batch and the taint/profile metadata —
+	// and BEFORE finishFullPass, so the open full-pass marker still guards the
+	// publish window: a failure or crash here fails the pass loudly and leaves
+	// readers deriving INCOMPLETE/UNAVAILABLE, never a certified graph with a
+	// silently partial snapshot.
+	if err := i.persistTrustSnapshot(ctx, fullPassGeneration); err != nil {
+		return err
+	}
 	if sqlStore, ok := i.store.(*graphstore.SQLiteStore); ok {
 		if err := sqlStore.WALCheckpoint(ctx, "TRUNCATE"); err != nil {
 			return fmt.Errorf("ingest: final checkpoint: %w", err)
@@ -475,6 +485,7 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		return err
 	}
 	i.resetSkips()
+	i.resetTrustSignals()
 	units, err := i.walk(ctx, root, nil)
 	if err != nil {
 		return err
@@ -819,5 +830,12 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	// files are recomputed and merged with the retained findings of untouched
 	// files, so the persisted set converges with a full re-index. Metadata-only
 	// (never nodes/edges) → byte-parity safe.
-	return i.refreshIntraProcTaint(ctx, root, toProcess, parsedResults)
+	if err := i.refreshIntraProcTaint(ctx, root, toProcess, parsedResults); err != nil {
+		return err
+	}
+	// P1 trust snapshot: rebind after every successful incremental mutation
+	// (post-commit, same three keys, current live generation) so the snapshot
+	// tracks every graph the readers can see — not only full passes. Same
+	// loud-failure discipline as the full pass.
+	return i.persistTrustSnapshotLive(ctx)
 }
