@@ -702,6 +702,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P1 trust surface: repository/target trust report over the persisted TrustSnapshot (--json emits the canonical contract-§2 document; --target/--policy/--details/--limit); strict read-only observer that never creates state; byte-parity with the graph_health MCP tool through the single client.TrustReport composition"
+  - id: query-strict
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P1 strict-query prototype (PRD §28 option A): runs the unchanged stable query, then excludes result edges below -min-tier and wraps the canonical result in an envelope carrying the exclusion count — filtered emptiness always carries an explicit limitation, never bare emptiness; optional fail-closed -policy preflight (FAIL/UNKNOWN blocks the query with the trust exit code); no tier is ever rewritten, stable query semantics untouched"
   - id: snapshot
     category: cli-subcommand
     status: shipped

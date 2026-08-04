@@ -67,6 +67,8 @@ func main() {
 		os.Exit(runStatus(os.Args[2:]))
 	case "trust-report":
 		os.Exit(runTrustReport(os.Args[2:]))
+	case "query-strict":
+		os.Exit(runQueryStrict(os.Args[2:]))
 	case "snapshot":
 		os.Exit(runSnapshot(os.Args[2:]))
 	case "compare":

@@ -71,6 +71,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi trust-report [--json] [--details] [--limit n] [--target <symbol|path|package>] [--policy exploratory|review|automated_change] [-root <repo>] [-db path] [-meta dir]",
 		"graphi trust-report --policy review --json",
 	},
+	"query-strict": {
+		"run a stable query, then exclude result edges below a confidence tier; excluded counts stay visible (filtered emptiness is never bare emptiness), optional fail-closed policy preflight",
+		"graphi query-strict <operation> -symbol <id> [-depth n] [-min-tier confirmed|derived|heuristic] [-policy exploratory|review|automated_change] [-db path]",
+		"graphi query-strict callers -symbol shop.price -min-tier derived",
+	},
 	"snapshot": {
 		"list, freeze, or delete named graph states of this repo (for graphi compare)",
 		"graphi snapshot [<name> | -rm <name>] [-root <repo>]",

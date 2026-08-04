@@ -25,7 +25,7 @@ row is tagged stable or one is dropped.
 
 **MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **44-tool** union (33 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **150**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **151**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -144,7 +144,7 @@ Total capabilities: **150**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | 🧪 labs | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | 🧪 labs | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (48)
+## CLI subcommands (49)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -174,6 +174,7 @@ Total capabilities: **150**. See [`architecture-plan.md`](architecture-plan.md) 
 | `pr-comment` | 🧪 labs | ✅ shipped | - | sticky PR comment + optional risk-threshold merge gate |
 | `privacy-audit` | 🧪 labs | ✅ shipped | - | local-first proof (CGo scan + canary egress guard) |
 | `query` | 🧪 labs | ✅ shipped | - | structural query (callers\|callees\|references\|definition\|neighborhood) |
+| `query-strict` | 🧪 labs | ✅ shipped | - | P1 strict-query prototype (PRD §28 option A): runs the unchanged stable query, then excludes result edges below -min-tier and wraps the canonical result in an envelope carrying the exclusion count — filtered emptiness always carries an explicit limitation, never bare emptiness; optional fail-closed -policy preflight (FAIL/UNKNOWN blocks the query with the trust exit code); no tier is ever rewritten, stable query semantics untouched |
 | `rebuild` | 🧪 labs | ✅ shipped | - | flagless cold full re-index of the auto-managed per-repo graph (facade over the stable index lifecycle's --full pass) |
 | `refactor` | 🧪 labs | ✅ shipped | - | commit a rename refactor through the edit saga |
 | `refactor-preview` | 🧪 labs | ✅ shipped | - | impact-set preview of a refactor, no mutation |
