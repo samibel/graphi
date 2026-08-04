@@ -75,6 +75,14 @@ type UnitResult struct {
 	// imports cannot resolve); it does not degrade the unit because go/types
 	// under-approximates on error (see the tier-honesty note above).
 	TypeErrors int
+	// DroppedIntents is this unit's share of Result.DroppedIntents: drops whose
+	// use site lives in the unit's files (for implements intents, the
+	// implementing type's declaring unit). Only checked units can accumulate
+	// drops — a degraded unit emits no intents — and summing over Units always
+	// equals the pass-global counter. This is the per-package attribution the
+	// P1 detail-evidence rows persist (PRD §14.3 "Dropped Intents nach
+	// Package").
+	DroppedIntents int
 }
 
 // Resolve type-checks the repository snapshot in files (the ingest walk's
@@ -106,7 +114,7 @@ func Resolve(files map[string][]byte, committed map[model.NodeId]struct{}) (Resu
 			ur.Degraded, ur.TypeErrors = degraded, typeErrs
 			if degraded == "" {
 				imp.checked[pkgPath] = tpkg
-				checked = append(checked, checkedUnit{pkg: tpkg, info: info, files: asts})
+				checked = append(checked, checkedUnit{dir: u.Dir, pkg: tpkg, info: info, files: asts})
 			}
 		}
 		res.Units = append(res.Units, ur)
@@ -114,7 +122,7 @@ func Resolve(files map[string][]byte, committed map[model.NodeId]struct{}) (Resu
 
 	for _, cu := range checked {
 		for _, f := range cu.files {
-			sink.collectFile(f, cu.info, fset)
+			sink.collectFile(f, cu.info, fset, cu.dir)
 		}
 	}
 	sink.collectImplements(checked, fset)
@@ -125,12 +133,21 @@ func Resolve(files map[string][]byte, committed map[model.NodeId]struct{}) (Resu
 	}
 	res.Edges = edges
 	res.DroppedIntents = sink.dropped
+	// Per-unit attribution of the drops (see UnitResult.DroppedIntents). A dir
+	// hosts at most one CHECKED unit (multiple clauses degrade every unit in
+	// the dir), so keying the sink's tally by directory assigns each drop to
+	// exactly one unit and the per-unit counts sum to the global counter.
+	for k := range res.Units {
+		res.Units[k].DroppedIntents = sink.droppedByDir[res.Units[k].Dir]
+	}
 	return res, nil
 }
 
 // checkedUnit pairs a successfully checked package with its info and ASTs for
-// the emission passes.
+// the emission passes. dir is the unit's repo-relative directory, carried along
+// so the intent sink can attribute never-fabricate drops to their unit.
 type checkedUnit struct {
+	dir   string
 	pkg   *types.Package
 	info  *types.Info
 	files []*ast.File
@@ -266,6 +283,10 @@ type intentSink struct {
 	groups    map[edgeKey]*edgeAgg
 	order     []edgeKey
 	dropped   int
+	// droppedByDir attributes each drop to the directory of the unit whose
+	// collection produced it (the use site's unit; for implements, the
+	// implementing type's unit), so Resolve can report per-unit drop counts.
+	droppedByDir map[string]int
 }
 
 type edgeKey struct {
@@ -280,7 +301,14 @@ type edgeAgg struct {
 }
 
 func newIntentSink(committed map[model.NodeId]struct{}) *intentSink {
-	return &intentSink{committed: committed, groups: map[edgeKey]*edgeAgg{}}
+	return &intentSink{committed: committed, groups: map[edgeKey]*edgeAgg{}, droppedByDir: map[string]int{}}
+}
+
+// drop records one never-fabricate drop, attributed to the unit directory the
+// collecting pass is working through.
+func (s *intentSink) drop(dir string) {
+	s.dropped++
+	s.droppedByDir[dir]++
 }
 
 func (s *intentSink) isCommitted(id model.NodeId) bool {
@@ -306,17 +334,18 @@ func (s *intentSink) add(from, to model.NodeId, kind, reason, evidence string) {
 // a top-level declaration (including nested function literals) belongs to that
 // declaration's symbol. Multi-name value specs pair names with values 1:1 when
 // the counts match (var a, b = f(), g()) and attribute the whole right-hand
-// side to every name otherwise (var a, b = twoValues()).
-func (s *intentSink) collectFile(f *ast.File, info *types.Info, fset *token.FileSet) {
+// side to every name otherwise (var a, b = twoValues()). dir is the owning
+// unit's directory (drop attribution only; resolution is unaffected).
+func (s *intentSink) collectFile(f *ast.File, info *types.Info, fset *token.FileSet, dir string) {
 	for _, decl := range f.Decls {
 		switch d := decl.(type) {
 		case *ast.FuncDecl:
-			s.collectDecl(info.Defs[d.Name], fset, info, d)
+			s.collectDecl(info.Defs[d.Name], fset, info, dir, d)
 		case *ast.GenDecl:
 			for _, spec := range d.Specs {
 				switch sp := spec.(type) {
 				case *ast.TypeSpec:
-					s.collectDecl(info.Defs[sp.Name], fset, info, sp)
+					s.collectDecl(info.Defs[sp.Name], fset, info, dir, sp)
 				case *ast.ValueSpec:
 					if len(sp.Names) == len(sp.Values) {
 						for i, nm := range sp.Names {
@@ -325,7 +354,7 @@ func (s *intentSink) collectFile(f *ast.File, info *types.Info, fset *token.File
 								roots = append(roots, sp.Type)
 							}
 							roots = append(roots, sp.Values[i])
-							s.collectDecl(info.Defs[nm], fset, info, roots...)
+							s.collectDecl(info.Defs[nm], fset, info, dir, roots...)
 						}
 						continue
 					}
@@ -337,7 +366,7 @@ func (s *intentSink) collectFile(f *ast.File, info *types.Info, fset *token.File
 						roots = append(roots, v)
 					}
 					for _, nm := range sp.Names {
-						s.collectDecl(info.Defs[nm], fset, info, roots...)
+						s.collectDecl(info.Defs[nm], fset, info, dir, roots...)
 					}
 				}
 			}
@@ -350,8 +379,8 @@ func (s *intentSink) collectFile(f *ast.File, info *types.Info, fset *token.File
 // object maps to NO extractor node (locals, parameters, fields, package names,
 // builtins, stub-package objects) are silently not intents — no node was ever
 // supposed to exist. Uses that reconstruct but miss the committed set are the
-// never-fabricate drops.
-func (s *intentSink) collectDecl(fromObj types.Object, fset *token.FileSet, info *types.Info, roots ...ast.Node) {
+// never-fabricate drops, attributed to dir (the owning unit's directory).
+func (s *intentSink) collectDecl(fromObj types.Object, fset *token.FileSet, info *types.Info, dir string, roots ...ast.Node) {
 	if fromObj == nil {
 		return
 	}
@@ -392,7 +421,7 @@ func (s *intentSink) collectDecl(fromObj types.Object, fset *token.FileSet, info
 				return true
 			}
 			if !fromCommitted || !s.isCommitted(toID) {
-				s.dropped++
+				s.drop(dir)
 				return true
 			}
 			pos := fset.Position(id.Pos())
@@ -450,6 +479,7 @@ func (s *intentSink) collectImplements(checked []checkedUnit, fset *token.FileSe
 		obj   *types.TypeName
 		named *types.Named
 		id    model.NodeId
+		dir   string // declaring unit's directory (drop attribution)
 	}
 	type ifaceEntry struct {
 		namedEntry
@@ -474,7 +504,7 @@ func (s *intentSink) collectImplements(checked []checkedUnit, fset *token.FileSe
 			if !ok {
 				continue
 			}
-			e := namedEntry{obj: tn, named: named, id: id}
+			e := namedEntry{obj: tn, named: named, id: id, dir: cu.dir}
 			allNamed = append(allNamed, e)
 			if iface, ok := named.Underlying().(*types.Interface); ok && !iface.Empty() && declaredShapeResolved(iface) {
 				allIfaces = append(allIfaces, ifaceEntry{namedEntry: e, iface: iface})
@@ -491,7 +521,7 @@ func (s *intentSink) collectImplements(checked []checkedUnit, fset *token.FileSe
 				continue
 			}
 			if !s.isCommitted(t.id) || !s.isCommitted(i.id) {
-				s.dropped++
+				s.drop(t.dir)
 				continue
 			}
 			pos := fset.Position(t.obj.Pos())

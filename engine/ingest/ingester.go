@@ -54,6 +54,26 @@ type Ingester struct {
 	// like lastLinkStats.
 	lastTypeResolution trust.TypeResolutionFacts
 
+	// lastFileLinkStats holds the PER-FILE linker counters of the most recent
+	// linkFiles pass, keyed by normalized repo-relative source path (P1 WP1.2
+	// detail evidence, PRD §14.3). The pass totals (lastLinkStats) are the
+	// exact sum of these deltas. Reset at pass start like lastLinkStats;
+	// touched only from the single ingesting goroutine.
+	lastFileLinkStats map[string]link.Stats
+
+	// lastPackageEvidence holds the per-package resolver evidence of the most
+	// recent typeresolvePass, folded from the transient typeresolve.Result at
+	// the same point lastTypeResolution is (P1 WP1.2, PRD §22 semantics).
+	// lastTypeResolutionRan records whether the resolver actually completed a
+	// Resolve this pass: an incremental pass that legitimately skips the
+	// whole-repo recompute (non-Go change set, fast profile, kill switch)
+	// must LEAVE the persisted package rows alone rather than wipe them —
+	// zero rows from a skipped resolver are absent evidence, not evidence of
+	// zero packages. Both are reset at pass start and touched only from the
+	// single ingesting goroutine.
+	lastPackageEvidence   []PackageEvidence
+	lastTypeResolutionRan bool
+
 	// bounds are the fail-closed parse-time resource bounds (SW-055 AC#6) applied
 	// to untrusted inputs: max file size (checked on the root-confined descriptor
 	// and enforced again while reading at MaxFileSize+1),
@@ -317,6 +337,9 @@ func (i *Ingester) resetSkips() {
 func (i *Ingester) resetTrustSignals() {
 	i.lastLinkStats = link.Stats{}
 	i.lastTypeResolution = trust.TypeResolutionFacts{}
+	i.lastFileLinkStats = map[string]link.Stats{}
+	i.lastPackageEvidence = nil
+	i.lastTypeResolutionRan = false
 }
 
 // MetaDB exposes the ingest-meta SQLite sidecar handle so a sibling engine

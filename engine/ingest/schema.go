@@ -64,7 +64,10 @@ CREATE TABLE IF NOT EXISTS ingest_semantics (
 //
 //	0 -> 1 : SW-037 — add edit-context columns to dirty_units.
 //	1 -> 2 : SW-050 — add has_links flag to file_content_cache (linker cascade).
-const schemaVersion = 2
+//	2 -> 3 : P1 WP1.2 — add the trust_file_evidence / trust_package_evidence
+//	    detail-evidence tables (PRD §14.3): generation-bound per-file and
+//	    per-package trust rows for target-scope assessments (trust_evidence.go).
+const schemaVersion = 3
 
 // migrate applies additive schema changes exactly once, gated on PRAGMA
 // user_version, so an existing on-disk ingest-meta.db (e.g. one created by a
@@ -89,6 +92,11 @@ func (i *Ingester) migrate(ctx context.Context) error {
 	if current < 2 {
 		if err := i.migrateCacheHasLinks(ctx); err != nil {
 			return fmt.Errorf("ingest: migrate file_content_cache has_links: %w", err)
+		}
+	}
+	if current < 3 {
+		if err := i.migrateTrustEvidence(ctx); err != nil {
+			return fmt.Errorf("ingest: migrate trust evidence tables: %w", err)
 		}
 	}
 	// PRAGMA does not accept bound parameters; schemaVersion is a trusted constant.
@@ -141,6 +149,46 @@ func (i *Ingester) migrateCacheHasLinks(ctx context.Context) error {
 	}
 	if _, err := i.meta.ExecContext(ctx, "ALTER TABLE file_content_cache ADD COLUMN has_links INTEGER NOT NULL DEFAULT 0"); err != nil {
 		return fmt.Errorf("ingest: add column has_links: %w", err)
+	}
+	return nil
+}
+
+// migrateTrustEvidence creates the P1 WP1.2 detail-evidence tables (PRD §14.3)
+// when absent. These are whole NEW tables (never a column add), so CREATE TABLE
+// IF NOT EXISTS is the correct idempotent form here — the base-DDL caveat above
+// (silent no-op on an existing table) is exactly the desired behavior for a
+// re-run. An old on-disk sidecar migrates additively: existing rows and tables
+// are untouched. A sidecar that has NOT run this step (user_version < 3, e.g.
+// opened read-only by an upgraded observer) reads as evidence-unavailable
+// through the trust_evidence.go read ports — never as empty-healthy.
+func (i *Ingester) migrateTrustEvidence(ctx context.Context) error {
+	const ddl = `
+CREATE TABLE IF NOT EXISTS trust_file_evidence (
+	generation_id TEXT NOT NULL,
+	path TEXT NOT NULL,
+	language TEXT NOT NULL,
+	parse_status TEXT NOT NULL,
+	parse_reason TEXT NOT NULL,
+	resolved_derived INTEGER NOT NULL,
+	resolved_heuristic INTEGER NOT NULL,
+	resolved_external INTEGER NOT NULL,
+	skipped INTEGER NOT NULL,
+	ambiguous INTEGER NOT NULL,
+	PRIMARY KEY (generation_id, path)
+);
+CREATE TABLE IF NOT EXISTS trust_package_evidence (
+	generation_id TEXT NOT NULL,
+	package_key TEXT NOT NULL,
+	state TEXT NOT NULL,
+	degraded_reason TEXT NOT NULL,
+	type_errors INTEGER NOT NULL,
+	dropped_intents INTEGER NOT NULL,
+	confirmed_edges INTEGER NOT NULL,
+	skipped_files INTEGER NOT NULL,
+	PRIMARY KEY (generation_id, package_key)
+);`
+	if _, err := i.meta.ExecContext(ctx, ddl); err != nil {
+		return fmt.Errorf("ingest: create trust evidence tables: %w", err)
 	}
 	return nil
 }

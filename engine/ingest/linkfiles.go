@@ -57,6 +57,10 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	if len(ownedNodeIDs) == 0 {
 		return nil, nil
 	}
+	if i.lastFileLinkStats == nil {
+		// resetTrustSignals seeds the map at pass start; guard direct callers.
+		i.lastFileLinkStats = map[string]link.Stats{}
+	}
 
 	// Build the symbol index streamed straight from the committed node set —
 	// same canonical NodeId order as the old full listing, but no whole-graph
@@ -141,44 +145,51 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	// link progress instead of a single event bracketed by clock heartbeats.
 	total := len(fileRefs)
 	done := 0
-	// commit resolves and commits ONE sub-batch of files. Splitting a language's
-	// files into batches is byte-safe: construct keys edges by content-derived
-	// (from,to,kind), every edge's From is owned by exactly one file (so no edge
-	// crosses a batch boundary), and minted external nodes upsert idempotently.
+	// commit resolves and commits ONE sub-batch of files. It dispatches Link
+	// once PER FILE, which is byte-safe for the same reason batch splitting is:
+	// construct keys edges by content-derived (from,to,kind), every edge's From
+	// is owned by exactly one file (so no logical edge's intents ever span two
+	// Link calls), and minted external nodes upsert idempotently. The per-file
+	// dispatch is what lets the pass retain per-file resolution counters
+	// (lastFileLinkStats) for the P1 WP1.2 detail-evidence rows (PRD §14.3) —
+	// the language totals are the exact sum of the per-file deltas.
 	commit := func(lang string, files []link.FileRefs) error {
-		extNodes, edges, st, err := i.linker.Link(lang, files, idx)
-		if err != nil {
-			return fmt.Errorf("ingest: link %s: %w", lang, err)
-		}
-		linkStats.ResolvedDerived += st.ResolvedDerived
-		linkStats.ResolvedHeuristic += st.ResolvedHeuristic
-		linkStats.ResolvedExternal += st.ResolvedExternal
-		linkStats.Skipped += st.Skipped
-		linkStats.Ambiguous += st.Ambiguous
-		for _, n := range extNodes {
-			if err := w.PutNode(ctx, n); err != nil {
-				return fmt.Errorf("ingest: link put external node %s: %w", n.ID(), err)
+		for _, fr := range files {
+			extNodes, edges, st, err := i.linker.Link(lang, []link.FileRefs{fr}, idx)
+			if err != nil {
+				return fmt.Errorf("ingest: link %s: %w", lang, err)
 			}
-		}
-		for _, e := range edges {
-			// Fast mode drops low-value import-fanout edges while preserving
-			// core navigable edges (calls, references, hierarchy edges).
-			if i.profile == profile.Fast && e.Kind() == "imports" {
-				continue
-			}
-			// Balanced mode aggregates external imports by target package.
-			if i.profile == profile.Balanced && e.Kind() == "imports" {
-				if path, ok := importPathFromReason(e.Reason()); ok && isExternalImport(path) {
-					importEdges = append(importEdges, e)
-					continue
+			linkStats.ResolvedDerived += st.ResolvedDerived
+			linkStats.ResolvedHeuristic += st.ResolvedHeuristic
+			linkStats.ResolvedExternal += st.ResolvedExternal
+			linkStats.Skipped += st.Skipped
+			linkStats.Ambiguous += st.Ambiguous
+			i.lastFileLinkStats[fr.SourcePath] = st
+			for _, n := range extNodes {
+				if err := w.PutNode(ctx, n); err != nil {
+					return fmt.Errorf("ingest: link put external node %s: %w", n.ID(), err)
 				}
 			}
-			// WP-08 (deferred): chunk this edge commit into ~50k-edge durable
-			// transactions instead of accumulating the whole pass in one batch.
-			if err := w.PutEdge(ctx, e); err != nil {
-				return fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
+			for _, e := range edges {
+				// Fast mode drops low-value import-fanout edges while preserving
+				// core navigable edges (calls, references, hierarchy edges).
+				if i.profile == profile.Fast && e.Kind() == "imports" {
+					continue
+				}
+				// Balanced mode aggregates external imports by target package.
+				if i.profile == profile.Balanced && e.Kind() == "imports" {
+					if path, ok := importPathFromReason(e.Reason()); ok && isExternalImport(path) {
+						importEdges = append(importEdges, e)
+						continue
+					}
+				}
+				// WP-08 (deferred): chunk this edge commit into ~50k-edge durable
+				// transactions instead of accumulating the whole pass in one batch.
+				if err := w.PutEdge(ctx, e); err != nil {
+					return fmt.Errorf("ingest: link put edge %s: %w", e.ID(), err)
+				}
+				edgeIDs = append(edgeIDs, string(e.ID()))
 			}
-			edgeIDs = append(edgeIDs, string(e.ID()))
 		}
 		return nil
 	}

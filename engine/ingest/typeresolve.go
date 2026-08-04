@@ -123,7 +123,13 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 	// Retain the compact trust summary at the ONE point the full Result exists;
 	// the Result itself stays transient. Every early return above leaves the
 	// pass-start zero value in place — a skipped resolver claims no facts.
+	// The per-package evidence rows (P1 WP1.2, PRD §14.3/§22) are folded here
+	// too, with the ran flag telling the evidence writer that these rows are a
+	// complete whole-repo recompute (safe to replace the persisted set) rather
+	// than a skipped pass's zero value.
 	i.lastTypeResolution = trust.NewTypeResolutionFacts(res)
+	i.lastPackageEvidence = packageEvidenceFromResult(res, dirOf)
+	i.lastTypeResolutionRan = true
 
 	checkedDirs := make(map[string]struct{}, len(res.Units))
 	for _, u := range res.Units {
