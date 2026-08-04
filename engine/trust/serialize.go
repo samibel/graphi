@@ -16,6 +16,21 @@ import (
 // partially interpreted (fail closed).
 var ErrSchemaUnsupported = errors.New("trust: unsupported snapshot schema version")
 
+// encodeCanonical is the shared canonical JSON emitter for every trust
+// document (Snapshot, Assessment): encoding/json with HTML escaping disabled,
+// no indentation, trailing newline stripped. Callers own nil-slice
+// normalization and list ordering; this helper owns only the byte conventions,
+// so the two document encoders cannot drift apart on them.
+func encodeCanonical(v any) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
+}
+
 // Encode serializes a Snapshot to its canonical byte form: encoding/json with
 // HTML escaping disabled, no indentation, trailing newline stripped, nil
 // slices normalized to empty (contract doc §2.3 rule 2: empty arrays, never
@@ -41,13 +56,11 @@ func Encode(s Snapshot) ([]byte, error) {
 	if s.TypeResolution.DegradedUnits == nil {
 		s.TypeResolution.DegradedUnits = []DegradedUnit{}
 	}
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(s); err != nil {
+	b, err := encodeCanonical(s)
+	if err != nil {
 		return nil, fmt.Errorf("trust: encode snapshot: %w", err)
 	}
-	return bytes.TrimRight(buf.Bytes(), "\n"), nil
+	return b, nil
 }
 
 // Decode parses bytes previously produced by Encode. A schema_version other

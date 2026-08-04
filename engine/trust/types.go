@@ -1,10 +1,15 @@
-// Package trust is the P1 trust-snapshot core: the v1 snapshot model, its
-// canonical byte-stable serialization, and the pure snapshot-state derivation.
-// The governing contracts are docs/plan/2026-08-graphi-p1-trust-contract-v1.md
-// (frozen v1 terminology, snapshot states) and docs/adr/0006-status-vs-trust-
-// separation.md (state is a pure derivation of the shared freshness facts;
-// atomicity is PRD §14.4 variant 3 — post-commit write, fail-closed
-// UNAVAILABLE until complete).
+// Package trust is the P1 trust core: the v1 snapshot model, its canonical
+// byte-stable serialization, the pure snapshot-state derivation, and the
+// assessment layer between facts and policies — the closed verdict/finding
+// model (assess.go, findings.go), fail-closed target-scope resolution
+// (scope.go), limitation and recommendation builders (limitations.go,
+// recommend.go). Policies plug into that layer; no policy verdict logic lives
+// here. The governing contracts are
+// docs/plan/2026-08-graphi-p1-trust-contract-v1.md (frozen v1 terminology,
+// snapshot states, the closed finding-code registry) and
+// docs/adr/0006-status-vs-trust-separation.md (state is a pure derivation of
+// the shared freshness facts; atomicity is PRD §14.4 variant 3 — post-commit
+// write, fail-closed UNAVAILABLE until complete).
 //
 // Layering: trust depends on core/model, core/graphstore, engine/link,
 // engine/typeresolve, and internal/freshness — never on engine/ingest (the
