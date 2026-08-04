@@ -3,9 +3,11 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -80,6 +82,12 @@ type callParams struct {
 		// at the surface; the engine never parses a raw blob or fetches.
 		PRNumber int    `json:"pr_number"`
 		Review   string `json:"review"`
+
+		// P1 trust surface (graph_health, PRD §17): the optional policy name and
+		// the bounded-details opt-in (target and limit reuse the shared `target`
+		// and `limit` arguments above).
+		Policy  string `json:"policy"`
+		Details bool   `json:"details"`
 	} `json:"arguments"`
 }
 
@@ -193,6 +201,13 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return s.changeRiskCall(ctx, p)
 	case ToolAgentBrief:
 		return s.agentBriefCall(ctx, p)
+	}
+
+	// P1 trust surface (PRD §17): graph_health rides the shared client
+	// TrustReport composition, so the document is byte-identical to
+	// `graphi trust-report --json` for the same inputs.
+	if p.Name == ToolGraphHealth {
+		return s.graphHealthCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -694,6 +709,38 @@ func (s *Server) changeRiskCall(ctx context.Context, p callParams) (any, *rpcErr
 	}
 	b, err := s.stableClient().ChangeRisk(ctx, p.Arguments.Target, p.Arguments.Diff, derefInt(p.Arguments.Limit))
 	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// graphHealthCall (P1 trust surface, PRD §17) returns the canonical contract §2
+// trust-report document through the shared client.TrustReport composition, so
+// MCP and `graphi trust-report --json` emit byte-identical documents for the
+// same inputs (ONE composition, ONE encoder — the explain_symbol template). The
+// surface constructs TrustReportOptions from the PRD §17 arguments only;
+// Root/DBPath/MetaDir stay empty so the composition resolves the server
+// process's repository and its auto-managed store exactly as `graphi status`
+// does (a pure read-only observer — nothing is created or repaired).
+//
+// Error model (contract §4): operational failures are TYPED tool errors, never
+// an empty success. An unknown policy is an input error (trust.ErrPolicyUnknown
+// → -32602, decided before any store I/O); every other non-nil error —
+// including a remote client's ErrTrustUnavailable sentinel — is operational
+// (-32603). A repository with no graph store is NOT an error: the composition
+// degrades to the fail-closed UNAVAILABLE document (ADR 0006 — the failure
+// direction is "no answer", never "wrong answer").
+func (s *Server) graphHealthCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, _, _, err := s.client().TrustReport(ctx, client.TrustReportOptions{
+		Target:  p.Arguments.Target,
+		Policy:  p.Arguments.Policy,
+		Details: p.Arguments.Details,
+		Limit:   derefInt(p.Arguments.Limit),
+	})
+	if err != nil {
+		if errors.Is(err, trust.ErrPolicyUnknown) {
+			return nil, &rpcError{Code: -32602, Message: err.Error()}
+		}
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
 	return textResult(b), nil

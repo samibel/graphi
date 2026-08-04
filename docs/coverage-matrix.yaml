@@ -555,6 +555,12 @@ capabilities:
     tier: stable
     epic: EP-024
     note: "SW-134: bounded, cited task-start context packet derived from the live graph and local memory store (start-here files, key symbols, known facts, risks)."
+  - id: graph_health
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P1 trust surface (PRD §17): canonical contract-§2 trust-report document (snapshot state, freshness facts, coverage, edge confidence tiers, resolution gaps, boundaries, optional exploratory|review|automated_change policy verdict) for repository or target scope; byte-parity with `graphi trust-report --json` through the single client.TrustReport composition; read-only fail-closed observer (missing evidence reads UNKNOWN/UNAVAILABLE, never PASS); Labs-only pending a promotion decision."
   - id: cli
     category: surface
     status: shipped
@@ -690,6 +696,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "read-only freshness report (repo/branch/drift/last-sync, --json; exit 0 current, 1 actionable, 2 error); opens store + sidecar mode=ro and never creates state"
+  - id: trust-report
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P1 trust surface: repository/target trust report over the persisted TrustSnapshot (--json emits the canonical contract-§2 document; --target/--policy/--details/--limit); strict read-only observer that never creates state; byte-parity with the graph_health MCP tool through the single client.TrustReport composition"
   - id: snapshot
     category: cli-subcommand
     status: shipped

@@ -18,6 +18,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/observe"
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -143,6 +144,9 @@ func (s *stubClient) CompareBranches(context.Context, string, string) ([]byte, e
 }
 func (s *stubClient) CritiqueReview(context.Context, int, string, string) ([]byte, error) {
 	return nil, client.ErrAnalysisUnavailable
+}
+func (s *stubClient) TrustReport(context.Context, client.TrustReportOptions) ([]byte, trust.Verdict, trust.State, error) {
+	return nil, "", "", client.ErrTrustUnavailable
 }
 
 func newServer(t *testing.T) (*Server, *stubClient, *observe.Broker) {

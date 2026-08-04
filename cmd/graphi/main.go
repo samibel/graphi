@@ -65,6 +65,8 @@ func main() {
 		os.Exit(runRebuild(os.Args[2:]))
 	case "status":
 		os.Exit(runStatus(os.Args[2:]))
+	case "trust-report":
+		os.Exit(runTrustReport(os.Args[2:]))
 	case "snapshot":
 		os.Exit(runSnapshot(os.Args[2:]))
 	case "compare":

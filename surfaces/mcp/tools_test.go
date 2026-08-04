@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -93,6 +94,9 @@ func (allToolsClient) CompareBranches(context.Context, string, string) ([]byte, 
 }
 func (allToolsClient) CritiqueReview(context.Context, int, string, string) ([]byte, error) {
 	return []byte("{}"), nil
+}
+func (allToolsClient) TrustReport(context.Context, client.TrustReportOptions) ([]byte, trust.Verdict, trust.State, error) {
+	return []byte("{}"), "", "", nil
 }
 
 // TestToolNames_MatchesAdvertisedMaximalSet is the in-package drift guard for the

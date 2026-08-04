@@ -31,6 +31,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/samibel/graphi/engine/trust"
 )
 
 // httpSchemaVersion is the SW-044 envelope contract version this adapter is
@@ -445,6 +447,15 @@ func (h *HTTP) CompareBranches(ctx context.Context, baseRef, headRef string) ([]
 // precedent).
 func (h *HTTP) CritiqueReview(ctx context.Context, prNumber int, diff, reviewJSON string) ([]byte, error) {
 	return nil, ErrAnalysisUnavailable
+}
+
+// TrustReport returns ErrTrustUnavailable until a remote trust-report endpoint
+// is added (P1 Labs). The composition needs the LOCAL repository root and
+// auto-managed store paths, which the loopback HTTP contract does not carry;
+// it is wired only on the in-process Direct client today (mirrors the
+// diagnostics "unavailable until wired" precedent). No request is emitted.
+func (h *HTTP) TrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, trust.Verdict, trust.State, error) {
+	return nil, "", "", ErrTrustUnavailable
 }
 
 // compile-time proof the adapter satisfies the surface contract.

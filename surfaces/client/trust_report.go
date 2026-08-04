@@ -1,0 +1,427 @@
+package client
+
+// This file is the SHARED trust-report composition (P1 trust surface): the ONE
+// place the contract §2 `graphi trust-report --json` document is assembled and
+// canonically serialized, following the explain_symbol template — engine
+// serialization conventions -> client.Client method -> Direct canonical bytes —
+// so the CLI and MCP emit byte-identical documents by construction.
+//
+// Governing contracts: docs/plan/2026-08-graphi-p1-trust-contract-v1.md (§1
+// terminology, §2 wire shape + contract rules, §4 error model) and
+// docs/adr/0006-status-vs-trust-separation.md (trust consumes the shared
+// freshness facts and mints no freshness prose or rebuild recommendation of
+// its own; snapshot state is a pure derivation; the reader is a strict
+// observer — read-only stores, no state-directory creation, no repair).
+//
+// The composition lives at the surface rank on purpose: the freshness probe
+// (internal/freshness/probe) imports engine/ingest, so engine/trust cannot
+// perform this composition itself without a cycle — the trust core stays pure
+// and the surface rank wires probe + store + trust together.
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/engine/trust"
+	"github.com/samibel/graphi/internal/freshness"
+	"github.com/samibel/graphi/internal/freshness/probe"
+	"github.com/samibel/graphi/internal/releaseinfo"
+)
+
+// trustReportJSONSchemaVersion versions the `graphi trust-report --json`
+// document (contract doc §2.4, following the statusJSONSchemaVersion
+// convention). Bump only on breaking changes to the shape or value domain; it
+// is the single source of the wire field `schema_version`.
+const trustReportJSONSchemaVersion = 1
+
+// liveGenerationKey is the graph's full-pass generation nonce in kv_meta — the
+// binding DeriveState checks the snapshot against (engine/ingest stamps it;
+// engine/trust/state.go documents the equality).
+const liveGenerationKey = "index.full_ingest_generation"
+
+// trustReportDoc is the contract §2 wire document. The first twelve properties
+// mirror the frozen §2.2 field register verbatim, at the register's nesting and
+// order; `findings`, `checks_passed`, and `details` are additive v1 fields
+// (contract doc §2.3 rule 7): findings carry the explaining policy/resolver
+// observations (PRD §26 — no verdict without findings or an explicit
+// all-checks-passed list, which checks_passed provides), and details carries
+// the bounded evidence samples emitted only on explicit request (rule 8).
+// Every property is always present; empty slices encode as [], never null
+// (rules 1–2); all lists are canonically sorted before serialization (rules
+// 4–5); paths are normalized and repo-relative by snapshot construction
+// (rule 9).
+type trustReportDoc struct {
+	SchemaVersion   int                   `json:"schema_version"`
+	SnapshotVersion string                `json:"snapshot_version"`
+	SnapshotState   trust.State           `json:"snapshot_state"`
+	GraphGeneration trustReportGeneration `json:"graph_generation"`
+	Freshness       trustReportFreshness  `json:"freshness"`
+	Scope           trustReportScope      `json:"scope"`
+	Coverage        trustReportCoverage   `json:"coverage"`
+	EdgeEvidence    trust.TierCounts      `json:"edge_evidence"`
+	Resolution      trustReportResolution `json:"resolution"`
+	Boundaries      []trustReportBoundary `json:"boundaries"`
+	Policy          trustReportPolicy     `json:"policy"`
+	Limitations     []trust.Limitation    `json:"limitations"`
+	Findings        []trust.Finding       `json:"findings"`
+	ChecksPassed    []string              `json:"checks_passed"`
+	Details         trustReportDetails    `json:"details"`
+}
+
+// trustReportGeneration is the §2.2 graph_generation object. Every value is a
+// fact the caller already holds (ADR 0006: nothing is measured twice): id is
+// the live full-pass generation nonce, source_commit/profile come from the
+// shared freshness facts (the sync stamp and index.profile), and binary_commit
+// is the running binary's VCS stamp ("" for unstamped dev builds).
+type trustReportGeneration struct {
+	ID           string `json:"id"`
+	SourceCommit string `json:"source_commit"`
+	Profile      string `json:"profile"`
+	BinaryCommit string `json:"binary_commit"`
+}
+
+// trustReportFreshness is the §2.2 freshness object: the shared probe's facts
+// verbatim — counts and currency only, never freshness prose (ADR 0006 D1).
+type trustReportFreshness struct {
+	Current bool             `json:"current"`
+	Drift   trustReportDrift `json:"drift"`
+}
+
+type trustReportDrift struct {
+	Added   int `json:"added"`
+	Changed int `json:"changed"`
+	Removed int `json:"removed"`
+}
+
+// trustReportScope is the §2.2 scope object: the closed §1.7 kind plus the
+// resolved identity string (empty for the repository default and for every
+// unresolved target — an unresolved scope stays visibly empty, PRD §27).
+type trustReportScope struct {
+	Kind string `json:"kind"`
+	ID   string `json:"id"`
+}
+
+// trustReportCoverage is the §2.2 coverage object. files_indexed is the shared
+// probe's cached-file count, files_skipped the snapshot's parse-skip count, and
+// files_discovered their sum — a pure derivation of already-collected facts
+// (discovered = indexed + skipped), never a second walk.
+type trustReportCoverage struct {
+	FilesDiscovered  int `json:"files_discovered"`
+	FilesIndexed     int `json:"files_indexed"`
+	FilesSkipped     int `json:"files_skipped"`
+	PackagesTotal    int `json:"packages_total"`
+	PackagesDegraded int `json:"packages_degraded"`
+}
+
+// trustReportResolution is the §2.2 resolution object, filled from the
+// snapshot's linker and type-resolution facts.
+type trustReportResolution struct {
+	ResolvedExternal int `json:"resolved_external"`
+	Skipped          int `json:"skipped"`
+	Ambiguous        int `json:"ambiguous"`
+	DroppedIntents   int `json:"dropped_intents"`
+}
+
+// trustReportBoundary is one §2.2 boundaries[] entry ({code, severity, count};
+// the §2.5 minimum vocabulary).
+type trustReportBoundary struct {
+	Code     string `json:"code"`
+	Severity string `json:"severity"`
+	Count    int    `json:"count"`
+}
+
+// trustReportPolicy is the §2.2 policy object. When no policy is requested it
+// is present with zero values, never omitted (§2.3 presence clarification).
+type trustReportPolicy struct {
+	Name    string        `json:"name"`
+	Version int           `json:"version"`
+	Verdict trust.Verdict `json:"verdict"`
+}
+
+// trustReportDetails carries the snapshot's bounded evidence samples. The
+// object is always present (§2.3 rule 1 discipline for additive fields); its
+// lists are filled only when details were explicitly requested (rule 8), and
+// capped by the caller's limit when limit > 0. The samples are already bounded
+// and repo-relative at snapshot construction (trust.MaxParsePaths /
+// trust.MaxDegradedUnits; absolute paths are dropped, never leaked).
+type trustReportDetails struct {
+	ParsePaths    []string             `json:"parse_paths"`
+	DegradedUnits []trust.DegradedUnit `json:"degraded_units"`
+	TopBoundaries []trust.Boundary     `json:"top_boundaries"`
+}
+
+// trustFacts bundles the store-derived inputs of one composition.
+type trustFacts struct {
+	snap       trust.Snapshot
+	state      trust.State
+	scope      trust.ScopeRef
+	resolution []trust.Finding
+	generation string
+}
+
+// composeTrustReport is the shared composition: probe -> read-only store ->
+// trust read path -> optional scope/policy -> canonical bytes. It returns the
+// canonical document bytes plus the policy verdict (zero Verdict when no
+// policy was requested) and the derived snapshot state, so the CLI maps its
+// exit codes without re-parsing JSON. A non-nil error is operational (CLI
+// exit 2, typed MCP tool error): an unknown policy wraps
+// trust.ErrPolicyUnknown, a store without selective lookups wraps
+// trust.ErrSelectiveLookupUnavailable, everything else is a probe/store
+// failure. A missing store is NOT an error: it composes the fail-closed
+// UNAVAILABLE document (contract doc §1.6; ADR 0006 — the failure direction is
+// "no answer", never "wrong answer").
+func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, trust.Verdict, trust.State, error) {
+	// Resolve the policy first: an unknown name is an input error regardless
+	// of graph state, and failing before any I/O keeps the outcome identical
+	// across indexed and unindexed repositories.
+	var pol trust.Policy
+	policyRequested := opts.Policy != ""
+	if policyRequested {
+		p, err := trust.PolicyByName(opts.Policy)
+		if err != nil {
+			return nil, "", "", err
+		}
+		pol = p
+	}
+
+	f, err := probe.Compute(ctx, opts.Root, opts.DBPath, opts.MetaDir)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("client: trust report freshness probe: %w", err)
+	}
+
+	facts, err := readTrustFacts(ctx, f, opts.Target)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	// The resolver findings are ALWAYS forwarded into the evaluation — never
+	// dropped, never rebuilt from the scope shape alone. Dropping them would
+	// launder an ambiguous or not-found target into a clean-looking scope
+	// (the false-pass hole the policy red-gate tests pin).
+	verdict := trust.Verdict("")
+	policyRef := trustReportPolicy{}
+	findings := make([]trust.Finding, len(facts.resolution))
+	copy(findings, facts.resolution)
+	trust.SortFindings(findings)
+	checksPassed := []string{}
+	if policyRequested {
+		a := pol.Evaluate(facts.snap, facts.state, facts.scope, facts.resolution...)
+		verdict = a.Verdict
+		policyRef = trustReportPolicy{Name: a.Policy.Name, Version: a.Policy.Version, Verdict: a.Verdict}
+		findings = a.Findings // canonical order; adopts the resolver findings verbatim
+		checksPassed = a.ChecksPassed
+	}
+
+	// One limitation source: the same snapshot-derived builder the assessment
+	// attaches (Assessment.Limitations == LimitationsFromSnapshot(snap) by
+	// construction), split by the §2.5 boundary vocabulary into the two wire
+	// lists. The builder's canonical order (severity rank, then code) is
+	// preserved through the split.
+	boundaries, limitations := splitBoundaries(trust.LimitationsFromSnapshot(facts.snap))
+
+	doc := trustReportDoc{
+		SchemaVersion:   trustReportJSONSchemaVersion,
+		SnapshotVersion: trust.SnapshotVersion,
+		SnapshotState:   facts.state,
+		GraphGeneration: trustReportGeneration{
+			ID:           facts.generation,
+			SourceCommit: f.LastSync.Commit,
+			Profile:      f.Profile,
+			BinaryCommit: releaseinfo.New().Commit(),
+		},
+		Freshness: trustReportFreshness{
+			Current: f.Current,
+			Drift:   trustReportDrift{Added: f.Drift.Added, Changed: f.Drift.Changed, Removed: f.Drift.Removed},
+		},
+		Scope: trustReportScope{Kind: facts.scope.Kind, ID: scopeWireID(facts.scope)},
+		Coverage: trustReportCoverage{
+			FilesDiscovered:  f.Index.FilesCached + facts.snap.Parse.Skipped,
+			FilesIndexed:     f.Index.FilesCached,
+			FilesSkipped:     facts.snap.Parse.Skipped,
+			PackagesTotal:    facts.snap.TypeResolution.UnitsTotal,
+			PackagesDegraded: facts.snap.TypeResolution.UnitsDegraded,
+		},
+		EdgeEvidence: facts.snap.Graph.EdgesByTier,
+		Resolution: trustReportResolution{
+			ResolvedExternal: facts.snap.Link.ResolvedExternal,
+			Skipped:          facts.snap.Link.Skipped,
+			Ambiguous:        facts.snap.Link.Ambiguous,
+			DroppedIntents:   facts.snap.TypeResolution.DroppedIntents,
+		},
+		Boundaries:   boundaries,
+		Policy:       policyRef,
+		Limitations:  limitations,
+		Findings:     findings,
+		ChecksPassed: checksPassed,
+		Details:      detailsBlock(facts.snap, opts),
+	}
+	b, err := encodeTrustReport(doc)
+	if err != nil {
+		return nil, "", "", err
+	}
+	return b, verdict, facts.state, nil
+}
+
+// readTrustFacts opens the durable store READ-ONLY (the same
+// OpenSQLiteReadOnly discipline the freshness probe uses — a pure observer
+// never creates or repairs state) and derives snapshot, state, and scope
+// through the existing trust read path. A repository with no store fails
+// closed to the UNAVAILABLE facts — a valid document, never an error.
+func readTrustFacts(ctx context.Context, f freshness.Report, target string) (trustFacts, error) {
+	facts := trustFacts{
+		state:      trust.StateUnavailable,
+		scope:      unresolvedScope(target),
+		resolution: []trust.Finding{},
+	}
+	if !f.Index.Exists {
+		return facts, nil
+	}
+	store, err := graphstore.OpenSQLiteReadOnly(f.DBPath)
+	if err != nil {
+		// The store vanished between the freshness probe and this read: fail
+		// closed to the UNAVAILABLE document, not an operational error.
+		return facts, nil
+	}
+	defer func() { _ = store.Close() }()
+
+	facts.generation, err = liveGeneration(ctx, store)
+	if err != nil {
+		return trustFacts{}, err
+	}
+	snap, state, err := trust.Evaluate(ctx, store, f, facts.generation)
+	if err != nil {
+		return trustFacts{}, fmt.Errorf("client: trust report snapshot: %w", err)
+	}
+	facts.snap, facts.state = snap, state
+
+	if strings.TrimSpace(target) != "" {
+		scope, resolution, err := trust.ResolveScope(ctx, store, target)
+		if err != nil {
+			return trustFacts{}, fmt.Errorf("client: trust report target: %w", err)
+		}
+		facts.scope, facts.resolution = scope, resolution
+	}
+	return facts, nil
+}
+
+// liveGeneration reads the graph's full-pass generation nonce; a store no full
+// pass ever certified has none ("" — DeriveState fails it closed to
+// UNAVAILABLE). Only a genuine store failure is an error.
+func liveGeneration(ctx context.Context, store graphstore.Graphstore) (string, error) {
+	gen, err := store.Metadata(ctx, liveGenerationKey)
+	if errors.Is(err, graphstore.ErrNotFound) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("client: trust report live generation: %w", err)
+	}
+	return gen, nil
+}
+
+// unresolvedScope shapes the scope for a target that could not be handed to
+// the resolver (no store to resolve against): the repository default for an
+// empty target, otherwise the asked shape with an empty ID — visibly
+// unresolved (PRD §27), mirroring the resolver's own package-looking rule, and
+// WITHOUT minting any resolution finding (there is no evidence to claim
+// not-found from; the policy rules fail such a scope closed to UNKNOWN and
+// explain it via SCOPE_EVIDENCE_UNAVAILABLE).
+func unresolvedScope(target string) trust.ScopeRef {
+	target = strings.TrimSpace(target)
+	switch {
+	case target == "":
+		return trust.ScopeRef{Kind: trust.ScopeRepository}
+	case strings.Contains(target, "/"):
+		return trust.ScopeRef{Kind: trust.ScopePackage, Package: target}
+	default:
+		return trust.ScopeRef{Kind: trust.ScopeSymbol, Symbol: target}
+	}
+}
+
+// scopeWireID picks the §2.2 scope.id string: the resolved node ID when one
+// exists, else the resolved file path (a file scope carries no NodeId), else
+// empty — an unresolved scope stays visibly empty (fail closed, PRD §27).
+func scopeWireID(s trust.ScopeRef) string {
+	if s.ID != "" {
+		return s.ID
+	}
+	return s.Path
+}
+
+// splitBoundaries partitions the snapshot-derived limitation list into the
+// §2.2 wire pair: entries whose code belongs to the §2.5 boundary vocabulary
+// become boundaries[] ({code, severity, count}); everything else stays a
+// limitation ({code, severity, count, action}). Both lists keep the builder's
+// canonical order and are never nil.
+func splitBoundaries(ls []trust.Limitation) ([]trustReportBoundary, []trust.Limitation) {
+	bounds := []trustReportBoundary{}
+	rest := []trust.Limitation{}
+	for _, l := range ls {
+		switch l.Code {
+		case trust.LimitationExternalNotNavigable,
+			trust.LimitationCrossRepositoryUnavailable,
+			trust.LimitationDependencyInternalsUnknown,
+			trust.LimitationDynamicRuntimeUnknown:
+			bounds = append(bounds, trustReportBoundary{Code: l.Code, Severity: l.Severity, Count: l.Count})
+		default:
+			rest = append(rest, l)
+		}
+	}
+	return bounds, rest
+}
+
+// detailsBlock fills the always-present details object: empty lists unless
+// details were explicitly requested, each list capped at limit when limit > 0.
+func detailsBlock(snap trust.Snapshot, opts TrustReportOptions) trustReportDetails {
+	det := trustReportDetails{
+		ParsePaths:    []string{},
+		DegradedUnits: []trust.DegradedUnit{},
+		TopBoundaries: []trust.Boundary{},
+	}
+	if !opts.Details {
+		return det
+	}
+	det.ParsePaths = capList(snap.Parse.Paths, opts.Limit)
+	det.DegradedUnits = capList(snap.TypeResolution.DegradedUnits, opts.Limit)
+	det.TopBoundaries = capList(snap.External.TopBoundaries, opts.Limit)
+	return det
+}
+
+// capList copies in (never aliasing the snapshot's slices) and caps the copy
+// at limit when limit > 0. The result is never nil.
+func capList[T any](in []T, limit int) []T {
+	out := make([]T, 0, len(in))
+	out = append(out, in...)
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out
+}
+
+// encodeTrustReport is THE canonical trust-report encoder — one encoder for
+// every surface, same byte conventions as the trust core's canonical
+// documents (engine/trust/serialize.go): encoding/json with HTML escaping
+// disabled, no indentation, trailing newline stripped. Field order follows
+// the struct declaration and every list is pre-sorted and non-nil, so
+// identical facts always encode to identical bytes.
+func encodeTrustReport(doc trustReportDoc) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(doc); err != nil {
+		return nil, fmt.Errorf("client: encode trust report: %w", err)
+	}
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
+}
+
+// TrustReport runs the shared trust-report composition without a constructed
+// client — the CLI's entry point. Direct.TrustReport and the MCP surface ride
+// the same function, so every surface emits byte-identical documents for the
+// same options (the parity-by-construction seam the contract §2 requires).
+func TrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, trust.Verdict, trust.State, error) {
+	return composeTrustReport(ctx, opts)
+}

@@ -11,6 +11,7 @@ import (
 	"errors"
 
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/trust"
 )
 
 // ErrSearchUnavailable is returned when a Client has no search service configured.
@@ -256,6 +257,27 @@ func AnalyzerSymbolOptional(name string) bool {
 	}
 }
 
+// TrustReportOptions is the transport-agnostic input for the P1 trust-report
+// composition (Labs). Both surfaces (CLI flags, MCP tool args) construct the
+// SAME options so the one shared composition receives identical inputs (parity
+// by construction). Root/DBPath/MetaDir locate the repository's auto-managed
+// graph state exactly as `graphi status` does (empty DBPath/MetaDir resolve
+// the auto-managed locations WITHOUT creating them — pure observer); Target is
+// the raw --target string (symbol|path|package, resolved fail-closed by
+// trust.ResolveScope); Policy is the contract §2.1 policy name
+// (exploratory|review|automated_change, "" for no policy); Details opts into
+// the bounded evidence samples, capped at Limit entries per list when
+// Limit > 0.
+type TrustReportOptions struct {
+	Root    string `json:"root"`
+	DBPath  string `json:"db_path"`
+	MetaDir string `json:"meta_dir"`
+	Target  string `json:"target"`
+	Policy  string `json:"policy"`
+	Details bool   `json:"details"`
+	Limit   int    `json:"limit"`
+}
+
 // DiagnoseOptions carries the per-surface flag configuration for the
 // diagnose engine boundary. It is the surface-layer contract; the in-process
 // Direct client translates it to engine/diagnostic.DiagnoseOptions.
@@ -456,6 +478,24 @@ type Client interface {
 	// ErrCompareUnavailable; without an analysis service, ErrAnalysisUnavailable (SW-107).
 	CompareBranches(ctx context.Context, baseRef, headRef string) ([]byte, error)
 
+	// TrustReport composes the P1 trust-report document (Labs): the canonical
+	// contract §2 JSON both `graphi trust-report --json` and the MCP surface
+	// emit — ONE composition, ONE encoder, so surface parity holds by
+	// construction (docs/plan/2026-08-graphi-p1-trust-contract-v1.md §2). It
+	// consumes the shared freshness probe (ADR 0006: trust mints no freshness
+	// prose of its own), reads the persisted trust snapshot fail-closed (a
+	// missing/corrupt/unbound snapshot — or no store at all — composes the
+	// UNAVAILABLE document, never an error), resolves an optional target scope
+	// through the selective-lookup port, and evaluates an optional built-in
+	// policy with the resolver findings always passed through. Strictly
+	// read-only. Alongside the canonical bytes it returns the policy verdict
+	// (zero Verdict when no policy was requested) and the derived snapshot
+	// state so the CLI can map its exit codes without re-parsing JSON. An
+	// unknown policy wraps trust.ErrPolicyUnknown; any non-nil error is
+	// operational (CLI exit 2, typed MCP tool error). Clients without a local
+	// trust composition return ErrTrustUnavailable.
+	TrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, trust.Verdict, trust.State, error)
+
 	// CritiqueReview critiques an EXISTING PR review against the local graph (SW-108,
 	// the EP-018 capstone). The review is obtained at the surface boundary — an inline
 	// reviewJSON (decoded into the structured ReviewInput at the surface) takes
@@ -519,6 +559,15 @@ var ErrSkillGenUnavailable = errors.New("client: skillgen service unavailable")
 
 // ErrBriefUnavailable is returned when a Client has no agent_brief assembler configured.
 var ErrBriefUnavailable = errors.New("client: agent_brief service unavailable")
+
+// ErrTrustUnavailable is returned when a Client cannot reach the Labs
+// trust-report composition on its transport. The in-process Direct client
+// always serves it (the composition is self-contained: it opens the
+// auto-managed store read-only itself and degrades to the fail-closed
+// UNAVAILABLE document when no graph exists); the daemon/HTTP remote clients
+// return this sentinel until a remote trust-report RPC is added (mirrors the
+// diagnostics "unavailable until wired" precedent).
+var ErrTrustUnavailable = errors.New("client: trust-report service unavailable")
 
 // ErrAgentToolsUnavailable is returned when a Client cannot reach the EP-020
 // agent tools (explain_symbol / related_files / change_risk) on its transport.
