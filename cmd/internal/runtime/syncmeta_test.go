@@ -10,6 +10,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/internal/freshness"
 )
 
 const testCommitHex = "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
@@ -36,7 +37,7 @@ func TestStampAndLastSync_RoundTrip(t *testing.T) {
 	store := graphstore.NewMemStore()
 	t.Cleanup(func() { _ = store.Close() })
 
-	if _, _, _, ok := LastSync(ctx, store); ok {
+	if _, _, _, ok := freshness.LastSync(ctx, store); ok {
 		t.Fatal("LastSync on a fresh store reported ok")
 	}
 
@@ -46,7 +47,7 @@ func TestStampAndLastSync_RoundTrip(t *testing.T) {
 	if err := StampSyncMetadata(ctx, store, repo, now); err != nil {
 		t.Fatalf("StampSyncMetadata: %v", err)
 	}
-	ts, branch, commit, ok := LastSync(ctx, store)
+	ts, branch, commit, ok := freshness.LastSync(ctx, store)
 	if !ok || !ts.Equal(now) || branch != "feature/login" || commit != testCommitHex {
 		t.Fatalf("LastSync = (%v, %q, %q, %v), want (%v, feature/login, %s, true)", ts, branch, commit, ok, now, testCommitHex)
 	}
@@ -64,7 +65,7 @@ func TestStampSyncMetadata_NoGitRepo(t *testing.T) {
 	if err := StampSyncMetadata(ctx, store, repo, now); err != nil {
 		t.Fatalf("StampSyncMetadata: %v", err)
 	}
-	ts, branch, commit, ok := LastSync(ctx, store)
+	ts, branch, commit, ok := freshness.LastSync(ctx, store)
 	if !ok || !ts.Equal(now) || branch != "" || commit != "" {
 		t.Fatalf("LastSync = (%v, %q, %q, %v), want (%v, \"\", \"\", true)", ts, branch, commit, ok, now)
 	}
@@ -90,7 +91,7 @@ func TestSyncRepo_StampsOnFullAndWarmPaths(t *testing.T) {
 	if !stats.Full {
 		t.Fatalf("cold SyncRepo stats = %+v, want Full", stats)
 	}
-	t1, branch, _, ok := LastSync(ctx, store)
+	t1, branch, _, ok := freshness.LastSync(ctx, store)
 	if !ok || branch != "main" {
 		t.Fatalf("after cold sync: LastSync = (%v, %q, ok=%v)", t1, branch, ok)
 	}
@@ -131,7 +132,7 @@ func TestSyncRepo_NoStampOnIngestError(t *testing.T) {
 	if _, err := SyncRepo(ctx, ing, store, missing, nil); err == nil {
 		t.Fatal("SyncRepo over a missing root succeeded, want error")
 	}
-	if _, _, _, ok := LastSync(ctx, store); ok {
+	if _, _, _, ok := freshness.LastSync(ctx, store); ok {
 		t.Fatal("failed sync still stamped metadata")
 	}
 }

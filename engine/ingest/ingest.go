@@ -43,6 +43,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		return err
 	}
 	i.resetSkips()
+	i.resetTrustSignals()
 	// Validate every repository-controlled semantics config before walking,
 	// parsing, or persisting source. stampSemanticsTx recomputes the value at the
 	// end so a mid-pass config change also fails closed instead of certifying a
@@ -287,6 +288,23 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 	if err := i.store.SetMetadata(ctx, "index.profile", string(prof)); err != nil {
 		return fmt.Errorf("ingest: persist profile metadata: %w", err)
 	}
+	// P1 trust snapshot (ADR 0006 D4, PRD §14.4 variant 3): published
+	// post-commit — after every graph batch and the taint/profile metadata —
+	// and BEFORE finishFullPass, so the open full-pass marker still guards the
+	// publish window: a failure or crash here fails the pass loudly and leaves
+	// readers deriving INCOMPLETE/UNAVAILABLE, never a certified graph with a
+	// silently partial snapshot.
+	if err := i.persistTrustSnapshot(ctx, fullPassGeneration); err != nil {
+		return err
+	}
+	// P1 WP1.2 detail evidence (PRD §14.3): the per-file / per-package rows
+	// ride the same publish window as the snapshot triple — after every graph
+	// commit, before finishFullPass — under the pass generation, wiping every
+	// other generation's rows. A write failure fails the pass loudly while the
+	// open marker still keeps readers at INCOMPLETE.
+	if err := i.persistTrustEvidenceFull(ctx, fullPassGeneration, units, parsed); err != nil {
+		return err
+	}
 	if sqlStore, ok := i.store.(*graphstore.SQLiteStore); ok {
 		if err := sqlStore.WALCheckpoint(ctx, "TRUNCATE"); err != nil {
 			return fmt.Errorf("ingest: final checkpoint: %w", err)
@@ -475,6 +493,7 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		return err
 	}
 	i.resetSkips()
+	i.resetTrustSignals()
 	units, err := i.walk(ctx, root, nil)
 	if err != nil {
 		return err
@@ -568,6 +587,9 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	// re-parsing (the parser was already invoked once this pass; re-parsing would
 	// double the observable parse count the incremental tests assert on).
 	parsedResults := make(map[string]*parse.ParseResult)
+	// P1 WP1.2: cached paths this pass purges (files gone from disk), collected
+	// inside the Phase-2 transaction for the post-commit evidence refresh.
+	var removedPaths []string
 	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
 		// Mirror IngestAll's batched write sessions: one durable graph
 		// transaction per phase, committed before each seam where the pass
@@ -718,7 +740,9 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			}
 		}
 
-		// Remove cache entries for files that no longer exist.
+		// Remove cache entries for files that no longer exist. The purged paths
+		// are retained (removedPaths) so the post-commit trust-evidence refresh
+		// deletes their rows too — a deleted file's evidence is stale evidence.
 		present := make(map[string]struct{}, len(units))
 		for _, u := range units {
 			present[u.relPath] = struct{}{}
@@ -734,6 +758,7 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if err := i.removeFileTx(ctx, tx, linkBatch, p); err != nil {
 				return err
 			}
+			removedPaths = append(removedPaths, p)
 		}
 		open = nil
 		if err := linkBatch.Commit(ctx); err != nil {
@@ -819,5 +844,23 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	// files are recomputed and merged with the retained findings of untouched
 	// files, so the persisted set converges with a full re-index. Metadata-only
 	// (never nodes/edges) → byte-parity safe.
-	return i.refreshIntraProcTaint(ctx, root, toProcess, parsedResults)
+	if err := i.refreshIntraProcTaint(ctx, root, toProcess, parsedResults); err != nil {
+		return err
+	}
+	// P1 trust snapshot: rebind after every successful incremental mutation
+	// (post-commit, same three keys, current live generation) so the snapshot
+	// tracks every graph the readers can see — not only full passes. Same
+	// loud-failure discipline as the full pass.
+	if err := i.persistTrustSnapshotLive(ctx); err != nil {
+		return err
+	}
+	// P1 WP1.2 detail evidence: refresh the touched files' (and, when the
+	// resolver ran, every package's) rows under the live generation and drop
+	// rows of deleted files — same post-commit window and loud-failure
+	// discipline as the snapshot rebind above.
+	parsedLangs := make(map[string]string, len(parsedResults))
+	for rel, res := range parsedResults {
+		parsedLangs[rel] = res.Meta.Language
+	}
+	return i.persistTrustEvidenceLive(ctx, toProcess, parsedLangs, removedPaths)
 }

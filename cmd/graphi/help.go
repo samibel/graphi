@@ -66,6 +66,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi status [--json] [-root <repo>] [-db path] [-meta dir]",
 		"graphi status --json",
 	},
+	"trust-report": {
+		"report the graph's trust surface: snapshot state, confidence tiers, coverage gaps, boundaries, optional policy verdict (read-only; exit 0 PASS/current, 1 WARN, 2 error, 3 FAIL, 4 UNKNOWN/unavailable)",
+		"graphi trust-report [--json] [--details] [--limit n] [--target <symbol|path|package>] [--policy exploratory|review|automated_change] [-root <repo>] [-db path] [-meta dir]",
+		"graphi trust-report --policy review --json",
+	},
 	"snapshot": {
 		"list, freeze, or delete named graph states of this repo (for graphi compare)",
 		"graphi snapshot [<name> | -rm <name>] [-root <repo>]",

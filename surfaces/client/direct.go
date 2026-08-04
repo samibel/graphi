@@ -29,6 +29,7 @@ import (
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/skillgen"
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/surfaces/forge"
 )
 
@@ -105,6 +106,13 @@ func (d *Direct) SupportsCapability(name string) bool {
 	case "agent_brief", "explain_symbol", "related_files", "change_risk":
 		// These tools intentionally return a typed unavailable/partial result when
 		// graph dependencies are absent; the operation itself is fully executable.
+		return true
+	case "trust_report", "graph_health":
+		// The trust-report composition is self-contained ("trust_report" is the
+		// operation, "graph_health" its P1 Labs MCP tool name): it opens the
+		// auto-managed store read-only itself and fails closed to the valid
+		// UNAVAILABLE document when no graph exists, so the operation is
+		// always executable in-process.
 		return true
 	default:
 		return false
@@ -889,6 +897,18 @@ func (d *Direct) ChangeRisk(ctx context.Context, target, diff string, maxItems i
 		return nil, err
 	}
 	return contract.Serialize(res)
+}
+
+// TrustReport implements Client via the shared trust-report composition
+// (trust_report.go) — the SINGLE place the contract §2 document is assembled
+// and canonically encoded, so CLI and MCP bytes are identical by construction
+// (the explain_symbol template). It is deliberately independent of the wired
+// query service: the trust surface observes the repository's durable
+// auto-managed store read-only from opts (ADR 0006 observer discipline —
+// nothing is created, nothing is repaired), degrading to the fail-closed
+// UNAVAILABLE document when no store exists.
+func (d *Direct) TrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, trust.Verdict, trust.State, error) {
+	return composeTrustReport(ctx, opts)
 }
 
 func marshalJSON(v any) ([]byte, error) {

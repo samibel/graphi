@@ -18,6 +18,7 @@ import (
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/link"
 	"github.com/samibel/graphi/engine/observe"
+	"github.com/samibel/graphi/engine/trust"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
 )
@@ -43,6 +44,35 @@ type Ingester struct {
 	// external materialization is observable. Touched only from the single
 	// ingesting goroutine.
 	lastLinkStats link.Stats
+
+	// lastTypeResolution is the compact trust summary of the most recent
+	// typeresolvePass, folded into the canonical snapshot form at the one
+	// point the full typeresolve.Result exists transiently (P1 trust
+	// snapshot). Reset at pass start (resetTrustSignals) so a pass that
+	// legitimately skips the resolver publishes zero facts, never the
+	// previous pass's. Touched only from the single ingesting goroutine,
+	// like lastLinkStats.
+	lastTypeResolution trust.TypeResolutionFacts
+
+	// lastFileLinkStats holds the PER-FILE linker counters of the most recent
+	// linkFiles pass, keyed by normalized repo-relative source path (P1 WP1.2
+	// detail evidence, PRD §14.3). The pass totals (lastLinkStats) are the
+	// exact sum of these deltas. Reset at pass start like lastLinkStats;
+	// touched only from the single ingesting goroutine.
+	lastFileLinkStats map[string]link.Stats
+
+	// lastPackageEvidence holds the per-package resolver evidence of the most
+	// recent typeresolvePass, folded from the transient typeresolve.Result at
+	// the same point lastTypeResolution is (P1 WP1.2, PRD §22 semantics).
+	// lastTypeResolutionRan records whether the resolver actually completed a
+	// Resolve this pass: an incremental pass that legitimately skips the
+	// whole-repo recompute (non-Go change set, fast profile, kill switch)
+	// must LEAVE the persisted package rows alone rather than wipe them —
+	// zero rows from a skipped resolver are absent evidence, not evidence of
+	// zero packages. Both are reset at pass start and touched only from the
+	// single ingesting goroutine.
+	lastPackageEvidence   []PackageEvidence
+	lastTypeResolutionRan bool
 
 	// bounds are the fail-closed parse-time resource bounds (SW-055 AC#6) applied
 	// to untrusted inputs: max file size (checked on the root-confined descriptor
@@ -297,6 +327,19 @@ func (i *Ingester) resetSkips() {
 	i.skipMu.Lock()
 	i.skipped = nil
 	i.skipMu.Unlock()
+}
+
+// resetTrustSignals clears the remaining per-pass trust-snapshot signals at
+// pass start (alongside resetSkips): linkFiles and typeresolvePass both have
+// legitimate skip paths (nothing reprocessed, non-Go change set, fast
+// profile), and a snapshot collected after such a pass must publish zero
+// facts for them, never a previous pass's leftovers.
+func (i *Ingester) resetTrustSignals() {
+	i.lastLinkStats = link.Stats{}
+	i.lastTypeResolution = trust.TypeResolutionFacts{}
+	i.lastFileLinkStats = map[string]link.Stats{}
+	i.lastPackageEvidence = nil
+	i.lastTypeResolutionRan = false
 }
 
 // MetaDB exposes the ingest-meta SQLite sidecar handle so a sibling engine

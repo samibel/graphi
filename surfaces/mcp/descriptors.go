@@ -600,6 +600,28 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P1 trust surface (PRD §17, FR-3): graph_health, the single Labs trust
+	// tool. It rides the shared client.TrustReport composition (ONE assembly,
+	// ONE encoder), so the returned document is byte-identical to
+	// `graphi trust-report --json` for the same inputs. The input schema is the
+	// PRD §17 shape verbatim; the [labs] prefix comes from markLabs below.
+	// Read-only annotations hold strictly: the composition is a pure observer
+	// (read-only store opens, no indexing, no daemon start, no network) and
+	// degrades fail-closed to the UNAVAILABLE document when no graph exists.
+	tools = append(tools, map[string]any{
+		"name":        ToolGraphHealth,
+		"description": "graph_health: return the canonical trust-report document for the repository or a target scope — snapshot state (CURRENT|STALE|INCOMPLETE|UNAVAILABLE), freshness facts, coverage, edge confidence tiers (confirmed/derived/heuristic), resolution gaps, external boundaries, and an optional policy verdict. Purpose: agent preflight — answer 'how far may I trust graph evidence for the planned action?' before acting on query results. When to use: before a risky task, to decide whether to use, supplement, or reject graph evidence; with a policy (exploratory | review | automated_change) for a reproducible fail-closed verdict. When NOT to use: for rebuild/freshness advice alone (use `graphi status`) or to run the query itself. Input shape: optional target (symbol | repository-relative path | package), optional policy, optional bounded details. Read-only: true — never indexes, never starts a daemon, no network; missing evidence reads UNKNOWN/UNAVAILABLE, never PASS. Partial results possible: details lists are bounded by limit.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"target":  map[string]any{"type": "string", "description": "optional symbol id, qualified name, repository-relative path or package"},
+				"policy":  map[string]any{"type": "string", "enum": []string{"exploratory", "review", "automated_change"}, "description": "optional trust policy"},
+				"details": map[string]any{"type": "boolean", "description": "include bounded supporting evidence"},
+				"limit":   map[string]any{"type": "integer", "description": "maximum detail items"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

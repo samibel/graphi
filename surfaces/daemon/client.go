@@ -13,6 +13,7 @@ import (
 
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -410,4 +411,12 @@ func (c *DaemonClient) CompareBranches(ctx context.Context, baseRef, headRef str
 // precedent).
 func (c *DaemonClient) CritiqueReview(ctx context.Context, prNumber int, diff, reviewJSON string) ([]byte, error) {
 	return nil, client.ErrAnalysisUnavailable
+}
+
+// TrustReport returns ErrTrustUnavailable until a daemon trust-report RPC is
+// added (P1 Labs). The composition is wired only on the in-process Direct
+// client today (mirrors the diagnostics "unavailable until wired" precedent);
+// no request is emitted and no daemon is auto-started for it.
+func (c *DaemonClient) TrustReport(ctx context.Context, opts client.TrustReportOptions) ([]byte, trust.Verdict, trust.State, error) {
+	return nil, "", "", client.ErrTrustUnavailable
 }

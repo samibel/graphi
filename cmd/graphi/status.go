@@ -9,12 +9,9 @@ import (
 	"os"
 	"time"
 
-	rtime "github.com/samibel/graphi/cmd/internal/runtime"
-	"github.com/samibel/graphi/core/graphstore"
-	"github.com/samibel/graphi/core/parse"
-	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/internal/freshness"
+	"github.com/samibel/graphi/internal/freshness/probe"
 	"github.com/samibel/graphi/internal/gitinfo"
-	"github.com/samibel/graphi/internal/ingestlock"
 	"github.com/samibel/graphi/internal/state"
 )
 
@@ -103,94 +100,39 @@ func runStatusAt(cwd string, args []string, stdout io.Writer) int {
 		}
 		root = detected
 	}
-	// Derive the auto-managed paths WITHOUT Ensure: a pure observer must not
-	// create state directories for repos that were never indexed.
-	if dbPath == "" || metaDir == "" {
-		p, err := state.Resolve(root)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "graphi: status: %v\n", err)
-			return 2
-		}
-		if dbPath == "" {
-			dbPath = p.DB
-		}
-		if metaDir == "" {
-			metaDir = p.Meta
-		}
-	}
-
-	info, gitOK := gitinfo.Head(root)
-	report := statusReport{
-		SchemaVersion: statusJSONSchemaVersion,
-		Repo:          root,
-		Git:           statusGit{Present: gitOK, Branch: info.Branch, Commit: info.Commit, Detached: info.Detached},
-		DBPath:        dbPath,
-	}
-
-	ctx := context.Background()
-	store, err := graphstore.OpenSQLiteReadOnly(dbPath)
+	facts, err := probe.Compute(context.Background(), root, dbPath, metaDir)
 	if err != nil {
-		// No durable store yet — the one non-error "not indexed" outcome.
-		report.Recommendation = "run 'graphi sync' to build the graph"
-		return emitStatus(stdout, report, asJSON)
-	}
-	defer store.Close()
-	report.Index.Exists = true
-
-	if n, cerr := store.CountNodes(ctx); cerr == nil {
-		report.NodeCount = n
-	}
-	if prof, perr := store.Metadata(ctx, "index.profile"); perr == nil {
-		report.Profile = prof
-	}
-	if ts, branch, commit, ok := rtime.LastSync(ctx, store); ok {
-		report.LastSync = statusLastSync{Recorded: true, Time: ts.UTC().Format(time.RFC3339), Branch: branch, Commit: commit}
-	}
-
-	ro, err := ingest.NewReadOnly(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
-	if err != nil {
-		report.Recommendation = "run 'graphi sync' to build the graph"
-		return emitStatus(stdout, report, asJSON)
-	}
-	defer ro.Close()
-
-	files, warmOK, werr := ro.CanWarmStart(ctx, root)
-	report.Index.FilesCached = files
-	if werr != nil || !warmOK {
-		// Incomplete pass, older-binary semantics, or a generation mismatch: the
-		// store needs a full pass, and drift over an untrusted cache is noise.
-		// The marker + lock probe split the actionable sub-states; both degrade
-		// silently so status keeps working on a partially readable state dir.
-		if marker, merr := ro.FullPassInProgress(ctx); merr == nil {
-			report.Index.FullPassInProgress = marker
-		}
-		if lock, lerr := ingestlock.Probe(ctx, metaDir); lerr == nil {
-			report.Index.LockHeld = lock == ingestlock.StateHeld
-		}
-		switch {
-		case report.Index.FullPassInProgress && report.Index.LockHeld:
-			report.Recommendation = "wait for the running index to finish — another graphi process is building it"
-		case report.Index.FullPassInProgress:
-			report.Recommendation = "run 'graphi index' to rebuild now with visible progress (the previous index did not complete)"
-		default:
-			report.Recommendation = "run 'graphi rebuild' to re-certify the graph"
-		}
-		return emitStatus(stdout, report, asJSON)
-	}
-	report.Index.WarmStartable = true
-
-	drift, derr := ro.DriftDetail(ctx, root, nil)
-	if derr != nil {
-		fmt.Fprintf(os.Stderr, "graphi: status: drift check: %v\n", derr)
+		fmt.Fprintf(os.Stderr, "graphi: status: %v\n", err)
 		return 2
 	}
-	report.Drift = statusDrift{Added: len(drift.Added), Changed: len(drift.Modified), Removed: len(drift.Deleted)}
-	if drift.Total() == 0 {
-		report.Current = true
-	} else {
-		report.Recommendation = "run 'graphi sync' to update the graph"
+	return emitStatus(stdout, statusReportOf(facts), asJSON)
+}
+
+// statusReportOf maps the shared freshness facts onto the versioned JSON
+// document; the schema and all formatting stay at the cmd rank.
+func statusReportOf(f freshness.Report) statusReport {
+	r := statusReport{
+		SchemaVersion: statusJSONSchemaVersion,
+		Repo:          f.Repo,
+		Git:           statusGit{Present: f.GitPresent, Branch: f.Git.Branch, Commit: f.Git.Commit, Detached: f.Git.Detached},
+		DBPath:        f.DBPath,
+		NodeCount:     f.NodeCount,
+		Profile:       f.Profile,
+		Index: statusIndexState{
+			Exists:             f.Index.Exists,
+			WarmStartable:      f.Index.WarmStartable,
+			FilesCached:        f.Index.FilesCached,
+			FullPassInProgress: f.Index.FullPassInProgress,
+			LockHeld:           f.Index.LockHeld,
+		},
+		Drift:          statusDrift{Added: f.Drift.Added, Changed: f.Drift.Changed, Removed: f.Drift.Removed},
+		Current:        f.Current,
+		Recommendation: f.Recommendation,
 	}
-	return emitStatus(stdout, report, asJSON)
+	if f.LastSync.Recorded {
+		r.LastSync = statusLastSync{Recorded: true, Time: f.LastSync.Time.UTC().Format(time.RFC3339), Branch: f.LastSync.Branch, Commit: f.LastSync.Commit}
+	}
+	return r
 }
 
 // emitStatus renders the report (human or JSON) and maps it to the exit code

@@ -85,6 +85,13 @@ const (
 	ToolExplainSymbol = "explain_symbol"
 	ToolRelatedFiles  = "related_files"
 	ToolChangeRisk    = "change_risk"
+
+	// P1 trust surface (PRD §17, FR-3): the single Labs trust tool. It returns
+	// the canonical contract §2 trust-report document through the shared
+	// client.TrustReport composition, byte-identical to
+	// `graphi trust-report --json`. Labs-only until a separate promotion
+	// decision; the frozen Stable-12 set is untouched.
+	ToolGraphHealth = "graph_health"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -124,6 +131,7 @@ var singletonToolNames = []string{
 	ToolRelatedFiles,
 	ToolChangeRisk,
 	ToolAgentBrief,
+	ToolGraphHealth,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

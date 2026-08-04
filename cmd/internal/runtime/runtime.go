@@ -444,7 +444,7 @@ func warmOrFullIngestStats(ctx context.Context, ing *ingest.Ingester, root strin
 // SyncRepo is the canonical "bring the graph up to date" pass shared by
 // `graphi sync`, `graphi index`, bare `graphi`, and MCP session open: crash
 // recovery → warm-or-full ingest → sync-metadata stamp. The stamp is written
-// only after a successful ingest, so LastSync never reports a time whose
+// only after a successful ingest, so freshness.LastSync never reports a time whose
 // graph didn't actually commit. The whole pass runs under the cross-process
 // ingest lock: concurrently opened sessions on the same logical store (e.g.
 // several MCP clients auto-starting `graphi mcp` for one workspace) wait for
