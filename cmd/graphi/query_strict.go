@@ -66,7 +66,7 @@ type strictEnvelope struct {
 }
 
 func runQueryStrictAt(cwd string, args []string, stdout io.Writer) int {
-	dbPath, socket, rest := extractFlags(args)
+	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
 	if len(rest) < 1 || rest[0] == "" || rest[0][0] == '-' {
 		fmt.Fprintln(os.Stderr, "usage: graphi query-strict <operation> -symbol <id> [-depth n] [-min-tier confirmed|derived|heuristic] [-policy <name>]")
 		return 2
@@ -79,6 +79,27 @@ func runQueryStrictAt(cwd string, args []string, stdout io.Writer) int {
 	minTier := fs.String("min-tier", "heuristic", "lowest confidence tier admitted into the result")
 	policy := fs.String("policy", "", "optional trust policy preflight (exploratory|review|automated_change)")
 	if err := fs.Parse(rest[1:]); err != nil {
+		return 2
+	}
+	if fs.NArg() > 0 {
+		// The stdlib flag parser stops at the first positional token, so a
+		// stray argument (or an explicit "--") would silently drop every flag
+		// after it — including -policy and -min-tier, i.e. the trust posture
+		// of the whole run. Leftover positionals are an input error, never a
+		// silent downgrade.
+		fmt.Fprintf(os.Stderr, "graphi: query-strict: unexpected argument %q — flags after it would be ignored\n", fs.Arg(0))
+		return 2
+	}
+	policySet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "policy" {
+			policySet = true
+		}
+	})
+	if policySet && *policy == "" {
+		// An explicitly empty -policy must not silently mean "no preflight":
+		// the caller asked for a gate and named none.
+		fmt.Fprintln(os.Stderr, "graphi: query-strict: -policy requires a value (exploratory|review|automated_change)")
 		return 2
 	}
 	if *symbol == "" {
@@ -99,7 +120,12 @@ func runQueryStrictAt(cwd string, args []string, stdout io.Writer) int {
 			printNotARepo("query-strict")
 			return 2
 		}
-		_, verdict, st, err := client.TrustReport(ctx, client.TrustReportOptions{Root: root, Policy: *policy})
+		// The preflight must judge the SAME store the query runs against: an
+		// explicit -db/-meta is forwarded verbatim, so a PASS minted on the
+		// auto-managed store can never certify a query over another store.
+		_, verdict, st, err := client.TrustReport(ctx, client.TrustReportOptions{
+			Root: root, DBPath: dbPath, MetaDir: metaDir, Policy: *policy,
+		})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "graphi: query-strict: %v\n", err)
 			return 2

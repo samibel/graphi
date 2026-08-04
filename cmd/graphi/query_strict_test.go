@@ -12,8 +12,9 @@ import (
 )
 
 // strictFixture builds and syncs a repo whose callers-of-helper result mixes
-// tiers: a.py's caller_a resolves same-file (derived), b.py's caller_b resolves
-// cross-file heuristically. Returns the repo root, the db path, and the node id
+// tiers: a.py's caller_a resolves same-file and b.py's caller_b same-directory
+// (both derived), while sub/c.py's caller_c resolves through the import
+// selector (heuristic). Returns the repo root, the db path, and the node id
 // of "a.helper".
 func strictFixture(t *testing.T) (repo, dbPath, helperID string) {
 	t.Helper()
@@ -23,10 +24,17 @@ func strictFixture(t *testing.T) (repo, dbPath, helperID string) {
 	repo = writeGoRepo(t)
 	py1 := "def helper():\n    return 1\n\ndef caller_a():\n    return helper()\n"
 	py2 := "def caller_b():\n    return helper()\n"
+	py3 := "import a\n\ndef caller_c():\n    return a.helper()\n"
 	if err := os.WriteFile(filepath.Join(repo, "a.py"), []byte(py1), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(repo, "b.py"), []byte(py2), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, "sub"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "sub", "c.py"), []byte(py3), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	gitRepo(t, repo, "main")
