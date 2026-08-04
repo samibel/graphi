@@ -153,6 +153,8 @@ func TestGraphHealth_ParityWithSharedComposition(t *testing.T) {
 		{"default", map[string]any{}, client.TrustReportOptions{}},
 		{"file target", map[string]any{"target": "util/util.go"},
 			client.TrustReportOptions{Target: "util/util.go"}},
+		{"file target with evidence and policy", map[string]any{"target": "util/util.go", "policy": trust.PolicyNameAutomatedChange},
+			client.TrustReportOptions{Target: "util/util.go", Policy: trust.PolicyNameAutomatedChange}},
 		{"unresolvable target", map[string]any{"target": "no_such_symbol_xyz"},
 			client.TrustReportOptions{Target: "no_such_symbol_xyz"}},
 		{"policy exploratory", map[string]any{"policy": trust.PolicyNameExploratory},
@@ -194,6 +196,58 @@ func TestGraphHealth_ParityWithSharedComposition(t *testing.T) {
 				t.Errorf("MCP text != shared composition bytes (CLI --json minus trailing newline):\nmcp: %s\ncli: %s", text, want)
 			}
 		})
+	}
+}
+
+// TestGraphHealth_ScopeEvidenceParity pins the additive scope_evidence object
+// across the surface seam for a target whose persisted file evidence exists
+// (util/util.go — a clean parsed row, pinned upstream in engine/ingest): the
+// MCP tool text carries the SAME scope_evidence bytes as the shared
+// composition (which the CLI --json emits verbatim), the object reports the
+// fetched row (available=true, parse_status parsed), and the scoped policy
+// verdict rides it to PASS on both surfaces — the byte-parity loop above
+// guarantees the whole documents match; this test makes the scope_evidence
+// half of that unmissable and self-describing.
+func TestGraphHealth_ScopeEvidenceParity(t *testing.T) {
+	root, dbPath, metaDir := buildGraphHealthFixture(t)
+	fx := &graphHealthFixtureClient{Client: client.NewDirect(nil, nil), root: root, dbPath: dbPath, metaDir: metaDir}
+	server := NewServerWithClient(fx, WithLabs())
+
+	args := map[string]any{"target": "util/util.go", "policy": trust.PolicyNameAutomatedChange}
+	text := toolText(t, invokeTool(t, server, ToolGraphHealth, args))
+
+	want, _, _, err := client.TrustReport(context.Background(), client.TrustReportOptions{
+		Root: root, DBPath: dbPath, MetaDir: metaDir,
+		Target: "util/util.go", Policy: trust.PolicyNameAutomatedChange,
+	})
+	if err != nil {
+		t.Fatalf("client.TrustReport: %v", err)
+	}
+	if text != string(want) {
+		t.Fatalf("MCP text != shared composition bytes for the evidence-backed target:\nmcp: %s\ncli: %s", text, want)
+	}
+
+	type scopedDoc struct {
+		ScopeEvidence trust.ScopeFacts `json:"scope_evidence"`
+		Policy        struct {
+			Verdict trust.Verdict `json:"verdict"`
+		} `json:"policy"`
+	}
+	var mcpDoc, cliDoc scopedDoc
+	if err := json.Unmarshal([]byte(text), &mcpDoc); err != nil {
+		t.Fatalf("decode MCP document: %v", err)
+	}
+	if err := json.Unmarshal(want, &cliDoc); err != nil {
+		t.Fatalf("decode composition document: %v", err)
+	}
+	if mcpDoc.ScopeEvidence != cliDoc.ScopeEvidence {
+		t.Errorf("scope_evidence differs across surfaces:\nmcp: %+v\ncli: %+v", mcpDoc.ScopeEvidence, cliDoc.ScopeEvidence)
+	}
+	if !mcpDoc.ScopeEvidence.Available || mcpDoc.ScopeEvidence.File.ParseStatus != trust.ScopeParseStatusParsed {
+		t.Errorf("scope_evidence = %+v, want the fetched parsed row (available=true)", mcpDoc.ScopeEvidence)
+	}
+	if mcpDoc.Policy.Verdict != trust.VerdictPass {
+		t.Errorf("automated_change over the clean evidence-backed file = %s, want PASS", mcpDoc.Policy.Verdict)
 	}
 }
 

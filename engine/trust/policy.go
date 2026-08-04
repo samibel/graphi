@@ -84,6 +84,35 @@ import (
 //     treatments. A9's "FAIL oder explizite Human Approval" has no approval
 //     channel in v1, so an external boundary FAILs automated-change with the
 //     human-review recommendation attached.
+//   - Scope facts (input extension, NO policy version bump). The v1 rules
+//     above already contain the contract §3 scope clauses (parse skip in
+//     scope, degraded package in scope, ambiguity in scope, unresolved in
+//     scope, external boundary in scope); v1 could not evaluate them for lack
+//     of scope evidence and fell to SCOPE_EVIDENCE_UNAVAILABLE. The optional
+//     ScopeFacts input (EvaluateWithScopeFacts, scopefacts.go) extends the
+//     INPUT, not the rules: absent, every evaluation is byte-identical to the
+//     factless call (the sealed matrix and every false-pass pin hold
+//     unchanged, and the byte-identity red gate in policy_matrix_test.go
+//     sweeps it); present and well-formed on a resolved non-repository scope,
+//     the same rules judge the same codes at the same per-policy severities
+//     against the scope's own evidence row, and the scope-evidence check
+//     passes instead of firing. Because no rule and no threshold changed, the
+//     policy versions stay at 1 (§3.0 bumps on rule/threshold changes, not on
+//     input extensions). In-scope grading decisions, resolved strictly-safer:
+//     an unparsed (skipped) file's zero resolution counters are absence of
+//     analysis, not evidence of absence — the counter checks stay silent
+//     there and the parse-skip finding explains the gap, while a nonzero
+//     counter on such a row still fires (the row witnesses the defect); a
+//     package claim of degraded or skipped carries no authoritative type
+//     evidence — R4's "nach Schwere" grading at single-package granularity
+//     mirrors the repository grading with the row's own facts (partial
+//     confirmed coverage remains → WARN, total loss → FAIL; A5 stays strict
+//     FAIL) — and an absent package claim ("", the v1 file-evidence shape)
+//     lets the degraded check neither pass nor fire, since file evidence
+//     alone cannot support a "no degraded package" claim; facts at repository
+//     scope are ignored entirely (the snapshot IS that scope's evidence); and
+//     malformed facts (Available without the closed vocabularies) are no
+//     evidence and read exactly like absent facts.
 //   - Out-of-domain inputs. The enums are closed (§1.5–§1.7), but Evaluate is
 //     a pure exported function and cannot stop a caller from handing it a
 //     State or ScopeRef.Kind outside them, a scope shape the resolver only
@@ -134,13 +163,15 @@ type Policy struct {
 }
 
 // ruleInput is the fact set one evaluation hands every rule: the snapshot
-// facts, the derived snapshot state, the scope under assessment, and the
-// resolver findings for that scope (empty when the scope resolved cleanly).
+// facts, the derived snapshot state, the scope under assessment, the resolver
+// findings for that scope (empty when the scope resolved cleanly), and the
+// optional target-scope evidence (zero when the caller has none — scopefacts.go).
 type ruleInput struct {
 	snap       Snapshot
 	st         State
 	scope      ScopeRef
 	resolution []Finding
+	scopeFacts ScopeFacts
 }
 
 // ruleResult is one rule's outcome. Exactly one of three shapes:
@@ -456,14 +487,16 @@ func ruleTargetResolved(id string, notFound, ambiguous, evidence Verdict) policy
 }
 
 // ruleScopeEvidence — R8 "fehlende Scope-Evidenz → UNKNOWN", A10's
-// scope-evidence face, and the exploratory WARN gap (file comment). Detail
-// evidence is deferred in v1, so every non-repository scope fires. When the
-// resolver already attached SCOPE_EVIDENCE_UNAVAILABLE (package-looking
-// target), its more specific finding — adopted by the target rule — stands as
-// the explanation and this rule only contributes the verdict. At repository
-// scope the snapshot IS the scope evidence: the check passes when the state
-// gives a usable snapshot and stays silent under UNAVAILABLE, where the state
-// rules explain the absence.
+// scope-evidence face, and the exploratory WARN gap (file comment). A
+// non-repository scope without usable scope facts fires; with usable facts
+// (the wiring layer read the scope's evidence row under the snapshot
+// generation) the check holds and the scope clauses of the evidence rules
+// judge the row. When the resolver already attached
+// SCOPE_EVIDENCE_UNAVAILABLE (package-looking target), its more specific
+// finding — adopted by the target rule — stands as the explanation and this
+// rule only contributes the verdict. At repository scope the snapshot IS the
+// scope evidence: the check passes when the state gives a usable snapshot and
+// stays silent under UNAVAILABLE, where the state rules explain the absence.
 func ruleScopeEvidence(id string, verdict Verdict) policyRule {
 	return policyRule{id: id, check: "scope evidence available", eval: func(in ruleInput) ruleResult {
 		if in.scope.Kind == ScopeRepository {
@@ -476,6 +509,9 @@ func ruleScopeEvidence(id string, verdict Verdict) policyRule {
 			}
 			return skipped()
 		}
+		if scopeFactsUsable(in) {
+			return passed()
+		}
 		if resolutionHas(in.resolution, FindingScopeEvidenceUnavailable) {
 			return ruleResult{verdict: verdict}
 		}
@@ -483,6 +519,69 @@ func ruleScopeEvidence(id string, verdict Verdict) policyRule {
 			in.scope.Kind, ScopeRepository,
 			"scope-level evidence is not collected in v1; only repository-scope facts exist"))
 	}}
+}
+
+// scopeFactsUsable gates the scope clauses of the evidence rules: they judge
+// the target-scope facts only when the assessed scope is a resolved
+// non-repository scope (the facts describe the target's own evidence row,
+// never the repository — repoFactsUsable covers that side) and the facts are
+// well-formed (scopefacts.go). At repository scope any handed-in facts are
+// ignored entirely: the snapshot IS that scope's evidence. Malformed or
+// absent facts fail closed to the unchanged v1 behavior — the scope clauses
+// stay silent and ruleScopeEvidence fires SCOPE_EVIDENCE_UNAVAILABLE.
+func scopeFactsUsable(in ruleInput) bool {
+	return in.scope.Kind != ScopeRepository && scopeResolved(in.scope) && in.scopeFacts.wellFormed()
+}
+
+// scopeCounterOutcome judges one per-file resolution counter of the scope
+// facts. A nonzero counter fires (the row witnesses the defect — even on an
+// inconsistent skipped-file row, fail closed over inconsistent facts, same
+// rationale as parseSkipEvidence). A zero counter passes only for a PARSED
+// file: an unparsed file's references were never analyzed, so its zero
+// counters are absence of analysis, not evidence of absence — the check stays
+// silent and the parse-skip finding explains the gap (the "checks that could
+// not run" convention of the file comment).
+func scopeCounterOutcome(in ruleInput, n int, verdict Verdict, mk func(n int) Finding) ruleResult {
+	if n > 0 {
+		return fired(verdict, mk(n))
+	}
+	if in.scopeFacts.File.ParseStatus != ScopeParseStatusParsed {
+		return skipped()
+	}
+	return passed()
+}
+
+// scopeDegradedOutcome judges the scope facts' package claim for the degraded
+// rules. An absent claim ("" — the v1 file-evidence shape, package scope
+// deferred) can neither pass nor fire: file evidence alone cannot support a
+// "no degraded package in scope" claim (PRD §26), and the clean scope may
+// still PASS on the checks that did run. checked/checked_with_errors pass —
+// the PRD §22 pin: type errors alone are never degradation. degraded and
+// skipped (never attempted) carry no authoritative type evidence; graded=true
+// applies R4's "nach Schwere" at single-package granularity mirroring the
+// repository grading with the row's own facts — partial confirmed coverage
+// remains (PRD §22's fourth state) → WARN, total type-evidence loss → FAIL —
+// while graded=false is A5's strict FAIL.
+func scopeDegradedOutcome(in ruleInput, graded bool) ruleResult {
+	p := in.scopeFacts.Package
+	switch p.State {
+	case "":
+		return skipped()
+	case ScopePackageStateChecked, ScopePackageStateCheckedWithErrors:
+		return passed()
+	}
+	observed := p.State
+	if p.DegradedReason != "" {
+		observed += "(" + p.DegradedReason + ")"
+	}
+	if graded && p.ConfirmedEdges > 0 {
+		return fired(VerdictWarn, policyFinding(FindingPackageDegraded, SeverityWarning, in.scope,
+			observed, ScopePackageStateChecked,
+			"the package owning the assessed scope lacks full type-check evidence; partial confirmed coverage remains"))
+	}
+	return fired(VerdictFail, policyFinding(FindingPackageDegraded, SeverityError, in.scope,
+		observed, ScopePackageStateChecked,
+		"the package owning the assessed scope carries no authoritative type-check evidence"))
 }
 
 // repoFactsUsable gates the repository-scoped evidence rules: they run only
@@ -498,9 +597,24 @@ func repoFactsUsable(in ruleInput) bool {
 }
 
 // ruleParseSkips — E5 "Parse Skips erzeugen WARN", R3 "Parse Skip im Target
-// Scope → FAIL", A4 "kein Parse Skip im Scope".
+// Scope → FAIL", A4 "kein Parse Skip im Scope". With usable scope facts the
+// clause judges the target file's own row (its parse status and recorded
+// reason); at repository scope it judges the snapshot's strongest skip signal.
 func ruleParseSkips(id, severity string, verdict Verdict) policyRule {
 	return policyRule{id: id, check: "no parse skips in scope", eval: func(in ruleInput) ruleResult {
+		if scopeFactsUsable(in) {
+			f := in.scopeFacts.File
+			if f.ParseStatus == ScopeParseStatusSkipped {
+				observed := f.ParseStatus
+				if f.ParseReason != "" {
+					observed += "(" + f.ParseReason + ")"
+				}
+				return fired(verdict, policyFinding(FindingParseSkippedInScope, severity, in.scope,
+					observed, ScopeParseStatusParsed,
+					"the file in the assessed scope was skipped during parsing and is absent from the evidence"))
+			}
+			return passed()
+		}
 		if !repoFactsUsable(in) {
 			return skipped()
 		}
@@ -516,9 +630,14 @@ func ruleParseSkips(id, severity string, verdict Verdict) policyRule {
 // ruleDegradedGraded — R4 "degraded Package im Target Scope → WARN oder FAIL
 // nach Schwere": total type-evidence loss (every unit degraded — or a
 // degraded signal at or beyond the unit total, which can only mean at least
-// total loss) is FAIL, partial degradation WARN (file comment).
+// total loss) is FAIL, partial degradation WARN (file comment). With usable
+// scope facts the clause judges the scope's package claim instead
+// (scopeDegradedOutcome — same partial/total grading over the row's facts).
 func ruleDegradedGraded(id string) policyRule {
 	return policyRule{id: id, check: "no degraded packages in scope", eval: func(in ruleInput) ruleResult {
+		if scopeFactsUsable(in) {
+			return scopeDegradedOutcome(in, true)
+		}
 		if !repoFactsUsable(in) {
 			return skipped()
 		}
@@ -539,9 +658,14 @@ func ruleDegradedGraded(id string) policyRule {
 	}}
 }
 
-// ruleDegradedStrict — A5 "kein degraded Package im Scope".
+// ruleDegradedStrict — A5 "kein degraded Package im Scope". With usable scope
+// facts the clause judges the scope's package claim (ungraded: any degraded or
+// never-attempted package FAILs an automated change).
 func ruleDegradedStrict(id string) policyRule {
 	return policyRule{id: id, check: "no degraded packages in scope", eval: func(in ruleInput) ruleResult {
+		if scopeFactsUsable(in) {
+			return scopeDegradedOutcome(in, false)
+		}
 		if !repoFactsUsable(in) {
 			return skipped()
 		}
@@ -555,9 +679,17 @@ func ruleDegradedStrict(id string) policyRule {
 }
 
 // ruleAmbiguousRefs — E4's ambiguous half, R5 "Ambiguous References im Scope
-// → WARN", A6 "keine Ambiguity im Scope".
+// → WARN", A6 "keine Ambiguity im Scope". With usable scope facts the clause
+// judges the target file's own ambiguous counter (scopeCounterOutcome).
 func ruleAmbiguousRefs(id, severity string, verdict Verdict) policyRule {
 	return policyRule{id: id, check: "no ambiguous references in scope", eval: func(in ruleInput) ruleResult {
+		if scopeFactsUsable(in) {
+			return scopeCounterOutcome(in, in.scopeFacts.File.Ambiguous, verdict, func(n int) Finding {
+				return policyFinding(FindingAmbiguousReferenceInScope, severity, in.scope,
+					strconv.Itoa(n), "0",
+					"references resolved to more than one candidate in the assessed scope")
+			})
+		}
 		if !repoFactsUsable(in) {
 			return skipped()
 		}
@@ -571,9 +703,17 @@ func ruleAmbiguousRefs(id, severity string, verdict Verdict) policyRule {
 }
 
 // ruleUnresolvedRefs — E4's unresolved half and A7 "keine unresolved
-// References im relevanten Scope".
+// References im relevanten Scope". With usable scope facts the clause judges
+// the target file's own skipped counter (scopeCounterOutcome).
 func ruleUnresolvedRefs(id, severity string, verdict Verdict) policyRule {
 	return policyRule{id: id, check: "no unresolved references in scope", eval: func(in ruleInput) ruleResult {
+		if scopeFactsUsable(in) {
+			return scopeCounterOutcome(in, in.scopeFacts.File.Skipped, verdict, func(n int) Finding {
+				return policyFinding(FindingUnresolvedReferenceInScope, severity, in.scope,
+					strconv.Itoa(n), "0",
+					"references could not be resolved and were skipped in the assessed scope")
+			})
+		}
 		if !repoFactsUsable(in) {
 			return skipped()
 		}
@@ -623,9 +763,17 @@ func ruleHeuristicOnly(id, severity string, verdict Verdict) policyRule {
 // (ungraded in v1: INFO), R7 "externe Boundaries im Pfad → WARN", A9
 // "externe Boundary mit möglicher Verhaltensabhängigkeit → FAIL oder
 // explizite Human Approval" (no approval channel in v1: FAIL, with the
-// human-review recommendation via the code's action).
+// human-review recommendation via the code's action). With usable scope facts
+// the clause judges the target file's own externally-resolved reference
+// counter (scopeCounterOutcome) at the same per-policy severity.
 func ruleExternalBoundaries(id, severity string, verdict Verdict, message string) policyRule {
 	return policyRule{id: id, check: "no external boundaries in scope", eval: func(in ruleInput) ruleResult {
+		if scopeFactsUsable(in) {
+			return scopeCounterOutcome(in, in.scopeFacts.File.ResolvedExternal, verdict, func(n int) Finding {
+				return policyFinding(FindingExternalBoundaryReached, severity, in.scope,
+					strconv.Itoa(n), "", message)
+			})
+		}
 		if !repoFactsUsable(in) {
 			return skipped()
 		}
@@ -717,7 +865,22 @@ func PolicyByName(name string) (Policy, error) {
 // scope from ResolveScope, and resolution is ResolveScope's finding list for
 // that scope — pass it whenever a target was asked, omit it for the
 // repository default (the trailing variadic keeps the plain four-argument
-// call shape).
+// call shape). Evaluate is the factless call: it evaluates with the zero
+// ScopeFacts, so every non-repository scope reads
+// SCOPE_EVIDENCE_UNAVAILABLE exactly as in v1 — callers holding target-scope
+// evidence use EvaluateWithScopeFacts.
+func (p Policy) Evaluate(snap Snapshot, st State, scope ScopeRef, resolution ...Finding) Assessment {
+	return p.EvaluateWithScopeFacts(snap, st, scope, ScopeFacts{}, resolution...)
+}
+
+// EvaluateWithScopeFacts is Evaluate extended with the optional target-scope
+// evidence input (scopefacts.go). The extension bumps NO policy version: the
+// rules and thresholds are unchanged — the scope clauses the contract §3
+// tables always contained simply become decidable when facts arrive (design
+// decision of record in the file comment and scopefacts.go). With
+// facts.Available false (or a malformed shape, which is no evidence) the
+// result is byte-identical to Evaluate — the red gate in
+// policy_matrix_test.go pins this over every sealed case.
 //
 // Every rule that fires appends its Finding(s); the verdict is the worst
 // outcome across fired rules (PASS < WARN < UNKNOWN < FAIL). Findings are
@@ -726,8 +889,8 @@ func PolicyByName(name string) (Policy, error) {
 // fill ChecksPassed — the explicit PRD §26 all-checks-passed list — so a
 // findings-free PASS is always explained. Every assessment carries the
 // snapshot-derived limitations and the deterministic recommendations.
-func (p Policy) Evaluate(snap Snapshot, st State, scope ScopeRef, resolution ...Finding) Assessment {
-	in := ruleInput{snap: snap, st: st, scope: scope, resolution: resolution}
+func (p Policy) EvaluateWithScopeFacts(snap Snapshot, st State, scope ScopeRef, facts ScopeFacts, resolution ...Finding) Assessment {
+	in := ruleInput{snap: snap, st: st, scope: scope, resolution: resolution, scopeFacts: facts}
 	findings := []Finding{}
 	checksPassed := []string{}
 	verdict := VerdictPass

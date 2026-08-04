@@ -100,14 +100,14 @@ func docFindingCodes(t *testing.T, doc map[string]json.RawMessage) []string {
 	return codes
 }
 
-// trustReportRegisterKeys is the frozen §2.2 field register plus the three
+// trustReportRegisterKeys is the frozen §2.2 field register plus the four
 // documented additive v1 fields, in no particular order (presence is the rule
 // under test; order is pinned by the determinism test via raw bytes).
 var trustReportRegisterKeys = []string{
 	"schema_version", "snapshot_version", "snapshot_state", "graph_generation",
 	"freshness", "scope", "coverage", "edge_evidence", "resolution",
 	"boundaries", "policy", "limitations",
-	"findings", "checks_passed", "details",
+	"findings", "checks_passed", "details", "scope_evidence",
 }
 
 // TestTrustReport_NoPolicyDocument is spot-check (a): over a freshly ingested
@@ -272,6 +272,114 @@ func TestTrustReport_Deterministic(t *testing.T) {
 	}
 	if !bytes.Equal(first, second) {
 		t.Fatalf("two compositions over identical facts differ:\n%s\n---\n%s", first, second)
+	}
+}
+
+// trustDocScopeEvidence decodes the additive scope_evidence object.
+func trustDocScopeEvidence(t *testing.T, doc map[string]json.RawMessage) trust.ScopeFacts {
+	t.Helper()
+	var se trust.ScopeFacts
+	if err := json.Unmarshal(doc["scope_evidence"], &se); err != nil {
+		t.Fatalf("decode scope_evidence: %v", err)
+	}
+	return se
+}
+
+// TestTrustReport_ScopeEvidenceFileTarget pins the decidable target scope
+// (US-3: local findings must not drown in the repository aggregate and vice
+// versa): for a resolved file target the composition fetches the file's
+// persisted evidence row under the snapshot generation, surfaces it as the
+// always-present scope_evidence object, and hands it to the policy — so the
+// clean file PASSes automated_change (with the explicit checks list, no
+// SCOPE_EVIDENCE_UNAVAILABLE) while the file with unresolved references FAILs
+// with UNRESOLVED_REFERENCE_IN_SCOPE, over the SAME snapshot. The fixture
+// rows are pinned upstream (engine/ingest trust_evidence_test.go):
+// util/util.go is clean, main.go carries skipped references.
+func TestTrustReport_ScopeEvidenceFileTarget(t *testing.T) {
+	ctx := context.Background()
+	root, dbPath, metaDir := buildTrustFixture(t)
+	d := NewDirect(nil, nil)
+
+	// Clean file: scoped PASS with the evidence row on the wire.
+	b, verdict, state, err := d.TrustReport(ctx, TrustReportOptions{
+		Root: root, DBPath: dbPath, MetaDir: metaDir,
+		Target: "util/util.go", Policy: trust.PolicyNameAutomatedChange,
+	})
+	if err != nil {
+		t.Fatalf("TrustReport(util/util.go): %v", err)
+	}
+	if state != trust.StateCurrent {
+		t.Fatalf("state = %s, want CURRENT", state)
+	}
+	if verdict != trust.VerdictPass {
+		t.Fatalf("automated_change over the clean file scope = %s, want PASS (scope facts make the scope decidable)\n%s", verdict, b)
+	}
+	doc := decodeTrustDoc(t, b)
+	se := trustDocScopeEvidence(t, doc)
+	if !se.Available || se.File.ParseStatus != trust.ScopeParseStatusParsed {
+		t.Errorf("scope_evidence = %+v, want available with a parsed file row", se)
+	}
+	for _, code := range docFindingCodes(t, doc) {
+		if code == trust.FindingScopeEvidenceUnavailable {
+			t.Error("SCOPE_EVIDENCE_UNAVAILABLE fired although the file's evidence row was fetched")
+		}
+	}
+	var checks []string
+	if err := json.Unmarshal(doc["checks_passed"], &checks); err != nil {
+		t.Fatalf("decode checks_passed: %v", err)
+	}
+	if len(checks) == 0 {
+		t.Error("scoped PASS without the explicit all-checks-passed list (PRD §26)")
+	}
+
+	// Dirty file, same snapshot: the row's skipped counter FAILs the policy.
+	b, verdict, _, err = d.TrustReport(ctx, TrustReportOptions{
+		Root: root, DBPath: dbPath, MetaDir: metaDir,
+		Target: "main.go", Policy: trust.PolicyNameAutomatedChange,
+	})
+	if err != nil {
+		t.Fatalf("TrustReport(main.go): %v", err)
+	}
+	if verdict != trust.VerdictFail {
+		t.Fatalf("automated_change over the unresolved-refs file = %s, want FAIL\n%s", verdict, b)
+	}
+	doc = decodeTrustDoc(t, b)
+	se = trustDocScopeEvidence(t, doc)
+	if !se.Available || se.File.Skipped == 0 {
+		t.Errorf("scope_evidence = %+v, want available with the nonzero skipped counter", se)
+	}
+	sawUnresolved := false
+	for _, code := range docFindingCodes(t, doc) {
+		if code == trust.FindingUnresolvedReferenceInScope {
+			sawUnresolved = true
+		}
+	}
+	if !sawUnresolved {
+		t.Errorf("UNRESOLVED_REFERENCE_IN_SCOPE missing from findings: %v", docFindingCodes(t, doc))
+	}
+
+	// No policy: the facts are still fetched and surfaced (facts and policy
+	// stay separate — the object is evidence, not a verdict input only).
+	b, _, _, err = d.TrustReport(ctx, TrustReportOptions{
+		Root: root, DBPath: dbPath, MetaDir: metaDir, Target: "util/util.go",
+	})
+	if err != nil {
+		t.Fatalf("TrustReport(no policy): %v", err)
+	}
+	if se := trustDocScopeEvidence(t, decodeTrustDoc(t, b)); !se.Available {
+		t.Errorf("scope_evidence without a policy = %+v, want the fetched row", se)
+	}
+
+	// Unresolvable target: the object stays present, zero-valued, available
+	// false — absence is visible, never dressed up (fail closed).
+	b, _, _, err = d.TrustReport(ctx, TrustReportOptions{
+		Root: root, DBPath: dbPath, MetaDir: metaDir, Target: "no_such_symbol_xyz",
+	})
+	if err != nil {
+		t.Fatalf("TrustReport(unresolvable): %v", err)
+	}
+	if se := trustDocScopeEvidence(t, decodeTrustDoc(t, b)); se.Available {
+		t.Errorf("scope_evidence for an unresolved target = %+v, want available=false", se)
 	}
 }
 

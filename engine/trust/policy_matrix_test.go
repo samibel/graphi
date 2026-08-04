@@ -1,6 +1,7 @@
 package trust_test
 
 import (
+	"bytes"
 	"errors"
 	"reflect"
 	"testing"
@@ -459,6 +460,231 @@ func TestPoliciesRegistry(t *testing.T) {
 	for _, bad := range []string{"", "exploratory-v1", "Review", "automated-change", "yolo"} {
 		if _, err := trust.PolicyByName(bad); !errors.Is(err, trust.ErrPolicyUnknown) {
 			t.Errorf("PolicyByName(%q) err = %v, want ErrPolicyUnknown", bad, err)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Scope-facts sealed additions.
+//
+// ScopeFacts (scopefacts.go) EXTEND THE EVALUATION INPUT, not the rules: the
+// v1 policies always contained the contract §3 scope clauses (parse skip in
+// scope, degraded package in scope, ambiguity in scope, unresolved in scope,
+// external boundary in scope) — v1 merely could not evaluate them for lack of
+// scope evidence and fell to SCOPE_EVIDENCE_UNAVAILABLE, which the original
+// 20 situations above seal. With facts present the same rules judge the same
+// codes at the same per-policy severities against the scope's own evidence
+// row. Because no rule and no threshold changed, this is NO policy version
+// bump (contract §3.0 bumps on rule/threshold changes, not input extensions):
+// the original sealed situations are untouched, and
+// TestScopeFactsAbsent_ByteIdenticalRedGate proves the factless call is
+// byte-identical over every one of them. The cases below are SEALED exactly
+// like the matrix above — a change here is a policy version bump.
+// ---------------------------------------------------------------------------
+
+// sealedScopedCase is one sealed scope-facts expectation: a fixture snapshot,
+// state, resolved target scope, its evidence facts, and the exact verdict +
+// canonically sorted finding codes per policy.
+type sealedScopedCase struct {
+	name   string
+	snap   trust.Snapshot
+	st     trust.State
+	scope  trust.ScopeRef
+	facts  trust.ScopeFacts
+	expect map[string]want
+}
+
+// sealedScopeFactsMatrix builds the sealed scope-facts situations, all over a
+// resolved file scope with a CURRENT pure snapshot so the fired code is
+// attributable to the scope facts alone. SEALED — a change here is a policy
+// version bump (contract §3 versioning rule).
+func sealedScopeFactsMatrix() []sealedScopedCase {
+	fileScope := trust.ScopeRef{Kind: trust.ScopeFile, Path: "a/alpha.go"}
+	parsedFile := func(mut func(*trust.ScopeFacts)) trust.ScopeFacts {
+		sf := trust.ScopeFacts{
+			Available: true,
+			File:      trust.ScopeFileFacts{ParseStatus: trust.ScopeParseStatusParsed},
+		}
+		if mut != nil {
+			mut(&sf)
+		}
+		return sf
+	}
+
+	return []sealedScopedCase{
+		{
+			// The task's hard floor from the other side: clean scope facts do
+			// NOT fire SCOPE_EVIDENCE_UNAVAILABLE, and the scope may reach
+			// PASS — with the checks recorded in checks_passed (asserted by
+			// the runner).
+			name: "S1 clean file scope facts",
+			snap: snapPure(), st: trust.StateCurrent, scope: fileScope,
+			facts: parsedFile(nil),
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, nil},
+				trust.PolicyNameReview:          {trust.VerdictPass, nil},
+				trust.PolicyNameAutomatedChange: {trust.VerdictPass, nil},
+			},
+		},
+		{
+			// E5 WARN / R3 FAIL / A4 FAIL — the contract tables' parse-skip
+			// clauses, now decidable in scope.
+			name: "S2 parse skip in scope",
+			snap: snapPure(), st: trust.StateCurrent, scope: fileScope,
+			facts: trust.ScopeFacts{
+				Available: true,
+				File: trust.ScopeFileFacts{
+					ParseStatus: trust.ScopeParseStatusSkipped,
+					ParseReason: "parse_timeout",
+				},
+			},
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictWarn, []string{trust.FindingParseSkippedInScope}},
+				trust.PolicyNameReview:          {trust.VerdictFail, []string{trust.FindingParseSkippedInScope}},
+				trust.PolicyNameAutomatedChange: {trust.VerdictFail, []string{trust.FindingParseSkippedInScope}},
+			},
+		},
+		{
+			// R4 FAIL (total type-evidence loss for the scope's package — the
+			// R4-style grading already sealed at repository scope) / A5 FAIL;
+			// exploratory binds no degraded rule (contract §3.1, sealed case
+			// 08).
+			name: "S3 degraded package in scope",
+			snap: snapPure(), st: trust.StateCurrent, scope: fileScope,
+			facts: parsedFile(func(sf *trust.ScopeFacts) {
+				sf.Package = trust.ScopePackageFacts{
+					State:          trust.ScopePackageStateDegraded,
+					DegradedReason: "load_error",
+				}
+			}),
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, nil},
+				trust.PolicyNameReview:          {trust.VerdictFail, []string{trust.FindingPackageDegraded}},
+				trust.PolicyNameAutomatedChange: {trust.VerdictFail, []string{trust.FindingPackageDegraded}},
+			},
+		},
+		{
+			// E4 visibility (info, non-blocking) / R5 WARN / A6 FAIL.
+			name: "S4 ambiguity in scope",
+			snap: snapPure(), st: trust.StateCurrent, scope: fileScope,
+			facts: parsedFile(func(sf *trust.ScopeFacts) { sf.File.Ambiguous = 2 }),
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, []string{trust.FindingAmbiguousReferenceInScope}},
+				trust.PolicyNameReview:          {trust.VerdictWarn, []string{trust.FindingAmbiguousReferenceInScope}},
+				trust.PolicyNameAutomatedChange: {trust.VerdictFail, []string{trust.FindingAmbiguousReferenceInScope}},
+			},
+		},
+		{
+			// E4 visibility / A7 FAIL; review binds no unresolved rule
+			// (contract §3.2, sealed case 10).
+			name: "S5 unresolved in scope",
+			snap: snapPure(), st: trust.StateCurrent, scope: fileScope,
+			facts: parsedFile(func(sf *trust.ScopeFacts) { sf.File.Skipped = 4 }),
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, []string{trust.FindingUnresolvedReferenceInScope}},
+				trust.PolicyNameReview:          {trust.VerdictPass, nil},
+				trust.PolicyNameAutomatedChange: {trust.VerdictFail, []string{trust.FindingUnresolvedReferenceInScope}},
+			},
+		},
+	}
+}
+
+// TestSealedPolicyMatrix_ScopeFacts pins verdict and sorted finding codes for
+// the sealed scope-facts situations under all three policies, with the same
+// wiring assertions as the factless matrix. Additionally: no case may fire
+// SCOPE_EVIDENCE_UNAVAILABLE (the facts ARE the scope evidence), and a PASS
+// carries the explicit all-checks-passed list.
+// SEALED — a change here is a policy version bump (contract §3 versioning
+// rule).
+func TestSealedPolicyMatrix_ScopeFacts(t *testing.T) {
+	for _, tc := range sealedScopeFactsMatrix() {
+		for _, p := range trust.Policies() {
+			exp, ok := tc.expect[p.Name]
+			if !ok {
+				t.Fatalf("%s: no sealed expectation for policy %s", tc.name, p.Name)
+			}
+			t.Run(tc.name+"/"+p.Name, func(t *testing.T) {
+				a := p.EvaluateWithScopeFacts(tc.snap, tc.st, tc.scope, tc.facts)
+				if a.Verdict != exp.verdict {
+					t.Errorf("verdict = %s, want %s", a.Verdict, exp.verdict)
+				}
+				wantCodes := exp.codes
+				if wantCodes == nil {
+					wantCodes = []string{}
+				}
+				if got := findingCodes(a.Findings); !reflect.DeepEqual(got, wantCodes) {
+					t.Errorf("finding codes = %v, want %v", got, wantCodes)
+				}
+				for _, f := range a.Findings {
+					if f.Code == trust.FindingScopeEvidenceUnavailable {
+						t.Error("SCOPE_EVIDENCE_UNAVAILABLE fired although scope facts were present")
+					}
+				}
+				if a.Policy.Name != p.Name || a.Policy.Version != 1 {
+					t.Errorf("policy ref = %+v, want %s v1 (scope facts are an input extension, never a version bump)", a.Policy, p.Name)
+				}
+				if a.Scope != tc.scope || a.SnapshotState != tc.st {
+					t.Errorf("scope/state = %+v/%s, want %+v/%s", a.Scope, a.SnapshotState, tc.scope, tc.st)
+				}
+				if wantLim := trust.LimitationsFromSnapshot(tc.snap); !reflect.DeepEqual(a.Limitations, wantLim) {
+					t.Errorf("limitations = %+v, want %+v", a.Limitations, wantLim)
+				}
+				if wantRec := trust.Recommendations(tc.st, a.Findings); !reflect.DeepEqual(a.Recommendations, wantRec) {
+					t.Errorf("recommendations = %q, want %q", a.Recommendations, wantRec)
+				}
+				if a.Verdict == trust.VerdictPass && len(a.ChecksPassed) == 0 {
+					t.Error("PASS without the explicit all-checks-passed list (PRD §26)")
+				}
+				if a.Findings == nil || a.Limitations == nil || a.Recommendations == nil || a.ChecksPassed == nil {
+					t.Error("assessment carries a nil list; want empty slices, never null")
+				}
+				again := p.EvaluateWithScopeFacts(tc.snap, tc.st, tc.scope, tc.facts)
+				if !reflect.DeepEqual(a, again) {
+					t.Error("EvaluateWithScopeFacts is not deterministic over identical inputs")
+				}
+			})
+		}
+	}
+}
+
+// TestScopeFactsAbsent_ByteIdenticalRedGate — red gate: over EVERY sealed
+// matrix situation and every policy, Evaluate without facts and
+// EvaluateWithScopeFacts with absent facts (Available=false) produce
+// byte-identical canonical assessments — both for the zero ScopeFacts and for
+// an Available=false value carrying nonzero fields (unavailable facts are
+// ignored wholesale, never partially read). This is the executable form of
+// the no-version-bump reasoning: the input extension leaves the sealed v1
+// behavior untouched to the byte.
+func TestScopeFactsAbsent_ByteIdenticalRedGate(t *testing.T) {
+	absent := map[string]trust.ScopeFacts{
+		"zero value": {},
+		"unavailable with nonzero fields": {
+			Available: false,
+			File: trust.ScopeFileFacts{
+				ParseStatus: trust.ScopeParseStatusSkipped, ParseReason: "oversize",
+				ResolvedExternal: 9, Skipped: 9, Ambiguous: 9,
+			},
+			Package: trust.ScopePackageFacts{
+				State: trust.ScopePackageStateDegraded, DegradedReason: "load_error", TypeErrors: 9,
+			},
+		},
+	}
+	for _, tc := range sealedMatrix(t) {
+		for _, p := range trust.Policies() {
+			base, err := trust.EncodeAssessment(p.Evaluate(tc.snap, tc.st, tc.scope, tc.resolution...))
+			if err != nil {
+				t.Fatalf("%s/%s: EncodeAssessment: %v", tc.name, p.Name, err)
+			}
+			for variant, facts := range absent {
+				got, err := trust.EncodeAssessment(p.EvaluateWithScopeFacts(tc.snap, tc.st, tc.scope, facts, tc.resolution...))
+				if err != nil {
+					t.Fatalf("%s/%s: EncodeAssessment(%s): %v", tc.name, p.Name, variant, err)
+				}
+				if !bytes.Equal(base, got) {
+					t.Errorf("%s/%s: absent scope facts (%s) changed the canonical assessment:\nwithout: %s\nwith:    %s",
+						tc.name, p.Name, variant, base, got)
+				}
+			}
 		}
 	}
 }

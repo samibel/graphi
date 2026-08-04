@@ -28,6 +28,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/engine/typeresolve"
 )
 
@@ -37,33 +38,38 @@ import (
 // (healthy-looking) result.
 const trustEvidenceSchemaVersion = 3
 
-// Parse-status vocabulary of FileEvidence.ParseStatus (closed set).
+// Parse-status vocabulary of FileEvidence.ParseStatus (closed set). The
+// values are aliases of engine/trust's scope-facts vocabulary — trust cannot
+// import ingest (layering), so the closed set lives there and the rows here
+// alias it: one source, the persisted values and the policy evaluator's
+// expectations cannot drift.
 const (
 	// ParseStatusParsed — the file parsed and its symbols were committed.
-	ParseStatusParsed = "parsed"
+	ParseStatusParsed = trust.ScopeParseStatusParsed
 	// ParseStatusSkipped — the file was skipped fail-closed; ParseReason
 	// carries the SkipReason (oversize / timeout / max-depth / unreadable /
 	// parse-error).
-	ParseStatusSkipped = "skipped"
+	ParseStatusSkipped = trust.ScopeParseStatusSkipped
 )
 
-// Package-state vocabulary of PackageEvidence.State (closed set, PRD §22).
-// The PRD-22 pin: type_errors > 0 alone is NOT degraded — a unit that checked
-// with swallowed errors stays checked_with_errors, and DegradedReason is never
-// invented from an error count.
+// Package-state vocabulary of PackageEvidence.State (closed set, PRD §22),
+// aliased from engine/trust for the same one-source reason as the parse
+// statuses. The PRD-22 pin: type_errors > 0 alone is NOT degraded — a unit
+// that checked with swallowed errors stays checked_with_errors, and
+// DegradedReason is never invented from an error count.
 const (
 	// PackageStateChecked — the unit type-checked with zero swallowed errors.
-	PackageStateChecked = "checked"
+	PackageStateChecked = trust.ScopePackageStateChecked
 	// PackageStateCheckedWithErrors — the unit type-checked; some errors were
 	// swallowed (expected with stub imports). Still authoritative, not degraded.
-	PackageStateCheckedWithErrors = "checked_with_errors"
+	PackageStateCheckedWithErrors = trust.ScopePackageStateCheckedWithErrors
 	// PackageStateDegraded — the unit was not type-checked; DegradedReason
 	// names why (multiple clauses, import cycle, full-parse failure, panic).
-	PackageStateDegraded = "degraded"
+	PackageStateDegraded = trust.ScopePackageStateDegraded
 	// PackageStateSkipped — reserved by the PRD §22 vocabulary for a unit the
 	// resolver never attempted. The v1 Go collector never mints it (a skipped
 	// resolver publishes no rows at all); readers must still accept it.
-	PackageStateSkipped = "skipped"
+	PackageStateSkipped = trust.ScopePackageStateSkipped
 )
 
 // ErrTrustEvidenceUnavailable marks a sidecar that cannot serve evidence at

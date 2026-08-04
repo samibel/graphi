@@ -296,6 +296,10 @@ func TestRunTrustReport_JSONMatchesSharedCompositionBytes(t *testing.T) {
 		{nil, client.TrustReportOptions{}},
 		{[]string{"--details", "--limit", "2"}, client.TrustReportOptions{Details: true, Limit: 2}},
 		{[]string{"--policy", "review", "--target", "no_such_symbol"}, client.TrustReportOptions{Policy: "review", Target: "no_such_symbol"}},
+		// A target whose persisted file evidence exists: the additive
+		// scope_evidence object must ride the same shared bytes on both
+		// surfaces (the MCP twin asserts the same object over the wire).
+		{[]string{"--policy", "review", "--target", "cart.go"}, client.TrustReportOptions{Policy: "review", Target: "cart.go"}},
 	}
 	for _, tc := range cases {
 		var out bytes.Buffer
@@ -308,6 +312,25 @@ func TestRunTrustReport_JSONMatchesSharedCompositionBytes(t *testing.T) {
 		}
 		if !bytes.Equal(out.Bytes(), append(want, '\n')) {
 			t.Errorf("%v: CLI --json bytes != shared composition bytes + newline:\ncli:    %s\nclient: %s", tc.args, out.String(), want)
+		}
+		if tc.opts.Target == "cart.go" {
+			// The CLI document carries the fetched evidence row — the file
+			// resolved, so scope_evidence is present and available, never the
+			// zero-valued fail-closed shape.
+			var doc struct {
+				ScopeEvidence struct {
+					Available bool `json:"available"`
+					File      struct {
+						ParseStatus string `json:"parse_status"`
+					} `json:"file"`
+				} `json:"scope_evidence"`
+			}
+			if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
+				t.Fatalf("%v: bad document: %v", tc.args, err)
+			}
+			if !doc.ScopeEvidence.Available || doc.ScopeEvidence.File.ParseStatus != "parsed" {
+				t.Errorf("%v: scope_evidence = %+v, want the fetched parsed row (available=true)", tc.args, doc.ScopeEvidence)
+			}
 		}
 	}
 }
