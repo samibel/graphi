@@ -127,6 +127,16 @@ type Assessment struct {
 	Findings        []Finding    `json:"findings"`
 	Limitations     []Limitation `json:"limitations"`
 	Recommendations []string     `json:"recommendations"`
+	// ChecksPassed is the explicit "all checks passed" list PRD §26 demands
+	// ("kein Verdict ohne Findings oder explizite „all checks passed“-Liste"):
+	// one fixed gloss per policy check that ran and held on the evaluated
+	// facts, in the policy's static rule order. A PASS with no findings is
+	// explained by this list alone; checks that fired appear as findings
+	// instead, and checks that could not run (missing evidence) appear in
+	// neither list — the finding that explains the missing evidence covers
+	// them. Additive v1 field of the assessment document (contract doc §2.3
+	// rule 7).
+	ChecksPassed []string `json:"checks_passed"`
 }
 
 // severityRank orders severities most-severe-first for the canonical sorts.
@@ -224,9 +234,9 @@ func sortLimitations(ls []Limitation) {
 // Unlike Snapshot, an Assessment's lists are filled by policy rules rather
 // than one canonicalizing builder, so this encoder owns the canonical list
 // order: Findings and Limitations are copied and re-sorted (the caller's
-// slices are never mutated). Recommendations keep the caller's order — it is
-// the finding-derived order Recommendations produced and part of the meaning,
-// not an encoder courtesy.
+// slices are never mutated). Recommendations and ChecksPassed keep the
+// caller's order — the finding-derived order Recommendations produced and the
+// policy's static rule order are part of the meaning, not an encoder courtesy.
 func EncodeAssessment(a Assessment) ([]byte, error) {
 	findings := make([]Finding, len(a.Findings))
 	copy(findings, a.Findings)
@@ -240,6 +250,9 @@ func EncodeAssessment(a Assessment) ([]byte, error) {
 
 	if a.Recommendations == nil {
 		a.Recommendations = []string{}
+	}
+	if a.ChecksPassed == nil {
+		a.ChecksPassed = []string{}
 	}
 	b, err := encodeCanonical(a)
 	if err != nil {

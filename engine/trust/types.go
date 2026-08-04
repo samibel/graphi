@@ -3,8 +3,8 @@
 // assessment layer between facts and policies — the closed verdict/finding
 // model (assess.go, findings.go), fail-closed target-scope resolution
 // (scope.go), limitation and recommendation builders (limitations.go,
-// recommend.go). Policies plug into that layer; no policy verdict logic lives
-// here. The governing contracts are
+// recommend.go), and the three built-in v1 policies with their pure evaluator
+// (policy.go). The governing contracts are
 // docs/plan/2026-08-graphi-p1-trust-contract-v1.md (frozen v1 terminology,
 // snapshot states, the closed finding-code registry) and
 // docs/adr/0006-status-vs-trust-separation.md (state is a pure derivation of
