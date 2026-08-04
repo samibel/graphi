@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/internal/state"
@@ -44,19 +45,27 @@ func runTrustReportAt(cwd string, args []string, stdout io.Writer) int {
 	rest := args[:0:0]
 	for i := 0; i < len(args); i++ {
 		a := args[i]
-		takeVal := func(name string) (string, bool) {
-			if (a == name || a == "-"+name[1:]) && i+1 < len(args) {
-				i++
-				return args[i], true
+		// takeVal matches --name/-name in space form ("--name v") and equals
+		// form ("--name=v"/"-name=v"). missing marks a flag given WITHOUT its
+		// value: an input error (exit 2), never a silent drop — dropping e.g. a
+		// trailing "--policy" would launder the requested policy gate into the
+		// friendlier no-policy exit code.
+		takeVal := func(name string) (val string, ok, missing bool) {
+			if a == name || a == name[1:] {
+				if i+1 < len(args) {
+					i++
+					return args[i], true, false
+				}
+				return "", false, true
 			}
 			if len(a) > len(name)+1 && a[:len(name)+1] == name+"=" {
-				return a[len(name)+1:], true
+				return a[len(name)+1:], true, false
 			}
 			short := name[1:]
 			if len(a) > len(short)+1 && a[:len(short)+1] == short+"=" {
-				return a[len(short)+1:], true
+				return a[len(short)+1:], true, false
 			}
-			return "", false
+			return "", false, false
 		}
 		switch {
 		case a == "--json" || a == "-json":
@@ -64,19 +73,36 @@ func runTrustReportAt(cwd string, args []string, stdout io.Writer) int {
 		case a == "--details" || a == "-details":
 			details = true
 		default:
-			if v, ok := takeVal("--target"); ok {
+			if v, ok, miss := takeVal("--target"); ok || miss {
+				if miss {
+					fmt.Fprintln(os.Stderr, "graphi: trust-report: --target requires a value")
+					return 2
+				}
 				target = v
 				continue
 			}
-			if v, ok := takeVal("--policy"); ok {
+			if v, ok, miss := takeVal("--policy"); ok || miss {
+				if miss {
+					fmt.Fprintln(os.Stderr, "graphi: trust-report: --policy requires a value")
+					return 2
+				}
 				policy = v
 				continue
 			}
-			if v, ok := takeVal("--limit"); ok {
-				if _, err := fmt.Sscanf(v, "%d", &limit); err != nil || limit < 0 {
+			if v, ok, miss := takeVal("--limit"); ok || miss {
+				if miss {
+					fmt.Fprintln(os.Stderr, "graphi: trust-report: --limit requires a value")
+					return 2
+				}
+				// strconv.Atoi, not fmt.Sscanf: Sscanf accepts trailing garbage
+				// ("3abc" → 3, "0x10" → 0 = uncapped), silently laundering a
+				// malformed limit into a different evidence bound.
+				n, err := strconv.Atoi(v)
+				if err != nil || n < 0 {
 					fmt.Fprintf(os.Stderr, "graphi: trust-report: invalid --limit %q\n", v)
 					return 2
 				}
+				limit = n
 				continue
 			}
 			rest = append(rest, a)

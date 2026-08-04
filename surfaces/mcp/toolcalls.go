@@ -731,11 +731,18 @@ func (s *Server) changeRiskCall(ctx context.Context, p callParams) (any, *rpcErr
 // degrades to the fail-closed UNAVAILABLE document (ADR 0006 — the failure
 // direction is "no answer", never "wrong answer").
 func (s *Server) graphHealthCall(ctx context.Context, p callParams) (any, *rpcError) {
+	limit := derefInt(p.Arguments.Limit)
+	if limit < 0 {
+		// Input parity with the CLI, which rejects a negative --limit with exit
+		// 2: a negative limit must never silently uncap the bounded details
+		// lists (fail closed on out-of-domain input, contract §4).
+		return nil, &rpcError{Code: -32602, Message: fmt.Sprintf("invalid limit %d: must be non-negative", limit)}
+	}
 	b, _, _, err := s.client().TrustReport(ctx, client.TrustReportOptions{
 		Target:  p.Arguments.Target,
 		Policy:  p.Arguments.Policy,
 		Details: p.Arguments.Details,
-		Limit:   derefInt(p.Arguments.Limit),
+		Limit:   limit,
 	})
 	if err != nil {
 		if errors.Is(err, trust.ErrPolicyUnknown) {
