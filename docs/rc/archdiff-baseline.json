@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "commit": "2ef15d8c4bf2c01ec764b9d2d3087ff357a63845",
+  "fixture": "corpus/fixtures/go",
+  "note": "Legacy (surfaces/client.Direct) outcomes per use case, recorded through the Client seam. Digests are over path-normalized response bytes. A later phase records the application-backed path the same way and compares; an unexplained diff stops that phase.",
+  "cases": {
+    "codechange/inline.dry-run": {
+      "context": "codechange",
+      "outcome": "ok",
+      "sha256": "21bff541b9d477bd5c060b03786901ce424bf66e805841a58d8a1d88db2ca63a",
+      "bytes": 285
+    },
+    "codechange/refactor-preview.rename": {
+      "context": "codechange",
+      "outcome": "ok",
+      "sha256": "df2479261b353293ec95075b913e0ce7291579378389337d501fbe24e2e7648d",
+      "bytes": 131
+    },
+    "codechange/refactor-preview.unsupported-kind": {
+      "context": "codechange",
+      "outcome": "error",
+      "error": "edit: refactor kind not implemented: \"extract\" is not implemented and fails closed — no source or graph mutation was performed (rename and signature_change are the supported kinds)"
+    },
+    "codechange/safe-delete.dry-run": {
+      "context": "codechange",
+      "outcome": "ok",
+      "sha256": "e60edbc30c96adc6d549ba5743722cfb4d005fc307a592321e59ad40e9179573",
+      "bytes": 381
+    },
+    "codechange/undo.unknown-token": {
+      "context": "codechange",
+      "outcome": "error",
+      "error": "edit: invalid edit op: no change record for undo token"
+    },
+    "graphread/analyze.impact": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "3ad0d139ce0e3640c1e1610b6dc2cbbdd77c7dde7dd5718dc02f7586c06b3b0a",
+      "bytes": 1622
+    },
+    "graphread/analyze.unknown": {
+      "context": "graphread",
+      "outcome": "error",
+      "error": "analysis: unknown analyzer \"no-such-analyzer\" (want one of [batched call-chain communities compare-branches concept conflicts-prs contracts critique-review git-history impact interproc metrics notebook-ingest pdg pr-questions pr-risk pr-signals suggest-reviewers taint taint-query triage-prs watcher-status])"
+    },
+    "graphread/change-risk": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "75e679d0b474c5ba1d969167e017539f55d5d6ad226a0380e88cbcd5353db299",
+      "bytes": 1162
+    },
+    "graphread/compound": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "be6c24e03f8f808fc20b4364d3ad35dec0728bff32ca3e427b90d8fb61cf9ce4",
+      "bytes": 575
+    },
+    "graphread/diagnose": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "753215cf7cb6466f12c3102ac2bb7e1505eee7b5fe78bd3cf804599cee1fdafc",
+      "bytes": 3402
+    },
+    "graphread/explain-symbol": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "fc0a7516f05c7ca15636dc80e53265a1f72f8ac90837e79406d92e9e8b03f498",
+      "bytes": 941
+    },
+    "graphread/find-clones": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "f75f7e64307a32ce6bff88a2058fdabc9c156ff40623cb9880bdb23273af4877",
+      "bytes": 568
+    },
+    "graphread/query.callees": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "045c16c4e35e5f05a6888d1abd2f01849f6cc25d47b6f064d861efd8f6fb8272",
+      "bytes": 439
+    },
+    "graphread/query.callers": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "980ac9e0c8f88356c41ddee5e10d50efb24793c0d7576ca18008314b7c7b833c",
+      "bytes": 802
+    },
+    "graphread/query.definition": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "feb221b1c2b7092d3cdd62a12963a21e0e52be95104e079f6c2bd3180cd5913d",
+      "bytes": 433
+    },
+    "graphread/query.neighborhood": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "724527f37ca8e77694d40b46ba7ef318bf82703626c0381c3e38eb911d72d3d1",
+      "bytes": 5987
+    },
+    "graphread/query.references": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "e8753078a58c32cee73edf6cca90dfc70b1c6e0fffce69681b5ca423018d01a0",
+      "bytes": 94
+    },
+    "graphread/query.unknown-symbol": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "bb4a630799b17a84cfe5e15301f4fefd6f9df11b0b388f57ddc96e9f0440f052",
+      "bytes": 96
+    },
+    "graphread/related-files": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "db6ace61772c8811b1cc35827e44813a1deac0b06bf8e161d840730e78768aaf",
+      "bytes": 310
+    },
+    "graphread/search": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "509588e3a408e20e4c902fd141a704cf2e1c9c5006c227ee18bfdff39f006be2",
+      "bytes": 184
+    },
+    "graphread/search-ast": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "2298d5c62714abc244bbf3a04b89575b56c9c46c16a4aa78ea385c7557f86421",
+      "bytes": 1807
+    },
+    "graphread/semantic-search.unconfigured": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "edd02e803d895e66daf29239ad1d20f24e8f5ecc4bf4e9cc6834ecba05c5402e",
+      "bytes": 115
+    },
+    "graphread/trust-report": {
+      "context": "graphread",
+      "outcome": "ok",
+      "sha256": "45ae653dd97c82c88eb7406aaffcd329857f5d8b1367f90ecfc5e2ffc133b5f2",
+      "bytes": 2251
+    },
+    "knowledge/brief": {
+      "context": "knowledge",
+      "outcome": "ok",
+      "sha256": "2ebb30a03d095eb12215fc9cd02e78fd79b391efa27e4bca74f94b8071a36344",
+      "bytes": 2501
+    },
+    "knowledge/distill": {
+      "context": "knowledge",
+      "outcome": "ok",
+      "sha256": "6f3678039978a826deb14365c112efc3f78e2e07667940e87f1e96fbdcfaf168",
+      "bytes": 338
+    },
+    "knowledge/memory.export-path-rejected": {
+      "context": "knowledge",
+      "outcome": "sentinel",
+      "sentinel": "ErrExportPathRejected"
+    },
+    "knowledge/memory.list-empty": {
+      "context": "knowledge",
+      "outcome": "ok",
+      "sha256": "3f55757d5e082ed7a21a66f5c2475715cff92de9fe26cba50743e6d555428be0",
+      "bytes": 57
+    },
+    "knowledge/skillgen": {
+      "context": "knowledge",
+      "outcome": "ok",
+      "sha256": "87ef371ac26da330a8ee53d1e82e3f95d7d69fa561ff878003b2df4f968a9822",
+      "bytes": 486
+    },
+    "operations/savings": {
+      "context": "operations",
+      "outcome": "ok",
+      "sha256": "da2e247358efaeb199c51e5d08f98712020aaee215c675bb1d658c3004deb1d9",
+      "bytes": 120
+    },
+    "review/compare-branches.unwired": {
+      "context": "review",
+      "outcome": "sentinel",
+      "sentinel": "ErrCompareUnavailable"
+    },
+    "review/conflicts-prs": {
+      "context": "review",
+      "outcome": "ok",
+      "sha256": "90600fab350b41a81e6892a76652e401961629d3c863d7e1a402b26fa9b3f18a",
+      "bytes": 114
+    },
+    "review/critique-review": {
+      "context": "review",
+      "outcome": "sentinel",
+      "sentinel": "ErrReviewFetchUnavailable"
+    },
+    "review/list-prs": {
+      "context": "review",
+      "outcome": "ok",
+      "sha256": "6465e9f4a6a5923dd32bc547ed631ab4d38acb6819c658f631081c3fb2eae214",
+      "bytes": 378
+    },
+    "review/pr-comment.dry-run": {
+      "context": "review",
+      "outcome": "ok",
+      "sha256": "f1803d6ec719506aefff18abf14d2232cfc1514e88d8f1d518df387bf120b757",
+      "bytes": 686
+    },
+    "review/suggest-reviewers": {
+      "context": "review",
+      "outcome": "ok",
+      "sha256": "9fcd00e0360526c9126f9a715e2f160da8a37c3ff10f93c07dc6edb905943db1",
+      "bytes": 329
+    },
+    "review/triage-prs": {
+      "context": "review",
+      "outcome": "ok",
+      "sha256": "1bdb5a48935e5985e6cf8004af718bd7e8f950c016d67fa32d006d9f9796d364",
+      "bytes": 872
+    },
+    "unwired/analyze": {
+      "context": "graphread",
+      "outcome": "sentinel",
+      "sentinel": "ErrAnalysisUnavailable"
+    },
+    "unwired/compare-branches": {
+      "context": "review",
+      "outcome": "sentinel",
+      "sentinel": "ErrCompareUnavailable"
+    },
+    "unwired/conflicts-prs": {
+      "context": "review",
+      "outcome": "sentinel",
+      "sentinel": "ErrForgeUnavailable"
+    },
+    "unwired/distill": {
+      "context": "knowledge",
+      "outcome": "sentinel",
+      "sentinel": "ErrDistillUnavailable"
+    },
+    "unwired/inline": {
+      "context": "codechange",
+      "outcome": "sentinel",
+      "sentinel": "ErrEditUnavailable"
+    },
+    "unwired/list-prs": {
+      "context": "review",
+      "outcome": "sentinel",
+      "sentinel": "ErrForgeUnavailable"
+    },
+    "unwired/memory": {
+      "context": "knowledge",
+      "outcome": "sentinel",
+      "sentinel": "ErrMemoryUnavailable"
+    },
+    "unwired/pr-comment": {
+      "context": "review",
+      "outcome": "sentinel",
+      "sentinel": "ErrReviewUnavailable"
+    },
+    "unwired/refactor": {
+      "context": "codechange",
+      "outcome": "sentinel",
+      "sentinel": "ErrEditUnavailable"
+    },
+    "unwired/refactor-preview": {
+      "context": "codechange",
+      "outcome": "sentinel",
+      "sentinel": "ErrEditUnavailable"
+    },
+    "unwired/safe-delete": {
+      "context": "codechange",
+      "outcome": "sentinel",
+      "sentinel": "ErrEditUnavailable"
+    },
+    "unwired/savings": {
+      "context": "operations",
+      "outcome": "sentinel",
+      "sentinel": "ErrSavingsUnavailable"
+    },
+    "unwired/skillgen": {
+      "context": "knowledge",
+      "outcome": "sentinel",
+      "sentinel": "ErrSkillGenUnavailable"
+    },
+    "unwired/triage-prs": {
+      "context": "review",
+      "outcome": "sentinel",
+      "sentinel": "ErrForgeUnavailable"
+    },
+    "unwired/undo": {
+      "context": "codechange",
+      "outcome": "sentinel",
+      "sentinel": "ErrEditUnavailable"
+    }
+  }
+}

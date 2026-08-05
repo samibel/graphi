@@ -1,0 +1,279 @@
+# graphi — P2 architecture migration matrix (ARCH-P0 source of truth)
+#
+# One row per method of the broad surfaces/client.Client contract, naming the
+# bounded context that will own it. Everything derivable from the code is NOT
+# recorded here — surface usage and refusal sentinels are scanned from source at
+# render time, so they cannot go stale. What lives here is what a human must
+# decide: ownership, migration pilots, and open questions.
+#
+# The `direct`, `http`, and `daemon` columns are the deliberate exception. They
+# ARE cross-checked against the source (internal/archmatrix.CheckStubs), and they
+# are declared anyway so that a NEW compatibility stub cannot appear without an
+# explicit, reviewed edit to this file. That is the freeze the PRD asks for:
+# "Remote-Client-Kompatibilitätsstubs für neue Capabilities: 0 neue".
+#
+#   full        — executes the real operation
+#   unavailable — refuses with a typed sentinel, doing no work (a stub)
+#   typed-skip  — returns a typed graceful-skip payload with NO error
+#
+# Regenerate the rendered table: go run ./cmd/archmatrix -generate
+# Check against the live code:   go run ./cmd/archmatrix -check
+
+methods:
+  # ── Graph Read → app/graphread (phase 4) ────────────────────────────────────
+  - method: Query
+    context: graphread
+    direct: full
+    http: full
+    daemon: full
+    pilot: true
+    note: "Structural query core; the canonical encoder is engine/query.Marshal."
+  - method: Compound
+    context: graphread
+    direct: full
+    http: full
+    daemon: full
+    note: "Compound/Cypher-style query; byte-identical to a fixed Query."
+  - method: Search
+    context: graphread
+    direct: full
+    http: full
+    daemon: full
+    note: "Lexical/symbol search."
+  - method: SemanticSearch
+    context: graphread
+    direct: full
+    http: full
+    daemon: typed-skip
+    note: "Optional embedder. The unconfigured path is a TYPED unavailable response with no error and zero network — it must not be folded into a sentinel."
+  - method: SearchAST
+    context: graphread
+    direct: full
+    http: full
+    daemon: full
+    note: "Structural AST pattern query; rides the query.Marshal encoder."
+  - method: FindClones
+    context: graphread
+    direct: full
+    http: full
+    daemon: full
+    note: "Clone-group detection; singleton pattern query."
+  - method: Analyze
+    context: graphread
+    direct: full
+    http: full
+    daemon: full
+    note: "Named analyzer dispatch."
+  - method: Diagnose
+    context: graphread
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Read-only diagnostics. Direct also owns surface-side generated-marker detection, which is filesystem I/O the application service must inherit deliberately."
+  - method: ExplainSymbol
+    context: graphread
+    direct: full
+    http: full
+    daemon: unavailable
+    note: "EP-020 agent tool over the shared query/search deps."
+  - method: RelatedFiles
+    context: graphread
+    direct: full
+    http: full
+    daemon: unavailable
+    note: "EP-020 agent tool."
+  - method: ChangeRisk
+    context: graphread
+    direct: full
+    http: full
+    daemon: unavailable
+    note: "EP-020 agent tool. HTTP serves it but rejects diff targeting as bad input rather than stubbing the whole method."
+  - method: TrustReport
+    context: graphread
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    pilot: true
+    note: "The only method returning a verdict and state alongside bytes. Its encoder lives at surface rank (surfaces/client/trust_report.go), so the application service must take ownership of that composition."
+
+  # ── Code Change → app/codechange (phase 5) ──────────────────────────────────
+  - method: RefactorPreview
+    context: codechange
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Impact set BEFORE mutation; must remain non-mutating."
+  - method: Refactor
+    context: codechange
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Commits through the shared edit applier and persists an audit record; the saga and undo-token semantics are the migration risk."
+  - method: Inline
+    context: codechange
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Edit operation."
+  - method: SafeDelete
+    context: codechange
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Edit operation."
+  - method: Undo
+    context: codechange
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Reverses a recorded change by undo token."
+
+  # ── Review & Forge → app/review (phase 6) ───────────────────────────────────
+  - method: ListPRs
+    context: review
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Forge enumeration; metadata only, no scoring."
+  - method: TriagePRs
+    context: review
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Local ranking over already-materialized PR metadata."
+  - method: ConflictsPRs
+    context: review
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Local conflict detection."
+  - method: SuggestReviewers
+    context: review
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Local analysis over a supplied diff."
+  - method: CritiqueReview
+    context: review
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Local critique; needs a review fetcher."
+  - method: CompareBranches
+    context: review
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Needs a branch-state materializer; the egress boundary must stay in the outer adapter."
+  - method: PrComment
+    context: review
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "The one publish path. Dry-run rendering must stay egress-free and separable from publishing."
+
+  # ── Knowledge → app/knowledge (phase 7) ─────────────────────────────────────
+  - method: Memory
+    context: knowledge
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Carries the SAFE-01 export-path rejection; that refusal is a safety contract, not a capability gap."
+  - method: Distill
+    context: knowledge
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Serialized by a plain json.Marshal helper in direct.go, unlike every other path — the application service must not silently change those bytes."
+  - method: SkillGen
+    context: knowledge
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    note: "Same plain-marshal caveat as Distill."
+  - method: Brief
+    context: knowledge
+    direct: full
+    http: unavailable
+    daemon: unavailable
+    decision: "Knowledge or Graph Read? The PRD lists Brief under the Knowledge context, but agent_brief is one of the 12 frozen stable read operations and shares agentDeps with ExplainSymbol/RelatedFiles/ChangeRisk, which are Graph Read. Placement decides which service owns the stable-12 encoder."
+    note: "The only method returning two payloads (JSON + Markdown)."
+
+  # ── Operations & Capability → app/operations (phase 7) ──────────────────────
+  - method: Savings
+    context: operations
+    direct: full
+    http: unavailable
+    daemon: full
+    note: "Savings-ledger readout. Capability reporting and runtime status join this context in phase 7 but are not Client methods today."
+
+# Every exported Err… in surfaces/client. The set is cross-checked against the
+# source: a new sentinel must be classified here, and a removed one must be
+# dropped. Which methods can return which sentinel is DERIVED, not declared.
+sentinels:
+  - name: ErrSearchUnavailable
+    kind: capability
+    note: "Search service absent."
+  - name: ErrSavingsUnavailable
+    kind: capability
+    note: "Savings ledger not wired."
+  - name: ErrAnalysisUnavailable
+    kind: capability
+    note: "Analysis service not wired."
+  - name: ErrEditUnavailable
+    kind: capability
+    note: "Edit applier/recorder not wired."
+  - name: ErrReviewUnavailable
+    kind: capability
+    note: "Review service not wired."
+  - name: ErrCompareUnavailable
+    kind: capability
+    note: "Branch-state materializer not wired."
+  - name: ErrDiagnosticUnavailable
+    kind: capability
+    note: "Diagnostics not available on this transport."
+  - name: ErrReviewFetchUnavailable
+    kind: capability
+    note: "Review fetcher not wired."
+  - name: ErrForgeUnavailable
+    kind: capability
+    note: "Forge enumerator not wired."
+  - name: ErrMemoryUnavailable
+    kind: capability
+    note: "Memory store not wired."
+  - name: ErrDistillUnavailable
+    kind: capability
+    note: "Distiller not wired."
+  - name: ErrSkillGenUnavailable
+    kind: capability
+    note: "Skill generator not wired."
+  - name: ErrBriefUnavailable
+    kind: capability
+    note: "Brief not available on this transport."
+  - name: ErrTrustUnavailable
+    kind: capability
+    note: "Trust reporting not available on this transport."
+  - name: ErrAgentToolsUnavailable
+    kind: capability
+    note: "EP-020 agent tools not available on this transport."
+  - name: ErrExportPathRejected
+    kind: safety
+    note: "SAFE-01: a server-side export path is refused outright. This is a safety contract that must survive the migration unchanged, NOT a capability gap to be filled."
+  - name: ErrUnreachable
+    kind: transport
+    note: "HTTP client could not reach the loopback server."
+  - name: ErrSchemaMismatch
+    kind: transport
+    note: "HTTP client and server disagree on the schema version."
+  - name: ErrUnavailable
+    kind: transport
+    note: "HTTP 503 from the loopback server."
+  - name: ErrBadInput
+    kind: validation
+    note: "HTTP 400: the request was rejected as malformed or unsupported on this surface."
+  - name: ErrStrictQueryInput
+    kind: validation
+    note: "Strict-query composition rejected the input."
+  - name: ErrStrictQueryBlocked
+    kind: validation
+    note: "Strict-query composition refused to answer under its own policy."

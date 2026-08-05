@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "commit": "2ef15d8c4bf2c01ec764b9d2d3087ff357a63845",
+  "toolchain": "go1.26.5 linux/amd64",
+  "fixture_digest": "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4",
+  "trust_fixture": "perfbaseline/trust-module (generated: 3-file Go module, one confirmed cross-package call)",
+  "samples": 15,
+  "warmup": 2,
+  "full_index": {
+    "median_ms": 10.453,
+    "p95_ms": 11.598,
+    "min_ms": 9.912,
+    "max_ms": 11.598,
+    "samples": 15
+  },
+  "warm_query": {
+    "callees": {
+      "median_ms": 0.082,
+      "p95_ms": 0.136,
+      "min_ms": 0.073,
+      "max_ms": 0.136,
+      "samples": 15
+    },
+    "callers": {
+      "median_ms": 0.085,
+      "p95_ms": 0.15,
+      "min_ms": 0.073,
+      "max_ms": 0.15,
+      "samples": 15
+    },
+    "definition": {
+      "median_ms": 0.078,
+      "p95_ms": 0.126,
+      "min_ms": 0.073,
+      "max_ms": 0.126,
+      "samples": 15
+    },
+    "neighborhood": {
+      "median_ms": 0.582,
+      "p95_ms": 1.452,
+      "min_ms": 0.399,
+      "max_ms": 1.452,
+      "samples": 15
+    },
+    "references": {
+      "median_ms": 0.051,
+      "p95_ms": 0.094,
+      "min_ms": 0.046,
+      "max_ms": 0.094,
+      "samples": 15
+    },
+    "search": {
+      "median_ms": 0.149,
+      "p95_ms": 0.217,
+      "min_ms": 0.137,
+      "max_ms": 0.217,
+      "samples": 15
+    }
+  },
+  "trust_report": {
+    "median_ms": 2.224,
+    "p95_ms": 2.625,
+    "min_ms": 2.079,
+    "max_ms": 2.625,
+    "samples": 15
+  },
+  "trust_verdict": "PASS",
+  "trust_state": "CURRENT",
+  "binary_size_bytes": 33158532,
+  "build_contract": "internal/release.CanonicalBuildArgs/v1",
+  "environment": "linux/amd64, 4 cpu"
+}

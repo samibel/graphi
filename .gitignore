@@ -41,3 +41,8 @@ Thumbs.db
 # in CI; never checked in (checked-in run evidence lives under docs/eval/runs/).
 /docs/release-scorecard.json
 /docs/release-scorecard.md
+
+# ARCH-P0 characterization baselines write the OBSERVED document beside the
+# checked-in baseline on a mismatch, so a human can diff before deciding. The
+# observed copy is scratch — never checked in.
+*.baseline.json.actual

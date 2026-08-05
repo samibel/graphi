@@ -1,0 +1,1005 @@
+{
+  "schema_version": 1,
+  "module": "github.com/samibel/graphi",
+  "commit": "2ef15d8c4bf2c01ec764b9d2d3087ff357a63845",
+  "note": "Module-internal production imports only (go list Imports). Test-only imports are excluded: test packages legitimately cross layers (a cross-surface parity test drives CLI, MCP, and the engine at once), and the architecture rules layerguard enforces govern production edges.",
+  "packages": [
+    {
+      "path": "cmd/bench",
+      "zone": "cmd",
+      "imports": [
+        "internal/bench"
+      ]
+    },
+    {
+      "path": "cmd/canary",
+      "zone": "cmd",
+      "imports": [
+        "core/graphstore",
+        "internal/canary"
+      ]
+    },
+    {
+      "path": "cmd/cgoconformance",
+      "zone": "cmd",
+      "imports": [
+        "internal/cgoconformance"
+      ]
+    },
+    {
+      "path": "cmd/corpus",
+      "zone": "cmd",
+      "imports": [
+        "internal/corpus"
+      ]
+    },
+    {
+      "path": "cmd/coverage",
+      "zone": "cmd",
+      "imports": [
+        "internal/coverage"
+      ]
+    },
+    {
+      "path": "cmd/eval",
+      "zone": "cmd",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "core/parse",
+        "engine/agenttools/contract",
+        "engine/agenttools/explain",
+        "engine/agenttools/resolve",
+        "engine/diagnostic",
+        "engine/ingest",
+        "engine/query",
+        "engine/scenario",
+        "engine/scorecard",
+        "engine/search",
+        "internal/corpus",
+        "internal/doctor",
+        "internal/eval",
+        "internal/evalreport",
+        "internal/evidence",
+        "surfaces/mcp"
+      ]
+    },
+    {
+      "path": "cmd/evidence",
+      "zone": "cmd",
+      "imports": [
+        "internal/evidence"
+      ]
+    },
+    {
+      "path": "cmd/gen-install",
+      "zone": "cmd",
+      "imports": [
+        "internal/release"
+      ]
+    },
+    {
+      "path": "cmd/gen-packaging",
+      "zone": "cmd",
+      "imports": [
+        "internal/release"
+      ]
+    },
+    {
+      "path": "cmd/graphi",
+      "zone": "cmd",
+      "imports": [
+        "cmd/internal/runtime",
+        "core/graphstore",
+        "core/parse",
+        "core/profile",
+        "engine/analysis",
+        "engine/distill",
+        "engine/edit",
+        "engine/embed",
+        "engine/embed/ollama",
+        "engine/ingest",
+        "engine/ledger",
+        "engine/memory",
+        "engine/observe",
+        "engine/query",
+        "engine/search",
+        "engine/skillgen",
+        "engine/trust",
+        "engine/watch",
+        "internal/audit",
+        "internal/doctor",
+        "internal/freshness",
+        "internal/freshness/probe",
+        "internal/gitinfo",
+        "internal/mcpconfig",
+        "internal/releaseinfo",
+        "internal/state",
+        "internal/version",
+        "surfaces/cli",
+        "surfaces/client",
+        "surfaces/daemon",
+        "surfaces/forge",
+        "surfaces/http",
+        "surfaces/mcp"
+      ]
+    },
+    {
+      "path": "cmd/internal/runtime",
+      "zone": "cmd",
+      "imports": [
+        "core/graphstore",
+        "core/parse",
+        "engine/analysis",
+        "engine/embed",
+        "engine/ingest",
+        "engine/observe",
+        "engine/query",
+        "engine/review",
+        "engine/search",
+        "internal/freshness",
+        "internal/gitinfo",
+        "internal/ingestlock",
+        "internal/state",
+        "surfaces/client",
+        "surfaces/daemon"
+      ]
+    },
+    {
+      "path": "cmd/layerguard",
+      "zone": "cmd",
+      "imports": [
+        "internal/layerguard"
+      ]
+    },
+    {
+      "path": "cmd/ledgeraudit",
+      "zone": "cmd",
+      "imports": [
+        "internal/ledgeraudit"
+      ]
+    },
+    {
+      "path": "cmd/parity",
+      "zone": "cmd",
+      "imports": [
+        "internal/corpus",
+        "internal/parity",
+        "internal/parityreport"
+      ]
+    },
+    {
+      "path": "cmd/publish-lock",
+      "zone": "cmd",
+      "imports": []
+    },
+    {
+      "path": "cmd/release",
+      "zone": "cmd",
+      "imports": [
+        "internal/release"
+      ]
+    },
+    {
+      "path": "cmd/release-gate",
+      "zone": "cmd",
+      "imports": [
+        "engine/scorecard",
+        "internal/evalreport",
+        "internal/version",
+        "surfaces/mcp"
+      ]
+    },
+    {
+      "path": "cmd/testgate",
+      "zone": "cmd",
+      "imports": [
+        "internal/testgate"
+      ]
+    },
+    {
+      "path": "core/community",
+      "zone": "core",
+      "imports": [
+        "core/model"
+      ]
+    },
+    {
+      "path": "core/graphstore",
+      "zone": "core",
+      "imports": [
+        "core/model"
+      ]
+    },
+    {
+      "path": "core/model",
+      "zone": "core",
+      "imports": []
+    },
+    {
+      "path": "core/parse",
+      "zone": "core",
+      "imports": [
+        "core/model"
+      ]
+    },
+    {
+      "path": "core/profile",
+      "zone": "core",
+      "imports": []
+    },
+    {
+      "path": "corpus/fixtures/go",
+      "zone": "other",
+      "imports": []
+    },
+    {
+      "path": "corpus/fixtures/hero-go",
+      "zone": "other",
+      "imports": []
+    },
+    {
+      "path": "engine/agenttools/brief",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/agenttools/contract",
+        "engine/agenttools/related",
+        "engine/agenttools/resolve",
+        "engine/memory",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/agenttools/contract",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/agenttools/explain",
+      "zone": "engine",
+      "imports": [
+        "engine/agenttools/contract",
+        "engine/agenttools/resolve",
+        "engine/agenttools/shape",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/agenttools/related",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/agenttools/contract",
+        "engine/agenttools/resolve",
+        "engine/agenttools/shape",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/agenttools/resolve",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/query",
+        "engine/search"
+      ]
+    },
+    {
+      "path": "engine/agenttools/risk",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/agenttools/contract",
+        "engine/agenttools/resolve",
+        "engine/agenttools/shape",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/agenttools/shape",
+      "zone": "engine",
+      "imports": [
+        "core/model",
+        "engine/agenttools/contract",
+        "engine/agenttools/resolve",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/analysis",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/analysis/contracts",
+        "engine/analysis/githistory",
+        "engine/analysis/interproc",
+        "engine/analysis/interproctaint",
+        "engine/analysis/intraproctaint",
+        "engine/analysis/pdg",
+        "engine/analysis/taint",
+        "engine/community",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/analysis/contracts",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/analysis/githistory",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/analysis/interproc",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/analysis/interproctaint",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/analysis/interproc",
+        "engine/analysis/taint",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/analysis/intraproctaint",
+      "zone": "engine",
+      "imports": [
+        "core/model",
+        "engine/analysis/taint"
+      ]
+    },
+    {
+      "path": "engine/analysis/pdg",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/analysis/taint",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/query",
+        "internal/rootfile"
+      ]
+    },
+    {
+      "path": "engine/cap",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/community",
+      "zone": "engine",
+      "imports": [
+        "core/community",
+        "core/graphstore",
+        "core/model"
+      ]
+    },
+    {
+      "path": "engine/conformance",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/context",
+      "zone": "engine",
+      "imports": [
+        "engine/query",
+        "engine/search"
+      ]
+    },
+    {
+      "path": "engine/diagnostic",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/distill",
+      "zone": "engine",
+      "imports": [
+        "engine/ledger"
+      ]
+    },
+    {
+      "path": "engine/edit",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/analysis",
+        "engine/diagnostic",
+        "engine/ingest"
+      ]
+    },
+    {
+      "path": "engine/embed",
+      "zone": "engine",
+      "imports": [
+        "core/model"
+      ]
+    },
+    {
+      "path": "engine/embed/ollama",
+      "zone": "engine",
+      "imports": [
+        "engine/embed"
+      ]
+    },
+    {
+      "path": "engine/ingest",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "core/parse",
+        "core/profile",
+        "engine/analysis/intraproctaint",
+        "engine/analysis/taint",
+        "engine/link",
+        "engine/observe",
+        "engine/trust",
+        "engine/typeresolve",
+        "internal/freshness",
+        "internal/gitignore",
+        "internal/rootfile"
+      ]
+    },
+    {
+      "path": "engine/ledger",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/link",
+      "zone": "engine",
+      "imports": [
+        "core/model",
+        "core/parse"
+      ]
+    },
+    {
+      "path": "engine/memory",
+      "zone": "engine",
+      "imports": [
+        "engine/ledger"
+      ]
+    },
+    {
+      "path": "engine/meter",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/observe",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/overlay",
+      "zone": "engine",
+      "imports": [
+        "core/model",
+        "core/parse"
+      ]
+    },
+    {
+      "path": "engine/price",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/query",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model"
+      ]
+    },
+    {
+      "path": "engine/query/compound",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/review",
+      "zone": "engine",
+      "imports": [
+        "core/model",
+        "engine/analysis"
+      ]
+    },
+    {
+      "path": "engine/scenario",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/agenttools/brief",
+        "engine/agenttools/contract",
+        "engine/agenttools/explain",
+        "engine/agenttools/related",
+        "engine/agenttools/resolve",
+        "engine/agenttools/risk",
+        "engine/analysis",
+        "engine/diagnostic",
+        "engine/query"
+      ]
+    },
+    {
+      "path": "engine/scorecard",
+      "zone": "engine",
+      "imports": []
+    },
+    {
+      "path": "engine/search",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/embed"
+      ]
+    },
+    {
+      "path": "engine/skillgen",
+      "zone": "engine",
+      "imports": [
+        "engine/ledger"
+      ]
+    },
+    {
+      "path": "engine/trust",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/link",
+        "engine/typeresolve",
+        "internal/freshness"
+      ]
+    },
+    {
+      "path": "engine/typeresolve",
+      "zone": "engine",
+      "imports": [
+        "core/model"
+      ]
+    },
+    {
+      "path": "engine/watch",
+      "zone": "engine",
+      "imports": [
+        "engine/ingest"
+      ]
+    },
+    {
+      "path": "engine/wiki",
+      "zone": "engine",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/community"
+      ]
+    },
+    {
+      "path": "extensions/github-action/validate",
+      "zone": "other",
+      "imports": []
+    },
+    {
+      "path": "internal/audit",
+      "zone": "internal",
+      "imports": [
+        "internal/canary",
+        "internal/cgoconformance"
+      ]
+    },
+    {
+      "path": "internal/bench",
+      "zone": "internal",
+      "imports": [
+        "core/graphstore",
+        "core/parse",
+        "core/profile",
+        "engine/ingest",
+        "engine/query",
+        "engine/search",
+        "internal/release",
+        "surfaces/client"
+      ]
+    },
+    {
+      "path": "internal/canary",
+      "zone": "internal",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "engine/query",
+        "engine/search",
+        "surfaces/cli",
+        "surfaces/client"
+      ]
+    },
+    {
+      "path": "internal/cgoconformance",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/corpus",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/coverage",
+      "zone": "internal",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "core/parse",
+        "engine/analysis",
+        "engine/query",
+        "surfaces/mcp"
+      ]
+    },
+    {
+      "path": "internal/doctor",
+      "zone": "internal",
+      "imports": [
+        "internal/ingestlock",
+        "internal/releaseinfo"
+      ]
+    },
+    {
+      "path": "internal/eval",
+      "zone": "internal",
+      "imports": [
+        "engine/query"
+      ]
+    },
+    {
+      "path": "internal/evalreport",
+      "zone": "internal",
+      "imports": [
+        "engine/scorecard"
+      ]
+    },
+    {
+      "path": "internal/evidence",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/freshness",
+      "zone": "internal",
+      "imports": [
+        "core/graphstore",
+        "internal/gitinfo"
+      ]
+    },
+    {
+      "path": "internal/freshness/probe",
+      "zone": "internal",
+      "imports": [
+        "core/graphstore",
+        "core/parse",
+        "engine/ingest",
+        "internal/freshness",
+        "internal/gitinfo",
+        "internal/ingestlock",
+        "internal/state"
+      ]
+    },
+    {
+      "path": "internal/gitignore",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/gitinfo",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/ingestlock",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/layerguard",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/ledgeraudit",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/mcpconfig",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/parity",
+      "zone": "internal",
+      "imports": [
+        "core/graphstore",
+        "internal/corpus",
+        "internal/ingestlock",
+        "internal/parityreport"
+      ]
+    },
+    {
+      "path": "internal/parityreport",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/release",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/releaseinfo",
+      "zone": "internal",
+      "imports": [
+        "internal/version"
+      ]
+    },
+    {
+      "path": "internal/rootfile",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/state",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/testgate",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/version",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "internal/workspace",
+      "zone": "internal",
+      "imports": []
+    },
+    {
+      "path": "surfaces",
+      "zone": "surfaces",
+      "imports": []
+    },
+    {
+      "path": "surfaces/cli",
+      "zone": "surfaces",
+      "imports": [
+        "engine/ledger",
+        "engine/price",
+        "surfaces/client"
+      ]
+    },
+    {
+      "path": "surfaces/client",
+      "zone": "surfaces",
+      "imports": [
+        "core/graphstore",
+        "core/model",
+        "core/parse",
+        "engine/agenttools/brief",
+        "engine/agenttools/contract",
+        "engine/agenttools/explain",
+        "engine/agenttools/related",
+        "engine/agenttools/resolve",
+        "engine/agenttools/risk",
+        "engine/analysis",
+        "engine/diagnostic",
+        "engine/distill",
+        "engine/edit",
+        "engine/ingest",
+        "engine/ledger",
+        "engine/link",
+        "engine/memory",
+        "engine/query",
+        "engine/query/compound",
+        "engine/review",
+        "engine/search",
+        "engine/skillgen",
+        "engine/trust",
+        "engine/typeresolve",
+        "internal/freshness",
+        "internal/freshness/probe",
+        "internal/releaseinfo",
+        "internal/state",
+        "surfaces/forge"
+      ]
+    },
+    {
+      "path": "surfaces/daemon",
+      "zone": "surfaces",
+      "imports": [
+        "engine/query",
+        "engine/search",
+        "engine/trust",
+        "surfaces/client"
+      ]
+    },
+    {
+      "path": "surfaces/forge",
+      "zone": "surfaces",
+      "imports": [
+        "core/model",
+        "engine/analysis"
+      ]
+    },
+    {
+      "path": "surfaces/guard",
+      "zone": "surfaces",
+      "imports": []
+    },
+    {
+      "path": "surfaces/http",
+      "zone": "surfaces",
+      "imports": [
+        "core/graphstore",
+        "engine/observe",
+        "engine/query",
+        "engine/wiki",
+        "surfaces/client",
+        "surfaces/http/webui",
+        "surfaces/mcp"
+      ]
+    },
+    {
+      "path": "surfaces/http/webui",
+      "zone": "surfaces",
+      "imports": []
+    },
+    {
+      "path": "surfaces/mcp",
+      "zone": "surfaces",
+      "imports": [
+        "engine/query",
+        "engine/search",
+        "engine/trust",
+        "surfaces/client",
+        "surfaces/guard"
+      ]
+    },
+    {
+      "path": "surfaces/tui",
+      "zone": "surfaces",
+      "imports": [
+        "surfaces/client"
+      ]
+    }
+  ],
+  "zone_edges": [
+    {
+      "from": "cmd",
+      "to": "cmd",
+      "count": 1
+    },
+    {
+      "from": "cmd",
+      "to": "core",
+      "count": 9
+    },
+    {
+      "from": "cmd",
+      "to": "engine",
+      "count": 31
+    },
+    {
+      "from": "cmd",
+      "to": "internal",
+      "count": 35
+    },
+    {
+      "from": "cmd",
+      "to": "surfaces",
+      "count": 10
+    },
+    {
+      "from": "core",
+      "to": "core",
+      "count": 3
+    },
+    {
+      "from": "engine",
+      "to": "core",
+      "count": 52
+    },
+    {
+      "from": "engine",
+      "to": "engine",
+      "count": 71
+    },
+    {
+      "from": "engine",
+      "to": "internal",
+      "count": 5
+    },
+    {
+      "from": "internal",
+      "to": "core",
+      "count": 12
+    },
+    {
+      "from": "internal",
+      "to": "engine",
+      "count": 10
+    },
+    {
+      "from": "internal",
+      "to": "internal",
+      "count": 14
+    },
+    {
+      "from": "internal",
+      "to": "surfaces",
+      "count": 4
+    },
+    {
+      "from": "surfaces",
+      "to": "core",
+      "count": 5
+    },
+    {
+      "from": "surfaces",
+      "to": "engine",
+      "count": 33
+    },
+    {
+      "from": "surfaces",
+      "to": "internal",
+      "count": 4
+    },
+    {
+      "from": "surfaces",
+      "to": "surfaces",
+      "count": 9
+    }
+  ]
+}

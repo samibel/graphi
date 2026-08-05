@@ -1,0 +1,1333 @@
+{
+  "maximal": [
+    {
+      "description": "structural query: callers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "callers"
+    },
+    {
+      "description": "structural query: callees",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "callees"
+    },
+    {
+      "description": "structural query: references",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "references"
+    },
+    {
+      "description": "structural query: definition",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "definition"
+    },
+    {
+      "description": "structural query: neighborhood",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "hop depth (clamped to MaxNeighborhoodDepth=5)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "neighborhood"
+    },
+    {
+      "description": "[labs] structural query: implementers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "implementers"
+    },
+    {
+      "description": "[labs] structural query: implements",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "implements"
+    },
+    {
+      "description": "[labs] structural query: overrides",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "overrides"
+    },
+    {
+      "description": "[labs] structural query: subtypes",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "subtypes"
+    },
+    {
+      "description": "[labs] structural query: supertypes",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "supertypes"
+    },
+    {
+      "description": "lexical and symbol search over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "search query (symbol token or free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "search"
+    },
+    {
+      "description": "[labs] optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "semantic search query (free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "search_semantic"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] structural AST pattern search (SW-082): match nodes by kind/name/parent_kind; returns node identity + parent context only, never a file body",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "maximum number of matches (applied after the canonical sort)",
+            "type": "integer"
+          },
+          "pattern": {
+            "description": "JSON AstPattern, e.g. {\"kind\":\"function\",\"name\":{\"regex\":\"^handle_\"}}",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "type": "object"
+      },
+      "name": "search_ast"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] clone-group detection (SW-083): reports exact/renamed/structural clone groups derived from the AST edge sets; deterministic and bounded by max_groups",
+      "inputSchema": {
+        "properties": {
+          "config": {
+            "description": "optional JSON CloneConfig (threshold, max_groups, clone_kinds, min_edges); empty uses engine defaults",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "find_clones"
+    },
+    {
+      "description": "[labs] token-savings ledger readout: per-call / per-session / cumulative USD with anti-gaming cap flags",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "savings"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "stable impact analysis: traverse forward dependencies or reverse dependents/blast radius",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "reverse (default blast radius) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "impact"
+    },
+    {
+      "description": "[labs] run a named graph analyzer (e.g. impact forward/reverse blast-radius reachability) over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "analyzer": {
+            "description": "analyzer name (e.g. impact)",
+            "type": "string"
+          },
+          "direction": {
+            "description": "traversal direction for directional analyzers: reverse (dependents/blast radius — the default) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "analyzer",
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "analyze"
+    },
+    {
+      "description": "[labs] flow-sensitive taint analysis: finds source-to-sink data-flow paths through the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "traversal direction: reverse (dependents/blast radius — the default) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "analyze_taint"
+    },
+    {
+      "description": "[labs] program dependence graph: computes data-dependence and control-dependence edges via reaching-definitions and post-dominance",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "analyze_pdg"
+    },
+    {
+      "description": "[labs] interprocedural analysis: Sharir-Pnueli fixpoint solver that computes procedure summaries over the call graph",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "analyze_interproc"
+    },
+    {
+      "description": "[labs] contract drift detection: finds producer/consumer contracts and detects structural drift between linked API surfaces",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "analyze_contracts"
+    },
+    {
+      "description": "[labs] git-history signal analysis: computes churn scores, bus-factor risks, and co-change groups from commit history",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "analyze_githistory"
+    },
+    {
+      "description": "[labs] risk-scored PR diff (SW-039): maps changed nodes onto the graph and combines EP-004 impact with EP-005 taint signals into a deterministic, versioned per-region risk record. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      },
+      "name": "analyze_pr_risk"
+    },
+    {
+      "description": "[labs] hub/bridge/surprise graph signals on PR-changed code (SW-040): annotates each changed node with hub (high fan-in/out over a configurable threshold), bridge (articulation point / cut-vertex between modules), and surprise (rarely-modified or unexpectedly-coupled region) signals. Consumes EP-004 metrics + EP-005 PDG/git-history; never recomputes centrality. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      },
+      "name": "analyze_pr_signals"
+    },
+    {
+      "description": "[labs] deterministic, no-LLM reviewer questions from graph findings on PR-changed code (SW-041): applies a fixed rule/template set to the consumed SW-039 risk scores and SW-040 hub/bridge/surprise signals to emit targeted reviewer questions. Each question carries a non-empty evidence reference to the triggering node/edge/signal; identical input yields byte-identical output. Consumes the two sibling reports; never recomputes scoring or signals. Local-first: diff is a unified-diff string or simple ref form; NO LLM, NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      },
+      "name": "analyze_pr_questions"
+    },
+    {
+      "description": "[labs] preview a graph-aware refactor: resolve the target via the query layer and return the EP-004 impact set (blast radius + planned edits) WITHOUT mutating",
+      "inputSchema": {
+        "properties": {
+          "destination_file": {
+            "description": "destination file (move only)",
+            "type": "string"
+          },
+          "kind": {
+            "description": "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)",
+            "type": "string"
+          },
+          "new_name": {
+            "description": "replacement spelling",
+            "type": "string"
+          },
+          "old_name": {
+            "description": "current spelling of the symbol",
+            "type": "string"
+          },
+          "target_symbol": {
+            "description": "resolved node id of the symbol to refactor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "target_symbol",
+          "old_name",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "name": "refactor_preview"
+    },
+    {
+      "description": "[labs] apply a graph-aware refactor through the shared atomic edit saga and return an auditable change record (operation, target, before/after, actor, timestamp, undo token)",
+      "inputSchema": {
+        "properties": {
+          "actor": {
+            "description": "request identity recorded on the change record (default \"mcp\")",
+            "type": "string"
+          },
+          "destination_file": {
+            "description": "destination file (move only)",
+            "type": "string"
+          },
+          "kind": {
+            "description": "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)",
+            "type": "string"
+          },
+          "new_name": {
+            "description": "replacement spelling",
+            "type": "string"
+          },
+          "old_name": {
+            "description": "current spelling of the symbol",
+            "type": "string"
+          },
+          "target_symbol": {
+            "description": "resolved node id of the symbol to refactor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "target_symbol",
+          "old_name",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "name": "refactor"
+    },
+    {
+      "description": "[labs] reverse a previously applied edit by its undo token, restoring the prior graph + source and recording the reversal as its own auditable change record",
+      "inputSchema": {
+        "properties": {
+          "actor": {
+            "description": "request identity recorded on the reversal record (default \"mcp\")",
+            "type": "string"
+          },
+          "undo_token": {
+            "description": "the undo token returned by a prior refactor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "undo_token"
+        ],
+        "type": "object"
+      },
+      "name": "undo"
+    },
+    {
+      "description": "[labs] render the assembled PR-review findings (risk + hub/bridge/surprise signals + reviewer questions) into one sticky Markdown comment and evaluate the optional risk-threshold merge gate; offline dry-run by default",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first unified-diff or simple ref string (required)",
+            "type": "string"
+          },
+          "gate_enabled": {
+            "description": "enable the optional risk-threshold merge gate",
+            "type": "boolean"
+          },
+          "gate_threshold": {
+            "description": "risk threshold in fixed-point units (1/1000) the worst region must EXCEED to BLOCK (default 700)",
+            "type": "integer"
+          },
+          "pr": {
+            "description": "PR reference rendered in the comment header (e.g. owner/repo#42)",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: summary (default; safe for public comments) | full",
+            "type": "string"
+          },
+          "publish": {
+            "description": "upsert the sticky comment through the host (default false: offline dry-run, render+gate only)",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      },
+      "name": "pr_comment"
+    },
+    {
+      "description": "[labs] compound / Cypher-style graph query composing traversals, filters, and projections in one request (SEED/HOP/WHERE/MAXDEPTH text form)",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "description": "compound query text: SEED <id> then HOP <in|out|both> [<kind>] lines, optional WHERE KIND <kind>",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "compound"
+    },
+    {
+      "description": "[labs] scoped agent memory: store, recall, forget, list, or export notes in scopes and notebooks with provenance",
+      "inputSchema": {
+        "properties": {
+          "confidence": {
+            "description": "confirmed | derived | heuristic",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "optional file:line citation",
+            "type": "string"
+          },
+          "export_to_path": {
+            "description": "REJECTED (SAFE-01): the transport never writes server-side files; export returns the payload in the response's `export` field — omit this argument",
+            "type": "string"
+          },
+          "kind": {
+            "description": "entry kind for store: architecture | command | convention | decision | risk | dependency | workflow",
+            "type": "string"
+          },
+          "limit": {
+            "description": "max entries for list",
+            "type": "integer"
+          },
+          "mem_id": {
+            "description": "entry id for forget or overwrite",
+            "type": "string"
+          },
+          "notebook": {
+            "description": "memory notebook",
+            "type": "string"
+          },
+          "op": {
+            "description": "operation: store | recall | forget | list | export",
+            "type": "string"
+          },
+          "payload": {
+            "description": "payload for store",
+            "type": "string"
+          },
+          "scope": {
+            "description": "memory scope",
+            "type": "string"
+          },
+          "source": {
+            "description": "provenance source for store",
+            "type": "string"
+          },
+          "tags": {
+            "description": "tags for store",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "op"
+        ],
+        "type": "object"
+      },
+      "name": "memory"
+    },
+    {
+      "description": "[labs] deterministic, non-LLM session distillation: compress a session trace into a reusable artifact",
+      "inputSchema": {
+        "properties": {
+          "decisions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "file_references": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "open_questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "session_id": {
+            "description": "session identifier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "distill"
+    },
+    {
+      "description": "[labs] deterministic, non-LLM skill generation: turn a repeatable procedure into a Markdown skill artifact",
+      "inputSchema": {
+        "properties": {
+          "description": {
+            "description": "skill description",
+            "type": "string"
+          },
+          "name": {
+            "description": "skill name",
+            "type": "string"
+          },
+          "trigger": {
+            "description": "skill trigger phrase",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "trigger"
+        ],
+        "type": "object"
+      },
+      "name": "skillgen"
+    },
+    {
+      "description": "[labs] list open pull requests of the configured repo with read-only forge metadata (number, title, author, base/head refs, head SHA, changed files, additions/deletions, mergeable). Discovery/metadata ONLY — no graph scoring, no comment posting. The forge enumeration is the suite's only outbound path.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "list_prs"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] single-pass graph-derived PR triage: enumerate open PRs, then rank them by blast radius, touched high-centrality nodes, ownership concentration, churn, and test-coverage-of-touched-code, folded into a fixed-integer composite. Deterministic total order (composite DESC, PR number ASC). Scoring is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "triage_prs"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] inter-PR conflict detection: enumerate open PRs, then report which PR PAIRS collide over the local graph — textual overlap (overlapping changed line ranges in the same file), shared file/symbol/high-centrality node, and the asymmetric contract-dependency case (one PR mutates a contract that another PR's changed entities depend on via graph edges, flagged even with NO textual overlap). Deterministic pairwise report (pairs by ascending PR number, canonical within-pair entity order). Detection is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "conflicts_prs"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] suggest reviewers for a change: resolve the touched symbol/file set from a local-first PR diff (or line-oriented refs), then rank candidate reviewers from graph ownership + recency-decayed churn over the touched files plus affected-subgraph proximity (callers/callees/contract neighbors) of the touched symbols. Each candidate carries a transparent per-signal breakdown (ownership/recency-decayed-churn/subgraph-proximity) with honest file-vs-symbol granularity labels. Deterministic total order (composite DESC, reviewer identity ASC). Zero-egress pass over the local graph + git history.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "unified diff or line-oriented refs (path:name | path#Lline | node id) of the change",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "suggest_reviewers"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] compare two branches at the GRAPH level: given two branch refs (states materialized above the surface boundary), report the structured diff of entities/symbols/contracts added/removed/changed plus edges added/removed and entities moved across files — keyed by stable canonical graph identity (NodeId), not line ranges. Detects signature/contract changes (a contract node whose dependency surface changed) and correlates moves by path-independent symbol identity. Deterministic per-group order. Zero-egress pure local set-diff; the engine never resolves a git ref.",
+      "inputSchema": {
+        "properties": {
+          "base": {
+            "description": "base branch ref",
+            "type": "string"
+          },
+          "head": {
+            "description": "head branch ref",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "compare_branches"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] critique an EXISTING PR review against the knowledge graph: replay the single-PR risk/blast-radius/centrality/taint signals as a ground-truth oracle over the PR's touched set, then emit a structured, graph-evidence-grounded critique with three item types — gap (a high-risk touched entity the review never mentioned: blast-radius count + centrality + contributing edge kinds + taint provenance), over_flag (a review-flagged entity the graph shows is a low-centrality leaf below the risk threshold), and unsupported_claim (a review comment asserting impact to an anchorable target with NO connecting graph edge). Comment→entity matching is DETERMINISTIC anchoring (file:line/symbol → NodeId); unanchorable comments/claims are counted in an honest unanchored tally, never guessed. NO LLM prose. Deterministic total order (type → entity NodeId → review-anchor). The review is fetched at the surface boundary (or supplied inline); the critique itself is a zero-egress pass over the local graph.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "the PR's touched set: unified diff or line-oriented refs (path:name | path#Lline | node id)",
+            "type": "string"
+          },
+          "pr_number": {
+            "description": "PR number to fetch the existing review for (when no inline review is supplied)",
+            "type": "integer"
+          },
+          "review": {
+            "description": "inline existing-review JSON ({verdict, comments:[{id,path,line,symbol,claim_targets}]}); takes precedence over the surface fetch",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "critique_review"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "explain_symbol: return a compact, cited symbol-identity summary (qualified name, kind, declaring file:line, direct callers/callees). Purpose: answer 'what is this symbol?' in one call. When to use: the agent has a symbol reference and needs identity + immediate neighborhood without reading source. When NOT to use: for broad 'what should I read first?' questions (use related_files) or risk scoring (use change_risk). Input shape: a single symbol reference (qualified id, file:line, or bare name). Read-only: true. Partial results possible: neighbor lists may truncate.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol reference: qualified id, file:line anchor, or bare name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "explain_symbol"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "related_files: return a deterministically ranked 'read these first' file list for a symbol, file, or diff anchor. Purpose: answer 'what should I read first?' in one call. When to use: the agent needs a scoped, evidence-backed file list before editing or reviewing. When NOT to use: for a single symbol's identity (use explain_symbol) or for risk scoring (use change_risk). Input shape: a single anchor plus optional direction (dependencies | dependents | both). Read-only: true. Partial results possible: ranked file list may truncate.",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "dependencies | dependents | both (default)",
+            "type": "string"
+          },
+          "target": {
+            "description": "anchor: symbol id, file path, or diff line-oriented refs",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "name": "related_files"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "change_risk: return an evidence-based low/medium/high/unknown risk assessment for a symbol, file, or diff target. Purpose: answer 'how risky is it to touch this?' in one call. When to use: before proposing or reviewing a change, to gauge blast radius and coverage. When NOT to use: when you only need a file list (use related_files) or a symbol summary (use explain_symbol). Input shape: a target symbol/file or a local-first diff. Read-only: true. Partial results possible: evidence may be truncated, and the tool returns unknown rather than guessing.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first unified diff or line-oriented refs (alternative to target)",
+            "type": "string"
+          },
+          "target": {
+            "description": "symbol id or file path to evaluate",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "change_risk"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "agent_brief: return a bounded, cited task-start context packet (project identity, start-here files, key symbols, known facts, hotspots, suggested next MCP calls) in Markdown with embedded canonical JSON. Purpose: give an agent a scoped, cited starting context without reading source blindly. When to use: at the beginning of a task or when entering a new subsystem. When NOT to use: when you already have a specific symbol to explain (use explain_symbol) or a file list to read (use related_files). Input shape: optional topic (symbol, path, or subsystem). Read-only: true. Partial results possible: sections may be empty if underlying analyzers are not yet wired.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "optional topic: symbol id, file path, or subsystem name",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "agent_brief"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] graph_health: return the canonical trust-report document for the repository or a target scope — snapshot state (CURRENT|STALE|INCOMPLETE|UNAVAILABLE), freshness facts, coverage, edge confidence tiers (confirmed/derived/heuristic), resolution gaps, external boundaries, and an optional policy verdict. Purpose: agent preflight — answer 'how far may I trust graph evidence for the planned action?' before acting on query results. When to use: before a risky task, to decide whether to use, supplement, or reject graph evidence; with a policy (exploratory-v1 | review-v1 | automated-change-v1) for a reproducible fail-closed verdict. When NOT to use: for rebuild/freshness advice alone (use `graphi status`) or to run the query itself. Input shape: optional target (symbol | repository-relative path | package), optional policy, optional bounded details. Read-only: true — never indexes, never starts a daemon, no network; missing evidence reads UNVERIFIED/UNAVAILABLE, never PASS. Partial results possible: details lists are bounded by limit.",
+      "inputSchema": {
+        "properties": {
+          "details": {
+            "description": "include bounded supporting evidence",
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "maximum detail items",
+            "type": "integer"
+          },
+          "policy": {
+            "description": "optional trust policy",
+            "enum": [
+              "exploratory-v1",
+              "review-v1",
+              "automated-change-v1"
+            ],
+            "type": "string"
+          },
+          "target": {
+            "description": "optional symbol id, qualified name, repository-relative path or package",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "graph_health"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "[labs] strict_query: run a structural query and WITHHOLD every result edge below a minimum confidence tier, reporting how many were withheld. Purpose: let an agent act only on evidence at or above a chosen strength, without having to filter and re-tally results itself. When to use: before a change or a definitive claim, when heuristic edges would be unsafe to treat as facts — pair it with graph_health for the repository-level verdict. When NOT to use: for exploration or recall (the Stable query tools return everything, which is what you want there). Input shape: operation (callers | callees | references | definition | neighborhood), symbol id, optional depth, optional minimum_tier (confirmed | derived | heuristic; default heuristic), optional policy preflight. Read-only: true — never indexes, never starts a daemon, no network. CRITICAL for interpreting the result: an EMPTY result with excluded_edges > 0 is filtered, NOT proven empty — the envelope says so in `limitations`, and reading it as \"no such relationships\" is a false negative. A blocked policy preflight returns an error and runs no query.",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "neighborhood hop depth (ignored by other operations)",
+            "type": "integer"
+          },
+          "minimum_tier": {
+            "description": "lowest confidence tier admitted into the result (default heuristic)",
+            "enum": [
+              "confirmed",
+              "derived",
+              "heuristic"
+            ],
+            "type": "string"
+          },
+          "operation": {
+            "description": "structural query operation to run",
+            "enum": [
+              "callers",
+              "callees",
+              "references",
+              "definition",
+              "neighborhood"
+            ],
+            "type": "string"
+          },
+          "policy": {
+            "description": "optional fail-closed trust preflight; a non-PASS/WARN verdict blocks the query",
+            "enum": [
+              "exploratory-v1",
+              "review-v1",
+              "automated-change-v1"
+            ],
+            "type": "string"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "strict_query"
+    }
+  ],
+  "schema_version": 1,
+  "stable": [
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "structural query: callers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "callers"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "structural query: callees",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "callees"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "structural query: references",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "references"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "structural query: definition",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "definition"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "structural query: neighborhood",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "hop depth (clamped to MaxNeighborhoodDepth=5)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "neighborhood"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "lexical and symbol search over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "search query (symbol token or free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "search"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "stable impact analysis: traverse forward dependencies or reverse dependents/blast radius",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "reverse (default blast radius) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "impact"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "return a compact, cited symbol identity and immediate neighborhood",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "maximum returned items",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "qualified id, file:line anchor, or bare name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "name": "explain_symbol"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "return a deterministically ranked read-first file list around an anchor",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "dependencies | dependents | both",
+            "type": "string"
+          },
+          "limit": {
+            "description": "maximum returned files",
+            "type": "integer"
+          },
+          "target": {
+            "description": "symbol id, file path, or diff anchor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "name": "related_files"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "return an evidence-based change-risk assessment for a target or diff",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "unified diff or line-oriented refs",
+            "type": "string"
+          },
+          "limit": {
+            "description": "maximum returned items",
+            "type": "integer"
+          },
+          "target": {
+            "description": "symbol id or file path",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "change_risk"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "return a bounded, cited task-start context packet",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "optional topic: symbol, path, or subsystem",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "agent_brief"
+    }
+  ],
+  "stable_names": [
+    "agent_brief",
+    "callees",
+    "callers",
+    "change_risk",
+    "definition",
+    "explain_symbol",
+    "impact",
+    "neighborhood",
+    "references",
+    "related_files",
+    "search"
+  ]
+}
