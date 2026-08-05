@@ -295,6 +295,11 @@ func scopeResolved(s ScopeRef) bool {
 		return s.Path != ""
 	case ScopeSymbol:
 		return s.ID != ""
+	case ScopePackage:
+		// Resolved only when ResolveScope CONFIRMED the key against real
+		// package evidence; the deferred v1 shape leaves ID empty and stays
+		// unresolved, exactly as before.
+		return s.ID != ""
 	default:
 		return false
 	}
@@ -639,7 +644,26 @@ func ruleParseSkips(id, severity string, verdict Verdict) policyRule {
 					observed, ScopeParseStatusParsed,
 					"the file in the assessed scope was skipped during parsing and is absent from the evidence"))
 			}
-			return passed()
+			if f.ParseStatus == ScopeParseStatusParsed {
+				return passed()
+			}
+			// No file claim — a package scope, whose evidence is its own row.
+			// The row counts the files the parser skipped inside the package,
+			// so the SAME clause is answerable at package granularity: a
+			// nonzero count fires, a zero count on an otherwise-present row
+			// passes. Returning passed() unconditionally here (the shape
+			// before package scope existed) would have claimed "no parse skips
+			// in scope" from a row that never mentioned files — a clean
+			// reading of evidence that was never consulted.
+			if p := in.scopeFacts.Package; p.State != "" {
+				if p.SkippedFiles > 0 {
+					return fired(verdict, policyFinding(FindingParseSkippedInScope, severity, in.scope,
+						strconv.Itoa(p.SkippedFiles), "0",
+						"files in the assessed package were skipped during parsing and are absent from the evidence"))
+				}
+				return passed()
+			}
+			return skipped()
 		}
 		if !repoFactsUsable(in) {
 			return skipped()

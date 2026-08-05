@@ -9,8 +9,8 @@ import (
 	"github.com/samibel/graphi/engine/trust"
 )
 
-// This file is the sealed policy matrix: 20 fixture situations × the three
-// built-in policies = 60 cases, each pinning the exact verdict and the exact
+// This file is the sealed policy matrix: 28 fixture situations × the three
+// built-in policies = 84 cases, each pinning the exact verdict and the exact
 // canonically-sorted finding-code list, written from contract doc §3 (and the
 // decisions of record in policy.go where the contract is silent) before the
 // implementation was matched to it. Fixtures are pure Snapshot/State/ScopeRef
@@ -52,7 +52,7 @@ type sealedCase struct {
 	expect     map[string]want // keyed by policy name
 }
 
-// sealedMatrix builds the 27 fixture situations — 81 sealed policy cases
+// sealedMatrix builds the 28 fixture situations — 84 sealed policy cases
 // across the three built-ins, which is the PRD §36.2 "≥ 80" row. SEALED — a
 // change here is a policy version bump (contract §3 versioning rule).
 func sealedMatrix(t *testing.T) []sealedCase {
@@ -408,24 +408,44 @@ func sealedMatrix(t *testing.T) []sealedCase {
 			},
 		},
 		{
-			// Package scope — deliberately deferred in v1 (contract §5) — and
-			// the sharper distinction case 26 does not show. A file scope with
-			// a path RESOLVES and merely lacks scope evidence, so exploratory
-			// still WARNs its way to a usable answer. A package scope does not
-			// resolve at all (scopeResolved has no ScopePackage arm), so it is
-			// UNSUPPORTED rather than evidence-poor, and ALL THREE policies
-			// abstain — exploratory included.
+			// An UNCONFIRMED package scope: the shape ResolveScope produces
+			// when no package lookup was supplied, or when the lookup did not
+			// know the key. ID stays empty, so the scope is unresolved and ALL
+			// THREE policies abstain — exploratory included.
 			//
-			// That asymmetry is the point: an unsupported scope kind must not
-			// degrade into "here are the repository facts instead". Sealing
-			// exploratory at UNVERIFIED here is what stops a future
-			// convenience change from quietly answering package questions with
-			// repository-wide evidence.
-			name: "27 package scope is unsupported in v1, not merely evidence-poor",
+			// This is the fail-closed default of package assessment, and the
+			// reason it is safe to have added: consulting package evidence can
+			// only ever turn "unknown" into "confirmed". A scope that was never
+			// confirmed must not degrade into "here are the repository facts
+			// instead", and sealing exploratory at UNVERIFIED is what stops a
+			// later convenience change from doing exactly that.
+			name: "27 unconfirmed package scope abstains in every policy",
 			snap: snapPure(), st: trust.StateCurrent,
-			scope: trust.ScopeRef{Kind: trust.ScopePackage, ID: "node-pkg-1", Package: "a"},
+			scope: trust.ScopeRef{Kind: trust.ScopePackage, Package: "a"},
 			expect: map[string]want{
 				trust.PolicyNameExploratory:     {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
+				trust.PolicyNameReview:          {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
+				trust.PolicyNameAutomatedChange: {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
+			},
+		},
+		{
+			// A CONFIRMED package scope whose evidence row was not supplied —
+			// the sealed matrix evaluates factlessly, so this is the
+			// evidence-poor case. It must grade exactly like the confirmed file
+			// scope of case 26: resolved, but with nothing to judge, so
+			// exploratory WARNs its way to a usable answer while review and
+			// automated change abstain.
+			//
+			// Together with case 27 this pins the whole safety story of package
+			// assessment in two rows: unconfirmed abstains everywhere,
+			// confirmed-without-evidence is merely evidence-poor. The
+			// with-evidence behaviour is pinned in package_scope_test.go, which
+			// can supply a row.
+			name: "28 confirmed package scope without evidence is evidence-poor, not unsupported",
+			snap: snapPure(), st: trust.StateCurrent,
+			scope: trust.ScopeRef{Kind: trust.ScopePackage, ID: "a", Package: "a"},
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictWarn, []string{trust.FindingScopeEvidenceUnavailable}},
 				trust.PolicyNameReview:          {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
 				trust.PolicyNameAutomatedChange: {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
 			},

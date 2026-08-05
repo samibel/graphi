@@ -99,27 +99,46 @@ type ScopeFacts struct {
 	Package   ScopePackageFacts `json:"package"`
 }
 
-// wellFormed reports whether the facts are usable evidence: Available, a
-// file claim inside the closed parse-status set (an "available" claim without
-// a recognizable parse status witnesses nothing — a real row always carries
-// one), and a package claim that is either absent ("") or inside the closed
-// state set. Anything else is not evidence and reads exactly like absent
+// wellFormed reports whether the facts are usable evidence: Available, AT
+// LEAST ONE claim present, and every present claim inside its closed
+// vocabulary. Anything else is not evidence and reads exactly like absent
 // facts (fail closed): SCOPE_EVIDENCE_UNAVAILABLE fires and no scope clause
 // runs — out-of-vocabulary facts can never improve a verdict or fabricate a
 // judged one.
+//
+// "At least one claim" replaced v1's "a file claim is mandatory" when package
+// scope became assessable. A package scope has no single file, so demanding a
+// file claim would have rejected the package row that IS that scope's
+// evidence, leaving the feature unreachable. The two guarantees that carried
+// the strictness are kept intact and are what matter: an Available claim with
+// NO claims at all is still not evidence, and an out-of-vocabulary value in
+// either claim is still not evidence. What a missing claim can never do is
+// let a rule PASS a check it cannot support — the rules gate on the presence
+// of the specific claim they judge (scopeCounterOutcome, scopeDegradedOutcome,
+// ruleParseSkips), so an absent claim makes its checks silent, not clean.
 func (sf ScopeFacts) wellFormed() bool {
 	if !sf.Available {
 		return false
 	}
-	switch sf.File.ParseStatus {
-	case ScopeParseStatusParsed, ScopeParseStatusSkipped:
-	default:
+	fileClaim := sf.File.ParseStatus != ""
+	packageClaim := sf.Package.State != ""
+	if !fileClaim && !packageClaim {
 		return false
 	}
-	switch sf.Package.State {
-	case "", ScopePackageStateChecked, ScopePackageStateCheckedWithErrors,
-		ScopePackageStateDegraded, ScopePackageStateSkipped:
-		return true
+	if fileClaim {
+		switch sf.File.ParseStatus {
+		case ScopeParseStatusParsed, ScopeParseStatusSkipped:
+		default:
+			return false
+		}
 	}
-	return false
+	if packageClaim {
+		switch sf.Package.State {
+		case ScopePackageStateChecked, ScopePackageStateCheckedWithErrors,
+			ScopePackageStateDegraded, ScopePackageStateSkipped:
+		default:
+			return false
+		}
+	}
+	return true
 }

@@ -26,37 +26,19 @@ file:
 
 ## [Unreleased]
 
-### Added (labs)
+## [0.9.0] - 2026-08-05
 
-- **`strict_query` MCP tool** — the strict-query wrapper reaches MCP agents,
-  which is where PRD v1.0 aims it: `graphi query-strict` shipped in 0.8.0 as a
-  CLI verb only, so the primary persona could not use it. Runs one of the Stable
-  structural queries unchanged, then withholds result edges below
-  `minimum_tier` and reports the withheld count. A result emptied by the filter
-  always carries an explicit limitation — filtered emptiness never reads as
-  proven emptiness. Optional fail-closed `policy` preflight blocks before the
-  query runs. Labs-only; the CLI verb keeps its `query-strict` spelling.
-- **Per-language capability matrix** in the trust-report document (field
-  `capabilities`, additive under `schema_version: 1`): each language graded
-  `typed-confirmed`, `cross-file-heuristic`, `intra-file-only` or `parse-only`.
-  Derived at read time from the live type-checker, resolver and parser
-  registries rather than a maintained table, and drift-tested against them.
+**The P1 trust surface reconciled against PRD v1.0.** 0.8.0 shipped that surface
+built to the July P1 PRD; a second PRD registered on 2026-08-05 fixes three of its
+wire values differently, and this release follows it. The breaking changes below
+are confined to **Labs** — `graphi trust-report`, `graphi query-strict` and the
+`graph_health` MCP tool. **Stable-12 is untouched:** the twelve frozen operations,
+their schemas, and the eleven-tool default MCP profile are byte-for-byte what
+0.8.0 served.
 
-### Changed
-
-- The CLI and MCP halves of both `query-strict`/`strict_query` and the trust
-  report now share one composition each (`surfaces/client/`), so the two
-  surfaces are byte-identical by construction rather than by review.
-
-### Fixed
-
-- **Emitted paths are now length-bounded (`trust.MaxPathLength`, 240 bytes).**
-  Snapshot sample lists were capped in count but each path was emitted verbatim,
-  so a repository could push arbitrarily long attacker-chosen text into the
-  trust snapshot — against the PRD's "nutzerkontrollierte Pfade …
-  längenbegrenzt" rule and against the ≤ 1 MB snapshot budget. Found by the new
-  privacy fixture. A truncated path carries a visible marker so it cannot be
-  mistaken for a real one.
+Read the breaking section first if you script against any Labs trust surface;
+one of the three changes (the exit-code collapse) is deliberate and lossy, and
+says so.
 
 ### Changed — BREAKING (labs)
 
@@ -91,6 +73,53 @@ All three changes are confined to **Labs** surfaces (`graphi trust-report`,
   mistyped flag now share code 2. Scripts that need to tell them apart must read
   the document — an error writes nothing to stdout, whereas FAIL and UNVERIFIED
   always emit the canonical document with its `policy.verdict`.
+
+### Added (labs)
+
+- **Package assessment.** A package target now resolves and is judged, instead
+  of reading `TARGET_NOT_FOUND` and abstaining. `graphi trust-report --target
+  util` (and `graph_health` with the same target) answers with the package's own
+  persisted evidence row — checked / checked-with-errors / degraded, its
+  confirmed-edge count and its skipped-file count — graded by the rules that
+  already existed for package state.
+
+  Resolution is confirmation-only and fail-closed: a key the evidence does not
+  know, or a sidecar that cannot be read, leaves the target unresolved exactly
+  as before. Two consequences worth knowing: the old "contains a slash" guess
+  for package-looking targets is gone, so top-level packages and the repository
+  root key `.` resolve too; and a package whose files were skipped during
+  parsing now reports `PARSE_SKIPPED_IN_SCOPE` from its own row rather than
+  reading clean.
+
+- **`strict_query` MCP tool** — the strict-query wrapper reaches MCP agents,
+  which is where PRD v1.0 aims it: `graphi query-strict` shipped in 0.8.0 as a
+  CLI verb only, so the primary persona could not use it. Runs one of the Stable
+  structural queries unchanged, then withholds result edges below
+  `minimum_tier` and reports the withheld count. A result emptied by the filter
+  always carries an explicit limitation — filtered emptiness never reads as
+  proven emptiness. Optional fail-closed `policy` preflight blocks before the
+  query runs. Labs-only; the CLI verb keeps its `query-strict` spelling.
+- **Per-language capability matrix** in the trust-report document (field
+  `capabilities`, additive under `schema_version: 1`): each language graded
+  `typed-confirmed`, `cross-file-heuristic`, `intra-file-only` or `parse-only`.
+  Derived at read time from the live type-checker, resolver and parser
+  registries rather than a maintained table, and drift-tested against them.
+
+### Changed
+
+- The CLI and MCP halves of both `query-strict`/`strict_query` and the trust
+  report now share one composition each (`surfaces/client/`), so the two
+  surfaces are byte-identical by construction rather than by review.
+
+### Fixed
+
+- **Emitted paths are now length-bounded (`trust.MaxPathLength`, 240 bytes).**
+  Snapshot sample lists were capped in count but each path was emitted verbatim,
+  so a repository could push arbitrarily long attacker-chosen text into the
+  trust snapshot — against the PRD's "nutzerkontrollierte Pfade …
+  längenbegrenzt" rule and against the ≤ 1 MB snapshot budget. Found by the new
+  privacy fixture. A truncated path carries a visible marker so it cannot be
+  mistaken for a real one.
 
 ## [0.8.0] - 2026-08-05
 

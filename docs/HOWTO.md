@@ -593,6 +593,9 @@ graphi trust-report --policy automated-change-v1 && echo safe-to-automate
 # Scope the assessment to one file or symbol:
 graphi trust-report --target internal/service/foo.go --policy review-v1
 
+# ... or a whole package (the repository root is ".")
+graphi trust-report --target internal/service --policy review-v1
+
 # Query with low-confidence edges excluded — the excluded count stays
 # visible, so filtered emptiness is never mistaken for proven emptiness:
 graphi query-strict callers -symbol pkg.MyFunc -min-tier derived
