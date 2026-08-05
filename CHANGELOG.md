@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-05
+
 ### Added (labs)
 
 - **P1 trust surface** — a persisted, generation-bound trust snapshot answers
@@ -50,6 +52,16 @@ file:
     ADR 0006 (status-vs-trust separation), and the start-before-P0-GO decision
     record. Adversarial reviews closed 17+ proven false-green/laundering holes,
     each pinned by a regression test.
+
+### Documentation
+
+- Trust surface documented across the user docs (readme, CLI reference,
+  How-To §6.8, agent-workflows `graph_health` preflight); FEATURES.md tool
+  counts corrected to the measured registry (44 maximal = 11 stable + 33 labs).
+- `docs/plan/2026-08-graphi-p1-evidence-index.md` — the P1 evidence index
+  (PRD §48 rows, GREEN only with a named artifact; evaluation rows honestly
+  OPEN) — and a `trust-surface feedback` issue template inviting first-time
+  users to answer the PRD §36.4 usability questions from real runs.
 
 ## [0.7.1] - 2026-07-29
 
