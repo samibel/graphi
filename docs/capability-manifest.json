@@ -378,6 +378,13 @@
       "note": "structural query (callers|callees|references|definition|neighborhood)"
     },
     {
+      "id": "query-strict",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P1 strict-query prototype (PRD §28 option A): runs the unchanged stable query, then excludes result edges below -min-tier and wraps the canonical result in an envelope carrying the exclusion count — filtered emptiness always carries an explicit limitation, never bare emptiness; optional fail-closed -policy preflight (FAIL/UNKNOWN blocks the query with the trust exit code); no tier is ever rewritten, stable query semantics untouched"
+    },
+    {
       "id": "rebuild",
       "category": "cli-subcommand",
       "status": "shipped",

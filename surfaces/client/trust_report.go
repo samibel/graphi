@@ -27,10 +27,13 @@ import (
 	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/internal/freshness"
 	"github.com/samibel/graphi/internal/freshness/probe"
 	"github.com/samibel/graphi/internal/releaseinfo"
+	"github.com/samibel/graphi/internal/state"
 )
 
 // trustReportJSONSchemaVersion versions the `graphi trust-report --json`
@@ -46,15 +49,18 @@ const liveGenerationKey = "index.full_ingest_generation"
 
 // trustReportDoc is the contract §2 wire document. The first twelve properties
 // mirror the frozen §2.2 field register verbatim, at the register's nesting and
-// order; `findings`, `checks_passed`, and `details` are additive v1 fields
-// (contract doc §2.3 rule 7): findings carry the explaining policy/resolver
-// observations (PRD §26 — no verdict without findings or an explicit
-// all-checks-passed list, which checks_passed provides), and details carries
-// the bounded evidence samples emitted only on explicit request (rule 8).
-// Every property is always present; empty slices encode as [], never null
-// (rules 1–2); all lists are canonically sorted before serialization (rules
-// 4–5); paths are normalized and repo-relative by snapshot construction
-// (rule 9).
+// order; `findings`, `checks_passed`, `details`, and `scope_evidence` are
+// additive v1 fields (contract doc §2.3 rule 7): findings carry the explaining
+// policy/resolver observations (PRD §26 — no verdict without findings or an
+// explicit all-checks-passed list, which checks_passed provides), details
+// carries the bounded evidence samples emitted only on explicit request
+// (rule 8), and scope_evidence carries the target scope's persisted evidence
+// row exactly as the policy judged it — always present, zero-valued with
+// available=false when no usable row backs the scope (fail closed: absence is
+// visible, never dressed up as clean facts). Every property is always present;
+// empty slices encode as [], never null (rules 1–2); all lists are canonically
+// sorted before serialization (rules 4–5); paths are normalized and
+// repo-relative by snapshot construction (rule 9).
 type trustReportDoc struct {
 	SchemaVersion   int                   `json:"schema_version"`
 	SnapshotVersion string                `json:"snapshot_version"`
@@ -71,6 +77,7 @@ type trustReportDoc struct {
 	Findings        []trust.Finding       `json:"findings"`
 	ChecksPassed    []string              `json:"checks_passed"`
 	Details         trustReportDetails    `json:"details"`
+	ScopeEvidence   trust.ScopeFacts      `json:"scope_evidence"`
 }
 
 // trustReportGeneration is the §2.2 graph_generation object. Every value is a
@@ -155,12 +162,15 @@ type trustReportDetails struct {
 	TopBoundaries []trust.Boundary     `json:"top_boundaries"`
 }
 
-// trustFacts bundles the store-derived inputs of one composition.
+// trustFacts bundles the store-derived inputs of one composition. scopeFacts
+// is the target scope's persisted evidence row (zero — absent, fail closed —
+// whenever no usable row backs the scope under the snapshot generation).
 type trustFacts struct {
 	snap       trust.Snapshot
 	state      trust.State
 	scope      trust.ScopeRef
 	resolution []trust.Finding
+	scopeFacts trust.ScopeFacts
 	generation string
 }
 
@@ -194,7 +204,7 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 		return nil, "", "", fmt.Errorf("client: trust report freshness probe: %w", err)
 	}
 
-	facts, err := readTrustFacts(ctx, f, opts.Target)
+	facts, err := readTrustFacts(ctx, f, opts)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -210,7 +220,7 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 	trust.SortFindings(findings)
 	checksPassed := []string{}
 	if policyRequested {
-		a := pol.Evaluate(facts.snap, facts.state, facts.scope, facts.resolution...)
+		a := pol.EvaluateWithScopeFacts(facts.snap, facts.state, facts.scope, facts.scopeFacts, facts.resolution...)
 		verdict = a.Verdict
 		policyRef = trustReportPolicy{Name: a.Policy.Name, Version: a.Policy.Version, Verdict: a.Verdict}
 		findings = a.Findings // canonical order; adopts the resolver findings verbatim
@@ -253,12 +263,13 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 			Ambiguous:        facts.snap.Link.Ambiguous,
 			DroppedIntents:   facts.snap.TypeResolution.DroppedIntents,
 		},
-		Boundaries:   boundaries,
-		Policy:       policyRef,
-		Limitations:  limitations,
-		Findings:     findings,
-		ChecksPassed: checksPassed,
-		Details:      detailsBlock(facts.snap, opts),
+		Boundaries:    boundaries,
+		Policy:        policyRef,
+		Limitations:   limitations,
+		Findings:      findings,
+		ChecksPassed:  checksPassed,
+		Details:       detailsBlock(facts.snap, opts),
+		ScopeEvidence: facts.scopeFacts,
 	}
 	b, err := encodeTrustReport(doc)
 	if err != nil {
@@ -269,13 +280,14 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 
 // readTrustFacts opens the durable store READ-ONLY (the same
 // OpenSQLiteReadOnly discipline the freshness probe uses — a pure observer
-// never creates or repairs state) and derives snapshot, state, and scope
-// through the existing trust read path. A repository with no store fails
-// closed to the UNAVAILABLE facts — a valid document, never an error.
-func readTrustFacts(ctx context.Context, f freshness.Report, target string) (trustFacts, error) {
+// never creates or repairs state) and derives snapshot, state, scope, and the
+// target scope's evidence row through the existing trust read path. A
+// repository with no store fails closed to the UNAVAILABLE facts — a valid
+// document, never an error.
+func readTrustFacts(ctx context.Context, f freshness.Report, opts TrustReportOptions) (trustFacts, error) {
 	facts := trustFacts{
 		state:      trust.StateUnavailable,
-		scope:      unresolvedScope(target),
+		scope:      unresolvedScope(opts.Target),
 		resolution: []trust.Finding{},
 	}
 	if !f.Index.Exists {
@@ -299,14 +311,92 @@ func readTrustFacts(ctx context.Context, f freshness.Report, target string) (tru
 	}
 	facts.snap, facts.state = snap, state
 
-	if strings.TrimSpace(target) != "" {
-		scope, resolution, err := trust.ResolveScope(ctx, store, target)
+	if strings.TrimSpace(opts.Target) != "" {
+		scope, resolution, err := trust.ResolveScope(ctx, store, opts.Target)
 		if err != nil {
 			return trustFacts{}, fmt.Errorf("client: trust report target: %w", err)
 		}
 		facts.scope, facts.resolution = scope, resolution
+		facts.scopeFacts = scopeEvidenceFacts(ctx, store, opts, facts.snap.Generation.FullPassGeneration, scope)
 	}
 	return facts, nil
+}
+
+// scopeEvidenceFacts fetches the resolved target scope's persisted file
+// evidence row and maps it into the policy input: a file scope reads its own
+// row, a resolved symbol scope the owning file's row via the resolution's
+// path (PRD §27 scope expansion); package scope resolution stays deferred in
+// v1, so package-looking targets never reach here with a fetchable shape.
+//
+// The lookup is generation-checked against the SNAPSHOT generation — the
+// facts the policy judges must describe the same pass the snapshot describes;
+// a row of any other generation is stale evidence and reads not-found.
+// EVERY failure fails closed to the absent ScopeFacts (zero value): row not
+// found, sidecar predating the evidence tables
+// (ingest.ErrTrustEvidenceUnavailable), unresolvable state locations, or an
+// operational sidecar error — the policy then fires
+// SCOPE_EVIDENCE_UNAVAILABLE exactly as it did before scope facts existed
+// ("no answer", never zero-valued clean-looking facts).
+//
+// Store handling: the already-open read-only graph store is reused; only the
+// ingest meta sidecar needs its own read-only handle (the freshness probe
+// closed its observer before returning, so one fresh mode=ro open of the
+// sidecar is unavoidable here — nothing is created, mirroring the probe's
+// observer discipline). When opts.MetaDir is empty the auto-managed location
+// is resolved WITHOUT Ensure via state.Resolve, exactly as the probe resolves
+// it — same inputs, same path, no second location semantics.
+func scopeEvidenceFacts(ctx context.Context, store graphstore.Graphstore, opts TrustReportOptions, snapshotGeneration string, scope trust.ScopeRef) trust.ScopeFacts {
+	path := scopeEvidencePath(scope)
+	if path == "" || snapshotGeneration == "" {
+		return trust.ScopeFacts{}
+	}
+	metaDir := opts.MetaDir
+	if metaDir == "" {
+		p, err := state.Resolve(opts.Root)
+		if err != nil {
+			return trust.ScopeFacts{}
+		}
+		metaDir = p.Meta
+	}
+	ro, err := ingest.NewReadOnly(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
+	if err != nil {
+		return trust.ScopeFacts{}
+	}
+	defer func() { _ = ro.Close() }()
+
+	fe, err := ro.FileEvidence(ctx, snapshotGeneration, path)
+	if err != nil {
+		return trust.ScopeFacts{}
+	}
+	return trust.ScopeFacts{
+		Available: true,
+		File: trust.ScopeFileFacts{
+			ParseStatus:       fe.ParseStatus,
+			ParseReason:       fe.ParseReason,
+			ResolvedDerived:   fe.ResolvedDerived,
+			ResolvedHeuristic: fe.ResolvedHeuristic,
+			ResolvedExternal:  fe.ResolvedExternal,
+			Skipped:           fe.Skipped,
+			Ambiguous:         fe.Ambiguous,
+		},
+	}
+}
+
+// scopeEvidencePath maps a resolved scope to the repo-relative file whose
+// evidence row backs it: a file scope's own path, or a resolved symbol
+// scope's owning file. Everything else — unresolved shapes (empty-ID symbol),
+// package scope (deferred in v1), result-set — has no fetchable row and
+// returns "" (the caller fails closed to absent facts).
+func scopeEvidencePath(scope trust.ScopeRef) string {
+	switch scope.Kind {
+	case trust.ScopeFile:
+		return scope.Path
+	case trust.ScopeSymbol:
+		if scope.ID != "" {
+			return scope.Path
+		}
+	}
+	return ""
 }
 
 // liveGeneration reads the graph's full-pass generation nonce; a store no full
