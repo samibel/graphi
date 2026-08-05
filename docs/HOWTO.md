@@ -588,10 +588,10 @@ graphi trust-report
 
 # Fail-closed policy verdict before letting an AI agent change code
 # unattended (exit 0 only on PASS; missing evidence never passes):
-graphi trust-report --policy automated_change && echo safe-to-automate
+graphi trust-report --policy automated-change-v1 && echo safe-to-automate
 
 # Scope the assessment to one file or symbol:
-graphi trust-report --target internal/service/foo.go --policy review
+graphi trust-report --target internal/service/foo.go --policy review-v1
 
 # Query with low-confidence edges excluded — the excluded count stays
 # visible, so filtered emptiness is never mistaken for proven emptiness:

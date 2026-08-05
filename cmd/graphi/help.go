@@ -68,12 +68,12 @@ var subcommandHelp = map[string]subHelp{
 	},
 	"trust-report": {
 		"report the graph's trust surface: snapshot state, confidence tiers, coverage gaps, boundaries, optional policy verdict (read-only; exit 0 PASS/current, 1 WARN, 2 error, 3 FAIL, 4 UNKNOWN/unavailable)",
-		"graphi trust-report [--json] [--details] [--limit n] [--target <symbol|path|package>] [--policy exploratory|review|automated_change] [-root <repo>] [-db path] [-meta dir]",
+		"graphi trust-report [--json] [--details] [--limit n] [--target <symbol|path|package>] [--policy exploratory-v1|review-v1|automated-change-v1] [-root <repo>] [-db path] [-meta dir]",
 		"graphi trust-report --policy review --json",
 	},
 	"query-strict": {
 		"run a stable query, then exclude result edges below a confidence tier; excluded counts stay visible (filtered emptiness is never bare emptiness), optional fail-closed policy preflight",
-		"graphi query-strict <operation> -symbol <id> [-depth n] [-min-tier confirmed|derived|heuristic] [-policy exploratory|review|automated_change] [-db path]",
+		"graphi query-strict <operation> -symbol <id> [-depth n] [-min-tier confirmed|derived|heuristic] [-policy exploratory-v1|review-v1|automated-change-v1] [-db path]",
 		"graphi query-strict callers -symbol shop.price -min-tier derived",
 	},
 	"snapshot": {

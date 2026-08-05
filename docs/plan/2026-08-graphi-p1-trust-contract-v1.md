@@ -3,8 +3,8 @@
 
 | | |
 |---|---|
-| **Status** | v1 — frozen on merge; changes require a version bump and a recorded decision |
-| **Date** | 2026-08-03 |
+| **Status** | v1.1 — frozen; changes require a version bump and a recorded decision |
+| **Date** | 2026-08-03 (v1) · amended 2026-08-05 (v1.1) |
 | **Owner** | samibel |
 | **Work package / story** | P1 Trust Surface — WP1.0 "Contract and Architecture", story P1-001 "Freeze Trust Contract" |
 | **Derived from** | The registered PRD [`docs/plan/2026-07-graphi-p1-trust-surface-prd.md`](2026-07-graphi-p1-trust-surface-prd.md) only (registration hash `sha256:58cce857b2657def19876bc0090f443ef74e5cb6383da2b2853b0347922bec8f`), §§ 11, 13, 15, 16, 25, 26, 35 |
@@ -21,9 +21,13 @@ This is the WP1.0 contract freeze for the P1 Trust Surface. It freezes, as v1:
 
 It also records what v1 deliberately leaves open (§5) and the change procedure (§6).
 
-It freezes **contracts, not implementations**: per the companion audit, P1 is 0 %
-implemented, so nothing below describes existing behavior except where a code file is
-quoted as the source of a definition. Everything normative is derived from the registered
+It freezes **contracts, not implementations**: per the companion audit, P1 was 0 %
+implemented when v1 was written, so nothing below described existing behavior except
+where a code file is quoted as the source of a definition. **That is no longer true as of
+v1.1** — P1 shipped in v0.8.0, and the two v1.1 amendments (§1.5, §2.1) change values the
+code already emits; they are reconciliations of a released surface, recorded in
+[`2026-08-graphi-p1-prd-v1-delta.md`](2026-08-graphi-p1-prd-v1-delta.md), not forward
+specification. Everything normative is derived from the registered
 PRD; where the PRD's German wording is load-bearing it is quoted verbatim. Additions this
 document makes beyond the PRD are explicitly marked (**minted in v1** for finding codes,
 *v1 clarification* for contract notes).
@@ -83,13 +87,19 @@ A fact deterministically derived from the graph, the ingest, a resolver, or stat
 
 A versioned rule set that evaluates trust facts for a named use case.
 
-### 1.5 Trust verdict (PRD §11.5)
+### 1.5 Trust verdict (PRD §11.5; **amended in v1.1**)
 
 Closed set, exactly four values:
 
 ```text
-PASS | WARN | FAIL | UNKNOWN
+PASS | WARN | FAIL | UNVERIFIED
 ```
+
+**v1.1 amendment.** v1 froze the fourth value as `UNKNOWN` from the July PRD, and
+v0.8.0 shipped it. PRD v1.0 §5/§6 renames it to `UNVERIFIED` and sharpens its meaning:
+it marks evidence that is missing *or not generation-bound*, i.e. not verifiable — not
+merely unknown. The owner decided PRD v1.0 wins (delta doc §A1). The set stays closed and
+stays four values; only the fourth spelling moved.
 
 ### 1.6 Snapshot state (PRD §11.6, semantics from §18)
 
@@ -116,11 +126,11 @@ repository | package | file | symbol | result-set
   "Partial Evidence → PARTIAL" once; §11.5/§11.6 do not include it, and the closed sets
   above govern. Partial evidence is expressed through findings and limitations; ingest
   incompleteness through snapshot state `INCOMPLETE`; unresolvable or unsupported scopes
-  through verdict `UNKNOWN`.
+  through verdict `UNVERIFIED`.
 - Verdicts qualify policy assessments; snapshot states qualify snapshots. The two enums
   never mix in one field.
 - Missing evidence is never a positive signal (PRD §7.5): no snapshot → `UNAVAILABLE`;
-  wrong generation → `STALE`; unresolvable scope or unsupported data source → `UNKNOWN`.
+  wrong generation → `STALE`; unresolvable scope or unsupported data source → `UNVERIFIED`.
 
 ## 2. JSON contract v1 — `graphi trust-report --json`
 
@@ -129,11 +139,23 @@ repository | package | file | symbol | result-set
 ```bash
 graphi trust-report [--json] [--details] \
   [--target <symbol|path|package>] \
-  [--policy exploratory|review|automated_change]
+  [--policy exploratory-v1|review-v1|automated-change-v1]
 ```
 
+**v1.1 amendment.** v1 spelled the policy tokens `exploratory|review|automated_change`,
+and v0.8.0 shipped them. PRD v1.0 §6 fixes the accepted token as the *canonical versioned
+identifier* — `review-v1` — so that is what the flag takes (delta doc §A2). Resolution is
+exact: the bare v1 names are rejected, not silently accepted alongside.
+
+The wire `policy` object gains an additive `id` field carrying that identifier
+(§2.3 rule 7). `name` and `version` remain and are its decomposition — `id` is always
+derived from them, so the three cannot disagree, and a policy version bump moves the
+identifier automatically.
+
 v1 freezes the JSON contract only. The human rendering and the exit-code table are
-specified by PRD §15 but not frozen by this document (see §5).
+specified by the governing PRD but not frozen by this document (see §5). **Note for
+v1.1:** the exit-code table therefore changed with PRD v1.0 §6 — 0 PASS, 1 WARN, 2
+everything else — without needing an amendment here (delta doc §A3).
 
 ### 2.2 Normative shape (PRD §16, FR-2)
 
@@ -189,6 +211,7 @@ properties shown, at the nesting shown, is the v1 property set (values are illus
     }
   ],
   "policy": {
+    "id": "review-v1",
     "name": "review",
     "version": 1,
     "verdict": "WARN"
@@ -305,7 +328,7 @@ queries.
 | E4 | "unresolved und ambiguous werden sichtbar." | Unresolved and ambiguous references are made visible. | `UNRESOLVED_REFERENCE_IN_SCOPE`, `AMBIGUOUS_REFERENCE_IN_SCOPE` | §26 |
 | E5 | "Parse Skips erzeugen WARN." | Parse skips produce WARN. | `PARSE_SKIPPED_IN_SCOPE` | §26 |
 | E6 | "externe Boundaries erzeugen INFO/WARN." | External boundaries produce INFO/WARN. | `EXTERNAL_BOUNDARY_REACHED` | §26 |
-| E7 | "fehlender Snapshot → UNKNOWN." | Missing snapshot → UNKNOWN. | `SNAPSHOT_MISSING` | §26 |
+| E7 | "fehlender Snapshot → UNVERIFIED." | Missing snapshot → UNVERIFIED. | `SNAPSHOT_MISSING` | §26 |
 
 Note on E4/E5: the default scope of `exploratory-v1` is `repository`, so the `IN_SCOPE`
 codes fire against the repository scope.
@@ -323,7 +346,7 @@ Purpose (PRD): PR review, change impact, risk analysis, reviewer questions.
 | R5 | "Ambiguous References im Scope → WARN." | Ambiguous references in scope → WARN. | `AMBIGUOUS_REFERENCE_IN_SCOPE` | §26 |
 | R6 | "rein heuristic kritischer Pfad → WARN." | Purely heuristic critical path → WARN. | `HEURISTIC_ONLY_PATH` | §26 |
 | R7 | "externe Boundaries im Pfad → WARN." | External boundaries in the path → WARN. | `EXTERNAL_BOUNDARY_REACHED` | §26 |
-| R8 | "fehlende Scope-Evidenz → UNKNOWN." | Missing scope evidence → UNKNOWN. | `SCOPE_EVIDENCE_UNAVAILABLE` | §26 |
+| R8 | "fehlende Scope-Evidenz → UNVERIFIED." | Missing scope evidence → UNVERIFIED. | `SCOPE_EVIDENCE_UNAVAILABLE` | §26 |
 
 ### 3.3 automated-change-v1 (PRD §25.3)
 

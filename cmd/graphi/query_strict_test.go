@@ -162,11 +162,11 @@ func TestQueryStrict_PreflightBlocksOnUnindexedRepo(t *testing.T) {
 	repo := writeGoRepo(t)
 	gitRepo(t, repo, "main")
 
-	// Unindexed repo: review policy yields UNKNOWN — the query must not run.
+	// Unindexed repo: review policy yields UNVERIFIED — the query must not run.
 	var out bytes.Buffer
-	code := runQueryStrictAt(repo, []string{"callers", "-symbol", "whatever", "-policy", "review"}, &out)
-	if code != 4 {
-		t.Fatalf("preflight exit = %d, want 4 (UNKNOWN blocks)", code)
+	code := runQueryStrictAt(repo, []string{"callers", "-symbol", "whatever", "-policy", "review-v1"}, &out)
+	if code != 2 {
+		t.Fatalf("preflight exit = %d, want 2 (UNVERIFIED blocks)", code)
 	}
 	if out.Len() != 0 {
 		t.Fatalf("blocked preflight still wrote a result:\n%s", out.String())

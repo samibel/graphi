@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/trust"
@@ -31,9 +32,9 @@ var strictTierRank = map[string]int{
 //
 //	graphi query-strict <operation> -symbol <id> [-depth n] \
 //	    [-min-tier confirmed|derived|heuristic] \
-//	    [-policy exploratory|review|automated_change] [-db path]
+//	    [-policy exploratory-v1|review-v1|automated-change-v1] [-db path]
 //
-// With -policy, a fail-closed trust preflight runs first: a FAIL or UNKNOWN
+// With -policy, a fail-closed trust preflight runs first: a FAIL or UNVERIFIED
 // verdict prints one explaining line and exits with the trust exit code —
 // the query itself never runs on untrustworthy evidence. PASS and WARN
 // proceed, with the verdict recorded in the envelope.
@@ -42,7 +43,8 @@ var strictTierRank = map[string]int{
 // filter is never presented as bare emptiness — whenever edges were
 // excluded, the envelope carries an explicit limitation naming the count.
 // Exit codes: 0 success; 1 query/store error; 2 input error; a blocked
-// preflight exits with the trust code (3 FAIL, 4 UNKNOWN).
+// preflight exits with the trust code, which PRD v1.0 §6 makes 2 for both
+// FAIL and UNVERIFIED (delta doc §A3).
 func runQueryStrict(args []string) int {
 	return runQueryStrictAt(getwd(), args, os.Stdout)
 }
@@ -77,7 +79,7 @@ func runQueryStrictAt(cwd string, args []string, stdout io.Writer) int {
 	symbol := fs.String("symbol", "", "symbol (node) id to query")
 	depth := fs.Int("depth", 1, "neighborhood hop depth (ignored by other operations)")
 	minTier := fs.String("min-tier", "heuristic", "lowest confidence tier admitted into the result")
-	policy := fs.String("policy", "", "optional trust policy preflight (exploratory|review|automated_change)")
+	policy := fs.String("policy", "", "optional trust policy preflight ("+strings.Join(trust.PolicyIDs(), "|")+")")
 	if err := fs.Parse(rest[1:]); err != nil {
 		return 2
 	}
@@ -99,7 +101,7 @@ func runQueryStrictAt(cwd string, args []string, stdout io.Writer) int {
 	if policySet && *policy == "" {
 		// An explicitly empty -policy must not silently mean "no preflight":
 		// the caller asked for a gate and named none.
-		fmt.Fprintln(os.Stderr, "graphi: query-strict: -policy requires a value (exploratory|review|automated_change)")
+		fmt.Fprintln(os.Stderr, "graphi: query-strict: -policy requires a value ("+strings.Join(trust.PolicyIDs(), "|")+")")
 		return 2
 	}
 	if *symbol == "" {
@@ -131,7 +133,7 @@ func runQueryStrictAt(cwd string, args []string, stdout io.Writer) int {
 			return 2
 		}
 		if verdict != trust.VerdictPass && verdict != trust.VerdictWarn {
-			// Fail-closed preflight: FAIL and UNKNOWN block the query — running
+			// Fail-closed preflight: FAIL and UNVERIFIED block the query — running
 			// it would dress untrustworthy evidence up as an answer.
 			fmt.Fprintf(os.Stderr, "graphi: query-strict: policy %s verdict %s (snapshot %s) — query not executed\n",
 				*policy, verdict, st)

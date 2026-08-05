@@ -265,7 +265,7 @@ func AnalyzerSymbolOptional(name string) bool {
 // the auto-managed locations WITHOUT creating them — pure observer); Target is
 // the raw --target string (symbol|path|package, resolved fail-closed by
 // trust.ResolveScope); Policy is the contract §2.1 policy name
-// (exploratory|review|automated_change, "" for no policy); Details opts into
+// (exploratory-v1|review-v1|automated-change-v1, "" for no policy); Details opts into
 // the bounded evidence samples, capped at Limit entries per list when
 // Limit > 0.
 type TrustReportOptions struct {

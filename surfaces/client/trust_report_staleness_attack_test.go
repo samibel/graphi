@@ -59,7 +59,7 @@ func TestTrustReport_StaleGenerationEvidenceNeverServed(t *testing.T) {
 	d := NewDirect(nil, nil)
 	b, verdict, state, err := d.TrustReport(ctx, TrustReportOptions{
 		Root: root, DBPath: dbPath, MetaDir: metaDir,
-		Target: "util/util.go", Policy: trust.PolicyNameAutomatedChange,
+		Target: "util/util.go", Policy: trust.PolicyIDAutomatedChange,
 	})
 	if err != nil {
 		t.Fatalf("TrustReport: %v", err)
@@ -70,7 +70,7 @@ func TestTrustReport_StaleGenerationEvidenceNeverServed(t *testing.T) {
 	if verdict == trust.VerdictPass {
 		t.Fatalf("FALSE PASS: rows of another generation were laundered into a scoped PASS\n%s", b)
 	}
-	if verdict != trust.VerdictUnknown {
+	if verdict != trust.VerdictUnverified {
 		t.Errorf("verdict = %s, want UNKNOWN (scope evidence absent, A10)", verdict)
 	}
 	doc := decodeTrustDoc(t, b)
@@ -128,7 +128,7 @@ func TestTrustReport_GenerationRebindingAroundFabricatedRows(t *testing.T) {
 	d := NewDirect(nil, nil)
 	b, verdict, state, err := d.TrustReport(ctx, TrustReportOptions{
 		Root: root, DBPath: dbPath, MetaDir: metaDir,
-		Target: "main.go", Policy: trust.PolicyNameAutomatedChange,
+		Target: "main.go", Policy: trust.PolicyIDAutomatedChange,
 	})
 	if err != nil {
 		t.Fatalf("TrustReport: %v", err)
@@ -156,7 +156,7 @@ func TestTrustReport_ScopeEvidenceDeterminismAndPathHygiene(t *testing.T) {
 	d := NewDirect(nil, nil)
 	opts := TrustReportOptions{
 		Root: root, DBPath: dbPath, MetaDir: metaDir,
-		Target: "util/util.go", Policy: trust.PolicyNameAutomatedChange,
+		Target: "util/util.go", Policy: trust.PolicyIDAutomatedChange,
 		Details: true, Limit: 3,
 	}
 

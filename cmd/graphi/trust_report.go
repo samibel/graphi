@@ -19,7 +19,7 @@ import (
 //
 //	graphi trust-report [--json] [--details] [--limit n] \
 //	    [--target <symbol|path|package>] \
-//	    [--policy exploratory|review|automated_change] \
+//	    [--policy exploratory-v1|review-v1|automated-change-v1] \
 //	    [-root <repo>] [-db path] [-meta dir]
 //
 // Strictly read-only: like status it observes the auto-managed store mode=ro
@@ -27,11 +27,12 @@ import (
 // UNAVAILABLE document instead of an error. --json emits the canonical bytes
 // (byte-identical to the graph_health MCP tool for the same inputs).
 //
-// Exit codes (PRD §15): 0 = policy PASS, or — without a policy — snapshot
-// available and CURRENT; 1 = policy WARN; 2 = operational error (not a
-// repository, unknown policy, probe failure); 3 = policy FAIL; 4 = verdict
-// UNKNOWN, or — without a policy — snapshot state STALE, INCOMPLETE or
-// UNAVAILABLE. Missing evidence never exits 0 (fail closed).
+// Exit codes (PRD v1.0 §6): 0 = policy PASS, or — without a policy — snapshot
+// available and CURRENT; 1 = policy WARN; 2 = policy FAIL or UNVERIFIED, a
+// snapshot that is not CURRENT when no policy was given, and every usage or
+// operational error (not a repository, unknown policy, probe failure). Missing
+// evidence never exits 0 (fail closed). See trustExitCode for why FAIL and
+// usage errors share a code and how the two stay distinguishable.
 func runTrustReport(args []string) int {
 	return runTrustReportAt(getwd(), args, os.Stdout)
 }
@@ -145,7 +146,18 @@ func runTrustReportAt(cwd string, args []string, stdout io.Writer) int {
 
 // trustExitCode maps the composition's verdict and snapshot state onto the
 // documented exit contract. Pure; anything outside the closed verdict set
-// falls to 4 — missing or unclassifiable evidence never reads as success.
+// falls to 2 — missing or unclassifiable evidence never reads as success.
+//
+// PRD v1.0 §6 collapsed the five-way table v0.8.0 shipped (0/1/2/3/4) into
+// three codes, with FAIL and UNVERIFIED sharing 2 (delta doc §A3). That costs
+// the exit code its ability to separate "the policy blocked me" from "you
+// passed a bad flag", since usage errors are also 2 by this repository's CLI
+// convention. The distinction is preserved on the other channel instead, and
+// callers that need it must read there: a usage or operational failure writes
+// to stderr and emits NO document, whereas FAIL and UNVERIFIED always emit the
+// canonical document carrying the `policy.verdict` field. The concern was
+// raised before the change and the owner chose PRD v1.0; this comment is the
+// record so a later reader does not read the collapse as an oversight.
 func trustExitCode(policyGiven bool, v trust.Verdict, st trust.State) int {
 	if policyGiven {
 		switch v {
@@ -153,16 +165,16 @@ func trustExitCode(policyGiven bool, v trust.Verdict, st trust.State) int {
 			return 0
 		case trust.VerdictWarn:
 			return 1
-		case trust.VerdictFail:
-			return 3
 		default:
-			return 4
+			// FAIL and UNVERIFIED alike. The default arm also absorbs any
+			// value outside the closed set, which must block rather than pass.
+			return 2
 		}
 	}
 	if st == trust.StateCurrent {
 		return 0
 	}
-	return 4
+	return 2
 }
 
 // trustHumanDoc mirrors the contract §2 wire fields the human renderer needs.
@@ -210,6 +222,7 @@ type trustHumanDoc struct {
 		Count int    `json:"count"`
 	} `json:"boundaries"`
 	Policy struct {
+		ID      string `json:"id"`
 		Name    string `json:"name"`
 		Version int    `json:"version"`
 		Verdict string `json:"verdict"`
@@ -300,10 +313,12 @@ func renderTrustHuman(w io.Writer, doc []byte) {
 		}
 	}
 
-	if d.Policy.Name != "" {
+	if d.Policy.ID != "" {
 		fmt.Fprintln(w)
 		fmt.Fprintf(w, "policy:\n")
-		fmt.Fprintf(w, "  %s: %s\n", d.Policy.Name, d.Policy.Verdict)
+		// The canonical versioned id, not the bare name: what a reader sees
+		// here is exactly what they pass back to --policy.
+		fmt.Fprintf(w, "  %s: %s\n", d.Policy.ID, d.Policy.Verdict)
 	}
 
 	warnings := 0

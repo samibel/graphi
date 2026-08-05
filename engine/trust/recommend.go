@@ -9,7 +9,7 @@ package trust
 // Canonical recommendation strings. Fixed and table-referenced only — a
 // recommendation either is one of these constants or does not exist. The
 // contract's canonical ones (PRD §29 examples) are all present: sync, rebuild,
-// scoped --target, refusing the automated_change policy, and human review at
+// scoped --target, refusing the automated-change-v1 policy, and human review at
 // an external boundary.
 const (
 	// RecommendSync — the graph or snapshot trails the source; re-sync.
@@ -20,7 +20,7 @@ const (
 	RecommendScopedTarget = "use --target for a scoped assessment"
 	// RecommendNoAutomatedChange — evidence is insufficient for autonomous
 	// changes (contract doc §3.3 A10: missing evidence never PASS).
-	RecommendNoAutomatedChange = "do not use the automated_change policy"
+	RecommendNoAutomatedChange = "do not use the automated-change-v1 policy"
 	// RecommendHumanReviewBoundary — the scope touches an external boundary
 	// (contract doc §3.3 A9: FAIL or explicit human approval).
 	RecommendHumanReviewBoundary = "human review required at external boundary"

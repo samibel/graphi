@@ -145,7 +145,7 @@ func TestTrustReport_NoPolicyDocument(t *testing.T) {
 	if got := string(doc["snapshot_state"]); got != `"CURRENT"` {
 		t.Errorf("snapshot_state = %s, want \"CURRENT\"", got)
 	}
-	if got := string(doc["policy"]); got != `{"name":"","version":0,"verdict":""}` {
+	if got := string(doc["policy"]); got != `{"id":"","name":"","version":0,"verdict":""}` {
 		t.Errorf("policy zero-value presence broken: %s", got)
 	}
 	for _, key := range []string{"findings", "limitations", "checks_passed"} {
@@ -241,12 +241,12 @@ func TestTrustReport_NoStoreUnavailable(t *testing.T) {
 	}
 
 	// Fail closed under a policy: no evidence never reads PASS.
-	opts.Policy = trust.PolicyNameReview
+	opts.Policy = trust.PolicyIDReview
 	_, verdict, state, err = d.TrustReport(ctx, opts)
 	if err != nil {
 		t.Fatalf("TrustReport(review) over a store-less repo must not error, got %v", err)
 	}
-	if state != trust.StateUnavailable || verdict != trust.VerdictUnknown {
+	if state != trust.StateUnavailable || verdict != trust.VerdictUnverified {
 		t.Fatalf("(state, verdict) = (%s, %s), want (UNAVAILABLE, UNKNOWN)", state, verdict)
 	}
 }
@@ -259,7 +259,7 @@ func TestTrustReport_Deterministic(t *testing.T) {
 	d := NewDirect(nil, nil)
 	opts := TrustReportOptions{
 		Root: root, DBPath: dbPath, MetaDir: metaDir,
-		Policy: trust.PolicyNameExploratory, Details: true, Limit: 3,
+		Policy: trust.PolicyIDExploratory, Details: true, Limit: 3,
 	}
 
 	first, _, _, err := d.TrustReport(context.Background(), opts)
@@ -303,7 +303,7 @@ func TestTrustReport_ScopeEvidenceFileTarget(t *testing.T) {
 	// Clean file: scoped PASS with the evidence row on the wire.
 	b, verdict, state, err := d.TrustReport(ctx, TrustReportOptions{
 		Root: root, DBPath: dbPath, MetaDir: metaDir,
-		Target: "util/util.go", Policy: trust.PolicyNameAutomatedChange,
+		Target: "util/util.go", Policy: trust.PolicyIDAutomatedChange,
 	})
 	if err != nil {
 		t.Fatalf("TrustReport(util/util.go): %v", err)
@@ -335,7 +335,7 @@ func TestTrustReport_ScopeEvidenceFileTarget(t *testing.T) {
 	// Dirty file, same snapshot: the row's skipped counter FAILs the policy.
 	b, verdict, _, err = d.TrustReport(ctx, TrustReportOptions{
 		Root: root, DBPath: dbPath, MetaDir: metaDir,
-		Target: "main.go", Policy: trust.PolicyNameAutomatedChange,
+		Target: "main.go", Policy: trust.PolicyIDAutomatedChange,
 	})
 	if err != nil {
 		t.Fatalf("TrustReport(main.go): %v", err)
@@ -397,8 +397,8 @@ func TestTrustReport_TargetNotFound(t *testing.T) {
 		policy string
 		want   trust.Verdict
 	}{
-		{trust.PolicyNameReview, trust.VerdictUnknown},
-		{trust.PolicyNameAutomatedChange, trust.VerdictFail},
+		{trust.PolicyIDReview, trust.VerdictUnverified},
+		{trust.PolicyIDAutomatedChange, trust.VerdictFail},
 	}
 	for _, tc := range cases {
 		b, verdict, state, err := d.TrustReport(ctx, TrustReportOptions{
@@ -430,8 +430,13 @@ func TestTrustReport_TargetNotFound(t *testing.T) {
 		if err := json.Unmarshal(doc["policy"], &pol); err != nil {
 			t.Fatalf("decode policy: %v", err)
 		}
-		if pol.Name != tc.policy || pol.Version != 1 || pol.Verdict != tc.want {
-			t.Errorf("%s: policy object = %+v, want {%s 1 %s}", tc.policy, pol, tc.policy, tc.want)
+		// id is the canonical token the caller passed; name/version are its
+		// decomposition, so name is deliberately the UNversioned component.
+		if pol.ID != tc.policy || pol.Version != 1 || pol.Verdict != tc.want {
+			t.Errorf("%s: policy object = %+v, want id %s, version 1, verdict %s", tc.policy, pol, tc.policy, tc.want)
+		}
+		if pol.Name+"-v1" != pol.ID {
+			t.Errorf("%s: policy name %q does not decompose id %q", tc.policy, pol.Name, pol.ID)
 		}
 		var scope trustReportScope
 		if err := json.Unmarshal(doc["scope"], &scope); err != nil {

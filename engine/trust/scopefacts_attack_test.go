@@ -202,9 +202,9 @@ func TestScopeFacts_ContradictorySkippedRowFailsClosed(t *testing.T) {
 			Skipped:     3,
 		},
 	}
-	p, err := trust.PolicyByName(trust.PolicyNameAutomatedChange)
+	p, err := trust.PolicyByID(trust.PolicyIDAutomatedChange)
 	if err != nil {
-		t.Fatalf("PolicyByName: %v", err)
+		t.Fatalf("PolicyByID: %v", err)
 	}
 	a := p.EvaluateWithScopeFacts(snapPure(), trust.StateCurrent, fileScope, contradictory)
 	if a.Verdict != trust.VerdictFail {

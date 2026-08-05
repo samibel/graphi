@@ -71,21 +71,21 @@ func sealedMatrix(t *testing.T) []sealedCase {
 
 	unavailable := map[string]want{
 		// E1+E7 / R1 / A1+A2: no usable evidence, UNKNOWN (never PASS).
-		trust.PolicyNameExploratory: {trust.VerdictUnknown,
+		trust.PolicyNameExploratory: {trust.VerdictUnverified,
 			[]string{trust.FindingGraphUnavailable, trust.FindingSnapshotMissing}},
-		trust.PolicyNameReview: {trust.VerdictUnknown,
+		trust.PolicyNameReview: {trust.VerdictUnverified,
 			[]string{trust.FindingGraphUnavailable}},
-		trust.PolicyNameAutomatedChange: {trust.VerdictUnknown,
+		trust.PolicyNameAutomatedChange: {trust.VerdictUnverified,
 			[]string{trust.FindingGraphUnavailable, trust.FindingSnapshotMissing}},
 	}
 	incomplete := map[string]want{
 		// E7 / R1 / A1+A2: unsettled evidence — no released snapshot, graph
 		// not settled — UNKNOWN.
-		trust.PolicyNameExploratory: {trust.VerdictUnknown,
+		trust.PolicyNameExploratory: {trust.VerdictUnverified,
 			[]string{trust.FindingSnapshotMissing}},
-		trust.PolicyNameReview: {trust.VerdictUnknown,
+		trust.PolicyNameReview: {trust.VerdictUnverified,
 			[]string{trust.FindingGraphStale}},
-		trust.PolicyNameAutomatedChange: {trust.VerdictUnknown,
+		trust.PolicyNameAutomatedChange: {trust.VerdictUnverified,
 			[]string{trust.FindingGraphStale, trust.FindingSnapshotMissing}},
 	}
 	stale := map[string]want{
@@ -222,8 +222,8 @@ func sealedMatrix(t *testing.T) []sealedCase {
 			snap: snapPure(), st: trust.StateCurrent, scope: symbolScope,
 			expect: map[string]want{
 				trust.PolicyNameExploratory:     {trust.VerdictWarn, []string{trust.FindingScopeEvidenceUnavailable}},
-				trust.PolicyNameReview:          {trust.VerdictUnknown, []string{trust.FindingScopeEvidenceUnavailable}},
-				trust.PolicyNameAutomatedChange: {trust.VerdictUnknown, []string{trust.FindingScopeEvidenceUnavailable}},
+				trust.PolicyNameReview:          {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
+				trust.PolicyNameAutomatedChange: {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
 			},
 		},
 		{
@@ -231,9 +231,9 @@ func sealedMatrix(t *testing.T) []sealedCase {
 			snap: snapPure(), st: trust.StateCurrent, scope: notFoundScope,
 			resolution: resNotFound,
 			expect: map[string]want{
-				trust.PolicyNameExploratory: {trust.VerdictUnknown,
+				trust.PolicyNameExploratory: {trust.VerdictUnverified,
 					[]string{trust.FindingTargetNotFound, trust.FindingScopeEvidenceUnavailable}},
-				trust.PolicyNameReview: {trust.VerdictUnknown,
+				trust.PolicyNameReview: {trust.VerdictUnverified,
 					[]string{trust.FindingTargetNotFound, trust.FindingScopeEvidenceUnavailable}},
 				trust.PolicyNameAutomatedChange: {trust.VerdictFail,
 					[]string{trust.FindingTargetNotFound, trust.FindingScopeEvidenceUnavailable}},
@@ -244,9 +244,9 @@ func sealedMatrix(t *testing.T) []sealedCase {
 			snap: snapPure(), st: trust.StateCurrent, scope: ambiguousScope,
 			resolution: resAmbiguous,
 			expect: map[string]want{
-				trust.PolicyNameExploratory: {trust.VerdictUnknown,
+				trust.PolicyNameExploratory: {trust.VerdictUnverified,
 					[]string{trust.FindingTargetAmbiguous, trust.FindingScopeEvidenceUnavailable}},
-				trust.PolicyNameReview: {trust.VerdictUnknown,
+				trust.PolicyNameReview: {trust.VerdictUnverified,
 					[]string{trust.FindingTargetAmbiguous, trust.FindingScopeEvidenceUnavailable}},
 				trust.PolicyNameAutomatedChange: {trust.VerdictFail,
 					[]string{trust.FindingTargetAmbiguous, trust.FindingScopeEvidenceUnavailable}},
@@ -382,9 +382,9 @@ func TestNoFalsePass_MissingEvidence(t *testing.T) {
 // A4–A7; the task's hard floor).
 func TestNoFalsePass_AutomatedChange(t *testing.T) {
 	repo := trust.ScopeRef{Kind: trust.ScopeRepository}
-	p, err := trust.PolicyByName(trust.PolicyNameAutomatedChange)
+	p, err := trust.PolicyByID(trust.PolicyIDAutomatedChange)
 	if err != nil {
-		t.Fatalf("PolicyByName(automated_change): %v", err)
+		t.Fatalf("PolicyByID(automated_change): %v", err)
 	}
 	counts := []int{0, 1, 3}
 	for _, skips := range counts {
@@ -452,14 +452,24 @@ func TestPoliciesRegistry(t *testing.T) {
 		if p.Version != 1 {
 			t.Errorf("policy %s version = %d, want 1", p.Name, p.Version)
 		}
-		got, err := trust.PolicyByName(p.Name)
+		got, err := trust.PolicyByID(p.ID())
 		if err != nil || got.Name != p.Name || got.Version != p.Version {
-			t.Errorf("PolicyByName(%q) = (%+v, %v), want the built-in", p.Name, got, err)
+			t.Errorf("PolicyByID(%q) = (%+v, %v), want the built-in", p.ID(), got, err)
 		}
 	}
-	for _, bad := range []string{"", "exploratory-v1", "Review", "automated-change", "yolo"} {
-		if _, err := trust.PolicyByName(bad); !errors.Is(err, trust.ErrPolicyUnknown) {
-			t.Errorf("PolicyByName(%q) err = %v, want ErrPolicyUnknown", bad, err)
+	// Rejected inputs. The bare names moved here from the accepted side with
+	// PRD v1.0 (delta doc §A2): "exploratory" and "automated_change" are what
+	// v0.8.0 accepted, and a binary that still honoured them would leave the
+	// superseded contract silently alive. "automated-change" — the kebab name
+	// component without its version — must also fail: the accepted token is the
+	// versioned identifier, never its parts.
+	for _, bad := range []string{
+		"", "Review", "yolo",
+		"exploratory", "review", "automated_change",
+		"automated-change", "automated_change-v1", "review-v2",
+	} {
+		if _, err := trust.PolicyByID(bad); !errors.Is(err, trust.ErrPolicyUnknown) {
+			t.Errorf("PolicyByID(%q) err = %v, want ErrPolicyUnknown", bad, err)
 		}
 	}
 }
@@ -694,9 +704,9 @@ func TestScopeFactsAbsent_ByteIdenticalRedGate(t *testing.T) {
 // non-arbitrary v1 grading — policy.go decision of record).
 func TestReviewDegradedGrading(t *testing.T) {
 	repo := trust.ScopeRef{Kind: trust.ScopeRepository}
-	p, err := trust.PolicyByName(trust.PolicyNameReview)
+	p, err := trust.PolicyByID(trust.PolicyIDReview)
 	if err != nil {
-		t.Fatalf("PolicyByName(review): %v", err)
+		t.Fatalf("PolicyByID(review): %v", err)
 	}
 	partial := snapWith(func(s *trust.Snapshot) {
 		s.TypeResolution = trust.TypeResolutionFacts{UnitsTotal: 4, UnitsDegraded: 3}

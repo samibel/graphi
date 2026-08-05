@@ -28,14 +28,14 @@ or safe to act on. With the Labs catalog (`graphi mcp -labs`), call
 `graph_health` first:
 
 ```text
-1. graph_health(policy="review", target="engine/query.Service")
+1. graph_health(policy="review-v1", target="engine/query.Service")
 2. Check snapshot_state == "CURRENT"   (STALE/INCOMPLETE/UNAVAILABLE: evidence
    is not usable for the current source — never treat it as healthy)
 3. Read policy.verdict and the findings
-4. FAIL or UNKNOWN → do not make a definitive graph-only claim; inspect the
+4. FAIL or UNVERIFIED → do not make a definitive graph-only claim; inspect the
    source or run additional tools instead
 5. Otherwise run the queries, and cite the trust limitations in your answer
-6. For an unattended automated change: require an automated_change PASS —
+6. For an unattended automated change: require an automated-change-v1 PASS —
    anything else means a human decides
 ```
 

@@ -2,8 +2,10 @@ package mcp
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -610,12 +612,16 @@ func maximalToolDescriptors() []map[string]any {
 	// degrades fail-closed to the UNAVAILABLE document when no graph exists.
 	tools = append(tools, map[string]any{
 		"name":        ToolGraphHealth,
-		"description": "graph_health: return the canonical trust-report document for the repository or a target scope — snapshot state (CURRENT|STALE|INCOMPLETE|UNAVAILABLE), freshness facts, coverage, edge confidence tiers (confirmed/derived/heuristic), resolution gaps, external boundaries, and an optional policy verdict. Purpose: agent preflight — answer 'how far may I trust graph evidence for the planned action?' before acting on query results. When to use: before a risky task, to decide whether to use, supplement, or reject graph evidence; with a policy (exploratory | review | automated_change) for a reproducible fail-closed verdict. When NOT to use: for rebuild/freshness advice alone (use `graphi status`) or to run the query itself. Input shape: optional target (symbol | repository-relative path | package), optional policy, optional bounded details. Read-only: true — never indexes, never starts a daemon, no network; missing evidence reads UNKNOWN/UNAVAILABLE, never PASS. Partial results possible: details lists are bounded by limit.",
+		"description": "graph_health: return the canonical trust-report document for the repository or a target scope — snapshot state (CURRENT|STALE|INCOMPLETE|UNAVAILABLE), freshness facts, coverage, edge confidence tiers (confirmed/derived/heuristic), resolution gaps, external boundaries, and an optional policy verdict. Purpose: agent preflight — answer 'how far may I trust graph evidence for the planned action?' before acting on query results. When to use: before a risky task, to decide whether to use, supplement, or reject graph evidence; with a policy (" + strings.Join(trust.PolicyIDs(), " | ") + ") for a reproducible fail-closed verdict. When NOT to use: for rebuild/freshness advice alone (use `graphi status`) or to run the query itself. Input shape: optional target (symbol | repository-relative path | package), optional policy, optional bounded details. Read-only: true — never indexes, never starts a daemon, no network; missing evidence reads UNVERIFIED/UNAVAILABLE, never PASS. Partial results possible: details lists are bounded by limit.",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"target":  map[string]any{"type": "string", "description": "optional symbol id, qualified name, repository-relative path or package"},
-				"policy":  map[string]any{"type": "string", "enum": []string{"exploratory", "review", "automated_change"}, "description": "optional trust policy"},
+				"target": map[string]any{"type": "string", "description": "optional symbol id, qualified name, repository-relative path or package"},
+				// Enum and prose both derive from trust.PolicyIDs so a policy
+				// version bump reaches the agent-facing schema automatically —
+				// a hand-copied list here would advertise a token the resolver
+				// no longer accepts.
+				"policy":  map[string]any{"type": "string", "enum": trust.PolicyIDs(), "description": "optional trust policy"},
 				"details": map[string]any{"type": "boolean", "description": "include bounded supporting evidence"},
 				"limit":   map[string]any{"type": "integer", "description": "maximum detail items"},
 			},

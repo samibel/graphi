@@ -144,7 +144,13 @@ type trustReportBoundary struct {
 
 // trustReportPolicy is the §2.2 policy object. When no policy is requested it
 // is present with zero values, never omitted (§2.3 presence clarification).
+//
+// ID is the canonical versioned identifier PRD v1.0 §6 fixes ("review-v1") and
+// the token --policy accepts; Name and Version are its decomposition. All three
+// come from one PolicyRef, so they cannot disagree (delta doc §A2). The field
+// is additive within schema_version 1 (contract §2.3 rule 7).
 type trustReportPolicy struct {
+	ID      string        `json:"id"`
 	Name    string        `json:"name"`
 	Version int           `json:"version"`
 	Verdict trust.Verdict `json:"verdict"`
@@ -192,7 +198,7 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 	var pol trust.Policy
 	policyRequested := opts.Policy != ""
 	if policyRequested {
-		p, err := trust.PolicyByName(opts.Policy)
+		p, err := trust.PolicyByID(opts.Policy)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -222,7 +228,7 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 	if policyRequested {
 		a := pol.EvaluateWithScopeFacts(facts.snap, facts.state, facts.scope, facts.scopeFacts, facts.resolution...)
 		verdict = a.Verdict
-		policyRef = trustReportPolicy{Name: a.Policy.Name, Version: a.Policy.Version, Verdict: a.Verdict}
+		policyRef = trustReportPolicy{ID: a.Policy.ID, Name: a.Policy.Name, Version: a.Policy.Version, Verdict: a.Verdict}
 		findings = a.Findings // canonical order; adopts the resolver findings verbatim
 		checksPassed = a.ChecksPassed
 	}
