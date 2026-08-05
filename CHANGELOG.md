@@ -48,6 +48,16 @@ file:
   report now share one composition each (`surfaces/client/`), so the two
   surfaces are byte-identical by construction rather than by review.
 
+### Fixed
+
+- **Emitted paths are now length-bounded (`trust.MaxPathLength`, 240 bytes).**
+  Snapshot sample lists were capped in count but each path was emitted verbatim,
+  so a repository could push arbitrarily long attacker-chosen text into the
+  trust snapshot — against the PRD's "nutzerkontrollierte Pfade …
+  längenbegrenzt" rule and against the ≤ 1 MB snapshot budget. Found by the new
+  privacy fixture. A truncated path carries a visible marker so it cannot be
+  mistaken for a real one.
+
 ### Changed — BREAKING (labs)
 
 The P1 trust surface shipped in 0.8.0 against the July P1 PRD. A second PRD —

@@ -76,11 +76,12 @@ reopens:
 
 | Item | Status | Evidence / what would discharge it |
 |---|---|---|
-| Trust Fixture Corpus vollständig (§36.1, 20 Fixtures) | **OPEN** | a large subset exists as Go test fixtures across the suites above, but no unified corpus artifact; closing it is plain Go test work, free in CI |
-| ≥ 80 Policy-Fälle versiegelt | **OPEN** | 60+ sealed matrix cases exist (`policy_matrix_test.go`) plus adversarial pins; the formal ≥80 sealed count is not reached |
+| Trust Fixture Corpus vollständig (§36.1, 20 Fixtures) | **OPEN** | the sealed matrix now carries 27 *snapshot-level* situations (`policy_matrix_test.go`) and the privacy fixture adds a hostile *repository*, but §36.1 asks for 20 unified repository fixtures and no such single artifact exists — the fixtures remain distributed across `engine/ingest`, `surfaces/client` and `surfaces/mcp` test files. Honest partial: not claimed green. |
+| ≥ 80 Policy-Fälle versiegelt | GREEN | 81 sealed cases — 27 fixture situations × 3 built-in policies (`engine/trust/policy_matrix_test.go`), each pinning the exact verdict and the exact canonically-sorted finding-code list, plus the adversarial pins in `policy_falsepass_test.go` / `scopefacts_attack_test.go`. Situations 21–27 pin boundaries the first twenty left implicit (type errors vs degradation, partial vs total degradation, derived-only vs heuristic-only, file vs package scope). |
 | ≥ 30 Agent Tasks ausgewertet (§36.3) | **OPEN** | requires an agent-task evaluation; can be run by the community or a future session |
 | ≥ 10 Human Usability Tests (§36.4) | **OPEN** | community path: the `trust-surface feedback` issue template asks first-time users exactly the §36.4 questions — real evidence, at no cost |
 | Policy Accuracy ≥ 98 % / Target Resolution ≥ 99 % | **OPEN** | needs the sealed evaluation runs above |
+| Privacy-Fixture + Output-Scanner (0 Source Bytes, 0 Secrets) | GREEN | `surfaces/client/privacy_test.go`: a repository with secrets in code, prompt-injection text in comments/literals/**a filename**, an over-long path, a binary blob and a fail-closed parse skip; every trust-report variant (incl. `--details`, both policies, adversarial targets) and every strict-query envelope is scanned. Found and closed a real gap: emitted paths were count-capped but not length-bounded (`trust.MaxPathLength`). Residual risk documented below. |
 | Full-/Incremental Trust Parity 100 % | GREEN | `FactDigest` parity + evidence-row parity tests (`engine/ingest/trust_persist_test.go`, `trust_evidence_test.go`) |
 | Performance Gates (Aggregate p95 ≤ 100 ms, Ingest-Overhead ≤ 5 %/10 %) | **OPEN** | the NFR gates target the P0 reference stress repo; no measurement on that repo has been run — no green is claimed from toy-fixture timings |
 | Security Review grün | **OPEN** | not held. Note: Dependabot currently reports 8 findings (4 high, 4 moderate) on `main` — dependency-level, not trust-surface code, but they block "keine offenen High/Critical Findings" |
@@ -90,6 +91,15 @@ reopens:
 ---
 
 ## Known limitations of record
+
+- **A filename can address the agent.** Trust documents name the files the
+  parser skipped — a skipped file a reader cannot name is not actionable — so a
+  repository can put chosen text in front of an agent by naming a file after it
+  (PRD §9 lists filenames as an injection vector and requires paths be escaped
+  and bounded, not omitted). What is guaranteed: such text arrives as DATA in a
+  known field, JSON-escaped, repository-relative and length-bounded
+  (`trust.MaxPathLength`), never as document prose and never with the file's
+  contents. Pinned by `TestPrivacy_PathsAreBoundedAndRelative`.
 
 - **Residual crash window** (documented in `engine/trust/state.go`): a
   crash-window graph mutation preserving the entire recomputable aggregate

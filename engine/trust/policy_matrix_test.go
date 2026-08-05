@@ -52,8 +52,9 @@ type sealedCase struct {
 	expect     map[string]want // keyed by policy name
 }
 
-// sealedMatrix builds the 20 fixture situations. SEALED — a change here is a
-// policy version bump (contract §3 versioning rule).
+// sealedMatrix builds the 27 fixture situations — 81 sealed policy cases
+// across the three built-ins, which is the PRD §36.2 "≥ 80" row. SEALED — a
+// change here is a policy version bump (contract §3 versioning rule).
 func sealedMatrix(t *testing.T) []sealedCase {
 	t.Helper()
 	repo := trust.ScopeRef{Kind: trust.ScopeRepository}
@@ -299,6 +300,134 @@ func sealedMatrix(t *testing.T) []sealedCase {
 					trust.FindingPackageDegraded, trust.FindingParseSkippedInScope,
 					trust.FindingSnapshotStale,
 				}},
+			},
+		},
+		// --------------------------------------------------------------
+		// Situations 21-27 (added 2026-08-05) lift the sealed count from 60
+		// to 81 policy cases, closing the PRD §36.2 "≥ 80 versiegelte Fälle"
+		// row. Each one pins a BOUNDARY the first twenty leave implicit —
+		// none restates a covered situation with different numbers, which
+		// would inflate the count without adding evidence.
+		{
+			// PRD-22 pin, in the policy layer. Swallowed type-check errors are
+			// EXPECTED under stub imports and are NOT degradation: a unit that
+			// type-checked with errors still produced type evidence. If this
+			// row ever reads WARN/FAIL, graphi has started treating normal
+			// operation as a coverage gap.
+			name: "21 type errors without degradation",
+			snap: snapWith(func(s *trust.Snapshot) {
+				s.TypeResolution = trust.TypeResolutionFacts{UnitsTotal: 4, UnitsDegraded: 0, TypeErrors: 17}
+			}),
+			st: trust.StateCurrent, scope: repo,
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, nil},
+				trust.PolicyNameReview:          {trust.VerdictPass, nil},
+				trust.PolicyNameAutomatedChange: {trust.VerdictPass, nil},
+			},
+		},
+		{
+			// The other side of case 08's grading boundary. R4 grades degraded
+			// "nach Schwere", and v1's only non-arbitrary reading is
+			// partial → WARN, TOTAL loss of type evidence → FAIL. Case 08 pins
+			// partial; this pins total, so the two together fix the boundary
+			// rather than one example of it.
+			name: "22 every unit degraded (total type-evidence loss)",
+			snap: snapWith(func(s *trust.Snapshot) {
+				s.TypeResolution = trust.TypeResolutionFacts{UnitsTotal: 4, UnitsDegraded: 4}
+			}),
+			st: trust.StateCurrent, scope: repo,
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, nil},
+				trust.PolicyNameReview:          {trust.VerdictFail, []string{trust.FindingPackageDegraded}},
+				trust.PolicyNameAutomatedChange: {trust.VerdictFail, []string{trust.FindingPackageDegraded}},
+			},
+		},
+		{
+			// Dropped intents are the never-fabricate counter: relationships
+			// the resolver saw but could not prove an endpoint for, and
+			// therefore discarded. They are a coverage gap that leaves NO
+			// trace in the edge counts, so a policy that ignores them would
+			// read a silently thinner graph as a complete one.
+			name: "23 dropped intents present",
+			snap: snapWith(func(s *trust.Snapshot) {
+				s.TypeResolution = trust.TypeResolutionFacts{UnitsTotal: 4, DroppedIntents: 9}
+			}),
+			st: trust.StateCurrent, scope: repo,
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, nil},
+				trust.PolicyNameReview:          {trust.VerdictPass, nil},
+				trust.PolicyNameAutomatedChange: {trust.VerdictPass, nil},
+			},
+		},
+		{
+			// The HEURISTIC_ONLY_PATH boundary from the safe side. Case 18
+			// pins a heuristic-only graph as blocking; this pins that a
+			// derived-only graph is NOT — firing "heuristic only" on evidence
+			// that contains no heuristic edge at all would be a false alarm,
+			// and the code says so explicitly.
+			name: "24 derived-only graph is not heuristic-only",
+			snap: snapWith(func(s *trust.Snapshot) {
+				s.Graph.EdgesByTier = trust.TierCounts{Derived: 20}
+			}),
+			st: trust.StateCurrent, scope: repo,
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, nil},
+				trust.PolicyNameReview:          {trust.VerdictPass, nil},
+				trust.PolicyNameAutomatedChange: {trust.VerdictPass, nil},
+			},
+		},
+		{
+			// A single heuristic edge among confirmed ones. Also a
+			// false-alarm guard: HEURISTIC_ONLY_PATH must NOT fire over a
+			// mixed graph — asserting "heuristic only" there would be a claim
+			// about paths v1 has no per-path analysis to support.
+			name: "25 one heuristic edge among confirmed",
+			snap: snapWith(func(s *trust.Snapshot) {
+				s.Graph.EdgesByTier = trust.TierCounts{Confirmed: 19, Heuristic: 1}
+			}),
+			st: trust.StateCurrent, scope: repo,
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictPass, []string{trust.FindingHeuristicEdgesPresent}},
+				trust.PolicyNameReview:          {trust.VerdictPass, nil},
+				trust.PolicyNameAutomatedChange: {trust.VerdictPass, nil},
+			},
+		},
+		{
+			// File scope. Case 15 pins symbol scope; the scope-evidence
+			// deferral applies to every non-repository scope, and a scope kind
+			// that quietly fell back to repository facts would present
+			// repository-wide evidence as scope-local — the laundering the
+			// SCOPE_EVIDENCE_UNAVAILABLE finding exists to prevent.
+			name: "26 file scope current (scope evidence deferred)",
+			snap: snapPure(), st: trust.StateCurrent,
+			scope: trust.ScopeRef{Kind: trust.ScopeFile, ID: "node-file-1", Path: "a/alpha.go"},
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictWarn, []string{trust.FindingScopeEvidenceUnavailable}},
+				trust.PolicyNameReview:          {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
+				trust.PolicyNameAutomatedChange: {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
+			},
+		},
+		{
+			// Package scope — deliberately deferred in v1 (contract §5) — and
+			// the sharper distinction case 26 does not show. A file scope with
+			// a path RESOLVES and merely lacks scope evidence, so exploratory
+			// still WARNs its way to a usable answer. A package scope does not
+			// resolve at all (scopeResolved has no ScopePackage arm), so it is
+			// UNSUPPORTED rather than evidence-poor, and ALL THREE policies
+			// abstain — exploratory included.
+			//
+			// That asymmetry is the point: an unsupported scope kind must not
+			// degrade into "here are the repository facts instead". Sealing
+			// exploratory at UNVERIFIED here is what stops a future
+			// convenience change from quietly answering package questions with
+			// repository-wide evidence.
+			name: "27 package scope is unsupported in v1, not merely evidence-poor",
+			snap: snapPure(), st: trust.StateCurrent,
+			scope: trust.ScopeRef{Kind: trust.ScopePackage, ID: "node-pkg-1", Package: "a"},
+			expect: map[string]want{
+				trust.PolicyNameExploratory:     {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
+				trust.PolicyNameReview:          {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
+				trust.PolicyNameAutomatedChange: {trust.VerdictUnverified, []string{trust.FindingScopeEvidenceUnavailable}},
 			},
 		},
 	}
