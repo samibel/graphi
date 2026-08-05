@@ -22,6 +22,12 @@ func (*JSONParser) Language() string { return "json" }
 // Runtime implements Parser: JSONParser is a stdlib-only (encoding/json) parser.
 func (*JSONParser) Runtime() Runtime { return RuntimeStdlib }
 
+// ExtractsSymbols implements SymbolCapable: JSONParser is the structural
+// outlier of the default tier. It parses to an AST and records structure, but
+// wires no SymbolExtractor and emits no symbol nodes or intra-file edges — so
+// the trust capability matrix reports json as parse-only.
+func (*JSONParser) ExtractsSymbols() bool { return false }
+
 // Extensions implements Parser.
 func (*JSONParser) Extensions() []string { return []string{".json"} }
 

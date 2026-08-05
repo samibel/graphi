@@ -39,6 +39,10 @@ func (*GoParser) Language() string { return "go" }
 // Runtime implements Parser: GoParser is the native go/ast path (pure Go).
 func (*GoParser) Runtime() Runtime { return RuntimeGoAST }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*GoParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*GoParser) Extensions() []string { return []string{".go"} }
 

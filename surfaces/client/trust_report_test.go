@@ -100,14 +100,19 @@ func docFindingCodes(t *testing.T, doc map[string]json.RawMessage) []string {
 	return codes
 }
 
-// trustReportRegisterKeys is the frozen §2.2 field register plus the four
+// trustReportRegisterKeys is the frozen §2.2 field register plus the five
 // documented additive v1 fields, in no particular order (presence is the rule
 // under test; order is pinned by the determinism test via raw bytes).
+//
+// `capabilities` is the P1 capability matrix (PRD v1.0 §3), added as an
+// additive field under schema_version 1 per contract §2.3 rule 7. The exact-count
+// assertion below is deliberate: a field appearing here is a contract decision
+// that must be argued in the delta document, never drift that slips in.
 var trustReportRegisterKeys = []string{
 	"schema_version", "snapshot_version", "snapshot_state", "graph_generation",
 	"freshness", "scope", "coverage", "edge_evidence", "resolution",
 	"boundaries", "policy", "limitations",
-	"findings", "checks_passed", "details", "scope_evidence",
+	"findings", "checks_passed", "details", "scope_evidence", "capabilities",
 }
 
 // TestTrustReport_NoPolicyDocument is spot-check (a): over a freshly ingested

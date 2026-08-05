@@ -37,6 +37,10 @@ func (*JavaScriptParser) Language() string { return "javascript" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*JavaScriptParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*JavaScriptParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*JavaScriptParser) Extensions() []string { return []string{".js"} }
 

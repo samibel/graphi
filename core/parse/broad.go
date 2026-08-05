@@ -86,6 +86,14 @@ func (p *forestParser) Extensions() []string { return p.spec.extensions }
 // by AssertPureGoDefaults (the runtime is NOT in the pure-Go allowlist).
 func (p *forestParser) Runtime() Runtime { return RuntimeCGOForest }
 
+// ExtractsSymbols implements SymbolCapable: every graphi-broad parser is wired
+// to a forestExtractor over the shared SymbolExtractor contract, so it emits
+// symbol nodes and intra-file edges. Declared here rather than left to the
+// optional-interface default because UndeclaredSymbolCapability must stay empty
+// under the graphi_broad tag too — a tagged build must not hand the trust
+// capability matrix a language it cannot classify.
+func (p *forestParser) ExtractsSymbols() bool { return true }
+
 // forestAST is the graphi-broad backend root handle threaded through the
 // SymbolExtractor `root any` contract. It carries the bare-runtime root Node
 // value, the OWNING *sitter.Tree (the root Node is only a view into it), the

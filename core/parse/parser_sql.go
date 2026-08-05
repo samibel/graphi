@@ -34,6 +34,10 @@ func (*SQLParser) Language() string { return "sql" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*SQLParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*SQLParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*SQLParser) Extensions() []string { return []string{".sql"} }
 

@@ -20,19 +20,35 @@ subset-tagged pure-Go `gotreesitter` grammars. The shipped default is built with
 ([`internal/release.DefaultGrammarSubsetTags`](../internal/release/build.go)) so only
 these languages' grammar blobs are embedded — never the all-206 default embed.
 
-| Language | Tier | Symbol nodes | Intra-file edges | Cross-file/package edges |
-|---|---|---|---|---|
-| **Go** | **GA** | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) + `confirmed`-tier go/types edges ¹ |
-| JSON | Preview | structural (AST) | — | — |
-| TypeScript · TSX/JSX · JavaScript | Preview | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **Python** | Preview | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| Ruby · PHP · Lua | Preview | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| Java · Kotlin · C# | Preview | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| C · C++ · Rust | Preview | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| Bash/Shell | Preview | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
-| SQL | Preview | ✅ symbol nodes | ✅ intra-file | — (no provable cross-file refs at this tier; resolver skips+counts) ² |
-| CSS · YAML · TOML · Markdown · HCL/Terraform | Preview | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
-| HTML | Source-only | ✖ not shipped — grammar exists upstream but is not subset-buildable in isolation (see below) | — | — |
+| Language | Tier | Capability level ³ | Symbol nodes | Intra-file edges | Cross-file/package edges |
+|---|---|---|---|---|---|
+| **Go** | **GA** | `typed-confirmed` | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) + `confirmed`-tier go/types edges ¹ |
+| JSON | Preview | `parse-only` | structural (AST) | — | — |
+| TypeScript · TSX/JSX · JavaScript | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Python** | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Ruby · PHP · Lua | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Java · Kotlin · C# | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| C · C++ · Rust | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| Bash/Shell | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
+| SQL | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | — (no provable cross-file refs at this tier; resolver skips+counts) ² |
+| CSS · YAML · TOML · Markdown · HCL/Terraform | Preview | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| HTML | Source-only | — (not registered) | ✖ not shipped — grammar exists upstream but is not subset-buildable in isolation (see below) | — | — |
+
+> ³ **Capability level** is the machine-readable grade the P1 trust surface reports per
+> language (`graphi trust-report --json`, field `capabilities`; PRD v1.0 §3/§5). The four
+> levels are `typed-confirmed` > `cross-file-heuristic` > `intra-file-only` > `parse-only`,
+> and each names the STRONGEST evidence available for that language — not overall support
+> quality, and not a score.
+>
+> **This column is not maintained by hand.** The surface derives it at read time from the
+> live registries — `typeresolve.Languages()` for type-checking, `link.Linker.Languages()`
+> for cross-file resolvers, and `core/parse`'s `SymbolCapable` declaration for symbol
+> extraction — and `surfaces/client/capability_test.go` re-derives every expectation from
+> those same registries, so the matrix cannot drift away from what the code actually does.
+> If this table and `--json` ever disagree, `--json` is right and this table is stale.
+> SQL sits at `cross-file-heuristic` because a resolver IS registered for it; that resolver
+> currently proves no cross-file references and counts skips instead, which is a resolver
+> outcome, not a missing capability.
 
 ## How cross-file resolution actually works, language by language
 

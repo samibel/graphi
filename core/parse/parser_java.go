@@ -32,6 +32,10 @@ func (*JavaParser) Language() string { return "java" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*JavaParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*JavaParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*JavaParser) Extensions() []string { return []string{".java"} }
 

@@ -31,6 +31,10 @@ func (*PHPParser) Language() string { return "php" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*PHPParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*PHPParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*PHPParser) Extensions() []string { return []string{".php"} }
 

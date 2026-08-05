@@ -31,6 +31,10 @@ func (*RustParser) Language() string { return "rust" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*RustParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*RustParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*RustParser) Extensions() []string { return []string{".rs"} }
 

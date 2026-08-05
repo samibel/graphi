@@ -227,6 +227,10 @@ type trustHumanDoc struct {
 		Version int    `json:"version"`
 		Verdict string `json:"verdict"`
 	} `json:"policy"`
+	Capabilities []struct {
+		Language string `json:"language"`
+		Level    string `json:"level"`
+	} `json:"capabilities"`
 	Limitations []struct {
 		Code     string `json:"code"`
 		Severity string `json:"severity"`
@@ -309,6 +313,25 @@ func renderTrustHuman(w io.Writer, doc []byte) {
 				fmt.Fprintf(w, "  %s (%d)\n", b.Code, b.Count)
 			} else {
 				fmt.Fprintf(w, "  %s\n", b.Code)
+			}
+		}
+	}
+
+	if len(d.Capabilities) > 0 {
+		// Counts per level, not the whole per-language table: the matrix has
+		// one row per registered grammar (22 today) and printing all of them
+		// would bury the repository's own facts above. The full table is in
+		// --json, and PRD v1.0 §6 asks the default human output to carry counts
+		// rather than complete lists.
+		byLevel := map[string]int{}
+		for _, c := range d.Capabilities {
+			byLevel[c.Level]++
+		}
+		fmt.Fprintln(w)
+		fmt.Fprintf(w, "language capabilities:\n")
+		for _, level := range []string{"typed-confirmed", "cross-file-heuristic", "intra-file-only", "parse-only"} {
+			if n := byLevel[level]; n > 0 {
+				fmt.Fprintf(w, "  %-21s %d\n", level+":", n)
 			}
 		}
 	}

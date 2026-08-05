@@ -35,6 +35,10 @@ func (*TSXParser) Language() string { return "tsx" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*TSXParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*TSXParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*TSXParser) Extensions() []string { return []string{".tsx"} }
 

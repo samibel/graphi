@@ -53,6 +53,10 @@ func (*TSParser) Language() string { return "typescript" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*TSParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*TSParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*TSParser) Extensions() []string { return []string{".ts"} }
 

@@ -32,6 +32,10 @@ func (*RubyParser) Language() string { return "ruby" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*RubyParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*RubyParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*RubyParser) Extensions() []string { return []string{".rb"} }
 

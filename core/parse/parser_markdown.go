@@ -35,6 +35,10 @@ func (*MarkdownParser) Language() string { return "markdown" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*MarkdownParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*MarkdownParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*MarkdownParser) Extensions() []string { return []string{".md", ".markdown"} }
 

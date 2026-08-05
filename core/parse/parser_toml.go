@@ -34,6 +34,10 @@ func (*TOMLParser) Language() string { return "toml" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*TOMLParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*TOMLParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*TOMLParser) Extensions() []string { return []string{".toml"} }
 

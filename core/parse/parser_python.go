@@ -32,6 +32,10 @@ func (*PythonParser) Language() string { return "python" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*PythonParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*PythonParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*PythonParser) Extensions() []string { return []string{".py"} }
 
