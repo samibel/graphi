@@ -26,6 +26,54 @@ file:
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-05
+
+**The P1 trust surface reconciled against PRD v1.0.** 0.8.0 shipped that surface
+built to the July P1 PRD; a second PRD registered on 2026-08-05 fixes three of its
+wire values differently, and this release follows it. The breaking changes below
+are confined to **Labs** — `graphi trust-report`, `graphi query-strict` and the
+`graph_health` MCP tool. **Stable-12 is untouched:** the twelve frozen operations,
+their schemas, and the eleven-tool default MCP profile are byte-for-byte what
+0.8.0 served.
+
+Read the breaking section first if you script against any Labs trust surface;
+one of the three changes (the exit-code collapse) is deliberate and lossy, and
+says so.
+
+### Changed — BREAKING (labs)
+
+The P1 trust surface shipped in 0.8.0 against the July P1 PRD. A second PRD —
+"Graphi P1: Trust & Coverage Intelligence" v1.0, registered as
+`docs/plan/2026-08-graphi-p1-prd-v1.md` — fixes three wire values differently,
+and the owner decided it wins where the two contradict. The reconciliation,
+including what deliberately did *not* change, is
+`docs/plan/2026-08-graphi-p1-prd-v1-delta.md`; the trust contract is amended to
+v1.1 accordingly.
+
+All three changes are confined to **Labs** surfaces (`graphi trust-report`,
+`graphi query-strict`, the `graph_health` MCP tool). Stable-12 is untouched.
+
+- **The fourth verdict is `UNVERIFIED`, was `UNKNOWN`.** The new name is the
+  precise one: it marks evidence that is missing *or not generation-bound* —
+  not verifiable, rather than merely unknown. Affects `policy.verdict` in the
+  trust-report document and the `graph_health` output.
+- **Policies are selected by their canonical versioned identifier:
+  `exploratory-v1`, `review-v1`, `automated-change-v1`** — was `exploratory`,
+  `review`, `automated_change`. The bare names are **rejected**, not accepted
+  alongside; accepting both would leave the superseded contract silently alive.
+  Affects `--policy` on `trust-report`, `-policy` on `query-strict`, and the
+  `graph_health` input schema. The wire `policy` object gains an additive `id`
+  field carrying that identifier; `name` and `version` remain as its
+  decomposition, and `id` is always derived from them so the three cannot
+  disagree.
+- **`graphi trust-report` exit codes are 0/1/2, were 0/1/2/3/4.** 0 = PASS, 1 =
+  WARN, 2 = everything else: FAIL, UNVERIFIED, a non-current snapshot when no
+  policy was given, and usage or operational errors. Missing evidence still
+  never exits 0. Note the cost, recorded rather than glossed: FAIL and a
+  mistyped flag now share code 2. Scripts that need to tell them apart must read
+  the document — an error writes nothing to stdout, whereas FAIL and UNVERIFIED
+  always emit the canonical document with its `policy.verdict`.
+
 ### Added (labs)
 
 - **Package assessment.** A package target now resolves and is judged, instead
@@ -72,40 +120,6 @@ file:
   längenbegrenzt" rule and against the ≤ 1 MB snapshot budget. Found by the new
   privacy fixture. A truncated path carries a visible marker so it cannot be
   mistaken for a real one.
-
-### Changed — BREAKING (labs)
-
-The P1 trust surface shipped in 0.8.0 against the July P1 PRD. A second PRD —
-"Graphi P1: Trust & Coverage Intelligence" v1.0, registered as
-`docs/plan/2026-08-graphi-p1-prd-v1.md` — fixes three wire values differently,
-and the owner decided it wins where the two contradict. The reconciliation,
-including what deliberately did *not* change, is
-`docs/plan/2026-08-graphi-p1-prd-v1-delta.md`; the trust contract is amended to
-v1.1 accordingly.
-
-All three changes are confined to **Labs** surfaces (`graphi trust-report`,
-`graphi query-strict`, the `graph_health` MCP tool). Stable-12 is untouched.
-
-- **The fourth verdict is `UNVERIFIED`, was `UNKNOWN`.** The new name is the
-  precise one: it marks evidence that is missing *or not generation-bound* —
-  not verifiable, rather than merely unknown. Affects `policy.verdict` in the
-  trust-report document and the `graph_health` output.
-- **Policies are selected by their canonical versioned identifier:
-  `exploratory-v1`, `review-v1`, `automated-change-v1`** — was `exploratory`,
-  `review`, `automated_change`. The bare names are **rejected**, not accepted
-  alongside; accepting both would leave the superseded contract silently alive.
-  Affects `--policy` on `trust-report`, `-policy` on `query-strict`, and the
-  `graph_health` input schema. The wire `policy` object gains an additive `id`
-  field carrying that identifier; `name` and `version` remain as its
-  decomposition, and `id` is always derived from them so the three cannot
-  disagree.
-- **`graphi trust-report` exit codes are 0/1/2, were 0/1/2/3/4.** 0 = PASS, 1 =
-  WARN, 2 = everything else: FAIL, UNVERIFIED, a non-current snapshot when no
-  policy was given, and usage or operational errors. Missing evidence still
-  never exits 0. Note the cost, recorded rather than glossed: FAIL and a
-  mistyped flag now share code 2. Scripts that need to tell them apart must read
-  the document — an error writes nothing to stdout, whereas FAIL and UNVERIFIED
-  always emit the canonical document with its `policy.verdict`.
 
 ## [0.8.0] - 2026-08-05
 
