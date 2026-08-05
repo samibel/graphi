@@ -575,6 +575,36 @@ graphi query callers -symbol pkg.MyFunc -daemon /tmp/graphi.sock
 > The daemon serves whatever is in its store; build the `-db` first
 > ([§5.2](#52-persistent-sqlite-reusable-by-cli--mcp--daemon)).
 
+### 6.8 Trust surface (labs): how far may you trust a graph answer?
+
+`graphi status` answers "does a graph exist and does it match the checked-out
+code?". The trust surface answers the next question: "how good is the evidence
+behind a graph answer, and is it fit for the action I'm planning?"
+
+```bash
+# Repository-wide trust facts: snapshot state, confidence tiers,
+# parse skips, degraded packages, external boundaries.
+graphi trust-report
+
+# Fail-closed policy verdict before letting an AI agent change code
+# unattended (exit 0 only on PASS; missing evidence never passes):
+graphi trust-report --policy automated_change && echo safe-to-automate
+
+# Scope the assessment to one file or symbol:
+graphi trust-report --target internal/service/foo.go --policy review
+
+# Query with low-confidence edges excluded — the excluded count stays
+# visible, so filtered emptiness is never mistaken for proven emptiness:
+graphi query-strict callers -symbol pkg.MyFunc -min-tier derived
+```
+
+The same document is available to agents as the `graph_health` MCP tool
+(`graphi mcp -labs`), byte-identical to `trust-report --json`. States other
+than `CURRENT` (`STALE`, `INCOMPLETE`, `UNAVAILABLE`) mean the evidence is not
+usable for the current source — the report says so prominently and exits
+non-zero. See [agent-workflows.md](agent-workflows.md) for the agent preflight
+pattern.
+
 ---
 
 ## 7. Prove it’s local-first (`privacy-audit`)
@@ -617,6 +647,8 @@ It runs a real CGo-free scan and a canary egress guard and prints a verdict:
 graphi sync    [-root r] [-db p] [-meta d]           Update the graph to match the checked-out code (incremental)
 graphi status  [--json] [-root r] [-db p] [-meta d]  Read-only freshness report (exit 0 current / 1 actionable / 2 error)
 graphi rebuild [-root r] [-db p] [-meta d]           Re-index the repo from scratch (cold full pass)
+graphi trust-report [--json] [--details] [--target t] [--policy p]   Trust surface: snapshot state, tiers, gaps, policy verdict (Labs)
+graphi query-strict <op> -symbol <id> [-min-tier t] [-policy p]      Tier-filtered query with visible exclusions (Labs)
 graphi snapshot [<name> | -rm <name>]                List / freeze / delete named graph states (Labs)
 graphi compare <base> <head>                         Diff two named graph states; 'current' = live graph (Labs)
 graphi index  [-root r] [-db p] [-meta d] [--full]   Advanced explicit-path form of sync/rebuild

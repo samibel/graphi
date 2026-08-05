@@ -26,6 +26,31 @@ file:
 
 ## [Unreleased]
 
+### Added (labs)
+
+- **P1 trust surface** — a persisted, generation-bound trust snapshot answers
+  "how far may I trust this graph answer for the planned action?", fail-closed:
+  missing, stale or corrupt evidence reads `UNAVAILABLE`/`STALE`/`INCOMPLETE`,
+  never healthy.
+  - `graphi trust-report` (labs): snapshot state, confidence-tier counts,
+    coverage gaps, external boundaries, per-target scope evidence, and an
+    optional policy verdict (`exploratory` / `review` / `automated_change` —
+    versioned static rules, sealed by a 60+-case matrix; a PASS always carries
+    its explicit checks-passed list). Exit codes 0 PASS/current, 1 WARN,
+    2 error, 3 FAIL, 4 UNKNOWN/unavailable.
+  - `graph_health` (labs MCP tool): the same canonical document, byte-identical
+    to `trust-report --json` through one shared composition.
+  - `graphi query-strict` (labs): stable queries with edges below `-min-tier`
+    excluded; the envelope carries the excluded count, filtered emptiness
+    always carries an explicit limitation, and an optional `-policy` preflight
+    blocks fail-closed before the query runs.
+  - Per-file and per-package trust evidence persisted in the ingest sidecar
+    (schema v3), generation-keyed with fail-closed selective read ports.
+  - Governance: trust contract v1 (`docs/plan/2026-08-graphi-p1-trust-contract-v1.md`),
+    ADR 0006 (status-vs-trust separation), and the start-before-P0-GO decision
+    record. Adversarial reviews closed 17+ proven false-green/laundering holes,
+    each pinned by a regression test.
+
 ## [0.7.1] - 2026-07-29
 
 **A measurement-code-only correction release.** The product tree is intended to be
