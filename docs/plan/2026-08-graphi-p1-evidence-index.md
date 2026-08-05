@@ -56,7 +56,21 @@ repository.
 | MCP `graph_health` implementiert, Labs-gegated | GREEN | `surfaces/mcp/{tools,descriptors,toolcalls}.go`; gating + error-model pins in `surfaces/mcp/graphhealth_test.go` |
 | CLI/MCP Parität 100 % | GREEN | byte-level parity pins over nine input combinations (`surfaces/mcp/graphhealth_test.go`, `cmd/graphi/trust_report_test.go`) — one shared composition (`surfaces/client/trust_report.go`) |
 | Default MCP Output im Budget | GREEN | `TestGraphHealth_DefaultOutputWithinTokenBudget` (~380 estimated tokens vs the 2 000 target, 8 000 hard cap) |
-| Strict Query implementiert, Stable-Semantik unverändert | GREEN | `cmd/graphi/query_strict.go`; pins in `query_strict_test.go` + `query_strict_attack_test.go` (incl. the filtered-emptiness limitation and the fail-closed preflight) |
+| Strict Query implementiert, Stable-Semantik unverändert | GREEN (CLI only) | `cmd/graphi/query_strict.go`; pins in `query_strict_test.go` + `query_strict_attack_test.go` (incl. the filtered-emptiness limitation and the fail-closed preflight). **The MCP half is not built** — see the PRD-v1.0 row below. |
+
+### PRD v1.0 delta rows (added 2026-08-05)
+
+Registered on 2026-08-05: a second P1 PRD,
+[`2026-08-graphi-p1-prd-v1.md`](2026-08-graphi-p1-prd-v1.md), reconciled by
+[`2026-08-graphi-p1-prd-v1-delta.md`](2026-08-graphi-p1-prd-v1-delta.md). Rows it adds or
+reopens:
+
+| Item | Status | Evidence / what would discharge it |
+|---|---|---|
+| Wire contract matches PRD v1.0 (`UNVERIFIED`, `-v1` policy tokens, exit codes 0/1/2) | **OPEN** | delta §A. v0.8.0 ships `UNKNOWN`, bare policy tokens and a 5-way exit table, all built to the July PRD. Discharged by delta §E PR 2 plus the contract v1.1 amendment. |
+| Capability Matrix (`typed-confirmed` / `cross-file-heuristic` / `intra-file-only` / `parse-only`) | **OPEN** | delta §B1. None of the four level strings exists in the repository; the substance is prose in `docs/language-support.md` only. Discharged by a registry-derived matrix plus the drift test PRD v1.0 §8 Phase 10 requires. |
+| Strict Query reachable over MCP (`strict_query`, Labs) | **OPEN** | delta §B2. CLI ships; `surfaces/mcp/tools.go` registers no strict-query tool, so the PRD's primary persona (MCP agent) cannot reach it. Name decided in delta §B2. |
+| `internal/repostatus` module (PRD v1.0 §6, §8 Phase 1) | **N/A — satisfied otherwise** | delta §C1. Shipped as `internal/freshness` + `/probe`; named in accepted ADR 0006. Not a wire contract; deliberately not renamed. Recorded so it is not filed as unmet. |
 
 ### Evaluation — the honest gap
 

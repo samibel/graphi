@@ -423,6 +423,21 @@ later work packages.
 
 ## 6. Change procedure
 
+> **Pending amendment (2026-08-05).** A second P1 PRD —
+> [`2026-08-graphi-p1-prd-v1.md`](2026-08-graphi-p1-prd-v1.md), v1.0 — was registered on
+> 2026-08-05 and contradicts this document in two frozen places: the fourth verdict
+> (§1.5 `UNKNOWN` → `UNVERIFIED`) and the policy tokens on the CLI flag (§2.1
+> `exploratory|review|automated_change` → `exploratory-v1|review-v1|automated-change-v1`).
+> The owner (`samibel`) decided that **PRD v1.0 wins and this document follows**. The
+> reconciliation, including what is *not* changed and why, is
+> [`2026-08-graphi-p1-prd-v1-delta.md`](2026-08-graphi-p1-prd-v1-delta.md) §A.
+>
+> Per the procedure below this is a terminology change and therefore a document version
+> bump: **§1.5 and §2.1 are amended in v1.1, landing with the code change (delta §E, PR 2).**
+> Until that PR lands, §1.5 and §2.1 below still describe the shipped v0.8.0 behavior — the
+> freeze is not silently edited ahead of the code. The exit-code change (delta §A3) needs
+> no amendment here: §2.1 and §5 already leave the exit-code table unfrozen.
+
 - **Wire contract:** breaking change → bump `trustReportJSONSchemaVersion` (and the wire
   `schema_version`); additive fields → allowed within the major version per §2.3 rule 7.
 - **Policies:** any rule or threshold change → bump that policy's version; the version is
