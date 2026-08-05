@@ -92,6 +92,23 @@ const (
 	// `graphi trust-report --json`. Labs-only until a separate promotion
 	// decision; the frozen Stable-12 set is untouched.
 	ToolGraphHealth = "graph_health"
+
+	// P1 strict query (PRD v1.0 §8 Phase 9): the Labs trust-aware query
+	// wrapper. It runs a Stable query UNCHANGED, then withholds result edges
+	// below the requested minimum confidence tier and reports how many it
+	// withheld — so an agent can tell "no callers" from "no callers you asked
+	// to see". Byte-identical to `graphi query-strict` through the shared
+	// client.ComposeStrictQuery composition.
+	//
+	// The name was left open by PRD v1.0 §12 ("strict_query, trust_query oder
+	// bestehendes Naming-Pattern?") and decided in the delta document §B2:
+	// strict_query, the PRD's own prose spelling, matching the snake_case
+	// tool-name convention (graph_health, explain_symbol, change_risk). The
+	// CLI verb stays `query-strict` — CLI verbs are kebab-case here, and
+	// renaming a shipped verb would be a gratuitous break.
+	//
+	// Labs-only. It adds no Stable operation and changes no Stable schema.
+	ToolStrictQuery = "strict_query"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -132,6 +149,7 @@ var singletonToolNames = []string{
 	ToolChangeRisk,
 	ToolAgentBrief,
 	ToolGraphHealth,
+	ToolStrictQuery,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

@@ -26,6 +26,28 @@ file:
 
 ## [Unreleased]
 
+### Added (labs)
+
+- **`strict_query` MCP tool** — the strict-query wrapper reaches MCP agents,
+  which is where PRD v1.0 aims it: `graphi query-strict` shipped in 0.8.0 as a
+  CLI verb only, so the primary persona could not use it. Runs one of the Stable
+  structural queries unchanged, then withholds result edges below
+  `minimum_tier` and reports the withheld count. A result emptied by the filter
+  always carries an explicit limitation — filtered emptiness never reads as
+  proven emptiness. Optional fail-closed `policy` preflight blocks before the
+  query runs. Labs-only; the CLI verb keeps its `query-strict` spelling.
+- **Per-language capability matrix** in the trust-report document (field
+  `capabilities`, additive under `schema_version: 1`): each language graded
+  `typed-confirmed`, `cross-file-heuristic`, `intra-file-only` or `parse-only`.
+  Derived at read time from the live type-checker, resolver and parser
+  registries rather than a maintained table, and drift-tested against them.
+
+### Changed
+
+- The CLI and MCP halves of both `query-strict`/`strict_query` and the trust
+  report now share one composition each (`surfaces/client/`), so the two
+  surfaces are byte-identical by construction rather than by review.
+
 ### Changed — BREAKING (labs)
 
 The P1 trust surface shipped in 0.8.0 against the July P1 PRD. A second PRD —

@@ -114,6 +114,12 @@ func (d *Direct) SupportsCapability(name string) bool {
 		// UNAVAILABLE document when no graph exists, so the operation is
 		// always executable in-process.
 		return true
+	case "strict_query":
+		// The P1 strict-query wrapper runs a structural query underneath and
+		// then filters its result, so it is executable exactly when the query
+		// service is. Its optional trust preflight is self-contained like
+		// trust_report and adds no requirement of its own.
+		return d.querySvc != nil
 	default:
 		return false
 	}

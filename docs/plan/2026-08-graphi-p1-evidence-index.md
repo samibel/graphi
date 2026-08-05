@@ -56,7 +56,7 @@ repository.
 | MCP `graph_health` implementiert, Labs-gegated | GREEN | `surfaces/mcp/{tools,descriptors,toolcalls}.go`; gating + error-model pins in `surfaces/mcp/graphhealth_test.go` |
 | CLI/MCP Parität 100 % | GREEN | byte-level parity pins over nine input combinations (`surfaces/mcp/graphhealth_test.go`, `cmd/graphi/trust_report_test.go`) — one shared composition (`surfaces/client/trust_report.go`) |
 | Default MCP Output im Budget | GREEN | `TestGraphHealth_DefaultOutputWithinTokenBudget` (~380 estimated tokens vs the 2 000 target, 8 000 hard cap) |
-| Strict Query implementiert, Stable-Semantik unverändert | GREEN (CLI only) | `cmd/graphi/query_strict.go`; pins in `query_strict_test.go` + `query_strict_attack_test.go` (incl. the filtered-emptiness limitation and the fail-closed preflight). **The MCP half is not built** — see the PRD-v1.0 row below. |
+| Strict Query implementiert, Stable-Semantik unverändert | GREEN | `cmd/graphi/query_strict.go`; pins in `query_strict_test.go` + `query_strict_attack_test.go` (incl. the filtered-emptiness limitation and the fail-closed preflight); the MCP half is `strict_query`, see the PRD-v1.0 row below. |
 
 ### PRD v1.0 delta rows (added 2026-08-05)
 
@@ -69,7 +69,7 @@ reopens:
 |---|---|---|
 | Wire contract matches PRD v1.0 (`UNVERIFIED`, `-v1` policy tokens, exit codes 0/1/2) | GREEN | delta §A, discharged. `engine/trust/prdv1_wire_test.go` pins all three values plus the rejection of the superseded bare names; `cmd/graphi/trust_report_test.go` pins the 0/1/2 table and the "no non-PASS verdict ever exits 0" property; contract amended to v1.1 (§1.5, §2.1). |
 | Capability Matrix (`typed-confirmed` / `cross-file-heuristic` / `intra-file-only` / `parse-only`) | GREEN | delta §B1, discharged. `engine/trust/capability.go` grades; `surfaces/client/trust_report.go` derives from the live registries at read time (not persisted — the snapshot digest contract and `schema_version: 1` both forbid it). Drift tests re-derive every expectation from the same registries (`surfaces/client/capability_test.go`); `core/parse.UndeclaredSymbolCapability` fails the build for a language registered without a declaration (`core/parse/capability_test.go`, planted-offender proof included). |
-| Strict Query reachable over MCP (`strict_query`, Labs) | **OPEN** | delta §B2. CLI ships; `surfaces/mcp/tools.go` registers no strict-query tool, so the PRD's primary persona (MCP agent) cannot reach it. Name decided in delta §B2. |
+| Strict Query reachable over MCP (`strict_query`, Labs) | GREEN | delta §B2, discharged. `ToolStrictQuery` registered Labs-only; CLI and MCP share one composition (`surfaces/client/query_strict.go`). Pins in `surfaces/mcp/strictquery_test.go`: byte parity over five input shapes, gating in both halves (absent from the Stable catalog AND dispatch-rejected), `[labs]` marking, the closed operation set, and the withheld-count/limitation red gate on real mixed-tier data. |
 | `internal/repostatus` module (PRD v1.0 §6, §8 Phase 1) | **N/A — satisfied otherwise** | delta §C1. Shipped as `internal/freshness` + `/probe`; named in accepted ADR 0006. Not a wire contract; deliberately not renamed. Recorded so it is not filed as unmet. |
 
 ### Evaluation — the honest gap

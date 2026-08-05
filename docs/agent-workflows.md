@@ -39,6 +39,23 @@ or safe to act on. With the Labs catalog (`graphi mcp -labs`), call
    anything else means a human decides
 ```
 
+### Acting only on strong evidence (`strict_query`, labs)
+
+`graph_health` grades the repository; `strict_query` grades an individual
+answer. It runs one of the Stable structural queries unchanged, then withholds
+result edges below a minimum confidence tier and reports how many it withheld:
+
+```text
+strict_query(operation="callers", symbol="<id>", minimum_tier="confirmed")
+```
+
+**Read the envelope, not just the list.** `filter.excluded_edges > 0` with an
+empty result means the answer was *filtered*, not that no such relationships
+exist — `limitations` says so explicitly. Treating that as "no callers" is a
+false negative, which on this surface is worse than no answer at all. Pass
+`policy` to run the same fail-closed preflight first; a non-PASS/WARN verdict
+returns an error and the query never runs.
+
 The three policies are versioned static rule sets, fail-closed by
 construction: missing evidence never yields PASS. The document is
 byte-identical to `graphi trust-report --json`, so CLI-side scripting and

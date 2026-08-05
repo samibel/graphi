@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/surfaces/client"
 )
 
 // strictFixture builds and syncs a repo whose callers-of-helper result mixes
@@ -67,11 +68,11 @@ func strictFixture(t *testing.T) (repo, dbPath, helperID string) {
 	return repo, dbPath, helperID
 }
 
-func runStrict(t *testing.T, repo string, args []string) (int, strictEnvelope, string) {
+func runStrict(t *testing.T, repo string, args []string) (int, client.StrictEnvelope, string) {
 	t.Helper()
 	var out bytes.Buffer
 	code := runQueryStrictAt(repo, args, &out)
-	var env strictEnvelope
+	var env client.StrictEnvelope
 	if out.Len() > 0 {
 		if err := json.Unmarshal(out.Bytes(), &env); err != nil {
 			t.Fatalf("envelope is not JSON: %v\n%s", err, out.String())
