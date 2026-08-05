@@ -44,7 +44,7 @@ repository.
 | Item | Status | Evidence |
 |---|---|---|
 | Repository / Symbol / File Assessment | GREEN | `engine/trust/{assess,scope,scopefacts}.go`; v1 symbol scope = owning-file evidence (documented) |
-| Package Assessment | **OPEN** | deliberately deferred in v1 (contract leaves-open list); package-looking targets read TARGET_NOT_FOUND + SCOPE_EVIDENCE_UNAVAILABLE |
+| Package Assessment | GREEN | `engine/trust/scope.go` resolves a package target through the optional `PackageLookup` port, confirmed against the persisted per-package evidence row (`surfaces/client` wires it over the ingest sidecar, generation-keyed). The existing package-state rules then judge the row unchanged. Pins: `engine/trust/package_scope_test.go` (resolution incl. the fail-closed directions, degraded grading, the skipped-files red gate), `surfaces/client/package_scope_test.go` (end-to-end over a real ingest, incl. the `.` root key and the unchanged file-target path), sealed cases 27/28. |
 | exploratory-v1 / review-v1 / automated-change-v1 | GREEN | `engine/trust/policy.go`; sealed matrix `engine/trust/policy_matrix_test.go` |
 | 0 False PASS in Fixtures | GREEN | red gates `TestNoFalsePass_MissingEvidence`, `TestNoFalsePass_AutomatedChange`, `TestVerdictAlwaysExplained` + pins in `policy_falsepass_test.go`, `scopefacts_attack_test.go` |
 

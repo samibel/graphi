@@ -28,6 +28,21 @@ file:
 
 ### Added (labs)
 
+- **Package assessment.** A package target now resolves and is judged, instead
+  of reading `TARGET_NOT_FOUND` and abstaining. `graphi trust-report --target
+  util` (and `graph_health` with the same target) answers with the package's own
+  persisted evidence row — checked / checked-with-errors / degraded, its
+  confirmed-edge count and its skipped-file count — graded by the rules that
+  already existed for package state.
+
+  Resolution is confirmation-only and fail-closed: a key the evidence does not
+  know, or a sidecar that cannot be read, leaves the target unresolved exactly
+  as before. Two consequences worth knowing: the old "contains a slash" guess
+  for package-looking targets is gone, so top-level packages and the repository
+  root key `.` resolve too; and a package whose files were skipped during
+  parsing now reports `PARSE_SKIPPED_IN_SCOPE` from its own row rather than
+  reading clean.
+
 - **`strict_query` MCP tool** — the strict-query wrapper reaches MCP agents,
   which is where PRD v1.0 aims it: `graphi query-strict` shipped in 0.8.0 as a
   CLI verb only, so the primary persona could not use it. Runs one of the Stable

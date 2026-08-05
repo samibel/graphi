@@ -47,15 +47,24 @@ type Target struct {
 //  4. Nothing matched → TARGET_NOT_FOUND, never an empty healthy scope
 //     (PRD §27 "wird nicht als leerer Scope behandelt").
 //
-// Package scope resolution is deliberately deferred in v1 (the contract's
-// leaves-open discipline: no QN-prefix probing is invented here). A
-// package-looking raw — it contains "/" and matched neither a qualified name
-// nor an indexed file path — therefore resolves as not-found with kind
-// "package" recorded on the scope and a SCOPE_EVIDENCE_UNAVAILABLE finding
-// attached documenting the gap. The returned findings are in canonical order;
-// a non-nil error is an operational store failure (or the missing lookup
-// port), never a resolution outcome.
-func ResolveScope(ctx context.Context, store graphstore.Graphstore, raw string) (ScopeRef, []Finding, error) {
+// Package scope (PRD §22) resolves only against REAL evidence, through the
+// optional PackageLookup argument. This package is I/O-free and cannot read
+// the per-package evidence sidecar itself, so the wiring layer supplies a
+// lookup over it; without one, resolution is exactly the v1 behaviour — a
+// package-looking raw (it contains "/") resolves as not-found with kind
+// "package" recorded and a SCOPE_EVIDENCE_UNAVAILABLE finding documenting the
+// gap.
+//
+// With a lookup, the "/" heuristic is not used to DECIDE anything: any
+// unmatched raw is offered to the lookup, so a top-level package directory
+// resolves too. Confirmation is the only thing the lookup can do — an unknown
+// key, or a lookup that errors, leaves the not-found outcome intact. Reading
+// evidence may narrow uncertainty, never manufacture a target.
+//
+// The returned findings are in canonical order; a non-nil error is an
+// operational store failure (or the missing symbol-lookup port), never a
+// resolution outcome.
+func ResolveScope(ctx context.Context, store graphstore.Graphstore, raw string, pkg ...PackageLookup) (ScopeRef, []Finding, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return ScopeRef{Kind: ScopeRepository}, []Finding{}, nil
@@ -98,7 +107,7 @@ func ResolveScope(ctx context.Context, store graphstore.Graphstore, raw string) 
 		return ScopeRef{Kind: ScopeFile, Path: normalized}, []Finding{}, nil
 	}
 
-	return notFoundScope(raw)
+	return notFoundScope(ctx, raw, pkg...)
 }
 
 // ambiguousTargetMessage renders the bounded, sorted candidate list for a
@@ -122,15 +131,49 @@ func ambiguousTargetMessage(raw string, nodes []model.Node) string {
 	return fmt.Sprintf("target %q matches %d symbols; candidates: %s", raw, len(nodes), list)
 }
 
-// notFoundScope builds the fail-closed not-found outcome. A raw containing
-// "/" is treated as package-looking (the deliberately simple v1 rule — no
-// prefix scans): the scope records kind "package" with ID empty and a
-// SCOPE_EVIDENCE_UNAVAILABLE finding documents that package scope resolution
-// is a v1 leaves-open item. Anything else records the asked symbol. In both
-// shapes the empty ID marks the scope unresolved — TARGET_NOT_FOUND is always
-// present, and the findings come back in canonical order (error before
-// warning).
-func notFoundScope(raw string) (ScopeRef, []Finding, error) {
+// PackageLookup is the optional port ResolveScope uses to CONFIRM a package
+// target against the persisted per-package trust evidence. It is an interface
+// rather than a dependency because engine/trust must stay I/O-free and must
+// never import engine/ingest (see the layering note in types.go); the wiring
+// layer implements it over the sidecar.
+//
+// Contract: report whether a package evidence row exists for key under the
+// generation the caller is assessing. An error means the evidence could not be
+// read — the caller treats that as "not confirmed", never as confirmation.
+type PackageLookup interface {
+	LookupPackage(ctx context.Context, key string) (bool, error)
+}
+
+// confirmPackage asks the first supplied lookup whether key names a real
+// package. Absent lookup, error, or an unknown key all read false: this
+// function can only ever turn "unknown" into "confirmed", never the reverse,
+// which is what lets ResolveScope consult evidence without weakening its
+// fail-closed default.
+func confirmPackage(ctx context.Context, key string, pkg []PackageLookup) bool {
+	if len(pkg) == 0 || pkg[0] == nil || key == "" {
+		return false
+	}
+	ok, err := pkg[0].LookupPackage(ctx, key)
+	return err == nil && ok
+}
+
+// notFoundScope builds the outcome for a raw that matched no qualified name
+// and no indexed file path.
+//
+// It first offers the raw to the package lookup: a confirmed key IS a resolved
+// package scope, carrying its identity in both ID and Package, with no
+// findings — nothing is missing, so nothing is reported.
+//
+// Otherwise the v1 fail-closed shape stands. A raw containing "/" records kind
+// "package" with ID empty plus a SCOPE_EVIDENCE_UNAVAILABLE finding (the
+// evidence that would have decided it was unavailable); anything else records
+// the asked symbol. In both shapes the empty ID marks the scope unresolved —
+// TARGET_NOT_FOUND is always present, and the findings come back in canonical
+// order (error before warning).
+func notFoundScope(ctx context.Context, raw string, pkg ...PackageLookup) (ScopeRef, []Finding, error) {
+	if confirmPackage(ctx, raw, pkg) {
+		return ScopeRef{Kind: ScopePackage, ID: raw, Package: raw}, []Finding{}, nil
+	}
 	scope := ScopeRef{Kind: ScopeSymbol, Symbol: raw}
 	packageLooking := strings.Contains(raw, "/")
 	if packageLooking {

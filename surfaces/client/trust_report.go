@@ -370,58 +370,132 @@ func readTrustFacts(ctx context.Context, f freshness.Report, opts TrustReportOpt
 	facts.snap, facts.state = snap, state
 
 	if strings.TrimSpace(opts.Target) != "" {
-		scope, resolution, err := trust.ResolveScope(ctx, store, opts.Target)
+		// ONE sidecar handle serves both halves of target handling: confirming
+		// a package target during resolution, and fetching the resolved
+		// scope's evidence row afterwards. Opening it twice would double the
+		// I/O and could straddle a concurrent write.
+		snapshotGeneration := facts.snap.Generation.FullPassGeneration
+		ro := openEvidenceSidecar(store, opts)
+		if ro != nil {
+			defer func() { _ = ro.Close() }()
+		}
+
+		var lookups []trust.PackageLookup
+		if ro != nil && snapshotGeneration != "" {
+			lookups = append(lookups, &sidecarPackageLookup{ro: ro, generation: snapshotGeneration})
+		}
+		scope, resolution, err := trust.ResolveScope(ctx, store, opts.Target, lookups...)
 		if err != nil {
 			return trustFacts{}, fmt.Errorf("client: trust report target: %w", err)
 		}
 		facts.scope, facts.resolution = scope, resolution
-		facts.scopeFacts = scopeEvidenceFacts(ctx, store, opts, facts.snap.Generation.FullPassGeneration, scope)
+		facts.scopeFacts = scopeEvidenceFacts(ctx, ro, snapshotGeneration, scope)
 	}
 	return facts, nil
 }
 
-// scopeEvidenceFacts fetches the resolved target scope's persisted file
-// evidence row and maps it into the policy input: a file scope reads its own
-// row, a resolved symbol scope the owning file's row via the resolution's
-// path (PRD §27 scope expansion); package scope resolution stays deferred in
-// v1, so package-looking targets never reach here with a fetchable shape.
+// sidecarPackageLookup implements trust.PackageLookup over the ingest evidence
+// sidecar. It answers only the question the resolver asks — "does a package
+// evidence row exist for this key under the snapshot's generation?" — and
+// answers it fail-closed: a missing row, a sidecar predating the evidence
+// tables, or any operational failure all read "not a package", because the
+// resolver may only use this to CONFIRM a target, never to invent one.
 //
-// The lookup is generation-checked against the SNAPSHOT generation — the
-// facts the policy judges must describe the same pass the snapshot describes;
-// a row of any other generation is stale evidence and reads not-found.
-// EVERY failure fails closed to the absent ScopeFacts (zero value): row not
-// found, sidecar predating the evidence tables
-// (ingest.ErrTrustEvidenceUnavailable), unresolvable state locations, or an
-// operational sidecar error — the policy then fires
-// SCOPE_EVIDENCE_UNAVAILABLE exactly as it did before scope facts existed
-// ("no answer", never zero-valued clean-looking facts).
-//
-// Store handling: the already-open read-only graph store is reused; only the
-// ingest meta sidecar needs its own read-only handle (the freshness probe
-// closed its observer before returning, so one fresh mode=ro open of the
-// sidecar is unavoidable here — nothing is created, mirroring the probe's
-// observer discipline). When opts.MetaDir is empty the auto-managed location
-// is resolved WITHOUT Ensure via state.Resolve, exactly as the probe resolves
-// it — same inputs, same path, no second location semantics.
-func scopeEvidenceFacts(ctx context.Context, store graphstore.Graphstore, opts TrustReportOptions, snapshotGeneration string, scope trust.ScopeRef) trust.ScopeFacts {
-	path := scopeEvidencePath(scope)
-	if path == "" || snapshotGeneration == "" {
-		return trust.ScopeFacts{}
+// Generation-keyed on purpose: a row from another pass describes a repository
+// state this snapshot does not, and confirming a target against stale evidence
+// would resolve a package that may no longer exist.
+type sidecarPackageLookup struct {
+	ro         *ingest.Ingester
+	generation string
+}
+
+func (l *sidecarPackageLookup) LookupPackage(ctx context.Context, key string) (bool, error) {
+	if l == nil || l.ro == nil || l.generation == "" {
+		return false, nil
 	}
+	if _, err := l.ro.PackageEvidence(ctx, l.generation, key); err != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+// openEvidenceSidecar opens the ingest meta sidecar READ-ONLY, or returns nil
+// when it cannot be opened at all (no meta dir, a store predating the evidence
+// tables, an operational failure). nil is not an error: every caller degrades
+// to "no scope evidence", which the policy reports as
+// SCOPE_EVIDENCE_UNAVAILABLE — "no answer", never "wrong answer" (ADR 0006).
+//
+// The freshness probe closed its own observer before returning, so one fresh
+// mode=ro open is unavoidable here. When opts.MetaDir is empty the
+// auto-managed location is resolved WITHOUT Ensure via state.Resolve, exactly
+// as the probe resolves it — same inputs, same path, no second location
+// semantics, and nothing is created.
+func openEvidenceSidecar(store graphstore.Graphstore, opts TrustReportOptions) *ingest.Ingester {
 	metaDir := opts.MetaDir
 	if metaDir == "" {
 		p, err := state.Resolve(opts.Root)
 		if err != nil {
-			return trust.ScopeFacts{}
+			return nil
 		}
 		metaDir = p.Meta
 	}
 	ro, err := ingest.NewReadOnly(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
 	if err != nil {
+		return nil
+	}
+	return ro
+}
+
+// scopeEvidenceFacts fetches the resolved target scope's persisted evidence
+// row and maps it into the policy input:
+//
+//   - a file scope reads its own row; a resolved symbol scope reads the owning
+//     file's row (PRD §27 scope expansion);
+//   - a CONFIRMED package scope reads its own package row — the row that
+//     confirmed it during resolution, so this fetch always succeeds for a
+//     scope that resolved.
+//
+// The lookup is generation-checked against the SNAPSHOT generation — the facts
+// the policy judges must describe the same pass the snapshot describes; a row
+// of any other generation is stale evidence and reads not-found.
+//
+// EVERY failure fails closed to the absent ScopeFacts (zero value): no sidecar,
+// row not found, sidecar predating the evidence tables
+// (ingest.ErrTrustEvidenceUnavailable), or an operational sidecar error. The
+// policy then fires SCOPE_EVIDENCE_UNAVAILABLE exactly as it did before scope
+// facts existed ("no answer", never zero-valued clean-looking facts).
+func scopeEvidenceFacts(ctx context.Context, ro *ingest.Ingester, snapshotGeneration string, scope trust.ScopeRef) trust.ScopeFacts {
+	if ro == nil || snapshotGeneration == "" {
 		return trust.ScopeFacts{}
 	}
-	defer func() { _ = ro.Close() }()
+	if scope.Kind == trust.ScopePackage {
+		if scope.ID == "" {
+			return trust.ScopeFacts{}
+		}
+		pe, err := ro.PackageEvidence(ctx, snapshotGeneration, scope.ID)
+		if err != nil {
+			return trust.ScopeFacts{}
+		}
+		// Package-only facts: no File claim. The rules gate on the presence of
+		// the claim they judge, so the per-file checks stay SILENT rather than
+		// passing on evidence that was never consulted.
+		return trust.ScopeFacts{
+			Available: true,
+			Package: trust.ScopePackageFacts{
+				State:          pe.State,
+				DegradedReason: pe.DegradedReason,
+				TypeErrors:     pe.TypeErrors,
+				DroppedIntents: pe.DroppedIntents,
+				ConfirmedEdges: pe.ConfirmedEdges,
+				SkippedFiles:   pe.SkippedFiles,
+			},
+		}
+	}
 
+	path := scopeEvidencePath(scope)
+	if path == "" {
+		return trust.ScopeFacts{}
+	}
 	fe, err := ro.FileEvidence(ctx, snapshotGeneration, path)
 	if err != nil {
 		return trust.ScopeFacts{}
@@ -440,11 +514,12 @@ func scopeEvidenceFacts(ctx context.Context, store graphstore.Graphstore, opts T
 	}
 }
 
-// scopeEvidencePath maps a resolved scope to the repo-relative file whose
-// evidence row backs it: a file scope's own path, or a resolved symbol
-// scope's owning file. Everything else — unresolved shapes (empty-ID symbol),
-// package scope (deferred in v1), result-set — has no fetchable row and
-// returns "" (the caller fails closed to absent facts).
+// scopeEvidencePath maps a resolved FILE-backed scope to the repo-relative
+// file whose evidence row backs it: a file scope's own path, or a resolved
+// symbol scope's owning file. Package scopes are handled by their own branch
+// above; everything else — unresolved shapes (empty-ID symbol), result-set —
+// has no fetchable row and returns "" (the caller fails closed to absent
+// facts).
 func scopeEvidencePath(scope trust.ScopeRef) string {
 	switch scope.Kind {
 	case trust.ScopeFile:
