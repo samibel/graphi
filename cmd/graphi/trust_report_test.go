@@ -28,11 +28,11 @@ func TestRunTrustReport_UnindexedRepo_FailClosed(t *testing.T) {
 	repo := writeGoRepo(t)
 	gitRepo(t, repo, "main")
 
-	// JSON: a valid UNAVAILABLE document, exit 4 — never healthy.
+	// JSON: a valid UNAVAILABLE document, exit 2 — never healthy.
 	var out bytes.Buffer
 	code := runTrustReportAt(repo, []string{"--json"}, &out)
-	if code != 4 {
-		t.Fatalf("trust-report of an unindexed repo exit = %d, want 4 (output: %s)", code, out.String())
+	if code != 2 {
+		t.Fatalf("trust-report of an unindexed repo exit = %d, want 2 (output: %s)", code, out.String())
 	}
 	var doc struct {
 		SchemaVersion int    `json:"schema_version"`
@@ -47,8 +47,8 @@ func TestRunTrustReport_UnindexedRepo_FailClosed(t *testing.T) {
 
 	// Human: the state is unmissable.
 	out.Reset()
-	if code := runTrustReportAt(repo, nil, &out); code != 4 {
-		t.Fatalf("human trust-report exit = %d, want 4", code)
+	if code := runTrustReportAt(repo, nil, &out); code != 2 {
+		t.Fatalf("human trust-report exit = %d, want 2", code)
 	}
 	if !strings.Contains(out.String(), "UNAVAILABLE") {
 		t.Fatalf("human output hides the UNAVAILABLE state:\n%s", out.String())
@@ -113,7 +113,7 @@ func TestRunTrustReport_PolicyExitMatchesDocument(t *testing.T) {
 		t.Fatal("seed sync failed")
 	}
 
-	for _, policy := range []string{"exploratory", "review", "automated_change"} {
+	for _, policy := range []string{"exploratory-v1", "review-v1", "automated-change-v1"} {
 		var out bytes.Buffer
 		code := runTrustReportAt(repo, []string{"--json", "--policy", policy}, &out)
 		var doc struct {
@@ -187,30 +187,31 @@ func TestRunTrustReport_SingleDashFlagsRecognized(t *testing.T) {
 	gitRepo(t, repo, "main")
 
 	var out bytes.Buffer
-	code := runTrustReportAt(repo, []string{"-json", "-policy", "review", "-target", "no_such_symbol", "-limit", "3"}, &out)
+	code := runTrustReportAt(repo, []string{"-json", "-policy", "review-v1", "-target", "no_such_symbol", "-limit", "3"}, &out)
 	var doc struct {
 		Scope struct {
 			Kind string `json:"kind"`
 		} `json:"scope"`
 		Policy struct {
+			ID   string `json:"id"`
 			Name string `json:"name"`
 		} `json:"policy"`
 	}
 	if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
 		t.Fatalf("bad document: %v\n%s", err, out.String())
 	}
-	if doc.Policy.Name != "review" {
-		t.Errorf("policy.name = %q, want %q (-policy space form was dropped)", doc.Policy.Name, "review")
+	if doc.Policy.ID != "review-v1" || doc.Policy.Name != "review" {
+		t.Errorf("policy = {id:%q name:%q}, want {review-v1 review} (-policy space form was dropped)", doc.Policy.ID, doc.Policy.Name)
 	}
 	if doc.Scope.Kind != "symbol" {
 		t.Errorf("scope.kind = %q, want %q (-target space form was dropped)", doc.Scope.Kind, "symbol")
 	}
-	// Unindexed repo + review policy: verdict UNKNOWN maps to exit 4, and the
-	// laundered variant (policy dropped, state UNAVAILABLE) also exits 4 — the
+	// Unindexed repo + review policy: verdict UNVERIFIED maps to exit 2, and the
+	// laundered variant (policy dropped, state UNAVAILABLE) also exits 2 — the
 	// document assertions above are the discriminating pin; the exit code
 	// simply must not be friendlier.
-	if code != 4 {
-		t.Errorf("exit = %d, want 4", code)
+	if code != 2 {
+		t.Errorf("exit = %d, want 2", code)
 	}
 }
 
@@ -224,8 +225,8 @@ func TestRunTrustReport_HumanAndJSONExitCodesAgree(t *testing.T) {
 
 	for _, args := range [][]string{
 		nil,
-		{"--policy", "review"},
-		{"--policy", "automated_change", "--target", "no_such_symbol"},
+		{"--policy", "review-v1"},
+		{"--policy", "automated-change-v1", "--target", "no_such_symbol"},
 	} {
 		human := runTrustReportAt(repo, args, new(bytes.Buffer))
 		jsonCode := runTrustReportAt(repo, append([]string{"--json"}, args...), new(bytes.Buffer))
@@ -295,11 +296,11 @@ func TestRunTrustReport_JSONMatchesSharedCompositionBytes(t *testing.T) {
 	}{
 		{nil, client.TrustReportOptions{}},
 		{[]string{"--details", "--limit", "2"}, client.TrustReportOptions{Details: true, Limit: 2}},
-		{[]string{"--policy", "review", "--target", "no_such_symbol"}, client.TrustReportOptions{Policy: "review", Target: "no_such_symbol"}},
+		{[]string{"--policy", "review-v1", "--target", "no_such_symbol"}, client.TrustReportOptions{Policy: "review-v1", Target: "no_such_symbol"}},
 		// A target whose persisted file evidence exists: the additive
 		// scope_evidence object must ride the same shared bytes on both
 		// surfaces (the MCP twin asserts the same object over the wire).
-		{[]string{"--policy", "review", "--target", "cart.go"}, client.TrustReportOptions{Policy: "review", Target: "cart.go"}},
+		{[]string{"--policy", "review-v1", "--target", "cart.go"}, client.TrustReportOptions{Policy: "review-v1", Target: "cart.go"}},
 	}
 	for _, tc := range cases {
 		var out bytes.Buffer
@@ -342,17 +343,31 @@ func TestTrustExitCode_Mapping(t *testing.T) {
 		state       trust.State
 		want        int
 	}{
+		// PRD v1.0 §6 collapsed the five-way table into three codes: FAIL and
+		// UNVERIFIED both exit 2, alongside usage and operational errors
+		// (delta doc §A3). Only PASS exits 0 and only WARN exits 1 — every
+		// other outcome blocks.
 		{true, trust.VerdictPass, trust.StateCurrent, 0},
 		{true, trust.VerdictWarn, trust.StateCurrent, 1},
-		{true, trust.VerdictFail, trust.StateCurrent, 3},
-		{true, trust.VerdictUnknown, trust.StateCurrent, 4},
-		{true, trust.Verdict(""), trust.StateCurrent, 4},      // outside the closed set: fail closed
-		{true, trust.Verdict("passish"), trust.StateStale, 4}, // outside the closed set: fail closed
+		{true, trust.VerdictFail, trust.StateCurrent, 2},
+		{true, trust.VerdictUnverified, trust.StateCurrent, 2},
+		{true, trust.Verdict(""), trust.StateCurrent, 2},      // outside the closed set: fail closed
+		{true, trust.Verdict("passish"), trust.StateStale, 2}, // outside the closed set: fail closed
 		{false, trust.Verdict(""), trust.StateCurrent, 0},
-		{false, trust.Verdict(""), trust.StateStale, 4},
-		{false, trust.Verdict(""), trust.StateIncomplete, 4},
-		{false, trust.Verdict(""), trust.StateUnavailable, 4},
-		{false, trust.Verdict(""), trust.State(""), 4}, // outside the closed set: fail closed
+		{false, trust.Verdict(""), trust.StateStale, 2},
+		{false, trust.Verdict(""), trust.StateIncomplete, 2},
+		{false, trust.Verdict(""), trust.StateUnavailable, 2},
+		{false, trust.Verdict(""), trust.State(""), 2}, // outside the closed set: fail closed
+	}
+	// The property that survives the collapse and is the whole point of the
+	// surface: no policy verdict other than PASS, and no snapshot state other
+	// than CURRENT, ever exits 0.
+	for _, v := range []trust.Verdict{trust.VerdictWarn, trust.VerdictFail, trust.VerdictUnverified, trust.Verdict("")} {
+		for _, st := range []trust.State{trust.StateCurrent, trust.StateStale, trust.StateIncomplete, trust.StateUnavailable} {
+			if trustExitCode(true, v, st) == 0 {
+				t.Errorf("trustExitCode(policy, %q, %q) = 0 — non-PASS must never read as success", v, st)
+			}
+		}
 	}
 	for _, c := range cases {
 		if got := trustExitCode(c.policyGiven, c.verdict, c.state); got != c.want {

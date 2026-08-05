@@ -31,6 +31,10 @@ func (*CSharpParser) Language() string { return "c_sharp" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*CSharpParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*CSharpParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*CSharpParser) Extensions() []string { return []string{".cs"} }
 

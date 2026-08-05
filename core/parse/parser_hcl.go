@@ -34,6 +34,10 @@ func (*HCLParser) Language() string { return "hcl" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*HCLParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*HCLParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*HCLParser) Extensions() []string { return []string{".hcl", ".tf"} }
 

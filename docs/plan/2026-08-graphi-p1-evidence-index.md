@@ -56,17 +56,32 @@ repository.
 | MCP `graph_health` implementiert, Labs-gegated | GREEN | `surfaces/mcp/{tools,descriptors,toolcalls}.go`; gating + error-model pins in `surfaces/mcp/graphhealth_test.go` |
 | CLI/MCP Parität 100 % | GREEN | byte-level parity pins over nine input combinations (`surfaces/mcp/graphhealth_test.go`, `cmd/graphi/trust_report_test.go`) — one shared composition (`surfaces/client/trust_report.go`) |
 | Default MCP Output im Budget | GREEN | `TestGraphHealth_DefaultOutputWithinTokenBudget` (~380 estimated tokens vs the 2 000 target, 8 000 hard cap) |
-| Strict Query implementiert, Stable-Semantik unverändert | GREEN | `cmd/graphi/query_strict.go`; pins in `query_strict_test.go` + `query_strict_attack_test.go` (incl. the filtered-emptiness limitation and the fail-closed preflight) |
+| Strict Query implementiert, Stable-Semantik unverändert | GREEN | `cmd/graphi/query_strict.go`; pins in `query_strict_test.go` + `query_strict_attack_test.go` (incl. the filtered-emptiness limitation and the fail-closed preflight); the MCP half is `strict_query`, see the PRD-v1.0 row below. |
+
+### PRD v1.0 delta rows (added 2026-08-05)
+
+Registered on 2026-08-05: a second P1 PRD,
+[`2026-08-graphi-p1-prd-v1.md`](2026-08-graphi-p1-prd-v1.md), reconciled by
+[`2026-08-graphi-p1-prd-v1-delta.md`](2026-08-graphi-p1-prd-v1-delta.md). Rows it adds or
+reopens:
+
+| Item | Status | Evidence / what would discharge it |
+|---|---|---|
+| Wire contract matches PRD v1.0 (`UNVERIFIED`, `-v1` policy tokens, exit codes 0/1/2) | GREEN | delta §A, discharged. `engine/trust/prdv1_wire_test.go` pins all three values plus the rejection of the superseded bare names; `cmd/graphi/trust_report_test.go` pins the 0/1/2 table and the "no non-PASS verdict ever exits 0" property; contract amended to v1.1 (§1.5, §2.1). |
+| Capability Matrix (`typed-confirmed` / `cross-file-heuristic` / `intra-file-only` / `parse-only`) | GREEN | delta §B1, discharged. `engine/trust/capability.go` grades; `surfaces/client/trust_report.go` derives from the live registries at read time (not persisted — the snapshot digest contract and `schema_version: 1` both forbid it). Drift tests re-derive every expectation from the same registries (`surfaces/client/capability_test.go`); `core/parse.UndeclaredSymbolCapability` fails the build for a language registered without a declaration (`core/parse/capability_test.go`, planted-offender proof included). |
+| Strict Query reachable over MCP (`strict_query`, Labs) | GREEN | delta §B2, discharged. `ToolStrictQuery` registered Labs-only; CLI and MCP share one composition (`surfaces/client/query_strict.go`). Pins in `surfaces/mcp/strictquery_test.go`: byte parity over five input shapes, gating in both halves (absent from the Stable catalog AND dispatch-rejected), `[labs]` marking, the closed operation set, and the withheld-count/limitation red gate on real mixed-tier data. |
+| `internal/repostatus` module (PRD v1.0 §6, §8 Phase 1) | **N/A — satisfied otherwise** | delta §C1. Shipped as `internal/freshness` + `/probe`; named in accepted ADR 0006. Not a wire contract; deliberately not renamed. Recorded so it is not filed as unmet. |
 
 ### Evaluation — the honest gap
 
 | Item | Status | Evidence / what would discharge it |
 |---|---|---|
-| Trust Fixture Corpus vollständig (§36.1, 20 Fixtures) | **OPEN** | a large subset exists as Go test fixtures across the suites above, but no unified corpus artifact; closing it is plain Go test work, free in CI |
-| ≥ 80 Policy-Fälle versiegelt | **OPEN** | 60+ sealed matrix cases exist (`policy_matrix_test.go`) plus adversarial pins; the formal ≥80 sealed count is not reached |
+| Trust Fixture Corpus vollständig (§36.1, 20 Fixtures) | **OPEN** | the sealed matrix now carries 27 *snapshot-level* situations (`policy_matrix_test.go`) and the privacy fixture adds a hostile *repository*, but §36.1 asks for 20 unified repository fixtures and no such single artifact exists — the fixtures remain distributed across `engine/ingest`, `surfaces/client` and `surfaces/mcp` test files. Honest partial: not claimed green. |
+| ≥ 80 Policy-Fälle versiegelt | GREEN | 81 sealed cases — 27 fixture situations × 3 built-in policies (`engine/trust/policy_matrix_test.go`), each pinning the exact verdict and the exact canonically-sorted finding-code list, plus the adversarial pins in `policy_falsepass_test.go` / `scopefacts_attack_test.go`. Situations 21–27 pin boundaries the first twenty left implicit (type errors vs degradation, partial vs total degradation, derived-only vs heuristic-only, file vs package scope). |
 | ≥ 30 Agent Tasks ausgewertet (§36.3) | **OPEN** | requires an agent-task evaluation; can be run by the community or a future session |
 | ≥ 10 Human Usability Tests (§36.4) | **OPEN** | community path: the `trust-surface feedback` issue template asks first-time users exactly the §36.4 questions — real evidence, at no cost |
 | Policy Accuracy ≥ 98 % / Target Resolution ≥ 99 % | **OPEN** | needs the sealed evaluation runs above |
+| Privacy-Fixture + Output-Scanner (0 Source Bytes, 0 Secrets) | GREEN | `surfaces/client/privacy_test.go`: a repository with secrets in code, prompt-injection text in comments/literals/**a filename**, an over-long path, a binary blob and a fail-closed parse skip; every trust-report variant (incl. `--details`, both policies, adversarial targets) and every strict-query envelope is scanned. Found and closed a real gap: emitted paths were count-capped but not length-bounded (`trust.MaxPathLength`). Residual risk documented below. |
 | Full-/Incremental Trust Parity 100 % | GREEN | `FactDigest` parity + evidence-row parity tests (`engine/ingest/trust_persist_test.go`, `trust_evidence_test.go`) |
 | Performance Gates (Aggregate p95 ≤ 100 ms, Ingest-Overhead ≤ 5 %/10 %) | **OPEN** | the NFR gates target the P0 reference stress repo; no measurement on that repo has been run — no green is claimed from toy-fixture timings |
 | Security Review grün | **OPEN** | not held. Note: Dependabot currently reports 8 findings (4 high, 4 moderate) on `main` — dependency-level, not trust-surface code, but they block "keine offenen High/Critical Findings" |
@@ -76,6 +91,15 @@ repository.
 ---
 
 ## Known limitations of record
+
+- **A filename can address the agent.** Trust documents name the files the
+  parser skipped — a skipped file a reader cannot name is not actionable — so a
+  repository can put chosen text in front of an agent by naming a file after it
+  (PRD §9 lists filenames as an injection vector and requires paths be escaped
+  and bounded, not omitted). What is guaranteed: such text arrives as DATA in a
+  known field, JSON-escaped, repository-relative and length-bounded
+  (`trust.MaxPathLength`), never as document prose and never with the file's
+  contents. Pinned by `TestPrivacy_PathsAreBoundedAndRelative`.
 
 - **Residual crash window** (documented in `engine/trust/state.go`): a
   crash-window graph mutation preserving the entire recomputable aggregate

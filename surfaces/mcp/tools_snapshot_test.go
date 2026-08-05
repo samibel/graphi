@@ -56,6 +56,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"search_ast",
 		"search_semantic",
 		"skillgen",
+		"strict_query",
 		"subtypes",
 		"suggest_reviewers",
 		"supertypes",

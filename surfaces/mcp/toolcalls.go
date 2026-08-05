@@ -40,6 +40,12 @@ type callParams struct {
 		Actor           string `json:"actor"`
 		// EP-011 G1 compound query text (SEED/HOP/WHERE/MAXDEPTH).
 		Query string `json:"query"`
+		// P1 strict_query arguments (PRD v1.0 §8 Phase 9). Operation selects the
+		// Stable structural query to run underneath; MinimumTier is the lowest
+		// confidence tier admitted into the result. Both share Symbol/Depth with
+		// the structural query tools.
+		Operation   string `json:"operation"`
+		MinimumTier string `json:"minimum_tier"`
 		// SW-085 pattern-query arguments: search_ast JSON pattern + limit, and the
 		// find_clones JSON config.
 		Pattern string `json:"pattern"`
@@ -208,6 +214,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	// `graphi trust-report --json` for the same inputs.
 	if p.Name == ToolGraphHealth {
 		return s.graphHealthCall(ctx, p)
+	}
+	if p.Name == ToolStrictQuery {
+		return s.strictQueryCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -748,6 +757,67 @@ func (s *Server) graphHealthCall(ctx context.Context, p callParams) (any, *rpcEr
 		if errors.Is(err, trust.ErrPolicyUnknown) {
 			return nil, &rpcError{Code: -32602, Message: err.Error()}
 		}
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// strictQueryCall (P1 strict query, PRD v1.0 §8 Phase 9) runs a Stable
+// structural query and withholds result edges below the requested minimum
+// confidence tier, through the shared client.ComposeStrictQuery composition —
+// so MCP and `graphi query-strict` emit byte-identical envelopes for the same
+// inputs (ONE composition, ONE encoder).
+//
+// Root/DBPath/MetaDir stay empty so the optional policy preflight resolves the
+// server process's repository and its auto-managed store exactly as
+// `graphi status` does (a pure read-only observer).
+//
+// It calls s.client(), not s.stableClient(): strict_query is Labs, and routing
+// it through the stable port would advertise a Labs capability on the frozen
+// surface. The Stable query it runs underneath is untouched — this tool filters
+// an already-canonical result and never rewrites a tier.
+//
+// Error model: input mistakes (unknown operation or tier, missing symbol,
+// unknown policy) are -32602; a BLOCKED policy preflight is -32603 carrying the
+// verdict, deliberately an error rather than an empty success — a refused
+// preflight means no result may be returned at all, and an empty-looking
+// success is exactly the false negative this surface exists to prevent.
+func (s *Server) strictQueryCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Operation == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: operation"}
+	}
+	if !isStrictQueryOperation(p.Arguments.Operation) {
+		// Closed set: strict_query wraps the Stable STRUCTURAL queries only.
+		// Validated against the same helper the input schema advertises, not
+		// against IsStableMCPTool — the stable set also contains `search` and
+		// the agent tools, which are not tier-filterable structural queries and
+		// would otherwise pass this gate and fail deeper as an operational
+		// error, reporting a caller mistake as a server fault.
+		return nil, &rpcError{Code: -32602, Message: fmt.Sprintf("unsupported operation %q for strict_query (want one of %v)", p.Arguments.Operation, strictQueryOperations())}
+	}
+	if p.Arguments.Symbol == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
+	}
+	if t := p.Arguments.MinimumTier; t != "" {
+		if _, ok := client.StrictTierRank[t]; !ok {
+			return nil, &rpcError{Code: -32602, Message: fmt.Sprintf("invalid minimum_tier %q: want confirmed|derived|heuristic", t)}
+		}
+	}
+	b, verdict, state, err := client.ComposeStrictQuery(ctx, s.client(), client.StrictQueryOptions{
+		Operation:   p.Arguments.Operation,
+		Symbol:      p.Arguments.Symbol,
+		Depth:       derefInt(p.Arguments.Depth),
+		MinimumTier: p.Arguments.MinimumTier,
+		Policy:      p.Arguments.Policy,
+	})
+	switch {
+	case errors.Is(err, client.ErrStrictQueryBlocked):
+		return nil, &rpcError{Code: -32603, Message: fmt.Sprintf(
+			"trust policy %s blocked the query: verdict %s, snapshot %s — no result was produced",
+			p.Arguments.Policy, verdict, state)}
+	case errors.Is(err, client.ErrStrictQueryInput), errors.Is(err, trust.ErrPolicyUnknown):
+		return nil, &rpcError{Code: -32602, Message: err.Error()}
+	case err != nil:
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
 	return textResult(b), nil

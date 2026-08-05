@@ -23,9 +23,9 @@ row is tagged stable or one is dropped.
 
 **The 12 stable operations (frozen):** `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `impact`, `neighborhood`, `references`, `related_files`, `search`.
 
-**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **44-tool** union (33 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
+**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **45-tool** union (34 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **151**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **152**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -82,7 +82,7 @@ Total capabilities: **151**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage-prs` | 🧪 labs | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | 🧪 labs | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (44)
+## MCP tools (45)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -107,7 +107,7 @@ Total capabilities: **151**. See [`architecture-plan.md`](architecture-plan.md) 
 | `distill` | 🧪 labs | ✅ shipped | EP-012 | session distillation into a compact decision record. |
 | `explain_symbol` | 🟢 stable | ✅ shipped | EP-020 | SW-115: compact, cited symbol-identity summary (definition + callers/callees/references) over the live graph; ambiguous references return candidates; CLI parity via `graphi explain-symbol`. |
 | `find_clones` | 🧪 labs | ✅ shipped | EP-013 | structural clone-group detection from a JSON config (G4). |
-| `graph_health` | 🧪 labs | ✅ shipped | - | P1 trust surface (PRD §17): canonical contract-§2 trust-report document (snapshot state, freshness facts, coverage, edge confidence tiers, resolution gaps, boundaries, optional exploratory\|review\|automated_change policy verdict) for repository or target scope; byte-parity with `graphi trust-report --json` through the single client.TrustReport composition; read-only fail-closed observer (missing evidence reads UNKNOWN/UNAVAILABLE, never PASS); Labs-only pending a promotion decision. |
+| `graph_health` | 🧪 labs | ✅ shipped | - | P1 trust surface (PRD §17): canonical contract-§2 trust-report document (snapshot state, freshness facts, coverage, edge confidence tiers, resolution gaps, boundaries, optional exploratory-v1\|review-v1\|automated-change-v1 policy verdict) for repository or target scope; byte-parity with `graphi trust-report --json` through the single client.TrustReport composition; read-only fail-closed observer (missing evidence reads UNVERIFIED/UNAVAILABLE, never PASS); Labs-only pending a promotion decision. |
 | `impact` | 🟢 stable | ✅ shipped | EP-004 | dedicated default-profile entry for the frozen Stable impact operation; dispatch is fixed to StableClient.Impact with no generic analyzer selector. |
 | `implementers` | 🧪 labs | ✅ shipped | EP-011 | structural query: types that implement/embed a symbol (G2). |
 | `implements` | 🧪 labs | ✅ shipped | EP-011 | structural query: interfaces/types a symbol implements (G2). |
@@ -125,6 +125,7 @@ Total capabilities: **151**. See [`architecture-plan.md`](architecture-plan.md) 
 | `search_ast` | 🧪 labs | ✅ shipped | EP-013 | structural AST pattern query over the indexed graph (G3). |
 | `search_semantic` | 🧪 labs | ✅ shipped | EP-001 | optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061). |
 | `skillgen` | 🧪 labs | ✅ shipped | EP-012 | deterministic skill generation from a procedure description. |
+| `strict_query` | 🧪 labs | ✅ shipped | - | P1 strict query (PRD v1.0 §8 Phase 9): runs a Stable structural query unchanged, then withholds result edges below `minimum_tier` (confirmed\|derived\|heuristic) and reports the withheld count; a result emptied by the filter always carries an explicit limitation, so filtered emptiness never reads as proven emptiness. Optional fail-closed policy preflight blocks before the query runs. Byte-parity with `graphi query-strict` through the single client.ComposeStrictQuery composition; operations closed to the Stable structural set; Labs-only. |
 | `subtypes` | 🧪 labs | ✅ shipped | EP-011 | structural query: subtypes (inherits+implements composed) (G2). |
 | `suggest_reviewers` | 🧪 labs | ✅ shipped | EP-018 | SW-107: ranked candidate-reviewer recommendation from local graph ownership/churn + affected-subgraph proximity over the touched set, with a transparent per-signal breakdown (zero engine egress). |
 | `supertypes` | 🧪 labs | ✅ shipped | EP-011 | structural query: supertypes (inherits+implements composed) (G2). |

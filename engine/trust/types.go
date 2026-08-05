@@ -60,7 +60,27 @@ const (
 	MaxParsePaths = 64
 	// MaxDegradedUnits caps TypeResolutionFacts.DegradedUnits.
 	MaxDegradedUnits = 64
+	// MaxPathLength caps the length of any single emitted path.
+	//
+	// Capping the list COUNT is not enough. A path is repository-controlled
+	// input: its length is chosen by whoever named the file, so an unbounded
+	// path is both a snapshot-size risk (PRD v1.0 §4 budgets the snapshot at
+	// ≤ 1 MB) and the "nutzerkontrollierte Pfade … längenbegrenzt" requirement
+	// of §7. 240 leaves a normal deep repository path untouched while bounding
+	// the pathological case.
+	MaxPathLength = 240
 )
+
+// truncatePath bounds a single path to MaxPathLength, marking any truncation
+// so a shortened path is never mistaken for a real one. The marker is ASCII
+// and cannot occur in a path graphi produced itself.
+func truncatePath(p string) string {
+	if len(p) <= MaxPathLength {
+		return p
+	}
+	const marker = "…[truncated]"
+	return p[:MaxPathLength-len(marker)] + marker
+}
 
 // State is the closed snapshot-state enum (contract doc §1.6, PRD §11.6/§18).
 // It qualifies snapshots only — never policy assessments (verdicts are a
@@ -251,8 +271,9 @@ func NewLinkFacts(s link.Stats) LinkFacts {
 // NewParseFacts builds the parse-skip facts from one pass's skip diagnostics:
 // paths is the full skipped-path list (one entry per skip, repo-relative) and
 // byReason the per-reason tally. Skipped counts every skip; Paths keeps only
-// relative paths, sorted, capped at MaxParsePaths — an absolute path is
-// dropped from the sample (never from the count) rather than leaked.
+// relative paths, sorted, capped at MaxParsePaths and each bounded to
+// MaxPathLength — an absolute path is dropped from the sample (never from the
+// count) rather than leaked.
 func NewParseFacts(paths []string, byReason map[string]int) ParseFacts {
 	reasons := make([]ReasonCount, 0, len(byReason))
 	for r, n := range byReason {
@@ -265,7 +286,7 @@ func NewParseFacts(paths []string, byReason map[string]int) ParseFacts {
 	rel := make([]string, 0, len(paths))
 	for _, p := range paths {
 		if !path.IsAbs(p) {
-			rel = append(rel, p)
+			rel = append(rel, truncatePath(p))
 		}
 	}
 	sort.Strings(rel)
@@ -293,7 +314,8 @@ func NewTypeResolutionFacts(r typeresolve.Result) TypeResolutionFacts {
 		if u.Degraded != "" {
 			f.UnitsDegraded++
 			f.DegradedUnits = append(f.DegradedUnits, DegradedUnit{
-				Dir: u.Dir, Name: u.Name, Reason: u.Degraded, TypeErrors: u.TypeErrors,
+				// Dir and Name are repository-controlled too — same bound.
+				Dir: truncatePath(u.Dir), Name: truncatePath(u.Name), Reason: u.Degraded, TypeErrors: u.TypeErrors,
 			})
 		}
 	}

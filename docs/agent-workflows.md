@@ -28,16 +28,33 @@ or safe to act on. With the Labs catalog (`graphi mcp -labs`), call
 `graph_health` first:
 
 ```text
-1. graph_health(policy="review", target="engine/query.Service")
+1. graph_health(policy="review-v1", target="engine/query.Service")
 2. Check snapshot_state == "CURRENT"   (STALE/INCOMPLETE/UNAVAILABLE: evidence
    is not usable for the current source — never treat it as healthy)
 3. Read policy.verdict and the findings
-4. FAIL or UNKNOWN → do not make a definitive graph-only claim; inspect the
+4. FAIL or UNVERIFIED → do not make a definitive graph-only claim; inspect the
    source or run additional tools instead
 5. Otherwise run the queries, and cite the trust limitations in your answer
-6. For an unattended automated change: require an automated_change PASS —
+6. For an unattended automated change: require an automated-change-v1 PASS —
    anything else means a human decides
 ```
+
+### Acting only on strong evidence (`strict_query`, labs)
+
+`graph_health` grades the repository; `strict_query` grades an individual
+answer. It runs one of the Stable structural queries unchanged, then withholds
+result edges below a minimum confidence tier and reports how many it withheld:
+
+```text
+strict_query(operation="callers", symbol="<id>", minimum_tier="confirmed")
+```
+
+**Read the envelope, not just the list.** `filter.excluded_edges > 0` with an
+empty result means the answer was *filtered*, not that no such relationships
+exist — `limitations` says so explicitly. Treating that as "no callers" is a
+false negative, which on this surface is worse than no answer at all. Pass
+`policy` to run the same fail-closed preflight first; a non-PASS/WARN verdict
+returns an error and the query never runs.
 
 The three policies are versioned static rule sets, fail-closed by
 construction: missing evidence never yields PASS. The document is

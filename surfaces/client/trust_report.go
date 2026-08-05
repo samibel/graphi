@@ -29,7 +29,9 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/engine/link"
 	"github.com/samibel/graphi/engine/trust"
+	"github.com/samibel/graphi/engine/typeresolve"
 	"github.com/samibel/graphi/internal/freshness"
 	"github.com/samibel/graphi/internal/freshness/probe"
 	"github.com/samibel/graphi/internal/releaseinfo"
@@ -78,6 +80,7 @@ type trustReportDoc struct {
 	ChecksPassed    []string              `json:"checks_passed"`
 	Details         trustReportDetails    `json:"details"`
 	ScopeEvidence   trust.ScopeFacts      `json:"scope_evidence"`
+	Capabilities    []trust.Capability    `json:"capabilities"`
 }
 
 // trustReportGeneration is the §2.2 graph_generation object. Every value is a
@@ -144,7 +147,13 @@ type trustReportBoundary struct {
 
 // trustReportPolicy is the §2.2 policy object. When no policy is requested it
 // is present with zero values, never omitted (§2.3 presence clarification).
+//
+// ID is the canonical versioned identifier PRD v1.0 §6 fixes ("review-v1") and
+// the token --policy accepts; Name and Version are its decomposition. All three
+// come from one PolicyRef, so they cannot disagree (delta doc §A2). The field
+// is additive within schema_version 1 (contract §2.3 rule 7).
 type trustReportPolicy struct {
+	ID      string        `json:"id"`
 	Name    string        `json:"name"`
 	Version int           `json:"version"`
 	Verdict trust.Verdict `json:"verdict"`
@@ -192,7 +201,7 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 	var pol trust.Policy
 	policyRequested := opts.Policy != ""
 	if policyRequested {
-		p, err := trust.PolicyByName(opts.Policy)
+		p, err := trust.PolicyByID(opts.Policy)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -222,7 +231,7 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 	if policyRequested {
 		a := pol.EvaluateWithScopeFacts(facts.snap, facts.state, facts.scope, facts.scopeFacts, facts.resolution...)
 		verdict = a.Verdict
-		policyRef = trustReportPolicy{Name: a.Policy.Name, Version: a.Policy.Version, Verdict: a.Verdict}
+		policyRef = trustReportPolicy{ID: a.Policy.ID, Name: a.Policy.Name, Version: a.Policy.Version, Verdict: a.Verdict}
 		findings = a.Findings // canonical order; adopts the resolver findings verbatim
 		checksPassed = a.ChecksPassed
 	}
@@ -270,12 +279,61 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 		ChecksPassed:  checksPassed,
 		Details:       detailsBlock(facts.snap, opts),
 		ScopeEvidence: facts.scopeFacts,
+		Capabilities:  languageCapabilities(),
 	}
 	b, err := encodeTrustReport(doc)
 	if err != nil {
 		return nil, "", "", err
 	}
 	return b, verdict, facts.state, nil
+}
+
+// languageCapabilities derives the P1 capability matrix (PRD v1.0 §3) from the
+// three live registries, each consulted in the package that owns its fact:
+// engine/typeresolve declares what it can type-check, engine/link which
+// languages have a cross-file resolver, and core/parse which languages are
+// parseable at all and which of those extract symbols.
+//
+// It lives at the surface rank for the same reason the rest of this
+// composition does: engine/trust is the pure domain core and grades the inputs
+// (trust.Capabilities) without importing the registries.
+//
+// Derived per call rather than persisted in the snapshot, deliberately.
+// Capability is a property of THIS BINARY, not of the graph generation: a
+// snapshot written by a build with fewer grammars would otherwise keep
+// advertising that build's capabilities under a newer one. Persisting it would
+// also change trust.Snapshot's canonical Encode bytes — which IS the digest
+// contract — and force SnapshotSchemaVersion to 2, contradicting the
+// schema_version 1 that PRD v1.0 §6 itself fixes. Recorded in delta doc §B1.
+//
+// The cost is one registry construction per report; both registries are pure
+// in-memory wiring with no I/O, and the report is a once-per-invocation
+// document.
+func languageCapabilities() []trust.Capability {
+	registry := parse.NewDefaultRegistry()
+	languages := registry.Languages()
+
+	extraction := make(map[string]bool, len(languages))
+	for _, lang := range languages {
+		p, err := registry.ParserForLang(lang)
+		if err != nil {
+			continue
+		}
+		// An undeclared parser stays ABSENT from the map, and
+		// trust.Capabilities omits its row rather than assuming a level.
+		// core/parse's UndeclaredSymbolCapability guard keeps that case out of
+		// shipped binaries; this is the fail-closed handling if it ever slips.
+		if extracts, known := parse.ExtractsSymbols(p); known {
+			extraction[lang] = extracts
+		}
+	}
+
+	return trust.Capabilities(trust.CapabilityInputs{
+		Languages:        languages,
+		TypeChecked:      typeresolve.Languages(),
+		CrossFileLinked:  link.New().Languages(),
+		SymbolExtraction: extraction,
+	})
 }
 
 // readTrustFacts opens the durable store READ-ONLY (the same

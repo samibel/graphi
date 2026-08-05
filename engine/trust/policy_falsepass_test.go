@@ -42,7 +42,7 @@ func TestFailClosed_StateOutsideClosedSet(t *testing.T) {
 	for _, st := range states {
 		for _, p := range trust.Policies() {
 			a := p.Evaluate(snapPure(), st, repo)
-			if a.Verdict != trust.VerdictUnknown {
+			if a.Verdict != trust.VerdictUnverified {
 				t.Errorf("%s over state %q = %s, want UNKNOWN (out-of-set state is not evidence)",
 					p.Name, st, a.Verdict)
 			}
@@ -72,7 +72,7 @@ func TestFailClosed_ScopeLaunderingWithoutResolverFindings(t *testing.T) {
 	for _, scope := range scopes {
 		for _, p := range trust.Policies() {
 			a := p.Evaluate(snapPure(), trust.StateCurrent, scope)
-			if a.Verdict != trust.VerdictUnknown {
+			if a.Verdict != trust.VerdictUnverified {
 				t.Errorf("%s over laundered scope %+v = %s, want UNKNOWN (§1.8)", p.Name, scope, a.Verdict)
 			}
 			if len(a.Findings) == 0 {
@@ -187,7 +187,7 @@ func TestFailClosed_InconsistentFactSections(t *testing.T) {
 func TestFailClosed_ZeroPolicyExplained(t *testing.T) {
 	repo := trust.ScopeRef{Kind: trust.ScopeRepository}
 	a := trust.Policy{}.Evaluate(snapPure(), trust.StateCurrent, repo)
-	if a.Verdict != trust.VerdictUnknown {
+	if a.Verdict != trust.VerdictUnverified {
 		t.Errorf("zero Policy verdict = %s, want UNKNOWN", a.Verdict)
 	}
 	if len(a.Findings) == 0 && len(a.ChecksPassed) == 0 {
@@ -200,9 +200,9 @@ func TestFailClosed_ZeroPolicyExplained(t *testing.T) {
 // to FAIL; the all-zero baseline stays PASS with the explicit checks list.
 func TestFailClosed_AutomatedChangeMinimalCounts(t *testing.T) {
 	repo := trust.ScopeRef{Kind: trust.ScopeRepository}
-	p, err := trust.PolicyByName(trust.PolicyNameAutomatedChange)
+	p, err := trust.PolicyByID(trust.PolicyIDAutomatedChange)
 	if err != nil {
-		t.Fatalf("PolicyByName: %v", err)
+		t.Fatalf("PolicyByID: %v", err)
 	}
 	baseline := p.Evaluate(snapPure(), trust.StateCurrent, repo)
 	if baseline.Verdict != trust.VerdictPass || len(baseline.ChecksPassed) == 0 {
@@ -258,31 +258,31 @@ func TestSeverityBindings_ContractTables(t *testing.T) {
 		severity string
 		verdict  trust.Verdict
 	}{
-		{"E2 stale", trust.PolicyNameExploratory, snapPure(), trust.StateStale, trust.FindingGraphStale, trust.SeverityWarning, trust.VerdictWarn},
-		{"R1 stale", trust.PolicyNameReview, snapPure(), trust.StateStale, trust.FindingGraphStale, trust.SeverityError, trust.VerdictFail},
-		{"A1 stale", trust.PolicyNameAutomatedChange, snapPure(), trust.StateStale, trust.FindingGraphStale, trust.SeverityError, trust.VerdictFail},
-		{"A2 stale snapshot", trust.PolicyNameAutomatedChange, snapPure(), trust.StateStale, trust.FindingSnapshotStale, trust.SeverityError, trust.VerdictFail},
-		{"E5 parse skips", trust.PolicyNameExploratory, parse, trust.StateCurrent, trust.FindingParseSkippedInScope, trust.SeverityWarning, trust.VerdictWarn},
-		{"R3 parse skips", trust.PolicyNameReview, parse, trust.StateCurrent, trust.FindingParseSkippedInScope, trust.SeverityError, trust.VerdictFail},
-		{"A4 parse skips", trust.PolicyNameAutomatedChange, parse, trust.StateCurrent, trust.FindingParseSkippedInScope, trust.SeverityError, trust.VerdictFail},
-		{"R4 partial degraded", trust.PolicyNameReview, partialDegraded, trust.StateCurrent, trust.FindingPackageDegraded, trust.SeverityWarning, trust.VerdictWarn},
-		{"R4 total degraded", trust.PolicyNameReview, totalDegraded, trust.StateCurrent, trust.FindingPackageDegraded, trust.SeverityError, trust.VerdictFail},
-		{"A5 degraded", trust.PolicyNameAutomatedChange, partialDegraded, trust.StateCurrent, trust.FindingPackageDegraded, trust.SeverityError, trust.VerdictFail},
-		{"E4 ambiguous visible", trust.PolicyNameExploratory, ambiguous, trust.StateCurrent, trust.FindingAmbiguousReferenceInScope, trust.SeverityInfo, trust.VerdictPass},
-		{"R5 ambiguous", trust.PolicyNameReview, ambiguous, trust.StateCurrent, trust.FindingAmbiguousReferenceInScope, trust.SeverityWarning, trust.VerdictWarn},
-		{"A6 ambiguous", trust.PolicyNameAutomatedChange, ambiguous, trust.StateCurrent, trust.FindingAmbiguousReferenceInScope, trust.SeverityError, trust.VerdictFail},
-		{"E4 unresolved visible", trust.PolicyNameExploratory, unresolved, trust.StateCurrent, trust.FindingUnresolvedReferenceInScope, trust.SeverityInfo, trust.VerdictPass},
-		{"A7 unresolved", trust.PolicyNameAutomatedChange, unresolved, trust.StateCurrent, trust.FindingUnresolvedReferenceInScope, trust.SeverityError, trust.VerdictFail},
-		{"R6 heuristic-only", trust.PolicyNameReview, heuristicOnly, trust.StateCurrent, trust.FindingHeuristicOnlyPath, trust.SeverityWarning, trust.VerdictWarn},
-		{"A8 heuristic-only", trust.PolicyNameAutomatedChange, heuristicOnly, trust.StateCurrent, trust.FindingHeuristicOnlyPath, trust.SeverityError, trust.VerdictFail},
-		{"E6 external visible", trust.PolicyNameExploratory, external, trust.StateCurrent, trust.FindingExternalBoundaryReached, trust.SeverityInfo, trust.VerdictPass},
-		{"R7 external", trust.PolicyNameReview, external, trust.StateCurrent, trust.FindingExternalBoundaryReached, trust.SeverityWarning, trust.VerdictWarn},
-		{"A9 external", trust.PolicyNameAutomatedChange, external, trust.StateCurrent, trust.FindingExternalBoundaryReached, trust.SeverityError, trust.VerdictFail},
+		{"E2 stale", trust.PolicyIDExploratory, snapPure(), trust.StateStale, trust.FindingGraphStale, trust.SeverityWarning, trust.VerdictWarn},
+		{"R1 stale", trust.PolicyIDReview, snapPure(), trust.StateStale, trust.FindingGraphStale, trust.SeverityError, trust.VerdictFail},
+		{"A1 stale", trust.PolicyIDAutomatedChange, snapPure(), trust.StateStale, trust.FindingGraphStale, trust.SeverityError, trust.VerdictFail},
+		{"A2 stale snapshot", trust.PolicyIDAutomatedChange, snapPure(), trust.StateStale, trust.FindingSnapshotStale, trust.SeverityError, trust.VerdictFail},
+		{"E5 parse skips", trust.PolicyIDExploratory, parse, trust.StateCurrent, trust.FindingParseSkippedInScope, trust.SeverityWarning, trust.VerdictWarn},
+		{"R3 parse skips", trust.PolicyIDReview, parse, trust.StateCurrent, trust.FindingParseSkippedInScope, trust.SeverityError, trust.VerdictFail},
+		{"A4 parse skips", trust.PolicyIDAutomatedChange, parse, trust.StateCurrent, trust.FindingParseSkippedInScope, trust.SeverityError, trust.VerdictFail},
+		{"R4 partial degraded", trust.PolicyIDReview, partialDegraded, trust.StateCurrent, trust.FindingPackageDegraded, trust.SeverityWarning, trust.VerdictWarn},
+		{"R4 total degraded", trust.PolicyIDReview, totalDegraded, trust.StateCurrent, trust.FindingPackageDegraded, trust.SeverityError, trust.VerdictFail},
+		{"A5 degraded", trust.PolicyIDAutomatedChange, partialDegraded, trust.StateCurrent, trust.FindingPackageDegraded, trust.SeverityError, trust.VerdictFail},
+		{"E4 ambiguous visible", trust.PolicyIDExploratory, ambiguous, trust.StateCurrent, trust.FindingAmbiguousReferenceInScope, trust.SeverityInfo, trust.VerdictPass},
+		{"R5 ambiguous", trust.PolicyIDReview, ambiguous, trust.StateCurrent, trust.FindingAmbiguousReferenceInScope, trust.SeverityWarning, trust.VerdictWarn},
+		{"A6 ambiguous", trust.PolicyIDAutomatedChange, ambiguous, trust.StateCurrent, trust.FindingAmbiguousReferenceInScope, trust.SeverityError, trust.VerdictFail},
+		{"E4 unresolved visible", trust.PolicyIDExploratory, unresolved, trust.StateCurrent, trust.FindingUnresolvedReferenceInScope, trust.SeverityInfo, trust.VerdictPass},
+		{"A7 unresolved", trust.PolicyIDAutomatedChange, unresolved, trust.StateCurrent, trust.FindingUnresolvedReferenceInScope, trust.SeverityError, trust.VerdictFail},
+		{"R6 heuristic-only", trust.PolicyIDReview, heuristicOnly, trust.StateCurrent, trust.FindingHeuristicOnlyPath, trust.SeverityWarning, trust.VerdictWarn},
+		{"A8 heuristic-only", trust.PolicyIDAutomatedChange, heuristicOnly, trust.StateCurrent, trust.FindingHeuristicOnlyPath, trust.SeverityError, trust.VerdictFail},
+		{"E6 external visible", trust.PolicyIDExploratory, external, trust.StateCurrent, trust.FindingExternalBoundaryReached, trust.SeverityInfo, trust.VerdictPass},
+		{"R7 external", trust.PolicyIDReview, external, trust.StateCurrent, trust.FindingExternalBoundaryReached, trust.SeverityWarning, trust.VerdictWarn},
+		{"A9 external", trust.PolicyIDAutomatedChange, external, trust.StateCurrent, trust.FindingExternalBoundaryReached, trust.SeverityError, trust.VerdictFail},
 	}
 	for _, tc := range cases {
-		p, err := trust.PolicyByName(tc.policy)
+		p, err := trust.PolicyByID(tc.policy)
 		if err != nil {
-			t.Fatalf("PolicyByName(%s): %v", tc.policy, err)
+			t.Fatalf("PolicyByID(%s): %v", tc.policy, err)
 		}
 		a := p.Evaluate(tc.snap, tc.st, repo)
 		if a.Verdict != tc.verdict {
@@ -300,14 +300,14 @@ func TestSeverityBindings_ContractTables(t *testing.T) {
 // evidence), regardless of how healthy the snapshot facts look.
 func TestExploratoryFloor(t *testing.T) {
 	repo := trust.ScopeRef{Kind: trust.ScopeRepository}
-	p, err := trust.PolicyByName(trust.PolicyNameExploratory)
+	p, err := trust.PolicyByID(trust.PolicyIDExploratory)
 	if err != nil {
-		t.Fatalf("PolicyByName: %v", err)
+		t.Fatalf("PolicyByID: %v", err)
 	}
 	for _, st := range []trust.State{trust.StateUnavailable, trust.StateIncomplete} {
 		for name, snap := range map[string]trust.Snapshot{"zero": {}, "pure": snapPure()} {
 			a := p.Evaluate(snap, st, repo)
-			if a.Verdict != trust.VerdictUnknown {
+			if a.Verdict != trust.VerdictUnverified {
 				t.Errorf("exploratory over %s snapshot in %s = %s, want UNKNOWN", name, st, a.Verdict)
 			}
 		}
@@ -402,24 +402,24 @@ func TestScopeFacts_SeverityBindings(t *testing.T) {
 		severity string
 		verdict  trust.Verdict
 	}{
-		{"E5 parse skip in scope", trust.PolicyNameExploratory, skippedFile, trust.FindingParseSkippedInScope, trust.SeverityWarning, trust.VerdictWarn},
-		{"R3 parse skip in scope", trust.PolicyNameReview, skippedFile, trust.FindingParseSkippedInScope, trust.SeverityError, trust.VerdictFail},
-		{"A4 parse skip in scope", trust.PolicyNameAutomatedChange, skippedFile, trust.FindingParseSkippedInScope, trust.SeverityError, trust.VerdictFail},
-		{"E4 ambiguous visible in scope", trust.PolicyNameExploratory, ambiguous, trust.FindingAmbiguousReferenceInScope, trust.SeverityInfo, trust.VerdictPass},
-		{"R5 ambiguous in scope", trust.PolicyNameReview, ambiguous, trust.FindingAmbiguousReferenceInScope, trust.SeverityWarning, trust.VerdictWarn},
-		{"A6 ambiguous in scope", trust.PolicyNameAutomatedChange, ambiguous, trust.FindingAmbiguousReferenceInScope, trust.SeverityError, trust.VerdictFail},
-		{"E4 unresolved visible in scope", trust.PolicyNameExploratory, unresolved, trust.FindingUnresolvedReferenceInScope, trust.SeverityInfo, trust.VerdictPass},
-		{"A7 unresolved in scope", trust.PolicyNameAutomatedChange, unresolved, trust.FindingUnresolvedReferenceInScope, trust.SeverityError, trust.VerdictFail},
-		{"E6 external visible in scope", trust.PolicyNameExploratory, external, trust.FindingExternalBoundaryReached, trust.SeverityInfo, trust.VerdictPass},
-		{"R7 external in scope", trust.PolicyNameReview, external, trust.FindingExternalBoundaryReached, trust.SeverityWarning, trust.VerdictWarn},
-		{"A9 external in scope", trust.PolicyNameAutomatedChange, external, trust.FindingExternalBoundaryReached, trust.SeverityError, trust.VerdictFail},
-		{"R4 degraded in scope", trust.PolicyNameReview, degraded, trust.FindingPackageDegraded, trust.SeverityError, trust.VerdictFail},
-		{"A5 degraded in scope", trust.PolicyNameAutomatedChange, degraded, trust.FindingPackageDegraded, trust.SeverityError, trust.VerdictFail},
+		{"E5 parse skip in scope", trust.PolicyIDExploratory, skippedFile, trust.FindingParseSkippedInScope, trust.SeverityWarning, trust.VerdictWarn},
+		{"R3 parse skip in scope", trust.PolicyIDReview, skippedFile, trust.FindingParseSkippedInScope, trust.SeverityError, trust.VerdictFail},
+		{"A4 parse skip in scope", trust.PolicyIDAutomatedChange, skippedFile, trust.FindingParseSkippedInScope, trust.SeverityError, trust.VerdictFail},
+		{"E4 ambiguous visible in scope", trust.PolicyIDExploratory, ambiguous, trust.FindingAmbiguousReferenceInScope, trust.SeverityInfo, trust.VerdictPass},
+		{"R5 ambiguous in scope", trust.PolicyIDReview, ambiguous, trust.FindingAmbiguousReferenceInScope, trust.SeverityWarning, trust.VerdictWarn},
+		{"A6 ambiguous in scope", trust.PolicyIDAutomatedChange, ambiguous, trust.FindingAmbiguousReferenceInScope, trust.SeverityError, trust.VerdictFail},
+		{"E4 unresolved visible in scope", trust.PolicyIDExploratory, unresolved, trust.FindingUnresolvedReferenceInScope, trust.SeverityInfo, trust.VerdictPass},
+		{"A7 unresolved in scope", trust.PolicyIDAutomatedChange, unresolved, trust.FindingUnresolvedReferenceInScope, trust.SeverityError, trust.VerdictFail},
+		{"E6 external visible in scope", trust.PolicyIDExploratory, external, trust.FindingExternalBoundaryReached, trust.SeverityInfo, trust.VerdictPass},
+		{"R7 external in scope", trust.PolicyIDReview, external, trust.FindingExternalBoundaryReached, trust.SeverityWarning, trust.VerdictWarn},
+		{"A9 external in scope", trust.PolicyIDAutomatedChange, external, trust.FindingExternalBoundaryReached, trust.SeverityError, trust.VerdictFail},
+		{"R4 degraded in scope", trust.PolicyIDReview, degraded, trust.FindingPackageDegraded, trust.SeverityError, trust.VerdictFail},
+		{"A5 degraded in scope", trust.PolicyIDAutomatedChange, degraded, trust.FindingPackageDegraded, trust.SeverityError, trust.VerdictFail},
 	}
 	for _, tc := range cases {
-		p, err := trust.PolicyByName(tc.policy)
+		p, err := trust.PolicyByID(tc.policy)
 		if err != nil {
-			t.Fatalf("PolicyByName(%s): %v", tc.policy, err)
+			t.Fatalf("PolicyByID(%s): %v", tc.policy, err)
 		}
 		a := p.EvaluateWithScopeFacts(snapPure(), trust.StateCurrent, fileScope, tc.facts)
 		if a.Verdict != tc.verdict {
@@ -465,9 +465,9 @@ func TestScopeFacts_SkippedFileCountersNotVouched(t *testing.T) {
 
 	inconsistent := skippedFile
 	inconsistent.File.Ambiguous = 3
-	p, err := trust.PolicyByName(trust.PolicyNameAutomatedChange)
+	p, err := trust.PolicyByID(trust.PolicyIDAutomatedChange)
 	if err != nil {
-		t.Fatalf("PolicyByName: %v", err)
+		t.Fatalf("PolicyByID: %v", err)
 	}
 	a := p.EvaluateWithScopeFacts(snapPure(), trust.StateCurrent, fileScope, inconsistent)
 	if severityByCode(a.Findings, trust.FindingAmbiguousReferenceInScope) != trust.SeverityError {
@@ -494,13 +494,13 @@ func TestScopeFacts_DegradedScopedGrading(t *testing.T) {
 			Package:   pkg,
 		}
 	}
-	review, err := trust.PolicyByName(trust.PolicyNameReview)
+	review, err := trust.PolicyByID(trust.PolicyIDReview)
 	if err != nil {
-		t.Fatalf("PolicyByName(review): %v", err)
+		t.Fatalf("PolicyByID(review): %v", err)
 	}
-	automated, err := trust.PolicyByName(trust.PolicyNameAutomatedChange)
+	automated, err := trust.PolicyByID(trust.PolicyIDAutomatedChange)
 	if err != nil {
-		t.Fatalf("PolicyByName(automated_change): %v", err)
+		t.Fatalf("PolicyByID(automated_change): %v", err)
 	}
 
 	total := withPkg(trust.ScopePackageFacts{State: trust.ScopePackageStateDegraded, DegradedReason: "load_error"})
@@ -554,7 +554,7 @@ func TestScopeFacts_CleanSymbolScope(t *testing.T) {
 		}
 
 		b := p.EvaluateWithScopeFacts(snapPure(), trust.StateCurrent, unresolved, clean)
-		if b.Verdict != trust.VerdictUnknown {
+		if b.Verdict != trust.VerdictUnverified {
 			t.Errorf("%s over unresolved symbol scope with borrowed facts = %s, want UNKNOWN (§1.8)", p.Name, b.Verdict)
 		}
 	}
@@ -588,9 +588,9 @@ func TestDeterminism_AdversarialInputs(t *testing.T) {
 		for _, p := range trust.Policies() {
 			a := p.Evaluate(tc.snap, tc.st, tc.scope)
 			// A second, independently constructed policy value must agree.
-			q, err := trust.PolicyByName(p.Name)
+			q, err := trust.PolicyByID(p.ID())
 			if err != nil {
-				t.Fatalf("PolicyByName(%s): %v", p.Name, err)
+				t.Fatalf("PolicyByID(%s): %v", p.ID(), err)
 			}
 			b := q.Evaluate(tc.snap, tc.st, tc.scope)
 			if !reflect.DeepEqual(a, b) {

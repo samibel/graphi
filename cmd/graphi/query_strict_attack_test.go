@@ -41,9 +41,9 @@ func TestQueryStrict_TrailingArgsAreInputErrors(t *testing.T) {
 		{"callers", "-db", dbPath, "-symbol", helper, "stray", "-min-tier", "confirmed"},
 		// Would silently drop -policy review: the query would run with no
 		// preflight although the user asked for one.
-		{"callers", "-db", dbPath, "-symbol", helper, "stray", "-policy", "review"},
+		{"callers", "-db", dbPath, "-symbol", helper, "stray", "-policy", "review-v1"},
 		// The explicit flag terminator is the same trick spelled differently.
-		{"callers", "-db", dbPath, "-symbol", helper, "--", "-policy", "review"},
+		{"callers", "-db", dbPath, "-symbol", helper, "--", "-policy", "review-v1"},
 	}
 	for _, args := range cases {
 		var out bytes.Buffer
@@ -65,7 +65,7 @@ func TestQueryStrict_PreflightFollowsExplicitDB(t *testing.T) {
 	repo, _, helper := strictFixture(t)
 
 	// Baseline: preflight over the auto-managed store passes, query runs.
-	code, env, raw := runStrict(t, repo, []string{"callers", "-symbol", helper, "-policy", "exploratory"})
+	code, env, raw := runStrict(t, repo, []string{"callers", "-symbol", helper, "-policy", "exploratory-v1"})
 	if code != 0 {
 		t.Fatalf("baseline preflight exit = %d, want 0 (fixture store is healthy)\n%s", code, raw)
 	}
@@ -84,9 +84,9 @@ func TestQueryStrict_PreflightFollowsExplicitDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out bytes.Buffer
-	code = runQueryStrictAt(repo, []string{"callers", "-db", uncertified, "-symbol", helper, "-policy", "exploratory"}, &out)
-	if code != 4 {
-		t.Fatalf("exit = %d, want 4: the preflight must judge the -db store the query runs against, not the auto-managed one\n%s", code, out.String())
+	code = runQueryStrictAt(repo, []string{"callers", "-db", uncertified, "-symbol", helper, "-policy", "exploratory-v1"}, &out)
+	if code != 2 {
+		t.Fatalf("exit = %d, want 2: the preflight must judge the -db store the query runs against, not the auto-managed one\n%s", code, out.String())
 	}
 	if out.Len() != 0 {
 		t.Fatalf("blocked preflight still wrote a result:\n%s", out.String())

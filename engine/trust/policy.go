@@ -134,15 +134,41 @@ import (
 // lands in Assessment.ChecksPassed, so a findings-free PASS always carries the
 // explicit list.
 
-// Policy names — the surface vocabulary of `--policy` (contract doc §2.1) and
-// of the wire `policy.name` field.
+// Policy names — the unversioned name component of the wire `policy.name`
+// field. The token a surface accepts is the *versioned* identifier built from
+// these by Policy.ID (contract doc §2.1 as amended; PRD v1.0 §6).
+//
+// PolicyNameAutomatedChange changed spelling with PRD v1.0: v0.8.0 shipped the
+// snake_case "automated_change", but the identifier PRD v1.0 §6 fixes is
+// "automated-change-v1", and the identifier is derived rather than stored.
+// Kebab-case here is what makes the derivation produce the specified token
+// (delta doc §A2).
 const (
 	// PolicyNameExploratory names exploratory-v1.
 	PolicyNameExploratory = "exploratory"
 	// PolicyNameReview names review-v1.
 	PolicyNameReview = "review"
 	// PolicyNameAutomatedChange names automated-change-v1.
-	PolicyNameAutomatedChange = "automated_change"
+	PolicyNameAutomatedChange = "automated-change"
+)
+
+// Canonical versioned policy identifiers (PRD v1.0 §6) — the tokens the
+// surfaces accept and the value of the wire `policy.id` field.
+//
+// Each constant names ONE version of one policy. A rules or threshold change
+// bumps that policy's Version (contract doc §3.0) and therefore mints a *new*
+// identifier and a new constant beside these; it never re-points an existing
+// one, because callers pinned to `review-v1` asked for those rules, not for
+// whatever review happens to mean later.
+//
+// These are declared for readability at call sites; Policy.ID derives the same
+// string from Name and Version, and `prdv1_wire_test.go` pins the two forms
+// equal so a version bump that forgets a constant fails loudly instead of
+// advertising a token the resolver rejects.
+const (
+	PolicyIDExploratory     = PolicyNameExploratory + "-v1"
+	PolicyIDReview          = PolicyNameReview + "-v1"
+	PolicyIDAutomatedChange = PolicyNameAutomatedChange + "-v1"
 )
 
 // ErrPolicyUnknown is the typed sentinel PolicyByName wraps for a name outside
@@ -202,7 +228,7 @@ func verdictRank(v Verdict) int {
 	switch v {
 	case VerdictFail:
 		return 3
-	case VerdictUnknown:
+	case VerdictUnverified:
 		return 2
 	case VerdictWarn:
 		return 1
@@ -340,11 +366,11 @@ func ruleGraphAvailable(id string) policyRule {
 	return policyRule{id: id, check: "graph available", eval: func(in ruleInput) ruleResult {
 		switch {
 		case in.st == StateUnavailable:
-			return fired(VerdictUnknown, policyFinding(FindingGraphUnavailable, "", in.scope,
+			return fired(VerdictUnverified, policyFinding(FindingGraphUnavailable, "", in.scope,
 				string(in.st), string(StateCurrent),
 				"no usable graph or trust snapshot evidence: snapshot state is UNAVAILABLE"))
 		case !stateKnown(in.st):
-			return fired(VerdictUnknown, policyFinding(FindingGraphUnavailable, "", in.scope,
+			return fired(VerdictUnverified, policyFinding(FindingGraphUnavailable, "", in.scope,
 				string(in.st), string(StateCurrent),
 				"snapshot state is outside the closed set; no usable evidence (fail closed)"))
 		default:
@@ -384,11 +410,11 @@ func ruleGraphCurrent(id string) policyRule {
 		case StateCurrent:
 			return passed()
 		case StateUnavailable:
-			return fired(VerdictUnknown, policyFinding(FindingGraphUnavailable, "", in.scope,
+			return fired(VerdictUnverified, policyFinding(FindingGraphUnavailable, "", in.scope,
 				string(in.st), string(StateCurrent),
 				"no usable graph or trust snapshot evidence: snapshot state is UNAVAILABLE"))
 		case StateIncomplete:
-			return fired(VerdictUnknown, policyFinding(FindingGraphStale, "", in.scope,
+			return fired(VerdictUnverified, policyFinding(FindingGraphStale, "", in.scope,
 				string(in.st), string(StateCurrent),
 				"the graph is not settled: snapshot state is INCOMPLETE (running or aborted ingest)"))
 		case StateStale:
@@ -396,7 +422,7 @@ func ruleGraphCurrent(id string) policyRule {
 				string(in.st), string(StateCurrent),
 				"the graph is not current: snapshot state is STALE"))
 		default:
-			return fired(VerdictUnknown, policyFinding(FindingGraphUnavailable, "", in.scope,
+			return fired(VerdictUnverified, policyFinding(FindingGraphUnavailable, "", in.scope,
 				string(in.st), string(StateCurrent),
 				"snapshot state is outside the closed set; no usable evidence (fail closed)"))
 		}
@@ -415,15 +441,15 @@ func ruleSnapshotPublished(id string) policyRule {
 		case StateCurrent, StateStale:
 			return passed()
 		case StateUnavailable:
-			return fired(VerdictUnknown, policyFinding(FindingSnapshotMissing, "", in.scope,
+			return fired(VerdictUnverified, policyFinding(FindingSnapshotMissing, "", in.scope,
 				string(in.st), string(StateCurrent),
 				"no usable trust snapshot: snapshot state is UNAVAILABLE"))
 		case StateIncomplete:
-			return fired(VerdictUnknown, policyFinding(FindingSnapshotMissing, "", in.scope,
+			return fired(VerdictUnverified, policyFinding(FindingSnapshotMissing, "", in.scope,
 				string(in.st), string(StateCurrent),
 				"no released trust snapshot: snapshot state is INCOMPLETE (a snapshot is released only after a successful ingest)"))
 		default:
-			return fired(VerdictUnknown, policyFinding(FindingSnapshotMissing, "", in.scope,
+			return fired(VerdictUnverified, policyFinding(FindingSnapshotMissing, "", in.scope,
 				string(in.st), string(StateCurrent),
 				"snapshot state is outside the closed set; cannot establish a released trust snapshot (fail closed)"))
 		}
@@ -467,7 +493,7 @@ func ruleTargetResolved(id string, notFound, ambiguous, evidence Verdict) policy
 			// code: verdict UNKNOWN (§1.8), findings-free — the scope-evidence
 			// rule fires the explaining SCOPE_EVIDENCE_UNAVAILABLE for every
 			// non-repository scope.
-			return ruleResult{verdict: VerdictUnknown}
+			return ruleResult{verdict: VerdictUnverified}
 		}
 		adopted := make([]Finding, len(in.resolution))
 		copy(adopted, in.resolution)
@@ -800,7 +826,7 @@ func PolicyExploratory() Policy {
 			"edges terminate at external boundary nodes; structural coverage ends there"),
 		ruleSnapshotPublished("E7"),
 		ruleScopeEvidence("E-scope(v1)", VerdictWarn),
-		ruleTargetResolved("E-target(v1)", VerdictUnknown, VerdictUnknown, VerdictWarn),
+		ruleTargetResolved("E-target(v1)", VerdictUnverified, VerdictUnverified, VerdictWarn),
 	}}
 }
 
@@ -809,14 +835,14 @@ func PolicyExploratory() Policy {
 func PolicyReview() Policy {
 	return Policy{Name: PolicyNameReview, Version: 1, rules: []policyRule{
 		ruleGraphCurrent("R1"),
-		ruleTargetResolved("R2", VerdictUnknown, VerdictUnknown, VerdictUnknown),
+		ruleTargetResolved("R2", VerdictUnverified, VerdictUnverified, VerdictUnverified),
 		ruleParseSkips("R3", SeverityError, VerdictFail),
 		ruleDegradedGraded("R4"),
 		ruleAmbiguousRefs("R5", SeverityWarning, VerdictWarn),
 		ruleHeuristicOnly("R6", SeverityWarning, VerdictWarn),
 		ruleExternalBoundaries("R7", SeverityWarning, VerdictWarn,
 			"edges terminate at external boundary nodes; review evidence ends there"),
-		ruleScopeEvidence("R8", VerdictUnknown),
+		ruleScopeEvidence("R8", VerdictUnverified),
 	}}
 }
 
@@ -829,7 +855,7 @@ func PolicyAutomatedChange() Policy {
 	return Policy{Name: PolicyNameAutomatedChange, Version: 1, rules: []policyRule{
 		ruleGraphCurrent("A1"),
 		ruleSnapshotCurrent("A2"),
-		ruleTargetResolved("A3", VerdictFail, VerdictFail, VerdictUnknown),
+		ruleTargetResolved("A3", VerdictFail, VerdictFail, VerdictUnverified),
 		ruleParseSkips("A4", SeverityError, VerdictFail),
 		ruleDegradedStrict("A5"),
 		ruleAmbiguousRefs("A6", SeverityError, VerdictFail),
@@ -837,7 +863,7 @@ func PolicyAutomatedChange() Policy {
 		ruleHeuristicOnly("A8", SeverityError, VerdictFail),
 		ruleExternalBoundaries("A9", SeverityError, VerdictFail,
 			"external boundaries with possible behavioral dependence require explicit human approval; no approval channel exists in v1"),
-		ruleScopeEvidence("A10", VerdictUnknown),
+		ruleScopeEvidence("A10", VerdictUnverified),
 	}}
 }
 
@@ -846,16 +872,49 @@ func Policies() []Policy {
 	return []Policy{PolicyExploratory(), PolicyReview(), PolicyAutomatedChange()}
 }
 
-// PolicyByName resolves a surface policy name (contract doc §2.1 vocabulary)
-// to its built-in rule set. An unknown name wraps ErrPolicyUnknown — never a
-// zero Policy, which would evaluate fail-closed but unexplained.
-func PolicyByName(name string) (Policy, error) {
+// ID is the policy's canonical versioned identifier — "review-v1" — as fixed
+// by PRD v1.0 §6. It is the token every surface accepts for `--policy` and the
+// value of the wire `policy.id` field.
+//
+// Derived, never stored: a rules or threshold change bumps Version (contract
+// doc §3.0), and the identifier moves with it automatically. A stored
+// identifier could name a version whose rules had already changed underneath
+// it, which is exactly the silent-policy-change the version discipline exists
+// to prevent.
+func (p Policy) ID() string {
+	return fmt.Sprintf("%s-v%d", p.Name, p.Version)
+}
+
+// PolicyIDs returns the canonical identifiers of the built-in policies in
+// surface order, for usage messages and input-schema enums. Surfaces must build
+// their vocabulary from this rather than repeating string literals, so a
+// version bump reaches every prompt at once.
+func PolicyIDs() []string {
+	ps := Policies()
+	ids := make([]string, 0, len(ps))
+	for _, p := range ps {
+		ids = append(ids, p.ID())
+	}
+	return ids
+}
+
+// PolicyByID resolves a canonical versioned policy identifier (contract doc
+// §2.1 as amended; PRD v1.0 §6) to its built-in rule set. An unknown
+// identifier wraps ErrPolicyUnknown — never a zero Policy, which would
+// evaluate fail-closed but unexplained.
+//
+// Resolution is exact. The bare names v0.8.0 accepted ("review",
+// "automated_change") are rejected: accepting both spellings would leave the
+// superseded contract half-alive, and a caller written against it would keep
+// working while believing it had selected a policy this binary no longer
+// defines under that spelling (delta doc §A2).
+func PolicyByID(id string) (Policy, error) {
 	for _, p := range Policies() {
-		if p.Name == name {
+		if p.ID() == id {
 			return p, nil
 		}
 	}
-	return Policy{}, fmt.Errorf("%w: %q is not a built-in policy (contract doc §3)", ErrPolicyUnknown, name)
+	return Policy{}, fmt.Errorf("%w: %q is not a built-in policy (want one of %v)", ErrPolicyUnknown, id, PolicyIDs())
 }
 
 // Evaluate is the pure policy evaluator: Facts + Scope + Policy → Verdict
@@ -909,7 +968,7 @@ func (p Policy) EvaluateWithScopeFacts(snap Snapshot, st State, scope ScopeRef, 
 		// verdict with neither findings nor an all-checks-passed list.
 		// Unreachable via the constructors, but Policy is an exported type, so
 		// the zero value is constructible and must not slip through silently.
-		verdict = VerdictUnknown
+		verdict = VerdictUnverified
 		findings = append(findings, policyFinding(FindingScopeEvidenceUnavailable, "", scope,
 			"0", "1",
 			"the policy defines no rules; no check ran and no evidence was judged (fail closed)"))
@@ -917,7 +976,7 @@ func (p Policy) EvaluateWithScopeFacts(snap Snapshot, st State, scope ScopeRef, 
 	SortFindings(findings)
 	return Assessment{
 		SchemaVersion:   AssessmentSchemaVersion,
-		Policy:          PolicyRef{Name: p.Name, Version: p.Version},
+		Policy:          PolicyRef{ID: p.ID(), Name: p.Name, Version: p.Version},
 		Scope:           scope,
 		SnapshotState:   st,
 		Verdict:         verdict,

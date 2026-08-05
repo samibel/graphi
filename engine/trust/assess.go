@@ -32,9 +32,17 @@ const (
 	VerdictWarn Verdict = "WARN"
 	// VerdictFail — the policy found blocking violations for its use case.
 	VerdictFail Verdict = "FAIL"
-	// VerdictUnknown — the facts required for a judgment are missing or the
-	// scope is unresolvable/unsupported; never a positive signal (PRD §7.5).
-	VerdictUnknown Verdict = "UNKNOWN"
+	// VerdictUnverified — the facts required for a judgment are missing, not
+	// generation-bound, or the scope is unresolvable/unsupported; never a
+	// positive signal (PRD §7.5).
+	//
+	// PRD v1.0 §5/§6 renamed this from UNKNOWN, the value v0.8.0 shipped
+	// (delta doc §A1). The new name is the more precise one: what the
+	// fail-closed policies detect is the absence of *verifiable* evidence, not
+	// mere ignorance. The Go identifier was renamed rather than aliased so an
+	// un-migrated call site fails to compile instead of quietly emitting the
+	// old wire value; `prdv1_wire_test.go` pins both halves.
+	VerdictUnverified Verdict = "UNVERIFIED"
 )
 
 // Finding severities. Closed working set for this layer: every registry code
@@ -78,7 +86,16 @@ type ScopeRef struct {
 // discipline per contract doc §3.0 — the version is part of the output). The
 // zero value means no policy was requested (the §2.3 presence rule: present
 // with zero values, never omitted).
+//
+// ID is the canonical versioned identifier PRD v1.0 §6 names ("review-v1"),
+// and is what the surfaces accept as the `--policy` token. It is always
+// Policy.ID() — derived from Name and Version, never stored independently — so
+// a rules change that bumps Version moves the identifier with it and the three
+// fields cannot disagree. Name and Version stay on the wire beside it: they are
+// the decomposition the version discipline operates on, and dropping them would
+// be a breaking removal for no gain (delta doc §A2).
 type PolicyRef struct {
+	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Version int    `json:"version"`
 }

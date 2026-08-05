@@ -192,6 +192,26 @@ func New() *Linker {
 // earlier one for the same language (open/closed extension point).
 func (l *Linker) Register(r Resolver) { l.resolvers[r.Language()] = r }
 
+// Languages returns the sorted canonical languages that have a registered
+// resolver — i.e. the languages whose cross-file and cross-package references
+// this linker can resolve at all. Link is a no-op for anything else.
+//
+// Exported for the P1 trust capability matrix (engine/trust), which reports
+// per language whether cross-file resolution is available. The resolver map is
+// unexported and Link's "no resolver ⇒ nothing to link" behaviour is silent by
+// design, so without this accessor the capability could only be guessed from a
+// copied list — exactly the drift the matrix exists to prevent.
+//
+// The returned slice is a copy; mutating it does not affect the Linker.
+func (l *Linker) Languages() []string {
+	out := make([]string, 0, len(l.resolvers))
+	for lang := range l.resolvers {
+		out = append(out, lang)
+	}
+	sort.Strings(out)
+	return out
+}
+
 // Link resolves the pending refs of the supplied files against idx and returns
 // the resulting edges, sorted by EdgeId, plus observability stats. It is pure,
 // deterministic, idempotent, and order-independent: shuffling files or their

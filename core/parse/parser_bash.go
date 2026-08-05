@@ -34,6 +34,10 @@ func (*BashParser) Language() string { return "bash" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*BashParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*BashParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*BashParser) Extensions() []string { return []string{".sh", ".bash"} }
 

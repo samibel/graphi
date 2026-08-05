@@ -33,6 +33,10 @@ func (*LuaParser) Language() string { return "lua" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*LuaParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*LuaParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*LuaParser) Extensions() []string { return []string{".lua"} }
 

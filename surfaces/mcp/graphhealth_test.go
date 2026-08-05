@@ -153,22 +153,22 @@ func TestGraphHealth_ParityWithSharedComposition(t *testing.T) {
 		{"default", map[string]any{}, client.TrustReportOptions{}},
 		{"file target", map[string]any{"target": "util/util.go"},
 			client.TrustReportOptions{Target: "util/util.go"}},
-		{"file target with evidence and policy", map[string]any{"target": "util/util.go", "policy": trust.PolicyNameAutomatedChange},
-			client.TrustReportOptions{Target: "util/util.go", Policy: trust.PolicyNameAutomatedChange}},
+		{"file target with evidence and policy", map[string]any{"target": "util/util.go", "policy": trust.PolicyIDAutomatedChange},
+			client.TrustReportOptions{Target: "util/util.go", Policy: trust.PolicyIDAutomatedChange}},
 		{"unresolvable target", map[string]any{"target": "no_such_symbol_xyz"},
 			client.TrustReportOptions{Target: "no_such_symbol_xyz"}},
-		{"policy exploratory", map[string]any{"policy": trust.PolicyNameExploratory},
-			client.TrustReportOptions{Policy: trust.PolicyNameExploratory}},
-		{"policy review", map[string]any{"policy": trust.PolicyNameReview},
-			client.TrustReportOptions{Policy: trust.PolicyNameReview}},
-		{"policy automated_change", map[string]any{"policy": trust.PolicyNameAutomatedChange},
-			client.TrustReportOptions{Policy: trust.PolicyNameAutomatedChange}},
+		{"policy exploratory", map[string]any{"policy": trust.PolicyIDExploratory},
+			client.TrustReportOptions{Policy: trust.PolicyIDExploratory}},
+		{"policy review", map[string]any{"policy": trust.PolicyIDReview},
+			client.TrustReportOptions{Policy: trust.PolicyIDReview}},
+		{"policy automated_change", map[string]any{"policy": trust.PolicyIDAutomatedChange},
+			client.TrustReportOptions{Policy: trust.PolicyIDAutomatedChange}},
 		{"details", map[string]any{"details": true},
 			client.TrustReportOptions{Details: true}},
 		{"details limited", map[string]any{"details": true, "limit": 1},
 			client.TrustReportOptions{Details: true, Limit: 1}},
-		{"kitchen sink", map[string]any{"target": "no_such_symbol_xyz", "policy": trust.PolicyNameAutomatedChange, "details": true, "limit": 2},
-			client.TrustReportOptions{Target: "no_such_symbol_xyz", Policy: trust.PolicyNameAutomatedChange, Details: true, Limit: 2}},
+		{"kitchen sink", map[string]any{"target": "no_such_symbol_xyz", "policy": trust.PolicyIDAutomatedChange, "details": true, "limit": 2},
+			client.TrustReportOptions{Target: "no_such_symbol_xyz", Policy: trust.PolicyIDAutomatedChange, Details: true, Limit: 2}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -213,12 +213,12 @@ func TestGraphHealth_ScopeEvidenceParity(t *testing.T) {
 	fx := &graphHealthFixtureClient{Client: client.NewDirect(nil, nil), root: root, dbPath: dbPath, metaDir: metaDir}
 	server := NewServerWithClient(fx, WithLabs())
 
-	args := map[string]any{"target": "util/util.go", "policy": trust.PolicyNameAutomatedChange}
+	args := map[string]any{"target": "util/util.go", "policy": trust.PolicyIDAutomatedChange}
 	text := toolText(t, invokeTool(t, server, ToolGraphHealth, args))
 
 	want, _, _, err := client.TrustReport(context.Background(), client.TrustReportOptions{
 		Root: root, DBPath: dbPath, MetaDir: metaDir,
-		Target: "util/util.go", Policy: trust.PolicyNameAutomatedChange,
+		Target: "util/util.go", Policy: trust.PolicyIDAutomatedChange,
 	})
 	if err != nil {
 		t.Fatalf("client.TrustReport: %v", err)
@@ -259,7 +259,7 @@ func TestGraphHealth_DeterministicOverTheWire(t *testing.T) {
 	fx := &graphHealthFixtureClient{Client: client.NewDirect(nil, nil), root: root, dbPath: dbPath, metaDir: metaDir}
 	server := NewServerWithClient(fx, WithLabs())
 
-	args := map[string]any{"policy": trust.PolicyNameExploratory, "details": true, "limit": 3}
+	args := map[string]any{"policy": trust.PolicyIDExploratory, "details": true, "limit": 3}
 	first := toolText(t, invokeTool(t, server, ToolGraphHealth, args))
 	second := toolText(t, invokeTool(t, server, ToolGraphHealth, args))
 	if first != second {

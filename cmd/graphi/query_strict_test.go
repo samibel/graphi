@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/surfaces/client"
 )
 
 // strictFixture builds and syncs a repo whose callers-of-helper result mixes
@@ -67,11 +68,11 @@ func strictFixture(t *testing.T) (repo, dbPath, helperID string) {
 	return repo, dbPath, helperID
 }
 
-func runStrict(t *testing.T, repo string, args []string) (int, strictEnvelope, string) {
+func runStrict(t *testing.T, repo string, args []string) (int, client.StrictEnvelope, string) {
 	t.Helper()
 	var out bytes.Buffer
 	code := runQueryStrictAt(repo, args, &out)
-	var env strictEnvelope
+	var env client.StrictEnvelope
 	if out.Len() > 0 {
 		if err := json.Unmarshal(out.Bytes(), &env); err != nil {
 			t.Fatalf("envelope is not JSON: %v\n%s", err, out.String())
@@ -162,11 +163,11 @@ func TestQueryStrict_PreflightBlocksOnUnindexedRepo(t *testing.T) {
 	repo := writeGoRepo(t)
 	gitRepo(t, repo, "main")
 
-	// Unindexed repo: review policy yields UNKNOWN — the query must not run.
+	// Unindexed repo: review policy yields UNVERIFIED — the query must not run.
 	var out bytes.Buffer
-	code := runQueryStrictAt(repo, []string{"callers", "-symbol", "whatever", "-policy", "review"}, &out)
-	if code != 4 {
-		t.Fatalf("preflight exit = %d, want 4 (UNKNOWN blocks)", code)
+	code := runQueryStrictAt(repo, []string{"callers", "-symbol", "whatever", "-policy", "review-v1"}, &out)
+	if code != 2 {
+		t.Fatalf("preflight exit = %d, want 2 (UNVERIFIED blocks)", code)
 	}
 	if out.Len() != 0 {
 		t.Fatalf("blocked preflight still wrote a result:\n%s", out.String())

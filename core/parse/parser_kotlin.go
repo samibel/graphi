@@ -33,6 +33,10 @@ func (*KotlinParser) Language() string { return "kotlin" }
 // Runtime implements Parser: pure-Go gotreesitter tree-sitter runtime (CGo-free).
 func (*KotlinParser) Runtime() Runtime { return RuntimeGoTreeSitter }
 
+// ExtractsSymbols implements SymbolCapable: this parser wires a SymbolExtractor
+// and emits symbol nodes plus intra-file edges.
+func (*KotlinParser) ExtractsSymbols() bool { return true }
+
 // Extensions implements Parser.
 func (*KotlinParser) Extensions() []string { return []string{".kt"} }
 

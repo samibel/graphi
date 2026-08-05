@@ -2,8 +2,10 @@ package mcp
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -610,15 +612,44 @@ func maximalToolDescriptors() []map[string]any {
 	// degrades fail-closed to the UNAVAILABLE document when no graph exists.
 	tools = append(tools, map[string]any{
 		"name":        ToolGraphHealth,
-		"description": "graph_health: return the canonical trust-report document for the repository or a target scope — snapshot state (CURRENT|STALE|INCOMPLETE|UNAVAILABLE), freshness facts, coverage, edge confidence tiers (confirmed/derived/heuristic), resolution gaps, external boundaries, and an optional policy verdict. Purpose: agent preflight — answer 'how far may I trust graph evidence for the planned action?' before acting on query results. When to use: before a risky task, to decide whether to use, supplement, or reject graph evidence; with a policy (exploratory | review | automated_change) for a reproducible fail-closed verdict. When NOT to use: for rebuild/freshness advice alone (use `graphi status`) or to run the query itself. Input shape: optional target (symbol | repository-relative path | package), optional policy, optional bounded details. Read-only: true — never indexes, never starts a daemon, no network; missing evidence reads UNKNOWN/UNAVAILABLE, never PASS. Partial results possible: details lists are bounded by limit.",
+		"description": "graph_health: return the canonical trust-report document for the repository or a target scope — snapshot state (CURRENT|STALE|INCOMPLETE|UNAVAILABLE), freshness facts, coverage, edge confidence tiers (confirmed/derived/heuristic), resolution gaps, external boundaries, and an optional policy verdict. Purpose: agent preflight — answer 'how far may I trust graph evidence for the planned action?' before acting on query results. When to use: before a risky task, to decide whether to use, supplement, or reject graph evidence; with a policy (" + strings.Join(trust.PolicyIDs(), " | ") + ") for a reproducible fail-closed verdict. When NOT to use: for rebuild/freshness advice alone (use `graphi status`) or to run the query itself. Input shape: optional target (symbol | repository-relative path | package), optional policy, optional bounded details. Read-only: true — never indexes, never starts a daemon, no network; missing evidence reads UNVERIFIED/UNAVAILABLE, never PASS. Partial results possible: details lists are bounded by limit.",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"target":  map[string]any{"type": "string", "description": "optional symbol id, qualified name, repository-relative path or package"},
-				"policy":  map[string]any{"type": "string", "enum": []string{"exploratory", "review", "automated_change"}, "description": "optional trust policy"},
+				"target": map[string]any{"type": "string", "description": "optional symbol id, qualified name, repository-relative path or package"},
+				// Enum and prose both derive from trust.PolicyIDs so a policy
+				// version bump reaches the agent-facing schema automatically —
+				// a hand-copied list here would advertise a token the resolver
+				// no longer accepts.
+				"policy":  map[string]any{"type": "string", "enum": trust.PolicyIDs(), "description": "optional trust policy"},
 				"details": map[string]any{"type": "boolean", "description": "include bounded supporting evidence"},
 				"limit":   map[string]any{"type": "integer", "description": "maximum detail items"},
 			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	// P1 strict query (PRD v1.0 §8 Phase 9): strict_query, the Labs trust-aware
+	// query wrapper. It rides the shared client.ComposeStrictQuery composition,
+	// so the envelope is byte-identical to `graphi query-strict` for the same
+	// inputs. Read-only annotations hold: it runs one Stable query underneath
+	// and filters its result — no indexing, no daemon start, no network.
+	//
+	// `operation` is constrained to the Stable structural operations. The tool
+	// exists to make an EXISTING answer's confidence legible; letting it select
+	// arbitrary analyzers would make it a second query surface.
+	tools = append(tools, map[string]any{
+		"name":        ToolStrictQuery,
+		"description": "strict_query: run a structural query and WITHHOLD every result edge below a minimum confidence tier, reporting how many were withheld. Purpose: let an agent act only on evidence at or above a chosen strength, without having to filter and re-tally results itself. When to use: before a change or a definitive claim, when heuristic edges would be unsafe to treat as facts — pair it with graph_health for the repository-level verdict. When NOT to use: for exploration or recall (the Stable query tools return everything, which is what you want there). Input shape: operation (" + strings.Join(strictQueryOperations(), " | ") + "), symbol id, optional depth, optional minimum_tier (confirmed | derived | heuristic; default heuristic), optional policy preflight. Read-only: true — never indexes, never starts a daemon, no network. CRITICAL for interpreting the result: an EMPTY result with excluded_edges > 0 is filtered, NOT proven empty — the envelope says so in `limitations`, and reading it as \"no such relationships\" is a false negative. A blocked policy preflight returns an error and runs no query.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"operation":    map[string]any{"type": "string", "enum": strictQueryOperations(), "description": "structural query operation to run"},
+				"symbol":       map[string]any{"type": "string", "description": "symbol (node) id to query"},
+				"depth":        map[string]any{"type": "integer", "description": "neighborhood hop depth (ignored by other operations)"},
+				"minimum_tier": map[string]any{"type": "string", "enum": []string{"confirmed", "derived", "heuristic"}, "description": "lowest confidence tier admitted into the result (default heuristic)"},
+				"policy":       map[string]any{"type": "string", "enum": trust.PolicyIDs(), "description": "optional fail-closed trust preflight; a non-PASS/WARN verdict blocks the query"},
+			},
+			"required": []string{"operation", "symbol"},
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
@@ -675,4 +706,31 @@ var editToolDescriptors = []map[string]any{
 			"required": []string{"undo_token"},
 		},
 	},
+}
+
+// strictQueryOperations is the closed operation set strict_query accepts: the
+// Stable structural query operations, minus the lifecycle op `index`. Derived
+// from StableMCPToolNames so a change to the frozen set reaches this schema
+// automatically, and filtered to structural queries so the tool cannot become a
+// second dispatcher for analyzers or agent tools.
+func strictQueryOperations() []string {
+	ops := make([]string, 0, len(query.Operations))
+	for _, op := range query.Operations {
+		if IsStableMCPTool(op) {
+			ops = append(ops, op)
+		}
+	}
+	return ops
+}
+
+// isStrictQueryOperation reports membership in the closed strict_query
+// operation set. Shared by the input schema and the handler so the two cannot
+// disagree about what the tool accepts.
+func isStrictQueryOperation(op string) bool {
+	for _, allowed := range strictQueryOperations() {
+		if op == allowed {
+			return true
+		}
+	}
+	return false
 }

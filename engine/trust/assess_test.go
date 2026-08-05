@@ -185,7 +185,7 @@ func TestEncodeAssessmentNormalizesNilSlices(t *testing.T) {
 	}
 	// Presence rule: policy and scope are present with zero values, never
 	// omitted (contract doc §2.3).
-	for _, field := range []string{`"policy":{"name":"","version":0}`, `"scope":`, `"snapshot_state":""`, `"verdict":""`} {
+	for _, field := range []string{`"policy":{"id":"","name":"","version":0}`, `"scope":`, `"snapshot_state":""`, `"verdict":""`} {
 		if !bytes.Contains(enc, []byte(field)) {
 			t.Errorf("missing always-present field %s in %s", field, enc)
 		}
