@@ -202,6 +202,7 @@ runnable: `graphi privacy-audit`.
 |---|---|---|
 | `graphi` | labs | Zero-config: index the current repo and open the web UI |
 | `graphi sync` · `status` · `rebuild` | **GA** (facade) | Keep the graph matching the checked-out code (incremental / read-only report / full re-index) |
+| `graphi trust-report` · `query-strict` | labs | How far may you trust a graph answer: snapshot state, confidence tiers, gaps, fail-closed policy verdicts; tier-filtered queries |
 | `graphi snapshot` · `compare` | labs | Freeze named graph states and diff them |
 | `graphi index [-root <repo>]` | **GA** | Build/refresh a graph store with explicit paths (advanced form of `sync`/`rebuild`) |
 | `graphi callers\|callees\|references\|definition\|neighborhood <symbol>` | **GA** | Structural queries |

@@ -20,6 +20,35 @@ At the start of a task, call the four agent-first tools in this order:
 Every tool is read-only and local-only: no account, no cloud service, no
 network egress.
 
+## Trust preflight (`graph_health`, labs)
+
+Before a risky task, ask how far graph evidence may be trusted for the planned
+action — a technically successful query result is not automatically complete
+or safe to act on. With the Labs catalog (`graphi mcp -labs`), call
+`graph_health` first:
+
+```text
+1. graph_health(policy="review", target="engine/query.Service")
+2. Check snapshot_state == "CURRENT"   (STALE/INCOMPLETE/UNAVAILABLE: evidence
+   is not usable for the current source — never treat it as healthy)
+3. Read policy.verdict and the findings
+4. FAIL or UNKNOWN → do not make a definitive graph-only claim; inspect the
+   source or run additional tools instead
+5. Otherwise run the queries, and cite the trust limitations in your answer
+6. For an unattended automated change: require an automated_change PASS —
+   anything else means a human decides
+```
+
+The three policies are versioned static rule sets, fail-closed by
+construction: missing evidence never yields PASS. The document is
+byte-identical to `graphi trust-report --json`, so CLI-side scripting and
+MCP-side agents read the same facts. Example of a safe agent claim:
+
+> Graphi found 14 local dependents; the graph is current. Twelve relevant
+> edges are confirmed or derived, two are heuristic. The path reaches one
+> external dependency whose internals are outside graphi's coverage — treat
+> this as a structural local blast-radius estimate, not a runtime guarantee.
+
 ## The shared response contract
 
 All four tools return one envelope:

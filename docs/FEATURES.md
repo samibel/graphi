@@ -79,7 +79,7 @@ currently advertises seven wired Stable RPCs and omits the four unwired agent
 tools instead of returning guaranteed failures.
 
 `graphi mcp -labs` is the only CLI opt-in to the larger profile. The maximal
-registry contains exactly **43 tools**: the same 11 Stable tools plus 32 Labs
+registry contains exactly **44 tools**: the same 11 Stable tools plus 33 Labs
 tools. Actual Stable and Labs advertisement is binding-capability-gated, so a
 session can expose fewer tools when its transport or an optional service is not
 wired. An unadvertised call is rejected before client dispatch.
@@ -90,9 +90,9 @@ the shared client. Stable `impact` is a dedicated fixed-dispatch tool through
 
 ```mermaid
 flowchart TD
-  ROOT["Maximal MCP registry (43)"]:::root
+  ROOT["Maximal MCP registry (44)"]:::root
   ROOT --> ST["Default Stable profile (11)"]
-  ROOT --> LB["Labs additions (32, explicit opt-in)"]
+  ROOT --> LB["Labs additions (33, explicit opt-in)"]
   ST --> STQ["Structural (5)<br/>callers · callees · references · definition · neighborhood"]
   ST --> STS["Lexical search (1)"]
   ST --> STI["Fixed impact (1)"]
@@ -104,6 +104,7 @@ flowchart TD
   LB --> LBE["Edit / refactor (3)"]
   LB --> LBR["PR / review (7)"]
   LB --> LBM["Memory / skills (3)"]
+  LB --> LBT["Trust surface (1)<br/>graph_health"]
   classDef root fill:#fff7d0,stroke:#7a5a00,color:#3a2c00
 ```
 
@@ -452,7 +453,7 @@ flowchart TD
 | Parsers (CGo-free tier) | 23 | `core/parse` registry + `docs/coverage-matrix.md` § Parsers |
 | Analyzers | 22 | `engine/analysis/dispatch.go` + `docs/coverage-matrix.md` § Analyzers |
 | MCP tools (default) | 11 | `surfaces/mcp.StableMCPToolNames()`; 12 Stable product operations minus lifecycle-only `index` |
-| MCP tools (maximal registry) | 43 | `surfaces/mcp.ToolNames()`; 11 Stable + 32 explicit-opt-in Labs rows, capability-gated at runtime |
+| MCP tools (maximal registry) | 44 | `surfaces/mcp.ToolNames()`; 11 Stable + 33 explicit-opt-in Labs rows, capability-gated at runtime |
 | CLI subcommands | ~30 | `surfaces/cli/cli.go` + `cmd/graphi/main.go` |
 | HTTP endpoints | 22 | `surfaces/http/server.go` (incl. `/prs/*`, `/branches/compare`, `/reviews/critique`) |
 | Surfaces | 8 | `docs/coverage-matrix.md` § Surfaces |
