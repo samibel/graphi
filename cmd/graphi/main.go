@@ -306,9 +306,4 @@ func runVersion() {
 	fmt.Println(releaseinfo.New().VersionString())
 }
 
-// runTUI is provided by tui_enabled.go (//go:build tui) and tui_disabled.go
-// (//go:build !tui). The interactive terminal surface (SW-047) pulls in the
-// Bubble Tea dependency tree, which roughly doubles the binary; keeping it
-// behind the `tui` build tag holds the default, local-first binary lean (the
-// budget-gated benchmark enforces the size ceiling). Build with -tags tui to
-// include it: `go build -tags tui ./cmd/graphi`.
+// runTUI is the interactive terminal surface (SW-047), in cmd/graphi/tui.go.

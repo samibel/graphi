@@ -26,6 +26,40 @@ file:
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-06
+
+**The terminal UI becomes reachable.** It shipped in 0.8.0 and earlier, but no
+released binary contained it and no documented path led to it — this release
+fixes both, at the cost of 1.44 MB in the default binary.
+
+### Changed
+
+- **`graphi tui` works out of the box.** Two things stood between an installed
+  graphi and its terminal UI, and both are gone.
+
+  It sat behind a `tui` build tag — but **no release asset was ever built with
+  that tag**, so for anyone who installed via `install.sh` the surface was
+  unreachable, and the "rebuild with `-tags tui`" hint assumed a Go toolchain
+  and a repository checkout they do not have. The TUI now ships in every binary.
+  Measured cost on the canonical release build: +1.44 MB (33.16 → 34.68 MB),
+  which exceeded the old size budget; the budget is re-pinned to 36.55 MB with
+  the same ~5.4 % headroom the previous re-pin chose, and stays ~13.45 MB under
+  the hard 50 MB ceiling. The reasoning is recorded in `bench/bench-budget.yml`.
+
+  And the ports could never meet: the TUI defaulted to `:8080` while
+  `graphi http` defaults to `:0`, a free port picked by the kernel — so a user
+  had to start the server, read the port it printed, and pass it back by hand.
+  **`graphi tui` with no arguments is now self-contained:** it starts the same
+  HTTP/SSE server on a kernel-assigned free port, points the TUI at it, and
+  tears it down on exit. Concurrent sessions no longer collide, and nothing
+  claims a well-known port.
+
+  `graphi tui -addr http://127.0.0.1:PORT` still attaches to a running
+  `graphi http` — use that when the server is indexing a repository or is
+  shared with the web/VS Code surfaces. The private backend reads the
+  auto-managed session store and never indexes on its own: bringing up a UI
+  must not silently start a full ingest.
+
 ## [0.9.0] - 2026-08-05
 
 **The P1 trust surface reconciled against PRD v1.0.** 0.8.0 shipped that surface

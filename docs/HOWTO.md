@@ -449,27 +449,35 @@ Interactions: pan/zoom the graph, click a symbol to highlight its blast-radius
 
 ### 6.4 TUI (terminal UI)
 
-The interactive terminal surface is **opt-in behind the `tui` build tag** (so the
-default binary stays lean). It consumes the HTTP/SSE API — start `graphi http`
-first.
+The interactive terminal surface ships in the **default binary** — no build tag,
+no second binary, nothing to install:
 
 ```bash
-# Build a binary that includes the TUI
-CGO_ENABLED=0 go build -tags tui -o graphi-tui ./cmd/graphi
+graphi sync     # once, so there is a graph to look at
+graphi tui
+```
 
-# Start the backend (separate terminal)
-graphi http -addr 127.0.0.1:8080 -root ./my-repo
+`graphi tui` is self-contained: it starts the same HTTP/SSE server `graphi http`
+runs, on a **free port chosen by the kernel**, points the TUI at it, and shuts it
+down on exit. It reads the repository's auto-managed session store and never
+indexes on its own — bringing up a UI must not silently start a full ingest.
 
-# Launch the TUI against it (loopback-only; fails closed on non-loopback)
-graphi-tui tui -addr http://127.0.0.1:8080
+To attach to a server you already run (for example one indexing a repository, or
+shared with the web/VS Code surfaces), pass its address:
+
+```bash
+graphi http -root ./my-repo                       # prints the port it picked
+graphi tui -addr http://127.0.0.1:PORT            # loopback-only; fails closed otherwise
 ```
 
 Keyboard-driven panes: a navigator, a content pane, and a persistent provenance
 pane that always shows where the displayed answer came from. It is strictly
 read-only.
 
-> If you run `graphi tui` on the **default** (non-TUI) binary, it prints a hint
-> telling you to rebuild with `-tags tui`.
+> Before 0.10.0 the TUI sat behind a `tui` build tag and no release asset carried
+> it, so `graphi tui` printed a "rebuild with `-tags tui`" hint that assumed a Go
+> toolchain and a repository checkout. Both are gone: the surface is in every
+> build.
 
 ### 6.5 VS Code extension
 
@@ -634,7 +642,7 @@ It runs a real CGo-free scan and a canary egress guard and prints a verdict:
 | `refusing non-loopback bind` | `-addr` host must be `127.0.0.1`, `localhost`, or `::1`. The HTTP surface is loopback-only by design. |
 | Queries return nothing | The store is empty — ingest a repo first (`graphi http -root <repo>` or build a `-db`, see [§5](#5-indexing-a-repository)). |
 | `412` from the HTTP API | Client/server `schema_version` mismatch — rebuild the client against the current `/contract`. |
-| `graphi tui` prints “compiled without the TUI surface” | Rebuild with `-tags tui` ([§6.4](#64-tui-terminal-ui)). |
+| `graphi tui` prints “compiled without the TUI surface” | A build older than 0.10.0. Update graphi; since 0.10.0 the TUI is in every binary ([§6.4](#64-tui-terminal-ui)). |
 | Web client shows a version-mismatch banner | The backend’s schema version differs from the one the client was built against — rebuild the web client (`npm run gen:types && npm run build`). |
 | `privacy-audit` reports UNVERIFIED locally | Expected off-Linux / unprivileged — it fails closed. The CI Linux job is the live proof. |
 | Claude Code doesn’t see graphi’s tools | Re-run `graphi setup`, then fully restart Claude Code. |
@@ -686,7 +694,7 @@ graphi distill -session <id> -decisions "..." -risks "..." -questions "..." -fil
 graphi skillgen -name <n> -trigger <t> -description <d>      Skill generation (EP-012)
 graphi setup-embedder [<selector>]                   Print how to opt in to semantic search
 graphi http   [-addr 127.0.0.1:8080] [-db p] [-root r] [-meta d]   Read-only HTTP/SSE (loopback)
-graphi tui    [-addr http://127.0.0.1:8080]          Interactive TUI (build with -tags tui)
+graphi tui    [-addr http://127.0.0.1:PORT]          Interactive TUI (self-contained; own backend on a free port)
 graphi mcp    [-db p] [-daemon sock]                 MCP stdio server (agent surface)
 graphi daemon start|stop|status [-socket p] [-db p]  Hot-index Unix-socket daemon
 graphi setup  [--client id|all] [--dry-run] [--binary p] [--config p]  Register MCP server into local clients
