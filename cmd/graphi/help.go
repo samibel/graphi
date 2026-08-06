@@ -227,9 +227,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi setup-embedder ollama",
 	},
 	"tui": {
-		"interactive terminal surface (requires a -tags tui build)",
-		"graphi tui [-db path] [-daemon socket]",
-		"graphi tui -db graph.db",
+		"interactive terminal surface (self-contained: starts its own backend on a free port)",
+		"graphi tui [-addr http://127.0.0.1:PORT] [-db path]",
+		"graphi tui",
 	},
 	"privacy-audit": {
 		"print the local-first proof (CGo scan + canary egress guard); non-zero on violation",
