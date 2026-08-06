@@ -474,7 +474,7 @@ Keyboard-driven panes: a navigator, a content pane, and a persistent provenance
 pane that always shows where the displayed answer came from. It is strictly
 read-only.
 
-> Before 0.9.0 the TUI sat behind a `tui` build tag and no release asset carried
+> Before 0.10.0 the TUI sat behind a `tui` build tag and no release asset carried
 > it, so `graphi tui` printed a "rebuild with `-tags tui`" hint that assumed a Go
 > toolchain and a repository checkout. Both are gone: the surface is in every
 > build.
@@ -642,7 +642,7 @@ It runs a real CGo-free scan and a canary egress guard and prints a verdict:
 | `refusing non-loopback bind` | `-addr` host must be `127.0.0.1`, `localhost`, or `::1`. The HTTP surface is loopback-only by design. |
 | Queries return nothing | The store is empty — ingest a repo first (`graphi http -root <repo>` or build a `-db`, see [§5](#5-indexing-a-repository)). |
 | `412` from the HTTP API | Client/server `schema_version` mismatch — rebuild the client against the current `/contract`. |
-| `graphi tui` prints “compiled without the TUI surface” | A build older than 0.9.0. Update graphi; since 0.9.0 the TUI is in every binary ([§6.4](#64-tui-terminal-ui)). |
+| `graphi tui` prints “compiled without the TUI surface” | A build older than 0.10.0. Update graphi; since 0.10.0 the TUI is in every binary ([§6.4](#64-tui-terminal-ui)). |
 | Web client shows a version-mismatch banner | The backend’s schema version differs from the one the client was built against — rebuild the web client (`npm run gen:types && npm run build`). |
 | `privacy-audit` reports UNVERIFIED locally | Expected off-Linux / unprivileged — it fails closed. The CI Linux job is the live proof. |
 | Claude Code doesn’t see graphi’s tools | Re-run `graphi setup`, then fully restart Claude Code. |
