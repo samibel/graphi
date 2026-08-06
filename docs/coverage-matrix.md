@@ -193,7 +193,7 @@ Total capabilities: **152**. See [`architecture-plan.md`](architecture-plan.md) 
 | `sync` | 🧪 labs | ✅ shipped | - | flagless incremental update of the auto-managed per-repo graph (facade over the stable index lifecycle; branch-switch aware; matrix row labs because the stable-12 set is frozen) |
 | `triage-prs` | 🧪 labs | ✅ shipped | - | graph-derived multi-PR triage ranking |
 | `trust-report` | 🧪 labs | ✅ shipped | - | P1 trust surface: repository/target trust report over the persisted TrustSnapshot (--json emits the canonical contract-§2 document; --target/--policy/--details/--limit); strict read-only observer that never creates state; byte-parity with the graph_health MCP tool through the single client.TrustReport composition |
-| `tui` | 🧪 labs | ✅ shipped | - | interactive terminal surface |
+| `tui` | 🧪 labs | ✅ shipped | - | interactive terminal surface; ships in the default binary since 0.9.0 (previously behind the `tui` build tag, which no release asset ever set). Self-contained without -addr: starts a private HTTP/SSE backend on a kernel-assigned free port and tears it down on exit; -addr attaches to a running `graphi http` instead. Loopback-only, fail-closed; never indexes on its own. |
 | `ui` | 🧪 labs | ✅ shipped | - | short-verb alias for the zero-config index+serve flow |
 | `undo` | 🧪 labs | ✅ shipped | - | reverse an applied edit by its undo token |
 | `upgrade` | 🧪 labs | ✅ shipped | - | user-initiated self-update via the pinned install script |

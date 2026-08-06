@@ -917,7 +917,7 @@ capabilities:
     status: shipped
     tier: labs
     epic: "-"
-    note: "interactive terminal surface"
+    note: "interactive terminal surface; ships in the default binary since 0.9.0 (previously behind the `tui` build tag, which no release asset ever set). Self-contained without -addr: starts a private HTTP/SSE backend on a kernel-assigned free port and tears it down on exit; -addr attaches to a running `graphi http` instead. Loopback-only, fail-closed; never indexes on its own."
   - id: ui
     category: cli-subcommand
     status: shipped

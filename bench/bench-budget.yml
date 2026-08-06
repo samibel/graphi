@@ -22,7 +22,22 @@ version: 1
 # grammar blob. Baseline 32,509,872 B is the measured canonical current tree;
 # budget 34,250,000 B preserves ~5.35% headroom and remains ~15.75 MB below the
 # hard 50 MB product ceiling.
-baseline_version: "2026-07-16-v050-hardening-go1.26.5-linux-amd64-release"
+#
+# 2026-08-05-tui-default: the interactive TUI ships in the DEFAULT binary. It
+# used to sit behind the `tui` build tag, which kept ~1.44 MB of Bubble Tea out
+# of the lean build — but no release asset was ever built with that tag, so the
+# surface was unreachable for anyone who installed via install.sh, and the
+# "rebuild with -tags tui" hint assumed a Go toolchain and a repository checkout
+# that those users do not have. Measured cost of removing the tag on the
+# canonical release build: 33,158,453 B -> 34,678,227 B (+1,519,774 B, +4.58%),
+# which exceeded the previous 34,250,000 B budget by 428,227 B. The budget is
+# re-pinned rather than the feature re-hidden: reachability of a shipped surface
+# outweighs 1.44 MB, and package analysis found no new transitive dependency
+# beyond the Bubble Tea tree the tag already gated. Baseline 34,678,227 B is the
+# measured canonical current tree; budget 36,550,000 B preserves ~5.40% headroom
+# — the same margin the previous re-pin chose — and remains ~13.45 MB below the
+# hard 50 MB product ceiling.
+baseline_version: "2026-08-05-tui-default-go1.26.5-linux-amd64-release"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
@@ -39,8 +54,8 @@ metrics:
     budget: 2000
     unit: ms
   binary_size_bytes:
-    baseline: 32509872
-    budget: 34250000
+    baseline: 34678227
+    budget: 36550000
     unit: bytes
   # EP-022 profile-aware metrics (warn-only until calibrated).
   fast_index_ms:
