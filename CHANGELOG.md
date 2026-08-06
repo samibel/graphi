@@ -26,6 +26,12 @@ file:
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-06
+
+**The terminal UI becomes reachable.** It shipped in 0.8.0 and earlier, but no
+released binary contained it and no documented path led to it — this release
+fixes both, at the cost of 1.44 MB in the default binary.
+
 ### Changed
 
 - **`graphi tui` works out of the box.** Two things stood between an installed
