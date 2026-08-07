@@ -20,7 +20,7 @@ import (
 //
 //	graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all]
 //	             [--dry-run] [--binary path] [--config path]
-//	graphi setup --project [--root <repo>] [--dry-run] [--binary path]
+//	graphi setup --project [--root <repo>] [--attach] [--dry-run] [--binary path]
 //
 // Default (--client all): always target Claude Code (created if absent, matching
 // historical behavior) plus every OTHER local client that looks installed. A
@@ -32,7 +32,9 @@ import (
 // .mcp.json at the repository root, with the session root pinned via
 // `mcp -root <abs root>` — so a client that launches the server outside the
 // repo (cwd=$HOME) and supplies no MCP roots still binds this repository. The
-// root is detected from the working directory, or named with --root.
+// root is detected from the working directory, or named with --root. --attach
+// pins the auto-managed per-repo store instead (`mcp -db <store> -meta
+// <sidecar>`, Attach mode: no auto-ingest — pair with `graphi sync`).
 func runSetup(args []string) int {
 	// setup --check is a diagnostic alias for `graphi doctor`.
 	for _, a := range args {
@@ -47,6 +49,7 @@ func runSetup(args []string) int {
 	client := fs.String("client", "all", "client to wire: "+strings.Join(mcpconfig.ClientIDs(), "|")+"|all")
 	project := fs.Bool("project", false, "write the project-scoped .mcp.json at the repository root with the session root pinned (mcp -root)")
 	rootFlag := fs.String("root", "", "repository root for --project (default: detected from the working directory)")
+	attach := fs.Bool("attach", false, "with --project: pin the auto-managed per-repo store instead (mcp -db/-meta; Attach mode, no auto-ingest)")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: setup: %v\n", err)
 		return 1
@@ -65,6 +68,10 @@ func runSetup(args []string) int {
 		fmt.Fprintln(os.Stderr, "graphi: setup: --root requires --project (client configs are global; only the project file pins a repository)")
 		return 1
 	}
+	if *attach && !*project {
+		fmt.Fprintln(os.Stderr, "graphi: setup: --attach requires --project (the per-repo store paths only make sense in the project file)")
+		return 1
+	}
 	if *project {
 		clientSet := false
 		fs.Visit(func(f *flag.Flag) {
@@ -76,7 +83,7 @@ func runSetup(args []string) int {
 			fmt.Fprintln(os.Stderr, "graphi: setup: --project writes <root>/.mcp.json; --client/--config do not apply to it")
 			return 1
 		}
-		return runSetupProject(getwd(), *rootFlag, bin, *dryRun)
+		return runSetupProject(getwd(), *rootFlag, bin, *dryRun, *attach)
 	}
 
 	// --config pins a single file; it implies a single client (the named one, or
@@ -131,12 +138,17 @@ func runSetup(args []string) int {
 }
 
 // runSetupProject upserts graphi into the project-scoped .mcp.json at the
-// repository root, pinning the MCP session root via `mcp -root <abs root>`.
-// Same guarantees as the client path (idempotent, atomic, fail-closed backup,
-// offline) through the shared mcpconfig.Apply. The written file carries
-// absolute paths (binary and root), so it is machine-specific by construction:
-// each clone runs `graphi setup --project` once rather than committing it.
-func runSetupProject(cwd, rootOverride, bin string, dryRun bool) int {
+// repository root. Default: pin the MCP session root via `mcp -root <abs
+// root>` (the session then auto-manages and auto-syncs its per-repo store).
+// With attach, pin the auto-managed store itself via `mcp -db <store> -meta
+// <sidecar>` (Attach mode: exactly that store, no ingest — the user keeps it
+// fresh with `graphi sync`); the paths are derived, not hand-copied, from the
+// same state layout every flagless verb uses. Same guarantees as the client
+// path (idempotent, atomic, fail-closed backup, offline) through the shared
+// mcpconfig.Apply. The written file carries absolute paths, so it is
+// machine-specific by construction: each clone runs `graphi setup --project`
+// once rather than committing it.
+func runSetupProject(cwd, rootOverride, bin string, dryRun, attach bool) int {
 	root := rootOverride
 	if root == "" {
 		detected, ok := state.DetectRepo(cwd)
@@ -162,13 +174,34 @@ func runSetupProject(cwd, rootOverride, bin string, dryRun bool) int {
 		return 1
 	}
 
+	args := []string{"mcp", "-root", root}
+	storeMissing := false
+	if attach {
+		p, err := state.Resolve(root)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: setup: --project: resolve per-repo state for %q: %v\n", root, err)
+			return 1
+		}
+		args = []string{"mcp", "-db", p.DB, "-meta", p.Meta}
+		if _, err := os.Stat(p.DB); err != nil {
+			storeMissing = true
+		}
+	}
+
 	path := filepath.Join(root, ".mcp.json")
-	entry := mcpconfig.GraphiEntry(bin, []string{"mcp", "-root", root})
+	entry := mcpconfig.GraphiEntry(bin, args)
 	rc := reportSetup("project (.mcp.json)", path, entry, dryRun, func() (mcpconfig.Result, error) {
 		return mcpconfig.Apply(path, "graphi", entry, dryRun)
 	})
 	if rc == 0 && !dryRun {
-		fmt.Printf("  note: %s pins absolute paths (binary + root) and is machine-specific;\n", path)
+		if attach {
+			fmt.Println("  note: attach mode serves the store as-is (no auto-ingest); keep it fresh with 'graphi sync'.")
+			if storeMissing {
+				fmt.Println("  note: the pinned store does not exist yet — run 'graphi sync' in the repo before the first session,")
+				fmt.Println("        or sessions will serve an empty graph.")
+			}
+		}
+		fmt.Printf("  note: %s pins absolute paths and is machine-specific;\n", path)
 		fmt.Println("        gitignore it, or have each clone run 'graphi setup --project' once.")
 		fmt.Println("  note: Claude Code asks once to approve project-scoped MCP servers on first use.")
 	}
