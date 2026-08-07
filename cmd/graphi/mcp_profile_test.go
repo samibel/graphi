@@ -23,12 +23,44 @@ func TestExtractMCPFlags_LabsRequiresExplicitOptIn(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, socket, _, labs, err := extractMCPFlags(tc.args)
+			db, socket, _, _, labs, err := extractMCPFlags(tc.args)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("error = %v, wantErr=%v", err, tc.wantErr)
 			}
 			if db != tc.wantDB || socket != tc.wantSocket || labs != tc.wantLabs {
 				t.Fatalf("got db=%q socket=%q labs=%v", db, socket, labs)
+			}
+		})
+	}
+}
+
+// TestExtractMCPFlags_MetaSidecar pins the -meta surface: it threads through
+// to the -db Attach path exactly like the CLI verbs (previously it was
+// extracted and silently dropped, so an attached MCP session never reloaded
+// durable semantic vectors), and it errors without -db instead of reading as
+// "vectors loaded" when they are not.
+func TestExtractMCPFlags_MetaSidecar(t *testing.T) {
+	cases := []struct {
+		name     string
+		args     []string
+		wantDB   string
+		wantMeta string
+		wantErr  bool
+	}{
+		{name: "meta_with_db", args: []string{"-db", "graph.db", "-meta", "meta"}, wantDB: "graph.db", wantMeta: "meta"},
+		{name: "meta_eq", args: []string{"-db=graph.db", "-meta=meta"}, wantDB: "graph.db", wantMeta: "meta"},
+		{name: "meta_without_db", args: []string{"-meta", "meta"}, wantErr: true},
+		{name: "meta_with_daemon_only", args: []string{"-daemon", "sock", "-meta", "meta"}, wantErr: true},
+		{name: "meta_with_root", args: []string{"-root", "/work/mars", "-meta", "meta"}, wantErr: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, _, meta, _, _, err := extractMCPFlags(tc.args)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("error = %v, wantErr=%v", err, tc.wantErr)
+			}
+			if db != tc.wantDB || meta != tc.wantMeta {
+				t.Fatalf("got db=%q meta=%q, want db=%q meta=%q", db, meta, tc.wantDB, tc.wantMeta)
 			}
 		})
 	}
@@ -56,7 +88,7 @@ func TestExtractMCPFlags_ExplicitRoot(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, root, _, err := extractMCPFlags(tc.args)
+			_, _, _, root, _, err := extractMCPFlags(tc.args)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("error = %v, wantErr=%v", err, tc.wantErr)
 			}

@@ -26,7 +26,7 @@ import (
 
 // runMCP launches the MCP stdio server. Usage:
 //
-//	graphi mcp [-root <repo>] [-db path] [-daemon socket] [-labs]
+//	graphi mcp [-root <repo>] [-db path [-meta dir]] [-daemon socket] [-labs]
 //
 // RUN-01 (ADR 0002): with no explicit -db/-daemon Runtime construction is
 // deferred until the MCP initialize lifecycle identifies the client workspace.
@@ -41,8 +41,10 @@ import (
 // directory guard, client roots and cwd ignored. It exists for MCP clients
 // that launch the server outside the repository (cwd=$HOME is common) and
 // supply no usable roots, where every tool call otherwise fails with -32002.
+// On the -db path, -meta names the sidecar dir exactly as it does for the CLI
+// verbs, so an attached session reloads durable semantic vectors too.
 func runMCP(args []string) int {
-	dbPath, socket, rootFlag, labs, err := extractMCPFlags(args)
+	dbPath, socket, metaDir, rootFlag, labs, err := extractMCPFlags(args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
 		return 1
@@ -53,7 +55,7 @@ func runMCP(args []string) int {
 	}
 	var srv *mcp.Server
 	if dbPath != "" || socket != "" {
-		rt, err := rtime.Attach(dbPath, socket, "")
+		rt, err := rtime.Attach(dbPath, socket, metaDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
 			return 1
@@ -106,8 +108,8 @@ func runMCP(args []string) int {
 	return 0
 }
 
-func extractMCPFlags(args []string) (dbPath, socket, root string, labs bool, err error) {
-	dbPath, socket, rest := extractFlags(args)
+func extractMCPFlags(args []string) (dbPath, socket, metaDir, root string, labs bool, err error) {
+	dbPath, socket, metaDir, rest := extractFlagsMeta(args)
 	for i := 0; i < len(rest); i++ {
 		a := rest[i]
 		take := func(name string) (string, bool) {
@@ -132,13 +134,22 @@ func extractMCPFlags(args []string) (dbPath, socket, root string, labs bool, err
 		case "-labs", "--labs":
 			labs = true
 		default:
-			return "", "", "", false, fmt.Errorf("unknown argument %q", a)
+			return "", "", "", "", false, fmt.Errorf("unknown argument %q", a)
 		}
 	}
 	if root != "" && (dbPath != "" || socket != "") {
-		return "", "", "", false, fmt.Errorf("cannot combine -root with -db or -daemon: an explicit store already pins the session without repository detection")
+		return "", "", "", "", false, fmt.Errorf("cannot combine -root with -db or -daemon: an explicit store already pins the session without repository detection")
 	}
-	return dbPath, socket, root, labs, nil
+	// -meta only means something on the -db Attach path (it names the sidecar
+	// the search service reloads durable vectors from). The binder path
+	// auto-manages its per-repo sidecar and the daemon path never reads one,
+	// so a stray -meta must error rather than be swallowed silently — before
+	// this check it was accepted and dropped, which reads as "vectors loaded"
+	// when they are not.
+	if metaDir != "" && dbPath == "" {
+		return "", "", "", "", false, fmt.Errorf("-meta requires -db: the zero-config session auto-manages its per-repo sidecar, and a daemon session never reads one")
+	}
+	return dbPath, socket, metaDir, root, labs, nil
 }
 
 // mcpRoot applies the explicit-root precedence for the MCP server: the -root

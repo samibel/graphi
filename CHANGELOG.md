@@ -38,6 +38,16 @@ file:
   combining the flag with either is a usage error). The pinned path must be an
   existing directory, else the bind fails closed with the actionable error.
 
+### Fixed
+
+- **`graphi mcp -db <path>` now honors `-meta <dir>`** the way every CLI verb
+  does, so an attached MCP session reloads the durable semantic vectors from
+  the sidecar. Previously `-meta` was extracted and silently dropped — the
+  session started, but `search -semantic` had no vectors and nothing said so.
+  A `-meta` without `-db` is now a usage error instead of that silent no-op
+  (the zero-config session auto-manages its per-repo sidecar, and a daemon
+  session never reads one).
+
 ## [0.9.0] - 2026-08-05
 
 **The P1 trust surface reconciled against PRD v1.0.** 0.8.0 shipped that surface

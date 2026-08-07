@@ -46,7 +46,10 @@ The implemented precedence is:
 
 1. explicit `-db` or `-daemon` on `graphi mcp` uses `runtime.Attach` and bypasses
    discovery and ingest (combining the `-root` flag with either is a usage error;
-   the `GRAPHI_ROOT` environment variable is ignored on this path);
+   the `GRAPHI_ROOT` environment variable is ignored on this path). With `-db`,
+   `-meta` names the sidecar directory exactly as for the CLI verbs; without
+   `-db` it is a usage error, since the zero-config session auto-manages its
+   per-repo sidecar;
 2. an explicit root — `-root` on `graphi mcp`, else the `GRAPHI_ROOT` environment
    variable (the flag wins) — pins exactly that directory: no detection walk, no
    home-directory guard, and transport roots and the working directory are

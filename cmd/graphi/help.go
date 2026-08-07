@@ -197,8 +197,8 @@ var subcommandHelp = map[string]subHelp{
 		"graphi safe-delete -root . -dry-run a1b2c3d4",
 	},
 	"mcp": {
-		"MCP stdio server (Stable tools by default; explicit -labs opt-in for experimental tools); -root or the GRAPHI_ROOT env var (flag wins) pins the repository root for clients that launch the server outside the repo and supply no MCP roots",
-		"graphi mcp [-root <repo>] [-db path] [-daemon socket] [-labs]",
+		"MCP stdio server (Stable tools by default; explicit -labs opt-in for experimental tools); -root or the GRAPHI_ROOT env var (flag wins) pins the repository root for clients that launch the server outside the repo and supply no MCP roots; with -db, -meta names the sidecar dir like the CLI verbs",
+		"graphi mcp [-root <repo>] [-db path [-meta dir]] [-daemon socket] [-labs]",
 		"graphi mcp -root ~/work/mars",
 	},
 	"daemon": {
