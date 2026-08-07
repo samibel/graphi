@@ -172,7 +172,9 @@ func MCPCheck(binary string) Check {
 				if statusOrder(res.Status) > statusOrder(worst) {
 					worst = res.Status
 				}
-				lines = append(lines, fmt.Sprintf("%s: %s", c.Display, res.Message))
+				// res.Message is already "<display>: <finding>" — see
+				// runMCPClientCheck — so it is the per-client detail line.
+				lines = append(lines, res.Message)
 				if warn := runMCPContentionCheck(c, cfg); warn != "" {
 					if statusOrder(StatusWarn) > statusOrder(worst) {
 						worst = StatusWarn
@@ -191,7 +193,15 @@ func MCPCheck(binary string) Check {
 				msg += " — " + strings.Join(contention, "; ")
 				action = "keep one zero-config graphi entry per client; pin extras with 'graphi mcp -db <path>' or remove them"
 			}
-			return ResultWithAction("mcp", "mcp", msg, worst, action)
+			result := ResultWithAction("mcp", "mcp", msg, worst, action)
+			// The aggregate message says *that* something needs attention; the
+			// detail says which client and why, so the finding is repairable.
+			// An all-pass run has nothing to attribute, and leaving Detail empty
+			// lets json:"detail,omitempty" omit it entirely.
+			if worst != StatusPass {
+				result.Detail = strings.Join(append(lines, contention...), "\n")
+			}
+			return result
 		},
 	}
 }

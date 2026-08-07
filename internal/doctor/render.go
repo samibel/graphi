@@ -32,18 +32,27 @@ type JSONOutcome struct {
 }
 
 // JSONCheckResult is the stable per-check JSON shape.
-// Every field is always present; empty strings are used instead of omission.
+// Every field is always present — empty strings are used instead of omission —
+// with the single exception of `detail`, an optional member of the schema
+// (CheckResult.Detail) that is omitted entirely when a check carries none.
+// Adding it is additive: schema_version stays 2.
 type JSONCheckResult struct {
 	ID       string `json:"id"`
 	Category string `json:"category"`
 	Status   Status `json:"status"`
 	Message  string `json:"message"`
 	Action   string `json:"action"`
+	Detail   string `json:"detail,omitempty"`
 }
+
+// detailIndent prefixes each Detail line rendered beneath its check line.
+const detailIndent = "    "
 
 // RenderHuman writes a concise human-readable report to w.
 // It emits one line per check (plus "→ action: ..." for non-pass results that
-// carry a remediation) and a single summary line.
+// carry a remediation) and a single summary line. A check that carries a
+// Detail additionally gets its detail lines beneath, indented; the single-line
+// format of every check without one is unchanged.
 func RenderHuman(w io.Writer, report Report) error {
 	results := SortedResults(report.Results)
 	for _, r := range results {
@@ -54,6 +63,14 @@ func RenderHuman(w io.Writer, report Report) error {
 		}
 		if _, err := fmt.Fprintln(w, line); err != nil {
 			return err
+		}
+		if r.Detail == "" {
+			continue
+		}
+		for _, d := range strings.Split(r.Detail, "\n") {
+			if _, err := fmt.Fprintln(w, detailIndent+d); err != nil {
+				return err
+			}
 		}
 	}
 	if _, err := fmt.Fprintln(w, FormatSummary(report)); err != nil {
@@ -75,6 +92,7 @@ func RenderJSON(w io.Writer, report Report) error {
 			Status:   r.Status,
 			Message:  r.Message,
 			Action:   r.Action,
+			Detail:   r.Detail,
 		})
 	}
 	out := JSONReport{
