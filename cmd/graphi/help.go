@@ -226,11 +226,6 @@ var subcommandHelp = map[string]subHelp{
 		"graphi setup-embedder [<selector>]",
 		"graphi setup-embedder ollama",
 	},
-	"tui": {
-		"interactive terminal surface (requires a -tags tui build)",
-		"graphi tui [-db path] [-daemon socket]",
-		"graphi tui -db graph.db",
-	},
 	"privacy-audit": {
 		"print the local-first proof (CGo scan + canary egress guard); non-zero on violation",
 		"graphi privacy-audit [--target ./...]",
@@ -385,5 +380,5 @@ func printHelp() {
 	fmt.Print("  graphi query <op> -symbol <id> [-depth N]\n")
 	fmt.Print("  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]\n")
 	fmt.Print("\nDetails on any subcommand:  graphi help <subcommand>   (or: graphi <subcommand> --help)\n")
-	fmt.Printf("registered languages (Go is GA; every other language is Preview — see docs/stability-tiers.md): %v\nsubcommands: sync, rebuild, status, snapshot, compare, query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, tui, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
+	fmt.Printf("registered languages (Go is GA; every other language is Preview — see docs/stability-tiers.md): %v\nsubcommands: sync, rebuild, status, snapshot, compare, query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>\n", reg.Languages())
 }

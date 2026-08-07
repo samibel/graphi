@@ -80,7 +80,7 @@ func TestStabilityMarker(t *testing.T) {
 			t.Errorf("stable %q must not carry the labs marker", n)
 		}
 	}
-	labs := []string{"analyze", "taint", "refactor", "memory", "distill", "skillgen", "triage-prs", "http", "daemon", "tui", "implementers", "supertypes", "snapshot", "compare"}
+	labs := []string{"analyze", "taint", "refactor", "memory", "distill", "skillgen", "triage-prs", "http", "daemon", "implementers", "supertypes", "snapshot", "compare"}
 	for _, n := range labs {
 		if subcommandIsStable(n) {
 			t.Errorf("%q should be Labs, not stable (SCOPE-01)", n)
