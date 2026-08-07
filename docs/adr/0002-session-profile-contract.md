@@ -45,9 +45,17 @@ The MCP transport does not discover repositories or construct stores. It receive
 The implemented precedence is:
 
 1. explicit `-db` or `-daemon` on `graphi mcp` uses `runtime.Attach` and bypasses
-   discovery and ingest;
-2. transport roots are authoritative when supplied;
-3. the process working directory is considered only when the transport supplied no
+   discovery and ingest (combining the `-root` flag with either is a usage error;
+   the `GRAPHI_ROOT` environment variable is ignored on this path). With `-db`,
+   `-meta` names the sidecar directory exactly as for the CLI verbs; without
+   `-db` it is a usage error, since the zero-config session auto-manages its
+   per-repo sidecar;
+2. an explicit root — `-root` on `graphi mcp`, else the `GRAPHI_ROOT` environment
+   variable (the flag wins) — pins exactly that directory: no detection walk, no
+   home-directory guard, and transport roots and the working directory are
+   ignored. It must name an existing directory, else the bind fails closed;
+3. transport roots are authoritative when supplied;
+4. the process working directory is considered only when the transport supplied no
    roots at all (`Options.Roots == nil`).
 
 For transport roots, `runtime.OpenSession` tests candidates in advertised order and
@@ -69,6 +77,8 @@ session. It does not silently hop the running session to another repository.
 **Evidence:** `runtime.resolveRepositoryRoot`,
 `TestOpenSession_ClientRootsOverrideProcessCwd`,
 `TestOpenSession_AuthoritativeEmptyRootsRejectCwd`,
+`TestOpenSession_ExplicitRootWinsOverClientRootsAndCwd`,
+`TestSessionProfile_MCPExplicitRootJourney`,
 `TestSessionBinding_RootsListChangedFailsClosedAndClosesSession`.
 
 ### D2. MCP roots lifecycle

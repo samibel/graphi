@@ -26,6 +26,39 @@ file:
 
 ## [Unreleased]
 
+### Added
+
+- **`graphi mcp -root <repo>` and the `GRAPHI_ROOT` environment variable** (the
+  flag wins) pin the MCP session's repository root explicitly — for MCP clients
+  that launch the server outside the repository (cwd=`$HOME` is common) and
+  supply no roots, where previously every tool call failed with the `-32002`
+  auto-bind refusal. An explicit pin is deliberate intent in the CLI `-root`
+  sense: no detection walk, no home-directory guard, precedence over
+  client-supplied roots and the process cwd (only `-db`/`-daemon` rank higher;
+  combining the flag with either is a usage error). The pinned path must be an
+  existing directory, else the bind fails closed with the actionable error.
+- **`graphi setup --project [--root <repo>] [--attach]`** automates that pin
+  per repository: it upserts graphi into the project-scoped `.mcp.json` at the
+  repo root with `mcp -root <abs root>` in the entry — the per-repo follow-up
+  the global-config-only setup contract deliberately deferred. `--attach`
+  writes the store pin instead (`mcp -db <store> -meta <sidecar>`), with the
+  paths derived from the same per-repo state layout the flagless verbs use —
+  no more hand-copying fingerprint paths; the report reminds you Attach mode
+  does not auto-ingest (pair with `graphi sync`) and warns when the store does
+  not exist yet. Same guarantees as the client path (idempotent upsert, atomic
+  write, fail-closed backup, offline); the file carries absolute paths and is
+  machine-specific, so gitignore it or run the command once per clone.
+
+### Fixed
+
+- **`graphi mcp -db <path>` now honors `-meta <dir>`** the way every CLI verb
+  does, so an attached MCP session reloads the durable semantic vectors from
+  the sidecar. Previously `-meta` was extracted and silently dropped — the
+  session started, but `search -semantic` had no vectors and nothing said so.
+  A `-meta` without `-db` is now a usage error instead of that silent no-op
+  (the zero-config session auto-manages its per-repo sidecar, and a daemon
+  session never reads one).
+
 ## [0.9.0] - 2026-08-05
 
 **The P1 trust surface reconciled against PRD v1.0.** 0.8.0 shipped that surface

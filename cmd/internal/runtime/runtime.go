@@ -52,6 +52,12 @@ type Options struct {
 	// fallback. A non-nil slice, including an empty one, is authoritative: Cwd
 	// must not leak into a client-scoped session when none of its roots bind.
 	Roots []string
+	// Root, when non-empty, pins the repository root exactly — explicit intent
+	// in the CLI -root sense: no detection walk, no home/filesystem-root guard,
+	// and precedence over transport Roots and the Cwd fallback (only
+	// DBOverride/Socket rank higher). It must name an existing directory;
+	// OpenSession otherwise fails closed with ErrNoRepository.
+	Root string
 	// DBOverride, when non-empty, short-circuits to Attach semantics: exactly
 	// this store, no discovery, no ingest (D2 precedence, zero regression).
 	DBOverride string
@@ -158,10 +164,11 @@ func Attach(dbPath, socket, metaDir string) (*Runtime, error) {
 
 // OpenSession opens the ADR 0002 session. Precedence (D4): an explicit
 // DBOverride/Socket behaves exactly like Attach (zero regression for callers
-// that pre-index and pass -db); otherwise transport roots are tried in order,
-// and only when Roots is nil does the cwd walk decide. A session that cannot
-// bind a repository fails closed with ErrNoRepository; it never masquerades as
-// a successful empty graph.
+// that pre-index and pass -db); otherwise an explicit Root pins the repository
+// outright; otherwise transport roots are tried in order, and only when Roots
+// is nil does the cwd walk decide. A session that cannot bind a repository
+// fails closed with ErrNoRepository; it never masquerades as a successful
+// empty graph.
 func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	if opts.DBOverride != "" || opts.Socket != "" {
 		return Attach(opts.DBOverride, opts.Socket, "")
@@ -245,13 +252,17 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	return rt, nil
 }
 
-// resolveRepositoryRoot enforces session scoping. MCP roots are authoritative
-// when present: choosing the process cwd after a client explicitly supplied an
+// resolveRepositoryRoot enforces session scoping. An explicit Root pin wins
+// outright (pinExplicitRoot). Below that, MCP roots are authoritative when
+// present: choosing the process cwd after a client explicitly supplied an
 // empty or unrelated root set would cross workspace boundaries. With no
 // transport roots (nil), legacy/non-roots-capable clients retain the cwd walk.
-// Either way the detected root passes guardAutoRoot: auto-binding the user's
-// home directory (or the filesystem root) is always an accident.
+// Either detected root passes guardAutoRoot: auto-binding the user's home
+// directory (or the filesystem root) is always an accident.
 func resolveRepositoryRoot(opts Options) (string, error) {
+	if opts.Root != "" {
+		return pinExplicitRoot(opts.Root)
+	}
 	if opts.Roots != nil {
 		var guardErr error
 		for _, candidate := range opts.Roots {
@@ -284,10 +295,37 @@ func resolveRepositoryRoot(opts Options) (string, error) {
 	return root, nil
 }
 
+// pinExplicitRoot validates an Options.Root pin. Unlike the detection paths it
+// performs no upward walk and no guardAutoRoot: an explicit root is deliberate
+// intent, exactly like -root on the CLI verbs. It still fails closed on a path
+// that does not exist or is not a directory — an MCP bind failure surfaces
+// late and opaquely (as the retryable -32002), so a typo must be caught here.
+func pinExplicitRoot(root string) (string, error) {
+	abs, err := filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return "", fmt.Errorf("%w: explicit root %q: %v", ErrNoRepository, root, err)
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		return "", fmt.Errorf("%w: explicit root %q does not exist", ErrNoRepository, abs)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("%w: explicit root %q is not a directory", ErrNoRepository, abs)
+	}
+	return abs, nil
+}
+
 // EnvAllowHomeRoot opts a session into deliberately binding the user's home
 // directory as the repository root (e.g. a genuinely home-rooted dotfiles
 // setup someone wants indexed).
 const EnvAllowHomeRoot = "GRAPHI_ALLOW_HOME_ROOT"
+
+// EnvRoot is the environment fallback for an explicit repository root on
+// `graphi mcp` (the -root flag wins): for MCP clients that launch the server
+// outside the repository and supply no usable roots. It is read in cmd/graphi
+// so Options stays explicit and unit-testable; this package never consults
+// the environment for it.
+const EnvRoot = "GRAPHI_ROOT"
 
 // guardAutoRoot refuses the roots that auto-detection lands on ONLY by
 // accident: the user's home directory and the filesystem root. A dotfiles
@@ -297,7 +335,8 @@ const EnvAllowHomeRoot = "GRAPHI_ALLOW_HOME_ROOT"
 // launching from the home directory) then silently starts indexing the entire
 // home tree, which never finishes and holds the ingest lock the whole time.
 // Explicit intent still works: `-db` pins a store (Attach path, no detection),
-// CLI verbs take `-root`, and GRAPHI_ALLOW_HOME_ROOT=1 overrides outright.
+// CLI verbs take `-root`, `graphi mcp -root` (or GRAPHI_ROOT) pins the session
+// root without this guard, and GRAPHI_ALLOW_HOME_ROOT=1 overrides outright.
 func guardAutoRoot(root string) error {
 	if os.Getenv(EnvAllowHomeRoot) == "1" {
 		return nil

@@ -65,6 +65,9 @@ CGO_ENABLED=0 go build -o graphi ./cmd/graphi
 # 3) Register graphi as an MCP server in the Claude CLI
 ./graphi setup
 #   → writes the stdio MCP entry into ~/.claude.json and prints the path.
+#   Per-repo alternative: ./graphi setup --project
+#   → writes this repo's .mcp.json with the session root pinned (mcp -root),
+#     so even a client that launches the server from $HOME binds this repo.
 
 # 4) Restart claude — graphi's tools are now visible.
 ```
@@ -79,7 +82,13 @@ flowchart LR
     GR -. "SQLite sidecar + hot in-mem graph" .- DB[("~/.graphi/graph.db")]
 ```
 
-> For non-Claude MCP clients: start the server directly with `./graphi mcp -db ~/.graphi/graph.db`.
+> For non-Claude MCP clients: start the server directly with `./graphi mcp -db ~/.graphi/graph.db`
+> (add `-meta <dir>` to reload durable semantic vectors, exactly as with the CLI verbs).
+> If your client launches the server outside the repository (cwd=`$HOME` is common) and supplies no
+> MCP roots, pin the repository explicitly: `./graphi mcp -root /path/to/repo` (or set
+> `GRAPHI_ROOT=/path/to/repo`; the flag wins) — e.g.
+> `claude mcp add graphi -- graphi mcp -root /path/to/repo`. Without a pin, every tool call in that
+> shape fails with the `-32002` auto-bind refusal.
 
 ---
 

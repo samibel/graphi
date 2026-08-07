@@ -687,9 +687,10 @@ graphi skillgen -name <n> -trigger <t> -description <d>      Skill generation (E
 graphi setup-embedder [<selector>]                   Print how to opt in to semantic search
 graphi http   [-addr 127.0.0.1:8080] [-db p] [-root r] [-meta d]   Read-only HTTP/SSE (loopback)
 graphi tui    [-addr http://127.0.0.1:8080]          Interactive TUI (build with -tags tui)
-graphi mcp    [-db p] [-daemon sock]                 MCP stdio server (agent surface)
+graphi mcp    [-root repo] [-db p [-meta d]] [-daemon sock]   MCP stdio server (agent surface)
 graphi daemon start|stop|status [-socket p] [-db p]  Hot-index Unix-socket daemon
 graphi setup  [--client id|all] [--dry-run] [--binary p] [--config p]  Register MCP server into local clients
+graphi setup --project [--root repo] [--attach]      Write the repo's .mcp.json (root pinned; --attach: store+meta pinned)
 graphi privacy-audit                                 Local-first proof (CONFIRMED/VIOLATED/UNVERIFIED)
 graphi savings -ledger <path>                        Token-savings readout from a session ledger
 graphi version                                       Version / commit / build date

@@ -197,9 +197,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi safe-delete -root . -dry-run a1b2c3d4",
 	},
 	"mcp": {
-		"MCP stdio server (Stable tools by default; explicit -labs opt-in for experimental tools)",
-		"graphi mcp [-db path] [-daemon socket] [-labs]",
-		"graphi mcp -db ~/.graphi/graph.db -labs",
+		"MCP stdio server (Stable tools by default; explicit -labs opt-in for experimental tools); -root or the GRAPHI_ROOT env var (flag wins) pins the repository root for clients that launch the server outside the repo and supply no MCP roots; with -db, -meta names the sidecar dir like the CLI verbs",
+		"graphi mcp [-root <repo>] [-db path [-meta dir]] [-daemon socket] [-labs]",
+		"graphi mcp -root ~/work/mars",
 	},
 	"daemon": {
 		"hot-index Unix-socket daemon lifecycle",
@@ -217,9 +217,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi doctor --json",
 	},
 	"setup": {
-		"register graphi's MCP stdio server into local MCP clients' configs",
-		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path]",
-		"graphi setup --dry-run",
+		"register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root), or with --attach the auto-managed per-repo store pinned (mcp -db/-meta)",
+		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --project [--root <repo>] [--attach]",
+		"graphi setup --project",
 	},
 	"setup-embedder": {
 		"print how to opt in to the optional semantic search (offline)",
