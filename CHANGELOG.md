@@ -37,6 +37,13 @@ file:
   client-supplied roots and the process cwd (only `-db`/`-daemon` rank higher;
   combining the flag with either is a usage error). The pinned path must be an
   existing directory, else the bind fails closed with the actionable error.
+- **`graphi setup --project [--root <repo>]`** automates that pin per
+  repository: it upserts graphi into the project-scoped `.mcp.json` at the
+  repo root with `mcp -root <abs root>` in the entry — the per-repo follow-up
+  the global-config-only setup contract deliberately deferred. Same guarantees
+  as the client path (idempotent upsert, atomic write, fail-closed backup,
+  offline); the file carries absolute paths and is machine-specific, so
+  gitignore it or run the command once per clone.
 
 ### Fixed
 

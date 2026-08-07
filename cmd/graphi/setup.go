@@ -5,10 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/samibel/graphi/internal/audit"
 	"github.com/samibel/graphi/internal/mcpconfig"
+	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/surfaces/cli"
 )
 
@@ -18,11 +20,19 @@ import (
 //
 //	graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all]
 //	             [--dry-run] [--binary path] [--config path]
+//	graphi setup --project [--root <repo>] [--dry-run] [--binary path]
 //
 // Default (--client all): always target Claude Code (created if absent, matching
 // historical behavior) plus every OTHER local client that looks installed. A
 // specific --client targets just that one. --config overrides the file path for a
 // single client (default claude), preserving the original single-file behavior.
+//
+// --project is the per-repository variant (the mcpconfig follow-up the global
+// contract deliberately deferred): it upserts graphi into the project-scoped
+// .mcp.json at the repository root, with the session root pinned via
+// `mcp -root <abs root>` — so a client that launches the server outside the
+// repo (cwd=$HOME) and supplies no MCP roots still binds this repository. The
+// root is detected from the working directory, or named with --root.
 func runSetup(args []string) int {
 	// setup --check is a diagnostic alias for `graphi doctor`.
 	for _, a := range args {
@@ -35,6 +45,8 @@ func runSetup(args []string) int {
 	binary := fs.String("binary", "", "graphi binary to register (default: this executable)")
 	cfgPath := fs.String("config", "", "config file path override (single client; default: that client's path)")
 	client := fs.String("client", "all", "client to wire: "+strings.Join(mcpconfig.ClientIDs(), "|")+"|all")
+	project := fs.Bool("project", false, "write the project-scoped .mcp.json at the repository root with the session root pinned (mcp -root)")
+	rootFlag := fs.String("root", "", "repository root for --project (default: detected from the working directory)")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: setup: %v\n", err)
 		return 1
@@ -47,6 +59,24 @@ func runSetup(args []string) int {
 			return 1
 		}
 		bin = exe
+	}
+
+	if *rootFlag != "" && !*project {
+		fmt.Fprintln(os.Stderr, "graphi: setup: --root requires --project (client configs are global; only the project file pins a repository)")
+		return 1
+	}
+	if *project {
+		clientSet := false
+		fs.Visit(func(f *flag.Flag) {
+			if f.Name == "client" || f.Name == "config" {
+				clientSet = true
+			}
+		})
+		if clientSet {
+			fmt.Fprintln(os.Stderr, "graphi: setup: --project writes <root>/.mcp.json; --client/--config do not apply to it")
+			return 1
+		}
+		return runSetupProject(getwd(), *rootFlag, bin, *dryRun)
 	}
 
 	// --config pins a single file; it implies a single client (the named one, or
@@ -96,6 +126,51 @@ func runSetup(args []string) int {
 		}) != 0 {
 			rc = 1
 		}
+	}
+	return rc
+}
+
+// runSetupProject upserts graphi into the project-scoped .mcp.json at the
+// repository root, pinning the MCP session root via `mcp -root <abs root>`.
+// Same guarantees as the client path (idempotent, atomic, fail-closed backup,
+// offline) through the shared mcpconfig.Apply. The written file carries
+// absolute paths (binary and root), so it is machine-specific by construction:
+// each clone runs `graphi setup --project` once rather than committing it.
+func runSetupProject(cwd, rootOverride, bin string, dryRun bool) int {
+	root := rootOverride
+	if root == "" {
+		detected, ok := state.DetectRepo(cwd)
+		if !ok {
+			printNotARepo("setup --project")
+			return 1
+		}
+		root = detected
+	}
+	abs, err := filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: setup: --project: resolve root %q: %v\n", root, err)
+		return 1
+	}
+	root = abs
+	info, err := os.Stat(root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: setup: --project: root %q does not exist\n", root)
+		return 1
+	}
+	if !info.IsDir() {
+		fmt.Fprintf(os.Stderr, "graphi: setup: --project: root %q is not a directory\n", root)
+		return 1
+	}
+
+	path := filepath.Join(root, ".mcp.json")
+	entry := mcpconfig.GraphiEntry(bin, []string{"mcp", "-root", root})
+	rc := reportSetup("project (.mcp.json)", path, entry, dryRun, func() (mcpconfig.Result, error) {
+		return mcpconfig.Apply(path, "graphi", entry, dryRun)
+	})
+	if rc == 0 && !dryRun {
+		fmt.Printf("  note: %s pins absolute paths (binary + root) and is machine-specific;\n", path)
+		fmt.Println("        gitignore it, or have each clone run 'graphi setup --project' once.")
+		fmt.Println("  note: Claude Code asks once to approve project-scoped MCP servers on first use.")
 	}
 	return rc
 }

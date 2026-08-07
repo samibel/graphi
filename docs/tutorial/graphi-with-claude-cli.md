@@ -65,6 +65,9 @@ CGO_ENABLED=0 go build -o graphi ./cmd/graphi
 # 3) Register graphi as an MCP server in the Claude CLI
 ./graphi setup
 #   → writes the stdio MCP entry into ~/.claude.json and prints the path.
+#   Per-repo alternative: ./graphi setup --project
+#   → writes this repo's .mcp.json with the session root pinned (mcp -root),
+#     so even a client that launches the server from $HOME binds this repo.
 
 # 4) Restart claude — graphi's tools are now visible.
 ```

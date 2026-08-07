@@ -690,6 +690,7 @@ graphi tui    [-addr http://127.0.0.1:8080]          Interactive TUI (build with
 graphi mcp    [-root repo] [-db p [-meta d]] [-daemon sock]   MCP stdio server (agent surface)
 graphi daemon start|stop|status [-socket p] [-db p]  Hot-index Unix-socket daemon
 graphi setup  [--client id|all] [--dry-run] [--binary p] [--config p]  Register MCP server into local clients
+graphi setup --project [--root repo]                 Write the repo's .mcp.json with the session root pinned
 graphi privacy-audit                                 Local-first proof (CONFIRMED/VIOLATED/UNVERIFIED)
 graphi savings -ledger <path>                        Token-savings readout from a session ledger
 graphi version                                       Version / commit / build date

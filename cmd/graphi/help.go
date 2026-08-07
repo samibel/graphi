@@ -217,9 +217,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi doctor --json",
 	},
 	"setup": {
-		"register graphi's MCP stdio server into local MCP clients' configs",
-		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path]",
-		"graphi setup --dry-run",
+		"register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root)",
+		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --project [--root <repo>]",
+		"graphi setup --project",
 	},
 	"setup-embedder": {
 		"print how to opt in to the optional semantic search (offline)",
