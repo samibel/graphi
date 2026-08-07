@@ -15,7 +15,7 @@ file:
 - **Shipping ≠ supported.** An entry below announcing a capability records that it
   landed, **not** that it is GA. Only the 12 frozen operations, on **Go**, over
   **CLI + MCP stdio**, are GA. Every non-Go language is Preview; HTTP, the daemon,
-  the web UI, the TUI, VS Code, the GitHub Action, refactorings, taint, memory, the
+  the web UI, VS Code, the GitHub Action, refactorings, taint, memory, the
   wiki and semantic search are Labs.
 - **Entries are historical and are not rewritten.** Each describes the state at its
   release date; where an older entry's tier language differs from today's, the
@@ -48,6 +48,21 @@ file:
   not exist yet. Same guarantees as the client path (idempotent upsert, atomic
   write, fail-closed backup, offline); the file carries absolute paths and is
   machine-specific, so gitignore it or run the command once per clone.
+
+### Removed
+
+- **The `tui` terminal surface (Labs) is gone** — `graphi tui`, `surfaces/tui/`,
+  the `tui` build tag, `docs/surfaces-tui.md` and the `bubbles` / `bubbletea` /
+  `lipgloss` / `x/exp/teatest` dependencies. **No released binary ever contained
+  it:** every published `graphi` build compiled the no-op stub, which printed
+  *"this build was compiled without the TUI surface"* and exited 2, so nothing
+  a user could have installed loses a working feature. Reaching the real
+  implementation required building from source with `-tags tui` and then
+  pointing it at a separately started `graphi http`. `graphi tui` now gets the
+  standard unknown-subcommand response. The documentation that described it was
+  wrong in the specifics anyway (it advertised `-db`/`-daemon` flags the code
+  never had, and denied the Bubble Tea dependency tree the code required), and
+  its two `coverage-matrix.yaml` rows both claimed `status: shipped`.
 
 ### Fixed
 

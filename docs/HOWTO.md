@@ -1,7 +1,7 @@
 # graphi — How-To (Install & Use)
 
 A practical, end-to-end guide: build graphi, index a repository, and use every
-surface — CLI, HTTP/SSE API, web client, TUI, VS Code extension, and the MCP
+surface — CLI, HTTP/SSE API, web client, VS Code extension, and the MCP
 server for Claude Code. Everything runs **locally**; no code leaves your machine.
 
 > New to graphi? Read the [README](../readme.md) for the “what & why”. This guide
@@ -13,7 +13,7 @@ server for Claude Code. Everything runs **locally**; no code leaves your machine
 
 | You want to use… | You need |
 |---|---|
-| The `graphi` binary (CLI, HTTP, MCP, daemon, TUI) | **Go 1.26.5+** — no C toolchain (the default build is CGo-free) |
+| The `graphi` binary (CLI, HTTP, MCP, daemon) | **Go 1.26.5+** — no C toolchain (the default build is CGo-free) |
 | The web client (Sigma graph viz + wiki) | **Node.js 18+** and npm |
 | The VS Code extension | Node.js 18+, npm, and **VS Code 1.80+** (plus `@vscode/vsce` for packaging) |
 | The MCP integration | **Claude Code** installed |
@@ -45,10 +45,6 @@ sudo mv graphi /usr/local/bin/        # or: install -m755 graphi ~/.local/bin/
 # verify
 graphi version
 ```
-
-> The default binary is intentionally lean and **excludes the interactive TUI**
-> (its Bubble Tea dependency tree roughly doubles the binary). See
-> [§6.4](#64-tui-terminal-ui) to build with the TUI included.
 
 ### 2.2 Build everything (sanity check)
 
@@ -83,7 +79,7 @@ CGO_ENABLED=1 go build -tags graphi_broad -o graphi-broad ./cmd/graphi
 - **Provenance** — every edge carries a confidence tier (heuristic / derived /
   confirmed), a reason, and evidence, so you can trust each relationship.
 - **One engine, many surfaces** — the CLI, daemon, MCP server, HTTP/SSE API, web
-  client, TUI, and VS Code extension all answer from the *same* engine, so they
+  client, and VS Code extension all answer from the *same* engine, so they
   never diverge.
 - **Local-first** — zero outbound network, no telemetry, loopback-only servers.
   Provable with `graphi privacy-audit` ([§7](#7-prove-its-local-first-privacy-audit)).
@@ -214,8 +210,8 @@ curl -s http://127.0.0.1:8080/contract        # served schema version + descript
 curl -s 'http://127.0.0.1:8080/query/callers?symbol=pkg.MyFunc'
 ```
 
-…or point the [web client](#63-web-client), [TUI](#64-tui-terminal-ui), or
-[VS Code extension](#65-vs-code-extension) at the same `http://127.0.0.1:8080`.
+…or point the [web client](#63-web-client) or
+[VS Code extension](#64-vs-code-extension) at the same `http://127.0.0.1:8080`.
 
 > `-addr` defaults to `127.0.0.1:0` (a random free port, printed on startup).
 > Pin a port with `-addr 127.0.0.1:8080` so the other surfaces can find it. The
@@ -447,31 +443,7 @@ Interactions: pan/zoom the graph, click a symbol to highlight its blast-radius
 (dependents) and citation/evidence edges, and browse the generated wiki under
 `/wiki`.
 
-### 6.4 TUI (terminal UI)
-
-The interactive terminal surface is **opt-in behind the `tui` build tag** (so the
-default binary stays lean). It consumes the HTTP/SSE API — start `graphi http`
-first.
-
-```bash
-# Build a binary that includes the TUI
-CGO_ENABLED=0 go build -tags tui -o graphi-tui ./cmd/graphi
-
-# Start the backend (separate terminal)
-graphi http -addr 127.0.0.1:8080 -root ./my-repo
-
-# Launch the TUI against it (loopback-only; fails closed on non-loopback)
-graphi-tui tui -addr http://127.0.0.1:8080
-```
-
-Keyboard-driven panes: a navigator, a content pane, and a persistent provenance
-pane that always shows where the displayed answer came from. It is strictly
-read-only.
-
-> If you run `graphi tui` on the **default** (non-TUI) binary, it prints a hint
-> telling you to rebuild with `-tags tui`.
-
-### 6.5 VS Code extension
+### 6.4 VS Code extension
 
 Read-only code intelligence + an interactive graph webview, inside the editor.
 It talks to the same loopback HTTP/SSE backend.
@@ -502,7 +474,7 @@ code --install-extension graphi-*.vsix
 The status bar shows connected / disconnected; the extension reconnects with
 bounded backoff and never blocks the editor UI thread.
 
-### 6.6 MCP server for local AI agents
+### 6.5 MCP server for local AI agents
 
 graphi exposes its read-only graph to AI agents over **MCP (stdio)**.
 
@@ -560,7 +532,7 @@ daemon transport wires the five structural queries plus `search` and `impact`
 and `change_risk` from `tools/list` until their daemon RPCs exist. It never
 advertises a Stable tool that is guaranteed to fail.
 
-### 6.7 Daemon (hot index)
+### 6.6 Daemon (hot index)
 
 Keep the graph hot in a background process and query it over a local Unix socket
 for instant responses.
@@ -575,7 +547,7 @@ graphi query callers -symbol pkg.MyFunc -daemon /tmp/graphi.sock
 > The daemon serves whatever is in its store; build the `-db` first
 > ([§5.2](#52-persistent-sqlite-reusable-by-cli--mcp--daemon)).
 
-### 6.8 Trust surface (labs): how far may you trust a graph answer?
+### 6.7 Trust surface (labs): how far may you trust a graph answer?
 
 `graphi status` answers "does a graph exist and does it match the checked-out
 code?". The trust surface answers the next question: "how good is the evidence
@@ -634,7 +606,6 @@ It runs a real CGo-free scan and a canary egress guard and prints a verdict:
 | `refusing non-loopback bind` | `-addr` host must be `127.0.0.1`, `localhost`, or `::1`. The HTTP surface is loopback-only by design. |
 | Queries return nothing | The store is empty — ingest a repo first (`graphi http -root <repo>` or build a `-db`, see [§5](#5-indexing-a-repository)). |
 | `412` from the HTTP API | Client/server `schema_version` mismatch — rebuild the client against the current `/contract`. |
-| `graphi tui` prints “compiled without the TUI surface” | Rebuild with `-tags tui` ([§6.4](#64-tui-terminal-ui)). |
 | Web client shows a version-mismatch banner | The backend’s schema version differs from the one the client was built against — rebuild the web client (`npm run gen:types && npm run build`). |
 | `privacy-audit` reports UNVERIFIED locally | Expected off-Linux / unprivileged — it fails closed. The CI Linux job is the live proof. |
 | Claude Code doesn’t see graphi’s tools | Re-run `graphi setup`, then fully restart Claude Code. |
@@ -686,7 +657,6 @@ graphi distill -session <id> -decisions "..." -risks "..." -questions "..." -fil
 graphi skillgen -name <n> -trigger <t> -description <d>      Skill generation (EP-012)
 graphi setup-embedder [<selector>]                   Print how to opt in to semantic search
 graphi http   [-addr 127.0.0.1:8080] [-db p] [-root r] [-meta d]   Read-only HTTP/SSE (loopback)
-graphi tui    [-addr http://127.0.0.1:8080]          Interactive TUI (build with -tags tui)
 graphi mcp    [-root repo] [-db p [-meta d]] [-daemon sock]   MCP stdio server (agent surface)
 graphi daemon start|stop|status [-socket p] [-db p]  Hot-index Unix-socket daemon
 graphi setup  [--client id|all] [--dry-run] [--binary p] [--config p]  Register MCP server into local clients

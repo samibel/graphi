@@ -25,7 +25,7 @@ row is tagged stable or one is dropped.
 
 **MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **45-tool** union (34 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **152**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **150**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -132,7 +132,7 @@ Total capabilities: **152**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage_prs` | 🧪 labs | ✅ shipped | EP-018 | SW-105: single-pass graph-derived ranked multi-PR triage over the enumerated PR set (zero engine egress). |
 | `undo` | 🧪 labs | ✅ shipped | EP-006 | reverse a previously applied edit by undo token. |
 
-## Surfaces (8)
+## Surfaces (7)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -141,11 +141,10 @@ Total capabilities: **152**. See [`architecture-plan.md`](architecture-plan.md) 
 | `github-action` | 🧪 labs | ✅ shipped | EP-007 | GitHub Action for the PR-review vertical (extensions/github-action). |
 | `http` | 🧪 labs | ✅ shipped | EP-008 | loopback HTTP/SSE surface. |
 | `mcp` | 🧪 labs | ✅ shipped | EP-008 | MCP stdio server (JSON-RPC 2.0, stdlib only). |
-| `tui` | 🧪 labs | ✅ shipped | EP-008 | terminal UI surface. |
 | `vscode` | 🧪 labs | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | 🧪 labs | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (49)
+## CLI subcommands (48)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -193,7 +192,6 @@ Total capabilities: **152**. See [`architecture-plan.md`](architecture-plan.md) 
 | `sync` | 🧪 labs | ✅ shipped | - | flagless incremental update of the auto-managed per-repo graph (facade over the stable index lifecycle; branch-switch aware; matrix row labs because the stable-12 set is frozen) |
 | `triage-prs` | 🧪 labs | ✅ shipped | - | graph-derived multi-PR triage ranking |
 | `trust-report` | 🧪 labs | ✅ shipped | - | P1 trust surface: repository/target trust report over the persisted TrustSnapshot (--json emits the canonical contract-§2 document; --target/--policy/--details/--limit); strict read-only observer that never creates state; byte-parity with the graph_health MCP tool through the single client.TrustReport composition |
-| `tui` | 🧪 labs | ✅ shipped | - | interactive terminal surface |
 | `ui` | 🧪 labs | ✅ shipped | - | short-verb alias for the zero-config index+serve flow |
 | `undo` | 🧪 labs | ✅ shipped | - | reverse an applied edit by its undo token |
 | `upgrade` | 🧪 labs | ✅ shipped | - | user-initiated self-update via the pinned install script |

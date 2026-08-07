@@ -21,7 +21,7 @@ dependency direction is strictly downward:
 ```
 cmd/*        entry points & wiring (graphi, layerguard, coverage, canary, …)
    ↓
-surfaces/*   CLI · daemon · MCP stdio · embeddable MCP HTTP adapter · HTTP/SSE · TUI · web · extensions · forge · guard
+surfaces/*   CLI · daemon · MCP stdio · embeddable MCP HTTP adapter · HTTP/SSE · web · extensions · forge · guard
    ↓
 engine/*     query · search · analysis · edit · review · ingest · observe · overlay · watch · community · interproc-taint · conformance · ledger · context · memory · distill · skillgen · wiki
    ↓
@@ -59,7 +59,7 @@ graphstore (core/graphstore)
   ▼
 query · search · analysis (engine/*)
   ▼
-surfaces (CLI · daemon · MCP · HTTP · TUI · web · extensions)
+surfaces (CLI · daemon · MCP · HTTP · web · extensions)
 ```
 
 - **Ingest is incremental and crash-safe.** Files are re-parsed only when their
@@ -161,7 +161,7 @@ it all real?"* — the closing piece of the project's end-to-end traceability st
 - **CI & local-first:** [ci/](ci) · [setup-privacy.md](setup-privacy.md)
 - **Token-savings:** [ledger/](ledger) · [meter/](meter) · [price/](price) · [savings/](savings)
 - **Edits / context:** [edit/](edit) · [context/](context)
-- **Surfaces:** [surfaces-http.md](surfaces-http.md) · [surfaces-tui.md](surfaces-tui.md) ·
+- **Surfaces:** [surfaces-http.md](surfaces-http.md) ·
   [surfaces-web.md](surfaces-web.md) · [surfaces-vscode.md](surfaces-vscode.md) ·
   [surfaces-wiki.md](surfaces-wiki.md)
 - **Decisions:** [adr/](adr)

@@ -505,13 +505,6 @@
       "note": "P1 trust surface: repository/target trust report over the persisted TrustSnapshot (--json emits the canonical contract-§2 document; --target/--policy/--details/--limit); strict read-only observer that never creates state; byte-parity with the graph_health MCP tool through the single client.TrustReport composition"
     },
     {
-      "id": "tui",
-      "category": "cli-subcommand",
-      "status": "shipped",
-      "tier": "labs",
-      "note": "interactive terminal surface"
-    },
-    {
       "id": "ui",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -1160,14 +1153,6 @@
       "tier": "labs",
       "epic": "EP-008",
       "note": "MCP stdio server (JSON-RPC 2.0, stdlib only)."
-    },
-    {
-      "id": "tui",
-      "category": "surface",
-      "status": "shipped",
-      "tier": "labs",
-      "epic": "EP-008",
-      "note": "terminal UI surface."
     },
     {
       "id": "vscode",

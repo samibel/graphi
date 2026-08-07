@@ -99,7 +99,6 @@ promise, and none of it receives feature work in the current program.
 | HTTP / SSE surface | Labs | not an operation; not a GA surface |
 | Daemon | Labs | not an operation; not a GA surface |
 | Web / browser UI | Labs | not an operation; not a GA surface |
-| TUI | Labs | not an operation; not a GA surface |
 | VS Code extension | Labs | not an operation; not a GA surface |
 | GitHub Action / PR automation | Labs | not an operation; not a GA surface |
 | Refactorings (`inline`, `safe-delete`, `refactor`, `undo`) | Labs | write path, outside the frozen 12 |

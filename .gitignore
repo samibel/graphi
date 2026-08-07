@@ -13,9 +13,9 @@
 /graphi-default
 
 # SW-162: leftover local `-tags tui` build artifact from the deleted TUI surface
-# (docs/HOWTO.md §6.4 told people to build it as `graphi-tui`). The surface is
-# gone, but a 53 MB binary of this name can still be sitting in a working tree —
-# anchored to the repo root so it can never be committed.
+# (the removed HOWTO section told people to build it as `graphi-tui`). The
+# surface is gone, but a 53 MB binary of this name can still be sitting in a
+# working tree — anchored to the repo root so it can never be committed.
 /graphi-tui
 
 # SW-066 (EP-010 Task C): the web UI copied into the embed dir for the bundled

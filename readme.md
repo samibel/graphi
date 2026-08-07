@@ -119,7 +119,7 @@ definition** of the GA / Preview / Labs / Source-only tiers; this is the summary
 - **CLI + MCP stdio only**, in the CGo-free default binary.
 
 **Not GA:** every other language is **Preview** (shipped and usable, unproven);
-HTTP/SSE, the daemon, web UI, TUI, VS Code extension, GitHub Action, refactorings,
+HTTP/SSE, the daemon, web UI, VS Code extension, GitHub Action, refactorings,
 taint, agent memory and semantic search are **Labs** (opt-in: `graphi mcp -labs`,
 `GRAPHI_HTTP_LABS=1`); the wiki is Source-only. **SaaS does not exist** — nothing
 is hosted, there is no service to sign up for.
@@ -212,7 +212,7 @@ runnable: `graphi privacy-audit`.
 | `graphi mcp` | **GA** | MCP stdio server (the agent-first surface) |
 | `graphi setup` | labs | Wire graphi into local MCP clients |
 | `graphi analyze <analyzer>` | labs | Deep analyzers (taint, pdg, call-chain, …) |
-| `graphi daemon` · `http` · `tui` | labs | Hot-index daemon, loopback HTTP/SSE, terminal UI |
+| `graphi daemon` · `http` | labs | Hot-index daemon, loopback HTTP/SSE |
 | `graphi upgrade` | labs | Update to the latest release (never automatic) |
 
 Every subcommand with flags and tier tags: [docs/cli-reference.md](docs/cli-reference.md)
@@ -223,7 +223,7 @@ or `graphi help`.
 ```mermaid
 flowchart TD
     CMD["cmd/*  — entry points, wiring"]
-    SURF["surfaces/*  — CLI, daemon, MCP stdio/HTTP, HTTP/SSE, TUI, forge, guard"]
+    SURF["surfaces/*  — CLI, daemon, MCP stdio/HTTP, HTTP/SSE, forge, guard"]
     ENG["engine/*  — query, search, analysis, edit, observe, overlay, watch, …"]
     CORE["core/*  — model, parse, graphstore"]
     CMD --> SURF --> ENG --> CORE
