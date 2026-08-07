@@ -130,7 +130,30 @@ func (m mcpConfigReader) Plan(client doctor.MCPClient, binary string) (doctor.MC
 	if err != nil {
 		return "", err
 	}
-	return doctor.MCPPlanAction(act), nil
+	return doctorPlanAction(act), nil
+}
+
+// doctorPlanAction translates an mcpconfig.Action into the doctor vocabulary.
+// The two are deliberately different words for the same three outcomes —
+// mcpconfig names the write it *would perform* ("created"/"updated"/
+// "unchanged"), doctor names the state it *observes* ("create"/"update"/
+// "no-op") — so they must be mapped, never cast. Casting is what made every
+// live client fall to the mcp check's "unknown plan action" branch.
+//
+// An action this function does not know is passed through verbatim so the
+// check reports it as unverified rather than silently guessing a status: an
+// unrecognized plan is not evidence of a healthy registration.
+func doctorPlanAction(act mcpconfig.Action) doctor.MCPPlanAction {
+	switch act {
+	case mcpconfig.ActionUnchanged:
+		return doctor.MCPPlanNoOp
+	case mcpconfig.ActionCreated:
+		return doctor.MCPPlanCreate
+	case mcpconfig.ActionUpdated:
+		return doctor.MCPPlanUpdate
+	default:
+		return doctor.MCPPlanAction(act)
+	}
 }
 
 // Contending implements doctor.MCPContentionReader: it lists this client's
