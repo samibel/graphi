@@ -26,6 +26,18 @@ file:
 
 ## [Unreleased]
 
+### Added
+
+- **`graphi mcp -root <repo>` and the `GRAPHI_ROOT` environment variable** (the
+  flag wins) pin the MCP session's repository root explicitly — for MCP clients
+  that launch the server outside the repository (cwd=`$HOME` is common) and
+  supply no roots, where previously every tool call failed with the `-32002`
+  auto-bind refusal. An explicit pin is deliberate intent in the CLI `-root`
+  sense: no detection walk, no home-directory guard, precedence over
+  client-supplied roots and the process cwd (only `-db`/`-daemon` rank higher;
+  combining the flag with either is a usage error). The pinned path must be an
+  existing directory, else the bind fails closed with the actionable error.
+
 ## [0.9.0] - 2026-08-05
 
 **The P1 trust surface reconciled against PRD v1.0.** 0.8.0 shipped that surface

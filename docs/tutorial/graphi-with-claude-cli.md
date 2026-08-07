@@ -80,6 +80,11 @@ flowchart LR
 ```
 
 > For non-Claude MCP clients: start the server directly with `./graphi mcp -db ~/.graphi/graph.db`.
+> If your client launches the server outside the repository (cwd=`$HOME` is common) and supplies no
+> MCP roots, pin the repository explicitly: `./graphi mcp -root /path/to/repo` (or set
+> `GRAPHI_ROOT=/path/to/repo`; the flag wins) — e.g.
+> `claude mcp add graphi -- graphi mcp -root /path/to/repo`. Without a pin, every tool call in that
+> shape fails with the `-32002` auto-bind refusal.
 
 ---
 

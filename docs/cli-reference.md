@@ -31,7 +31,7 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi search [-limit N] [-semantic] <query>` | **GA** | Lexical / symbol search — the **GA** tier covers the lexical operation only. The optional `-semantic` flag is **labs**: it runs the embedding search (graceful-skip when no embedder is configured). |
 | `graphi setup-embedder [<selector>]` | labs | Print how to opt in to the optional semantic search (offline; semantic search stays OFF until you set `GRAPHI_EMBEDDER`). |
 | `graphi analyze <analyzer> -symbol <id> [options]` | labs | Run a semantic or deep analyzer (see below). |
-| `graphi mcp` | **GA** | Run the MCP **stdio** server (the agent-first surface). GA as a transport for the 12 operations; `-labs` opens the Labs catalog and is not GA. |
+| `graphi mcp [-root <repo>]` | **GA** | Run the MCP **stdio** server (the agent-first surface). GA as a transport for the 12 operations; `-labs` opens the Labs catalog and is not GA. `-root` (or the `GRAPHI_ROOT` env var; the flag wins) pins the repository root explicitly — for clients that launch the server outside the repository and supply no MCP roots. |
 | `graphi daemon start\|stop\|status [-socket path] [-db path]` | labs | Manage the hot-index Unix-socket daemon. |
 | `graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo] [-meta dir]` | labs | Read-only HTTP REST + SSE surface (loopback-only). |
 | `graphi tui [-db path] [-daemon socket]` | labs | Interactive terminal surface (select / neighbors / blast / search). |

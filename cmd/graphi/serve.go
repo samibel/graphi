@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	rtime "github.com/samibel/graphi/cmd/internal/runtime"
@@ -25,7 +26,7 @@ import (
 
 // runMCP launches the MCP stdio server. Usage:
 //
-//	graphi mcp [-db path] [-daemon socket] [-labs]
+//	graphi mcp [-root <repo>] [-db path] [-daemon socket] [-labs]
 //
 // RUN-01 (ADR 0002): with no explicit -db/-daemon Runtime construction is
 // deferred until the MCP initialize lifecycle identifies the client workspace.
@@ -34,8 +35,14 @@ import (
 // the process-cwd fallback. The selected per-repo state is recovered and
 // warm/full-ingested before any tool can run. An explicit -db keeps the exact
 // pre-RUN-01 behavior (Attach; SW-110 pins it).
+//
+// An explicit root — the -root flag, else the GRAPHI_ROOT environment variable
+// (flag wins) — pins the repository outright: no detection walk, no home-
+// directory guard, client roots and cwd ignored. It exists for MCP clients
+// that launch the server outside the repository (cwd=$HOME is common) and
+// supply no usable roots, where every tool call otherwise fails with -32002.
 func runMCP(args []string) int {
-	dbPath, socket, labs, err := extractMCPFlags(args)
+	dbPath, socket, rootFlag, labs, err := extractMCPFlags(args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: mcp: %v\n", err)
 		return 1
@@ -55,6 +62,7 @@ func runMCP(args []string) int {
 		srv = mcp.NewServerWithClient(rt.Client, options...)
 	} else {
 		cwd := getwd()
+		root := mcpRoot(rootFlag, os.Getenv(rtime.EnvRoot))
 		// The bind status feeds the retryable -32002 errors a live description
 		// (phase, per-file progress, lock waits) instead of a static "still
 		// indexing"; the stderr renderers land in the MCP client's log pane.
@@ -63,10 +71,14 @@ func runMCP(args []string) int {
 		options = append(options, mcp.WithBindStatus(status.Render))
 		srv = mcp.NewServerWithBinder(func(ctx context.Context, roots []string) (mcp.Binding, error) {
 			status.BeginAttempt()
+			if root != "" && len(roots) > 0 {
+				fmt.Fprintf(os.Stderr, "graphi: mcp: ignoring %d client root(s); session pinned to %s (-root/%s)\n", len(roots), root, rtime.EnvRoot)
+			}
 			prog := newIngestProgress(os.Stderr, false)
 			rt, err := rtime.OpenSession(ctx, rtime.Options{
 				Cwd:   cwd,
 				Roots: roots,
+				Root:  root,
 				Progress: func(ev ingest.ProgressEvent) {
 					prog.Handle(ev)
 					status.HandleProgress(ev)
@@ -94,17 +106,49 @@ func runMCP(args []string) int {
 	return 0
 }
 
-func extractMCPFlags(args []string) (dbPath, socket string, labs bool, err error) {
+func extractMCPFlags(args []string) (dbPath, socket, root string, labs bool, err error) {
 	dbPath, socket, rest := extractFlags(args)
-	for _, arg := range rest {
-		switch arg {
+	for i := 0; i < len(rest); i++ {
+		a := rest[i]
+		take := func(name string) (string, bool) {
+			if a == name && i+1 < len(rest) {
+				i++
+				return rest[i], true
+			}
+			if strings.HasPrefix(a, name+"=") {
+				return a[len(name)+1:], true
+			}
+			return "", false
+		}
+		if v, ok := take("-root"); ok {
+			root = v
+			continue
+		}
+		if v, ok := take("--root"); ok {
+			root = v
+			continue
+		}
+		switch a {
 		case "-labs", "--labs":
 			labs = true
 		default:
-			return "", "", false, fmt.Errorf("unknown argument %q", arg)
+			return "", "", "", false, fmt.Errorf("unknown argument %q", a)
 		}
 	}
-	return dbPath, socket, labs, nil
+	if root != "" && (dbPath != "" || socket != "") {
+		return "", "", "", false, fmt.Errorf("cannot combine -root with -db or -daemon: an explicit store already pins the session without repository detection")
+	}
+	return dbPath, socket, root, labs, nil
+}
+
+// mcpRoot applies the explicit-root precedence for the MCP server: the -root
+// flag wins over the GRAPHI_ROOT environment variable. The env fallback exists
+// because MCP client configs can usually set env but not always arguments.
+func mcpRoot(flagRoot, envRoot string) string {
+	if flagRoot != "" {
+		return flagRoot
+	}
+	return envRoot
 }
 
 // watchStatusProvider adapts the engine/watch Manager's read-only per-root health
