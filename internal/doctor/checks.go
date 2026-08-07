@@ -199,7 +199,10 @@ func MCPCheck(binary string) Check {
 			// An all-pass run has nothing to attribute, and leaving Detail empty
 			// lets json:"detail,omitempty" omit it entirely.
 			if worst != StatusPass {
-				result.Detail = strings.Join(append(lines, contention...), "\n")
+				detail := make([]string, 0, len(lines)+len(contention))
+				detail = append(detail, lines...)
+				detail = append(detail, contention...)
+				result.Detail = strings.Join(detail, "\n")
 			}
 			return result
 		},

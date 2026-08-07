@@ -12,6 +12,12 @@
 /graphi-broad
 /graphi-default
 
+# SW-159 review finding 5: a locally-built TUI binary (53MB) sat untracked at the
+# repo root with no matching rule, one `git add -A` away from being committed.
+# Anchored to the repo root so it never matches source paths. (Harmless once
+# SW-162 removes the TUI surface — the rule simply stops matching anything.)
+/graphi-tui
+
 # SW-066 (EP-010 Task C): the web UI copied into the embed dir for the bundled
 # `-tags webui_embed` build is a build artifact (the source lives in web/dist).
 # Anchored to the package path so it never matches the webui *.go sources.
