@@ -3,6 +3,7 @@ package doctor
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -115,6 +116,100 @@ func TestRenderHumanContainsSummary(t *testing.T) {
 	}
 	if !bytes.Contains(buf.Bytes(), []byte("→ action: run graphi setup")) {
 		t.Fatalf("human output missing action arrow: %s", out)
+	}
+}
+
+// TestRenderJSONDetailOmitEmpty pins SW-159 AC5/AC6: `detail` is present when
+// the check carries one and ABSENT — not `""` — when it does not, which is what
+// json:"detail,omitempty" promises. The schema version stays 2 either way,
+// because Detail is an existing optional member of the schema.
+func TestRenderJSONDetailOmitEmpty(t *testing.T) {
+	results := []CheckResult{
+		{ID: "mcp", Category: "mcp", Status: StatusWarn, Message: "one or more MCP clients need attention",
+			Action: "re-run `graphi setup` to update registrations", Detail: "Claude Code: not registered\nCursor: registered and current"},
+		{ID: "path", Category: "path", Status: StatusPass, Message: "ok"},
+	}
+	buf := &bytes.Buffer{}
+	if err := RenderJSON(buf, Report{Results: results}); err != nil {
+		t.Fatalf("RenderJSON: %v", err)
+	}
+	var top map[string]json.RawMessage
+	if err := json.Unmarshal(buf.Bytes(), &top); err != nil {
+		t.Fatalf("parse JSON: %v", err)
+	}
+	var version int
+	if err := json.Unmarshal(top["schema_version"], &version); err != nil {
+		t.Fatalf("parse schema_version: %v", err)
+	}
+	if version != 2 {
+		t.Fatalf("adding detail must NOT bump the schema: got %d, want 2", version)
+	}
+	var checks []map[string]json.RawMessage
+	if err := json.Unmarshal(top["checks"], &checks); err != nil {
+		t.Fatalf("parse checks: %v", err)
+	}
+	if len(checks) != 2 {
+		t.Fatalf("checks count: got %d, want 2", len(checks))
+	}
+	byID := map[string]map[string]json.RawMessage{}
+	for _, c := range checks {
+		var id string
+		if err := json.Unmarshal(c["id"], &id); err != nil {
+			t.Fatalf("parse id: %v", err)
+		}
+		byID[id] = c
+	}
+	raw, ok := byID["mcp"]["detail"]
+	if !ok {
+		t.Fatalf("mcp check must carry `detail`: %s", buf.String())
+	}
+	var detail string
+	if err := json.Unmarshal(raw, &detail); err != nil {
+		t.Fatalf("parse detail: %v", err)
+	}
+	if detail != "Claude Code: not registered\nCursor: registered and current" {
+		t.Fatalf("detail round-trip: %q", detail)
+	}
+	if _, ok := byID["path"]["detail"]; ok {
+		t.Fatalf("an empty detail must be omitted, not rendered as \"\": %s", buf.String())
+	}
+}
+
+// TestRenderHumanIndentsDetailBeneathCheck pins SW-159 AC4: Detail renders
+// beneath its check line, indented, and a check without Detail keeps the
+// existing single-line format.
+func TestRenderHumanIndentsDetailBeneathCheck(t *testing.T) {
+	results := []CheckResult{
+		{ID: "mcp", Category: "mcp", Status: StatusWarn, Message: "one or more MCP clients need attention",
+			Action: "re-run `graphi setup` to update registrations", Detail: "Claude Code: not registered\nCursor: registered and current"},
+		{ID: "path", Category: "path", Status: StatusPass, Message: "graphi and go are on PATH"},
+	}
+	buf := &bytes.Buffer{}
+	if err := RenderHuman(buf, Report{Results: results}); err != nil {
+		t.Fatalf("RenderHuman: %v", err)
+	}
+	lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
+	if len(lines) != 5 {
+		t.Fatalf("expected mcp line + 2 detail lines + path line + summary, got %d:\n%s", len(lines), buf.String())
+	}
+	if !strings.HasPrefix(lines[0], "⚠ [mcp] one or more MCP clients need attention") {
+		t.Fatalf("mcp check line changed: %q", lines[0])
+	}
+	if !strings.Contains(lines[0], "→ action: re-run `graphi setup` to update registrations") {
+		t.Fatalf("mcp action arrow lost: %q", lines[0])
+	}
+	for i, want := range []string{"Claude Code: not registered", "Cursor: registered and current"} {
+		got := lines[1+i]
+		if strings.TrimLeft(got, " ") != want {
+			t.Fatalf("detail line %d: got %q, want %q indented", i, got, want)
+		}
+		if got == strings.TrimLeft(got, " ") {
+			t.Fatalf("detail line %d is not indented: %q", i, got)
+		}
+	}
+	// A check without Detail keeps its single-line format, unchanged.
+	if lines[3] != "✓ [path] graphi and go are on PATH" {
+		t.Fatalf("detail-free check line changed: %q", lines[3])
 	}
 }
 
