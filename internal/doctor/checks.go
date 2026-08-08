@@ -191,7 +191,7 @@ func MCPCheck(binary string) Check {
 			if len(contention) > 0 {
 				sort.Strings(contention)
 				msg += " — " + strings.Join(contention, "; ")
-				action = "keep one zero-config graphi entry per client; pin extras with 'graphi mcp -db <path>' or remove them"
+				action = "keep one zero-config graphi entry per client: run 'graphi setup --repair --dry-run' to preview, then 'graphi setup --repair --pin <server-name>=<repo>' to pin the extras"
 			}
 			result := ResultWithAction("mcp", "mcp", msg, worst, action)
 			// The aggregate message says *that* something needs attention; the

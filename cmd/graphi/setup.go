@@ -21,6 +21,7 @@ import (
 //	graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all]
 //	             [--dry-run] [--binary path] [--config path]
 //	graphi setup --project [--root <repo>] [--attach] [--dry-run] [--binary path]
+//	graphi setup --repair [--pin <server-name>=<repo>]... [--client id] [--config path] [--dry-run]
 //
 // Default (--client all): always target Claude Code (created if absent, matching
 // historical behavior) plus every OTHER local client that looks installed. A
@@ -35,6 +36,11 @@ import (
 // root is detected from the working directory, or named with --root. --attach
 // pins the auto-managed per-repo store instead (`mcp -db <store> -meta
 // <sidecar>`, Attach mode: no auto-ingest — pair with `graphi sync`).
+//
+// --repair (SW-164) registers NOTHING. It repairs the GLOBAL client configs that
+// already hold two or more contending zero-config graphi entries, by pinning the
+// extras with `-root <path>`; see runSetupRepair. It is a different operation
+// from --project, which writes a repository's own project-scoped .mcp.json.
 func runSetup(args []string) int {
 	// setup --check is a diagnostic alias for `graphi doctor`.
 	for _, a := range args {
@@ -50,12 +56,23 @@ func runSetup(args []string) int {
 	project := fs.Bool("project", false, "write the project-scoped .mcp.json at the repository root with the session root pinned (mcp -root)")
 	rootFlag := fs.String("root", "", "repository root for --project (default: detected from the working directory)")
 	attach := fs.Bool("attach", false, "with --project: pin the auto-managed per-repo store instead (mcp -db/-meta; Attach mode, no auto-ingest)")
+	repair := fs.Bool("repair", false, "registers nothing: resolve MCP double-registration by pinning the extra zero-config graphi entries with -root")
+	pins := repairPins{}
+	fs.Var(pins, "pin", "with --repair: the repository for one contending entry, as <server-name>=<path> (repeatable)")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: setup: %v\n", err)
 		return 1
 	}
+	if len(pins) > 0 && !*repair {
+		fmt.Fprintln(os.Stderr, "graphi: setup: --pin only applies to --repair (it names the repository of a contending MCP entry)")
+		return 1
+	}
+	if *repair && *project {
+		fmt.Fprintln(os.Stderr, "graphi: setup: --repair and --project are different operations: --project writes <root>/.mcp.json; --repair fixes global client configs that already contend")
+		return 1
+	}
 	bin := *binary
-	if bin == "" {
+	if bin == "" && !*repair { // --repair rewrites existing entries; it registers no binary
 		exe, err := os.Executable()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "graphi: resolve executable: %v\n", err)
@@ -98,6 +115,9 @@ func runSetup(args []string) int {
 			fmt.Fprintf(os.Stderr, "graphi: setup: unknown --client %q\n", id)
 			return 1
 		}
+		if *repair {
+			return runSetupRepair([]mcpconfig.Client{c.WithConfigPath(*cfgPath)}, pins, *dryRun, os.Stdout, os.Stderr)
+		}
 		entry := mcpconfig.GraphiEntry(bin, nil)
 		return reportSetup(c.Display, *cfgPath, entry, *dryRun, func() (mcpconfig.Result, error) {
 			return mcpconfig.Apply(*cfgPath, "graphi", entry, *dryRun) // claude key; --config implies the claude shape
@@ -122,6 +142,10 @@ func runSetup(args []string) int {
 			return 1
 		}
 		targets = []mcpconfig.Client{c}
+	}
+
+	if *repair {
+		return runSetupRepair(targets, pins, *dryRun, os.Stdout, os.Stderr)
 	}
 
 	rc := 0

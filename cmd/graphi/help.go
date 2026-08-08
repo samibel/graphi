@@ -217,9 +217,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi doctor --json",
 	},
 	"setup": {
-		"register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root), or with --attach the auto-managed per-repo store pinned (mcp -db/-meta)",
-		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --project [--root <repo>] [--attach]",
-		"graphi setup --project",
+		"register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root), or with --attach the auto-managed per-repo store pinned (mcp -db/-meta); --repair registers nothing and instead resolves MCP double-registration, pinning every contending zero-config entry except the setup-managed one with -root <path> named by --pin (it never deletes an entry, and an entry with no --pin is reported, left alone and exits non-zero)",
+		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --project [--root <repo>] [--attach] | graphi setup --repair [--pin <server-name>=<repo>]... [--client id] [--dry-run]",
+		"graphi setup --repair --dry-run",
 	},
 	"setup-embedder": {
 		"print how to opt in to the optional semantic search (offline)",
