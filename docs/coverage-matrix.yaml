@@ -597,12 +597,6 @@ capabilities:
     tier: labs
     epic: EP-008
     note: "MCP stdio server (JSON-RPC 2.0, stdlib only)."
-  - id: tui
-    category: surface
-    status: shipped
-    tier: labs
-    epic: EP-008
-    note: "terminal UI surface."
   - id: vscode
     category: surface
     status: shipped
@@ -912,12 +906,6 @@ capabilities:
     tier: labs
     epic: "-"
     note: "graph-derived multi-PR triage ranking"
-  - id: tui
-    category: cli-subcommand
-    status: shipped
-    tier: labs
-    epic: "-"
-    note: "interactive terminal surface"
   - id: ui
     category: cli-subcommand
     status: shipped

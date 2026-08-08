@@ -129,8 +129,6 @@ func main() {
 		os.Exit(runDoctor(os.Args[2:]))
 	case "setup-embedder":
 		os.Exit(runSetupEmbedder(os.Args[2:]))
-	case "tui":
-		os.Exit(runTUI(os.Args[2:]))
 	case "privacy-audit":
 		os.Exit(runPrivacyAudit(os.Args[2:]))
 	case "upgrade":
@@ -305,10 +303,3 @@ func makeClientOrOpenMeta(dbPath, socket, metaDir string) (client.Client, func()
 func runVersion() {
 	fmt.Println(releaseinfo.New().VersionString())
 }
-
-// runTUI is provided by tui_enabled.go (//go:build tui) and tui_disabled.go
-// (//go:build !tui). The interactive terminal surface (SW-047) pulls in the
-// Bubble Tea dependency tree, which roughly doubles the binary; keeping it
-// behind the `tui` build tag holds the default, local-first binary lean (the
-// budget-gated benchmark enforces the size ceiling). Build with -tags tui to
-// include it: `go build -tags tui ./cmd/graphi`.

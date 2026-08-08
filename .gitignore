@@ -12,10 +12,10 @@
 /graphi-broad
 /graphi-default
 
-# SW-159 review finding 5: a locally-built TUI binary (53MB) sat untracked at the
-# repo root with no matching rule, one `git add -A` away from being committed.
-# Anchored to the repo root so it never matches source paths. (Harmless once
-# SW-162 removes the TUI surface — the rule simply stops matching anything.)
+# SW-162: leftover local `-tags tui` build artifact from the deleted TUI surface
+# (the removed HOWTO section told people to build it as `graphi-tui`). The
+# surface is gone, but a 53 MB binary of this name can still be sitting in a
+# working tree — anchored to the repo root so it can never be committed.
 /graphi-tui
 
 # SW-066 (EP-010 Task C): the web UI copied into the embed dir for the bundled

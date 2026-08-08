@@ -11,7 +11,7 @@ What problem are you trying to solve? What's the use case?
 
 ## Proposed solution
 
-What you'd like graphi to do. If it touches a surface (CLI, MCP, HTTP, TUI) or
+What you'd like graphi to do. If it touches a surface (CLI, MCP, HTTP) or
 an analyzer/parser, say which.
 
 ## Alternatives considered

@@ -17,7 +17,7 @@
 >
 > In short: **GA** is the 12 frozen operations, on **Go**, over **CLI + MCP stdio**.
 > Every non-Go language is **Preview**. Everything else in this catalogue — HTTP,
-> the daemon, the web UI, the TUI, VS Code, the GitHub Action, refactorings, taint,
+> the daemon, the web UI, VS Code, the GitHub Action, refactorings, taint,
 > memory and semantic search — is **Labs**; the wiki (`engine/wiki`) is
 > **Source-only**, reachable from no surface. Note that the matrix's `tier`
 > field answers only *"is this one of the 12 frozen operations?"*, which is why the
@@ -117,10 +117,9 @@ flowchart LR
   U --> S2["MCP stdio<br/>(surfaces/mcp mcp.go)"]
   U --> S3["MCP POST embedding adapter<br/>(no CLI listener / no SSE)"]
   U --> S4["HTTP + SSE<br/>(surfaces/http)"]
-  U --> S5["TUI<br/>(surfaces/tui)"]
-  U --> S6["Web (React + Sigma)<br/>(web/)"]
-  U --> S7["VS Code ext<br/>(extensions/vscode)"]
-  U --> S8["GitHub Action<br/>(extensions/github-action)"]
+  U --> S5["Web (React + Sigma)<br/>(web/)"]
+  U --> S6["VS Code ext<br/>(extensions/vscode)"]
+  U --> S7["GitHub Action<br/>(extensions/github-action)"]
   S1 --> C["surfaces/client.Client"]
   S2 --> C
   S3 --> C
@@ -128,7 +127,6 @@ flowchart LR
   S5 --> C
   S6 --> C
   S7 --> C
-  S8 --> C
   C --> E["engine/*"]
   E --> CORE["core/*"]
   S3 -. per-class SSE .- E

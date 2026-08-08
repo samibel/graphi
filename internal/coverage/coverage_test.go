@@ -51,7 +51,7 @@ func TestEnumerate_Completeness(t *testing.T) {
 	wantTools := []string{"analyze", "analyze_taint", "callers", "pr_comment", "search_semantic"}
 	assertContainsAll(t, "mcp-tools", live.MCPTools, wantTools)
 
-	wantSurfaces := []string{"cli", "daemon", "github-action", "http", "mcp", "tui", "vscode", "web"}
+	wantSurfaces := []string{"cli", "daemon", "github-action", "http", "mcp", "vscode", "web"}
 	if !reflect.DeepEqual(live.Surfaces, sortedCopy(wantSurfaces)) {
 		t.Errorf("surfaces = %v, want exactly %v", live.Surfaces, sortedCopy(wantSurfaces))
 	}

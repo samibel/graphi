@@ -19,7 +19,7 @@ which, so the difference stays visible.
 | [setup-privacy.md](setup-privacy.md) | `graphi setup` + `graphi privacy-audit` |
 | [real-world-report.md](real-world-report.md) | Before/after record of the two external field tests, every row reproducible |
 | [tutorial/](tutorial) | Using graphi with the Claude CLI |
-| [surfaces-http.md](surfaces-http.md) · [surfaces-tui.md](surfaces-tui.md) · [surfaces-web.md](surfaces-web.md) · [surfaces-vscode.md](surfaces-vscode.md) · [surfaces-wiki.md](surfaces-wiki.md) | Per-surface documentation |
+| [surfaces-http.md](surfaces-http.md) · [surfaces-web.md](surfaces-web.md) · [surfaces-vscode.md](surfaces-vscode.md) · [surfaces-wiki.md](surfaces-wiki.md) | Per-surface documentation |
 
 ## Architecture & contributor documentation
 

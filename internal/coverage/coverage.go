@@ -81,7 +81,6 @@ var surfaceDirs = []struct{ dir, id string }{
 	{"surfaces/daemon", "daemon"},
 	{"surfaces/http", "http"},
 	{"surfaces/mcp", "mcp"},
-	{"surfaces/tui", "tui"},
 	{"web", "web"},
 	{"extensions/github-action", "github-action"},
 	{"extensions/vscode", "vscode"},

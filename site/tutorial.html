@@ -174,7 +174,7 @@ scripts/build-release-webui.sh</code></pre></div>
             <ul>
               <li><strong>Code graph</strong> — repository → nodes (functions, types, files) + edges (<code>calls</code>, <code>references</code>, <code>defines</code>, <code>imports</code>), with <strong>deterministic IDs</strong>.</li>
               <li><strong>Provenance</strong> — every edge has a confidence tier (<code>heuristic</code> / <code>derived</code> / <code>confirmed</code>), a reason and evidence (<code>file:line</code>). So you can trust each relationship instead of guessing.</li>
-              <li><strong>One engine, many surfaces</strong> — CLI, Unix-socket daemon, MCP-stdio server, loopback HTTP/SSE, TUI, web UI and VS Code extension all answer from the <strong>same</strong> engine → answers are byte-identical and can never drift apart.</li>
+              <li><strong>One engine, many surfaces</strong> — CLI, Unix-socket daemon, MCP-stdio server, loopback HTTP/SSE, web UI and VS Code extension all answer from the <strong>same</strong> engine → answers are byte-identical and can never drift apart.</li>
               <li><strong>Local-first</strong> — zero outbound network traffic, no telemetry, loopback-only. Provable with <code>graphi privacy-audit</code>.</li>
             </ul>
             <p><strong>Language coverage (default tier, CGo-free):</strong> Go, TypeScript/TSX/JSX/JavaScript, Python, Java, Kotlin, C#, Ruby, PHP, Lua, C, C++, Rust, Bash, SQL plus JSON/CSS/YAML/TOML/Markdown/HCL (the latter intra-file only).</p>
@@ -540,7 +540,6 @@ graphi mcp -db ~/.graphi/graph.db      # manual, for any MCP client
 # OTHER SURFACES
 graphi ui                              # web UI + browser
 graphi http -addr 127.0.0.1:8080 -db ~/.graphi/graph.db -root .
-graphi tui  -db ~/.graphi/graph.db
 
 # SAVINGS &amp; TRUST
 graphi savings -ledger &lt;path&gt;

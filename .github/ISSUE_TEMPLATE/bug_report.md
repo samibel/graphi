@@ -29,7 +29,7 @@ What you expected to happen instead.
 - graphi version / commit: <!-- `graphi version` -->
 - OS and architecture:
 - Build flavor: default / `graphi-broad` / `webui_embed`
-- Surface: CLI / MCP stdio / HTTP / TUI / VS Code
+- Surface: CLI / MCP stdio / HTTP / VS Code
 
 ## Logs / output
 
