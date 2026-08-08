@@ -70,6 +70,16 @@ func (r repairPins) Set(v string) error {
 //     enforces at bind time). A root that fails is reported, nothing is written
 //     for that entry, and the command exits non-zero — repairing contention into
 //     an entry that cannot bind is not a repair.
+//   - An entry repair cannot APPEND to honestly — one whose args is not a JSON
+//     array of strings led by the `mcp` subcommand
+//     (mcpconfig.Client.UnpinnableReasons) — is reported and left exactly as it
+//     is. Repair will not reshape a hand-written value into what graphi guesses
+//     it meant; that is the same inference AC3 rules out, applied to args
+//     instead of to roots.
+//
+// The three per-entry refusals above behave identically: report by client and
+// server name, change nothing for that entry, carry on with its neighbours, and
+// exit non-zero. Only a client whose config cannot be READ aborts that client.
 //
 // dryRun prints the exact planned per-entry change and writes nothing. Its exit
 // code reports whether the PREVIEW ran, not what the preview found: an entry
@@ -85,6 +95,9 @@ func runSetupRepair(targets []mcpconfig.Client, pins map[string]string, dryRun b
 			rc = 1
 		}
 	}
+	// seen records the entry names repair actually considered, so a --pin the
+	// user supplied that matched nothing can be reported instead of vanishing.
+	seen := map[string]bool{}
 	for _, c := range targets {
 		path, _ := c.ConfigPath()
 		entries, err := c.ContendingEntries()
@@ -106,10 +119,28 @@ func runSetupRepair(targets []mcpconfig.Client, pins map[string]string, dryRun b
 		fmt.Fprintf(stdout, "%s (%s): %d zero-config graphi entries resolve the same repository — %s\n",
 			c.Display, path, len(entries), strings.Join(names, ", "))
 
+		// Why an entry cannot be pinned at all, read once per client. Checked
+		// BEFORE the root, because telling someone to supply --pin for an entry
+		// repair would refuse anyway is bad advice.
+		unpinnable, err := c.UnpinnableReasons(names)
+		if err != nil {
+			fmt.Fprintf(stderr, "graphi: setup --repair: cannot inspect %s config (%s): %v\n", c.Display, path, err)
+			rc = 1
+			continue
+		}
+
 		plan := map[string]string{}
 		for _, e := range entries {
 			if e.Managed {
 				fmt.Fprintf(stdout, "  keep %s zero-config (managed by `graphi setup`)\n", e.Name)
+				continue
+			}
+			seen[e.Name] = true
+			if why := unpinnable[e.Name]; why != "" {
+				fmt.Fprintf(stderr, "graphi: setup --repair: %s: cannot pin server %q: %s — left unchanged\n",
+					c.Display, e.Name, why)
+				fmt.Fprintln(stderr, "  repair only APPENDS `-root <path>`; it will not reshape a value you wrote by hand. Fix the entry, then re-run.")
+				fail()
 				continue
 			}
 			supplied, ok := pins[e.Name]
@@ -157,10 +188,48 @@ func runSetupRepair(targets []mcpconfig.Client, pins map[string]string, dryRun b
 		fmt.Fprintf(stdout, "  restart/reload %s to pick up the change.\n", c.Display)
 	}
 
+	reportUnusedPins(pins, seen, stdout, stderr)
+
 	if contended == 0 && rc == 0 {
 		fmt.Fprintln(stdout, "no MCP client has contending zero-config graphi entries — nothing to repair.")
 	}
 	return rc
+}
+
+// reportUnusedPins says so when a --pin matched no entry repair considered. The
+// flag is loud about malformed syntax and about duplicates, so silence here was
+// inconsistent with its own contract — and the value is one the user typed
+// explicitly, which makes a typo the likely cause and silence the worst answer.
+//
+// Two shapes, deliberately distinguished:
+//   - --pin graphi=<path> is a STATED refusal, not a typo: the setup-managed
+//     entry stays zero-config (AC2), which was previously true only as a side
+//     effect of the loop skipping it before pins were consulted.
+//   - any other unmatched name names no contending entry in any targeted
+//     client.
+//
+// Both are warnings and neither touches the exit code. AC9 requires rc 0 when
+// no client is contending, and a run whose only complaint is an unused --pin
+// wrote nothing and found nothing to repair; where there IS contention, the
+// entry the user meant to fix is still unpinned and AC4 has already made the
+// run non-zero. The warning explains that exit code rather than inventing one.
+func reportUnusedPins(pins map[string]string, seen map[string]bool, stdout, stderr io.Writer) {
+	unused := make([]string, 0, len(pins))
+	for name := range pins {
+		if !seen[name] {
+			unused = append(unused, name)
+		}
+	}
+	sort.Strings(unused)
+	for _, name := range unused {
+		if name == mcpconfig.ManagedServerName {
+			fmt.Fprintf(stdout, "  note: ignoring --pin %s=%s — the setup-managed %q entry deliberately stays zero-config.\n",
+				name, pins[name], name)
+			continue
+		}
+		fmt.Fprintf(stderr, "graphi: setup --repair: warning: --pin %s=%s matched no contending entry in any targeted client (check the server name, or narrow with --client)\n",
+			name, pins[name])
+	}
 }
 
 func plural(n int, one, many string) string {

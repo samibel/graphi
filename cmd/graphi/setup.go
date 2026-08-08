@@ -71,6 +71,10 @@ func runSetup(args []string) int {
 		fmt.Fprintln(os.Stderr, "graphi: setup: --repair and --project are different operations: --project writes <root>/.mcp.json; --repair fixes global client configs that already contend")
 		return 1
 	}
+	if *binary != "" && *repair {
+		fmt.Fprintln(os.Stderr, "graphi: setup: --binary does not apply to --repair (repair rewrites the args of entries that already exist; it registers no binary)")
+		return 1
+	}
 	bin := *binary
 	if bin == "" && !*repair { // --repair rewrites existing entries; it registers no binary
 		exe, err := os.Executable()
@@ -115,6 +119,14 @@ func runSetup(args []string) int {
 			fmt.Fprintf(os.Stderr, "graphi: setup: unknown --client %q\n", id)
 			return 1
 		}
+		// The two --config paths use different servers keys ON PURPOSE. Below,
+		// registration hardcodes the Claude shape ("mcpServers"), which is the
+		// original single-file behavior and is preserved for compatibility.
+		// Repair instead keeps the named client's own ServersKey ("servers" for
+		// copilot), because it is REWRITING entries that already exist in that
+		// file: reading them under the wrong key would find nothing to repair
+		// and silently report a healthy config. Repair must match the file it
+		// was handed, not a default.
 		if *repair {
 			return runSetupRepair([]mcpconfig.Client{c.WithConfigPath(*cfgPath)}, pins, *dryRun, os.Stdout, os.Stderr)
 		}

@@ -201,6 +201,102 @@ func TestPinRoots_RefusesMissingOrNonObjectEntry(t *testing.T) {
 	}
 }
 
+// TestPinRoots_RefusesArgsItCannotAppendTo pins the guard that closes review
+// finding 1, by trying to make it OPEN. Each shape here is one where the old
+// `args, _ := entry["args"].([]any)` yielded nil and the "append" silently
+// REPLACED the user's value with just `-root <path>` — destroying an existing
+// argument (AC7) and leaving an entry that cannot bind (AC5's invariant) while
+// reporting success. Every case must be an error BEFORE any write, and the
+// entry must come back byte-identical.
+//
+// Drop the pinnableArgs call and the first case writes ["-root", "<dir>"] over
+// the string "mcp -labs", returns nil, and this test fails on both counts.
+func TestPinRoots_RefusesArgsItCannotAppendTo(t *testing.T) {
+	cases := map[string]any{
+		// The canonical hand-edit slip: the whole command line as one string.
+		"args is a string":        "mcp -labs",
+		"args is an object":       map[string]any{"0": "mcp"},
+		"args is a number":        float64(3),
+		"args is null":            nil,
+		"args element not string": []any{"mcp", float64(42)},
+		// Appending -root here yields `graphi -root <path>` — no subcommand.
+		"args is empty":          []any{},
+		"args does not lead mcp": []any{"-labs"},
+		"args leads with a flag": []any{"-labs", "mcp"},
+	}
+	for name, args := range cases {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			entry := map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi"}
+			if args != nil {
+				entry["args"] = args
+			} else {
+				entry["args"] = nil
+			}
+			writeJSON(t, path, map[string]any{
+				"mcpServers": map[string]any{
+					"graphi":       map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": []any{"mcp"}},
+					"graphi-weird": entry,
+				},
+				"unrelated": "keep-me",
+			})
+			dir := filepath.Dir(path)
+			c := fakeClient("claude", "mcpServers", path)
+			before := snapshotDir(t, dir)
+
+			if _, err := c.PinRoots(map[string]string{"graphi-weird": t.TempDir()}, false); err == nil {
+				t.Fatalf("PinRoots pinned an entry whose args it cannot append to (%v) — the guard is open", args)
+			}
+			assertDirUnchanged(t, dir, before)
+		})
+	}
+}
+
+// TestPinRoots_RefusesEntryWithNoArgsKey is the weaker variant of the same gap:
+// nothing is destroyed, but appending to an absent args yields
+// `graphi -root <path>` — no `mcp` subcommand, so the entry cannot bind, and
+// reporting it as pinned would be a false success.
+func TestPinRoots_RefusesEntryWithNoArgsKey(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeJSON(t, path, map[string]any{
+		"mcpServers": map[string]any{
+			"graphi":        map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": []any{"mcp"}},
+			"graphi-noargs": map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi"},
+		},
+	})
+	dir := filepath.Dir(path)
+	c := fakeClient("claude", "mcpServers", path)
+	before := snapshotDir(t, dir)
+
+	if _, err := c.PinRoots(map[string]string{"graphi-noargs": t.TempDir()}, false); err == nil {
+		t.Fatal("PinRoots pinned an entry with no args — the result could not have bound")
+	}
+	assertDirUnchanged(t, dir, before)
+}
+
+// TestPinRoots_OneUnpinnableEntryAbortsTheWholeWrite: the args guard aborts the
+// batch exactly like the other three refusals, so a malformed neighbour can
+// never leave a half-repaired config behind.
+func TestPinRoots_OneUnpinnableEntryAbortsTheWholeWrite(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeJSON(t, path, map[string]any{
+		"mcpServers": map[string]any{
+			"graphi":       map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": []any{"mcp"}},
+			"graphi-mars":  map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": []any{"mcp"}},
+			"graphi-weird": map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": "mcp -labs"},
+		},
+	})
+	dir := filepath.Dir(path)
+	c := fakeClient("claude", "mcpServers", path)
+	before := snapshotDir(t, dir)
+
+	_, err := c.PinRoots(map[string]string{"graphi-mars": t.TempDir(), "graphi-weird": t.TempDir()}, false)
+	if err == nil {
+		t.Fatal("PinRoots succeeded with one unpinnable entry; want an error")
+	}
+	assertDirUnchanged(t, dir, before)
+}
+
 // TestPinRoots_ValidatesRootBeforeWriting pins AC5 at the write boundary by
 // trying to make it OPEN. Each bad root is one `graphi mcp -root` would refuse
 // at bind time; if the validation were dropped, PinRoots would happily write it,

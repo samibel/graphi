@@ -84,27 +84,35 @@ func repairAssertDirUnchanged(t *testing.T, dir string, before map[string]string
 	}
 }
 
-// repairArgsOf reads one server entry's args back off disk.
+// repairArgsOf reads one server entry's args back off disk. It decodes
+// generically rather than into `Args []string`, because several tests here
+// stage a config that deliberately contains a MALFORMED args value — a typed
+// decode would fail on the whole document and hide what the healthy entries
+// look like.
 func repairArgsOf(t *testing.T, path, name string) []string {
 	t.Helper()
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
-	var doc struct {
-		MCPServers map[string]struct {
-			Command string   `json:"command"`
-			Args    []string `json:"args"`
-		} `json:"mcpServers"`
-	}
+	var doc map[string]any
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		t.Fatalf("parse %s: %v", path, err)
 	}
-	e, ok := doc.MCPServers[name]
+	servers, _ := doc["mcpServers"].(map[string]any)
+	entry, ok := servers[name].(map[string]any)
 	if !ok {
 		t.Fatalf("server %q missing from %s: %s", name, path, raw)
 	}
-	return e.Args
+	list, ok := entry["args"].([]any)
+	if !ok {
+		t.Fatalf("server %q args is %T, not a JSON array: %v", name, entry["args"], entry["args"])
+	}
+	out := make([]string, len(list))
+	for i, a := range list {
+		out[i], _ = a.(string)
+	}
+	return out
 }
 
 // runRepair drives the command function with captured output.
@@ -315,6 +323,159 @@ func TestSetupRepair_NonGraphiEntryIsNeverAPinTarget(t *testing.T) {
 	repairAssertDirUnchanged(t, dir, before)
 }
 
+// TestSetupRepair_RefusesEntryWhoseArgsItCannotAppendTo closes review finding 1
+// at the boundary that actually reaches users. This is the doctor→repair chain:
+// ContendingGraphiServers counts an entry with a malformed `args` as contending,
+// `graphi doctor` warns about it, and AC11's remediation now sends that user
+// straight here. Before the guard, this exact input returned rc 0 and
+// "1 graphi MCP entry pinned" while replacing "mcp -labs" with ["-root", "…"] —
+// the subcommand destroyed and the entry left unable to bind.
+//
+// Drop pinnableArgs and both subtests fail: rc becomes 0 and the directory
+// changes.
+func TestSetupRepair_RefusesEntryWhoseArgsItCannotAppendTo(t *testing.T) {
+	cases := map[string]map[string]any{
+		// The canonical hand-edit slip — a command line written as one string.
+		"args is a string": {"type": "stdio", "command": "/usr/local/bin/graphi", "args": "mcp -labs"},
+		// The weaker variant: nothing destroyed, but `graphi -root <path>` has
+		// no subcommand and cannot bind, so reporting success would be false.
+		"no args key": {"type": "stdio", "command": "/usr/local/bin/graphi"},
+	}
+	for name, entry := range cases {
+		t.Run(name, func(t *testing.T) {
+			path := repairConfigAt(t, map[string]any{
+				"graphi":       zeroConfigEntry(),
+				"graphi-weird": entry,
+			})
+			dir := filepath.Dir(path)
+			before := repairSnapshotDir(t, dir)
+
+			rc, stdout, stderr := runRepair(t, path, map[string]string{"graphi-weird": t.TempDir()}, false)
+			if rc == 0 {
+				t.Fatalf("rc = 0 — repair claimed success on an entry it cannot pin honestly\nstdout: %s", stdout)
+			}
+			if strings.Contains(stdout, "pinned in") {
+				t.Fatalf("repair reported a successful pin:\n%s", stdout)
+			}
+			// The refusal is per entry and comes BEFORE the plan, so repair
+			// never announces a pin it is about to refuse.
+			if strings.Contains(stdout, "pin  graphi-weird") {
+				t.Fatalf("repair announced a plan for an entry it then refused:\n%s", stdout)
+			}
+			if !strings.Contains(stderr, "graphi-weird") {
+				t.Fatalf("report does not name the entry it refused:\n%s", stderr)
+			}
+			repairAssertDirUnchanged(t, dir, before)
+
+			// AC6: under --dry-run this is a FINDING, not a failed preview, so
+			// the exit code stays 0 — the same rule AC4 and AC5 follow. It
+			// matters because doctor sends users to --repair --dry-run first.
+			rcDry, _, stderrDry := runRepair(t, path, map[string]string{"graphi-weird": t.TempDir()}, true)
+			if rcDry != 0 {
+				t.Fatalf("dry-run rc = %d, want 0 — dry-run reports whether the preview ran, not what it found", rcDry)
+			}
+			if !strings.Contains(stderrDry, "graphi-weird") {
+				t.Fatalf("dry-run did not report the entry it cannot repair:\n%s", stderrDry)
+			}
+			repairAssertDirUnchanged(t, dir, before)
+		})
+	}
+}
+
+// TestSetupRepair_UnpinnableEntryDoesNotBlockItsNeighbours: the args refusal is
+// per entry, exactly like AC4's and AC5's, so a malformed neighbour is reported
+// while a healthy entry in the same client is still repaired.
+func TestSetupRepair_UnpinnableEntryDoesNotBlockItsNeighbours(t *testing.T) {
+	path := repairConfigAt(t, map[string]any{
+		"graphi":       zeroConfigEntry(),
+		"graphi-mars":  zeroConfigEntry(),
+		"graphi-weird": map[string]any{"type": "stdio", "command": "/usr/local/bin/graphi", "args": "mcp -labs"},
+	})
+	mars := t.TempDir()
+
+	rc, _, stderr := runRepair(t, path, map[string]string{
+		"graphi-mars":  mars,
+		"graphi-weird": t.TempDir(),
+	}, false)
+	if rc == 0 {
+		t.Fatalf("rc = 0 despite an unpinnable entry (stderr: %s)", stderr)
+	}
+	if got, want := repairArgsOf(t, path, "graphi-mars"), []string{"mcp", "-root", mars}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("the healthy entry was not repaired: args = %v, want %v", got, want)
+	}
+	// The malformed value is preserved verbatim — repair appends, it never
+	// reshapes a hand-written value.
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"mcp -labs"`) {
+		t.Fatalf("the hand-written args value was not preserved:\n%s", raw)
+	}
+}
+
+// TestSetupRepair_UnusedPinIsReported covers review MINOR 1: a --pin that
+// matched no entry repair considered is reported rather than silently
+// discarded. Neither shape changes the exit code — see reportUnusedPins.
+func TestSetupRepair_UnusedPinIsReported(t *testing.T) {
+	t.Run("typo names no contending entry", func(t *testing.T) {
+		path := repairConfigAt(t, contendingServers())
+		mars := t.TempDir()
+
+		rc, _, stderr := runRepair(t, path, map[string]string{
+			"graphi-mars": mars,
+			"graphi-marz": t.TempDir(), // the typo
+		}, false)
+		if rc != 0 {
+			t.Fatalf("rc = %d, want 0 — an unused --pin is a warning, not a failure (stderr: %s)", rc, stderr)
+		}
+		if !strings.Contains(stderr, "--pin graphi-marz=") || !strings.Contains(stderr, "matched no contending entry") {
+			t.Fatalf("the unused --pin was not reported:\n%s", stderr)
+		}
+		// The real pin still landed.
+		if got, want := repairArgsOf(t, path, "graphi-mars"), []string{"mcp", "-root", mars}; !reflect.DeepEqual(got, want) {
+			t.Fatalf("graphi-mars args = %v, want %v", got, want)
+		}
+	})
+
+	// AC2 held here only as a side effect of the loop skipping the managed
+	// entry before pins were consulted. Now it is a STATED refusal.
+	t.Run("pinning the managed entry is a stated refusal", func(t *testing.T) {
+		path := repairConfigAt(t, contendingServers())
+		mars := t.TempDir()
+
+		rc, stdout, stderr := runRepair(t, path, map[string]string{
+			"graphi":      t.TempDir(),
+			"graphi-mars": mars,
+		}, false)
+		if rc != 0 {
+			t.Fatalf("rc = %d, want 0 (stderr: %s)", rc, stderr)
+		}
+		if !strings.Contains(stdout, "ignoring --pin graphi=") {
+			t.Fatalf("the refusal to pin the managed entry was not stated:\n%s", stdout)
+		}
+		if got, want := repairArgsOf(t, path, "graphi"), []string{"mcp"}; !reflect.DeepEqual(got, want) {
+			t.Fatalf("managed entry was pinned despite AC2: args = %v", got)
+		}
+	})
+
+	// A run whose only complaint is an unused --pin must still satisfy AC9.
+	t.Run("unused pin does not break AC9", func(t *testing.T) {
+		path := repairConfigAt(t, map[string]any{"graphi": zeroConfigEntry()})
+		dir := filepath.Dir(path)
+		before := repairSnapshotDir(t, dir)
+
+		rc, stdout, _ := runRepair(t, path, map[string]string{"graphi-nope": t.TempDir()}, false)
+		if rc != 0 {
+			t.Fatalf("rc = %d, want 0 — AC9 requires 0 when no client is contending", rc)
+		}
+		if !strings.Contains(stdout, "nothing to repair") {
+			t.Fatalf("no-contention run does not report that:\n%s", stdout)
+		}
+		repairAssertDirUnchanged(t, dir, before)
+	})
+}
+
 // TestSetupRepair_NoContentionReportsAndWritesNothing pins AC9.
 func TestSetupRepair_NoContentionReportsAndWritesNothing(t *testing.T) {
 	path := repairConfigAt(t, map[string]any{
@@ -384,6 +545,14 @@ func TestSetupRepair_FlagWiring(t *testing.T) {
 
 	t.Run("--pin without --repair is a usage error", func(t *testing.T) {
 		if rc := runSetup([]string{"--pin", "graphi-mars=" + t.TempDir(), "--dry-run"}); rc != 1 {
+			t.Fatalf("rc = %d, want 1", rc)
+		}
+	})
+
+	// Review MINOR 3: --binary parsed fine under --repair and did nothing,
+	// while every other inapplicable flag is a hard usage error.
+	t.Run("--binary with --repair is a usage error", func(t *testing.T) {
+		if rc := runSetup([]string{"--repair", "--binary", "/usr/local/bin/graphi", "--dry-run"}); rc != 1 {
 			t.Fatalf("rc = %d, want 1", rc)
 		}
 	})
