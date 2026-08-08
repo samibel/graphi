@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -291,5 +292,113 @@ func TestMCPCheckWarnsOnContendingEntries(t *testing.T) {
 	}
 	if !strings.Contains(res.Action, "keep one zero-config graphi entry") {
 		t.Fatalf("action not actionable: %s", res.Action)
+	}
+}
+
+// fakeMixedMCPConfig reports four clients whose plans exercise every per-client
+// finding the aggregate mcp check can produce: registered-and-current,
+// not-registered, stale-command, and cannot-read-config.
+type fakeMixedMCPConfig struct{}
+
+func (fakeMixedMCPConfig) Clients() []MCPClient {
+	// Deliberately NOT in sorted display order, so a test asserting sorted
+	// detail lines is actually asserting the sort and not the input order.
+	return []MCPClient{
+		{ID: "zed", Display: "Zed", ConfigPath: "/dev/null/zed.json"},
+		{ID: "cursor", Display: "Cursor", ConfigPath: "/dev/null/cursor.json"},
+		{ID: "claude", Display: "Claude Code", ConfigPath: "/dev/null/claude.json"},
+		{ID: "vscode", Display: "VS Code", ConfigPath: "/dev/null/vscode.json"},
+	}
+}
+
+func (fakeMixedMCPConfig) Plan(client MCPClient, binary string) (MCPPlanAction, error) {
+	switch client.ID {
+	case "claude":
+		return MCPPlanNoOp, nil
+	case "cursor":
+		return MCPPlanUpdate, nil
+	case "vscode":
+		return MCPPlanCreate, nil
+	default:
+		return "", errors.New("unexpected end of JSON input")
+	}
+}
+
+type fakeMixedEnv struct{ fakeEnv }
+
+func (fakeMixedEnv) MCPConfig() MCPConfigReader { return fakeMixedMCPConfig{} }
+
+// TestMCPCheckDetailAttributesEveryClient pins SW-159 AC1/AC2: the per-client
+// lines the aggregate check computes are surfaced in CheckResult.Detail, one
+// client per line, sorted, each naming the client and its specific finding.
+func TestMCPCheckDetailAttributesEveryClient(t *testing.T) {
+	res := MCPCheck("/bin/graphi").Run(context.Background(), fakeMixedEnv{})
+	if res.Status != StatusFail {
+		t.Fatalf("expected fail (one client is not registered), got %q: %s", res.Status, res.Message)
+	}
+	if res.Detail == "" {
+		t.Fatal("detail is empty: the per-client findings were discarded again")
+	}
+	lines := strings.Split(res.Detail, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected one line per client (4), got %d: %q", len(lines), res.Detail)
+	}
+	want := []string{
+		"Claude Code: registered and current",
+		"Cursor: stale command path or args",
+		"VS Code: not registered",
+		"Zed: cannot read config: unexpected end of JSON input",
+	}
+	for i, w := range want {
+		if lines[i] != w {
+			t.Fatalf("detail line %d: got %q, want %q (full detail:\n%s)", i, lines[i], w, res.Detail)
+		}
+	}
+	if !sort.StringsAreSorted(lines) {
+		t.Fatalf("detail lines are not in sorted order: %q", lines)
+	}
+}
+
+// TestMCPCheckDetailDoesNotChangeAggregate pins SW-159 AC7: adding Detail
+// leaves the check's id, category, status derivation, message and action
+// exactly as they were.
+func TestMCPCheckDetailDoesNotChangeAggregate(t *testing.T) {
+	res := MCPCheck("/bin/graphi").Run(context.Background(), fakeMixedEnv{})
+	if res.ID != "mcp" || res.Category != "mcp" {
+		t.Fatalf("id/category changed: %q/%q", res.ID, res.Category)
+	}
+	if res.Message != "one or more MCP clients need attention" {
+		t.Fatalf("aggregate message changed: %q", res.Message)
+	}
+	if res.Action != "re-run `graphi setup` to update registrations" {
+		t.Fatalf("aggregate action changed: %q", res.Action)
+	}
+}
+
+// TestMCPCheckDetailReportsContentionPerClient pins SW-159 AC3: contention is
+// attributed to the client it was found in inside Detail, in addition to the
+// existing aggregate message (which keeps carrying it).
+func TestMCPCheckDetailReportsContentionPerClient(t *testing.T) {
+	res := MCPCheck("/bin/graphi").Run(context.Background(), fakeContendingEnv{})
+	wantDetail := "Claude Code: registered and current\n" +
+		"Claude Code: 2 zero-config graphi entries (graphi, graphi-mars) will resolve the same repository and contend on its ingest lock"
+	if res.Detail != wantDetail {
+		t.Fatalf("detail:\ngot:\n%s\nwant:\n%s", res.Detail, wantDetail)
+	}
+	// AC3 says "in addition to" — the aggregate message must still carry it.
+	if !strings.Contains(res.Message, "contend on its ingest lock") {
+		t.Fatalf("aggregate message lost its contention text: %q", res.Message)
+	}
+}
+
+// TestMCPCheckDetailEmptyWhenAllPass pins SW-159 AC5: an all-pass run leaves
+// Detail empty so `json:"detail,omitempty"` omits it entirely.
+func TestMCPCheckDetailEmptyWhenAllPass(t *testing.T) {
+	res := MCPCheck("/bin/graphi").Run(context.Background(), fakeEnv{})
+	if res.Status != StatusPass {
+		t.Fatalf("expected pass, got %q: %s", res.Status, res.Message)
+	}
+	if res.Detail != "" {
+		t.Fatalf("all clients pass, detail must be empty, got %q", res.Detail)
 	}
 }

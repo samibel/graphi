@@ -231,3 +231,120 @@ func TestClient_ContendingGraphiServers(t *testing.T) {
 		t.Fatalf("missing config: names=%v err=%v, want empty, nil", names, err)
 	}
 }
+
+// entryWithArgs builds a config-shaped entry ([]any args, as JSON decoding
+// yields) for the pinned predicate.
+func entryWithArgs(command string, args ...string) map[string]any {
+	raw := make([]any, len(args))
+	for i, a := range args {
+		raw[i] = a
+	}
+	return map[string]any{"type": "stdio", "command": command, "args": raw}
+}
+
+// TestGraphiEntryIsPinned pins the predicate `ContendingGraphiServers` filters
+// on. `-root <repo>` (SW-163) pins a session exactly as `-db`/`-daemon` do — it
+// binds the repository outright, so the process performs no detection and never
+// contends on an auto-resolved repo's ingest lock. Every spelling `graphi mcp`
+// itself accepts (cmd/graphi/serve.go extractMCPFlags) must be recognised, and a
+// bare `-root` — which that parser REJECTS as an unknown argument — must not be.
+func TestGraphiEntryIsPinned(t *testing.T) {
+	cases := []struct {
+		name string
+		args []string
+		want bool
+	}{
+		// -root, all four spellings the flag parser accepts.
+		{"-root with a value", []string{"mcp", "-root", "/repos/mars"}, true},
+		{"--root with a value", []string{"mcp", "--root", "/repos/mars"}, true},
+		{"-root=value", []string{"mcp", "-root=/repos/mars"}, true},
+		{"--root=value", []string{"mcp", "--root=/repos/mars"}, true},
+		{"-root alongside -labs", []string{"mcp", "-labs", "-root", "/repos/mars"}, true},
+
+		// AC4 negatives: a root flag that names no repository pins nothing.
+		{"bare -root, no value", []string{"mcp", "-root"}, false},
+		{"bare --root, no value", []string{"mcp", "--root"}, false},
+		{"-root with an empty value", []string{"mcp", "-root", ""}, false},
+		{"-root= with an empty value", []string{"mcp", "-root="}, false},
+
+		// AC3 regression: db/daemon recognition is untouched.
+		{"-db", []string{"mcp", "-db", "/x/db.sqlite"}, true},
+		{"--db=value", []string{"mcp", "--db=/x/db.sqlite"}, true},
+		{"-daemon", []string{"mcp", "-daemon", "/tmp/g.sock"}, true},
+		{"--daemon=value", []string{"mcp", "--daemon=/tmp/g.sock"}, true},
+		{"bare -db keeps its pre-SW-163 lenient treatment", []string{"mcp", "-db"}, true},
+
+		// Zero-config: the entries that DO contend.
+		{"zero-config mcp", []string{"mcp"}, false},
+		{"no args at all", nil, false},
+		{"an unrelated flag", []string{"mcp", "-labs"}, false},
+		{"a flag that merely starts with root", []string{"mcp", "-rootless", "x"}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := graphiEntryIsPinned(entryWithArgs("/usr/local/bin/graphi", tc.args...)); got != tc.want {
+				t.Fatalf("graphiEntryIsPinned(%v) = %v, want %v", tc.args, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestClient_ContendingGraphiServers_RootPinnedDoesNotContend is the AC5
+// round-trip that ties the predicate to the defect it exists to fix: with two
+// graphi entries where exactly one carries `-root`, doctor's `mcp` check warns
+// only at two or more contending entries (internal/doctor/checks.go), so the
+// pinned one must drop out and leave fewer than two. A non-graphi command
+// carrying `-root` stays out of the count entirely (AC4).
+func TestClient_ContendingGraphiServers_RootPinnedDoesNotContend(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	doc := map[string]any{
+		"mcpServers": map[string]any{
+			"graphi":       entryWithArgs("/usr/local/bin/graphi", "mcp"),
+			"graphi-mars":  entryWithArgs("/usr/local/bin/graphi", "mcp", "-root", "/repos/mars"),
+			"rooted-other": entryWithArgs("/usr/bin/other-tool", "serve", "-root", "/repos/mars"),
+		},
+	}
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	names, err := fakeClient("claude", "mcpServers", path).ContendingGraphiServers()
+	if err != nil {
+		t.Fatalf("ContendingGraphiServers: %v", err)
+	}
+	if len(names) >= 2 {
+		t.Fatalf("contending = %v (%d entries): a -root-pinned entry still counts, so doctor keeps warning", names, len(names))
+	}
+	if len(names) != 1 || names[0] != "graphi" {
+		t.Fatalf("contending = %v, want exactly [graphi]", names)
+	}
+}
+
+// TestClient_ContendingGraphiServers_SetupProjectEntryIsPinned pins the reader
+// to the writer rather than to an assumption about it: it builds the entry the
+// way `graphi setup --project` does (cmd/graphi/setup.go — GraphiEntry(bin,
+// []string{"mcp", "-root", <abs root>}) applied through Apply), writes it
+// through the real write path, and reads it back through the real config
+// decode. An entry graphi itself wrote must never be reported as contending.
+func TestClient_ContendingGraphiServers_SetupProjectEntryIsPinned(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(t.TempDir(), ".mcp.json")
+
+	// Exactly cmd/graphi/setup.go's runSetupProject default (non-attach) path.
+	entry := GraphiEntry("/usr/local/bin/graphi", []string{"mcp", "-root", root})
+	if _, err := Apply(path, "graphi", entry, false); err != nil {
+		t.Fatalf("apply setup --project entry: %v", err)
+	}
+
+	names, err := fakeClient("claude", "mcpServers", path).ContendingGraphiServers()
+	if err != nil {
+		t.Fatalf("ContendingGraphiServers: %v", err)
+	}
+	if len(names) != 0 {
+		t.Fatalf("contending = %v, want none: `setup --project` writes a -root-pinned entry", names)
+	}
+}

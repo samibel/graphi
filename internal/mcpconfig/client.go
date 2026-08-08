@@ -73,8 +73,8 @@ func (c Client) Apply(binary string, args []string, dryRun bool) (Result, error)
 
 // ContendingGraphiServers returns the names (sorted) of server entries in this
 // client's config that spawn a graphi binary in ZERO-CONFIG mcp mode — no
-// `-db`/`-daemon` pin, so each spawned process resolves its repository from
-// its own environment. Two or more such entries (e.g. a hand-added
+// `-db`/`-daemon`/`-root` pin, so each spawned process resolves its repository
+// from its own environment. Two or more such entries (e.g. a hand-added
 // "graphi-myrepo" next to the setup-managed "graphi") resolve the SAME
 // repository and contend on its cross-process ingest lock: one indexes, the
 // rest block, and every one of them reports "repository is not bound" until
@@ -120,18 +120,43 @@ func isGraphiCommand(command string) bool {
 	return strings.TrimSuffix(name, ".exe") == "graphi"
 }
 
-// graphiEntryIsPinned reports whether the entry's args attach to an explicit
-// store or daemon (`-db`/`-daemon`, single or double dash, with or without
-// `=value`) — a pinned server performs no repository detection and therefore
-// never contends on an auto-resolved repo's ingest lock.
+// graphiEntryIsPinned reports whether the entry's args bind the session
+// outright — to an explicit store or daemon (`-db`/`-daemon`) or to an explicit
+// repository root (`-root`), single or double dash, with or without `=value`.
+// A pinned server performs no repository detection and therefore never contends
+// on an auto-resolved repo's ingest lock.
+//
+// `-root` differs from the other two in one way that matters here: it pins only
+// when it actually names a repository. `-db` keeps its historical value-agnostic
+// leniency (a bare `-db` still reads as pinned), but a bare `-root` is REJECTED
+// by `graphi mcp` itself as an unknown argument (cmd/graphi/serve.go
+// extractMCPFlags), and an empty value falls back to detection — neither pins
+// anything, so neither may silence the contention warning. The value of
+// `-root <path>` is the FOLLOWING argument, so the scan is index-aware.
+//
+// Only args are considered. GRAPHI_ROOT in the entry's Env map also pins a
+// session at runtime, but whether an env-pinned entry counts as pinned for
+// contention purposes is a separate judgement (SW-163 scope note).
 func graphiEntryIsPinned(entry map[string]any) bool {
-	args, _ := entry["args"].([]any)
-	for _, a := range args {
-		s, _ := a.(string)
+	raw, _ := entry["args"].([]any)
+	args := make([]string, len(raw))
+	for i, a := range raw {
+		args[i], _ = a.(string)
+	}
+	for i, arg := range args {
+		s := strings.TrimPrefix(arg, "-")
 		s = strings.TrimPrefix(s, "-")
-		s = strings.TrimPrefix(s, "-")
-		if s == "db" || s == "daemon" || strings.HasPrefix(s, "db=") || strings.HasPrefix(s, "daemon=") {
+		switch {
+		case s == "db" || s == "daemon" || strings.HasPrefix(s, "db=") || strings.HasPrefix(s, "daemon="):
 			return true
+		case strings.HasPrefix(s, "root="):
+			if strings.TrimPrefix(s, "root=") != "" {
+				return true
+			}
+		case s == "root":
+			if i+1 < len(args) && args[i+1] != "" {
+				return true
+			}
 		}
 	}
 	return false
