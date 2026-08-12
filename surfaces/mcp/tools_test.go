@@ -77,6 +77,12 @@ func (allToolsClient) TaskContext(context.Context, client.TaskContextParams) ([]
 func (allToolsClient) RepoOverview(context.Context, client.RepoOverviewParams) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) TestImpact(context.Context, client.TestImpactParams) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) ChangeImpact(context.Context, client.ChangeImpactParams) ([]byte, error) {
+	return []byte("{}"), nil
+}
 func (allToolsClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return []byte("{}"), nil
 }

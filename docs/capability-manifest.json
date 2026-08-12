@@ -207,6 +207,13 @@
       "note": "run a registered analyzer over the graph"
     },
     {
+      "id": "change-impact",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P1 change intelligence (Change Risk 2.0): changed symbols, public API, dependents, covering tests, reasons, risk for a target or a piped `git diff` range; byte-parity with the change_impact MCP tool"
+    },
+    {
       "id": "change-risk",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -512,6 +519,13 @@
       "note": "P0 agent intelligence: free-text task → ranked, cited, token-budgeted context bundle with recommended read order; byte-parity with the task_context MCP tool"
     },
     {
+      "id": "test-impact",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P1 test intelligence: must_run/recommended/probably_unaffected/unknown test buckets for a target or a piped `git diff` range; byte-parity with the test_impact MCP tool"
+    },
+    {
       "id": "triage-prs",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -688,6 +702,13 @@
       "tier": "stable",
       "epic": "EP-001",
       "note": "structural query: callers."
+    },
+    {
+      "id": "change_impact",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P1 change intelligence (Change Risk 2.0): changed symbols, public-API subset, direct dependents with evidence, bounded transitive closure, covering tests via engine/testintel, config files in the diff, explicit reasons, and a risk level (change_risk thresholds + one-step public-API escalation); confidence derived from consumed edge tiers, never invented; the frozen-stable change_risk operation keeps its bytes; byte-parity with `graphi change-impact`; Labs-only."
     },
     {
       "id": "change_risk",
@@ -955,6 +976,13 @@
       "status": "shipped",
       "tier": "labs",
       "note": "P0 agent intelligence: free-text task → deterministically ranked, cited, token-budgeted context bundle (primary seeds, related symbols, callers/callees, nearby tests and configs, related-file roll-up, change_risk-consistent risk, recommended read order); ranking is a fixed integer weight model whose hash is stamped in every summary — no floats, no LLM estimates; byte-parity with `graphi task-context` through the single engine/agenttools/taskctx assembly; Labs-only."
+    },
+    {
+      "id": "test_impact",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P1 test intelligence: diff/target → must_run (direct-call evidence at confirmed/derived tier), recommended (transitive reach, naming conventions, same-directory test files), probably_unaffected (remaining test-file universe, counted in full), unknown (unresolvable diff paths — never guessed); the symbol↔test mapping is DERIVED on demand by engine/testintel (bounded walks + exact SourcePath lookups — no materialized edges, frozen index output untouched); byte-parity with `graphi test-impact`; Labs-only."
     },
     {
       "id": "triage_prs",

@@ -707,6 +707,39 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P1 test intelligence: test_impact. The mapping is derived on demand
+	// (bounded walks + naming/package heuristics) — no materialized edges, so
+	// the frozen index output is untouched. Read-only.
+	tools = append(tools, map[string]any{
+		"name":        ToolTestImpact,
+		"description": "test_impact: given a unified diff or a symbol/file target, bucket the repository's tests — must_run (a direct call edge proves the test exercises a changed symbol), recommended (transitive reach, naming conventions, same-directory test files), probably_unaffected (the remaining test-file universe, counted in full), and unknown (diff paths with no graph symbols — never guessed). Purpose: run seven tests instead of the whole suite, with evidence for why. When to use: after editing, before running tests; pipe `git diff <range>` in for range-based selection. When NOT to use: for the risk grade itself (use change_impact) or coverage of a single known symbol (symbol_context lists its tests). Input shape: exactly one of target or diff, plus optional depth (walk hops 1-3) and limit. Read-only: true. Partial results possible: bounded walks make the buckets a superset-safe lower bound; limits.truncated says when.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"target": map[string]any{"type": "string", "description": "symbol id or file path (alternative to diff)"},
+				"diff":   map[string]any{"type": "string", "description": "unified diff text (alternative to target)"},
+				"depth":  map[string]any{"type": "integer", "description": "reverse-walk hop depth 1-3 (default 2)"},
+				"limit":  map[string]any{"type": "integer", "description": "item cap (default 20)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	// P1 change intelligence: change_impact ("Change Risk 2.0"). A separate
+	// labs operation — the frozen-stable change_risk envelope keeps its bytes.
+	tools = append(tools, map[string]any{
+		"name":        ToolChangeImpact,
+		"description": "change_impact: the Change Risk 2.0 assessment for a unified diff or a symbol/file target — changed symbols, their public-API subset, direct dependents with evidence, the bounded transitive closure, the tests covering the change, configuration files riding the diff, explicit machine-checkable reasons ('public interface changed', 'no test directly covers X', dependent counts), and a risk level (change_risk's thresholds, plus a one-step escalation when exported surface changed). The confidence distribution is derived from the consumed edge tiers, never invented. Purpose: one call answers 'how risky is this change and why?'. When to use: before proposing or reviewing a change set; pipe `git diff <range>` in for ranges. When NOT to use: for the stable low/medium/high quick check (change_risk) or test selection alone (test_impact). Input shape: exactly one of target or diff, plus optional depth (1-3) and limit. Read-only: true. Partial results possible: bounded walks make dependent/test counts lower bounds; limits.truncated says when.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"target": map[string]any{"type": "string", "description": "symbol id or file path (alternative to diff)"},
+				"diff":   map[string]any{"type": "string", "description": "unified diff text (alternative to target)"},
+				"depth":  map[string]any{"type": "integer", "description": "transitive-walk hop depth 1-3 (default 2)"},
+				"limit":  map[string]any{"type": "integer", "description": "item cap (default 20)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

@@ -237,6 +237,12 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolRepoOverview {
 		return s.repoOverviewCall(ctx, p)
 	}
+	if p.Name == ToolTestImpact {
+		return s.testImpactCall(ctx, p)
+	}
+	if p.Name == ToolChangeImpact {
+		return s.changeImpactCall(ctx, p)
+	}
 
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
@@ -764,6 +770,44 @@ func (s *Server) repoOverviewCall(ctx context.Context, p callParams) (any, *rpcE
 	b, err := s.client().RepoOverview(ctx, client.RepoOverviewParams{
 		MaxItems:    derefInt(p.Arguments.Limit),
 		Communities: p.Arguments.Communities,
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// testImpactCall (P1 test intelligence, labs) returns the test buckets in the
+// C1 contract shape through the shared client.TestImpact composition (byte
+// parity with `graphi test-impact`).
+func (s *Server) testImpactCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Target == "" && p.Arguments.Diff == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: target or diff"}
+	}
+	b, err := s.client().TestImpact(ctx, client.TestImpactParams{
+		Target:   p.Arguments.Target,
+		Diff:     p.Arguments.Diff,
+		Depth:    derefInt(p.Arguments.Depth),
+		MaxItems: derefInt(p.Arguments.Limit),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// changeImpactCall (P1 change intelligence, labs) returns the Change Risk 2.0
+// assessment in the C1 contract shape through the shared client.ChangeImpact
+// composition (byte parity with `graphi change-impact`).
+func (s *Server) changeImpactCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Target == "" && p.Arguments.Diff == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: target or diff"}
+	}
+	b, err := s.client().ChangeImpact(ctx, client.ChangeImpactParams{
+		Target:   p.Arguments.Target,
+		Diff:     p.Arguments.Diff,
+		Depth:    derefInt(p.Arguments.Depth),
+		MaxItems: derefInt(p.Arguments.Limit),
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}

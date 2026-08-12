@@ -585,6 +585,18 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P0 agent intelligence: one-call repository summary — totals with edge-confidence tiers, directory tree, language mix, entry-point candidates, high-centrality symbols, test and generated/vendored areas, external boundaries, suggested next calls; the default call reads only the compact BriefStats/TrustStats aggregates, `communities` is the documented opt-in full-graph pass; byte-parity with `graphi repo-overview` through the single engine/agenttools/overview assembly; Labs-only."
+  - id: test_impact
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P1 test intelligence: diff/target → must_run (direct-call evidence at confirmed/derived tier), recommended (transitive reach, naming conventions, same-directory test files), probably_unaffected (remaining test-file universe, counted in full), unknown (unresolvable diff paths — never guessed); the symbol↔test mapping is DERIVED on demand by engine/testintel (bounded walks + exact SourcePath lookups — no materialized edges, frozen index output untouched); byte-parity with `graphi test-impact`; Labs-only."
+  - id: change_impact
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P1 change intelligence (Change Risk 2.0): changed symbols, public-API subset, direct dependents with evidence, bounded transitive closure, covering tests via engine/testintel, config files in the diff, explicit reasons, and a risk level (change_risk thresholds + one-step public-API escalation); confidence derived from consumed edge tiers, never invented; the frozen-stable change_risk operation keeps its bytes; byte-parity with `graphi change-impact`; Labs-only."
   - id: cli
     category: surface
     status: shipped
@@ -744,6 +756,18 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P0 agent intelligence: one-call repository summary (structure, languages, entrypoints, central symbols, tests, boundaries, optional communities); byte-parity with the repo_overview MCP tool"
+  - id: test-impact
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P1 test intelligence: must_run/recommended/probably_unaffected/unknown test buckets for a target or a piped `git diff` range; byte-parity with the test_impact MCP tool"
+  - id: change-impact
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P1 change intelligence (Change Risk 2.0): changed symbols, public API, dependents, covering tests, reasons, risk for a target or a piped `git diff` range; byte-parity with the change_impact MCP tool"
   - id: snapshot
     category: cli-subcommand
     status: shipped

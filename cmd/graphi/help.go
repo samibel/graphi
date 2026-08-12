@@ -121,6 +121,16 @@ var subcommandHelp = map[string]subHelp{
 		"graphi repo-overview [-db path] [-max-items n] [-communities]",
 		"graphi repo-overview -communities",
 	},
+	"test-impact": {
+		"which tests must run for a change: must_run / recommended / probably_unaffected / unknown (labs)",
+		"graphi test-impact [-db path] [-depth 1-3] [-max-items n] (<target> | -diff <file|->)",
+		"git diff HEAD~1..HEAD | graphi test-impact -diff -",
+	},
+	"change-impact": {
+		"Change Risk 2.0: changed symbols, public API, dependents, covering tests, reasons, risk (labs)",
+		"graphi change-impact [-db path] [-depth 1-3] [-max-items n] (<target> | -diff <file|->)",
+		"git diff HEAD~1..HEAD | graphi change-impact -diff -",
+	},
 	"related-files": {
 		"ranked, cited read-first file list around a symbol, path, or task",
 		"graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>",
@@ -385,6 +395,8 @@ func printHelp() {
 	fmt.Print("  graphi symbol-context <s>   unified single-call symbol view (definition, snippet, tests, risk)\n")
 	fmt.Print("  graphi task-context <text>  free-text task → ranked, token-budgeted context bundle\n")
 	fmt.Print("  graphi repo-overview        one-call repository summary (structure, languages, entrypoints)\n")
+	fmt.Print("  graphi test-impact <t>      which tests must run for a change (must_run/recommended/unaffected)\n")
+	fmt.Print("  graphi change-impact <t>    Change Risk 2.0: dependents, covering tests, reasons, risk\n")
 	fmt.Print("  graphi snapshot [<name>]    list or freeze named graph states of this repo\n")
 	fmt.Print("  graphi compare <a> <b>      diff two named graph states ('current' = live graph)\n")
 	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")

@@ -19,8 +19,10 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/risk"
+	"github.com/samibel/graphi/engine/agenttools/changeimpact"
 	"github.com/samibel/graphi/engine/agenttools/symbolcontext"
 	"github.com/samibel/graphi/engine/agenttools/taskctx"
+	"github.com/samibel/graphi/engine/agenttools/testimpact"
 	"github.com/samibel/graphi/engine/analysis"
 	enginecontext "github.com/samibel/graphi/engine/context"
 	"github.com/samibel/graphi/engine/diagnostic"
@@ -112,7 +114,7 @@ func (d *Direct) SupportsCapability(name string) bool {
 		// These tools intentionally return a typed unavailable/partial result when
 		// graph dependencies are absent; the operation itself is fully executable.
 		return true
-	case "symbol_context", "task_context", "repo_overview":
+	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact":
 		// Labs agent intelligence: same typed-unavailable degradation contract.
 		return true
 	case "trust_report", "graph_health":
@@ -968,6 +970,38 @@ func (d *Direct) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte
 		Deps:        d.agentDeps(),
 		MaxItems:    p.MaxItems,
 		Communities: p.Communities,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// TestImpact implements Client via the shared engine/agenttools/testimpact
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) TestImpact(ctx context.Context, p TestImpactParams) ([]byte, error) {
+	res, err := testimpact.Assemble(ctx, testimpact.Params{
+		Target:   p.Target,
+		Diff:     p.Diff,
+		Depth:    p.Depth,
+		MaxItems: p.MaxItems,
+		Deps:     d.agentDeps(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// ChangeImpact implements Client via the shared engine/agenttools/changeimpact
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, error) {
+	res, err := changeimpact.Assemble(ctx, changeimpact.Params{
+		Target:   p.Target,
+		Diff:     p.Diff,
+		Depth:    p.Depth,
+		MaxItems: p.MaxItems,
+		Deps:     d.agentDeps(),
 	})
 	if err != nil {
 		return nil, err
