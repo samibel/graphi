@@ -14,6 +14,7 @@ import (
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/analysis/githistory"
 	"github.com/samibel/graphi/engine/analysis/taint"
+	pathclass "github.com/samibel/graphi/engine/classify"
 	"github.com/samibel/graphi/engine/query"
 )
 
@@ -457,34 +458,14 @@ func bfsImpact(adj map[model.NodeId][]impactNbr, seed model.NodeId, nodeOf map[m
 	return Analysis{Analyzer: "impact", Outcome: outcome, Symbol: seed, Truncated: truncated, Nodes: out, Metrics: metrics}
 }
 
-// testNodePathPatterns is the DOCUMENTED, deterministic, pure-string heuristic for
-// classifying a node as a test node by its source path. It is conservative and
-// language-agnostic (Go _test.go, JS/TS .test./.spec., Python test_/_test, and the
-// common tests/spec directories). A node whose kind contains "test" also counts.
-var testNodePathPatterns = []string{
-	"_test.",
-	".test.",
-	".spec.",
-	"_spec.",
-	"test_",
-	"/tests/",
-	"/test/",
-	"/spec/",
-	"/__tests__/",
-}
-
-// isTestNode reports whether a node is a test node by the documented heuristic.
+// isTestNode reports whether a node is a test node: its kind contains "test",
+// or its source path matches the shared documented heuristic
+// (classify.TestPathPatterns — which additionally counts /testdata/ trees).
 func isTestNode(n query.ResultNode) bool {
 	if strings.Contains(strings.ToLower(n.Kind), "test") {
 		return true
 	}
-	p := strings.ToLower(model.NormalizePath(n.SourcePath))
-	for _, pat := range testNodePathPatterns {
-		if strings.Contains(p, pat) {
-			return true
-		}
-	}
-	return false
+	return pathclass.IsTestPath(n.SourcePath)
 }
 
 // computeTestReachability returns the set of nodes reachable FROM any test node by

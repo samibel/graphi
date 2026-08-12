@@ -283,6 +283,12 @@ func DiffPaths(diff string) []string {
 
 // isTestPath reports whether a path looks like test code (mirrors the
 // diagnostic suppression defaults).
+//
+// DELIBERATELY NOT unified onto engine/classify.IsTestPath: this predicate
+// feeds the frozen-stable change_risk summary ("N dependent test file(s)"),
+// and the shared union is broader (.spec., /spec/, test_ prefixes, …) —
+// switching would silently change stable output on polyglot repos. Unifying
+// is a recorded follow-up that needs an explicit product decision.
 func isTestPath(p string) bool {
 	base := p
 	if i := strings.LastIndex(p, "/"); i >= 0 {

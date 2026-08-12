@@ -1,10 +1,10 @@
 package diagnostic
 
 import (
-	"path"
 	"strings"
 
 	"github.com/samibel/graphi/core/model"
+	pathclass "github.com/samibel/graphi/engine/classify"
 )
 
 // SuppressionConfig carries caller-supplied pattern sets for the configurable
@@ -29,9 +29,9 @@ type SuppressionConfig struct {
 // DefaultSuppressionConfig returns the built-in conservative pattern sets.
 func DefaultSuppressionConfig() SuppressionConfig {
 	return SuppressionConfig{
-		GeneratedPathPatterns: []string{
-			"*.gen.go", "*_pb.go", "*.generated.*", "generated", "vendor/", "node_modules/",
-		},
+		// The generated/vendored default set is owned by the shared
+		// engine/classify leaf; glob semantics are identical.
+		GeneratedPathPatterns: pathclass.GeneratedPathPatterns,
 		TestPathPatterns: []string{
 			"*_test.go", "*.test.*", "/testdata/",
 		},
@@ -92,7 +92,7 @@ func classify(d Diagnostic, cfg SuppressionConfig) SuppressionCategory {
 	file := d.File
 	name := nodeNameFromMessage(d.Message)
 
-	if matchAnyPattern(file, cfg.TestPathPatterns) || strings.HasSuffix(file, "_test.go") || strings.Contains(file, "/testdata/") {
+	if matchAnyPattern(file, cfg.TestPathPatterns) || pathclass.IsTestPath(file) {
 		return SuppressionTestCode
 	}
 	if matchAnyPattern(file, cfg.GeneratedPathPatterns) {
@@ -113,35 +113,11 @@ func classify(d Diagnostic, cfg SuppressionConfig) SuppressionCategory {
 	return ""
 }
 
-// matchAnyPattern reports whether p matches any of the glob patterns. Patterns
-// without a slash match the base name or any path segment; patterns with a
-// slash match as a path substring.
+// matchAnyPattern reports whether p matches any of the glob patterns. The
+// implementation is owned by the shared engine/classify leaf; this wrapper
+// keeps existing call sites (and user-configured pattern sets) unchanged.
 func matchAnyPattern(p string, patterns []string) bool {
-	for _, pat := range patterns {
-		if pat == "" {
-			continue
-		}
-		matched, _ := path.Match(pat, p)
-		if matched {
-			return true
-		}
-		matched, _ = path.Match(pat, path.Base(p))
-		if matched {
-			return true
-		}
-		// Match against any path segment.
-		for _, seg := range strings.Split(p, "/") {
-			matched, _ = path.Match(pat, seg)
-			if matched {
-				return true
-			}
-		}
-		// Path-substring match for directory-style patterns.
-		if strings.Contains(pat, "/") && strings.Contains(p, pat) {
-			return true
-		}
-	}
-	return false
+	return pathclass.MatchAnyPattern(p, patterns)
 }
 
 // matchAnySignature reports whether the name or path matches a framework signature.
