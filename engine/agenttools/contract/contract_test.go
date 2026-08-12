@@ -148,6 +148,35 @@ func TestNoHTMLEscape(t *testing.T) {
 	}
 }
 
+func TestEvidenceSnippetRoundTripAndOmitEmpty(t *testing.T) {
+	// Without a snippet the field must be absent from the wire bytes, so the
+	// frozen stable operations' serialized output is provably unchanged.
+	plain := sampleResult()
+	b, err := contract.Serialize(plain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(b, []byte("snippet")) {
+		t.Fatalf("empty snippet must be omitted from serialized bytes: %s", b)
+	}
+
+	// With a snippet the text round-trips exactly, including characters the
+	// serializer must not HTML-escape.
+	with := sampleResult()
+	with.Evidence[0].Snippet = "if a < b && b > 0 {\n\treturn \"ok\"\n}"
+	b, err = contract.Serialize(with)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got contract.Result
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Evidence[0].Snippet != with.Evidence[0].Snippet {
+		t.Fatalf("snippet round-trip mismatch: %q", got.Evidence[0].Snippet)
+	}
+}
+
 func TestJSONRoundTrip(t *testing.T) {
 	r := sampleResult()
 	b, err := contract.Serialize(r)

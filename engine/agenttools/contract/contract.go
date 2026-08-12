@@ -39,12 +39,17 @@ var validOutcomes = map[Outcome]bool{
 func (o Outcome) Valid() bool { return validOutcomes[o] }
 
 // Evidence is a file:line citation backing an item.
+//
+// Snippet optionally carries token-budgeted source text whose exact citation
+// is Path/Line (+Span "start-end"). It is additive and omitempty: the frozen
+// stable operations never set it, so their serialized bytes are unchanged.
 type Evidence struct {
-	RefID string `json:"ref_id"`
-	Path  string `json:"path"`
-	Line  int    `json:"line"`
-	Span  string `json:"span,omitempty"`
-	Role  string `json:"role"`
+	RefID   string `json:"ref_id"`
+	Path    string `json:"path"`
+	Line    int    `json:"line"`
+	Span    string `json:"span,omitempty"`
+	Role    string `json:"role"`
+	Snippet string `json:"snippet,omitempty"`
 }
 
 // Item is a single ranked result row.

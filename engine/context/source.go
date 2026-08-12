@@ -34,6 +34,46 @@ func (LocalReader) ReadSpan(path string, want Span) (string, Span, error) {
 	return extractSpan(path, lines, want)
 }
 
+// RootedReader resolves repo-relative candidate paths against a fixed root
+// before delegating to the disk-backed LocalReader. Graph paths are stored
+// repo-relative; surfaces that know the repository root wrap LocalReader in a
+// RootedReader so snippet reads work regardless of the process working
+// directory. An empty Root is a passthrough (cwd-relative, today's CLI
+// behavior when run from the repo root). Absolute paths are passed through
+// untouched. The remote-source rejection stays in LocalReader.
+type RootedReader struct {
+	Root string
+}
+
+// NewRootedReader returns a SourceReader that resolves paths against root.
+func NewRootedReader(root string) RootedReader { return RootedReader{Root: root} }
+
+// ReadSpan resolves path against Root and reads via LocalReader.
+func (r RootedReader) ReadSpan(path string, want Span) (string, Span, error) {
+	p := path
+	if r.Root != "" && !strings.HasPrefix(p, "/") && !isRemoteSource(p) {
+		p = strings.TrimSuffix(r.Root, "/") + "/" + p
+	}
+	return LocalReader{}.ReadSpan(p, want)
+}
+
+// FilterReadable returns the candidates whose first span line is readable via
+// reader, preserving order. Assemble is deliberately fail-closed (one read
+// error aborts the whole bundle); callers that prefer to drop unreadable
+// candidates — e.g. attach-mode surfaces whose working directory is not the
+// repo root — pre-filter with this helper. Deterministic: a candidate is kept
+// or dropped purely by the reader's success on its probe span.
+func FilterReadable(reader Reader, cands []Candidate) []Candidate {
+	out := make([]Candidate, 0, len(cands))
+	for _, c := range cands {
+		if _, _, err := reader.ReadSpan(c.Path, Span{Start: c.StartLine, End: c.StartLine}); err != nil {
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
 // extractSpan is the pure, testable core of ReadSpan: given the file's lines and
 // a want window, it returns the clamped text + actual span. It is shared with
 // the in-memory test reader so clamping behavior is identical everywhere.
