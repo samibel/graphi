@@ -1,0 +1,12 @@
+id: change-impact-fixture
+description: change_impact assesses a changed fixture symbol with dependents, covering tests, reasons, and a risk level.
+fixture_ref: tier1-fixture-go
+operation:
+  name: change_impact
+  args:
+    target: Hello
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  max_latency_ms: 2000

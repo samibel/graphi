@@ -44,6 +44,19 @@ tokens, the same cited contract envelope:
    all three relation lists, the tests that exercise the symbol (bounded
    reverse walk, `depth` 1–3), and a `change_risk`-consistent risk level.
 
+After editing, two further labs tools close the loop:
+
+4. **`test_impact`** — pass the diff (`git diff <range> | graphi test-impact
+   -diff -`) and get the tests bucketed: `must_run` (direct-call proof),
+   `recommended` (transitive/naming/proximity), `probably_unaffected` (the
+   rest, counted in full), `unknown` (paths the graph doesn't know — never
+   guessed). Run seven tests instead of the whole suite, with evidence.
+5. **`change_impact`** — the Change Risk 2.0 assessment for the same diff:
+   changed symbols, public-API subset, dependents (direct + bounded
+   transitive), covering tests, config changes, explicit reasons, and a risk
+   level with a tier-derived confidence distribution. The stable
+   `change_risk` quick check is unchanged; this is its richer labs sibling.
+
 These are labs operations: their shapes may still change, and they are only
 advertised under `graphi mcp -labs` (HTTP: 403 without `GRAPHI_LABS=1`). The
 four stable tools above remain the frozen, GA-supported path.

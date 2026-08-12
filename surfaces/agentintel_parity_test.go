@@ -85,4 +85,22 @@ func TestMCP_CLI_AgentIntelParity(t *testing.T) {
 	if got, want := mcpArgs(mcp.ToolRepoOverview, map[string]any{}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
 		t.Fatalf("repo_overview parity mismatch:\n CLI: %s\n MCP: %s", want, got)
 	}
+
+	// test_impact (target mode)
+	cliOut.Reset()
+	if err := cli.RunTestImpact(context.Background(), c, []string{"p.B"}, strings.NewReader(""), &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli test-impact: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolTestImpact, map[string]any{"target": "p.B"}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("test_impact parity mismatch:\n CLI: %s\n MCP: %s", want, got)
+	}
+
+	// change_impact (target mode)
+	cliOut.Reset()
+	if err := cli.RunChangeImpact(context.Background(), c, []string{"p.B"}, strings.NewReader(""), &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli change-impact: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolChangeImpact, map[string]any{"target": "p.B"}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("change_impact parity mismatch:\n CLI: %s\n MCP: %s", want, got)
+	}
 }

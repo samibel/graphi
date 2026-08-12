@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 6,
   "baseline": 96.2,
   "target": 90,
   "scenarios": [
@@ -10,6 +10,11 @@
     },
     {
       "id": "anchor-absent",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "change-impact-fixture",
       "outcome": "pass",
       "tier1": true
     },
@@ -85,6 +90,11 @@
     },
     {
       "id": "task-context-fixture",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "test-impact-fixture",
       "outcome": "pass",
       "tier1": true
     }

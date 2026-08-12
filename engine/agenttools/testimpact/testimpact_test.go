@@ -137,6 +137,41 @@ func TestAssembleFromTarget(t *testing.T) {
 	}
 }
 
+func TestAssembleNoTestsKnownIsACitedFinding(t *testing.T) {
+	// A graph without any test files: the result must still cite the subject
+	// and state the coverage gap instead of returning empty items.
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	n, err := model.NewNode("function", "solo.Fn", "solo/fn.go", 1, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PutNode(ctx, n); err != nil {
+		t.Fatal(err)
+	}
+	deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
+
+	res, err := Assemble(ctx, Params{Target: "solo.Fn", Deps: deps})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Outcome != contract.OutcomeFound {
+		t.Fatalf("expected found, got %s", res.Outcome)
+	}
+	var sawCoverage bool
+	for _, it := range res.Items {
+		if strings.HasPrefix(it.Reason, "coverage: no test files known") {
+			sawCoverage = true
+		}
+	}
+	if !sawCoverage || len(res.Evidence) == 0 {
+		t.Fatalf("expected a cited coverage finding: items=%+v evidence=%+v", res.Items, res.Evidence)
+	}
+	if !strings.Contains(res.Summary, "coverage risk high") {
+		t.Fatalf("zero-signal change must grade coverage risk high: %q", res.Summary)
+	}
+}
+
 func TestAssembleInputValidation(t *testing.T) {
 	deps := fixtureDeps(t)
 	if _, err := Assemble(context.Background(), Params{Deps: deps}); err == nil {

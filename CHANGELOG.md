@@ -28,6 +28,30 @@ file:
 
 ### Added
 
+- **[labs] `test_impact` — which tests must run for a change** (P1 test
+  intelligence). Diff or target in, four evidence-cited buckets out:
+  `must_run` (a direct call edge at confirmed/derived tier proves the test
+  exercises a changed symbol), `recommended` (transitive reach, naming
+  conventions, same-directory test files), `probably_unaffected` (the
+  remaining test-file universe, counted in full), and `unknown` (diff paths
+  with no graph symbols — never guessed). A change with no test signal at all
+  is itself a cited finding ("treat it as untested"). The symbol↔test mapping
+  is DERIVED on demand by the new `engine/testintel` leaf — bounded reverse
+  walks plus exact SourcePath listings, no materialized edges, so the frozen
+  `index` output and the parity gates keep their bytes. CLI
+  `graphi test-impact (<target> | -diff <file|->)` — pipe
+  `git diff <range>` in for range selection; the product stays exec-free.
+- **[labs] `change_impact` — the Change Risk 2.0 assessment** (P1 change
+  intelligence). One call returns the changed symbols, their public-API
+  subset, direct dependents with edge evidence, the bounded transitive
+  closure, the tests covering the change, configuration files riding the
+  diff, explicit machine-checkable reasons ("public interface changed",
+  "no test directly covers X", dependent counts), and a risk level —
+  `change_risk`'s single-source thresholds plus a one-step escalation when
+  exported surface changed. The confidence distribution is derived from the
+  consumed edge tiers, never invented. The frozen-stable `change_risk`
+  operation keeps its bytes: this is a separate labs operation. CLI
+  `graphi change-impact (<target> | -diff <file|->)`.
 - **[labs] `symbol_context` — the unified single-call symbol view** (P0 agent
   intelligence). One call returns the definition site with an optional
   token-budgeted source snippet, the type-hierarchy relations, callers,

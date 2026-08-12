@@ -210,6 +210,25 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		})
 	}
 
+	// A change with NO test signal at all is itself a finding: cite the
+	// subject and say so explicitly instead of returning an empty, uncitable
+	// result (the fixture-without-tests case).
+	if len(subjects) > 0 && mustRunTotal == 0 && recommendedTotal == 0 && unaffectedTotal == 0 {
+		lead := subjects[0]
+		for _, s := range subjects[1:] {
+			if s.ID() < lead.ID() {
+				lead = s
+			}
+		}
+		evID := ev.Add(lead.SourcePath(), lead.Line(), "coverage")
+		items = append(items, contract.Item{
+			RefID:          "coverage",
+			Rank:           bandUnknown<<20 + 2,
+			Reason:         "coverage: no test files known to the graph for this change — treat it as untested",
+			EvidenceRefIDs: []string{evID},
+		})
+	}
+
 	// unknown: unresolved diff paths (never guessed into a bucket).
 	for i, path := range unresolved {
 		if i >= unknownRows {

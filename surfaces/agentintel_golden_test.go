@@ -15,7 +15,7 @@ import (
 	"github.com/samibel/graphi/surfaces/client"
 )
 
-var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview"}
+var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact"}
 
 // runAgentIntelOps drives the three labs ops through the shared surface client
 // (rooted at the fixture so snippet reads resolve) and returns op→bytes.
@@ -43,6 +43,12 @@ func runAgentIntelOps(t *testing.T, store graphstore.Graphstore) map[string]stri
 
 	ov, err := c.RepoOverview(ctx, client.RepoOverviewParams{})
 	record("repo_overview", ov, err)
+
+	ti, err := c.TestImpact(ctx, client.TestImpactParams{Target: hello})
+	record("test_impact", ti, err)
+
+	ci, err := c.ChangeImpact(ctx, client.ChangeImpactParams{Target: hello})
+	record("change_impact", ci, err)
 
 	if len(out) != len(agentIntelOps) {
 		t.Fatalf("expected %d op outputs, got %d", len(agentIntelOps), len(out))
