@@ -56,6 +56,11 @@ const (
 	OpChangeRisk    = "change_risk"
 	OpAgentBrief    = "agent_brief"
 
+	// P0 agent-intelligence operations (labs), same C1 contract envelope.
+	OpSymbolContext = "symbol_context"
+	OpTaskContext   = "task_context"
+	OpRepoOverview  = "repo_overview"
+
 	// OpDiagnose runs the engine diagnostics over the fixture store (signal
 	// quality scenarios).
 	OpDiagnose = "diagnose"
@@ -67,15 +72,18 @@ func KnownOps() []string {
 		OpDefinition, OpReferences, OpCallers, OpCallees, OpSearch,
 		OpNeighborhood, OpImpact, OpIndex,
 		OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
+		OpSymbolContext, OpTaskContext, OpRepoOverview,
 		OpDiagnose,
 	}
 }
 
-// IsAgentToolOp reports whether name is one of the four EP-020 agent-tool
-// operations (which return the full C1 contract envelope).
+// IsAgentToolOp reports whether name is one of the agent-tool operations
+// (which return the full C1 contract envelope): the four EP-020 tools plus
+// the three P0 agent-intelligence tools.
 func IsAgentToolOp(name string) bool {
 	switch name {
-	case OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief:
+	case OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
+		OpSymbolContext, OpTaskContext, OpRepoOverview:
 		return true
 	}
 	return false

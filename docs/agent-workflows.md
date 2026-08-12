@@ -20,6 +20,34 @@ At the start of a task, call the four agent-first tools in this order:
 Every tool is read-only and local-only: no account, no cloud service, no
 network egress.
 
+## One-call context (labs): `repo_overview`, `task_context`, `symbol_context`
+
+With the Labs catalog (`graphi mcp -labs`), the P0 agent-intelligence tools
+collapse the call sequence above into single calls — fewer round-trips, fewer
+tokens, the same cited contract envelope:
+
+1. **`repo_overview`** — first call in an unfamiliar repository: totals with
+   edge-confidence tiers, directory tree, language mix, entry-point
+   candidates, the highest-centrality symbols, test and generated areas,
+   external boundaries, and concrete suggested next calls. The default call
+   reads only compact aggregates; pass `communities: true` for the opt-in
+   full-graph community pass.
+2. **`task_context`** — phrase the task in a few words and get a ranked,
+   token-budgeted bundle: primary seeds, related symbols, callers/callees,
+   nearby tests and configs, a related-file roll-up, a risk level, a
+   recommended read order, and source snippets under `token_budget`. The
+   ranking is a fixed integer weight model; its hash is stamped in every
+   summary, so identical inputs rank identically everywhere.
+3. **`symbol_context`** — when the symbol is known, one call replaces
+   `explain_symbol` + `callers` + `callees` + `references` + `change_risk`:
+   definition with an optional token-budgeted snippet, hierarchy relations,
+   all three relation lists, the tests that exercise the symbol (bounded
+   reverse walk, `depth` 1–3), and a `change_risk`-consistent risk level.
+
+These are labs operations: their shapes may still change, and they are only
+advertised under `graphi mcp -labs` (HTTP: 403 without `GRAPHI_LABS=1`). The
+four stable tools above remain the frozen, GA-supported path.
+
 ## Trust preflight (`graph_health`, labs)
 
 Before a risky task, ask how far graph evidence may be trusted for the planned

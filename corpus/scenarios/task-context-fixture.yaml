@@ -1,0 +1,12 @@
+id: task-context-fixture
+description: task_context turns a task phrase into a ranked, cited context bundle over the fixture graph.
+fixture_ref: tier1-fixture-go
+operation:
+  name: task_context
+  args:
+    task: Hello
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  max_latency_ms: 2000

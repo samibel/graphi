@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "baseline": 96.2,
   "target": 90,
   "scenarios": [
@@ -44,6 +44,11 @@
       "tier1": true
     },
     {
+      "id": "repo-overview-fixture",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
       "id": "signal-default-high-confidence",
       "outcome": "pass",
       "tier1": true
@@ -65,6 +70,21 @@
     },
     {
       "id": "signal-testcode-suppressed",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "symbol-context-known-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "symbol-context-unknown-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "task-context-fixture",
       "outcome": "pass",
       "tier1": true
     }
