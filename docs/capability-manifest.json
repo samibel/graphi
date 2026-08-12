@@ -484,6 +484,13 @@
       "note": "ranked candidate-reviewer recommender"
     },
     {
+      "id": "symbol-context",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P0 agent intelligence: unified single-call symbol view (definition + snippet, hierarchy, callers/callees/references, covering tests, risk); byte-parity with the symbol_context MCP tool"
+    },
+    {
       "id": "sync",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -913,6 +920,13 @@
       "tier": "labs",
       "epic": "EP-011",
       "note": "structural query: supertypes (inherits+implements composed) (G2)."
+    },
+    {
+      "id": "symbol_context",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P0 agent intelligence: unified single-call symbol view — definition site with optional token-budgeted source snippet, type-hierarchy relations, callers/callees/references, covering tests via a bounded reverse walk (per-node edge limit, global node budget, depth clamp — never a whole-graph scan), and a change_risk-consistent risk level; byte-parity with `graphi symbol-context` through the single engine/agenttools/symbolcontext assembly; Labs-only pending a promotion decision."
     },
     {
       "id": "triage_prs",

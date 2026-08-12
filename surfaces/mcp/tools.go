@@ -109,6 +109,12 @@ const (
 	//
 	// Labs-only. It adds no Stable operation and changes no Stable schema.
 	ToolStrictQuery = "strict_query"
+
+	// P0 agent intelligence: the unified single-call symbol view (definition
+	// with optional token-budgeted snippet, hierarchy, callers/callees/
+	// references, covering tests, risk level). Labs-only; the frozen Stable-12
+	// set is untouched.
+	ToolSymbolContext = "symbol_context"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -150,6 +156,7 @@ var singletonToolNames = []string{
 	ToolAgentBrief,
 	ToolGraphHealth,
 	ToolStrictQuery,
+	ToolSymbolContext,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

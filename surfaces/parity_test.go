@@ -373,9 +373,11 @@ func TestMCP_ToolsList(t *testing.T) {
 	// pattern-query tools + the EP-020 "explain_symbol", "related_files", and
 	// "change_risk" tools (advertised unconditionally) + the P1 "graph_health"
 	// trust tool (self-contained composition, always executable on Direct) + the
-	// P1 "strict_query" wrapper (executable wherever the query service is).
-	if len(resp.Result.Tools) != len(query.Operations)+11 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+11)
+	// P1 "strict_query" wrapper (executable wherever the query service is) + the
+	// P0 agent-intelligence "symbol_context" tool (labs, advertised
+	// unconditionally with the same typed-unavailable degradation).
+	if len(resp.Result.Tools) != len(query.Operations)+12 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+12)
 	}
 }
 

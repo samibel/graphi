@@ -81,6 +81,8 @@ func main() {
 		os.Exit(runAgentBrief(os.Args[2:]))
 	case "explain-symbol":
 		os.Exit(runAgentTool(os.Args[2:], "explain-symbol"))
+	case "symbol-context":
+		os.Exit(runAgentTool(os.Args[2:], "symbol-context"))
 	case "related-files":
 		os.Exit(runAgentTool(os.Args[2:], "related-files"))
 	case "change-risk":

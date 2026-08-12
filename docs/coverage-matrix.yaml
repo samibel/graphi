@@ -567,6 +567,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P1 strict query (PRD v1.0 §8 Phase 9): runs a Stable structural query unchanged, then withholds result edges below `minimum_tier` (confirmed|derived|heuristic) and reports the withheld count; a result emptied by the filter always carries an explicit limitation, so filtered emptiness never reads as proven emptiness. Optional fail-closed policy preflight blocks before the query runs. Byte-parity with `graphi query-strict` through the single client.ComposeStrictQuery composition; operations closed to the Stable structural set; Labs-only."
+  - id: symbol_context
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: unified single-call symbol view — definition site with optional token-budgeted source snippet, type-hierarchy relations, callers/callees/references, covering tests via a bounded reverse walk (per-node edge limit, global node budget, depth clamp — never a whole-graph scan), and a change_risk-consistent risk level; byte-parity with `graphi symbol-context` through the single engine/agenttools/symbolcontext assembly; Labs-only pending a promotion decision."
   - id: cli
     category: surface
     status: shipped
@@ -708,6 +714,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P1 strict-query prototype (PRD §28 option A): runs the unchanged stable query, then excludes result edges below -min-tier and wraps the canonical result in an envelope carrying the exclusion count — filtered emptiness always carries an explicit limitation, never bare emptiness; optional fail-closed -policy preflight (FAIL/UNKNOWN blocks the query with the trust exit code); no tier is ever rewritten, stable query semantics untouched"
+  - id: symbol-context
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: unified single-call symbol view (definition + snippet, hierarchy, callers/callees/references, covering tests, risk); byte-parity with the symbol_context MCP tool"
   - id: snapshot
     category: cli-subcommand
     status: shipped

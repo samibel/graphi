@@ -313,6 +313,27 @@ func (c *DaemonClient) ChangeRisk(ctx context.Context, target, diff string, maxI
 	return nil, client.ErrAgentToolsUnavailable
 }
 
+// SymbolContext implements client.Client. Returns ErrAgentIntelUnavailable
+// until a daemon RPC is added.
+func (c *DaemonClient) SymbolContext(ctx context.Context, p client.SymbolContextParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
+// TaskContext implements client.Client. Returns ErrAgentIntelUnavailable until
+// a daemon RPC is added.
+func (c *DaemonClient) TaskContext(ctx context.Context, p client.TaskContextParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
+// RepoOverview implements client.Client. Returns ErrAgentIntelUnavailable
+// until a daemon RPC is added.
+func (c *DaemonClient) RepoOverview(ctx context.Context, p client.RepoOverviewParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {

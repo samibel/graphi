@@ -18,7 +18,9 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/risk"
+	"github.com/samibel/graphi/engine/agenttools/symbolcontext"
 	"github.com/samibel/graphi/engine/analysis"
+	enginecontext "github.com/samibel/graphi/engine/context"
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/edit"
@@ -51,6 +53,7 @@ type Direct struct {
 	forge         forge.Enumerator
 	branchState   BranchStateMaterializer
 	reviewFetcher forge.ReviewFetcher
+	repoRoot      string
 }
 
 // NewDirect constructs an in-process client.
@@ -106,6 +109,9 @@ func (d *Direct) SupportsCapability(name string) bool {
 	case "agent_brief", "explain_symbol", "related_files", "change_risk":
 		// These tools intentionally return a typed unavailable/partial result when
 		// graph dependencies are absent; the operation itself is fully executable.
+		return true
+	case "symbol_context", "task_context", "repo_overview":
+		// Labs agent intelligence: same typed-unavailable degradation contract.
 		return true
 	case "trust_report", "graph_health":
 		// The trust-report composition is self-contained ("trust_report" is the
@@ -218,6 +224,21 @@ func (d *Direct) WithBranchStates(m BranchStateMaterializer) *Direct {
 func (d *Direct) WithReviewFetcher(f forge.ReviewFetcher) *Direct {
 	d.reviewFetcher = f
 	return d
+}
+
+// WithRepoRoot records the repository root so the labs agent-intelligence
+// tools can read source snippets from repo-relative graph paths regardless of
+// the process working directory. Empty keeps cwd-relative reads (today's CLI
+// behavior when run from the repo root). It returns the receiver for chaining.
+func (d *Direct) WithRepoRoot(root string) *Direct {
+	d.repoRoot = root
+	return d
+}
+
+// snippetReader is the source reader handed to the labs agent-intelligence
+// tools: disk-backed, repo-root-resolved, remote-rejecting.
+func (d *Direct) snippetReader() enginecontext.Reader {
+	return enginecontext.NewRootedReader(d.repoRoot)
 }
 
 // Query implements Client.
@@ -903,6 +924,35 @@ func (d *Direct) ChangeRisk(ctx context.Context, target, diff string, maxItems i
 		return nil, err
 	}
 	return contract.Serialize(res)
+}
+
+// SymbolContext implements Client via the shared engine/agenttools/symbolcontext
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) SymbolContext(ctx context.Context, p SymbolContextParams) ([]byte, error) {
+	res, err := symbolcontext.Context(ctx, symbolcontext.Params{
+		Ref:         p.Symbol,
+		Depth:       p.Depth,
+		MaxItems:    p.MaxItems,
+		TokenBudget: p.TokenBudget,
+		Deps:        d.agentDeps(),
+		Reader:      d.snippetReader(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// TaskContext implements Client (labs agent intelligence). Wired in the
+// task_context step of the P0 epic.
+func (d *Direct) TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error) {
+	return nil, ErrAgentIntelUnavailable
+}
+
+// RepoOverview implements Client (labs agent intelligence). Wired in the
+// repo_overview step of the P0 epic.
+func (d *Direct) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error) {
+	return nil, ErrAgentIntelUnavailable
 }
 
 // TrustReport implements Client via the shared trust-report composition

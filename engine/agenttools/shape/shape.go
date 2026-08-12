@@ -52,6 +52,20 @@ func (s *EvidenceSet) AddRef(ref, role string) string {
 	return s.Add(path, line, role)
 }
 
+// AddSnippet records one snippet-bearing evidence citation and returns its ref
+// id. The dedup key matches Add's (path, line, role); on a repeat the first
+// insertion wins and its existing ref id is returned.
+func (s *EvidenceSet) AddSnippet(path string, line int, role, span, snippet string) string {
+	key := path + ":" + strconv.Itoa(line) + ":" + role
+	if id, ok := s.index[key]; ok {
+		return id
+	}
+	id := "e" + strconv.Itoa(len(s.entries)+1)
+	s.index[key] = id
+	s.entries = append(s.entries, contract.Evidence{RefID: id, Path: path, Line: line, Role: role, Span: span, Snippet: snippet})
+	return id
+}
+
 // List returns the accumulated evidence in insertion order.
 func (s *EvidenceSet) List() []contract.Evidence { return s.entries }
 

@@ -392,6 +392,35 @@ func (h *HTTP) ChangeRisk(ctx context.Context, target, diff string, maxItems int
 	return h.doGET(ctx, "/analyze/change_risk", q)
 }
 
+// SymbolContext rides the read-only /analyze/symbol_context endpoint (labs
+// agent intelligence; 403 unless the server runs with GRAPHI_LABS=1).
+func (h *HTTP) SymbolContext(ctx context.Context, p SymbolContextParams) ([]byte, error) {
+	q := url.Values{}
+	q.Set("symbol", p.Symbol)
+	if p.Depth > 0 {
+		q.Set("depth", strconv.Itoa(p.Depth))
+	}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	if p.TokenBudget != 0 {
+		q.Set("token-budget", strconv.Itoa(p.TokenBudget))
+	}
+	return h.doGET(ctx, "/analyze/symbol_context", q)
+}
+
+// TaskContext returns ErrAgentIntelUnavailable until the task_context step of
+// the P0 epic wires its endpoint.
+func (h *HTTP) TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error) {
+	return nil, ErrAgentIntelUnavailable
+}
+
+// RepoOverview returns ErrAgentIntelUnavailable until the repo_overview step
+// of the P0 epic wires its endpoint.
+func (h *HTTP) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error) {
+	return nil, ErrAgentIntelUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
 // is added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (h *HTTP) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {

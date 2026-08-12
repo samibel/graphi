@@ -653,6 +653,27 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P0 agent intelligence: symbol_context, the unified single-call symbol
+	// view. It rides the shared engine/agenttools/symbolcontext assembly
+	// through the labs client facade, so CLI and MCP emit byte-identical
+	// envelopes. Read-only annotations hold: bounded graph reads plus local
+	// disk reads for the definition snippet — no indexing, no daemon start,
+	// no network.
+	tools = append(tools, map[string]any{
+		"name":        ToolSymbolContext,
+		"description": "symbol_context: return the unified single-call symbol view — definition site with an optional token-budgeted source snippet, type-hierarchy relations (implementers/implements/overrides/subtypes/supertypes), callers, callees, references, the test files that exercise the symbol (bounded reverse walk), and a change_risk-consistent risk level, every claim cited. Purpose: replace the explain_symbol + callers + callees + references + change_risk round-trips with ONE call when an agent is about to work on a symbol. When to use: the agent has a concrete symbol and wants its full working context in one response. When NOT to use: for 'what should I read first?' (use related_files/agent_brief) or free-text task scoping (use task_context when available). Input shape: symbol reference plus optional depth (test-walk hops, 1-3), limit (item cap), token_budget (snippet tokens; negative disables). Read-only: true. Partial results possible: item cap and walk bounds truncate; limits.next says how to widen.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol":       map[string]any{"type": "string", "description": "symbol reference: qualified id, repo-relative path, or bare name"},
+				"depth":        map[string]any{"type": "integer", "description": "test-walk hop depth 1-3 (default 2)"},
+				"limit":        map[string]any{"type": "integer", "description": "item cap (default 20)"},
+				"token_budget": map[string]any{"type": "integer", "description": "snippet token budget (default 700; negative disables the snippet)"},
+			},
+			"required": []string{"symbol"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

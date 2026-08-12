@@ -41,6 +41,21 @@ const (
 	highMinDependents    = 8
 )
 
+// LevelFor classifies fan-in plus distinct dependent files into a risk level
+// using the documented thresholds. It is the single-source classification also
+// used by Assess, exported so other agent tools reporting a risk level stay
+// consistent with change_risk.
+func LevelFor(fanIn, dependentFiles int) Level {
+	switch {
+	case fanIn > highMinFanIn || dependentFiles > highMinDependents:
+		return LevelHigh
+	case fanIn <= lowMaxFanIn && dependentFiles <= lowMaxDependentFiles:
+		return LevelLow
+	default:
+		return LevelMedium
+	}
+}
+
 // Assess estimates the local risk of changing target (node id, path, or symbol
 // query) or the files named by a unified diff. Exactly one of target/diff may
 // be empty.
@@ -152,13 +167,7 @@ func Assess(ctx context.Context, deps resolve.Deps, target, diff string, maxItem
 		}
 	}
 
-	level := LevelMedium
-	switch {
-	case fanIn > highMinFanIn || len(dependentFiles) > highMinDependents:
-		level = LevelHigh
-	case fanIn <= lowMaxFanIn && len(dependentFiles) <= lowMaxDependentFiles:
-		level = LevelLow
-	}
+	level := LevelFor(fanIn, len(dependentFiles))
 
 	testFiles := 0
 	for f := range dependentFiles {
