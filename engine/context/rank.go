@@ -43,7 +43,7 @@ func candidateLess(a, b Candidate) bool {
 // file bounds via the reader), reads exactly that span, and returns the snippet.
 // The snippet's Citation reflects the ACTUAL expanded+clamped span (got), so it
 // always round-trips to the bytes carried in Text.
-func winnow(reader engineFor, c Candidate, contextLines int) (Snippet, error) {
+func winnow(reader Reader, c Candidate, contextLines int) (Snippet, error) {
 	want := Span{
 		Start: c.StartLine - contextLines,
 		End:   c.EndLine + contextLines,

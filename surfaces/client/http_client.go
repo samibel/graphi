@@ -392,6 +392,50 @@ func (h *HTTP) ChangeRisk(ctx context.Context, target, diff string, maxItems int
 	return h.doGET(ctx, "/analyze/change_risk", q)
 }
 
+// SymbolContext rides the read-only /analyze/symbol_context endpoint (labs
+// agent intelligence; 403 unless the server runs with GRAPHI_LABS=1).
+func (h *HTTP) SymbolContext(ctx context.Context, p SymbolContextParams) ([]byte, error) {
+	q := url.Values{}
+	q.Set("symbol", p.Symbol)
+	if p.Depth > 0 {
+		q.Set("depth", strconv.Itoa(p.Depth))
+	}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	if p.TokenBudget != 0 {
+		q.Set("token-budget", strconv.Itoa(p.TokenBudget))
+	}
+	return h.doGET(ctx, "/analyze/symbol_context", q)
+}
+
+// TaskContext rides the read-only /analyze/task_context endpoint (labs agent
+// intelligence; 403 unless the server runs with GRAPHI_LABS=1).
+func (h *HTTP) TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error) {
+	q := url.Values{}
+	q.Set("task", p.Task)
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	if p.TokenBudget != 0 {
+		q.Set("token-budget", strconv.Itoa(p.TokenBudget))
+	}
+	return h.doGET(ctx, "/analyze/task_context", q)
+}
+
+// RepoOverview rides the read-only /analyze/repo_overview endpoint (labs
+// agent intelligence; 403 unless the server runs with GRAPHI_LABS=1).
+func (h *HTTP) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error) {
+	q := url.Values{}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	if p.Communities {
+		q.Set("communities", "1")
+	}
+	return h.doGET(ctx, "/analyze/repo_overview", q)
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
 // is added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (h *HTTP) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {

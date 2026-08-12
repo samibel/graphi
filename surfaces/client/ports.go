@@ -72,6 +72,18 @@ type AgentContextPort interface {
 	ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error)
 }
 
+// AgentIntelPort is the labs agent-intelligence port (P0): the three unified
+// context operations. It is deliberately SEPARATE from AgentContextPort —
+// that port feeds the frozen StableClient, and these operations are labs.
+type AgentIntelPort interface {
+	// SymbolContext returns the unified, cited single-call symbol view.
+	SymbolContext(ctx context.Context, p SymbolContextParams) ([]byte, error)
+	// TaskContext returns the deterministically ranked, token-budgeted task context.
+	TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error)
+	// RepoOverview returns the one-call repository summary.
+	RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error)
+}
+
 // StableClient is the composed view a stable surface holds: exactly the three
 // consumer-owned ports, nothing else. The MCP server routes its stable tool
 // dispatch through this type so the compiler proves the stable path cannot
@@ -127,5 +139,6 @@ var (
 	_ QueryPort        = (Client)(nil)
 	_ SearchPort       = (Client)(nil)
 	_ AgentContextPort = (Client)(nil)
+	_ AgentIntelPort   = (Client)(nil)
 	_ StableClient     = stableClient{}
 )

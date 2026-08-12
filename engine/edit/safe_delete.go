@@ -9,6 +9,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	pathclass "github.com/samibel/graphi/engine/classify"
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/ingest"
 )
@@ -196,15 +197,10 @@ func refReason(tier model.ConfidenceTier, referrerFile string) RefReason {
 	if tier == model.TierHeuristic {
 		return ReasonUnresolved
 	}
-	if isTestPath(referrerFile) {
+	if pathclass.IsTestPath(referrerFile) {
 		return ReasonTestReference
 	}
 	return ReasonLiveReference
-}
-
-// isTestPath reports whether p looks like a test source file.
-func isTestPath(p string) bool {
-	return strings.Contains(p, "_test.") || strings.Contains(p, "/test/") || strings.HasPrefix(p, "test/")
 }
 
 // newlyDead returns the symbols that lose their last live inbound reference when

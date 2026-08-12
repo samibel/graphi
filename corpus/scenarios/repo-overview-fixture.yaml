@@ -1,0 +1,11 @@
+id: repo-overview-fixture
+description: repo_overview summarizes the indexed fixture (totals, tree, languages, central symbols) from the compact aggregates.
+fixture_ref: tier1-fixture-go
+operation:
+  name: repo_overview
+  args: {}
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  max_latency_ms: 2000

@@ -22,7 +22,7 @@ package context
 // A read error on a candidate aborts the whole assembly with that error
 // (fail-closed: never emit a partial/guessed bundle). Callers that want to skip
 // unreadable candidates should pre-filter their candidate list.
-func Assemble(query string, candidates []Candidate, opts Options, reader engineFor) (Bundle, error) {
+func Assemble(query string, candidates []Candidate, opts Options, reader Reader) (Bundle, error) {
 	opts = opts.withDefaults()
 	ranked := rankCandidates(candidates)
 

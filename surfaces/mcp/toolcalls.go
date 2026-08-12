@@ -51,6 +51,13 @@ type callParams struct {
 		Pattern string `json:"pattern"`
 		Limit   *int   `json:"limit"`
 		Config  string `json:"config"`
+		// P0 agent-intelligence arguments (labs): snippet token budget and the
+		// free-text task for symbol_context/task_context, plus the
+		// repo_overview community opt-in. Item caps ride the existing generic
+		// limit argument.
+		TokenBudget *int   `json:"token_budget"`
+		Task        string `json:"task"`
+		Communities bool   `json:"communities"`
 		// EP-012 memory arguments.
 		Op           string   `json:"op"`
 		Scope        string   `json:"scope"`
@@ -217,6 +224,18 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	}
 	if p.Name == ToolStrictQuery {
 		return s.strictQueryCall(ctx, p)
+	}
+	// P0 agent intelligence (labs): these ride the labs client facade —
+	// routing them through the stable port would advertise a labs capability
+	// on the frozen surface.
+	if p.Name == ToolSymbolContext {
+		return s.symbolContextCall(ctx, p)
+	}
+	if p.Name == ToolTaskContext {
+		return s.taskContextCall(ctx, p)
+	}
+	if p.Name == ToolRepoOverview {
+		return s.repoOverviewCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -691,6 +710,61 @@ func (s *Server) explainSymbolCall(ctx context.Context, p callParams) (any, *rpc
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
 	}
 	b, err := s.stableClient().ExplainSymbol(ctx, p.Arguments.Symbol, derefInt(p.Arguments.Limit))
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// symbolContextCall (P0 agent intelligence, labs) returns the unified
+// single-call symbol view in the C1 contract shape through the shared
+// client.SymbolContext composition, so MCP and `graphi symbol-context` emit
+// byte-identical envelopes for the same inputs (ONE assembly, ONE encoder).
+// It calls s.client(), not s.stableClient(): symbol_context is labs.
+func (s *Server) symbolContextCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Symbol == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
+	}
+	b, err := s.client().SymbolContext(ctx, client.SymbolContextParams{
+		Symbol:      p.Arguments.Symbol,
+		Depth:       derefInt(p.Arguments.Depth),
+		MaxItems:    derefInt(p.Arguments.Limit),
+		TokenBudget: derefInt(p.Arguments.TokenBudget),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// taskContextCall (P0 agent intelligence, labs) returns the ranked,
+// token-budgeted task-context bundle in the C1 contract shape through the
+// shared client.TaskContext composition (ONE assembly, ONE encoder — byte
+// parity with `graphi task-context`).
+func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Task == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: task"}
+	}
+	b, err := s.client().TaskContext(ctx, client.TaskContextParams{
+		Task:        p.Arguments.Task,
+		MaxItems:    derefInt(p.Arguments.Limit),
+		TokenBudget: derefInt(p.Arguments.TokenBudget),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// repoOverviewCall (P0 agent intelligence, labs) returns the one-call
+// repository summary in the C1 contract shape through the shared
+// client.RepoOverview composition (ONE assembly, ONE encoder — byte parity
+// with `graphi repo-overview`).
+func (s *Server) repoOverviewCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.client().RepoOverview(ctx, client.RepoOverviewParams{
+		MaxItems:    derefInt(p.Arguments.Limit),
+		Communities: p.Arguments.Communities,
+	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}

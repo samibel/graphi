@@ -2,6 +2,11 @@
 
 > Part of the Token-Savings Ledger & Token-Efficient Context work.
 > Package: `engine/context`
+> Production consumers: the P0 agent-intelligence tools
+> (`engine/agenttools/symbolcontext`, `engine/agenttools/taskctx`) hand their
+> snippet candidates plus a `Reader` (usually the repo-rooted `RootedReader`)
+> to `Assemble` and attach the resulting snippets as `contract.Evidence`
+> entries with exact citations.
 
 This document explains how graphi turns raw search results into compact,
 citation-backed context bundles. It's for contributors working on the

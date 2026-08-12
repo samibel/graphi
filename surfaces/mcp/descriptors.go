@@ -653,6 +653,60 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P0 agent intelligence: symbol_context, the unified single-call symbol
+	// view. It rides the shared engine/agenttools/symbolcontext assembly
+	// through the labs client facade, so CLI and MCP emit byte-identical
+	// envelopes. Read-only annotations hold: bounded graph reads plus local
+	// disk reads for the definition snippet — no indexing, no daemon start,
+	// no network.
+	tools = append(tools, map[string]any{
+		"name":        ToolSymbolContext,
+		"description": "symbol_context: return the unified single-call symbol view — definition site with an optional token-budgeted source snippet, type-hierarchy relations (implementers/implements/overrides/subtypes/supertypes), callers, callees, references, the test files that exercise the symbol (bounded reverse walk), and a change_risk-consistent risk level, every claim cited. Purpose: replace the explain_symbol + callers + callees + references + change_risk round-trips with ONE call when an agent is about to work on a symbol. When to use: the agent has a concrete symbol and wants its full working context in one response. When NOT to use: for 'what should I read first?' (use related_files/agent_brief) or free-text task scoping (use task_context when available). Input shape: symbol reference plus optional depth (test-walk hops, 1-3), limit (item cap), token_budget (snippet tokens; negative disables). Read-only: true. Partial results possible: item cap and walk bounds truncate; limits.next says how to widen.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"symbol":       map[string]any{"type": "string", "description": "symbol reference: qualified id, repo-relative path, or bare name"},
+				"depth":        map[string]any{"type": "integer", "description": "test-walk hop depth 1-3 (default 2)"},
+				"limit":        map[string]any{"type": "integer", "description": "item cap (default 20)"},
+				"token_budget": map[string]any{"type": "integer", "description": "snippet token budget (default 700; negative disables the snippet)"},
+			},
+			"required": []string{"symbol"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	// P0 agent intelligence: task_context, the free-text task scoper. One
+	// call returns a deterministically ranked, token-budgeted context bundle;
+	// the ranking is an integer weight model whose hash is stamped into every
+	// summary (no LLM estimates, no floats). Read-only.
+	tools = append(tools, map[string]any{
+		"name":        ToolTaskContext,
+		"description": "task_context: turn a free-text task description into a ranked, cited, token-budgeted context bundle — primary symbols (seeds), related symbols, callers, callees, nearby tests and configuration files, a related-file roll-up, a change_risk-consistent risk level, and a recommended read order, with source snippets under a hard token budget. Ranking is a deterministic integer weight model (hash stamped in the summary), never an LLM guess. Purpose: answer 'where do I start for this task?' in one call, replacing search + related_files + explain round-trips. When to use: at task start, with the task phrased in a few words. When NOT to use: when you already know the exact symbol (use symbol_context) or need repository orientation (use agent_brief / repo_overview when available). Input shape: task text plus optional limit (item cap) and token_budget (snippet tokens; negative disables). Read-only: true. Partial results possible: bounded reads and the item cap truncate; limits.next says how to widen.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"task":         map[string]any{"type": "string", "description": "free-text task description, or an exact symbol/path"},
+				"limit":        map[string]any{"type": "integer", "description": "item cap (default 40)"},
+				"token_budget": map[string]any{"type": "integer", "description": "snippet token budget (default 1200; negative disables snippets)"},
+			},
+			"required": []string{"task"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	// P0 agent intelligence: repo_overview, the one-call repository summary.
+	// The default call reads only the compact aggregates; `communities` is
+	// the documented opt-in full-graph pass. Read-only.
+	tools = append(tools, map[string]any{
+		"name":        ToolRepoOverview,
+		"description": "repo_overview: return the one-call 'what is this repository?' summary — node/edge/file totals with edge-confidence tiers, a directory tree ranked by symbol count, the language mix, entry-point candidates (go-main probe, meta flags, cmd/ path heuristic), the highest-centrality symbols, test and generated/vendored areas, external boundaries, optional dependency communities, and concrete suggested next calls. Purpose: orient an agent in an unfamiliar repository in one response, right after indexing. When to use: first call in a new repository, or when scoping where a subsystem lives. When NOT to use: for task-specific context (use task_context) or a known symbol (use symbol_context). Input shape: optional limit (item cap) and communities (opt-in full-graph community detection — the only non-aggregate read). Read-only: true. Partial results possible: every section is row-capped and the item cap truncates lowest-value sections first.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit":       map[string]any{"type": "integer", "description": "item cap (default 60)"},
+				"communities": map[string]any{"type": "boolean", "description": "opt into the full-graph community pass (default false)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

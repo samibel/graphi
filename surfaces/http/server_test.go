@@ -112,6 +112,15 @@ func (s *stubClient) RelatedFiles(context.Context, string, string, int) ([]byte,
 func (s *stubClient) ChangeRisk(context.Context, string, string, int) ([]byte, error) {
 	return nil, client.ErrAgentToolsUnavailable
 }
+func (s *stubClient) SymbolContext(context.Context, client.SymbolContextParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
+func (s *stubClient) TaskContext(context.Context, client.TaskContextParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
+func (s *stubClient) RepoOverview(context.Context, client.RepoOverviewParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
 func (s *stubClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }

@@ -76,9 +76,10 @@ func (o Options) withDefaults() Options {
 	return o
 }
 
-// engineFor is the single SourceReader method the assembly depends on. It keeps
-// the engine decoupled from any concrete reader (tests inject a fake; production
-// uses the disk-backed LocalReader).
-type engineFor interface {
+// Reader is the single SourceReader method the assembly depends on. It keeps
+// the engine decoupled from any concrete reader (tests inject a fake;
+// production uses the disk-backed LocalReader or a RootedReader). Exported so
+// other engine packages can hand candidates plus their own reader to Assemble.
+type Reader interface {
 	ReadSpan(path string, want Span) (text string, got Span, err error)
 }

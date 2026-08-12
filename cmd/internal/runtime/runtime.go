@@ -248,7 +248,8 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	asvc := analysis.NewDefaultService(store)
 	rt.Client = client.NewDirect(query.New(store), NewSearchService(store, p.Meta)).
 		WithAnalysis(asvc).
-		WithReview(review.NewService(asvc))
+		WithReview(review.NewService(asvc)).
+		WithRepoRoot(root)
 	return rt, nil
 }
 

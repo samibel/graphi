@@ -106,6 +106,21 @@ var subcommandHelp = map[string]subHelp{
 		"graphi explain-symbol [-db path] [-max-items n] <symbol|path|node-id>",
 		"graphi explain-symbol -db graph.db util.Format",
 	},
+	"symbol-context": {
+		"unified single-call symbol view: definition + snippet, hierarchy, callers/callees/references, covering tests, risk (labs)",
+		"graphi symbol-context [-db path] [-depth 1-3] [-max-items n] [-token-budget n] <symbol|path|node-id>",
+		"graphi symbol-context util.Format",
+	},
+	"task-context": {
+		"free-text task → ranked, cited, token-budgeted context bundle with read order (labs)",
+		"graphi task-context [-db path] [-max-items n] [-token-budget n] <task text>",
+		"graphi task-context \"add validation to createOrder\"",
+	},
+	"repo-overview": {
+		"one-call repository summary: structure, languages, entrypoints, central symbols, tests, boundaries (labs)",
+		"graphi repo-overview [-db path] [-max-items n] [-communities]",
+		"graphi repo-overview -communities",
+	},
 	"related-files": {
 		"ranked, cited read-first file list around a symbol, path, or task",
 		"graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>",
@@ -367,6 +382,9 @@ func printHelp() {
 	fmt.Print("  graphi change-risk <t>      evidence-based local blast-radius estimate\n")
 	fmt.Print("  graphi agent-brief          bounded, cited task-start context packet\n")
 	fmt.Print("\nLabs & tooling (not a stable promise):\n")
+	fmt.Print("  graphi symbol-context <s>   unified single-call symbol view (definition, snippet, tests, risk)\n")
+	fmt.Print("  graphi task-context <text>  free-text task → ranked, token-budgeted context bundle\n")
+	fmt.Print("  graphi repo-overview        one-call repository summary (structure, languages, entrypoints)\n")
 	fmt.Print("  graphi snapshot [<name>]    list or freeze named graph states of this repo\n")
 	fmt.Print("  graphi compare <a> <b>      diff two named graph states ('current' = live graph)\n")
 	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")

@@ -1,0 +1,10 @@
+id: symbol-context-unknown-symbol
+description: symbol_context on an unresolvable reference yields the explicit empty outcome, never a guess.
+fixture_ref: tier1-fixture-go
+operation:
+  name: symbol_context
+  args:
+    symbol: NoSuchSymbolAnywhereZZZ
+expect:
+  outcome: empty
+  max_latency_ms: 2000

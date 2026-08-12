@@ -641,6 +641,101 @@ func RunExplainSymbol(ctx context.Context, c client.AgentContextPort, args []str
 	return nil
 }
 
+// RunSymbolContext runs the symbol_context agent tool (P0 agent intelligence,
+// labs) and prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	symbol-context [-depth n] [-max-items n] [-token-budget n] <symbol|path|node-id>
+func RunSymbolContext(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("symbol-context", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	depth := fs.Int("depth", 0, "test-walk hop depth 1-3 (0 = default 2)")
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	tokenBudget := fs.Int("token-budget", 0, "snippet token budget (0 = default; negative disables the snippet)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 1 {
+		return fmt.Errorf("cli: symbol-context needs exactly one symbol/path/node-id argument")
+	}
+	b, err := c.SymbolContext(ctx, client.SymbolContextParams{
+		Symbol:      fs.Arg(0),
+		Depth:       *depth,
+		MaxItems:    *maxItems,
+		TokenBudget: *tokenBudget,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunTaskContext runs the task_context agent tool (P0 agent intelligence,
+// labs) and prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	task-context [-max-items n] [-token-budget n] <task text>
+func RunTaskContext(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("task-context", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	tokenBudget := fs.Int("token-budget", 0, "snippet token budget (0 = default; negative disables snippets)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() == 0 {
+		return fmt.Errorf("cli: task-context needs a task description argument")
+	}
+	task := strings.Join(fs.Args(), " ")
+	b, err := c.TaskContext(ctx, client.TaskContextParams{
+		Task:        task,
+		MaxItems:    *maxItems,
+		TokenBudget: *tokenBudget,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunRepoOverview runs the repo_overview agent tool (P0 agent intelligence,
+// labs) and prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	repo-overview [-max-items n] [-communities]
+func RunRepoOverview(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("repo-overview", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	communities := fs.Bool("communities", false, "opt into the full-graph community pass")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 0 {
+		return fmt.Errorf("cli: repo-overview takes no positional arguments")
+	}
+	b, err := c.RepoOverview(ctx, client.RepoOverviewParams{
+		MaxItems:    *maxItems,
+		Communities: *communities,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunRelatedFiles runs the related_files agent tool (EP-020) and prints the
 // canonical contract JSON (parity with MCP tools/call).
 //

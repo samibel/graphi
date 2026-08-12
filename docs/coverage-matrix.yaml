@@ -567,6 +567,24 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P1 strict query (PRD v1.0 §8 Phase 9): runs a Stable structural query unchanged, then withholds result edges below `minimum_tier` (confirmed|derived|heuristic) and reports the withheld count; a result emptied by the filter always carries an explicit limitation, so filtered emptiness never reads as proven emptiness. Optional fail-closed policy preflight blocks before the query runs. Byte-parity with `graphi query-strict` through the single client.ComposeStrictQuery composition; operations closed to the Stable structural set; Labs-only."
+  - id: symbol_context
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: unified single-call symbol view — definition site with optional token-budgeted source snippet, type-hierarchy relations, callers/callees/references, covering tests via a bounded reverse walk (per-node edge limit, global node budget, depth clamp — never a whole-graph scan), and a change_risk-consistent risk level; byte-parity with `graphi symbol-context` through the single engine/agenttools/symbolcontext assembly; Labs-only pending a promotion decision."
+  - id: task_context
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: free-text task → deterministically ranked, cited, token-budgeted context bundle (primary seeds, related symbols, callers/callees, nearby tests and configs, related-file roll-up, change_risk-consistent risk, recommended read order); ranking is a fixed integer weight model whose hash is stamped in every summary — no floats, no LLM estimates; byte-parity with `graphi task-context` through the single engine/agenttools/taskctx assembly; Labs-only."
+  - id: repo_overview
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: one-call repository summary — totals with edge-confidence tiers, directory tree, language mix, entry-point candidates, high-centrality symbols, test and generated/vendored areas, external boundaries, suggested next calls; the default call reads only the compact BriefStats/TrustStats aggregates, `communities` is the documented opt-in full-graph pass; byte-parity with `graphi repo-overview` through the single engine/agenttools/overview assembly; Labs-only."
   - id: cli
     category: surface
     status: shipped
@@ -708,6 +726,24 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P1 strict-query prototype (PRD §28 option A): runs the unchanged stable query, then excludes result edges below -min-tier and wraps the canonical result in an envelope carrying the exclusion count — filtered emptiness always carries an explicit limitation, never bare emptiness; optional fail-closed -policy preflight (FAIL/UNKNOWN blocks the query with the trust exit code); no tier is ever rewritten, stable query semantics untouched"
+  - id: symbol-context
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: unified single-call symbol view (definition + snippet, hierarchy, callers/callees/references, covering tests, risk); byte-parity with the symbol_context MCP tool"
+  - id: task-context
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: free-text task → ranked, cited, token-budgeted context bundle with recommended read order; byte-parity with the task_context MCP tool"
+  - id: repo-overview
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: one-call repository summary (structure, languages, entrypoints, central symbols, tests, boundaries, optional communities); byte-parity with the repo_overview MCP tool"
   - id: snapshot
     category: cli-subcommand
     status: shipped

@@ -294,10 +294,12 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 	writeEnvelope(w, raw)
 }
 
-// agentToolNames are the EP-020 agent tools served on the /analyze/{name}
-// route and advertised in /contract. They dispatch through the dedicated
-// client seams, not the generic analysis service.
-var agentToolNames = []string{"agent_brief", "change_risk", "explain_symbol", "related_files"}
+// agentToolNames are the EP-020 agent tools plus the P0 agent-intelligence
+// labs tools served on the /analyze/{name} route and advertised in /contract.
+// They dispatch through the dedicated client seams, not the generic analysis
+// service. The labs entries are auto-403'd by the capability guard unless the
+// server runs with GRAPHI_LABS=1 (isLabsCapability keys off StableOperations).
+var agentToolNames = []string{"agent_brief", "change_risk", "explain_symbol", "related_files", "repo_overview", "symbol_context", "task_context"}
 
 // handleAgentTool serves the EP-020 agent tools on the shared /analyze route.
 // It returns false when name is not an agent tool so the generic analyzer
@@ -351,6 +353,51 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 			topic = q.Get("symbol")
 		}
 		raw, _, err = s.client.Brief(r.Context(), topic)
+	case "symbol_context":
+		symbol := q.Get("symbol")
+		if symbol == "" {
+			writeErr(w, http.StatusBadRequest, "bad_request", "symbol required")
+			return true
+		}
+		p := client.SymbolContextParams{Symbol: symbol, MaxItems: maxItems}
+		if d := q.Get("depth"); d != "" {
+			v, err := strconv.Atoi(d)
+			if err != nil || v < 0 {
+				writeErr(w, http.StatusBadRequest, "bad_request", "bad depth")
+				return true
+			}
+			p.Depth = v
+		}
+		if tb := q.Get("token-budget"); tb != "" {
+			v, err := strconv.Atoi(tb)
+			if err != nil {
+				writeErr(w, http.StatusBadRequest, "bad_request", "bad token-budget")
+				return true
+			}
+			p.TokenBudget = v
+		}
+		raw, err = s.client.SymbolContext(r.Context(), p)
+	case "task_context":
+		task := q.Get("task")
+		if task == "" {
+			writeErr(w, http.StatusBadRequest, "bad_request", "task required")
+			return true
+		}
+		p := client.TaskContextParams{Task: task, MaxItems: maxItems}
+		if tb := q.Get("token-budget"); tb != "" {
+			v, err := strconv.Atoi(tb)
+			if err != nil {
+				writeErr(w, http.StatusBadRequest, "bad_request", "bad token-budget")
+				return true
+			}
+			p.TokenBudget = v
+		}
+		raw, err = s.client.TaskContext(r.Context(), p)
+	case "repo_overview":
+		raw, err = s.client.RepoOverview(r.Context(), client.RepoOverviewParams{
+			MaxItems:    maxItems,
+			Communities: q.Get("communities") == "1" || q.Get("communities") == "true",
+		})
 	default:
 		return false
 	}

@@ -13,10 +13,14 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/overview"
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/risk"
+	"github.com/samibel/graphi/engine/agenttools/symbolcontext"
+	"github.com/samibel/graphi/engine/agenttools/taskctx"
 	"github.com/samibel/graphi/engine/analysis"
+	enginecontext "github.com/samibel/graphi/engine/context"
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/query"
 )
@@ -302,6 +306,29 @@ func (e *FixtureEngine) InvokeContract(ctx context.Context, operation string, ar
 			RepoRoot:    e.RepoRoot,
 			MaxItems:    intArg(args, "max_items", 0),
 			Deps:        e.Deps,
+		})
+	case OpSymbolContext:
+		return symbolcontext.Context(ctx, symbolcontext.Params{
+			Ref:         firstArg(args, "symbol", "ref"),
+			Depth:       intArg(args, "depth", 0),
+			MaxItems:    intArg(args, "max_items", 0),
+			TokenBudget: intArg(args, "token_budget", 0),
+			Deps:        e.Deps,
+			Reader:      enginecontext.NewRootedReader(e.RepoRoot),
+		})
+	case OpTaskContext:
+		return taskctx.Assemble(ctx, taskctx.Params{
+			Task:        firstArg(args, "task", "symbol"),
+			MaxItems:    intArg(args, "max_items", 0),
+			TokenBudget: intArg(args, "token_budget", 0),
+			Deps:        e.Deps,
+			Reader:      enginecontext.NewRootedReader(e.RepoRoot),
+		})
+	case OpRepoOverview:
+		return overview.Assemble(ctx, overview.Params{
+			Deps:        e.Deps,
+			MaxItems:    intArg(args, "max_items", 0),
+			Communities: args["communities"] == "true" || args["communities"] == "1",
 		})
 	default:
 		return nil, fmt.Errorf("scenario: %q is not an agent-tool operation", operation)

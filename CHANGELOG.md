@@ -28,6 +28,47 @@ file:
 
 ### Added
 
+- **[labs] `symbol_context` — the unified single-call symbol view** (P0 agent
+  intelligence). One call returns the definition site with an optional
+  token-budgeted source snippet, the type-hierarchy relations, callers,
+  callees, references, the test files that exercise the symbol (bounded
+  reverse walk: per-node edge limit, global node budget, depth clamp — never
+  a whole-graph scan), and a `change_risk`-consistent risk level, every claim
+  cited. CLI `graphi symbol-context`, MCP `symbol_context` (Labs catalog,
+  `graphi mcp -labs`), HTTP `/analyze/symbol_context` (403 without
+  `GRAPHI_LABS=1`). Byte-parity across surfaces through the single
+  `engine/agenttools/symbolcontext` assembly.
+- **[labs] `task_context` — free-text task → ranked context bundle** (P0
+  agent intelligence). One call turns a task phrase into primary seeds,
+  related symbols, callers/callees, nearby tests and configuration files, a
+  related-file roll-up, a risk level, a recommended read order, and source
+  snippets under a hard token budget. Ranking is a fixed **integer** weight
+  model whose sha256 hash is stamped into every summary — deterministic by
+  construction, no floats, no LLM estimates. Multi-word tasks fall back to a
+  deterministic token search instead of stalling on the quoted FTS
+  expression. CLI `graphi task-context`, MCP `task_context`, HTTP
+  `/analyze/task_context`.
+- **[labs] `repo_overview` — the one-call repository summary** (P0 agent
+  intelligence). Totals with edge-confidence tiers, a directory tree ranked
+  by symbol count, the language mix, entry-point candidates (each reason
+  names its signal), the highest-centrality symbols, test and
+  generated/vendored areas, external boundaries, and concrete suggested next
+  calls. The default call reads only the compact `BriefStats`/`TrustStats`
+  aggregates; `-communities` is the documented opt-in full-graph pass. CLI
+  `graphi repo-overview`, MCP `repo_overview`, HTTP `/analyze/repo_overview`.
+- **`contract.Evidence.Snippet`** — an additive, `omitempty` field carrying
+  token-budgeted source text whose citation is the evidence's
+  `path`/`line`(+`span`). The frozen stable operations never set it; the
+  characterization suites pin that their serialized bytes are unchanged.
+- **`engine/classify`** — the shared path-classification leaf (test,
+  generated/vendored, config, language-by-extension), unifying the previously
+  duplicated heuristics in triage, safe-delete and diagnostic suppression.
+  `change_risk`'s private test-path predicate is deliberately not migrated
+  (stable-output freeze); unification there is a recorded follow-up.
+- The previously unwired `engine/context` token-budget assembler gained its
+  first production consumers (snippets in `symbol_context`/`task_context`),
+  plus an exported `Reader` seam, a repo-rooted reader, and `FilterReadable`.
+
 - **`graphi mcp -root <repo>` and the `GRAPHI_ROOT` environment variable** (the
   flag wins) pin the MCP session's repository root explicitly — for MCP clients
   that launch the server outside the repository (cwd=`$HOME` is common) and

@@ -411,6 +411,25 @@ type Client interface {
 	// or unified diff. At least one of target/diff must be non-empty. Read-only.
 	ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error)
 
+	// SymbolContext runs the symbol_context agent tool (labs, P0 agent
+	// intelligence): the unified single-call symbol view — definition
+	// (optionally with a token-budgeted source snippet), type hierarchy,
+	// callers/callees/references, covering tests via a bounded reverse walk,
+	// and a change_risk-consistent risk level. Read-only. Remote clients
+	// return ErrAgentIntelUnavailable until an RPC is added.
+	SymbolContext(ctx context.Context, p SymbolContextParams) ([]byte, error)
+
+	// TaskContext runs the task_context agent tool (labs, P0 agent
+	// intelligence): free-text task → deterministically ranked, token-budgeted
+	// context bundle (primary/related symbols, callers/callees, tests,
+	// configs, related files, risk, read order). Read-only.
+	TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error)
+
+	// RepoOverview runs the repo_overview agent tool (labs, P0 agent
+	// intelligence): the one-call "what is this repository" summary derived
+	// from the compact graph aggregates. Read-only.
+	RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error)
+
 	// Diagnose runs the engine diagnostics (SW-091) over the graph and returns the
 	// canonical serialized diagnostic.Result bytes via diagnostic.Marshal — the
 	// single serializer every surface uses (byte-identical parity, SW-094). kinds
@@ -575,3 +594,35 @@ var ErrTrustUnavailable = errors.New("client: trust-report service unavailable")
 // "unavailable" outcome when no graph services are wired); remote clients
 // return this sentinel until an RPC is added.
 var ErrAgentToolsUnavailable = errors.New("client: agent tools unavailable")
+
+// ErrAgentIntelUnavailable is returned when a Client cannot reach the labs
+// agent-intelligence tools (symbol_context / task_context / repo_overview) on
+// its transport. The in-process Direct client always serves them (degrading to
+// the contract's "unavailable" outcome when no graph services are wired);
+// remote clients return this sentinel until an RPC is added.
+var ErrAgentIntelUnavailable = errors.New("client: agent intelligence tools unavailable")
+
+// SymbolContextParams carries the symbol_context inputs. Zero values select
+// the engine defaults (depth 2, token budget 700, item cap 20).
+type SymbolContextParams struct {
+	Symbol      string
+	Depth       int
+	MaxItems    int
+	TokenBudget int
+}
+
+// TaskContextParams carries the task_context inputs. Zero values select the
+// engine defaults (token budget 1200, item cap 40).
+type TaskContextParams struct {
+	Task        string
+	MaxItems    int
+	TokenBudget int
+}
+
+// RepoOverviewParams carries the repo_overview inputs. Communities opts into
+// the documented full-graph community pass; the default call stays on the
+// compact aggregates.
+type RepoOverviewParams struct {
+	MaxItems    int
+	Communities bool
+}
