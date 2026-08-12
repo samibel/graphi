@@ -409,10 +409,18 @@ func (h *HTTP) SymbolContext(ctx context.Context, p SymbolContextParams) ([]byte
 	return h.doGET(ctx, "/analyze/symbol_context", q)
 }
 
-// TaskContext returns ErrAgentIntelUnavailable until the task_context step of
-// the P0 epic wires its endpoint.
+// TaskContext rides the read-only /analyze/task_context endpoint (labs agent
+// intelligence; 403 unless the server runs with GRAPHI_LABS=1).
 func (h *HTTP) TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error) {
-	return nil, ErrAgentIntelUnavailable
+	q := url.Values{}
+	q.Set("task", p.Task)
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	if p.TokenBudget != 0 {
+		q.Set("token-budget", strconv.Itoa(p.TokenBudget))
+	}
+	return h.doGET(ctx, "/analyze/task_context", q)
 }
 
 // RepoOverview returns ErrAgentIntelUnavailable until the repo_overview step

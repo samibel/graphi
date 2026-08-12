@@ -61,6 +61,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"suggest_reviewers",
 		"supertypes",
 		"symbol_context",
+		"task_context",
 		"triage_prs",
 		"undo",
 	}

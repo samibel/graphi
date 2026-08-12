@@ -51,10 +51,11 @@ type callParams struct {
 		Pattern string `json:"pattern"`
 		Limit   *int   `json:"limit"`
 		Config  string `json:"config"`
-		// P0 agent-intelligence arguments (labs): snippet token budget for
-		// symbol_context/task_context. Item caps ride the existing generic
-		// limit argument.
-		TokenBudget *int `json:"token_budget"`
+		// P0 agent-intelligence arguments (labs): snippet token budget and the
+		// free-text task for symbol_context/task_context. Item caps ride the
+		// existing generic limit argument.
+		TokenBudget *int   `json:"token_budget"`
+		Task        string `json:"task"`
 		// EP-012 memory arguments.
 		Op           string   `json:"op"`
 		Scope        string   `json:"scope"`
@@ -222,11 +223,14 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolStrictQuery {
 		return s.strictQueryCall(ctx, p)
 	}
-	// P0 agent intelligence (labs): symbol_context rides the labs client
-	// facade — routing it through the stable port would advertise a labs
-	// capability on the frozen surface.
+	// P0 agent intelligence (labs): these ride the labs client facade —
+	// routing them through the stable port would advertise a labs capability
+	// on the frozen surface.
 	if p.Name == ToolSymbolContext {
 		return s.symbolContextCall(ctx, p)
+	}
+	if p.Name == ToolTaskContext {
+		return s.taskContextCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -719,6 +723,25 @@ func (s *Server) symbolContextCall(ctx context.Context, p callParams) (any, *rpc
 	b, err := s.client().SymbolContext(ctx, client.SymbolContextParams{
 		Symbol:      p.Arguments.Symbol,
 		Depth:       derefInt(p.Arguments.Depth),
+		MaxItems:    derefInt(p.Arguments.Limit),
+		TokenBudget: derefInt(p.Arguments.TokenBudget),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// taskContextCall (P0 agent intelligence, labs) returns the ranked,
+// token-budgeted task-context bundle in the C1 contract shape through the
+// shared client.TaskContext composition (ONE assembly, ONE encoder — byte
+// parity with `graphi task-context`).
+func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Task == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: task"}
+	}
+	b, err := s.client().TaskContext(ctx, client.TaskContextParams{
+		Task:        p.Arguments.Task,
 		MaxItems:    derefInt(p.Arguments.Limit),
 		TokenBudget: derefInt(p.Arguments.TokenBudget),
 	})

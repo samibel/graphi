@@ -674,6 +674,38 @@ func RunSymbolContext(ctx context.Context, c client.AgentIntelPort, args []strin
 	return nil
 }
 
+// RunTaskContext runs the task_context agent tool (P0 agent intelligence,
+// labs) and prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	task-context [-max-items n] [-token-budget n] <task text>
+func RunTaskContext(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("task-context", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	tokenBudget := fs.Int("token-budget", 0, "snippet token budget (0 = default; negative disables snippets)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() == 0 {
+		return fmt.Errorf("cli: task-context needs a task description argument")
+	}
+	task := strings.Join(fs.Args(), " ")
+	b, err := c.TaskContext(ctx, client.TaskContextParams{
+		Task:        task,
+		MaxItems:    *maxItems,
+		TokenBudget: *tokenBudget,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunRelatedFiles runs the related_files agent tool (EP-020) and prints the
 // canonical contract JSON (parity with MCP tools/call).
 //

@@ -115,6 +115,11 @@ const (
 	// references, covering tests, risk level). Labs-only; the frozen Stable-12
 	// set is untouched.
 	ToolSymbolContext = "symbol_context"
+
+	// P0 agent intelligence: free-text task → deterministically ranked,
+	// token-budgeted context bundle (integer weight model, hash-stamped).
+	// Labs-only.
+	ToolTaskContext = "task_context"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -157,6 +162,7 @@ var singletonToolNames = []string{
 	ToolGraphHealth,
 	ToolStrictQuery,
 	ToolSymbolContext,
+	ToolTaskContext,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

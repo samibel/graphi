@@ -573,6 +573,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P0 agent intelligence: unified single-call symbol view — definition site with optional token-budgeted source snippet, type-hierarchy relations, callers/callees/references, covering tests via a bounded reverse walk (per-node edge limit, global node budget, depth clamp — never a whole-graph scan), and a change_risk-consistent risk level; byte-parity with `graphi symbol-context` through the single engine/agenttools/symbolcontext assembly; Labs-only pending a promotion decision."
+  - id: task_context
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: free-text task → deterministically ranked, cited, token-budgeted context bundle (primary seeds, related symbols, callers/callees, nearby tests and configs, related-file roll-up, change_risk-consistent risk, recommended read order); ranking is a fixed integer weight model whose hash is stamped in every summary — no floats, no LLM estimates; byte-parity with `graphi task-context` through the single engine/agenttools/taskctx assembly; Labs-only."
   - id: cli
     category: surface
     status: shipped
@@ -720,6 +726,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P0 agent intelligence: unified single-call symbol view (definition + snippet, hierarchy, callers/callees/references, covering tests, risk); byte-parity with the symbol_context MCP tool"
+  - id: task-context
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: free-text task → ranked, cited, token-budgeted context bundle with recommended read order; byte-parity with the task_context MCP tool"
   - id: snapshot
     category: cli-subcommand
     status: shipped

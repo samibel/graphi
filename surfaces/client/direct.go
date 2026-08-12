@@ -19,6 +19,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/risk"
 	"github.com/samibel/graphi/engine/agenttools/symbolcontext"
+	"github.com/samibel/graphi/engine/agenttools/taskctx"
 	"github.com/samibel/graphi/engine/analysis"
 	enginecontext "github.com/samibel/graphi/engine/context"
 	"github.com/samibel/graphi/engine/diagnostic"
@@ -943,10 +944,20 @@ func (d *Direct) SymbolContext(ctx context.Context, p SymbolContextParams) ([]by
 	return contract.Serialize(res)
 }
 
-// TaskContext implements Client (labs agent intelligence). Wired in the
-// task_context step of the P0 epic.
+// TaskContext implements Client via the shared engine/agenttools/taskctx
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
 func (d *Direct) TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error) {
-	return nil, ErrAgentIntelUnavailable
+	res, err := taskctx.Assemble(ctx, taskctx.Params{
+		Task:        p.Task,
+		TokenBudget: p.TokenBudget,
+		MaxItems:    p.MaxItems,
+		Deps:        d.agentDeps(),
+		Reader:      d.snippetReader(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
 }
 
 // RepoOverview implements Client (labs agent intelligence). Wired in the

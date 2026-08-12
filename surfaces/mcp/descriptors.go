@@ -674,6 +674,24 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P0 agent intelligence: task_context, the free-text task scoper. One
+	// call returns a deterministically ranked, token-budgeted context bundle;
+	// the ranking is an integer weight model whose hash is stamped into every
+	// summary (no LLM estimates, no floats). Read-only.
+	tools = append(tools, map[string]any{
+		"name":        ToolTaskContext,
+		"description": "task_context: turn a free-text task description into a ranked, cited, token-budgeted context bundle — primary symbols (seeds), related symbols, callers, callees, nearby tests and configuration files, a related-file roll-up, a change_risk-consistent risk level, and a recommended read order, with source snippets under a hard token budget. Ranking is a deterministic integer weight model (hash stamped in the summary), never an LLM guess. Purpose: answer 'where do I start for this task?' in one call, replacing search + related_files + explain round-trips. When to use: at task start, with the task phrased in a few words. When NOT to use: when you already know the exact symbol (use symbol_context) or need repository orientation (use agent_brief / repo_overview when available). Input shape: task text plus optional limit (item cap) and token_budget (snippet tokens; negative disables). Read-only: true. Partial results possible: bounded reads and the item cap truncate; limits.next says how to widen.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"task":         map[string]any{"type": "string", "description": "free-text task description, or an exact symbol/path"},
+				"limit":        map[string]any{"type": "integer", "description": "item cap (default 40)"},
+				"token_budget": map[string]any{"type": "integer", "description": "snippet token budget (default 1200; negative disables snippets)"},
+			},
+			"required": []string{"task"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

@@ -299,7 +299,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 // They dispatch through the dedicated client seams, not the generic analysis
 // service. The labs entries are auto-403'd by the capability guard unless the
 // server runs with GRAPHI_LABS=1 (isLabsCapability keys off StableOperations).
-var agentToolNames = []string{"agent_brief", "change_risk", "explain_symbol", "related_files", "symbol_context"}
+var agentToolNames = []string{"agent_brief", "change_risk", "explain_symbol", "related_files", "symbol_context", "task_context"}
 
 // handleAgentTool serves the EP-020 agent tools on the shared /analyze route.
 // It returns false when name is not an agent tool so the generic analyzer
@@ -377,6 +377,22 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 			p.TokenBudget = v
 		}
 		raw, err = s.client.SymbolContext(r.Context(), p)
+	case "task_context":
+		task := q.Get("task")
+		if task == "" {
+			writeErr(w, http.StatusBadRequest, "bad_request", "task required")
+			return true
+		}
+		p := client.TaskContextParams{Task: task, MaxItems: maxItems}
+		if tb := q.Get("token-budget"); tb != "" {
+			v, err := strconv.Atoi(tb)
+			if err != nil {
+				writeErr(w, http.StatusBadRequest, "bad_request", "bad token-budget")
+				return true
+			}
+			p.TokenBudget = v
+		}
+		raw, err = s.client.TaskContext(r.Context(), p)
 	default:
 		return false
 	}
