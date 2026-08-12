@@ -28,6 +28,29 @@ file:
 
 ### Added
 
+- **[labs] `hotspots` — churn × dependency-centrality file ranking** (P2 git
+  intelligence). One call ranks the files that change constantly AND that the
+  graph depends on — `commits-in-window × (1 + edge endpoints)`, integer
+  breakdown in every row — with single-author bus-factor warnings for the
+  ranked hotspots and a concrete next call. CLI `graphi hotspots
+  [-max-commits n]`, MCP `hotspots` (labs catalog), HTTP `/analyze/hotspots`.
+  Without git history the tool returns a typed unavailable outcome.
+- **[labs] `change_impact` gained a co-change section** (P2 git
+  intelligence): files that historically change together with the changed
+  files but are NOT in this change — "`B` usually changes with `A`
+  (N co-commits) — not in this change" — as cited items plus a reason line.
+  Absent without a git provider, so provider-less output is unchanged.
+- **`surfaces/gitlog` — the production git-history provider.** The
+  `githistory.GitProvider` seam existed since SW-032 but was only ever wired
+  with nil; every history consumer silently returned empty. The new provider
+  reads bounded local history (`git log --name-only`, max-commits/max-age
+  window) at the surface boundary — the engine stays exec-free — and the
+  session composition root now injects it into the analysis service
+  (**`analyze_githistory`, `suggest_reviewers`, and `analyze_pr_signals`
+  produce real churn/co-change/bus-factor/reviewer signals for the first
+  time**) and into the labs agent-intelligence tools. Attach mode (`-db`)
+  stays provider-less and degrades gracefully as before.
+
 - **[labs] `test_impact` — which tests must run for a change** (P1 test
   intelligence). Diff or target in, four evidence-cited buckets out:
   `must_run` (a direct call edge at confirmed/derived tier proves the test

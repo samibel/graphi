@@ -167,6 +167,16 @@ func newDefaultSignalSource() defaultSignalSource {
 	}
 }
 
+// newDefaultSignalSourceWithProvider is newDefaultSignalSource with a real
+// git-history provider, so churn-derived surprise signals are produced.
+func newDefaultSignalSourceWithProvider(p githistory.GitProvider) defaultSignalSource {
+	return defaultSignalSource{
+		metrics: metricsAnalyzer{},
+		pdg:     pdg.New(pdg.DefaultConfig()),
+		hist:    githistory.New(p, githistory.Config{}),
+	}
+}
+
 func (s defaultSignalSource) Metrics(ctx context.Context, r query.Reader) ([]NodeScore, error) {
 	a, err := s.metrics.Analyze(ctx, r, Params{})
 	if err != nil {

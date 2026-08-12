@@ -471,6 +471,19 @@ func (h *HTTP) ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, 
 	return h.doGET(ctx, "/analyze/change_impact", q)
 }
 
+// Hotspots rides the read-only /analyze/hotspots endpoint (labs; 403 unless
+// the server runs with GRAPHI_LABS=1).
+func (h *HTTP) Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error) {
+	q := url.Values{}
+	if p.MaxCommits > 0 {
+		q.Set("max-commits", strconv.Itoa(p.MaxCommits))
+	}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	return h.doGET(ctx, "/analyze/hotspots", q)
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
 // is added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (h *HTTP) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {

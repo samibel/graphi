@@ -348,6 +348,13 @@ func (c *DaemonClient) ChangeImpact(ctx context.Context, p client.ChangeImpactPa
 	return nil, client.ErrAgentIntelUnavailable
 }
 
+// Hotspots implements client.Client. Returns ErrAgentIntelUnavailable until a
+// daemon RPC is added.
+func (c *DaemonClient) Hotspots(ctx context.Context, p client.HotspotsParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {

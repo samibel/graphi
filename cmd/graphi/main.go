@@ -91,6 +91,8 @@ func main() {
 		os.Exit(runAgentTool(os.Args[2:], "test-impact"))
 	case "change-impact":
 		os.Exit(runAgentTool(os.Args[2:], "change-impact"))
+	case "hotspots":
+		os.Exit(runAgentTool(os.Args[2:], "hotspots"))
 	case "related-files":
 		os.Exit(runAgentTool(os.Args[2:], "related-files"))
 	case "change-risk":

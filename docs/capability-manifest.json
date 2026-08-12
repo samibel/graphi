@@ -211,7 +211,7 @@
       "category": "cli-subcommand",
       "status": "shipped",
       "tier": "labs",
-      "note": "P1 change intelligence (Change Risk 2.0): changed symbols, public API, dependents, covering tests, reasons, risk for a target or a piped `git diff` range; byte-parity with the change_impact MCP tool"
+      "note": "P1 change intelligence (Change Risk 2.0): changed symbols, public API, dependents, covering tests, co-change partners, reasons, risk for a target or a piped `git diff` range; byte-parity with the change_impact MCP tool"
     },
     {
       "id": "change-risk",
@@ -313,6 +313,13 @@
       "status": "shipped",
       "tier": "labs",
       "note": "print the help blurb"
+    },
+    {
+      "id": "hotspots",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 git intelligence: churn × dependency-centrality file ranking with bus-factor warnings over the session repository's bounded git history; byte-parity with the hotspots MCP tool"
     },
     {
       "id": "http",
@@ -708,7 +715,7 @@
       "category": "mcp-tool",
       "status": "shipped",
       "tier": "labs",
-      "note": "P1 change intelligence (Change Risk 2.0): changed symbols, public-API subset, direct dependents with evidence, bounded transitive closure, covering tests via engine/testintel, config files in the diff, explicit reasons, and a risk level (change_risk thresholds + one-step public-API escalation); confidence derived from consumed edge tiers, never invented; the frozen-stable change_risk operation keeps its bytes; byte-parity with `graphi change-impact`; Labs-only."
+      "note": "P1 change intelligence (Change Risk 2.0): changed symbols, public-API subset, direct dependents with evidence, bounded transitive closure, covering tests via engine/testintel, co-change partners from bounded git history ('B usually changes with A — not in this change'), config files in the diff, explicit reasons, and a risk level (change_risk thresholds + one-step public-API escalation); confidence derived from consumed edge tiers, never invented; the frozen-stable change_risk operation keeps its bytes; byte-parity with `graphi change-impact`; Labs-only."
     },
     {
       "id": "change_risk",
@@ -788,6 +795,13 @@
       "status": "shipped",
       "tier": "labs",
       "note": "P1 trust surface (PRD §17): canonical contract-§2 trust-report document (snapshot state, freshness facts, coverage, edge confidence tiers, resolution gaps, boundaries, optional exploratory-v1|review-v1|automated-change-v1 policy verdict) for repository or target scope; byte-parity with `graphi trust-report --json` through the single client.TrustReport composition; read-only fail-closed observer (missing evidence reads UNVERIFIED/UNAVAILABLE, never PASS); Labs-only pending a promotion decision."
+    },
+    {
+      "id": "hotspots",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 git intelligence: churn × dependency-centrality file ranking (commits-in-window × (1 + graph edge endpoints), integer breakdown per row) with single-author bus-factor warnings for the ranked hotspots; history via the surface-boundary bounded `git log` provider (surfaces/gitlog — the engine stays exec-free), centrality via the compact BriefStats aggregate; typed unavailable without a git provider; byte-parity with `graphi hotspots`; Labs-only."
     },
     {
       "id": "impact",

@@ -740,6 +740,20 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P2 git intelligence: hotspots. History comes from the surface-boundary
+	// bounded `git log` provider; the engine stays exec-free. Read-only.
+	tools = append(tools, map[string]any{
+		"name":        ToolHotspots,
+		"description": "hotspots: rank the repository's files by churn × dependency centrality — 'this file changed 12 times in the window AND has 43 graph edge endpoints' — with per-file breakdowns, single-author bus-factor warnings for the ranked hotspots, and a concrete next call. A far better where-to-refactor signal than cyclomatic complexity alone. Purpose: answer 'where does this repository hurt?' in one call. When to use: planning refactors, onboarding into maintenance, prioritizing review attention. When NOT to use: for a specific change's risk (change_impact) or test selection (test_impact). Input shape: optional max_commits (history window bound, default 1000) and limit (item cap). Read-only: true — one bounded local `git log` plus compact graph aggregates; no network. Partial results possible: the window is bounded by max-commits/max-age; without git history the tool returns a typed unavailable outcome.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"max_commits": map[string]any{"type": "integer", "description": "history window bound (default 1000)"},
+				"limit":       map[string]any{"type": "integer", "description": "item cap (default 20)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

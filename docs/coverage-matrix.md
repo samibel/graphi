@@ -23,9 +23,9 @@ row is tagged stable or one is dropped.
 
 **The 12 stable operations (frozen):** `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `impact`, `neighborhood`, `references`, `related_files`, `search`.
 
-**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **50-tool** union (39 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
+**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **51-tool** union (40 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **160**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **162**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -82,7 +82,7 @@ Total capabilities: **160**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage-prs` | 🧪 labs | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | 🧪 labs | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (50)
+## MCP tools (51)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -98,7 +98,7 @@ Total capabilities: **160**. See [`architecture-plan.md`](architecture-plan.md) 
 | `analyze_taint` | 🧪 labs | ✅ shipped | EP-005 | dedicated tool for the taint analyzer. |
 | `callees` | 🟢 stable | ✅ shipped | EP-001 | structural query: callees. |
 | `callers` | 🟢 stable | ✅ shipped | EP-001 | structural query: callers. |
-| `change_impact` | 🧪 labs | ✅ shipped | - | P1 change intelligence (Change Risk 2.0): changed symbols, public-API subset, direct dependents with evidence, bounded transitive closure, covering tests via engine/testintel, config files in the diff, explicit reasons, and a risk level (change_risk thresholds + one-step public-API escalation); confidence derived from consumed edge tiers, never invented; the frozen-stable change_risk operation keeps its bytes; byte-parity with `graphi change-impact`; Labs-only. |
+| `change_impact` | 🧪 labs | ✅ shipped | - | P1 change intelligence (Change Risk 2.0): changed symbols, public-API subset, direct dependents with evidence, bounded transitive closure, covering tests via engine/testintel, co-change partners from bounded git history ('B usually changes with A — not in this change'), config files in the diff, explicit reasons, and a risk level (change_risk thresholds + one-step public-API escalation); confidence derived from consumed edge tiers, never invented; the frozen-stable change_risk operation keeps its bytes; byte-parity with `graphi change-impact`; Labs-only. |
 | `change_risk` | 🟢 stable | ✅ shipped | EP-020 | SW-117: evidence-based low/medium/high/unknown blast-radius estimate from fan-in and dependent files, with diff targeting; CLI parity via `graphi change-risk`. |
 | `compare_branches` | 🧪 labs | ✅ shipped | EP-018 | SW-107: graph-level structured diff of two branch states keyed by canonical NodeId — added/removed/changed/moved entities + edges, incl. detected signature/contract change (zero engine egress; states materialized above the surface boundary). |
 | `compound` | 🧪 labs | ✅ shipped | EP-011 | compound / Cypher-style graph query composing traversals+filters (G1). |
@@ -109,6 +109,7 @@ Total capabilities: **160**. See [`architecture-plan.md`](architecture-plan.md) 
 | `explain_symbol` | 🟢 stable | ✅ shipped | EP-020 | SW-115: compact, cited symbol-identity summary (definition + callers/callees/references) over the live graph; ambiguous references return candidates; CLI parity via `graphi explain-symbol`. |
 | `find_clones` | 🧪 labs | ✅ shipped | EP-013 | structural clone-group detection from a JSON config (G4). |
 | `graph_health` | 🧪 labs | ✅ shipped | - | P1 trust surface (PRD §17): canonical contract-§2 trust-report document (snapshot state, freshness facts, coverage, edge confidence tiers, resolution gaps, boundaries, optional exploratory-v1\|review-v1\|automated-change-v1 policy verdict) for repository or target scope; byte-parity with `graphi trust-report --json` through the single client.TrustReport composition; read-only fail-closed observer (missing evidence reads UNVERIFIED/UNAVAILABLE, never PASS); Labs-only pending a promotion decision. |
+| `hotspots` | 🧪 labs | ✅ shipped | - | P2 git intelligence: churn × dependency-centrality file ranking (commits-in-window × (1 + graph edge endpoints), integer breakdown per row) with single-author bus-factor warnings for the ranked hotspots; history via the surface-boundary bounded `git log` provider (surfaces/gitlog — the engine stays exec-free), centrality via the compact BriefStats aggregate; typed unavailable without a git provider; byte-parity with `graphi hotspots`; Labs-only. |
 | `impact` | 🟢 stable | ✅ shipped | EP-004 | dedicated default-profile entry for the frozen Stable impact operation; dispatch is fixed to StableClient.Impact with no generic analyzer selector. |
 | `implementers` | 🧪 labs | ✅ shipped | EP-011 | structural query: types that implement/embed a symbol (G2). |
 | `implements` | 🧪 labs | ✅ shipped | EP-011 | structural query: interfaces/types a symbol implements (G2). |
@@ -149,13 +150,13 @@ Total capabilities: **160**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | 🧪 labs | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | 🧪 labs | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (53)
+## CLI subcommands (54)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
 | `agent-brief` | 🧪 labs | 🟡 partial | - | bounded, cited task-start context packet for agents |
 | `analyze` | 🧪 labs | ✅ shipped | - | run a registered analyzer over the graph |
-| `change-impact` | 🧪 labs | ✅ shipped | - | P1 change intelligence (Change Risk 2.0): changed symbols, public API, dependents, covering tests, reasons, risk for a target or a piped `git diff` range; byte-parity with the change_impact MCP tool |
+| `change-impact` | 🧪 labs | ✅ shipped | - | P1 change intelligence (Change Risk 2.0): changed symbols, public API, dependents, covering tests, co-change partners, reasons, risk for a target or a piped `git diff` range; byte-parity with the change_impact MCP tool |
 | `change-risk` | 🧪 labs | ✅ shipped | EP-020 | evidence-based local blast-radius estimate (low/medium/high/unknown) for a symbol, path, or unified diff; byte-parity with the change_risk MCP tool |
 | `claude` | 🧪 labs | ✅ shipped | - | short-verb alias for `setup` (register the MCP server) |
 | `compare` | 🧪 labs | ✅ shipped | - | name-based wrapper over compare-branches: resolves snapshot names plus the reserved `current` (live store) to paths; byte-identical diff output |
@@ -170,6 +171,7 @@ Total capabilities: **160**. See [`architecture-plan.md`](architecture-plan.md) 
 | `explain-symbol` | 🧪 labs | ✅ shipped | EP-020 | compact, cited symbol identity summary; byte-parity with the explain_symbol MCP tool |
 | `find-clones` | 🧪 labs | ✅ shipped | - | edge-profile clone detection |
 | `help` | 🧪 labs | ✅ shipped | - | print the help blurb |
+| `hotspots` | 🧪 labs | ✅ shipped | - | P2 git intelligence: churn × dependency-centrality file ranking with bus-factor warnings over the session repository's bounded git history; byte-parity with the hotspots MCP tool |
 | `http` | 🧪 labs | ✅ shipped | - | loopback-only HTTP REST + SSE surface |
 | `index` | 🟢 stable | ✅ shipped | - | ingest a repo into a durable store (optional --semantic embed pass) |
 | `inline` | 🧪 labs | ✅ shipped | - | inline refactor over the edit saga (requires -root) |

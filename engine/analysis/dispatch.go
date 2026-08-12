@@ -25,6 +25,25 @@ type Service struct {
 	reg    *Registry
 }
 
+// WithGitProvider re-arms the git-consuming analyzers (git-history,
+// suggest-reviewers, pr-signals) with a real local-history provider. The
+// default registrations carry a nil provider (graceful empty results); the
+// composition root injects the surface-boundary provider here after
+// construction. It returns the receiver for chaining. Replace errors are
+// impossible by construction (the names were registered above) and would
+// indicate a programming fault, so they panic like mustRegister.
+func (s *Service) WithGitProvider(p githistory.GitProvider) *Service {
+	replace := func(a Analyzer) {
+		if err := s.reg.Replace(a); err != nil {
+			panic(err)
+		}
+	}
+	replace(gitHistoryAdapter{inner: githistory.New(p, githistory.Config{})})
+	replace(suggestReviewersAnalyzer{provider: p, weights: defaultReviewerWeights})
+	replace(prSignalsAnalyzer{source: newDefaultSignalSourceWithProvider(p), config: defaultSignalConfig})
+	return s
+}
+
 // NewService constructs a Service over the given read-only Reader and Registry.
 func NewService(reader query.Reader, reg *Registry) *Service {
 	if reg == nil {

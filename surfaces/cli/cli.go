@@ -884,6 +884,36 @@ func RunChangeImpact(ctx context.Context, c client.AgentIntelPort, args []string
 	}, args, in, out, errOut)
 }
 
+// RunHotspots runs the hotspots agent tool (P2 git intelligence, labs) and
+// prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	hotspots [-max-commits n] [-max-items n]
+func RunHotspots(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("hotspots", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxCommits := fs.Int("max-commits", 0, "history window bound (0 = default 1000)")
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 0 {
+		return fmt.Errorf("cli: hotspots takes no positional arguments")
+	}
+	b, err := c.Hotspots(ctx, client.HotspotsParams{
+		MaxCommits: *maxCommits,
+		MaxItems:   *maxItems,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunMemory executes a memory operation against the shared client and writes the
 // canonical serialized MemoryResponse.
 //

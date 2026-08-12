@@ -53,11 +53,12 @@ type callParams struct {
 		Config  string `json:"config"`
 		// P0 agent-intelligence arguments (labs): snippet token budget and the
 		// free-text task for symbol_context/task_context, plus the
-		// repo_overview community opt-in. Item caps ride the existing generic
-		// limit argument.
+		// repo_overview community opt-in and the hotspots history bound. Item
+		// caps ride the existing generic limit argument.
 		TokenBudget *int   `json:"token_budget"`
 		Task        string `json:"task"`
 		Communities bool   `json:"communities"`
+		MaxCommits  *int   `json:"max_commits"`
 		// EP-012 memory arguments.
 		Op           string   `json:"op"`
 		Scope        string   `json:"scope"`
@@ -242,6 +243,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	}
 	if p.Name == ToolChangeImpact {
 		return s.changeImpactCall(ctx, p)
+	}
+	if p.Name == ToolHotspots {
+		return s.hotspotsCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -808,6 +812,20 @@ func (s *Server) changeImpactCall(ctx context.Context, p callParams) (any, *rpcE
 		Diff:     p.Arguments.Diff,
 		Depth:    derefInt(p.Arguments.Depth),
 		MaxItems: derefInt(p.Arguments.Limit),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// hotspotsCall (P2 git intelligence, labs) returns the churn × centrality
+// hotspot ranking in the C1 contract shape through the shared client.Hotspots
+// composition (byte parity with `graphi hotspots`).
+func (s *Server) hotspotsCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.client().Hotspots(ctx, client.HotspotsParams{
+		MaxCommits: derefInt(p.Arguments.MaxCommits),
+		MaxItems:   derefInt(p.Arguments.Limit),
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}

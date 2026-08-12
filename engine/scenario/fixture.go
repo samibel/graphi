@@ -14,6 +14,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/changeimpact"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/hotspots"
 	"github.com/samibel/graphi/engine/agenttools/overview"
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
@@ -347,6 +348,14 @@ func (e *FixtureEngine) InvokeContract(ctx context.Context, operation string, ar
 			Depth:    intArg(args, "depth", 0),
 			MaxItems: intArg(args, "max_items", 0),
 			Deps:     e.Deps,
+		})
+	case OpHotspots:
+		// The fixture runner deliberately passes no git provider: scenarios
+		// pin the typed unavailable degradation.
+		return hotspots.Assemble(ctx, hotspots.Params{
+			MaxCommits: intArg(args, "max_commits", 0),
+			MaxItems:   intArg(args, "max_items", 0),
+			Deps:       e.Deps,
 		})
 	default:
 		return nil, fmt.Errorf("scenario: %q is not an agent-tool operation", operation)

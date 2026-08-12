@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -29,6 +30,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/risk"
 	"github.com/samibel/graphi/engine/agenttools/shape"
+	"github.com/samibel/graphi/engine/analysis/githistory"
 	pathclass "github.com/samibel/graphi/engine/classify"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/testintel"
@@ -41,11 +43,12 @@ const MethodVersion = "change_impact/1"
 
 // Rank bands (rank = band<<20 + score, score < 1<<20).
 const (
-	bandChanged    = 9
-	bandPublicAPI  = 8
-	bandDependents = 7
-	bandTransitive = 6
-	bandTests      = 5
+	bandChanged    = 10
+	bandPublicAPI  = 9
+	bandDependents = 8
+	bandTransitive = 7
+	bandTests      = 6
+	bandCoChange   = 5
 	bandConfigs    = 4
 	bandReasons    = 3
 	bandRisk       = 2
@@ -75,6 +78,13 @@ type Params struct {
 	// MaxItems caps the item list (0 selects shape.DefaultMaxItems).
 	MaxItems int
 	Deps     resolve.Deps
+	// Provider is the optional surface-boundary git-history source for the
+	// co-change section ("you changed A, but B usually changes with it").
+	// Nil skips the section.
+	Provider githistory.GitProvider
+	// Now overrides the history window's reference time (zero = wall clock;
+	// tests pass a fixed time for byte determinism).
+	Now time.Time
 }
 
 func (p Params) depth() int {
@@ -327,6 +337,81 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		})
 	}
 
+	// Band 5: co-change partners from bounded git history — files that
+	// usually change together with the changed files but are NOT in this
+	// change. The strongest "you probably forgot B" signal git can give.
+	coChangePartners := 0
+	var coChangeLead string
+	if p.Provider != nil {
+		changedFiles := map[string]struct{}{}
+		for _, path := range diffPaths {
+			changedFiles[model.NormalizePath(path)] = struct{}{}
+		}
+		for f := range subjectFiles {
+			changedFiles[f] = struct{}{}
+		}
+		if len(changedFiles) > 0 {
+			hist, err := githistory.New(p.Provider, githistory.Config{Now: p.Now}).Run(ctx)
+			if err != nil {
+				return nil, err
+			}
+			type partner struct {
+				path string
+				with string
+				co   int
+			}
+			best := map[string]partner{}
+			for _, g := range hist.CoChangeGroups {
+				if len(g.Files) != 2 {
+					continue
+				}
+				a, b := g.Files[0], g.Files[1]
+				_, aIn := changedFiles[a]
+				_, bIn := changedFiles[b]
+				if aIn == bIn {
+					continue // both changed (nothing forgotten) or both untouched
+				}
+				changed, other := a, b
+				if bIn {
+					changed, other = b, a
+				}
+				if cur, ok := best[other]; !ok || g.CoCommits > cur.co || (g.CoCommits == cur.co && changed < cur.with) {
+					best[other] = partner{path: other, with: changed, co: g.CoCommits}
+				}
+			}
+			partners := make([]partner, 0, len(best))
+			for _, pt := range best {
+				partners = append(partners, pt)
+			}
+			sort.Slice(partners, func(i, j int) bool {
+				if partners[i].co != partners[j].co {
+					return partners[i].co > partners[j].co
+				}
+				return partners[i].path < partners[j].path
+			})
+			for i, pt := range partners {
+				if i >= testRows {
+					break
+				}
+				coChangePartners++
+				if coChangeLead == "" {
+					coChangeLead = pt.path
+				}
+				evID := ev.Add(pt.path, 0, "co_change")
+				score := pt.co
+				if score >= 1<<20 {
+					score = 1<<20 - 1
+				}
+				items = append(items, contract.Item{
+					RefID:          "co:" + pt.path,
+					Rank:           bandCoChange<<20 + score,
+					Reason:         fmt.Sprintf("co_change: %s usually changes with %s (%d co-commit(s) in window) — not in this change", pt.path, pt.with, pt.co),
+					EvidenceRefIDs: []string{evID},
+				})
+			}
+		}
+	}
+
 	// Band 4: configuration files among the diff paths.
 	configCount := 0
 	for _, path := range diffPaths {
@@ -364,6 +449,9 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 	}
 	if untested > 3 {
 		reasons = append(reasons, fmt.Sprintf("%d further changed symbol(s) without a direct test", untested-3))
+	}
+	if coChangePartners > 0 {
+		reasons = append(reasons, fmt.Sprintf("%d file(s) usually change with this change but are untouched (e.g. %s)", coChangePartners, coChangeLead))
 	}
 	if configCount > 0 {
 		reasons = append(reasons, fmt.Sprintf("%d configuration file(s) in the change", configCount))
@@ -411,8 +499,8 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 
 	r := &contract.Result{
 		Outcome: contract.OutcomeFound,
-		Summary: fmt.Sprintf("change_impact: risk %s — %d changed symbol(s), %d affected symbol(s), %d covering test(s), %d public-API change(s), %d config file(s), %d unknown path(s) (%s)",
-			level, len(subs), len(directDependents)+transitive, testTotal, publicAPI, configCount, len(unresolved), MethodVersion),
+		Summary: fmt.Sprintf("change_impact: risk %s — %d changed symbol(s), %d affected symbol(s), %d covering test(s), %d public-API change(s), %d co-change partner(s), %d config file(s), %d unknown path(s) (%s)",
+			level, len(subs), len(directDependents)+transitive, testTotal, publicAPI, coChangePartners, configCount, len(unresolved), MethodVersion),
 		Items:      items,
 		Evidence:   ev.List(),
 		Confidence: tally.Confidence("unknown", "no_edges"),

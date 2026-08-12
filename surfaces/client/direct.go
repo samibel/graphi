@@ -16,6 +16,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/changeimpact"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/hotspots"
 	"github.com/samibel/graphi/engine/agenttools/overview"
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
@@ -24,6 +25,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/taskctx"
 	"github.com/samibel/graphi/engine/agenttools/testimpact"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/analysis/githistory"
 	enginecontext "github.com/samibel/graphi/engine/context"
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/distill"
@@ -58,6 +60,7 @@ type Direct struct {
 	branchState   BranchStateMaterializer
 	reviewFetcher forge.ReviewFetcher
 	repoRoot      string
+	gitProvider   githistory.GitProvider
 }
 
 // NewDirect constructs an in-process client.
@@ -114,7 +117,7 @@ func (d *Direct) SupportsCapability(name string) bool {
 		// These tools intentionally return a typed unavailable/partial result when
 		// graph dependencies are absent; the operation itself is fully executable.
 		return true
-	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact":
+	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots":
 		// Labs agent intelligence: same typed-unavailable degradation contract.
 		return true
 	case "trust_report", "graph_health":
@@ -236,6 +239,15 @@ func (d *Direct) WithReviewFetcher(f forge.ReviewFetcher) *Direct {
 // behavior when run from the repo root). It returns the receiver for chaining.
 func (d *Direct) WithRepoRoot(root string) *Direct {
 	d.repoRoot = root
+	return d
+}
+
+// WithGitProvider attaches the surface-boundary git-history provider so the
+// git-intelligence agent tools (hotspots, change_impact's co-change section)
+// can consume bounded local history. Nil keeps the graceful no-history
+// degradation. It returns the receiver for chaining.
+func (d *Direct) WithGitProvider(p githistory.GitProvider) *Direct {
+	d.gitProvider = p
 	return d
 }
 
@@ -977,6 +989,21 @@ func (d *Direct) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte
 	return contract.Serialize(res)
 }
 
+// Hotspots implements Client via the shared engine/agenttools/hotspots
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error) {
+	res, err := hotspots.Assemble(ctx, hotspots.Params{
+		Provider:   d.gitProvider,
+		MaxCommits: p.MaxCommits,
+		MaxItems:   p.MaxItems,
+		Deps:       d.agentDeps(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
 // TestImpact implements Client via the shared engine/agenttools/testimpact
 // package, so CLI, MCP, and HTTP emit the same canonical bytes.
 func (d *Direct) TestImpact(ctx context.Context, p TestImpactParams) ([]byte, error) {
@@ -1002,6 +1029,7 @@ func (d *Direct) ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte
 		Depth:    p.Depth,
 		MaxItems: p.MaxItems,
 		Deps:     d.agentDeps(),
+		Provider: d.gitProvider,
 	})
 	if err != nil {
 		return nil, err

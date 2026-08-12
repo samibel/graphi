@@ -39,6 +39,7 @@ import (
 	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/daemon"
+	"github.com/samibel/graphi/surfaces/gitlog"
 )
 
 // Options configures OpenSession.
@@ -245,11 +246,17 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 		return nil, fmt.Errorf("session ingest: %w", err)
 	}
 
-	asvc := analysis.NewDefaultService(store)
+	// The surface-boundary git-history provider: bounded local `git log`,
+	// injected into both the analysis service (git-history, suggest-reviewers,
+	// pr-signals) and the labs agent-intelligence tools. The engine itself
+	// stays exec-free; only this composition root hands it the seam.
+	gp := gitlog.New(root)
+	asvc := analysis.NewDefaultService(store).WithGitProvider(gp)
 	rt.Client = client.NewDirect(query.New(store), NewSearchService(store, p.Meta)).
 		WithAnalysis(asvc).
 		WithReview(review.NewService(asvc)).
-		WithRepoRoot(root)
+		WithRepoRoot(root).
+		WithGitProvider(gp)
 	return rt, nil
 }
 

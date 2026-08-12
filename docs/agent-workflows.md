@@ -53,9 +53,15 @@ After editing, two further labs tools close the loop:
    guessed). Run seven tests instead of the whole suite, with evidence.
 5. **`change_impact`** — the Change Risk 2.0 assessment for the same diff:
    changed symbols, public-API subset, dependents (direct + bounded
-   transitive), covering tests, config changes, explicit reasons, and a risk
-   level with a tier-derived confidence distribution. The stable
-   `change_risk` quick check is unchanged; this is its richer labs sibling.
+   transitive), covering tests, co-change partners from bounded git history
+   ("`B` usually changes with `A` — not in this change"), config changes,
+   explicit reasons, and a risk level with a tier-derived confidence
+   distribution. The stable `change_risk` quick check is unchanged; this is
+   its richer labs sibling.
+6. **`hotspots`** — where does the repository hurt? Files ranked by churn ×
+   dependency centrality with per-row breakdowns and single-author
+   bus-factor warnings. Use it to plan refactors and prioritize review
+   attention before a task even starts.
 
 These are labs operations: their shapes may still change, and they are only
 advertised under `graphi mcp -labs` (HTTP: 403 without `GRAPHI_LABS=1`). The
