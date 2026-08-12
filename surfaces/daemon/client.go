@@ -334,6 +334,20 @@ func (c *DaemonClient) RepoOverview(ctx context.Context, p client.RepoOverviewPa
 	return nil, client.ErrAgentIntelUnavailable
 }
 
+// TestImpact implements client.Client. Returns ErrAgentIntelUnavailable until
+// a daemon RPC is added.
+func (c *DaemonClient) TestImpact(ctx context.Context, p client.TestImpactParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
+// ChangeImpact implements client.Client. Returns ErrAgentIntelUnavailable
+// until a daemon RPC is added.
+func (c *DaemonClient) ChangeImpact(ctx context.Context, p client.ChangeImpactParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {

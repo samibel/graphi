@@ -813,6 +813,77 @@ func RunChangeRisk(ctx context.Context, c client.AgentContextPort, args []string
 	return nil
 }
 
+// runImpactTool is the shared runner for the P1 diff/target agent tools
+// (test-impact, change-impact): identical flag surface, identical diff
+// reading, one seam per tool.
+func runImpactTool(ctx context.Context, name string, call func(ctx context.Context, target, diff string, depth, maxItems int) ([]byte, error), args []string, in io.Reader, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet(name, flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	diffPath := fs.String("diff", "", "path to a unified diff, or - for stdin (pipe `git diff <range>` for ranges)")
+	depth := fs.Int("depth", 0, "walk hop depth 1-3 (0 = default 2)")
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	var target, diff string
+	switch {
+	case fs.NArg() == 1:
+		target = fs.Arg(0)
+	case fs.NArg() > 1:
+		return fmt.Errorf("cli: %s takes at most one target argument", name)
+	}
+	if *diffPath != "" {
+		var (
+			raw []byte
+			err error
+		)
+		if *diffPath == "-" {
+			raw, err = io.ReadAll(in)
+		} else {
+			raw, err = os.ReadFile(*diffPath)
+		}
+		if err != nil {
+			return fmt.Errorf("cli: read diff: %w", err)
+		}
+		diff = string(raw)
+	}
+	if target == "" && diff == "" {
+		return fmt.Errorf("cli: %s needs a target argument or -diff", name)
+	}
+	b, err := call(ctx, target, diff, *depth, *maxItems)
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunTestImpact runs the test_impact agent tool (P1 test intelligence, labs)
+// and prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	test-impact [-depth n] [-max-items n] (<target> | -diff <file|->)
+func RunTestImpact(ctx context.Context, c client.AgentIntelPort, args []string, in io.Reader, out, errOut io.Writer) error {
+	return runImpactTool(ctx, "test-impact", func(ctx context.Context, target, diff string, depth, maxItems int) ([]byte, error) {
+		return c.TestImpact(ctx, client.TestImpactParams{Target: target, Diff: diff, Depth: depth, MaxItems: maxItems})
+	}, args, in, out, errOut)
+}
+
+// RunChangeImpact runs the change_impact agent tool (P1 change intelligence,
+// labs) and prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	change-impact [-depth n] [-max-items n] (<target> | -diff <file|->)
+func RunChangeImpact(ctx context.Context, c client.AgentIntelPort, args []string, in io.Reader, out, errOut io.Writer) error {
+	return runImpactTool(ctx, "change-impact", func(ctx context.Context, target, diff string, depth, maxItems int) ([]byte, error) {
+		return c.ChangeImpact(ctx, client.ChangeImpactParams{Target: target, Diff: diff, Depth: depth, MaxItems: maxItems})
+	}, args, in, out, errOut)
+}
+
 // RunMemory executes a memory operation against the shared client and writes the
 // canonical serialized MemoryResponse.
 //

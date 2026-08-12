@@ -11,6 +11,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/agenttools/brief"
+	"github.com/samibel/graphi/engine/agenttools/changeimpact"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
 	"github.com/samibel/graphi/engine/agenttools/overview"
@@ -19,6 +20,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/risk"
 	"github.com/samibel/graphi/engine/agenttools/symbolcontext"
 	"github.com/samibel/graphi/engine/agenttools/taskctx"
+	"github.com/samibel/graphi/engine/agenttools/testimpact"
 	"github.com/samibel/graphi/engine/analysis"
 	enginecontext "github.com/samibel/graphi/engine/context"
 	"github.com/samibel/graphi/engine/diagnostic"
@@ -329,6 +331,22 @@ func (e *FixtureEngine) InvokeContract(ctx context.Context, operation string, ar
 			Deps:        e.Deps,
 			MaxItems:    intArg(args, "max_items", 0),
 			Communities: args["communities"] == "true" || args["communities"] == "1",
+		})
+	case OpTestImpact:
+		return testimpact.Assemble(ctx, testimpact.Params{
+			Target:   firstArg(args, "target", "symbol"),
+			Diff:     args["diff"],
+			Depth:    intArg(args, "depth", 0),
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
+		})
+	case OpChangeImpact:
+		return changeimpact.Assemble(ctx, changeimpact.Params{
+			Target:   firstArg(args, "target", "symbol"),
+			Diff:     args["diff"],
+			Depth:    intArg(args, "depth", 0),
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
 		})
 	default:
 		return nil, fmt.Errorf("scenario: %q is not an agent-tool operation", operation)

@@ -430,6 +430,19 @@ type Client interface {
 	// from the compact graph aggregates. Read-only.
 	RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error)
 
+	// TestImpact runs the test_impact agent tool (labs, P1 test
+	// intelligence): diff/target → must-run, recommended, and
+	// probably-unaffected test buckets from the derived symbol↔test mapping.
+	// Read-only.
+	TestImpact(ctx context.Context, p TestImpactParams) ([]byte, error)
+
+	// ChangeImpact runs the change_impact agent tool (labs, P1 change
+	// intelligence — "Change Risk 2.0"): changed symbols, public-API subset,
+	// direct/transitive dependents, covering tests, config changes, explicit
+	// reasons, and a risk level. The frozen-stable change_risk operation is
+	// untouched. Read-only.
+	ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, error)
+
 	// Diagnose runs the engine diagnostics (SW-091) over the graph and returns the
 	// canonical serialized diagnostic.Result bytes via diagnostic.Marshal — the
 	// single serializer every surface uses (byte-identical parity, SW-094). kinds
@@ -625,4 +638,22 @@ type TaskContextParams struct {
 type RepoOverviewParams struct {
 	MaxItems    int
 	Communities bool
+}
+
+// TestImpactParams carries the test_impact inputs. Exactly one of Target/Diff
+// must be non-empty; a git range is served by piping `git diff <range>` in.
+type TestImpactParams struct {
+	Target   string
+	Diff     string
+	Depth    int
+	MaxItems int
+}
+
+// ChangeImpactParams carries the change_impact inputs. Exactly one of
+// Target/Diff must be non-empty.
+type ChangeImpactParams struct {
+	Target   string
+	Diff     string
+	Depth    int
+	MaxItems int
 }

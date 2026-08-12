@@ -124,6 +124,17 @@ const (
 	// P0 agent intelligence: the one-call "what is this repository" summary
 	// from the compact graph aggregates (communities opt-in). Labs-only.
 	ToolRepoOverview = "repo_overview"
+
+	// P1 test intelligence: diff/target → must-run, recommended, and
+	// probably-unaffected test buckets from the derived symbol↔test mapping.
+	// Labs-only.
+	ToolTestImpact = "test_impact"
+
+	// P1 change intelligence ("Change Risk 2.0"): changed symbols, public-API
+	// subset, direct/transitive dependents, covering tests, config changes,
+	// explicit reasons, risk level. The frozen-stable change_risk operation
+	// is untouched. Labs-only.
+	ToolChangeImpact = "change_impact"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -168,6 +179,8 @@ var singletonToolNames = []string{
 	ToolSymbolContext,
 	ToolTaskContext,
 	ToolRepoOverview,
+	ToolTestImpact,
+	ToolChangeImpact,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

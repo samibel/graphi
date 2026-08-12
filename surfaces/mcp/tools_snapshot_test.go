@@ -29,6 +29,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"analyze_taint",
 		"callees",
 		"callers",
+		"change_impact",
 		"change_risk",
 		"compare_branches",
 		"compound",
@@ -63,6 +64,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"supertypes",
 		"symbol_context",
 		"task_context",
+		"test_impact",
 		"triage_prs",
 		"undo",
 	}

@@ -121,6 +121,12 @@ func (s *stubClient) TaskContext(context.Context, client.TaskContextParams) ([]b
 func (s *stubClient) RepoOverview(context.Context, client.RepoOverviewParams) ([]byte, error) {
 	return nil, client.ErrAgentIntelUnavailable
 }
+func (s *stubClient) TestImpact(context.Context, client.TestImpactParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
+func (s *stubClient) ChangeImpact(context.Context, client.ChangeImpactParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
 func (s *stubClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }

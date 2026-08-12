@@ -436,6 +436,41 @@ func (h *HTTP) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, 
 	return h.doGET(ctx, "/analyze/repo_overview", q)
 }
 
+// TestImpact rides the read-only /analyze/test_impact endpoint (labs; target
+// mode only — diff targeting is not offered over the GET-only HTTP surface,
+// the change_risk precedent).
+func (h *HTTP) TestImpact(ctx context.Context, p TestImpactParams) ([]byte, error) {
+	if p.Diff != "" {
+		return nil, fmt.Errorf("%w: diff targeting is not available over the read-only HTTP surface", ErrBadInput)
+	}
+	q := url.Values{}
+	q.Set("target", p.Target)
+	if p.Depth > 0 {
+		q.Set("depth", strconv.Itoa(p.Depth))
+	}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	return h.doGET(ctx, "/analyze/test_impact", q)
+}
+
+// ChangeImpact rides the read-only /analyze/change_impact endpoint (labs;
+// target mode only, like TestImpact).
+func (h *HTTP) ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, error) {
+	if p.Diff != "" {
+		return nil, fmt.Errorf("%w: diff targeting is not available over the read-only HTTP surface", ErrBadInput)
+	}
+	q := url.Values{}
+	q.Set("target", p.Target)
+	if p.Depth > 0 {
+		q.Set("depth", strconv.Itoa(p.Depth))
+	}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	return h.doGET(ctx, "/analyze/change_impact", q)
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
 // is added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (h *HTTP) Diagnose(ctx context.Context, kinds []string, opts DiagnoseOptions) ([]byte, error) {

@@ -72,9 +72,10 @@ type AgentContextPort interface {
 	ChangeRisk(ctx context.Context, target, diff string, maxItems int) ([]byte, error)
 }
 
-// AgentIntelPort is the labs agent-intelligence port (P0): the three unified
-// context operations. It is deliberately SEPARATE from AgentContextPort —
-// that port feeds the frozen StableClient, and these operations are labs.
+// AgentIntelPort is the labs agent-intelligence port (P0 context + P1
+// change/test intelligence). It is deliberately SEPARATE from
+// AgentContextPort — that port feeds the frozen StableClient, and these
+// operations are labs.
 type AgentIntelPort interface {
 	// SymbolContext returns the unified, cited single-call symbol view.
 	SymbolContext(ctx context.Context, p SymbolContextParams) ([]byte, error)
@@ -82,6 +83,10 @@ type AgentIntelPort interface {
 	TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error)
 	// RepoOverview returns the one-call repository summary.
 	RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error)
+	// TestImpact returns the must-run/recommended/unaffected test buckets.
+	TestImpact(ctx context.Context, p TestImpactParams) ([]byte, error)
+	// ChangeImpact returns the Change Risk 2.0 assessment.
+	ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, error)
 }
 
 // StableClient is the composed view a stable surface holds: exactly the three

@@ -299,7 +299,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 // They dispatch through the dedicated client seams, not the generic analysis
 // service. The labs entries are auto-403'd by the capability guard unless the
 // server runs with GRAPHI_LABS=1 (isLabsCapability keys off StableOperations).
-var agentToolNames = []string{"agent_brief", "change_risk", "explain_symbol", "related_files", "repo_overview", "symbol_context", "task_context"}
+var agentToolNames = []string{"agent_brief", "change_impact", "change_risk", "explain_symbol", "related_files", "repo_overview", "symbol_context", "task_context", "test_impact"}
 
 // handleAgentTool serves the EP-020 agent tools on the shared /analyze route.
 // It returns false when name is not an agent tool so the generic analyzer
@@ -398,6 +398,31 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 			MaxItems:    maxItems,
 			Communities: q.Get("communities") == "1" || q.Get("communities") == "true",
 		})
+	case "test_impact", "change_impact":
+		// Diff targeting is not offered over the GET-only surface (the
+		// change_risk precedent); target mode only.
+		target := q.Get("target")
+		if target == "" {
+			target = q.Get("symbol")
+		}
+		if target == "" {
+			writeErr(w, http.StatusBadRequest, "bad_request", "target required")
+			return true
+		}
+		depth := 0
+		if d := q.Get("depth"); d != "" {
+			v, err := strconv.Atoi(d)
+			if err != nil || v < 0 {
+				writeErr(w, http.StatusBadRequest, "bad_request", "bad depth")
+				return true
+			}
+			depth = v
+		}
+		if name == "test_impact" {
+			raw, err = s.client.TestImpact(r.Context(), client.TestImpactParams{Target: target, Depth: depth, MaxItems: maxItems})
+		} else {
+			raw, err = s.client.ChangeImpact(r.Context(), client.ChangeImpactParams{Target: target, Depth: depth, MaxItems: maxItems})
+		}
 	default:
 		return false
 	}
