@@ -579,6 +579,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P0 agent intelligence: free-text task → deterministically ranked, cited, token-budgeted context bundle (primary seeds, related symbols, callers/callees, nearby tests and configs, related-file roll-up, change_risk-consistent risk, recommended read order); ranking is a fixed integer weight model whose hash is stamped in every summary — no floats, no LLM estimates; byte-parity with `graphi task-context` through the single engine/agenttools/taskctx assembly; Labs-only."
+  - id: repo_overview
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: one-call repository summary — totals with edge-confidence tiers, directory tree, language mix, entry-point candidates, high-centrality symbols, test and generated/vendored areas, external boundaries, suggested next calls; the default call reads only the compact BriefStats/TrustStats aggregates, `communities` is the documented opt-in full-graph pass; byte-parity with `graphi repo-overview` through the single engine/agenttools/overview assembly; Labs-only."
   - id: cli
     category: surface
     status: shipped
@@ -732,6 +738,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P0 agent intelligence: free-text task → ranked, cited, token-budgeted context bundle with recommended read order; byte-parity with the task_context MCP tool"
+  - id: repo-overview
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P0 agent intelligence: one-call repository summary (structure, languages, entrypoints, central symbols, tests, boundaries, optional communities); byte-parity with the repo_overview MCP tool"
   - id: snapshot
     category: cli-subcommand
     status: shipped

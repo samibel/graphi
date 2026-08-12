@@ -414,6 +414,13 @@
       "note": "ranked, cited read-first file list; byte-parity with the related_files MCP tool"
     },
     {
+      "id": "repo-overview",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P0 agent intelligence: one-call repository summary (structure, languages, entrypoints, central symbols, tests, boundaries, optional communities); byte-parity with the repo_overview MCP tool"
+    },
+    {
       "id": "safe-delete",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -856,6 +863,13 @@
       "tier": "stable",
       "epic": "EP-020",
       "note": "SW-116: deterministic, evidence-cited read-first file ranking by graph proximity with direction filtering; CLI parity via `graphi related-files`."
+    },
+    {
+      "id": "repo_overview",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P0 agent intelligence: one-call repository summary — totals with edge-confidence tiers, directory tree, language mix, entry-point candidates, high-centrality symbols, test and generated/vendored areas, external boundaries, suggested next calls; the default call reads only the compact BriefStats/TrustStats aggregates, `communities` is the documented opt-in full-graph pass; byte-parity with `graphi repo-overview` through the single engine/agenttools/overview assembly; Labs-only."
     },
     {
       "id": "savings",

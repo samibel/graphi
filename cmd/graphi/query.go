@@ -549,6 +549,8 @@ func runAgentTool(args []string, verb string) int {
 		err = cli.RunSymbolContext(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "task-context":
 		err = cli.RunTaskContext(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "repo-overview":
+		err = cli.RunRepoOverview(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "related-files":
 		err = cli.RunRelatedFiles(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "change-risk":

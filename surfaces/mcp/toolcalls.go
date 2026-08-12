@@ -52,10 +52,12 @@ type callParams struct {
 		Limit   *int   `json:"limit"`
 		Config  string `json:"config"`
 		// P0 agent-intelligence arguments (labs): snippet token budget and the
-		// free-text task for symbol_context/task_context. Item caps ride the
-		// existing generic limit argument.
+		// free-text task for symbol_context/task_context, plus the
+		// repo_overview community opt-in. Item caps ride the existing generic
+		// limit argument.
 		TokenBudget *int   `json:"token_budget"`
 		Task        string `json:"task"`
+		Communities bool   `json:"communities"`
 		// EP-012 memory arguments.
 		Op           string   `json:"op"`
 		Scope        string   `json:"scope"`
@@ -231,6 +233,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	}
 	if p.Name == ToolTaskContext {
 		return s.taskContextCall(ctx, p)
+	}
+	if p.Name == ToolRepoOverview {
+		return s.repoOverviewCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -744,6 +749,21 @@ func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcEr
 		Task:        p.Arguments.Task,
 		MaxItems:    derefInt(p.Arguments.Limit),
 		TokenBudget: derefInt(p.Arguments.TokenBudget),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// repoOverviewCall (P0 agent intelligence, labs) returns the one-call
+// repository summary in the C1 contract shape through the shared
+// client.RepoOverview composition (ONE assembly, ONE encoder — byte parity
+// with `graphi repo-overview`).
+func (s *Server) repoOverviewCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.client().RepoOverview(ctx, client.RepoOverviewParams{
+		MaxItems:    derefInt(p.Arguments.Limit),
+		Communities: p.Arguments.Communities,
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}

@@ -299,7 +299,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 // They dispatch through the dedicated client seams, not the generic analysis
 // service. The labs entries are auto-403'd by the capability guard unless the
 // server runs with GRAPHI_LABS=1 (isLabsCapability keys off StableOperations).
-var agentToolNames = []string{"agent_brief", "change_risk", "explain_symbol", "related_files", "symbol_context", "task_context"}
+var agentToolNames = []string{"agent_brief", "change_risk", "explain_symbol", "related_files", "repo_overview", "symbol_context", "task_context"}
 
 // handleAgentTool serves the EP-020 agent tools on the shared /analyze route.
 // It returns false when name is not an agent tool so the generic analyzer
@@ -393,6 +393,11 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 			p.TokenBudget = v
 		}
 		raw, err = s.client.TaskContext(r.Context(), p)
+	case "repo_overview":
+		raw, err = s.client.RepoOverview(r.Context(), client.RepoOverviewParams{
+			MaxItems:    maxItems,
+			Communities: q.Get("communities") == "1" || q.Get("communities") == "true",
+		})
 	default:
 		return false
 	}

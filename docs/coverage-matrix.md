@@ -23,9 +23,9 @@ row is tagged stable or one is dropped.
 
 **The 12 stable operations (frozen):** `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `impact`, `neighborhood`, `references`, `related_files`, `search`.
 
-**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **47-tool** union (36 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
+**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **48-tool** union (37 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **154**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **156**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -82,7 +82,7 @@ Total capabilities: **154**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage-prs` | 🧪 labs | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | 🧪 labs | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (47)
+## MCP tools (48)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -120,6 +120,7 @@ Total capabilities: **154**. See [`architecture-plan.md`](architecture-plan.md) 
 | `refactor_preview` | 🧪 labs | ✅ shipped | EP-006 | preview a graph-aware refactor (impact set, no mutation). |
 | `references` | 🟢 stable | ✅ shipped | EP-001 | structural query: references. |
 | `related_files` | 🟢 stable | ✅ shipped | EP-020 | SW-116: deterministic, evidence-cited read-first file ranking by graph proximity with direction filtering; CLI parity via `graphi related-files`. |
+| `repo_overview` | 🧪 labs | ✅ shipped | - | P0 agent intelligence: one-call repository summary — totals with edge-confidence tiers, directory tree, language mix, entry-point candidates, high-centrality symbols, test and generated/vendored areas, external boundaries, suggested next calls; the default call reads only the compact BriefStats/TrustStats aggregates, `communities` is the documented opt-in full-graph pass; byte-parity with `graphi repo-overview` through the single engine/agenttools/overview assembly; Labs-only. |
 | `savings` | 🧪 labs | ✅ shipped | EP-003 | token-savings ledger readout (per-call/session/cumulative USD). |
 | `search` | 🟢 stable | ✅ shipped | EP-001 | lexical / symbol search over the indexed graph. |
 | `search_ast` | 🧪 labs | ✅ shipped | EP-013 | structural AST pattern query over the indexed graph (G3). |
@@ -146,7 +147,7 @@ Total capabilities: **154**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | 🧪 labs | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | 🧪 labs | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (50)
+## CLI subcommands (51)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -181,6 +182,7 @@ Total capabilities: **154**. See [`architecture-plan.md`](architecture-plan.md) 
 | `refactor` | 🧪 labs | ✅ shipped | - | commit a rename refactor through the edit saga |
 | `refactor-preview` | 🧪 labs | ✅ shipped | - | impact-set preview of a refactor, no mutation |
 | `related-files` | 🧪 labs | ✅ shipped | EP-020 | ranked, cited read-first file list; byte-parity with the related_files MCP tool |
+| `repo-overview` | 🧪 labs | ✅ shipped | - | P0 agent intelligence: one-call repository summary (structure, languages, entrypoints, central symbols, tests, boundaries, optional communities); byte-parity with the repo_overview MCP tool |
 | `safe-delete` | 🧪 labs | ✅ shipped | - | reference-safety-gated delete over the edit saga (requires -root) |
 | `savings` | 🧪 labs | ✅ shipped | - | session token-savings readout (requires -ledger) |
 | `search` | 🧪 labs | ✅ shipped | - | lexical search; -semantic runs the optional embedding search |

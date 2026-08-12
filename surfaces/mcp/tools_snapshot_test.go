@@ -51,6 +51,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"refactor_preview",
 		"references",
 		"related_files",
+		"repo_overview",
 		"savings",
 		"search",
 		"search_ast",

@@ -15,6 +15,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/overview"
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/risk"
@@ -960,10 +961,18 @@ func (d *Direct) TaskContext(ctx context.Context, p TaskContextParams) ([]byte, 
 	return contract.Serialize(res)
 }
 
-// RepoOverview implements Client (labs agent intelligence). Wired in the
-// repo_overview step of the P0 epic.
+// RepoOverview implements Client via the shared engine/agenttools/overview
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
 func (d *Direct) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error) {
-	return nil, ErrAgentIntelUnavailable
+	res, err := overview.Assemble(ctx, overview.Params{
+		Deps:        d.agentDeps(),
+		MaxItems:    p.MaxItems,
+		Communities: p.Communities,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
 }
 
 // TrustReport implements Client via the shared trust-report composition

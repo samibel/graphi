@@ -706,6 +706,36 @@ func RunTaskContext(ctx context.Context, c client.AgentIntelPort, args []string,
 	return nil
 }
 
+// RunRepoOverview runs the repo_overview agent tool (P0 agent intelligence,
+// labs) and prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	repo-overview [-max-items n] [-communities]
+func RunRepoOverview(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("repo-overview", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	communities := fs.Bool("communities", false, "opt into the full-graph community pass")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 0 {
+		return fmt.Errorf("cli: repo-overview takes no positional arguments")
+	}
+	b, err := c.RepoOverview(ctx, client.RepoOverviewParams{
+		MaxItems:    *maxItems,
+		Communities: *communities,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunRelatedFiles runs the related_files agent tool (EP-020) and prints the
 // canonical contract JSON (parity with MCP tools/call).
 //

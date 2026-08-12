@@ -120,6 +120,10 @@ const (
 	// token-budgeted context bundle (integer weight model, hash-stamped).
 	// Labs-only.
 	ToolTaskContext = "task_context"
+
+	// P0 agent intelligence: the one-call "what is this repository" summary
+	// from the compact graph aggregates (communities opt-in). Labs-only.
+	ToolRepoOverview = "repo_overview"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -163,6 +167,7 @@ var singletonToolNames = []string{
 	ToolStrictQuery,
 	ToolSymbolContext,
 	ToolTaskContext,
+	ToolRepoOverview,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

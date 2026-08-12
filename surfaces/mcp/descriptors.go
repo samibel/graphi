@@ -692,6 +692,21 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P0 agent intelligence: repo_overview, the one-call repository summary.
+	// The default call reads only the compact aggregates; `communities` is
+	// the documented opt-in full-graph pass. Read-only.
+	tools = append(tools, map[string]any{
+		"name":        ToolRepoOverview,
+		"description": "repo_overview: return the one-call 'what is this repository?' summary — node/edge/file totals with edge-confidence tiers, a directory tree ranked by symbol count, the language mix, entry-point candidates (go-main probe, meta flags, cmd/ path heuristic), the highest-centrality symbols, test and generated/vendored areas, external boundaries, optional dependency communities, and concrete suggested next calls. Purpose: orient an agent in an unfamiliar repository in one response, right after indexing. When to use: first call in a new repository, or when scoping where a subsystem lives. When NOT to use: for task-specific context (use task_context) or a known symbol (use symbol_context). Input shape: optional limit (item cap) and communities (opt-in full-graph community detection — the only non-aggregate read). Read-only: true. Partial results possible: every section is row-capped and the item cap truncates lowest-value sections first.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit":       map[string]any{"type": "integer", "description": "item cap (default 60)"},
+				"communities": map[string]any{"type": "boolean", "description": "opt into the full-graph community pass (default false)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

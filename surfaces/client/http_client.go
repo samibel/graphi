@@ -423,10 +423,17 @@ func (h *HTTP) TaskContext(ctx context.Context, p TaskContextParams) ([]byte, er
 	return h.doGET(ctx, "/analyze/task_context", q)
 }
 
-// RepoOverview returns ErrAgentIntelUnavailable until the repo_overview step
-// of the P0 epic wires its endpoint.
+// RepoOverview rides the read-only /analyze/repo_overview endpoint (labs
+// agent intelligence; 403 unless the server runs with GRAPHI_LABS=1).
 func (h *HTTP) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte, error) {
-	return nil, ErrAgentIntelUnavailable
+	q := url.Values{}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	if p.Communities {
+		q.Set("communities", "1")
+	}
+	return h.doGET(ctx, "/analyze/repo_overview", q)
 }
 
 // Diagnose returns ErrDiagnosticUnavailable until a daemon/HTTP diagnostics RPC
