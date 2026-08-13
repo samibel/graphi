@@ -31,12 +31,12 @@ flowchart LR
 
 ## State after this story
 
-Performance is now **provable and gated**. A distinct CI check runs a
-four-metric harness against a frozen workload fixture. The moment any metric
-exceeds its pinned budget, the check fails loudly, naming the regressed metric
-and its delta versus baseline.
+Performance is now **provable and gated**. A distinct CI check runs the
+benchmark harness against a frozen workload fixture. The moment any
+fail-severity metric exceeds its pinned budget, the check fails loudly, naming
+the regressed metric and its delta versus baseline.
 
-### The four metrics (measured at their owning-layer boundaries)
+### The four core metrics (measured at their owning-layer boundaries)
 
 | Metric | Boundary | How it is measured |
 |---|---|---|
@@ -44,6 +44,26 @@ and its delta versus baseline.
 | `full_index_ms` | engine/ingest | `IngestAll` over the frozen fixture; median over N samples |
 | `freshness_lag_ms` | daemon/engine hot-index | hot-index `IngestChanged` + query round-trip latency |
 | `binary_size_bytes` | canonical default release flavor | byte size of the `CGO_ENABLED=0` build produced with `internal/release.CanonicalBuildArgs`: `-trimpath`, VCS metadata, a fixed version stamp, and `DefaultGrammarSubsetTags` |
+
+### The incremental-indexing suite (P4 / roadmap TODO-19)
+
+All incremental measurements mutate a RUNTIME COPY of the fixture only — the
+pinned `fixture_digest` never changes. Every published number is CI-produced
+(`bench-report.json` artifact); nothing is hand-written into docs.
+
+| Metric | What it measures | Severity |
+|---|---|---|
+| `incremental_ten_file_ms` | a ten-file change (4 modified + 6 created) absorbed via `IngestChanged` + a proving query round-trip | fail |
+| `branch_switch_sim_ms` | a checkout-shaped delta (2 modified + 2 added + 1 deleted) absorbed via `IngestChanged` + round-trip | fail |
+| `mcp_startup_ms` | the measured binary: `mcp -db` spawn → first `initialize` response, median (skipped/omitted for external binaries — their MCP capability is unverified) | warn |
+| `symbol_lookup_ms` | lexical symbol lookup on the hot store, median | warn |
+| `callers_query_ms` | `callers` structural query on a resolved node id, median | warn |
+| `context_query_ms` | the `task_context` one-call bundle on the hot store, median | warn |
+| `index_heap_alloc_bytes` | post-GC heap after a full fixture index | warn |
+
+The spawn-, sub-millisecond-, and GC-sensitive metrics start at severity
+`warn` (trend tracking in every report without adding CI flake surface); the
+index-bound ones gate at `fail` like `full_index_ms`/`freshness_lag_ms`.
 
 The JSON report reads Go version, GOOS, GOARCH, GOAMD64, CGO and VCS settings
 from the measured binary itself. CI pins `GOAMD64=v1`; the enforced baseline is

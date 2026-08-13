@@ -1,6 +1,7 @@
 # SW-010 — Budget-gated benchmark suite (graphi)
 #
-# Runs the four-metric benchmark harness, gates each metric against its pinned
+# Runs the benchmark harness (four core metrics + the P4/TODO-19
+# incremental-indexing suite), gates each metric against its pinned
 # budget in bench/bench-budget.yml, emits a machine-readable report artifact for
 # audit/trend tracking, and fails the build when any metric exceeds its budget
 # (naming the regressed metric + delta). Hermetic: loopback-only, CGo-free,

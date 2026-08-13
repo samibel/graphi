@@ -163,11 +163,33 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 		return Metrics{}, fmt.Errorf("bench: freshness: %w", err)
 	}
 
+	// (4) P4 / TODO-19 incremental-indexing suite (ten-file change, simulated
+	// branch switch, named query latencies, heap footprint, MCP startup over
+	// the measured binary). MCP startup is skipped for external binaries —
+	// their MCP capability is unverified, like their build contract.
+	mcpBinary := binPath
+	if !builtInternally {
+		mcpBinary = ""
+	}
+	incr, err := measureIncremental(ctx, fixture, mcpBinary)
+	if err != nil {
+		return Metrics{}, fmt.Errorf("bench: incremental suite: %w", err)
+	}
+
 	return Metrics{
-		ColdStartP95MS:   ms(P95(coldSamples)),
-		FullIndexMS:      ms(Median(idxSamples)),
-		FreshnessLagMS:   ms(fresh),
-		BinarySizeBytes:  info.Size(),
+		ColdStartP95MS:  ms(P95(coldSamples)),
+		FullIndexMS:     ms(Median(idxSamples)),
+		FreshnessLagMS:  ms(fresh),
+		BinarySizeBytes: info.Size(),
+
+		IncrementalTenFileMS: incr.TenFileMS,
+		BranchSwitchSimMS:    incr.BranchSwitchMS,
+		MCPStartupMS:         incr.MCPStartupMS,
+		SymbolLookupMS:       incr.SymbolLookupMS,
+		CallersQueryMS:       incr.CallersQueryMS,
+		ContextQueryMS:       incr.ContextQueryMS,
+		IndexHeapAllocBytes:  incr.HeapAllocBytes,
+
 		BuildContract:    buildContract,
 		BuildGoVersion:   provenance.goVersion,
 		BuildGOOS:        provenance.settings["GOOS"],

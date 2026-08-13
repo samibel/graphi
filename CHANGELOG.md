@@ -28,6 +28,20 @@ file:
 
 ### Added
 
+- **Incremental-indexing benchmark suite** (P4, roadmap TODO 19). The SW-010
+  budget-gated benchmark harness gains seven metrics over the same frozen
+  fixture (mutations happen only in a runtime copy — the pinned fixture
+  digest is unchanged): `incremental_ten_file_ms` (4 modified + 6 created
+  files absorbed via `IngestChanged` + proving query), `branch_switch_sim_ms`
+  (checkout-shaped modify+add+delete delta), `mcp_startup_ms` (measured
+  binary: `mcp -db` spawn → first `initialize` response; skipped and omitted
+  for external binaries, never a fake zero), `symbol_lookup_ms` /
+  `callers_query_ms` / `context_query_ms` (named query latencies on the hot
+  store, medians), and `index_heap_alloc_bytes` (post-GC heap after a full
+  index). Index-bound metrics gate at fail severity, the spawn-/sub-ms-/
+  GC-sensitive ones start at warn. Every published number is CI-produced via
+  the `bench-report.json` artifact — no hand-written figures in docs.
+
 - **[labs] `framework_map` — framework intelligence from recorded
   annotations** (P3). The application-level view on top of the code graph:
   HTTP routes (`@GetMapping`, NestJS `@Get`, `[HttpGet]`), event handlers
