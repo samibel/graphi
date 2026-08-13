@@ -252,7 +252,7 @@
         <div class="section__head">
           <span class="eyebrow"><span class="eyebrow__num">05</span>Features</span>
           <h2>12 GA operations over one engine — plus an opt-in Labs catalog.</h2>
-          <p class="prose">The default MCP profile advertises <strong>11 tools</strong> (the 12 GA operations minus lifecycle-only <code>index</code>). <code>graphi mcp -labs</code> opens the maximal <strong>52-tool</strong> registry — 41 Labs additions, capability-gated, and not part of the GA promise. Tiers are defined in <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p>
+          <p class="prose">The default MCP profile advertises <strong>11 tools</strong> (the 12 GA operations minus lifecycle-only <code>index</code>). <code>graphi mcp -labs</code> opens the maximal <strong>56-tool</strong> registry — 45 Labs additions, capability-gated, and not part of the GA promise. Tiers are defined in <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p>
         </div>
 
         <div class="feature-groups">
@@ -388,6 +388,19 @@
               <li><code>change_impact</code> · changed symbols, public API, dependents, covering tests, co-change partners, reasons, risk</li>
               <li><code>hotspots</code> · churn × dependency centrality with bus-factor warnings</li>
               <li>History via a bounded local <code>git log</code> at the surface boundary — the engine stays exec-free</li>
+            </ul>
+          </article>
+
+          <article class="fgroup fgroup--wide glow-card">
+            <span class="fgroup__idx" aria-hidden="true">11</span>
+            <h3 class="fgroup__title">Architecture &amp; dead-code intelligence <span class="fgroup__tier">labs</span></h3>
+            <p class="fgroup__lede">The real modules, which way they depend — and where the layering breaks.</p>
+            <ul class="fgroup__list" role="list">
+              <li><code>architecture</code> · deterministic Louvain communities labeled by dominant package prefix, layered by dependency direction</li>
+              <li><code>architecture_violations</code> · cycles, edges against the dominant direction, high-coupling pairs, god modules</li>
+              <li><code>dead_code</code> · scored candidates with visible exclusions (entry points, test fixtures, exported API)</li>
+              <li><code>framework_map</code> · routes, event handlers &amp; DI wiring from recorded annotations (Spring, NestJS/Angular, .NET)</li>
+              <li>Every finding quotes its edge counts, scores and pinned thresholds — no LLM classification anywhere</li>
             </ul>
           </article>
         </div>

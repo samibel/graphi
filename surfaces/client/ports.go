@@ -91,6 +91,14 @@ type AgentIntelPort interface {
 	Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error)
 	// SearchHybrid returns the embedding-free hybrid search ranking.
 	SearchHybrid(ctx context.Context, p SearchHybridParams) ([]byte, error)
+	// Architecture returns the community/layer architecture view.
+	Architecture(ctx context.Context, p ArchitectureParams) ([]byte, error)
+	// ArchitectureViolations returns the architecture-violation findings.
+	ArchitectureViolations(ctx context.Context, p ArchitectureViolationsParams) ([]byte, error)
+	// DeadCode returns the scored dead-code candidates with exclusions.
+	DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error)
+	// FrameworkMap returns the annotation-derived application view.
+	FrameworkMap(ctx context.Context, p FrameworkMapParams) ([]byte, error)
 }
 
 // StableClient is the composed view a stable surface holds: exactly the three

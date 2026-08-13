@@ -10,10 +10,13 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/agenttools/archintel"
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/changeimpact"
 	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/deadcode"
 	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/frameworkmap"
 	"github.com/samibel/graphi/engine/agenttools/hotspots"
 	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
 	"github.com/samibel/graphi/engine/agenttools/overview"
@@ -363,6 +366,26 @@ func (e *FixtureEngine) InvokeContract(ctx context.Context, operation string, ar
 			MaxCommits: intArg(args, "max_commits", 0),
 			MaxItems:   intArg(args, "max_items", 0),
 			Deps:       e.Deps,
+		})
+	case OpArchitecture:
+		return archintel.Assemble(ctx, archintel.Params{
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
+		})
+	case OpArchitectureViolations:
+		return archintel.Violations(ctx, archintel.ViolationsParams{
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
+		})
+	case OpDeadCode:
+		return deadcode.Assemble(ctx, deadcode.Params{
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
+		})
+	case OpFrameworkMap:
+		return frameworkmap.Assemble(ctx, frameworkmap.Params{
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
 		})
 	default:
 		return nil, fmt.Errorf("scenario: %q is not an agent-tool operation", operation)

@@ -1,0 +1,8 @@
+id: dead-code-fixture
+description: dead_code answers on the fixture graph — scored candidates or a cited clean item, exclusions always visible with reasons.
+fixture_ref: tier1-fixture-go
+operation:
+  name: dead_code
+expect:
+  outcome: found
+  max_latency_ms: 2000

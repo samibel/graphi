@@ -28,6 +28,49 @@ file:
 
 ### Added
 
+- **[labs] `framework_map` — framework intelligence from recorded
+  annotations** (P3). The application-level view on top of the code graph:
+  HTTP routes (`@GetMapping`, NestJS `@Get`, `[HttpGet]`), event handlers
+  (`@EventListener`, `@KafkaListener`, `@EventPattern`, `@Scheduled`),
+  injection points (`@Autowired`, `@Inject`), DI-managed components
+  (`@RestController`, `@Service`, `@Injectable`, Angular `@Component`), and
+  configuration units (`@Configuration`, `@Bean`, `@Module`) — derived
+  purely from the annotation/decorator names the parsers already record,
+  via deterministic provider tables: spring (Java/Kotlin), nest
+  (TypeScript/JavaScript), dotnet (C#). Every fact cites its annotation and
+  definition site; graphs without annotation metadata (Go, Python sources)
+  return an honest typed empty outcome naming the provider scope. CLI
+  `graphi framework-map`, MCP `framework_map` (labs), HTTP
+  `/analyze/framework_map`.
+
+- **[labs] `dead_code` — precise dead-code candidates** (P2). The agent-facing
+  view of the EP-015 `dead_symbol` diagnostic: symbols with zero live inbound
+  references (calls/references/implements/inherits/overrides), each scored by
+  a pinned integer signal model — exported API and dynamic-dispatch methods
+  score lower, penalties quoted in every reason — and the exclusions made
+  VISIBLE with their reasons instead of silently dropped: framework/language
+  entry points (annotations, main, test paths, overrides, decorators), test
+  fixtures, generated/vendored paths, and exported API without usage
+  evidence. A candidate-free graph returns an explicit cited "clean" item.
+  Far better than "references == 0". CLI `graphi dead-code`, MCP `dead_code`
+  (labs), HTTP `/analyze/dead_code`.
+
+- **[labs] `architecture` + `architecture_violations` — architecture
+  intelligence** (P2). `architecture` is the automatic community/layer view of
+  the code graph: deterministic Louvain communities (the SW-103 detector
+  semantics over the symbol-only projection) labeled by their dominant package
+  prefix, layered by dependency DIRECTION (edge majority between communities;
+  foundation = layer 1), with per-community depends-on/used-by neighbor lists
+  and the strongest inter-community dependencies. `architecture_violations`
+  detects cycles (with edge counts along the loop), unexpected dependencies
+  (edges against the dominant direction), high-coupling pairs (≥3 edges both
+  ways), and god modules (≥50% of inter-community edges while touching ≥60% of
+  communities) — pinned integer thresholds quoted in every finding, and an
+  explicit cited "clean" item when nothing fires. No LLM classification
+  anywhere. CLI `graphi architecture` / `graphi architecture-violations`, MCP
+  `architecture` / `architecture_violations` (labs), HTTP
+  `/analyze/architecture` / `/analyze/architecture_violations`.
+
 - **[labs] `search_hybrid` — embedding-free hybrid search** (P3 repository
   search). Multi-token queries ranked by identifier-segment matching
   (camelCase/snake_case aware), path relevance, and bounded graph degree —

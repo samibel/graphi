@@ -133,6 +133,18 @@ func (s *stubClient) Hotspots(context.Context, client.HotspotsParams) ([]byte, e
 func (s *stubClient) SearchHybrid(context.Context, client.SearchHybridParams) ([]byte, error) {
 	return nil, client.ErrAgentIntelUnavailable
 }
+func (s *stubClient) Architecture(context.Context, client.ArchitectureParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
+func (s *stubClient) ArchitectureViolations(context.Context, client.ArchitectureViolationsParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
+func (s *stubClient) DeadCode(context.Context, client.DeadCodeParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
+func (s *stubClient) FrameworkMap(context.Context, client.FrameworkMapParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
 func (s *stubClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }

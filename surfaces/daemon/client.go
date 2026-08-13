@@ -362,6 +362,34 @@ func (c *DaemonClient) Hotspots(ctx context.Context, p client.HotspotsParams) ([
 	return nil, client.ErrAgentIntelUnavailable
 }
 
+// Architecture implements client.Client. Returns ErrAgentIntelUnavailable
+// until a daemon RPC is added.
+func (c *DaemonClient) Architecture(ctx context.Context, p client.ArchitectureParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
+// ArchitectureViolations implements client.Client. Returns
+// ErrAgentIntelUnavailable until a daemon RPC is added.
+func (c *DaemonClient) ArchitectureViolations(ctx context.Context, p client.ArchitectureViolationsParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
+// DeadCode implements client.Client. Returns ErrAgentIntelUnavailable until a
+// daemon RPC is added.
+func (c *DaemonClient) DeadCode(ctx context.Context, p client.DeadCodeParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
+// FrameworkMap implements client.Client. Returns ErrAgentIntelUnavailable
+// until a daemon RPC is added.
+func (c *DaemonClient) FrameworkMap(ctx context.Context, p client.FrameworkMapParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {

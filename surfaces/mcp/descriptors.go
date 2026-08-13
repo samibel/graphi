@@ -769,6 +769,57 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P2 architecture intelligence: architecture + architecture_violations.
+	// Both consume the deterministic Louvain partition (SW-103) over the
+	// symbol-only projection — one documented whole-graph pass per call.
+	tools = append(tools, map[string]any{
+		"name":        ToolArchitecture,
+		"description": "architecture: the automatic architecture view of the code graph — deterministic Louvain communities labeled by their dominant package prefix, layered by dependency DIRECTION (edge majority between communities; foundation = layer 1), each row listing member counts and its strongest depends-on/used-by neighbors with edge counts, plus the top inter-community dependencies. No LLM classification — every line is a graph fact. Purpose: answer 'what are this repository's real modules and which way do they depend?' in one call. When to use: orientation beyond repo_overview, before refactor planning, to see whether intended layering matches reality. When NOT to use: for violations themselves (architecture_violations) or file-tree structure (repo_overview). Input shape: optional limit (item cap). Read-only: true — one node and one edge catalog read (detection needs the whole graph by definition). Partial results possible: community and dependency rows are capped; cyclic communities get 'layer ?' and a pointer to architecture_violations.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 60)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	tools = append(tools, map[string]any{
+		"name":        ToolArchitectureViolations,
+		"description": "architecture_violations: detect architecture violations on the community dependency graph — dependency CYCLES (community A → B → A with edge counts along the loop), UNEXPECTED dependencies (edges against the dominant direction, e.g. 3 edges storage → domain against a 120-edge domain → storage), HIGH-COUPLING pairs (≥3 edges both ways — no clean layering possible), and GOD MODULES (≥50% of all inter-community edges while touching ≥60% of communities). Pinned integer thresholds are quoted in every finding; a violation-free graph returns an explicit cited 'clean' item, never an empty shrug. Purpose: make unusual dependency directions visible before they calcify. When to use: architecture reviews, CI-adjacent hygiene checks, after large refactors. When NOT to use: for the layer view itself (architecture) or single-change risk (change_impact). Input shape: optional limit (item cap). Read-only: true — one node and one edge catalog read. Partial results possible: per-category rows are capped (8 cycles, 12 back-edges, 8 coupling pairs).",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 60)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	// P2 dead code: dead_code — the agent-facing view of the EP-015
+	// dead_symbol diagnostic, with scores and visible exclusions.
+	tools = append(tools, map[string]any{
+		"name":        ToolDeadCode,
+		"description": "dead_code: precise dead-code candidates — symbols with ZERO live inbound references (calls/references/implements/inherits/overrides), each scored by a pinned integer signal model (exported API and dynamic-dispatch methods score lower, penalties quoted in the reason) — plus the exclusions made VISIBLE with their reasons: framework/language entry points (annotations, main, test paths, overrides, decorators), test fixtures, generated/vendored paths, and exported API without usage evidence. Far better than 'references == 0': every candidate says why it is safe and every exclusion says why it is not dead. Purpose: find safely deletable code with evidence. When to use: cleanup passes, before refactors, dead-weight audits. When NOT to use: for a guarded delete itself (CLI safe-delete) or a single symbol's liveness (symbol_context). Input shape: optional limit (item cap). Read-only: true — one node + one edge catalog read (the analysis needs every edge) plus selective hydration. Partial results possible: candidate and exclusion rows are capped; limits.truncated says when.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 40)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	// P3 framework intelligence: framework_map — the application-graph view
+	// derived from parser-recorded annotations; no new parsing, no guessing.
+	tools = append(tools, map[string]any{
+		"name":        ToolFrameworkMap,
+		"description": "framework_map: the application-level view of the repository derived from the framework annotations and decorators already recorded in the graph — HTTP ROUTES (@GetMapping, NestJS @Get, [HttpGet]), EVENT handlers (@EventListener, @KafkaListener, @EventPattern, @Scheduled), INJECTION points (@Autowired, @Inject), DI-managed COMPONENTS (@RestController, @Service, @Injectable, Angular @Component), and CONFIGURATION units (@Configuration, @Bean, @Module). Providers: spring (Java/Kotlin), nest (TypeScript/JavaScript), dotnet (C#). Every fact cites its annotation and definition site verbatim — no LLM classification, no new parsing. Purpose: see the application graph (endpoints, listeners, wiring) on top of the code graph in one call. When to use: orienting in an annotated service codebase, enumerating endpoints before a change, finding event consumers. When NOT to use: for call-graph structure (callers/callees) or repositories without annotation metadata — Go and Python sources record none, and the tool says so honestly. Input shape: optional limit (item cap). Read-only: true — one node catalog read, no edges. Partial results possible: per-category rows are capped; limits.truncated says when.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 60)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

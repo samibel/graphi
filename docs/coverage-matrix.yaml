@@ -609,6 +609,30 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P2 git intelligence: churn × dependency-centrality file ranking (commits-in-window × (1 + graph edge endpoints), integer breakdown per row) with single-author bus-factor warnings for the ranked hotspots; history via the surface-boundary bounded `git log` provider (surfaces/gitlog — the engine stays exec-free), centrality via the compact BriefStats aggregate; typed unavailable without a git provider; byte-parity with `graphi hotspots`; Labs-only."
+  - id: architecture
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 architecture intelligence: the automatic community/layer view — deterministic Louvain communities (SW-103 detector semantics over the symbol-only projection) labeled by dominant package prefix, layered by dependency direction (edge majority; foundation = layer 1), with per-community depends-on/used-by neighbor lists and the strongest inter-community dependencies; no LLM classification; one node + one edge catalog read per call (the repo_overview Communities opt-in precedent); byte-parity with `graphi architecture`; Labs-only."
+  - id: architecture_violations
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 architecture intelligence: cycles, unexpected dependencies (edges against the dominant direction), high-coupling pairs (≥3 edges both ways), and god modules (≥50% of inter-community edges while touching ≥60% of communities) on the community dependency graph; pinned integer thresholds quoted in every finding; a violation-free graph returns an explicit cited clean item; byte-parity with `graphi architecture-violations`; Labs-only."
+  - id: framework_map
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P3 framework intelligence: the application-level view derived from parser-recorded framework annotations/decorators — HTTP routes (@GetMapping/NestJS @Get/[HttpGet]), event handlers (@EventListener/@KafkaListener/@EventPattern/@Scheduled), injection points, DI components, configuration units; providers spring (Java/Kotlin), nest (TypeScript/JavaScript), dotnet (C#); every fact cites annotation + definition site; annotation-free graphs (Go/Python) get an honest typed empty outcome; one node catalog read, no edges; byte-parity with `graphi framework-map`; Labs-only."
+  - id: dead_code
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 dead code: scored dead-code candidates over the EP-015 dead_symbol diagnostic (zero live inbound references across calls/references/implements/inherits/overrides) — pinned integer signal model (exported API and dynamic-dispatch methods score lower, penalties quoted per reason), with exclusions made visible with reasons (framework/language entry points, test fixtures, generated paths, exported API without usage evidence); a candidate-free graph returns an explicit cited clean item; byte-parity with `graphi dead-code`; Labs-only."
   - id: cli
     category: surface
     status: shipped
@@ -792,6 +816,30 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P2 git intelligence: churn × dependency-centrality file ranking with bus-factor warnings over the session repository's bounded git history; byte-parity with the hotspots MCP tool"
+  - id: architecture
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 architecture intelligence: community/layer view of the graph (Louvain + dependency direction); byte-parity with the architecture MCP tool"
+  - id: architecture-violations
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 architecture intelligence: cycles, back-edges, high-coupling pairs, god modules on the community graph; byte-parity with the architecture_violations MCP tool"
+  - id: framework-map
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P3 framework intelligence: routes, event handlers, injections, components, configuration from recorded annotations; byte-parity with the framework_map MCP tool"
+  - id: dead-code
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 dead code: scored dead-code candidates with explicit exclusion reasons; byte-parity with the dead_code MCP tool"
   - id: snapshot
     category: cli-subcommand
     status: shipped

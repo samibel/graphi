@@ -207,6 +207,20 @@
       "note": "run a registered analyzer over the graph"
     },
     {
+      "id": "architecture",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 architecture intelligence: community/layer view of the graph (Louvain + dependency direction); byte-parity with the architecture MCP tool"
+    },
+    {
+      "id": "architecture-violations",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 architecture intelligence: cycles, back-edges, high-coupling pairs, god modules on the community graph; byte-parity with the architecture_violations MCP tool"
+    },
+    {
       "id": "change-impact",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -271,6 +285,13 @@
       "note": "hot-index Unix-socket daemon lifecycle (start|stop|status)"
     },
     {
+      "id": "dead-code",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 dead code: scored dead-code candidates with explicit exclusion reasons; byte-parity with the dead_code MCP tool"
+    },
+    {
       "id": "diagnose",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -306,6 +327,13 @@
       "status": "shipped",
       "tier": "labs",
       "note": "edge-profile clone detection"
+    },
+    {
+      "id": "framework-map",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P3 framework intelligence: routes, event handlers, injections, components, configuration from recorded annotations; byte-parity with the framework_map MCP tool"
     },
     {
       "id": "help",
@@ -702,6 +730,20 @@
       "note": "dedicated tool for the taint analyzer."
     },
     {
+      "id": "architecture",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 architecture intelligence: the automatic community/layer view — deterministic Louvain communities (SW-103 detector semantics over the symbol-only projection) labeled by dominant package prefix, layered by dependency direction (edge majority; foundation = layer 1), with per-community depends-on/used-by neighbor lists and the strongest inter-community dependencies; no LLM classification; one node + one edge catalog read per call (the repo_overview Communities opt-in precedent); byte-parity with `graphi architecture`; Labs-only."
+    },
+    {
+      "id": "architecture_violations",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 architecture intelligence: cycles, unexpected dependencies (edges against the dominant direction), high-coupling pairs (≥3 edges both ways), and god modules (≥50% of inter-community edges while touching ≥60% of communities) on the community dependency graph; pinned integer thresholds quoted in every finding; a violation-free graph returns an explicit cited clean item; byte-parity with `graphi architecture-violations`; Labs-only."
+    },
+    {
       "id": "callees",
       "category": "mcp-tool",
       "status": "shipped",
@@ -765,6 +807,13 @@
       "note": "SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress)."
     },
     {
+      "id": "dead_code",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 dead code: scored dead-code candidates over the EP-015 dead_symbol diagnostic (zero live inbound references across calls/references/implements/inherits/overrides) — pinned integer signal model (exported API and dynamic-dispatch methods score lower, penalties quoted per reason), with exclusions made visible with reasons (framework/language entry points, test fixtures, generated paths, exported API without usage evidence); a candidate-free graph returns an explicit cited clean item; byte-parity with `graphi dead-code`; Labs-only."
+    },
+    {
       "id": "definition",
       "category": "mcp-tool",
       "status": "shipped",
@@ -795,6 +844,13 @@
       "tier": "labs",
       "epic": "EP-013",
       "note": "structural clone-group detection from a JSON config (G4)."
+    },
+    {
+      "id": "framework_map",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P3 framework intelligence: the application-level view derived from parser-recorded framework annotations/decorators — HTTP routes (@GetMapping/NestJS @Get/[HttpGet]), event handlers (@EventListener/@KafkaListener/@EventPattern/@Scheduled), injection points, DI components, configuration units; providers spring (Java/Kotlin), nest (TypeScript/JavaScript), dotnet (C#); every fact cites annotation + definition site; annotation-free graphs (Go/Python) get an honest typed empty outcome; one node catalog read, no edges; byte-parity with `graphi framework-map`; Labs-only."
     },
     {
       "id": "graph_health",

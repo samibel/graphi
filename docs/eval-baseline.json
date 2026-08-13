@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 11,
   "baseline": 96.2,
   "target": 90,
   "scenarios": [
@@ -14,12 +14,27 @@
       "tier1": true
     },
     {
+      "id": "architecture-fixture",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "architecture-violations-fixture",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
       "id": "change-impact-fixture",
       "outcome": "pass",
       "tier1": true
     },
     {
       "id": "change-risk-known-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "dead-code-fixture",
       "outcome": "pass",
       "tier1": true
     },
@@ -35,6 +50,11 @@
     },
     {
       "id": "explain-known-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "framework-map-fixture",
       "outcome": "pass",
       "tier1": true
     },

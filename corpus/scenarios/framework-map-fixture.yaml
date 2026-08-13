@@ -1,0 +1,8 @@
+id: framework-map-fixture
+description: framework_map on the annotation-free Go fixture yields the honest typed empty outcome naming the provider scope.
+fixture_ref: tier1-fixture-go
+operation:
+  name: framework_map
+expect:
+  outcome: empty
+  max_latency_ms: 2000
