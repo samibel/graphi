@@ -408,7 +408,7 @@ and **loopback-only** (refuses any non-loopback bind). All responses carry a
 | `GET /query/{op}?symbol=<id>&depth=N` | Structural query (`op` = callers/callees/references/definition/neighborhood) |
 | `GET /search?q=<term>&limit=N` | Lexical / symbol search |
 | `GET /analyze/{analyzer}?symbol=<id>&…` | Run an analyzer |
-| `GET /analyze/{agent-tool}` | The agent tools ride the same route: `agent_brief`, `explain_symbol`, `related_files`, `change_risk` (GA) and `symbol_context`, `task_context`, `repo_overview`, `test_impact`, `change_impact`, `hotspots` (labs — 403 without `GRAPHI_HTTP_LABS=1`; diff targeting stays CLI/MCP-only) |
+| `GET /analyze/{agent-tool}` | The agent tools ride the same route: `agent_brief`, `explain_symbol`, `related_files`, `change_risk` (GA) and `symbol_context`, `task_context`, `repo_overview`, `test_impact`, `change_impact`, `hotspots`, `search_hybrid`, `architecture`, `architecture_violations` (labs — 403 without `GRAPHI_HTTP_LABS=1`; diff targeting stays CLI/MCP-only) |
 | `GET /events` | Server-Sent Events stream (ingest/graph-change events) |
 | `GET /wiki`, `GET /wiki/c/{id}` | Auto-generated wiki (index + per-community pages, Markdown) |
 
@@ -681,6 +681,8 @@ graphi test-impact (<target> | -diff <file|->)       Which tests must run: must_
 graphi change-impact (<target> | -diff <file|->)     Change Risk 2.0: dependents, tests, co-change, reasons, risk (Labs)
 graphi hotspots [-max-commits n]                     Churn x dependency centrality with bus-factor warnings (Labs)
 graphi search-hybrid "<query text>"                  Embedding-free hybrid search: identifier + path + degree (Labs)
+graphi architecture                                  Community/layer view of the graph: Louvain + dependency direction (Labs)
+graphi architecture-violations                       Cycles, back-edges, high coupling, god modules (Labs)
 graphi list-prs                                      Forge enumeration of open PRs (EP-018)
 graphi triage-prs                                    Graph-derived PR triage ranking (EP-018)
 graphi conflicts-prs                                 Inter-PR conflict detection (EP-018)

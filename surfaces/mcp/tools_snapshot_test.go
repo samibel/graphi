@@ -27,6 +27,8 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"analyze_pr_risk",
 		"analyze_pr_signals",
 		"analyze_taint",
+		"architecture",
+		"architecture_violations",
 		"callees",
 		"callers",
 		"change_impact",

@@ -89,6 +89,12 @@ func (allToolsClient) Hotspots(context.Context, client.HotspotsParams) ([]byte, 
 func (allToolsClient) SearchHybrid(context.Context, client.SearchHybridParams) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) Architecture(context.Context, client.ArchitectureParams) ([]byte, error) {
+	return []byte("{}"), nil
+}
+func (allToolsClient) ArchitectureViolations(context.Context, client.ArchitectureViolationsParams) ([]byte, error) {
+	return []byte("{}"), nil
+}
 func (allToolsClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return []byte("{}"), nil
 }

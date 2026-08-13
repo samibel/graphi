@@ -943,6 +943,60 @@ func RunSearchHybrid(ctx context.Context, c client.AgentIntelPort, args []string
 	return nil
 }
 
+// RunArchitecture runs the architecture agent tool (P2 architecture
+// intelligence, labs) and prints the canonical contract JSON (parity with MCP
+// tools/call).
+//
+// Usage:
+//
+//	architecture [-max-items n]
+func RunArchitecture(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("architecture", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 0 {
+		return fmt.Errorf("cli: architecture takes no positional arguments")
+	}
+	b, err := c.Architecture(ctx, client.ArchitectureParams{MaxItems: *maxItems})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
+// RunArchitectureViolations runs the architecture_violations agent tool (P2
+// architecture intelligence, labs) and prints the canonical contract JSON
+// (parity with MCP tools/call).
+//
+// Usage:
+//
+//	architecture-violations [-max-items n]
+func RunArchitectureViolations(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("architecture-violations", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 0 {
+		return fmt.Errorf("cli: architecture-violations takes no positional arguments")
+	}
+	b, err := c.ArchitectureViolations(ctx, client.ArchitectureViolationsParams{MaxItems: *maxItems})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunMemory executes a memory operation against the shared client and writes the
 // canonical serialized MemoryResponse.
 //

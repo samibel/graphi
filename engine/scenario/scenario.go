@@ -72,6 +72,10 @@ const (
 	// P3 repository-search operation (labs).
 	OpSearchHybrid = "search_hybrid"
 
+	// P2 architecture-intelligence operations (labs), same envelope.
+	OpArchitecture           = "architecture"
+	OpArchitectureViolations = "architecture_violations"
+
 	// OpDiagnose runs the engine diagnostics over the fixture store (signal
 	// quality scenarios).
 	OpDiagnose = "diagnose"
@@ -85,6 +89,7 @@ func KnownOps() []string {
 		OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
 		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
+		OpArchitecture, OpArchitectureViolations,
 		OpDiagnose,
 	}
 }
@@ -96,7 +101,8 @@ func IsAgentToolOp(name string) bool {
 	switch name {
 	case OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
-		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid:
+		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
+		OpArchitecture, OpArchitectureViolations:
 		return true
 	}
 	return false

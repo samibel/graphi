@@ -1,0 +1,8 @@
+id: architecture-violations-fixture
+description: architecture_violations answers on the fixture graph — findings or an explicit cited clean item, never a shrug.
+fixture_ref: tier1-fixture-go
+operation:
+  name: architecture_violations
+expect:
+  outcome: found
+  max_latency_ms: 2000

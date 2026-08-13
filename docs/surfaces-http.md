@@ -49,7 +49,7 @@ the same bytes MCP/CLI return:
 | GET | `/search?q=&limit=` | `client.Search` |
 | GET | `/search/semantic?q=&limit=` | `client.SearchSemantic` (graceful-skip when no embedder) |
 | GET | `/analyze/{analyzer}?symbol=&direction=&max-nodes=` | `client.Analyze` (incl. `impact`, `call-chain`, `concept`, `metrics`, `batched`, `taint`, `pdg`, `interproc`, `contracts`, `git-history`, `pr-risk`, `pr-signals`, `pr-questions`, `communities`, `notebook-ingest`, `taint-query`, `watcher-status`, `triage-prs`, `conflicts-prs`, `suggest-reviewers`, `compare-branches`, `critique-review`) |
-| GET | `/analyze/{agent-tool}` | The ten agent tools ride the same route via dedicated client seams: `agent_brief`, `explain_symbol`, `related_files`, `change_risk` (GA) and `symbol_context`, `task_context`, `repo_overview`, `test_impact`, `change_impact`, `hotspots` (labs — 403 without `GRAPHI_HTTP_LABS=1`; diff targeting is CLI/MCP-only on this GET surface) |
+| GET | `/analyze/{agent-tool}` | The thirteen agent tools ride the same route via dedicated client seams: `agent_brief`, `explain_symbol`, `related_files`, `change_risk` (GA) and `symbol_context`, `task_context`, `repo_overview`, `test_impact`, `change_impact`, `hotspots`, `search_hybrid`, `architecture`, `architecture_violations` (labs — 403 without `GRAPHI_HTTP_LABS=1`; diff targeting is CLI/MCP-only on this GET surface) |
 | GET | `/prs` | `client.ListPRs` (read-only forge enumeration) |
 | GET | `/prs/triage` | `client.TriagePRs` (single-pass graph-derived ranking) |
 | GET | `/prs/conflicts` | `client.ConflictsPRs` (textual + graph-semantic + asymmetric contract-dependency) |

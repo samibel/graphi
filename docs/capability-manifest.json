@@ -207,6 +207,20 @@
       "note": "run a registered analyzer over the graph"
     },
     {
+      "id": "architecture",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 architecture intelligence: community/layer view of the graph (Louvain + dependency direction); byte-parity with the architecture MCP tool"
+    },
+    {
+      "id": "architecture-violations",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 architecture intelligence: cycles, back-edges, high-coupling pairs, god modules on the community graph; byte-parity with the architecture_violations MCP tool"
+    },
+    {
       "id": "change-impact",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -700,6 +714,20 @@
       "tier": "labs",
       "epic": "EP-005",
       "note": "dedicated tool for the taint analyzer."
+    },
+    {
+      "id": "architecture",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 architecture intelligence: the automatic community/layer view — deterministic Louvain communities (SW-103 detector semantics over the symbol-only projection) labeled by dominant package prefix, layered by dependency direction (edge majority; foundation = layer 1), with per-community depends-on/used-by neighbor lists and the strongest inter-community dependencies; no LLM classification; one node + one edge catalog read per call (the repo_overview Communities opt-in precedent); byte-parity with `graphi architecture`; Labs-only."
+    },
+    {
+      "id": "architecture_violations",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 architecture intelligence: cycles, unexpected dependencies (edges against the dominant direction), high-coupling pairs (≥3 edges both ways), and god modules (≥50% of inter-community edges while touching ≥60% of communities) on the community dependency graph; pinned integer thresholds quoted in every finding; a violation-free graph returns an explicit cited clean item; byte-parity with `graphi architecture-violations`; Labs-only."
     },
     {
       "id": "callees",

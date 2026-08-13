@@ -250,6 +250,12 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolSearchHybrid {
 		return s.searchHybridCall(ctx, p)
 	}
+	if p.Name == ToolArchitecture {
+		return s.architectureCall(ctx, p)
+	}
+	if p.Name == ToolArchitectureViolations {
+		return s.architectureViolationsCall(ctx, p)
+	}
 
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
@@ -845,6 +851,31 @@ func (s *Server) searchHybridCall(ctx context.Context, p callParams) (any, *rpcE
 	}
 	b, err := s.client().SearchHybrid(ctx, client.SearchHybridParams{
 		Query:    p.Arguments.Query,
+		MaxItems: derefInt(p.Arguments.Limit),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// architectureCall (P2 architecture intelligence, labs) returns the automatic
+// community/layer view in the C1 contract shape through the shared
+// client.Architecture composition (byte parity with `graphi architecture`).
+func (s *Server) architectureCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.client().Architecture(ctx, client.ArchitectureParams{
+		MaxItems: derefInt(p.Arguments.Limit),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// architectureViolationsCall (P2 architecture intelligence, labs) returns the
+// cycle/back-edge/coupling/god-module findings in the C1 contract shape.
+func (s *Server) architectureViolationsCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.client().ArchitectureViolations(ctx, client.ArchitectureViolationsParams{
 		MaxItems: derefInt(p.Arguments.Limit),
 	})
 	if err != nil {

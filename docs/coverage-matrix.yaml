@@ -609,6 +609,18 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P2 git intelligence: churn × dependency-centrality file ranking (commits-in-window × (1 + graph edge endpoints), integer breakdown per row) with single-author bus-factor warnings for the ranked hotspots; history via the surface-boundary bounded `git log` provider (surfaces/gitlog — the engine stays exec-free), centrality via the compact BriefStats aggregate; typed unavailable without a git provider; byte-parity with `graphi hotspots`; Labs-only."
+  - id: architecture
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 architecture intelligence: the automatic community/layer view — deterministic Louvain communities (SW-103 detector semantics over the symbol-only projection) labeled by dominant package prefix, layered by dependency direction (edge majority; foundation = layer 1), with per-community depends-on/used-by neighbor lists and the strongest inter-community dependencies; no LLM classification; one node + one edge catalog read per call (the repo_overview Communities opt-in precedent); byte-parity with `graphi architecture`; Labs-only."
+  - id: architecture_violations
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 architecture intelligence: cycles, unexpected dependencies (edges against the dominant direction), high-coupling pairs (≥3 edges both ways), and god modules (≥50% of inter-community edges while touching ≥60% of communities) on the community dependency graph; pinned integer thresholds quoted in every finding; a violation-free graph returns an explicit cited clean item; byte-parity with `graphi architecture-violations`; Labs-only."
   - id: cli
     category: surface
     status: shipped
@@ -792,6 +804,18 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P2 git intelligence: churn × dependency-centrality file ranking with bus-factor warnings over the session repository's bounded git history; byte-parity with the hotspots MCP tool"
+  - id: architecture
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 architecture intelligence: community/layer view of the graph (Louvain + dependency direction); byte-parity with the architecture MCP tool"
+  - id: architecture-violations
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P2 architecture intelligence: cycles, back-edges, high-coupling pairs, god modules on the community graph; byte-parity with the architecture_violations MCP tool"
   - id: snapshot
     category: cli-subcommand
     status: shipped

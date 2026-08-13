@@ -339,6 +339,7 @@ graphi setup
               <li><strong>Agent intelligence [labs]:</strong> <code>symbol_context</code> (one-call symbol view incl. snippet, tests, risk), <code>task_context</code> (free-text task &rarr; ranked, token-budgeted bundle), <code>repo_overview</code> (one-call repository summary)</li>
               <li><strong>Test &amp; change intelligence [labs]:</strong> <code>test_impact</code> (must-run / recommended / probably-unaffected test buckets for a diff), <code>change_impact</code> (Change Risk 2.0 incl. co-change partners)</li>
               <li><strong>Git intelligence [labs]:</strong> <code>hotspots</code> (churn &times; dependency centrality with bus-factor warnings)</li>
+              <li><strong>Architecture intelligence [labs]:</strong> <code>architecture</code> (community/layer view: Louvain + dependency direction), <code>architecture_violations</code> (cycles, back-edges, high coupling, god modules)</li>
               <li><strong>Trust [labs]:</strong> <code>graph_health</code>, <code>strict_query</code></li>
               <li><strong>Memory &amp; skills [labs]:</strong> <code>memory</code>, <code>distill</code>, <code>skillgen</code></li>
             </ul>
@@ -357,6 +358,7 @@ graphi setup
                   <tr><td>“Which tests must I run for this diff?”</td><td><code>test_impact</code> <span class="tier-tag">labs</span></td><td>Must-run / recommended buckets with call-edge evidence — 7 tests instead of the whole suite</td></tr>
                   <tr><td>“What am I about to break — and what did I forget?”</td><td><code>change_impact</code> <span class="tier-tag">labs</span></td><td>Dependents, covering tests, co-change partners (“B usually changes with A”) and a risk level</td></tr>
                   <tr><td>“Where does this repository hurt?”</td><td><code>hotspots</code> <span class="tier-tag">labs</span></td><td>Churn × dependency centrality with bus-factor warnings</td></tr>
+                  <tr><td>“Does the intended layering match reality?”</td><td><code>architecture</code> <span class="tier-tag">labs</span></td><td>Louvain communities layered by dependency direction — then <code>architecture_violations</code> for cycles and back-edges</td></tr>
                 </tbody>
               </table>
             </div>

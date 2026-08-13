@@ -769,6 +769,31 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P2 architecture intelligence: architecture + architecture_violations.
+	// Both consume the deterministic Louvain partition (SW-103) over the
+	// symbol-only projection — one documented whole-graph pass per call.
+	tools = append(tools, map[string]any{
+		"name":        ToolArchitecture,
+		"description": "architecture: the automatic architecture view of the code graph — deterministic Louvain communities labeled by their dominant package prefix, layered by dependency DIRECTION (edge majority between communities; foundation = layer 1), each row listing member counts and its strongest depends-on/used-by neighbors with edge counts, plus the top inter-community dependencies. No LLM classification — every line is a graph fact. Purpose: answer 'what are this repository's real modules and which way do they depend?' in one call. When to use: orientation beyond repo_overview, before refactor planning, to see whether intended layering matches reality. When NOT to use: for violations themselves (architecture_violations) or file-tree structure (repo_overview). Input shape: optional limit (item cap). Read-only: true — one node and one edge catalog read (detection needs the whole graph by definition). Partial results possible: community and dependency rows are capped; cyclic communities get 'layer ?' and a pointer to architecture_violations.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 60)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	tools = append(tools, map[string]any{
+		"name":        ToolArchitectureViolations,
+		"description": "architecture_violations: detect architecture violations on the community dependency graph — dependency CYCLES (community A → B → A with edge counts along the loop), UNEXPECTED dependencies (edges against the dominant direction, e.g. 3 edges storage → domain against a 120-edge domain → storage), HIGH-COUPLING pairs (≥3 edges both ways — no clean layering possible), and GOD MODULES (≥50% of all inter-community edges while touching ≥60% of communities). Pinned integer thresholds are quoted in every finding; a violation-free graph returns an explicit cited 'clean' item, never an empty shrug. Purpose: make unusual dependency directions visible before they calcify. When to use: architecture reviews, CI-adjacent hygiene checks, after large refactors. When NOT to use: for the layer view itself (architecture) or single-change risk (change_impact). Input shape: optional limit (item cap). Read-only: true — one node and one edge catalog read. Partial results possible: per-category rows are capped (8 cycles, 12 back-edges, 8 coupling pairs).",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 60)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

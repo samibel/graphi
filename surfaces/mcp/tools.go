@@ -144,6 +144,16 @@ const (
 	// P3 repository search: embedding-free hybrid ranking (identifier
 	// segments, path relevance, bounded graph degree). Labs-only.
 	ToolSearchHybrid = "search_hybrid"
+
+	// P2 architecture intelligence: the automatic community/layer view of the
+	// graph — Louvain communities labeled by dominant package prefix, layered
+	// by dependency direction. Labs-only.
+	ToolArchitecture = "architecture"
+
+	// P2 architecture intelligence: cycles, edges against the dominant
+	// dependency direction, high-coupling pairs, and god modules on the
+	// community graph. Labs-only.
+	ToolArchitectureViolations = "architecture_violations"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -192,6 +202,8 @@ var singletonToolNames = []string{
 	ToolChangeImpact,
 	ToolHotspots,
 	ToolSearchHybrid,
+	ToolArchitecture,
+	ToolArchitectureViolations,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

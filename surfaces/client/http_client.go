@@ -482,8 +482,28 @@ func (h *HTTP) SearchHybrid(ctx context.Context, p SearchHybridParams) ([]byte, 
 	return h.doGET(ctx, "/analyze/search_hybrid", q)
 }
 
+// Architecture rides the read-only /analyze/architecture endpoint (labs; 403
+// unless the server runs with GRAPHI_HTTP_LABS=1).
+func (h *HTTP) Architecture(ctx context.Context, p ArchitectureParams) ([]byte, error) {
+	q := url.Values{}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	return h.doGET(ctx, "/analyze/architecture", q)
+}
+
+// ArchitectureViolations rides the read-only /analyze/architecture_violations
+// endpoint (labs; 403 unless the server runs with GRAPHI_HTTP_LABS=1).
+func (h *HTTP) ArchitectureViolations(ctx context.Context, p ArchitectureViolationsParams) ([]byte, error) {
+	q := url.Values{}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	return h.doGET(ctx, "/analyze/architecture_violations", q)
+}
+
 // Hotspots rides the read-only /analyze/hotspots endpoint (labs; 403 unless
-// the server runs with GRAPHI_LABS=1).
+// the server runs with GRAPHI_HTTP_LABS=1).
 func (h *HTTP) Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error) {
 	q := url.Values{}
 	if p.MaxCommits > 0 {

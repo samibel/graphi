@@ -21,3 +21,8 @@ func isArtifactKind(kind string) bool {
 	_, ok := artifactKinds[kind]
 	return ok
 }
+
+// IsArtifactKind exposes the community-hygiene kind filter to engine consumers
+// that project the graph for detection themselves (e.g. the architecture agent
+// tools), so the symbol-only membership rule has exactly one definition.
+func IsArtifactKind(kind string) bool { return isArtifactKind(kind) }

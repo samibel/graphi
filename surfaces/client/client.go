@@ -448,6 +448,18 @@ type Client interface {
 	// segments, path relevance, bounded graph degree. Read-only.
 	SearchHybrid(ctx context.Context, p SearchHybridParams) ([]byte, error)
 
+	// Architecture runs the architecture agent tool (labs, P2 architecture
+	// intelligence): Louvain communities labeled by dominant package prefix,
+	// layered by dependency direction, with the strongest inter-community
+	// dependencies. Read-only.
+	Architecture(ctx context.Context, p ArchitectureParams) ([]byte, error)
+
+	// ArchitectureViolations runs the architecture_violations agent tool
+	// (labs, P2 architecture intelligence): cycles, edges against the
+	// dominant dependency direction, high-coupling pairs, and god modules on
+	// the community graph. Read-only.
+	ArchitectureViolations(ctx context.Context, p ArchitectureViolationsParams) ([]byte, error)
+
 	// Hotspots runs the hotspots agent tool (labs, P2 git intelligence):
 	// churn × dependency-centrality ranking of the files that change
 	// constantly AND that the graph depends on, with bus-factor warnings.
@@ -673,6 +685,16 @@ type ChangeImpactParams struct {
 // SearchHybridParams carries the search_hybrid inputs.
 type SearchHybridParams struct {
 	Query    string
+	MaxItems int
+}
+
+// ArchitectureParams carries the architecture inputs.
+type ArchitectureParams struct {
+	MaxItems int
+}
+
+// ArchitectureViolationsParams carries the architecture_violations inputs.
+type ArchitectureViolationsParams struct {
 	MaxItems int
 }
 
