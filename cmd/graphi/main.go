@@ -95,6 +95,10 @@ func main() {
 		os.Exit(runAgentTool(os.Args[2:], "hotspots"))
 	case "search-hybrid":
 		os.Exit(runAgentTool(os.Args[2:], "search-hybrid"))
+	case "architecture":
+		os.Exit(runAgentTool(os.Args[2:], "architecture"))
+	case "architecture-violations":
+		os.Exit(runAgentTool(os.Args[2:], "architecture-violations"))
 	case "related-files":
 		os.Exit(runAgentTool(os.Args[2:], "related-files"))
 	case "change-risk":

@@ -28,6 +28,22 @@ file:
 
 ### Added
 
+- **[labs] `architecture` + `architecture_violations` — architecture
+  intelligence** (P2). `architecture` is the automatic community/layer view of
+  the code graph: deterministic Louvain communities (the SW-103 detector
+  semantics over the symbol-only projection) labeled by their dominant package
+  prefix, layered by dependency DIRECTION (edge majority between communities;
+  foundation = layer 1), with per-community depends-on/used-by neighbor lists
+  and the strongest inter-community dependencies. `architecture_violations`
+  detects cycles (with edge counts along the loop), unexpected dependencies
+  (edges against the dominant direction), high-coupling pairs (≥3 edges both
+  ways), and god modules (≥50% of inter-community edges while touching ≥60% of
+  communities) — pinned integer thresholds quoted in every finding, and an
+  explicit cited "clean" item when nothing fires. No LLM classification
+  anywhere. CLI `graphi architecture` / `graphi architecture-violations`, MCP
+  `architecture` / `architecture_violations` (labs), HTTP
+  `/analyze/architecture` / `/analyze/architecture_violations`.
+
 - **[labs] `search_hybrid` — embedding-free hybrid search** (P3 repository
   search). Multi-token queries ranked by identifier-segment matching
   (camelCase/snake_case aware), path relevance, and bounded graph degree —

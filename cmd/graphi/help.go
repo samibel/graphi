@@ -141,6 +141,16 @@ var subcommandHelp = map[string]subHelp{
 		"graphi search-hybrid [-max-items n] <query text>",
 		"graphi search-hybrid \"authentication token validation\"",
 	},
+	"architecture": {
+		"automatic architecture view: Louvain communities layered by dependency direction (labs)",
+		"graphi architecture [-max-items n]",
+		"graphi architecture",
+	},
+	"architecture-violations": {
+		"cycles, back-edges, high coupling, god modules on the community graph (labs)",
+		"graphi architecture-violations [-max-items n]",
+		"graphi architecture-violations",
+	},
 	"related-files": {
 		"ranked, cited read-first file list around a symbol, path, or task",
 		"graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>",
@@ -409,6 +419,8 @@ func printHelp() {
 	fmt.Print("  graphi change-impact <t>    Change Risk 2.0: dependents, covering tests, reasons, risk\n")
 	fmt.Print("  graphi hotspots             churn × centrality file ranking with bus-factor warnings\n")
 	fmt.Print("  graphi search-hybrid <q>    embedding-free hybrid search (identifier + path + degree)\n")
+	fmt.Print("  graphi architecture         community/layer view of the graph (Louvain + dependency direction)\n")
+	fmt.Print("  graphi architecture-violations  cycles, back-edges, high coupling, god modules\n")
 	fmt.Print("  graphi snapshot [<name>]    list or freeze named graph states of this repo\n")
 	fmt.Print("  graphi compare <a> <b>      diff two named graph states ('current' = live graph)\n")
 	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")

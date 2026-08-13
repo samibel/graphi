@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/agenttools/archintel"
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/changeimpact"
 	"github.com/samibel/graphi/engine/agenttools/contract"
@@ -118,7 +119,7 @@ func (d *Direct) SupportsCapability(name string) bool {
 		// These tools intentionally return a typed unavailable/partial result when
 		// graph dependencies are absent; the operation itself is fully executable.
 		return true
-	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid":
+	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid", "architecture", "architecture_violations":
 		// Labs agent intelligence: same typed-unavailable degradation contract.
 		return true
 	case "trust_report", "graph_health":
@@ -995,6 +996,33 @@ func (d *Direct) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte
 func (d *Direct) SearchHybrid(ctx context.Context, p SearchHybridParams) ([]byte, error) {
 	res, err := hybridsearch.Search(ctx, hybridsearch.Params{
 		Query:    p.Query,
+		MaxItems: p.MaxItems,
+		Deps:     d.agentDeps(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// Architecture implements Client via the shared engine/agenttools/archintel
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) Architecture(ctx context.Context, p ArchitectureParams) ([]byte, error) {
+	res, err := archintel.Assemble(ctx, archintel.Params{
+		MaxItems: p.MaxItems,
+		Deps:     d.agentDeps(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// ArchitectureViolations implements Client via the shared
+// engine/agenttools/archintel package, so CLI, MCP, and HTTP emit the same
+// canonical bytes.
+func (d *Direct) ArchitectureViolations(ctx context.Context, p ArchitectureViolationsParams) ([]byte, error) {
+	res, err := archintel.Violations(ctx, archintel.ViolationsParams{
 		MaxItems: p.MaxItems,
 		Deps:     d.agentDeps(),
 	})

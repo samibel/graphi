@@ -64,6 +64,14 @@ After editing, two further labs tools close the loop:
    dependency centrality with per-row breakdowns and single-author
    bus-factor warnings. Use it to plan refactors and prioritize review
    attention before a task even starts.
+7. **`search_hybrid`** — multi-token discovery without embeddings: lexical
+   retrieval re-ranked by identifier segments, path relevance, and bounded
+   graph degree, with the per-signal breakdown in every reason.
+8. **`architecture`** — the automatic community/layer view: deterministic
+   Louvain communities labeled by dominant package prefix, layered by
+   dependency direction. Follow with **`architecture_violations`** for
+   cycles, edges against the dominant direction, high-coupling pairs, and
+   god modules — every finding quotes its edge counts and thresholds.
 
 These are labs operations: their shapes may still change, and they are only
 advertised under `graphi mcp -labs` (HTTP: 403 without `GRAPHI_HTTP_LABS=1`). The
@@ -192,10 +200,12 @@ that would require a server-initiated `roots/list` request.
 Over HTTP the tools are `GET /analyze/agent_brief?topic=…`,
 `/analyze/related_files?target=…&direction=…`,
 `/analyze/explain_symbol?symbol=…`, `/analyze/change_risk?target=…`, and the
-six Labs agent-intelligence tools on the same route
+nine Labs agent-intelligence tools on the same route
 (`/analyze/symbol_context?symbol=…`, `/analyze/task_context?task=…`,
 `/analyze/repo_overview`, `/analyze/test_impact?target=…`,
-`/analyze/change_impact?target=…`, `/analyze/hotspots` — 403 without
+`/analyze/change_impact?target=…`, `/analyze/hotspots`,
+`/analyze/search_hybrid?query=…`, `/analyze/architecture`,
+`/analyze/architecture_violations` — 403 without
 `GRAPHI_HTTP_LABS=1`; diff targeting stays CLI/MCP-only on this GET surface) —
 all advertised in `GET /contract`.
 

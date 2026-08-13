@@ -1,0 +1,10 @@
+id: architecture-fixture
+description: architecture returns the community/layer view of the fixture graph with evidence.
+fixture_ref: tier1-fixture-go
+operation:
+  name: architecture
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  max_latency_ms: 2000
