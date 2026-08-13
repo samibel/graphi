@@ -97,6 +97,8 @@ type AgentIntelPort interface {
 	ArchitectureViolations(ctx context.Context, p ArchitectureViolationsParams) ([]byte, error)
 	// DeadCode returns the scored dead-code candidates with exclusions.
 	DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error)
+	// FrameworkMap returns the annotation-derived application view.
+	FrameworkMap(ctx context.Context, p FrameworkMapParams) ([]byte, error)
 }
 
 // StableClient is the composed view a stable surface holds: exactly the three

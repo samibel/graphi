@@ -807,6 +807,19 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P3 framework intelligence: framework_map — the application-graph view
+	// derived from parser-recorded annotations; no new parsing, no guessing.
+	tools = append(tools, map[string]any{
+		"name":        ToolFrameworkMap,
+		"description": "framework_map: the application-level view of the repository derived from the framework annotations and decorators already recorded in the graph — HTTP ROUTES (@GetMapping, NestJS @Get, [HttpGet]), EVENT handlers (@EventListener, @KafkaListener, @EventPattern, @Scheduled), INJECTION points (@Autowired, @Inject), DI-managed COMPONENTS (@RestController, @Service, @Injectable, Angular @Component), and CONFIGURATION units (@Configuration, @Bean, @Module). Providers: spring (Java/Kotlin), nest (TypeScript/JavaScript), dotnet (C#). Every fact cites its annotation and definition site verbatim — no LLM classification, no new parsing. Purpose: see the application graph (endpoints, listeners, wiring) on top of the code graph in one call. When to use: orienting in an annotated service codebase, enumerating endpoints before a change, finding event consumers. When NOT to use: for call-graph structure (callers/callees) or repositories without annotation metadata — Go and Python sources record none, and the tool says so honestly. Input shape: optional limit (item cap). Read-only: true — one node catalog read, no edges. Partial results possible: per-category rows are capped; limits.truncated says when.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 60)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

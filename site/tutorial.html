@@ -339,7 +339,7 @@ graphi setup
               <li><strong>Agent intelligence [labs]:</strong> <code>symbol_context</code> (one-call symbol view incl. snippet, tests, risk), <code>task_context</code> (free-text task &rarr; ranked, token-budgeted bundle), <code>repo_overview</code> (one-call repository summary)</li>
               <li><strong>Test &amp; change intelligence [labs]:</strong> <code>test_impact</code> (must-run / recommended / probably-unaffected test buckets for a diff), <code>change_impact</code> (Change Risk 2.0 incl. co-change partners)</li>
               <li><strong>Git intelligence [labs]:</strong> <code>hotspots</code> (churn &times; dependency centrality with bus-factor warnings)</li>
-              <li><strong>Architecture &amp; dead-code intelligence [labs]:</strong> <code>architecture</code> (community/layer view: Louvain + dependency direction), <code>architecture_violations</code> (cycles, back-edges, high coupling, god modules), <code>dead_code</code> (scored candidates with exclusion reasons)</li>
+              <li><strong>Architecture &amp; dead-code intelligence [labs]:</strong> <code>architecture</code> (community/layer view: Louvain + dependency direction), <code>architecture_violations</code> (cycles, back-edges, high coupling, god modules), <code>dead_code</code> (scored candidates with exclusion reasons), <code>framework_map</code> (routes, events, DI from recorded annotations)</li>
               <li><strong>Trust [labs]:</strong> <code>graph_health</code>, <code>strict_query</code></li>
               <li><strong>Memory &amp; skills [labs]:</strong> <code>memory</code>, <code>distill</code>, <code>skillgen</code></li>
             </ul>
@@ -360,6 +360,7 @@ graphi setup
                   <tr><td>“Where does this repository hurt?”</td><td><code>hotspots</code> <span class="tier-tag">labs</span></td><td>Churn × dependency centrality with bus-factor warnings</td></tr>
                   <tr><td>“Does the intended layering match reality?”</td><td><code>architecture</code> <span class="tier-tag">labs</span></td><td>Louvain communities layered by dependency direction — then <code>architecture_violations</code> for cycles and back-edges</td></tr>
                   <tr><td>“What can I safely delete?”</td><td><code>dead_code</code> <span class="tier-tag">labs</span></td><td>Scored candidates with visible exclusions — entry points and exported API are never silently flagged</td></tr>
+                  <tr><td>“What are this service’s endpoints and listeners?”</td><td><code>framework_map</code> <span class="tier-tag">labs</span></td><td>Routes, event handlers and DI wiring derived from recorded framework annotations</td></tr>
                 </tbody>
               </table>
             </div>

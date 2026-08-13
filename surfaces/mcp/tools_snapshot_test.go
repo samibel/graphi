@@ -42,6 +42,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"distill",
 		"explain_symbol",
 		"find_clones",
+		"framework_map",
 		"graph_health",
 		"hotspots",
 		"impact",

@@ -465,6 +465,11 @@ type Client interface {
 	// dead_symbol diagnostic. Read-only.
 	DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error)
 
+	// FrameworkMap runs the framework_map agent tool (labs, P3 framework
+	// intelligence): routes, event handlers, injections, components, and
+	// configuration units derived from recorded annotations. Read-only.
+	FrameworkMap(ctx context.Context, p FrameworkMapParams) ([]byte, error)
+
 	// Hotspots runs the hotspots agent tool (labs, P2 git intelligence):
 	// churn × dependency-centrality ranking of the files that change
 	// constantly AND that the graph depends on, with bus-factor warnings.
@@ -705,6 +710,11 @@ type ArchitectureViolationsParams struct {
 
 // DeadCodeParams carries the dead_code inputs.
 type DeadCodeParams struct {
+	MaxItems int
+}
+
+// FrameworkMapParams carries the framework_map inputs.
+type FrameworkMapParams struct {
 	MaxItems int
 }
 

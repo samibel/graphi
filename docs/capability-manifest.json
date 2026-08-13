@@ -329,6 +329,13 @@
       "note": "edge-profile clone detection"
     },
     {
+      "id": "framework-map",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P3 framework intelligence: routes, event handlers, injections, components, configuration from recorded annotations; byte-parity with the framework_map MCP tool"
+    },
+    {
       "id": "help",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -837,6 +844,13 @@
       "tier": "labs",
       "epic": "EP-013",
       "note": "structural clone-group detection from a JSON config (G4)."
+    },
+    {
+      "id": "framework_map",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P3 framework intelligence: the application-level view derived from parser-recorded framework annotations/decorators — HTTP routes (@GetMapping/NestJS @Get/[HttpGet]), event handlers (@EventListener/@KafkaListener/@EventPattern/@Scheduled), injection points, DI components, configuration units; providers spring (Java/Kotlin), nest (TypeScript/JavaScript), dotnet (C#); every fact cites annotation + definition site; annotation-free graphs (Go/Python) get an honest typed empty outcome; one node catalog read, no edges; byte-parity with `graphi framework-map`; Labs-only."
     },
     {
       "id": "graph_health",

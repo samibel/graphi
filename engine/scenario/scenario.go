@@ -79,6 +79,9 @@ const (
 	// P2 dead-code operation (labs), same envelope.
 	OpDeadCode = "dead_code"
 
+	// P3 framework-intelligence operation (labs), same envelope.
+	OpFrameworkMap = "framework_map"
+
 	// OpDiagnose runs the engine diagnostics over the fixture store (signal
 	// quality scenarios).
 	OpDiagnose = "diagnose"
@@ -92,7 +95,7 @@ func KnownOps() []string {
 		OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
 		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
-		OpArchitecture, OpArchitectureViolations, OpDeadCode,
+		OpArchitecture, OpArchitectureViolations, OpDeadCode, OpFrameworkMap,
 		OpDiagnose,
 	}
 }
@@ -105,7 +108,7 @@ func IsAgentToolOp(name string) bool {
 	case OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
 		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
-		OpArchitecture, OpArchitectureViolations, OpDeadCode:
+		OpArchitecture, OpArchitectureViolations, OpDeadCode, OpFrameworkMap:
 		return true
 	}
 	return false

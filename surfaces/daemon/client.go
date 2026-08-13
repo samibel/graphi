@@ -383,6 +383,13 @@ func (c *DaemonClient) DeadCode(ctx context.Context, p client.DeadCodeParams) ([
 	return nil, client.ErrAgentIntelUnavailable
 }
 
+// FrameworkMap implements client.Client. Returns ErrAgentIntelUnavailable
+// until a daemon RPC is added.
+func (c *DaemonClient) FrameworkMap(ctx context.Context, p client.FrameworkMapParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {
