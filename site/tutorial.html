@@ -336,6 +336,11 @@ graphi setup
               <li><strong>Analysis [labs]:</strong> <code>analyze</code> (the generic selector), <code>analyze_taint</code>, <code>analyze_pdg</code>, <code>analyze_interproc</code>, <code>analyze_contracts</code>, <code>analyze_githistory</code></li>
               <li><strong>PR review [labs]:</strong> <code>analyze_pr_risk</code>, <code>triage_prs</code>, <code>suggest_reviewers</code>, <code>compare_branches</code>, <code>critique_review</code>, <code>pr_comment</code> and more</li>
               <li><strong>Edit (opt-in) &amp; readout [labs]:</strong> <code>refactor_preview</code>, <code>refactor</code>, <code>undo</code>, <code>savings</code></li>
+              <li><strong>Agent intelligence [labs]:</strong> <code>symbol_context</code> (one-call symbol view incl. snippet, tests, risk), <code>task_context</code> (free-text task &rarr; ranked, token-budgeted bundle), <code>repo_overview</code> (one-call repository summary)</li>
+              <li><strong>Test &amp; change intelligence [labs]:</strong> <code>test_impact</code> (must-run / recommended / probably-unaffected test buckets for a diff), <code>change_impact</code> (Change Risk 2.0 incl. co-change partners)</li>
+              <li><strong>Git intelligence [labs]:</strong> <code>hotspots</code> (churn &times; dependency centrality with bus-factor warnings)</li>
+              <li><strong>Trust [labs]:</strong> <code>graph_health</code>, <code>strict_query</code></li>
+              <li><strong>Memory &amp; skills [labs]:</strong> <code>memory</code>, <code>distill</code>, <code>skillgen</code></li>
             </ul>
 
             <h3>6.4 Typical agent prompts (applied to a repo)</h3>
@@ -348,6 +353,10 @@ graphi setup
                   <tr><td>“Is there a path from an input source to a dangerous sink?”</td><td><code>analyze_taint</code></td><td>Flow-sensitive source→sink paths</td></tr>
                   <tr><td>“How risky is this diff?”</td><td><code>analyze_pr_risk</code> / <code>analyze_pr_signals</code></td><td>Risk-scored diff + signals</td></tr>
                   <tr><td>“Rename <code>price</code> to <code>cost</code> — across all call sites”</td><td><code>refactor_preview</code> → <code>refactor</code> → <code>undo</code></td><td>Atomic saga with rollback</td></tr>
+                  <tr><td>“I’m new to this repo — where do I start?”</td><td><code>repo_overview</code> <span class="tier-tag">labs</span></td><td>Structure, languages, entry points and central symbols in one call</td></tr>
+                  <tr><td>“Which tests must I run for this diff?”</td><td><code>test_impact</code> <span class="tier-tag">labs</span></td><td>Must-run / recommended buckets with call-edge evidence — 7 tests instead of the whole suite</td></tr>
+                  <tr><td>“What am I about to break — and what did I forget?”</td><td><code>change_impact</code> <span class="tier-tag">labs</span></td><td>Dependents, covering tests, co-change partners (“B usually changes with A”) and a risk level</td></tr>
+                  <tr><td>“Where does this repository hurt?”</td><td><code>hotspots</code> <span class="tier-tag">labs</span></td><td>Churn × dependency centrality with bus-factor warnings</td></tr>
                 </tbody>
               </table>
             </div>
@@ -471,6 +480,7 @@ graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.d
               <li><strong>Branch comparison works over frozen states, not git refs:</strong> <code>graphi snapshot &lt;name&gt;</code> freezes the currently checked-out code under a name, and <code>graphi compare &lt;base&gt; &lt;head&gt;</code> diffs two names (the reserved <code>current</code> means the live graph) — so check out each branch, snapshot it, then compare. The raw form <code>compare-branches -base/-head</code> takes explicit SQLite paths and never resolves <code>main</code>/<code>feature</code> from git itself.</li>
               <li><strong><code>safe-delete</code> only removes the declaration line:</strong> for multi-line bodies, check the diff.</li>
               <li><strong><code>graphi-broad</code> (CGO) is not memory-isolated:</strong> for trusted/CI sources only. A C-grammar crash isn’t caught by Go’s safety mechanisms.</li>
+              <li><strong>Git-derived signals need local history:</strong> <code>hotspots</code>, <code>change_impact</code>’s co-change section and the <code>git-history</code>/<code>pr-signals</code>/<code>suggest-reviewers</code> analyzers read a bounded window of the local <code>git log</code> (surface boundary only). Outside a git repository or in attach mode (<code>-db</code>) they return a typed <em>unavailable</em>/empty outcome instead of guessing.</li>
               <li><strong>Semantic search is off by default:</strong> without a configured embedder, <code>search -semantic</code> returns a typed “unavailable” response (no error, no network). Details and enabling in section 9.</li>
             </ul>
           </div>
@@ -527,6 +537,14 @@ graphi analyze impact     -db ... -symbol &lt;id&gt; -direction reverse|forward
 graphi analyze call-chain -db ... -symbol &lt;id&gt; -target &lt;id&gt;
 graphi analyze concept    -db ... -symbol &lt;id&gt; -concept "..."
 graphi analyze metrics|taint|pdg|interproc|contracts|git-history|batched -db ... -symbol &lt;id&gt;
+
+# AGENT / TEST / CHANGE / GIT INTELLIGENCE (labs)
+graphi symbol-context &lt;symbol&gt;                    # one-call symbol view
+graphi task-context "add rate limiting"           # task → ranked context bundle
+graphi repo-overview [-communities]               # one-call repository summary
+git diff HEAD~1..HEAD | graphi test-impact -diff -    # which tests must run
+git diff HEAD~1..HEAD | graphi change-impact -diff -  # Change Risk 2.0
+graphi hotspots [-max-commits n]                  # churn × centrality ranking
 
 # DAEMON (fast repeated queries)
 graphi daemon start -socket /tmp/graphi.sock -db ~/.graphi/graph.db

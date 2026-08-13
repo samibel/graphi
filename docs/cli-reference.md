@@ -25,6 +25,12 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi related-files <target>` | **GA** | Ranked, cited read-first file list. |
 | `graphi change-risk <target>` | **GA** | Evidence-based local blast-radius estimate. |
 | `graphi agent-brief` | **GA** | Bounded, cited task-start context packet. |
+| `graphi symbol-context [-depth 1-3] [-max-items n] [-token-budget n] <symbol\|path\|node-id>` | labs | Unified one-call symbol view: definition + token-budgeted source snippet, type hierarchy, callers/callees/references, covering tests (bounded reverse walk), and a `change_risk`-consistent risk level. |
+| `graphi task-context [-max-items n] [-token-budget n] <task text>` | labs | Free-text task → deterministically ranked, cited, token-budgeted context bundle with a recommended read order (integer weight model, hash-stamped in the summary). |
+| `graphi repo-overview [-max-items n] [-communities]` | labs | One-call repository summary: totals, directory tree, language mix, entry points, central symbols, test/generated areas, external boundaries. `-communities` opts into the full-graph community pass. |
+| `graphi test-impact [-depth 1-3] [-max-items n] (<target> \| -diff <file\|->)` | labs | Bucket the repository's tests for a change: `must_run` / `recommended` / `probably_unaffected` / `unknown`. Pipe `git diff <range>` into `-diff -` for range selection. |
+| `graphi change-impact [-depth 1-3] [-max-items n] (<target> \| -diff <file\|->)` | labs | Change Risk 2.0: changed symbols, public-API subset, dependents, covering tests, co-change partners, explicit reasons, risk level. The stable `change-risk` quick check is unchanged. |
+| `graphi hotspots [-max-commits n] [-max-items n]` | labs | Churn × dependency-centrality file ranking with bus-factor warnings, over the repo's bounded local git history. |
 | `graphi parse <file>` | labs | Parse a single file into the graph (default when no subcommand is given). |
 | `graphi query <op> -symbol <id> [-depth N]` | **GA** | Structural query. `<op>` is one of `callers`, `callees`, `references`, `definition`, `neighborhood`. |
 | `graphi query-strict <op> -symbol <id> [-min-tier confirmed\|derived\|heuristic] [-policy <name>]` | labs | Strict wrapper: the stable query runs unchanged, then result edges below `-min-tier` are excluded; the envelope carries the excluded count and filtered emptiness always carries an explicit limitation. Optional `-policy` preflight blocks fail-closed on FAIL/UNVERIFIED before the query runs. Byte-identical to the `strict_query` MCP tool (labs). |
@@ -51,6 +57,15 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi memory store\|recall\|forget ...` | labs | Agent memory operations. |
 | `graphi distill -session <id> -decisions "..." -risks "..." -questions "..." -files "..."` | labs | Session distillation. |
 | `graphi skillgen -name <n> -trigger <t> -description <d>` | labs | Deterministic skill generation. |
+| `graphi compound <query>` | labs | Cypher-like compound query (SEED/HOP/WHERE/MAXDEPTH). |
+| `graphi refactor-preview -kind rename\|signature_change -target-symbol <id> -old-name <n> -new-name <n>` | labs | Preview a graph-aware refactor (blast radius + planned edits) without mutating. |
+| `graphi refactor …` | labs | Apply a refactor through the atomic edit saga (auditable change record + undo token). |
+| `graphi undo -token <undo-token>` | labs | Reverse a previously applied edit by its undo token. |
+| `graphi doctor` | labs | Read-only diagnostic checks: MCP registrations, DB, PATH health. |
+| `graphi ui` | labs | Index the current repo and open the local web UI. |
+| `graphi claude` | labs | Wire graphi into Claude Code (MCP) — the single-client shortcut for `setup`. |
+| `graphi upgrade [-print]` | labs | Update to the latest release (user-initiated; never automatic). |
+| `graphi help [<subcommand>]` | labs | Usage overview, or detailed help for one subcommand. |
 | `graphi privacy-audit [--target ./...]` | labs | Print the local-first proof (real CGo scan + canary egress guard); non-zero on violation. |
 | `graphi savings -ledger <path>` | labs | Print the session token-savings readout from a ledger a prior MCP/daemon session wrote. |
 | `graphi version` | labs | Print the version / commit / build date stamped into the binary. |
@@ -63,6 +78,11 @@ graphi analyze [-db path] [-daemon socket] <analyzer> -symbol <id> \
 ```
 
 Available analyzers: `impact`, `call-chain`, `concept`, `metrics`, `batched`, `taint`, `pdg`, `interproc`, `contracts`, `git-history`, `pr-risk`, `pr-signals`, `pr-questions`, `communities`, `notebook-ingest`, `taint-query`, `watcher-status`, `triage-prs`, `conflicts-prs`, `suggest-reviewers`, `compare-branches`, `critique-review`.
+
+> `git-history`, `pr-signals` and `suggest-reviewers` read real local history
+> via the `surfaces/gitlog` provider when run from a git repository (they were
+> provider-less and always empty before the P2 git-intelligence work). In
+> attach mode (`-db`) they degrade to empty results as before.
 
 `impact` is the only GA operation here; the generic `analyze` dispatcher and
 every other analyzer are Labs.

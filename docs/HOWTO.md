@@ -175,6 +175,11 @@ graphi taint  <symbol>         # flow-sensitive taint from sources to sinks
 
 graphi ui        # explicitly serve the graph + open the browser
 graphi claude    # wire graphi into Claude Code (MCP setup)
+
+# One-call agent intelligence (Labs)
+graphi symbol-context <symbol>    # definition + snippet, hierarchy, tests, risk
+graphi task-context "<task>"      # free-text task -> ranked context bundle
+graphi repo-overview              # one-call repository summary
 ```
 
 These are aliases over the same engine as the full forms below.
@@ -403,6 +408,7 @@ and **loopback-only** (refuses any non-loopback bind). All responses carry a
 | `GET /query/{op}?symbol=<id>&depth=N` | Structural query (`op` = callers/callees/references/definition/neighborhood) |
 | `GET /search?q=<term>&limit=N` | Lexical / symbol search |
 | `GET /analyze/{analyzer}?symbol=<id>&…` | Run an analyzer |
+| `GET /analyze/{agent-tool}` | The agent tools ride the same route: `agent_brief`, `explain_symbol`, `related_files`, `change_risk` (GA) and `symbol_context`, `task_context`, `repo_overview`, `test_impact`, `change_impact`, `hotspots` (labs — 403 without `GRAPHI_HTTP_LABS=1`; diff targeting stays CLI/MCP-only) |
 | `GET /events` | Server-Sent Events stream (ingest/graph-change events) |
 | `GET /wiki`, `GET /wiki/c/{id}` | Auto-generated wiki (index + per-community pages, Markdown) |
 
@@ -580,6 +586,30 @@ usable for the current source — the report says so prominently and exits
 non-zero. See [agent-workflows.md](agent-workflows.md) for the agent preflight
 pattern.
 
+### 6.8 Agent intelligence (labs): one-call context, test & change impact
+
+The six labs agent-intelligence operations collapse the usual multi-call
+workflow into single, cited, token-budgeted answers (CLI shown; the same
+tools are on `graphi mcp -labs` and on HTTP `GET /analyze/{name}` behind
+`GRAPHI_HTTP_LABS=1`):
+
+```bash
+graphi repo-overview                    # orient: structure, languages, entry points
+graphi task-context "add rate limiting" # scope a task: seeds, tests, configs, read order
+graphi symbol-context util.Format       # one-call symbol view incl. snippet + tests + risk
+
+# after editing — pipe a git range in (the product never runs git for you):
+git diff HEAD~1..HEAD | graphi test-impact -diff -    # which tests must run
+git diff HEAD~1..HEAD | graphi change-impact -diff -  # Change Risk 2.0 incl. co-change
+graphi hotspots -max-commits 500        # where the repository hurts
+```
+
+`hotspots`, `change-impact`'s co-change section and the git-history/reviewer
+analyzers read a bounded window of the **local** git history via the
+`surfaces/gitlog` provider (surface boundary only — the engine never executes
+anything). Outside a git repository or in attach mode (`-db`) they return a
+typed unavailable/empty outcome instead of guessing.
+
 ---
 
 ## 7. Prove it’s local-first (`privacy-audit`)
@@ -644,6 +674,12 @@ graphi analyze <analyzer> -symbol <id> [opts]        impact|call-chain|concept|m
                                                      communities|notebook-ingest|taint-query|watcher-status|
                                                      triage-prs|conflicts-prs|suggest-reviewers|
                                                      compare-branches|critique-review
+graphi symbol-context [-depth 1-3] [-token-budget n] <sym>   One-call symbol view: definition+snippet, hierarchy, tests, risk (Labs)
+graphi task-context [-token-budget n] "<task text>"  Free-text task -> ranked, token-budgeted context bundle (Labs)
+graphi repo-overview [-communities]                  One-call repository summary (Labs)
+graphi test-impact (<target> | -diff <file|->)       Which tests must run: must_run/recommended/unaffected (Labs)
+graphi change-impact (<target> | -diff <file|->)     Change Risk 2.0: dependents, tests, co-change, reasons, risk (Labs)
+graphi hotspots [-max-commits n]                     Churn x dependency centrality with bus-factor warnings (Labs)
 graphi list-prs                                      Forge enumeration of open PRs (EP-018)
 graphi triage-prs                                    Graph-derived PR triage ranking (EP-018)
 graphi conflicts-prs                                 Inter-PR conflict detection (EP-018)

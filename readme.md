@@ -10,7 +10,7 @@
   <a href="https://samibel.github.io/graphi/tutorial.html"><strong>Hands-on tutorial</strong></a>
 </p>
 
-> Local-first, CGo-free code-intelligence engine. Parse a repository into a deterministic, provenance-backed code graph and answer structural and semantic questions over an agent-first **MCP (stdio)** + **CLI** surface — without a single byte leaving your machine.
+> Local-first, CGo-free code-intelligence engine. Parse a repository into a deterministic, provenance-backed code graph and answer structural and semantic questions — plus one-call agent context, test-impact, change-risk and hotspot bundles (Labs) — over an agent-first **MCP (stdio)** + **CLI** surface, without a single byte leaving your machine.
 
 [![CGo-free](https://img.shields.io/badge/build-CGo--free-success)](#the-local-first-contract)
 [![local-first](https://img.shields.io/badge/runtime-zero%20egress-success)](#the-local-first-contract)
@@ -20,7 +20,9 @@ An AI coding agent that greps and re-reads your whole codebase on every question
 is slow, expensive, and still guessing. graphi indexes the repo once into a
 graph — symbols as nodes, calls/references/imports as edges — and answers
 "who calls this," "what breaks if I change it," and "how are these two
-functions connected" in one round-trip, entirely on your machine. Structural
+functions connected" in one round-trip, entirely on your machine. The Labs
+agent-intelligence layer extends that to "give me the context for this task,"
+"which tests must I run for this diff," and "where does this repository hurt." Structural
 answers cover the symbols your repo defines: stdlib and third-party targets
 are recorded, but deliberately not navigable (see
 [docs/external-nodes.md](docs/external-nodes.md)).
@@ -71,6 +73,14 @@ graphi ui                    # explicitly serve the graph + open the browser
 graphi claude                # wire graphi into Claude Code (MCP)
 graphi setup                 # wire every detected local MCP client (Claude Code, Copilot, Cursor, Devin CLI, Windsurf, Claude Desktop)
 
+# One-call agent, test, change & git intelligence (Labs)
+graphi symbol-context <symbol>   # definition + snippet, hierarchy, tests, risk
+graphi task-context "<task>"     # free-text task -> ranked, token-budgeted context
+graphi repo-overview             # structure, languages, entry points, central symbols
+git diff HEAD~1..HEAD | graphi test-impact -diff -    # which tests must run
+git diff HEAD~1..HEAD | graphi change-impact -diff -  # Change Risk 2.0
+graphi hotspots                  # churn x dependency centrality, bus-factor warnings
+
 # Freeze and diff branch states (Labs)
 graphi snapshot main         # freeze the current checkout under a name
 graphi compare main current  # graph-level diff: snapshot vs live graph
@@ -120,7 +130,10 @@ definition** of the GA / Preview / Labs / Source-only tiers; this is the summary
 
 **Not GA:** every other language is **Preview** (shipped and usable, unproven);
 HTTP/SSE, the daemon, web UI, VS Code extension, GitHub Action, refactorings,
-taint, agent memory and semantic search are **Labs** (opt-in: `graphi mcp -labs`,
+taint, agent memory, semantic search, the one-call agent-intelligence bundles
+(`symbol_context`, `task_context`, `repo_overview`), the test/change
+intelligence (`test_impact`, `change_impact`) and the git intelligence
+(`hotspots`, co-change) are **Labs** (opt-in: `graphi mcp -labs`,
 `GRAPHI_HTTP_LABS=1`); the wiki is Source-only. **SaaS does not exist** — nothing
 is hosted, there is no service to sign up for.
 
@@ -133,6 +146,11 @@ is hosted, there is no service to sign up for.
   See [docs/external-nodes.md](docs/external-nodes.md).
 - **Cross-file edges are heuristic-tier** for Preview languages; Go alone
   additionally gets type-checker-`confirmed` edges.
+- **Git-derived signals need local history.** `hotspots`, `change_impact`'s
+  co-change section and the git-history/reviewer analyzers read a bounded
+  window of the local `git log` (surface boundary only — the engine never
+  executes anything). Outside a git repository or in attach mode (`-db`)
+  they return a typed unavailable/empty outcome instead of guessing.
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`
 > column answers a different question ("is this one of the 12 frozen
@@ -193,8 +211,10 @@ build). Setup and the guarantees that hold either way:
 
 The Stable default tier runs with no accounts and no outbound network access.
 Explicitly configured Labs/forge or embedder features may contact their
-configured service; they are not part of that default claim. The proof is
-runnable: `graphi privacy-audit`.
+configured service; they are not part of that default claim. The git-history
+provider behind the Labs git intelligence executes the local `git` binary
+against the local repository — no network, no writes. The proof is runnable:
+`graphi privacy-audit`.
 
 ## Subcommands (the short list)
 
@@ -209,6 +229,7 @@ runnable: `graphi privacy-audit`.
 | `graphi impact <symbol>` | **GA** | Blast radius of a change (in-repo) |
 | `graphi search <query>` | **GA** | Lexical / symbol search |
 | `graphi agent-brief` · `explain-symbol` · `related-files` · `change-risk` | **GA** | Cited agent-context operations |
+| `graphi symbol-context` · `task-context` · `repo-overview` · `test-impact` · `change-impact` · `hotspots` | labs | One-call agent, test, change & git intelligence |
 | `graphi mcp` | **GA** | MCP stdio server (the agent-first surface) |
 | `graphi setup` | labs | Wire graphi into local MCP clients |
 | `graphi analyze <analyzer>` | labs | Deep analyzers (taint, pdg, call-chain, …) |
@@ -223,8 +244,8 @@ or `graphi help`.
 ```mermaid
 flowchart TD
     CMD["cmd/*  — entry points, wiring"]
-    SURF["surfaces/*  — CLI, daemon, MCP stdio/HTTP, HTTP/SSE, forge, guard"]
-    ENG["engine/*  — query, search, analysis, edit, observe, overlay, watch, …"]
+    SURF["surfaces/*  — CLI, daemon, MCP stdio/HTTP, HTTP/SSE, forge, gitlog, guard"]
+    ENG["engine/*  — query, search, analysis, agenttools, testintel, classify, context, edit, observe, overlay, watch, …"]
     CORE["core/*  — model, parse, graphstore"]
     CMD --> SURF --> ENG --> CORE
 ```
@@ -234,6 +255,9 @@ flowchart TD
   own, so they cannot diverge.
 - **Layered by direction** (CI-enforced): lower layers never depend on higher
   ones; `core/parse` and `core/graphstore` are pure leaves.
+- **Exec at the boundary.** `surfaces/gitlog` is the only component that runs
+  the local `git` binary; the engine consumes commits through a provider seam
+  and never executes anything.
 - **Data flow:** source repo → incremental ingest → graphstore (hot in-memory
   graph + durable SQLite sidecar) → query / search / analysis → surfaces.
 
@@ -247,6 +271,7 @@ Full design: [docs/architecture-plan.md](docs/architecture-plan.md).
 | [docs/stability-tiers.md](docs/stability-tiers.md) | **Canonical** GA / Preview / Labs / Source-only definition |
 | [docs/real-world-report.md](docs/real-world-report.md) | The honest before/after field-test record |
 | [docs/FEATURES.md](docs/FEATURES.md) | Complete catalogue: every MCP tool, subcommand, endpoint, analyzer |
+| [docs/agent-workflows.md](docs/agent-workflows.md) | Recommended agent call order, incl. the one-call Labs bundles |
 | [docs/coverage-matrix.md](docs/coverage-matrix.md) | Machine-checked capability inventory (drift breaks the build) |
 | [docs/](docs/) | Documentation map and deeper subsystem docs |
 

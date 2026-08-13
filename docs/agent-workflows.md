@@ -6,7 +6,9 @@ and how to read the shared response contract.
 
 ## Recommended call order
 
-At the start of a task, call the four agent-first tools in this order:
+At the start of a task, call the four agent-first tools in this order
+(with the Labs catalog, start at `repo_overview`/`task_context` instead — see
+the next section):
 
 1. **`agent_brief`** — get the bounded, cited project context packet:
    start-here files, key symbols, known facts from local memory, risks.
@@ -64,7 +66,7 @@ After editing, two further labs tools close the loop:
    attention before a task even starts.
 
 These are labs operations: their shapes may still change, and they are only
-advertised under `graphi mcp -labs` (HTTP: 403 without `GRAPHI_LABS=1`). The
+advertised under `graphi mcp -labs` (HTTP: 403 without `GRAPHI_HTTP_LABS=1`). The
 four stable tools above remain the frozen, GA-supported path.
 
 ## Trust preflight (`graph_health`, labs)
@@ -115,7 +117,8 @@ MCP-side agents read the same facts. Example of a safe agent claim:
 
 ## The shared response contract
 
-All four tools return one envelope:
+All ten agent tools — the four GA tools and the six Labs
+agent-intelligence tools — return one envelope:
 
 ```json
 {
@@ -188,7 +191,12 @@ that would require a server-initiated `roots/list` request.
 
 Over HTTP the tools are `GET /analyze/agent_brief?topic=…`,
 `/analyze/related_files?target=…&direction=…`,
-`/analyze/explain_symbol?symbol=…`, `/analyze/change_risk?target=…` —
+`/analyze/explain_symbol?symbol=…`, `/analyze/change_risk?target=…`, and the
+six Labs agent-intelligence tools on the same route
+(`/analyze/symbol_context?symbol=…`, `/analyze/task_context?task=…`,
+`/analyze/repo_overview`, `/analyze/test_impact?target=…`,
+`/analyze/change_impact?target=…`, `/analyze/hotspots` — 403 without
+`GRAPHI_HTTP_LABS=1`; diff targeting stays CLI/MCP-only on this GET surface) —
 all advertised in `GET /contract`.
 
 ## Memory: teach the brief project facts
