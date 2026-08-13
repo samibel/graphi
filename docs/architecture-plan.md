@@ -21,9 +21,9 @@ dependency direction is strictly downward:
 ```
 cmd/*        entry points & wiring (graphi, layerguard, coverage, canary, …)
    ↓
-surfaces/*   CLI · daemon · MCP stdio · embeddable MCP HTTP adapter · HTTP/SSE · web · extensions · forge · guard
+surfaces/*   CLI · daemon · MCP stdio · embeddable MCP HTTP adapter · HTTP/SSE · web · extensions · forge · gitlog · guard
    ↓
-engine/*     query · search · analysis · edit · review · ingest · observe · overlay · watch · community · interproc-taint · conformance · ledger · context · memory · distill · skillgen · wiki
+engine/*     query · search · analysis · agenttools · testintel · classify · edit · review · ingest · observe · overlay · watch · community · interproc-taint · conformance · ledger · context · memory · distill · skillgen · wiki
    ↓
 core/*       model · parse · graphstore · community   (pure leaves)
 ```

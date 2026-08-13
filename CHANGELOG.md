@@ -83,7 +83,7 @@ file:
   a whole-graph scan), and a `change_risk`-consistent risk level, every claim
   cited. CLI `graphi symbol-context`, MCP `symbol_context` (Labs catalog,
   `graphi mcp -labs`), HTTP `/analyze/symbol_context` (403 without
-  `GRAPHI_LABS=1`). Byte-parity across surfaces through the single
+  `GRAPHI_HTTP_LABS=1`). Byte-parity across surfaces through the single
   `engine/agenttools/symbolcontext` assembly.
 - **[labs] `task_context` — free-text task → ranked context bundle** (P0
   agent intelligence). One call turns a task phrase into primary seeds,

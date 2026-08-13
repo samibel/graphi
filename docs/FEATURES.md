@@ -7,7 +7,7 @@
 > `ToolNames()` is the maximal Stable+Labs registry. The companion source of
 > truth for the `analyze` subcommand set is `engine/analysis/dispatch.go`.
 >
-> Reconciled 2026-07-15. The generated
+> Reconciled 2026-08-13. The generated
 > [`coverage-matrix.md`](coverage-matrix.md) remains authoritative.
 
 > **This is an inventory, not a promise.** Listing a capability here says graphi
@@ -40,6 +40,7 @@
   - [EP-016 — Live IDE transport](#ep-016--live-ide-transport)
   - [EP-017 — Notebooks, watcher, interproc taint, communities](#ep-017--notebooks-watcher-interproc-taint-communities)
   - [EP-018 — PR-tool suite](#ep-018--pr-tool-suite)
+  - [P0–P2 — Agent, test, change & git intelligence](#p0p2--agent-test-change--git-intelligence)
 - [PR-tool pipeline](#pr-tool-pipeline)
 - [Live-IDE transport sequence](#live-ide-transport-sequence)
 - [Watcher + conformance](#watcher--conformance)
@@ -79,7 +80,7 @@ currently advertises seven wired Stable RPCs and omits the four unwired agent
 tools instead of returning guaranteed failures.
 
 `graphi mcp -labs` is the only CLI opt-in to the larger profile. The maximal
-registry contains exactly **44 tools**: the same 11 Stable tools plus 33 Labs
+registry contains exactly **51 tools**: the same 11 Stable tools plus 40 Labs
 tools. Actual Stable and Labs advertisement is binding-capability-gated, so a
 session can expose fewer tools when its transport or an optional service is not
 wired. An unadvertised call is rejected before client dispatch.
@@ -90,9 +91,9 @@ the shared client. Stable `impact` is a dedicated fixed-dispatch tool through
 
 ```mermaid
 flowchart TD
-  ROOT["Maximal MCP registry (44)"]:::root
+  ROOT["Maximal MCP registry (51)"]:::root
   ROOT --> ST["Default Stable profile (11)"]
-  ROOT --> LB["Labs additions (33, explicit opt-in)"]
+  ROOT --> LB["Labs additions (40, explicit opt-in)"]
   ST --> STQ["Structural (5)<br/>callers · callees · references · definition · neighborhood"]
   ST --> STS["Lexical search (1)"]
   ST --> STI["Fixed impact (1)"]
@@ -104,7 +105,10 @@ flowchart TD
   LB --> LBE["Edit / refactor (3)"]
   LB --> LBR["PR / review (7)"]
   LB --> LBM["Memory / skills (3)"]
-  LB --> LBT["Trust surface (1)<br/>graph_health"]
+  LB --> LBT["Trust surface (2)<br/>graph_health · strict_query"]
+  LB --> LBI["Agent intelligence (3)<br/>symbol_context · task_context · repo_overview"]
+  LB --> LBC["Test/change intelligence (2)<br/>test_impact · change_impact"]
+  LB --> LBG["Git intelligence (1)<br/>hotspots"]
   classDef root fill:#fff7d0,stroke:#7a5a00,color:#3a2c00
 ```
 
@@ -176,6 +180,11 @@ graphi analyze concept   -symbol p.Root -concept "rate limiting"
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
 | `analyze_taint`, `analyze_pdg`, `analyze_interproc`, `analyze_contracts`, `analyze_githistory` | `graphi analyze <analyzer>` | `GET /analyze/{analyzer}` | `taint`, `pdg`, `interproc`, `contracts`, `git-history` |
+
+> `git-history` is backed by the `surfaces/gitlog` production provider since
+> the P2 git-intelligence work — it returns real churn/co-change/bus-factor
+> signals when run from a git repository (it was nil-wired and always empty
+> before). The same applies to `pr-signals` and `suggest-reviewers` below.
 
 ### EP-006 — Graph-aware edits & refactoring
 
@@ -261,7 +270,7 @@ graphi safe-delete p/LegacyThing
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
-| The embeddable POST handler preserves the constructed server profile (11 Stable by default; explicit Labs construction up to the capability-gated 43-tool maximum). No standalone MCP HTTP CLI listener is shipped. | `graphi daemon start\|stop\|status`; `graphi http` serves the separate REST/SSE surface, not MCP HTTP | REST/SSE `GET /events` (optional `?analyzer=<name>`); no request-associated SSE in `mcp.HTTPHandler` | (overlay + observe + guard) |
+| The embeddable POST handler preserves the constructed server profile (11 Stable by default; explicit Labs construction up to the capability-gated 51-tool maximum). No standalone MCP HTTP CLI listener is shipped. | `graphi daemon start\|stop\|status`; `graphi http` serves the separate REST/SSE surface, not MCP HTTP | REST/SSE `GET /events` (optional `?analyzer=<name>`); no request-associated SSE in `mcp.HTTPHandler` | (overlay + observe + guard) |
 
 ### EP-017 — Notebooks, watcher, interproc taint, communities
 
@@ -317,6 +326,43 @@ graphi compare-branches -base base-graph.db -head head-graph.db
 # Critique an existing review (no LLM prose; graph evidence only).
 graphi critique-review -diff origin/main..HEAD -pr 42 -review-path review.json
 ```
+
+### P0–P2 — Agent, test, change & git intelligence
+
+- **Status:** ✅ shipped (labs)
+- **Key packages:** `engine/agenttools/{symbolcontext,taskctx,overview,testimpact,changeimpact,hotspots}`, `engine/testintel`, `engine/classify`, `engine/context`, `surfaces/gitlog`
+- **What it is:**
+  - One-call context bundles that replace multi-tool round-trips:
+    `symbol_context` (definition + token-budgeted snippet, hierarchy,
+    callers/callees/references, covering tests, risk), `task_context`
+    (free-text task → deterministically ranked, token-budgeted bundle with a
+    recommended read order; integer weight model, hash-stamped), and
+    `repo_overview` (totals, directory tree, language mix, entry points,
+    central symbols, test/generated areas — compact aggregates only,
+    `-communities` opts into the full-graph pass).
+  - Test intelligence: `test_impact` buckets the repository's tests for a
+    diff or target — `must_run` (direct-call evidence), `recommended`,
+    `probably_unaffected`, `unknown` — from the on-demand symbol↔test
+    mapping in `engine/testintel` (bounded walks + naming/package
+    heuristics; no materialized edges, frozen `index` output untouched).
+  - Change intelligence: `change_impact` ("Change Risk 2.0") — changed
+    symbols, public-API subset, direct/transitive dependents, covering
+    tests, co-change partners from bounded git history, config changes,
+    explicit reasons, and a risk level (stable `change_risk` thresholds +
+    one-step public-API escalation). The frozen-stable `change_risk`
+    operation keeps its bytes.
+  - Git intelligence: `hotspots` ranks files by churn × dependency
+    centrality with bus-factor warnings. History comes from
+    `surfaces/gitlog` — the production `githistory.GitProvider` (bounded
+    local `git log` at the surface boundary; the engine stays exec-free).
+    **Since this provider landed, `analyze_githistory`,
+    `suggest_reviewers`, and `analyze_pr_signals` return real
+    churn/co-change/bus-factor/reviewer signals — they were nil-wired and
+    always empty before.**
+
+| MCP tools | CLI subcommands | HTTP endpoints | Engine packages |
+|---|---|---|---|
+| `symbol_context`, `task_context`, `repo_overview`, `test_impact`, `change_impact`, `hotspots` (all labs, `graphi mcp -labs`) | `graphi symbol-context <sym>`, `graphi task-context "<text>"`, `graphi repo-overview [-communities]`, `graphi test-impact (<target> \| -diff <file\|->)`, `graphi change-impact (<target> \| -diff <file\|->)`, `graphi hotspots [-max-commits n]` | `GET /analyze/{name}` via `agentToolNames` (labs — 403 without `GRAPHI_HTTP_LABS=1`) | `engine/agenttools/*`, `engine/testintel`, `engine/classify`, `engine/context`, `surfaces/gitlog` |
 
 ## PR-tool pipeline
 
@@ -451,8 +497,8 @@ flowchart TD
 | Parsers (CGo-free tier) | 23 | `core/parse` registry + `docs/coverage-matrix.md` § Parsers |
 | Analyzers | 22 | `engine/analysis/dispatch.go` + `docs/coverage-matrix.md` § Analyzers |
 | MCP tools (default) | 11 | `surfaces/mcp.StableMCPToolNames()`; 12 Stable product operations minus lifecycle-only `index` |
-| MCP tools (maximal registry) | 44 | `surfaces/mcp.ToolNames()`; 11 Stable + 33 explicit-opt-in Labs rows, capability-gated at runtime |
-| CLI subcommands | ~30 | `surfaces/cli/cli.go` + `cmd/graphi/main.go` |
+| MCP tools (maximal registry) | 51 | `surfaces/mcp.ToolNames()`; 11 Stable + 40 explicit-opt-in Labs rows, capability-gated at runtime |
+| CLI subcommands | 54 | `cmd/graphi/help.go` `subcommandHelp` (pinned by `help_test.go`) |
 | HTTP endpoints | 22 | `surfaces/http/server.go` (incl. `/prs/*`, `/branches/compare`, `/reviews/critique`) |
 | Surfaces | 8 | `docs/coverage-matrix.md` § Surfaces |
 | Feature Units | 5 | `docs/coverage-matrix.md` § Feature-Unit |

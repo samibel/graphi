@@ -161,7 +161,7 @@
             <p>Fast, structural answers about an unfamiliar or large codebase — right on the command line.</p>
             <pre class="mini-term"><code><span class="prompt">$</span> graphi callers <span class="tok">handleAuth</span>
 <span class="prompt">$</span> graphi impact  <span class="tok">handleAuth</span>
-<span class="prompt">$</span> graphi references <span class="tok">handleAuth</span></code></pre>
+<span class="prompt">$</span> graphi task-context <span class="tok">"add rate limiting"</span></code></pre>
           </article>
           <article class="audience-card glow-card">
             <div class="audience-card__icon" aria-hidden="true">
@@ -252,7 +252,7 @@
         <div class="section__head">
           <span class="eyebrow"><span class="eyebrow__num">05</span>Features</span>
           <h2>12 GA operations over one engine — plus an opt-in Labs catalog.</h2>
-          <p class="prose">The default MCP profile advertises <strong>11 tools</strong> (the 12 GA operations minus lifecycle-only <code>index</code>). <code>graphi mcp -labs</code> opens the maximal <strong>43-tool</strong> registry — 32 Labs additions, capability-gated, and not part of the GA promise. Tiers are defined in <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p>
+          <p class="prose">The default MCP profile advertises <strong>11 tools</strong> (the 12 GA operations minus lifecycle-only <code>index</code>). <code>graphi mcp -labs</code> opens the maximal <strong>51-tool</strong> registry — 40 Labs additions, capability-gated, and not part of the GA promise. Tiers are defined in <a href="https://github.com/samibel/graphi/blob/main/docs/stability-tiers.md" target="_blank" rel="noopener">docs/stability-tiers.md</a>.</p>
         </div>
 
         <div class="feature-groups">
@@ -293,7 +293,7 @@
               <li><code>pdg</code> · program dependence graph</li>
               <li><code>interproc</code> · interprocedural fixpoint summaries</li>
               <li><code>contracts</code> · API contracts &amp; drift</li>
-              <li><code>git-history</code> · churn, co-change, bus factor</li>
+              <li><code>git-history</code> · churn, co-change, bus factor (reads real local history via the gitlog provider)</li>
             </ul>
           </article>
 
@@ -360,6 +360,33 @@
               <li>fsnotify watcher with deterministic apply</li>
               <li>Notebook ingestion &amp; Louvain communities</li>
               <li>Fail-closed zero-egress guard</li>
+            </ul>
+          </article>
+
+          <article class="fgroup fgroup--wide glow-card">
+            <span class="fgroup__idx" aria-hidden="true">09</span>
+            <h3 class="fgroup__title">Agent context <span class="fgroup__tier">GA + labs</span></h3>
+            <p class="fgroup__lede">One call returns the context an agent actually needs — cited, ranked, token-budgeted.</p>
+            <ul class="fgroup__list" role="list">
+              <li><code>agent_brief</code> · bounded, cited task-start packet</li>
+              <li><code>explain_symbol</code> · cited symbol identity summary</li>
+              <li><code>related_files</code> · ranked read-first file list</li>
+              <li><code>change_risk</code> · evidence-based blast-radius estimate</li>
+              <li class="labs"><code>symbol_context</code> · definition + snippet, hierarchy, tests, risk in one call <span class="tier-tag">labs</span></li>
+              <li class="labs"><code>task_context</code> · free-text task → ranked, token-budgeted bundle <span class="tier-tag">labs</span></li>
+              <li class="labs"><code>repo_overview</code> · structure, languages, entry points, central symbols <span class="tier-tag">labs</span></li>
+            </ul>
+          </article>
+
+          <article class="fgroup fgroup--wide glow-card">
+            <span class="fgroup__idx" aria-hidden="true">10</span>
+            <h3 class="fgroup__title">Change, test &amp; git intelligence <span class="fgroup__tier">labs</span></h3>
+            <p class="fgroup__lede">Which tests must run, how risky a diff is, and where the repository hurts.</p>
+            <ul class="fgroup__list" role="list">
+              <li><code>test_impact</code> · must-run / recommended / probably-unaffected test buckets for a diff</li>
+              <li><code>change_impact</code> · changed symbols, public API, dependents, covering tests, co-change partners, reasons, risk</li>
+              <li><code>hotspots</code> · churn × dependency centrality with bus-factor warnings</li>
+              <li>History via a bounded local <code>git log</code> at the surface boundary — the engine stays exec-free</li>
             </ul>
           </article>
         </div>

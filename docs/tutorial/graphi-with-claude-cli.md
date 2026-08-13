@@ -128,6 +128,9 @@ So the agent (and you) can *trust* the answer instead of believing it.
 All tools are read-only by default. Real MCP tool names, grouped:
 
 - **Structure:** `callers`, `callees`, `references`, `definition`, `neighborhood`, `implementers`, `implements`, `overrides`, `subtypes`, `supertypes`
+- **Agent context:** `agent_brief`, `explain_symbol`, `related_files`, `change_risk` (GA) — plus the labs one-call bundles `symbol_context`, `task_context`, `repo_overview`
+- **Test, change & git intelligence (labs):** `test_impact`, `change_impact`, `hotspots`
+- **Trust (labs):** `graph_health`, `strict_query`
 - **Search:** `search`, `search_semantic`, `compound` (Cypher-style)
 - **Pattern queries:** `search_ast`, `find_clones`
 - **Analysis:** `analyze` (e.g. with `analyzer: "impact"`), `analyze_taint`, `analyze_pdg`, `analyze_interproc`, `analyze_contracts`, `analyze_githistory`
