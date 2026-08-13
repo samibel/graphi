@@ -139,6 +139,9 @@ func (s *stubClient) Architecture(context.Context, client.ArchitectureParams) ([
 func (s *stubClient) ArchitectureViolations(context.Context, client.ArchitectureViolationsParams) ([]byte, error) {
 	return nil, client.ErrAgentIntelUnavailable
 }
+func (s *stubClient) DeadCode(context.Context, client.DeadCodeParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
 func (s *stubClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }

@@ -299,7 +299,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 // They dispatch through the dedicated client seams, not the generic analysis
 // service. The labs entries are auto-403'd by the capability guard unless the
 // server runs with GRAPHI_LABS=1 (isLabsCapability keys off StableOperations).
-var agentToolNames = []string{"agent_brief", "architecture", "architecture_violations", "change_impact", "change_risk", "explain_symbol", "hotspots", "related_files", "repo_overview", "search_hybrid", "symbol_context", "task_context", "test_impact"}
+var agentToolNames = []string{"agent_brief", "architecture", "architecture_violations", "change_impact", "change_risk", "dead_code", "explain_symbol", "hotspots", "related_files", "repo_overview", "search_hybrid", "symbol_context", "task_context", "test_impact"}
 
 // handleAgentTool serves the EP-020 agent tools on the shared /analyze route.
 // It returns false when name is not an agent tool so the generic analyzer
@@ -437,6 +437,8 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 		raw, err = s.client.Architecture(r.Context(), client.ArchitectureParams{MaxItems: maxItems})
 	case "architecture_violations":
 		raw, err = s.client.ArchitectureViolations(r.Context(), client.ArchitectureViolationsParams{MaxItems: maxItems})
+	case "dead_code":
+		raw, err = s.client.DeadCode(r.Context(), client.DeadCodeParams{MaxItems: maxItems})
 	case "hotspots":
 		p := client.HotspotsParams{MaxItems: maxItems}
 		if mc := q.Get("max-commits"); mc != "" {

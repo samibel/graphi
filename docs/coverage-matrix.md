@@ -23,9 +23,9 @@ row is tagged stable or one is dropped.
 
 **The 12 stable operations (frozen):** `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `impact`, `neighborhood`, `references`, `related_files`, `search`.
 
-**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **54-tool** union (43 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
+**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **55-tool** union (44 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **168**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **170**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -82,7 +82,7 @@ Total capabilities: **168**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage-prs` | 🧪 labs | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | 🧪 labs | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (54)
+## MCP tools (55)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -106,6 +106,7 @@ Total capabilities: **168**. See [`architecture-plan.md`](architecture-plan.md) 
 | `compound` | 🧪 labs | ✅ shipped | EP-011 | compound / Cypher-style graph query composing traversals+filters (G1). |
 | `conflicts_prs` | 🧪 labs | ✅ shipped | EP-018 | SW-106: inter-PR conflict detection over the enumerated PR set — textual / graph-semantic / asymmetric contract-dependency pairwise report (zero engine egress). |
 | `critique_review` | 🧪 labs | ✅ shipped | EP-018 | SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress). |
+| `dead_code` | 🧪 labs | ✅ shipped | - | P2 dead code: scored dead-code candidates over the EP-015 dead_symbol diagnostic (zero live inbound references across calls/references/implements/inherits/overrides) — pinned integer signal model (exported API and dynamic-dispatch methods score lower, penalties quoted per reason), with exclusions made visible with reasons (framework/language entry points, test fixtures, generated paths, exported API without usage evidence); a candidate-free graph returns an explicit cited clean item; byte-parity with `graphi dead-code`; Labs-only. |
 | `definition` | 🟢 stable | ✅ shipped | EP-001 | structural query: definition. |
 | `distill` | 🧪 labs | ✅ shipped | EP-012 | session distillation into a compact decision record. |
 | `explain_symbol` | 🟢 stable | ✅ shipped | EP-020 | SW-115: compact, cited symbol-identity summary (definition + callers/callees/references) over the live graph; ambiguous references return candidates; CLI parity via `graphi explain-symbol`. |
@@ -153,7 +154,7 @@ Total capabilities: **168**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | 🧪 labs | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | 🧪 labs | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (57)
+## CLI subcommands (58)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -170,6 +171,7 @@ Total capabilities: **168**. See [`architecture-plan.md`](architecture-plan.md) 
 | `conflicts-prs` | 🧪 labs | ✅ shipped | - | inter-PR conflict detection |
 | `critique-review` | 🧪 labs | ✅ shipped | - | graph-evidence critique of an existing PR review |
 | `daemon` | 🧪 labs | ✅ shipped | - | hot-index Unix-socket daemon lifecycle (start\|stop\|status) |
+| `dead-code` | 🧪 labs | ✅ shipped | - | P2 dead code: scored dead-code candidates with explicit exclusion reasons; byte-parity with the dead_code MCP tool |
 | `diagnose` | 🧪 labs | ✅ shipped | - | graph-derived diagnostics + suggested code-actions |
 | `distill` | 🧪 labs | ✅ shipped | - | session distillation |
 | `doctor` | 🧪 labs | ✅ shipped | EP-023 | read-only diagnostic checkup (binary, PATH, MCP clients, DB, privacy, local-first) |

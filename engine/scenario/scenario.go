@@ -76,6 +76,9 @@ const (
 	OpArchitecture           = "architecture"
 	OpArchitectureViolations = "architecture_violations"
 
+	// P2 dead-code operation (labs), same envelope.
+	OpDeadCode = "dead_code"
+
 	// OpDiagnose runs the engine diagnostics over the fixture store (signal
 	// quality scenarios).
 	OpDiagnose = "diagnose"
@@ -89,7 +92,7 @@ func KnownOps() []string {
 		OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
 		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
-		OpArchitecture, OpArchitectureViolations,
+		OpArchitecture, OpArchitectureViolations, OpDeadCode,
 		OpDiagnose,
 	}
 }
@@ -102,7 +105,7 @@ func IsAgentToolOp(name string) bool {
 	case OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
 		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
-		OpArchitecture, OpArchitectureViolations:
+		OpArchitecture, OpArchitectureViolations, OpDeadCode:
 		return true
 	}
 	return false

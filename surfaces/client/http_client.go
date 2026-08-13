@@ -502,6 +502,16 @@ func (h *HTTP) ArchitectureViolations(ctx context.Context, p ArchitectureViolati
 	return h.doGET(ctx, "/analyze/architecture_violations", q)
 }
 
+// DeadCode rides the read-only /analyze/dead_code endpoint (labs; 403 unless
+// the server runs with GRAPHI_HTTP_LABS=1).
+func (h *HTTP) DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error) {
+	q := url.Values{}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	return h.doGET(ctx, "/analyze/dead_code", q)
+}
+
 // Hotspots rides the read-only /analyze/hotspots endpoint (labs; 403 unless
 // the server runs with GRAPHI_HTTP_LABS=1).
 func (h *HTTP) Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error) {

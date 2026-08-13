@@ -794,6 +794,19 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P2 dead code: dead_code — the agent-facing view of the EP-015
+	// dead_symbol diagnostic, with scores and visible exclusions.
+	tools = append(tools, map[string]any{
+		"name":        ToolDeadCode,
+		"description": "dead_code: precise dead-code candidates — symbols with ZERO live inbound references (calls/references/implements/inherits/overrides), each scored by a pinned integer signal model (exported API and dynamic-dispatch methods score lower, penalties quoted in the reason) — plus the exclusions made VISIBLE with their reasons: framework/language entry points (annotations, main, test paths, overrides, decorators), test fixtures, generated/vendored paths, and exported API without usage evidence. Far better than 'references == 0': every candidate says why it is safe and every exclusion says why it is not dead. Purpose: find safely deletable code with evidence. When to use: cleanup passes, before refactors, dead-weight audits. When NOT to use: for a guarded delete itself (CLI safe-delete) or a single symbol's liveness (symbol_context). Input shape: optional limit (item cap). Read-only: true — one node + one edge catalog read (the analysis needs every edge) plus selective hydration. Partial results possible: candidate and exclusion rows are capped; limits.truncated says when.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 40)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.
