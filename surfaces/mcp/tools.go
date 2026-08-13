@@ -135,6 +135,11 @@ const (
 	// explicit reasons, risk level. The frozen-stable change_risk operation
 	// is untouched. Labs-only.
 	ToolChangeImpact = "change_impact"
+
+	// P2 git intelligence: churn × dependency-centrality hotspot ranking with
+	// bus-factor warnings, over the bounded surface-boundary git provider.
+	// Labs-only.
+	ToolHotspots = "hotspots"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -181,6 +186,7 @@ var singletonToolNames = []string{
 	ToolRepoOverview,
 	ToolTestImpact,
 	ToolChangeImpact,
+	ToolHotspots,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

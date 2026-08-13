@@ -443,6 +443,13 @@ type Client interface {
 	// untouched. Read-only.
 	ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, error)
 
+	// Hotspots runs the hotspots agent tool (labs, P2 git intelligence):
+	// churn × dependency-centrality ranking of the files that change
+	// constantly AND that the graph depends on, with bus-factor warnings.
+	// Read-only; degrades to a typed unavailable outcome without a git
+	// provider. Read-only.
+	Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error)
+
 	// Diagnose runs the engine diagnostics (SW-091) over the graph and returns the
 	// canonical serialized diagnostic.Result bytes via diagnostic.Marshal — the
 	// single serializer every surface uses (byte-identical parity, SW-094). kinds
@@ -656,4 +663,11 @@ type ChangeImpactParams struct {
 	Diff     string
 	Depth    int
 	MaxItems int
+}
+
+// HotspotsParams carries the hotspots inputs.
+type HotspotsParams struct {
+	// MaxCommits bounds the history window (0 = engine default, 1000).
+	MaxCommits int
+	MaxItems   int
 }

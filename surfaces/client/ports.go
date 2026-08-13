@@ -87,6 +87,8 @@ type AgentIntelPort interface {
 	TestImpact(ctx context.Context, p TestImpactParams) ([]byte, error)
 	// ChangeImpact returns the Change Risk 2.0 assessment.
 	ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, error)
+	// Hotspots returns the churn × centrality hotspot ranking.
+	Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error)
 }
 
 // StableClient is the composed view a stable surface holds: exactly the three

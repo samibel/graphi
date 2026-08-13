@@ -103,4 +103,14 @@ func TestMCP_CLI_AgentIntelParity(t *testing.T) {
 	if got, want := mcpArgs(mcp.ToolChangeImpact, map[string]any{"target": "p.B"}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
 		t.Fatalf("change_impact parity mismatch:\n CLI: %s\n MCP: %s", want, got)
 	}
+
+	// hotspots (no provider on either surface: parity over the typed
+	// unavailable degradation)
+	cliOut.Reset()
+	if err := cli.RunHotspots(context.Background(), c, nil, &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli hotspots: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolHotspots, map[string]any{}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("hotspots parity mismatch:\n CLI: %s\n MCP: %s", want, got)
+	}
 }

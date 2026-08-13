@@ -1,0 +1,9 @@
+id: hotspots-degrades-without-git
+description: hotspots without a git provider degrades to the typed unavailable outcome, never a guess.
+fixture_ref: tier1-fixture-go
+operation:
+  name: hotspots
+  args: {}
+expect:
+  outcome: unavailable
+  max_latency_ms: 2000

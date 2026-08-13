@@ -131,6 +131,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi change-impact [-db path] [-depth 1-3] [-max-items n] (<target> | -diff <file|->)",
 		"git diff HEAD~1..HEAD | graphi change-impact -diff -",
 	},
+	"hotspots": {
+		"churn × dependency-centrality file ranking with bus-factor warnings (labs)",
+		"graphi hotspots [-max-commits n] [-max-items n]",
+		"graphi hotspots -max-commits 500",
+	},
 	"related-files": {
 		"ranked, cited read-first file list around a symbol, path, or task",
 		"graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>",
@@ -397,6 +402,7 @@ func printHelp() {
 	fmt.Print("  graphi repo-overview        one-call repository summary (structure, languages, entrypoints)\n")
 	fmt.Print("  graphi test-impact <t>      which tests must run for a change (must_run/recommended/unaffected)\n")
 	fmt.Print("  graphi change-impact <t>    Change Risk 2.0: dependents, covering tests, reasons, risk\n")
+	fmt.Print("  graphi hotspots             churn × centrality file ranking with bus-factor warnings\n")
 	fmt.Print("  graphi snapshot [<name>]    list or freeze named graph states of this repo\n")
 	fmt.Print("  graphi compare <a> <b>      diff two named graph states ('current' = live graph)\n")
 	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")

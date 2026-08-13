@@ -299,7 +299,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 // They dispatch through the dedicated client seams, not the generic analysis
 // service. The labs entries are auto-403'd by the capability guard unless the
 // server runs with GRAPHI_LABS=1 (isLabsCapability keys off StableOperations).
-var agentToolNames = []string{"agent_brief", "change_impact", "change_risk", "explain_symbol", "related_files", "repo_overview", "symbol_context", "task_context", "test_impact"}
+var agentToolNames = []string{"agent_brief", "change_impact", "change_risk", "explain_symbol", "hotspots", "related_files", "repo_overview", "symbol_context", "task_context", "test_impact"}
 
 // handleAgentTool serves the EP-020 agent tools on the shared /analyze route.
 // It returns false when name is not an agent tool so the generic analyzer
@@ -423,6 +423,17 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 		} else {
 			raw, err = s.client.ChangeImpact(r.Context(), client.ChangeImpactParams{Target: target, Depth: depth, MaxItems: maxItems})
 		}
+	case "hotspots":
+		p := client.HotspotsParams{MaxItems: maxItems}
+		if mc := q.Get("max-commits"); mc != "" {
+			v, err := strconv.Atoi(mc)
+			if err != nil || v < 0 {
+				writeErr(w, http.StatusBadRequest, "bad_request", "bad max-commits")
+				return true
+			}
+			p.MaxCommits = v
+		}
+		raw, err = s.client.Hotspots(r.Context(), p)
 	default:
 		return false
 	}

@@ -5,11 +5,13 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/analysis/githistory"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 )
@@ -155,6 +157,51 @@ func TestAssembleFromTargetAndValidation(t *testing.T) {
 	}
 	if out.Outcome != contract.OutcomeUnavailable {
 		t.Fatalf("expected unavailable, got %s", out.Outcome)
+	}
+}
+
+func TestCoChangeSection(t *testing.T) {
+	deps := fixtureDeps(t)
+	now := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	c := func(sha string, age time.Duration, files ...string) githistory.Commit {
+		return githistory.Commit{SHA: sha, Author: "alice", Timestamp: now.Add(-age), FilesChanged: files}
+	}
+	// util/format.go historically changes together with util/format_doc.md.
+	provider := &githistory.InMemoryProvider{Commits: []githistory.Commit{
+		c("c3", 1*time.Hour, "util/format.go", "util/format_doc.md"),
+		c("c2", 2*time.Hour, "util/format.go", "util/format_doc.md"),
+		c("c1", 3*time.Hour, "util/format.go", "util/format_doc.md"),
+	}}
+
+	res, err := Assemble(context.Background(), Params{Diff: sampleDiff, Deps: deps, Provider: provider, Now: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sawPartner, sawReason bool
+	for _, it := range res.Items {
+		if strings.HasPrefix(it.Reason, "co_change: util/format_doc.md usually changes with util/format.go (3 co-commit(s)") {
+			sawPartner = true
+		}
+		if strings.HasPrefix(it.Reason, "reason:") && strings.Contains(it.Reason, "usually change with this change") {
+			sawReason = true
+		}
+	}
+	if !sawPartner || !sawReason {
+		t.Fatalf("missing co-change output: partner=%v reason=%v (%s)", sawPartner, sawReason, res.Summary)
+	}
+	if !strings.Contains(res.Summary, "1 co-change partner(s)") {
+		t.Fatalf("summary must count partners: %q", res.Summary)
+	}
+
+	// Without a provider the section is absent (golden stability).
+	res, err = Assemble(context.Background(), Params{Diff: sampleDiff, Deps: deps})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range res.Items {
+		if strings.HasPrefix(it.Reason, "co_change:") {
+			t.Fatalf("no provider must mean no co-change section: %q", it.Reason)
+		}
 	}
 }
 

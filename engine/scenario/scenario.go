@@ -65,6 +65,10 @@ const (
 	OpTestImpact   = "test_impact"
 	OpChangeImpact = "change_impact"
 
+	// P2 git-intelligence operation (labs). The fixture runner has no git
+	// provider, so scenarios assert the typed unavailable degradation.
+	OpHotspots = "hotspots"
+
 	// OpDiagnose runs the engine diagnostics over the fixture store (signal
 	// quality scenarios).
 	OpDiagnose = "diagnose"
@@ -77,7 +81,7 @@ func KnownOps() []string {
 		OpNeighborhood, OpImpact, OpIndex,
 		OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
-		OpTestImpact, OpChangeImpact,
+		OpTestImpact, OpChangeImpact, OpHotspots,
 		OpDiagnose,
 	}
 }
@@ -89,7 +93,7 @@ func IsAgentToolOp(name string) bool {
 	switch name {
 	case OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
-		OpTestImpact, OpChangeImpact:
+		OpTestImpact, OpChangeImpact, OpHotspots:
 		return true
 	}
 	return false

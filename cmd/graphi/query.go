@@ -19,8 +19,10 @@ import (
 	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/skillgen"
+	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
+	"github.com/samibel/graphi/surfaces/gitlog"
 )
 
 // runQuery launches the CLI surface. Usage:
@@ -529,7 +531,8 @@ func runAgentBrief(args []string) int {
 //	graphi change-risk    [-db path] [-max-items n] (<target> | -diff <file|->)
 func runAgentTool(args []string, verb string) int {
 	dbPath, socket, rest := extractFlags(args)
-	if dbPath == "" && socket == "" {
+	discovered := dbPath == "" && socket == ""
+	if discovered {
 		dbPath, socket = resolveSession(getwd(), "", "")
 	}
 	c, storeCleanup := makeClientOrOpen(dbPath, socket)
@@ -540,6 +543,18 @@ func runAgentTool(args []string, verb string) int {
 	if socket != "" {
 		fmt.Fprintf(os.Stderr, "graphi: %s: not available via daemon in this build\n", verb)
 		return 1
+	}
+	// When the session was DISCOVERED from the working directory, the
+	// repository root is known: arm the labs snippet and git-history seams
+	// exactly like the MCP session path does. An explicit -db keeps pure
+	// attach semantics (unknown root — no snippet root, no git provider; the
+	// tools degrade to their typed outcomes).
+	if discovered {
+		if root, ok := state.DetectRepo(getwd()); ok {
+			if d, isDirect := c.(*client.Direct); isDirect {
+				d.WithRepoRoot(root).WithGitProvider(gitlog.New(root))
+			}
+		}
 	}
 	var err error
 	switch verb {
@@ -555,6 +570,8 @@ func runAgentTool(args []string, verb string) int {
 		err = cli.RunTestImpact(context.Background(), c, rest, os.Stdin, os.Stdout, os.Stderr)
 	case "change-impact":
 		err = cli.RunChangeImpact(context.Background(), c, rest, os.Stdin, os.Stdout, os.Stderr)
+	case "hotspots":
+		err = cli.RunHotspots(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "related-files":
 		err = cli.RunRelatedFiles(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "change-risk":

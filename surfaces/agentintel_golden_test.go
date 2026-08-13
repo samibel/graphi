@@ -15,7 +15,7 @@ import (
 	"github.com/samibel/graphi/surfaces/client"
 )
 
-var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact"}
+var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots"}
 
 // runAgentIntelOps drives the three labs ops through the shared surface client
 // (rooted at the fixture so snippet reads resolve) and returns op→bytes.
@@ -49,6 +49,11 @@ func runAgentIntelOps(t *testing.T, store graphstore.Graphstore) map[string]stri
 
 	ci, err := c.ChangeImpact(ctx, client.ChangeImpactParams{Target: hello})
 	record("change_impact", ci, err)
+
+	// No git provider in the golden harness: hotspots pins its typed
+	// unavailable degradation byte-stably.
+	hs, err := c.Hotspots(ctx, client.HotspotsParams{})
+	record("hotspots", hs, err)
 
 	if len(out) != len(agentIntelOps) {
 		t.Fatalf("expected %d op outputs, got %d", len(agentIntelOps), len(out))

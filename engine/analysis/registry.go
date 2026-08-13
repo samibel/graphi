@@ -50,6 +50,27 @@ func (r *Registry) Get(name string) (Analyzer, bool) {
 	return a, ok
 }
 
+// Replace swaps the analyzer registered under a.Name() for a. Unlike Register
+// it REQUIRES the name to already exist: it exists solely to re-arm a
+// registered analyzer with an injected dependency (the git-provider seam), and
+// refusing unknown names keeps it from becoming a second registration path.
+func (r *Registry) Replace(a Analyzer) error {
+	if a == nil {
+		return fmt.Errorf("analysis: replace nil analyzer")
+	}
+	name := a.Name()
+	if name == "" {
+		return fmt.Errorf("analysis: replace analyzer with empty name")
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, exists := r.analyzers[name]; !exists {
+		return fmt.Errorf("analysis: analyzer %q not registered", name)
+	}
+	r.analyzers[name] = a
+	return nil
+}
+
 // Names returns the sorted, deduplicated list of registered analyzer names.
 // Sorting makes the list deterministic across runs (surfaces advertise tools
 // from this list, so stable ordering keeps MCP tool listings byte-stable).

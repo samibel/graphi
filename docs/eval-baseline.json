@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "baseline": 96.2,
   "target": 90,
   "scenarios": [
@@ -40,6 +40,11 @@
     },
     {
       "id": "go-symbol",
+      "outcome": "pass",
+      "tier1": true
+    },
+    {
+      "id": "hotspots-degrades-without-git",
       "outcome": "pass",
       "tier1": true
     },
