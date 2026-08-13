@@ -108,6 +108,7 @@ promise, and none of it receives feature work in the current program.
 | Agent intelligence (`symbol_context`, `task_context`, `repo_overview`) | Labs | one-call context bundles, outside the frozen 12 |
 | Test & change intelligence (`test_impact`, `change_impact`) | Labs | outside the frozen 12; the stable `change_risk` is unchanged |
 | Git intelligence (`hotspots`, co-change, the gitlog provider) | Labs | requires local git history; outside the frozen 12 |
+| Hybrid search (`search_hybrid`) | Labs | embedding-free ranking, outside the frozen 12 |
 | Trust surface (`graph_health`, `strict_query`) | Labs | outside the frozen 12 |
 | **Wiki** | **Source-only** | `engine/wiki` exists in the tree but has **no matrix row, no MCP tool and no CLI subcommand** — it is not reachable from any surface |
 | SaaS / hosted service | Source-only | does not exist; nothing is hosted |

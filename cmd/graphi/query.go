@@ -572,6 +572,8 @@ func runAgentTool(args []string, verb string) int {
 		err = cli.RunChangeImpact(context.Background(), c, rest, os.Stdin, os.Stdout, os.Stderr)
 	case "hotspots":
 		err = cli.RunHotspots(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "search-hybrid":
+		err = cli.RunSearchHybrid(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "related-files":
 		err = cli.RunRelatedFiles(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "change-risk":

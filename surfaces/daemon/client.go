@@ -348,6 +348,13 @@ func (c *DaemonClient) ChangeImpact(ctx context.Context, p client.ChangeImpactPa
 	return nil, client.ErrAgentIntelUnavailable
 }
 
+// SearchHybrid implements client.Client. Returns ErrAgentIntelUnavailable
+// until a daemon RPC is added.
+func (c *DaemonClient) SearchHybrid(ctx context.Context, p client.SearchHybridParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
 // Hotspots implements client.Client. Returns ErrAgentIntelUnavailable until a
 // daemon RPC is added.
 func (c *DaemonClient) Hotspots(ctx context.Context, p client.HotspotsParams) ([]byte, error) {

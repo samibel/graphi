@@ -443,6 +443,11 @@ type Client interface {
 	// untouched. Read-only.
 	ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, error)
 
+	// SearchHybrid runs the search_hybrid agent tool (labs, P3 repository
+	// search): multi-token queries ranked without embeddings — identifier
+	// segments, path relevance, bounded graph degree. Read-only.
+	SearchHybrid(ctx context.Context, p SearchHybridParams) ([]byte, error)
+
 	// Hotspots runs the hotspots agent tool (labs, P2 git intelligence):
 	// churn × dependency-centrality ranking of the files that change
 	// constantly AND that the graph depends on, with bus-factor warnings.
@@ -662,6 +667,12 @@ type ChangeImpactParams struct {
 	Target   string
 	Diff     string
 	Depth    int
+	MaxItems int
+}
+
+// SearchHybridParams carries the search_hybrid inputs.
+type SearchHybridParams struct {
+	Query    string
 	MaxItems int
 }
 

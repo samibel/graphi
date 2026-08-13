@@ -15,6 +15,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
 	"github.com/samibel/graphi/engine/agenttools/hotspots"
+	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
 	"github.com/samibel/graphi/engine/agenttools/overview"
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
@@ -346,6 +347,12 @@ func (e *FixtureEngine) InvokeContract(ctx context.Context, operation string, ar
 			Target:   firstArg(args, "target", "symbol"),
 			Diff:     args["diff"],
 			Depth:    intArg(args, "depth", 0),
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
+		})
+	case OpSearchHybrid:
+		return hybridsearch.Search(ctx, hybridsearch.Params{
+			Query:    firstArg(args, "query", "symbol"),
 			MaxItems: intArg(args, "max_items", 0),
 			Deps:     e.Deps,
 		})

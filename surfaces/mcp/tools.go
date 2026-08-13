@@ -140,6 +140,10 @@ const (
 	// bus-factor warnings, over the bounded surface-boundary git provider.
 	// Labs-only.
 	ToolHotspots = "hotspots"
+
+	// P3 repository search: embedding-free hybrid ranking (identifier
+	// segments, path relevance, bounded graph degree). Labs-only.
+	ToolSearchHybrid = "search_hybrid"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -187,6 +191,7 @@ var singletonToolNames = []string{
 	ToolTestImpact,
 	ToolChangeImpact,
 	ToolHotspots,
+	ToolSearchHybrid,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

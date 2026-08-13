@@ -463,6 +463,13 @@
       "note": "structural AST pattern query"
     },
     {
+      "id": "search-hybrid",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P3 repository search: embedding-free hybrid search (identifier segments + path + bounded graph degree); byte-parity with the search_hybrid MCP tool"
+    },
+    {
       "id": "setup",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -929,6 +936,13 @@
       "tier": "labs",
       "epic": "EP-013",
       "note": "structural AST pattern query over the indexed graph (G3)."
+    },
+    {
+      "id": "search_hybrid",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P3 repository search: embedding-free hybrid ranking for multi-token queries — lexical retrieval re-ranked by identifier-segment matching (camelCase/snake_case aware), path relevance, and bounded graph degree; deterministic integer weight model, hash-stamped in every summary; no vector database, no egress; the optional search_semantic opt-in is untouched; byte-parity with `graphi search-hybrid`; Labs-only."
     },
     {
       "id": "search_semantic",

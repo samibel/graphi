@@ -104,6 +104,15 @@ func TestMCP_CLI_AgentIntelParity(t *testing.T) {
 		t.Fatalf("change_impact parity mismatch:\n CLI: %s\n MCP: %s", want, got)
 	}
 
+	// search_hybrid
+	cliOut.Reset()
+	if err := cli.RunSearchHybrid(context.Background(), c, []string{"p.B"}, &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli search-hybrid: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolSearchHybrid, map[string]any{"query": "p.B"}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("search_hybrid parity mismatch:\n CLI: %s\n MCP: %s", want, got)
+	}
+
 	// hotspots (no provider on either surface: parity over the typed
 	// unavailable degradation)
 	cliOut.Reset()

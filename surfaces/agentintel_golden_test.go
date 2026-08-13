@@ -15,7 +15,15 @@ import (
 	"github.com/samibel/graphi/surfaces/client"
 )
 
-var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots"}
+var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid"}
+
+// crossBackendAgentIntelOps excludes search_hybrid: its candidate RETRIEVAL
+// rides the backend search port, whose recall semantics legitimately differ
+// (MemStore matches case-insensitive substrings, SQLite matches FTS tokens).
+// The deterministic re-rank orders whatever set was retrieved, so per-backend
+// output is byte-stable (covered by the store-conditions golden below), but
+// the retrieved sets themselves are not required to agree across backends.
+var crossBackendAgentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots"}
 
 // runAgentIntelOps drives the three labs ops through the shared surface client
 // (rooted at the fixture so snippet reads resolve) and returns op→bytes.
@@ -54,6 +62,9 @@ func runAgentIntelOps(t *testing.T, store graphstore.Graphstore) map[string]stri
 	// unavailable degradation byte-stably.
 	hs, err := c.Hotspots(ctx, client.HotspotsParams{})
 	record("hotspots", hs, err)
+
+	sh, err := c.SearchHybrid(ctx, client.SearchHybridParams{Query: "hello greeter"})
+	record("search_hybrid", sh, err)
 
 	if len(out) != len(agentIntelOps) {
 		t.Fatalf("expected %d op outputs, got %d", len(agentIntelOps), len(out))
@@ -121,7 +132,7 @@ func TestAgentIntel_MemAndSQLiteBackendsAgree(t *testing.T) {
 	indexCharFixture(t, sq)
 	sqOut := runAgentIntelOps(t, sq)
 
-	for _, op := range agentIntelOps {
+	for _, op := range crossBackendAgentIntelOps {
 		if memOut[op] != sqOut[op] {
 			t.Errorf("op %s: Mem and SQLite backends disagree:\n mem=%s\n sql=%s", op, memOut[op], sqOut[op])
 		}

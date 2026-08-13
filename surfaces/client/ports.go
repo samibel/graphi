@@ -89,6 +89,8 @@ type AgentIntelPort interface {
 	ChangeImpact(ctx context.Context, p ChangeImpactParams) ([]byte, error)
 	// Hotspots returns the churn × centrality hotspot ranking.
 	Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error)
+	// SearchHybrid returns the embedding-free hybrid search ranking.
+	SearchHybrid(ctx context.Context, p SearchHybridParams) ([]byte, error)
 }
 
 // StableClient is the composed view a stable surface holds: exactly the three

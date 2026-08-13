@@ -247,6 +247,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolHotspots {
 		return s.hotspotsCall(ctx, p)
 	}
+	if p.Name == ToolSearchHybrid {
+		return s.searchHybridCall(ctx, p)
+	}
 
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
@@ -826,6 +829,23 @@ func (s *Server) hotspotsCall(ctx context.Context, p callParams) (any, *rpcError
 	b, err := s.client().Hotspots(ctx, client.HotspotsParams{
 		MaxCommits: derefInt(p.Arguments.MaxCommits),
 		MaxItems:   derefInt(p.Arguments.Limit),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// searchHybridCall (P3 repository search, labs) returns the embedding-free
+// hybrid ranking in the C1 contract shape through the shared
+// client.SearchHybrid composition (byte parity with `graphi search-hybrid`).
+func (s *Server) searchHybridCall(ctx context.Context, p callParams) (any, *rpcError) {
+	if p.Arguments.Query == "" {
+		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+	}
+	b, err := s.client().SearchHybrid(ctx, client.SearchHybridParams{
+		Query:    p.Arguments.Query,
+		MaxItems: derefInt(p.Arguments.Limit),
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}

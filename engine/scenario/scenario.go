@@ -69,6 +69,9 @@ const (
 	// provider, so scenarios assert the typed unavailable degradation.
 	OpHotspots = "hotspots"
 
+	// P3 repository-search operation (labs).
+	OpSearchHybrid = "search_hybrid"
+
 	// OpDiagnose runs the engine diagnostics over the fixture store (signal
 	// quality scenarios).
 	OpDiagnose = "diagnose"
@@ -81,7 +84,7 @@ func KnownOps() []string {
 		OpNeighborhood, OpImpact, OpIndex,
 		OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
-		OpTestImpact, OpChangeImpact, OpHotspots,
+		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
 		OpDiagnose,
 	}
 }
@@ -93,7 +96,7 @@ func IsAgentToolOp(name string) bool {
 	switch name {
 	case OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
-		OpTestImpact, OpChangeImpact, OpHotspots:
+		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid:
 		return true
 	}
 	return false
