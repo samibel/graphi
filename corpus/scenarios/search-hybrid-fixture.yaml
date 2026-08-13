@@ -1,0 +1,12 @@
+id: search-hybrid-fixture
+description: search_hybrid ranks fixture symbols for a multi-token query with per-signal breakdowns.
+fixture_ref: tier1-fixture-go
+operation:
+  name: search_hybrid
+  args:
+    query: hello greeter
+expect:
+  outcome: found
+  contains_path: sample.go
+  has_evidence: true
+  max_latency_ms: 2000

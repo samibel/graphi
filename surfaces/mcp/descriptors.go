@@ -754,6 +754,21 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P3 repository search: search_hybrid, embedding-free multi-token ranking.
+	// Read-only; the optional semantic search stays a separate opt-in.
+	tools = append(tools, map[string]any{
+		"name":        ToolSearchHybrid,
+		"description": "search_hybrid: rank symbols for a multi-token free-text query WITHOUT embeddings — lexical retrieval re-ranked by identifier-segment matching (camelCase/snake_case aware), path relevance, and bounded graph degree, with the per-signal breakdown in every reason ('authentication token validation' ranks TokenValidator ahead of accidental substring hits). Deterministic integer weight model, hash-stamped in the summary; no vector database, no model, no egress. Purpose: better multi-word discovery than plain lexical search, before reaching for the optional semantic search. When to use: exploratory multi-word queries where plain search returns noise. When NOT to use: exact names (search / definition) or task scoping (task_context). Input shape: query text plus optional limit. Read-only: true. Partial results possible: retrieval and degree reads are bounded; the item cap truncates lowest scores first.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"query": map[string]any{"type": "string", "description": "free-text multi-token query"},
+				"limit": map[string]any{"type": "integer", "description": "item cap (default 20)"},
+			},
+			"required": []string{"query"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

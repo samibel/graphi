@@ -914,6 +914,35 @@ func RunHotspots(ctx context.Context, c client.AgentIntelPort, args []string, ou
 	return nil
 }
 
+// RunSearchHybrid runs the search_hybrid agent tool (P3 repository search,
+// labs) and prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	search-hybrid [-max-items n] <query text>
+func RunSearchHybrid(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("search-hybrid", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() == 0 {
+		return fmt.Errorf("cli: search-hybrid needs a query argument")
+	}
+	b, err := c.SearchHybrid(ctx, client.SearchHybridParams{
+		Query:    strings.Join(fs.Args(), " "),
+		MaxItems: *maxItems,
+	})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunMemory executes a memory operation against the shared client and writes the
 // canonical serialized MemoryResponse.
 //

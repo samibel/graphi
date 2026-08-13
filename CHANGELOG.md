@@ -28,6 +28,17 @@ file:
 
 ### Added
 
+- **[labs] `search_hybrid` — embedding-free hybrid search** (P3 repository
+  search). Multi-token queries ranked by identifier-segment matching
+  (camelCase/snake_case aware), path relevance, and bounded graph degree —
+  deterministic integer weights, hash-stamped, per-signal breakdown in every
+  reason. "authentication token validation" ranks `TokenValidator` ahead of
+  accidental substring hits; no vector database, no model, no egress. CLI
+  `graphi search-hybrid`, MCP `search_hybrid` (labs), HTTP
+  `/analyze/search_hybrid`. The optional semantic search (`search_semantic`,
+  the roadmap's "SemanticProvider" — embedder opt-in via `GRAPHI_EMBEDDER`,
+  default none) is untouched and remains the separate, explicit opt-in.
+
 - **[labs] `hotspots` — churn × dependency-centrality file ranking** (P2 git
   intelligence). One call ranks the files that change constantly AND that the
   graph depends on — `commits-in-window × (1 + edge endpoints)`, integer

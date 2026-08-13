@@ -30,6 +30,7 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi repo-overview [-max-items n] [-communities]` | labs | One-call repository summary: totals, directory tree, language mix, entry points, central symbols, test/generated areas, external boundaries. `-communities` opts into the full-graph community pass. |
 | `graphi test-impact [-depth 1-3] [-max-items n] (<target> \| -diff <file\|->)` | labs | Bucket the repository's tests for a change: `must_run` / `recommended` / `probably_unaffected` / `unknown`. Pipe `git diff <range>` into `-diff -` for range selection. |
 | `graphi change-impact [-depth 1-3] [-max-items n] (<target> \| -diff <file\|->)` | labs | Change Risk 2.0: changed symbols, public-API subset, dependents, covering tests, co-change partners, explicit reasons, risk level. The stable `change-risk` quick check is unchanged. |
+| `graphi search-hybrid [-max-items n] <query text>` | labs | Embedding-free hybrid search: lexical retrieval re-ranked by identifier segments, path relevance and bounded graph degree (per-signal breakdown in every reason). |
 | `graphi hotspots [-max-commits n] [-max-items n]` | labs | Churn × dependency-centrality file ranking with bus-factor warnings, over the repo's bounded local git history. |
 | `graphi parse <file>` | labs | Parse a single file into the graph (default when no subcommand is given). |
 | `graphi query <op> -symbol <id> [-depth N]` | **GA** | Structural query. `<op>` is one of `callers`, `callees`, `references`, `definition`, `neighborhood`. |

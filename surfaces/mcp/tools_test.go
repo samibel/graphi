@@ -86,6 +86,9 @@ func (allToolsClient) ChangeImpact(context.Context, client.ChangeImpactParams) (
 func (allToolsClient) Hotspots(context.Context, client.HotspotsParams) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) SearchHybrid(context.Context, client.SearchHybridParams) ([]byte, error) {
+	return []byte("{}"), nil
+}
 func (allToolsClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return []byte("{}"), nil
 }

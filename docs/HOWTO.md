@@ -680,6 +680,7 @@ graphi repo-overview [-communities]                  One-call repository summary
 graphi test-impact (<target> | -diff <file|->)       Which tests must run: must_run/recommended/unaffected (Labs)
 graphi change-impact (<target> | -diff <file|->)     Change Risk 2.0: dependents, tests, co-change, reasons, risk (Labs)
 graphi hotspots [-max-commits n]                     Churn x dependency centrality with bus-factor warnings (Labs)
+graphi search-hybrid "<query text>"                  Embedding-free hybrid search: identifier + path + degree (Labs)
 graphi list-prs                                      Forge enumeration of open PRs (EP-018)
 graphi triage-prs                                    Graph-derived PR triage ranking (EP-018)
 graphi conflicts-prs                                 Inter-PR conflict detection (EP-018)

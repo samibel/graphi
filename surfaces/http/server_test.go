@@ -130,6 +130,9 @@ func (s *stubClient) ChangeImpact(context.Context, client.ChangeImpactParams) ([
 func (s *stubClient) Hotspots(context.Context, client.HotspotsParams) ([]byte, error) {
 	return nil, client.ErrAgentIntelUnavailable
 }
+func (s *stubClient) SearchHybrid(context.Context, client.SearchHybridParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
 func (s *stubClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
 	"github.com/samibel/graphi/engine/agenttools/hotspots"
+	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
 	"github.com/samibel/graphi/engine/agenttools/overview"
 	"github.com/samibel/graphi/engine/agenttools/related"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
@@ -117,7 +118,7 @@ func (d *Direct) SupportsCapability(name string) bool {
 		// These tools intentionally return a typed unavailable/partial result when
 		// graph dependencies are absent; the operation itself is fully executable.
 		return true
-	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots":
+	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid":
 		// Labs agent intelligence: same typed-unavailable degradation contract.
 		return true
 	case "trust_report", "graph_health":
@@ -982,6 +983,20 @@ func (d *Direct) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte
 		Deps:        d.agentDeps(),
 		MaxItems:    p.MaxItems,
 		Communities: p.Communities,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// SearchHybrid implements Client via the shared engine/agenttools/hybridsearch
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) SearchHybrid(ctx context.Context, p SearchHybridParams) ([]byte, error) {
+	res, err := hybridsearch.Search(ctx, hybridsearch.Params{
+		Query:    p.Query,
+		MaxItems: p.MaxItems,
+		Deps:     d.agentDeps(),
 	})
 	if err != nil {
 		return nil, err

@@ -375,11 +375,11 @@ func TestMCP_ToolsList(t *testing.T) {
 	// trust tool (self-contained composition, always executable on Direct) + the
 	// P1 "strict_query" wrapper (executable wherever the query service is) + the
 	// P0 agent-intelligence "symbol_context", "task_context", and
-	// "repo_overview" plus the P1 "test_impact"/"change_impact" and the P2
-	// "hotspots" tools (labs, advertised unconditionally with the same
-	// typed-unavailable degradation).
-	if len(resp.Result.Tools) != len(query.Operations)+17 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+17)
+	// "repo_overview" plus the P1 "test_impact"/"change_impact", the P2
+	// "hotspots", and the P3 "search_hybrid" tools (labs, advertised
+	// unconditionally with the same typed-unavailable degradation).
+	if len(resp.Result.Tools) != len(query.Operations)+18 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+18)
 	}
 }
 
