@@ -621,6 +621,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P2 architecture intelligence: cycles, unexpected dependencies (edges against the dominant direction), high-coupling pairs (≥3 edges both ways), and god modules (≥50% of inter-community edges while touching ≥60% of communities) on the community dependency graph; pinned integer thresholds quoted in every finding; a violation-free graph returns an explicit cited clean item; byte-parity with `graphi architecture-violations`; Labs-only."
+  - id: framework_map
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P3 framework intelligence: the application-level view derived from parser-recorded framework annotations/decorators — HTTP routes (@GetMapping/NestJS @Get/[HttpGet]), event handlers (@EventListener/@KafkaListener/@EventPattern/@Scheduled), injection points, DI components, configuration units; providers spring (Java/Kotlin), nest (TypeScript/JavaScript), dotnet (C#); every fact cites annotation + definition site; annotation-free graphs (Go/Python) get an honest typed empty outcome; one node catalog read, no edges; byte-parity with `graphi framework-map`; Labs-only."
   - id: dead_code
     category: mcp-tool
     status: shipped
@@ -822,6 +828,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P2 architecture intelligence: cycles, back-edges, high-coupling pairs, god modules on the community graph; byte-parity with the architecture_violations MCP tool"
+  - id: framework-map
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P3 framework intelligence: routes, event handlers, injections, components, configuration from recorded annotations; byte-parity with the framework_map MCP tool"
   - id: dead-code
     category: cli-subcommand
     status: shipped

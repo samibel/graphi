@@ -512,6 +512,16 @@ func (h *HTTP) DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error) {
 	return h.doGET(ctx, "/analyze/dead_code", q)
 }
 
+// FrameworkMap rides the read-only /analyze/framework_map endpoint (labs; 403
+// unless the server runs with GRAPHI_HTTP_LABS=1).
+func (h *HTTP) FrameworkMap(ctx context.Context, p FrameworkMapParams) ([]byte, error) {
+	q := url.Values{}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	return h.doGET(ctx, "/analyze/framework_map", q)
+}
+
 // Hotspots rides the read-only /analyze/hotspots endpoint (labs; 403 unless
 // the server runs with GRAPHI_HTTP_LABS=1).
 func (h *HTTP) Hotspots(ctx context.Context, p HotspotsParams) ([]byte, error) {

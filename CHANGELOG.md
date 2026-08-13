@@ -28,6 +28,21 @@ file:
 
 ### Added
 
+- **[labs] `framework_map` — framework intelligence from recorded
+  annotations** (P3). The application-level view on top of the code graph:
+  HTTP routes (`@GetMapping`, NestJS `@Get`, `[HttpGet]`), event handlers
+  (`@EventListener`, `@KafkaListener`, `@EventPattern`, `@Scheduled`),
+  injection points (`@Autowired`, `@Inject`), DI-managed components
+  (`@RestController`, `@Service`, `@Injectable`, Angular `@Component`), and
+  configuration units (`@Configuration`, `@Bean`, `@Module`) — derived
+  purely from the annotation/decorator names the parsers already record,
+  via deterministic provider tables: spring (Java/Kotlin), nest
+  (TypeScript/JavaScript), dotnet (C#). Every fact cites its annotation and
+  definition site; graphs without annotation metadata (Go, Python sources)
+  return an honest typed empty outcome naming the provider scope. CLI
+  `graphi framework-map`, MCP `framework_map` (labs), HTTP
+  `/analyze/framework_map`.
+
 - **[labs] `dead_code` — precise dead-code candidates** (P2). The agent-facing
   view of the EP-015 `dead_symbol` diagnostic: symbols with zero live inbound
   references (calls/references/implements/inherits/overrides), each scored by

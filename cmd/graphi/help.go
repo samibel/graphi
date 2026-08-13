@@ -156,6 +156,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi dead-code [-max-items n]",
 		"graphi dead-code",
 	},
+	"framework-map": {
+		"application view from recorded framework annotations: routes, events, DI (labs)",
+		"graphi framework-map [-max-items n]",
+		"graphi framework-map",
+	},
 	"related-files": {
 		"ranked, cited read-first file list around a symbol, path, or task",
 		"graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>",
@@ -427,6 +432,7 @@ func printHelp() {
 	fmt.Print("  graphi architecture         community/layer view of the graph (Louvain + dependency direction)\n")
 	fmt.Print("  graphi architecture-violations  cycles, back-edges, high coupling, god modules\n")
 	fmt.Print("  graphi dead-code            scored dead-code candidates with exclusion reasons\n")
+	fmt.Print("  graphi framework-map        routes, events, DI components from recorded annotations\n")
 	fmt.Print("  graphi snapshot [<name>]    list or freeze named graph states of this repo\n")
 	fmt.Print("  graphi compare <a> <b>      diff two named graph states ('current' = live graph)\n")
 	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")

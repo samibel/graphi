@@ -16,6 +16,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/deadcode"
 	"github.com/samibel/graphi/engine/agenttools/explain"
+	"github.com/samibel/graphi/engine/agenttools/frameworkmap"
 	"github.com/samibel/graphi/engine/agenttools/hotspots"
 	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
 	"github.com/samibel/graphi/engine/agenttools/overview"
@@ -378,6 +379,11 @@ func (e *FixtureEngine) InvokeContract(ctx context.Context, operation string, ar
 		})
 	case OpDeadCode:
 		return deadcode.Assemble(ctx, deadcode.Params{
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
+		})
+	case OpFrameworkMap:
+		return frameworkmap.Assemble(ctx, frameworkmap.Params{
 			MaxItems: intArg(args, "max_items", 0),
 			Deps:     e.Deps,
 		})

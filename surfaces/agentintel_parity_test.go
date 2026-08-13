@@ -140,6 +140,15 @@ func TestMCP_CLI_AgentIntelParity(t *testing.T) {
 		t.Fatalf("dead_code parity mismatch:\n CLI: %s\n MCP: %s", want, got)
 	}
 
+	// framework_map
+	cliOut.Reset()
+	if err := cli.RunFrameworkMap(context.Background(), c, nil, &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli framework-map: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolFrameworkMap, map[string]any{}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("framework_map parity mismatch:\n CLI: %s\n MCP: %s", want, got)
+	}
+
 	// hotspots (no provider on either surface: parity over the typed
 	// unavailable degradation)
 	cliOut.Reset()
