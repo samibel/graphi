@@ -37,6 +37,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"compound",
 		"conflicts_prs",
 		"critique_review",
+		"dead_code",
 		"definition",
 		"distill",
 		"explain_symbol",

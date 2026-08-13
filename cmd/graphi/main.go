@@ -99,6 +99,8 @@ func main() {
 		os.Exit(runAgentTool(os.Args[2:], "architecture"))
 	case "architecture-violations":
 		os.Exit(runAgentTool(os.Args[2:], "architecture-violations"))
+	case "dead-code":
+		os.Exit(runAgentTool(os.Args[2:], "dead-code"))
 	case "related-files":
 		os.Exit(runAgentTool(os.Args[2:], "related-files"))
 	case "change-risk":

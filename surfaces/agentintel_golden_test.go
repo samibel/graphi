@@ -15,7 +15,7 @@ import (
 	"github.com/samibel/graphi/surfaces/client"
 )
 
-var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid", "architecture", "architecture_violations"}
+var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid", "architecture", "architecture_violations", "dead_code"}
 
 // crossBackendAgentIntelOps excludes search_hybrid: its candidate RETRIEVAL
 // rides the backend search port, whose recall semantics legitimately differ
@@ -23,7 +23,7 @@ var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", 
 // The deterministic re-rank orders whatever set was retrieved, so per-backend
 // output is byte-stable (covered by the store-conditions golden below), but
 // the retrieved sets themselves are not required to agree across backends.
-var crossBackendAgentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "architecture", "architecture_violations"}
+var crossBackendAgentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "architecture", "architecture_violations", "dead_code"}
 
 // runAgentIntelOps drives the three labs ops through the shared surface client
 // (rooted at the fixture so snippet reads resolve) and returns op→bytes.
@@ -71,6 +71,9 @@ func runAgentIntelOps(t *testing.T, store graphstore.Graphstore) map[string]stri
 
 	av, err := c.ArchitectureViolations(ctx, client.ArchitectureViolationsParams{})
 	record("architecture_violations", av, err)
+
+	dc, err := c.DeadCode(ctx, client.DeadCodeParams{})
+	record("dead_code", dc, err)
 
 	if len(out) != len(agentIntelOps) {
 		t.Fatalf("expected %d op outputs, got %d", len(agentIntelOps), len(out))

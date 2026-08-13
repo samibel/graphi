@@ -256,6 +256,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolArchitectureViolations {
 		return s.architectureViolationsCall(ctx, p)
 	}
+	if p.Name == ToolDeadCode {
+		return s.deadCodeCall(ctx, p)
+	}
 
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
@@ -876,6 +879,19 @@ func (s *Server) architectureCall(ctx context.Context, p callParams) (any, *rpcE
 // cycle/back-edge/coupling/god-module findings in the C1 contract shape.
 func (s *Server) architectureViolationsCall(ctx context.Context, p callParams) (any, *rpcError) {
 	b, err := s.client().ArchitectureViolations(ctx, client.ArchitectureViolationsParams{
+		MaxItems: derefInt(p.Arguments.Limit),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// deadCodeCall (P2 dead code, labs) returns the scored dead-code candidates
+// with visible exclusions in the C1 contract shape (byte parity with
+// `graphi dead-code`).
+func (s *Server) deadCodeCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.client().DeadCode(ctx, client.DeadCodeParams{
 		MaxItems: derefInt(p.Arguments.Limit),
 	})
 	if err != nil {

@@ -151,6 +151,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi architecture-violations [-max-items n]",
 		"graphi architecture-violations",
 	},
+	"dead-code": {
+		"scored dead-code candidates with explicit exclusion reasons (labs)",
+		"graphi dead-code [-max-items n]",
+		"graphi dead-code",
+	},
 	"related-files": {
 		"ranked, cited read-first file list around a symbol, path, or task",
 		"graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>",
@@ -421,6 +426,7 @@ func printHelp() {
 	fmt.Print("  graphi search-hybrid <q>    embedding-free hybrid search (identifier + path + degree)\n")
 	fmt.Print("  graphi architecture         community/layer view of the graph (Louvain + dependency direction)\n")
 	fmt.Print("  graphi architecture-violations  cycles, back-edges, high coupling, god modules\n")
+	fmt.Print("  graphi dead-code            scored dead-code candidates with exclusion reasons\n")
 	fmt.Print("  graphi snapshot [<name>]    list or freeze named graph states of this repo\n")
 	fmt.Print("  graphi compare <a> <b>      diff two named graph states ('current' = live graph)\n")
 	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")

@@ -14,6 +14,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/changeimpact"
 	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/deadcode"
 	"github.com/samibel/graphi/engine/agenttools/explain"
 	"github.com/samibel/graphi/engine/agenttools/hotspots"
 	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
@@ -372,6 +373,11 @@ func (e *FixtureEngine) InvokeContract(ctx context.Context, operation string, ar
 		})
 	case OpArchitectureViolations:
 		return archintel.Violations(ctx, archintel.ViolationsParams{
+			MaxItems: intArg(args, "max_items", 0),
+			Deps:     e.Deps,
+		})
+	case OpDeadCode:
+		return deadcode.Assemble(ctx, deadcode.Params{
 			MaxItems: intArg(args, "max_items", 0),
 			Deps:     e.Deps,
 		})

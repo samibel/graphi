@@ -110,6 +110,7 @@ promise, and none of it receives feature work in the current program.
 | Git intelligence (`hotspots`, co-change, the gitlog provider) | Labs | requires local git history; outside the frozen 12 |
 | Hybrid search (`search_hybrid`) | Labs | embedding-free ranking, outside the frozen 12 |
 | Architecture intelligence (`architecture`, `architecture_violations`) | Labs | community/layer view and violation findings, outside the frozen 12 |
+| Dead code (`dead_code`) | Labs | scored candidates with exclusion reasons, outside the frozen 12 |
 | Trust surface (`graph_health`, `strict_query`) | Labs | outside the frozen 12 |
 | **Wiki** | **Source-only** | `engine/wiki` exists in the tree but has **no matrix row, no MCP tool and no CLI subcommand** — it is not reachable from any surface |
 | SaaS / hosted service | Source-only | does not exist; nothing is hosted |

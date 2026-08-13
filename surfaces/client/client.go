@@ -460,6 +460,11 @@ type Client interface {
 	// the community graph. Read-only.
 	ArchitectureViolations(ctx context.Context, p ArchitectureViolationsParams) ([]byte, error)
 
+	// DeadCode runs the dead_code agent tool (labs, P2 dead code): scored
+	// dead-code candidates with explicit exclusion reasons, over the EP-015
+	// dead_symbol diagnostic. Read-only.
+	DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error)
+
 	// Hotspots runs the hotspots agent tool (labs, P2 git intelligence):
 	// churn × dependency-centrality ranking of the files that change
 	// constantly AND that the graph depends on, with bus-factor warnings.
@@ -695,6 +700,11 @@ type ArchitectureParams struct {
 
 // ArchitectureViolationsParams carries the architecture_violations inputs.
 type ArchitectureViolationsParams struct {
+	MaxItems int
+}
+
+// DeadCodeParams carries the dead_code inputs.
+type DeadCodeParams struct {
 	MaxItems int
 }
 

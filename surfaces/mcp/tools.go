@@ -154,6 +154,10 @@ const (
 	// dependency direction, high-coupling pairs, and god modules on the
 	// community graph. Labs-only.
 	ToolArchitectureViolations = "architecture_violations"
+
+	// P2 dead code: scored dead-code candidates with explicit exclusion
+	// reasons, over the EP-015 dead_symbol diagnostic. Labs-only.
+	ToolDeadCode = "dead_code"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -204,6 +208,7 @@ var singletonToolNames = []string{
 	ToolSearchHybrid,
 	ToolArchitecture,
 	ToolArchitectureViolations,
+	ToolDeadCode,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE

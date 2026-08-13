@@ -578,6 +578,8 @@ func runAgentTool(args []string, verb string) int {
 		err = cli.RunArchitecture(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "architecture-violations":
 		err = cli.RunArchitectureViolations(context.Background(), c, rest, os.Stdout, os.Stderr)
+	case "dead-code":
+		err = cli.RunDeadCode(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "related-files":
 		err = cli.RunRelatedFiles(context.Background(), c, rest, os.Stdout, os.Stderr)
 	case "change-risk":

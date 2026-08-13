@@ -28,6 +28,18 @@ file:
 
 ### Added
 
+- **[labs] `dead_code` — precise dead-code candidates** (P2). The agent-facing
+  view of the EP-015 `dead_symbol` diagnostic: symbols with zero live inbound
+  references (calls/references/implements/inherits/overrides), each scored by
+  a pinned integer signal model — exported API and dynamic-dispatch methods
+  score lower, penalties quoted in every reason — and the exclusions made
+  VISIBLE with their reasons instead of silently dropped: framework/language
+  entry points (annotations, main, test paths, overrides, decorators), test
+  fixtures, generated/vendored paths, and exported API without usage
+  evidence. A candidate-free graph returns an explicit cited "clean" item.
+  Far better than "references == 0". CLI `graphi dead-code`, MCP `dead_code`
+  (labs), HTTP `/analyze/dead_code`.
+
 - **[labs] `architecture` + `architecture_violations` — architecture
   intelligence** (P2). `architecture` is the automatic community/layer view of
   the code graph: deterministic Louvain communities (the SW-103 detector

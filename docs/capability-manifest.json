@@ -285,6 +285,13 @@
       "note": "hot-index Unix-socket daemon lifecycle (start|stop|status)"
     },
     {
+      "id": "dead-code",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 dead code: scored dead-code candidates with explicit exclusion reasons; byte-parity with the dead_code MCP tool"
+    },
+    {
       "id": "diagnose",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -791,6 +798,13 @@
       "tier": "labs",
       "epic": "EP-018",
       "note": "SW-108 (capstone): deterministic graph-evidence critique of an existing PR review — gap / over_flag / unsupported_claim items with machine-readable evidence (blast-radius count, centrality, edge kinds, taint provenance, review-anchor) + an honest unanchored tally; NO LLM prose (zero engine egress; the review fetch is the only surface egress)."
+    },
+    {
+      "id": "dead_code",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P2 dead code: scored dead-code candidates over the EP-015 dead_symbol diagnostic (zero live inbound references across calls/references/implements/inherits/overrides) — pinned integer signal model (exported API and dynamic-dispatch methods score lower, penalties quoted per reason), with exclusions made visible with reasons (framework/language entry points, test fixtures, generated paths, exported API without usage evidence); a candidate-free graph returns an explicit cited clean item; byte-parity with `graphi dead-code`; Labs-only."
     },
     {
       "id": "definition",

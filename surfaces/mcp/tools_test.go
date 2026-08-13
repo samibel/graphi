@@ -95,6 +95,9 @@ func (allToolsClient) Architecture(context.Context, client.ArchitectureParams) (
 func (allToolsClient) ArchitectureViolations(context.Context, client.ArchitectureViolationsParams) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) DeadCode(context.Context, client.DeadCodeParams) ([]byte, error) {
+	return []byte("{}"), nil
+}
 func (allToolsClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return []byte("{}"), nil
 }

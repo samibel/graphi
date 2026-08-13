@@ -376,6 +376,13 @@ func (c *DaemonClient) ArchitectureViolations(ctx context.Context, p client.Arch
 	return nil, client.ErrAgentIntelUnavailable
 }
 
+// DeadCode implements client.Client. Returns ErrAgentIntelUnavailable until a
+// daemon RPC is added.
+func (c *DaemonClient) DeadCode(ctx context.Context, p client.DeadCodeParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {

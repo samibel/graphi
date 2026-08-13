@@ -970,6 +970,32 @@ func RunArchitecture(ctx context.Context, c client.AgentIntelPort, args []string
 	return nil
 }
 
+// RunDeadCode runs the dead_code agent tool (P2 dead code, labs) and prints
+// the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	dead-code [-max-items n]
+func RunDeadCode(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("dead-code", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 0 {
+		return fmt.Errorf("cli: dead-code takes no positional arguments")
+	}
+	b, err := c.DeadCode(ctx, client.DeadCodeParams{MaxItems: *maxItems})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunArchitectureViolations runs the architecture_violations agent tool (P2
 // architecture intelligence, labs) and prints the canonical contract JSON
 // (parity with MCP tools/call).
