@@ -1,6 +1,6 @@
 module github.com/samibel/graphi
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/alexaandru/go-sitter-forest/zig v1.9.4

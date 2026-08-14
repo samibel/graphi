@@ -59,8 +59,8 @@ func TestRealActionYMLSatisfiesContract(t *testing.T) {
 	if !strings.Contains(action, `go -C "${GRAPHI_SOURCE_ROOT}" build`) {
 		t.Fatal("engine build must execute from the pinned Action source root")
 	}
-	if !strings.Contains(action, `go-version: "1.26.5"`) {
-		t.Fatal("shipped Action must use the CVE-fixed Go 1.26.5 toolchain, not a floating or vulnerable 1.26.x selector")
+	if !strings.Contains(action, `go-version: "1.26.6"`) {
+		t.Fatal("shipped Action must use the CVE-fixed Go 1.26.6 toolchain, not a floating or vulnerable 1.26.x selector")
 	}
 }
 

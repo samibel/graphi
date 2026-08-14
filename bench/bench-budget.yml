@@ -32,7 +32,7 @@ version: 1
 # cold_start local/CI ratio); budgets add further margin. The spawn-, sub-ms-,
 # and GC-sensitive metrics start at severity warn (trend tracking without new
 # flake surface); the index-bound ones gate at fail like full_index/freshness.
-baseline_version: "2026-08-13-p4-incremental-suite-go1.26.5-linux-amd64-release"
+baseline_version: "2026-08-13-p4-incremental-suite-go1.26.6-linux-amd64-release"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
