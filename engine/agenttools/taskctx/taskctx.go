@@ -558,7 +558,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		Evidence:   ev.List(),
 		Confidence: tally.Confidence("heuristic", "seeds_only"),
 	}
-	out, err := shape.Finish(r, p.maxItems())
+	out, err := shape.FinishLabs(r, p.maxItems())
 	if err != nil {
 		return nil, err
 	}
@@ -568,7 +568,9 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 			out.Outcome = contract.OutcomePartial
 		}
 	}
-	if out.Limits.Next == "" && snippetHint != "" {
+	// The operation-specific snippet hint outranks the generic cap hint
+	// FinishLabs may have set.
+	if snippetHint != "" {
 		out.Limits.Next = snippetHint
 	}
 	return out, nil

@@ -87,6 +87,14 @@ After editing, two further labs tools close the loop:
     violations, change hotspots. Every finding carries severity, evidence,
     confidence, and the CONCRETE next call to fix it.
 
+**Truncation is never a dead end (labs).** When a labs response reports
+`limits.truncated: true`, `limits.next` names the exact continuation: for an
+item-cap truncation it is the deterministic rerun ("raise limit (>=N) to
+fetch all N item(s) in one response"), and operation-specific hints (a wider
+`token_budget` for snippets, "bounded reads clipped" for walk bounds) take
+precedence when raising the limit would not help. The frozen stable
+operations keep `"next":""` — their wire bytes are part of the GA contract.
+
 These are labs operations: their shapes may still change, and they are only
 advertised under `graphi mcp -labs` (HTTP: 403 without `GRAPHI_HTTP_LABS=1`). The
 four stable tools above remain the frozen, GA-supported path.

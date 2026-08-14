@@ -157,7 +157,7 @@ func Context(ctx context.Context, p Params) (*contract.Result, error) {
 		return nil, err
 	}
 	if res.Ambiguous() {
-		return shape.Finish(shape.Ambiguous(tool, p.Ref, res.Candidates), p.MaxItems)
+		return shape.FinishLabs(shape.Ambiguous(tool, p.Ref, res.Candidates), p.MaxItems)
 	}
 	if !res.Resolved() {
 		return shape.Empty(tool, p.Ref), nil
@@ -169,7 +169,7 @@ func Context(ctx context.Context, p Params) (*contract.Result, error) {
 		for _, n := range res.Nodes {
 			cands = append(cands, resolve.Candidate{Node: n})
 		}
-		return shape.Finish(shape.Ambiguous(tool, p.Ref, cands), p.MaxItems)
+		return shape.FinishLabs(shape.Ambiguous(tool, p.Ref, cands), p.MaxItems)
 	}
 	node := res.Nodes[0]
 
@@ -236,7 +236,7 @@ func Context(ctx context.Context, p Params) (*contract.Result, error) {
 		Evidence:   ev.List(),
 		Confidence: tally.Confidence("confirmed", "definition_only"),
 	}
-	out, err := shape.Finish(r, p.MaxItems)
+	out, err := shape.FinishLabs(r, p.MaxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,10 @@ func Context(ctx context.Context, p Params) (*contract.Result, error) {
 			out.Outcome = contract.OutcomePartial
 		}
 	}
-	if out.Limits.Next == "" {
+	// The operation-specific snippet hint outranks the generic cap hint
+	// FinishLabs may have set: a wider token_budget changes WHAT is in the
+	// answer, a higher limit only how much of it.
+	if nextHint != "" {
 		out.Limits.Next = nextHint
 	}
 	return out, nil

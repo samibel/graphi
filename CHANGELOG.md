@@ -42,6 +42,19 @@ file:
   GC-sensitive ones start at warn. Every published number is CI-produced via
   the `bench-report.json` artifact — no hand-written figures in docs.
 
+- **[labs] Continuation hints for truncated responses** (P4 / TODO 16
+  completion). Every labs agent operation now fills `limits.next` when the
+  item cap truncates the response: the deterministic rerun that returns the
+  complete answer in one call ("raise limit (>=N) to fetch all N item(s) in
+  one response; order is deterministic"), computed purely from the
+  already-pinned `total_available`. Operation-specific hints (wider
+  `token_budget`, "bounded reads clipped") take precedence where a higher
+  limit would not help. The frozen stable operations keep emitting
+  `"next":""` — enforced by new pin tests at both the shape layer
+  (`Finish` never fills `next`, even under truncation) and the wire level
+  (a forced-truncation stable call still serializes `"next":""`). No new
+  parameters, no schema changes.
+
 - **[labs] `code_health` — ten deterministic health detectors** (P5).
   Exactly ten detectors in one call — deliberately not "50 rules at once":
   dependency cycles (Tarjan SCCs over the symbol coupling graph), god

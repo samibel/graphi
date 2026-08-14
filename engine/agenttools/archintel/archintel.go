@@ -477,7 +477,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		Evidence:   ev.List(),
 		Confidence: m.tally.Confidence("unknown", "community_graph"),
 	}
-	return shape.Finish(r, p.maxItems())
+	return shape.FinishLabs(r, p.maxItems())
 }
 
 // topLayerLabel names the first community row (the top layer's largest

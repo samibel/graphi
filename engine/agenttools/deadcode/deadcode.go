@@ -345,7 +345,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		Evidence:   ev.List(),
 		Confidence: conf,
 	}
-	return shape.Finish(r, p.maxItems())
+	return shape.FinishLabs(r, p.maxItems())
 }
 
 // exclusionReason renders a suppression category as the roadmap-style
