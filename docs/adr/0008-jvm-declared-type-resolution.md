@@ -1,7 +1,11 @@
 # ADR 0008 — JVM Declared-Type Semantic Resolution (`jvmresolve`, confirmed tier for Java/Kotlin)
 
-- Status: **Proposed** (skeleton — decision points D1–D8 below are open; the
-  owner rules; no implementation exists)
+- Status: **Proposed** (decision points D1–D8 below are open and the owner
+  rules; groundwork exists — the D3 node half, and `engine/jvmresolve` slice 1:
+  the declaration→node identity map with its golden cross-test (gate G2a),
+  which also PINNED three collector facts the binder must respect: Java enum
+  members, Kotlin enum-class members and Kotlin companions + their members
+  mint NO nodes)
 - Date: 2026-08-14
 - Program: [`docs/plan/2026-08-graphi-p2-language-ga-program-v1.md`](../plan/2026-08-graphi-p2-language-ga-program-v1.md)
   §5.1 (design), §5.2 WP-J2…WP-J4, WP-J9 (ground truth)

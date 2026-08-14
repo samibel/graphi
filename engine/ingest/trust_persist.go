@@ -77,7 +77,7 @@ func (i *Ingester) collectTrustSnapshot(ctx context.Context, generation string) 
 		External:       trust.NewExternalFacts(stats),
 		Link:           trust.NewLinkFacts(i.lastLinkStats),
 		Parse:          trust.NewParseFacts(paths, byReason),
-		TypeResolution: i.lastTypeResolution,
+		TypeResolution: i.combinedTypeResolutionFacts(),
 	}, true, nil
 }
 

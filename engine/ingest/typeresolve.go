@@ -141,7 +141,10 @@ func (i *Ingester) semanticResolve(ctx context.Context, w graphstore.Writer, roo
 			// clean against stub imports, and the stale-confirmed sweep below
 			// would then delete EVERY cross-package confirmed edge. Skip the
 			// whole pass instead — degradation never deletes knowledge; the
-			// next pass re-runs it over a stable tree.
+			// next pass re-runs it over a stable tree. The flag additionally
+			// blocks this pass's wholesale package-evidence replace (see
+			// semanticEvidenceReady) for the same reason.
+			i.semanticReadFailure = true
 			return nil, nil
 		}
 		files[u.relPath] = read.src
@@ -164,20 +167,18 @@ func (i *Ingester) semanticResolve(ctx context.Context, w graphstore.Writer, roo
 		return nil, fmt.Errorf("ingest: typeresolve: %w", err)
 	}
 	// Retain the compact trust summary at the ONE point the full Result exists;
-	// the Result itself stays transient. Every early return above leaves the
-	// pass-start zero value in place — a skipped resolver claims no facts.
-	// The per-package evidence rows (P1 WP1.2, PRD §14.3/§22) are folded here
-	// too, with the ran flag telling the evidence writer that these rows are a
-	// complete whole-repo recompute (safe to replace the persisted set) rather
-	// than a skipped pass's zero value.
-	//
-	// SINGLE-SLOT, DELIBERATELY: these fields hold ONE resolver's facts, which
-	// is exact while the registry has one registrant (Go). Registering a second
-	// language (WP-J3) must widen them to per-language facts BEFORE it lands —
-	// the trust snapshot may never silently report only the last-run language.
-	i.lastTypeResolution = trust.NewTypeResolutionFacts(result)
-	i.lastPackageEvidence = packageEvidenceFromResult(result, dirOf)
-	i.lastTypeResolutionRan = true
+	// the Result itself stays transient. Every early return above records no
+	// run — a skipped resolver claims no facts. The per-package evidence rows
+	// (P1 WP1.2, PRD §14.3/§22) are folded here too; presence in semanticRuns
+	// tells the evidence writer these rows are a complete whole-repo recompute
+	// (safe to replace the persisted set) rather than a skipped pass's zero
+	// value. Facts are keyed PER LANGUAGE and folded back into the single-slot
+	// snapshot/persistence shapes by trust_fold.go, whose single-language case
+	// is the identity — the pre-seam bytes exactly.
+	i.recordSemanticRun(res.Language(), semanticRun{
+		facts:    trust.NewTypeResolutionFacts(result),
+		evidence: packageEvidenceFromResult(result, dirOf),
+	})
 
 	checkedDirs := make(map[string]struct{}, len(result.Units))
 	for _, u := range result.Units {

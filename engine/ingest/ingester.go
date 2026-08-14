@@ -18,7 +18,6 @@ import (
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/link"
 	"github.com/samibel/graphi/engine/observe"
-	"github.com/samibel/graphi/engine/trust"
 	"github.com/samibel/graphi/engine/typeresolve"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
@@ -51,14 +50,30 @@ type Ingester struct {
 	// ingesting goroutine.
 	lastLinkStats link.Stats
 
-	// lastTypeResolution is the compact trust summary of the most recent
-	// typeresolvePass, folded into the canonical snapshot form at the one
-	// point the full typeresolve.Result exists transiently (P1 trust
-	// snapshot). Reset at pass start (resetTrustSignals) so a pass that
-	// legitimately skips the resolver publishes zero facts, never the
+	// semanticRuns holds, PER LANGUAGE, the completed whole-repo recompute of
+	// the most recent typeresolvePass: the compact trust facts plus the
+	// per-package evidence rows, folded at the one point each registrant's
+	// full typeresolve.Result exists transiently (P1 trust snapshot; P1 WP1.2
+	// / PRD §14.3, §22). Only COMPLETED runs enter the map — a resolver that
+	// skipped (kill switch, no subject files, failed re-read) claims no
+	// facts. The per-language shape is the WP-J3 entry criterion from
+	// ADR 0007: with a second registrant, a single slot would silently report
+	// only the last-run language. Snapshot and persistence consume the map
+	// through the fold accessors in trust_fold.go, whose single-language case
+	// is the identity — so with the Go-only registry the published bytes are
+	// unchanged. Reset at pass start (resetTrustSignals) so a pass that
+	// legitimately skips the resolvers publishes zero facts, never the
 	// previous pass's. Touched only from the single ingesting goroutine,
 	// like lastLinkStats.
-	lastTypeResolution trust.TypeResolutionFacts
+	semanticRuns map[string]semanticRun
+
+	// semanticReadFailure records that at least one resolver skipped THIS
+	// pass because a walked input failed to re-read mid-pass. While set, the
+	// pass's package-evidence rows must NOT replace the persisted set
+	// wholesale: the failed language cannot contribute rows, so a replace
+	// would delete its persisted evidence — degradation never deletes
+	// knowledge. Reset alongside semanticRuns.
+	semanticReadFailure bool
 
 	// lastFileLinkStats holds the PER-FILE linker counters of the most recent
 	// linkFiles pass, keyed by normalized repo-relative source path (P1 WP1.2
@@ -66,19 +81,6 @@ type Ingester struct {
 	// exact sum of these deltas. Reset at pass start like lastLinkStats;
 	// touched only from the single ingesting goroutine.
 	lastFileLinkStats map[string]link.Stats
-
-	// lastPackageEvidence holds the per-package resolver evidence of the most
-	// recent typeresolvePass, folded from the transient typeresolve.Result at
-	// the same point lastTypeResolution is (P1 WP1.2, PRD §22 semantics).
-	// lastTypeResolutionRan records whether the resolver actually completed a
-	// Resolve this pass: an incremental pass that legitimately skips the
-	// whole-repo recompute (non-Go change set, fast profile, kill switch)
-	// must LEAVE the persisted package rows alone rather than wipe them —
-	// zero rows from a skipped resolver are absent evidence, not evidence of
-	// zero packages. Both are reset at pass start and touched only from the
-	// single ingesting goroutine.
-	lastPackageEvidence   []PackageEvidence
-	lastTypeResolutionRan bool
 
 	// bounds are the fail-closed parse-time resource bounds (SW-055 AC#6) applied
 	// to untrusted inputs: max file size (checked on the root-confined descriptor
@@ -342,10 +344,9 @@ func (i *Ingester) resetSkips() {
 // facts for them, never a previous pass's leftovers.
 func (i *Ingester) resetTrustSignals() {
 	i.lastLinkStats = link.Stats{}
-	i.lastTypeResolution = trust.TypeResolutionFacts{}
 	i.lastFileLinkStats = map[string]link.Stats{}
-	i.lastPackageEvidence = nil
-	i.lastTypeResolutionRan = false
+	i.semanticRuns = nil
+	i.semanticReadFailure = false
 }
 
 // MetaDB exposes the ingest-meta SQLite sidecar handle so a sibling engine

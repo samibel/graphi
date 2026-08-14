@@ -229,7 +229,7 @@ func (i *Ingester) persistTrustEvidenceFull(ctx context.Context, generation stri
 		if err := insertFileEvidenceTx(ctx, tx, generation, rows); err != nil {
 			return err
 		}
-		return insertPackageEvidenceTx(ctx, tx, generation, i.lastPackageEvidence)
+		return insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence())
 	})
 }
 
@@ -245,8 +245,9 @@ func (i *Ingester) persistTrustEvidenceFull(ctx context.Context, generation stri
 // the pass's rows are upserted — parse skips are upserted for every diagnostic
 // of the pass (walk-time skips re-observe the whole tree, so this converges
 // file rows even for paths outside the touched set). Package rows are replaced
-// wholesale exactly when the resolver ran (its recompute is whole-repo); a
-// pass that skipped the resolver leaves the persisted package rows alone.
+// wholesale exactly when a semantic recompute completed and none read-failed
+// (semanticEvidenceReady — each registrant's recompute is whole-repo); a pass
+// that skipped the resolvers leaves the persisted package rows alone.
 func (i *Ingester) persistTrustEvidenceLive(ctx context.Context, touched map[string]struct{}, parsedLangs map[string]string, removed []string) error {
 	generation, err := i.store.Metadata(ctx, graphFullPassGenerationKey)
 	if errors.Is(err, graphstore.ErrNotFound) {
@@ -276,13 +277,13 @@ func (i *Ingester) persistTrustEvidenceLive(ctx context.Context, touched map[str
 		if err := insertFileEvidenceTx(ctx, tx, generation, rows); err != nil {
 			return err
 		}
-		if !i.lastTypeResolutionRan {
+		if !i.semanticEvidenceReady() {
 			return nil
 		}
 		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_package_evidence"); err != nil {
 			return fmt.Errorf("ingest: clear package evidence: %w", err)
 		}
-		return insertPackageEvidenceTx(ctx, tx, generation, i.lastPackageEvidence)
+		return insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence())
 	})
 }
 
