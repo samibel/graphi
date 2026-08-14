@@ -112,6 +112,7 @@ promise, and none of it receives feature work in the current program.
 | Architecture intelligence (`architecture`, `architecture_violations`) | Labs | community/layer view and violation findings, outside the frozen 12 |
 | Dead code (`dead_code`) | Labs | scored candidates with exclusion reasons, outside the frozen 12 |
 | Framework intelligence (`framework_map`) | Labs | annotation-derived application view, outside the frozen 12 |
+| Code health (`code_health`) | Labs | ten deterministic detectors with remediation, outside the frozen 12 |
 | Trust surface (`graph_health`, `strict_query`) | Labs | outside the frozen 12 |
 | **Wiki** | **Source-only** | `engine/wiki` exists in the tree but has **no matrix row, no MCP tool and no CLI subcommand** — it is not reachable from any surface |
 | SaaS / hosted service | Source-only | does not exist; nothing is hosted |

@@ -13,6 +13,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/archintel"
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/changeimpact"
+	"github.com/samibel/graphi/engine/agenttools/codehealth"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/deadcode"
 	"github.com/samibel/graphi/engine/agenttools/explain"
@@ -386,6 +387,14 @@ func (e *FixtureEngine) InvokeContract(ctx context.Context, operation string, ar
 		return frameworkmap.Assemble(ctx, frameworkmap.Params{
 			MaxItems: intArg(args, "max_items", 0),
 			Deps:     e.Deps,
+		})
+	case OpCodeHealth:
+		// The fixture runner passes no git provider: scenarios pin the typed
+		// change_hotspots informational row.
+		return codehealth.Assemble(ctx, codehealth.Params{
+			MaxCommits: intArg(args, "max_commits", 0),
+			MaxItems:   intArg(args, "max_items", 0),
+			Deps:       e.Deps,
 		})
 	default:
 		return nil, fmt.Errorf("scenario: %q is not an agent-tool operation", operation)

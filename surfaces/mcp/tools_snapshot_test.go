@@ -33,6 +33,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"callers",
 		"change_impact",
 		"change_risk",
+		"code_health",
 		"compare_branches",
 		"compound",
 		"conflicts_prs",

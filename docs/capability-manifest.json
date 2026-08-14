@@ -243,6 +243,13 @@
       "note": "short-verb alias for `setup` (register the MCP server)"
     },
     {
+      "id": "code-health",
+      "category": "cli-subcommand",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P5 code health: ten deterministic detectors with severity/evidence/confidence/remediation; byte-parity with the code_health MCP tool"
+    },
+    {
       "id": "compare",
       "category": "cli-subcommand",
       "status": "shipped",
@@ -773,6 +780,13 @@
       "tier": "stable",
       "epic": "EP-020",
       "note": "SW-117: evidence-based low/medium/high/unknown blast-radius estimate from fan-in and dependent files, with diff targeting; CLI parity via `graphi change-risk`."
+    },
+    {
+      "id": "code_health",
+      "category": "mcp-tool",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "P5 code health: exactly ten deterministic detectors in one call — dependency cycles (Tarjan SCCs), god files, god symbols, high fan-in/out, dead symbols (EP-015 core), unstable dependencies (package instability E/(A+E)), duplicate dependency paths, layer violations (architecture model), change hotspots (bounded git history; typed informational row without a provider); every finding carries severity/evidence/confidence/remediation with pinned integer thresholds quoted; three documented whole-graph passes; byte-parity with `graphi code-health`; Labs-only."
     },
     {
       "id": "compare_branches",

@@ -820,6 +820,20 @@ func maximalToolDescriptors() []map[string]any {
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})
+	// P5 code health: code_health — exactly ten deterministic detectors,
+	// composing the architecture, dead-code, and hotspot models.
+	tools = append(tools, map[string]any{
+		"name":        ToolCodeHealth,
+		"description": "code_health: run exactly TEN deterministic health detectors in one call — dependency cycles (Tarjan SCCs over the symbol coupling graph), god files, god symbols (high fan-in AND fan-out), high fan-in, high fan-out, dead symbols (the EP-015 diagnostic core), unstable dependencies (packages depended on heavily yet with instability E/(A+E) ≥ 70%), duplicate dependency paths (a direct edge shadowed by indirect routes), layer violations (community cycles + against-dominant edges from the architecture model), and change hotspots (churn × centrality over bounded git history; degrades to a typed informational row without a provider). Every finding carries severity (high/warn/info), a cited definition site, a confidence label, and a CONCRETE remediation — the next graphi call or the structural fix. Pinned integer thresholds quoted in every reason; deliberately not '50 rules at once'. Purpose: the one-call repository health check an agent can act on. When to use: onboarding, before large refactors, periodic hygiene sweeps. When NOT to use: for one family in depth (architecture_violations, dead_code, hotspots are the deep dives). Input shape: optional max_commits (history window) and limit. Read-only: true — three documented whole-graph passes (detectors + architecture model + dead-symbol diagnostic). Partial results possible: per-detector rows are capped; the item cap truncates info rows first.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"max_commits": map[string]any{"type": "integer", "description": "history window bound for change_hotspots (default 1000)"},
+				"limit":       map[string]any{"type": "integer", "description": "item cap (default 60)"},
+			},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
 	// Central stability-tier marking (single source: StableOperations in
 	// tools.go) — every advertised tool outside the frozen 12-op stable set is
 	// prefixed [labs]; descriptor literals never carry the tag by hand.

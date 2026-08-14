@@ -390,6 +390,13 @@ func (c *DaemonClient) FrameworkMap(ctx context.Context, p client.FrameworkMapPa
 	return nil, client.ErrAgentIntelUnavailable
 }
 
+// CodeHealth implements client.Client. Returns ErrAgentIntelUnavailable until
+// a daemon RPC is added.
+func (c *DaemonClient) CodeHealth(ctx context.Context, p client.CodeHealthParams) ([]byte, error) {
+	_, _ = ctx, p
+	return nil, client.ErrAgentIntelUnavailable
+}
+
 // Diagnose returns ErrDiagnosticUnavailable until a daemon diagnostics RPC is
 // added (mirrors the analysis/edit "unavailable until wired" precedent).
 func (c *DaemonClient) Diagnose(ctx context.Context, kinds []string, opts client.DiagnoseOptions) ([]byte, error) {

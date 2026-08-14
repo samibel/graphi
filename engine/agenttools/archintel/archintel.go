@@ -268,6 +268,49 @@ func (m *archModel) display(id int) string {
 	return fmt.Sprintf("%s (community %d)", m.label[id], id)
 }
 
+// HealthView is the narrow community-graph read the code_health detectors
+// consume (P5 / TODO-21): the partition size plus the two architecture-level
+// violation families, rendered exactly like the architecture_violations rows.
+// It exists so codehealth composes this package's model without this package
+// exporting its internals.
+type HealthView struct {
+	Communities int
+	// Cycles renders each community dependency cycle as its display-label walk.
+	Cycles []string
+	// BackEdges renders each against-dominant-direction dependency.
+	BackEdges []string
+}
+
+// Health computes the HealthView over the same deterministic model the
+// architecture tools use (one node + one edge catalog read).
+func Health(ctx context.Context, deps resolve.Deps) (HealthView, error) {
+	m, err := buildModel(ctx, deps)
+	if err != nil {
+		return HealthView{}, err
+	}
+	out := HealthView{Communities: len(m.commIDs)}
+	for _, cyc := range findCycles(m) {
+		labels := make([]string, 0, len(cyc)+1)
+		for _, c := range cyc {
+			labels = append(labels, m.display(c))
+		}
+		labels = append(labels, m.display(cyc[0]))
+		out.Cycles = append(out.Cycles, strings.Join(labels, " → "))
+	}
+	for p, dom := range m.dominant {
+		if !dom {
+			continue
+		}
+		rev := m.pairCount[pair{p.to, p.from}]
+		if rev == 0 || min(m.pairCount[p], rev) >= highCouplingMin {
+			continue
+		}
+		out.BackEdges = append(out.BackEdges, fmt.Sprintf("%s → %s — %d edge(s) against the dominant direction (%d)", m.display(p.to), m.display(p.from), rev, m.pairCount[p]))
+	}
+	sort.Strings(out.BackEdges)
+	return out, nil
+}
+
 // packagePrefix extracts the structural package of a qualified name: the
 // prefix before the final "." (a name with no "." is its own package).
 func packagePrefix(qn string) string {

@@ -163,6 +163,10 @@ const (
 	// recorded framework annotations/decorators (routes, event handlers,
 	// injections, components, configuration). Labs-only.
 	ToolFrameworkMap = "framework_map"
+
+	// P5 code health: ten deterministic health detectors in one call, each
+	// finding with severity, evidence, confidence, and remediation. Labs-only.
+	ToolCodeHealth = "code_health"
 )
 
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
@@ -215,6 +219,7 @@ var singletonToolNames = []string{
 	ToolArchitectureViolations,
 	ToolDeadCode,
 	ToolFrameworkMap,
+	ToolCodeHealth,
 }
 
 // StableOperations is the frozen SCOPE-01 (SW-111) set of graphi's 12 STABLE
