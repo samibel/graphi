@@ -22,7 +22,17 @@ version: 1
 # grammar blob. Baseline 32,509,872 B is the measured canonical current tree;
 # budget 34,250,000 B preserves ~5.35% headroom and remains ~15.75 MB below the
 # hard 50 MB product ceiling.
-baseline_version: "2026-07-16-v050-hardening-go1.26.5-linux-amd64-release"
+# 2026-08-13-p4-incremental-suite: the P4 / TODO-19 incremental-indexing suite
+# adds seven metrics over the SAME frozen fixture (mutations happen only in a
+# runtime copy — fixture_digest is unchanged): ten-file incremental change,
+# simulated branch switch (modify+add+delete), MCP startup over the measured
+# binary (spawn → initialize response), named query latencies (symbol lookup /
+# callers / task_context), and the post-GC heap after a full index. Baselines
+# are the locally measured values scaled ~10x for CI-runner headroom (the
+# cold_start local/CI ratio); budgets add further margin. The spawn-, sub-ms-,
+# and GC-sensitive metrics start at severity warn (trend tracking without new
+# flake surface); the index-bound ones gate at fail like full_index/freshness.
+baseline_version: "2026-08-13-p4-incremental-suite-go1.26.6-linux-amd64-release"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
@@ -102,4 +112,39 @@ metrics:
     baseline: 5
     budget: 20
     unit: ms
+    severity: warn
+  incremental_ten_file_ms:
+    baseline: 140
+    budget: 2000
+    unit: ms
+    severity: fail
+  branch_switch_sim_ms:
+    baseline: 120
+    budget: 2000
+    unit: ms
+    severity: fail
+  mcp_startup_ms:
+    baseline: 150
+    budget: 1500
+    unit: ms
+    severity: warn
+  symbol_lookup_ms:
+    baseline: 3
+    budget: 50
+    unit: ms
+    severity: warn
+  callers_query_ms:
+    baseline: 3
+    budget: 50
+    unit: ms
+    severity: warn
+  context_query_ms:
+    baseline: 20
+    budget: 200
+    unit: ms
+    severity: warn
+  index_heap_alloc_bytes:
+    baseline: 60000000
+    budget: 200000000
+    unit: bytes
     severity: warn

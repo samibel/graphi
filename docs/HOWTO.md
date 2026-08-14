@@ -13,7 +13,7 @@ server for Claude Code. Everything runs **locally**; no code leaves your machine
 
 | You want to use… | You need |
 |---|---|
-| The `graphi` binary (CLI, HTTP, MCP, daemon) | **Go 1.26.5+** — no C toolchain (the default build is CGo-free) |
+| The `graphi` binary (CLI, HTTP, MCP, daemon) | **Go 1.26.6+** — no C toolchain (the default build is CGo-free) |
 | The web client (Sigma graph viz + wiki) | **Node.js 18+** and npm |
 | The VS Code extension | Node.js 18+, npm, and **VS Code 1.80+** (plus `@vscode/vsce` for packaging) |
 | The MCP integration | **Claude Code** installed |
@@ -21,7 +21,7 @@ server for Claude Code. Everything runs **locally**; no code leaves your machine
 Check Go:
 
 ```bash
-go version   # must report go1.26.5 or newer
+go version   # must report go1.26.6 or newer
 ```
 
 ---

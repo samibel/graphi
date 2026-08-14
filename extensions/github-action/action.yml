@@ -111,7 +111,7 @@ runs:
       with:
         # Keep this exact patch in sync with go.mod/go.work. Earlier 1.26.x
         # patches contain reachable standard-library vulnerabilities.
-        go-version: "1.26.5"
+        go-version: "1.26.6"
 
     - name: Build pinned graphi engine (CGo-free, in-runner)
       shell: bash

@@ -226,6 +226,18 @@ func TestRunExternalBinaryIsUnverifiedAndUsesArtifactProvenance(t *testing.T) {
 		metrics.BuildCGOEnabled != want.settings["CGO_ENABLED"] {
 		t.Fatalf("metrics provenance does not match external artifact: metrics=%+v artifact=%+v", metrics, want)
 	}
+	// An external binary's MCP capability is unverified: the startup metric is
+	// skipped and omitted from the measurement map (never a fake zero).
+	if metrics.MCPStartupMS != 0 {
+		t.Fatalf("MCPStartupMS = %v for external binary, want skipped (0)", metrics.MCPStartupMS)
+	}
+	if _, ok := metrics.Map()["mcp_startup_ms"]; ok {
+		t.Fatal("mcp_startup_ms must be omitted from Map() when unmeasured")
+	}
+	// The in-process incremental suite runs regardless of binary provenance.
+	if metrics.IncrementalTenFileMS <= 0 || metrics.BranchSwitchSimMS <= 0 || metrics.ContextQueryMS <= 0 {
+		t.Fatalf("incremental suite metrics missing: %+v", metrics)
+	}
 }
 
 func TestClassifyBuildContractRejectsNonCanonicalBuilds(t *testing.T) {

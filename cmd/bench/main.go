@@ -1,8 +1,11 @@
-// Command bench runs the budget-gated benchmark suite for graphi (story SW-010).
-// It measures cold-start P95, full-index time, freshness lag, and static binary
-// size against the pinned budgets in bench/bench-budget.yml, emits a
-// machine-readable report (metrics + gate), and exits non-zero when any metric
-// exceeds its budget so CI fails loudly naming the regressed metric.
+// Command bench runs the budget-gated benchmark suite for graphi (story SW-010,
+// extended by P4/TODO-19). It measures cold-start P95, full-index time,
+// freshness lag, static binary size, the incremental-indexing suite (ten-file
+// change, simulated branch switch, MCP startup, named query latencies, heap
+// footprint), and the per-profile metrics against the pinned budgets in
+// bench/bench-budget.yml, emits a machine-readable report (metrics + gate), and
+// exits non-zero when any fail-severity metric exceeds its budget so CI fails
+// loudly naming the regressed metric.
 //
 // Usage:
 //
