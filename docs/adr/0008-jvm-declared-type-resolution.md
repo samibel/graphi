@@ -1,11 +1,15 @@
 # ADR 0008 — JVM Declared-Type Semantic Resolution (`jvmresolve`, confirmed tier for Java/Kotlin)
 
 - Status: **Proposed** (decision points D1–D8 below are open and the owner
-  rules; groundwork exists — the D3 node half, and `engine/jvmresolve` slice 1:
-  the declaration→node identity map with its golden cross-test (gate G2a),
-  which also PINNED three collector facts the binder must respect: Java enum
-  members, Kotlin enum-class members and Kotlin companions + their members
-  mint NO nodes)
+  rules; the binder is being built DARK — unregistered, unreachable from any
+  surface — along this ADR's recommended contracts, so nothing ships until the
+  rulings land. Groundwork so far: the D3 node half; `engine/jvmresolve`
+  slice 1 — the declaration→node identity map with its golden cross-test
+  (gate G2a), which PINNED three collector facts (Java enum members, Kotlin
+  enum-class members, Kotlin companions + their members mint NO nodes); and
+  slice 2 — Phase A: the declaration table (`table.go`, both CST walkers) and
+  the JLS-approximation type-name resolution with the strict ambiguity rule
+  (`resolve.go`))
 - Date: 2026-08-14
 - Program: [`docs/plan/2026-08-graphi-p2-language-ga-program-v1.md`](../plan/2026-08-graphi-p2-language-ga-program-v1.md)
   §5.1 (design), §5.2 WP-J2…WP-J4, WP-J9 (ground truth)
