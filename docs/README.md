@@ -53,7 +53,8 @@ them breaks gates; the generated ones are overwritten on the next run.
 |---|---|
 | [plan/2026-07-graphi-9of10-execution-plan.md](plan/2026-07-graphi-9of10-execution-plan.md) | The **planning authority**, cited by the RC evidence gate (`internal/evidence`). Wins everywhere except inside P0 scope |
 | [plan/2026-07-graphi-p0-proof-and-truth-prd.md](plan/2026-07-graphi-p0-proof-and-truth-prd.md) | The **P0 PRD** — a *precisification of plan milestones M0–M2*, not a replacement. Inside P0 scope the PRD wins; outside it the plan wins. Defines no gate IDs of its own: it reuses the WP0–WP10 / M0–M5 row IDs from [rc/evidence-index.yaml](rc/evidence-index.yaml) |
+| [plan/2026-08-graphi-p2-language-ga-program-v1.md](plan/2026-08-graphi-p2-language-ga-program-v1.md) | The **P2 language-GA program** (PROPOSED) — every shipped Preview language to Go's canonical GA bar, starting with Java/Kotlin; its open decisions live in ADR [0007](adr/0007-semantic-resolver-registry.md)/[0008](adr/0008-jvm-declared-type-resolution.md) |
 
-These two are the only planning documents in the tree, and they are ordered, not
-competing. Earlier plans, PRDs, expert reviews, and per-slice engineering records have
+The planning documents under [plan/](plan) are ordered, not competing.
+Superseded plans, PRDs, expert reviews, and per-slice engineering records have
 been removed; they remain reachable through git history only.
