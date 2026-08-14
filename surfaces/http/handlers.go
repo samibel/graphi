@@ -299,7 +299,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 // They dispatch through the dedicated client seams, not the generic analysis
 // service. The labs entries are auto-403'd by the capability guard unless the
 // server runs with GRAPHI_LABS=1 (isLabsCapability keys off StableOperations).
-var agentToolNames = []string{"agent_brief", "architecture", "architecture_violations", "change_impact", "change_risk", "dead_code", "explain_symbol", "framework_map", "hotspots", "related_files", "repo_overview", "search_hybrid", "symbol_context", "task_context", "test_impact"}
+var agentToolNames = []string{"agent_brief", "architecture", "architecture_violations", "change_impact", "change_risk", "code_health", "dead_code", "explain_symbol", "framework_map", "hotspots", "related_files", "repo_overview", "search_hybrid", "symbol_context", "task_context", "test_impact"}
 
 // handleAgentTool serves the EP-020 agent tools on the shared /analyze route.
 // It returns false when name is not an agent tool so the generic analyzer
@@ -441,6 +441,17 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 		raw, err = s.client.DeadCode(r.Context(), client.DeadCodeParams{MaxItems: maxItems})
 	case "framework_map":
 		raw, err = s.client.FrameworkMap(r.Context(), client.FrameworkMapParams{MaxItems: maxItems})
+	case "code_health":
+		p := client.CodeHealthParams{MaxItems: maxItems}
+		if mc := q.Get("max-commits"); mc != "" {
+			v, err := strconv.Atoi(mc)
+			if err != nil || v < 0 {
+				writeErr(w, http.StatusBadRequest, "bad_request", "bad max-commits")
+				return true
+			}
+			p.MaxCommits = v
+		}
+		raw, err = s.client.CodeHealth(r.Context(), p)
 	case "hotspots":
 		p := client.HotspotsParams{MaxItems: maxItems}
 		if mc := q.Get("max-commits"); mc != "" {

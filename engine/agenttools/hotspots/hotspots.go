@@ -188,7 +188,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 			Method:       "churn_x_centrality",
 		},
 	}
-	return shape.Finish(r, p.MaxItems)
+	return shape.FinishLabs(r, p.MaxItems)
 }
 
 // joinCapped joins up to n entries, appending an ellipsis marker beyond that.

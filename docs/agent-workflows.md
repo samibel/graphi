@@ -81,6 +81,19 @@ After editing, two further labs tools close the loop:
     annotations the parsers record: HTTP routes, event handlers, injection
     points, DI components, and configuration units (providers: spring, nest,
     dotnet). Annotation-free graphs answer with an honest typed empty.
+11. **`code_health`** — exactly ten deterministic detectors in one call:
+    dependency cycles, god files, god symbols, high fan-in/out, dead
+    symbols, unstable dependencies, duplicate dependency paths, layer
+    violations, change hotspots. Every finding carries severity, evidence,
+    confidence, and the CONCRETE next call to fix it.
+
+**Truncation is never a dead end (labs).** When a labs response reports
+`limits.truncated: true`, `limits.next` names the exact continuation: for an
+item-cap truncation it is the deterministic rerun ("raise limit (>=N) to
+fetch all N item(s) in one response"), and operation-specific hints (a wider
+`token_budget` for snippets, "bounded reads clipped" for walk bounds) take
+precedence when raising the limit would not help. The frozen stable
+operations keep `"next":""` — their wire bytes are part of the GA contract.
 
 These are labs operations: their shapes may still change, and they are only
 advertised under `graphi mcp -labs` (HTTP: 403 without `GRAPHI_HTTP_LABS=1`). The
@@ -209,13 +222,13 @@ that would require a server-initiated `roots/list` request.
 Over HTTP the tools are `GET /analyze/agent_brief?topic=…`,
 `/analyze/related_files?target=…&direction=…`,
 `/analyze/explain_symbol?symbol=…`, `/analyze/change_risk?target=…`, and the
-eleven Labs agent-intelligence tools on the same route
+twelve Labs agent-intelligence tools on the same route
 (`/analyze/symbol_context?symbol=…`, `/analyze/task_context?task=…`,
 `/analyze/repo_overview`, `/analyze/test_impact?target=…`,
 `/analyze/change_impact?target=…`, `/analyze/hotspots`,
 `/analyze/search_hybrid?query=…`, `/analyze/architecture`,
 `/analyze/architecture_violations`, `/analyze/dead_code`,
-`/analyze/framework_map` — 403 without
+`/analyze/framework_map`, `/analyze/code_health` — 403 without
 `GRAPHI_HTTP_LABS=1`; diff targeting stays CLI/MCP-only on this GET surface) —
 all advertised in `GET /contract`.
 

@@ -262,6 +262,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolFrameworkMap {
 		return s.frameworkMapCall(ctx, p)
 	}
+	if p.Name == ToolCodeHealth {
+		return s.codeHealthCall(ctx, p)
+	}
 
 	if p.Arguments.Symbol == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
@@ -883,6 +886,19 @@ func (s *Server) architectureCall(ctx context.Context, p callParams) (any, *rpcE
 func (s *Server) architectureViolationsCall(ctx context.Context, p callParams) (any, *rpcError) {
 	b, err := s.client().ArchitectureViolations(ctx, client.ArchitectureViolationsParams{
 		MaxItems: derefInt(p.Arguments.Limit),
+	})
+	if err != nil {
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// codeHealthCall (P5 code health, labs) returns the ten-detector health
+// report in the C1 contract shape (byte parity with `graphi code-health`).
+func (s *Server) codeHealthCall(ctx context.Context, p callParams) (any, *rpcError) {
+	b, err := s.client().CodeHealth(ctx, client.CodeHealthParams{
+		MaxCommits: derefInt(p.Arguments.MaxCommits),
+		MaxItems:   derefInt(p.Arguments.Limit),
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}

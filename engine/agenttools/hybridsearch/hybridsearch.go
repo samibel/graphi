@@ -279,7 +279,7 @@ func Search(ctx context.Context, p Params) (*contract.Result, error) {
 			Method:       "hybrid_ranking",
 		},
 	}
-	out, err := shape.Finish(r, p.MaxItems)
+	out, err := shape.FinishLabs(r, p.MaxItems)
 	if err != nil {
 		return nil, err
 	}

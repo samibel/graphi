@@ -329,5 +329,5 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 			Method:       "recorded_annotations",
 		},
 	}
-	return shape.Finish(r, p.maxItems())
+	return shape.FinishLabs(r, p.maxItems())
 }

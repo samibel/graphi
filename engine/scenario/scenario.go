@@ -82,6 +82,9 @@ const (
 	// P3 framework-intelligence operation (labs), same envelope.
 	OpFrameworkMap = "framework_map"
 
+	// P5 code-health operation (labs), same envelope.
+	OpCodeHealth = "code_health"
+
 	// OpDiagnose runs the engine diagnostics over the fixture store (signal
 	// quality scenarios).
 	OpDiagnose = "diagnose"
@@ -96,6 +99,7 @@ func KnownOps() []string {
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
 		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
 		OpArchitecture, OpArchitectureViolations, OpDeadCode, OpFrameworkMap,
+		OpCodeHealth,
 		OpDiagnose,
 	}
 }
@@ -108,7 +112,8 @@ func IsAgentToolOp(name string) bool {
 	case OpExplainSymbol, OpRelatedFiles, OpChangeRisk, OpAgentBrief,
 		OpSymbolContext, OpTaskContext, OpRepoOverview,
 		OpTestImpact, OpChangeImpact, OpHotspots, OpSearchHybrid,
-		OpArchitecture, OpArchitectureViolations, OpDeadCode, OpFrameworkMap:
+		OpArchitecture, OpArchitectureViolations, OpDeadCode, OpFrameworkMap,
+		OpCodeHealth:
 		return true
 	}
 	return false

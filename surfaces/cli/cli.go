@@ -996,6 +996,33 @@ func RunDeadCode(ctx context.Context, c client.AgentIntelPort, args []string, ou
 	return nil
 }
 
+// RunCodeHealth runs the code_health agent tool (P5 code health, labs) and
+// prints the canonical contract JSON (parity with MCP tools/call).
+//
+// Usage:
+//
+//	code-health [-max-commits n] [-max-items n]
+func RunCodeHealth(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("code-health", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	maxCommits := fs.Int("max-commits", 0, "history window bound for change_hotspots (0 = default)")
+	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if fs.NArg() != 0 {
+		return fmt.Errorf("cli: code-health takes no positional arguments")
+	}
+	b, err := c.CodeHealth(ctx, client.CodeHealthParams{MaxCommits: *maxCommits, MaxItems: *maxItems})
+	if err != nil {
+		return fmt.Errorf("cli: %w", err)
+	}
+	if _, err := out.Write(append(b, '\n')); err != nil {
+		return fmt.Errorf("cli: write output: %w", err)
+	}
+	return nil
+}
+
 // RunFrameworkMap runs the framework_map agent tool (P3 framework
 // intelligence, labs) and prints the canonical contract JSON (parity with MCP
 // tools/call).

@@ -40,7 +40,7 @@
   - [EP-016 — Live IDE transport](#ep-016--live-ide-transport)
   - [EP-017 — Notebooks, watcher, interproc taint, communities](#ep-017--notebooks-watcher-interproc-taint-communities)
   - [EP-018 — PR-tool suite](#ep-018--pr-tool-suite)
-  - [P0–P3 — Agent, test, change, git, search, architecture & dead-code intelligence](#p0p3--agent-test-change-git-search-architecture--dead-code-intelligence)
+  - [P0–P5 — Agent intelligence suite](#p0p5--agent-intelligence-suite)
 - [PR-tool pipeline](#pr-tool-pipeline)
 - [Live-IDE transport sequence](#live-ide-transport-sequence)
 - [Watcher + conformance](#watcher--conformance)
@@ -80,7 +80,7 @@ currently advertises seven wired Stable RPCs and omits the four unwired agent
 tools instead of returning guaranteed failures.
 
 `graphi mcp -labs` is the only CLI opt-in to the larger profile. The maximal
-registry contains exactly **56 tools**: the same 11 Stable tools plus 45 Labs
+registry contains exactly **57 tools**: the same 11 Stable tools plus 46 Labs
 tools. Actual Stable and Labs advertisement is binding-capability-gated, so a
 session can expose fewer tools when its transport or an optional service is not
 wired. An unadvertised call is rejected before client dispatch.
@@ -91,9 +91,9 @@ the shared client. Stable `impact` is a dedicated fixed-dispatch tool through
 
 ```mermaid
 flowchart TD
-  ROOT["Maximal MCP registry (56)"]:::root
+  ROOT["Maximal MCP registry (57)"]:::root
   ROOT --> ST["Default Stable profile (11)"]
-  ROOT --> LB["Labs additions (45, explicit opt-in)"]
+  ROOT --> LB["Labs additions (46, explicit opt-in)"]
   ST --> STQ["Structural (5)<br/>callers · callees · references · definition · neighborhood"]
   ST --> STS["Lexical search (1)"]
   ST --> STI["Fixed impact (1)"]
@@ -113,6 +113,7 @@ flowchart TD
   LB --> LBArch["Architecture intelligence (2)<br/>architecture · architecture_violations"]
   LB --> LBDead["Dead code (1)<br/>dead_code"]
   LB --> LBFw["Framework intelligence (1)<br/>framework_map"]
+  LB --> LBHealth["Code health (1)<br/>code_health"]
   classDef root fill:#fff7d0,stroke:#7a5a00,color:#3a2c00
 ```
 
@@ -274,7 +275,7 @@ graphi safe-delete p/LegacyThing
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
-| The embeddable POST handler preserves the constructed server profile (11 Stable by default; explicit Labs construction up to the capability-gated 56-tool maximum). No standalone MCP HTTP CLI listener is shipped. | `graphi daemon start\|stop\|status`; `graphi http` serves the separate REST/SSE surface, not MCP HTTP | REST/SSE `GET /events` (optional `?analyzer=<name>`); no request-associated SSE in `mcp.HTTPHandler` | (overlay + observe + guard) |
+| The embeddable POST handler preserves the constructed server profile (11 Stable by default; explicit Labs construction up to the capability-gated 57-tool maximum). No standalone MCP HTTP CLI listener is shipped. | `graphi daemon start\|stop\|status`; `graphi http` serves the separate REST/SSE surface, not MCP HTTP | REST/SSE `GET /events` (optional `?analyzer=<name>`); no request-associated SSE in `mcp.HTTPHandler` | (overlay + observe + guard) |
 
 ### EP-017 — Notebooks, watcher, interproc taint, communities
 
@@ -331,10 +332,10 @@ graphi compare-branches -base base-graph.db -head head-graph.db
 graphi critique-review -diff origin/main..HEAD -pr 42 -review-path review.json
 ```
 
-### P0–P3 — Agent, test, change, git, search, architecture & dead-code intelligence
+### P0–P5 — Agent intelligence suite
 
 - **Status:** ✅ shipped (labs)
-- **Key packages:** `engine/agenttools/{symbolcontext,taskctx,overview,testimpact,changeimpact,hotspots,hybridsearch,archintel,deadcode,frameworkmap}`, `engine/testintel`, `engine/classify`, `engine/context`, `surfaces/gitlog`
+- **Key packages:** `engine/agenttools/{symbolcontext,taskctx,overview,testimpact,changeimpact,hotspots,hybridsearch,archintel,deadcode,frameworkmap,codehealth}`, `engine/testintel`, `engine/classify`, `engine/context`, `surfaces/gitlog`
 - **What it is:**
   - One-call context bundles that replace multi-tool round-trips:
     `symbol_context` (definition + token-budgeted snippet, hierarchy,
@@ -384,10 +385,16 @@ graphi critique-review -diff origin/main..HEAD -pr 42 -review-path review.json
     (TypeScript/JavaScript), and dotnet (C#) provider tables. Every fact
     cites its annotation and definition site; annotation-free graphs (Go,
     Python) get an honest typed empty outcome.
+  - Code health: `code_health` — exactly ten deterministic detectors in
+    one call (dependency cycles, god files/symbols, fan-in/out, dead
+    symbols, unstable dependencies, duplicate dependency paths, layer
+    violations, change hotspots), every finding with severity, evidence,
+    confidence, and a concrete remediation. Deliberately not "50 rules at
+    once".
 
 | MCP tools | CLI subcommands | HTTP endpoints | Engine packages |
 |---|---|---|---|
-| `symbol_context`, `task_context`, `repo_overview`, `test_impact`, `change_impact`, `hotspots`, `search_hybrid`, `architecture`, `architecture_violations`, `dead_code`, `framework_map` (all labs, `graphi mcp -labs`) | `graphi symbol-context <sym>`, `graphi task-context "<text>"`, `graphi repo-overview [-communities]`, `graphi test-impact (<target> \| -diff <file\|->)`, `graphi change-impact (<target> \| -diff <file\|->)`, `graphi hotspots [-max-commits n]`, `graphi architecture`, `graphi architecture-violations`, `graphi dead-code`, `graphi framework-map` | `GET /analyze/{name}` via `agentToolNames` (labs — 403 without `GRAPHI_HTTP_LABS=1`) | `engine/agenttools/*`, `engine/testintel`, `engine/classify`, `engine/context`, `surfaces/gitlog` |
+| `symbol_context`, `task_context`, `repo_overview`, `test_impact`, `change_impact`, `hotspots`, `search_hybrid`, `architecture`, `architecture_violations`, `dead_code`, `framework_map`, `code_health` (all labs, `graphi mcp -labs`) | `graphi symbol-context <sym>`, `graphi task-context "<text>"`, `graphi repo-overview [-communities]`, `graphi test-impact (<target> \| -diff <file\|->)`, `graphi change-impact (<target> \| -diff <file\|->)`, `graphi hotspots [-max-commits n]`, `graphi architecture`, `graphi architecture-violations`, `graphi dead-code`, `graphi framework-map`, `graphi code-health` | `GET /analyze/{name}` via `agentToolNames` (labs — 403 without `GRAPHI_HTTP_LABS=1`) | `engine/agenttools/*`, `engine/testintel`, `engine/classify`, `engine/context`, `surfaces/gitlog` |
 
 ## PR-tool pipeline
 
@@ -522,8 +529,8 @@ flowchart TD
 | Parsers (CGo-free tier) | 23 | `core/parse` registry + `docs/coverage-matrix.md` § Parsers |
 | Analyzers | 22 | `engine/analysis/dispatch.go` + `docs/coverage-matrix.md` § Analyzers |
 | MCP tools (default) | 11 | `surfaces/mcp.StableMCPToolNames()`; 12 Stable product operations minus lifecycle-only `index` |
-| MCP tools (maximal registry) | 56 | `surfaces/mcp.ToolNames()`; 11 Stable + 45 explicit-opt-in Labs rows, capability-gated at runtime |
-| CLI subcommands | 59 | `cmd/graphi/help.go` `subcommandHelp` (pinned by `help_test.go`) |
+| MCP tools (maximal registry) | 57 | `surfaces/mcp.ToolNames()`; 11 Stable + 46 explicit-opt-in Labs rows, capability-gated at runtime |
+| CLI subcommands | 60 | `cmd/graphi/help.go` `subcommandHelp` (pinned by `help_test.go`) |
 | HTTP endpoints | 22 | `surfaces/http/server.go` (incl. `/prs/*`, `/branches/compare`, `/reviews/critique`) |
 | Surfaces | 8 | `docs/coverage-matrix.md` § Surfaces |
 | Feature Units | 5 | `docs/coverage-matrix.md` § Feature-Unit |

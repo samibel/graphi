@@ -101,6 +101,9 @@ func (allToolsClient) DeadCode(context.Context, client.DeadCodeParams) ([]byte, 
 func (allToolsClient) FrameworkMap(context.Context, client.FrameworkMapParams) ([]byte, error) {
 	return []byte("{}"), nil
 }
+func (allToolsClient) CodeHealth(context.Context, client.CodeHealthParams) ([]byte, error) {
+	return []byte("{}"), nil
+}
 func (allToolsClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return []byte("{}"), nil
 }

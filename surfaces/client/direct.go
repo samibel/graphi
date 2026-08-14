@@ -15,6 +15,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/archintel"
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/changeimpact"
+	"github.com/samibel/graphi/engine/agenttools/codehealth"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/deadcode"
 	"github.com/samibel/graphi/engine/agenttools/explain"
@@ -121,7 +122,7 @@ func (d *Direct) SupportsCapability(name string) bool {
 		// These tools intentionally return a typed unavailable/partial result when
 		// graph dependencies are absent; the operation itself is fully executable.
 		return true
-	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid", "architecture", "architecture_violations", "dead_code", "framework_map":
+	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid", "architecture", "architecture_violations", "dead_code", "framework_map", "code_health":
 		// Labs agent intelligence: same typed-unavailable degradation contract.
 		return true
 	case "trust_report", "graph_health":
@@ -1040,6 +1041,21 @@ func (d *Direct) DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error)
 	res, err := deadcode.Assemble(ctx, deadcode.Params{
 		MaxItems: p.MaxItems,
 		Deps:     d.agentDeps(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return contract.Serialize(res)
+}
+
+// CodeHealth implements Client via the shared engine/agenttools/codehealth
+// package, so CLI, MCP, and HTTP emit the same canonical bytes.
+func (d *Direct) CodeHealth(ctx context.Context, p CodeHealthParams) ([]byte, error) {
+	res, err := codehealth.Assemble(ctx, codehealth.Params{
+		Provider:   d.gitProvider,
+		MaxCommits: p.MaxCommits,
+		MaxItems:   p.MaxItems,
+		Deps:       d.agentDeps(),
 	})
 	if err != nil {
 		return nil, err

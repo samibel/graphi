@@ -377,10 +377,11 @@ func TestMCP_ToolsList(t *testing.T) {
 	// P0 agent-intelligence "symbol_context", "task_context", and
 	// "repo_overview" plus the P1 "test_impact"/"change_impact", the P2
 	// "hotspots"/"architecture"/"architecture_violations"/"dead_code", and
-	// the P3 "search_hybrid"/"framework_map" tools (labs, advertised
-	// unconditionally with the same typed-unavailable degradation).
-	if len(resp.Result.Tools) != len(query.Operations)+22 {
-		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+22)
+	// the P3 "search_hybrid"/"framework_map" and P5 "code_health" tools
+	// (labs, advertised unconditionally with the same typed-unavailable
+	// degradation).
+	if len(resp.Result.Tools) != len(query.Operations)+23 {
+		t.Fatalf("tools count = %d, want %d", len(resp.Result.Tools), len(query.Operations)+23)
 	}
 }
 

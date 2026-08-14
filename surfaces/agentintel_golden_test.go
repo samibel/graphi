@@ -15,7 +15,7 @@ import (
 	"github.com/samibel/graphi/surfaces/client"
 )
 
-var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid", "architecture", "architecture_violations", "dead_code", "framework_map"}
+var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid", "architecture", "architecture_violations", "dead_code", "framework_map", "code_health"}
 
 // crossBackendAgentIntelOps excludes search_hybrid: its candidate RETRIEVAL
 // rides the backend search port, whose recall semantics legitimately differ
@@ -23,7 +23,7 @@ var agentIntelOps = []string{"symbol_context", "task_context", "repo_overview", 
 // The deterministic re-rank orders whatever set was retrieved, so per-backend
 // output is byte-stable (covered by the store-conditions golden below), but
 // the retrieved sets themselves are not required to agree across backends.
-var crossBackendAgentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "architecture", "architecture_violations", "dead_code", "framework_map"}
+var crossBackendAgentIntelOps = []string{"symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "architecture", "architecture_violations", "dead_code", "framework_map", "code_health"}
 
 // runAgentIntelOps drives the three labs ops through the shared surface client
 // (rooted at the fixture so snippet reads resolve) and returns op→bytes.
@@ -79,6 +79,11 @@ func runAgentIntelOps(t *testing.T, store graphstore.Graphstore) map[string]stri
 	// empty outcome byte-stably.
 	fm, err := c.FrameworkMap(ctx, client.FrameworkMapParams{})
 	record("framework_map", fm, err)
+
+	// No git provider in the golden harness: code_health pins the typed
+	// change_hotspots informational row alongside the nine graph detectors.
+	ch, err := c.CodeHealth(ctx, client.CodeHealthParams{})
+	record("code_health", ch, err)
 
 	if len(out) != len(agentIntelOps) {
 		t.Fatalf("expected %d op outputs, got %d", len(agentIntelOps), len(out))

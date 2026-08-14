@@ -621,6 +621,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P2 architecture intelligence: cycles, unexpected dependencies (edges against the dominant direction), high-coupling pairs (≥3 edges both ways), and god modules (≥50% of inter-community edges while touching ≥60% of communities) on the community dependency graph; pinned integer thresholds quoted in every finding; a violation-free graph returns an explicit cited clean item; byte-parity with `graphi architecture-violations`; Labs-only."
+  - id: code_health
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P5 code health: exactly ten deterministic detectors in one call — dependency cycles (Tarjan SCCs), god files, god symbols, high fan-in/out, dead symbols (EP-015 core), unstable dependencies (package instability E/(A+E)), duplicate dependency paths, layer violations (architecture model), change hotspots (bounded git history; typed informational row without a provider); every finding carries severity/evidence/confidence/remediation with pinned integer thresholds quoted; three documented whole-graph passes; byte-parity with `graphi code-health`; Labs-only."
   - id: framework_map
     category: mcp-tool
     status: shipped
@@ -828,6 +834,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "P2 architecture intelligence: cycles, back-edges, high-coupling pairs, god modules on the community graph; byte-parity with the architecture_violations MCP tool"
+  - id: code-health
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "P5 code health: ten deterministic detectors with severity/evidence/confidence/remediation; byte-parity with the code_health MCP tool"
   - id: framework-map
     category: cli-subcommand
     status: shipped

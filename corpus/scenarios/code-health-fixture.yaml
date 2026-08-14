@@ -1,0 +1,8 @@
+id: code-health-fixture
+description: code_health runs all ten detectors on the fixture graph — findings or the cited clean row, plus the typed change_hotspots row without a git provider.
+fixture_ref: tier1-fixture-go
+operation:
+  name: code_health
+expect:
+  outcome: found
+  max_latency_ms: 2000

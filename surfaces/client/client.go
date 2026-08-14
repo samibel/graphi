@@ -470,6 +470,11 @@ type Client interface {
 	// configuration units derived from recorded annotations. Read-only.
 	FrameworkMap(ctx context.Context, p FrameworkMapParams) ([]byte, error)
 
+	// CodeHealth runs the code_health agent tool (labs, P5 code health): ten
+	// deterministic detectors, each finding with severity, evidence,
+	// confidence, and remediation. Read-only.
+	CodeHealth(ctx context.Context, p CodeHealthParams) ([]byte, error)
+
 	// Hotspots runs the hotspots agent tool (labs, P2 git intelligence):
 	// churn × dependency-centrality ranking of the files that change
 	// constantly AND that the graph depends on, with bus-factor warnings.
@@ -716,6 +721,13 @@ type DeadCodeParams struct {
 // FrameworkMapParams carries the framework_map inputs.
 type FrameworkMapParams struct {
 	MaxItems int
+}
+
+// CodeHealthParams carries the code_health inputs.
+type CodeHealthParams struct {
+	// MaxCommits bounds the change_hotspots history window (0 = default).
+	MaxCommits int
+	MaxItems   int
 }
 
 // HotspotsParams carries the hotspots inputs.

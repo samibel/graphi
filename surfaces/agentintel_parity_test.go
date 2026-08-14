@@ -149,6 +149,15 @@ func TestMCP_CLI_AgentIntelParity(t *testing.T) {
 		t.Fatalf("framework_map parity mismatch:\n CLI: %s\n MCP: %s", want, got)
 	}
 
+	// code_health
+	cliOut.Reset()
+	if err := cli.RunCodeHealth(context.Background(), c, nil, &cliOut, &cliErr); err != nil {
+		t.Fatalf("cli code-health: %v (%s)", err, cliErr.String())
+	}
+	if got, want := mcpArgs(mcp.ToolCodeHealth, map[string]any{}), bytes.TrimRight(cliOut.Bytes(), "\n"); !bytes.Equal(got, want) {
+		t.Fatalf("code_health parity mismatch:\n CLI: %s\n MCP: %s", want, got)
+	}
+
 	// hotspots (no provider on either surface: parity over the typed
 	// unavailable degradation)
 	cliOut.Reset()

@@ -103,6 +103,8 @@ func main() {
 		os.Exit(runAgentTool(os.Args[2:], "dead-code"))
 	case "framework-map":
 		os.Exit(runAgentTool(os.Args[2:], "framework-map"))
+	case "code-health":
+		os.Exit(runAgentTool(os.Args[2:], "code-health"))
 	case "related-files":
 		os.Exit(runAgentTool(os.Args[2:], "related-files"))
 	case "change-risk":

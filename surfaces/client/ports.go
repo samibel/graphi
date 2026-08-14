@@ -99,6 +99,8 @@ type AgentIntelPort interface {
 	DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error)
 	// FrameworkMap returns the annotation-derived application view.
 	FrameworkMap(ctx context.Context, p FrameworkMapParams) ([]byte, error)
+	// CodeHealth returns the ten-detector health report.
+	CodeHealth(ctx context.Context, p CodeHealthParams) ([]byte, error)
 }
 
 // StableClient is the composed view a stable surface holds: exactly the three

@@ -145,6 +145,9 @@ func (s *stubClient) DeadCode(context.Context, client.DeadCodeParams) ([]byte, e
 func (s *stubClient) FrameworkMap(context.Context, client.FrameworkMapParams) ([]byte, error) {
 	return nil, client.ErrAgentIntelUnavailable
 }
+func (s *stubClient) CodeHealth(context.Context, client.CodeHealthParams) ([]byte, error) {
+	return nil, client.ErrAgentIntelUnavailable
+}
 func (s *stubClient) Diagnose(context.Context, []string, client.DiagnoseOptions) ([]byte, error) {
 	return nil, client.ErrDiagnosticUnavailable
 }

@@ -512,6 +512,19 @@ func (h *HTTP) DeadCode(ctx context.Context, p DeadCodeParams) ([]byte, error) {
 	return h.doGET(ctx, "/analyze/dead_code", q)
 }
 
+// CodeHealth rides the read-only /analyze/code_health endpoint (labs; 403
+// unless the server runs with GRAPHI_HTTP_LABS=1).
+func (h *HTTP) CodeHealth(ctx context.Context, p CodeHealthParams) ([]byte, error) {
+	q := url.Values{}
+	if p.MaxCommits > 0 {
+		q.Set("max-commits", strconv.Itoa(p.MaxCommits))
+	}
+	if p.MaxItems > 0 {
+		q.Set("max-items", strconv.Itoa(p.MaxItems))
+	}
+	return h.doGET(ctx, "/analyze/code_health", q)
+}
+
 // FrameworkMap rides the read-only /analyze/framework_map endpoint (labs; 403
 // unless the server runs with GRAPHI_HTTP_LABS=1).
 func (h *HTTP) FrameworkMap(ctx context.Context, p FrameworkMapParams) ([]byte, error) {

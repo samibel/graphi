@@ -329,7 +329,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		Evidence:   ev.List(),
 		Confidence: tally.Confidence("unknown", "aggregate"),
 	}
-	return shape.Finish(r, p.maxItems())
+	return shape.FinishLabs(r, p.maxItems())
 }
 
 // dirKey rolls a file path up to its leading one or two segments.

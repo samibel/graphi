@@ -130,7 +130,7 @@ All tools are read-only by default. Real MCP tool names, grouped:
 - **Structure:** `callers`, `callees`, `references`, `definition`, `neighborhood`, `implementers`, `implements`, `overrides`, `subtypes`, `supertypes`
 - **Agent context:** `agent_brief`, `explain_symbol`, `related_files`, `change_risk` (GA) — plus the labs one-call bundles `symbol_context`, `task_context`, `repo_overview`
 - **Test, change & git intelligence (labs):** `test_impact`, `change_impact`, `hotspots`
-- **Search & architecture intelligence (labs):** `search_hybrid` (embedding-free multi-token ranking), `architecture` (community/layer view), `architecture_violations` (cycles, back-edges, coupling, god modules), `dead_code` (scored candidates with exclusion reasons), `framework_map` (routes/events/DI from annotations)
+- **Search & architecture intelligence (labs):** `search_hybrid` (embedding-free multi-token ranking), `architecture` (community/layer view), `architecture_violations` (cycles, back-edges, coupling, god modules), `dead_code` (scored candidates with exclusion reasons), `framework_map` (routes/events/DI from annotations), `code_health` (ten deterministic detectors)
 - **Trust (labs):** `graph_health`, `strict_query`
 - **Search:** `search`, `search_semantic`, `compound` (Cypher-style)
 - **Pattern queries:** `search_ast`, `find_clones`

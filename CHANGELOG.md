@@ -42,6 +42,34 @@ file:
   GC-sensitive ones start at warn. Every published number is CI-produced via
   the `bench-report.json` artifact — no hand-written figures in docs.
 
+- **[labs] Continuation hints for truncated responses** (P4 / TODO 16
+  completion). Every labs agent operation now fills `limits.next` when the
+  item cap truncates the response: the deterministic rerun that returns the
+  complete answer in one call ("raise limit (>=N) to fetch all N item(s) in
+  one response; order is deterministic"), computed purely from the
+  already-pinned `total_available`. Operation-specific hints (wider
+  `token_budget`, "bounded reads clipped") take precedence where a higher
+  limit would not help. The frozen stable operations keep emitting
+  `"next":""` — enforced by new pin tests at both the shape layer
+  (`Finish` never fills `next`, even under truncation) and the wire level
+  (a forced-truncation stable call still serializes `"next":""`). No new
+  parameters, no schema changes.
+
+- **[labs] `code_health` — ten deterministic health detectors** (P5).
+  Exactly ten detectors in one call — deliberately not "50 rules at once":
+  dependency cycles (Tarjan SCCs over the symbol coupling graph), god
+  files, god symbols (high fan-in AND fan-out), high fan-in, high fan-out,
+  dead symbols (the EP-015 diagnostic core), unstable dependencies
+  (packages depended on heavily yet with instability E/(A+E) ≥ 70%),
+  duplicate dependency paths (a direct edge shadowed by indirect routes),
+  layer violations (community cycles + against-dominant edges from the
+  architecture model), and change hotspots (churn × centrality over
+  bounded git history; a typed informational row without a provider).
+  Every finding carries severity (high/warn/info), a cited definition
+  site, a confidence label, and a CONCRETE remediation; pinned integer
+  thresholds are quoted in every reason. CLI `graphi code-health`, MCP
+  `code_health` (labs), HTTP `/analyze/code_health`.
+
 - **[labs] `framework_map` — framework intelligence from recorded
   annotations** (P3). The application-level view on top of the code graph:
   HTTP routes (`@GetMapping`, NestJS `@Get`, `[HttpGet]`), event handlers
