@@ -87,13 +87,19 @@ func (p *JavaParser) Parse(ctx context.Context, filename string, src []byte) (re
 	}, nil
 }
 
-// Kind mapping (Java collapses onto {file, method, type}):
+// Kind mapping (Java collapses onto {file, method, type, variable, constant}):
 //
-//	type   ← class_declaration / interface_declaration / enum_declaration
-//	method ← method_declaration (Java has no free functions; all callables are methods)
+//	type     ← class_declaration / interface_declaration / enum_declaration
+//	method   ← method_declaration (Java has no free functions; all callables are methods)
+//	constant ← constant_declaration declarator (interface fields — the grammar
+//	           names their constancy), or a field_declaration declarator with
+//	           DECLARED `static final` (WP-J2)
+//	variable ← every other field_declaration declarator (WP-J2)
 //
-// Absent by design: function (no free functions), variable/constant (field
-// declarations are out of the top-level node set this slice).
+// Absent by design: function (no free functions). Field kinds follow the
+// declared form only — nothing is inferred beyond what the CST names. Enum
+// constants are not extracted at this tier (they live in enum_body, not as
+// field_declaration).
 
 type javaSymbolExtractor struct{ lang *gts.Language }
 
@@ -182,7 +188,11 @@ func javaCollectDefs(w *cstWalk, program *gts.Node, filename string) {
 func javaCollectMethods(w *cstWalk, body *gts.Node, filename string) {
 	for i := 0; i < body.ChildCount(); i++ {
 		c := body.Child(i)
-		if c != nil && c.Type(w.lang) == "method_declaration" {
+		if c == nil {
+			continue
+		}
+		switch c.Type(w.lang) {
+		case "method_declaration":
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
 				bare := name.Text(w.src)
 				w.addDef(bare, KindMethod, nodePoint(name))
@@ -190,8 +200,100 @@ func javaCollectMethods(w *cstWalk, body *gts.Node, filename string) {
 				// static flag, and the main-signature flag as non-identity meta.
 				w.setDefMeta(bare, javaDeclMeta(w, c, bare, filename, true))
 			}
+		case "field_declaration", "constant_declaration":
+			// WP-J2 (ADR 0008 D3): field nodes, so field references have honest
+			// committed targets when the JVM binder lands. One declaration can
+			// carry several declarators (`int a, b;`) sharing its modifiers.
+			// Kind follows the DECLARED form only: an interface field parses as
+			// constant_declaration (the grammar names its constancy — reading
+			// that is not inference), and a class field is a constant exactly
+			// when it declares `static final`.
+			javaCollectFields(w, c, filename)
 		}
 	}
+}
+
+// javaCollectFields mints one node per variable_declarator of a
+// field_declaration, with the declaration's annotations and static/final
+// declared modifiers as non-identity meta.
+func javaCollectFields(w *cstWalk, decl *gts.Node, filename string) {
+	static, final := javaDeclaredModifiers(w, decl)
+	kind := KindVariable
+	if (static && final) || decl.Type(w.lang) == "constant_declaration" {
+		kind = KindConstant
+	}
+	for i := 0; i < decl.ChildCount(); i++ {
+		d := decl.Child(i)
+		if d == nil || d.Type(w.lang) != "variable_declarator" {
+			continue
+		}
+		name := d.ChildByFieldName("name", w.lang)
+		if name == nil {
+			name = childByType(d, "identifier", w.lang)
+		}
+		if name == nil {
+			continue
+		}
+		bare := name.Text(w.src)
+		w.addDef(bare, kind, nodePoint(name))
+		w.setDefMeta(bare, javaFieldMeta(w, decl, filename, static, final))
+	}
+}
+
+// javaDeclaredModifiers reports the explicit `static` / `final` tokens of a
+// declaration's `modifiers` child. Absent modifiers read false — declared
+// modifiers only, never language-implied ones.
+func javaDeclaredModifiers(w *cstWalk, decl *gts.Node) (static, final bool) {
+	mods := childByType(decl, "modifiers", w.lang)
+	if mods == nil {
+		return false, false
+	}
+	for i := 0; i < mods.ChildCount(); i++ {
+		m := mods.Child(i)
+		if m == nil {
+			continue
+		}
+		switch m.Text(w.src) {
+		case "static":
+			static = true
+		case "final":
+			final = true
+		}
+	}
+	return static, final
+}
+
+// javaFieldMeta derives the NON-identity NodeMeta for a field declarator:
+// annotation names plus the declared static/final flags and the test-path
+// flag — the same deterministic NewNodeMeta discipline as javaDeclMeta, kept
+// separate because fields carry `final` where classes/methods deliberately do
+// not (changing javaDeclMeta would move existing class/method meta bytes).
+func javaFieldMeta(w *cstWalk, decl *gts.Node, filename string, static, final bool) model.NodeMeta {
+	var annotations, flags []string
+	if mods := childByType(decl, "modifiers", w.lang); mods != nil {
+		for i := 0; i < mods.ChildCount(); i++ {
+			m := mods.Child(i)
+			if m == nil {
+				continue
+			}
+			switch m.Type(w.lang) {
+			case "marker_annotation", "annotation":
+				if name := javaAnnotationName(w, m); name != "" {
+					annotations = append(annotations, name)
+				}
+			}
+		}
+	}
+	if static {
+		flags = append(flags, "static")
+	}
+	if final {
+		flags = append(flags, "final")
+	}
+	if javaIsTestPath(filename) {
+		flags = append(flags, "test_path")
+	}
+	return model.NewNodeMeta(annotations, flags)
 }
 
 // javaDeclMeta derives the NON-identity NodeMeta for a class/method declaration:

@@ -9,9 +9,10 @@ import (
 	"github.com/samibel/graphi/core/model"
 )
 
-// kotlinGoldenFixture is the committed, FROZEN Kotlin fixture (SW-054). Kotlin
-// top-level properties are out of the node set this tier, so `variable` and `constant`
-// are ABSENT BY DESIGN.
+// kotlinGoldenFixture is the committed, FROZEN Kotlin fixture (SW-054). It
+// declares no properties, so its node set is unchanged by the WP-J2 property
+// extraction — TestExtractKotlin_PropertyNodes covers properties on its own
+// fixture.
 const kotlinGoldenFixture = `package shop
 
 import kotlin.collections.List
@@ -47,7 +48,8 @@ func parseKotlinFixtureResult(t *testing.T) *ParseResult {
 	return res
 }
 
-// TestExtractKotlin_Nodes asserts the EXACT closed node set + kinds; variable/constant absent.
+// TestExtractKotlin_Nodes asserts the EXACT closed node set + kinds on the
+// frozen property-free fixture.
 func TestExtractKotlin_Nodes(t *testing.T) {
 	nodes, _ := parseKotlinFixture(t)
 
@@ -83,16 +85,64 @@ func TestExtractKotlin_Nodes(t *testing.T) {
 			t.Errorf("expected kind literal %q to be present", k)
 		}
 	}
+	// This fixture declares no properties, so variable/constant are absent
+	// HERE (not by design since WP-J2 — see TestExtractKotlin_PropertyNodes).
 	for _, bad := range []model.NodeKind{"variable", "constant"} {
 		if _, ok := emitted[bad]; ok {
-			t.Errorf("kotlin must not emit %q (absent by design)", bad)
+			t.Errorf("the property-free golden fixture must not emit %q", bad)
 		}
 	}
 	for bad := range emitted {
 		switch string(bad) {
-		case "file", "function", "method", "type", "package":
+		case "file", "function", "method", "type", "package", "variable", "constant":
 		default:
 			t.Errorf("unexpected node kind literal %q (closed vocabulary violated)", bad)
+		}
+	}
+}
+
+// TestExtractKotlin_PropertyNodes pins the WP-J2 (ADR 0008 D3) property
+// extraction: top-level and class-level named properties become nodes, kind
+// from the DECLARED form only (`const val` → constant; every other val/var →
+// variable — val-ness is immutability, not compile-time constancy), and a
+// destructuring declaration is skipped (no single declared name).
+func TestExtractKotlin_PropertyNodes(t *testing.T) {
+	const fixture = `package shop
+
+const val TOP = 1
+val greeting: String = "hi"
+
+class Store {
+	val name: String = "x"
+	var count = 0
+	fun m() {}
+}
+
+val (a, b) = makePair()
+`
+	res, err := NewKotlinParser().Parse(context.Background(), "shop/store.kt", []byte(fixture))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	want := map[string]model.NodeKind{
+		"shop.TOP":      goKindConstant, // declared `const`
+		"shop.greeting": goKindVariable, // plain val: immutable, not constant
+		"shop.name":     goKindVariable,
+		"shop.count":    goKindVariable,
+	}
+	for qn, kind := range want {
+		n, ok := nodeByQN(res.Nodes, qn)
+		if !ok {
+			t.Errorf("missing property node %q", qn)
+			continue
+		}
+		if n.Kind() != kind {
+			t.Errorf("node %q kind = %q, want %q", qn, n.Kind(), kind)
+		}
+	}
+	for _, absent := range []string{"shop.a", "shop.b"} {
+		if _, ok := nodeByQN(res.Nodes, absent); ok {
+			t.Errorf("destructuring component %q must not become a node (no single declared name)", absent)
 		}
 	}
 }

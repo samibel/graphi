@@ -88,14 +88,17 @@ func (p *KotlinParser) Parse(ctx context.Context, filename string, src []byte) (
 	}, nil
 }
 
-// Kind mapping (Kotlin collapses onto {file, function, method, type}):
+// Kind mapping (Kotlin collapses onto {file, function, method, type, variable, constant}):
 //
 //	function ← top-level function_declaration
 //	method   ← function_declaration inside a class_body
 //	type     ← class_declaration / object_declaration / interface (collapsed to type)
+//	constant ← property_declaration with the DECLARED `const` modifier (WP-J2)
+//	variable ← every other named property_declaration, top-level or class-level (WP-J2)
 //
-// Absent by design: variable/constant (Kotlin top-level property declarations are out
-// of the node set this slice). `import` headers are recorded as ImportSpecs.
+// val-ness alone is immutability, not compile-time constancy, so a plain `val`
+// is a variable; destructuring declarations have no single declared name and
+// are skipped. `import` headers are recorded as ImportSpecs.
 
 type kotlinSymbolExtractor struct{ lang *gts.Language }
 
@@ -169,6 +172,33 @@ func kotlinName(decl *gts.Node, lang *gts.Language) *gts.Node {
 	return nil
 }
 
+// kotlinPropertyName returns the declared name of a property_declaration: the
+// simple_identifier inside its variable_declaration child. A destructuring
+// declaration has no variable_declaration child and yields nil (skip).
+func kotlinPropertyName(decl *gts.Node, lang *gts.Language) *gts.Node {
+	vd := childByType(decl, "variable_declaration", lang)
+	if vd == nil {
+		return nil
+	}
+	return childByType(vd, "simple_identifier", lang)
+}
+
+// kotlinIsConstProperty reports whether a property_declaration carries the
+// DECLARED `const` property modifier (`const val X = …`).
+func kotlinIsConstProperty(w *cstWalk, decl *gts.Node) bool {
+	mods := childByType(decl, "modifiers", w.lang)
+	if mods == nil {
+		return false
+	}
+	for i := 0; i < mods.ChildCount(); i++ {
+		m := mods.Child(i)
+		if m != nil && m.Type(w.lang) == "property_modifier" && m.Text(w.src) == "const" {
+			return true
+		}
+	}
+	return false
+}
+
 func kotlinCollectDefs(w *cstWalk, n *gts.Node, inClass bool) {
 	for i := 0; i < n.ChildCount(); i++ {
 		c := n.Child(i)
@@ -196,6 +226,25 @@ func kotlinCollectDefs(w *cstWalk, n *gts.Node, inClass bool) {
 			}
 			if body := childByType(c, "class_body", w.lang); body != nil {
 				kotlinCollectDefs(w, body, true)
+			}
+		case "property_declaration":
+			// WP-J2 (ADR 0008 D3): property nodes — top-level and class-level —
+			// so property references have honest committed targets when the JVM
+			// binder lands. Kind follows the DECLARED form only: `const val` is
+			// a constant, every other val/var a variable (val-ness is
+			// immutability, not compile-time constancy). A destructuring
+			// declaration (`val (a, b) = …`) has no single declared name and is
+			// skipped — multi_variable_declaration carries no
+			// variable_declaration child, so the name lookup below fails
+			// closed.
+			if name := kotlinPropertyName(c, w.lang); name != nil {
+				bare := name.Text(w.src)
+				kind := KindVariable
+				if kotlinIsConstProperty(w, c) {
+					kind = KindConstant
+				}
+				w.addDef(bare, kind, nodePoint(name))
+				w.setDefMeta(bare, kotlinDeclMeta(w, c))
 			}
 		}
 	}
