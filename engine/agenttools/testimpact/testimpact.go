@@ -265,7 +265,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		Evidence:   ev.List(),
 		Confidence: tally.Confidence("unknown", "no_links"),
 	}
-	out, err := shape.Finish(r, p.MaxItems)
+	out, err := shape.FinishLabs(r, p.MaxItems)
 	if err != nil {
 		return nil, err
 	}

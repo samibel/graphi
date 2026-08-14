@@ -505,7 +505,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		Evidence:   ev.List(),
 		Confidence: tally.Confidence("unknown", "no_edges"),
 	}
-	out, err := shape.Finish(r, p.MaxItems)
+	out, err := shape.FinishLabs(r, p.MaxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -514,9 +514,9 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		if out.Outcome == contract.OutcomeFound {
 			out.Outcome = contract.OutcomePartial
 		}
-		if out.Limits.Next == "" {
-			out.Limits.Next = "bounded reads clipped; dependent/test counts are lower bounds"
-		}
+		// The walk hint outranks the generic cap hint FinishLabs may have
+		// set: a higher limit cannot un-clip the bounded reads.
+		out.Limits.Next = "bounded reads clipped; dependent/test counts are lower bounds"
 	}
 	return out, nil
 }

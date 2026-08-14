@@ -173,6 +173,11 @@ func Ambiguous(tool, ref string, cands []resolve.Candidate) *contract.Result {
 // Finish applies the item cap, stamps limits, and downgrades the outcome to
 // "partial" when the cap truncated the item list. maxItems <= 0 selects
 // DefaultMaxItems.
+//
+// Finish NEVER fills Limits.Next: it is called by the frozen stable
+// operations, whose wire bytes always carry `"next":""` — that emptiness is
+// part of the frozen contract. Labs operations that want the continuation
+// hint call FinishLabs instead.
 func Finish(r *contract.Result, maxItems int) (*contract.Result, error) {
 	if maxItems <= 0 {
 		maxItems = DefaultMaxItems
@@ -183,6 +188,35 @@ func Finish(r *contract.Result, maxItems int) (*contract.Result, error) {
 	}
 	if out.Limits.Truncated && out.Outcome == contract.OutcomeFound {
 		out.Outcome = contract.OutcomePartial
+	}
+	return out, nil
+}
+
+// CapNext renders the deterministic continuation hint for an item-cap
+// truncation: the exact rerun that returns the complete answer in one
+// response. It is a pure function of the already-pinned Limits integers, so
+// it inherits their byte stability across store conditions and backends.
+// Non-truncated (or degenerate zero-drop) limits yield "".
+func CapNext(l contract.Limits) string {
+	if !l.Truncated || l.Dropped <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("raise limit (>=%d) to fetch all %d item(s) in one response; order is deterministic", l.TotalAvailable, l.TotalAvailable)
+}
+
+// FinishLabs is Finish plus the TODO-16 continuation hint: when the item cap
+// truncated the list and no operation-specific hint was set, Limits.Next is
+// filled with the CapNext rerun instruction. LABS OPERATIONS ONLY — the
+// frozen stable operations keep calling Finish, so their `"next":""` bytes
+// never change. An operation-specific hint set before or after this call
+// takes precedence over the generic cap hint.
+func FinishLabs(r *contract.Result, maxItems int) (*contract.Result, error) {
+	out, err := Finish(r, maxItems)
+	if err != nil {
+		return nil, err
+	}
+	if out.Limits.Next == "" {
+		out.Limits.Next = CapNext(out.Limits)
 	}
 	return out, nil
 }

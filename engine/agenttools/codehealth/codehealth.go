@@ -327,7 +327,7 @@ func Assemble(ctx context.Context, p Params) (*contract.Result, error) {
 		Evidence:   ev.List(),
 		Confidence: conf,
 	}
-	return shape.Finish(r, p.maxItems())
+	return shape.FinishLabs(r, p.maxItems())
 }
 
 // detectCycles finds strongly connected components of size >= 2 over the

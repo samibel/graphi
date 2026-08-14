@@ -262,7 +262,7 @@ func Violations(ctx context.Context, p ViolationsParams) (*contract.Result, erro
 		Evidence:   ev.List(),
 		Confidence: m.tally.Confidence("unknown", "community_graph"),
 	}
-	return shape.Finish(r, p.maxItems())
+	return shape.FinishLabs(r, p.maxItems())
 }
 
 // findCycles enumerates distinct dependency cycles on the dominant-direction
