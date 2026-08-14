@@ -19,8 +19,9 @@ const MatrixJSONPath = "docs/capability-manifest.json"
 
 // ManifestSchemaVersion versions the generated JSON shape (not the capability
 // content). Bump it when fields are added/renamed so consumers can detect the
-// contract change.
-const ManifestSchemaVersion = 1
+// contract change. 1 → 2: the optional `capability` field (declared GA
+// capability level) on ga-language rows (WP-J1).
+const ManifestSchemaVersion = 2
 
 // manifest is the serialized shape. Capabilities keep the matrix's canonical
 // row order; StableOperations restates the frozen SCOPE-01 set so a consumer
@@ -39,6 +40,8 @@ type manifestCapability struct {
 	Tier     string `json:"tier"`
 	Epic     string `json:"epic,omitempty"`
 	Note     string `json:"note,omitempty"`
+	// Capability is the declared GA capability level; ga-language rows only.
+	Capability string `json:"capability,omitempty"`
 }
 
 // RenderJSON encodes the manifest for the given matrix rows deterministically.
@@ -55,12 +58,13 @@ func RenderJSON(caps []Capability) ([]byte, error) {
 			epic = ""
 		}
 		m.Capabilities = append(m.Capabilities, manifestCapability{
-			ID:       c.ID,
-			Category: c.Category,
-			Status:   c.Status,
-			Tier:     c.Tier,
-			Epic:     epic,
-			Note:     c.Note,
+			ID:         c.ID,
+			Category:   c.Category,
+			Status:     c.Status,
+			Tier:       c.Tier,
+			Epic:       epic,
+			Note:       c.Note,
+			Capability: c.CapabilityLevel,
 		})
 	}
 	b, err := json.MarshalIndent(m, "", "  ")

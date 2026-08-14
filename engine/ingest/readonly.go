@@ -13,6 +13,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/link"
+	"github.com/samibel/graphi/engine/typeresolve"
 )
 
 // ErrReadOnly is returned by every mutating Ingester entry point on an
@@ -40,7 +41,7 @@ func NewReadOnly(store graphstore.Graphstore, parser Parser, metaDir string) (*I
 	if err != nil {
 		return nil, fmt.Errorf("ingest: open read-only sidecar: %w", err)
 	}
-	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now(), readOnly: true}
+	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), semantic: typeresolve.NewRegistry(), bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now(), readOnly: true}
 	// Probe with a harmless query so a corrupt/non-SQLite sidecar fails here,
 	// not on the first caller read.
 	var one int

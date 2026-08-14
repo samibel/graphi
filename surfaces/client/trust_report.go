@@ -309,6 +309,13 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 // The cost is one registry construction per report; both registries are pure
 // in-memory wiring with no I/O, and the report is a once-per-invocation
 // document.
+// LanguageCapabilities is the exported form of languageCapabilities, so the
+// GA-language gate (internal/coverage.CheckGALanguages, driven by
+// cmd/coverage -check) binds to the SAME derivation the trust report serves
+// instead of re-assembling the registries — the gate and the product cannot
+// disagree about a language's capability level (WP-J1, ADR 0007).
+func LanguageCapabilities() []trust.Capability { return languageCapabilities() }
+
 func languageCapabilities() []trust.Capability {
 	registry := parse.NewDefaultRegistry()
 	languages := registry.Languages()

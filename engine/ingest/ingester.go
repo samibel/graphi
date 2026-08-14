@@ -19,6 +19,7 @@ import (
 	"github.com/samibel/graphi/engine/link"
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/trust"
+	"github.com/samibel/graphi/engine/typeresolve"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
 )
@@ -29,6 +30,11 @@ type Ingester struct {
 	parser Parser
 	meta   *sql.DB
 	linker *link.Linker
+
+	// semantic is the registry of confirmed-tier semantic resolvers the third
+	// ingest phase dispatches over (ADR 0007, WP-J0). Wired at construction
+	// like linker; today it holds exactly the go/types resolver.
+	semantic *typeresolve.Registry
 
 	// metaDir is the durable sidecar directory ("" = in-memory sidecar). It
 	// identifies one logical store's state on disk, so cross-process
@@ -220,7 +226,7 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 	if err != nil {
 		return nil, fmt.Errorf("ingest: open meta db: %w", err)
 	}
-	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), metaDir: metaDir, bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now()}
+	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), semantic: typeresolve.NewRegistry(), metaDir: metaDir, bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now()}
 	// Apply the fail-closed recursion-depth bound to the shared parse path
 	// (process-wide; core/parse reads it per Extract). Size + timeout are enforced
 	// at this ingest boundary directly.

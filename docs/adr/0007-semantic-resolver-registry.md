@@ -1,7 +1,9 @@
 # ADR 0007 — The Semantic-Resolver Registry (Language GA program, WP-J0/WP-J1)
 
-- Status: **Proposed** (skeleton — no implementation exists; accepted only when
-  WP-J0 lands with its behavior-preserving gate green)
+- Status: **Accepted** (implemented 2026-08-14: `engine/typeresolve/registry.go`,
+  the registry-driven pass in `engine/ingest/typeresolve.go`, and
+  `internal/coverage.CheckGALanguages` — the behavior-preserving gate ran green:
+  full test suite, conformance byte-parity suite, hero gate, coverage checks)
 - Date: 2026-08-14
 - Program: [`docs/plan/2026-08-graphi-p2-language-ga-program-v1.md`](../plan/2026-08-graphi-p2-language-ga-program-v1.md)
   §5 WP-J0 (seam) and §6/WP-J1 (GA-language machine check)
@@ -56,20 +58,47 @@ otherwise built to prevent.
 
 ## Gate
 
-Behavior-preserving **to the byte**: the full conformance suite, the hero gate,
-and a before/after snapshot-byte comparison on the Go corpus must all be
-unchanged by the seam extraction. Any diff is a defect in this ADR's
-implementation, not a baseline move.
+Behavior-preserving **to the byte**. The before/after evidence is the tree's
+pre-seam pinned-byte expectations passing unchanged: the conformance
+change-class table (full-vs-incremental snapshot bytes on both stores, with
+witnesses), `engine/ingest`'s typeresolve parity and golden graph-dump tests
+(exact node/edge sets including tier/confidence/reason), the hero gate, and
+the full test suite — every one of them authored against the pre-seam code and
+green after it. The nil-vs-empty return distinction and the three path
+predicates are additionally pinned by dedicated tests. Any diff against these
+expectations is a defect in this ADR's implementation, not a baseline move.
 
-## Open points (to resolve before Accepted)
+## Open points — resolved at implementation
 
-- Exact interface shape and package location of the registry (inside
-  `engine/typeresolve` vs a new `engine/semantic` umbrella) — smallest-diff
-  option preferred.
-- Whether the per-language kill switch is env-var-per-language (as proposed) or
-  one comma-separated variable.
-- How the outcome-based capability derivation (needed to close the SQL wrinkle
-  named in the program plan §4) is expressed without hand-maintained tables.
+- **Registry location:** inside `engine/typeresolve` (`registry.go`), the
+  smallest diff — the Result currency and the trust-facts folding already live
+  there, and the package-level `Languages()` now delegates to the registry so
+  the trust surface needed no change. A future `engine/jvmresolve` imports
+  typeresolve for the seam types and is registered in `NewRegistry`.
+- **Resolver interface shape:** three path predicates instead of one, because
+  the pre-seam Go pass genuinely used three distinct path sets that byte-parity
+  forbids collapsing: `Subject` (gates the run — non-test `.go`; go.mod alone
+  runs nothing), `Input` (the file map — all `.go` incl. `_test.go` plus
+  go.mod), `Triggers` (the incremental re-run gate — non-test `.go` or go.mod).
+  Pinned by `TestGoResolver_PathPredicates`.
+- **Kill switch:** env-var-per-language (`GRAPHI_NO_TYPERESOLVE_<LANG>`),
+  pinned as a wire identifier by `TestTyperesolve_PerLanguageKillSwitch`; the
+  global switch is unchanged.
+- **GA-language check location:** `internal/coverage/galang.go`, consuming the
+  derivation through the exported `surfaces/client.LanguageCapabilities()` (the
+  SAME assembly the trust report serves) plus `internal/evidence` gate facts —
+  wired into `cmd/coverage -check` behind `category: ga-language` matrix rows.
+
+## Still open (deferred, tracked in the program plan)
+
+- Outcome-based capability derivation for heuristic resolvers (the SQL wrinkle,
+  program plan §4 finding 3 / ADR-W1): the derivation still grades resolver
+  REGISTRATION. This blocks no current row — Go's binding is outcome-true — and
+  is wave-5 scope.
+- The trust-facts fields (`lastTypeResolution`, `lastPackageEvidence`) are
+  single-slot and hold ONE resolver's facts — exact with one registrant, and
+  the pass carries a load-bearing comment requiring per-language widening
+  BEFORE a second registrant lands (WP-J3 entry criterion).
 
 ## Consequences
 
