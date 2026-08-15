@@ -407,14 +407,7 @@
      "expect_nonempty": true
     }
    ],
-   "confirmed_edges": [
-    {
-     "symbol_query": "core",
-     "operation": "callers",
-     "min": 3
-    }
-   ],
-   "notes": "Tier-1 pinned multi-file JVM (Java+Kotlin) fixture for the WP-J6 hero-jvm tasks. Exercises the 12 stable ops with the declared-type binder LIVE (the hero-jvm gate sets GRAPHI_JVM_TYPERESOLVE): cross-file and cross-language confirmed callers of impl.core, a nominal interface with two implementations, and a field-read references edge. No network, no JDK \u2014 the pure-Go grammars parse it and the binder runs in-process."
+   "notes": "Tier-1 pinned multi-file JVM (Java+Kotlin) fixture for the WP-J6 hero-jvm tasks. The hero-jvm gate (cmd/eval/hero_jvm_test.go) sets GRAPHI_JVM_TYPERESOLVE and asserts the 12 stable ops over the CONFIRMED tier. This corpus smoke entry deliberately carries NO confirmed_edges assertion: the corpus runner drives the DEFAULT binary (binder off, JVM is Preview/heuristic), so a confirmed-edge assertion would be unsatisfiable here and would contradict the default-off contract. The heuristic search assertion is what the default product proves. No network, no JDK."
   }
  ]
 }
