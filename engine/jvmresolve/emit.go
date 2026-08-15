@@ -41,7 +41,9 @@ package jvmresolve
 
 import (
 	"fmt"
+	"path"
 	"sort"
+	"strings"
 
 	"github.com/samibel/graphi/core/model"
 )
@@ -66,19 +68,43 @@ type EmitResult struct {
 	Edges []model.Edge
 	// DroppedIntents counts intents whose reconstructed endpoint was not in
 	// the committed set — never fabricated (one count per use site).
+	// DroppedByDir attributes the same counts to the FROM endpoint's
+	// directory (the unit key space), so the seam adapter can uphold the
+	// UnitResult invariant that per-unit drops sum to the pass-global count.
 	DroppedIntents int
+	DroppedByDir   map[string]int
 	// Skips are the named identity gaps (endpoints qn.go maps to no node).
 	Skips SkipCounts
 }
 
 // Emit builds the confirmed edge set from sites and the table's nominal
-// interface clauses, against the committed node set.
+// interface clauses, against the committed node set — both languages.
 func (ix *Index) Emit(sites []TypedSite, committed map[model.NodeId]struct{}) (EmitResult, error) {
+	return ix.EmitForLanguage("", sites, committed)
+}
+
+// EmitForLanguage restricts emission to ONE language's edges (lang "" = all):
+// sites from that language's files and implements clauses of that language's
+// types. The per-language seam registrants need this so each owns exactly its
+// language's edge set — the ingest sweep would otherwise let one registrant
+// delete the other's edges.
+func (ix *Index) EmitForLanguage(lang string, sites []TypedSite, committed map[model.NodeId]struct{}) (EmitResult, error) {
 	sink := newEdgeSink(committed)
-	res := EmitResult{Skips: SkipCounts{}}
+	res := EmitResult{Skips: SkipCounts{}, DroppedByDir: map[string]int{}}
+
+	suffix := ""
+	switch lang {
+	case LangJava:
+		suffix = ".java"
+	case LangKotlin:
+		suffix = ".kt"
+	}
 
 	for i := range sites {
 		s := &sites[i]
+		if suffix != "" && !strings.HasSuffix(s.FromFile, suffix) {
+			continue
+		}
 		fromID, ok := ix.siteFromID(s)
 		if !ok {
 			res.Skips.add(SkipEmitFromNoNode)
@@ -89,7 +115,7 @@ func (ix *Index) Emit(sites []TypedSite, committed map[model.NodeId]struct{}) (E
 			res.Skips.add(SkipEmitToNoNode)
 			continue
 		}
-		sink.add(fromID, toID, kind, reason, fmt.Sprintf("%s:%d", s.FromFile, s.Line), &res)
+		sink.add(fromID, toID, kind, reason, fmt.Sprintf("%s:%d", s.FromFile, s.Line), path.Dir(s.FromFile), &res)
 	}
 
 	// Nominal implements: every tabled type's resolved INTERFACE supertypes.
@@ -97,6 +123,9 @@ func (ix *Index) Emit(sites []TypedSite, committed map[model.NodeId]struct{}) (E
 		file := &ix.table.Files[fi]
 		for ti := range file.Types {
 			ty := &file.Types[ti]
+			if lang != "" && ty.Language != lang {
+				continue
+			}
 			fromID, ok := typeNodeID(ty)
 			if !ok {
 				continue // a node-less type (nested Java, companion) claims nothing
@@ -111,7 +140,7 @@ func (ix *Index) Emit(sites []TypedSite, committed map[model.NodeId]struct{}) (E
 					res.Skips.add(SkipEmitToNoNode)
 					continue
 				}
-				sink.add(fromID, toID, "implements", reasonImplements, fmt.Sprintf("%s:%d", ty.File, ty.Line), &res)
+				sink.add(fromID, toID, "implements", reasonImplements, fmt.Sprintf("%s:%d", ty.File, ty.Line), path.Dir(ty.File), &res)
 			}
 		}
 	}
@@ -257,14 +286,16 @@ func newEdgeSink(committed map[model.NodeId]struct{}) *edgeSink {
 }
 
 // add records one intent; an endpoint outside the committed set drops and
-// counts (never fabricate).
-func (s *edgeSink) add(from, to model.NodeId, kind, reason, evidence string, res *EmitResult) {
+// counts (never fabricate), attributed to the from-file's directory.
+func (s *edgeSink) add(from, to model.NodeId, kind, reason, evidence, fromDir string, res *EmitResult) {
 	if _, ok := s.committed[from]; !ok {
 		res.DroppedIntents++
+		res.DroppedByDir[fromDir]++
 		return
 	}
 	if _, ok := s.committed[to]; !ok {
 		res.DroppedIntents++
+		res.DroppedByDir[fromDir]++
 		return
 	}
 	key := edgeKey{from: from, to: to, kind: kind}
