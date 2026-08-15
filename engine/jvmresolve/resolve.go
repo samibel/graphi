@@ -41,6 +41,8 @@ const (
 type Index struct {
 	table Table
 	byFQN map[string][]*Type
+	// filesByPath is built lazily by fileOf (hierarchy.go).
+	filesByPath map[string]*File
 }
 
 // NewIndex builds the resolution index. The Table is copied by value into the

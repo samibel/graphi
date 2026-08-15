@@ -6,10 +6,15 @@
   rulings land. Groundwork so far: the D3 node half; `engine/jvmresolve`
   slice 1 — the declaration→node identity map with its golden cross-test
   (gate G2a), which PINNED three collector facts (Java enum members, Kotlin
-  enum-class members, Kotlin companions + their members mint NO nodes); and
+  enum-class members, Kotlin companions + their members mint NO nodes);
   slice 2 — Phase A: the declaration table (`table.go`, both CST walkers) and
   the JLS-approximation type-name resolution with the strict ambiguity rule
-  (`resolve.go`))
+  (`resolve.go`); and slice 3 — supertype chains + member lookup
+  (`hierarchy.go`): the D6 rule implemented as identical-signature override
+  chains binding most-derived, differing same-arity signatures ambiguous, and
+  ANY open chain (external/ambiguous supertype) forfeiting every binding —
+  even a receiver-declared member, since an external overload could be the
+  more applicable javac target)
 - Date: 2026-08-14
 - Program: [`docs/plan/2026-08-graphi-p2-language-ga-program-v1.md`](../plan/2026-08-graphi-p2-language-ga-program-v1.md)
   §5.1 (design), §5.2 WP-J2…WP-J4, WP-J9 (ground truth)
