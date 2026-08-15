@@ -31,12 +31,12 @@
 # The binder is EXPERIMENTAL and default-off (GRAPHI_JVM_TYPERESOLVE); the
 # harness sets it. These rows prove hermetic full-vs-incremental snapshot-byte
 # parity on BOTH MemStore and SQLite, with non-vacuous witnesses — NOT the PRD
-# §12.3 gate and NOT the real-repository matrix (that is WP-J7). The five
-# required rows are the wave-1 subset: the add/modify path plus the two
-# signature JVM behaviours (the D6 overload drop, the D2 declared/inferred
-# flip). The remaining Go-15 mappings and JVM-specific classes are declared
-# DEFERRED below with their owners — present as placeholders, never counted as
-# proven.
+# §12.3 gate and NOT the real-repository matrix (that is WP-J7). The eight
+# required rows cover the add/modify/call path, the two signature JVM
+# behaviours (the D6 overload drop, the D2 declared/inferred flip), the rename
+# cascade, supertype-chain re-pointing, and the nested/top-level node
+# boundary. jvm_delete_file remains DEFERRED (ADR 0008 D8 — the PARITY-001
+# entry criterion), present as a placeholder and never counted as proven.
 
 parity_classes:
   - id: "jvm_add_file"
@@ -114,6 +114,51 @@ parity_classes:
     owner: "WP-J5"
     note: "The signature Kotlin class (ADR 0008 D2). A Kotlin local flips declared → inferred; the binder types the declared form and drops the inferred one (no inference), so the confirmed edge k.run --calls--> tax.rate through the local must vanish. Makes the D2 recall boundary a proven behaviour."
 
+  - id: "jvm_rename_package"
+    kind: "change_class"
+    label: "Java-Package umbenennen / rename a package (dir + clause + importers)"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "WP-J5b"
+    note: "A package's directory, clause and importer move in one change set. Because a JVM node's QN keys on the file directory (qn.go filePackage), the callee's identity changes, so use.f's confirmed edge re-points from iso.val to moved.val. Witness requires iso.val absent and the confirmed edge at moved.val — the full rename cascade."
+
+  - id: "jvm_change_type_hierarchy"
+    kind: "change_class"
+    label: "Typ-Hierarchie ändern / re-point extends"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "WP-J5b"
+    note: "Sub's extends clause re-points from base.Base to mid.Mid, so s.ship() binds mid.Mid.ship and the confirmed edge re-points. Proves supertype-chain re-resolution (hierarchy.go), not just member add/remove. Witness requires the base.ship edge absent and the mid.ship edge confirmed."
+
+  - id: "jvm_move_nested_class"
+    kind: "change_class"
+    label: "Nested-Klasse verschieben / inner→top-level"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "WP-J5b"
+    note: "A nested Java class is promoted to top level. Nested types mint NO node (qn.go), so promotion makes the type AND its method appear as nodes for the first time. Pins the nested/top-level node boundary as a parity-holding transition. Witness requires nest.Inner and nest.deep present."
+
   # ── DEFERRED (declared placeholders — NOT proven here) ───────────────────
   - id: "jvm_delete_file"
     kind: "change_class"
@@ -129,48 +174,3 @@ parity_classes:
     deferred_to: "WP-J7"
     owner: "WP-J7"
     note: "The delete path shares ingest's phase-ordering with Go's PARITY-001, which is language-independent and ingest-level. ADR 0008 D8 makes the PARITY-001/002 fixes the entry criterion for JVM real-repo parity, so the delete class is deferred until then rather than pinned as a JVM-specific defect it is not."
-
-  - id: "jvm_rename_package"
-    kind: "change_class"
-    label: "Java-Package umbenennen / rename a package (dir + clause + importers)"
-    verdict: "ABSENT"
-    test_file: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
-    harness_row: "deferred"
-    known_defect: ""
-    deferred_to: "WP-J5b"
-    owner: "WP-J5b"
-    note: "The rename/move cascade adapted to JVM package clauses and importers. Deferred to the WP-J5 follow-up slice."
-
-  - id: "jvm_change_type_hierarchy"
-    kind: "change_class"
-    label: "Typ-Hierarchie ändern / re-point extends"
-    verdict: "ABSENT"
-    test_file: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
-    harness_row: "deferred"
-    known_defect: ""
-    deferred_to: "WP-J5b"
-    owner: "WP-J5b"
-    note: "Re-pointing extends so inherited-member lookup and implements edges converge. Deferred to the WP-J5 follow-up slice."
-
-  - id: "jvm_move_nested_class"
-    kind: "change_class"
-    label: "Nested-Klasse verschieben / inner→top-level and between outers"
-    verdict: "ABSENT"
-    test_file: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
-    harness_row: "deferred"
-    known_defect: ""
-    deferred_to: "WP-J5b"
-    owner: "WP-J5b"
-    note: "QN-identity stress for nested types. Deferred to the WP-J5 follow-up slice."

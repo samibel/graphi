@@ -181,6 +181,71 @@ class App {
 				return g.requireNoEdge("k.run", "calls", "tax.rate")
 			},
 		},
+		{
+			id:   "jvm_rename_package",
+			kind: kindChangeClass,
+			description: "A package is renamed: its directory, its package clause AND its importer all move in one change set. Because a JVM node's QN keys on the file's directory (qn.go filePackage), the callee's " +
+				"node identity changes, so this exercises the full rename cascade — stale-node purge, re-link, and the confirmed re-emission at the new identity.",
+			seed: map[string]string{
+				"iso/Iso.java": "package iso;\npublic class Iso { public int val() { return 1; } }\n",
+				"use/Use.java": "package use;\nimport iso.Iso;\npublic class Use { public int f(Iso i) { return i.val(); } }\n",
+			},
+			apply: func(f *fixture) {
+				// iso → moved: the file moves AND the importer's import clause
+				// is rewritten, so use.f's confirmed edge re-points from
+				// iso.val to moved.val.
+				f.Move("iso/Iso.java", "moved/Iso.java", "package moved;\npublic class Iso { public int val() { return 1; } }\n")
+				f.Write("use/Use.java", "package use;\nimport moved.Iso;\npublic class Use { public int f(Iso i) { return i.val(); } }\n")
+			},
+			witness: func(g *graphView) error {
+				return all(
+					g.requireAbsent("iso.val"), // old identity gone
+					g.requireEdgeAtTier("use.f", "calls", "moved.val", confirmed),
+				)
+			},
+		},
+		{
+			id:   "jvm_change_type_hierarchy",
+			kind: kindChangeClass,
+			description: "A class's `extends` clause is re-pointed to a different intra-repo supertype. The inherited-member lookup must converge on the NEW supertype's method, so the confirmed call through the " +
+				"receiver re-points — the class that proves supertype-chain re-resolution (hierarchy.go), not just member add/remove.",
+			seed: map[string]string{
+				"base/Base.java": "package base;\npublic class Base { public void ship() {} }\n",
+				"mid/Mid.java":   "package mid;\npublic class Mid { public void ship() {} }\n",
+				"h/Sub.java":     "package h;\nimport base.Base;\npublic class Sub extends Base {}\n",
+				"h/User.java":    "package h;\npublic class User { public void use(Sub s) { s.ship(); } }\n",
+			},
+			apply: func(f *fixture) {
+				// Sub now extends mid.Mid: s.ship() binds mid.Mid.ship instead
+				// of base.Base.ship, and the confirmed edge re-points.
+				f.Write("h/Sub.java", "package h;\nimport mid.Mid;\npublic class Sub extends Mid {}\n")
+			},
+			witness: func(g *graphView) error {
+				return all(
+					g.requireNoEdge("h.use", "calls", "base.ship"), // the old inherited target
+					g.requireEdgeAtTier("h.use", "calls", "mid.ship", confirmed),
+				)
+			},
+		},
+		{
+			id:   "jvm_move_nested_class",
+			kind: kindChangeClass,
+			description: "A nested Java class is promoted to top level. Nested types mint NO node (qn.go), so promotion makes the type AND its method appear as nodes for the first time — the class that pins the " +
+				"nested/top-level node boundary as a parity-holding transition.",
+			seed: map[string]string{
+				"nest/Outer.java": "package nest;\npublic class Outer {\n    class Inner { public int deep() { return 1; } }\n}\n",
+			},
+			apply: func(f *fixture) {
+				// Inner promoted to top level: it and its method gain nodes.
+				f.Write("nest/Outer.java", "package nest;\npublic class Outer {}\nclass Inner { public int deep() { return 1; } }\n")
+			},
+			witness: func(g *graphView) error {
+				return all(
+					g.requirePresent("nest.Inner"), // the promoted type now has a node
+					g.requirePresent("nest.deep"),  // and so does its method
+				)
+			},
+		},
 	}
 }
 
