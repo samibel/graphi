@@ -58,6 +58,12 @@ type FileCensus struct {
 	// the STRICTEST reading of "source files" — it counts no docs, YAML or
 	// vendored assets — and is what the stress threshold is asserted on.
 	GoFiles int `json:"go_files"`
+	// SourceFiles is the count of the entry's PRIMARY-LANGUAGE source files at
+	// the pinned SHA — the non-Go analog of GoFiles (e.g. tracked *.kt+*.java
+	// for a JVM entry). It brings non-Go entries to the v3 measured standard
+	// (language-GA program G5): a real count from a real clone, not inferred.
+	// Go entries leave it 0 and use GoFiles, which the stress threshold reads.
+	SourceFiles int `json:"source_files,omitempty"`
 	// TrackedFiles is every tracked file at the pinned SHA (context for
 	// GoFiles, not a substitute for it).
 	TrackedFiles int `json:"tracked_files"`

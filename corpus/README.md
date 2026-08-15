@@ -25,6 +25,7 @@ while keeping the non-Go repositories for cross-language regression detection.
 | [grpc-go](https://github.com/grpc/grpc-go) | v1.60.1 | 3 | Apache-2.0 | 831 | The workhorse: 277 Go package directories, 11 `go.mod` files, 49 generated protobuf files, 287 test files — four properties at a size the nightly run can still afford. |
 | [kubernetes](https://github.com/kubernetes/kubernetes) | v1.29.0 | **4** | Apache-2.0 | 15718 | The FR-2 stress target (≥10 000 source files): 3611 package directories, 34 modules, `staging/` publishing 5899 of the files as separate modules. |
 | flask, sinatra, ky, express, guava | — | 1–3 | BSD-3-Clause / MIT / MIT / MIT / Apache-2.0 | — | Kept from v2: they cover the historical first-contact bug classes (non-source assets, symlinked layouts, malformed JSON fixtures) and give cross-language regression signal. Out of scope for P0 accuracy and performance claims. |
+| [okio](https://github.com/square/okio) | 3.9.1 | 3 | Apache-2.0 | 313 | The first **Kotlin** pin (language-GA program G5): a Kotlin-multiplatform IO library, 284 `.kt` + 29 `.java` at the pin. Cross-language regression + JVM-binder capability — graphi parses all 313 files with zero parse crashes and produces confirmed Java+Kotlin call sites. Its `measured` block uses the new `source_files` census (the non-Go analog of `go_files`). |
 
 Every count above is **measured**, not estimated: each entry's `measured` block
 records the numbers, the date, and the exact command sequence (a shallow clone at
