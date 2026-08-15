@@ -527,6 +527,11 @@ func TestCheckedInManifest_PRGateUnchanged(t *testing.T) {
 	wantPRGate := map[string]bool{
 		"cobra": true, "flask": true, "sinatra": true, "ky": true, "express": true,
 		"tier1-fixture-go": true, "tier1-fixture-hero-go": true,
+		// WP-J6 (language-GA program G6): the hero-jvm suite is a hermetic
+		// local fixture (Java+Kotlin, no network, no JDK — the pure-Go
+		// grammars parse it and the binder runs in-process), so it belongs on
+		// the PR gate exactly like hero-go.
+		"tier1-fixture-hero-jvm": true,
 	}
 	for _, e := range m.Entries {
 		if e.Tier > 2 {

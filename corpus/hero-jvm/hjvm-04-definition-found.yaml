@@ -1,0 +1,11 @@
+id: hjvm-04-definition-found
+description: The definition of core resolves to English.java.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: definition
+  args:
+    symbol: core
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: impl/English.java

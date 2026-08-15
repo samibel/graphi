@@ -1,0 +1,14 @@
+id: hjvm-02-search-hit
+description: Searching for English finds the impl class.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: search
+  args:
+    query: English
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: impl.English
+      match: contains

@@ -1,0 +1,10 @@
+id: hjvm-16-change-risk
+description: Change risk of core reflects its inbound callers.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: change_risk
+  args:
+    target: core
+area: agent_mcp
+expect:
+  outcome: found

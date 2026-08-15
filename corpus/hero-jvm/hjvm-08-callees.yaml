@@ -1,0 +1,14 @@
+id: hjvm-08-callees
+description: Callees of twice are core and salute.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: callees
+  args:
+    symbol: twice
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: impl.core
+      match: contains

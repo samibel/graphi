@@ -1,0 +1,15 @@
+id: hjvm-13-related-files
+description: >
+  The files dependent on core are the caller files — the Java Service and the
+  Kotlin Report — reached through the confirmed cross-file/cross-language call
+  edges. English.java (which defines core) is the seed and is excluded.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: related_files
+  args:
+    anchor: core
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: app/Service.java

@@ -1,0 +1,10 @@
+id: hjvm-07-callers-ambiguous
+description: salute is declared in three types, so callers is ambiguous.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: callers
+  args:
+    symbol: salute
+area: agent_mcp
+expect:
+  outcome: ambiguous

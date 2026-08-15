@@ -1,0 +1,8 @@
+id: hjvm-01-index
+description: Indexing the JVM fixture reports a populated inventory.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: index
+area: agent_mcp
+expect:
+  outcome: found

@@ -107,6 +107,14 @@ it caught a harness parser bug (javap omits the owner prefix on same-class
 calls) that had produced a false soundness violation — exactly the failure a
 weaker self-check would have missed.
 
+WP-J6 (G6) adds the hero-jvm suite: a hermetic Java+Kotlin fixture
+(`corpus/fixtures/hero-jvm`) and 16 scenarios (`corpus/hero-jvm`) exercising
+all 12 stable ops with the binder live — cross-file and cross-language
+confirmed callers/callees/references, interface implementations, and the
+ambiguous/partial/empty/not_found failure classes plus a negative anchor — all
+passing (`cmd/eval` hero_jvm_test.go, `GRAPHI_JVM_TYPERESOLVE` set so the
+fixture indexes at the typed-confirmed capability).
+
 ## Decision points (owner rules; recommendations recorded)
 
 | ID | Question | Recommendation |
