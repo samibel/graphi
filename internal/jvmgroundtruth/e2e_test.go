@@ -49,6 +49,7 @@ public class Rate {
     public int scaled(Rate other) { return other.rate(); }
     public int apply(int x) { return x; }
     public int apply(String s) { return 0; }
+    public static int base() { return 1; }
 }
 `,
 		"shop/Cart.java": `package shop;
@@ -56,6 +57,7 @@ import tax.Rate;
 public class Cart {
     public int checkout(Rate r) { return r.rate() + r.apply(1); }
     public Rate build() { return new Rate(9); }
+    public int total() { return Rate.base(); }
 }
 `,
 	}
@@ -84,14 +86,21 @@ public class Cart {
 		t.Fatalf("SOUNDNESS FAILURE:\n%s\nconfirmed: %+v\ntruth: %+v", res.Format(), confirmed, truth)
 	}
 
-	// Three provable calls must be confirmed: checkout→rate, scaled→rate, and
-	// the CONSTRUCTOR call build→Rate (new Rate(9), targeting the type node —
-	// which the bytecode's `invokespecial tax/Rate.<init>` normalizes to). The
-	// ambiguous checkout→apply must be DROPPED (present in bytecode, absent
+	// Four provable calls must be confirmed, one per DISPATCH FORM so the oracle
+	// covers the invoke opcodes real code emits:
+	//   checkout→rate  invokevirtual  (instance call through a declared param)
+	//   scaled→rate    invokevirtual  (instance call through a declared param)
+	//   build→Rate     invokespecial  (constructor; the bytecode's
+	//                                  `invokespecial tax/Rate.<init>` normalizes
+	//                                  to the type node graphi targets)
+	//   total→base     invokestatic   (static call through the type name)
+	// The ambiguous checkout→apply must be DROPPED (present in bytecode, absent
 	// from confirmed), so recall stays strictly below 100% — the honest, sound
-	// outcome.
-	if got := len(confirmed); got != 3 {
-		t.Fatalf("expected exactly 3 confirmed calls (checkout→rate, scaled→rate, build→Rate ctor), got %d: %+v", got, confirmed)
+	// outcome. That a static call keys identically to a virtual one in the
+	// comparator (Compare is method-to-method, opcode-blind) is exactly the
+	// property being asserted: graphi ⊆ bytecode holds across dispatch forms.
+	if got := len(confirmed); got != 4 {
+		t.Fatalf("expected exactly 4 confirmed calls (checkout→rate, scaled→rate, build→Rate ctor, total→base static), got %d: %+v", got, confirmed)
 	}
 	if res.TruthIntra <= res.Matched {
 		t.Fatalf("the ambiguous overload must leave a recall gap (truth %d > matched %d)", res.TruthIntra, res.Matched)
