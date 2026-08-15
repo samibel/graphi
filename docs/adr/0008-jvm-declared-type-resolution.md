@@ -14,11 +14,18 @@
   chains binding most-derived, differing same-arity signatures ambiguous, and
   ANY open chain (external/ambiguous supertype) forfeiting every binding —
   even a receiver-declared member, since an external overload could be the
-  more applicable javac target; and slices 4/5 — Phase B for BOTH languages
+  more applicable javac target; slices 4/5 — Phase B for BOTH languages
   (`body_java.go`, `body_kotlin.go`): declared-type receiver propagation with
   block-scoped environments and the named-gap counters, including Kotlin's
   lambda-rebinding forfeit (`this`/bare calls inside any lambda) and the
-  trailing-lambda arity forfeit)
+  trailing-lambda arity forfeit; and slice 6 — Phase C emission (`emit.go`):
+  confirmed@1.0 calls/references edges with the D1 reason string, nominal
+  implements from interface clauses only (class-extends stays heuristic
+  `inherits`, which ingest's sweep excludes from the confirmed set),
+  constructor calls targeting the TYPE node (the heuristic FQN binder's shape,
+  so confirmed upserts replace rather than duplicate), and the committed-set
+  gate as the structural never-fabricate — proven end-to-end in tests whose
+  committed sets come from the REAL core/parse extractors)
 - Date: 2026-08-14
 - Program: [`docs/plan/2026-08-graphi-p2-language-ga-program-v1.md`](../plan/2026-08-graphi-p2-language-ga-program-v1.md)
   §5.1 (design), §5.2 WP-J2…WP-J4, WP-J9 (ground truth)
