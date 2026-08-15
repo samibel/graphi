@@ -60,6 +60,21 @@ public class Cart {
     public int total() { return Rate.base(); }
 }
 `,
+		// A super.m() call: the receiver types to the direct class supertype
+		// (intra-repo, chain closed), which javac binds NON-VIRTUALLY as
+		// `invokespecial tax/Base.seed` — a distinct dispatch to a class OTHER
+		// than the <init> case, so it exercises the invokespecial path on a
+		// regular method.
+		"tax/Base.java": `package tax;
+public class Base {
+    public int seed() { return 3; }
+}
+`,
+		"tax/Derived.java": `package tax;
+public class Derived extends Base {
+    public int reseed() { return super.seed(); }
+}
+`,
 	}
 
 	root := t.TempDir()
@@ -86,21 +101,24 @@ public class Cart {
 		t.Fatalf("SOUNDNESS FAILURE:\n%s\nconfirmed: %+v\ntruth: %+v", res.Format(), confirmed, truth)
 	}
 
-	// Four provable calls must be confirmed, one per DISPATCH FORM so the oracle
-	// covers the invoke opcodes real code emits:
+	// Five provable calls must be confirmed, spanning the invoke opcodes real
+	// code emits so the oracle covers the dispatch surface, not one form:
 	//   checkout→rate  invokevirtual  (instance call through a declared param)
 	//   scaled→rate    invokevirtual  (instance call through a declared param)
 	//   build→Rate     invokespecial  (constructor; the bytecode's
 	//                                  `invokespecial tax/Rate.<init>` normalizes
 	//                                  to the type node graphi targets)
 	//   total→base     invokestatic   (static call through the type name)
+	//   reseed→seed    invokespecial  (super.seed() — non-virtual dispatch to a
+	//                                  class OTHER than <init>)
 	// The ambiguous checkout→apply must be DROPPED (present in bytecode, absent
 	// from confirmed), so recall stays strictly below 100% — the honest, sound
-	// outcome. That a static call keys identically to a virtual one in the
-	// comparator (Compare is method-to-method, opcode-blind) is exactly the
-	// property being asserted: graphi ⊆ bytecode holds across dispatch forms.
-	if got := len(confirmed); got != 4 {
-		t.Fatalf("expected exactly 4 confirmed calls (checkout→rate, scaled→rate, build→Rate ctor, total→base static), got %d: %+v", got, confirmed)
+	// outcome. That static and both invokespecial forms key identically to a
+	// virtual call in the comparator (Compare is method-to-method, opcode-blind)
+	// is exactly the property being asserted: graphi ⊆ bytecode holds across
+	// dispatch forms.
+	if got := len(confirmed); got != 5 {
+		t.Fatalf("expected exactly 5 confirmed calls (checkout→rate, scaled→rate, build→Rate ctor, total→base static, reseed→seed super), got %d: %+v", got, confirmed)
 	}
 	if res.TruthIntra <= res.Matched {
 		t.Fatalf("the ambiguous overload must leave a recall gap (truth %d > matched %d)", res.TruthIntra, res.Matched)

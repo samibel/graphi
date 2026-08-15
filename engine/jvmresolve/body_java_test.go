@@ -153,6 +153,76 @@ func TestAnalyzeJavaBodies_Deterministic(t *testing.T) {
 	}
 }
 
+// TestAnalyzeJavaBodies_SuperCall pins `super.m()`: the receiver types to the
+// enclosing type's direct CLASS supertype (intra-repo, chain closed), and the
+// call binds the supertype's method — the invokespecial form javac emits. An
+// OPEN supertype chain (external base) forfeits the binding as a named skip.
+func TestAnalyzeJavaBodies_SuperCall(t *testing.T) {
+	files := map[string][]byte{
+		"h/Base.java": []byte(`package h;
+public class Base {
+    public int seed() { return 3; }
+}
+`),
+		"h/Derived.java": []byte(`package h;
+public class Derived extends Base {
+    public int reseed() { return super.seed(); }
+}
+`),
+	}
+	tab := BuildTable(files)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("fixture must table cleanly: %+v", tab.Skipped)
+	}
+	sites, _ := NewIndex(tab).AnalyzeJavaBodies(files)
+
+	s, ok := findSite(sites, SiteCall, "seed", 3)
+	if !ok {
+		t.Fatalf("expected a super.seed() call site: %+v", sites)
+	}
+	if s.Receiver.FQN != "h.Base" || s.Declaring.FQN != "h.Base" || s.Arity != 0 {
+		t.Fatalf("super call bound %s on %s (declaring %s), want h.Base", s.Name, s.Receiver.FQN, s.Declaring.FQN)
+	}
+	if s.FromType.FQN != "h.Derived" || s.FromMember.Name != "reseed" {
+		t.Fatalf("wrong from-context: %s.%s", s.FromType.FQN, s.FromMember.Name)
+	}
+}
+
+// TestAnalyzeJavaBodies_NewChain pins the `new Foo(...).bar()` composition: the
+// constructor site AND the chained call site both emit — the receiver of bar()
+// types to Foo through object_creation_expression, and the outer new Foo(...)
+// itself is a constructor call. Two confirmed edges from one expression, exactly
+// as the bytecode emits invokespecial <init> then invokevirtual bar.
+func TestAnalyzeJavaBodies_NewChain(t *testing.T) {
+	files := map[string][]byte{
+		"nc/Widget.java": []byte(`package nc;
+public class Widget {
+    public Widget(int n) {}
+    public int bar() { return 1; }
+}
+`),
+		"nc/Use.java": []byte(`package nc;
+public class Use {
+    public int run() { return new Widget(1).bar(); }
+}
+`),
+	}
+	tab := BuildTable(files)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("fixture must table cleanly: %+v", tab.Skipped)
+	}
+	sites, _ := NewIndex(tab).AnalyzeJavaBodies(files)
+
+	// The chained call bar() on the fresh Widget.
+	if s, ok := findSite(sites, SiteCall, "bar", 3); !ok || s.Receiver.FQN != "nc.Widget" || s.Arity != 0 {
+		t.Errorf("chained bar() on new Widget: %+v ok=%v", s, ok)
+	}
+	// The constructor call itself, targeting the type.
+	if s, ok := findSite(sites, SiteCall, "Widget", 3); !ok || s.Declaring.FQN != "nc.Widget" || s.Member == nil || s.Member.Form != MemberConstructor {
+		t.Errorf("constructor site for new Widget(1): %+v ok=%v", s, ok)
+	}
+}
+
 // TestAnalyzeJavaBodies_ConstructorSite pins the `new Foo(...)` constructor
 // call: the written type resolves intra-repo, an explicit constructor of the
 // matching arity exists, and the site targets Foo's TYPE (Declaring == the
