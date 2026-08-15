@@ -15,7 +15,7 @@ import "sort"
 // a copied table would be correct exactly until the next grammar lands.
 //
 // The three sources each own their fact:
-//   - typeresolve.Languages() — which languages can be type-checked
+//   - semantic.Languages() — which languages the process can semantically prove
 //   - link.Linker.Languages() — which languages have a cross-file resolver
 //   - parse.Registry + parse.SymbolCapable — which languages extract symbols
 //

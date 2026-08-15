@@ -92,15 +92,10 @@ func (i *Ingester) combinedTypeResolutionFacts() trust.TypeResolutionFacts {
 }
 
 // combinedPackageEvidence concatenates the per-language evidence rows in
-// sorted-language order; one language returns its rows unchanged.
-//
-// KNOWN LIMIT (multi-language, WP-J3): PackageKey is a bare directory, so a
-// directory holding units of TWO languages would contribute one row per
-// language under the SAME key, and insertPackageEvidenceTx's INSERT OR
-// REPLACE would keep only the later one. Harmless while one registrant
-// exists; the fix is a language column in trust_package_evidence — a schema
-// decision WP-J3 must take BEFORE registering a second language, tracked in
-// the language-GA program.
+// sorted-language order; one language returns its rows unchanged. Rows are
+// keyed (generation, language, package_key) since schema v4, so two
+// languages sharing a directory persist side by side — the limit this
+// comment used to record is closed.
 func (i *Ingester) combinedPackageEvidence() []PackageEvidence {
 	langs := i.semanticLanguages()
 	if len(langs) == 1 {

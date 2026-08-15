@@ -1,9 +1,15 @@
 # ADR 0008 — JVM Declared-Type Semantic Resolution (`jvmresolve`, confirmed tier for Java/Kotlin)
 
 - Status: **Proposed** (decision points D1–D8 below are open and the owner
-  rules; the binder is being built DARK — unregistered, unreachable from any
-  surface — along this ADR's recommended contracts, so nothing ships until the
-  rulings land. Groundwork so far: the D3 node half; `engine/jvmresolve`
+  rules. The binder is now REGISTERED behind the ADR 0007 seam but
+  DEFAULT-OFF: `engine/semantic` adds the java/kotlin registrants only under
+  the experimental `GRAPHI_JVM_TYPERESOLVE` opt-in, so the shipped default —
+  graph bytes, trust report, capability matrix — is unchanged until the
+  rulings and the GA-LANG evidence land; flipping the default is WP-J11
+  scope. The live path is proven under the flag: a real IngestAll produces
+  the confirmed cross-language edge, full-vs-incremental byte parity holds,
+  and the per-language kill switches reach the registrants
+  (engine/ingest/jvmresolve_e2e_test.go). Groundwork: the D3 node half; `engine/jvmresolve`
   slice 1 — the declaration→node identity map with its golden cross-test
   (gate G2a), which PINNED three collector facts (Java enum members, Kotlin
   enum-class members, Kotlin companions + their members mint NO nodes);

@@ -30,8 +30,8 @@ import (
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/link"
+	"github.com/samibel/graphi/engine/semantic"
 	"github.com/samibel/graphi/engine/trust"
-	"github.com/samibel/graphi/engine/typeresolve"
 	"github.com/samibel/graphi/internal/freshness"
 	"github.com/samibel/graphi/internal/freshness/probe"
 	"github.com/samibel/graphi/internal/releaseinfo"
@@ -290,7 +290,7 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 
 // languageCapabilities derives the P1 capability matrix (PRD v1.0 §3) from the
 // three live registries, each consulted in the package that owns its fact:
-// engine/typeresolve declares what it can type-check, engine/link which
+// engine/semantic declares what the process can type-check, engine/link which
 // languages have a cross-file resolver, and core/parse which languages are
 // parseable at all and which of those extract symbols.
 //
@@ -337,7 +337,7 @@ func languageCapabilities() []trust.Capability {
 
 	return trust.Capabilities(trust.CapabilityInputs{
 		Languages:        languages,
-		TypeChecked:      typeresolve.Languages(),
+		TypeChecked:      semantic.Languages(),
 		CrossFileLinked:  link.New().Languages(),
 		SymbolExtraction: extraction,
 	})
