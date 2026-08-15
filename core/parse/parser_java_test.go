@@ -9,9 +9,10 @@ import (
 	"github.com/samibel/graphi/core/model"
 )
 
-// javaGoldenFixture is the committed, FROZEN Java fixture (SW-054). Java has no free
-// functions and no top-level vars, so `function`, `variable`, and `constant` are
-// ABSENT BY DESIGN at this tier; only `type` (class/interface) and `method` appear.
+// javaGoldenFixture is the committed, FROZEN Java fixture (SW-054). Java has no
+// free functions, so `function` is ABSENT BY DESIGN. This fixture declares no
+// fields, so its node set is unchanged by the WP-J2 field extraction —
+// TestExtractJava_FieldNodes covers fields on its own fixture.
 const javaGoldenFixture = `package shop;
 
 import java.util.List;
@@ -50,8 +51,8 @@ func parseJavaFixtureResult(t *testing.T) *ParseResult {
 	return res
 }
 
-// TestExtractJava_Nodes asserts the EXACT closed node set + kinds; function/variable/
-// constant are absent-by-design.
+// TestExtractJava_Nodes asserts the EXACT closed node set + kinds on the
+// frozen field-free fixture; function is absent-by-design.
 func TestExtractJava_Nodes(t *testing.T) {
 	nodes, _ := parseJavaFixture(t)
 
@@ -89,18 +90,77 @@ func TestExtractJava_Nodes(t *testing.T) {
 			t.Errorf("expected kind literal %q to be present", k)
 		}
 	}
-	// function/variable/constant are ABSENT BY DESIGN for Java.
+	// function is ABSENT BY DESIGN for Java (no free functions); this fixture
+	// declares no fields, so variable/constant are absent HERE (not by design
+	// since WP-J2 — see TestExtractJava_FieldNodes).
 	for _, bad := range []model.NodeKind{"function", "variable", "constant"} {
 		if _, ok := emitted[bad]; ok {
-			t.Errorf("java must not emit %q (absent by design)", bad)
+			t.Errorf("the field-free golden fixture must not emit %q", bad)
 		}
 	}
 	for bad := range emitted {
 		switch string(bad) {
-		case "file", "method", "type", "package":
+		case "file", "method", "type", "package", "variable", "constant":
 		default:
 			t.Errorf("unexpected node kind literal %q (closed vocabulary violated)", bad)
 		}
+	}
+}
+
+// TestExtractJava_FieldNodes pins the WP-J2 (ADR 0008 D3) field extraction:
+// one node per variable_declarator, kind from the DECLARED form only — a
+// `static final` field or an interface constant_declaration (the grammar names
+// its constancy) is a constant, everything else a variable — with annotations
+// and static/final flags as non-identity meta.
+func TestExtractJava_FieldNodes(t *testing.T) {
+	const fixture = `package shop;
+
+class Store {
+	static final int MAX = 3;
+	@Deprecated private String name, alias;
+	int count = 0;
+	void m() {}
+}
+
+interface Cfg {
+	int LIMIT = 9;
+}
+`
+	res, err := NewJavaParser().Parse(context.Background(), "shop/Store.java", []byte(fixture))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	want := map[string]model.NodeKind{
+		"shop.MAX":   goKindConstant, // declared static final
+		"shop.name":  goKindVariable,
+		"shop.alias": goKindVariable, // second declarator of one declaration
+		"shop.count": goKindVariable,
+		"shop.LIMIT": goKindConstant, // interface field: the CST declares it constant_declaration
+	}
+	for qn, kind := range want {
+		n, ok := nodeByQN(res.Nodes, qn)
+		if !ok {
+			t.Errorf("missing field node %q", qn)
+			continue
+		}
+		if n.Kind() != kind {
+			t.Errorf("node %q kind = %q, want %q", qn, n.Kind(), kind)
+		}
+	}
+
+	metaOf := func(qn string) model.NodeMeta {
+		t.Helper()
+		n, ok := nodeByQN(res.Nodes, qn)
+		if !ok {
+			t.Fatalf("missing node %q", qn)
+		}
+		return n.Meta()
+	}
+	if m := metaOf("shop.MAX"); strings.Join(m.Flags, ",") != "final,static" {
+		t.Errorf("shop.MAX flags = %v, want [final static]", m.Flags)
+	}
+	if m := metaOf("shop.name"); strings.Join(m.Annotations, ",") != "Deprecated" || len(m.Flags) != 0 {
+		t.Errorf("shop.name meta = %+v, want annotation Deprecated and no flags", m)
 	}
 }
 

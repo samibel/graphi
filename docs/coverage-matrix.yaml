@@ -26,7 +26,23 @@
 #
 # status: shipped | partial | planned
 # tier:   stable | labs | disabled
+#
+# ga-language rows (WP-J1, ADR 0007) machine-encode the GA LANGUAGE AXIS that
+# docs/stability-tiers.md's conjunction used to carry in prose alone. Each row
+# declares a language GA at a stated `capability` level (engine/trust's closed
+# vocabulary); internal/coverage.CheckGALanguages binds the declaration to the
+# live capability derivation AND to green GA-LANG-<lang>-* rows in
+# docs/rc/evidence-index.yaml (go alone is grandfathered: its GA evidence is
+# the P0/P1 program record). Adding a row here without those artifacts fails
+# `go run ./cmd/coverage -check` — a language cannot be flipped GA by prose.
 capabilities:
+  - id: go
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: typed-confirmed
+    epic: "-"
+    note: "The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA."
   - id: bash
     category: parser
     status: shipped

@@ -801,13 +801,14 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		}
 		i.skipMu.Unlock()
 
-		// Third phase (site 2): whole-repo go/types confirmed-tier pass, after
+		// Third phase (site 2): whole-repo semantic confirmed-tier pass, after
 		// the linker and after the stale-file cleanup so it sees the final
-		// committed node set. Runs only when the change set can affect Go
-		// resolution — a pure asset/doc edit skips the whole-repo recompute.
+		// committed node set. Runs only when the change set can affect a
+		// registered resolver's result — a pure asset/doc edit skips the
+		// whole-repo recompute.
 		// Placed after the parse-error elevation above so a doomed transaction
 		// never pays for (or half-applies) the pass.
-		if touchesGoResolution(toProcess) {
+		if i.semanticTriggers(toProcess) {
 			if prog != nil {
 				prog(ProgressEvent{Phase: PhaseResolve, Done: progDone, Total: progTotal})
 			}

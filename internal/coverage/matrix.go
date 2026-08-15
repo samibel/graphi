@@ -20,6 +20,13 @@ type Capability struct {
 	Tier     string // stable | labs | disabled  (SCOPE-01 stability taxonomy)
 	Epic     string
 	Note     string
+
+	// CapabilityLevel is the declared per-language capability level
+	// (engine/trust's closed vocabulary, e.g. typed-confirmed) and is carried
+	// ONLY by `category: ga-language` rows — the machine-encoded GA language
+	// axis (WP-J1, ADR 0007). validateGALanguageRow rejects it anywhere else
+	// and requires it there; CheckGALanguages binds it to the live derivation.
+	CapabilityLevel string
 }
 
 // Valid statuses for a capability row.
@@ -110,6 +117,9 @@ func parseMatrixYAML(text string) ([]Capability, error) {
 		if cur.Tier != TierStable && cur.Tier != TierLabs && cur.Tier != TierDisabled {
 			return fmt.Errorf("row %q has invalid tier %q (want stable|labs|disabled)", cur.Key(), cur.Tier)
 		}
+		if err := validateGALanguageRow(cur); err != nil {
+			return err
+		}
 		caps = append(caps, *cur)
 		cur = nil
 		return nil
@@ -173,6 +183,8 @@ func assignField(c *Capability, key, val string) error {
 		c.Epic = val
 	case "note":
 		c.Note = val
+	case "capability":
+		c.CapabilityLevel = val
 	default:
 		return fmt.Errorf("unknown field %q", key)
 	}

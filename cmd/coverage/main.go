@@ -19,6 +19,8 @@ import (
 	"path/filepath"
 
 	"github.com/samibel/graphi/internal/coverage"
+	"github.com/samibel/graphi/internal/evidence"
+	"github.com/samibel/graphi/surfaces/client"
 )
 
 func main() {
@@ -87,6 +89,27 @@ func main() {
 	profileRep := coverage.CheckMCPDefaultProfile(caps)
 	fmt.Print(profileRep.Format())
 
+	// WP-J1 (ADR 0007): the GA LANGUAGE AXIS. Every `category: ga-language`
+	// row must be bound to the live capability derivation (the same one the
+	// trust report serves) and to green GA-LANG-* evidence rows — the axis
+	// docs/stability-tiers.md used to carry in prose alone.
+	idx, err := evidence.Load(filepath.Join(dir, filepath.FromSlash(evidence.EvidenceYAMLPath)))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "coverage: load evidence index: %v\n", err)
+		os.Exit(2)
+	}
+	gaGates := make([]coverage.GAEvidenceGate, 0, len(idx.Gates))
+	for _, g := range idx.Gates {
+		gaGates = append(gaGates, coverage.GAEvidenceGate{
+			ID: g.ID,
+			// internal/evidence's WP0 honesty rule, folded here: PASS counts
+			// only with both evidence URI and sha.
+			Passed: g.Status == evidence.StatusPass && g.EvidenceURI != "" && g.SHA != "",
+		})
+	}
+	gaRep := coverage.CheckGALanguages(caps, client.LanguageCapabilities(), gaGates)
+	fmt.Print(gaRep.Format())
+
 	// Also verify the rendered .md is fresh, so -check is the single CI gate.
 	if current, rerr := os.ReadFile(mdPath); rerr == nil {
 		if want := coverage.RenderMarkdown(caps); string(current) != want {
@@ -111,7 +134,7 @@ func main() {
 	}
 	fmt.Printf("capability-manifest check PASS — %s matches the checked matrix.\n", coverage.MatrixJSONPath)
 
-	if !rep.Pass() || !stableRep.Pass() || !profileRep.Pass() {
+	if !rep.Pass() || !stableRep.Pass() || !profileRep.Pass() || !gaRep.Pass() {
 		os.Exit(1)
 	}
 }

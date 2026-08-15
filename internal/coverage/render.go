@@ -57,6 +57,8 @@ func categoryTitle(cat string) string {
 		return "Surfaces"
 	case CategoryCLI:
 		return "CLI subcommands"
+	case CategoryGALanguage:
+		return "GA languages"
 	default:
 		return strings.Title(cat) //nolint:staticcheck // simple ASCII heading
 	}
@@ -113,8 +115,11 @@ func RenderMarkdown(caps []Capability) string {
 	b.WriteString("> **`tier` is not GA.** The `tier` column answers exactly one machine question —\n")
 	b.WriteString("> *is this row one of the 12 frozen operations?* Parser and surface rows are\n")
 	b.WriteString("> structurally ineligible for `stable`, so `go`, `cli`, and `mcp` read `labs`\n")
-	b.WriteString("> despite being the entire GA scope. GA is a prose tier defined in\n")
-	b.WriteString("> [`stability-tiers.md`](stability-tiers.md).\n\n")
+	b.WriteString("> despite being the entire GA scope. GA is defined in\n")
+	b.WriteString("> [`stability-tiers.md`](stability-tiers.md); its LANGUAGE axis is pinned by the\n")
+	b.WriteString("> `ga-language` rows below (`internal/coverage.CheckGALanguages` binds each one to\n")
+	b.WriteString("> the live capability derivation and the evidence index — a language cannot be\n")
+	b.WriteString("> flipped GA by editing prose or this matrix alone).\n\n")
 	b.WriteString(renderStableCallout(sorted))
 	b.WriteString(renderMCPProfileCallout(sorted))
 	b.WriteString(fmt.Sprintf("Total capabilities: **%d**. See [`architecture-plan.md`](architecture-plan.md) for the design context.\n", len(sorted)))
@@ -122,6 +127,17 @@ func RenderMarkdown(caps []Capability) string {
 	for _, cat := range order {
 		rows := byCat[cat]
 		fmt.Fprintf(&b, "\n## %s (%d)\n\n", categoryTitle(cat), len(rows))
+		if cat == CategoryGALanguage {
+			// The GA-language axis carries its declared capability level; the
+			// binding to registries + evidence is CheckGALanguages, not this table.
+			b.WriteString("| id | capability | tier | status | epic | note |\n")
+			b.WriteString("|---|---|---|---|---|---|\n")
+			for _, c := range rows {
+				fmt.Fprintf(&b, "| `%s` | `%s` | %s | %s | %s | %s |\n",
+					c.ID, c.CapabilityLevel, tierBadge(c.Tier), statusBadge(c.Status), mdCell(c.Epic), mdCell(c.Note))
+			}
+			continue
+		}
 		b.WriteString("| id | tier | status | epic | note |\n")
 		b.WriteString("|---|---|---|---|---|\n")
 		for _, c := range rows {

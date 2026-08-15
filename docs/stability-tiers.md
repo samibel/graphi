@@ -49,17 +49,29 @@ This is **structural, not a judgement**. `CheckStableTier` requires every
 **ineligible for `stable`** and can only ever be `labs`. Its `labs` label
 therefore carries **no information about GA**.
 
-So the matrix pins **one of GA's three axes**. GA is a conjunction:
+So the matrix pins **two of GA's four axes**. GA is a conjunction:
 
 ```
 GA  =  operation ∈ {the 12 tier:stable rows}     ← pinned by cmd/coverage -check
-   AND language  = Go                            ← NOT encoded in the matrix
+   AND language  ∈ {the ga-language rows}        ← pinned by cmd/coverage -check (WP-J1)
    AND surface   ∈ {CLI, MCP stdio}              ← NOT encoded in the matrix
    AND build     = the CGo-free default binary   ← enforced by cgoconformance CI
 ```
 
-The language and surface axes live in prose — in this file — because no matrix
-row expresses them. That is precisely why this file has to exist.
+Since WP-J1 (ADR 0007) the language axis is machine-encoded: a
+`category: ga-language` matrix row declares a language GA at a stated
+`capability` level, and `internal/coverage.CheckGALanguages` binds that
+declaration to the live capability derivation (the same one
+`graphi trust-report` serves) **and** to green `GA-LANG-<lang>-*` rows in the
+[evidence index](rc/evidence-index.yaml) — so a language cannot be flipped GA
+by editing prose, this file included. Today the set is exactly `{go}` at
+`typed-confirmed`; the
+[language-GA program](plan/2026-08-graphi-p2-language-ga-program-v1.md) is the
+plan for growing it, and "Preview" means precisely "a shipped parser row not in
+the ga-language set".
+
+The surface axis still lives in prose — in this file — because no matrix row
+expresses it. That is why this file continues to exist.
 
 ## Why Preview and Labs are both `tier: labs` — and are still different
 
@@ -84,7 +96,8 @@ collapse Preview into Labs and say so here.)
 `related_files`, `explain_symbol`, `change_risk`. `index` is lifecycle-only, so
 the default MCP profile advertises **11** tools.
 
-**Language.** **Go only.** Every other language is Preview.
+**Language.** **Go only** — the sole `ga-language` matrix row. Every other
+language is Preview.
 
 **Surfaces.** **CLI** and **MCP stdio** only.
 

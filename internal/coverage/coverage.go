@@ -42,6 +42,12 @@ const (
 	CategoryCLI      = "cli-subcommand"
 )
 
+// CategoryGALanguage rows machine-encode the GA language axis (WP-J1,
+// ADR 0007). Deliberately NOT code-derived: bare registration is exactly what
+// the GA claim must not trust — CheckGALanguages (galang.go) binds these rows
+// to the live capability derivation and the evidence index instead.
+const CategoryGALanguage = "ga-language"
+
 // LiveSet is the deterministic, sorted snapshot of every live capability across
 // the four code-derived categories. It is derived purely from the running
 // registries; nothing here is hand-maintained.

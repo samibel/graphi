@@ -29,19 +29,18 @@ import (
 // drop edges, never mint false ones. Never fabricate: an intent whose
 // reconstructed endpoint is not committed is dropped and counted.
 
-// Languages returns the canonical languages this resolver can type-check, and
-// whose relationships it can therefore raise to the `confirmed` tier.
+// Languages returns the canonical languages the registered semantic resolvers
+// can prove, and whose relationships can therefore reach the `confirmed` tier.
 //
-// It is Go alone, and it is declared here because this package owns the fact:
-// the whole pass is built on go/parser + go/types. Until now the fact lived
-// implicitly in the caller's ".go" suffix gate (engine/ingest/typeresolve.go),
-// where nothing outside ingest could read it. The P1 trust capability matrix
-// (engine/trust) needs it to decide which languages report `typed-confirmed`,
-// and deriving that from a hard-coded "go" over in the trust package would put
-// the fact somewhere it cannot be kept true.
+// Since WP-J0 (ADR 0007) the fact lives in the resolver registry
+// (registry.go): each registrant owns its language, and this package-level
+// accessor is the union the P1 trust capability matrix (engine/trust) consumes
+// to decide which languages report `typed-confirmed`. Deriving that from a
+// hard-coded list — here or over in the trust package — would put the fact
+// somewhere it cannot be kept true.
 //
 // The returned slice is a fresh copy and is sorted.
-func Languages() []string { return []string{"go"} }
+func Languages() []string { return NewRegistry().Languages() }
 
 // Edge kinds this pass emits, matching the canonical query vocabulary (the
 // same strings engine/link uses; duplicated deliberately — see the kind-string

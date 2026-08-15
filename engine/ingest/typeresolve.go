@@ -14,7 +14,7 @@ import (
 	"github.com/samibel/graphi/engine/typeresolve"
 )
 
-// EnvNoTyperesolve is the kill switch for the go/types confirmed-tier pass:
+// EnvNoTyperesolve is the kill switch for the semantic confirmed-tier pass:
 // set GRAPHI_NO_TYPERESOLVE=1 to skip it entirely (heuristic edges are then
 // the final word, exactly the pre-v0.2.0 behavior). Any non-empty value other
 // than "0" disables the pass.
@@ -25,24 +25,74 @@ func typeresolveDisabled() bool {
 	return v != "" && v != "0"
 }
 
+// envNoTyperesolveLang is the per-language kill switch (ADR 0007):
+// GRAPHI_NO_TYPERESOLVE_<LANG> (language id uppercased) disables one
+// registrant while the global switch keeps its whole-pass meaning. Same value
+// semantics as the global switch.
+func envNoTyperesolveLang(lang string) string {
+	return EnvNoTyperesolve + "_" + strings.ToUpper(lang)
+}
+
+func semanticResolverDisabled(lang string) bool {
+	v := os.Getenv(envNoTyperesolveLang(lang))
+	return v != "" && v != "0"
+}
+
 // typeresolveKind reports whether kind is one of the edge kinds the
 // typeresolve pass emits (and therefore reconciles). Deliberately narrower
 // than the linker's sweep set: imports/inherits/overrides are never confirmed
-// by the type-check pass and must not be touched by its reconciliation.
+// by the semantic pass and must not be touched by its reconciliation.
 func typeresolveKind(kind string) bool {
 	return kind == "calls" || kind == "references" || kind == "implements"
 }
 
 // typeresolvePass is the third ingest phase (after parse-commit and linkFiles,
-// at BOTH the full and the incremental site): the whole-repo go/types pass
-// that turns name-heuristic knowledge into confirmed-tier knowledge where the
-// type-checker can prove it.
+// at BOTH the full and the incremental site): the whole-repo semantic pass
+// that turns name-heuristic knowledge into confirmed-tier knowledge where a
+// registered resolver can prove it. Dispatch is registry-driven (ADR 0007,
+// WP-J0): each resolver in i.semantic runs the identical
+// gate → read → resolve → reconcile body over its own language's files. Today
+// the registry holds exactly the go/types resolver, so behavior is
+// byte-identical to the pre-seam Go-only pass.
 //
-// Design (parity by construction): the pass always recomputes over the ENTIRE
-// walked snapshot, so its output is a pure function of the final source state
-// and the committed node set — full-vs-incremental byte parity needs no
+// Design (parity by construction): each resolver always recomputes over the
+// ENTIRE walked snapshot, so its output is a pure function of the final source
+// state and the committed node set — full-vs-incremental byte parity needs no
 // per-file bookkeeping. Memoization can be layered underneath later without
 // changing observable behavior.
+//
+// Returns the ids of the edges it put, so the incremental site can funnel
+// them into the edit-provenance side-channel like the linker's edges. The
+// result is nil exactly when NO resolver completed a run (disabled, fast
+// profile, no subject files, or a skipped re-read) — the distinction
+// TestTyperesolvePass_SkipsOnFailedReread pins.
+func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, root string, units []fileUnit) ([]string, error) {
+	if typeresolveDisabled() || i.profile == profile.Fast {
+		return nil, nil
+	}
+	var ids []string
+	for _, res := range i.semantic.Resolvers() {
+		if semanticResolverDisabled(res.Language()) {
+			continue
+		}
+		resIDs, err := i.semanticResolve(ctx, w, root, units, res)
+		if err != nil {
+			return nil, err
+		}
+		if resIDs == nil {
+			continue // this resolver skipped: no subjects, or a failed re-read
+		}
+		if ids == nil {
+			ids = []string{}
+		}
+		ids = append(ids, resIDs...)
+	}
+	return ids, nil
+}
+
+// semanticResolve runs one resolver's whole-repo pass: the exact body the
+// Go-only pass had before the registry seam, parameterized by the resolver's
+// path predicates and Resolve call.
 //
 // Reconciliation contract with the store:
 //   - Fresh confirmed edges are upserted. A confirmed edge shares its
@@ -58,26 +108,19 @@ func typeresolveKind(kind string) bool {
 //     skipped by the sweep: degradation never deletes knowledge. Its symbols
 //     keep whatever the store holds — heuristic edges from linkFiles, or
 //     prior confirmed edges when the unit's files were not reprocessed.
-//
-// Returns the ids of the edges it put, so the incremental site can funnel
-// them into the edit-provenance side-channel like the linker's edges.
-func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, root string, units []fileUnit) ([]string, error) {
-	if typeresolveDisabled() || i.profile == profile.Fast {
-		return nil, nil
-	}
-	hasGo := false
+func (i *Ingester) semanticResolve(ctx context.Context, w graphstore.Writer, root string, units []fileUnit, res typeresolve.Resolver) ([]string, error) {
+	hasSubject := false
 	for _, u := range units {
-		if strings.HasSuffix(u.relPath, ".go") && !strings.HasSuffix(u.relPath, "_test.go") {
-			hasGo = true
+		if res.Subject(u.relPath) {
+			hasSubject = true
 			break
 		}
 	}
-	if !hasGo {
-		return nil, nil // non-Go repo: no units to check, skip the store scans
+	if !hasSubject {
+		return nil, nil // no subject files for this resolver: skip the store scans
 	}
-	// Re-read only what the resolver consumes: Go sources (including _test.go,
-	// whose PATHS steer GroupPackages' skip bookkeeping) and go.mod. Units
-	// carry no bytes, and the old whole-unit-list map held every file of the
+	// Re-read only what the resolver consumes (its Input predicate). Units
+	// carry no bytes, and a whole-unit-list map would hold every file of the
 	// repo — assets included — resident for the entire pass.
 	rootHandle, err := os.OpenRoot(root)
 	if err != nil {
@@ -86,7 +129,7 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 	defer rootHandle.Close()
 	files := make(map[string][]byte)
 	for _, u := range units {
-		if u.relPath != "go.mod" && !strings.HasSuffix(u.relPath, ".go") {
+		if !res.Input(u.relPath) {
 			continue
 		}
 		read := readRootedRegularFile(rootHandle, u.relPath, i.bounds.MaxFileSize)
@@ -98,7 +141,10 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 			// clean against stub imports, and the stale-confirmed sweep below
 			// would then delete EVERY cross-package confirmed edge. Skip the
 			// whole pass instead — degradation never deletes knowledge; the
-			// next pass re-runs it over a stable tree.
+			// next pass re-runs it over a stable tree. The flag additionally
+			// blocks this pass's wholesale package-evidence replace (see
+			// semanticEvidenceReady) for the same reason.
+			i.semanticReadFailure = true
 			return nil, nil
 		}
 		files[u.relPath] = read.src
@@ -116,29 +162,32 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 		return nil, fmt.Errorf("ingest: typeresolve read nodes: %w", err)
 	}
 
-	res, err := typeresolve.Resolve(files, committed)
+	result, err := res.Resolve(files, committed)
 	if err != nil {
 		return nil, fmt.Errorf("ingest: typeresolve: %w", err)
 	}
 	// Retain the compact trust summary at the ONE point the full Result exists;
-	// the Result itself stays transient. Every early return above leaves the
-	// pass-start zero value in place — a skipped resolver claims no facts.
-	// The per-package evidence rows (P1 WP1.2, PRD §14.3/§22) are folded here
-	// too, with the ran flag telling the evidence writer that these rows are a
-	// complete whole-repo recompute (safe to replace the persisted set) rather
-	// than a skipped pass's zero value.
-	i.lastTypeResolution = trust.NewTypeResolutionFacts(res)
-	i.lastPackageEvidence = packageEvidenceFromResult(res, dirOf)
-	i.lastTypeResolutionRan = true
+	// the Result itself stays transient. Every early return above records no
+	// run — a skipped resolver claims no facts. The per-package evidence rows
+	// (P1 WP1.2, PRD §14.3/§22) are folded here too; presence in semanticRuns
+	// tells the evidence writer these rows are a complete whole-repo recompute
+	// (safe to replace the persisted set) rather than a skipped pass's zero
+	// value. Facts are keyed PER LANGUAGE and folded back into the single-slot
+	// snapshot/persistence shapes by trust_fold.go, whose single-language case
+	// is the identity — the pre-seam bytes exactly.
+	i.recordSemanticRun(res.Language(), semanticRun{
+		facts:    trust.NewTypeResolutionFacts(result),
+		evidence: packageEvidenceFromResult(result, dirOf),
+	})
 
-	checkedDirs := make(map[string]struct{}, len(res.Units))
-	for _, u := range res.Units {
+	checkedDirs := make(map[string]struct{}, len(result.Units))
+	for _, u := range result.Units {
 		if u.Degraded == "" {
 			checkedDirs[u.Dir] = struct{}{}
 		}
 	}
-	fresh := make(map[model.EdgeId]struct{}, len(res.Edges))
-	for _, e := range res.Edges {
+	fresh := make(map[model.EdgeId]struct{}, len(result.Edges))
+	for _, e := range result.Edges {
 		fresh[e.ID()] = struct{}{}
 	}
 
@@ -168,8 +217,8 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 		}
 	}
 
-	ids := make([]string, 0, len(res.Edges))
-	for _, e := range res.Edges {
+	ids := make([]string, 0, len(result.Edges))
+	for _, e := range result.Edges {
 		if err := w.PutEdge(ctx, e); err != nil {
 			return nil, fmt.Errorf("ingest: typeresolve put edge %s: %w", e.ID(), err)
 		}
@@ -178,19 +227,19 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 	return ids, nil
 }
 
-// touchesGoResolution reports whether any (re)processed path can change the
-// go/types resolution result: a Go source file (test files cannot — the
-// typeresolve grouping skips them in v1 — but a rename between _test and
-// non-test arrives as the non-test path anyway, so plain .go matching stays
-// correct and cheap) or the root go.mod (the module path steers intra-repo
-// import resolution).
-func touchesGoResolution(paths map[string]struct{}) bool {
+// semanticTriggers reports whether any (re)processed path can change any
+// registered resolver's resolution result — the registry-driven form of the
+// old touchesGoResolution gate. Deliberately evaluated WITHOUT consulting the
+// kill switches: the pass itself is the single place that honors them, so a
+// disabled pass costs one no-op call rather than duplicating switch logic
+// here. The per-language reasoning (why go.mod triggers, why _test.go does
+// not) lives on each resolver's Triggers predicate.
+func (i *Ingester) semanticTriggers(paths map[string]struct{}) bool {
 	for p := range paths {
-		if p == "go.mod" {
-			return true
-		}
-		if strings.HasSuffix(p, ".go") && !strings.HasSuffix(p, "_test.go") {
-			return true
+		for _, r := range i.semantic.Resolvers() {
+			if r.Triggers(p) {
+				return true
+			}
 		}
 	}
 	return false

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "generated_by": "cmd/coverage -generate (do not edit; source: docs/coverage-matrix.yaml)",
   "stable_operations": [
     "agent_brief",
@@ -648,6 +648,14 @@
       "tier": "labs",
       "epic": "EP-001",
       "note": "Per-language cross-file/cross-package resolvers over engine/link (SW-063), with ingest dispatching the linker per language. Resolvers: Go, TypeScript family (ts/tsx/js), Python, Rust, Java, Kotlin, C#, C, C++, Ruby, PHP, Lua, Bash. SQL is an honest no-op (no provable cross-file refs at this tier → skip+count). Each is heuristic tier, deterministic, byte-identical full-vs-incremental, never confirmed, never fabricates."
+    },
+    {
+      "id": "go",
+      "category": "ga-language",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA.",
+      "capability": "typed-confirmed"
     },
     {
       "id": "agent_brief",

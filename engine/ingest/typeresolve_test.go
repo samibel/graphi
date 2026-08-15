@@ -311,3 +311,37 @@ func TestTyperesolve_KillSwitchAndAssetEditSkip(t *testing.T) {
 		}
 	})
 }
+
+// TestTyperesolve_PerLanguageKillSwitch pins the ADR 0007 per-language switch:
+// GRAPHI_NO_TYPERESOLVE_<LANG> disables exactly one registrant while the
+// global switch keeps its whole-pass meaning. With Go as the only registrant
+// the observable outcome equals the global switch: no confirmed
+// calls/references/implements edges, heuristic layer intact. The env name is
+// a frozen wire identifier — spelled literally here, not via a helper, so a
+// rename cannot slip through as a refactor.
+func TestTyperesolve_PerLanguageKillSwitch(t *testing.T) {
+	ctx := context.Background()
+	t.Setenv("GRAPHI_NO_TYPERESOLVE_GO", "1")
+	store := graphstore.NewMemStore()
+	t.Cleanup(func() { _ = store.Close() })
+	ing := newIngester(t, store, parse.NewDefaultRegistry())
+	root := writeRepo(t, typeresolveFixture())
+	if err := ing.IngestAll(ctx, root); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	edges, err := store.Edges(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range edges {
+		if k := e.Kind(); k != "calls" && k != "references" && k != "implements" {
+			continue
+		}
+		if e.Tier() == model.TierConfirmed {
+			t.Errorf("confirmed %s edge %s emitted with the per-language kill switch set", e.Kind(), e.ID())
+		}
+	}
+	if e, ok := edgeBetween(t, store, "main.main", "util.Answer", "calls"); !ok || e.Tier() == model.TierConfirmed {
+		t.Errorf("heuristic layer must still resolve the call: ok=%v tier=%v", ok, e.Tier())
+	}
+}

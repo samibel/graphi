@@ -18,14 +18,17 @@ row is tagged stable or one is dropped.
 > **`tier` is not GA.** The `tier` column answers exactly one machine question —
 > *is this row one of the 12 frozen operations?* Parser and surface rows are
 > structurally ineligible for `stable`, so `go`, `cli`, and `mcp` read `labs`
-> despite being the entire GA scope. GA is a prose tier defined in
-> [`stability-tiers.md`](stability-tiers.md).
+> despite being the entire GA scope. GA is defined in
+> [`stability-tiers.md`](stability-tiers.md); its LANGUAGE axis is pinned by the
+> `ga-language` rows below (`internal/coverage.CheckGALanguages` binds each one to
+> the live capability derivation and the evidence index — a language cannot be
+> flipped GA by editing prose or this matrix alone).
 
 **The 12 stable operations (frozen):** `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `impact`, `neighborhood`, `references`, `related_files`, `search`.
 
 **MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **56-tool** union (45 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **172**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **173**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -228,3 +231,9 @@ Total capabilities: **172**. See [`architecture-plan.md`](architecture-plan.md) 
 | `FU-3` | 🧪 labs | ✅ shipped | EP-001 | Optional embedder graceful-skip path + semantic search (SW-059); resolves OQ6. |
 | `FU-4` | 🧪 labs | ✅ shipped | EP-001 | Traceability story (SW-060): consolidated architecture-plan + CI-enforced coverage matrix (this matrix). |
 | `FU-5` | 🧪 labs | ✅ shipped | EP-001 | Per-language cross-file/cross-package resolvers over engine/link (SW-063), with ingest dispatching the linker per language. Resolvers: Go, TypeScript family (ts/tsx/js), Python, Rust, Java, Kotlin, C#, C, C++, Ruby, PHP, Lua, Bash. SQL is an honest no-op (no provable cross-file refs at this tier → skip+count). Each is heuristic tier, deterministic, byte-identical full-vs-incremental, never confirmed, never fabricates. |
+
+## GA languages (1)
+
+| id | capability | tier | status | epic | note |
+|---|---|---|---|---|---|
+| `go` | `typed-confirmed` | 🧪 labs | ✅ shipped | - | The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA. |
