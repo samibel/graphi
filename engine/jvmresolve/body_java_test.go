@@ -152,3 +152,44 @@ func TestAnalyzeJavaBodies_Deterministic(t *testing.T) {
 		}
 	}
 }
+
+// TestAnalyzeJavaBodies_ConstructorSite pins the `new Foo(...)` constructor
+// call: the written type resolves intra-repo, an explicit constructor of the
+// matching arity exists, and the site targets Foo's TYPE (Declaring == the
+// type, a constructor Member). Symmetric with the Kotlin walker.
+func TestAnalyzeJavaBodies_ConstructorSite(t *testing.T) {
+	files := map[string][]byte{
+		"mk/Widget.java": []byte(`package mk;
+public class Widget {
+    public Widget(int n) {}
+}
+`),
+		"mk/Factory.java": []byte(`package mk;
+public class Factory {
+    public Widget make() { return new Widget(1); }
+    public Widget none() { return new Missing(2); }
+}
+`),
+	}
+	tab := BuildTable(files)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("fixture must table cleanly: %+v", tab.Skipped)
+	}
+	sites, skips := NewIndex(tab).AnalyzeJavaBodies(files)
+
+	// make() → the Widget constructor: a call site targeting the type.
+	s, ok := findSite(sites, SiteCall, "Widget", 3)
+	if !ok {
+		t.Fatalf("expected a constructor call site for new Widget(1): %+v", sites)
+	}
+	if s.Declaring.FQN != "mk.Widget" || s.Member == nil || s.Member.Form != MemberConstructor || !s.StaticReceiver {
+		t.Fatalf("constructor site shape: %+v", s)
+	}
+	// new Missing(2): Missing resolves nowhere intra-repo → external skip, no site.
+	if _, ok := findSite(sites, SiteCall, "Missing", 4); ok {
+		t.Error("a constructor call on an unresolvable type must not produce a site")
+	}
+	if skips[SkipReceiverExternal] == 0 {
+		t.Errorf("expected %s > 0 for new Missing(): %+v", SkipReceiverExternal, skips)
+	}
+}

@@ -44,6 +44,7 @@ func TestGroundTruth_Java_LiveJDK(t *testing.T) {
 	files := map[string]string{
 		"tax/Rate.java": `package tax;
 public class Rate {
+    public Rate(int seed) {}
     public int rate() { return 7; }
     public int scaled(Rate other) { return other.rate(); }
     public int apply(int x) { return x; }
@@ -54,6 +55,7 @@ public class Rate {
 import tax.Rate;
 public class Cart {
     public int checkout(Rate r) { return r.rate() + r.apply(1); }
+    public Rate build() { return new Rate(9); }
 }
 `,
 	}
@@ -82,12 +84,14 @@ public class Cart {
 		t.Fatalf("SOUNDNESS FAILURE:\n%s\nconfirmed: %+v\ntruth: %+v", res.Format(), confirmed, truth)
 	}
 
-	// The two provable calls (checkout→rate, scaled→rate) must be confirmed;
-	// the ambiguous checkout→apply must be DROPPED (present in bytecode,
-	// absent from confirmed) — so recall is strictly below 100% and that is
-	// the honest, sound outcome.
-	if got := len(confirmed); got != 2 {
-		t.Fatalf("expected exactly 2 confirmed calls (checkout→rate, scaled→rate), got %d: %+v", got, confirmed)
+	// Three provable calls must be confirmed: checkout→rate, scaled→rate, and
+	// the CONSTRUCTOR call build→Rate (new Rate(9), targeting the type node —
+	// which the bytecode's `invokespecial tax/Rate.<init>` normalizes to). The
+	// ambiguous checkout→apply must be DROPPED (present in bytecode, absent
+	// from confirmed), so recall stays strictly below 100% — the honest, sound
+	// outcome.
+	if got := len(confirmed); got != 3 {
+		t.Fatalf("expected exactly 3 confirmed calls (checkout→rate, scaled→rate, build→Rate ctor), got %d: %+v", got, confirmed)
 	}
 	if res.TruthIntra <= res.Matched {
 		t.Fatalf("the ambiguous overload must leave a recall gap (truth %d > matched %d)", res.TruthIntra, res.Matched)

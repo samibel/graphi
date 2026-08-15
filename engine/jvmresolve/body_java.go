@@ -359,12 +359,71 @@ func (w *javaBodyWalk) expressions(n *gts.Node, ty *Type, member *Member, env *s
 			w.expressions(obj, ty, member, env)
 		}
 		return
+	case "object_creation_expression":
+		w.constructorSite(n, ty, member, env)
+		// Recurse into the arguments for nested sites; the type child is a
+		// type position, never an expression.
+		if args := n.ChildByFieldName("arguments", w.lang); args != nil {
+			w.expressions(args, ty, member, env)
+		}
+		return
 	}
 	for i := 0; i < n.ChildCount(); i++ {
 		if c := n.Child(i); c != nil {
 			w.expressions(c, ty, member, env)
 		}
 	}
+}
+
+// constructorSite emits a confirmed constructor-call edge for `new Foo(...)`:
+// the written type resolves to an intra-repo type carrying an explicit
+// constructor of matching arity, and the edge targets Foo's TYPE node (the
+// heuristic FQN binder's shape, and what the bytecode ground-truth normalizes
+// javac's `invokespecial Foo.<init>` to). Symmetric with the Kotlin walker.
+//
+// KNOWN RECALL GAP, shared with Kotlin: a class with only an IMPLICIT
+// (compiler-synthesized) constructor tables no constructor member, so a
+// `new Foo()` on it finds no arity match and skip+counts. javac still emits
+// the <init> call, so this costs recall, never soundness.
+func (w *javaBodyWalk) constructorSite(n *gts.Node, ty *Type, member *Member, env *scopeStack) {
+	typeNode := n.ChildByFieldName("type", w.lang)
+	args := n.ChildByFieldName("arguments", w.lang)
+	if typeNode == nil || args == nil {
+		w.skips.add(SkipReceiverUntyped)
+		return
+	}
+	ref, ok := w.typeRefOf(typeNode)
+	if !ok {
+		w.skips.add(SkipReceiverUntyped)
+		return
+	}
+	target, res := w.ix.ResolveTypeName(w.file, ty, ref.Base)
+	switch res {
+	case ResolvedType:
+		// resolved intra-repo — fall through
+	case AmbiguousType:
+		w.skips.add(SkipReceiverAmbig)
+		return
+	default:
+		w.skips.add(SkipReceiverExternal)
+		return
+	}
+	arity := countArgs(args, w.lang)
+	for mi := range target.Members {
+		m := &target.Members[mi]
+		if m.Form == MemberConstructor && len(m.Params) == arity {
+			w.sites = append(w.sites, TypedSite{
+				FromFile: w.file.Path, FromType: ty, FromMember: member,
+				Receiver: target, Declaring: target, Member: m,
+				StaticReceiver: true, Name: target.Name, Arity: arity,
+				Line: nodeLine(typeNode), Kind: SiteCall,
+			})
+			return
+		}
+	}
+	// No explicit constructor of this arity (implicit ctor, or a secondary
+	// this slice does not table): an honest recall gap.
+	w.skips.add(SkipLookupNotFound)
 }
 
 // callSite types one method_invocation's receiver and binds the member.
