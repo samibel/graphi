@@ -9,7 +9,12 @@
   scope. The live path is proven under the flag: a real IngestAll produces
   the confirmed cross-language edge, full-vs-incremental byte parity holds,
   and the per-language kill switches reach the registrants
-  (engine/ingest/jvmresolve_e2e_test.go). Groundwork: the D3 node half; `engine/jvmresolve`
+  (engine/ingest/jvmresolve_e2e_test.go). WP-J5 proves hermetic
+  full-vs-incremental snapshot-byte parity for a wave-1 change-class subset on
+  BOTH MemStore and SQLite with the binder live — including the two signature
+  behaviours, the D6 overload drop (jvm_change_overload) and the D2
+  declared/inferred flip (kotlin_infer_declared_flip) — bound to
+  docs/rc/parity-classes-jvm.yaml by a drift guard. Groundwork: the D3 node half; `engine/jvmresolve`
   slice 1 — the declaration→node identity map with its golden cross-test
   (gate G2a), which PINNED three collector facts (Java enum members, Kotlin
   enum-class members, Kotlin companions + their members mint NO nodes);
@@ -101,7 +106,7 @@ counterexample is a `JVMSOUND-0xx` defect and blocks the GA flip) and measures
 | D3 | Extractor deepening: field/property nodes + declared-type metadata? | **Node half LANDED 2026-08-14** (WP-J2 slice): Java field/constant declarators and Kotlin properties become variable/constant nodes, kind from the DECLARED form only (`static final` / `constant_declaration` / `const val` → constant), pinned by `TestExtractJava_FieldNodes` / `TestExtractKotlin_PropertyNodes`; the frozen golden fixtures are field-free, so their bytes are unchanged, and the full suite stayed green. Declared-TYPE metadata on nodes is DEFERRED — the binder re-parses sources itself (see above), so node-level types are not load-bearing for WP-J3; revisit only if the trust surface wants them. Known honest cost: a field sharing a bare name with a same-package symbol now marks that name dir-ambiguous in the heuristic linker (drop+count, never a wrong edge) |
 | D4 | Kill-switch shape | inherit ADR 0007 (`GRAPHI_NO_TYPERESOLVE` + per-language) |
 | D6 | Overload binding rule | (name, arity) uniqueness; any ambiguity drops+counts; the `change_overload` change class pins the drop |
-| D8 | Entry criterion for JVM real-repo parity | PARITY-001/002 fixes land first — they are ingest-level and language-independent, and would make every JVM verdict start PARTIAL for non-JVM reasons |
+| D8 | Entry criterion for JVM real-repo parity | PARITY-001/002 fixes land first — they are ingest-level and language-independent, and would make every JVM verdict start PARTIAL for non-JVM reasons. WP-J5's hermetic parity gate honors this: jvm_delete_file is DEFERRED (docs/rc/parity-classes-jvm.yaml), not pinned as a JVM defect it is not |
 
 ## Rejected alternatives (recorded, not silently omitted)
 

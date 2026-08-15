@@ -1,0 +1,176 @@
+# graphi — JVM change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (WP-J5, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestJVMParityMatrix_DriftGuard (engine/conformance/
+# jvmparity_matrix_test.go) binds this file to the harness table
+# jvmChangeClassTable() in jvmparity_test.go, in the same bidirectional shape
+# docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+#
+# ---------------------------------------------------------------------------
+# SCOPE OF THE WAVE-1 SUBSET, STATED SO IT IS NOT OVERREAD
+# ---------------------------------------------------------------------------
+# The binder is EXPERIMENTAL and default-off (GRAPHI_JVM_TYPERESOLVE); the
+# harness sets it. These rows prove hermetic full-vs-incremental snapshot-byte
+# parity on BOTH MemStore and SQLite, with non-vacuous witnesses — NOT the PRD
+# §12.3 gate and NOT the real-repository matrix (that is WP-J7). The five
+# required rows are the wave-1 subset: the add/modify path plus the two
+# signature JVM behaviours (the D6 overload drop, the D2 declared/inferred
+# flip). The remaining Go-15 mappings and JVM-specific classes are declared
+# DEFERRED below with their owners — present as placeholders, never counted as
+# proven.
+
+parity_classes:
+  - id: "jvm_add_file"
+    kind: "change_class"
+    label: "Java-Datei hinzufügen / add a Java file in a new package"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "WP-J5"
+    note: "A new Java file arrives in a new package: pure add path. Witness requires util.help present with shop.checkout as the base-tree-indexed control. Fixture label reads production Go parser to satisfy the shared closed vocabulary; the binder under test is the JVM declared-type resolver, live via GRAPHI_JVM_TYPERESOLVE."
+
+  - id: "jvm_modify_file"
+    kind: "change_class"
+    label: "Java-Datei ändern / rewrite a Java file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "WP-J5"
+    note: "An indexed Java file is rewritten: a method is added while existing nodes keep identity. Witness requires shop.extra present and shop.checkout preserved."
+
+  - id: "jvm_add_call"
+    kind: "change_class"
+    label: "Aufruf hinzufügen (confirmed) / add a confirmed call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "WP-J5"
+    note: "A new declared-typed-receiver call binds a CONFIRMED edge (shop.checkout --calls--> tax.apply at tier confirmed). Witness asserts the tier, so the heuristic linker — which skips variable-receiver instance calls — cannot satisfy it."
+
+  - id: "jvm_change_overload"
+    kind: "change_class"
+    label: "Overload hinzufügen (drop) / add a same-arity overload"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "WP-J5"
+    note: "The signature JVM class (ADR 0008 D6). A same-arity String overload is added to tax.Rate.apply, so (apply,1) becomes ambiguous and shop.checkout's confirmed edge to tax.apply must DROP, while the still-unique tax.rate stays confirmed. Proves the binder never ranks an overload set. The inverse of jvm_add_call."
+
+  - id: "kotlin_infer_declared_flip"
+    kind: "change_class"
+    label: "Kotlin declared↔inferred / val x: T = … ↔ val x = …"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "WP-J5"
+    note: "The signature Kotlin class (ADR 0008 D2). A Kotlin local flips declared → inferred; the binder types the declared form and drops the inferred one (no inference), so the confirmed edge k.run --calls--> tax.rate through the local must vanish. Makes the D2 recall boundary a proven behaviour."
+
+  # ── DEFERRED (declared placeholders — NOT proven here) ───────────────────
+  - id: "jvm_delete_file"
+    kind: "change_class"
+    label: "Java-Datei löschen / delete a Java file"
+    verdict: "ABSENT"
+    test_file: ""
+    test_name: ""
+    fixture: ""
+    store: ""
+    assertion: ""
+    harness_row: "deferred"
+    known_defect: ""
+    deferred_to: "WP-J7"
+    owner: "WP-J7"
+    note: "The delete path shares ingest's phase-ordering with Go's PARITY-001, which is language-independent and ingest-level. ADR 0008 D8 makes the PARITY-001/002 fixes the entry criterion for JVM real-repo parity, so the delete class is deferred until then rather than pinned as a JVM-specific defect it is not."
+
+  - id: "jvm_rename_package"
+    kind: "change_class"
+    label: "Java-Package umbenennen / rename a package (dir + clause + importers)"
+    verdict: "ABSENT"
+    test_file: ""
+    test_name: ""
+    fixture: ""
+    store: ""
+    assertion: ""
+    harness_row: "deferred"
+    known_defect: ""
+    deferred_to: "WP-J5b"
+    owner: "WP-J5b"
+    note: "The rename/move cascade adapted to JVM package clauses and importers. Deferred to the WP-J5 follow-up slice."
+
+  - id: "jvm_change_type_hierarchy"
+    kind: "change_class"
+    label: "Typ-Hierarchie ändern / re-point extends"
+    verdict: "ABSENT"
+    test_file: ""
+    test_name: ""
+    fixture: ""
+    store: ""
+    assertion: ""
+    harness_row: "deferred"
+    known_defect: ""
+    deferred_to: "WP-J5b"
+    owner: "WP-J5b"
+    note: "Re-pointing extends so inherited-member lookup and implements edges converge. Deferred to the WP-J5 follow-up slice."
+
+  - id: "jvm_move_nested_class"
+    kind: "change_class"
+    label: "Nested-Klasse verschieben / inner→top-level and between outers"
+    verdict: "ABSENT"
+    test_file: ""
+    test_name: ""
+    fixture: ""
+    store: ""
+    assertion: ""
+    harness_row: "deferred"
+    known_defect: ""
+    deferred_to: "WP-J5b"
+    owner: "WP-J5b"
+    note: "QN-identity stress for nested types. Deferred to the WP-J5 follow-up slice."
