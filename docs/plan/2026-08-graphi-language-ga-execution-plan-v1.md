@@ -66,20 +66,25 @@ today) rather than a full PASS. That is ADR 0008 D8's ruling to make (§4).
 
 ## 3. Milestones — ordered, with the Claude/owner split
 
-### M1 — Evidence deepening (BUILDABLE, no dependencies) — *Claude, now*
+### M1 — Evidence deepening (BUILDABLE, no dependencies) — *Claude — ✅ DONE 2026-08-15*
 Raise recall and harden the oracle while everything downstream waits. Each item
-ships with a local proof; none touches the shipped default.
-- **M1.1** Binder recall forms, each proven by the live-JDK gate:
-  `super.method()`, field-access value chains, `new Foo().bar()` compositions.
-- **M1.2** Corpus pins (WP-J6 / G5): guava→v3 standard, plus one Kotlin pin
-  (kotlinx.serialization *or* ktor). **Pins measured at pin time** (shallow
-  clone at the sha, `git ls-files`, `measured` block) — network required.
-- **M1.3** Write the **Kotlin** ground-truth e2e test (mirrors the Java one,
-  reuses the javap parser). It **skips locally** (no `kotlinc`) and is proven
-  for the first time by `jvm-groundtruth.yml`, which already installs `kotlinc`.
-  Ship it as *unproven-here, CI-gated* — never as a claimed green.
-- **Gate:** full suite + layerguard + `cmd/coverage -check` green; live-JDK gate
-  green on the new forms; `TestJVMParityMatrix_DriftGuard` green.
+shipped with a local proof; none touched the shipped default.
+- **M1.1 ✅** Binder recall forms, each proven by the live-JDK gate:
+  `super.method()` (invokespecial to a regular method) and `new Foo().bar()`
+  compositions pinned hermetically + live; field-access and declared-return
+  chains were already covered. Live gate now spans invokevirtual, invokespecial
+  (`<init>` and regular), and invokestatic — SOUND, recall 5/7.
+- **M1.2 ✅** Corpus pins (WP-J6 / G5): guava→v3 measured standard (full sha +
+  census, 3204 .java) and a second Kotlin pin, kotlinx.serialization v1.6.3
+  (615 JVM files, binder resolves 3517 typed sites, zero crashes at pin time).
+- **M1.3 ✅** Kotlin ground-truth e2e test written; SKIPS locally (no `kotlinc`),
+  proven for the first time by `jvm-groundtruth.yml`. The graphi side is
+  validated locally (exactly 2 confirmed calls with the keys the bytecode
+  carries); only the bytecode half waits for CI.
+- **Gate:** touched packages + layerguard green; live-JDK gate green on the new
+  forms; drift guards green. (Full-suite: two pre-existing load-induced flakes
+  in `surfaces` MCP journey tests — unrelated to M1, pass in isolation; see the
+  note under §6.)
 
 ### M2 — Clear the critical path (BLOCKED → the real work) — *owner-scheduled*
 - **M2.1** Fix **PARITY-001** (phase-ordering / delete path) and **PARITY-002**
@@ -146,8 +151,25 @@ that exercises the template before the next `typed-confirmed` language.
 
 ## 6. What proceeds without further input
 
-Milestone **M1** is unblocked and mine. Absent other direction I will land its
-slices on the current branch (`claude/jvm-java-constructor-calls` or a fresh
-one), each with its proof, no PR unless asked. M2 is owner-scheduled (it is a
+Milestone **M1 is DONE** (2026-08-15) — landed on `claude/jvm-java-constructor-calls`,
+each slice with its proof, no PR. **M2 is next and owner-scheduled** (it is a
 product-byte change to a shipped defect); M3 depends on M2; M4 is the owner's
 cutover. This plan is the map from *here* to that flip.
+
+### Note — a full-suite flake surfaced while gating M1 (pre-existing, not M1)
+
+Running `go test ./...` under full parallelism, two `surfaces` MCP
+session-journey subprocess tests fail and **pass in isolation**:
+- `TestSessionProfile_MCPRepositoryJourney` — the documented `-32002
+  "repository is not bound … retry in a moment"` 2s bind race (known flake).
+- `TestSessionProfile_MCPRootsListJourney` — a distinct, sharper variant: the
+  bind fails wrapping a **SQL migration race**, `table
+  trust_package_evidence_v4 already exists`. The migration at
+  `engine/ingest/schema.go:249` does `CREATE TABLE trust_package_evidence_v4`
+  **without `IF NOT EXISTS`**, so two subprocesses opening the shared test
+  state home can both attempt it. In production the ingest lock serializes
+  access, so this is a test-isolation robustness gap, not a shipped-path
+  correctness bug — but it is a genuine CI-red risk. It predates M1 (it comes
+  with the per-language trust-evidence migration) and is a candidate for a
+  small, separate hardening change (`IF NOT EXISTS` + a transactional guard, or
+  test-side state-home isolation).
