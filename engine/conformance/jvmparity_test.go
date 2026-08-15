@@ -246,6 +246,29 @@ class App {
 				)
 			},
 		},
+		{
+			id:   "jvm_change_import_shadowing",
+			kind: kindChangeClass,
+			description: "A single-type import is added to a caller, shadowing an on-demand (`b.*`) import of the same simple name (JLS §6.4.1). The receiver type `Model` re-resolves from b.Model to c.Model, so the " +
+				"confirmed call re-points — the class that proves the resolver's import-precedence ladder (resolve.go), not just presence/absence of a member.",
+			seed: map[string]string{
+				"b/Model.java": "package b;\npublic class Model { public void run() {} }\n",
+				"c/Model.java": "package c;\npublic class Model { public void run() {} }\n",
+				"u/User.java":  "package u;\nimport b.*;\npublic class User { public void use(Model m) { m.run(); } }\n",
+			},
+			apply: func(f *fixture) {
+				// The explicit `import c.Model` shadows the on-demand `import
+				// b.*`, so Model now binds c.Model and use's confirmed edge
+				// re-points from b.run to c.run.
+				f.Write("u/User.java", "package u;\nimport b.*;\nimport c.Model;\npublic class User { public void use(Model m) { m.run(); } }\n")
+			},
+			witness: func(g *graphView) error {
+				return all(
+					g.requireNoEdge("u.use", "calls", "b.run"), // the shadowed binding
+					g.requireEdgeAtTier("u.use", "calls", "c.run", confirmed),
+				)
+			},
+		},
 	}
 }
 
