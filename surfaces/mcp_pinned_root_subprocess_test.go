@@ -53,31 +53,42 @@ func TestSessionProfile_MCPExplicitRootJourney(t *testing.T) {
 	// run launches the journey from a fresh fake $HOME carrying a repo marker
 	// (the dotfiles-.git shape) with isolated per-run state, and returns the
 	// responses by id. extraArgs/extraEnv select the pin channel per subrun.
+	// The static journey races the asynchronous bind, so a tools/call that
+	// lands as the documented retryable shape re-runs the journey against the
+	// SAME home/state — the in-flight index converges (retryableUnbound).
 	run := func(t *testing.T, extraArgs, extraEnv []string) map[int]rpcResponse {
 		t.Helper()
 		home := t.TempDir()
 		if err := os.MkdirAll(filepath.Join(home, ".git"), 0o700); err != nil {
 			t.Fatal(err)
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		defer cancel()
-		mcp := exec.CommandContext(ctx, bin, append([]string{"mcp"}, extraArgs...)...)
-		mcp.Dir = home // the failing shape: process cwd is the marker-carrying home
-		mcp.Env = append(os.Environ(),
-			"CGO_ENABLED=0",
-			"HOME="+home,
-			"USERPROFILE="+home,
-			"XDG_STATE_HOME="+filepath.Join(home, "xdg-state"),
-		)
-		mcp.Env = append(mcp.Env, extraEnv...)
-		mcp.Stdin = strings.NewReader(journey)
-		var stdout, stderr bytes.Buffer
-		mcp.Stdout = &stdout
-		mcp.Stderr = &stderr
-		if err := mcp.Run(); err != nil {
-			t.Fatalf("graphi mcp subprocess: %v\nstderr: %s\nstdout: %s", err, stderr.String(), stdout.String())
+		for attempt := 1; ; attempt++ {
+			ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+			mcp := exec.CommandContext(ctx, bin, append([]string{"mcp"}, extraArgs...)...)
+			mcp.Dir = home // the failing shape: process cwd is the marker-carrying home
+			mcp.Env = append(os.Environ(),
+				"CGO_ENABLED=0",
+				"HOME="+home,
+				"USERPROFILE="+home,
+				"XDG_STATE_HOME="+filepath.Join(home, "xdg-state"),
+			)
+			mcp.Env = append(mcp.Env, extraEnv...)
+			mcp.Stdin = strings.NewReader(journey)
+			var stdout, stderr bytes.Buffer
+			mcp.Stdout = &stdout
+			mcp.Stderr = &stderr
+			err := mcp.Run()
+			cancel()
+			if err != nil {
+				t.Fatalf("graphi mcp subprocess: %v\nstderr: %s\nstdout: %s", err, stderr.String(), stdout.String())
+			}
+			byID := decodeByID(t, stdout.Bytes())
+			if attempt < 5 && retryableUnbound(byID[3]) {
+				time.Sleep(time.Duration(attempt) * 500 * time.Millisecond)
+				continue
+			}
+			return byID
 		}
-		return decodeByID(t, stdout.Bytes())
 	}
 
 	// requireBound asserts the pinned session answered the search over the

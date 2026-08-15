@@ -18,6 +18,7 @@ import (
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/link"
 	"github.com/samibel/graphi/engine/observe"
+	semreg "github.com/samibel/graphi/engine/semantic"
 	"github.com/samibel/graphi/engine/typeresolve"
 
 	_ "modernc.org/sqlite" // ingest meta DB driver
@@ -228,7 +229,7 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 	if err != nil {
 		return nil, fmt.Errorf("ingest: open meta db: %w", err)
 	}
-	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), semantic: typeresolve.NewRegistry(), metaDir: metaDir, bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now()}
+	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), semantic: semreg.NewRegistry(), metaDir: metaDir, bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now()}
 	// Apply the fail-closed recursion-depth bound to the shared parse path
 	// (process-wide; core/parse reads it per Extract). Size + timeout are enforced
 	// at this ingest boundary directly.

@@ -1,20 +1,42 @@
 # ADR 0008 — JVM Declared-Type Semantic Resolution (`jvmresolve`, confirmed tier for Java/Kotlin)
 
 - Status: **Proposed** (decision points D1–D8 below are open and the owner
-  rules; the binder is being built DARK — unregistered, unreachable from any
-  surface — along this ADR's recommended contracts, so nothing ships until the
-  rulings land. Groundwork so far: the D3 node half; `engine/jvmresolve`
+  rules. The binder is now REGISTERED behind the ADR 0007 seam but
+  DEFAULT-OFF: `engine/semantic` adds the java/kotlin registrants only under
+  the experimental `GRAPHI_JVM_TYPERESOLVE` opt-in, so the shipped default —
+  graph bytes, trust report, capability matrix — is unchanged until the
+  rulings and the GA-LANG evidence land; flipping the default is WP-J11
+  scope. The live path is proven under the flag: a real IngestAll produces
+  the confirmed cross-language edge, full-vs-incremental byte parity holds,
+  and the per-language kill switches reach the registrants
+  (engine/ingest/jvmresolve_e2e_test.go). WP-J5 proves hermetic
+  full-vs-incremental snapshot-byte parity for a wave-1 change-class subset on
+  BOTH MemStore and SQLite with the binder live — including the two signature
+  behaviours, the D6 overload drop (jvm_change_overload) and the D2
+  declared/inferred flip (kotlin_infer_declared_flip) — bound to
+  docs/rc/parity-classes-jvm.yaml by a drift guard. Groundwork: the D3 node half; `engine/jvmresolve`
   slice 1 — the declaration→node identity map with its golden cross-test
   (gate G2a), which PINNED three collector facts (Java enum members, Kotlin
   enum-class members, Kotlin companions + their members mint NO nodes);
   slice 2 — Phase A: the declaration table (`table.go`, both CST walkers) and
   the JLS-approximation type-name resolution with the strict ambiguity rule
-  (`resolve.go`); and slice 3 — supertype chains + member lookup
+  (`resolve.go`); slice 3 — supertype chains + member lookup
   (`hierarchy.go`): the D6 rule implemented as identical-signature override
   chains binding most-derived, differing same-arity signatures ambiguous, and
   ANY open chain (external/ambiguous supertype) forfeiting every binding —
   even a receiver-declared member, since an external overload could be the
-  more applicable javac target)
+  more applicable javac target; slices 4/5 — Phase B for BOTH languages
+  (`body_java.go`, `body_kotlin.go`): declared-type receiver propagation with
+  block-scoped environments and the named-gap counters, including Kotlin's
+  lambda-rebinding forfeit (`this`/bare calls inside any lambda) and the
+  trailing-lambda arity forfeit; and slice 6 — Phase C emission (`emit.go`):
+  confirmed@1.0 calls/references edges with the D1 reason string, nominal
+  implements from interface clauses only (class-extends stays heuristic
+  `inherits`, which ingest's sweep excludes from the confirmed set),
+  constructor calls targeting the TYPE node (the heuristic FQN binder's shape,
+  so confirmed upserts replace rather than duplicate), and the committed-set
+  gate as the structural never-fabricate — proven end-to-end in tests whose
+  committed sets come from the REAL core/parse extractors)
 - Date: 2026-08-14
 - Program: [`docs/plan/2026-08-graphi-p2-language-ga-program-v1.md`](../plan/2026-08-graphi-p2-language-ga-program-v1.md)
   §5.1 (design), §5.2 WP-J2…WP-J4, WP-J9 (ground truth)
@@ -69,11 +91,29 @@ interface's method object, not the dynamic implementation), and exactly what
 override, reachable via implements/overrides edges; the edge's reason string
 says so.
 
-**Ground truth (CI only, never product):** a nightly workflow compiles pinned
-corpus repos with a runner-local JDK and checks **soundness** (every graphi
-confirmed edge appears in the bytecode-derived facts; zero tolerance; a
-counterexample is a `JVMSOUND-0xx` defect and blocks the GA flip) and measures
-**recall** (published, not gated).
+**Ground truth (CI only, never product):** LANDED (WP-J9,
+`internal/jvmgroundtruth` + `.github/workflows/jvm-groundtruth.yml`). A
+nightly/dispatch workflow compiles the sources with a runner-local
+JDK/kotlinc, `javap -c -p` disassembles them, and the parser projects the
+constant-pool method refs into the same call-fact space as graphi's confirmed
+edges. **Soundness** is zero-tolerance (every confirmed edge must be a
+bytecode fact; a counterexample is a `JVMSOUND-0xx` stop-ship) and **recall**
+is measured, not gated. The comparator + parser are unit-tested against a
+checked-in REAL javap fixture, and the live e2e test compiles a fixture and
+proves graphi ⊆ bytecode end to end — green in development (2/2 confirmed
+calls backed by bytecode, the ambiguous overload conservatively dropped for a
+recall gap, the honest sound outcome). The gate earned its keep immediately:
+it caught a harness parser bug (javap omits the owner prefix on same-class
+calls) that had produced a false soundness violation — exactly the failure a
+weaker self-check would have missed.
+
+WP-J6 (G6) adds the hero-jvm suite: a hermetic Java+Kotlin fixture
+(`corpus/fixtures/hero-jvm`) and 16 scenarios (`corpus/hero-jvm`) exercising
+all 12 stable ops with the binder live — cross-file and cross-language
+confirmed callers/callees/references, interface implementations, and the
+ambiguous/partial/empty/not_found failure classes plus a negative anchor — all
+passing (`cmd/eval` hero_jvm_test.go, `GRAPHI_JVM_TYPERESOLVE` set so the
+fixture indexes at the typed-confirmed capability).
 
 ## Decision points (owner rules; recommendations recorded)
 
@@ -84,7 +124,7 @@ counterexample is a `JVMSOUND-0xx` defect and blocks the GA flip) and measures
 | D3 | Extractor deepening: field/property nodes + declared-type metadata? | **Node half LANDED 2026-08-14** (WP-J2 slice): Java field/constant declarators and Kotlin properties become variable/constant nodes, kind from the DECLARED form only (`static final` / `constant_declaration` / `const val` → constant), pinned by `TestExtractJava_FieldNodes` / `TestExtractKotlin_PropertyNodes`; the frozen golden fixtures are field-free, so their bytes are unchanged, and the full suite stayed green. Declared-TYPE metadata on nodes is DEFERRED — the binder re-parses sources itself (see above), so node-level types are not load-bearing for WP-J3; revisit only if the trust surface wants them. Known honest cost: a field sharing a bare name with a same-package symbol now marks that name dir-ambiguous in the heuristic linker (drop+count, never a wrong edge) |
 | D4 | Kill-switch shape | inherit ADR 0007 (`GRAPHI_NO_TYPERESOLVE` + per-language) |
 | D6 | Overload binding rule | (name, arity) uniqueness; any ambiguity drops+counts; the `change_overload` change class pins the drop |
-| D8 | Entry criterion for JVM real-repo parity | PARITY-001/002 fixes land first — they are ingest-level and language-independent, and would make every JVM verdict start PARTIAL for non-JVM reasons |
+| D8 | Entry criterion for JVM real-repo parity | PARITY-001/002 fixes land first — they are ingest-level and language-independent, and would make every JVM verdict start PARTIAL for non-JVM reasons. WP-J5's hermetic parity gate honors this: jvm_delete_file is DEFERRED (docs/rc/parity-classes-jvm.yaml), not pinned as a JVM defect it is not |
 
 ## Rejected alternatives (recorded, not silently omitted)
 

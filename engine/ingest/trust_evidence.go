@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"path"
 	"sort"
+	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
@@ -36,7 +37,16 @@ import (
 // evidence tables (schema.go ladder step 2 -> 3). A sidecar below it has no
 // tables to read and MUST surface ErrTrustEvidenceUnavailable, never an empty
 // (healthy-looking) result.
-const trustEvidenceSchemaVersion = 3
+//
+// packageEvidenceSchemaVersion is the version whose 3 -> 4 rebuild gave
+// trust_package_evidence its language column. The PACKAGE read requires it (a
+// v3 sidecar observed read-only has no such column and never migrates); the
+// FILE read keeps the older floor — its table is unchanged, and refusing to
+// serve intact rows would be a false unavailability.
+const (
+	trustEvidenceSchemaVersion   = 3
+	packageEvidenceSchemaVersion = 4
+)
 
 // Parse-status vocabulary of FileEvidence.ParseStatus (closed set). The
 // values are aliases of engine/trust's scope-facts vocabulary — trust cannot
@@ -106,7 +116,11 @@ type FileEvidence struct {
 // to ONE degraded row (every unit in such a directory is degraded with the
 // same reason by construction).
 type PackageEvidence struct {
-	Generation     string
+	Generation string
+	// Language names the semantic registrant that produced the row (schema
+	// 3 -> 4): with per-language resolvers one directory carries one row per
+	// language, keyed (generation, language, package_key).
+	Language       string
 	PackageKey     string
 	State          string
 	DegradedReason string
@@ -125,12 +139,12 @@ type PackageEvidence struct {
 // exists; a directory with no checkable unit carries no row (no unit, no
 // package claim). State derivation follows PRD §22: degraded only from a
 // recorded degradation reason, NEVER from the type-error count alone.
-func packageEvidenceFromResult(res typeresolve.Result, dirOf map[model.NodeId]string) []PackageEvidence {
+func packageEvidenceFromResult(lang string, res typeresolve.Result, dirOf map[model.NodeId]string) []PackageEvidence {
 	byKey := map[string]*PackageEvidence{}
 	for _, u := range res.Units {
 		r := byKey[u.Dir]
 		if r == nil {
-			r = &PackageEvidence{PackageKey: u.Dir}
+			r = &PackageEvidence{Language: lang, PackageKey: u.Dir}
 			byKey[u.Dir] = r
 		}
 		r.TypeErrors += u.TypeErrors
@@ -304,10 +318,10 @@ func insertFileEvidenceTx(ctx context.Context, tx *sql.Tx, generation string, ro
 func insertPackageEvidenceTx(ctx context.Context, tx *sql.Tx, generation string, rows []PackageEvidence) error {
 	for _, r := range rows {
 		if _, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO trust_package_evidence
-			(generation_id, package_key, state, degraded_reason,
+			(generation_id, language, package_key, state, degraded_reason,
 			 type_errors, dropped_intents, confirmed_edges, skipped_files)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			generation, r.PackageKey, r.State, r.DegradedReason,
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			generation, r.Language, r.PackageKey, r.State, r.DegradedReason,
 			r.TypeErrors, r.DroppedIntents, r.ConfirmedEdges, r.SkippedFiles); err != nil {
 			return fmt.Errorf("ingest: persist package evidence for %s: %w", r.PackageKey, err)
 		}
@@ -321,13 +335,17 @@ func insertPackageEvidenceTx(ctx context.Context, tx *sql.Tx, generation string,
 // observer never migrates). Missing schema is ErrTrustEvidenceUnavailable —
 // evidence-unavailable, never empty-healthy.
 func (i *Ingester) trustEvidenceReady(ctx context.Context) error {
+	return i.trustEvidenceReadyAt(ctx, trustEvidenceSchemaVersion)
+}
+
+func (i *Ingester) trustEvidenceReadyAt(ctx context.Context, minVersion int) error {
 	var v int
 	if err := i.meta.QueryRowContext(ctx, "PRAGMA user_version").Scan(&v); err != nil {
 		return fmt.Errorf("ingest: trust evidence schema probe: %w", err)
 	}
-	if v < trustEvidenceSchemaVersion {
+	if v < minVersion {
 		return fmt.Errorf("%w: sidecar schema version %d predates the evidence tables (need %d)",
-			ErrTrustEvidenceUnavailable, v, trustEvidenceSchemaVersion)
+			ErrTrustEvidenceUnavailable, v, minVersion)
 	}
 	return nil
 }
@@ -361,28 +379,76 @@ func (i *Ingester) FileEvidence(ctx context.Context, generation, path string) (F
 	return fe, nil
 }
 
-// PackageEvidence returns the persisted evidence row for one package (keyed by
+// PackageEvidence returns the persisted evidence for one package (keyed by
 // its repo-relative unit directory, "." for the root) under the given
-// generation. Same fail-closed contract as FileEvidence: generation mismatch
-// or unknown key is ErrTrustEvidenceNotFound; missing schema is
-// ErrTrustEvidenceUnavailable. Safe on read-only ingesters.
+// generation, FOLDED across languages: since schema v4 a directory can carry
+// one row per semantic registrant, and the caller's scope key is
+// language-agnostic, so counters sum and a degradation in ANY language
+// degrades the fold (reasons joined in language order, deterministic). A
+// single-language directory folds to exactly its one row — the identity, so
+// pre-JVM behavior is byte-unchanged. Same fail-closed contract as
+// FileEvidence; missing schema (incl. a v3 sidecar observed read-only, which
+// lacks the language column) is ErrTrustEvidenceUnavailable. Safe on
+// read-only ingesters.
 func (i *Ingester) PackageEvidence(ctx context.Context, generation, pkgKey string) (PackageEvidence, error) {
-	if err := i.trustEvidenceReady(ctx); err != nil {
+	if err := i.trustEvidenceReadyAt(ctx, packageEvidenceSchemaVersion); err != nil {
 		return PackageEvidence{}, err
 	}
 	if generation == "" {
 		return PackageEvidence{}, fmt.Errorf("%w: no generation to look up", ErrTrustEvidenceNotFound)
 	}
-	pe := PackageEvidence{Generation: generation, PackageKey: pkgKey}
-	err := i.meta.QueryRowContext(ctx, `SELECT state, degraded_reason,
+	rows, err := i.meta.QueryContext(ctx, `SELECT language, state, degraded_reason,
 			type_errors, dropped_intents, confirmed_edges, skipped_files
-		FROM trust_package_evidence WHERE generation_id = ? AND package_key = ?`, generation, pkgKey).
-		Scan(&pe.State, &pe.DegradedReason, &pe.TypeErrors, &pe.DroppedIntents, &pe.ConfirmedEdges, &pe.SkippedFiles)
-	if errors.Is(err, sql.ErrNoRows) {
-		return PackageEvidence{}, fmt.Errorf("%w: package %q under generation %q", ErrTrustEvidenceNotFound, pkgKey, generation)
-	}
+		FROM trust_package_evidence WHERE generation_id = ? AND package_key = ?
+		ORDER BY language`, generation, pkgKey)
 	if err != nil {
 		return PackageEvidence{}, fmt.Errorf("ingest: read package evidence: %w", err)
+	}
+	defer rows.Close()
+
+	pe := PackageEvidence{Generation: generation, PackageKey: pkgKey}
+	n := 0
+	var reasons []string
+	for rows.Next() {
+		var r PackageEvidence
+		if err := rows.Scan(&r.Language, &r.State, &r.DegradedReason,
+			&r.TypeErrors, &r.DroppedIntents, &r.ConfirmedEdges, &r.SkippedFiles); err != nil {
+			return PackageEvidence{}, fmt.Errorf("ingest: read package evidence: %w", err)
+		}
+		n++
+		if n == 1 {
+			r.Generation, r.PackageKey = generation, pkgKey
+			pe = r
+			if r.DegradedReason != "" {
+				reasons = append(reasons, r.DegradedReason)
+			}
+			continue
+		}
+		if n == 2 {
+			// The fold leaves single-language reads untouched; from the
+			// second row on it is a cross-language aggregate.
+			pe.Language = ""
+		}
+		pe.TypeErrors += r.TypeErrors
+		pe.DroppedIntents += r.DroppedIntents
+		pe.ConfirmedEdges += r.ConfirmedEdges
+		pe.SkippedFiles += r.SkippedFiles
+		if r.DegradedReason != "" {
+			reasons = append(reasons, r.DegradedReason)
+		}
+		if r.State == PackageStateDegraded ||
+			(r.State == PackageStateCheckedWithErrors && pe.State == PackageStateChecked) {
+			pe.State = r.State
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return PackageEvidence{}, fmt.Errorf("ingest: read package evidence: %w", err)
+	}
+	if n == 0 {
+		return PackageEvidence{}, fmt.Errorf("%w: package %q under generation %q", ErrTrustEvidenceNotFound, pkgKey, generation)
+	}
+	if n > 1 {
+		pe.DegradedReason = strings.Join(reasons, "; ")
 	}
 	return pe, nil
 }

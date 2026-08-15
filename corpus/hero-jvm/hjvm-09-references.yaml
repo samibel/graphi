@@ -1,0 +1,14 @@
+id: hjvm-09-references
+description: The prefix field is referenced (read) by core.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: references
+  args:
+    symbol: prefix
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: impl.core
+      match: contains

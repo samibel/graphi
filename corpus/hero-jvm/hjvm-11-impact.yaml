@@ -1,0 +1,14 @@
+id: hjvm-11-impact
+description: The blast radius of core reaches its cross-file callers.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: impact
+  args:
+    symbol: core
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.serve
+      match: contains

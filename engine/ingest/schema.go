@@ -67,7 +67,14 @@ CREATE TABLE IF NOT EXISTS ingest_semantics (
 //	2 -> 3 : P1 WP1.2 — add the trust_file_evidence / trust_package_evidence
 //	    detail-evidence tables (PRD §14.3): generation-bound per-file and
 //	    per-package trust rows for target-scope assessments (trust_evidence.go).
-const schemaVersion = 3
+//	3 -> 4 : ADR 0007/0008 (language-GA program) — trust_package_evidence gains
+//	    a language column and it joins the PRIMARY KEY: with per-language
+//	    semantic registrants, one directory can carry one row PER LANGUAGE,
+//	    and the old (generation, package_key) key would silently clobber the
+//	    sibling's row. SQLite cannot alter a primary key, so the step rebuilds
+//	    the table, backfilling 'go' — exactly right, because every row a v3
+//	    sidecar can hold came from the sole go registrant.
+const schemaVersion = 4
 
 // migrate applies additive schema changes exactly once, gated on PRAGMA
 // user_version, so an existing on-disk ingest-meta.db (e.g. one created by a
@@ -97,6 +104,11 @@ func (i *Ingester) migrate(ctx context.Context) error {
 	if current < 3 {
 		if err := i.migrateTrustEvidence(ctx); err != nil {
 			return fmt.Errorf("ingest: migrate trust evidence tables: %w", err)
+		}
+	}
+	if current < 4 {
+		if err := i.migratePackageEvidenceLanguage(ctx); err != nil {
+			return fmt.Errorf("ingest: migrate package evidence language: %w", err)
 		}
 	}
 	// PRAGMA does not accept bound parameters; schemaVersion is a trusted constant.
@@ -216,4 +228,44 @@ func (i *Ingester) columnSet(ctx context.Context, table string) (map[string]stru
 		cols[name] = struct{}{}
 	}
 	return cols, rows.Err()
+}
+
+// migratePackageEvidenceLanguage rebuilds trust_package_evidence with the
+// language column in its PRIMARY KEY (schema 3 -> 4). A column-presence guard
+// keeps the step idempotent; the copy backfills 'go' because every row a v3
+// sidecar can hold came from the sole go registrant — no information is
+// invented and none is lost. SQLite cannot ALTER a primary key, hence the
+// create-copy-drop-rename shape, executed as one script so a crash between
+// statements is repaired by the next open re-running the guarded step.
+func (i *Ingester) migratePackageEvidenceLanguage(ctx context.Context) error {
+	have, err := i.columnSet(ctx, "trust_package_evidence")
+	if err != nil {
+		return err
+	}
+	if _, ok := have["language"]; ok {
+		return nil
+	}
+	const ddl = `
+CREATE TABLE trust_package_evidence_v4 (
+	generation_id TEXT NOT NULL,
+	language TEXT NOT NULL,
+	package_key TEXT NOT NULL,
+	state TEXT NOT NULL,
+	degraded_reason TEXT NOT NULL,
+	type_errors INTEGER NOT NULL,
+	dropped_intents INTEGER NOT NULL,
+	confirmed_edges INTEGER NOT NULL,
+	skipped_files INTEGER NOT NULL,
+	PRIMARY KEY (generation_id, language, package_key)
+);
+INSERT INTO trust_package_evidence_v4
+	SELECT generation_id, 'go', package_key, state, degraded_reason,
+	       type_errors, dropped_intents, confirmed_edges, skipped_files
+	FROM trust_package_evidence;
+DROP TABLE trust_package_evidence;
+ALTER TABLE trust_package_evidence_v4 RENAME TO trust_package_evidence;`
+	if _, err := i.meta.ExecContext(ctx, ddl); err != nil {
+		return fmt.Errorf("ingest: rebuild trust_package_evidence with language: %w", err)
+	}
+	return nil
 }

@@ -125,6 +125,19 @@ type rpcResponse struct {
 	Error  json.RawMessage `json:"error"`
 }
 
+// retryableUnbound reports the server's DOCUMENTED retryable bind-in-flight
+// answer (surfaces/mcp unavailableErrorLocked: "…; retry in a moment"). The
+// subprocess journeys pipe a static request script, so the tools/call races
+// the asynchronous bind; under full-suite load the fixture index can outlive
+// one journey's lifetime — a load condition, not a product defect. A real MCP
+// client retries exactly this shape, and the journey tests do the same:
+// re-run against the SAME state home so the in-flight index converges instead
+// of restarting from scratch. Every other error shape (guardAutoRoot refusal,
+// bind failure, uninitialized session) stays a hard failure.
+func retryableUnbound(resp rpcResponse) bool {
+	return len(resp.Error) > 0 && strings.Contains(string(resp.Error), "retry in a moment")
+}
+
 // decodeByID parses the newline-framed JSON-RPC responses the MCP subprocess
 // emitted and indexes them by request id.
 func decodeByID(t *testing.T, out []byte) map[int]rpcResponse {

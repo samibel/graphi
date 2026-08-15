@@ -132,8 +132,8 @@ func TestTrustEvidence_FullPassWritesFixtureRows(t *testing.T) {
 	}
 
 	wantPkgs := map[string]ingest.PackageEvidence{
-		".":    {Generation: gen, PackageKey: ".", State: ingest.PackageStateChecked, ConfirmedEdges: 1},
-		"util": {Generation: gen, PackageKey: "util", State: ingest.PackageStateChecked},
+		".":    {Generation: gen, Language: "go", PackageKey: ".", State: ingest.PackageStateChecked, ConfirmedEdges: 1},
+		"util": {Generation: gen, Language: "go", PackageKey: "util", State: ingest.PackageStateChecked},
 	}
 	for key, w := range wantPkgs {
 		pe, err := ing.PackageEvidence(ctx, gen, key)
@@ -395,7 +395,7 @@ func TestTrustEvidence_OldGenerationRowsCleaned(t *testing.T) {
 		t.Fatalf("plant old file row: %v", err)
 	}
 	if _, err := ing.MetaDB().ExecContext(ctx, `INSERT INTO trust_package_evidence
-		VALUES ('old-generation', 'ghost', 'checked', '', 0, 0, 0, 0)`); err != nil {
+		VALUES ('old-generation', 'go', 'ghost', 'checked', '', 0, 0, 0, 0)`); err != nil {
 		t.Fatalf("plant old package row: %v", err)
 	}
 
@@ -527,7 +527,7 @@ func TestTrustEvidence_Migration2To3(t *testing.T) {
 		t.Fatalf("close read-only observer: %v", err)
 	}
 
-	// Read-write open migrates 2 -> 3 additively.
+	// Read-write open migrates 2 -> 4 (the full remaining ladder).
 	store := graphstore.NewMemStore()
 	t.Cleanup(func() { _ = store.Close() })
 	ing, err := ingest.New(store, parse.NewDefaultRegistry(), metaDir)
@@ -539,8 +539,8 @@ func TestTrustEvidence_Migration2To3(t *testing.T) {
 	if err := ing.MetaDB().QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		t.Fatalf("read user_version: %v", err)
 	}
-	if version != 3 {
-		t.Errorf("user_version = %d after migration, want 3", version)
+	if version != 4 {
+		t.Errorf("user_version = %d after migration, want 4", version)
 	}
 	for _, table := range []string{"trust_file_evidence", "trust_package_evidence"} {
 		var n int

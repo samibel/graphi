@@ -177,7 +177,7 @@ func (i *Ingester) semanticResolve(ctx context.Context, w graphstore.Writer, roo
 	// is the identity — the pre-seam bytes exactly.
 	i.recordSemanticRun(res.Language(), semanticRun{
 		facts:    trust.NewTypeResolutionFacts(result),
-		evidence: packageEvidenceFromResult(result, dirOf),
+		evidence: packageEvidenceFromResult(res.Language(), result, dirOf),
 	})
 
 	checkedDirs := make(map[string]struct{}, len(result.Units))

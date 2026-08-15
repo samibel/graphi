@@ -1,11 +1,11 @@
 {
  "version": 3,
- "notes": "Real-repository corpus (internal/corpus). v3 gives the corpus GO DEPTH: six pinned Go repositories (uuid, lo, cobra, gin, grpc-go, kubernetes) carry the P0 FR-2 stratification, beside the five non-Go repositories kept for cross-language regression detection (flask, sinatra, ky, express, guava). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars — the Go entries pin the FULL 40-char commit sha). If an upstream tag is ever re-pointed, the pin step fails closed. Every count under `measured` was taken from a real clone at the pinned sha on the recorded date, never from repository metadata; `go_files` is the strict count the stress threshold is asserted on. Tiers: 1 = PR gate (local fixtures), 2 = pinned SHAs, 3 = nightly/manual, 4 = manual-only stress (corpus.yml caps the scheduled run at -max-tier 3, so tier 4 never runs on a schedule or a PR). Adding a repository is a data change here, never a code change. Per-repository selection rationale: corpus/README.md.",
+ "notes": "Real-repository corpus (internal/corpus). v3 gives the corpus GO DEPTH: six pinned Go repositories (uuid, lo, cobra, gin, grpc-go, kubernetes) carry the P0 FR-2 stratification, beside the non-Go repositories kept for cross-language regression detection (flask, sinatra, ky, express, guava, and okio \u2014 the first Kotlin pin, language-GA program G5). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars \u2014 the Go entries pin the FULL 40-char commit sha). If an upstream tag is ever re-pointed, the pin step fails closed. Every count under `measured` was taken from a real clone at the pinned sha on the recorded date, never from repository metadata; `go_files` is the strict count the stress threshold is asserted on, and `source_files` is its non-Go analog (the entry's primary-language source count). Tiers: 1 = PR gate (local fixtures), 2 = pinned SHAs, 3 = nightly/manual, 4 = manual-only stress (corpus.yml caps the scheduled run at -max-tier 3, so tier 4 never runs on a schedule or a PR). Adding a repository is a data change here, never a code change. Per-repository selection rationale: corpus/README.md.",
  "stratification": [
   {
    "property": "small library",
    "repo": "uuid",
-   "evidence": "21 Go files in a single package, 31 tracked files — the smallest real repository in the corpus."
+   "evidence": "21 Go files in a single package, 31 tracked files \u2014 the smallest real repository in the corpus."
   },
   {
    "property": "mid-size CLI application",
@@ -61,7 +61,7 @@
    "sha": "a0a6ae020bb3899ff0276067863e50523f897370",
    "language": "go",
    "license": "Apache-2.0",
-   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only — no source is redistributed.",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only \u2014 no source is redistributed.",
    "properties": [
     "mid-size CLI application"
    ],
@@ -89,7 +89,7 @@
      "min": 1
     }
    ],
-   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() — a receiver-method dispatch the name heuristic cannot prove — and the go/types pass must carry it at the confirmed tier. v3 widened the sha pin from the 12-char prefix to the full commit sha; the tag and the assertion are unchanged."
+   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() \u2014 a receiver-method dispatch the name heuristic cannot prove \u2014 and the go/types pass must carry it at the confirmed tier. v3 widened the sha pin from the 12-char prefix to the full commit sha; the tag and the assertion are unchanged."
   },
   {
    "name": "uuid",
@@ -120,7 +120,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Small single-package Go library — the floor of the size range, and the case where a whole repository fits inside one index pass. Tier 3: never on the PR gate."
+   "notes": "Small single-package Go library \u2014 the floor of the size range, and the case where a whole repository fits inside one index pass. Tier 3: never on the PR gate."
   },
   {
    "name": "lo",
@@ -183,7 +183,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Web/API service shape (router, middleware chain, binding, render) and the corpus's build-tag carrier: 16 files sit behind //go:build constraints, so a pass that ignores tags either drops or double-counts symbols. Tier 3: never on the PR gate. The second search asserts RouterGroup rather than the more obvious Context: `graphi search Context` returns no matches on ANY indexed repository (observed on gin and kubernetes, 2026-07-27) — a search-side observation recorded in SW-122, not a property of this repository."
+   "notes": "Web/API service shape (router, middleware chain, binding, render) and the corpus's build-tag carrier: 16 files sit behind //go:build constraints, so a pass that ignores tags either drops or double-counts symbols. Tier 3: never on the PR gate. The second search asserts RouterGroup rather than the more obvious Context: `graphi search Context` returns no matches on ANY indexed repository (observed on gin and kubernetes, 2026-07-27) \u2014 a search-side observation recorded in SW-122, not a property of this repository."
   },
   {
    "name": "grpc-go",
@@ -249,7 +249,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "The FR-2 stress target: 15718 Go files (>= the 10000 threshold) across 3611 package directories and 34 modules. Tier 4 — deliberately outside BOTH the PR gate and the nightly schedule: a measured full index costs ~3m16s wall and ~9 GB peak RSS on an 8-core laptop (2026-07-27, v0.6.7 dev build), which no hosted runner should absorb on a schedule. Run it explicitly: `go run ./cmd/corpus -manifest corpus/manifest.json -tier 4` or `go run ./cmd/eval -full-run kubernetes` once SW-123 has named a runner class and SW-124 the budgets."
+   "notes": "The FR-2 stress target: 15718 Go files (>= the 10000 threshold) across 3611 package directories and 34 modules. Tier 4 \u2014 deliberately outside BOTH the PR gate and the nightly schedule: a measured full index costs ~3m16s wall and ~9 GB peak RSS on an 8-core laptop (2026-07-27, v0.6.7 dev build), which no hosted runner should absorb on a schedule. Run it explicitly: `go run ./cmd/corpus -manifest corpus/manifest.json -tier 4` or `go run ./cmd/eval -full-run kubernetes` once SW-123 has named a runner class and SW-124 the budgets."
   },
   {
    "name": "flask",
@@ -313,7 +313,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class."
+   "notes": "JavaScript + many JSON fixtures and markdown \u2014 the malformed-asset bug class."
   },
   {
    "name": "guava",
@@ -334,7 +334,30 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) — the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate."
+   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) \u2014 the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate."
+  },
+  {
+   "name": "okio",
+   "url": "https://github.com/square/okio",
+   "ref": "3.9.1",
+   "sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+   "language": "kotlin",
+   "license": "Apache-2.0",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only \u2014 no source is redistributed.",
+   "tier": 3,
+   "measured": {
+    "source_files": 313,
+    "tracked_files": 403,
+    "measured_at": "2026-08-15",
+    "method": "git clone --depth 1 --branch 3.9.1; git ls-files '*.kt' '*.java' | wc -l (284 kt + 29 java = 313) and git ls-files | wc -l at the pinned sha 8b870e8"
+   },
+   "searches": [
+    {
+     "query": "Buffer",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "First Kotlin corpus pin (language-GA program G5): Square's okio, a Kotlin-multiplatform IO library (284 .kt + 29 .java at the pin). Tier 3 (nightly/manual, never the PR gate). Cross-language regression + JVM-binder capability: graphi parses all 313 JVM files with zero parse crashes and produces confirmed Java+Kotlin call sites (verified at pin time). Brings a non-Go entry to the v3 measured standard via the new source_files census field."
   },
   {
    "name": "tier1-fixture-go",
@@ -371,6 +394,20 @@
     }
    ],
    "notes": "Tier-1 pinned multi-file Go fixture for the SW-122 hero tasks (cross-file callers, related_files ranking). The single-file go fixture is frozen as the SW-110 byte-parity oracle and must not grow, so multi-file shapes live here. No network required."
+  },
+  {
+   "name": "tier1-fixture-hero-jvm",
+   "path": "corpus/fixtures/hero-jvm",
+   "tier": 1,
+   "language": "jvm",
+   "scenario_ref": "hero-jvm",
+   "searches": [
+    {
+     "query": "English",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file JVM (Java+Kotlin) fixture for the WP-J6 hero-jvm tasks. The hero-jvm gate (cmd/eval/hero_jvm_test.go) sets GRAPHI_JVM_TYPERESOLVE and asserts the 12 stable ops over the CONFIRMED tier. This corpus smoke entry deliberately carries NO confirmed_edges assertion: the corpus runner drives the DEFAULT binary (binder off, JVM is Preview/heuristic), so a confirmed-edge assertion would be unsatisfiable here and would contradict the default-off contract. The heuristic search assertion is what the default product proves. No network, no JDK."
   }
  ]
 }

@@ -1,0 +1,24 @@
+id: hjvm-06-callers-cross-lang
+description: >
+  Callers of impl.core span files AND languages (Java Service.serve/twice,
+  Kotlin Report.run, same-class English.salute) — all confirmed by the binder.
+  Spanish, which never calls core, must not appear (negative anchor).
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: callers
+  args:
+    symbol: core
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.serve
+      match: contains
+    - kind: symbol
+      value: app.run
+      match: contains
+  absent:
+    - kind: symbol
+      value: other.Spanish
+      match: contains

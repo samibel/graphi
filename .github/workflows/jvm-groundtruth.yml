@@ -1,0 +1,67 @@
+# WP-J9 — the differential BYTECODE ground-truth soundness gate for the JVM
+# declared-type binder (ADR 0008).
+#
+# The contract: every confirmed JVM `calls` edge graphi emits must correspond
+# to a real static-binding call in the bytecode javac/kotlinc produced. A
+# counterexample is a JVMSOUND-0xx defect and a stop-ship for the GA flip.
+# Recall is measured and reported, never gated — it is the D2 coverage number
+# the Kotlin `typed-confirmed` decision needs.
+#
+# This is CI-ONLY, never product: the JDK/kotlinc live on the runner, the
+# harness (internal/jvmgroundtruth) is imported only by tests, and the shipped
+# CGo-free binary gains no toolchain dependency. Both the Go unit tests (parser
+# + comparator, bound to a checked-in real javap fixture) and the live e2e test
+# (which compiles a fixture and disassembles it) run here; the e2e test SKIPS
+# when the toolchain is absent, so a runner without a JDK degrades to the unit
+# tests rather than failing.
+#
+# Nightly + dispatch, not per-PR: installing a JDK is minutes the PR gate
+# should not pay. The hermetic conformance parity gate (engine/conformance,
+# TestJVMFullVsIncremental_ByteParity) already runs the binder on every PR;
+# this job adds the independent bytecode oracle on a schedule.
+name: jvm-groundtruth
+
+on:
+  schedule:
+    - cron: "0 4 * * *" # nightly, 04:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  jvm-groundtruth:
+    name: jvm-groundtruth
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+      GRAPHI_JVM_TYPERESOLVE: "1"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The JDK provides javac + javap for the Java ground truth. Temurin 21 is
+      # a current LTS; the parser reads javap's stable -c -p disassembly, which
+      # is not version-specific for the constant-pool method refs it keys on.
+      - uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # kotlinc for the Kotlin ground truth (the sandbox that developed this
+      # gate had javac but no kotlinc, so the Kotlin e2e path is proven for the
+      # first time HERE). Best-effort install; the Kotlin e2e test skips if it
+      # is unavailable rather than failing the job.
+      - name: install kotlinc
+        run: |
+          curl -fsSL https://github.com/JetBrains/kotlin/releases/latest/download/kotlin-compiler.zip -o /tmp/kotlinc.zip || true
+          if [ -f /tmp/kotlinc.zip ]; then
+            unzip -q /tmp/kotlinc.zip -d /opt || true
+            echo "/opt/kotlinc/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: parser + comparator unit tests (checked-in real javap fixture)
+        run: go test ./internal/jvmgroundtruth/ -run 'TestParseJavap|TestParseMethodRef|TestCompare|TestConfirmed' -count=1
+
+      - name: live differential soundness (javac/kotlinc + the binder)
+        run: go test ./internal/jvmgroundtruth/ -run 'TestGroundTruth' -count=1 -v

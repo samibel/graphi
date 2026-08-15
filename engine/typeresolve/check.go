@@ -29,15 +29,12 @@ import (
 // drop edges, never mint false ones. Never fabricate: an intent whose
 // reconstructed endpoint is not committed is dropped and counted.
 
-// Languages returns the canonical languages the registered semantic resolvers
-// can prove, and whose relationships can therefore reach the `confirmed` tier.
-//
-// Since WP-J0 (ADR 0007) the fact lives in the resolver registry
-// (registry.go): each registrant owns its language, and this package-level
-// accessor is the union the P1 trust capability matrix (engine/trust) consumes
-// to decide which languages report `typed-confirmed`. Deriving that from a
-// hard-coded list — here or over in the trust package — would put the fact
-// somewhere it cannot be kept true.
+// Languages returns THIS PACKAGE's own registrants — the go/types resolver
+// alone. It is NOT the product-wide union: per-language binders register in
+// engine/semantic (they import this package for the seam types, so
+// registering here would cycle), and engine/semantic.Languages() is what the
+// trust surface consumes. Kept exported for the registry's own tests and as
+// the honest statement of what this package by itself can prove.
 //
 // The returned slice is a fresh copy and is sorted.
 func Languages() []string { return NewRegistry().Languages() }

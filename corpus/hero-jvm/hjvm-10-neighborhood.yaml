@@ -1,0 +1,11 @@
+id: hjvm-10-neighborhood
+description: The depth-1 neighborhood of core includes its callers and the field it reads.
+fixture_ref: tier1-fixture-hero-jvm
+operation:
+  name: neighborhood
+  args:
+    symbol: core
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found
