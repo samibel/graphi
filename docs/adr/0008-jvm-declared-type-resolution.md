@@ -91,11 +91,21 @@ interface's method object, not the dynamic implementation), and exactly what
 override, reachable via implements/overrides edges; the edge's reason string
 says so.
 
-**Ground truth (CI only, never product):** a nightly workflow compiles pinned
-corpus repos with a runner-local JDK and checks **soundness** (every graphi
-confirmed edge appears in the bytecode-derived facts; zero tolerance; a
-counterexample is a `JVMSOUND-0xx` defect and blocks the GA flip) and measures
-**recall** (published, not gated).
+**Ground truth (CI only, never product):** LANDED (WP-J9,
+`internal/jvmgroundtruth` + `.github/workflows/jvm-groundtruth.yml`). A
+nightly/dispatch workflow compiles the sources with a runner-local
+JDK/kotlinc, `javap -c -p` disassembles them, and the parser projects the
+constant-pool method refs into the same call-fact space as graphi's confirmed
+edges. **Soundness** is zero-tolerance (every confirmed edge must be a
+bytecode fact; a counterexample is a `JVMSOUND-0xx` stop-ship) and **recall**
+is measured, not gated. The comparator + parser are unit-tested against a
+checked-in REAL javap fixture, and the live e2e test compiles a fixture and
+proves graphi ⊆ bytecode end to end — green in development (2/2 confirmed
+calls backed by bytecode, the ambiguous overload conservatively dropped for a
+recall gap, the honest sound outcome). The gate earned its keep immediately:
+it caught a harness parser bug (javap omits the owner prefix on same-class
+calls) that had produced a false soundness violation — exactly the failure a
+weaker self-check would have missed.
 
 ## Decision points (owner rules; recommendations recorded)
 
