@@ -319,11 +319,17 @@
    "name": "guava",
    "url": "https://github.com/google/guava",
    "ref": "v33.0.0",
-   "sha": "2214c63670fc",
+   "sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
    "tier": 3,
    "language": "java",
    "license": "Apache-2.0",
    "permitted_use": "Public repository under Apache-2.0; read-only shallow clone in CI, measurements only, no redistribution.",
+   "measured": {
+    "source_files": 3204,
+    "tracked_files": 3298,
+    "measured_at": "2026-08-15",
+    "method": "git clone --depth 1 --branch v33.0.0; git ls-files '*.java' | wc -l (3204) and git ls-files | wc -l (3298) at the pinned sha 2214c63670fc"
+   },
    "searches": [
     {
      "query": "ImmutableList",
@@ -334,7 +340,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) \u2014 the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate."
+   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) \u2014 the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate. Brought to the v3 measured standard (WP-J6): the 12-char prefix expanded to the full 40-char sha and a measured census added (3204 .java of 3298 tracked, via the source_files field non-Go entries use)."
   },
   {
    "name": "okio",
@@ -358,6 +364,33 @@
     }
    ],
    "notes": "First Kotlin corpus pin (language-GA program G5): Square's okio, a Kotlin-multiplatform IO library (284 .kt + 29 .java at the pin). Tier 3 (nightly/manual, never the PR gate). Cross-language regression + JVM-binder capability: graphi parses all 313 JVM files with zero parse crashes and produces confirmed Java+Kotlin call sites (verified at pin time). Brings a non-Go entry to the v3 measured standard via the new source_files census field."
+  },
+  {
+   "name": "kotlinx.serialization",
+   "url": "https://github.com/Kotlin/kotlinx.serialization",
+   "ref": "v1.6.3",
+   "sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+   "language": "kotlin",
+   "license": "Apache-2.0",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only — no source is redistributed.",
+   "tier": 3,
+   "measured": {
+    "source_files": 615,
+    "tracked_files": 974,
+    "measured_at": "2026-08-15",
+    "method": "git clone --depth 1 --branch v1.6.3; git ls-files '*.kt' '*.java' | wc -l (609 kt + 6 java = 615) and git ls-files | wc -l (974) at the pinned sha 3efe324b"
+   },
+   "searches": [
+    {
+     "query": "Serializable",
+     "expect_nonempty": true
+    },
+    {
+     "query": "Encoder",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Second Kotlin corpus pin (language-GA program G5, WP-J6): JetBrains' kotlinx.serialization, a reflectionless Kotlin-multiplatform serialization library (609 .kt + 6 .java at the pin; the 6 .java are module-info.java JPMS declarations, which carry no methods and produce no sites — expected). Tier 3 (nightly/manual, never the PR gate). Complements okio with a compiler-plugin-heavy, densely-generic Kotlin codebase for cross-language regression + JVM-binder breadth. Verified at pin time: graphi tables all 615 JVM files with ZERO parse or tabling crashes and the declared-type binder resolves 3517 typed Kotlin sites."
   },
   {
    "name": "tier1-fixture-go",
