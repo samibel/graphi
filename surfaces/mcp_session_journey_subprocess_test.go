@@ -206,22 +206,38 @@ func TestSessionProfile_MCPRootsListJourney(t *testing.T) {
 		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search","arguments":{"symbol":"Hello"}}}`,
 	}, "\n") + "\n"
 
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, bin, "mcp")
-	cmd.Dir = work
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "XDG_STATE_HOME="+stateHome)
-	cmd.Stdin = strings.NewReader(journey)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("graphi mcp roots/list subprocess: %v\nstderr: %s\nstdout: %s", err, stderr.String(), stdout.String())
+	// The static journey races the asynchronous bind: a tools/call landing as
+	// the documented retryable shape re-runs against the SAME state home so
+	// the in-flight index converges (retryableUnbound).
+	var (
+		stdout, stderr bytes.Buffer
+		byID           map[int]rpcResponse
+	)
+	for attempt := 1; ; attempt++ {
+		stdout.Reset()
+		stderr.Reset()
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		cmd := exec.CommandContext(ctx, bin, "mcp")
+		cmd.Dir = work
+		cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "XDG_STATE_HOME="+stateHome)
+		cmd.Stdin = strings.NewReader(journey)
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		err := cmd.Run()
+		cancel()
+		if err != nil {
+			t.Fatalf("graphi mcp roots/list subprocess: %v\nstderr: %s\nstdout: %s", err, stderr.String(), stdout.String())
+		}
+		byID = decodeByID(t, stdout.Bytes())
+		if attempt < 5 && retryableUnbound(byID[3]) {
+			time.Sleep(time.Duration(attempt) * 500 * time.Millisecond)
+			continue
+		}
+		break
 	}
 	if !bytes.Contains(stdout.Bytes(), []byte(`"method":"roots/list"`)) {
 		t.Fatalf("MCP server did not request roots/list:\n%s", stdout.String())
 	}
-	byID := decodeByID(t, stdout.Bytes())
 	if response := byID[1]; response.Error != nil || len(response.Result) == 0 {
 		t.Fatalf("initialize failed: %+v (stderr: %s)", response, stderr.String())
 	}
