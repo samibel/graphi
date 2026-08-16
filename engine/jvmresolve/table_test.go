@@ -253,6 +253,55 @@ enum class Status {
 	}
 }
 
+// TestBuildTable_RecordsElasticParams is the G2b-over-tabling invariant
+// (independent-review R4): the honesty guard must hold at the TABLE, not only at
+// emission. JVMSOUND-001 shipped because the table destroyed the varargs marker,
+// so the emitter — obeying its own invariant perfectly — was fed a table that
+// looked complete while being wrong. This pins that the table now FAITHFULLY
+// records the constructs that break (name, arity) uniqueness: a Java
+// spread_parameter, a Kotlin vararg, and a Kotlin default value. If any regresses
+// to being dropped at tabling, this fails here — before the lookup can mis-bind.
+func TestBuildTable_RecordsElasticParams(t *testing.T) {
+	files := map[string][]byte{
+		"e/J.java": []byte("package e;\npublic class J { void f(int a, String... s) {} }\n"),
+		"e/K.kt":   []byte("package e\nclass K {\n  fun g(vararg n: Int) {}\n  fun h(a: Int, b: Int = 0) {}\n}\n"),
+	}
+	tab := BuildTable(files)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("fixture must table cleanly: %+v", tab.Skipped)
+	}
+
+	find := func(typeName, member string) *Member {
+		for fi := range tab.Files {
+			for ti := range tab.Files[fi].Types {
+				ty := &tab.Files[fi].Types[ti]
+				if ty.Name != typeName {
+					continue
+				}
+				for mi := range ty.Members {
+					if ty.Members[mi].Name == member {
+						return &ty.Members[mi]
+					}
+				}
+			}
+		}
+		return nil
+	}
+
+	// Java spread_parameter → the LAST param is Variadic.
+	if m := find("J", "f"); m == nil || len(m.Params) != 2 || !m.Params[1].Variadic {
+		t.Errorf("Java spread_parameter must table Variadic on the last param: %+v", m)
+	}
+	// Kotlin vararg → Variadic.
+	if m := find("K", "g"); m == nil || len(m.Params) != 1 || !m.Params[0].Variadic {
+		t.Errorf("Kotlin vararg must table Variadic: %+v", m)
+	}
+	// Kotlin default value → HasDefault on the defaulted param only.
+	if m := find("K", "h"); m == nil || len(m.Params) != 2 || m.Params[0].HasDefault || !m.Params[1].HasDefault {
+		t.Errorf("Kotlin default value must table HasDefault on the defaulted param only: %+v", m)
+	}
+}
+
 // TestBuildTable_Determinism pins sorted-path table order and byte-identical
 // re-runs over the same input.
 func TestBuildTable_Determinism(t *testing.T) {

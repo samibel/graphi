@@ -116,6 +116,29 @@ re-worded to what is actually true; and the oracle must be pointed at the pinned
 corpus (guava for Java, okio + kotlinx.serialization for Kotlin), which is
 CI-only and violates no product constraint.
 
+**STATUS — FIXED 2026-08-16 (Wave 0, W0.d).** Both defects are closed and
+D6 is corrected:
+- JVMSOUND-001: `Param` now carries `Variadic`/`HasDefault`, set at tabling for
+  Java `spread_parameter` and Kotlin `vararg`/default values; the lookup
+  forfeits (`AmbiguousMember`) when any same-name callable is elastic.
+- JVMSOUND-002: `callableSig` keys each parameter on its RESOLVED type FQN
+  (intra-repo) or marked text (primitive/external), so `q.Foo`/`r.Foo` no longer
+  collapse while genuine `m(int)` overrides still bind.
+- Proof: member-precise unit tests (`TestAnalyzeJavaBodies_VariadicForfeit`,
+  `_ResolvedSignature`, Kotlin `_ElasticForfeit`), each demonstrated
+  red-without-fix, plus the tabling-level invariant
+  `TestBuildTable_RecordsElasticParams` (R4 — the honesty guard now holds at the
+  table, where both defects lived).
+
+**REFINEMENT to R3, discovered while fixing this.** Pointing the WP-J9 oracle at
+the corpus is necessary but NOT sufficient to catch this class: the oracle keys
+calls at method-NAME granularity, so two overloads of the same name in the same
+file share a comparison key and a wrong-overload binding is invisible to it. The
+oracle needs **signature-aware keys** as well as corpus scale. Until then the
+member-precise unit tests are the proof of record for overload mis-binding; a
+live varargs case in the oracle would pass with OR without the fix and would be
+theater. Booked as part of W0.e.
+
 ## 2. The critical path — and it is not JVM-specific
 
 The long pole to Java/Kotlin GA runs through **Go-level** defects, not the

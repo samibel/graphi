@@ -69,6 +69,26 @@ func (w *kotlinWalk) childByType(n *gts.Node, typ string) *gts.Node {
 	return nil
 }
 
+// hasVararg reports whether a parameter_modifiers node carries the `vararg`
+// keyword. Structure: parameter_modifiers → parameter_modifier → vararg.
+func (w *kotlinWalk) hasVararg(mods *gts.Node) bool {
+	for i := 0; i < mods.ChildCount(); i++ {
+		pm := mods.Child(i)
+		if pm == nil {
+			continue
+		}
+		if pm.Type(w.lang) == "vararg" {
+			return true
+		}
+		for j := 0; j < pm.ChildCount(); j++ {
+			if c := pm.Child(j); c != nil && c.Type(w.lang) == "vararg" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // importClause reads one import_header: dotted identifier, optional
 // `as Alias` (import_alias→type_identifier), optional wildcard_import.
 func (w *kotlinWalk) importClause(n *gts.Node) (Import, bool) {
@@ -286,6 +306,21 @@ func (w *kotlinWalk) function(n *gts.Node, inEnumBody, inCompanion bool) (Member
 			param := Param{Name: w.text(pname)}
 			if ref, ok := w.declaredType(p); ok {
 				param.Type = ref
+			}
+			// vararg is a `parameter_modifiers` sibling PRECEDING the parameter;
+			// a default value is an `=` sibling FOLLOWING it. Both let one member
+			// satisfy a call at other arities, so they break (name, arity)
+			// uniqueness — the table records them, hierarchy.go forfeits on them
+			// (JVMSOUND-001).
+			if i > 0 {
+				if prev := params.Child(i - 1); prev != nil && prev.Type(w.lang) == "parameter_modifiers" && w.hasVararg(prev) {
+					param.Variadic = true
+				}
+			}
+			if i+1 < params.ChildCount() {
+				if next := params.Child(i + 1); next != nil && next.Type(w.lang) == "=" {
+					param.HasDefault = true
+				}
 			}
 			m.Params = append(m.Params, param)
 		}

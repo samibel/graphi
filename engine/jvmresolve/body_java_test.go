@@ -70,6 +70,78 @@ func findSite(sites []TypedSite, kind SiteKind, name string, line int) (TypedSit
 	return TypedSite{}, false
 }
 
+// TestAnalyzeJavaBodies_VariadicForfeit pins JVMSOUND-001: a variadic overload
+// beside a fixed one makes (name, arity) an unreliable key. `f("a","b")` must
+// NOT bind f(int,int) — javac binds f(String...) — so the whole binding forfeits
+// as ambiguous rather than emitting a wrong confirmed edge.
+func TestAnalyzeJavaBodies_VariadicForfeit(t *testing.T) {
+	files := map[string][]byte{
+		"vf/T.java": []byte(`package vf;
+public class T {
+    void f(int a, int b) {}
+    void f(String... s) {}
+    void g() { f("a", "b"); }
+}
+`),
+	}
+	tab := BuildTable(files)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("fixture must table cleanly: %+v", tab.Skipped)
+	}
+	sites, skips := NewIndex(tab).AnalyzeJavaBodies(files)
+	if s, ok := findSite(sites, SiteCall, "f", 5); ok {
+		t.Errorf("variadic overload must forfeit, not bind f(int,int): got %+v (JVMSOUND-001)", s)
+	}
+	if skips[SkipLookupAmbiguous] == 0 {
+		t.Errorf("expected %s > 0 (the variadic forfeit): %+v", SkipLookupAmbiguous, skips)
+	}
+}
+
+// TestAnalyzeJavaBodies_ResolvedSignature pins JVMSOUND-002: two overloads whose
+// parameters are both written `Foo` but resolve to q.Foo / r.Foo are DISTINCT,
+// not an override chain. `b.m(f)` must forfeit (differing resolved signatures),
+// not collapse onto the most-derived B.m by written-text equality. It also
+// controls that a genuine primitive override (m(int)/m(int)) still binds, so the
+// resolved-signature rule does not over-forfeit.
+func TestAnalyzeJavaBodies_ResolvedSignature(t *testing.T) {
+	files := map[string][]byte{
+		"q/Foo.java": []byte("package q;\npublic class Foo {}\n"),
+		"r/Foo.java": []byte("package r;\npublic class Foo {}\n"),
+		"s/A.java":   []byte("package s;\nimport q.Foo;\npublic class A { public void m(Foo x) {} }\n"),
+		"s/B.java":   []byte("package s;\nimport r.Foo;\npublic class B extends A { public void m(Foo x) {} }\n"),
+		"s/C.java":   []byte("package s;\nimport q.Foo;\npublic class C { void call(B b, Foo f) { b.m(f); } }\n"),
+		// control: a real primitive override must still collapse and bind.
+		"o/Base.java": []byte("package o;\npublic class Base { public int k(int n) { return n; } }\n"),
+		"o/Sub.java":  []byte("package o;\npublic class Sub extends Base { public int k(int n) { return n + 1; } }\n"),
+		"o/Use.java":  []byte("package o;\npublic class Use { int go(Sub s) { return s.k(1); } }\n"),
+	}
+	tab := BuildTable(files)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("fixture must table cleanly: %+v", tab.Skipped)
+	}
+	sites, skips := NewIndex(tab).AnalyzeJavaBodies(files)
+
+	// b.m(f): distinct resolved signatures (q.Foo vs r.Foo) → forfeit, no site.
+	for _, s := range sites {
+		if s.Name == "m" && s.Declaring.FQN == "s.B" {
+			t.Errorf("b.m(f) must forfeit, not bind the most-derived B.m by text equality: %+v (JVMSOUND-002)", s)
+		}
+	}
+	if skips[SkipLookupAmbiguous] == 0 {
+		t.Errorf("expected %s > 0 (the resolved-signature forfeit): %+v", SkipLookupAmbiguous, skips)
+	}
+	// Control: the primitive override still binds most-derived (no over-forfeit).
+	boundSubK := false
+	for _, s := range sites {
+		if s.Name == "k" && s.Declaring.FQN == "o.Sub" {
+			boundSubK = true
+		}
+	}
+	if !boundSubK {
+		t.Errorf("a genuine primitive override must still bind Sub.k (resolved-sig rule must not over-forfeit): %+v", sites)
+	}
+}
+
 func TestAnalyzeJavaBodies_DeclaredReceiverForms(t *testing.T) {
 	sites, _ := analyze(t)
 

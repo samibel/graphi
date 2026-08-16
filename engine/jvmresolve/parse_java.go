@@ -295,6 +295,10 @@ func (w *javaWalk) params(n *gts.Node) []Param {
 		switch p.Type(w.lang) {
 		case "formal_parameter", "spread_parameter":
 			var param Param
+			// spread_parameter is `T... name` — variadic. Record it so the
+			// binder forfeits (name, arity) uniqueness rather than mis-binding a
+			// fixed-arity sibling to a variadic call (JVMSOUND-001).
+			param.Variadic = p.Type(w.lang) == "spread_parameter"
 			if ref, ok := w.firstTypeRef(p); ok {
 				param.Type = ref
 			}

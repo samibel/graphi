@@ -57,6 +57,16 @@ func (r TypeRef) IsZero() bool { return r.Raw == "" && r.Base == "" }
 type Param struct {
 	Name string
 	Type TypeRef
+	// Variadic: Java `spread_parameter` (T...) or Kotlin `vararg`. A variadic
+	// parameter absorbs a variable count of arguments, so a member carrying one
+	// can match a CALL at more arities than its declared parameter count — which
+	// makes (name, arity) an unreliable binding key (JVMSOUND-001). The table
+	// records the fact; hierarchy.go forfeits on it.
+	Variadic bool
+	// HasDefault: a Kotlin parameter with a default value. Like Variadic, it lets
+	// one member satisfy a call at fewer arguments than it declares, so it breaks
+	// (name, arity) uniqueness the same way.
+	HasDefault bool
 }
 
 // Member forms — the declared grammar shape, never a judgement.
