@@ -37,9 +37,84 @@ here with a local proof), **BLOCKED** (a dependency must clear first),
 | WP-J10 | Perf + budget runs; create `GA-LANG-*` rows (born UNKNOWN) | **OWNER** | needs an attested candidate + reproducible CI runs |
 | WP-J11 | The flip: registries report java/kotlin `typed-confirmed` | **OWNER** | stop-ship gated; one line in `engine/semantic/semantic.go` |
 
-Gate roll-up for Java/Kotlin: **G1, G2, G3, G6, G8** DONE (capability wiring is
-verified end-to-end — `TestCapabilities_JVMOptInFlip` pins what the flip
-produces). **G5** partial. **G4, G7, G9** not yet green.
+Gate roll-up for Java/Kotlin: **every gate reads UNKNOWN.** This table
+previously claimed "G1, G2, G3, G6, G8 DONE"; that claim was **withdrawn on
+2026-08-16** after an independent architect and product-owner review, for two
+independent reasons — either alone is sufficient:
+
+1. **No `GA-LANG-*` evidence row exists.** `docs/rc/evidence-index.yaml` holds
+   17 gate rows: 13 UNKNOWN, 4 STALE, **zero PASS**, and `grep GA-LANG` returns
+   nothing. Under this repository's own claims discipline, **UNKNOWN counts as
+   not passed**, so a gate cannot read DONE before its row exists and is green.
+   The previous roll-up was self-assessed from green test suites — precisely the
+   substitution `internal/coverage.CheckGALanguages` exists to prevent,
+   sidestepped by never creating the rows.
+2. **G2 is affirmatively FALSE, not merely unevidenced.** The binder emits
+   *wrong* confirmed edges in two reproduced cases (see the D6 note in §3/M3),
+   which is the stop-ship class, not a coverage gap.
+
+The engineering behind these gates is real and largely green in CI; what was
+wrong is the ledger's verdict vocabulary. Green tests are an input to a gate,
+never the gate itself. **G5** partial. **G4, G7, G9** not started.
+
+### 1.1 STOP-SHIP — the binder emits FALSE `confirmed` edges (found 2026-08-16)
+
+Two defects in the D6 binding rule, **each reproduced against the live binder**
+(found by an independent architect review, then re-reproduced independently
+before being recorded here). Both produce a **wrong** edge, not a missing one —
+the class the program doc defines as a stop-ship because it falsifies the tier's
+meaning rather than a coverage claim. Neither fired a skip counter: the binder
+believed its information was complete.
+
+**JVMSOUND-001 — variadic arity.** `parse_java.go` tables `spread_parameter`
+exactly like `formal_parameter`, so `void f(String... s)` records
+`len(Params) == 1`, and `hierarchy.go` matches candidates on
+`len(m.Params) == arity`. A variadic method is therefore invisible at every
+arity except its declared one:
+
+```java
+void f(int a, int b) {}
+void f(String... s) {}
+void g() { f("a", "b"); }   // javac binds f(String...)
+```
+```
+SITE f arity=2 BOUND-TO sig="int,int"   ← wrong; zero skips
+```
+Kotlin is worse: `parse_kotlin.go` records neither `vararg` nor default
+parameter values, so `fun f(a: Int, b: Int = 0)` beside `fun f(s: String)`
+mis-binds `f(1)` the same way.
+
+**JVMSOUND-002 — signature identity compares written text.** `sigOf`
+concatenates each parameter's type name **as written**, so two members whose
+parameters are spelled alike but *resolve* differently are collapsed into an
+override chain and the most-derived one wins:
+
+```
+q/Foo.java  package q; class Foo {}
+r/Foo.java  package r; class Foo {}
+s/A.java    import q.Foo;  class A       { void m(Foo x) {} }
+s/B.java    import r.Foo;  class B extends A { void m(Foo x) {} }   // an OVERLOAD to javac
+```
+```
+b.m(qFoo) → DECLARING s.B    ← wrong; javac binds A.m; zero skips
+```
+The index already has `ResolveTypeName`; it simply is not used for signature
+identity.
+
+**Why every existing gate missed them.** The G2b invariant tests are written
+against the *intended* semantics ("partial information may only drop edges") and
+cannot see a case where the binder wrongly believes it is complete. The WP-J9
+bytecode oracle is zero-tolerance and would catch both instantly — but
+`jvm-groundtruth.yml` compiles only checked-in fixtures, and those fixtures
+contain no varargs. **Fixture-scale zero-tolerance is not zero-tolerance.**
+
+**Consequences, unconditional and independent of any open decision:** the
+WP-J11 default flip cannot proceed; **G2 reads FALSE, not UNKNOWN**; the D6 rule
+as written in ADR 0008 (and as described in `hierarchy.go`'s own comment, which
+claims identical-erased-signature matching the code does not do) must be
+re-worded to what is actually true; and the oracle must be pointed at the pinned
+corpus (guava for Java, okio + kotlinx.serialization for Kotlin), which is
+CI-only and violates no product constraint.
 
 ## 2. The critical path — and it is not JVM-specific
 
