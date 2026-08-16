@@ -410,16 +410,18 @@ func changeClassTable() []changeClassRow {
 			id:   "delete_file",
 			kind: kindChangeClass,
 			description: "A file declaring a symbol that ANOTHER package calls through an intra-module import is deleted, so the per-file stale-node purge, the re-link pass and the " +
-				"external-interning path all run over it. THIS CLASS DOES NOT HOLD TODAY: it carries the tracked defect PARITY-001, so the row PINS the current wrong behaviour instead of " +
-				"asserting parity. Read the PARITY-001 block on `apply` before touching anything here.",
-			knownDefect: "PARITY-001",
+				"external-interning path all run over it. This class carried the tracked defect PARITY-001 for two releases; the phase-ordering fix landed and the row now asserts REAL " +
+				"PARITY on both stores. Read the PARITY-001 block on `apply` for what it was and why the fix is the shape it is.",
 			apply: func(f *fixture) {
 				// ==========================================================
-				// PARITY-001 — TRACKED PRODUCT DEFECT, NOT A HARNESS BUG.
-				// Filed: projects/graphi/backlog.md. NOT FIXED HERE.
-				// Scheduled: v0.7.2 batch item 3, behind SW-151's F4 residual
-				// and SW-153's freshness diagnosis. Measure-first stands — do
-				// NOT fix this early, it moves the candidate.
+				// PARITY-001 — FIXED. This block is kept as the record of a
+				// defect that shipped for two releases, because the fix is an
+				// ordering constraint that is easy to reintroduce.
+				//
+				// THE FIX: engine/ingest.go's incremental path now runs the
+				// deleted-path purge, AND COMMITS IT, BEFORE linkFiles — the
+				// order IngestAll always used. See the PARITY-001 FIX comment
+				// there before reordering anything in that function.
 				// ==========================================================
 				//
 				// PRECONDITION (corrected in review round 1 — the first
@@ -457,47 +459,45 @@ func changeClassTable() []changeClassRow {
 				// Whoever fixes this must not be sent to dependentsOf, where
 				// there is nothing to fix.)
 				//
-				// engine/ingest/ingest.go:709 calls linkFiles BEFORE the
-				// deleted-path purge at :721-736. linkFiles builds its symbol
-				// index by streaming the LIVE store
-				// (engine/ingest/linkfiles.go:64-71,
-				// graphstore.ForEachNode over i.store), and at that moment the
-				// purge has not run, so `tax.Rate` is STILL A NODE. The linker
-				// therefore resolves the call intra-module and never classifies
-				// it as an unresolved external. Only afterwards does
-				// removeFileTx delete `tax.Rate`, cascading its edges away —
-				// leaving the graph one node and one edge short of full.
+				// The incremental path called linkFiles BEFORE the deleted-path
+				// purge. linkFiles builds its symbol index by streaming the
+				// LIVE store (engine/ingest/linkfiles.go, graphstore.ForEachNode
+				// over i.store), and at that moment the purge had not run, so
+				// `tax.Rate` was STILL A NODE. The linker therefore resolved the
+				// call intra-module and never classified it as an unresolved
+				// external. Only afterwards did removeFileTx delete `tax.Rate`,
+				// cascading its edges away — leaving the graph one node and one
+				// edge short of full.
 				//
-				// That ordering also explains, exactly, why the SECOND apply
-				// converges: by then `tax.Rate` is already gone, so linkFiles
-				// builds its index without it, resolution fails, and the
-				// external node is minted. The second apply does what the first
-				// should have.
+				// That ordering also explained, exactly, why the SECOND apply
+				// converged: by then `tax.Rate` was already gone, so linkFiles
+				// built its index without it, resolution failed, and the
+				// external node was minted. The second apply did what the first
+				// should have — which is why the fix is to purge and COMMIT
+				// first, making the first apply behave like the second.
 				//
-				// PERMANENT in the shipped path, not eventually-consistent:
-				// once the delete is applied, DriftSet returns empty and every
-				// further Reconcile is a no-op (verified over six reconciles,
-				// snapshot unmoved), so `graphi sync` stays diverged from
-				// `graphi rebuild` until a full rebuild. Backend-independent
-				// (byte-identical failure on MemStore and SQLite) and not a
-				// watcher artifact (reproduces with plain serial
-				// ing.IngestChanged, and independently through the shipped
-				// DriftDetail -> IngestChanged path graphi sync drives).
+				// It was PERMANENT in the shipped path, not
+				// eventually-consistent: once the delete was applied, DriftSet
+				// returned empty and every further Reconcile was a no-op
+				// (verified over six reconciles, snapshot unmoved), so
+				// `graphi sync` stayed diverged from `graphi rebuild` until a
+				// full rebuild. Backend-independent (byte-identical failure on
+				// MemStore and SQLite) and not a watcher artifact (reproduced
+				// with plain serial ing.IngestChanged, and independently through
+				// the shipped DriftDetail -> IngestChanged path graphi sync
+				// drives). The fix converges on BOTH stores, so the class now
+				// asserts snapshot-byte parity like every other row.
 				f.Remove("tax/tax.go")
 			},
 			witness: func(g *graphView) error {
 				return all(
 					g.requireAbsent("tax.Rate"),
 					g.requirePresent("shop.Checkout"), // control: only the deleted file's nodes went
-				)
-			},
-			// pin: the CURRENT WRONG BEHAVIOUR, stated exactly. Not an
-			// expectation — a published defect. If graphi is fixed, this fails
-			// and tells the fixer to restore the parity assertion.
-			pin: func(inc, full *graphView) error {
-				return requireOnlyMissing(inc, full,
-					[]string{"example.com/m/tax.Rate"},
-					[][3]string{{"shop.Checkout", "calls", "example.com/m/tax.Rate"}},
+					// The external interning the defect used to skip: with the
+					// purge committed before linkFiles, the incremental pass
+					// resolves the now-unresolvable import exactly as full does.
+					g.requirePresent("example.com/m/tax.Rate"),
+					g.requireEdge("shop.Checkout", "calls", "example.com/m/tax.Rate"),
 				)
 			},
 		},

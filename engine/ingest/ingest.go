@@ -712,6 +712,62 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			}
 		}
 
+		// PARITY-001 FIX — the deleted-path purge runs, AND COMMITS, BEFORE
+		// linkFiles. It used to run after, and that ordering was the defect:
+		// linkFiles builds its symbol index by streaming the LIVE store
+		// (linkfiles.go, graphstore.ForEachNode over i.store), so a deleted
+		// file's nodes still committed at that moment let the linker resolve a
+		// cross-package call intra-module and never mint the interned external
+		// node a full pass mints. The purge then cascaded those edges away,
+		// leaving the graph one node and one edge short — permanently, since a
+		// converged DriftSet never revisits it. The full pass has always
+		// purged-then-committed before building its index (see IngestAll); this
+		// makes the incremental path do exactly the same thing, which is why it
+		// converges rather than merely differing differently.
+		//
+		// It is a SEPARATE, COMMITTED batch on purpose. Purging into linkBatch
+		// would not help — the index reads committed state, not the open batch —
+		// and it is the shape that breaks SQLite with `edge references unknown
+		// node`, because linkFiles would then emit edges through the same batch
+		// that deletes their endpoints. Committing first means linkFiles can
+		// never even see a purged node, so it cannot emit an edge into one.
+		//
+		// The purged paths are retained (removedPaths) so the post-commit
+		// trust-evidence refresh deletes their rows too — a deleted file's
+		// evidence is stale evidence.
+		present := make(map[string]struct{}, len(units))
+		for _, u := range units {
+			present[u.relPath] = struct{}{}
+		}
+		cached, err := i.cachedPathsTx(ctx, tx)
+		if err != nil {
+			return err
+		}
+		var gone []string
+		for _, p := range cached {
+			if _, ok := present[p]; ok {
+				continue
+			}
+			gone = append(gone, p)
+		}
+		if len(gone) > 0 {
+			purgeBatch, err := graphstore.BeginBatch(ctx, i.store)
+			if err != nil {
+				return err
+			}
+			open = purgeBatch
+			for _, p := range gone {
+				if err := i.removeFileTx(ctx, tx, purgeBatch, p); err != nil {
+					return err
+				}
+				removedPaths = append(removedPaths, p)
+			}
+			open = nil
+			if err := purgeBatch.Commit(ctx); err != nil {
+				return err
+			}
+		}
+
 		// Post-node-commit linker pass (site 2): re-resolve cross-file edges for
 		// the reprocessed files against the full committed node set, removing
 		// stale from-owned cross-file edges first. The cascade closure
@@ -738,27 +794,6 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if err := i.recordEditProvenanceTx(ctx, tx, "edge", linkEdgeIDs, *prov); err != nil {
 				return err
 			}
-		}
-
-		// Remove cache entries for files that no longer exist. The purged paths
-		// are retained (removedPaths) so the post-commit trust-evidence refresh
-		// deletes their rows too — a deleted file's evidence is stale evidence.
-		present := make(map[string]struct{}, len(units))
-		for _, u := range units {
-			present[u.relPath] = struct{}{}
-		}
-		cached, err := i.cachedPathsTx(ctx, tx)
-		if err != nil {
-			return err
-		}
-		for _, p := range cached {
-			if _, ok := present[p]; ok {
-				continue
-			}
-			if err := i.removeFileTx(ctx, tx, linkBatch, p); err != nil {
-				return err
-			}
-			removedPaths = append(removedPaths, p)
 		}
 		open = nil
 		if err := linkBatch.Commit(ctx); err != nil {
