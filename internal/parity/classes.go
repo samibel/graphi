@@ -177,6 +177,19 @@ func specs() []ClassSpec {
 				"a multi-module tree (sub-modules are excluded from the edit model by " +
 				"construction — only the root module is touched)."},
 		{ID: "change_external_import", Plan: planChangeExternalImport},
+		{ID: "change_colliding_package_dir", Plan: planCollidingPackageDir,
+			Note: "Adds a NEW directory whose package clause collides with an existing " +
+				"package's, and that nothing imports — what USED to be the PARITY-002 " +
+				"precondition. Since the ADR 0009 fix (module-aware import→directory " +
+				"resolution) a clause collision cannot cross-contaminate an importer's " +
+				"edge set, so this row now asserts real parity: the colliding directory " +
+				"is indexed, and no importer gains or loses an edge on either pass."},
+		{ID: "add_nested_gomod", Plan: planAddNestedGoMod,
+			Note: "Adds a go.mod to a non-root package directory, re-moduling its " +
+				"subtree (ADR 0009): resolution of every import into that subtree " +
+				"shifts, so the change must trigger the full re-link — the invalidation " +
+				"the fix's own hazard demanded (link.GoModPath at any depth, not the " +
+				"literal root path)."},
 	}
 }
 
@@ -197,6 +210,83 @@ func SpecByID() map[string]ClassSpec {
 // ---------------------------------------------------------------------------
 
 const marker = "graphiParity"
+
+// planCollidingPackageDir adds a NEW directory whose package clause collides
+// with the primary package's, and which nothing imports — the PARITY-002
+// precondition.
+//
+// Why this is a legitimate real-repo edit and not a manufactured defect: two
+// directories declaring the same package clause is an ordinary Go shape (gin
+// alone ships four `package json` directories behind build tags), and the edit
+// ADDS a self-contained, syntactically valid file. It creates no dangling
+// reference — the near-miss the record warns about, where an incomplete
+// `rename_package` left an importer pointing at a package that no longer
+// existed and the harness then measured its own breakage.
+//
+// The divergence it exposes belongs to the product: `imports` edges fan out
+// over EVERY directory sharing the clause (engine/link/index.go
+// packageFileNodes keys on path.Base(importPath)), so adding the colliding
+// directory changes the correct fan-out of every importer of the ORIGINAL
+// directory — while dependentsOf, being directory-local, re-links none of them.
+func planCollidingPackageDir(m *RepoModel) (*Mutation, error) {
+	pkg := m.primaryPkg()
+	if pkg == nil {
+		return nil, errNoTarget
+	}
+	// A fixed, deterministic location that cannot already exist in a pinned
+	// clone, and that no file imports.
+	dir := path.Join("graphi_parity_collide", pkg.Name)
+	rel := strings.TrimPrefix(path.Join(dir, "collide.go"), "./")
+	if fileExistsIn(pkg, rel) {
+		return nil, errNoTarget
+	}
+	body := fmt.Sprintf("package %s\n\n// %sCollide is added by the real-repo parity matrix to create a\n"+
+		"// package-clause collision with %s. Nothing imports this directory.\nfunc %sCollide() string {\n\treturn %q\n}\n",
+		pkg.Name, marker, pkg.Dir, marker, "parity-002")
+	return &Mutation{
+		Desc: fmt.Sprintf("add directory %s declaring package %s — colliding with %s, imported by nobody (the PARITY-002 precondition)",
+			dir, pkg.Name, pkg.Dir),
+		Ops: []FileOp{{Kind: opWrite, Path: rel, Data: []byte(body)}},
+	}, nil
+}
+
+// planAddNestedGoMod re-modules a real non-root package directory by writing a
+// go.mod into it (ADR 0009's invalidation hazard). Deterministic target: the
+// non-root package with the MOST files, tie-broken lexicographically by
+// directory — most-files because a bigger subtree gives the re-link more to
+// get wrong, and both criteria are stable across dispatches. The mutation adds
+// one self-contained file; it cannot manufacture a dangling reference. On a
+// repo whose chosen directory has no importers the row still exercises the
+// any-depth go.mod re-link trigger, and parity must hold either way.
+//
+// No exists-guard on the target path: the RepoModel enumerates only .go files,
+// so it cannot answer "is there already a go.mod here", and a pinned clone
+// directory that already roots a module would simply be OVERWRITTEN by opWrite
+// — visible in the mutation's Desc, and parity over the edit must hold
+// regardless. (A fileExistsIn check here would be dead code dressed as
+// protection: it can never match a non-.go path.)
+func planAddNestedGoMod(m *RepoModel) (*Mutation, error) {
+	var target *GoPkg
+	for _, p := range m.Pkgs {
+		if p.Dir == "" || p.Dir == "." || len(p.Files) == 0 {
+			continue
+		}
+		if target == nil || len(p.Files) > len(target.Files) ||
+			(len(p.Files) == len(target.Files) && p.Dir < target.Dir) {
+			target = p
+		}
+	}
+	if target == nil {
+		return nil, errNoTarget // single-package root-only repo: no nested dir to re-module
+	}
+	rel := strings.TrimPrefix(path.Join(target.Dir, "go.mod"), "./")
+	body := "module graphi.invalid/parity-nested\n\ngo 1.21\n"
+	return &Mutation{
+		Desc: fmt.Sprintf("add %s (module graphi.invalid/parity-nested), re-moduling package %s's subtree — the ADR 0009 any-depth go.mod invalidation shape",
+			rel, target.Name),
+		Ops: []FileOp{{Kind: opWrite, Path: rel, Data: []byte(body)}},
+	}, nil
+}
 
 // planAddFile adds a new file in a new-to-the-graph position of an existing
 // package.

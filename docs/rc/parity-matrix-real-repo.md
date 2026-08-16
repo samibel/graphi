@@ -1,5 +1,19 @@
 # Full/incremental parity matrix over pinned real repositories — SW-144 + SW-158
 
+> **SUPERSEDED IN PART — PENDING RE-MEASUREMENT (2026-08-16).** Both product
+> defects this record files are now FIXED in the tree: **PARITY-001** by the
+> purge-before-link ordering (the `delete_file` hermetic row asserts real
+> parity, and the harness's own end-to-end fixture run converges), and
+> **PARITY-002** by ADR 0009's module-aware import→directory resolution (the
+> `change_colliding_package_dir` hermetic reproduction converges on both
+> stores, red-without/green-with demonstrated). **Every measurement below
+> stands AS PUBLISHED against the tree it measured** — a fixed defect does not
+> re-measure a matrix; only re-running `internal/parity` over the pinned
+> clones on the new candidate can do that, and until it does, the FAIL rows
+> below describe the OLD tree, not this one. The matrix run also gains two
+> rows (`change_colliding_package_dir`, `add_nested_gomod`) that this record
+> predates.
+
 **Status: PUBLISHED FAIL, and now COMPLETE.** All **17** declared rows execute — 15 FR-7 change
 classes and 2 Delta §9 crash conditions. **13 PASS, 4 FAIL**, the four accounted for by **two
 product defects**, both filed and neither fixed. Nothing is deferred any more.

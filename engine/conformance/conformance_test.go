@@ -231,12 +231,13 @@ func TestFullVsIncremental_EnvelopeParity(t *testing.T) {
 	// twelve compare two identical EMPTY envelopes, which is parity over nothing —
 	// the assertion below rejects exactly that.
 	//
-	// The delete step removes c/c.go, which nothing references. That is deliberate:
-	// deleting the SOLE file of a package an importer still names is the shape that
-	// trips PARITY-001 (see the delete_file row in changeclass_test.go), and letting
-	// this test fail on a known graph defect would hide whatever the envelope layer
-	// is doing. The delete class is proven by its own row; this test's subject is
-	// envelopes.
+	// The delete step removes c/c.go, which nothing references. That was originally
+	// chosen to avoid PARITY-001 — deleting a file whose symbol another package
+	// still calls was the shape that tripped it. PARITY-001 is now FIXED (the
+	// deleted-path purge commits before linkFiles) and the delete_file row asserts
+	// real parity, so this is no longer a workaround; it is kept because this
+	// test's subject is ENVELOPES, and the narrow delete keeps it that way. The
+	// delete class is proven by its own row.
 	aInitial := `package a
 
 import "example.com/m/b"

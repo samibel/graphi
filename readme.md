@@ -151,6 +151,13 @@ is hosted, there is no service to sign up for.
   window of the local `git log` (surface boundary only — the engine never
   executes anything). Outside a git repository or in attach mode (`-db`)
   they return a typed unavailable/empty outcome instead of guessing.
+- **Go `imports` edges resolve by module path** (ADR 0009): an import links to
+  the one directory its module path declares, across every `go.mod` in the
+  tree (nested modules own their subtrees). Directories that merely share a
+  package clause never cross-contaminate an importer's edge set. This closed
+  defect PARITY-002 (`sync` could diverge from `rebuild` on `imports` edges on
+  clause-colliding repositories); the historical measurement record remains in
+  [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`
 > column answers a different question ("is this one of the 12 frozen

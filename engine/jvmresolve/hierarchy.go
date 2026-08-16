@@ -1,5 +1,7 @@
 package jvmresolve
 
+import "strings"
+
 // Slice 3 (WP-J3, the member-lookup half of Phase C's machinery): supertype
 // chains and member binding over the Phase A table, under ADR 0008's D6 rule
 // and the fail-closed posture.
@@ -11,9 +13,22 @@ package jvmresolve
 //	supertypes in declaration order, then theirs, cycle-safe). Matches are
 //	collected across ALL levels; then:
 //
-//	  - every match carries the IDENTICAL erased parameter signature
+//	  - ELASTIC-ARITY GUARD (JVMSOUND-001), checked first: if ANY callable of
+//	    this name in the closed chain has a VARIADIC or DEFAULTED parameter, the
+//	    member can satisfy a call at more arities than its declared count, so
+//	    (name, arity) is no longer a reliable key — forfeit outright
+//	    (AmbiguousMember). Without this, `f(int,int)` beside `f(String...)`
+//	    would bind the fixed overload to `f("a","b")` where javac binds the
+//	    varargs one: a WRONG edge, not a missing one.
+//	  - every match carries the IDENTICAL RESOLVED parameter signature
 //	    → an override chain: bind the FIRST-FOUND (most derived) member —
-//	      which is javac's static-binding target for the receiver's type;
+//	      which is javac's static-binding target for the receiver's type. The
+//	      signature keys each parameter on its RESOLVED type identity (intra-repo
+//	      FQN via ResolveTypeName), NOT its written text (JVMSOUND-002): two
+//	      parameters both spelled `Foo` that resolve to `q.Foo` and `r.Foo` are
+//	      DIFFERENT overloads and must not collapse. Primitives and external
+//	      types (which do not resolve intra-repo) key on their marked text, so a
+//	      genuine `m(int)`/`m(int)` override still collapses correctly.
 //	  - signatures differ anywhere in the match set
 //	    → same-arity OVERLOADS: javac would pick by argument types, which a
 //	      declared-type binder cannot prove — AmbiguousMember, drop+count;
@@ -114,37 +129,78 @@ func valueForm(form string) bool {
 	return form == MemberField || form == MemberProperty || form == MemberEnumConst
 }
 
-// sigOf is the erased parameter signature used for the override-vs-overload
-// distinction.
-func sigOf(m *Member) string {
-	sig := ""
+// callableSig is the parameter signature used for the override-vs-overload
+// distinction. Each parameter keys on its RESOLVED type identity: an intra-repo
+// type contributes its FQN (so two params both spelled `Foo` that resolve to
+// `q.Foo` and `r.Foo` produce DIFFERENT signatures — JVMSOUND-002), while a
+// primitive or external type (which does not resolve intra-repo) contributes
+// its written text with a leading marker byte, so it can never collide with a
+// resolved FQN yet a genuine `m(int)`/`m(int)` override still matches itself.
+//
+// KNOWN RESIDUAL, stated so it is not overread: two DIFFERENT external types
+// that share a simple name (e.g. `a.Foo` and `b.Foo`, neither declared in the
+// repo) both key on `?Foo` and would collapse. This is the same simple-name
+// collision class the heuristic linker already carries, and it can only affect
+// the override/overload distinction of methods whose parameters are both
+// external and same-named — much narrower than the intra-repo case this fixes.
+func (ix *Index) callableSig(m *Member, declaring *Type) string {
+	file := ix.fileOf(declaring)
+	var b strings.Builder
 	for i, p := range m.Params {
 		if i > 0 {
-			sig += ","
+			b.WriteByte(',')
 		}
-		sig += p.Type.Base
+		if file != nil {
+			if rt, res := ix.ResolveTypeName(file, declaring, p.Type.Base); res == ResolvedType && rt != nil {
+				b.WriteString(rt.FQN)
+				continue
+			}
+		}
+		b.WriteByte('?')
+		b.WriteString(p.Type.Base)
 	}
-	return sig
+	return b.String()
+}
+
+// elasticMember reports whether any parameter is variadic or defaulted — either
+// lets the member satisfy a call at arities other than its declared count, so
+// (name, arity) stops being a reliable binding key (JVMSOUND-001).
+func elasticMember(m *Member) bool {
+	for i := range m.Params {
+		if m.Params[i].Variadic || m.Params[i].HasDefault {
+			return true
+		}
+	}
+	return false
 }
 
 // LookupCallable binds receiver.name(arity) under the rule above.
 func (ix *Index) LookupCallable(receiver *Type, name string, arity int) LookupResult {
-	return ix.memberLookup(receiver, func(m *Member) bool {
-		return callableForm(m.Form) && m.Name == name && len(m.Params) == arity
-	}, true)
+	return ix.memberLookup(receiver,
+		func(m *Member) bool {
+			return callableForm(m.Form) && m.Name == name && len(m.Params) == arity
+		},
+		func(m *Member) bool {
+			// A same-name callable with elastic arity forfeits ALL bindings of
+			// this name, at every arity — it could be javac's real target.
+			return callableForm(m.Form) && m.Name == name && elasticMember(m)
+		},
+		true)
 }
 
 // LookupValue binds receiver.name for field/property access.
 func (ix *Index) LookupValue(receiver *Type, name string) LookupResult {
 	return ix.memberLookup(receiver, func(m *Member) bool {
 		return valueForm(m.Form) && m.Name == name
-	}, false)
+	}, nil, false)
 }
 
 // memberLookup implements the shared walk. checkSig applies the
 // override-vs-overload signature rule (callables); fields skip it — same-name
-// fields are hiding by construction and the most derived wins.
-func (ix *Index) memberLookup(receiver *Type, match func(*Member) bool, checkSig bool) LookupResult {
+// fields are hiding by construction and the most derived wins. forfeit (may be
+// nil) marks any member in the closed chain whose mere presence makes the whole
+// (name)-binding unprovable — the elastic-arity guard (JVMSOUND-001).
+func (ix *Index) memberLookup(receiver *Type, match func(*Member) bool, forfeit func(*Member) bool, checkSig bool) LookupResult {
 	if receiver == nil {
 		return LookupResult{Outcome: OpenChain}
 	}
@@ -158,21 +214,25 @@ func (ix *Index) memberLookup(receiver *Type, match func(*Member) bool, checkSig
 		first    LookupResult
 		firstSig string
 		n        int
+		elastic  bool
 	)
 	for _, level := range levels {
 		for _, t := range level {
 			for mi := range t.Members {
 				m := &t.Members[mi]
+				if forfeit != nil && forfeit(m) {
+					elastic = true
+				}
 				if !match(m) {
 					continue
 				}
 				n++
 				if n == 1 {
 					first = LookupResult{Declaring: t, Member: m, Outcome: BoundMember}
-					firstSig = sigOf(m)
+					firstSig = ix.callableSig(m, t)
 					continue
 				}
-				if checkSig && sigOf(m) != firstSig {
+				if checkSig && ix.callableSig(m, t) != firstSig {
 					// Differing same-arity signatures: an overload set a
 					// declared-type binder must not rank.
 					return LookupResult{Outcome: AmbiguousMember}
@@ -181,6 +241,12 @@ func (ix *Index) memberLookup(receiver *Type, match func(*Member) bool, checkSig
 				// most-derived binding stands.
 			}
 		}
+	}
+	if elastic {
+		// A variadic/defaulted same-name callable exists: (name, arity) cannot
+		// be trusted to be unique, so forfeit even a lone arity match rather
+		// than risk binding a fixed overload where javac binds the elastic one.
+		return LookupResult{Outcome: AmbiguousMember}
 	}
 	if n == 0 {
 		return LookupResult{Outcome: NotFoundMember}

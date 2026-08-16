@@ -240,6 +240,10 @@ func TestLocalFirstCheck(t *testing.T) {
 	}
 }
 
+// TestKnownDefectsCheck was removed with its subject: the known-defects
+// disclosure check's only entry, PARITY-002, is fixed (ADR 0009), and the
+// check's own contract says an empty list removes the check.
+
 func TestDBCheckEmptyPath(t *testing.T) {
 	env := fakeEnv{dbPath: ""}
 	res := DBCheck().Run(context.Background(), env)

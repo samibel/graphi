@@ -164,6 +164,53 @@ func (g *graphView) requireAbsent(qns ...string) error {
 	return nil
 }
 
+// fileEdge looks up an edge whose endpoints are FILE nodes (a file node's
+// qualified name is its source path). The regular edge() cannot see these:
+// newGraphView deliberately keeps file nodes out of byQN so symbol lookups
+// never collide with paths — imports edges are file→file, so they need this
+// separate accessor.
+func (g *graphView) fileEdge(fromPath, kind, toPath string) (model.Edge, bool) {
+	var fromID, toID model.NodeId
+	for _, n := range g.nodes {
+		if n.Kind() != "file" {
+			continue
+		}
+		switch n.QualifiedName() {
+		case fromPath:
+			fromID = n.ID()
+		case toPath:
+			toID = n.ID()
+		}
+	}
+	if fromID == "" || toID == "" {
+		return model.Edge{}, false
+	}
+	for _, e := range g.edges {
+		if e.From() == fromID && e.To() == toID && e.Kind() == kind {
+			return e, true
+		}
+	}
+	return model.Edge{}, false
+}
+
+// symbolAt finds the non-file node with this qualified name declared at this
+// source path. byQN cannot answer the question: when two directories declare
+// the same package clause AND the same symbol name (the crossPackage half of
+// change_colliding_package_dir), TWO nodes share one qualified name and byQN
+// retains an arbitrary one of them — so a witness that must distinguish the
+// colliding declarations has to key on (qn, source path).
+func (g *graphView) symbolAt(qn, sourcePath string) (model.Node, bool) {
+	for _, n := range g.nodes {
+		if n.Kind() == "file" {
+			continue
+		}
+		if n.QualifiedName() == qn && filepath.ToSlash(n.SourcePath()) == sourcePath {
+			return n, true
+		}
+	}
+	return model.Node{}, false
+}
+
 // edge finds fromQN --kind--> toQN, matching on qualified names so a witness
 // never has to know a NodeId.
 func (g *graphView) edge(fromQN, kind, toQN string) (model.Edge, bool) {
@@ -342,7 +389,23 @@ type changeClassRow struct {
 	witness     func(g *graphView) error
 	knownDefect string
 	pin         func(inc, full *graphView) error
+	// reapply names what re-applying the identical change set does. Required
+	// exactly when knownDefect is set — see runKnownDefectRow assertion (3). It
+	// is a property of the DEFECT, not of the harness, so it must be declared
+	// rather than assumed: a defect that re-syncing heals and one that it cannot
+	// are different severities, and conflating them hides the worse case.
+	reapply string
 }
+
+// The two re-application shapes a pinned defect can have.
+const (
+	// reapplyHeals: the second apply moves the graph and lands on the full
+	// bytes — "the second apply does what the first should have" (PARITY-001).
+	reapplyHeals = "heals"
+	// reapplyFrozen: re-application does not move the graph and the divergence
+	// survives, so only a full rebuild recovers it (PARITY-002). Strictly worse.
+	reapplyFrozen = "frozen"
+)
 
 // baseTree is the fixture every row starts from: a real Go module with a
 // cross-package call (shop.Checkout -> tax.Rate) through an intra-module import,
@@ -410,16 +473,18 @@ func changeClassTable() []changeClassRow {
 			id:   "delete_file",
 			kind: kindChangeClass,
 			description: "A file declaring a symbol that ANOTHER package calls through an intra-module import is deleted, so the per-file stale-node purge, the re-link pass and the " +
-				"external-interning path all run over it. THIS CLASS DOES NOT HOLD TODAY: it carries the tracked defect PARITY-001, so the row PINS the current wrong behaviour instead of " +
-				"asserting parity. Read the PARITY-001 block on `apply` before touching anything here.",
-			knownDefect: "PARITY-001",
+				"external-interning path all run over it. This class carried the tracked defect PARITY-001 for two releases; the phase-ordering fix landed and the row now asserts REAL " +
+				"PARITY on both stores. Read the PARITY-001 block on `apply` for what it was and why the fix is the shape it is.",
 			apply: func(f *fixture) {
 				// ==========================================================
-				// PARITY-001 — TRACKED PRODUCT DEFECT, NOT A HARNESS BUG.
-				// Filed: projects/graphi/backlog.md. NOT FIXED HERE.
-				// Scheduled: v0.7.2 batch item 3, behind SW-151's F4 residual
-				// and SW-153's freshness diagnosis. Measure-first stands — do
-				// NOT fix this early, it moves the candidate.
+				// PARITY-001 — FIXED. This block is kept as the record of a
+				// defect that shipped for two releases, because the fix is an
+				// ordering constraint that is easy to reintroduce.
+				//
+				// THE FIX: engine/ingest.go's incremental path now runs the
+				// deleted-path purge, AND COMMITS IT, BEFORE linkFiles — the
+				// order IngestAll always used. See the PARITY-001 FIX comment
+				// there before reordering anything in that function.
 				// ==========================================================
 				//
 				// PRECONDITION (corrected in review round 1 — the first
@@ -457,47 +522,45 @@ func changeClassTable() []changeClassRow {
 				// Whoever fixes this must not be sent to dependentsOf, where
 				// there is nothing to fix.)
 				//
-				// engine/ingest/ingest.go:709 calls linkFiles BEFORE the
-				// deleted-path purge at :721-736. linkFiles builds its symbol
-				// index by streaming the LIVE store
-				// (engine/ingest/linkfiles.go:64-71,
-				// graphstore.ForEachNode over i.store), and at that moment the
-				// purge has not run, so `tax.Rate` is STILL A NODE. The linker
-				// therefore resolves the call intra-module and never classifies
-				// it as an unresolved external. Only afterwards does
-				// removeFileTx delete `tax.Rate`, cascading its edges away —
-				// leaving the graph one node and one edge short of full.
+				// The incremental path called linkFiles BEFORE the deleted-path
+				// purge. linkFiles builds its symbol index by streaming the
+				// LIVE store (engine/ingest/linkfiles.go, graphstore.ForEachNode
+				// over i.store), and at that moment the purge had not run, so
+				// `tax.Rate` was STILL A NODE. The linker therefore resolved the
+				// call intra-module and never classified it as an unresolved
+				// external. Only afterwards did removeFileTx delete `tax.Rate`,
+				// cascading its edges away — leaving the graph one node and one
+				// edge short of full.
 				//
-				// That ordering also explains, exactly, why the SECOND apply
-				// converges: by then `tax.Rate` is already gone, so linkFiles
-				// builds its index without it, resolution fails, and the
-				// external node is minted. The second apply does what the first
-				// should have.
+				// That ordering also explained, exactly, why the SECOND apply
+				// converged: by then `tax.Rate` was already gone, so linkFiles
+				// built its index without it, resolution failed, and the
+				// external node was minted. The second apply did what the first
+				// should have — which is why the fix is to purge and COMMIT
+				// first, making the first apply behave like the second.
 				//
-				// PERMANENT in the shipped path, not eventually-consistent:
-				// once the delete is applied, DriftSet returns empty and every
-				// further Reconcile is a no-op (verified over six reconciles,
-				// snapshot unmoved), so `graphi sync` stays diverged from
-				// `graphi rebuild` until a full rebuild. Backend-independent
-				// (byte-identical failure on MemStore and SQLite) and not a
-				// watcher artifact (reproduces with plain serial
-				// ing.IngestChanged, and independently through the shipped
-				// DriftDetail -> IngestChanged path graphi sync drives).
+				// It was PERMANENT in the shipped path, not
+				// eventually-consistent: once the delete was applied, DriftSet
+				// returned empty and every further Reconcile was a no-op
+				// (verified over six reconciles, snapshot unmoved), so
+				// `graphi sync` stayed diverged from `graphi rebuild` until a
+				// full rebuild. Backend-independent (byte-identical failure on
+				// MemStore and SQLite) and not a watcher artifact (reproduced
+				// with plain serial ing.IngestChanged, and independently through
+				// the shipped DriftDetail -> IngestChanged path graphi sync
+				// drives). The fix converges on BOTH stores, so the class now
+				// asserts snapshot-byte parity like every other row.
 				f.Remove("tax/tax.go")
 			},
 			witness: func(g *graphView) error {
 				return all(
 					g.requireAbsent("tax.Rate"),
 					g.requirePresent("shop.Checkout"), // control: only the deleted file's nodes went
-				)
-			},
-			// pin: the CURRENT WRONG BEHAVIOUR, stated exactly. Not an
-			// expectation — a published defect. If graphi is fixed, this fails
-			// and tells the fixer to restore the parity assertion.
-			pin: func(inc, full *graphView) error {
-				return requireOnlyMissing(inc, full,
-					[]string{"example.com/m/tax.Rate"},
-					[][3]string{{"shop.Checkout", "calls", "example.com/m/tax.Rate"}},
+					// The external interning the defect used to skip: with the
+					// purge committed before linkFiles, the incremental pass
+					// resolves the now-unresolvable import exactly as full does.
+					g.requirePresent("example.com/m/tax.Rate"),
+					g.requireEdge("shop.Checkout", "calls", "example.com/m/tax.Rate"),
 				)
 			},
 		},
@@ -875,6 +938,160 @@ func Use() {
 				"docs/adr/0004-ingest-recovery-disposition.md:34-41; the real-process complement is owned by SW-158.",
 			deferredTo: "SW-158",
 		},
+		{
+			id:   "change_colliding_package_dir",
+			kind: kindChangeClass,
+			description: "A file is added to a directory that COLLIDES on its package clause with an imported directory, and that NOTHING imports. This class was the first HERMETIC reproduction " +
+				"of PARITY-002 and carried it as a pinned known defect; the ADR 0009 fix (module-aware import→directory resolution) landed and the row now asserts REAL parity on both stores. " +
+				"The colliding file also declares a SAME-NAME symbol, so the row covers BOTH resolution paths the collision used to poison: the imports fan-out (packageFileNodes) and the " +
+				"crossPackage symbol lookup that went ambiguous and minted an external node on the full pass only (ADR 0009 review round 1, finding 1). " +
+				"Read the PARITY-002 block on `apply` for what the defect was and why the fix removes both halves at once.",
+			seed: map[string]string{
+				"x/json/a.go":  "package json\n\nfunc A() int { return 1 }\n",
+				"impA/main.go": "package impA\n\nimport \"example.com/m/x/json\"\n\nfunc UseA() int { return json.A() }\n",
+				"impB/main.go": "package impB\n\nimport \"example.com/m/x/json\"\n\nfunc UseB() int { return json.A() }\n",
+			},
+			apply: func(f *fixture) {
+				// ==========================================================
+				// PARITY-002 — FIXED (ADR 0009). This block is kept as the
+				// record of the defect and its mechanism, because the fix is a
+				// resolution-basis change that is easy to regress.
+				//
+				// THE FIX: Go import→directory resolution goes through the
+				// tree's module map (engine/link/modulemap.go), so an import
+				// resolves to exactly ONE directory — the one its module path
+				// declares — and the clause union below no longer exists for
+				// Go. Both halves of the defect vanish at once: the full pass
+				// stops emitting the semantically wrong y/json edge, and with
+				// no fan-out there is nothing for the directory-local cascade
+				// to miss.
+				// ==========================================================
+				//
+				// THE DEFECT, as it was. A CLOSURE defect, not an ordering one.
+				// `imports` was the only edge kind whose value depended on a SET
+				// of nodes from a GLOBAL relation while the incremental cascade
+				// is DIRECTORY-LOCAL:
+				//
+				//   packageFileNodes(importPath) used to compute
+				//       clause := path.Base(importPath)   // "json"
+				//       dirs   := idx.byClause[clause]    // EVERY dir with that clause
+				//   and resolve_go emitted ONE imports edge per file node in
+				//   that union.
+				//
+				// So adding y/json — which nothing imports — changed the
+				// fan-out of impA and impB, which import x/json; but
+				// dependentsOf(y/json) is EMPTY, so the cascade re-linked
+				// neither importer. Observed then: incremental 8 nodes/8 edges
+				// vs full 8/10, the two extras being impA/impB --imports-->
+				// y/json/b.go, each carrying reason "file imports package
+				// example.com/m/x/json" — the importer imports x/json and the
+				// edge targeted y/json/b.go, so NEITHER side was right: the
+				// full pass emitted a semantically wrong edge and the
+				// incremental pass merely failed to emit it. It was FROZEN —
+				// re-syncing could never heal it, only rebuild.
+				//
+				// THE SECOND HALF (found in the ADR 0009 review, finding 1):
+				// the added file also declares func A — the SAME bare name the
+				// importers call. Clause-based crossPackage went AMBIGUOUS on
+				// the full pass (A exists in two dirs declaring "json"),
+				// dropped the intra-repo calls edge, and minted an interned
+				// external node example.com/m/x/json.A with a heuristic edge
+				// instead — while the never-re-linked incremental side kept
+				// the old intra edge. Same frozen divergence, through `calls`.
+				// Module-aware crossPackage consults only the ONE directory
+				// the import path names, so the collision cannot arise.
+				f.Write("y/json/b.go", "package json\n\nfunc A() int { return 3 }\n\nfunc B() int { return 2 }\n")
+			},
+			witness: func(g *graphView) error {
+				if err := all(
+					// The added directory really was indexed…
+					g.requirePresent("json.B"),
+					// …and both importers plus the imported symbol survive, so
+					// the row is not vacuously green on a broken tree.
+					g.requirePresent("json.A", "impA.UseA", "impB.UseB"),
+				); err != nil {
+					return err
+				}
+				// The heart of the fixed behaviour: each importer's imports
+				// edge targets x/json/a.go and ONLY x/json/a.go — the wrong
+				// clause-collision edge to y/json/b.go must not exist on
+				// EITHER side (this witness runs against the incremental
+				// graph; the byte parity above covers the full side).
+				for _, imp := range []string{"impA/main.go", "impB/main.go"} {
+					if _, ok := g.fileEdge(imp, "imports", "x/json/a.go"); !ok {
+						return fmt.Errorf("importer %s lost its true imports edge to x/json/a.go", imp)
+					}
+					if _, ok := g.fileEdge(imp, "imports", "y/json/b.go"); ok {
+						return fmt.Errorf("importer %s carries the clause-collision edge to y/json/b.go — PARITY-002's wrong edge is back", imp)
+					}
+				}
+				// The calls half (review finding 1). Both A declarations must
+				// exist — otherwise the collision is gone and this half proves
+				// nothing — and the witness must key on (qn, path) because the
+				// two share qualified name "json.A".
+				xA, ok := g.symbolAt("json.A", "x/json/a.go")
+				if !ok {
+					return fmt.Errorf("x/json's func A is missing — the calls half of this row is vacuous")
+				}
+				if _, ok := g.symbolAt("json.A", "y/json/b.go"); !ok {
+					return fmt.Errorf("y/json's colliding func A is missing — the calls half of this row is vacuous")
+				}
+				for _, caller := range []string{"impA.UseA", "impB.UseB"} {
+					from, _ := g.node(caller) // presence asserted above
+					found := false
+					for _, e := range g.edges {
+						if e.From() == from.ID() && e.Kind() == "calls" && e.To() == xA.ID() {
+							found = true
+							break
+						}
+					}
+					if !found {
+						return fmt.Errorf("%s lost its intra-repo calls edge to x/json's A — the clause-ambiguity drop is back", caller)
+					}
+				}
+				// The full pass used to mint this instead of the intra edge;
+				// with module-aware crossPackage it must never exist.
+				return g.requireNoExternal("example.com/m/x/json.A")
+			},
+		},
+		{
+			id:   "add_nested_gomod",
+			kind: kindChangeClass,
+			description: "A NESTED go.mod is added to a subtree whose files were previously resolved through the ROOT module path (ADR 0009). The subtree's import→directory resolution shifts — the old " +
+				"root-module import path no longer owns it — so every importer's imports edge must vanish, on BOTH passes. The class that pins the module-map cache invalidation: a go.mod change at ANY " +
+				"depth must trigger the full re-link, where the historical check matched only the literal root path \"go.mod\".",
+			seed: map[string]string{
+				"sub/pkg/p.go":  "package pkg\n\nfunc P() int { return 1 }\n",
+				"user/main.go":  "package user\n\nimport \"example.com/m/sub/pkg\"\n\nfunc Use() int { return pkg.P() }\n",
+				"user2/main.go": "package user2\n\nimport \"example.com/m/sub/pkg\"\n\nfunc Use2() int { return pkg.P() }\n",
+			},
+			apply: func(f *fixture) {
+				// The subtree becomes its OWN module with an unrelated path:
+				// example.com/m/sub/pkg no longer resolves into it. A full pass
+				// drops both importers' imports edges; the incremental pass
+				// only converges if the nested-go.mod change triggers the
+				// full re-link (link.GoModPath at any depth — the fix). With
+				// the old root-only predicate the importers were never
+				// re-linked and their stale edges survived: a PARITY-002-shaped
+				// divergence introduced by the resolution change itself.
+				f.Write("sub/go.mod", "module other.example/standalone\n\ngo 1.26\n")
+			},
+			witness: func(g *graphView) error {
+				if err := all(
+					g.requirePresent("pkg.P", "user.Use", "user2.Use2"), // nothing was deleted
+				); err != nil {
+					return err
+				}
+				// The re-moduled subtree is no longer owned by the root module
+				// path, so the importers' edges must be GONE.
+				for _, imp := range []string{"user/main.go", "user2/main.go"} {
+					if _, ok := g.fileEdge(imp, "imports", "sub/pkg/p.go"); ok {
+						return fmt.Errorf("importer %s still carries an imports edge into the re-moduled subtree — the nested go.mod did not re-link it", imp)
+					}
+				}
+				return nil
+			},
+		},
 	}
 }
 
@@ -963,6 +1180,15 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 			"tracked defect with no pin publishes nothing, and a pin with no defect id is untraceable",
 			row.id, row.knownDefect, row.pin != nil)
 	}
+	if row.knownDefect == "" && row.reapply != "" {
+		t.Fatalf("class %q declares reapply=%q without a knownDefect: re-application shape is only "+
+			"meaningful for a pinned defect", row.id, row.reapply)
+	}
+	if row.knownDefect != "" && row.reapply != reapplyHeals && row.reapply != reapplyFrozen {
+		t.Fatalf("class %q pins defect %q but declares reapply=%q; it must name %q or %q so the "+
+			"defect's severity under re-sync is published, not assumed",
+			row.id, row.knownDefect, row.reapply, reapplyHeals, reapplyFrozen)
+	}
 
 	ctx := context.Background()
 	root := t.TempDir()
@@ -1036,13 +1262,29 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 //  1. incremental and full MUST STILL DIFFER. If they converge, the defect is
 //     fixed (or masked) and this row is now lying — it fails, and whoever fixed
 //     it is told to restore the parity assertion and clear known_defect.
+//
 //  2. the difference is EXACTLY what row.pin says. Not "some difference" — the
 //     named missing nodes and edges and nothing else. If the defect changes
 //     shape or grows, the pin fails.
-//  3. re-applying the identical change set converges to the FULL bytes. That is
-//     the same defect seen from the idempotency side, and pinning it records the
-//     most diagnostic fact about the bug: the second apply does what the first
-//     should have.
+//
+//  3. re-application behaves EXACTLY as the row declares in `reapply`. This is
+//     the same defect seen from the idempotency side, and it is the most
+//     diagnostic fact about a parity bug — but it is a property of the DEFECT,
+//     not of known-defect rows in general, so the row must name it:
+//
+//     reapplyHeals  — the second apply MOVES the graph and lands on the full
+//     bytes: "the second apply does what the first should
+//     have". PARITY-001's shape (its index was stale only
+//     until the purge had run once).
+//     reapplyFrozen — re-application does NOT move the graph at all, and the
+//     divergence survives. STRICTLY WORSE than reapplyHeals:
+//     the defect cannot be worked around by syncing again,
+//     only by a full rebuild. PARITY-002's shape (the affected
+//     importers are never in the re-link set, so no amount of
+//     re-syncing reaches them).
+//
+//     Both are pinned assertions in both directions: a frozen defect that starts
+//     healing fails just as loudly as a healing one that starts freezing.
 //
 // The pin is labelled WRONG everywhere it appears. It is never phrased as an
 // expectation, and the verdict in docs/rc/parity-classes.yaml may not read PROVEN
@@ -1091,15 +1333,35 @@ func runKnownDefectRow(t *testing.T, b parityBackend, row changeClassRow, inc *i
 		t.Fatalf("[%s/%s] pinned re-apply: %v", b.name, row.id, err)
 	}
 	reapplied := snapshot(t, inc.store)
-	if string(reapplied) == string(incSnap) {
-		t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: re-applying the identical change set no "+
-			"longer moves the graph. The recorded reproduction said the second apply converges; it "+
-			"no longer does.", b.name, row.id, row.knownDefect)
-	}
-	if string(reapplied) != string(fullSnap) {
-		t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: the second apply no longer converges to the "+
-			"full-parse bytes.\n%s", b.name, row.id, row.knownDefect,
-			snapshotDiff(t, "after re-apply", reapplied, "full", fullSnap))
+	switch row.reapply {
+	case reapplyHeals:
+		if string(reapplied) == string(incSnap) {
+			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: re-applying the identical change set no "+
+				"longer moves the graph. The recorded reproduction said the second apply converges; it "+
+				"no longer does.", b.name, row.id, row.knownDefect)
+		}
+		if string(reapplied) != string(fullSnap) {
+			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: the second apply no longer converges to the "+
+				"full-parse bytes.\n%s", b.name, row.id, row.knownDefect,
+				snapshotDiff(t, "after re-apply", reapplied, "full", fullSnap))
+		}
+	case reapplyFrozen:
+		if string(reapplied) != string(incSnap) {
+			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: this row publishes a defect that re-syncing "+
+				"CANNOT heal, but re-applying the identical change set moved the graph. Either the defect "+
+				"now self-heals (re-verdict it as %s) or something else changed.\n%s",
+				b.name, row.id, row.knownDefect, reapplyHeals,
+				snapshotDiff(t, "incremental", incSnap, "after re-apply", reapplied))
+		}
+		if string(reapplied) == string(fullSnap) {
+			t.Errorf("[%s/%s] PINNED DEFECT %s NO LONGER REPRODUCES on re-apply: the second apply now "+
+				"lands on the full-parse bytes. That is good news and a required action: re-verdict this "+
+				"row as %s, or if the divergence is gone entirely, restore the parity assertion and clear "+
+				"known_defect.", b.name, row.id, row.knownDefect, reapplyHeals)
+		}
+	default:
+		t.Fatalf("[%s/%s] known-defect row must declare reapply as %q or %q, got %q",
+			b.name, row.id, reapplyHeals, reapplyFrozen, row.reapply)
 	}
 
 	t.Logf("PINNED KNOWN DEFECT %s on class %q [%s]: incremental %d nodes / %d edges vs full %d / %d. "+

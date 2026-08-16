@@ -213,10 +213,19 @@ func helper() int { return 1 }
 }
 
 // TestTyperesolve_GoModChangeParity pins the go.mod cascade expansion: editing
-// ONLY go.mod (module rename) withdraws the type-check proof for every
-// intra-module import, and the incremental result must still match a fresh
-// full index — the confirmed edge degrades to the re-linked heuristic edge
-// instead of disappearing.
+// ONLY go.mod (module rename) makes every import that still names the OLD
+// module path STALE, and the incremental result must match a fresh full index.
+//
+// WHAT "STALE" RESOLVES TO changed with ADR 0009 (module-aware resolution).
+// Before it, the clause heuristic kept guessing: the confirmed edge degraded
+// to a heuristic INTRA-repo edge (path.Base("example.com/m/util") happened to
+// match the util directory). Now resolution is fail-closed through the module
+// map: "example.com/m/util" names no module in the renamed tree, so the call
+// binds to an interned EXTERNAL node at the heuristic tier — which is what the
+// import honestly is mid-refactor (go build would try to fetch it as a
+// third-party module). The information does not disappear: the call site keeps
+// an edge, the local symbol keeps its node, and nothing is ever confirmed
+// against a module path that no longer exists.
 func TestTyperesolve_GoModChangeParity(t *testing.T) {
 	ctx := context.Background()
 	renamed := "module example.com/renamed\n\ngo 1.26\n"
@@ -246,14 +255,34 @@ func TestTyperesolve_GoModChangeParity(t *testing.T) {
 	if a, b := dumpGraph(t, storeA), dumpGraph(t, storeB); a != b {
 		t.Errorf("go.mod-only change diverges from a fresh full index:\n--- incremental ---\n%s\n--- full ---\n%s", a, b)
 	}
-	// The import no longer resolves intra-module, so the call edge must be
-	// back at the heuristic tier — present, not proven.
-	e, ok := edgeBetween(t, storeA, "main.main", "util.Answer", "calls")
+	// The stale import resolves to nothing intra-repo (fail-closed), so the
+	// intra edge must be GONE — resurrecting it would mean clause-guessing is
+	// back (the PARITY-002 mechanism) — and the call must instead bind to the
+	// interned external node, present but never proven.
+	if _, ok := edgeBetween(t, storeA, "main.main", "util.Answer", "calls"); ok {
+		t.Errorf("intra-repo call edge survived the module rename — resolution is guessing by clause again (ADR 0009 regression)")
+	}
+	e, ok := edgeBetween(t, storeA, "main.main", "example.com/m/util.Answer", "calls")
 	if !ok {
-		t.Fatalf("module rename deleted the call edge — it must degrade, not disappear")
+		t.Fatalf("module rename deleted the call edge entirely — it must retarget to the external node, not disappear")
 	}
 	if e.Tier() == model.TierConfirmed {
 		t.Errorf("edge still confirmed although the module path no longer matches the import (tier %s)", e.Tier())
+	}
+	// The local declaration is untouched by the rename.
+	nodes, err := storeA.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatalf("nodes: %v", err)
+	}
+	found := false
+	for _, n := range nodes {
+		if n.QualifiedName() == "util.Answer" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("util.Answer node vanished on a go.mod-only change")
 	}
 }
 

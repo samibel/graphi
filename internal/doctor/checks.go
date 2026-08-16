@@ -370,6 +370,13 @@ func LocalFirstCheck() Check {
 	}
 }
 
+// The known-defects disclosure check was removed 2026-08-16 when its ONLY
+// entry, PARITY-002, was fixed (ADR 0009: module-aware import→directory
+// resolution) — per its own contract, "an empty list removes the check". The
+// pattern stands ready for the next open defect that affects a GA operation:
+// info severity, never silently green, named defect id + operation +
+// workaround, removed only in the same change that closes the defect.
+
 // checkFunc is a functional adapter for the Check interface.
 type checkFunc struct {
 	id       string

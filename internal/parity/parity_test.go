@@ -182,12 +182,19 @@ func TestClassTable_BindsToDeclaredMatrix(t *testing.T) {
 	})
 
 	t.Run("COUNT", func(t *testing.T) {
-		// 15 change classes (PRD FR-7) + 2 crash conditions (Delta §9). Derived
-		// from `kind`, never from len(rows) — counting crash conditions among
-		// the change classes is the exact conflation that produced
-		// backlog.md:55's "16 change classes".
-		if got := CountChangeClasses(rows); got != 15 {
-			t.Errorf("CountChangeClasses = %d, want 15", got)
+		// 17 = PRD FR-7's 15 change classes + `change_colliding_package_dir`
+		// (2026-08-16, the hermetic PARITY-002 reproduction, now a real parity
+		// assertion) + `add_nested_gomod` (same date, pinning the ADR 0009
+		// module-map cache invalidation). Neither is an FR-7 requirement and
+		// both prd_source fields say so. That first one
+		// is NOT an FR-7 requirement — its prd_source says "none" — it exists to
+		// publish a defect as executable data, and it carries a real-repo
+		// planner so it runs on pinned clones too. Derived from `kind`, never
+		// from len(rows): counting crash conditions among the change classes is
+		// the exact conflation that produced backlog.md:55's "16 change
+		// classes", so this number and that mistake are not the same 16.
+		if got := CountChangeClasses(rows); got != 17 {
+			t.Errorf("CountChangeClasses = %d, want 17", got)
 		}
 	})
 }
@@ -791,17 +798,19 @@ func TestRunner_EndToEndOnALocalFixture(t *testing.T) {
 	if got["add_file"] != parityreport.VerdictPass {
 		t.Errorf("add_file = %s, want PASS — adding a file must converge", got["add_file"])
 	}
-	// PARITY-001 is a TRACKED, FILED, SCHEDULED product defect (v0.7.2 batch
-	// item 3, behind SW-151 and SW-153). This assertion PINS it as data: the row
-	// is expected to FAIL, so a green here means the defect changed — including
-	// being fixed — and this test must then be updated deliberately, in the same
-	// commit as the matrix YAML. It is NOT a waiver: the run's outcome is still
-	// FAIL and the report still publishes the failure.
-	if got["delete_file"] != parityreport.VerdictFail {
-		t.Errorf("delete_file = %s, want FAIL. PARITY-001 is a known permanent full-vs-incremental "+
-			"divergence when deleting a file declaring a symbol another package calls through an "+
-			"intra-module import. If this now converges, the defect moved: update this pin, "+
-			"docs/rc/parity-classes.yaml and the backlog entry together.", got["delete_file"])
+	// PARITY-001 IS FIXED (2026-08-16): the incremental path now runs the
+	// deleted-path purge AND COMMITS IT before linkFiles, so the linker cannot
+	// resolve a call into a node the pass is about to delete. This assertion used
+	// to PIN the defect as data (want FAIL); it now asserts the CONVERGENCE, and
+	// it is the independent confirmation that matters most — unlike the hermetic
+	// engine/conformance row, this drives the BUILT BINARY end to end through the
+	// real Runner, so it proves the shipped path converges, not just the library.
+	// A regression here means the ordering was reintroduced in engine/ingest.
+	if got["delete_file"] != parityreport.VerdictPass {
+		t.Errorf("delete_file = %s, want PASS. PARITY-001 was fixed by committing the deleted-path "+
+			"purge before linkFiles (engine/ingest, see the PARITY-001 FIX comment); a FAIL here "+
+			"means that ordering was reintroduced and `graphi sync` diverges permanently from "+
+			"`graphi rebuild` when a file declaring a cross-package callee is deleted.", got["delete_file"])
 	}
 	if rep.Outcome != parityreport.OutcomeIncomplete {
 		t.Errorf("a two-row run over a fifteen-class matrix must be INCOMPLETE, got %s", rep.Outcome)

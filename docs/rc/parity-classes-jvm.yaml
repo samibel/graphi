@@ -31,14 +31,18 @@
 # The binder is EXPERIMENTAL and default-off (GRAPHI_JVM_TYPERESOLVE); the
 # harness sets it. These rows prove hermetic full-vs-incremental snapshot-byte
 # parity on BOTH MemStore and SQLite, with non-vacuous witnesses — NOT the PRD
-# §12.3 gate and NOT the real-repository matrix (that is WP-J7). The ten
+# §12.3 gate and NOT the real-repository matrix (that is WP-J7). The eleven
 # required rows cover the add/modify/call path, the two signature JVM
 # behaviours (the D6 overload drop, the D2 declared/inferred flip), the rename
 # cascade, supertype-chain re-pointing, the nested/top-level node boundary, the
-# JLS import-precedence ladder, and the same-package file-to-file symbol move
-# (the QN-stable BLOCK-2 re-home, Go's move_symbol direction). jvm_delete_file
-# remains DEFERRED (ADR 0008 D8 — the PARITY-001 entry criterion), present as a
-# placeholder and never counted as proven.
+# JLS import-precedence ladder, the same-package file-to-file symbol move (the
+# QN-stable BLOCK-2 re-home, Go's move_symbol direction), and the delete path.
+#
+# THERE ARE NO DEFERRED ROWS LEFT. jvm_delete_file was the last one, held back
+# by ADR 0008 D8's PARITY-001 entry criterion; PARITY-001 is fixed and the row
+# is promoted. Its note records the measurement that matters for reading it
+# honestly: it converges with AND without that fix, so the deferral was a
+# precaution, not a masked JVM defect.
 
 parity_classes:
   - id: "jvm_add_file"
@@ -195,14 +199,14 @@ parity_classes:
   - id: "jvm_delete_file"
     kind: "change_class"
     label: "Java-Datei löschen / delete a Java file"
-    verdict: "ABSENT"
-    test_file: ""
-    test_name: ""
-    fixture: ""
-    store: ""
-    assertion: ""
-    harness_row: "deferred"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
     known_defect: ""
-    deferred_to: "WP-J7"
-    owner: "WP-J7"
-    note: "The delete path shares ingest's phase-ordering with Go's PARITY-001, which is language-independent and ingest-level. ADR 0008 D8 makes the PARITY-001/002 fixes the entry criterion for JVM real-repo parity, so the delete class is deferred until then rather than pinned as a JVM-specific defect it is not."
+    deferred_to: ""
+    owner: "M2.2"
+    note: "PROMOTED FROM DEFERRED TO REQUIRED - 2026-08-16 (language-GA execution plan M2.2), after PARITY-001 was fixed. tax/Rate.java declares the type BOTH shop.Cart (Java) and k.App (Kotlin) import and call; deleting it exercises the per-file stale-node purge, the confirmed-edge sweep and the re-link together. Witness requires tax.Rate, tax.rate and tax.apply absent, BOTH importers (shop.checkout, k.run) still present, and the confirmed edges into the deleted callee gone - a stale confirmed edge would be the worst outcome here. Inc-vs-full snapshot bytes hold on both stores. MEASURED AND STATED PLAINLY, because a row that would have passed all along must not be sold as newly enabled: this class converges BOTH WITH AND WITHOUT the PARITY-001 fix, verified by reverting engine/ingest/ingest.go to its pre-fix revision and re-running (still green on both stores). The JVM delete path therefore never carried PARITY-001 divergence in this shape, and the ADR 0008 D8 deferral was a PRECAUTION rather than a masked JVM defect. That is consistent with the witness: PARITY-001 was entirely about the full side minting an interned external node for the now-unresolvable import, and here NEITHER side mints one, so the two passes have nothing to disagree about. The row earns its place on its own terms - the JVM delete path was previously assumed to converge and is now proven to - and it closes the last deferred row in this matrix."

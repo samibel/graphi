@@ -123,7 +123,7 @@ func (i *Ingester) migrate(ctx context.Context) error {
 // DEFAULT is safe on a populated table. Detection via PRAGMA table_info makes the
 // step idempotent regardless of prior user_version tracking.
 func (i *Ingester) migrateDirtyUnitsEditContext(ctx context.Context) error {
-	have, err := i.columnSet(ctx, "dirty_units")
+	have, err := columnSet(ctx, i.meta, "dirty_units")
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (i *Ingester) migrateDirtyUnitsEditContext(ctx context.Context) error {
 // among genuinely linkable files (real Go), never among unrelated stub files
 // that merely share a directory. The step is idempotent (PRAGMA-detected).
 func (i *Ingester) migrateCacheHasLinks(ctx context.Context) error {
-	have, err := i.columnSet(ctx, "file_content_cache")
+	have, err := columnSet(ctx, i.meta, "file_content_cache")
 	if err != nil {
 		return err
 	}
@@ -205,10 +205,17 @@ CREATE TABLE IF NOT EXISTS trust_package_evidence (
 	return nil
 }
 
+// querier is the read seam columnSet needs, satisfied by both *sql.DB and
+// *sql.Tx — the latter is what lets a migration step evaluate its idempotency
+// guard INSIDE the same transaction that performs the rewrite.
+type querier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
 // columnSet returns the set of column names on a table via PRAGMA table_info.
 // The table name is a trusted in-package literal, never caller-supplied.
-func (i *Ingester) columnSet(ctx context.Context, table string) (map[string]struct{}, error) {
-	rows, err := i.meta.QueryContext(ctx, fmt.Sprintf("PRAGMA table_info(%s)", table))
+func columnSet(ctx context.Context, q querier, table string) (map[string]struct{}, error) {
+	rows, err := q.QueryContext(ctx, fmt.Sprintf("PRAGMA table_info(%s)", table))
 	if err != nil {
 		return nil, fmt.Errorf("ingest: table_info(%s): %w", table, err)
 	}
@@ -238,14 +245,42 @@ func (i *Ingester) columnSet(ctx context.Context, table string) (map[string]stru
 // create-copy-drop-rename shape, executed as one script so a crash between
 // statements is repaired by the next open re-running the guarded step.
 func (i *Ingester) migratePackageEvidenceLanguage(ctx context.Context) error {
-	have, err := i.columnSet(ctx, "trust_package_evidence")
+	// The migration MUST be atomic and idempotent. It was neither: a bare
+	// multi-statement ExecContext is not run in one transaction, so a crash —
+	// or a second process racing the same meta home (the ingest lock serializes
+	// this in production, but tests share a state home) — left
+	// trust_package_evidence_v4 half-built, and the next run failed at
+	// `CREATE TABLE trust_package_evidence_v4` with "table already exists". Two
+	// changes fix it: wrap the whole script in a transaction (a crash rolls back
+	// to the pre-migration state, and the guard re-runs cleanly), and drop
+	// any leftover _v4 first so a re-run after a rolled-back attempt starts from
+	// a clean slate rather than colliding with its own debris.
+	//
+	// THE GUARD IS EVALUATED INSIDE THE SAME TRANSACTION AS THE REWRITE (ADR
+	// 0009 review round 1, finding 2). It used to be read from i.meta before
+	// BeginTx, which left a window: a second process could pass the stale guard
+	// after the winner committed, re-run the copy against the already-migrated
+	// table, and silently reset EVERY row's language to 'go' — destroying rows
+	// the jvm registrant had written. With the guard on the tx there is no
+	// window: the losing writer either sees the migrated table and no-ops, or
+	// its write collides with the winner's lock and errs, and the next open
+	// re-runs the guarded step cleanly. An error here is always retryable;
+	// silent data loss was not.
+	tx, err := i.meta.BeginTx(ctx, nil)
 	if err != nil {
+		return fmt.Errorf("ingest: begin trust_package_evidence migration: %w", err)
+	}
+	have, err := columnSet(ctx, tx, "trust_package_evidence")
+	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 	if _, ok := have["language"]; ok {
+		_ = tx.Rollback() // already migrated; nothing was written
 		return nil
 	}
 	const ddl = `
+DROP TABLE IF EXISTS trust_package_evidence_v4;
 CREATE TABLE trust_package_evidence_v4 (
 	generation_id TEXT NOT NULL,
 	language TEXT NOT NULL,
@@ -264,8 +299,12 @@ INSERT INTO trust_package_evidence_v4
 	FROM trust_package_evidence;
 DROP TABLE trust_package_evidence;
 ALTER TABLE trust_package_evidence_v4 RENAME TO trust_package_evidence;`
-	if _, err := i.meta.ExecContext(ctx, ddl); err != nil {
+	if _, err := tx.ExecContext(ctx, ddl); err != nil {
+		_ = tx.Rollback()
 		return fmt.Errorf("ingest: rebuild trust_package_evidence with language: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("ingest: commit trust_package_evidence migration: %w", err)
 	}
 	return nil
 }

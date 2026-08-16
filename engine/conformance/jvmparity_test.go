@@ -314,6 +314,43 @@ fun other(): Int = 2
 				)
 			},
 		},
+		{
+			id:   "jvm_delete_file",
+			kind: kindChangeClass,
+			description: "A Java file declaring a type that TWO other packages call through imports is deleted, so the per-file stale-node purge, the confirmed-edge sweep and the re-link all run over it. " +
+				"This class was DEFERRED behind PARITY-001 (ADR 0008 D8) as a PRECAUTION — the Go delete path diverged permanently, and a JVM row failing for that language-independent reason would have " +
+				"pinned a defect that was not JVM's. MEASURED WHEN ADDING IT, and stated because a row that would have passed all along must not be sold as newly enabled: this class converges byte-exactly " +
+				"BOTH WITH AND WITHOUT the PARITY-001 fix (verified by reverting engine/ingest/ingest.go to its pre-fix revision and re-running — still green on both stores). So the JVM delete path never " +
+				"carried PARITY-001's divergence in this shape. Consistent with the witness: PARITY-001's Go divergence was ENTIRELY about the full side minting an interned external node for the now-unresolvable " +
+				"import, and here NEITHER side mints one (tax.Rate is absent from both graphs), so there is nothing for the two passes to disagree about. The row is worth having on its own terms — the JVM " +
+				"delete path was assumed to converge and is now proven to, and it closes the last deferred row in this matrix.",
+			apply: func(f *fixture) {
+				// tax/Rate.java declares the type BOTH shop.Cart (Java) and k.App
+				// (Kotlin) import and call. Deleting it is the JVM instance of the
+				// exact shape PARITY-001 governed: the callee's nodes must go, the
+				// confirmed edges into them must go with them, and the incremental
+				// pass must land on the same bytes as a full parse — including
+				// whatever the heuristic linker interns for the now-unresolvable
+				// imports, which is the half the old ordering silently skipped.
+				f.Remove("tax/Rate.java")
+			},
+			witness: func(g *graphView) error {
+				return all(
+					g.requireAbsent("tax.Rate"), // the deleted type
+					g.requireAbsent("tax.rate"), // and its members
+					g.requireAbsent("tax.apply"),
+					// Controls: only the deleted file's nodes went. Both importers
+					// survive, in both languages, so the purge is scoped and the
+					// row is not vacuously green on an empty graph.
+					g.requirePresent("shop.checkout"),
+					g.requirePresent("k.run"),
+					// The confirmed edges into the deleted callee must be gone —
+					// a stale confirmed edge would be the worst outcome here.
+					g.requireNoEdge("shop.checkout", "calls", "tax.rate"),
+					g.requireNoEdge("k.run", "calls", "tax.rate"),
+				)
+			},
+		},
 	}
 }
 

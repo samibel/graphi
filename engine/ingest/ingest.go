@@ -208,7 +208,17 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 		// is built from the now-fully-committed node set, streamed straight from
 		// the durable layer (same canonical order as the old full listing) so no
 		// whole-graph slice or cache mirror is ever materialized.
+		//
+		// The module map (PARITY-002 fix, ADR 0009) is built ONCE from the
+		// walked units — the walk read every go.mod at any depth already — and
+		// shared by this reverse-deps translation and the linkFiles pass below,
+		// so both resolve imports on the identical module view.
+		moduleMap, err := i.moduleMapFromUnits(root, units)
+		if err != nil {
+			return err
+		}
 		ib := link.NewIndexBuilder()
+		ib.SetModuleMap(moduleMap)
 		if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
 			ib.Add(n)
 			return nil
@@ -232,7 +242,7 @@ func (i *Ingester) IngestAll(ctx context.Context, root string) error {
 			return err
 		}
 		open = linkBatch
-		if _, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges, func(ev ProgressEvent) {
+		if _, err := i.linkFiles(ctx, linkBatch, moduleMap, fileRefs, owned, parserEdges, func(ev ProgressEvent) {
 			i.notifyProgress(ctx, ev)
 		}); err != nil {
 			return err
@@ -527,17 +537,35 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		}
 	}
 
-	// A go.mod change (edit/add/delete) re-links every linkable file. The
-	// module path steers ONLY the typeresolve pass (the heuristic linker
-	// resolves via per-file import paths and never reads go.mod), but a
-	// confirmed edge that loses its type-check proof must fall back to the
-	// heuristic edge for the same logical relation — and that fallback only
-	// exists if linkFiles re-put it this pass. Without this expansion the
-	// typeresolve sweep would delete the stale confirmed edge outright,
-	// diverging from a fresh full index (which would hold the heuristic
-	// edge). go.mod edits are rare; the full re-link is the cheap side of
-	// that trade.
-	if _, ok := toProcess["go.mod"]; ok {
+	// A go.mod change (edit/add/delete), AT ANY DEPTH, re-links every linkable
+	// file. Two consumers depend on the module view now:
+	//
+	//   - the typeresolve pass (module path steers import resolution there), and
+	//   - since ADR 0009 (the PARITY-002 fix) the heuristic linker itself, whose
+	//     import→directory resolution goes through the tree's module map.
+	//
+	// The predicate is link.GoModPath — any path whose basename is go.mod — and
+	// NOT the literal root "go.mod" it used to be. Root-only was correct while
+	// the linker ignored go.mod, but with module-aware resolution a NESTED
+	// go.mod (grpc-go carries eleven, kubernetes thirty-four) shifts the
+	// import→directory mapping for its whole subtree; missing the re-link here
+	// would freeze every importer's edge set — a brand-new PARITY-002-shaped
+	// divergence introduced by the fix itself. The add_nested_gomod conformance
+	// class pins this red-without/green-with.
+	//
+	// The typeresolve half of the old rationale still holds too: a confirmed
+	// edge that loses its type-check proof must fall back to the heuristic edge
+	// for the same logical relation, and that fallback only exists if linkFiles
+	// re-put it this pass. go.mod edits are rare; the full re-link is the cheap
+	// side of that trade.
+	goModChanged := false
+	for p := range toProcess {
+		if link.GoModPath(p) {
+			goModChanged = true
+			break
+		}
+	}
+	if goModChanged {
 		linkable, err := i.linkableCachedPaths(ctx)
 		if err != nil {
 			return err
@@ -688,11 +716,22 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			return err
 		}
 
+		// The incremental pass's module view (PARITY-002 fix, ADR 0009): this
+		// pass's walk (above) enumerated the WHOLE tree, exactly like the full
+		// pass's, so the same units-driven builder yields the identical go.mod
+		// census — the property the parity gates assert. Built ONCE and shared
+		// by the reverse-deps translation and the linkFiles pass below.
+		moduleMap, err := i.moduleMapFromUnits(root, units)
+		if err != nil {
+			return err
+		}
+
 		// Update reverse deps AFTER all reprocessed nodes are committed, so the
 		// import-path → directory translation (BLOCK-1) resolves target packages
 		// against the full committed node set rather than a partial mid-loop view.
 		if len(fwdByFile) > 0 {
 			ib := link.NewIndexBuilder()
+			ib.SetModuleMap(moduleMap)
 			if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
 				ib.Add(n)
 				return nil
@@ -712,6 +751,62 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			}
 		}
 
+		// PARITY-001 FIX — the deleted-path purge runs, AND COMMITS, BEFORE
+		// linkFiles. It used to run after, and that ordering was the defect:
+		// linkFiles builds its symbol index by streaming the LIVE store
+		// (linkfiles.go, graphstore.ForEachNode over i.store), so a deleted
+		// file's nodes still committed at that moment let the linker resolve a
+		// cross-package call intra-module and never mint the interned external
+		// node a full pass mints. The purge then cascaded those edges away,
+		// leaving the graph one node and one edge short — permanently, since a
+		// converged DriftSet never revisits it. The full pass has always
+		// purged-then-committed before building its index (see IngestAll); this
+		// makes the incremental path do exactly the same thing, which is why it
+		// converges rather than merely differing differently.
+		//
+		// It is a SEPARATE, COMMITTED batch on purpose. Purging into linkBatch
+		// would not help — the index reads committed state, not the open batch —
+		// and it is the shape that breaks SQLite with `edge references unknown
+		// node`, because linkFiles would then emit edges through the same batch
+		// that deletes their endpoints. Committing first means linkFiles can
+		// never even see a purged node, so it cannot emit an edge into one.
+		//
+		// The purged paths are retained (removedPaths) so the post-commit
+		// trust-evidence refresh deletes their rows too — a deleted file's
+		// evidence is stale evidence.
+		present := make(map[string]struct{}, len(units))
+		for _, u := range units {
+			present[u.relPath] = struct{}{}
+		}
+		cached, err := i.cachedPathsTx(ctx, tx)
+		if err != nil {
+			return err
+		}
+		var gone []string
+		for _, p := range cached {
+			if _, ok := present[p]; ok {
+				continue
+			}
+			gone = append(gone, p)
+		}
+		if len(gone) > 0 {
+			purgeBatch, err := graphstore.BeginBatch(ctx, i.store)
+			if err != nil {
+				return err
+			}
+			open = purgeBatch
+			for _, p := range gone {
+				if err := i.removeFileTx(ctx, tx, purgeBatch, p); err != nil {
+					return err
+				}
+				removedPaths = append(removedPaths, p)
+			}
+			open = nil
+			if err := purgeBatch.Commit(ctx); err != nil {
+				return err
+			}
+		}
+
 		// Post-node-commit linker pass (site 2): re-resolve cross-file edges for
 		// the reprocessed files against the full committed node set, removing
 		// stale from-owned cross-file edges first. The cascade closure
@@ -728,7 +823,7 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 		// WP-02: the incremental path threads its own scoped `prog` (nil for
 		// background passes), so linkFiles emits climbing-Done link progress on the
 		// warm-start path too without ever leaking through the stored callback.
-		linkEdgeIDs, err := i.linkFiles(ctx, linkBatch, fileRefs, owned, parserEdges, prog)
+		linkEdgeIDs, err := i.linkFiles(ctx, linkBatch, moduleMap, fileRefs, owned, parserEdges, prog)
 		if err != nil {
 			return err
 		}
@@ -738,27 +833,6 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			if err := i.recordEditProvenanceTx(ctx, tx, "edge", linkEdgeIDs, *prov); err != nil {
 				return err
 			}
-		}
-
-		// Remove cache entries for files that no longer exist. The purged paths
-		// are retained (removedPaths) so the post-commit trust-evidence refresh
-		// deletes their rows too — a deleted file's evidence is stale evidence.
-		present := make(map[string]struct{}, len(units))
-		for _, u := range units {
-			present[u.relPath] = struct{}{}
-		}
-		cached, err := i.cachedPathsTx(ctx, tx)
-		if err != nil {
-			return err
-		}
-		for _, p := range cached {
-			if _, ok := present[p]; ok {
-				continue
-			}
-			if err := i.removeFileTx(ctx, tx, linkBatch, p); err != nil {
-				return err
-			}
-			removedPaths = append(removedPaths, p)
 		}
 		open = nil
 		if err := linkBatch.Commit(ctx); err != nil {

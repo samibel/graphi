@@ -120,6 +120,52 @@ func TestAnalyzeKotlinBodies_NamedGaps(t *testing.T) {
 	}
 }
 
+// TestAnalyzeKotlinBodies_ElasticForfeit pins JVMSOUND-001 for Kotlin: both
+// `vararg` and defaulted parameters make (name, arity) unreliable, so a call
+// that would otherwise bind a fixed sibling must forfeit. Covers the tabling
+// path (parse_kotlin.go records Variadic/HasDefault) end to end.
+func TestAnalyzeKotlinBodies_ElasticForfeit(t *testing.T) {
+	// vararg: f(String) beside f(vararg Int) — a call f(1) has arity 1 and would
+	// wrongly bind f(String) at that arity if the vararg did not forfeit.
+	varargFiles := map[string][]byte{
+		"ef/T.kt": []byte(`package ef
+class T {
+    fun f(s: String) {}
+    fun f(vararg n: Int) {}
+    fun g() { f(1) }
+}
+`),
+	}
+	tab := BuildTable(varargFiles)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("vararg fixture must table cleanly: %+v", tab.Skipped)
+	}
+	_, skips := NewIndex(tab).AnalyzeKotlinBodies(varargFiles)
+	if skips[SkipKtLookupAmbiguous] == 0 {
+		t.Errorf("a vararg overload must forfeit (name,arity): %+v (JVMSOUND-001)", skips)
+	}
+
+	// default value: h(a, b = 0) beside h(s: String) — the defaulted member can
+	// satisfy h("x") at arity 1, so a same-arity sibling must forfeit.
+	defaultFiles := map[string][]byte{
+		"ef/D.kt": []byte(`package ef
+class D {
+    fun h(a: Int, b: Int = 0) {}
+    fun h(s: String) {}
+    fun g() { h("x") }
+}
+`),
+	}
+	tab2 := BuildTable(defaultFiles)
+	if len(tab2.Skipped) != 0 {
+		t.Fatalf("default fixture must table cleanly: %+v", tab2.Skipped)
+	}
+	_, skips2 := NewIndex(tab2).AnalyzeKotlinBodies(defaultFiles)
+	if skips2[SkipKtLookupAmbiguous] == 0 {
+		t.Errorf("a defaulted-parameter overload must forfeit (name,arity): %+v (JVMSOUND-001)", skips2)
+	}
+}
+
 func TestAnalyzeKotlinBodies_Deterministic(t *testing.T) {
 	s1, k1 := analyzeKotlin(t)
 	s2, k2 := analyzeKotlin(t)
