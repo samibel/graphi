@@ -240,6 +240,23 @@ func TestLocalFirstCheck(t *testing.T) {
 	}
 }
 
+// TestKnownDefectsCheck pins the disclosure contract: an OPEN published defect
+// in a GA operation is reported at info severity — never pass (that would be
+// silently green) and never fail (it is not a health problem of this install).
+// The message must name the defect id, the affected operation and the
+// workaround, so a user learns the limitation from the tool itself.
+func TestKnownDefectsCheck(t *testing.T) {
+	res := KnownDefectsCheck().Run(context.Background(), fakeEnv{})
+	if res.Status != StatusInfo {
+		t.Fatalf("expected info for known-defects disclosure, got %q", res.Status)
+	}
+	for _, want := range []string{"PARITY-002", "sync", "rebuild", "imports"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("disclosure must mention %q; got: %s", want, res.Message)
+		}
+	}
+}
+
 func TestDBCheckEmptyPath(t *testing.T) {
 	env := fakeEnv{dbPath: ""}
 	res := DBCheck().Run(context.Background(), env)

@@ -245,7 +245,18 @@ func (i *Ingester) migratePackageEvidenceLanguage(ctx context.Context) error {
 	if _, ok := have["language"]; ok {
 		return nil
 	}
+	// The migration MUST be atomic and idempotent. It was neither: a bare
+	// multi-statement ExecContext is not run in one transaction, so a crash —
+	// or a second process racing the same meta home (the ingest lock serializes
+	// this in production, but tests share a state home) — left
+	// trust_package_evidence_v4 half-built, and the next run failed at
+	// `CREATE TABLE trust_package_evidence_v4` with "table already exists". Two
+	// changes fix it: wrap the whole script in a transaction (a crash rolls back
+	// to the pre-migration state, and the guard above re-runs cleanly), and drop
+	// any leftover _v4 first so a re-run after a rolled-back attempt starts from
+	// a clean slate rather than colliding with its own debris.
 	const ddl = `
+DROP TABLE IF EXISTS trust_package_evidence_v4;
 CREATE TABLE trust_package_evidence_v4 (
 	generation_id TEXT NOT NULL,
 	language TEXT NOT NULL,
@@ -264,8 +275,16 @@ INSERT INTO trust_package_evidence_v4
 	FROM trust_package_evidence;
 DROP TABLE trust_package_evidence;
 ALTER TABLE trust_package_evidence_v4 RENAME TO trust_package_evidence;`
-	if _, err := i.meta.ExecContext(ctx, ddl); err != nil {
+	tx, err := i.meta.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("ingest: begin trust_package_evidence migration: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, ddl); err != nil {
+		_ = tx.Rollback()
 		return fmt.Errorf("ingest: rebuild trust_package_evidence with language: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("ingest: commit trust_package_evidence migration: %w", err)
 	}
 	return nil
 }

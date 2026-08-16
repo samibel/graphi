@@ -1,16 +1,38 @@
 # Decision: independent architect + product-owner review of the language-GA program
 
-> ## ⚠️ RECOMMENDATIONS — NOT YET RATIFIED
+> ## ✅ OWNER RATIFIED, 2026-08-16 — with one reversal
 >
 > Two reviewers examined this tree **independently and without seeing each
 > other's findings**, then reconciled their two genuine conflicts. This record is
-> their reconciled position. **Sami remains the decision owner** (ADR 0007/0008);
-> the rulings below are binding only when ratified, except where they merely
-> record a verified fact (§1) — a fact does not need ratification.
+> their reconciled position. **Sami is the decision owner** (ADR 0007/0008) and
+> has now ruled:
 >
-> Nothing here was accepted on assertion. Every load-bearing claim was
-> re-verified against the tree by a third party before being written down, and
-> two of them were re-executed against the live binder.
+> **The goal is unchanged: GA for EVERY shipped language**, each at its honestly
+> achievable capability level, with Go's full proof chain (the original P2
+> program). Therefore §7's recommendation to *pause* the language-GA program is
+> **OVERRULED**, and §5.2's proposal to retire per-language "GA" vocabulary is
+> **declined** — languages keep GA, but every user-facing GA mention of a
+> language now carries its capability level beside it (`Java — GA
+> (cross-file-heuristic)`, never bare "GA"), which is the reviewers' own
+> mitigation adopted as a standing rule.
+>
+> **Everything in §1 (verified facts) and every soundness/integrity ruling
+> stands and is adopted, unchanged.** The blockers are not reasons to stop; they
+> are **Wave 0** of the program — the work that must land before any language,
+> Go included, may read GA. Priority order §3 is adopted as Wave 0's order.
+> **Go's grandfathering ends**: "GA for all languages" includes Go, so Go gets
+> real `GA-LANG-go-*` evidence rows (backfilled from the P0/P1 record where
+> artifacts exist), closing finding S2.
+>
+> Execution plan:
+> [`../plan/2026-08-graphi-language-ga-execution-plan-v1.md`](../plan/2026-08-graphi-language-ga-execution-plan-v1.md)
+> is superseded by the Wave-structured route agreed with the owner; Wave 0 is in
+> progress on branch `claude/parity-001-002-m2` (PARITY-002 disclosed, the
+> migration race fixed; JVMSOUND-001/002 and the rest next).
+>
+> The rulings below remain the substance; only §5's open questions 2 and 3, and
+> §7's pause, are resolved by this header. Where a ruling merely records a
+> verified fact (§1), it never needed ratification.
 
 - **Date:** 2026-08-16
 - **Scope:** the language-GA program (Java/Kotlin first), ADR 0008 D1–D8, the
