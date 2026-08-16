@@ -716,12 +716,12 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 			return err
 		}
 
-		// The incremental pass's module view (PARITY-002 fix, ADR 0009): fresh
-		// go.mod contents from this pass's units, every other cached go.mod read
-		// from disk — the same tree the full pass resolves against, so the two
-		// build identical maps over a stable tree. Built ONCE and shared by the
-		// reverse-deps translation and the linkFiles pass below.
-		moduleMap, err := i.moduleMapIncremental(ctx, tx, root, units)
+		// The incremental pass's module view (PARITY-002 fix, ADR 0009): this
+		// pass's walk (above) enumerated the WHOLE tree, exactly like the full
+		// pass's, so the same units-driven builder yields the identical go.mod
+		// census — the property the parity gates assert. Built ONCE and shared
+		// by the reverse-deps translation and the linkFiles pass below.
+		moduleMap, err := i.moduleMapFromUnits(root, units)
 		if err != nil {
 			return err
 		}

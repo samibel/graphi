@@ -646,3 +646,64 @@ func TestTrustEvidence_MigrationIdempotentWithLeftoverV4(t *testing.T) {
 		t.Error("the leftover trust_package_evidence_v4 debris survived the migration")
 	}
 }
+
+// TestTrustEvidence_MigrationReentryPreservesNonGoRows pins the data-loss half
+// of the migration race (ADR 0009 review round 1, finding 2): a process whose
+// belief about the schema is STALE re-enters the 3→4 step against an
+// already-migrated table. The step's copy backfills language='go', so without
+// a guard evaluated in the SAME transaction as the copy, the re-entrant loser
+// silently reset every row — including rows the jvm registrant wrote. The
+// stale belief is made durable here by rolling user_version back while the
+// table keeps its migrated shape and a 'kotlin' row: the reopened store MUST
+// no-op the step and preserve the row.
+//
+// Scope, honestly stated: this pins guard EXISTENCE and re-entry idempotency.
+// The sub-statement window of the original race (guard read from the DB, the
+// winner commits, then the copy runs) has no black-box seam to schedule
+// deterministically; it is closed structurally by evaluating the guard on the
+// migration transaction itself (engine/ingest/schema.go,
+// migratePackageEvidenceLanguage), and its lossy consequence was confirmed by
+// a throwaway probe before the fix (the copy against a migrated table returns
+// language='go' for a row seeded 'kotlin').
+func TestTrustEvidence_MigrationReentryPreservesNonGoRows(t *testing.T) {
+	ctx := context.Background()
+	metaDir := filepath.Join(t.TempDir(), "meta")
+	seedV2Sidecar(t, metaDir)
+
+	// First open: migrate the full ladder to v4.
+	store := graphstore.NewMemStore()
+	t.Cleanup(func() { _ = store.Close() })
+	ing, err := ingest.New(store, parse.NewDefaultRegistry(), metaDir)
+	if err != nil {
+		t.Fatalf("ingest.New on v2 sidecar: %v", err)
+	}
+	if _, err := ing.MetaDB().ExecContext(ctx,
+		"INSERT INTO trust_package_evidence VALUES ('g1','kotlin','com.example','ok','',0,0,3,0)"); err != nil {
+		t.Fatalf("seed kotlin row: %v", err)
+	}
+	// The loser's worldview: user_version says the step still needs to run.
+	if _, err := ing.MetaDB().ExecContext(ctx, "PRAGMA user_version = 3"); err != nil {
+		t.Fatalf("roll back user_version: %v", err)
+	}
+	if err := ing.Close(); err != nil {
+		t.Fatalf("close first open: %v", err)
+	}
+
+	// Re-entry: the 3→4 step runs again over the already-migrated table.
+	store2 := graphstore.NewMemStore()
+	t.Cleanup(func() { _ = store2.Close() })
+	ing2, err := ingest.New(store2, parse.NewDefaultRegistry(), metaDir)
+	if err != nil {
+		t.Fatalf("re-entrant open: %v", err)
+	}
+	t.Cleanup(func() { _ = ing2.Close() })
+
+	var lang string
+	if err := ing2.MetaDB().QueryRowContext(ctx,
+		"SELECT language FROM trust_package_evidence WHERE package_key = 'com.example'").Scan(&lang); err != nil {
+		t.Fatalf("read seeded row after re-entry: %v", err)
+	}
+	if lang != "kotlin" {
+		t.Errorf("re-entrant migration reset language to %q, want the seeded \"kotlin\" preserved", lang)
+	}
+}

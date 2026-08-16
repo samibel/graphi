@@ -252,11 +252,19 @@ func planCollidingPackageDir(m *RepoModel) (*Mutation, error) {
 
 // planAddNestedGoMod re-modules a real non-root package directory by writing a
 // go.mod into it (ADR 0009's invalidation hazard). Deterministic target: the
-// DEEPEST directory among the packages with the most files, tie-broken
-// lexicographically. The mutation adds one self-contained file; it cannot
-// manufacture a dangling reference. On a repo whose chosen directory has no
-// importers the row still exercises the any-depth go.mod re-link trigger, and
-// parity must hold either way.
+// non-root package with the MOST files, tie-broken lexicographically by
+// directory — most-files because a bigger subtree gives the re-link more to
+// get wrong, and both criteria are stable across dispatches. The mutation adds
+// one self-contained file; it cannot manufacture a dangling reference. On a
+// repo whose chosen directory has no importers the row still exercises the
+// any-depth go.mod re-link trigger, and parity must hold either way.
+//
+// No exists-guard on the target path: the RepoModel enumerates only .go files,
+// so it cannot answer "is there already a go.mod here", and a pinned clone
+// directory that already roots a module would simply be OVERWRITTEN by opWrite
+// — visible in the mutation's Desc, and parity over the edit must hold
+// regardless. (A fileExistsIn check here would be dead code dressed as
+// protection: it can never match a non-.go path.)
 func planAddNestedGoMod(m *RepoModel) (*Mutation, error) {
 	var target *GoPkg
 	for _, p := range m.Pkgs {
@@ -272,9 +280,6 @@ func planAddNestedGoMod(m *RepoModel) (*Mutation, error) {
 		return nil, errNoTarget // single-package root-only repo: no nested dir to re-module
 	}
 	rel := strings.TrimPrefix(path.Join(target.Dir, "go.mod"), "./")
-	if fileExistsIn(target, rel) {
-		return nil, errNoTarget
-	}
 	body := "module graphi.invalid/parity-nested\n\ngo 1.21\n"
 	return &Mutation{
 		Desc: fmt.Sprintf("add %s (module graphi.invalid/parity-nested), re-moduling package %s's subtree — the ADR 0009 any-depth go.mod invalidation shape",

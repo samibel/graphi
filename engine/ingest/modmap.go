@@ -1,8 +1,6 @@
 package ingest
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"os"
 
@@ -48,37 +46,18 @@ func (i *Ingester) buildModuleMap(root string, relPaths []string) (*link.ModuleM
 	return link.NewModuleMap(gomods), nil
 }
 
-// moduleMapFromUnits builds the map for a FULL pass: the walk enumerated every
-// file in the tree, so the units' paths are the complete go.mod census.
+// moduleMapFromUnits builds the map for a pass from its walked units. BOTH
+// passes qualify: IngestAll and ingestChanged each begin with a full i.walk of
+// the tree, so the units' paths are the complete go.mod census either way —
+// which is why there is no separate "incremental" builder unioning in cached
+// paths (there was, briefly; the union was provably redundant and its
+// tx-visibility rationale was wrong — the map is built before the purge, from
+// the walk, and the walk cannot see deleted files at all).
 func (i *Ingester) moduleMapFromUnits(root string, units []fileUnit) (*link.ModuleMap, error) {
 	paths := make([]string, 0, 4)
 	for _, u := range units {
 		if link.GoModPath(u.relPath) {
 			paths = append(paths, u.relPath)
-		}
-	}
-	return i.buildModuleMap(root, paths)
-}
-
-// moduleMapIncremental builds the map for an INCREMENTAL pass: this pass's
-// units cover added/changed go.mod files, and the cache (read within tx so this
-// pass's own upserts and purges are visible) covers every go.mod the tree
-// already held. A go.mod deleted this pass fails its disk read and is thereby
-// excluded — the same answer the full pass gives.
-func (i *Ingester) moduleMapIncremental(ctx context.Context, tx *sql.Tx, root string, units []fileUnit) (*link.ModuleMap, error) {
-	paths := make([]string, 0, 4)
-	for _, u := range units {
-		if link.GoModPath(u.relPath) {
-			paths = append(paths, u.relPath)
-		}
-	}
-	cached, err := i.cachedPathsTx(ctx, tx)
-	if err != nil {
-		return nil, err
-	}
-	for _, p := range cached {
-		if link.GoModPath(p) {
-			paths = append(paths, p)
 		}
 	}
 	return i.buildModuleMap(root, paths)

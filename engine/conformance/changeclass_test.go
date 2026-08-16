@@ -164,8 +164,6 @@ func (g *graphView) requireAbsent(qns ...string) error {
 	return nil
 }
 
-// edge finds fromQN --kind--> toQN, matching on qualified names so a witness
-// never has to know a NodeId.
 // fileEdge looks up an edge whose endpoints are FILE nodes (a file node's
 // qualified name is its source path). The regular edge() cannot see these:
 // newGraphView deliberately keeps file nodes out of byQN so symbol lookups
@@ -195,6 +193,26 @@ func (g *graphView) fileEdge(fromPath, kind, toPath string) (model.Edge, bool) {
 	return model.Edge{}, false
 }
 
+// symbolAt finds the non-file node with this qualified name declared at this
+// source path. byQN cannot answer the question: when two directories declare
+// the same package clause AND the same symbol name (the crossPackage half of
+// change_colliding_package_dir), TWO nodes share one qualified name and byQN
+// retains an arbitrary one of them — so a witness that must distinguish the
+// colliding declarations has to key on (qn, source path).
+func (g *graphView) symbolAt(qn, sourcePath string) (model.Node, bool) {
+	for _, n := range g.nodes {
+		if n.Kind() == "file" {
+			continue
+		}
+		if n.QualifiedName() == qn && filepath.ToSlash(n.SourcePath()) == sourcePath {
+			return n, true
+		}
+	}
+	return model.Node{}, false
+}
+
+// edge finds fromQN --kind--> toQN, matching on qualified names so a witness
+// never has to know a NodeId.
 func (g *graphView) edge(fromQN, kind, toQN string) (model.Edge, bool) {
 	from, okF := g.node(fromQN)
 	to, okT := g.node(toQN)
@@ -925,6 +943,8 @@ func Use() {
 			kind: kindChangeClass,
 			description: "A file is added to a directory that COLLIDES on its package clause with an imported directory, and that NOTHING imports. This class was the first HERMETIC reproduction " +
 				"of PARITY-002 and carried it as a pinned known defect; the ADR 0009 fix (module-aware import→directory resolution) landed and the row now asserts REAL parity on both stores. " +
+				"The colliding file also declares a SAME-NAME symbol, so the row covers BOTH resolution paths the collision used to poison: the imports fan-out (packageFileNodes) and the " +
+				"crossPackage symbol lookup that went ambiguous and minted an external node on the full pass only (ADR 0009 review round 1, finding 1). " +
 				"Read the PARITY-002 block on `apply` for what the defect was and why the fix removes both halves at once.",
 			seed: map[string]string{
 				"x/json/a.go":  "package json\n\nfunc A() int { return 1 }\n",
@@ -969,7 +989,18 @@ func Use() {
 				// full pass emitted a semantically wrong edge and the
 				// incremental pass merely failed to emit it. It was FROZEN —
 				// re-syncing could never heal it, only rebuild.
-				f.Write("y/json/b.go", "package json\n\nfunc B() int { return 2 }\n")
+				//
+				// THE SECOND HALF (found in the ADR 0009 review, finding 1):
+				// the added file also declares func A — the SAME bare name the
+				// importers call. Clause-based crossPackage went AMBIGUOUS on
+				// the full pass (A exists in two dirs declaring "json"),
+				// dropped the intra-repo calls edge, and minted an interned
+				// external node example.com/m/x/json.A with a heuristic edge
+				// instead — while the never-re-linked incremental side kept
+				// the old intra edge. Same frozen divergence, through `calls`.
+				// Module-aware crossPackage consults only the ONE directory
+				// the import path names, so the collision cannot arise.
+				f.Write("y/json/b.go", "package json\n\nfunc A() int { return 3 }\n\nfunc B() int { return 2 }\n")
 			},
 			witness: func(g *graphView) error {
 				if err := all(
@@ -994,7 +1025,33 @@ func Use() {
 						return fmt.Errorf("importer %s carries the clause-collision edge to y/json/b.go — PARITY-002's wrong edge is back", imp)
 					}
 				}
-				return nil
+				// The calls half (review finding 1). Both A declarations must
+				// exist — otherwise the collision is gone and this half proves
+				// nothing — and the witness must key on (qn, path) because the
+				// two share qualified name "json.A".
+				xA, ok := g.symbolAt("json.A", "x/json/a.go")
+				if !ok {
+					return fmt.Errorf("x/json's func A is missing — the calls half of this row is vacuous")
+				}
+				if _, ok := g.symbolAt("json.A", "y/json/b.go"); !ok {
+					return fmt.Errorf("y/json's colliding func A is missing — the calls half of this row is vacuous")
+				}
+				for _, caller := range []string{"impA.UseA", "impB.UseB"} {
+					from, _ := g.node(caller) // presence asserted above
+					found := false
+					for _, e := range g.edges {
+						if e.From() == from.ID() && e.Kind() == "calls" && e.To() == xA.ID() {
+							found = true
+							break
+						}
+					}
+					if !found {
+						return fmt.Errorf("%s lost its intra-repo calls edge to x/json's A — the clause-ambiguity drop is back", caller)
+					}
+				}
+				// The full pass used to mint this instead of the intra edge;
+				// with module-aware crossPackage it must never exist.
+				return g.requireNoExternal("example.com/m/x/json.A")
 			},
 		},
 		{

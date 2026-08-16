@@ -259,12 +259,14 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 				gotCrash++
 			}
 		}
-		// 16 + 2: PRD FR-7's 15 change classes + Delta PRD §9's 2 crash
-		// conditions, PLUS exactly one class that FR-7 does not name —
-		// `change_colliding_package_dir`, added 2026-08-16 as the first hermetic
-		// reproduction of PARITY-002. It is a real change class (a file is added
-		// to a colliding package directory) but it exists to publish a defect,
-		// not to discharge an FR-7 requirement, and its `prd_source` says so.
+		// 17 + 2: PRD FR-7's 15 change classes + Delta PRD §9's 2 crash
+		// conditions, PLUS exactly two classes that FR-7 does not name, both
+		// born of PARITY-002 (ADR 0009): `change_colliding_package_dir` (added
+		// 2026-08-16 as the defect's first hermetic reproduction, now a real
+		// parity assertion) and `add_nested_gomod` (pins the module-map cache
+		// invalidation the fix itself depends on). Both are real change classes
+		// but exist to prove a defect and its fix, not to discharge an FR-7
+		// requirement, and their `prd_source` says so.
 		// The count stays PINNED rather than becoming a `>=` bound: the guard's
 		// job is that no row can be re-kinded or added unnoticed, and a bound
 		// would forfeit exactly that. Adding another class means updating this

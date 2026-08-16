@@ -224,27 +224,57 @@ func (idx *SymbolIndex) sameDir(dir, name string) (model.NodeId, bool) {
 	return id, ok
 }
 
-// hasPackage reports whether the repo contains an INTERNAL package for the given
-// import path, using the SAME clause (last-path-segment) basis crossPackage and
-// packageFileNodes resolve on: byClause[path.Base(importPath)] is non-empty. The
-// receiver-type external-minting path (resolve_go.go drop-point 2) uses this to
-// avoid materializing an external node for a receiver whose type belongs to a
-// package committed in the repo — an internal method call is resolved (or honestly
-// skipped) through the normal paths, never minted as `external`. Erring toward
-// "internal" on a clause collision (e.g. a repo package sharing a stdlib clause)
-// is the SAFE direction: it suppresses an external node rather than flooding.
+// hasPackage reports whether the repo contains an INTERNAL package for the
+// given import path. Module-aware since ADR 0009 review round 1: with a
+// moduleMap the answer comes from the ONE directory the module path declares —
+// the same basis crossPackage and packageFileNodes resolve on, which is what
+// keeps all three consumers of "is this import internal?" telling one story.
+// Without a moduleMap (no go.mod) the historical clause basis is kept:
+// byClause[path.Base(importPath)] non-empty, erring toward "internal" on a
+// clause collision — the safe direction for the external-minting path
+// (resolve_go.go drop-point 2), which suppresses a node rather than flooding.
 func (idx *SymbolIndex) hasPackage(importPath string) bool {
 	if importPath == "" {
 		return false
 	}
+	if !idx.moduleMap.Empty() {
+		dir, ok := idx.moduleMap.Dir(importPath)
+		if !ok {
+			return false
+		}
+		return len(idx.byDir[dir]) > 0 || len(idx.fileNodesByDir[dir]) > 0
+	}
 	return len(idx.byClause[path.Base(importPath)]) > 0
 }
 
-// crossPackage resolves a selector (importPath, name) to a NodeId. The import
-// path maps to a package clause via its last segment; the symbol is then looked
-// up in every directory declaring that clause. A unique hit resolves; zero or
-// ambiguous (>1 distinct NodeId) hits are skipped deterministically.
+// crossPackage resolves a selector (importPath, name) to a NodeId.
+//
+// MODULE-AWARE since ADR 0009 review round 1 — this was the review's CONFIRMED
+// finding 1, and the reason "fail-closed resolution" was not a good enough
+// reason to leave it clause-based: on a full pass a clause collision made the
+// lookup AMBIGUOUS, which dropped the intra-repo edge and minted an interned
+// external node instead, while the incremental pass — whose directory-local
+// cascade never re-linked the importer — kept the OLD intra-repo edge. A
+// frozen full-vs-incremental divergence through `calls`, structurally
+// identical to the `imports` half of PARITY-002. With the moduleMap the
+// lookup consults exactly the ONE directory the import path declares, so the
+// collision cannot arise. Without a moduleMap the historical clause union is
+// kept: unique hit resolves, zero or ambiguous hits skip deterministically.
+//
+// The module branch resolves through sameDir, NOT a bare byDir read, on
+// purpose: byDir keeps the FIRST-added id when one directory declares a bare
+// name twice (build-tag variants make that a legitimate shape), which is
+// Add-order-dependent — and the full and incremental passes add nodes in
+// different orders. sameDir consults dirAmbiguous and skips those
+// deterministically, which is the property BuildIndex promises.
 func (idx *SymbolIndex) crossPackage(importPath, name string) (model.NodeId, bool) {
+	if !idx.moduleMap.Empty() {
+		dir, ok := idx.moduleMap.Dir(importPath)
+		if !ok {
+			return "", false
+		}
+		return idx.sameDir(dir, name)
+	}
 	clause := path.Base(importPath)
 	dirs := idx.byClause[clause]
 	if dirs == nil {

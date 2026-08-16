@@ -10,9 +10,13 @@
 - Spec-Gate: the conformance classes `change_colliding_package_dir` (now a real
   parity assertion) and `add_nested_gomod` (new), both stores, plus the
   `internal/parity` real-repo planners for both ids
-- Depends: the PARITY-001 fix (purge-before-link ordering) — its purge-first
-  discipline is what lets the incremental module map read cached paths within
-  the pass's tx and see deletions
+- Depends: the PARITY-001 fix (purge-before-link ordering) — module-aware
+  resolution consults the committed node population per directory, so it needs
+  deleted paths purged before `linkFiles`, or a re-moduled subtree would still
+  count purged nodes as resolution targets. (An earlier version of this bullet
+  claimed the dependency was about reading cached paths in-tx; that mechanism
+  never existed — the map is built from the walk, before the purge — and the
+  claim was corrected in review round 1, finding 6.)
 - Feeds: WP-J7 real-repo parity (G4), the Wave-0 gate (`internal/parity` two
   dispatches with identical COUNTS), Wave 2's Python fan-out decision (F5)
 
@@ -58,11 +62,14 @@ from every `go.mod` in the tree:
   keeps the historical clause behaviour unchanged; a `go.mod` that cannot be
   read or parsed contributes no resolution, never a guess.
 
-Wiring: `engine/ingest` builds the map once per pass — from the walked units'
-`go.mod` census on a full pass (contents read from disk; `fileUnit` carries
-only hashes by design), and from units ∪ cached paths on an incremental pass —
-and attaches it at all three index build sites (`linkFiles`, and both
-reverse-deps translations). `packageFileNodes` and `DirsForImport` consult it;
+Wiring: `engine/ingest` builds the map once per pass from the walked units'
+`go.mod` census (contents read from disk; `fileUnit` carries only hashes by
+design) — the SAME builder for both passes, because `IngestAll` and
+`ingestChanged` each begin with a full walk of the tree, so the units are the
+complete census either way (review round 1, finding 6: an earlier
+incremental-only variant unioned in cached paths; the union was provably
+redundant and was removed). The map attaches at all three index build sites
+(`linkFiles`, and both reverse-deps translations). `packageFileNodes` and `DirsForImport` consult it;
 because `DirsForImport` feeds `reverse_deps`, the cascade's dependency records
 agree with the emission by construction.
 
@@ -73,13 +80,29 @@ would shift resolution for its subtree with no re-link — a PARITY-002-shaped
 divergence introduced by the fix itself. Pinned red-without/green-with by
 `add_nested_gomod`.
 
+**Widened in review round 1 — `crossPackage` and `hasPackage` are module-aware
+too.** The first version of this ADR left them clause-based on the argument
+that they are fail-closed (ambiguity → skip) and "not PARITY-002's mechanism".
+The independent review REFUTED that argument (finding 1, confirmed by repro):
+on a full pass a clause collision on a shared symbol name made the
+`crossPackage` lookup ambiguous, which dropped the intra-repo `calls` edge and
+minted an interned external node (`example.com/m/x/json.A`) with a heuristic
+edge instead — while the incremental pass, whose directory-local cascade never
+re-linked the importer, kept the old intra edge. The same frozen
+full-vs-incremental divergence, through `calls` instead of `imports`:
+fail-closed resolution is only parity-safe if both passes fail closed on the
+same inputs, and the clause union made the inputs differ. Both lookups now
+resolve through the module map when one exists (clause behaviour unchanged
+when the tree has no `go.mod`), and the conformance class pins the shape: the
+colliding directory also declares a same-name symbol, and the witness asserts
+the intra edge survives and the external node never exists.
+
 **Deliberately NOT changed:**
 
-- `crossPackage` / `hasPackage` / `receiverMethod` stay clause-based. They are
-  fail-closed (ambiguity → skip, and `hasPackage` errs toward suppressing
-  external nodes — the documented safe direction), they are not PARITY-002's
-  mechanism, and switching them is a separate semantic change with its own
-  blast radius.
+- `receiverMethod` stays bare-name-based. It never consults the import path at
+  all (it resolves `recv.Method` across directories by receiver/method name),
+  so the module map has nothing to key on, and its ambiguity rule is
+  symmetric between the passes.
 - Non-Go languages: Python/Ruby/JS package imports keep their clause fan-out
   (`clausePackageFileNodes`) and Java/Kotlin keep the single interned
   file→package edge. Python's structural exposure to the same fan-out shape is
@@ -111,7 +134,13 @@ by `TestParseModuleDirective_AgreesWithTyperesolve` (test-only dependency).
 ## Consequences
 
 - Product-byte change: `imports` edge sets change on clause-colliding
-  repositories (they lose semantically wrong edges). The candidate moves;
+  repositories (they lose semantically wrong edges). Additionally, an import
+  that names a module path NOT present in the tree — the mid-refactor state
+  after a module rename, when files still import the old path — now resolves
+  as EXTERNAL (interned node, heuristic edge) instead of being clause-guessed
+  back onto an intra-repo directory. `TestTyperesolve_GoModChangeParity` pins
+  the new shape: the call edge retargets to the external node rather than
+  disappearing, and is never confirmed. The candidate moves;
   previously measured perf/evidence rows stay STALE until re-measured, and the
   real-repo matrix rows for gin/grpc-go stand as published (with a superseded
   header) until `internal/parity` re-runs.
