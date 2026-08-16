@@ -29,9 +29,9 @@ here with a local proof), **BLOCKED** (a dependency must clear first),
 | WP-J2 | Extractor deepening + `qn.go` identity map | **DONE** | byte-exact golden cross-test |
 | WP-J3 | Java binder (phases A–C), dark | **DONE** | named skip counters, zero external confirmed edges |
 | WP-J4 | Kotlin binder on the shared table | **DONE** | D2 inferred/declared boundary proven |
-| WP-J5 | Hermetic change-class parity | **DONE** | **10** required classes, both stores, byte parity |
+| WP-J5 | Hermetic change-class parity | **DONE** | **11** required classes, both stores, byte parity; **no deferred rows left** (M2.2) |
 | WP-J6 | Corpus deepening (pins + stratification) | **PARTIAL** | okio pinned (G5); guava→v3 + more pins outstanding |
-| WP-J7 | Real-repo parity over JVM pins (**G4**) | **BLOCKED** | ADR 0008 D8: PARITY-001/002 fixes are the entry criterion |
+| WP-J7 | Real-repo parity over JVM pins (**G4**) | **BLOCKED** | ADR 0008 D8 entry criterion: PARITY-001 ✅ fixed (M2.1), **PARITY-002 still open** |
 | WP-J8 | Hero-JVM (~20 scenarios × 12 ops) | **DONE** | `corpus/fixtures/hero-jvm`, hero gate green |
 | WP-J9 | Differential bytecode ground-truth (soundness) | **DONE** (Java) | live JDK, 4 dispatch forms; **Kotlin live path runs in CI only** (no local `kotlinc`) |
 | WP-J10 | Perf + budget runs; create `GA-LANG-*` rows (born UNKNOWN) | **OWNER** | needs an attested candidate + reproducible CI runs |
@@ -43,12 +43,14 @@ produces). **G5** partial. **G4, G7, G9** not yet green.
 
 ## 2. The critical path — and it is not JVM-specific
 
-The long pole to Java/Kotlin GA runs through a **Go-level** defect, not the
-binder:
+The long pole to Java/Kotlin GA runs through **Go-level** defects, not the
+binder. **PARITY-001 is now FIXED (M2.1); PARITY-002 remains open**, so the path
+is shorter but not clear:
 
 ```
-PARITY-001 / PARITY-002   (open, unfixed, scheduled v0.7.2 — docs/rc/parity-matrix-real-repo.md)
-      │  re-link non-determinism + phase-ordering; language-independent, ingest-level
+PARITY-001  ✅ FIXED 2026-08-16 (M2.1) — deleted-path purge now commits before linkFiles
+PARITY-002  ⛔ OPEN — re-link `imports` edge-set divergence, NON-DETERMINISTIC
+      │  language-independent, ingest-level
       ▼
 WP-J7  (real-repo parity over JVM pins)   ← ADR 0008 D8 makes the fixes the ENTRY CRITERION
       ▼
@@ -58,11 +60,24 @@ GA-LANG-java/kotlin-G4 = PASS
 ```
 
 Everything else is either DONE, BUILDABLE by me now, or an OWNER sign-off.
-**If G4 is required for GA-at-declared-capability, PARITY-001/002 is the
+**If G4 is required for GA-at-declared-capability, PARITY-002 is now the
 schedule.** The one open ADR question that could shorten this path is whether
 Java/Kotlin may reach GA with G4 published as an honest **PARTIAL** (defects
 filed, pinned, never hidden — exactly how Go's own real-repo matrix reads
 today) rather than a full PASS. That is ADR 0008 D8's ruling to make (§4).
+
+**What PARITY-002 will take, from the published characterisation.** It is *not*
+a second instance of PARITY-001 — different edge kind (`imports` only), different
+trigger (`sync` re-linking *any* file, including a comment-only edit; a no-op
+`sync` converges), and bidirectional rather than one-way. `imports` edges are
+file→file and fan out over `idx.packageFileNodes(imp.Path)`, so what varies is
+*which file nodes were in the index when the loop ran*. The hard part is not the
+fan-out — it is that grpc-go produced **three distinct incremental snapshots over
+six executions of an identical tree and binary** while the full side read the same
+number every time. Any fix must first make `sync` *reproducible*, because a
+non-deterministic baseline cannot be shown to have converged. That is a genuine
+root-cause investigation, not a reordering, and it should not be attempted by
+pattern-matching it to PARITY-001's fix.
 
 ## 3. Milestones — ordered, with the Claude/owner split
 
@@ -86,14 +101,26 @@ shipped with a local proof; none touched the shipped default.
   in `surfaces` MCP journey tests — unrelated to M1, pass in isolation; see the
   note under §6.)
 
-### M2 — Clear the critical path (BLOCKED → the real work) — *owner-scheduled*
-- **M2.1** Fix **PARITY-001** (phase-ordering / delete path) and **PARITY-002**
-  (re-link edge-set non-determinism). Product-byte changes → a new candidate.
-- **M2.2** Land the deferred conformance class `jvm_delete_file` (its entry
-  criterion is exactly M2.1) — flips the JVM matrix from 10 required + 1
-  deferred to 11 required.
-- **Gate:** `internal/parity` real-repo matrix converges deterministically on
-  the Go corpus; the two published dispatches agree on every verdict.
+### M2 — Clear the critical path — *partially done; PARITY-002 remains*
+- **M2.1a ✅ PARITY-001 FIXED** (2026-08-16). The incremental path now runs the
+  deleted-path purge **and commits it** before `linkFiles` — the order
+  `IngestAll` always used. Both published pins flipped in the same commit: the
+  hermetic `engine/conformance` row now asserts real parity with a strengthened
+  witness, and `internal/parity` (which drives the **built binary**) went from
+  `want FAIL` to `want PASS`. The SQLite trap SW-157 recorded is *avoided, not
+  disproved* — purging into the link batch is what breaks it; a separate,
+  committed batch means `linkFiles` never sees a purged node.
+- **M2.1b ⛔ PARITY-002 still open** — see §2 for what it will take. Deliberately
+  not attempted alongside M2.1: it is a different defect with a
+  non-deterministic baseline, and bundling them would make neither provable.
+- **M2.2 ✅ DONE** — `jvm_delete_file` promoted from deferred to required; the
+  JVM matrix is now **11 required rows and no deferred rows**. Recorded honestly:
+  it converges *with and without* the PARITY-001 fix (verified by reverting
+  `engine/ingest`), so the ADR 0008 D8 deferral was a precaution rather than a
+  masked JVM defect.
+- **Gate (still open):** `internal/parity` real-repo matrix converges
+  **deterministically** on the Go corpus; the two published dispatches agree on
+  every verdict. Blocked on M2.1b.
 
 ### M3 — Real-repo parity + perf for JVM (unblocked by M2) — *Claude builds, CI measures*
 - **M3.1** WP-J7: run `internal/parity` over the JVM pins; publish
@@ -151,10 +178,16 @@ that exercises the template before the next `typed-confirmed` language.
 
 ## 6. What proceeds without further input
 
-Milestone **M1 is DONE** (2026-08-15) — landed on `claude/jvm-java-constructor-calls`,
-each slice with its proof, no PR. **M2 is next and owner-scheduled** (it is a
-product-byte change to a shipped defect); M3 depends on M2; M4 is the owner's
-cutover. This plan is the map from *here* to that flip.
+Milestone **M1 is DONE** (2026-08-15, merged as #123). **M2 is half done**
+(2026-08-16, branch `claude/parity-001-002-m2`): PARITY-001 is fixed and
+`jvm_delete_file` is promoted, so the JVM matrix has no deferred rows left.
+**PARITY-002 is the remaining blocker** on the critical path — a separate,
+harder defect with a non-deterministic baseline (§2). M3 depends on it; M4 is
+the owner's cutover. This plan is the map from *here* to that flip.
+
+Both PARITY-001 fixes were product-byte changes, so they move the candidate —
+the perf/evidence rows measured against the previous candidate stay STALE until
+re-measured, exactly as the claims discipline requires.
 
 ### Note — a full-suite flake surfaced while gating M1 (pre-existing, not M1)
 
