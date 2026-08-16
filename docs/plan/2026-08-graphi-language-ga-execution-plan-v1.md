@@ -79,6 +79,30 @@ non-deterministic baseline cannot be shown to have converged. That is a genuine
 root-cause investigation, not a reordering, and it should not be attempted by
 pattern-matching it to PARITY-001's fix.
 
+**NEGATIVE RESULT — PARITY-002 does not reproduce hermetically at fixture scale
+(measured 2026-08-16, M2.1b).** A throwaway probe built the published correlate
+directly: a package directory whose import target is under-determined — two
+mutually exclusive `//go:build` variants, an in-package `_test.go`, an external
+`package p_test` file — imported by two packages, driven through **seven**
+triggers (edit a file in the imported package, edit a build-tag variant, edit
+the in-package test file, edit the external test package, edit one importer, add
+a file to the imported package, delete a build-tag variant), on **both** stores,
+**repeated five times**. All 14 combinations converged on snapshot bytes, every
+run — no divergence and no run-to-run variation.
+
+What that does and does not establish. It does **not** refute PARITY-002: the
+defect is measured on real pinned clones and that measurement stands. What it
+does establish is that **the under-determined-import-target shape is not, by
+itself, sufficient** — which the published record already declined to claim
+("consistency is not proof and this record does not claim it"), and this is
+evidence on that question rather than another restatement of it. So the next
+investigation should look for what gin and grpc-go have that a fixture does not:
+**scale** (92 and 831 files against 8), and therefore plausibly a **concurrency
+or ordering effect in the ingest worker pool** — which is also the only class of
+cause that would explain grpc-go's run-to-run variation while the full side stays
+byte-stable. The probe was deleted rather than committed: a green test that does
+not reproduce the defect it is named for is worse than no test.
+
 ## 3. Milestones — ordered, with the Claude/owner split
 
 ### M1 — Evidence deepening (BUILDABLE, no dependencies) — *Claude — ✅ DONE 2026-08-15*
