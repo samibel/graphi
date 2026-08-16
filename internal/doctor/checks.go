@@ -370,12 +370,37 @@ func LocalFirstCheck() Check {
 	}
 }
 
-// The known-defects disclosure check was removed 2026-08-16 when its ONLY
-// entry, PARITY-002, was fixed (ADR 0009: module-aware import→directory
-// resolution) — per its own contract, "an empty list removes the check". The
-// pattern stands ready for the next open defect that affects a GA operation:
-// info severity, never silently green, named defect id + operation +
-// workaround, removed only in the same change that closes the defect.
+// KnownDefectsCheck discloses OPEN, published product defects that affect a
+// GA operation — the claims-discipline rule applied to doctor: a user must be
+// able to learn a shipped limitation from the tool itself, not only from the
+// engineering record. Info severity, never pass: an open defect is not a
+// health failure of THIS install, but it is also never silently green. The
+// list is maintained by hand and must shrink to removal in the same change
+// that closes a defect; an empty list removes the check.
+//
+// The check was removed 2026-08-16 when its only entry (PARITY-002) closed,
+// and RESTORED the same day when the ADR 0009 re-measurement over pinned real
+// repositories isolated a SECOND, distinctly-mechanismed defect the fixture
+// gates cannot see: PARITY-003, in the Balanced profile's import aggregation.
+func KnownDefectsCheck() Check {
+	return checkFunc{
+		id:       "known-defects",
+		category: "known-defects",
+		fn: func(ctx context.Context, env Env) CheckResult {
+			return StringResult("known-defects", "known-defects",
+				"PARITY-003 (open): under the DEFAULT index profile (balanced), `graphi sync` "+
+					"can settle a superset of the file→file imports edges `graphi rebuild` "+
+					"produces over the identical tree — deterministic, only imports edges, only "+
+					"repositories whose module path has a dotted first segment (github.com/…). "+
+					"Cause: the profile's per-target import aggregation is computed over the "+
+					"files of ONE pass, so a re-link re-aggregates a subset while the previous "+
+					"pass's aggregated edges survive. Record: docs/rc/parity-matrix-real-repo.md. "+
+					"Workaround: run `graphi rebuild` when exact imports/related_files fidelity "+
+					"matters, or index with -profile full.",
+				StatusInfo)
+		},
+	}
+}
 
 // checkFunc is a functional adapter for the Check interface.
 type checkFunc struct {
