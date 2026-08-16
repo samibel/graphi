@@ -12,7 +12,8 @@
 //
 // Two reports from two dispatches are compared with:
 //
-//	go run ./cmd/parity -verdict-diff a.json,b.json
+//	go run ./cmd/parity -verdict-diff a.json,b.json   # verdicts agree
+//	go run ./cmd/parity -counts-diff a.json,b.json    # per-row counts + snapshot digests agree (the determinism gate)
 //
 // Exit codes mirror cmd/corpus: 0 = every executed row passed, 1 = at least one
 // row FAILED (which is legitimate published evidence, not a harness fault),
@@ -27,6 +28,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -53,10 +55,14 @@ func run() int {
 			"runs per kill point; every repetition is published, and a row FAILS if any of them diverged — "+
 			"this can never retry a row into green")
 	verdictDiff := flag.String("verdict-diff", "", "compare the verdict sets of two reports (a.json,b.json) and exit non-zero if they differ")
+	countsDiff := flag.String("counts-diff", "", "compare per-row node/edge counts and snapshot digests of two reports (a.json,b.json) and exit non-zero if they differ — the Wave-0 determinism gate that -verdict-diff is structurally blind to")
 	flag.Parse()
 
 	if *verdictDiff != "" {
 		return compareVerdictSets(*verdictDiff)
+	}
+	if *countsDiff != "" {
+		return compareCountsSets(*countsDiff)
 	}
 
 	rows, err := parity.LoadClasses(*classesPath)
@@ -241,6 +247,72 @@ func compareVerdictSets(spec string) int {
 		return 2
 	}
 	fmt.Println("\nparity: two dispatches agree on every verdict and both are publishable.")
+	return 0
+}
+
+// compareCountsSets is the Wave-0 DETERMINISM gate: two dispatches must agree
+// on per-row node/edge COUNTS and snapshot DIGESTS, not merely on verdicts.
+//
+// It exists because `-verdict-diff` was demonstrated structurally blind to
+// PARITY-002's non-deterministic half: on grpc-go all six published executions
+// agreed the row FAILs while the incremental edge count flapped 69939/69940
+// between dispatches (docs/rc/parity-matrix-real-repo.md records this
+// verbatim). A verdict agreement over flapping counts is not determinism.
+// This gate compares what the counts prove and keeps -verdict-diff's
+// discipline: a differing row is an ENVIRONMENT FINDING to be explained,
+// never a flake to be retried away.
+func compareCountsSets(spec string) int {
+	parts := strings.Split(spec, ",")
+	if len(parts) != 2 {
+		fmt.Fprintln(os.Stderr, "parity: -counts-diff needs exactly two report paths: a.json,b.json")
+		return 2
+	}
+	a, err := parityreport.Read(strings.TrimSpace(parts[0]))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parity: %v\n", err)
+		return 2
+	}
+	b, err := parityreport.Read(strings.TrimSpace(parts[1]))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parity: %v\n", err)
+		return 2
+	}
+	da, db := a.CountsSetDigest(), b.CountsSetDigest()
+	fmt.Printf("run a: %s\nrun b: %s\n", a.Provenance.RunSHA, b.Provenance.RunSHA)
+	if da != db {
+		fmt.Println("\nparity: COUNTS DIFFER between the two dispatches — non-determinism (or a row-set mismatch); an environment finding to be explained, not a flake to retry away.")
+		as, bs := a.CountsSet(), b.CountsSet()
+		ids := make([]string, 0, len(as)+len(bs))
+		seen := map[string]bool{}
+		for id := range as {
+			ids = append(ids, id)
+			seen[id] = true
+		}
+		for id := range bs {
+			if !seen[id] {
+				ids = append(ids, id)
+			}
+		}
+		sort.Strings(ids)
+		for _, id := range ids {
+			av, aok := as[id]
+			bv, bok := bs[id]
+			switch {
+			case !aok:
+				fmt.Printf("  %-28s only in run b: %s\n", id, bv)
+			case !bok:
+				fmt.Printf("  %-28s only in run a: %s\n", id, av)
+			case av != bv:
+				fmt.Printf("  %-28s\n    a: %s\n    b: %s\n", id, av, bv)
+			}
+		}
+		return 1
+	}
+	if !a.Publishable || !b.Publishable {
+		fmt.Println("\nparity: counts agree, but at least one run is NOT publishable — publication refused.")
+		return 2
+	}
+	fmt.Println("\nparity: two dispatches agree on every per-row count and snapshot digest, and both are publishable.")
 	return 0
 }
 

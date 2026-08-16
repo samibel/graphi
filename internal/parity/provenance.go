@@ -34,11 +34,14 @@ var ProductPaths = []string{"engine", "core", "surfaces", "cmd/graphi", "interna
 //	                      figures are only meaningful against a named machine.
 //	pin mismatch        — checked per repository in Report.Finalize.
 //
-// PROVENANCE IS STATED HONESTLY AND NEVER OVERSTATED. The harness does not exist
-// at the candidate SHA, so the statement this produces is "product source
-// byte-identical to v0.7.1 at 80d67ed…" and both SHAs are recorded. No record
-// may say the run happened AT the candidate — parityreport.NewProvenance owns
-// that sentence so no caller can phrase it any other way.
+// PROVENANCE IS STATED HONESTLY AND NEVER OVERSTATED. The run may happen at a
+// commit other than the candidate, so the statement this produces is "product
+// source byte-identical to the ADR 0009 candidate at <sha>" and both SHAs are
+// recorded. No record may say the run happened AT the candidate —
+// parityreport.NewProvenance owns that sentence so no caller can phrase it any
+// other way. (Under the original P0 candidate the harness did not even exist
+// at the candidate SHA; since the 2026-08-16 candidate move it does, and the
+// separation of the two SHAs is kept for the same reason regardless.)
 func CollectProvenance(ctx context.Context, repoRoot string) parityreport.Provenance {
 	head, _ := gitHead(ctx, repoRoot)
 	p := parityreport.NewProvenance(head)
