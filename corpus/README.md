@@ -24,8 +24,10 @@ while keeping the non-Go repositories for cross-language regression detection.
 | [gin](https://github.com/gin-gonic/gin) | v1.9.1 | 3 | MIT | 92 | Web/API service shape (router, middleware, binding, render) **and** the build-tag carrier: 16 files sit behind `//go:build` constraints. |
 | [grpc-go](https://github.com/grpc/grpc-go) | v1.60.1 | 3 | Apache-2.0 | 831 | The workhorse: 277 Go package directories, 11 `go.mod` files, 49 generated protobuf files, 287 test files — four properties at a size the nightly run can still afford. |
 | [kubernetes](https://github.com/kubernetes/kubernetes) | v1.29.0 | **4** | Apache-2.0 | 15718 | The FR-2 stress target (≥10 000 source files): 3611 package directories, 34 modules, `staging/` publishing 5899 of the files as separate modules. |
-| flask, sinatra, ky, express, guava | — | 1–3 | BSD-3-Clause / MIT / MIT / MIT / Apache-2.0 | — | Kept from v2: they cover the historical first-contact bug classes (non-source assets, symlinked layouts, malformed JSON fixtures) and give cross-language regression signal. Out of scope for P0 accuracy and performance claims. |
+| flask, sinatra, ky, express | — | 1–3 | BSD-3-Clause / MIT / MIT / MIT | — | Kept from v2: they cover the historical first-contact bug classes (non-source assets, symlinked layouts, malformed JSON fixtures) and give cross-language regression signal. Out of scope for P0 accuracy and performance claims. |
+| [guava](https://github.com/google/guava) | v33.0.0 | 3 | Apache-2.0 | 3204 | The **Java** monorepo (guava, guava-testlib, guava-gwt, android flavor). Brought to the v3 measured standard (WP-J6): full 40-char sha + a `measured` census (3204 `.java` of 3298 tracked, via the `source_files` field). Cross-language regression; out of scope for P0 accuracy. |
 | [okio](https://github.com/square/okio) | 3.9.1 | 3 | Apache-2.0 | 313 | The first **Kotlin** pin (language-GA program G5): a Kotlin-multiplatform IO library, 284 `.kt` + 29 `.java` at the pin. Cross-language regression + JVM-binder capability — graphi parses all 313 files with zero parse crashes and produces confirmed Java+Kotlin call sites. Its `measured` block uses the new `source_files` census (the non-Go analog of `go_files`). |
+| [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization) | v1.6.3 | 3 | Apache-2.0 | 615 | The second **Kotlin** pin (G5, WP-J6): JetBrains' reflectionless serialization library, 609 `.kt` + 6 `.java` (the `.java` are `module-info.java` JPMS declarations) at the pin. Complements okio with a compiler-plugin-heavy, densely-generic codebase — graphi tables all 615 JVM files with zero crashes and the binder resolves 3517 typed Kotlin sites. |
 
 Every count above is **measured**, not estimated: each entry's `measured` block
 records the numbers, the date, and the exact command sequence (a shallow clone at
@@ -88,7 +90,8 @@ available to the P0 performance harness without ever joining a scheduled job.
 ## Pins fail closed
 
 `ref` pins a **release tag**; `sha` additionally pins the checkout HEAD. The v3 Go
-entries pin the **full 40-character commit sha** (FR-2), while the older entries keep
+entries and the three JVM entries (guava, okio, kotlinx.serialization) pin the
+**full 40-character commit sha** (FR-2); the remaining older non-Go entries keep
 their recorded 12-character prefixes. If an upstream tag is re-pointed — or a clone
 lands on any other commit — the run fails at the `pin` step *before* indexing, with
 the observed HEAD in the failure detail. It is never a warning, and there is no

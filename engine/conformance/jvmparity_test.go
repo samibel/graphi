@@ -269,6 +269,51 @@ class App {
 				)
 			},
 		},
+		{
+			id:   "jvm_move_symbol",
+			kind: kindChangeClass,
+			description: "A Kotlin top-level function moves file-to-file WITHIN one package. A JVM node's QN keys on the directory, not the filename (qn.go filePackage), so the moved function's identity k.helper is STABLE while its " +
+				"source file changes — two files then claim one NodeId inside a single change set, the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The class that proves a QN-stable re-home carries the node AND its confirmed edge to the new file with no stale copy left behind.",
+			seed: map[string]string{
+				"k/a.kt": `package k
+import tax.Rate
+fun helper(r: Rate): Int {
+    val typed: Rate = r
+    return typed.rate()
+}
+fun keep(): Int = 1
+`,
+				"k/b.kt": `package k
+fun other(): Int = 2
+`,
+			},
+			apply: func(f *fixture) {
+				// helper() moves a.kt → b.kt, both rewritten in place (no file
+				// add/delete, so the deferred delete path is untouched). k.helper's
+				// QN is stable, so the incremental reconcile must re-home the node
+				// and its confirmed edge onto b.kt without leaving a stale a.kt copy
+				// or dropping the edge — the parity risk this class exists to pin.
+				f.Write("k/a.kt", `package k
+fun keep(): Int = 1
+`)
+				f.Write("k/b.kt", `package k
+import tax.Rate
+fun helper(r: Rate): Int {
+    val typed: Rate = r
+    return typed.rate()
+}
+fun other(): Int = 2
+`)
+			},
+			witness: func(g *graphView) error {
+				return all(
+					g.requirePresent("k.helper"),                                    // identity preserved across the cross-file move
+					g.requireEdgeAtTier("k.helper", "calls", "tax.rate", confirmed), // and its confirmed edge survives the re-home
+					g.requirePresent("k.keep"),                                      // control: stayed in a.kt
+					g.requirePresent("k.other"),                                     // control: stayed in b.kt
+				)
+			},
+		},
 	}
 }
 
