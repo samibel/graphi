@@ -69,9 +69,29 @@ design) — the SAME builder for both passes, because `IngestAll` and
 complete census either way (review round 1, finding 6: an earlier
 incremental-only variant unioned in cached paths; the union was provably
 redundant and was removed). The map attaches at all three index build sites
-(`linkFiles`, and both reverse-deps translations). `packageFileNodes` and `DirsForImport` consult it;
-because `DirsForImport` feeds `reverse_deps`, the cascade's dependency records
-agree with the emission by construction.
+(`linkFiles`, and both reverse-deps translations). `packageFileNodes`,
+`crossPackage` and `hasPackage` consult it for Go emission.
+
+`DirsForImport` — the reverse-dep translation's resolver — returns the UNION
+of the module basis and the clause basis, NOT the module directory alone.
+This is a review-round-2 correction of a CONFIRMED blocker (independent
+reviewer, finding 1, reproduced hermetically): the translation serves ALL
+languages and its targets carry no language, while non-Go emission stays
+clause-based — a module-only answer swallowed every non-Go target in any tree
+containing a go.mod, so a Python caller's dependency record was stored
+verbatim ("shop") instead of as its target directory ("src/shop"), the
+cascade never re-linked it, and the full pass's cross-module edge went
+permanently missing from the incremental graph. A NEW frozen divergence of
+exactly the class this ADR closes, introduced by its own first version. The
+invariant the translation must uphold is records ⊇ emission dependencies, per
+language, all languages at once; the union satisfies it (the module dir is
+not always inside the clause dirs — a directory's declared clause can differ
+from its import path's last segment), and over-approximation is safe by
+idempotence: an unnecessary re-link re-emits identical bytes. The earlier
+"records agree with the emission by construction" wording claimed equality
+where only coverage is needed — and its module-only implementation delivered
+neither. Pinned by `TestLink_Python_MixedTreeWithGoMod_IncrementalParity`
+(mixed tree, clause ≠ directory, change set naming only the target file).
 
 **Cache invalidation widens with the dependency**: a change to a `go.mod` at
 ANY depth (`link.GoModPath`) triggers the full re-link, where the historical
@@ -105,9 +125,12 @@ the intra edge survives and the external node never exists.
   symmetric between the passes.
 - Non-Go languages: Python/Ruby/JS package imports keep their clause fan-out
   (`clausePackageFileNodes`) and Java/Kotlin keep the single interned
-  file→package edge. Python's structural exposure to the same fan-out shape is
-  recorded (review finding F5) and is a Wave-2 entry question, measured
-  separately — never bundled into this change.
+  file→package edge — non-Go EMISSION never consults the module map, so a
+  single pass's non-Go bytes are unchanged. (The shared reverse-dep
+  TRANSLATION is a different story — see the `DirsForImport` union above,
+  which review round 2 forced.) Python's structural exposure to the same
+  fan-out shape is recorded (review finding F5) and is a Wave-2 entry
+  question, measured separately — never bundled into this change.
 - `engine/typeresolve`'s `Input`/`Triggers` stay root-only: its Resolve reads
   only the root module path today, so a nested `go.mod` cannot change its
   result; widening them would re-run the pass for nothing.
@@ -152,3 +175,44 @@ by `TestParseModuleDirective_AgreesWithTyperesolve` (test-only dependency).
   non-deterministic half is closed by argument (the fan-out no longer exists
   for Go), not by measurement — the distinction the evidence discipline
   requires stating.
+
+## Review round 2 (independent adversarial reviewer, 2026-08-16)
+
+An independent reviewer was set on the whole diff with instructions to refute
+it. Outcomes, so none is silently absorbed:
+
+- **Finding 1 (BLOCKER, confirmed, fixed)**: the `DirsForImport` union above.
+- **Finding 3 (fixed)**: a nested `go.mod` that is unparseable — or that lost
+  the duplicate-module-path tie-break — used to contribute nothing at all, so
+  the ENCLOSING module's arithmetic resolved into its subtree: intra-repo
+  edges for a tree the Go toolchain refuses to build. `moduleDirs` is now
+  built from every input `go.mod` path, parseable or not: a broken module
+  still marks a BOUNDARY (shielded and unresolvable), pinned by
+  `TestModuleMap_UnparseableNestedGoModStillShieldsSubtree`.
+
+Known limits, recorded rather than fixed (all deterministic and identical
+across passes — none is a parity defect):
+
+- **Torn `go.mod` read** (finding 2): a non-atomic writer racing a pass can
+  yield truncated-but-parseable content and thus a wrong resolution FOR THAT
+  PASS. Drift-healed: the cache's go.mod hash mismatches the settled bytes,
+  the next sync re-links everything. The unhealed shape needs a delete +
+  byte-identical restore with BOTH watcher events lost — inherent to reading
+  disk mid-pass (the rejected `fileUnit.src` alternative would trade it for a
+  worse one), accepted with eyes open.
+- **Ambiguous import** (finding 3's second half): when a nested module's
+  declared path collides with the enclosing module's arithmetic for an
+  existing directory — Go's "ambiguous import" build error — `Dir` picks the
+  module-path match deterministically instead of failing closed. Malformed
+  tree; both passes agree.
+- **Hard-fail wedge widened** (finding 4): any go.mod change pulls every
+  linkable file into the re-link set, and a pre-existing `SkipParseError`
+  elevation makes the incremental pass hard-fail if ANY file in that set
+  cannot be parsed — pre-existing policy for the root go.mod, now reachable
+  from any depth. Changing the elevation policy is its own semantic decision,
+  not smuggled in here.
+- **Pre-purge translation index** (finding 6, pre-existing): the incremental
+  reverse-deps translation runs before the deleted-path purge, the full
+  pass's after — meta-only (`reverse_deps` rows, graph bytes agree), and
+  owned by the PARITY-001 follow-up (W0.i), where the batch-ordering work
+  already lives.

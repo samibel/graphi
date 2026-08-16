@@ -112,6 +112,45 @@ func TestModuleMap_NestedModuleExcludesSubtree(t *testing.T) {
 	}
 }
 
+// TestModuleMap_UnparseableNestedGoModStillShieldsSubtree pins the ADR 0009
+// review round 2 hardening (finding 3): a nested go.mod that cannot be parsed
+// contributes no RESOLUTION — but it still marks a module BOUNDARY. Without
+// that, the enclosing module's path arithmetic resolved into a subtree the Go
+// toolchain would refuse to build (it errors on the broken go.mod), minting
+// intra-repo edges out of a guess. Same rule for a go.mod that lost the
+// duplicate-module-path tie-break: its directory roots a module even though
+// its path maps elsewhere. Fail closed: shielded and unresolvable beats
+// resolved-by-arithmetic.
+func TestModuleMap_UnparseableNestedGoModStillShieldsSubtree(t *testing.T) {
+	m := NewModuleMap(map[string][]byte{
+		"go.mod":     []byte("module example.com/m\n"),
+		"sub/go.mod": []byte("this is not a go.mod\n"),
+	})
+	if dir, ok := m.Dir("example.com/m/sub/pkg"); ok {
+		t.Errorf("the broken nested go.mod must shield its subtree from the root module; got %q", dir)
+	}
+	if dir, ok := m.Dir("example.com/m/elsewhere"); !ok || dir != "elsewhere" {
+		t.Errorf("the root module keeps the rest of the tree: got (%q, %v)", dir, ok)
+	}
+
+	// Duplicate module path: the shallower declaration wins the path, but the
+	// loser's directory still roots a module and shields its subtree.
+	dup := NewModuleMap(map[string][]byte{
+		"a/go.mod": []byte("module example.com/dup\n"),
+		"b/go.mod": []byte("module example.com/dup\n"),
+	})
+	if dir, ok := dup.Dir("example.com/dup/x"); !ok || dir != "a/x" {
+		t.Errorf("duplicate module path: shallowest-then-lex winner must resolve; got (%q, %v)", dir, ok)
+	}
+	root := NewModuleMap(map[string][]byte{
+		"go.mod":     []byte("module example.com/m\n"),
+		"sub/go.mod": []byte("module example.com/m\n"), // duplicate: root wins the path
+	})
+	if dir, ok := root.Dir("example.com/m/sub/pkg"); ok {
+		t.Errorf("the duplicate-loser go.mod must still shield its subtree; got %q", dir)
+	}
+}
+
 // TestModuleMap_SegmentBoundary is the regression a raw strings.HasPrefix would
 // fail: "example.com/m" must not swallow "example.com/mtools".
 func TestModuleMap_SegmentBoundary(t *testing.T) {

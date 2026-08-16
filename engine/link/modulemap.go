@@ -84,9 +84,16 @@ func NewModuleMap(gomods map[string][]byte) *ModuleMap {
 		}
 		m.mods[modPath] = posixDir(p)
 	}
-	m.moduleDirs = make(map[string]struct{}, len(m.mods))
-	for _, d := range m.mods {
-		m.moduleDirs[d] = struct{}{}
+	// moduleDirs comes from EVERY input go.mod path, not just the parsed
+	// winners in m.mods (ADR 0009 review round 2, finding 3): a go.mod that is
+	// unparseable — or that lost the duplicate-module-path tie-break — still
+	// marks a module BOUNDARY even though it contributes no resolution. If it
+	// did not, the enclosing module's path arithmetic would resolve into a
+	// subtree the Go toolchain refuses to build, minting intra-repo edges out
+	// of a guess. Shielded-and-unresolvable is the fail-closed answer.
+	m.moduleDirs = make(map[string]struct{}, len(gomods))
+	for p := range gomods {
+		m.moduleDirs[posixDir(p)] = struct{}{}
 	}
 	m.order = make([]string, 0, len(m.mods))
 	for mp := range m.mods {
