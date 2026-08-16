@@ -182,12 +182,16 @@ func TestClassTable_BindsToDeclaredMatrix(t *testing.T) {
 	})
 
 	t.Run("COUNT", func(t *testing.T) {
-		// 15 change classes (PRD FR-7) + 2 crash conditions (Delta §9). Derived
-		// from `kind`, never from len(rows) — counting crash conditions among
-		// the change classes is the exact conflation that produced
-		// backlog.md:55's "16 change classes".
-		if got := CountChangeClasses(rows); got != 15 {
-			t.Errorf("CountChangeClasses = %d, want 15", got)
+		// 16 = PRD FR-7's 15 change classes + `change_colliding_package_dir`,
+		// added 2026-08-16 as the hermetic reproduction of PARITY-002. That one
+		// is NOT an FR-7 requirement — its prd_source says "none" — it exists to
+		// publish a defect as executable data, and it carries a real-repo
+		// planner so it runs on pinned clones too. Derived from `kind`, never
+		// from len(rows): counting crash conditions among the change classes is
+		// the exact conflation that produced backlog.md:55's "16 change
+		// classes", so this number and that mistake are not the same 16.
+		if got := CountChangeClasses(rows); got != 16 {
+			t.Errorf("CountChangeClasses = %d, want 16", got)
 		}
 	})
 }

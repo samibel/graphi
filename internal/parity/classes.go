@@ -177,6 +177,14 @@ func specs() []ClassSpec {
 				"a multi-module tree (sub-modules are excluded from the edit model by " +
 				"construction — only the root module is touched)."},
 		{ID: "change_external_import", Plan: planChangeExternalImport},
+		{ID: "change_colliding_package_dir", Plan: planCollidingPackageDir,
+			Note: "Adds a NEW directory whose package clause collides with an existing " +
+				"package's, and that nothing imports — the PARITY-002 precondition. " +
+				"`imports` edges fan out over every directory sharing the clause " +
+				"(engine/link/index.go packageFileNodes keys on path.Base), while the " +
+				"incremental cascade is directory-local, so importers of the ORIGINAL " +
+				"directory are never re-linked. A FAIL here is the EXPECTED, tracked " +
+				"result, not a harness fault."},
 	}
 }
 
@@ -197,6 +205,45 @@ func SpecByID() map[string]ClassSpec {
 // ---------------------------------------------------------------------------
 
 const marker = "graphiParity"
+
+// planCollidingPackageDir adds a NEW directory whose package clause collides
+// with the primary package's, and which nothing imports — the PARITY-002
+// precondition.
+//
+// Why this is a legitimate real-repo edit and not a manufactured defect: two
+// directories declaring the same package clause is an ordinary Go shape (gin
+// alone ships four `package json` directories behind build tags), and the edit
+// ADDS a self-contained, syntactically valid file. It creates no dangling
+// reference — the near-miss the record warns about, where an incomplete
+// `rename_package` left an importer pointing at a package that no longer
+// existed and the harness then measured its own breakage.
+//
+// The divergence it exposes belongs to the product: `imports` edges fan out
+// over EVERY directory sharing the clause (engine/link/index.go
+// packageFileNodes keys on path.Base(importPath)), so adding the colliding
+// directory changes the correct fan-out of every importer of the ORIGINAL
+// directory — while dependentsOf, being directory-local, re-links none of them.
+func planCollidingPackageDir(m *RepoModel) (*Mutation, error) {
+	pkg := m.primaryPkg()
+	if pkg == nil {
+		return nil, errNoTarget
+	}
+	// A fixed, deterministic location that cannot already exist in a pinned
+	// clone, and that no file imports.
+	dir := path.Join("graphi_parity_collide", pkg.Name)
+	rel := strings.TrimPrefix(path.Join(dir, "collide.go"), "./")
+	if fileExistsIn(pkg, rel) {
+		return nil, errNoTarget
+	}
+	body := fmt.Sprintf("package %s\n\n// %sCollide is added by the real-repo parity matrix to create a\n"+
+		"// package-clause collision with %s. Nothing imports this directory.\nfunc %sCollide() string {\n\treturn %q\n}\n",
+		pkg.Name, marker, pkg.Dir, marker, "parity-002")
+	return &Mutation{
+		Desc: fmt.Sprintf("add directory %s declaring package %s — colliding with %s, imported by nobody (the PARITY-002 precondition)",
+			dir, pkg.Name, pkg.Dir),
+		Ops: []FileOp{{Kind: opWrite, Path: rel, Data: []byte(body)}},
+	}, nil
+}
 
 // planAddFile adds a new file in a new-to-the-graph position of an existing
 // package.

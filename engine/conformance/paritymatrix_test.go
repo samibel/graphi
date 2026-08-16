@@ -92,7 +92,29 @@ var (
 	legalStores      = []string{"MemStore", "SQLite", "both", storeNone}
 	legalAssertions  = []string{assertionSnapshotBytes, assertionEnvelopeBytes, "spot query"}
 	legalHarnessRows = []string{harnessRequired, harnessDeferred}
+
+	// requiredRowOwners is the CLOSED set of stories permitted to own a
+	// harness_row: "required" class. SW-157 built the harness and owns the FR-7
+	// rows; every later entry names the work package that ADDED a required row,
+	// because attributing someone else's row to SW-157 would be false
+	// provenance. Keeping it closed (rather than "any non-empty string") is what
+	// still stops a row arriving with an empty or invented owner.
+	requiredRowOwners = map[string]bool{
+		"SW-157": true, // the harness and FR-7's 15 change classes
+		"W0.f":   true, // change_colliding_package_dir — the PARITY-002 reproduction
+	}
 )
+
+// requiredRowOwnerList renders requiredRowOwners deterministically for failure
+// messages.
+func requiredRowOwnerList() []string {
+	out := make([]string, 0, len(requiredRowOwners))
+	for k := range requiredRowOwners {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
 
 // loadParityClasses parses docs/rc/parity-classes.yaml, the machine-readable
 // source of truth SW-156 landed. It is deliberately the ONLY place this harness
@@ -237,10 +259,18 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 				gotCrash++
 			}
 		}
-		// 15 + 2, per PRD FR-7 (15 change classes) + Delta PRD §9 (2 crash
-		// conditions). Pinned so a re-kinded row cannot slide past unnoticed.
-		if gotClasses != 15 || gotCrash != 2 {
-			t.Errorf("KIND: %s has %d change_class + %d crash_condition rows; want 15 + 2",
+		// 16 + 2: PRD FR-7's 15 change classes + Delta PRD §9's 2 crash
+		// conditions, PLUS exactly one class that FR-7 does not name —
+		// `change_colliding_package_dir`, added 2026-08-16 as the first hermetic
+		// reproduction of PARITY-002. It is a real change class (a file is added
+		// to a colliding package directory) but it exists to publish a defect,
+		// not to discharge an FR-7 requirement, and its `prd_source` says so.
+		// The count stays PINNED rather than becoming a `>=` bound: the guard's
+		// job is that no row can be re-kinded or added unnoticed, and a bound
+		// would forfeit exactly that. Adding another class means updating this
+		// number and saying why, here.
+		if gotClasses != 16 || gotCrash != 2 {
+			t.Errorf("KIND: %s has %d change_class + %d crash_condition rows; want 16 + 2",
 				parityClassesPath, gotClasses, gotCrash)
 		}
 	})
@@ -371,9 +401,16 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 		for _, r := range rows {
 			switch r.HarnessRow {
 			case harnessRequired:
-				if r.Owner != "SW-157" {
-					t.Errorf("OWNER: %q is harness_row: %q so owner must be \"SW-157\"; got %q",
-						r.ID, harnessRequired, r.Owner)
+				// SW-157 built the harness and owns the FR-7 rows it landed
+				// with. A later story that ADDS a required row owns that row
+				// instead — attributing it to SW-157 would be false provenance,
+				// which is the opposite of what this guard exists for. The set
+				// stays CLOSED and enumerated, so a row still cannot arrive with
+				// an empty or invented owner; adding one means naming it in
+				// requiredRowOwners.
+				if !requiredRowOwners[r.Owner] {
+					t.Errorf("OWNER: %q is harness_row: %q so owner must be one of %v; got %q",
+						r.ID, harnessRequired, requiredRowOwnerList(), r.Owner)
 				}
 				if r.DeferredTo != "" {
 					t.Errorf("OWNER: %q is harness_row: %q so deferred_to must be empty; got %q",

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -342,7 +343,23 @@ type changeClassRow struct {
 	witness     func(g *graphView) error
 	knownDefect string
 	pin         func(inc, full *graphView) error
+	// reapply names what re-applying the identical change set does. Required
+	// exactly when knownDefect is set — see runKnownDefectRow assertion (3). It
+	// is a property of the DEFECT, not of the harness, so it must be declared
+	// rather than assumed: a defect that re-syncing heals and one that it cannot
+	// are different severities, and conflating them hides the worse case.
+	reapply string
 }
+
+// The two re-application shapes a pinned defect can have.
+const (
+	// reapplyHeals: the second apply moves the graph and lands on the full
+	// bytes — "the second apply does what the first should have" (PARITY-001).
+	reapplyHeals = "heals"
+	// reapplyFrozen: re-application does not move the graph and the divergence
+	// survives, so only a full rebuild recovers it (PARITY-002). Strictly worse.
+	reapplyFrozen = "frozen"
+)
 
 // baseTree is the fixture every row starts from: a real Go module with a
 // cross-package call (shop.Checkout -> tax.Rate) through an intra-module import,
@@ -875,6 +892,114 @@ func Use() {
 				"docs/adr/0004-ingest-recovery-disposition.md:34-41; the real-process complement is owned by SW-158.",
 			deferredTo: "SW-158",
 		},
+		{
+			id:   "change_colliding_package_dir",
+			kind: kindChangeClass,
+			description: "A file is added to a directory that COLLIDES on its package clause with an imported directory, and that NOTHING imports. THIS CLASS DOES NOT HOLD TODAY: it carries " +
+				"the tracked defect PARITY-002, so the row PINS the current wrong behaviour instead of asserting parity. It is the first HERMETIC reproduction of PARITY-002 — until now the " +
+				"defect existed only as a measurement on pinned real clones. Read the PARITY-002 block on `apply` before touching anything here.",
+			knownDefect: "PARITY-002",
+			// FROZEN, and this is the fact that makes PARITY-002 worse than
+			// PARITY-001 was: re-syncing cannot heal it. impA and impB are never
+			// in the re-link set — nothing they import changed — so no number of
+			// further `graphi sync` runs reaches them. Only `graphi rebuild`
+			// recovers, which is exactly the workaround the readme now names.
+			reapply: reapplyFrozen,
+			seed: map[string]string{
+				"x/json/a.go":  "package json\n\nfunc A() int { return 1 }\n",
+				"impA/main.go": "package impA\n\nimport \"example.com/m/x/json\"\n\nfunc UseA() int { return json.A() }\n",
+				"impB/main.go": "package impB\n\nimport \"example.com/m/x/json\"\n\nfunc UseB() int { return json.A() }\n",
+			},
+			apply: func(f *fixture) {
+				// ==========================================================
+				// PARITY-002 — TRACKED PRODUCT DEFECT, NOT A HARNESS BUG.
+				// Disclosed to users (readme "Known limits", `sync -h`,
+				// `doctor`'s known-defects check). NOT FIXED HERE.
+				// ==========================================================
+				//
+				// MECHANISM, and it is a CLOSURE defect, not an ordering one.
+				// `imports` is the only edge kind whose value depends on a SET
+				// of nodes rather than one resolved target, and that set comes
+				// from a GLOBAL relation while the incremental cascade is
+				// DIRECTORY-LOCAL:
+				//
+				//   engine/link/index.go packageFileNodes(importPath):
+				//       clause := path.Base(importPath)   // "json"
+				//       dirs   := idx.byClause[clause]    // EVERY dir with that clause
+				//   engine/link/resolve_go.go emits ONE imports edge per file
+				//   node in that union.
+				//
+				// So adding y/json — which nothing imports — changes the
+				// CORRECT fan-out of impA and impB, which import x/json. But
+				// dependentsOf(y/json) is EMPTY, so the cascade re-links
+				// neither importer and their edge sets stay frozen, while a
+				// full pass recomputes them.
+				//
+				// OBSERVED, for this fixture, on BOTH stores, deterministically
+				// (5 consecutive runs, identical):
+				//
+				//   incremental 8 nodes / 8 edges
+				//   full        8 nodes / 10 edges
+				//
+				// The two extra edges are, verbatim:
+				//   impA/main.go --imports--> y/json/b.go
+				//   impB/main.go --imports--> y/json/b.go
+				// each carrying reason "file imports package example.com/m/x/json".
+				//
+				// READ THAT REASON STRING: the importer imports x/json and the
+				// edge targets y/json/b.go. **NEITHER SIDE IS RIGHT** — the
+				// full pass emits a semantically WRONG edge and the incremental
+				// pass merely fails to emit it. `rebuild` is the reference by
+				// definition, so `sync` is what "diverges", but the real fix is
+				// to stop resolving Go import paths by path.Base clause and
+				// resolve them to the ACTUAL directory via the module path.
+				// That is a product-byte change and wants its own ADR; this row
+				// exists so the defect is executable data in the meantime.
+				//
+				// Node counts are EQUAL and every diverging edge is `imports` —
+				// exactly the signature the real-repo record publishes for gin
+				// and grpc-go (docs/rc/parity-matrix-real-repo.md).
+				f.Write("y/json/b.go", "package json\n\nfunc B() int { return 2 }\n")
+			},
+			witness: func(g *graphView) error {
+				return all(
+					// The added directory really was indexed…
+					g.requirePresent("json.B"),
+					// …and both importers plus the imported symbol survive, so
+					// the row is not vacuously green on a broken tree.
+					g.requirePresent("json.A", "impA.UseA", "impB.UseB"),
+				)
+			},
+			// pin: the CURRENT WRONG BEHAVIOUR, stated exactly. The shared
+			// requireOnlyMissing helper cannot express this — newGraphView keeps
+			// FILE nodes out of byQN, and these are file→file edges — so the pin
+			// is written against byID/edges directly.
+			pin: func(inc, full *graphView) error {
+				if len(inc.nodes) != len(full.nodes) {
+					return fmt.Errorf("PARITY-002 pins an EDGE-ONLY divergence, but node counts differ: inc %d, full %d", len(inc.nodes), len(full.nodes))
+				}
+				incKey := map[string]bool{}
+				for _, e := range inc.edges {
+					incKey[fmt.Sprintf("%s|%s|%s", inc.byID[e.From()].QualifiedName(), e.Kind(), inc.byID[e.To()].QualifiedName())] = true
+				}
+				var extra []string
+				for _, e := range full.edges {
+					k := fmt.Sprintf("%s|%s|%s", full.byID[e.From()].QualifiedName(), e.Kind(), full.byID[e.To()].QualifiedName())
+					if !incKey[k] {
+						extra = append(extra, k)
+					}
+				}
+				sort.Strings(extra)
+				want := []string{
+					"impA/main.go|imports|y/json/b.go",
+					"impB/main.go|imports|y/json/b.go",
+				}
+				if !reflect.DeepEqual(extra, want) {
+					return fmt.Errorf("the divergence is not the pinned one.\n got: %v\nwant: %v\n(if this is now EMPTY, PARITY-002 is fixed: restore the parity assertion, delete knownDefect and pin, clear known_defect in docs/rc/parity-classes.yaml and re-verdict)", extra, want)
+				}
+				return nil
+			},
+		},
 	}
 }
 
@@ -963,6 +1088,15 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 			"tracked defect with no pin publishes nothing, and a pin with no defect id is untraceable",
 			row.id, row.knownDefect, row.pin != nil)
 	}
+	if row.knownDefect == "" && row.reapply != "" {
+		t.Fatalf("class %q declares reapply=%q without a knownDefect: re-application shape is only "+
+			"meaningful for a pinned defect", row.id, row.reapply)
+	}
+	if row.knownDefect != "" && row.reapply != reapplyHeals && row.reapply != reapplyFrozen {
+		t.Fatalf("class %q pins defect %q but declares reapply=%q; it must name %q or %q so the "+
+			"defect's severity under re-sync is published, not assumed",
+			row.id, row.knownDefect, row.reapply, reapplyHeals, reapplyFrozen)
+	}
 
 	ctx := context.Background()
 	root := t.TempDir()
@@ -1036,13 +1170,29 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 //  1. incremental and full MUST STILL DIFFER. If they converge, the defect is
 //     fixed (or masked) and this row is now lying — it fails, and whoever fixed
 //     it is told to restore the parity assertion and clear known_defect.
+//
 //  2. the difference is EXACTLY what row.pin says. Not "some difference" — the
 //     named missing nodes and edges and nothing else. If the defect changes
 //     shape or grows, the pin fails.
-//  3. re-applying the identical change set converges to the FULL bytes. That is
-//     the same defect seen from the idempotency side, and pinning it records the
-//     most diagnostic fact about the bug: the second apply does what the first
-//     should have.
+//
+//  3. re-application behaves EXACTLY as the row declares in `reapply`. This is
+//     the same defect seen from the idempotency side, and it is the most
+//     diagnostic fact about a parity bug — but it is a property of the DEFECT,
+//     not of known-defect rows in general, so the row must name it:
+//
+//     reapplyHeals  — the second apply MOVES the graph and lands on the full
+//     bytes: "the second apply does what the first should
+//     have". PARITY-001's shape (its index was stale only
+//     until the purge had run once).
+//     reapplyFrozen — re-application does NOT move the graph at all, and the
+//     divergence survives. STRICTLY WORSE than reapplyHeals:
+//     the defect cannot be worked around by syncing again,
+//     only by a full rebuild. PARITY-002's shape (the affected
+//     importers are never in the re-link set, so no amount of
+//     re-syncing reaches them).
+//
+//     Both are pinned assertions in both directions: a frozen defect that starts
+//     healing fails just as loudly as a healing one that starts freezing.
 //
 // The pin is labelled WRONG everywhere it appears. It is never phrased as an
 // expectation, and the verdict in docs/rc/parity-classes.yaml may not read PROVEN
@@ -1091,15 +1241,35 @@ func runKnownDefectRow(t *testing.T, b parityBackend, row changeClassRow, inc *i
 		t.Fatalf("[%s/%s] pinned re-apply: %v", b.name, row.id, err)
 	}
 	reapplied := snapshot(t, inc.store)
-	if string(reapplied) == string(incSnap) {
-		t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: re-applying the identical change set no "+
-			"longer moves the graph. The recorded reproduction said the second apply converges; it "+
-			"no longer does.", b.name, row.id, row.knownDefect)
-	}
-	if string(reapplied) != string(fullSnap) {
-		t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: the second apply no longer converges to the "+
-			"full-parse bytes.\n%s", b.name, row.id, row.knownDefect,
-			snapshotDiff(t, "after re-apply", reapplied, "full", fullSnap))
+	switch row.reapply {
+	case reapplyHeals:
+		if string(reapplied) == string(incSnap) {
+			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: re-applying the identical change set no "+
+				"longer moves the graph. The recorded reproduction said the second apply converges; it "+
+				"no longer does.", b.name, row.id, row.knownDefect)
+		}
+		if string(reapplied) != string(fullSnap) {
+			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: the second apply no longer converges to the "+
+				"full-parse bytes.\n%s", b.name, row.id, row.knownDefect,
+				snapshotDiff(t, "after re-apply", reapplied, "full", fullSnap))
+		}
+	case reapplyFrozen:
+		if string(reapplied) != string(incSnap) {
+			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: this row publishes a defect that re-syncing "+
+				"CANNOT heal, but re-applying the identical change set moved the graph. Either the defect "+
+				"now self-heals (re-verdict it as %s) or something else changed.\n%s",
+				b.name, row.id, row.knownDefect, reapplyHeals,
+				snapshotDiff(t, "incremental", incSnap, "after re-apply", reapplied))
+		}
+		if string(reapplied) == string(fullSnap) {
+			t.Errorf("[%s/%s] PINNED DEFECT %s NO LONGER REPRODUCES on re-apply: the second apply now "+
+				"lands on the full-parse bytes. That is good news and a required action: re-verdict this "+
+				"row as %s, or if the divergence is gone entirely, restore the parity assertion and clear "+
+				"known_defect.", b.name, row.id, row.knownDefect, reapplyHeals)
+		}
+	default:
+		t.Fatalf("[%s/%s] known-defect row must declare reapply as %q or %q, got %q",
+			b.name, row.id, reapplyHeals, reapplyFrozen, row.reapply)
 	}
 
 	t.Logf("PINNED KNOWN DEFECT %s on class %q [%s]: incremental %d nodes / %d edges vs full %d / %d. "+

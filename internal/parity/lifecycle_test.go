@@ -71,12 +71,16 @@ func TestLifecycleTable_BindsToDeclaredMatrix(t *testing.T) {
 	})
 
 	t.Run("KIND accounting is separate for the two kinds", func(t *testing.T) {
-		// FR-7 declares 15 change classes; Delta §9 adds 2 crash conditions.
-		// Counting them together is the conflation that produced
-		// backlog.md:55's "16 change classes", so the two counters must stay
-		// separate even now that both kinds actually run.
-		if got := CountChangeClasses(rows); got != 15 {
-			t.Errorf("CountChangeClasses = %d, want 15", got)
+		// FR-7 declares 15 change classes; Delta §9 adds 2 crash conditions;
+		// change_colliding_package_dir (2026-08-16, the PARITY-002
+		// reproduction) is a 16th change class that FR-7 does not require and
+		// whose prd_source says so. Counting the two KINDS together is the
+		// conflation that produced backlog.md:55's "16 change classes" — that
+		// mistake summed 15 classes + 2 crash conditions and lost a row; this 16
+		// is a real change-class count and the crash counter below is still
+		// asserted separately, which is the property this test protects.
+		if got := CountChangeClasses(rows); got != 16 {
+			t.Errorf("CountChangeClasses = %d, want 16", got)
 		}
 		if got := CountCrashConditions(rows); got != 2 {
 			t.Errorf("CountCrashConditions = %d, want 2", got)

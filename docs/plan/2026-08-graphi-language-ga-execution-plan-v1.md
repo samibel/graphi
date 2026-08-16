@@ -201,6 +201,52 @@ cause that would explain grpc-go's run-to-run variation while the full side stay
 byte-stable. The probe was deleted rather than committed: a green test that does
 not reproduce the defect it is named for is worse than no test.
 
+**SUPERSEDED 2026-08-16 — PARITY-002 IS NOW REPRODUCED HERMETICALLY, and the
+"scale/concurrency" guess above was WRONG.** The negative result stands exactly
+as recorded (that probe really did converge, and why is now explained), but its
+conclusion pointed the wrong way. The missing variable was not scale — it was
+**reachability**. All seven triggers of the first probe landed INSIDE
+`dependentsOf`'s closure, so the cascade was accidentally complete and nothing
+*could* diverge.
+
+Targeting the closure instead reproduces the defect **deterministically, on both
+stores, in a 4-file fixture** (5 consecutive runs identical): add a directory
+`y/json` that **nothing imports** but whose package clause collides with the
+imported `x/json`, and the importers' fan-out changes while `dependentsOf(y/json)`
+stays empty, so neither importer is re-linked:
+
+```
+incremental 8 nodes /  8 edges
+full        8 nodes / 10 edges
+  + impA/main.go --imports--> y/json/b.go   reason "file imports package example.com/m/x/json"
+  + impB/main.go --imports--> y/json/b.go   reason "file imports package example.com/m/x/json"
+```
+
+Node counts equal, every diverging edge `imports` — the published gin/grpc-go
+signature exactly. **Read the reason string:** the importer imports `x/json` and
+the edge targets `y/json/b.go`, so *neither side is right* — the full pass emits
+a semantically WRONG edge and the incremental pass merely fails to emit it.
+`rebuild` is the reference by definition, so `sync` is what "diverges".
+
+Landed as the conformance class `change_colliding_package_dir`, pinned as
+`knownDefect: PARITY-002` (published red data, the shape `delete_file` used
+before it was fixed), plus a real-repo planner so it also runs on pinned clones.
+
+**Two things the reproduction taught, beyond the repro itself:**
+1. **PARITY-002 is FROZEN, not self-healing** — strictly worse than PARITY-001
+   was. Re-syncing cannot fix it, because the affected importers are never in
+   the re-link set at all; only `graphi rebuild` recovers. The harness assumed
+   PARITY-001's "the second apply does what the first should have" for every
+   pinned defect; it now requires each row to **declare** its re-application
+   shape (`reapplyHeals` / `reapplyFrozen`) and asserts it in both directions.
+2. **Step 0 is also done, from data already on disk.** Pairwise-diffing the four
+   published `docs/rc/parity-matrix*.json` shows grpc-go inc 69939/69940 against
+   full 69772 every run, nodes identical at 14898, and the differing pair shares
+   the same `from` while differing in `to` — pointing at the INDEX rather than
+   the re-link set. `packageFileNodes` is itself dedup-and-sorted, so the
+   remaining run-to-run variance must come from the index's *content*, not its
+   iteration. That is the one part still open.
+
 ## 3. Milestones — ordered, with the Claude/owner split
 
 ### M1 — Evidence deepening (BUILDABLE, no dependencies) — *Claude — ✅ DONE 2026-08-15*
