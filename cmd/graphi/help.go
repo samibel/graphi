@@ -52,7 +52,7 @@ var subcommandHelp = map[string]subHelp{
 		"graphi index -root . -db ~/.graphi/graph.db -meta ~/.graphi/meta",
 	},
 	"sync": {
-		"bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch). Known limit PARITY-002: on repos where several directories share a package clause, imports edges can settle differently than `graphi rebuild` — run rebuild when exact imports fidelity matters (see readme Known limits)",
+		"bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch)",
 		"graphi sync [-root <repo>] [-db path] [-meta dir] [-profile name]",
 		"git switch feature/login && graphi sync",
 	},

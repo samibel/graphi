@@ -86,6 +86,32 @@ func TestModuleMap_Dir(t *testing.T) {
 	}
 }
 
+// TestModuleMap_NestedModuleExcludesSubtree pins the Go ownership rule the
+// add_nested_gomod conformance class caught this implementation missing: a
+// nested module EXCLUDES its directory subtree from the enclosing module, so
+// once `sub/` roots its own (differently-named) module, the ROOT module's path
+// arithmetic must no longer resolve into it. Fail closed — the import resolves
+// nowhere.
+func TestModuleMap_NestedModuleExcludesSubtree(t *testing.T) {
+	m := NewModuleMap(map[string][]byte{
+		"go.mod":     []byte("module example.com/m\n"),
+		"sub/go.mod": []byte("module other.example/standalone\n"),
+	})
+	// The root module's path arithmetic would land in sub/pkg — but sub/ is
+	// owned by other.example/standalone now, so this import resolves NOWHERE.
+	if dir, ok := m.Dir("example.com/m/sub/pkg"); ok {
+		t.Errorf("example.com/m/sub/pkg must not resolve into a foreign nested module's subtree; got %q", dir)
+	}
+	// The nested module's own path still resolves into its subtree.
+	if dir, ok := m.Dir("other.example/standalone/pkg"); !ok || dir != "sub/pkg" {
+		t.Errorf("the nested module's own path must resolve: got (%q, %v)", dir, ok)
+	}
+	// And the root module still owns everything outside sub/.
+	if dir, ok := m.Dir("example.com/m/elsewhere"); !ok || dir != "elsewhere" {
+		t.Errorf("the root module keeps the rest of the tree: got (%q, %v)", dir, ok)
+	}
+}
+
 // TestModuleMap_SegmentBoundary is the regression a raw strings.HasPrefix would
 // fail: "example.com/m" must not swallow "example.com/mtools".
 func TestModuleMap_SegmentBoundary(t *testing.T) {

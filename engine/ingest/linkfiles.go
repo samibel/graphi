@@ -47,7 +47,12 @@ import (
 // of climbing-Done events on a large repo.
 const linkProgressBatchSize = 64
 
-func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}, progress func(ProgressEvent)) ([]string, error) {
+// moduleMap is the pass's Go module view (PARITY-002 fix, ADR 0009): built once
+// by the caller — from walked units on a full pass, units+cache+disk on an
+// incremental one — so every index this pass constructs resolves imports on the
+// identical module basis. Nil/empty means "no go.mod in the tree" and keeps the
+// historical clause behaviour.
+func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, moduleMap *link.ModuleMap, fileRefs []link.FileRefs, ownedNodeIDs map[string]struct{}, parserEdges map[string]struct{}, progress func(ProgressEvent)) ([]string, error) {
 	// Nothing reprocessed: no nodes to sweep stale edges from and nothing to
 	// re-link. (BLOCK-2: gating on ownedNodeIDs, NOT fileRefs — an edit that
 	// removes the LAST cross-file ref leaves fileRefs empty yet still owns
@@ -66,6 +71,7 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, fileRefs 
 	// same canonical NodeId order as the old full listing, but no whole-graph
 	// slice and no cache mirror is ever materialized.
 	ib := link.NewIndexBuilder()
+	ib.SetModuleMap(moduleMap)
 	if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
 		ib.Add(n)
 		return nil

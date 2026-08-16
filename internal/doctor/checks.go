@@ -370,28 +370,12 @@ func LocalFirstCheck() Check {
 	}
 }
 
-// KnownDefectsCheck discloses OPEN, published product defects that affect a
-// GA operation — the claims-discipline rule applied to doctor: a user must be
-// able to learn a shipped limitation from the tool itself, not only from the
-// engineering record. Info severity, never pass: an open defect is not a
-// health failure of THIS install, but it is also never silently green. The
-// list is maintained by hand and must shrink to removal in the same change
-// that closes a defect; an empty list removes the check.
-func KnownDefectsCheck() Check {
-	return checkFunc{
-		id:       "known-defects",
-		category: "known-defects",
-		fn: func(ctx context.Context, env Env) CheckResult {
-			return StringResult("known-defects", "known-defects",
-				"PARITY-002 (open): on repos where several directories share a package clause, "+
-					"`graphi sync` can settle a different — on large repos non-deterministic — "+
-					"file→file imports edge set than `graphi rebuild` over the identical tree; "+
-					"only imports edges are affected. Record: docs/rc/parity-matrix-real-repo.md. "+
-					"Workaround: run `graphi rebuild` when exact imports/related_files fidelity matters.",
-				StatusInfo)
-		},
-	}
-}
+// The known-defects disclosure check was removed 2026-08-16 when its ONLY
+// entry, PARITY-002, was fixed (ADR 0009: module-aware import→directory
+// resolution) — per its own contract, "an empty list removes the check". The
+// pattern stands ready for the next open defect that affects a GA operation:
+// info severity, never silently green, named defect id + operation +
+// workaround, removed only in the same change that closes the defect.
 
 // checkFunc is a functional adapter for the Check interface.
 type checkFunc struct {

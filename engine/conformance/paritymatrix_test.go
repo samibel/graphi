@@ -269,8 +269,8 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 		// job is that no row can be re-kinded or added unnoticed, and a bound
 		// would forfeit exactly that. Adding another class means updating this
 		// number and saying why, here.
-		if gotClasses != 16 || gotCrash != 2 {
-			t.Errorf("KIND: %s has %d change_class + %d crash_condition rows; want 16 + 2",
+		if gotClasses != 17 || gotCrash != 2 {
+			t.Errorf("KIND: %s has %d change_class + %d crash_condition rows; want 17 + 2",
 				parityClassesPath, gotClasses, gotCrash)
 		}
 	})

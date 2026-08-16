@@ -182,16 +182,19 @@ func TestClassTable_BindsToDeclaredMatrix(t *testing.T) {
 	})
 
 	t.Run("COUNT", func(t *testing.T) {
-		// 16 = PRD FR-7's 15 change classes + `change_colliding_package_dir`,
-		// added 2026-08-16 as the hermetic reproduction of PARITY-002. That one
+		// 17 = PRD FR-7's 15 change classes + `change_colliding_package_dir`
+		// (2026-08-16, the hermetic PARITY-002 reproduction, now a real parity
+		// assertion) + `add_nested_gomod` (same date, pinning the ADR 0009
+		// module-map cache invalidation). Neither is an FR-7 requirement and
+		// both prd_source fields say so. That first one
 		// is NOT an FR-7 requirement — its prd_source says "none" — it exists to
 		// publish a defect as executable data, and it carries a real-repo
 		// planner so it runs on pinned clones too. Derived from `kind`, never
 		// from len(rows): counting crash conditions among the change classes is
 		// the exact conflation that produced backlog.md:55's "16 change
 		// classes", so this number and that mistake are not the same 16.
-		if got := CountChangeClasses(rows); got != 16 {
-			t.Errorf("CountChangeClasses = %d, want 16", got)
+		if got := CountChangeClasses(rows); got != 17 {
+			t.Errorf("CountChangeClasses = %d, want 17", got)
 		}
 	})
 }

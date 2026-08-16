@@ -39,6 +39,15 @@ type ModuleMap struct {
 	// linear scan is the most specific one. Precomputed so resolution does not
 	// sort per call.
 	order []string
+	// moduleDirs is the set of directories that ROOT a module, used for the
+	// directory-ownership check: in Go, a nested module EXCLUDES its subtree
+	// from the enclosing module, so a directory resolved through module M is
+	// only valid if no other module's root sits between M's root and that
+	// directory. Without this, path arithmetic alone would happily resolve
+	// `example.com/m/sub/pkg` into `sub/pkg` even after `sub/` became its own
+	// (differently-named) module — the exact stale-edge shape the
+	// add_nested_gomod conformance class pins.
+	moduleDirs map[string]struct{}
 }
 
 // NewModuleMap builds the map from a set of discovered go.mod files, keyed by
@@ -74,6 +83,10 @@ func NewModuleMap(gomods map[string][]byte) *ModuleMap {
 			continue // first (shallowest) declaration wins, deterministically
 		}
 		m.mods[modPath] = posixDir(p)
+	}
+	m.moduleDirs = make(map[string]struct{}, len(m.mods))
+	for _, d := range m.mods {
+		m.moduleDirs[d] = struct{}{}
 	}
 	m.order = make([]string, 0, len(m.mods))
 	for mp := range m.mods {
@@ -111,15 +124,46 @@ func (m *ModuleMap) Dir(importPath string) (string, bool) {
 			continue
 		}
 		base := m.mods[mp]
-		if rest == "" {
-			return base, true
+		var dir string
+		switch {
+		case rest == "":
+			dir = base
+		case base == "":
+			dir = rest
+		default:
+			dir = base + "/" + rest
 		}
-		if base == "" {
-			return rest, true
+		// Ownership check: the resolved directory must still BELONG to the
+		// module that resolved it. In Go, a nested module excludes its subtree
+		// from the enclosing module, so if any OTHER module's root sits on the
+		// path between this module's root and dir, the import does not resolve
+		// here — and because module paths are disjoint prefixes, it resolves
+		// nowhere: fail closed.
+		if m.ownedBy(dir) != base {
+			return "", false
 		}
-		return base + "/" + rest, true
+		return dir, true
 	}
 	return "", false
+}
+
+// ownedBy returns the module ROOT directory that owns dir: the deepest module
+// root that is dir itself or an ancestor of it. The repo-root module ("") owns
+// everything not claimed by a nested module.
+func (m *ModuleMap) ownedBy(dir string) string {
+	for d := dir; ; {
+		if _, ok := m.moduleDirs[d]; ok {
+			return d
+		}
+		if d == "" {
+			return "" // fell through to the root; the root module (if any) owns it
+		}
+		if i := strings.LastIndexByte(d, '/'); i >= 0 {
+			d = d[:i]
+		} else {
+			d = ""
+		}
+	}
 }
 
 // trimModulePrefix returns importPath relative to modPath when importPath is
