@@ -61,6 +61,24 @@ type SymbolIndex struct {
 	// of scanning every directory in byDir per unresolved recv.method call — an
 	// O(dirs)→O(candidates) win that changes NO resolution semantics.
 	methodDirs map[string][]string
+
+	// moduleMap resolves a Go import path to the ONE repo directory its module
+	// path declares (PARITY-002 fix, ADR 0009). When non-Empty, Go package-file
+	// resolution (packageFileNodes, crossPackage, hasPackage) goes through it
+	// instead of the clause union, so an import can never fan out over an
+	// unrelated directory that merely shares a package clause. When Empty (a
+	// tree with no go.mod), the clause behaviour is kept unchanged — module
+	// resolution is an upgrade where module information exists, never a
+	// regression where it does not.
+	//
+	// SCOPE, precisely (review round 2 corrected an overbroad earlier claim):
+	// non-Go RESOLUTION never consults it (clausePackageFileNodes and
+	// packageNodeByPath are separate paths, so single-pass non-Go bytes are
+	// unaffected) — but DirsForImport, which serves the language-blind
+	// reverse-dep translation for ALL languages, must return the UNION of the
+	// module and clause bases; see its doc comment for the frozen divergence a
+	// module-only answer caused there.
+	moduleMap *ModuleMap
 }
 
 // fileKind / the qualified-name shape are mirrored from the Go extractor:
@@ -103,6 +121,13 @@ func NewIndexBuilder() *IndexBuilder {
 		methodDirs:        map[string][]string{},
 	}}
 }
+
+// SetModuleMap attaches the Go module resolution map (PARITY-002 fix). Callers
+// that can see the tree's go.mod files (engine/ingest, at every index build
+// site) set it; callers that cannot (pure-link unit tests, non-Go paths) leave
+// it unset and get the historical clause behaviour. Safe to call at any point
+// before the index is queried.
+func (b *IndexBuilder) SetModuleMap(m *ModuleMap) { b.idx.moduleMap = m }
 
 // Add indexes one committed node (BuildIndex's per-node step).
 func (b *IndexBuilder) Add(n model.Node) {
@@ -206,27 +231,57 @@ func (idx *SymbolIndex) sameDir(dir, name string) (model.NodeId, bool) {
 	return id, ok
 }
 
-// hasPackage reports whether the repo contains an INTERNAL package for the given
-// import path, using the SAME clause (last-path-segment) basis crossPackage and
-// packageFileNodes resolve on: byClause[path.Base(importPath)] is non-empty. The
-// receiver-type external-minting path (resolve_go.go drop-point 2) uses this to
-// avoid materializing an external node for a receiver whose type belongs to a
-// package committed in the repo — an internal method call is resolved (or honestly
-// skipped) through the normal paths, never minted as `external`. Erring toward
-// "internal" on a clause collision (e.g. a repo package sharing a stdlib clause)
-// is the SAFE direction: it suppresses an external node rather than flooding.
+// hasPackage reports whether the repo contains an INTERNAL package for the
+// given import path. Module-aware since ADR 0009 review round 1: with a
+// moduleMap the answer comes from the ONE directory the module path declares —
+// the same basis crossPackage and packageFileNodes resolve on, which is what
+// keeps all three consumers of "is this import internal?" telling one story.
+// Without a moduleMap (no go.mod) the historical clause basis is kept:
+// byClause[path.Base(importPath)] non-empty, erring toward "internal" on a
+// clause collision — the safe direction for the external-minting path
+// (resolve_go.go drop-point 2), which suppresses a node rather than flooding.
 func (idx *SymbolIndex) hasPackage(importPath string) bool {
 	if importPath == "" {
 		return false
 	}
+	if !idx.moduleMap.Empty() {
+		dir, ok := idx.moduleMap.Dir(importPath)
+		if !ok {
+			return false
+		}
+		return len(idx.byDir[dir]) > 0 || len(idx.fileNodesByDir[dir]) > 0
+	}
 	return len(idx.byClause[path.Base(importPath)]) > 0
 }
 
-// crossPackage resolves a selector (importPath, name) to a NodeId. The import
-// path maps to a package clause via its last segment; the symbol is then looked
-// up in every directory declaring that clause. A unique hit resolves; zero or
-// ambiguous (>1 distinct NodeId) hits are skipped deterministically.
+// crossPackage resolves a selector (importPath, name) to a NodeId.
+//
+// MODULE-AWARE since ADR 0009 review round 1 — this was the review's CONFIRMED
+// finding 1, and the reason "fail-closed resolution" was not a good enough
+// reason to leave it clause-based: on a full pass a clause collision made the
+// lookup AMBIGUOUS, which dropped the intra-repo edge and minted an interned
+// external node instead, while the incremental pass — whose directory-local
+// cascade never re-linked the importer — kept the OLD intra-repo edge. A
+// frozen full-vs-incremental divergence through `calls`, structurally
+// identical to the `imports` half of PARITY-002. With the moduleMap the
+// lookup consults exactly the ONE directory the import path declares, so the
+// collision cannot arise. Without a moduleMap the historical clause union is
+// kept: unique hit resolves, zero or ambiguous hits skip deterministically.
+//
+// The module branch resolves through sameDir, NOT a bare byDir read, on
+// purpose: byDir keeps the FIRST-added id when one directory declares a bare
+// name twice (build-tag variants make that a legitimate shape), which is
+// Add-order-dependent — and the full and incremental passes add nodes in
+// different orders. sameDir consults dirAmbiguous and skips those
+// deterministically, which is the property BuildIndex promises.
 func (idx *SymbolIndex) crossPackage(importPath, name string) (model.NodeId, bool) {
+	if !idx.moduleMap.Empty() {
+		dir, ok := idx.moduleMap.Dir(importPath)
+		if !ok {
+			return "", false
+		}
+		return idx.sameDir(dir, name)
+	}
 	clause := path.Base(importPath)
 	dirs := idx.byClause[clause]
 	if dirs == nil {
@@ -317,11 +372,28 @@ func (idx *SymbolIndex) fileNode(sourcePath string) (model.NodeId, bool) {
 }
 
 // packageFileNodes returns the committed "file" node ids of the package an
-// import path resolves to (clause = last path segment), sorted for determinism.
-// A package may span multiple directories declaring the same clause; FU-1 links
-// the importing file to every such file node. Returns nil when the package is
-// not present in the repo (stdlib / 3rd-party) so no phantom imports edge forms.
+// import path resolves to, sorted for determinism. Returns nil when the package
+// is not present in the repo (stdlib / 3rd-party) so no phantom imports edge
+// forms.
+//
+// RESOLUTION BASIS (PARITY-002 fix, ADR 0009). With a moduleMap present, the
+// import path resolves to exactly ONE directory — the one its module path
+// declares — so two directories that merely share a package clause can never
+// cross-contaminate an importer's edge set. That collision (`x/json` and
+// `y/json` both declaring `package json`) was PARITY-002: the full pass fanned
+// the importer out over BOTH directories while the directory-local incremental
+// cascade never re-linked it. Without a moduleMap (no go.mod in the tree) the
+// historical clause-union behaviour is kept unchanged.
 func (idx *SymbolIndex) packageFileNodes(importPath string) []model.NodeId {
+	if !idx.moduleMap.Empty() {
+		dir, ok := idx.moduleMap.Dir(importPath)
+		if !ok {
+			return nil // no module in this tree owns the path: external
+		}
+		out := append([]model.NodeId(nil), idx.fileNodesByDir[dir]...)
+		sort.Slice(out, func(a, b int) bool { return out[a] < out[b] })
+		return out
+	}
 	clause := path.Base(importPath)
 	dirs := idx.byClause[clause]
 	if dirs == nil {
@@ -342,26 +414,59 @@ func (idx *SymbolIndex) packageFileNodes(importPath string) []model.NodeId {
 	return out
 }
 
-// DirsForImport returns the source directories that an import path resolves to:
-// every directory whose package clause equals the import path's last segment
-// (the same clause = path.Base(importPath) mapping crossPackage/packageFileNodes
-// use). The result is sorted for determinism and is empty when the package is
-// not present in the repo (stdlib / 3rd-party / a stub file-path "import").
+// DirsForImport returns the source directories an import path may resolve to,
+// sorted for determinism, empty when the package is not present in the repo
+// (stdlib / 3rd-party / a stub file-path "import").
 //
 // Ingest uses this to translate import-path forward refs into the DIRECTORY key
 // space so the incremental reverse-dependency cascade (dependentsOf) — which
 // keys off the changed file's directory — actually finds cross-package
 // importers. Without it, reverse_deps keyed by import-path string is never hit
 // by a file-path/directory lookup and the import-dependent cascade is dead.
+//
+// THE RESULT IS THE UNION OF EVERY EMISSION BASIS, not the single module
+// directory (ADR 0009 review round 2, finding 1 — a CONFIRMED blocker). This
+// function serves the reverse-dep translation for ALL languages, and its
+// targets carry no language: Go emission resolves through the module map, but
+// Python/Ruby/JS emission stays clause-based. A module-only answer swallowed
+// every non-Go target in any tree containing a go.mod (no module owns "shop"),
+// so the caller's dependency record was stored verbatim instead of as a
+// directory, the cascade never re-linked it, and the full pass's cross-module
+// edge went PERMANENTLY missing from the incremental graph — a new frozen
+// divergence of exactly the class ADR 0009 closes, pinned by
+// TestLink_Python_MixedTreeWithGoMod_IncrementalParity. The invariant this
+// function must uphold is records ⊇ emission dependencies, per language, all
+// languages at once: the union covers Go's module basis AND the clause basis
+// (the module dir is NOT always inside the clause dirs — a directory's
+// declared package clause can differ from its import path's last segment).
+// Over-approximation is safe by idempotence: an unnecessary re-link re-emits
+// the same bytes; an under-approximation freezes an edge forever.
 func (idx *SymbolIndex) DirsForImport(importPath string) []string {
-	clause := path.Base(importPath)
-	dirs := idx.byClause[clause]
-	if dirs == nil {
-		return nil
+	seen := map[string]struct{}{}
+	var out []string
+	add := func(dir string) {
+		if _, dup := seen[dir]; !dup {
+			seen[dir] = struct{}{}
+			out = append(out, dir)
+		}
 	}
-	out := make([]string, 0, len(dirs))
-	for dir := range dirs {
-		out = append(out, dir)
+	// Clause basis: the emission basis for every non-Go language, and the
+	// historical Go basis.
+	for dir := range idx.byClause[path.Base(importPath)] {
+		add(dir)
+	}
+	// Module basis: Go's emission basis (ADR 0009) when the tree has a go.mod.
+	// The emptiness guard gives the same "not present in the repo" answer the
+	// clause basis gives for an absent clause.
+	if !idx.moduleMap.Empty() {
+		if dir, ok := idx.moduleMap.Dir(importPath); ok {
+			if len(idx.fileNodesByDir[dir]) > 0 || len(idx.byDir[dir]) > 0 {
+				add(dir)
+			}
+		}
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	sort.Strings(out)
 	return out

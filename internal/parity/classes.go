@@ -179,12 +179,17 @@ func specs() []ClassSpec {
 		{ID: "change_external_import", Plan: planChangeExternalImport},
 		{ID: "change_colliding_package_dir", Plan: planCollidingPackageDir,
 			Note: "Adds a NEW directory whose package clause collides with an existing " +
-				"package's, and that nothing imports — the PARITY-002 precondition. " +
-				"`imports` edges fan out over every directory sharing the clause " +
-				"(engine/link/index.go packageFileNodes keys on path.Base), while the " +
-				"incremental cascade is directory-local, so importers of the ORIGINAL " +
-				"directory are never re-linked. A FAIL here is the EXPECTED, tracked " +
-				"result, not a harness fault."},
+				"package's, and that nothing imports — what USED to be the PARITY-002 " +
+				"precondition. Since the ADR 0009 fix (module-aware import→directory " +
+				"resolution) a clause collision cannot cross-contaminate an importer's " +
+				"edge set, so this row now asserts real parity: the colliding directory " +
+				"is indexed, and no importer gains or loses an edge on either pass."},
+		{ID: "add_nested_gomod", Plan: planAddNestedGoMod,
+			Note: "Adds a go.mod to a non-root package directory, re-moduling its " +
+				"subtree (ADR 0009): resolution of every import into that subtree " +
+				"shifts, so the change must trigger the full re-link — the invalidation " +
+				"the fix's own hazard demanded (link.GoModPath at any depth, not the " +
+				"literal root path)."},
 	}
 }
 
@@ -241,6 +246,44 @@ func planCollidingPackageDir(m *RepoModel) (*Mutation, error) {
 	return &Mutation{
 		Desc: fmt.Sprintf("add directory %s declaring package %s — colliding with %s, imported by nobody (the PARITY-002 precondition)",
 			dir, pkg.Name, pkg.Dir),
+		Ops: []FileOp{{Kind: opWrite, Path: rel, Data: []byte(body)}},
+	}, nil
+}
+
+// planAddNestedGoMod re-modules a real non-root package directory by writing a
+// go.mod into it (ADR 0009's invalidation hazard). Deterministic target: the
+// non-root package with the MOST files, tie-broken lexicographically by
+// directory — most-files because a bigger subtree gives the re-link more to
+// get wrong, and both criteria are stable across dispatches. The mutation adds
+// one self-contained file; it cannot manufacture a dangling reference. On a
+// repo whose chosen directory has no importers the row still exercises the
+// any-depth go.mod re-link trigger, and parity must hold either way.
+//
+// No exists-guard on the target path: the RepoModel enumerates only .go files,
+// so it cannot answer "is there already a go.mod here", and a pinned clone
+// directory that already roots a module would simply be OVERWRITTEN by opWrite
+// — visible in the mutation's Desc, and parity over the edit must hold
+// regardless. (A fileExistsIn check here would be dead code dressed as
+// protection: it can never match a non-.go path.)
+func planAddNestedGoMod(m *RepoModel) (*Mutation, error) {
+	var target *GoPkg
+	for _, p := range m.Pkgs {
+		if p.Dir == "" || p.Dir == "." || len(p.Files) == 0 {
+			continue
+		}
+		if target == nil || len(p.Files) > len(target.Files) ||
+			(len(p.Files) == len(target.Files) && p.Dir < target.Dir) {
+			target = p
+		}
+	}
+	if target == nil {
+		return nil, errNoTarget // single-package root-only repo: no nested dir to re-module
+	}
+	rel := strings.TrimPrefix(path.Join(target.Dir, "go.mod"), "./")
+	body := "module graphi.invalid/parity-nested\n\ngo 1.21\n"
+	return &Mutation{
+		Desc: fmt.Sprintf("add %s (module graphi.invalid/parity-nested), re-moduling package %s's subtree — the ADR 0009 any-depth go.mod invalidation shape",
+			rel, target.Name),
 		Ops: []FileOp{{Kind: opWrite, Path: rel, Data: []byte(body)}},
 	}, nil
 }
