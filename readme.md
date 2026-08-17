@@ -156,8 +156,18 @@ is hosted, there is no service to sign up for.
   tree (nested modules own their subtrees). Directories that merely share a
   package clause never cross-contaminate an importer's edge set. This closed
   defect PARITY-002 (`sync` could diverge from `rebuild` on `imports` edges on
-  clause-colliding repositories); the historical measurement record remains in
+  clause-colliding repositories); the measurement record is
   [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
+- **Known open defect PARITY-003**: under the DEFAULT index profile
+  (`balanced`), `graphi sync` can settle a superset of the file→file `imports`
+  edges `graphi rebuild` produces over the identical tree — deterministic,
+  `imports` edges only, on repositories whose module path has a dotted first
+  segment (`github.com/…`). The profile's per-target import aggregation is
+  computed over one pass's files, so a re-link re-aggregates a subset while the
+  previous pass's aggregated edges survive. Isolated by the ADR 0009 real-repo
+  re-measurement (same record as above). Workaround: `graphi rebuild` when
+  exact `imports`/`related_files` fidelity matters, or index with
+  `-profile full`.
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`
 > column answers a different question ("is this one of the 12 frozen

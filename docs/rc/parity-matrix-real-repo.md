@@ -1,18 +1,139 @@
-# Full/incremental parity matrix over pinned real repositories — SW-144 + SW-158
+# Full/incremental parity matrix over pinned real repositories
 
-> **SUPERSEDED IN PART — PENDING RE-MEASUREMENT (2026-08-16).** Both product
-> defects this record files are now FIXED in the tree: **PARITY-001** by the
-> purge-before-link ordering (the `delete_file` hermetic row asserts real
-> parity, and the harness's own end-to-end fixture run converges), and
-> **PARITY-002** by ADR 0009's module-aware import→directory resolution (the
-> `change_colliding_package_dir` hermetic reproduction converges on both
-> stores, red-without/green-with demonstrated). **Every measurement below
-> stands AS PUBLISHED against the tree it measured** — a fixed defect does not
-> re-measure a matrix; only re-running `internal/parity` over the pinned
-> clones on the new candidate can do that, and until it does, the FAIL rows
-> below describe the OLD tree, not this one. The matrix run also gains two
-> rows (`change_colliding_package_dir`, `add_nested_gomod`) that this record
-> predates.
+# Current measurement — the ADR 0009 candidate (2026-08-16, W0.f-3)
+
+**Status: PUBLISHED FAIL, COMPLETE, and — for the first time — DETERMINISTIC.**
+All **19** declared rows execute — 17 change classes (15 FR-7 + the two ADR
+0009 rows) and 2 crash conditions. **16 PASS, 3 FAIL**, the three accounted for
+by **ONE newly isolated defect (PARITY-003, filed below)**. Two dispatches
+agree on **every verdict AND every per-row node/edge count and snapshot
+digest** (`-verdict-diff` exit 0, `-counts-diff` exit 0) — the two-green-runs
+discipline now holds at COUNT granularity, which the historical record below
+could not claim.
+
+| | |
+|---|---|
+| Produced by | `internal/parity` + `cmd/parity`, two full local dispatches |
+| Gate | PRD FR-7 / §12.3 — full/incremental parity, binary, no threshold to negotiate |
+| Provenance | **product source byte-identical to the ADR 0009 candidate at `c4209dd3be146c1d965acf4ea36a00aea5a3e70f`** (candidate move: [`../decisions/2026-08-parity-candidate-move-adr0009.md`](../decisions/2026-08-parity-candidate-move-adr0009.md)); run SHA `4d032fe5acac3c978ca15eda1c97235aba4e2abc`, runner class `Linux-X64/ccr-container`, both dispatches publishable |
+| Matrix source | `docs/rc/parity-classes.yaml` (17 change classes + 2 crash conditions) |
+| Report artifact | `docs/rc/parity-matrix-adr0009-run-a.json`, `…-adr0009-run-b.json` |
+| Historical artifacts | the v0.7.1-candidate pairs, preserved not deleted — see the historical record below |
+
+## Results (identical in both dispatches, to the byte)
+
+| Class | Verdict | Repository | inc nodes/edges | full nodes/edges |
+|---|---|---|---|---|
+| `add_file` | **PASS** | cobra | 940/3918 | = |
+| `modify_file` | **PASS** | cobra | 939/3917 | = |
+| `delete_file` | **PASS** | cobra | 897/3789 | = — **PARITY-001 CLOSED BY MEASUREMENT** (was FAIL) |
+| `rename_symbol` | **PASS** | cobra | 938/3909 | = |
+| `move_symbol` | **PASS** | cobra | 939/3917 | = |
+| `rename_package` | **PASS** | cobra | 938/3916 | = |
+| `add_call` | **PASS** | cobra | 939/3918 | = |
+| `remove_call` | **PASS** | cobra | 938/3916 | = |
+| `change_interface` | **PASS** | lo | 523/704 | = |
+| `add_implementation` | **PASS** | lo | 526/707 | = |
+| `remove_implementation` | **FAIL** | gin | 1903/**6604** | 1903/**6599** — **PARITY-003** |
+| `branch_switch` | **PASS** | cobra | 3/3 repetitions identical | |
+| `change_build_tag` | **FAIL** | gin | 1904/**6607** | 1904/**6602** — **PARITY-003** |
+| `replace_generated_file` | **FAIL** | grpc-go | 14922/**69733** | 14922/**69613** — **PARITY-003, now DETERMINISTIC** (see below) |
+| `change_external_import` | **PASS** | cobra | 940/3918 | = |
+| `interrupted_full_pass` | **PASS** | cobra | 6/6 repetitions identical (K1, K3) | |
+| `restart_and_recovery` | **PASS** | cobra | 6/6 repetitions identical (K5→K7, K6→K7) | |
+| `change_colliding_package_dir` | **PASS** | cobra | 940/3917 | = — new row, the PARITY-002 reproduction, real parity on real source |
+| `add_nested_gomod` | **PASS** | cobra | 941/3906 | = — new row, the ADR 0009 invalidation pin |
+
+The two §12.3 store-level counts read **orphaned external nodes = 0** and
+**stale linker edges = 0** on every executed row, on both sides (same scope
+limit as ever: a "stale linker edge" is one whose endpoint is not a node, so
+PARITY-003's extra edges — valid endpoints — are invisible to it by design).
+
+## What this measurement CLOSES
+
+- **PARITY-001 is closed by measurement.** `delete_file` on real cobra source
+  flips FAIL → PASS; the purge-before-link fix holds outside the fixture.
+- **PARITY-002 is closed by measurement — both halves.** The deterministic
+  half: the published fan-out signature (an importer of `x/json` carrying an
+  `imports` edge into an unrelated directory that merely shares the clause) no
+  longer appears anywhere in either dispatch, and the two rows built from the
+  defect (`change_colliding_package_dir`, `add_nested_gomod`) PASS on real
+  source. The NON-DETERMINISTIC half: the historical record's grpc-go row
+  produced **three distinct incremental snapshots over six executions**
+  (69902/69939/69940); this measurement produces **byte-identical incremental
+  snapshots across both dispatches** (sha256 `86e7d02f…` in both), and
+  `-counts-diff` — added because `-verdict-diff` is structurally blind to count
+  flapping — exits 0 over the full pair. What ADR 0009 could previously close
+  only by argument is now closed by measurement.
+
+## PARITY-003 — filed by this measurement, NOT fixed
+
+**One defect, three rows, a DIFFERENT mechanism than PARITY-002 — the
+historical record's "PARITY-002" FAILs on gin/grpc-go were two defects
+overlapping.** ADR 0009 removed the resolution-layer half; what remains is a
+profile-layer closure defect:
+
+- **Shape:** the incremental graph is a strict SUPERSET of the full graph
+  (only-in-full = 0 in every failing row), only `imports` edges, deterministic
+  — byte-identical across both dispatches. Class-independent: the two gin rows
+  (unrelated mutations) diverge by the IDENTICAL five edge IDs.
+- **Mechanism** (`engine/ingest/linkfiles.go`, Balanced profile): the profile
+  aggregates "external" imports by TARGET file — one edge per target, from a
+  REPRESENTATIVE source (`aggregated N imports of …`), computed over the files
+  of ONE pass. `isExternalImport` classifies any dotted first segment as
+  external, which catches the repository's OWN module path (`github.com/…`,
+  `google.golang.org/…`) — the only imports that ever HAVE intra-repo edges to
+  aggregate (true externals resolve to no target at all). A full pass
+  aggregates over every file (gin: one edge per `internal/json` target from
+  `binding/form_mapping.go`, "aggregated 6 imports"); an incremental pass
+  re-aggregates over only the RE-LINKED subset (new representative edges,
+  "aggregated 2 imports" from `errors.go`), while the baseline's aggregated
+  edges survive — the stale-edge sweep removes from-OWNED edges of reprocessed
+  nodes, and the representative's file was not reprocessed. gin: 5 + 5 = 10
+  edges incremental vs 5 full. grpc-go: 120 extra incremental edges (99
+  aggregated-reason, 21 lone-importer, 8 representative from-files).
+- **A second wrong beyond parity:** the aggregated edge misattributes the
+  import — an edge `from errors.go` carrying `errors_test.go`'s evidence, and
+  on the full side a single representative standing for six importers. Readers
+  of `related_files`/`imports` see one importer where there are six.
+- **Why every hermetic gate missed it:** the engine's zero-value profile does
+  not aggregate, and `ingest.New` defaults to it — the conformance and ingest
+  suites drive the library. The CLI resolves the profile and DEFAULTS TO
+  BALANCED, so every real `graphi rebuild`/`sync` runs the aggregation path the
+  fixtures never exercise. This is a gate gap in its own right: the parity
+  fixtures must also run under the shipped default profile.
+- **Disclosed** (same contract as PARITY-002's disclosure, restored in the
+  same change that files this): readme Known limits, `graphi sync -h`, and the
+  doctor `known-defects` check. Workaround: `graphi rebuild`, or
+  `-profile full`.
+- **Fix direction, recorded not executed** (it is a product-byte change and
+  moves the candidate again — own change, own red/green, own re-measure): an
+  import path OWNED by the tree's module map is not external, which reduces
+  the Balanced aggregation to its actual prey — and true externals mint no
+  file→file imports edges, so the correct aggregation set is empty. Plus a
+  Balanced-profile conformance run to close the gate gap.
+
+## Reproducing this measurement
+
+```bash
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "<your machine>" -workdir /var/tmp/parity-a -report run-a.json
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "<your machine>" -workdir /var/tmp/parity-b -report run-b.json
+go run ./cmd/parity -verdict-diff run-a.json,run-b.json   # verdicts agree
+go run ./cmd/parity -counts-diff  run-a.json,run-b.json   # counts + digests agree
+```
+
+---
+
+# Historical record — the v0.7.1 candidate (SW-144 + SW-158), preserved as published
+
+> Everything below measured **the OLD candidate** (v0.7.1 at `80d67ed…`),
+> BEFORE the PARITY-001 and ADR 0009 fixes. It stands as published: its FAIL
+> rows describe that tree, its "PARITY-002" rows conflate what are now known
+> to be two defects (the fan-out fixed by ADR 0009, and PARITY-003 above), and
+> its grpc-go non-determinism is the phenomenon the current measurement
+> closes. Nothing below was rewritten.
 
 **Status: PUBLISHED FAIL, and now COMPLETE.** All **17** declared rows execute — 15 FR-7 change
 classes and 2 Delta §9 crash conditions. **13 PASS, 4 FAIL**, the four accounted for by **two

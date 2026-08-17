@@ -240,9 +240,25 @@ func TestLocalFirstCheck(t *testing.T) {
 	}
 }
 
-// TestKnownDefectsCheck was removed with its subject: the known-defects
-// disclosure check's only entry, PARITY-002, is fixed (ADR 0009), and the
-// check's own contract says an empty list removes the check.
+// TestKnownDefectsCheck pins the disclosure contract: an OPEN published defect
+// in a GA operation is reported at info severity — never pass (that would be
+// silently green) and never fail (it is not a health problem of this install).
+// The message must name the defect id, the affected operation and the
+// workaround, so a user learns the limitation from the tool itself.
+//
+// (Removed 2026-08-16 when PARITY-002 closed; restored the same day for
+// PARITY-003, which the ADR 0009 real-repo re-measurement isolated.)
+func TestKnownDefectsCheck(t *testing.T) {
+	res := KnownDefectsCheck().Run(context.Background(), fakeEnv{})
+	if res.Status != StatusInfo {
+		t.Fatalf("expected info for known-defects disclosure, got %q", res.Status)
+	}
+	for _, want := range []string{"PARITY-003", "sync", "rebuild", "imports", "profile"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("disclosure must mention %q; got: %s", want, res.Message)
+		}
+	}
+}
 
 func TestDBCheckEmptyPath(t *testing.T) {
 	env := fakeEnv{dbPath: ""}

@@ -171,10 +171,20 @@ by `TestParseModuleDirective_AgreesWithTyperesolve` (test-only dependency).
   doctor known-defects check) is retired in the same change that closes the
   defect, per the disclosure's own contract.
 - The Wave-0 gate's determinism proof (`internal/parity`, two dispatches with
-  identical COUNTS on grpc-go) becomes runnable; until it runs, PARITY-002's
-  non-deterministic half is closed by argument (the fan-out no longer exists
-  for Go), not by measurement — the distinction the evidence discipline
-  requires stating.
+  identical COUNTS on grpc-go) **RAN on 2026-08-16 and PASSED at count
+  granularity** (candidate move:
+  `../decisions/2026-08-parity-candidate-move-adr0009.md`; record:
+  `../rc/parity-matrix-real-repo.md`): two dispatches agree on every per-row
+  count and snapshot digest, grpc-go's incremental snapshot is byte-identical
+  across them where the historical record had three distinct snapshots over
+  six executions, and no fan-out-signature edge appears anywhere. PARITY-002
+  is closed BY MEASUREMENT, both halves. The same measurement isolated a
+  SECOND, previously-conflated defect the fixture gates cannot see —
+  PARITY-003, the Balanced profile's pass-scoped import aggregation
+  (`engine/ingest/linkfiles.go`), filed and disclosed in the record, NOT
+  fixed by this ADR: three real-repo rows still FAIL deterministically under
+  the shipped default profile, and the historical "PARITY-002" gin/grpc-go
+  FAILs are now understood as two overlapping mechanisms.
 
 ## Review round 2 (independent adversarial reviewer, 2026-08-16)
 

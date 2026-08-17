@@ -54,9 +54,18 @@ const (
 	KindCrashCondition = "crash_condition"
 )
 
-// CandidateSHA is the P0 candidate, v0.7.1. The harness does NOT exist at this
-// SHA, so no report may ever claim it ran there — see Provenance.Statement.
-const CandidateSHA = "80d67ed586723ab22704cf7aada316138cb1360e"
+// CandidateSHA is the candidate the product tree is compared against.
+//
+// CANDIDATE MOVE (2026-08-16, deliberate): the previous candidate was the P0
+// v0.7.1 SHA 80d67ed586723ab22704cf7aada316138cb1360e. ADR 0009 (module-aware
+// Go import resolution, the PARITY-002 fix) is a product-byte change — the
+// candidate MOVES by that ADR's own consequence section, and every measurement
+// against the old candidate is historical. The new candidate is the merge
+// commit that landed ADR 0009 on main (PR #125 incl. review rounds 1+2).
+// Unlike the P0 candidate, the harness DOES exist at this SHA; the provenance
+// statement still records run SHA and candidate SHA separately, because the
+// run may happen at any later commit whose product bytes are identical.
+const CandidateSHA = "c4209dd3be146c1d965acf4ea36a00aea5a3e70f"
 
 // FR7ChangeClasses is the size of the authoritative matrix: PRD FR-7 lists
 // EXACTLY 15 change classes (heading "Änderungsklassen", prefix "Mindestens:"),
@@ -105,8 +114,9 @@ const (
 // Provenance is the run-level attribution block. Every field here exists to
 // stop a reader from over-reading the result.
 type Provenance struct {
-	// CandidateSHA is the frozen P0 candidate the product tree is compared
-	// AGAINST. It is never the SHA the run happened at.
+	// CandidateSHA is the frozen candidate the product tree is compared
+	// AGAINST (the ADR 0009 merge since the 2026-08-16 candidate move). It is
+	// not necessarily the SHA the run happened at.
 	CandidateSHA string `json:"candidate_sha"`
 	// RunSHA is the HEAD the harness actually ran at.
 	RunSHA string `json:"run_sha"`
@@ -151,14 +161,15 @@ type Provenance struct {
 // the candidate relationship.
 //
 // The phrasing is load-bearing and is enforced here rather than left to a
-// caller's prose. The harness does not exist at the candidate SHA, so a record
-// saying the run happened AT the candidate would be false. What is true, and
-// all that is claimed, is that the PRODUCT SOURCE is byte-identical to it.
+// caller's prose. The run may happen at any commit; what is claimed is never
+// "the run happened at the candidate" but that the PRODUCT SOURCE (decided by
+// the built-binary comparison) is byte-identical to it. Both SHAs are recorded
+// so the claim is checkable.
 func NewProvenance(runSHA string) Provenance {
 	return Provenance{
 		CandidateSHA:   CandidateSHA,
 		RunSHA:         runSHA,
-		Statement:      "product source byte-identical to v0.7.1 at " + CandidateSHA,
+		Statement:      "product source byte-identical to the ADR 0009 candidate at " + CandidateSHA,
 		HarnessVersion: HarnessVersion,
 		SchemaVersion:  SchemaVersion,
 	}
@@ -464,6 +475,45 @@ func (r Report) VerdictSetDigest() string {
 	out := ""
 	for _, id := range ids {
 		out += id + "=" + vs[id] + ";"
+	}
+	return out
+}
+
+// CountsSet returns the id -> counts line map for the Wave-0 COUNTS gate.
+//
+// WHY THIS EXISTS WHEN VerdictSet ALREADY DOES: the published PARITY-002
+// record states outright that `-verdict-diff` was structurally blind to the
+// grpc-go non-determinism — six executions agreed the row FAILs while the
+// incremental EDGE COUNT flapped between them (69939/69940 against a stable
+// full 69772). Two dispatches agreeing on verdicts therefore proves nothing
+// about determinism; agreeing on per-row node/edge counts AND snapshot digests
+// does. Repo and verdict are included so a count can never be compared across
+// two rows that silently ran on different repositories or in different
+// outcomes.
+//
+// Like VerdictSet it deliberately excludes timings, durations, clone paths and
+// diagnostics — differences there are environment noise, not measurement.
+func (r Report) CountsSet() map[string]string {
+	out := make(map[string]string, len(r.Classes))
+	for _, c := range r.Classes {
+		out[c.ID] = fmt.Sprintf("repo=%s verdict=%s full=%d/%d inc=%d/%d sha_full=%s sha_inc=%s",
+			c.Repo, c.Verdict, c.FullNodes, c.FullEdges, c.IncNodes, c.IncEdges,
+			c.SnapshotFullSHA256, c.SnapshotIncSHA256)
+	}
+	return out
+}
+
+// CountsSetDigest renders the counts set as a stable, comparable string.
+func (r Report) CountsSetDigest() string {
+	cs := r.CountsSet()
+	ids := make([]string, 0, len(cs))
+	for id := range cs {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	out := ""
+	for _, id := range ids {
+		out += id + "{" + cs[id] + "};"
 	}
 	return out
 }

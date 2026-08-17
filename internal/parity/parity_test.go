@@ -620,15 +620,18 @@ func TestReport_FailsClosed(t *testing.T) {
 	})
 }
 
-// TestProvenance_NeverClaimsItRanAtTheCandidate pins the sentence AC-12 governs.
+// TestProvenance_NeverClaimsItRanAtTheCandidate pins the sentence AC-12
+// governs. (The candidate moved 2026-08-16 — ADR 0009 is a product-byte
+// change — so the sanctioned sentence names the ADR 0009 candidate now, and
+// the old v0.7.1 wording is among the forbidden phrasings.)
 func TestProvenance_NeverClaimsItRanAtTheCandidate(t *testing.T) {
 	p := parityreport.NewProvenance("cafebabe")
-	if !strings.Contains(p.Statement, "byte-identical to v0.7.1 at "+parityreport.CandidateSHA) {
-		t.Fatalf("statement must say the product SOURCE is byte-identical: %q", p.Statement)
+	if !strings.Contains(p.Statement, "byte-identical to the ADR 0009 candidate at "+parityreport.CandidateSHA) {
+		t.Fatalf("statement must say the product SOURCE is byte-identical to the current candidate: %q", p.Statement)
 	}
-	for _, bad := range []string{"measured at the candidate", "ran at the candidate", "at v0.7.1"} {
+	for _, bad := range []string{"measured at the candidate", "ran at the candidate", "v0.7.1"} {
 		if strings.Contains(strings.ToLower(p.Statement), bad) {
-			t.Fatalf("statement implies the run happened AT the candidate: %q", p.Statement)
+			t.Fatalf("statement implies the run happened AT the candidate, or names the retired candidate: %q", p.Statement)
 		}
 	}
 	if p.RunSHA == p.CandidateSHA {
@@ -654,6 +657,51 @@ func TestVerdictSet_ComparesVerdictsNotBytes(t *testing.T) {
 	c := mk("2026-07-31T11:22:33Z", parityreport.VerdictPass)
 	if a.VerdictSetDigest() == c.VerdictSetDigest() {
 		t.Fatal("a changed verdict must show as a disagreement")
+	}
+}
+
+// TestCountsSet_SeesWhatVerdictsCannot pins the Wave-0 determinism gate against
+// the EXACT published blindness: grpc-go's replace_generated_file row FAILed in
+// all six executions (verdicts agree) while the incremental edge count flapped
+// 69939/69940 between dispatches. -verdict-diff structurally cannot see that;
+// -counts-diff exists to. Timestamps and durations must still not count as
+// disagreement, or every pair of dispatches would "differ".
+func TestCountsSet_SeesWhatVerdictsCannot(t *testing.T) {
+	mk := func(when string, incEdges int) parityreport.Report {
+		p := parityreport.NewProvenance("sha")
+		p.GeneratedAt = when
+		return parityreport.Report{Provenance: p, Classes: []parityreport.ClassResult{
+			{ID: "add_file", Kind: "change_class", Verdict: parityreport.VerdictPass,
+				Repo: "cobra", FullNodes: 10, FullEdges: 20, IncNodes: 10, IncEdges: 20,
+				SnapshotFullSHA256: "aaaa", SnapshotIncSHA256: "aaaa", DurationMS: 10},
+			{ID: "replace_generated_file", Kind: "change_class", Verdict: parityreport.VerdictFail,
+				Repo: "grpc-go", FullNodes: 14898, FullEdges: 69772, IncNodes: 14898, IncEdges: incEdges,
+				SnapshotFullSHA256: "ffff", SnapshotIncSHA256: "0000", DurationMS: 99},
+		}}
+	}
+	a := mk("2026-08-16T00:00:00Z", 69939)
+	b := mk("2026-08-16T11:22:33Z", 69940) // the published flap, verbatim
+
+	// The blindness, demonstrated rather than asserted away: verdicts AGREE.
+	if a.VerdictSetDigest() != b.VerdictSetDigest() {
+		t.Fatal("precondition broken: the two dispatches must agree on every verdict")
+	}
+	// The gate: counts DISAGREE.
+	if a.CountsSetDigest() == b.CountsSetDigest() {
+		t.Fatal("a flapping incremental edge count must show as a counts disagreement — this is the non-determinism -verdict-diff cannot see")
+	}
+	// Environment noise must not register.
+	c := mk("2026-09-01T00:00:00Z", 69939)
+	c.Classes[0].DurationMS = 12345
+	if a.CountsSetDigest() != c.CountsSetDigest() {
+		t.Fatal("two dispatches differing only in timestamps and durations must agree on counts")
+	}
+	// A row silently running on a different repository must register even with
+	// identical numbers.
+	d := mk("2026-08-16T00:00:00Z", 69939)
+	d.Classes[1].Repo = "gin"
+	if a.CountsSetDigest() == d.CountsSetDigest() {
+		t.Fatal("the same counts measured on a different repository must not compare equal")
 	}
 }
 

@@ -31,7 +31,7 @@ here with a local proof), **BLOCKED** (a dependency must clear first),
 | WP-J4 | Kotlin binder on the shared table | **DONE** | D2 inferred/declared boundary proven |
 | WP-J5 | Hermetic change-class parity | **DONE** | **11** required classes, both stores, byte parity; **no deferred rows left** (M2.2) |
 | WP-J6 | Corpus deepening (pins + stratification) | **PARTIAL** | okio pinned (G5); guava→v3 + more pins outstanding |
-| WP-J7 | Real-repo parity over JVM pins (**G4**) | **READY** | ADR 0008 D8 entry criterion met 2026-08-16: PARITY-001 ✅ fixed (M2.1), PARITY-002 ✅ fixed (ADR 0009, W0.f) |
+| WP-J7 | Real-repo parity over JVM pins (**G4**) | **BLOCKED again** | PARITY-001 ✅ + PARITY-002 ✅ CLOSED BY MEASUREMENT (W0.f-3), but the measurement isolated **PARITY-003** (Balanced-profile aggregation, ⛔ open, W0.f-4) — D8's per-defect test applies to it before J7 runs |
 | WP-J8 | Hero-JVM (~20 scenarios × 12 ops) | **DONE** | `corpus/fixtures/hero-jvm`, hero gate green |
 | WP-J9 | Differential bytecode ground-truth (soundness) | **DONE** (Java) | live JDK, 4 dispatch forms; **Kotlin live path runs in CI only** (no local `kotlinc`) |
 | WP-J10 | Perf + budget runs; create `GA-LANG-*` rows (born UNKNOWN) | **OWNER** | needs an attested candidate + reproducible CI runs |
@@ -142,14 +142,20 @@ theater. Booked as part of W0.e.
 ## 2. The critical path — and it is not JVM-specific
 
 The long pole to Java/Kotlin GA runs through **Go-level** defects, not the
-binder. **Both are now FIXED** (PARITY-001 in M2.1; PARITY-002 on 2026-08-16 by
-ADR 0009's module-aware import→directory resolution, W0.f), so the path below
-is open — what remains is running WP-J7 and re-measuring, not fixing:
+binder. **PARITY-001 and PARITY-002 are CLOSED BY MEASUREMENT** (W0.f-3,
+2026-08-16: two dispatches over the pinned clones, identical at COUNT
+granularity, fan-out signature gone, grpc-go count-flapping gone — record in
+`docs/rc/parity-matrix-real-repo.md`) — **and that same measurement isolated
+PARITY-003**, a distinctly-mechanismed defect the two "PARITY-002" gin/grpc-go
+rows had been conflating:
 
 ```
-PARITY-001  ✅ FIXED 2026-08-16 (M2.1) — deleted-path purge now commits before linkFiles
-PARITY-002  ✅ FIXED 2026-08-16 (W0.f, ADR 0009) — Go imports resolve by module path, not clause fan-out
-      │  language-independent, ingest-level
+PARITY-001  ✅ CLOSED BY MEASUREMENT 2026-08-16 (fix M2.1; delete_file FAIL→PASS on real cobra)
+PARITY-002  ✅ CLOSED BY MEASUREMENT 2026-08-16 (fix W0.f/ADR 0009; determinism proven via -counts-diff)
+PARITY-003  ⛔ OPEN — Balanced-profile import aggregation is PASS-SCOPED (engine/ingest/linkfiles.go):
+      │     sync keeps a SUPERSET of rebuild's imports edges; deterministic; default profile;
+      │     invisible to every hermetic gate (engine default profile ≠ CLI default balanced);
+      │     filed + user-disclosed (readme, sync -h, doctor) in W0.f-3 → fix is W0.f-4
       ▼
 WP-J7  (real-repo parity over JVM pins)   ← ADR 0008 D8 makes the fixes the ENTRY CRITERION
       ▼
@@ -159,9 +165,13 @@ GA-LANG-java/kotlin-G4 = PASS
 ```
 
 Everything else is either DONE, BUILDABLE by me now, or an OWNER sign-off.
-**If G4 is required for GA-at-declared-capability, the schedule is now the
-WP-J7 measurement run, not a defect fix** (updated 2026-08-16 — before the
-ADR 0009 fix this sentence read "PARITY-002 is now the schedule").
+**If G4 is required for GA-at-declared-capability, PARITY-003 (W0.f-4) is now
+the schedule** (updated twice on 2026-08-16: "PARITY-002 is the schedule" →
+"the measurement run is the schedule" → the measurement ran and found
+PARITY-003 — each supersession kept, that is what a measurement is FOR).
+Note WP-J7's JVM rows may be less exposed than Go's (Java/Kotlin emit a single
+interned file→package edge, not per-file fan-out — the aggregation path is
+Go-shaped), but that is an argument, not a measurement.
 The one open ADR question that could shorten this path is whether
 Java/Kotlin may reach GA with G4 published as an honest **PARTIAL** (defects
 filed, pinned, never hidden — exactly how Go's own real-repo matrix reads
