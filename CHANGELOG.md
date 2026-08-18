@@ -232,27 +232,56 @@ file:
   minus `_test.go` (a test file is a package member but is not *importable* —
   the ruling `engine/typeresolve` already made), Python takes `.py` **and**
   `.ipynb` and keeps `test_*.py` (Python test modules are importable), C# `.cs`,
-  Rust `.rs`. Java, Kotlin, the TypeScript family, C, C++, Ruby, PHP, Lua and
-  Bash are structurally unaffected and their graph bytes are unchanged.
+  Rust `.rs`. Java, Kotlin, the TypeScript family, C, C++, Ruby, PHP, Lua, Bash
+  and SQL are structurally unaffected and their graph bytes are unchanged (SQL
+  emits no `imports` edge at all).
 
   **BEHAVIOUR CHANGE, three surfaces, stated rather than left to be discovered:**
 
-  - `related_files` and `imports` gain precision and narrow: on cobra,
-    `related-files -max-files 12 doc/man_docs.go` returned 12 items of which 5
-    were relevant; the seven non-source additions are gone.
+  - `related_files` and `imports` gain precision and narrow. The published
+    pre-fix measurement on pinned cobra is
+    `related-files -max-files 12 doc/man_docs.go` → 12 items, 5 genuinely
+    related, **four of the seven additions not Go source**
+    ([the record](docs/rc/parity-matrix-real-repo.md)). The post-fix number on
+    cobra has **not** been re-measured yet, so no "after" figure is claimed
+    here.
+  - **A `.md`/`.yml` file used as a `related_files` ANCHOR now answers empty.**
+    `related_files` accepts a repo-relative path, a Markdown file mints only
+    intra-file symbols, and same-file neighbours are skipped — so the inbound
+    `imports` edge was that file's *only* cross-file path. `graphi related-files
+    README.md` therefore returns an explicit empty outcome (with its reason)
+    where it used to list the importing packages. The edge it lost was wrong,
+    but the operation-level effect is real and is pinned by
+    `TestRelatedFiles_MarkdownAnchorLosesItsOnlyPath`.
   - **`neighborhood` changes shape at depth ≥ 2.** `query.Neighborhood`
     (`engine/query/service.go`) walks all edge kinds and excludes only
     `package`/`external` nodes, so it reaches `.md`/`.yml` file nodes through an
     `imports` edge today and stops doing so. Whether `file` nodes belong in
     neighborhood traversal at all is a separate product question, not decided
     here.
-  - Degree-ranked Labs output (`agent_brief`, hybrid search) shifts, because the
-    removed edges were carrying degree.
+  - **Everything degree-ranked shifts**, because the removed edges were carrying
+    degree: `agent_brief` and hybrid search, `hotspots` (its score multiplies
+    commit count by edge endpoints), `change_risk` fan-in/fan-out,
+    `explain_symbol` and `change_impact` at depth 1, `task_context`, and the
+    hub/bridge centrality in `engine/analysis` that feeds PR signals.
 
-  **Two honest losses**, accepted rather than worked around: a `.proto` beside
-  its generated `.pb.go`, and `testdata/` plus `//go:embed` assets, lose their
-  only graph path — graphi models no embed or codegen relation, and building one
-  is its own epic. LINK-001's disclosure (readme "Known limits", the doctor
+  **UPGRADING AN EXISTING INDEX REQUIRES `graphi rebuild`.** Verified on a real
+  fixture with both binaries: an index built by the previous release keeps its
+  wrong `imports` edges, and `graphi sync` does **not** remove them — drift is
+  content-hash based, the source files did not change, so nothing is re-linked
+  and `sync` correctly reports "up to date". `graphi rebuild` applies the fix.
+  (One manual before/after run on that fixture, **not** a gated measurement:
+  `related_files` on the importer went 4 items → 1, confirmed-tier share
+  0.2 → 0.5.) This is the standing
+  property of an incremental index whenever a *linker rule* changes rather than
+  a source file; it is stated here because "upgrade the binary and the graph is
+  fixed" would otherwise be a reasonable and wrong assumption.
+
+  **Three honest losses**, accepted rather than worked around: a `.proto` beside
+  its generated `.pb.go`; `testdata/` plus `//go:embed` assets; and a cgo
+  package's `.c`/`.h` sources, which the C parser does commit as file nodes.
+  All three lose their only graph path — graphi models no embed, codegen or cgo
+  relation, and building one is its own epic. LINK-001's disclosure (readme "Known limits", the doctor
   `known-defects` check and its test) is retracted in this same change, per the
   disclosure contract.
 

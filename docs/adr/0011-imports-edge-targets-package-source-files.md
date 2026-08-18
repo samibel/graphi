@@ -65,6 +65,13 @@ Three parts, each load-bearing:
 | Rust | `.rs` | no separate test-file extension exists |
 | Java, Kotlin | *unchanged* | one file→`package` edge; no directory fan-out |
 | TypeScript family, C, C++, Ruby, PHP, Lua, Bash | *unchanged* | exact target paths via `importFileTargets` |
+| SQL | *unchanged* | its resolver deliberately resolves nothing, so it emits no `imports` edge to filter |
+
+`.ipynb` appears in Python's set only. A notebook's language is its kernel
+language and ingest links per language, so a Rust or C# notebook could not be an
+`imports` target today. That is a deliberate non-decision, not an oversight:
+neither has been observed, and adding an extension on speculation is how a
+membership rule stops being reviewable.
 
 **The `_test.go` ruling, stated explicitly because it is the one arguable case.**
 Test files ARE package members — `go build` compiles them into the package under
@@ -72,8 +79,13 @@ Test files ARE package members — `go build` compiles them into the package und
 reach a symbol declared in `foo_test.go`. An `imports` edge models the import
 declaration, so the importable set is the right one. This is also the ruling
 `engine/typeresolve/pkggraph.go:103` already makes for the same question on the
-type-checked side, so the heuristic and type-checked layers now agree rather than
-contradict. The filter binds the TARGET side only: `foo_test.go` remains a
+type-checked side, so the two layers agree **on the `_test.go` question** — the
+one this ADR decides. *Corrected in review, so the claim is not read wider than
+it is true:* they still differ on case, because `pkggraph.go:100` matches `.go`
+case-**sensitively** while this filter does not (see below), so a `Helper.GO` is
+an `imports` target that typeresolve skips. That is a pre-existing typeresolve
+scoping choice, not something this change introduced, and it is not reopened
+here. The filter binds the TARGET side only: `foo_test.go` remains a
 first-class *importer*, and an external test package's edge onto `foo.go` is
 unchanged.
 
@@ -112,8 +124,15 @@ reason.
   so in gin's `internal/json` a clause filter passes `README.md` straight
   through.
 - **Asking `Registry.ParserFor` for a node's language** — the registry's
-  contents are build-tag dependent (`graphi_broad` / CGO), which would make
-  committed graph bytes depend on how the binary was built.
+  contents are build-tag dependent (`graphi_broad` / CGO), so an edge SET would
+  become a function of how the binary was built. *Stated precisely after review,
+  because the first phrasing overclaimed:* which files become `file` nodes at
+  all already depends on that same registry, so the registry is not a
+  build-independent/dependent boundary in general. The point is narrower and
+  still decisive — a **static** list keeps the membership rule reviewable in one
+  place and independent of a registry that a build tag can grow underneath it,
+  and it is what makes the per-language reasoning above (`.ipynb` in, `.pyi`
+  out) an explicit decision rather than a side effect.
 - **Widening `dependentsOf` over the clause relation** — makes every re-link
   O(repo); already rejected by ADR 0009.
 
@@ -133,11 +152,17 @@ reason.
 - **LINK-001's disclosure is retracted in this same change**, per the disclosure
   contract: the readme "Known limits" bullet, the doctor `known-defects` check,
   its test, and the registration in `cmd/graphi/doctor.go`.
+- **An existing index needs `graphi rebuild`, not `graphi sync`.** Verified with
+  both binaries on one fixture: after upgrading, `sync` reports "up to date" and
+  the wrong edges survive, because drift is content-hash based and no source
+  file changed, so nothing is re-linked. This is a property of every linker-rule
+  change, not of this one, but it is the kind of thing that is only obvious in
+  hindsight — a reader who assumes "new binary ⇒ corrected graph" is wrong.
 
-### The two honest losses
+### The honest losses
 
-These are real and are accepted, not worked around. Both have the same cause:
-graphi models **no embed and no codegen relation**, so for these files the
+These are real and are accepted, not worked around. They share one cause:
+graphi models **no embed, codegen or cgo relation**, so for these files the
 directory-fan-out `imports` edge was their ONLY path in the graph. Removing a
 wrong edge that was carrying real weight still removes real weight.
 
@@ -149,9 +174,25 @@ wrong edge that was carrying real weight still removes real weight.
    or `.json` is a genuine build input of the package that embeds it, and
    `//go:embed` states so in the source. graphi models no embed relation, so
    those files lose their only graph path too.
+3. **A cgo package's `.c` / `.h` sources.** *Added in review: the ticket named
+   two losses and this is a third the exploration missed.* The C parser claims
+   `.c` and `.h` (`core/parse/parser_c.go`), so those files ARE committed file
+   nodes, and in a cgo package they are genuine build inputs of the Go package
+   beside them. `goPackageFile` admits only `.go`, so they lose their path
+   exactly as the `.proto` does. Cgo packages are not rare.
 
-Building an embed/codegen relation is its own epic. Recording the loss here is
-the alternative to pretending the fix is free.
+**An operation-level consequence, stated because it is not obvious from the
+edge-level rule.** `related_files` accepts a repo-relative PATH anchor, and a
+Markdown file mints only intra-file symbols while same-file neighbours are
+skipped — so the inbound `imports` edge was a `.md`/`.yml` file node's only
+cross-file path *in either direction*. `graphi related-files README.md` now
+returns an explicit empty outcome where it used to list the importing packages.
+Pinned by `TestRelatedFiles_MarkdownAnchorLosesItsOnlyPath`, which asserts the
+LOSS deliberately: it is a recorded fact for a reviewer to weigh, not something
+a user should discover.
+
+Building an embed/codegen/cgo relation is its own epic. Recording the losses
+here is the alternative to pretending the fix is free.
 
 ## Verification
 

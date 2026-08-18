@@ -473,11 +473,15 @@ func (idx *SymbolIndex) packageFileNodes(importPath string, keep packageFileFilt
 		if !ok {
 			return nil // no module in this tree owns the path: external
 		}
-		var out []model.NodeId
-		for _, ref := range idx.fileNodesByDir[dir] {
+		refs := idx.fileNodesByDir[dir]
+		out := make([]model.NodeId, 0, len(refs))
+		for _, ref := range refs {
 			if keep(ref.path) {
 				out = append(out, ref.id)
 			}
+		}
+		if len(out) == 0 {
+			return nil
 		}
 		sort.Slice(out, func(a, b int) bool { return out[a] < out[b] })
 		return out

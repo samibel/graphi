@@ -1,6 +1,9 @@
 package link
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"sort"
@@ -436,45 +439,93 @@ func TestExtensionSets_AreWellFormed(t *testing.T) {
 // notice.
 //
 // It is a source scan for the same reason TestLinkPurity is one: the fact being
-// asserted is "every resolver file that opts into the package fan-out also
-// declares its membership set", which is a property of the FILE SET, not of any
-// one call. Building it out of a test-only hook in the product code would have
-// been the alternative, and a product byte added purely to observe a test is a
-// worse trade than reading the directory `go test` already runs in.
+// asserted is "every file that opts into the package fan-out also declares its
+// membership set", which is a property of the FILE SET, not of any one call.
+// Building it out of a test-only hook in the product code would have been the
+// alternative, and a product byte added purely to observe a test is a worse
+// trade than reading the directory `go test` already runs in.
+//
+// IT WALKS THE AST, NOT THE TEXT. *Strengthened in review, which showed the
+// first version had exactly the holes that matter:* a `strings.Contains` scan
+// for the literal `"b.pkgImportPaths = append"` is blind to
+// `b.pkgImportPaths = []string{…}`, to a `binder{pkgImportPaths: …}` composite
+// literal, and to any other spelling — each of which would give a new language
+// zero `imports` edges with nothing going red, which is precisely the
+// silent-zero scenario the guard exists to prevent. Symmetrically, a text scan
+// for `"pkgTargetExts:"` is satisfied by a COMMENT. Walking the AST removes
+// both: every field reference is found whatever its syntax, and comments are
+// not part of it.
 func TestEveryClauseKeyedResolver_DeclaresPkgTargetExts(t *testing.T) {
 	entries, err := os.ReadDir(".")
 	if err != nil {
 		t.Fatal(err)
 	}
+	fset := token.NewFileSet()
 	scanned, optedIn := 0, 0
 	for _, e := range entries {
 		name := e.Name()
-		if e.IsDir() || !strings.HasPrefix(name, "resolve_") || !strings.HasSuffix(name, ".go") ||
-			strings.HasSuffix(name, "_test.go") || name == "resolve_common.go" {
+		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
 			continue
 		}
-		src, err := os.ReadFile(filepath.Clean(name))
+		f, err := parser.ParseFile(fset, filepath.Clean(name), nil, 0)
 		if err != nil {
-			t.Fatalf("read %s: %v", name, err)
+			t.Fatalf("parse %s: %v", name, err)
 		}
 		scanned++
-		body := string(src)
-		if !strings.Contains(body, "b.pkgImportPaths = append") {
+		// resolve_common.go DEFINES both fields and is the consumer of
+		// pkgTargetExts, so it names them without opting in. Every other file is
+		// judged on the pair.
+		if name == "resolve_common.go" {
+			continue
+		}
+		usesImports := fileMentionsField(f, "pkgImportPaths")
+		usesExts := fileMentionsField(f, "pkgTargetExts")
+		if !usesImports {
+			if usesExts {
+				t.Errorf("%s declares pkgTargetExts but never populates pkgImportPaths: the "+
+					"extension set has no fan-out to filter and is dead", name)
+			}
 			continue
 		}
 		optedIn++
-		if !strings.Contains(body, "pkgTargetExts:") {
+		if !usesExts {
 			t.Errorf("%s populates binder.pkgImportPaths (the package fan-out) but never sets "+
 				"pkgTargetExts, so extSetFilter admits nothing and this language emits NO imports "+
-				"edges (LINK-001 / ADR 0011)", name)
+				"edges at all (LINK-001 / ADR 0011)", name)
 		}
 	}
 	if scanned == 0 {
-		t.Fatal("scanned no resolver files: the guard is vacuous")
+		t.Fatal("scanned no source files: the guard is vacuous")
 	}
 	if optedIn != 3 {
-		t.Errorf("%d resolver files opt into the package fan-out, want 3 (python, c_sharp, rust). "+
+		t.Errorf("%d files opt into the package fan-out, want 3 (python, c_sharp, rust). "+
 			"A change to that set is a deliberate scope change and must update ADR 0011 and "+
 			"docs/language-support.md with it", optedIn)
 	}
+}
+
+// fileMentionsField reports whether f references the named struct field in any
+// syntactic position — a selector (`b.pkgTargetExts`), a composite-literal key
+// (`binder{pkgTargetExts: …}`), or a field declaration. Comments are not part of
+// the AST walked here, which is the point: a mention in prose must not satisfy
+// the guard.
+func fileMentionsField(f *ast.File, field string) bool {
+	found := false
+	ast.Inspect(f, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+		switch v := n.(type) {
+		case *ast.SelectorExpr:
+			if v.Sel != nil && v.Sel.Name == field {
+				found = true
+			}
+		case *ast.KeyValueExpr:
+			if id, ok := v.Key.(*ast.Ident); ok && id.Name == field {
+				found = true
+			}
+		}
+		return !found
+	})
+	return found
 }

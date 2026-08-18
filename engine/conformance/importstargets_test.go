@@ -6,7 +6,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
+
+	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/related"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/search"
 )
 
 // mixedExtensionTree is the LINK-001 / ADR 0011 fixture: an importer, and an
@@ -269,6 +276,83 @@ func TestImportsEdge_ImmuneLanguagesUnchanged(t *testing.T) {
 
 					sum := sha256.Sum256(snapshot(t, store))
 					t.Logf("[%s] AC-7 immune-language snapshot sha256 = %s", axis, hex.EncodeToString(sum[:]))
+				})
+			}
+		})
+	}
+}
+
+// TestRelatedFiles_MarkdownAnchorLosesItsOnlyPath is the operation-level
+// consequence of ADR 0011, pinned as a test because prose in a CHANGELOG is not
+// a gate.
+//
+// `related_files` accepts a repo-relative PATH anchor
+// (engine/agenttools/resolve/resolve.go, MethodFile), so `graphi related-files
+// README.md` is a supported, shipped call on a Stable-12 operation. A Markdown
+// file mints only intra-file `defines` symbols (core/parse/parser_markdown.go)
+// and related.Files skips same-file neighbours, so an INBOUND `imports` edge was
+// a `.md` file node's ONLY cross-file path in the graph. Removing that edge —
+// correctly, it was never a package member — therefore turns this call from
+// "the importing packages" into an explicit EMPTY outcome.
+//
+// The direction of this test is deliberate: it asserts the LOSS, not a
+// preserved capability. It exists so the behaviour is a recorded, executable
+// fact that a reviewer can weigh, rather than something a user discovers. If a
+// future change gives non-source files a real graph relation (an embed or
+// codegen edge — the thing whose absence causes the two honest losses in ADR
+// 0011), this test goes red and should be REPLACED, not deleted quietly.
+func TestRelatedFiles_MarkdownAnchorLosesItsOnlyPath(t *testing.T) {
+	ctx := context.Background()
+	for _, b := range parityBackends() {
+		b := b
+		t.Run(b.name, func(t *testing.T) {
+			for _, pr := range parityProfiles() {
+				pr := pr
+				t.Run(pr.name, func(t *testing.T) {
+					t.Parallel()
+					axis := b.name + "/" + pr.name
+					root := t.TempDir()
+					writeTree(t, root, mixedExtensionTree())
+
+					store := newBackendStore(t, b)
+					ing := newIngester(t, store, pr.p)
+					if err := ing.IngestAll(ctx, root); err != nil {
+						t.Fatalf("[%s] IngestAll: %v", axis, err)
+					}
+					deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
+
+					// The control FIRST: the Go source file in the same directory
+					// keeps its inbound relation, so an empty answer for the
+					// README is about package membership and not about the
+					// fixture failing to index.
+					got, err := related.Files(ctx, deps, "tax/tax.go", "", 10)
+					if err != nil {
+						t.Fatalf("[%s] related.Files(tax/tax.go): %v", axis, err)
+					}
+					if got.Outcome != contract.OutcomeFound {
+						t.Fatalf("[%s] CONTROL FAILED: related_files on tax/tax.go is %q, want %q — "+
+							"the fixture did not produce the edges this test reasons about",
+							axis, got.Outcome, contract.OutcomeFound)
+					}
+
+					for _, anchor := range []string{"tax/README.md", "tax/.golangci.yml"} {
+						r, err := related.Files(ctx, deps, anchor, "", 10)
+						if err != nil {
+							t.Fatalf("[%s] related.Files(%s): %v", axis, anchor, err)
+						}
+						if r.Outcome != contract.OutcomeEmpty {
+							t.Errorf("[%s] related_files on %q is %q with %d item(s), want %q.\n"+
+								"ADR 0011 removed the inbound `imports` edge that was this file's only "+
+								"cross-file path. If that edge is back, the LINK-001 fix regressed; if a "+
+								"NEW relation replaced it, replace this test rather than deleting it.",
+								axis, anchor, r.Outcome, len(r.Items), contract.OutcomeEmpty)
+							continue
+						}
+						if !strings.Contains(r.Summary, "no ") {
+							t.Errorf("[%s] related_files on %q is empty but its summary does not say why: %q",
+								axis, anchor, r.Summary)
+						}
+					}
 				})
 			}
 		})

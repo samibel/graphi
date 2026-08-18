@@ -98,6 +98,7 @@ families, because the three import mechanisms differ:
 | | **Rust** | file→file, `.rs` |
 | Interned package node | **Java · Kotlin** | ONE file→`package` edge; no directory fan-out exists to filter |
 | Exact target path | **TypeScript family · C · C++ · Ruby · PHP · Lua · Bash** | the resolver already names the exact file (`./util.ts`, `util.h`, `require './x'`); only a committed node at that path emits an edge |
+| No `imports` edge at all | **SQL** | its resolver deliberately resolves nothing (skip+count), so there is no target set |
 
 Go excludes `_test.go` because a test file is a package member but is **not
 importable** — the same ruling [`engine/typeresolve`](../engine/typeresolve)
@@ -106,9 +107,12 @@ module is an ordinary importable module; the Go rule rests on non-importability,
 not on the word "test". The filter binds the **target** side only: a `_test.go`
 file remains a first-class importer.
 
-Two consequences are accepted rather than hidden: a `.proto` beside its
-generated `.pb.go`, and `testdata/` plus `//go:embed` assets, lose their only
-graph path, because graphi models no embed or codegen relation.
+Three consequences are accepted rather than hidden: a `.proto` beside its
+generated `.pb.go`, `testdata/` plus `//go:embed` assets, and a cgo package's
+`.c`/`.h` sources all lose their only graph path, because graphi models no
+embed, codegen or cgo relation. One follows at the operation level: a `.md` or
+`.yml` used as a `related_files` **anchor** now answers empty, because that
+inbound `imports` edge was its only cross-file path.
 
 ## Deferred / not in the default tier
 

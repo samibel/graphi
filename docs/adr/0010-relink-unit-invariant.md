@@ -138,6 +138,17 @@ a formality.
 
 ## Consequences
 
+> **Amendment 2026-08-19 — one status word below is stale; nothing is rewritten.**
+> This section says LINK-001 is "disclosed, fix scheduled as its own change".
+> That change is
+> [ADR 0011](0011-imports-edge-targets-package-source-files.md), landed
+> 2026-08-19: **LINK-001 is fixed and its disclosure is retracted.** The
+> measured figures below (44 of 340 on cobra, 2 120 on grpc-go, `related_files`
+> 5 → 12) are pre-fix and remain true of the candidate they were taken on; no
+> post-fix figure exists yet, because the candidate has not moved. Everything
+> else here — including the withdrawal of the "edges they should always have
+> had" claim, which was correct and stays withdrawn — stands as published.
+
 - **Product-byte change on the shipped default profile.** Balanced graphs gain
   the imports edges the aggregation used to swallow (and lose the synthetic
   `aggregated N imports of …` edges). The parity-matrix candidate moves again;

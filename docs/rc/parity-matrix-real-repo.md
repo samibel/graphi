@@ -1,5 +1,31 @@
 # Full/incremental parity matrix over pinned real repositories
 
+> ## Amendment 2026-08-19 — LINK-001 is CLOSED IN CODE, and nothing below is rewritten
+>
+> Every measurement, count and verdict below stands exactly as published. This
+> note exists because one **status word** in this file went stale the moment
+> LINK-001 was fixed, and the disclosure contract requires the retraction to
+> land in the same change that closes the defect.
+>
+> **Read "Filed as **LINK-001** (open, disclosed on the user surfaces, fix
+> scheduled as its own change…)" in §"The finding the FAIL rows understated" as
+> LINK-001 — FIXED 2026-08-19 by
+> [ADR 0011](../adr/0011-imports-edge-targets-package-source-files.md).** An
+> `imports` edge now targets the imported package's SOURCE files, decided on the
+> file extension in the resolver at read time; the `_test.go` ruling that
+> paragraph asks for is made there (test files are package members but are not
+> importable, so they are excluded). The user-surface disclosures — the readme
+> "Known limits" bullet and the doctor `known-defects` check — are retracted in
+> that same change.
+>
+> **What is NOT claimed by this note, stated so it cannot be misread.** The
+> 44-of-340 and 2 120-of-23 575 figures, and the cobra `related_files` 5 → 12
+> reproduction, are **pre-fix** measurements and remain true of the candidate
+> they were taken on. **No post-fix figure exists yet**: the candidate has not
+> moved and the matrix has not been re-run. Until it is, LINK-001 is closed *in
+> code and by hermetic proof*, not *by measurement* — the weaker of the two
+> claims this project distinguishes, and deliberately the one made here.
+
 # Current measurement — the ADR 0010 candidate (2026-08-16, W0.f-4)
 
 **Status: PUBLISHED PASS — 19 of 19 rows, and the first fully green matrix this
