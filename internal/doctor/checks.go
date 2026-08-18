@@ -370,18 +370,37 @@ func LocalFirstCheck() Check {
 	}
 }
 
-// The known-defects disclosure check is REMOVED AGAIN (2026-08-16, second
-// time): its only entry, PARITY-003, is fixed by ADR 0010 (the pass-scoped
-// Balanced import aggregation is gone), and the check's own contract says an
-// empty list removes the check.
+// KnownDefectsCheck discloses OPEN, published product defects that affect a
+// GA operation. Info severity, never pass: an open defect is not a health
+// failure of THIS install, but it is also never silently green. The list is
+// maintained by hand and must shrink to removal in the same change that closes
+// a defect; an empty list removes the check.
 //
-// The pattern is worth keeping legible for the next open defect that affects a
-// GA operation: info severity so it is never silently green and never a health
-// failure of this install, a named defect id + affected operation + a
-// workaround the user can actually run (the PARITY-003 disclosure shipped
-// "-profile full", which profile.Parse rejects — verify the workaround), and
-// removal in the same change that closes the defect. Both removals were paired
-// with a measurement, not an argument: docs/rc/parity-matrix-real-repo.md.
+// Its history is the disclosure contract working: removed when PARITY-002
+// closed, restored for PARITY-003, removed when that closed, and restored the
+// same day for LINK-001 — which the PARITY-003 fix's own review UNMASKED
+// rather than introduced. A workaround named here must be one the CLI accepts:
+// the PARITY-003 disclosure shipped "-profile full", which profile.Parse
+// rejects, so verify the string before shipping it.
+func KnownDefectsCheck() Check {
+	return checkFunc{
+		id:       "known-defects",
+		category: "known-defects",
+		fn: func(ctx context.Context, env Env) CheckResult {
+			return StringResult("known-defects", "known-defects",
+				"LINK-001 (open): an `imports` edge targets EVERY file in the imported package's "+
+					"directory, including files that are not package source — on pinned cobra 44 of "+
+					"340 imports edges point at .md/.yml files, on grpc-go 2120 point at .md/.sh. "+
+					"This inflates `related_files`/`imports` results with unrelated files and shifts "+
+					"degree-ranked output (agent_brief, search_hybrid). It affects every profile that "+
+					"keeps imports edges; it became more visible when PARITY-003's edge-collapsing was "+
+					"removed (ADR 0010). Record: docs/rc/parity-matrix-real-repo.md. Workaround: read "+
+					"the `reason`/evidence on an imports edge to tell a package member from a "+
+					"same-directory file, or use `callers`/`callees`/`references`, which are unaffected.",
+				StatusInfo)
+		},
+	}
+}
 
 // checkFunc is a functional adapter for the Check interface.
 type checkFunc struct {

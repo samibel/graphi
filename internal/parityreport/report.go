@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"os"
 	"sort"
+
+	"github.com/samibel/graphi/core/profile"
 )
 
 // SchemaVersion versions this report envelope. Bump when a field is added,
@@ -145,6 +147,13 @@ type Provenance struct {
 	WorktreeClean bool `json:"worktree_clean"`
 	// WorktreeDirtyDetail carries the dirty paths when it is not.
 	WorktreeDirtyDetail string `json:"worktree_dirty_detail,omitempty"`
+	// IndexProfile is the INDEX PROFILE the measured passes ran under (ADR
+	// 0010 review round 1, finding 7). The harness passes no -profile so it
+	// measures the product's resolved DEFAULT, and clears
+	// GRAPHI_INDEX_PROFILE for the child so an inherited value cannot silently
+	// change what was measured — this field is what makes that checkable from
+	// the artifact instead of trusted.
+	IndexProfile string `json:"index_profile"`
 	// RunnerClass names the machine class (e.g. "ubuntu-latest"). A run with no
 	// runner class is not publishable: an unattributed measurement is an
 	// anecdote.
@@ -173,6 +182,7 @@ func NewProvenance(runSHA string) Provenance {
 	return Provenance{
 		CandidateSHA:   CandidateSHA,
 		RunSHA:         runSHA,
+		IndexProfile:   string(profile.Balanced) + " (the product's resolved default; GRAPHI_INDEX_PROFILE cleared for the measured child processes)",
 		Statement:      "product source byte-identical to the ADR 0010 candidate at " + CandidateSHA,
 		HarnessVersion: HarnessVersion,
 		SchemaVersion:  SchemaVersion,

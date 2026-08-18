@@ -83,9 +83,15 @@ metrics:
     budget: 300000
     unit: bytes
     severity: warn
+  # balanced_edge_count / deep_edge_count are pinned to the SAME numbers since
+  # ADR 0010: the profiles are graph-identical (the one reduction that separated
+  # them was the parity-unsafe import aggregation, now removed), so a 2x ladder
+  # between them is not just unmet — it is definitionally unreachable. Kept as
+  # two rows rather than merged so a future balanced-only reduction has a slot
+  # to move, and so the harness keeps measuring all three profiles.
   balanced_edge_count:
-    baseline: 500
-    budget: 1000
+    baseline: 1000
+    budget: 2000
     unit: count
     severity: warn
   balanced_query_latency_ms:

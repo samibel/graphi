@@ -14,7 +14,7 @@ linker edges = 0** on all 38 sides (19 rows × full + incremental).
 | Produced by | `internal/parity` + `cmd/parity`, two full local dispatches |
 | Gate | PRD FR-7 / §12.3 — full/incremental parity, binary, no threshold to negotiate |
 | Provenance | **product source byte-identical to the ADR 0010 candidate at `7574a49379d3ede0a08bdb024e7a2e315bdc14a1`** (candidate move: [`../decisions/2026-08-parity-candidate-move-adr0010.md`](../decisions/2026-08-parity-candidate-move-adr0010.md)); run SHA `3398d3b6c0f0`, runner class `Linux-X64/ccr-container`, go1.26.6 linux/amd64, clean worktree, both dispatches publishable |
-| Matrix source | `docs/rc/parity-classes.yaml` (17 change classes + 2 crash conditions, each now recording its `profile:` axis) |
+| Matrix source | `docs/rc/parity-classes.yaml` (17 change classes + 2 crash conditions; every row with a proof records its `profile:` axis — the one ABSENT row correctly records none) |
 | Report artifact | `docs/rc/parity-matrix-adr0010-run-c.json`, `…-adr0010-run-d.json` |
 | Historical artifacts | the ADR 0009 pair and the v0.7.1 pairs, preserved not deleted — see the superseded records below |
 
@@ -74,9 +74,23 @@ were lost. Measured on the fixed candidate against the previous one:
 
 (Totals: cobra 3918 → 4218 edges, gin 6599 → 6791, grpc-go 69613 → 92518, i.e.
 **+22 905 edges** on grpc-go. `lo` is unchanged at 704 — it has no intra-repo
-imports to collapse. The "before" `imports` figures are the totals minus the
-measured delta; the delta is entirely `imports` because that is the only kind
-the removed branch touched.)
+imports to collapse.)
+
+**PROVENANCE OF THIS TABLE, because it is not in the report artifacts**
+(review round 1, finding 6): `parity-matrix-adr0010-run-{c,d}.json` carry only
+per-row TOTAL node/edge counts and digests, so they cannot reproduce the
+per-kind figures above. Those come from counting `imports` edges in the
+snapshots the run kept, and from re-indexing the same pinned clones with a
+binary built at the previous candidate. Reproduce with:
+`go build -o /tmp/pre ./cmd/graphi` at `c4209dd` and at `7574a49`, index a
+pinned clone with each, then count by kind. The review re-derived all six
+figures independently and they matched exactly, including the per-kind claim
+that node counts and every non-`imports` kind (`calls`, `defines`,
+`references`, `implements`, `inherits`) are IDENTICAL before and after — which
+is what makes "the delta is entirely `imports`" a measurement rather than an
+inference. The cobra "before" figure is the `add_file` row (Δ300); other cobra
+rows carry Δ280–290, so recomputing from a different row gives a slightly
+different total.
 
 So under the profile the product actually ships, a file that really did import
 a package frequently had **no `imports` edge at all** — only one representative
@@ -86,19 +100,65 @@ evidence. That is a recall defect in a GA operation (`related_files`,
 of the same broken rule.
 
 **One published claim cross-checked, because it could have been a product of
-the defect:** the Real-World Report Card's metric 2 ("Import edges/node
-**0.96**, budget < 8") is measured by `TestLinkFanout_EdgeExplosionBudget`,
-which runs the library's ZERO-value profile and therefore always measured the
-un-aggregated world. The claim is unaffected, and the new real-repo figures sit
-far inside the budget: cobra **0.36**, gin **0.15**, grpc-go **1.58** imports
-per node. The fix moves the product toward the published number, not away
-from it.
+the defect:** the Real-World Report Card's metric 2 ("**0.96**, budget < 8") is
+measured by `TestLinkFanout_EdgeExplosionBudget`, which runs the library's
+ZERO-value profile and therefore always measured the un-aggregated world — the
+figure never included the aggregation and is unaffected. Two precisions found
+while checking it (review round 1, finding 13): that metric is **total** edges
+per node, not imports-only (its label said otherwise and is corrected in
+`../real-world-report.md`), so it is not the same ratio as the imports-per-node
+figures here; and on its own fixture the shipped Balanced profile went 0.67 →
+**0.96** with this fix, i.e. the product now lands exactly on the published
+number instead of below it. The new real-repo imports-per-node figures sit far
+inside the gate's bound either way: cobra **0.36**, gin **0.15**, grpc-go
+**1.58**.
 
 **Storage consequence, stated rather than left to be discovered:** ~33% more
-edges on grpc-go means a larger index for repositories of that shape. The
-§12.2 `db_size` gate (≤ 300 MB) is UNKNOWN on this candidate — like every
-performance gate — so this measurement neither satisfies nor breaks it; it is
-named here so the next baseline run knows to look.
+edges on grpc-go means a larger index for repositories of that shape (measured:
+grpc-go's store grows 25.2 MB → 30.7 MB, +22%). The §12.2 `db_size` gate
+(≤ 300 MB) is UNKNOWN on this candidate — like every performance gate — so this
+measurement neither satisfies nor breaks it; it is named here so the next
+baseline run knows to look.
+
+### CORRECTION (same day, from this change's independent review): the recall half was published without its precision half
+
+The sentence this record and ADR 0010 first shipped — "users of the default
+profile GAIN edges they should always have had" — is **not supportable as
+written**, and the review that found it is the reason it is corrected here
+rather than left standing. The restored edges are per-importer and correctly
+attributed, but `imports` targets are **every file node in the target
+directory**, not the imported package's source files
+(`engine/link/index.go:150` fills `fileNodesByDir` from every `file` node;
+`packageFileNodes` returns the whole list). So the aggregation had been masking
+a pre-existing WRONG-edge class, and removing it multiplies what reaches the
+user. Measured on the same pinned clones, `imports` edges by target:
+
+| repo | targets that are not `.go` at all | share of all `imports` | `_test.go` targets |
+|---|---|---|---|
+| cobra | 4 → **44** (33 `.md`, 11 `.yml`) | 12.9% | 126 (37.1%) |
+| gin | 8 → 8 | 2.7% | ~38% |
+| grpc-go | 15 → **2 120** (1 417 `.md`, 703 `.sh`) | 9.0% | ~31.7% |
+
+A `README.md` is not part of a Go package, so an `imports` edge to it is wrong
+in either profile — `-profile deep` and every hermetic gate have always emitted
+these. What changed is dominance under the SHIPPED default. Reproduced
+end-to-end on pinned cobra: `graphi related-files -max-files 12
+doc/man_docs.go` returned 5 genuinely-related items before and 12 after, the
+extra 7 including `.golangci.yml`, `CONDUCT.md`, `CONTRIBUTING.md` and
+`README.md`. So on that GA operation **recall improved and precision
+regressed**, and degree-ranked surfaces (`agent-brief`'s "start here" files,
+`search-hybrid`'s inbound-degree score) shift with it, unmeasured.
+
+Filed as **LINK-001** (open, disclosed on the user surfaces, fix scheduled as
+its own change with its own red/green and its own re-measurement — it is a
+product-byte change and moves the candidate again). Fix direction:
+`packageFileNodes` must return the target package's SOURCE files, which is a
+language/extension question the index can answer from the node's path; whether
+in-package `_test.go` files belong (they are part of the package but are not
+importable) is a separate ruling that change must make explicitly. This
+correction is published in the same change that received the review, per the
+disclosure contract — the honest sequence is that the measurement was right,
+the framing around it was not.
 
 ## Reproducing this measurement
 

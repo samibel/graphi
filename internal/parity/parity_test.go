@@ -112,6 +112,17 @@ func TestSnapshotBoundary_OnlyGraphstoreIsImported(t *testing.T) {
 		// prevent. It runs NO ingest and opens no graph store, so it does not
 		// touch the instrument boundary above.
 		"github.com/samibel/graphi/internal/ingestlock": true,
+		// ADR 0010 review round 1, finding 7: the harness must PIN the index
+		// profile of the child processes it measures (an inherited
+		// GRAPHI_INDEX_PROFILE would silently change what "19 of 19 PASS"
+		// describes) and record it in the report. core/profile is where that
+		// variable's name and the resolution rule live; re-deriving either here
+		// would create the second dialect the ingestlock reasoning above
+		// rejects. It is a pure constants/parse package — no store, no ingest,
+		// no I/O — so linking it cannot perturb the instrument, which is the
+		// property this guard protects. It is also linked transitively through
+		// internal/parityreport, which records the profile in provenance.
+		"github.com/samibel/graphi/core/profile": true,
 	}
 	for _, d := range strings.Split(string(out), "\n") {
 		d = strings.TrimSpace(d)

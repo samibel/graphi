@@ -60,26 +60,59 @@ bugs.
 **Applied here:** the Balanced import aggregation is REMOVED, not repaired.
 Balanced now behaves exactly like Deep for `imports` edges; Fast still drops
 them. The removal is not a trade-off against index size, because the
-aggregation had **no legitimate prey in any language**: a true external import
-mints no `imports` edge at all (Go `packageFileNodes`, `clausePackageFileNodes`
-and `packageNodeByPath` each return nothing for a package the repository does
-not declare), so every edge it could see was intra-repo. `isExternalImport`
+aggregation had **no legitimate prey in any language**: every edge it could see
+targeted a node the repository itself declares. With a module map present, Go's
+`packageFileNodes` fails closed for a path no module owns, and
+`clausePackageFileNodes` / `packageNodeByPath` likewise return nothing for a
+package the repository does not declare. ONE PRECISION, added in review round 1
+(finding 5): in a tree with NO `go.mod` the Go path falls back to the clause
+union, where a genuinely external import (`github.com/someone/bar`) CAN mint an
+edge if some directory happens to declare `package bar` — so "a true external
+import mints no edge at all" is false in that fallback. The conclusion survives
+unchanged, because the minted edge still targets an in-repo node: the
+aggregation still had no external prey. The wrong edge in that fallback is a
+separate, pre-existing clause-resolution defect (ADR 0009's known limit), not
+aggregation prey. `isExternalImport`
 split the path on `/` only, so it classified the repository's OWN dotted module
 path — `github.com/…`, `google.golang.org/…`, and every Java/Python/C# package
 path — as external.
 
 **Consequence for the profile ladder, stated rather than hidden:** `i.profile`
-is read in exactly three places (`typeresolve.go` Fast skips typeresolve;
-`linkfiles.go` Fast drops imports; the aggregation, now gone), so **Balanced
-and Deep are behaviourally identical today**. Both names stay — they are CLI
+is read in five places — three that decide GRAPH CONTENT (`typeresolve.go` Fast
+skips typeresolve; `linkfiles.go` Fast drops imports; the aggregation, now
+gone) and two that only RECORD it (`ingest.go` persists `index.profile`,
+defaulting `""` → balanced; `trust_persist.go` puts it in the trust snapshot,
+from where `graphi status`, `trust-report` and `doctor` print it). The
+content-deciding set is what matters here, so **Balanced and Deep are
+behaviourally identical today** — verified in review by indexing a real clone
+under both and getting identical node/edge sets and identical kind histograms,
+with `kv_meta['index.profile']` the only difference in the whole store. The
+product therefore still REPORTS a distinction that no longer carries
+information about content; that is a naming debt this ADR records, not a
+behaviour difference. (The first version of this section said "exactly three
+places" and was corrected in review round 1, finding 4: an enumeration
+presented as exhaustive has to be one.) Both names stay — they are CLI
 values and persisted `index.profile` metadata — but Balanced's "bounded
 linking" claim is currently **unbacked**, and this ADR records that instead of
 letting the name imply a reduction that no longer happens.
 
-**The gate gap is closed structurally:** the conformance change-class table now
-runs over a PROFILE axis (`parityProfiles()`: `default` + `balanced`) crossed
-with both stores. A defect that lives in the shipped profile can no longer pass
-a green hermetic table.
+**The gate gap is closed structurally:** the conformance change-class table —
+and, after review round 1 (finding 2), the JVM twin table — run over a PROFILE
+axis (`parityProfiles()`: `default` + `balanced`) crossed with both stores, and
+`TestParityMatrix_DriftGuard/AXIS` binds that axis to the `profile:` field so
+narrowing it cannot pass silently (finding 3 demonstrated it could).
+
+WHAT THE AXIS ACTUALLY CATCHES, precisely, because "closed structurally" would
+otherwise be read as more than it is (finding 11): with the aggregation
+restored, the axis goes red through the `change_colliding_package_dir` row's
+non-vacuity WITNESS — "importer impB/main.go lost its true imports edge" — and
+NOT through a `PARITY FAIL`. In a hermetic fixture both passes aggregate
+consistently, so the superset half of PARITY-003 does not reproduce there; what
+the hermetic gate pins is the DROPPED-EDGE half, and the superset half is
+pinned by the real-repo matrix. Coverage therefore rests on one row's witness,
+and an aggregation whose predicate spared that fixture's shape would still pass
+— which is why the real-repo re-measurement below is part of the proof and not
+a formality.
 
 ## Rejected alternatives (recorded, not silently omitted)
 
@@ -109,8 +142,18 @@ a green hermetic table.
   the imports edges the aggregation used to swallow (and lose the synthetic
   `aggregated N imports of …` edges). The parity-matrix candidate moves again;
   previously measured rows stay STALE until re-measured.
-- Users of the default profile GAIN edges they should always have had — the
-  fix is a recall improvement, not only a parity fix.
+- Users of the default profile GAIN the per-importer edges the collapse was
+  swallowing — a recall improvement, not only a parity fix. **CORRECTED in this
+  ADR's own review round (finding 1): that is only the recall half.** `imports`
+  targets are every file node in the resolved directory, not the package's
+  source files, so removing the collapse also multiplies a PRE-EXISTING
+  wrong-edge class: on pinned cobra 44 of 340 `imports` edges now target `.md`
+  and `.yml` files, on grpc-go 2 120 target `.md`/`.sh`. `related_files`
+  precision measurably regresses under the shipped default (reproduced:
+  5 relevant items → 12, four of the additions not Go source). Filed as
+  LINK-001, disclosed, fix scheduled as its own change — this ADR's invariant
+  is satisfied either way, but the claim "edges they should always have had"
+  was too broad and is withdrawn.
 - PARITY-003's disclosure (readme Known limits, `graphi sync -h`, the doctor
   `known-defects` check) is retired in the same change that closes the defect,
   per the disclosure's own contract.
@@ -129,6 +172,16 @@ rows that isolated the defect flipped: gin `remove_implementation`
 `replace_generated_file` 69733/69613 → 92518/92518. Record and artifacts:
 [`../rc/parity-matrix-real-repo.md`](../rc/parity-matrix-real-repo.md),
 `parity-matrix-adr0010-run-{c,d}.json`.
+
+**How strong that pair is, graded rather than implied** (review round 1,
+finding 12): both dispatches ran on the SAME machine at the SAME commit, minutes
+apart. That rules out in-process nondeterminism, map-iteration order and
+clone-path effects — the things `-counts-diff` exists to catch — and it does NOT
+rule out a machine-local or operator-method effect, which only a second runner
+class or a second operator would. The eval baseline's WP2 row grades its own
+substitute this way ("a clean freshly provisioned CI runner, NOT a second
+person"); this measurement deserves the same sentence, and the nightly
+`parity.yml` dispatch on a GitHub runner is the cheapest way to strengthen it.
 
 **The measurement also sized the recall loss the FAIL rows understated.** The
 collapse was firing on every Go repository with a dotted module path, including

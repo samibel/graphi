@@ -43,8 +43,11 @@ func edgeSet(t *testing.T, store graphstore.Graphstore) map[string]struct{} {
 	return set
 }
 
-// TestProfile_DistinctAndSuperset asserts that fast/balanced/deep produce
-// distinct edge sets and that deep is a superset of balanced and fast.
+// TestProfile_DistinctAndSuperset asserts the ladder that actually exists
+// (ADR 0010): deep ⊇ balanced ⊇ fast, with FAST strictly smaller. It does NOT
+// assert that balanced and deep differ — since the import aggregation was
+// removed they are graph-identical, and the surviving strictness comes from
+// Fast dropping every `imports` edge.
 func TestProfile_DistinctAndSuperset(t *testing.T) {
 	repo := writeRepo(t, map[string]string{
 		"shop/cart.go": `package shop
@@ -270,8 +273,10 @@ func Rate() int { return 7 }
 	}
 }
 
-// TestProfile_DeepPreservesRelationshipsAfterCompaction asserts that the deep
-// edge set is still a superset of balanced after compaction/aggregation.
+// TestProfile_DeepPreservesRelationshipsAfterCompaction asserts deep ⊇ balanced.
+// Its name mentions compaction/aggregation, which no longer exists (ADR 0010);
+// the assertion is kept because it is the cheapest guard against a future
+// balanced-only reduction reappearing without the ladder being re-stated.
 func TestProfile_DeepPreservesRelationshipsAfterCompaction(t *testing.T) {
 	repo := writeRepo(t, map[string]string{
 		"shop/cart.go": `package shop

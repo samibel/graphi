@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/internal/corpus"
 	"github.com/samibel/graphi/internal/parityreport"
 )
@@ -536,6 +537,15 @@ func applyMutation(root string, mut *Mutation) error {
 func (r *Runner) graphi(ctx context.Context, cwd string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, r.Binary, args...)
 	cmd.Dir = cwd
+	// THE MEASURED PROFILE IS PINNED, NOT INHERITED (ADR 0010 review round 1,
+	// finding 7). The harness deliberately passes no -profile so it measures
+	// the DEFAULT the product resolves — but an inherited
+	// GRAPHI_INDEX_PROFILE=fast in the operator's environment would silently
+	// make every row converge on a configuration nobody ships, and the report
+	// would still publish "19 of 19 PASS". That is the exact failure mode ADR
+	// 0010 exists to close, so the variable is cleared for the child and the
+	// resolved profile is recorded in the report's provenance.
+	cmd.Env = append(os.Environ(), profile.EnvName+"=")
 	out, err := cmd.CombinedOutput()
 	if p := panicMarker(out); p != "" {
 		return out, fmt.Errorf("graphi %s: panic in output: %s", strings.Join(args, " "), p)

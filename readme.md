@@ -158,6 +158,17 @@ is hosted, there is no service to sign up for.
   defect PARITY-002 (`sync` could diverge from `rebuild` on `imports` edges on
   clause-colliding repositories); the measurement record is
   [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
+- **Known open defect LINK-001**: an `imports` edge targets **every file in the
+  imported package's directory**, including files that are not package source
+  (measured on pinned clones: 44 of 340 `imports` edges on cobra point at
+  `.md`/`.yml`; 2 120 on grpc-go point at `.md`/`.sh`). That inflates
+  `related_files`/`imports` with unrelated files and shifts degree-ranked Labs
+  output. It affects every profile that keeps `imports` edges and became more
+  visible when the edge-collapsing of PARITY-003 was removed (ADR 0010).
+  Workaround: read an edge's `reason`/evidence to tell a package member from a
+  same-directory file, or use `callers`/`callees`/`references`, which are
+  unaffected. Record:
+  [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
 - **`imports` edges are per-importer under every profile that keeps them**
   (ADR 0010): each file that imports a package gets its own edge, carrying its
   own `file:line` evidence. The `balanced` profile used to collapse them to one

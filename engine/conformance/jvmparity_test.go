@@ -365,10 +365,27 @@ func TestJVMFullVsIncremental_ByteParity(t *testing.T) {
 	for _, b := range parityBackends() {
 		b := b
 		t.Run(b.name, func(t *testing.T) {
-			for _, row := range table {
-				row := row
-				t.Run(row.id, func(t *testing.T) {
-					runJVMChangeClassRow(t, b, row)
+			// THE PROFILE AXIS RUNS HERE TOO (ADR 0010 review round 1,
+			// finding 2). The Go table gained it because PARITY-003 lived in
+			// the shipped Balanced profile; leaving this table default-only
+			// would have left the gap open on the languages the removed
+			// predicate hit HARDEST. `isExternalImport` split on "/" only, so
+			// every dotted Java/Kotlin package path counted as external, and
+			// resolve_common.go emits one file→package edge per importer — N
+			// importers of one package collapsed to ONE edge whose evidence
+			// cited all N. Verified during that review: with the aggregation
+			// restored, two Java importers of one package produced a single
+			// edge from the first file, and this table stayed GREEN while the
+			// Go table went red. It no longer would.
+			for _, pr := range parityProfiles() {
+				pr := pr
+				t.Run(pr.name, func(t *testing.T) {
+					for _, row := range table {
+						row := row
+						t.Run(row.id, func(t *testing.T) {
+							runJVMChangeClassRow(t, b, pr, row)
+						})
+					}
 				})
 			}
 		})
@@ -380,8 +397,9 @@ func TestJVMFullVsIncremental_ByteParity(t *testing.T) {
 // deferred per ADR 0008 D8), so this driver is the clean add/modify path:
 // seed+reconcile, apply+reconcile, full parse, byte-parity, non-vacuity,
 // idempotency.
-func runJVMChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
+func runJVMChangeClassRow(t *testing.T, b parityBackend, pr parityProfile, row changeClassRow) {
 	t.Helper()
+	axis := b.name + "/" + pr.name
 	if row.apply == nil || row.witness == nil {
 		t.Fatalf("class %q has no apply/witness", row.id)
 	}
@@ -395,15 +413,15 @@ func runJVMChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 	}
 
 	incStore := newBackendStore(t, b)
-	buildIncrementalParallel(t, root, incStore, "", []func(){
+	buildIncrementalParallel(t, root, incStore, pr.p, []func(){
 		func() { writeTree(t, root, seed) },
 		func() { row.apply(f) },
 	})
 
 	fullStore := newBackendStore(t, b)
-	fullIng := newIngester(t, fullStore, "")
+	fullIng := newIngester(t, fullStore, pr.p)
 	if err := fullIng.IngestAll(ctx, root); err != nil {
-		t.Fatalf("[%s/%s] full IngestAll: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] full IngestAll: %v", axis, row.id, err)
 	}
 
 	incSnap := snapshot(t, incStore)
@@ -412,16 +430,16 @@ func runJVMChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 	// Non-vacuity first and unconditionally, against the incremental graph.
 	g, err := newGraphView(ctx, incStore)
 	if err != nil {
-		t.Fatalf("[%s/%s] read incremental graph: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] read incremental graph: %v", axis, row.id, err)
 	}
 	if err := row.witness(g); err != nil {
-		t.Errorf("[%s/%s] VACUOUS ROW: witness did not hold, so `apply` did not produce the claimed shape: %v", b.name, row.id, err)
+		t.Errorf("[%s/%s] VACUOUS ROW: witness did not hold, so `apply` did not produce the claimed shape: %v", axis, row.id, err)
 	}
 
 	// The assertion: snapshot bytes, nothing weaker.
 	if string(incSnap) != string(fullSnap) {
 		t.Errorf("[%s/%s] PARITY FAIL: incremental != full snapshot bytes.\nclass: %s\nchange set: %v\n%s",
-			b.name, row.id, row.description, f.changeSet(),
+			axis, row.id, row.description, f.changeSet(),
 			snapshotDiff(t, "incremental", incSnap, "full", fullSnap))
 	}
 }

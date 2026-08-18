@@ -5,7 +5,16 @@
 # of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
 # and yaml.Unmarshal read it, and it diffs one row per change.
 #
-# matrix_version: 1
+# matrix_version: 2
+#
+#                      BUMPED 1 -> 2 by W0.f-4 review round 1 (finding 2): the
+#                      `profile` FIELD was added, mirroring the Go matrix. The
+#                      JVM table now runs the same INDEX-PROFILE axis
+#                      (parityProfiles: the library default + the shipped
+#                      balanced), because the aggregation PARITY-003 removed hit
+#                      dotted Java/Kotlin package paths hardest — N importers of
+#                      one package collapsed to one edge — and a default-only
+#                      table could not see it.
 #
 # ---------------------------------------------------------------------------
 # WHAT THIS FILE BINDS TO
@@ -53,6 +62,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -68,6 +78,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -83,6 +94,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -98,6 +110,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -113,6 +126,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -128,6 +142,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -143,6 +158,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -158,6 +174,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -173,6 +190,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -188,6 +206,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -204,6 +223,7 @@ parity_classes:
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""

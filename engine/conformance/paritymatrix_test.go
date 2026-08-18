@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samibel/graphi/core/profile"
 	"gopkg.in/yaml.v3"
 )
 
@@ -445,6 +446,37 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 				t.Errorf("OWNER: harness row %q is deferred to %q but %s marks it %q",
 					row.id, row.deferredTo, parityClassesPath, harnessRequired)
 			}
+		}
+	})
+
+	// AXIS binds the YAML's `profile: both` CLAIM to the axis the harness
+	// actually runs. Without it the guard is one-directional — exactly the hole
+	// review round 1 (finding 3) demonstrated: deleting the balanced entry from
+	// parityProfiles() left `go test ./engine/conformance/` green while 16 rows
+	// kept publishing "proven under both profiles", silently reverting coverage
+	// to the pre-PARITY-003 state the axis exists to prevent. The same
+	// direction is asserted for the store axis, which had the identical
+	// weakness against parityBackends().
+	t.Run("AXIS", func(t *testing.T) {
+		wantProfiles := map[profile.Profile]bool{"": false, profile.Balanced: false}
+		for _, pr := range parityProfiles() {
+			if _, declared := wantProfiles[pr.p]; !declared {
+				t.Errorf("AXIS: parityProfiles() runs profile %q, which no row can describe: the "+
+					"vocabulary is %v, so widening the axis means widening the YAML field too", pr.p, legalProfiles)
+				continue
+			}
+			wantProfiles[pr.p] = true
+		}
+		for p, seen := range wantProfiles {
+			if !seen {
+				t.Errorf("AXIS: parityProfiles() no longer runs profile %q, but rows still publish "+
+					"profile: \"both\" — the axis was narrowed without saying so. Either restore the "+
+					"axis entry or re-verdict every affected row (ADR 0010).", p)
+			}
+		}
+		if n := len(parityBackends()); n != 2 {
+			t.Errorf("AXIS: parityBackends() runs %d backend(s), but rows publish store: \"both\"; "+
+				"the store axis was narrowed without saying so", n)
 		}
 	})
 

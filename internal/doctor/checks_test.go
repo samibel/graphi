@@ -240,11 +240,28 @@ func TestLocalFirstCheck(t *testing.T) {
 	}
 }
 
-// TestKnownDefectsCheck was removed with its subject, for the second time:
-// the known-defects check's only entry (PARITY-003) is fixed by ADR 0010, and
-// the check's contract says an empty list removes the check. The disclosure
-// itself is proven by the fix's own gates now — the conformance profile axis
-// and TestProfile_BalancedKeepsEveryImporterEdge.
+// TestKnownDefectsCheck pins the disclosure contract: an OPEN published defect
+// in a GA operation is reported at info severity — never pass (silently green)
+// and never fail (not a health problem of this install) — naming the defect id,
+// the affected operation and a workaround the user can actually run.
+//
+// Restored for LINK-001, which the PARITY-003 fix's review unmasked. The
+// workaround assertion is deliberate: the retired PARITY-003 disclosure shipped
+// "-profile full", a value profile.Parse rejects.
+func TestKnownDefectsCheck(t *testing.T) {
+	res := KnownDefectsCheck().Run(context.Background(), fakeEnv{})
+	if res.Status != StatusInfo {
+		t.Fatalf("expected info for known-defects disclosure, got %q", res.Status)
+	}
+	for _, want := range []string{"LINK-001", "imports", "related_files", "Workaround"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("disclosure must mention %q; got: %s", want, res.Message)
+		}
+	}
+	if strings.Contains(res.Message, "-profile full") {
+		t.Error("disclosure names a profile the CLI rejects (profile.Parse accepts fast|balanced|deep)")
+	}
+}
 
 func TestDBCheckEmptyPath(t *testing.T) {
 	env := fakeEnv{dbPath: ""}
