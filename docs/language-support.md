@@ -82,6 +82,34 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > Every cross-file edge is `heuristic` tier with file:line evidence and is **never**
 > `confirmed`; unresolved/ambiguous references are dropped and counted, never fabricated.
 
+## What an `imports` edge targets
+
+An `imports` edge targets the imported package's **source** files — never every
+file that happens to sit in the resolved directory. Membership is decided on the
+**file extension**, by the asking resolver, at read time
+([ADR 0011](adr/0011-imports-edge-targets-package-source-files.md)). Three
+families, because the three import mechanisms differ:
+
+| Family | Languages | Target set |
+|---|---|---|
+| Directory fan-out | **Go** | file→file, `.go` **minus `_test.go`** |
+| | **Python** | file→file, `.py` **and** `.ipynb`; `test_*.py` is included |
+| | **C#** | file→file, `.cs` |
+| | **Rust** | file→file, `.rs` |
+| Interned package node | **Java · Kotlin** | ONE file→`package` edge; no directory fan-out exists to filter |
+| Exact target path | **TypeScript family · C · C++ · Ruby · PHP · Lua · Bash** | the resolver already names the exact file (`./util.ts`, `util.h`, `require './x'`); only a committed node at that path emits an edge |
+
+Go excludes `_test.go` because a test file is a package member but is **not
+importable** — the same ruling [`engine/typeresolve`](../engine/typeresolve)
+already makes. Python does **not** exclude `test_*.py`, because a Python test
+module is an ordinary importable module; the Go rule rests on non-importability,
+not on the word "test". The filter binds the **target** side only: a `_test.go`
+file remains a first-class importer.
+
+Two consequences are accepted rather than hidden: a `.proto` beside its
+generated `.pb.go`, and `testdata/` plus `//go:embed` assets, lose their only
+graph path, because graphi models no embed or codegen relation.
+
 ## Deferred / not in the default tier
 
 - **HTML** — has a pure-Go grammar but is **not subset-buildable in isolation** in

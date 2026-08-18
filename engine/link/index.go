@@ -35,11 +35,21 @@ type SymbolIndex struct {
 	// so the linker can emit file→file imports edges against committed file nodes.
 	fileNodeByPath map[string]model.NodeId
 
-	// fileNodesByDir maps a source directory to the committed "file" node ids
-	// declared in it. Precomputed once in BuildIndex so package-file-node lookups
-	// (packageFileNodes / clausePackageFileNodes) cost O(files-in-dir) instead of
-	// re-scanning every file node in the repo on every package import.
-	fileNodesByDir map[string][]model.NodeId
+	// fileNodesByDir maps a source directory to the committed "file" nodes
+	// declared in it, each paired with its normalized source PATH. Precomputed
+	// once in BuildIndex so package-file-node lookups (packageFileNodes /
+	// clausePackageFileNodes) cost O(files-in-dir) instead of re-scanning every
+	// file node in the repo on every package import.
+	//
+	// THE LIST IS DELIBERATELY UNFILTERED (ADR 0011). It holds every file node in
+	// the directory — `.md`, `.yml`, `_test.go` included — because its other two
+	// consumers, hasPackage and DirsForImport, have an invariant that permits
+	// over- but never under-approximation: under-approximating DirsForImport
+	// freezes an edge permanently, which is the ADR 0009 defect class. Package
+	// MEMBERSHIP is therefore decided at READ time by the asking resolver, via
+	// the packageFileFilter that packageFileNodes / clausePackageFileNodes take —
+	// never by narrowing what Add records here.
+	fileNodesByDir map[string][]fileNodeRef
 
 	// clauseByDir maps a directory to the package clause its symbols declare,
 	// derived from node qualified names (pkg.Symbol). Used to find the directory
@@ -81,6 +91,60 @@ type SymbolIndex struct {
 	moduleMap *ModuleMap
 }
 
+// fileNodeRef is a committed `file` node paired with its normalized POSIX
+// repo-relative source path. The index used to record the NodeId alone, which
+// discarded the only fact that makes package membership decidable at read time:
+// the file's EXTENSION. ADR 0011 (LINK-001) needs it, so fileNodesByDir carries
+// it alongside the id.
+type fileNodeRef struct {
+	id   model.NodeId
+	path string
+}
+
+// packageFileFilter decides whether a committed file node is a SOURCE file of
+// the package an `imports` edge may target (ADR 0011). It is a parameter of
+// READING fileNodesByDir, supplied by the resolver that asks — never a property
+// of the index — because the same unfiltered list also answers "does the repo
+// contain this package?" (hasPackage) and "which directories may this import
+// resolve to?" (DirsForImport), where over-approximation is safe and
+// under-approximation freezes an edge forever.
+//
+// A nil filter is NOT "admit everything": see packageFileNodes.
+type packageFileFilter func(sourcePath string) bool
+
+// extSetFilter builds a packageFileFilter admitting exactly the given file
+// extensions. The extension set is STATIC per language and lives in that
+// language's resolver — deliberately not
+// obtained from parse.Registry, whose contents are build-tag dependent
+// (graphi_broad / CGO) and would therefore make committed graph bytes depend on
+// how the binary was built. Precedent: tsExts (resolve_typescript.go).
+//
+// An EMPTY set admits nothing. That is the fail-closed direction and it is
+// intentional: an unknown source-extension set must not license an edge onto a
+// README, and a lost edge is a recall defect while a wrong edge is a soundness
+// defect. pkgtargets_test.go pins that every resolver populating
+// binder.pkgImportPaths also declares a non-empty set, so the fail-closed branch
+// cannot silently become the shipped behaviour.
+//
+// THE COMPARISON IS CASE-INSENSITIVE, matching parse.Registry.ParserFor, which
+// lowercases an extension before selecting a parser (core/parse/registry.go
+// normalizeExt). That is what decides whether a `file` node exists at all, so a
+// `Main.PY` committed by a Windows-authored repository IS an indexed Python
+// module; a case-sensitive filter here would have silently dropped its edges —
+// a recall regression this change would otherwise have introduced. Declared sets
+// are lowercase, pinned by TestExtensionSets_AreWellFormed.
+func extSetFilter(exts []string) packageFileFilter {
+	return func(sourcePath string) bool {
+		ext := strings.ToLower(path.Ext(sourcePath))
+		for _, want := range exts {
+			if ext == want {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 // fileKind / the qualified-name shape are mirrored from the Go extractor:
 // a "file" node's QualifiedName is its source path; a symbol node's
 // QualifiedName is "<pkgClause>.<name>" (methods: "<pkgClause>.<recv>.<name>").
@@ -115,7 +179,7 @@ func NewIndexBuilder() *IndexBuilder {
 		dirAmbiguous:      map[string]map[string]struct{}{},
 		byClause:          map[string]map[string]map[string]model.NodeId{},
 		fileNodeByPath:    map[string]model.NodeId{},
-		fileNodesByDir:    map[string][]model.NodeId{},
+		fileNodesByDir:    map[string][]fileNodeRef{},
 		clauseByDir:       map[string]string{},
 		packageNodeByPath: map[string]model.NodeId{},
 		methodDirs:        map[string][]string{},
@@ -147,7 +211,8 @@ func (b *IndexBuilder) Add(n model.Node) {
 	}
 	if n.Kind() == fileKind {
 		idx.fileNodeByPath[sp] = n.ID()
-		idx.fileNodesByDir[dir] = append(idx.fileNodesByDir[dir], n.ID())
+		// Recorded UNFILTERED, on purpose — see the fileNodesByDir doc comment.
+		idx.fileNodesByDir[dir] = append(idx.fileNodesByDir[dir], fileNodeRef{id: n.ID(), path: sp})
 		return
 	}
 	clause, bare := splitQN(n.QualifiedName())
@@ -240,6 +305,13 @@ func (idx *SymbolIndex) sameDir(dir, name string) (model.NodeId, bool) {
 // byClause[path.Base(importPath)] non-empty, erring toward "internal" on a
 // clause collision — the safe direction for the external-minting path
 // (resolve_go.go drop-point 2), which suppresses a node rather than flooding.
+//
+// ADR 0011: this reads fileNodesByDir UNFILTERED, and must keep doing so. The
+// question is "does the repo contain this package at all?", not "which files are
+// its source?". A directory holding only a doc.go the extension filter admits
+// and a directory holding a README the filter rejects are both PRESENT; answering
+// "absent" for the second would mint an interned external node for an import the
+// repo really does own.
 func (idx *SymbolIndex) hasPackage(importPath string) bool {
 	if importPath == "" {
 		return false
@@ -376,6 +448,14 @@ func (idx *SymbolIndex) fileNode(sourcePath string) (model.NodeId, bool) {
 // is not present in the repo (stdlib / 3rd-party) so no phantom imports edge
 // forms.
 //
+// MEMBERSHIP (LINK-001 fix, ADR 0011). `keep` decides which of the resolved
+// directory's file nodes are the package's SOURCE files. It is required: a nil
+// filter admits nothing, because the whole defect this parameter closes was a
+// caller that got the WHOLE directory — `README.md`, `.golangci.yml`,
+// `Makefile`, `_test.go` — and emitted an `imports` edge onto each. Failing
+// closed on a missing filter turns "someone added a caller and forgot" into a
+// visible recall loss rather than a silent return of the defect.
+//
 // RESOLUTION BASIS (PARITY-002 fix, ADR 0009). With a moduleMap present, the
 // import path resolves to exactly ONE directory — the one its module path
 // declares — so two directories that merely share a package clause can never
@@ -384,13 +464,21 @@ func (idx *SymbolIndex) fileNode(sourcePath string) (model.NodeId, bool) {
 // the importer out over BOTH directories while the directory-local incremental
 // cascade never re-linked it. Without a moduleMap (no go.mod in the tree) the
 // historical clause-union behaviour is kept unchanged.
-func (idx *SymbolIndex) packageFileNodes(importPath string) []model.NodeId {
+func (idx *SymbolIndex) packageFileNodes(importPath string, keep packageFileFilter) []model.NodeId {
+	if keep == nil {
+		return nil
+	}
 	if !idx.moduleMap.Empty() {
 		dir, ok := idx.moduleMap.Dir(importPath)
 		if !ok {
 			return nil // no module in this tree owns the path: external
 		}
-		out := append([]model.NodeId(nil), idx.fileNodesByDir[dir]...)
+		var out []model.NodeId
+		for _, ref := range idx.fileNodesByDir[dir] {
+			if keep(ref.path) {
+				out = append(out, ref.id)
+			}
+		}
 		sort.Slice(out, func(a, b int) bool { return out[a] < out[b] })
 		return out
 	}
@@ -402,12 +490,15 @@ func (idx *SymbolIndex) packageFileNodes(importPath string) []model.NodeId {
 	seen := map[model.NodeId]struct{}{}
 	var out []model.NodeId
 	for dir := range dirs {
-		for _, id := range idx.fileNodesByDir[dir] {
-			if _, dup := seen[id]; dup {
+		for _, ref := range idx.fileNodesByDir[dir] {
+			if !keep(ref.path) {
 				continue
 			}
-			seen[id] = struct{}{}
-			out = append(out, id)
+			if _, dup := seen[ref.id]; dup {
+				continue
+			}
+			seen[ref.id] = struct{}{}
+			out = append(out, ref.id)
 		}
 	}
 	sort.Slice(out, func(a, b int) bool { return out[a] < out[b] })
@@ -441,6 +532,13 @@ func (idx *SymbolIndex) packageFileNodes(importPath string) []model.NodeId {
 // declared package clause can differ from its import path's last segment).
 // Over-approximation is safe by idempotence: an unnecessary re-link re-emits
 // the same bytes; an under-approximation freezes an edge forever.
+//
+// ADR 0011: this reads fileNodesByDir UNFILTERED, and must keep doing so — the
+// invariant in the paragraph above is exactly the reason LINK-001 was NOT fixed
+// by filtering at SymbolIndex.Add. This function answers a re-link SCHEDULING
+// question ("might a change here require re-linking an importer?"), not an
+// emission question, and a directory whose only extension-admitted file is added
+// LATER must still be reachable by the cascade today.
 func (idx *SymbolIndex) DirsForImport(importPath string) []string {
 	seen := map[string]struct{}{}
 	var out []string

@@ -222,6 +222,40 @@ file:
 
 ### Fixed
 
+- **An `imports` edge now targets the imported package's SOURCE files**
+  (LINK-001, [ADR 0011](docs/adr/0011-imports-edge-targets-package-source-files.md)).
+  It used to target **every file in the resolved directory** — `README.md`,
+  `.golangci.yml`, `.sh` and `_test.go` included. Measured on pinned clones:
+  44 of 340 `imports` edges on cobra pointed at `.md`/`.yml` plus 126 at
+  `_test.go`; 2 120 of 23 575 on grpc-go pointed at `.md`/`.sh`. Membership is
+  now decided on the **file extension**, by the asking resolver: Go takes `.go`
+  minus `_test.go` (a test file is a package member but is not *importable* —
+  the ruling `engine/typeresolve` already made), Python takes `.py` **and**
+  `.ipynb` and keeps `test_*.py` (Python test modules are importable), C# `.cs`,
+  Rust `.rs`. Java, Kotlin, the TypeScript family, C, C++, Ruby, PHP, Lua and
+  Bash are structurally unaffected and their graph bytes are unchanged.
+
+  **BEHAVIOUR CHANGE, three surfaces, stated rather than left to be discovered:**
+
+  - `related_files` and `imports` gain precision and narrow: on cobra,
+    `related-files -max-files 12 doc/man_docs.go` returned 12 items of which 5
+    were relevant; the seven non-source additions are gone.
+  - **`neighborhood` changes shape at depth ≥ 2.** `query.Neighborhood`
+    (`engine/query/service.go`) walks all edge kinds and excludes only
+    `package`/`external` nodes, so it reaches `.md`/`.yml` file nodes through an
+    `imports` edge today and stops doing so. Whether `file` nodes belong in
+    neighborhood traversal at all is a separate product question, not decided
+    here.
+  - Degree-ranked Labs output (`agent_brief`, hybrid search) shifts, because the
+    removed edges were carrying degree.
+
+  **Two honest losses**, accepted rather than worked around: a `.proto` beside
+  its generated `.pb.go`, and `testdata/` plus `//go:embed` assets, lose their
+  only graph path — graphi models no embed or codegen relation, and building one
+  is its own epic. LINK-001's disclosure (readme "Known limits", the doctor
+  `known-defects` check and its test) is retracted in this same change, per the
+  disclosure contract.
+
 - **`graphi mcp -db <path>` now honors `-meta <dir>`** the way every CLI verb
   does, so an attached MCP session reloads the durable semantic vectors from
   the sidecar. Previously `-meta` was extracted and silently dropped — the

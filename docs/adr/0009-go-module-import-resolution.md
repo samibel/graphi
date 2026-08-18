@@ -156,6 +156,15 @@ by `TestParseModuleDirective_AgreesWithTyperesolve` (test-only dependency).
 
 ## Consequences
 
+> **Made precise 2026-08-19 by [ADR 0011](0011-imports-edge-targets-package-source-files.md),
+> which supersedes NOTHING here.** Everything below is about **which DIRECTORY**
+> an import resolves to, and that half stands unchanged and unqualified. It was
+> silent on **which files inside that directory are targets**, and the answer it
+> tacitly carried — all of them — was wrong: that is LINK-001, fixed by ADR 0011.
+> Read every "`imports` edge set" sentence below as "the resolved directory",
+> and ADR 0011 as the rule for the target set within it. No sentence is edited;
+> this note is added on top, per the never-rewrite-a-published-record discipline.
+
 - Product-byte change: `imports` edge sets change on clause-colliding
   repositories (they lose semantically wrong edges). Additionally, an import
   that names a module path NOT present in the tree — the mid-refactor state

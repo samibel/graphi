@@ -158,17 +158,21 @@ is hosted, there is no service to sign up for.
   defect PARITY-002 (`sync` could diverge from `rebuild` on `imports` edges on
   clause-colliding repositories); the measurement record is
   [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
-- **Known open defect LINK-001**: an `imports` edge targets **every file in the
-  imported package's directory**, including files that are not package source
-  (measured on pinned clones: 44 of 340 `imports` edges on cobra point at
-  `.md`/`.yml`; 2 120 on grpc-go point at `.md`/`.sh`). That inflates
-  `related_files`/`imports` with unrelated files and shifts degree-ranked Labs
-  output. It affects every profile that keeps `imports` edges and became more
-  visible when the edge-collapsing of PARITY-003 was removed (ADR 0010).
-  Workaround: read an edge's `reason`/evidence to tell a package member from a
-  same-directory file, or use `callers`/`callees`/`references`, which are
-  unaffected. Record:
-  [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
+  ADR 0009 decides **which directory** an import resolves to, and that half is
+  unchanged; **which files inside it are targets** is ADR 0011's question, and
+  that is what the next bullet narrows.
+- **An `imports` edge targets the imported package's SOURCE files** (ADR 0011):
+  membership is decided on the file extension, so a `README.md`, a
+  `.golangci.yml` or a `Makefile` sitting in the resolved directory is not a
+  target. For Go the set is `.go` minus `_test.go` — a test file is a package
+  member but is not importable, the same ruling the type-checked layer already
+  made. This closed defect LINK-001, under which an edge targeted *every* file in
+  the directory (measured on pinned clones: 44 of 340 `imports` edges on cobra
+  pointed at `.md`/`.yml`; 2 120 on grpc-go at `.md`/`.sh`). Two limits it
+  deliberately accepts: a `.proto` beside its generated `.pb.go`, and `testdata/`
+  and `//go:embed` assets, lose their only graph path, because graphi models no
+  embed or codegen relation. Record:
+  [docs/adr/0011-imports-edge-targets-package-source-files.md](docs/adr/0011-imports-edge-targets-package-source-files.md).
 - **`imports` edges are per-importer under every profile that keeps them**
   (ADR 0010): each file that imports a package gets its own edge, carrying its
   own `file:line` evidence. The `balanced` profile used to collapse them to one

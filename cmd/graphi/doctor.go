@@ -61,7 +61,6 @@ func runDoctor(args []string) int {
 	reg.Register(doctor.IndexCheck(indexRoot, indexMeta))
 	reg.Register(doctor.PrivacyCheck())
 	reg.Register(doctor.LocalFirstCheck())
-	reg.Register(doctor.KnownDefectsCheck())
 
 	runner := doctor.NewRunner(reg)
 	report := runner.Run(context.Background(), env)

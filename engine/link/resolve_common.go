@@ -92,10 +92,28 @@ type binder struct {
 	importFileTargets []string
 
 	// pkgImportPaths are module import paths whose package file nodes this file
-	// imports, for clause-keyed languages (Python). Each resolves to committed file
-	// nodes via the package clause → file→file `imports` edges (no phantom when the
-	// package is not in the repo).
+	// imports, for clause-keyed languages (Python, C#, Rust). Each resolves to
+	// committed file nodes via the package clause → file→file `imports` edges (no
+	// phantom when the package is not in the repo).
 	pkgImportPaths []string
+
+	// pkgTargetExts is the STATIC per-language set of file extensions that count
+	// as the imported package's SOURCE files (LINK-001, ADR 0011). Every resolver
+	// that populates pkgImportPaths MUST declare it: without it the fan-out below
+	// targets every file node in the directory, `README.md` and `.golangci.yml`
+	// included, and an `imports` edge onto a README is wrong in every profile.
+	//
+	// It is a static list in the resolver rather than a lookup in
+	// parse.Registry because the registry's contents depend on build tags
+	// (graphi_broad / CGO) and committed graph bytes must not depend on how the
+	// binary was built. It is extension-based rather than clause-based because
+	// every tree-sitter parser sets a symbol's clause to the DIRECTORY name
+	// (core/parse/parser_tswalk.go:240-251) and Markdown mints real symbols, so a
+	// clause filter passes a README straight through.
+	//
+	// EMPTY ⇒ NO TARGETS (extSetFilter). Fail closed: a missing set must cost
+	// recall, never emit a wrong edge.
+	pkgTargetExts []string
 
 	// packageImports are full PACKAGE paths (e.g. "com.a.b") this file imports, for
 	// FQN/package-node languages (Java, Kotlin). Each resolves to the interned
@@ -282,10 +300,12 @@ func resolveRefs(in FileRefs, idx *SymbolIndex, st *Stats, b binder) []intent {
 				emit(tID, "file imports "+target)
 			}
 		}
-		// Clause-keyed package imports (Python): every committed file node of the
-		// imported package, keyed by the language-derived clause.
+		// Clause-keyed package imports (Python, C#, Rust): every committed SOURCE
+		// file node of the imported package, keyed by the language-derived clause.
+		// The membership filter is built ONCE per file, not per import.
+		keep := extSetFilter(b.pkgTargetExts)
 		for _, ip := range b.pkgImportPaths {
-			for _, tID := range clausePackageFileNodes(idx, b.clause(ip)) {
+			for _, tID := range clausePackageFileNodes(idx, b.clause(ip), keep) {
 				emit(tID, "file imports package "+ip)
 			}
 		}
@@ -489,13 +509,19 @@ func crossModule(idx *SymbolIndex, clause, name string) (model.NodeId, bool, boo
 	return "", false, false
 }
 
-// clausePackageFileNodes returns the committed "file" node ids of every directory
-// declaring the given package clause, sorted for determinism. It mirrors
-// SymbolIndex.packageFileNodes but takes a pre-derived clause (so dot-separated
-// module paths resolve correctly) and reads the index tables directly (same
-// package, no index edit — D3). Returns nil when the clause is not in the repo so
-// no phantom imports edge forms.
-func clausePackageFileNodes(idx *SymbolIndex, clause string) []model.NodeId {
+// clausePackageFileNodes returns the committed SOURCE "file" node ids of every
+// directory declaring the given package clause, sorted for determinism. It
+// mirrors SymbolIndex.packageFileNodes but takes a pre-derived clause (so
+// dot-separated module paths resolve correctly) and reads the index tables
+// directly (same package, no index edit — D3). Returns nil when the clause is not
+// in the repo so no phantom imports edge forms.
+//
+// `keep` is the caller's membership predicate (LINK-001, ADR 0011); a nil filter
+// admits nothing, exactly as in packageFileNodes and for the same reason.
+func clausePackageFileNodes(idx *SymbolIndex, clause string, keep packageFileFilter) []model.NodeId {
+	if keep == nil {
+		return nil
+	}
 	dirs := idx.byClause[clause]
 	if dirs == nil {
 		return nil
@@ -503,12 +529,15 @@ func clausePackageFileNodes(idx *SymbolIndex, clause string) []model.NodeId {
 	seen := map[model.NodeId]struct{}{}
 	var out []model.NodeId
 	for dir := range dirs {
-		for _, id := range idx.fileNodesByDir[dir] {
-			if _, dup := seen[id]; dup {
+		for _, ref := range idx.fileNodesByDir[dir] {
+			if !keep(ref.path) {
 				continue
 			}
-			seen[id] = struct{}{}
-			out = append(out, id)
+			if _, dup := seen[ref.id]; dup {
+				continue
+			}
+			seen[ref.id] = struct{}{}
+			out = append(out, ref.id)
 		}
 	}
 	sort.Slice(out, func(a, b int) bool { return out[a] < out[b] })
