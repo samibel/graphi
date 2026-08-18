@@ -1,5 +1,193 @@
 # Full/incremental parity matrix over pinned real repositories
 
+# Current measurement — the ADR 0011 candidate (2026-08-19, W0.f-5)
+
+**Status: PUBLISHED PASS — 19 of 19 rows.** Two dispatches, `outcome PASS` and
+`publishable: true` in both, agreeing on **every verdict** (`-verdict-diff`
+exit 0) AND on **every per-row node/edge count and snapshot digest**
+(`-counts-diff` exit 0). The two §12.3 store-level counts read **orphaned
+external nodes = 0** and **stale linker edges = 0** on all 38 sides (19 rows ×
+full + incremental).
+
+| | |
+|---|---|
+| Produced by | `internal/parity` + `cmd/parity`, two full local dispatches, separate workdirs, run serially |
+| Gate | PRD FR-7 / §12.3 — full/incremental parity, binary, no threshold to negotiate |
+| Provenance | **product source byte-identical to the ADR 0011 candidate at `3b8d43f6bc0a264c74424ca209b6fbd2401c9a31`** (candidate move: [`../decisions/2026-08-parity-candidate-move-adr0011.md`](../decisions/2026-08-parity-candidate-move-adr0011.md)); run SHA `8e053200718b`, runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, clean worktree, both dispatches publishable |
+| Product binary | HEAD and candidate both `036be635…` — the authoritative equality this record rests on |
+| Matrix source | `docs/rc/parity-classes.yaml` (17 change classes + 2 crash conditions) |
+| Report artifact | `docs/rc/parity-matrix-adr0011-run-e.json`, `…-adr0011-run-f.json` |
+| Historical artifacts | the ADR 0010, ADR 0009 and v0.7.1 pairs, preserved not deleted — see the superseded sections below |
+
+## What this supersedes, stated rather than edited (D6)
+
+Two things below this section are now **superseded and deliberately left
+byte-unchanged**:
+
+1. The section headed **"Current measurement — the ADR 0010 candidate
+   (2026-08-16, W0.f-4)"** is no longer the current measurement. Its heading is
+   **not** rewritten: a published record keeps the words it was published with,
+   and this paragraph is where the supersession is recorded instead.
+2. The **Amendment 2026-08-19** block immediately below says *"**No post-fix
+   figure exists yet**: the candidate has not moved and the matrix has not been
+   re-run."* That sentence was true when written and is **now spent** — this
+   section is the post-fix figure it was waiting for. LINK-001 is therefore
+   closed **by measurement**, the stronger of the two claims that amendment
+   distinguishes, and no longer only "in code and by hermetic proof".
+
+## Results (identical in both dispatches, to the byte)
+
+`Δ edges` compares against the ADR 0010 measurement published below. **Every
+node count is unchanged**, in all 16 count-carrying cells — the entire delta is
+edges, which is what ADR 0011 predicts, since it retargets `imports` edges and
+creates or destroys no node.
+
+| Class | Verdict | Repository | inc = full (nodes/edges) | Δ edges vs ADR 0010 |
+|---|---|---|---|---|
+| `add_file` | **PASS** | cobra | 940/4048 | −170 |
+| `modify_file` | **PASS** | cobra | 939/4037 | −170 |
+| `delete_file` | **PASS** | cobra | 897/3899 | −170 |
+| `rename_symbol` | **PASS** | cobra | 938/4029 | −170 |
+| `move_symbol` | **PASS** | cobra | 939/4047 | −170 |
+| `rename_package` | **PASS** | cobra | 938/4036 | −170 |
+| `add_call` | **PASS** | cobra | 939/4038 | −170 |
+| `remove_call` | **PASS** | cobra | 938/4036 | −170 |
+| `change_interface` | **PASS** | lo | 523/704 | 0 — provably unchanged, see below |
+| `add_implementation` | **PASS** | lo | 526/707 | 0 — provably unchanged, see below |
+| `remove_implementation` | **PASS** | gin | 1903/6672 | −119 |
+| `branch_switch` | **PASS** | cobra | 3/3 repetitions identical (branch switch a→b) | n/a |
+| `change_build_tag` | **PASS** | gin | 1904/6675 | −119 |
+| `replace_generated_file` | **PASS** | grpc-go | 14922/82923 | −9 595 |
+| `change_external_import` | **PASS** | cobra | 940/4038 | −170 |
+| `interrupted_full_pass` | **PASS** | cobra | 6/6 repetitions identical (K1, K3) | n/a |
+| `restart_and_recovery` | **PASS** | cobra | 6/6 repetitions identical (K5 → K7, K6 → K7) | n/a |
+| `change_colliding_package_dir` | **PASS** | cobra | 940/4037 | −170 |
+| `add_nested_gomod` | **PASS** | cobra | 941/4031 | **−165 — deviates, see below** |
+
+## The two `lo` cells are provably unchanged, not freshly evidenced
+
+`lo` has **no intra-repo `imports` edges** — the record below already states it
+("`lo` is unchanged at 704 — it has no intra-repo imports to collapse"), and
+ADR 0011 changes only what an intra-repo `imports` edge *targets*. With no such
+edge to retarget, the two `lo` cells could not have moved whatever the fix did.
+They are reprinted above because the harness measured all 19 rows, and they did
+in fact come back 704 and 707 — but they are **corroboration that the fix is
+correctly scoped, not evidence that it works**. No claim in this section rests
+on them.
+
+## Deviations from the predicted deltas — published, not explained away
+
+The story predicted the deltas **before** the run, so a surprise would be
+visible as a surprise. Three of the four predictions came in slightly high and
+one cell missed by a wider margin. All four are published as measured:
+
+| Cell(s) | Predicted Δ | Measured Δ | Deviation |
+|---|---|---|---|
+| cobra × 10 cells | −170 | −170 | **0 — exact** |
+| gin × 2 cells | ≈−118 | −119 | −1 |
+| grpc-go `replace_generated_file` | ≈−9 593 (→ ≈82 925) | −9 595 (→ 82 923) | −2 |
+| cobra `add_nested_gomod` | −170 | **−165** | **+5** |
+
+**The gin and grpc-go deviations are rounding, and the arithmetic says so.**
+The predictions were computed from the pre-fix per-target table below, as
+*(non-`.go` targets) + (`_test.go` targets)*, and two of its terms are published
+to two significant figures. cobra is exact because both its terms are exact:
+44 + 126 = **170**. gin's test-target share is published as "~38%" of 291
+`imports` edges → 8 + 110.6 = 118.6, so a measured 119 means the true share is
+38.1%. grpc-go's is "~31.7%" of 23 575 → 2 120 + 7 473.3 = 9 593.3, and 0.01
+percentage point of 23 575 is 2.4 edges, so a measured 9 595 sits inside the
+published precision. Neither is a discrepancy in the fix; both are the
+consequence of predicting from a rounded figure, and they are recorded rather
+than quietly absorbed.
+
+**The `add_nested_gomod` cell is a real deviation and is filed as an
+observation, not a defect.** It removed **5 fewer** edges than the other ten
+cobra cells, and it is the only cobra row that does not lose exactly 170. What
+distinguishes it is stated in its own row description: it adds a `go.mod` to a
+non-root package directory, **re-moduling that subtree**, so imports that were
+intra-module before the mutation become cross-module afterwards. An import that
+now resolves to a different module is not an intra-repo `imports` edge to a
+directory's files, so five of the edges the fix would otherwise have removed
+were already not there to remove.
+
+> **That mechanism is INFERRED from the row's construction, not measured.** The
+> harness reports per-row totals only; nothing in
+> `parity-matrix-adr0011-run-{e,f}.json` attributes the 5-edge difference to
+> re-moduling. It is recorded here as an open question with a plausible
+> explanation, filed as **PARITY-OBS-001**, and it is **not** a parity failure:
+> the row PASSes, full and incremental agree to the byte, and both dispatches
+> agree. Settling it needs a per-kind edge diff of that row's two trees, which
+> is its own piece of work.
+
+## The runner class changed, and here is the control that neutralises it
+
+The ADR 0010 measurement below ran on `Linux-X64/ccr-container`
+(go1.26.6 linux/amd64). This one ran on `Darwin-ARM64/apple-m2-max`
+(go1.26.6 darwin/arm64). Comparing counts across a platform change would
+normally confound "what the fix did" with "what the platform did", and Go's
+build constraints make that a real risk on a corpus containing `_linux.go` and
+`_darwin.go` files.
+
+So it was **controlled rather than assumed**. `./cmd/graphi` was rebuilt at the
+**previous** candidate `7574a49` (digest `882881…`) and driven by the same
+harness on **this** machine over the same pinned clones:
+
+```
+add_file               PASS  cobra    (940 nodes / 4218 edges)
+change_interface       PASS  lo       (523 nodes /  704 edges)
+remove_implementation  PASS  gin      (1903 nodes / 6791 edges)
+replace_generated_file PASS  grpc-go  (14922 nodes / 92518 edges)
+add_nested_gomod       PASS  cobra    (941 nodes / 4196 edges)
+```
+
+Every one of those five reproduces the ADR 0010 figure published below
+**exactly**, on a different OS and a different architecture. Graph counts are
+therefore platform-independent across this pair, and every Δ in this section is
+attributable to ADR 0011 alone. That control run is deliberately **not
+publishable** (`-classes` filtered → `outcome INCOMPLETE`, exit 1) and is not
+offered as a matrix; it is offered as the confound check.
+
+## What this measurement closes
+
+**LINK-001 is closed by measurement.** ADR 0011 makes an `imports` edge target
+the imported package's **source** files, and the edges it removes are exactly
+the ones the pre-fix table below counted as wrong: on cobra 44 non-`.go`
+targets plus 126 `_test.go` targets = the measured **170**; on grpc-go 2 120
+non-`.go` targets plus ~31.7% `_test.go` targets = the measured **9 595**. The
+19/19 PASS says the fix is **parity-clean** — incremental and full agree to the
+byte on every class, so the new targeting rule settles identically whether a
+file is re-linked or indexed cold.
+
+**What 19/19 does NOT say**, stated so it cannot be misread: parity compares two
+passes of the same rule, so a PASS here can never certify that the rule is
+*right*. The evidence that the surviving edges are the correct ones is ADR
+0011's hermetic proofs and `engine/conformance/importstargets_test.go`, not this
+matrix. This section closes LINK-001's **regression** question; it does not
+re-open or re-decide its correctness question.
+
+**PARITY-001, -002 and -003 remain closed.** Nothing in this measurement
+re-opens them: all 19 rows pass, including the three that isolated PARITY-003.
+
+## Reproducing this measurement
+
+```bash
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "<your machine>" -workdir /var/tmp/parity-e -report run-e.json
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "<your machine>" -workdir /var/tmp/parity-f -report run-f.json
+go run ./cmd/parity -verdict-diff run-e.json,run-f.json   # verdicts agree
+go run ./cmd/parity -counts-diff  run-e.json,run-f.json   # counts + digests agree
+
+# The platform control (not publishable by construction — a filtered run never is):
+git worktree add --detach -f /tmp/old 7574a49379d3ede0a08bdb024e7a2e315bdc14a1
+(cd /tmp/old && CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/graphi-adr0010 ./cmd/graphi)
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 3 -binary /tmp/graphi-adr0010 \
+  -classes add_file,add_nested_gomod,remove_implementation,replace_generated_file,change_interface \
+  -workdir /var/tmp/parity-ctl -report control.json
+```
+
+---
+
 > ## Amendment 2026-08-19 — LINK-001 is CLOSED IN CODE, and nothing below is rewritten
 >
 > Every measurement, count and verdict below stands exactly as published. This
