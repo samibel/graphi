@@ -13,6 +13,75 @@
 - Feeds: the W0.f-5 re-measurement (candidate move + real-repo matrix), which is
   its own change and had **not** run when this ADR was written
 
+> ## Correction 2026-08-19 — two of the three published "honest losses" cannot occur
+>
+> Per D6 nothing below is rewritten. §"The honest losses" stands exactly as
+> published; **read it through this note**, which corrects it and adds two
+> records the published body does not carry.
+>
+> ### 1. Losses 1 and 2 were asserted without checking the parser registry
+>
+> A file loses an `imports` edge only if it was a committed `file` node in the
+> first place, and a `file` node is minted by a parser's **SymbolExtractor**
+> (`core/parse/mapping.go`, `core/parse/extract_go.go`). A file whose extension
+> has **no registered parser** returns `parse.ErrNoParser` and is silently
+> untracked (`engine/ingest/parsefile.go`); a file whose parser is **parse-only**
+> mints no nodes either. Neither was checked when the losses were written.
+>
+> | Published loss | Corrected status, measured |
+> |---|---|
+> | 1. `.proto` beside its generated `.pb.go` | **Cannot occur.** No `.proto` parser is registered (`core/parse/defaults.go`), so a `.proto` is never a `file` node and was never an `imports` target. It loses nothing because it had nothing. |
+> | 2a. `testdata/` fixtures | **Cannot occur.** `testdata/` is a *different directory* from the one the import resolves to, so its files were never targets of an import of the parent package — before this change or after it. |
+> | 2b. `//go:embed` assets, illustrated by `.tmpl` / `.json` | **Half true, and the two illustrations are the wrong ones.** `.tmpl` has no registered parser; `.json` has one but it is **parse-only** (`JSONParser.ExtractsSymbols() == false`, `core/parse/parser_json.go`), so neither is ever a `file` node. An embedded `.sql`, `.md`, `.yml`/`.yaml`, `.toml`, `.css` or `.sh` in the package directory **is** a node and **is** a real loss. |
+> | 3. A cgo package's `.c` / `.h` | **True as published.** Confirmed. |
+>
+> ### 2. The losses, restated as the two a user can actually hit
+>
+> **(a) Parseable non-Go build inputs sitting in the package directory** — a
+> `.sql`, `.md`, `.yml`/`.yaml`, `.toml`, `.css` or `.sh`, whether pulled in by
+> `//go:embed` or merely co-located. Their parsers extract symbols, so they are
+> committed `file` nodes, and the directory-fan-out `imports` edge was their only
+> path. **(b) A cgo package's `.c`/`.h` sources**, as published in loss 3.
+>
+> **The operation-level consequence is part of the loss, not a footnote.**
+> `related_files` on a `.md` / `.yml` **anchor** now answers an explicit empty
+> outcome — that inbound `imports` edge was the file node's only cross-file path
+> in either direction. It is the consequence a user is most likely to meet, and
+> it is now stated on the readme surface as well as here. Pinned by
+> `TestRelatedFiles_MarkdownAnchorLosesItsOnlyPath`.
+>
+> **Measured, not reasoned.** Two binaries (`facc014` pre-fix, `3b8d43f`
+> post-fix) over one fixture repo whose `tax/` package directory holds
+> `tax.go`, `tax_test.go`, `README.md`, `.golangci.yml`, `values.yaml`,
+> `config.toml`, `style.css`, `deploy.sh`, `gen.sql`, `helper.c`, `helper.h`,
+> `rates.json`, `api.proto`, `page.tmpl`, `notes.txt` and a `testdata/` holding
+> `golden.go` + `case.yml`. Pre-fix, `graphi related-files app/main.go` returned
+> **11** targets — every one of the above **except** `rates.json`, `api.proto`,
+> `page.tmpl`, `notes.txt` and everything under `testdata/`, none of which
+> resolve as a node at all (`related_files: no symbol or file matched`). Post-fix
+> it returns `tax/tax.go` alone. The dropped set is exactly loss (a) + loss (b).
+>
+> ### 3. Two records the published body does not carry
+>
+> - **`.pyi`'s exclusion is currently unobservable, not a measured choice.** The
+>   registered Python parser claims only `.py` (`core/parse/parser_python.go`),
+>   so a `.pyi` is never a `file` node and never was an `imports` target — at
+>   this commit the exclusion costs and saves exactly nothing. The reasoning for
+>   it (a stub declares no runtime module; `import foo` never binds `foo.pyi`;
+>   its symbols would duplicate the `.py` beside it) stands on the merits and
+>   should be re-decided **with a measurement** if a Python parser ever claims
+>   `.pyi`.
+> - **`Foo_Test.GO` remains a target — a known corner, deliberately not closed.**
+>   The two halves of `goPackageFile` differ in case-sensitivity on purpose (see
+>   §"Case-sensitivity"), and their combination admits `Foo_Test.GO`: the
+>   extension matches case-insensitively, the `_test.go` suffix does not match at
+>   all. `go/build` would not treat that file as Go source in the first place, so
+>   there is no ground truth being violated, and the behaviour is pre-existing
+>   rather than introduced here. Closing it would mean deciding what `go/build`
+>   means on a case-insensitive filesystem, which is a larger question than this
+>   ADR. Measured post-fix on the fixture above: `tax/Foo_Test.GO` is still a
+>   target.
+
 ## Problem
 
 LINK-001, measured on pinned real repositories
@@ -160,6 +229,10 @@ reason.
   hindsight — a reader who assumes "new binary ⇒ corrected graph" is wrong.
 
 ### The honest losses
+
+> **CORRECTED 2026-08-19 — see the correction block at the top of this ADR.**
+> Losses 1 and 2 below cannot occur; loss 3 stands. Nothing in this section is
+> rewritten, per D6.
 
 These are real and are accepted, not worked around. They share one cause:
 graphi models **no embed, codegen or cgo relation**, so for these files the

@@ -277,11 +277,19 @@ file:
   a source file; it is stated here because "upgrade the binary and the graph is
   fixed" would otherwise be a reasonable and wrong assumption.
 
-  **Three honest losses**, accepted rather than worked around: a `.proto` beside
-  its generated `.pb.go`; `testdata/` plus `//go:embed` assets; and a cgo
-  package's `.c`/`.h` sources, which the C parser does commit as file nodes.
-  All three lose their only graph path — graphi models no embed, codegen or cgo
-  relation, and building one is its own epic. LINK-001's disclosure (readme "Known limits", the doctor
+  **Two honest losses**, accepted rather than worked around and measured with
+  both binaries over a mixed-extension package directory: (1) a non-Go build
+  input **in the package directory** — a `.sql`, `.md`, `.yml`/`.yaml`, `.toml`,
+  `.css` or `.sh`, embedded via `//go:embed` or merely co-located — and (2) a
+  cgo package's `.c`/`.h` sources, which the C parser does commit as file nodes.
+  Both lose their only graph path — graphi models no embed, codegen or cgo
+  relation, and building one is its own epic. The user-visible face of loss (1)
+  is the `related_files` **anchor** break described above.
+  **Not losses, contrary to an earlier draft of this entry:** a `.proto` or a
+  `.tmpl` (no registered parser), a `.json` (parser is parse-only and mints no
+  nodes) and anything under `testdata/` (a different directory from the resolved
+  package directory) were never `imports` targets, so nothing about them
+  changes. LINK-001's disclosure (readme "Known limits", the doctor
   `known-defects` check and its test) is retracted in this same change, per the
   disclosure contract.
 

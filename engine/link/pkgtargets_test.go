@@ -409,12 +409,31 @@ func TestImports_CaseVariantExtensionsStayTargets(t *testing.T) {
 // TestExtensionSets_AreWellFormed pins the shape extSetFilter can actually
 // match: it compares a LOWERCASED path.Ext, so an entry without its leading dot
 // — or an entry carrying an uppercase letter — silently matches nothing.
+//
+// THE SET UNDER TEST IS DERIVED, NOT HAND-LISTED. *Strengthened in review round
+// 1:* the value map below still has to be written by hand (Go has no reflection
+// from a variable NAME to its value), but the NAMES are cross-checked against
+// every `…PkgExts` package-level var the AST can find in this package. A fourth
+// language that adds `zigPkgExts` and forgets this test therefore goes red here
+// instead of being silently unchecked — which is the failure mode a hand-written
+// enumeration has.
 func TestExtensionSets_AreWellFormed(t *testing.T) {
-	for name, exts := range map[string][]string{
+	checked := map[string][]string{
 		"pyPkgExts":     pyPkgExts,
 		"csharpPkgExts": csharpPkgExts,
 		"rustPkgExts":   rustPkgExts,
-	} {
+	}
+	declared := declaredPkgExtVars(t)
+	if len(declared) == 0 {
+		t.Fatal("found no …PkgExts var declarations in this package: the derivation is vacuous")
+	}
+	for _, name := range declared {
+		if _, ok := checked[name]; !ok {
+			t.Errorf("%s is declared as a package-source extension set but is not well-formedness "+
+				"checked: add it to this test (LINK-001 / ADR 0011)", name)
+		}
+	}
+	for name, exts := range checked {
 		if len(exts) == 0 {
 			t.Errorf("%s is empty: extSetFilter would admit nothing and the language would emit "+
 				"NO imports edges at all", name)
@@ -430,6 +449,50 @@ func TestExtensionSets_AreWellFormed(t *testing.T) {
 			}
 		}
 	}
+}
+
+// declaredPkgExtVars returns the names of every package-level `…PkgExts` var
+// declared in this package's non-test source, sorted. It reads the same
+// directory `go test` already runs in, exactly as
+// TestEveryClauseKeyedResolver_DeclaresPkgTargetExts does, and for the same
+// reason: the property is about the FILE SET, so no single call can observe it.
+func declaredPkgExtVars(t *testing.T) []string {
+	t.Helper()
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fset := token.NewFileSet()
+	var names []string
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		f, err := parser.ParseFile(fset, filepath.Clean(name), nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", name, err)
+		}
+		for _, decl := range f.Decls {
+			gd, ok := decl.(*ast.GenDecl)
+			if !ok || gd.Tok != token.VAR {
+				continue
+			}
+			for _, spec := range gd.Specs {
+				vs, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+				for _, ident := range vs.Names {
+					if strings.HasSuffix(ident.Name, "PkgExts") {
+						names = append(names, ident.Name)
+					}
+				}
+			}
+		}
+	}
+	sort.Strings(names)
+	return names
 }
 
 // TestEveryClauseKeyedResolver_DeclaresPkgTargetExts is the guard that binds a

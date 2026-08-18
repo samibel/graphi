@@ -107,12 +107,22 @@ module is an ordinary importable module; the Go rule rests on non-importability,
 not on the word "test". The filter binds the **target** side only: a `_test.go`
 file remains a first-class importer.
 
-Three consequences are accepted rather than hidden: a `.proto` beside its
-generated `.pb.go`, `testdata/` plus `//go:embed` assets, and a cgo package's
-`.c`/`.h` sources all lose their only graph path, because graphi models no
-embed, codegen or cgo relation. One follows at the operation level: a `.md` or
+Two consequences are accepted rather than hidden, and they are the ones a file
+actually has to be a graph node to suffer. A **non-source build input in the
+package directory** — a `.sql`, `.md`, `.yml`/`.yaml`, `.toml`, `.css` or `.sh`,
+whether pulled in by `//go:embed` or merely co-located — and a **cgo package's
+`.c`/`.h` sources** lose their only graph path, because graphi models no embed,
+codegen or cgo relation. A third follows at the operation level: a `.md` or
 `.yml` used as a `related_files` **anchor** now answers empty, because that
 inbound `imports` edge was its only cross-file path.
+
+A file kind with **no registered parser** (`.proto`, `.tmpl`, `.txt`) or with a
+**parse-only** parser (`.json`) is never a committed `file` node in the first
+place, so it was never an `imports` target and loses nothing here. Neither does
+anything under `testdata/`, which is a different directory from the one the
+import resolves to. An earlier version of this page named those as losses; see
+the dated correction at the top of
+[ADR 0011](adr/0011-imports-edge-targets-package-source-files.md).
 
 ## Deferred / not in the default tier
 

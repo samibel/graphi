@@ -168,10 +168,16 @@ is hosted, there is no service to sign up for.
   member but is not importable, the same ruling the type-checked layer already
   made. This closed defect LINK-001, under which an edge targeted *every* file in
   the directory (measured on pinned clones: 44 of 340 `imports` edges on cobra
-  pointed at `.md`/`.yml`; 2 120 on grpc-go at `.md`/`.sh`). Two limits it
-  deliberately accepts: a `.proto` beside its generated `.pb.go`, and `testdata/`
-  and `//go:embed` assets, lose their only graph path, because graphi models no
-  embed or codegen relation. Record:
+  pointed at `.md`/`.yml`; 2 120 on grpc-go at `.md`/`.sh`). **Two limits it
+  deliberately accepts**, both measured rather than reasoned: (1) a non-Go build
+  input sitting in the package directory — a `.sql`, `.md`, `.yml`, `.toml`,
+  `.css` or `.sh`, embedded via `//go:embed` or merely co-located — and a cgo
+  package's `.c`/`.h`, lose their only graph path, because graphi models no
+  embed, codegen or cgo relation; (2) consequently `related-files` on a `.md` or
+  `.yml` **anchor** now returns an explicit empty outcome where it used to list
+  the importing packages, because that inbound edge was the file's only
+  cross-file path. Upgrading an existing index needs `graphi rebuild` — `sync`
+  reports "up to date" and keeps the old edges. Record:
   [docs/adr/0011-imports-edge-targets-package-source-files.md](docs/adr/0011-imports-edge-targets-package-source-files.md).
 - **`imports` edges are per-importer under every profile that keeps them**
   (ADR 0010): each file that imports a package gets its own edge, carrying its
