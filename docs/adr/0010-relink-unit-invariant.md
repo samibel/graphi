@@ -117,3 +117,26 @@ a green hermetic table.
 - The profile axis roughly doubles the change-class table's subtests. It is
   deliberately NOT gated behind `-short`: hiding the shipped default profile
   behind a flag is what produced this defect's two-release lifetime.
+
+## Measured (2026-08-16, same day)
+
+The real-repository re-measurement ran on the moved candidate and **PARITY-003
+is closed by measurement, not only hermetically**: 19 of 19 rows PASS over two
+publishable dispatches that agree on every verdict AND every per-row count and
+snapshot digest (`-verdict-diff` and `-counts-diff` both exit 0). The three
+rows that isolated the defect flipped: gin `remove_implementation`
+6604/6599 → 6791/6791, gin `change_build_tag` 6607/6602 → 6794/6794, grpc-go
+`replace_generated_file` 69733/69613 → 92518/92518. Record and artifacts:
+[`../rc/parity-matrix-real-repo.md`](../rc/parity-matrix-real-repo.md),
+`parity-matrix-adr0010-run-{c,d}.json`.
+
+**The measurement also sized the recall loss the FAIL rows understated.** The
+collapse was firing on every Go repository with a dotted module path, including
+rows that already PASSED (there both passes aggregated consistently, so parity
+held while edges were lost): the shipped default kept roughly 40 of 340
+`imports` edges on cobra, 99 of 291 on gin, and **670 of 23 575 on grpc-go** —
+up to ~97% of intra-repo `imports` edges dropped. Removing the aggregation is
+therefore a recall FIX of that magnitude, which is why this ADR frames it as
+correctness rather than as giving up an optimization. The fan-out budget the
+Real-World Report Card publishes (< 8 imports edges per node) is met with room
+to spare on the fixed product: cobra 0.36, gin 0.15, grpc-go 1.58.

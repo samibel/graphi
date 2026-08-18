@@ -1,6 +1,124 @@
 # Full/incremental parity matrix over pinned real repositories
 
-# Current measurement — the ADR 0009 candidate (2026-08-16, W0.f-3)
+# Current measurement — the ADR 0010 candidate (2026-08-16, W0.f-4)
+
+**Status: PUBLISHED PASS — 19 of 19 rows, and the first fully green matrix this
+project has measured.** Two dispatches, `outcome PASS` and `publishable: true`
+in both, agreeing on **every verdict** (`-verdict-diff` exit 0) AND on **every
+per-row node/edge count and snapshot digest** (`-counts-diff` exit 0). The
+two §12.3 store-level counts read **orphaned external nodes = 0** and **stale
+linker edges = 0** on all 38 sides (19 rows × full + incremental).
+
+| | |
+|---|---|
+| Produced by | `internal/parity` + `cmd/parity`, two full local dispatches |
+| Gate | PRD FR-7 / §12.3 — full/incremental parity, binary, no threshold to negotiate |
+| Provenance | **product source byte-identical to the ADR 0010 candidate at `7574a49379d3ede0a08bdb024e7a2e315bdc14a1`** (candidate move: [`../decisions/2026-08-parity-candidate-move-adr0010.md`](../decisions/2026-08-parity-candidate-move-adr0010.md)); run SHA `3398d3b6c0f0`, runner class `Linux-X64/ccr-container`, go1.26.6 linux/amd64, clean worktree, both dispatches publishable |
+| Matrix source | `docs/rc/parity-classes.yaml` (17 change classes + 2 crash conditions, each now recording its `profile:` axis) |
+| Report artifact | `docs/rc/parity-matrix-adr0010-run-c.json`, `…-adr0010-run-d.json` |
+| Historical artifacts | the ADR 0009 pair and the v0.7.1 pairs, preserved not deleted — see the superseded records below |
+
+## Results (identical in both dispatches, to the byte)
+
+| Class | Verdict | Repository | inc = full (nodes/edges) |
+|---|---|---|---|
+| `add_file` | **PASS** | cobra | 940/4218 |
+| `modify_file` | **PASS** | cobra | 939/4207 |
+| `delete_file` | **PASS** | cobra | 897/4069 |
+| `rename_symbol` | **PASS** | cobra | 938/4199 |
+| `move_symbol` | **PASS** | cobra | 939/4217 |
+| `rename_package` | **PASS** | cobra | 938/4206 |
+| `add_call` | **PASS** | cobra | 939/4208 |
+| `remove_call` | **PASS** | cobra | 938/4206 |
+| `change_interface` | **PASS** | lo | 523/704 |
+| `add_implementation` | **PASS** | lo | 526/707 |
+| `remove_implementation` | **PASS** | gin | 1903/6791 |
+| `branch_switch` | **PASS** | cobra | 3/3 repetitions identical (branch switch a→b) |
+| `change_build_tag` | **PASS** | gin | 1904/6794 |
+| `replace_generated_file` | **PASS** | grpc-go | 14922/92518 |
+| `change_external_import` | **PASS** | cobra | 940/4208 |
+| `interrupted_full_pass` | **PASS** | cobra | 6/6 repetitions identical (K1, K3) |
+| `restart_and_recovery` | **PASS** | cobra | 6/6 repetitions identical (K5 -> K7, K6 -> K7) |
+| `change_colliding_package_dir` | **PASS** | cobra | 940/4207 |
+| `add_nested_gomod` | **PASS** | cobra | 941/4196 |
+
+## What this measurement closes
+
+**PARITY-003 is closed by measurement.** All three rows that failed on the ADR
+0009 candidate now pass, and the fix is ADR 0010 (the pass-scoped Balanced
+import aggregation is removed):
+
+| Row | Repo | ADR 0009 candidate (inc/full) | ADR 0010 candidate |
+|---|---|---|---|
+| `remove_implementation` | gin | 6604 / 6599 — **FAIL** | 6791 / 6791 — **PASS** |
+| `change_build_tag` | gin | 6607 / 6602 — **FAIL** | 6794 / 6794 — **PASS** |
+| `replace_generated_file` | grpc-go | 69733 / 69613 — **FAIL** | 92518 / 92518 — **PASS** |
+
+**With PARITY-001 and PARITY-002 (closed by the previous measurement), the
+matrix now carries no open parity defect** — and for the first time the
+two-green-runs discipline holds at COUNT granularity, which is the property
+`-verdict-diff` alone was demonstrated unable to see.
+
+## The finding the FAIL rows understated: a large recall loss under the shipped default
+
+The fix removed a collapse that was firing on **every** Go repository with a
+dotted module path — including the rows that were already PASSING, because
+there both passes aggregated consistently and parity was preserved while edges
+were lost. Measured on the fixed candidate against the previous one:
+
+| Repo | `imports` edges kept before | after | dropped by the default profile |
+|---|---|---|---|
+| cobra | ~40 | 340 | ~88% |
+| gin | ~99 | 291 | ~66% |
+| grpc-go | ~670 | 23 575 | **~97%** |
+
+(Totals: cobra 3918 → 4218 edges, gin 6599 → 6791, grpc-go 69613 → 92518, i.e.
+**+22 905 edges** on grpc-go. `lo` is unchanged at 704 — it has no intra-repo
+imports to collapse. The "before" `imports` figures are the totals minus the
+measured delta; the delta is entirely `imports` because that is the only kind
+the removed branch touched.)
+
+So under the profile the product actually ships, a file that really did import
+a package frequently had **no `imports` edge at all** — only one representative
+importer per target kept one, carrying the other importers' `file:line`
+evidence. That is a recall defect in a GA operation (`related_files`,
+`imports`), and no parity gate could see it, because parity compares two passes
+of the same broken rule.
+
+**One published claim cross-checked, because it could have been a product of
+the defect:** the Real-World Report Card's metric 2 ("Import edges/node
+**0.96**, budget < 8") is measured by `TestLinkFanout_EdgeExplosionBudget`,
+which runs the library's ZERO-value profile and therefore always measured the
+un-aggregated world. The claim is unaffected, and the new real-repo figures sit
+far inside the budget: cobra **0.36**, gin **0.15**, grpc-go **1.58** imports
+per node. The fix moves the product toward the published number, not away
+from it.
+
+**Storage consequence, stated rather than left to be discovered:** ~33% more
+edges on grpc-go means a larger index for repositories of that shape. The
+§12.2 `db_size` gate (≤ 300 MB) is UNKNOWN on this candidate — like every
+performance gate — so this measurement neither satisfies nor breaks it; it is
+named here so the next baseline run knows to look.
+
+## Reproducing this measurement
+
+```bash
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "<your machine>" -workdir /var/tmp/parity-c -report run-c.json
+go run ./cmd/parity -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "<your machine>" -workdir /var/tmp/parity-d -report run-d.json
+go run ./cmd/parity -verdict-diff run-c.json,run-d.json   # verdicts agree
+go run ./cmd/parity -counts-diff  run-c.json,run-d.json   # counts + digests agree
+```
+
+---
+
+# Superseded measurement — the ADR 0009 candidate (2026-08-16, W0.f-3)
+
+> **SUPERSEDED the same day by the ADR 0010 measurement above.** It stands as
+> published: it is the record of the product BETWEEN the two fixes, and its
+> three PARITY-003 FAIL rows are what isolated that defect and forced the
+> second candidate move. Nothing here is re-pointed.
 
 **Status: PUBLISHED FAIL, COMPLETE, and — for the first time — DETERMINISTIC.**
 All **19** declared rows execute — 17 change classes (15 FR-7 + the two ADR

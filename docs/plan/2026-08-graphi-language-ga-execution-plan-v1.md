@@ -31,7 +31,7 @@ here with a local proof), **BLOCKED** (a dependency must clear first),
 | WP-J4 | Kotlin binder on the shared table | **DONE** | D2 inferred/declared boundary proven |
 | WP-J5 | Hermetic change-class parity | **DONE** | **11** required classes, both stores, byte parity; **no deferred rows left** (M2.2) |
 | WP-J6 | Corpus deepening (pins + stratification) | **PARTIAL** | okio pinned (G5); guava→v3 + more pins outstanding |
-| WP-J7 | Real-repo parity over JVM pins (**G4**) | **READY pending re-measure** | PARITY-001 ✅ + PARITY-002 ✅ closed by measurement (W0.f-3); PARITY-003 ✅ fixed by ADR 0010 (W0.f-4) — no open parity defect; D8's entry criterion is met once the W0.f-4 re-measurement publishes |
+| WP-J7 | Real-repo parity over JVM pins (**G4**) | **READY** | All three parity defects CLOSED BY MEASUREMENT (W0.f-3 + W0.f-4): the Go matrix is 19/19 PASS over two dispatches identical at count granularity. ADR 0008 D8's entry criterion is met; what remains is running J7 over the JVM pins |
 | WP-J8 | Hero-JVM (~20 scenarios × 12 ops) | **DONE** | `corpus/fixtures/hero-jvm`, hero gate green |
 | WP-J9 | Differential bytecode ground-truth (soundness) | **DONE** (Java) | live JDK, 4 dispatch forms; **Kotlin live path runs in CI only** (no local `kotlinc`) |
 | WP-J10 | Perf + budget runs; create `GA-LANG-*` rows (born UNKNOWN) | **OWNER** | needs an attested candidate + reproducible CI runs |
@@ -152,7 +152,8 @@ rows had been conflating:
 ```
 PARITY-001  ✅ CLOSED BY MEASUREMENT 2026-08-16 (fix M2.1; delete_file FAIL→PASS on real cobra)
 PARITY-002  ✅ CLOSED BY MEASUREMENT 2026-08-16 (fix W0.f/ADR 0009; determinism proven via -counts-diff)
-PARITY-003  ✅ FIXED 2026-08-16 (W0.f-4, ADR 0010) — the pass-scoped Balanced import aggregation is
+PARITY-003  ✅ FIXED AND MEASURED 2026-08-16 (W0.f-4, ADR 0010) — 19/19 PASS, two dispatches count-identical.
+      │     The pass-scoped Balanced import aggregation is
       │     REMOVED (it had no legitimate prey in any language, dropped true edges, and merged
       │     other files' evidence). The gate gap that hid it is closed structurally: the
       │     conformance change-class table now runs a PROFILE axis (default + balanced) crossed
@@ -166,12 +167,12 @@ GA-LANG-java/kotlin-G4 = PASS
 ```
 
 Everything else is either DONE, BUILDABLE by me now, or an OWNER sign-off.
-**If G4 is required for GA-at-declared-capability, the schedule is the W0.f-4
-re-measurement, and after it WP-J7 itself** (updated three times on 2026-08-16:
-"PARITY-002 is the schedule" → "the measurement run is the schedule" → the
-measurement ran and found PARITY-003 → PARITY-003 is fixed and the schedule is
-the re-measurement. Each supersession is kept: that sequence is what a
-measurement is FOR).
+**If G4 is required for GA-at-declared-capability, the schedule is now WP-J7
+itself — no parity defect stands in front of it** (updated four times on
+2026-08-16, each supersession kept because that sequence is what a measurement
+is FOR: "PARITY-002 is the schedule" → "the measurement run is the schedule" →
+the measurement ran and found PARITY-003 → PARITY-003 is fixed and measured,
+19/19 PASS, two dispatches count-identical).
 Note WP-J7's JVM rows may be less exposed than Go's (Java/Kotlin emit a single
 interned file→package edge, not per-file fan-out — the aggregation path is
 Go-shaped), but that is an argument, not a measurement.
