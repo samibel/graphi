@@ -267,7 +267,8 @@
 # ---------------------------------------------------------------------------
 # WHAT THE ROWS SAY
 # ---------------------------------------------------------------------------
-# Exactly 17 rows: 15 change classes (PRD FR-7) + 2 crash conditions (Delta §9).
+# Exactly 19 rows: 17 change classes (PRD FR-7's 15 + the two ADR 0009 rows,
+# change_colliding_package_dir and add_nested_gomod) + 2 crash conditions (Delta §9).
 # The kinds are distinct and each row states its own kind. See the .md for the
 # 15-vs-16 resolution.
 #

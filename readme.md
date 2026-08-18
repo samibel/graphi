@@ -167,7 +167,7 @@ is hosted, there is no service to sign up for.
   previous pass's aggregated edges survive. Isolated by the ADR 0009 real-repo
   re-measurement (same record as above). Workaround: `graphi rebuild` when
   exact `imports`/`related_files` fidelity matters, or index with
-  `-profile full`.
+  `-profile deep`.
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`
 > column answers a different question ("is this one of the 12 frozen

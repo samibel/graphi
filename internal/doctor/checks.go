@@ -396,7 +396,7 @@ func KnownDefectsCheck() Check {
 					"files of ONE pass, so a re-link re-aggregates a subset while the previous "+
 					"pass's aggregated edges survive. Record: docs/rc/parity-matrix-real-repo.md. "+
 					"Workaround: run `graphi rebuild` when exact imports/related_files fidelity "+
-					"matters, or index with -profile full.",
+					"matters, or index with -profile deep.",
 				StatusInfo)
 		},
 	}
