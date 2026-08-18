@@ -158,16 +158,13 @@ is hosted, there is no service to sign up for.
   defect PARITY-002 (`sync` could diverge from `rebuild` on `imports` edges on
   clause-colliding repositories); the measurement record is
   [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
-- **Known open defect PARITY-003**: under the DEFAULT index profile
-  (`balanced`), `graphi sync` can settle a superset of the file→file `imports`
-  edges `graphi rebuild` produces over the identical tree — deterministic,
-  `imports` edges only, on repositories whose module path has a dotted first
-  segment (`github.com/…`). The profile's per-target import aggregation is
-  computed over one pass's files, so a re-link re-aggregates a subset while the
-  previous pass's aggregated edges survive. Isolated by the ADR 0009 real-repo
-  re-measurement (same record as above). Workaround: `graphi rebuild` when
-  exact `imports`/`related_files` fidelity matters, or index with
-  `-profile deep`.
+- **`imports` edges are per-importer under every profile that keeps them**
+  (ADR 0010): each file that imports a package gets its own edge, carrying its
+  own `file:line` evidence. The `balanced` profile used to collapse them to one
+  edge per target from a representative importer, which dropped true edges and
+  made `sync` settle a superset of `rebuild`'s edge set (closed defect
+  PARITY-003; `fast` still omits `imports` edges entirely). Record:
+  [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`
 > column answers a different question ("is this one of the 12 frozen

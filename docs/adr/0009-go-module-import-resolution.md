@@ -179,12 +179,15 @@ by `TestParseModuleDirective_AgreesWithTyperesolve` (test-only dependency).
   across them where the historical record had three distinct snapshots over
   six executions, and no fan-out-signature edge appears anywhere. PARITY-002
   is closed BY MEASUREMENT, both halves. The same measurement isolated a
-  SECOND, previously-conflated defect the fixture gates cannot see —
+  SECOND, previously-conflated defect the fixture gates could not see —
   PARITY-003, the Balanced profile's pass-scoped import aggregation
-  (`engine/ingest/linkfiles.go`), filed and disclosed in the record, NOT
-  fixed by this ADR: three real-repo rows still FAIL deterministically under
-  the shipped default profile, and the historical "PARITY-002" gin/grpc-go
-  FAILs are now understood as two overlapping mechanisms.
+  (`engine/ingest/linkfiles.go`). It was filed and disclosed here, deliberately
+  NOT fixed by this ADR, and is now **fixed by
+  [ADR 0010](0010-relink-unit-invariant.md)** (W0.f-4), which also generalizes
+  this ADR's closure lesson into one invariant: an edge's value may not depend
+  on more files than the re-link unit. The historical "PARITY-002" gin/grpc-go
+  FAILs are therefore two overlapping mechanisms, each closed by its own ADR
+  and its own measurement.
 
 ## Review round 2 (independent adversarial reviewer, 2026-08-16)
 

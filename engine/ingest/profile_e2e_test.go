@@ -2,9 +2,12 @@ package ingest_test
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/ingest"
@@ -122,14 +125,24 @@ func Rate() int { return 7 }
 
 // TestProfile_BalancedDefaultIsUnchanged asserts that an ingester without an
 // explicit profile behaves like balanced (runs typeresolve and keeps imports).
+//
+// THE FIXTURE CARRIES TWO IMPORTERS OF ONE TARGET ON PURPOSE. Until ADR 0010
+// this test was green for the wrong reason: its fixture gave every target a
+// single importer, so the balanced aggregation was a no-op on it
+// (aggregateImportsByTarget passed singleton groups through verbatim) and the
+// test could not observe the very difference it asserts is absent. The
+// library-vs-CLI profile asymmetry it was supposed to guard is exactly what
+// hid PARITY-003, so the fixture now contains the shape that differed.
 func TestProfile_BalancedDefaultIsUnchanged(t *testing.T) {
 	repo := writeRepo(t, map[string]string{
+		"go.mod": "module example.com/repo\n\ngo 1.26\n",
 		"shop/cart.go": `package shop
 import "example.com/repo/tax"
 func checkout() int { return price() + tax.Rate() }
 `,
 		"shop/price.go": `package shop
-func price() int { return 10 }
+import "example.com/repo/tax"
+func price() int { return tax.Rate() }
 `,
 		"tax/tax.go": `package tax
 func Rate() int { return 7 }
@@ -169,20 +182,43 @@ func importEdgeCount(t *testing.T, store graphstore.Graphstore) int {
 	return len(edges)
 }
 
-// TestProfile_BalancedAggregatesExternalImports asserts that balanced mode
-// aggregates external import edges by target package while deep mode keeps
-// individual imports.
-func TestProfile_BalancedAggregatesExternalImports(t *testing.T) {
+// TestProfile_BalancedKeepsEveryImporterEdge replaces
+// TestProfile_BalancedAggregatesExternalImports, which asserted the OPPOSITE
+// and was wrong on both halves — recorded here rather than deleted, because a
+// retired assertion is evidence about how the defect survived.
+//
+// The retired test asserted `balancedImports < deepImports` ("aggregation did
+// not reduce") over a fixture importing "example.com/repo/tax" — a package the
+// SAME fixture declares, i.e. an INTRA-REPO import. It called that external
+// because engine/ingest's isExternalImport split the path on "/" and found a
+// dot in "example.com". So the test named its subject "ExternalImports" while
+// pinning the aggregation of internal ones, and its green was the reason
+// PARITY-003 looked intentional for two releases.
+//
+// What is true, and what this test pins instead (ADR 0010): under EVERY
+// profile that keeps imports edges at all, EACH importer of a target keeps its
+// OWN edge. The retired aggregation kept one edge per target from a
+// representative source, so the second importer of a target had no imports
+// edge — a dropped true edge in a GA operation, and the shape the conformance
+// table's `change_colliding_package_dir` row now catches under the balanced
+// axis on both stores.
+func TestProfile_BalancedKeepsEveryImporterEdge(t *testing.T) {
 	repo := writeRepo(t, map[string]string{
+		"go.mod": "module example.com/repo\n\ngo 1.26\n",
 		"shop/cart.go": `package shop
+
 import "example.com/repo/tax"
+
 func checkout() int { return tax.Rate() }
 `,
 		"shop/price.go": `package shop
+
 import "example.com/repo/tax"
+
 func price() int { return tax.Rate() }
 `,
 		"tax/tax.go": `package tax
+
 func Rate() int { return 7 }
 `,
 	})
@@ -190,11 +226,47 @@ func Rate() int { return 7 }
 	balanced := indexWithProfile(t, repo, profile.Balanced)
 	deep := indexWithProfile(t, repo, profile.Deep)
 
-	balancedImports := importEdgeCount(t, balanced)
-	deepImports := importEdgeCount(t, deep)
+	// Two importers, one target file: two edges, on both profiles. The
+	// retired aggregation produced ONE here.
+	if got := importEdgeCount(t, balanced); got != 2 {
+		t.Errorf("balanced imports edges = %d, want 2 (one per importer of tax/tax.go); "+
+			"a lower number means representative-collapsing is back and an importer lost its edge", got)
+	}
+	if bal, dp := importEdgeCount(t, balanced), importEdgeCount(t, deep); bal != dp {
+		t.Errorf("balanced imports (%d) != deep imports (%d): the two profiles must agree on imports "+
+			"edges — only fast drops them (ADR 0010)", bal, dp)
+	}
 
-	if balancedImports >= deepImports {
-		t.Fatalf("balanced imports (%d) not fewer than deep imports (%d); aggregation did not reduce", balancedImports, deepImports)
+	// Non-vacuity: each importer is really the source of its own edge, and no
+	// edge carries another file's evidence (the aggregation merged evidence
+	// across the group and published one importer citing the others' lines).
+	edges, err := balanced.Edges(context.Background(), graphstore.Query{EdgeKind: "imports"})
+	if err != nil {
+		t.Fatalf("Edges: %v", err)
+	}
+	nodes, err := balanced.Nodes(context.Background(), graphstore.Query{})
+	if err != nil {
+		t.Fatalf("Nodes: %v", err)
+	}
+	pathOf := map[model.NodeId]string{}
+	for _, n := range nodes {
+		pathOf[n.ID()] = filepath.ToSlash(n.SourcePath())
+	}
+	seen := map[string]bool{}
+	for _, e := range edges {
+		from := pathOf[e.From()]
+		seen[from] = true
+		for _, ev := range e.Evidence() {
+			if !strings.HasPrefix(ev, from+":") {
+				t.Errorf("imports edge from %s cites evidence %q belonging to another file — "+
+					"aggregated evidence is back", from, ev)
+			}
+		}
+	}
+	for _, want := range []string{"shop/cart.go", "shop/price.go"} {
+		if !seen[want] {
+			t.Errorf("no imports edge originates from %s; that importer lost its edge", want)
+		}
 	}
 }
 

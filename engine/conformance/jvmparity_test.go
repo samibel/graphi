@@ -395,13 +395,13 @@ func runJVMChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 	}
 
 	incStore := newBackendStore(t, b)
-	buildIncrementalParallel(t, root, incStore, []func(){
+	buildIncrementalParallel(t, root, incStore, "", []func(){
 		func() { writeTree(t, root, seed) },
 		func() { row.apply(f) },
 	})
 
 	fullStore := newBackendStore(t, b)
-	fullIng := newIngester(t, fullStore)
+	fullIng := newIngester(t, fullStore, "")
 	if err := fullIng.IngestAll(ctx, root); err != nil {
 		t.Fatalf("[%s/%s] full IngestAll: %v", b.name, row.id, err)
 	}

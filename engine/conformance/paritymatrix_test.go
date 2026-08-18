@@ -58,6 +58,7 @@ type parityRow struct {
 	TestName    string `yaml:"test_name"`
 	Fixture     string `yaml:"fixture"`
 	Store       string `yaml:"store"`
+	Profile     string `yaml:"profile"`
 	Assertion   string `yaml:"assertion"`
 	HarnessRow  string `yaml:"harness_row"`
 	KnownDefect string `yaml:"known_defect"`
@@ -86,10 +87,14 @@ const (
 )
 
 var (
-	legalKinds       = []string{kindChangeClass, kindCrashCondition}
-	legalVerdicts    = []string{verdictProven, verdictPartial, verdictAbsent}
-	legalFixtures    = []string{"synthetic stub parser", "production Go parser", "real pinned repository"}
-	legalStores      = []string{"MemStore", "SQLite", "both", storeNone}
+	legalKinds    = []string{kindChangeClass, kindCrashCondition}
+	legalVerdicts = []string{verdictProven, verdictPartial, verdictAbsent}
+	legalFixtures = []string{"synthetic stub parser", "production Go parser", "real pinned repository"}
+	legalStores   = []string{"MemStore", "SQLite", "both", storeNone}
+	// legalProfiles is the INDEX-PROFILE axis (W0.f-4, ADR 0010): "default" is
+	// ingest.New's zero value, "balanced" is what the CLI resolves for every
+	// shipped pass, "both" is the two-value axis parityProfiles() runs.
+	legalProfiles    = []string{"default", "balanced", "both"}
 	legalAssertions  = []string{assertionSnapshotBytes, assertionEnvelopeBytes, "spot query"}
 	legalHarnessRows = []string{harnessRequired, harnessDeferred}
 
@@ -488,15 +493,26 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 			absent := r.Verdict == verdictAbsent
 			check("fixture", r.Fixture, legalFixtures, absent)
 			check("store", r.Store, legalStores, absent)
+			check("profile", r.Profile, legalProfiles, absent)
 			check("assertion", r.Assertion, legalAssertions, absent)
 			if absent {
-				if r.Fixture != "" || r.Store != "" || r.Assertion != "" {
-					t.Errorf("VOCABULARY: %q reads verdict: %q but still cites fixture=%q store=%q assertion=%q",
-						r.ID, verdictAbsent, r.Fixture, r.Store, r.Assertion)
+				if r.Fixture != "" || r.Store != "" || r.Assertion != "" || r.Profile != "" {
+					t.Errorf("VOCABULARY: %q reads verdict: %q but still cites fixture=%q store=%q profile=%q assertion=%q",
+						r.ID, verdictAbsent, r.Fixture, r.Store, r.Profile, r.Assertion)
 				}
-			} else if r.Fixture == "" || r.Store == "" || r.Assertion == "" {
-				t.Errorf("VOCABULARY: %q reads verdict: %q so fixture/store/assertion must all be set; "+
-					"got fixture=%q store=%q assertion=%q", r.ID, r.Verdict, r.Fixture, r.Store, r.Assertion)
+			} else if r.Fixture == "" || r.Store == "" || r.Assertion == "" || r.Profile == "" {
+				t.Errorf("VOCABULARY: %q reads verdict: %q so fixture/store/profile/assertion must all be set; "+
+					"got fixture=%q store=%q profile=%q assertion=%q",
+					r.ID, r.Verdict, r.Fixture, r.Store, r.Profile, r.Assertion)
+			}
+			// A row proven by the conformance change-class table runs the FULL
+			// profile axis, so it may not claim a single profile: that is the
+			// machine-checked half of ADR 0010's gate-gap closure. Rows proven
+			// elsewhere (the fault matrix drives the library default) say which.
+			if r.HarnessRow == harnessRequired && r.Profile != "both" && !absent {
+				t.Errorf("VOCABULARY: %q is a required harness row but records profile=%q; the "+
+					"change-class table runs parityProfiles() (default + balanced), so a required row "+
+					"is proven under BOTH or the axis has been narrowed without saying so", r.ID, r.Profile)
 			}
 			// known_defect is an open string (a defect id), not a closed set, so
 			// VOCABULARY checks only that it looks like an ID rather than prose —

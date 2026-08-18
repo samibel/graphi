@@ -12,6 +12,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/profile"
 )
 
 // harnessTestFile / harnessTestName are the citation docs/rc/parity-classes.yaml
@@ -1123,6 +1124,42 @@ func parityBackends() []parityBackend {
 
 // newBackendStore builds a fresh empty store for a backend and registers its
 // close.
+// parityProfile is the SECOND axis of the change-class table: the INDEX
+// PROFILE the ingesters run under. It exists because PARITY-003 proved a
+// one-axis table insufficient.
+//
+// THE GATE GAP IT CLOSES, stated so it cannot be re-opened by accident. Every
+// hermetic suite in this repository drove ingest.New's ZERO-value profile,
+// which matches neither branch in engine/ingest/linkfiles.go, while every
+// shipped `graphi index/sync/rebuild` resolves to Balanced
+// (core/profile.ResolveProfile). PARITY-003 lived exclusively in the Balanced
+// branch, so it survived a full 19-row two-store parity table and was found
+// only by the real-repo harness, which drives the built binary. A gate that
+// does not exercise the configuration the product ships is not a gate for that
+// configuration — so the table now runs BOTH, and "default" is kept rather
+// than replaced because the library's zero value is a real, shipped entry
+// point too (engine/semantic and every embedding caller use it).
+//
+// Deliberately NOT an env-var axis: nothing under engine/ reads
+// profile.EnvName (only cmd/graphi does), so an env gate would invent a
+// mechanism the product does not have — and t.Setenv forbids parallel
+// ancestors, which would cost this table its t.Parallel(). The shape follows
+// engine/edit/refactor_test.go's modes×kinds crossing.
+type parityProfile struct {
+	name string
+	p    profile.Profile
+}
+
+// parityProfiles returns the profile axis. "default" is ingest.New's zero
+// value (what the library gives an embedder); "balanced" is what the CLI
+// resolves for every user-facing pass.
+func parityProfiles() []parityProfile {
+	return []parityProfile{
+		{name: "default", p: ""},
+		{name: "balanced", p: profile.Balanced},
+	}
+}
+
 func newBackendStore(t *testing.T, b parityBackend) graphstore.Graphstore {
 	t.Helper()
 	st, err := b.factory(t.TempDir())
@@ -1163,8 +1200,9 @@ func writeTree(t *testing.T, root string, files map[string]string) {
 // Each row gets its own tree and its own stores, deliberately. A single shared
 // sequence would let one class's failure poison every later class's comparison,
 // and this table's whole job is to attribute a parity failure to a named class.
-func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
+func runChangeClassRow(t *testing.T, b parityBackend, pr parityProfile, row changeClassRow) {
 	t.Helper()
+	axis := b.name + "/" + pr.name
 	if row.deferredTo != "" {
 		// A declared placeholder SKIPS. It must never report green: a green row
 		// for a class nobody exercised is exactly the substituted evidence this
@@ -1201,16 +1239,16 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 
 	// (1)+(2) Incremental: seed, reconcile, apply, reconcile.
 	incStore := newBackendStore(t, b)
-	inc := buildIncrementalParallel(t, root, incStore, []func(){
+	inc := buildIncrementalParallel(t, root, incStore, pr.p, []func(){
 		func() { writeTree(t, root, seed) },
 		func() { row.apply(f) },
 	})
 
 	// (3) Full parse of the FINAL on-disk state.
 	fullStore := newBackendStore(t, b)
-	fullIng := newIngester(t, fullStore)
+	fullIng := newIngester(t, fullStore, pr.p)
 	if err := fullIng.IngestAll(ctx, root); err != nil {
-		t.Fatalf("[%s/%s] full IngestAll: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] full IngestAll: %v", axis, row.id, err)
 	}
 
 	incSnap := snapshot(t, incStore)
@@ -1224,15 +1262,15 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 	// hide behind either a green parity assertion or a green pin.
 	g, err := newGraphView(ctx, incStore)
 	if err != nil {
-		t.Fatalf("[%s/%s] read incremental graph: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] read incremental graph: %v", axis, row.id, err)
 	}
 	if err := row.witness(g); err != nil {
 		t.Errorf("[%s/%s] VACUOUS ROW: the witness for this class did not hold, so `apply` did not "+
-			"produce the graph shape the row claims to exercise: %v", b.name, row.id, err)
+			"produce the graph shape the row claims to exercise: %v", axis, row.id, err)
 	}
 
 	if row.knownDefect != "" {
-		runKnownDefectRow(t, b, row, inc, root, f, incStore, fullStore, incSnap, fullSnap)
+		runKnownDefectRow(t, b, pr, row, inc, root, f, incStore, fullStore, incSnap, fullSnap)
 		return
 	}
 
@@ -1240,12 +1278,12 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 	if string(incSnap) != string(fullSnap) {
 		t.Errorf("[%s/%s] PARITY FAIL: incremental != full snapshot bytes.\n"+
 			"class: %s\nchange set: %v\n%s",
-			b.name, row.id, row.description, f.changeSet(),
+			axis, row.id, row.description, f.changeSet(),
 			snapshotDiff(t, "incremental", incSnap, "full", fullSnap))
 	}
 
 	// (6) Idempotency.
-	assertIdempotentReapplication(t, b, row, inc, root, f, incSnap)
+	assertIdempotentReapplication(t, b, pr, row, inc, root, f, incSnap)
 }
 
 // runKnownDefectRow is what a class does INSTEAD of asserting parity, once the
@@ -1291,9 +1329,10 @@ func runChangeClassRow(t *testing.T, b parityBackend, row changeClassRow) {
 // while known_defect is set — TestParityMatrix_DriftGuard/VERDICT enforces that
 // MECHANICALLY, independent of whether this suite is green, which is precisely
 // the trap a green pin would otherwise open.
-func runKnownDefectRow(t *testing.T, b parityBackend, row changeClassRow, inc *incBuild,
+func runKnownDefectRow(t *testing.T, b parityBackend, pr parityProfile, row changeClassRow, inc *incBuild,
 	root string, f *fixture, incStore, fullStore graphstore.Graphstore, incSnap, fullSnap []byte) {
 	t.Helper()
+	axis := b.name + "/" + pr.name
 	ctx := context.Background()
 
 	// (1) The divergence must still exist.
@@ -1302,23 +1341,23 @@ func runKnownDefectRow(t *testing.T, b parityBackend, row changeClassRow, inc *i
 			"now AGREE. This is good news and a required action, not a pass: restore this row's parity "+
 			"assertion, delete its knownDefect and pin, clear `known_defect` in "+
 			"docs/rc/parity-classes.yaml, and re-verdict the class.",
-			b.name, row.id, row.knownDefect)
+			axis, row.id, row.knownDefect)
 		return
 	}
 
 	// (2) …and it must be EXACTLY the shape this row publishes.
 	incView, err := newGraphView(ctx, incStore)
 	if err != nil {
-		t.Fatalf("[%s/%s] read incremental graph: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] read incremental graph: %v", axis, row.id, err)
 	}
 	fullView, err := newGraphView(ctx, fullStore)
 	if err != nil {
-		t.Fatalf("[%s/%s] read full graph: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] read full graph: %v", axis, row.id, err)
 	}
 	if err := row.pin(incView, fullView); err != nil {
 		t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: the divergence is no longer the one this row "+
 			"publishes, so the recorded reproduction is stale: %v\n%s",
-			b.name, row.id, row.knownDefect, err,
+			axis, row.id, row.knownDefect, err,
 			snapshotDiff(t, "incremental", incSnap, "full", fullSnap))
 	}
 
@@ -1327,10 +1366,10 @@ func runKnownDefectRow(t *testing.T, b parityBackend, row changeClassRow, inc *i
 	// full-parse bytes.
 	parsed, err := inc.svc.Pool().ParseBatch(ctx, inc.ing, root, f.parseSet())
 	if err != nil {
-		t.Fatalf("[%s/%s] pinned re-parse: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] pinned re-parse: %v", axis, row.id, err)
 	}
 	if err := inc.ing.ApplyChangedParsed(ctx, root, f.changeSet(), parsed); err != nil {
-		t.Fatalf("[%s/%s] pinned re-apply: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] pinned re-apply: %v", axis, row.id, err)
 	}
 	reapplied := snapshot(t, inc.store)
 	switch row.reapply {
@@ -1338,11 +1377,11 @@ func runKnownDefectRow(t *testing.T, b parityBackend, row changeClassRow, inc *i
 		if string(reapplied) == string(incSnap) {
 			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: re-applying the identical change set no "+
 				"longer moves the graph. The recorded reproduction said the second apply converges; it "+
-				"no longer does.", b.name, row.id, row.knownDefect)
+				"no longer does.", axis, row.id, row.knownDefect)
 		}
 		if string(reapplied) != string(fullSnap) {
 			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: the second apply no longer converges to the "+
-				"full-parse bytes.\n%s", b.name, row.id, row.knownDefect,
+				"full-parse bytes.\n%s", axis, row.id, row.knownDefect,
 				snapshotDiff(t, "after re-apply", reapplied, "full", fullSnap))
 		}
 	case reapplyFrozen:
@@ -1350,18 +1389,18 @@ func runKnownDefectRow(t *testing.T, b parityBackend, row changeClassRow, inc *i
 			t.Errorf("[%s/%s] PINNED DEFECT %s CHANGED SHAPE: this row publishes a defect that re-syncing "+
 				"CANNOT heal, but re-applying the identical change set moved the graph. Either the defect "+
 				"now self-heals (re-verdict it as %s) or something else changed.\n%s",
-				b.name, row.id, row.knownDefect, reapplyHeals,
+				axis, row.id, row.knownDefect, reapplyHeals,
 				snapshotDiff(t, "incremental", incSnap, "after re-apply", reapplied))
 		}
 		if string(reapplied) == string(fullSnap) {
 			t.Errorf("[%s/%s] PINNED DEFECT %s NO LONGER REPRODUCES on re-apply: the second apply now "+
 				"lands on the full-parse bytes. That is good news and a required action: re-verdict this "+
 				"row as %s, or if the divergence is gone entirely, restore the parity assertion and clear "+
-				"known_defect.", b.name, row.id, row.knownDefect, reapplyHeals)
+				"known_defect.", axis, row.id, row.knownDefect, reapplyHeals)
 		}
 	default:
 		t.Fatalf("[%s/%s] known-defect row must declare reapply as %q or %q, got %q",
-			b.name, row.id, reapplyHeals, reapplyFrozen, row.reapply)
+			axis, row.id, reapplyHeals, reapplyFrozen, row.reapply)
 	}
 
 	t.Logf("PINNED KNOWN DEFECT %s on class %q [%s]: incremental %d nodes / %d edges vs full %d / %d. "+
@@ -1447,22 +1486,23 @@ func requireOnlyMissing(inc, full *graphView, missingNodes []string, missingEdge
 // drift set and Reconcile returns at engine/watch/service.go:276 having done
 // nothing — the assertion would pass vacuously. Naming the recorded change set
 // explicitly is what makes the second apply real.
-func assertIdempotentReapplication(t *testing.T, b parityBackend, row changeClassRow,
+func assertIdempotentReapplication(t *testing.T, b parityBackend, pr parityProfile, row changeClassRow,
 	inc *incBuild, root string, f *fixture, before []byte) {
 	t.Helper()
+	axis := b.name + "/" + pr.name
 	ctx := context.Background()
 
 	parsed, err := inc.svc.Pool().ParseBatch(ctx, inc.ing, root, f.parseSet())
 	if err != nil {
-		t.Fatalf("[%s/%s] idempotency re-parse: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] idempotency re-parse: %v", axis, row.id, err)
 	}
 	if err := inc.ing.ApplyChangedParsed(ctx, root, f.changeSet(), parsed); err != nil {
-		t.Fatalf("[%s/%s] idempotency re-apply: %v", b.name, row.id, err)
+		t.Fatalf("[%s/%s] idempotency re-apply: %v", axis, row.id, err)
 	}
 	after := snapshot(t, inc.store)
 	if string(before) != string(after) {
 		t.Errorf("[%s/%s] IDEMPOTENCY FAIL: re-applying the identical change set %v moved the graph.\n%s",
-			b.name, row.id, f.changeSet(),
+			axis, row.id, f.changeSet(),
 			snapshotDiff(t, "before re-apply", before, "after re-apply", after))
 	}
 }
@@ -1614,7 +1654,7 @@ func TestChangeClassTable_WitnessesAreNonVacuous(t *testing.T) {
 
 			store := graphstore.NewMemStore()
 			t.Cleanup(func() { _ = store.Close() })
-			ing := newIngester(t, store)
+			ing := newIngester(t, store, "")
 			if err := ing.IngestAll(ctx, root); err != nil {
 				t.Fatalf("seed IngestAll: %v", err)
 			}
