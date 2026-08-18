@@ -621,15 +621,16 @@ func TestReport_FailsClosed(t *testing.T) {
 }
 
 // TestProvenance_NeverClaimsItRanAtTheCandidate pins the sentence AC-12
-// governs. (The candidate moved 2026-08-16 — ADR 0009 is a product-byte
-// change — so the sanctioned sentence names the ADR 0009 candidate now, and
-// the old v0.7.1 wording is among the forbidden phrasings.)
+// governs. (The candidate moved TWICE on 2026-08-16 — ADR 0009 and then ADR
+// 0010, both product-byte changes — so the sanctioned sentence names the ADR
+// 0010 candidate now, and every retired candidate's wording is among the
+// forbidden phrasings. Each move has its own record under docs/decisions/.)
 func TestProvenance_NeverClaimsItRanAtTheCandidate(t *testing.T) {
 	p := parityreport.NewProvenance("cafebabe")
-	if !strings.Contains(p.Statement, "byte-identical to the ADR 0009 candidate at "+parityreport.CandidateSHA) {
+	if !strings.Contains(p.Statement, "byte-identical to the ADR 0010 candidate at "+parityreport.CandidateSHA) {
 		t.Fatalf("statement must say the product SOURCE is byte-identical to the current candidate: %q", p.Statement)
 	}
-	for _, bad := range []string{"measured at the candidate", "ran at the candidate", "v0.7.1"} {
+	for _, bad := range []string{"measured at the candidate", "ran at the candidate", "v0.7.1", "adr 0009 candidate"} {
 		if strings.Contains(strings.ToLower(p.Statement), bad) {
 			t.Fatalf("statement implies the run happened AT the candidate, or names the retired candidate: %q", p.Statement)
 		}
