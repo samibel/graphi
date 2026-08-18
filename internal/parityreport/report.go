@@ -58,20 +58,33 @@ const (
 
 // CandidateSHA is the candidate the product tree is compared against.
 //
-// CANDIDATE MOVE (2026-08-16, second of the day, deliberate): the previous
-// candidate was c4209dd (the ADR 0009 merge), which superseded the P0 v0.7.1
-// SHA 80d67ed586723ab22704cf7aada316138cb1360e. ADR 0010 (the PARITY-003 fix:
-// the pass-scoped Balanced import aggregation is removed) changes product bytes
-// on the SHIPPED DEFAULT profile — balanced graphs gain the imports edges the
-// aggregation used to swallow — so the candidate moves again by the same rule,
-// and every measurement against c4209dd is historical.
+// CANDIDATE MOVE (2026-08-19, deliberate): the previous candidate was 7574a49
+// (the ADR 0010 commit), which superseded c4209dd (the ADR 0009 merge), which
+// superseded the P0 v0.7.1 SHA 80d67ed586723ab22704cf7aada316138cb1360e.
+// ADR 0011 (the LINK-001 fix: an `imports` edge targets the imported package's
+// SOURCE files, decided on the file extension, with in-package `_test.go`
+// files excluded because they are package members but are not importable)
+// changes product bytes on the SHIPPED DEFAULT profile — balanced graphs lose
+// the `imports` edges that pointed at `README.md`, `.yml` and `.sh` files — so
+// the candidate moves again by the same rule, and every measurement against
+// 7574a49 is historical.
+//
+// WHY THIS SHA AND NOT THE FIRST COMMIT OF THE FIX. The LINK-001 fix landed
+// over three commits (01f95cf, 3b8d43f, 7e4291f). The candidate is not the
+// first of them but the one where the PRODUCT BYTES SETTLED, and that was
+// decided by building, not by reading subjects: `./cmd/graphi` built with
+// -trimpath -buildvcs=false is fcd26b6e… at 01f95cf and 036be635… at 3b8d43f,
+// which is what 7e4291f (docs plus one _test.go) also builds to. 3b8d43f is
+// the adversarial-review commit that closed an undisclosed break in
+// engine/link/index.go, so it — not 01f95cf — is the boundary the provenance
+// gate must compare against.
 //
 // Each move is recorded before its first published measurement:
-// docs/decisions/2026-08-parity-candidate-move-adr0010.md, which cites its
-// ADR-0009 predecessor. The provenance statement keeps run SHA and candidate
+// docs/decisions/2026-08-parity-candidate-move-adr0011.md, which cites its
+// ADR-0010 predecessor. The provenance statement keeps run SHA and candidate
 // SHA separate, because a run may happen at any later commit whose product
 // bytes are identical to the candidate's.
-const CandidateSHA = "7574a49379d3ede0a08bdb024e7a2e315bdc14a1"
+const CandidateSHA = "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31"
 
 // FR7ChangeClasses is the size of the authoritative matrix: PRD FR-7 lists
 // EXACTLY 15 change classes (heading "Änderungsklassen", prefix "Mindestens:"),
@@ -183,7 +196,7 @@ func NewProvenance(runSHA string) Provenance {
 		CandidateSHA:   CandidateSHA,
 		RunSHA:         runSHA,
 		IndexProfile:   string(profile.Balanced) + " (the product's resolved default; GRAPHI_INDEX_PROFILE cleared for the measured child processes)",
-		Statement:      "product source byte-identical to the ADR 0010 candidate at " + CandidateSHA,
+		Statement:      "product source byte-identical to the ADR 0011 candidate at " + CandidateSHA,
 		HarnessVersion: HarnessVersion,
 		SchemaVersion:  SchemaVersion,
 	}

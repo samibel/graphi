@@ -633,15 +633,22 @@ func TestReport_FailsClosed(t *testing.T) {
 
 // TestProvenance_NeverClaimsItRanAtTheCandidate pins the sentence AC-12
 // governs. (The candidate moved TWICE on 2026-08-16 — ADR 0009 and then ADR
-// 0010, both product-byte changes — so the sanctioned sentence names the ADR
-// 0010 candidate now, and every retired candidate's wording is among the
+// 0010 — and a THIRD time on 2026-08-19 for ADR 0011, the LINK-001 fix; all
+// three are product-byte changes, so the sanctioned sentence names the ADR
+// 0011 candidate now, and every retired candidate's wording is among the
 // forbidden phrasings. Each move has its own record under docs/decisions/.)
+//
+// The forbidden list is the load-bearing half of this test and it only works
+// if it GROWS at every move: a sentence still naming the previous candidate
+// would otherwise read as a correct provenance claim about the wrong product.
+// That is why "adr 0010 candidate" joins "adr 0009 candidate" and "v0.7.1"
+// here rather than replacing them — a retired name is retired forever.
 func TestProvenance_NeverClaimsItRanAtTheCandidate(t *testing.T) {
 	p := parityreport.NewProvenance("cafebabe")
-	if !strings.Contains(p.Statement, "byte-identical to the ADR 0010 candidate at "+parityreport.CandidateSHA) {
+	if !strings.Contains(p.Statement, "byte-identical to the ADR 0011 candidate at "+parityreport.CandidateSHA) {
 		t.Fatalf("statement must say the product SOURCE is byte-identical to the current candidate: %q", p.Statement)
 	}
-	for _, bad := range []string{"measured at the candidate", "ran at the candidate", "v0.7.1", "adr 0009 candidate"} {
+	for _, bad := range []string{"measured at the candidate", "ran at the candidate", "v0.7.1", "adr 0009 candidate", "adr 0010 candidate"} {
 		if strings.Contains(strings.ToLower(p.Statement), bad) {
 			t.Fatalf("statement implies the run happened AT the candidate, or names the retired candidate: %q", p.Statement)
 		}
