@@ -1,5 +1,340 @@
 # Full/incremental parity matrix over pinned real repositories
 
+# JVM real-repository matrix — WP-J7 / gate G4 (2026-08-19, W1.c)
+
+> **THIS SECTION SUPERSEDES NOTHING. It is a DIFFERENT FAMILY, not a newer
+> measurement.** The section below it — "Current measurement — the ADR 0011
+> candidate" — remains the current PRD FR-7 **Go** matrix, at 19 of 19 PASS,
+> and this section settles none of its rows. Two matrices now live in this
+> file: the Go one over `docs/rc/parity-classes.yaml`, and the JVM one over
+> `docs/rc/parity-classes-jvm.yaml`. They cover different change classes, run
+> different axes, and are reported with a `family` discriminator in the JSON so
+> a tool cannot confuse them either. Per D6 nothing below this section is
+> rewritten, re-pointed or deleted.
+
+**Status: NOT PUBLISHABLE. 44 of 52 crossed rows PASS, 8 SKIPPED, 0 FAIL,
+0 harness error.** This is the first time the JVM change classes have been run
+over real Java and Kotlin repositories at all. It is being recorded rather than
+published, because **two independent conditions each deny publishability**, and
+the harness refuses on both by itself rather than being told to:
+
+| | |
+|---|---|
+| Produced by | `internal/parity` + `cmd/parity -family jvm`, two full local dispatches, separate persistent workdirs, run serially |
+| Gate | language-GA programme G4 / work package WP-J7 — real-repository full-vs-incremental parity for Java and Kotlin |
+| Matrix source | `docs/rc/parity-classes-jvm.yaml` at `matrix_version: 4` (13 declared change classes) |
+| Axis crossing | `binder{off,on} × profile{resolved default, fast}` = **4 cells**, so 13 × 4 = **52 declared rows** |
+| Corpus pins | guava `2214c636` (java, tier 3), okio `8b870e8e` (kotlin, tier 3), kotlinx.serialization `3efe324b` (kotlin, tier 3) |
+| Provenance | **both** dispatches at run SHA `a761cfa`, `worktree_clean: true` in both, runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64 |
+| Product binary | HEAD `4f0e1a20…` vs candidate `036be635…` — **they DIFFER**, see blocker 1 |
+| Report artifacts | [`parity-matrix-jvm-wpj7-run-l.json`](parity-matrix-jvm-wpj7-run-l.json) `sha256 03b78643…` · [`…-run-m.json`](parity-matrix-jvm-wpj7-run-m.json) `sha256 eeac3e03…` |
+
+## The two blockers, stated before any number, because they bound what any number here means
+
+**Blocker 1 — the product tree has diverged from the measurement candidate, and
+this predates this story entirely.** `parityreport.CandidateSHA` is
+`3b8d43f6bc0a264c74424ca209b6fbd2401c9a31`, which builds `./cmd/graphi` to
+`036be635…`; the branch head builds it to `4f0e1a20…`. `CollectProvenance`
+therefore sets `ProductDiffEmpty = false` and every dispatch from this branch
+reports `not_publishable_because: "product tree differs from the candidate"`.
+The nineteen product files responsible were landed by SW-171, SW-175 and their
+neighbours — the harness prints the path diff informationally — and **not one
+byte of the divergence belongs to W1.c**: `./cmd/graphi` builds to `4f0e1a20…`
+both at this story's base `ee2d34c` and at its head. Moving the candidate is
+the owner's decision and is already owed. Until it is made, **no JVM parity
+matrix measured on this branch can be published, however green it is**.
+
+**Blocker 2 — the run is INCOMPLETE, and would be even if blocker 1 were
+cleared.** Two of the thirteen declared classes find no target in any pinned
+JVM repository, so eight of the fifty-two crossed rows are SKIPPED and
+`Finalize` refuses the run. Both classes are declared `harness_row: required`.
+Detail in "Coverage limits" below; filed as **PARITY-COV-001**.
+
+Consequently `-verdict-diff` and `-counts-diff` **cannot exit 0** on this pair,
+and the story's AC-2 — which requires exit 0 and `publishable: true` — is
+**not satisfiable from this branch**. What they do report is the substantive
+half of the same question, and it is green:
+
+```
+########## -verdict-diff run-l.json,run-m.json
+parity: verdict sets agree, but at least one run is NOT publishable — publication refused.
+
+########## -counts-diff run-l.json,run-m.json
+parity: counts agree, but at least one run is NOT publishable — publication refused.
+```
+
+**The two dispatches agree on every verdict AND on every per-row node/edge
+count and snapshot digest.** The gates then refuse publication on
+publishability, which is them working correctly.
+
+**A note on the exit code, because a published exit code was wrong once before
+(`6ea0b5d`, discipline D8) and the SW-167 review caught the same class of
+error.** `cmd/parity/main.go` returns **2** for any outcome that is not PASS or
+FAIL, and `INCOMPLETE` is one of those; the diff gates likewise return **2**
+when a run is not publishable. Invoked through `go run`, the child's status is
+masked: `go run` prints `exit status 2` and itself exits **1**.
+
+Measured both ways rather than stated once, because the masking is the whole
+trap. The two gates were run **directly from a built `cmd/parity` binary** and
+returned **2** each; through `go run` the same two invocations printed
+`exit status 2` and exited **1**. Both dispatches were observed only through
+`go run` (exit **1**, printing `exit status 2`), and `cmd/parity/main.go`'s
+`printAndScore` returns 2 for any outcome that is not PASS or FAIL. So:
+**harness exit 2, `go run` exit 1** — and under AC-3's taxonomy this is neither
+"FAIL rows" (which would be 1) nor a harness error, but a benign INCOMPLETE
+that legitimately returns 2.
+
+## What these rows actually cover — the binder is default-off, and it matters more than it looks
+
+The JVM declared-type binder is **experimental and default-off**:
+`engine/semantic` registers it only when `GRAPHI_JVM_TYPERESOLVE` is set.
+Flipping it on by default is a separate, later story. So a JVM parity row
+driven at the shipped default exercises JVM parse, tabling, the heuristic
+linker and the incremental purge/re-link — **and not one line of the binder the
+work package is about.** That is why every class runs over the binder axis, why
+the cell is in the row id *and* in an `axis_note` field, and why both
+environment variables are cleared for the child and then set explicitly per
+cell.
+
+The crossing splits the 44 decided rows three ways, and only one third of them
+touches the binder at all:
+
+| cells | rows | what they exercise |
+|---|---:|---|
+| `binder=off` × {default, fast} | **22** | parse, tabling, heuristic linker, incremental purge/re-link. **No binder code, by declaration.** This is the shipped configuration. |
+| `binder=on` × `fast` | **11** | **No binder OUTPUT, by measurement.** See below. |
+| `binder=on` × `default` | **11** | the only rows that exercise the binder |
+
+**The `binder=on × fast` cells are byte-identical to their `binder=off × fast`
+twins — every one of them, on both pins.** `Fast` skips the resolve passes
+entirely, so the opt-in is present and cannot take effect. This was left as an
+open question by the harness's own design note ("whether that cell is
+byte-identical … is a question the matrix answers instead of a claim it
+makes"), and the matrix answers it:
+
+| class | profile | off digest | on digest | binder effect |
+|---|---|---|---|---|
+| every decided class | `fast` | *(11 pairs)* | *(identical)* | **none — byte-identical** |
+| `jvm_add_file` | default | `0074f0f4cd1b` | `e7128cfa75e6` | edges 6 948 → 7 261 (**+313**) |
+| `jvm_add_call` | default | `939fa01d58dd` | `c3dcb740a2f1` | edges 6 947 → 7 261 (**+314**) |
+| `jvm_change_type_hierarchy` | default | `fd293df2f0a4` | `7e2db3978a55` | edges 73 780 → 73 882 (**+102**) |
+
+**And the binder reacts to the row's own MUTATION in only two classes.** The
+`+313`-ish deltas above are repository-wide: the binder adds edges everywhere,
+whether or not the edit touched anything it resolves. Comparing the *delta*
+off-vs-on isolates the mutation: only `jvm_add_call` (`e+1` off, `e+2` on) and
+`jvm_move_symbol` (`e+3/e-2` off, `e+4/e-3` on) change shape under the binder.
+For the other nine classes the mutation's graph delta is identical with the
+binder on and off.
+
+**So, stated plainly: of 52 declared rows, 11 exercise the binder, and 2
+exercise it on the thing the row actually edits.** Nothing here should be read
+as evidence about the binder beyond that.
+
+## Non-vacuity — measured for every row, and three classes fail it
+
+The question "does this row's change class actually perturb the graph, or does
+it merely edit a file nothing looked at" was answered by measurement rather
+than by reading the planners. For every decided row, a fresh full index of the
+**mutated** tree was compared with `graphi compare-branches` against a fresh
+full index of the **pristine** tree, taken with the same binary under the same
+axis cell.
+
+**Three classes return `outcome: empty` — `n+0 n-0 nc0 nm0 e+0 e-0` — on all
+four of their cells.** Their real edit lands in real source and moves nothing
+in the graph, so full-vs-incremental byte parity is satisfied because both
+sides reproduce the unmutated graph:
+
+| class | repo | pristine-vs-mutated | reading |
+|---|---|---|---|
+| `jvm_change_overload` | okio | **empty** | ADR 0008 **D6** never reached |
+| `kotlin_infer_declared_flip` | okio | **empty** | ADR 0008 **D2** never reached |
+| `jvm_change_type_hierarchy` | guava | **empty** | the graph has no supertype relation to move |
+| `jvm_add_call` *(control)* | okio | `found`, `n+1 e+1` (`e+2` binder on) | the probe is not vacuous itself |
+| `jvm_rename_package` *(control)* | okio | `found`, `n+39 n-38 e+82 e-82` | |
+
+**Their PASS is real, and it proves the pipeline stable under a no-op rather
+than the change class.** Filed as **PARITY-VAC-001**. Two distinct causes:
+
+**(a) `jvm_change_type_hierarchy` cannot be non-vacuous at the shipped default,
+for a product reason — and this is the single most useful thing this matrix
+measured.** The JVM graph carries **no `extends` edge kind at all**. With the
+binder off, the entire edge vocabulary on both pins is `defines` / `calls` /
+`imports`:
+
+| pin | axis | defines | calls | imports | references | implements |
+|---|---|---:|---:|---:|---:|---:|
+| guava | binder off | 42 713 | 25 820 | 5 247 | — | — |
+| guava | binder on | 42 713 | 25 898 | 5 247 | 22 | **2** |
+| okio | binder off | 3 943 | 2 890 | 115 | — | — |
+| okio | binder on | 3 943 | 3 119 | 115 | 56 | **28** |
+
+Supertype relations reach the graph only as `implements`, and only under the
+binder — **2 edges across guava's 46 352 nodes**. Re-pointing one class's
+supertype in a repository that carries two supertype edges moves nothing, and
+the planner cannot know which two. So this class is unprovable on real Java
+source at the shipped default and near-unprovable under the binder. That is a
+statement about what the graph can express, not about the harness.
+
+**(b) The other two are planner-selection weaknesses.** Both locate the right
+*syntactic* shape — a method unique by (name, arity); a Kotlin local with a
+declared type — but neither requires the shape to participate in an edge the
+graph carries. D6's drop precondition needs a confirmed call **into** the
+method whose (name, arity) becomes ambiguous; D2's needs the local to be the
+**receiver** of a call. Making selection edge-aware may well turn both rows
+SKIPPED on this corpus, which would be a more honest verdict than a green
+no-op. Not fixed here: that is planner design, it moves published counts, and
+this story's job was to measure the corpus rather than redesign the instrument
+on the way past.
+
+**Eight of the eleven decided classes ARE non-vacuous**, and their measured
+graph deltas are the `found` rows of the same probe.
+
+## PARITY-OBS-002 — found by this measurement, and fixed inside it
+
+The pre-fix `jvm_change_type_hierarchy` row published this mutation:
+
+> re-point the supertype of class `AbstractCollectionTestSuiteBuilder` …
+> extends `AbstractCollectionTestSuiteBuilder` → extends `AbstractCollectionTester`
+
+A class re-pointed at itself. The real guava header is
+
+```java
+public abstract class AbstractCollectionTestSuiteBuilder<
+        B extends AbstractCollectionTestSuiteBuilder<B, E>, E>
+    extends PerCollectionSizeTestSuiteBuilder<B, TestCollectionGenerator<E>, Collection<E>, E> {
+```
+
+and `scanSuper`'s Java branch took the first `extends` between the type name
+and the body with **no angle-bracket depth**, where the Kotlin branch four
+lines below it always tracked depth. Java spells a bounded type parameter with
+the same keyword as an extends clause, so the scan returned the **bound**, and
+the edit the row actually applied rewrote a type-parameter bound while the
+report described a supertype re-point.
+
+**A published row whose mutation description is false about its own edit is
+worse than a FAIL row**, so this was fixed rather than filed: `a761cfa`, pinned
+red-before-green by `TestScanSuper_IgnoresExtendsInsideATypeParameterList` on
+the reduced real header. Post-fix the row reads *"extends
+`PerCollectionSizeTestSuiteBuilder` → extends `AbstractCollectionTester`"*.
+
+**The fix changed no number, and that is measured rather than assumed:**
+`-counts-diff` between the pre-fix dispatch pair and the post-fix one agrees on
+every per-row count and every snapshot digest. It corrects which bytes are
+rewritten and what the report says about them; the row was graph-vacuous before
+and after, per (a) above.
+
+## Coverage limits — PARITY-COV-001
+
+| class | verdict | why |
+|---|---|---|
+| `jvm_change_import_shadowing` | **SKIPPED** ×4 | needs a **non-static** on-demand import as its shadowing base. Across all three pins the only Java wildcard import of any kind is guava's `import static java.util.stream.Collectors.*;` — a static one, which imports members rather than types, so JLS 6.4.1's single-type-import rule does not govern it. The planner refuses it deliberately: accepting it would publish a verdict about a rule the row never exercised. |
+| `jvm_mixed_dir_change_receiver_type` | **SKIPPED** ×4 | needs a five-way conjunction — a Java class **outside** a mixed-language directory, carrying a supertype, **named by** a file **inside** one, with a swappable sibling class in its own directory. No pin satisfies it. |
+
+**A third limit, which no row reports because no row ran there:
+`kotlinx.serialization` hosts ZERO decided rows.** It is cloned only because
+the two skipping classes examine it before giving up. Every decided row landed
+on okio or guava, so **the `GA-LANG-kotlin-G4` evidence rests entirely on
+okio**, and the 615-file kotlinx pin contributes nothing to this matrix.
+
+**And two "distinct" classes applied the SAME edit.** `jvm_delete_file` and
+`jvm_mixed_dir_delete_callee` both delete
+`okio/src/nonJvmMain/kotlin/okio/Timeout.kt` and therefore carry identical
+digests (`df1eb831247e`, `1736f7f863d9`, `aa5a78106ecc`) in every cell. The D9
+mixed-directory sweep row is not a distinct row on this corpus: its witness —
+a Java file in a mixed directory naming the deleted type — is incidental to the
+edit rather than enforced by a different one.
+
+## Results — 44 PASS, identical in both dispatches to the byte
+
+`§12.3` store-level counts read **orphaned external nodes = 0** and **stale
+linker edges = 0** on all 88 sides (44 rows × full + incremental), in both
+dispatches.
+
+| class | repo | off/default | off/fast | on/default | on/fast |
+|---|---|---|---|---|---|
+| `jvm_add_file` | okio | 4401/6948 | 4401/6833 | 4401/7261 | 4401/6833 |
+| `jvm_modify_file` | okio | 4398/6947 | 4398/6832 | 4398/7260 | 4398/6832 |
+| `jvm_add_call` | okio | 4398/6947 | 4398/6832 | 4398/7261 | 4398/6832 |
+| `jvm_change_overload` † | okio | 4397/6946 | 4397/6831 | 4397/7259 | 4397/6831 |
+| `kotlin_infer_declared_flip` † | okio | 4397/6946 | 4397/6831 | 4397/7259 | 4397/6831 |
+| `jvm_rename_package` | okio | 4398/6946 | 4398/6831 | 4398/7259 | 4398/6831 |
+| `jvm_change_type_hierarchy` † | guava | 46352/73780 | 46352/68533 | 46352/73882 | 46352/68533 |
+| `jvm_move_nested_class` | okio | 4401/6949 | 4401/6834 | 4401/7262 | 4401/6834 |
+| `jvm_change_import_shadowing` | — | SKIPPED | SKIPPED | SKIPPED | SKIPPED |
+| `jvm_move_symbol` | okio | 4398/6947 | 4398/6831 | 4398/7260 | 4398/6831 |
+| `jvm_delete_file` | okio | 4395/6945 | 4395/6830 | 4395/7258 | 4395/6830 |
+| `jvm_mixed_dir_delete_callee` ‡ | okio | 4395/6945 | 4395/6830 | 4395/7258 | 4395/6830 |
+| `jvm_mixed_dir_change_receiver_type` | — | SKIPPED | SKIPPED | SKIPPED | SKIPPED |
+
+† graph-vacuous (PARITY-VAC-001) · ‡ same edit as `jvm_delete_file`
+
+**Node counts are identical across the binder axis in every row** — the binder
+adds edges, never nodes. Between the two profiles, `fast` carries ~115 fewer
+edges on okio and ~5 247 fewer on guava, which is the resolve passes it skips.
+
+## What this measurement does and does not say
+
+**Says.** Over 44 crossed rows on two real JVM repositories, an incrementally
+updated graph and a fresh full index of the same final tree are **byte-identical**,
+reproducibly across two dispatches, in both the shipped configuration and with
+the experimental binder live, at both behaviourally distinct CLI profiles. No
+row diverged. No orphaned external node and no stale linker edge appeared on
+any of the 88 sides.
+
+**Does not say.** (1) Nothing about **correctness**: a PASS compares two passes
+of the same rules, and there is no ground truth for a real repository's JVM edge
+set. (2) Nothing about the **binder** beyond the 11 rows that run it and the 2
+whose mutation it responds to. (3) Nothing about the three vacuous classes'
+change classes. (4) Nothing publishable at all, per the two blockers. (5) No
+performance, latency or RSS figure — none was taken.
+
+## G4 verdict — PARTIAL, and it does not meet its own condition for PARTIAL
+
+The story's AC-5 permits **PARTIAL** "only where every open defect it reports is
+deterministic **and** disclosed on the user surfaces". Taking that literally:
+
+- **Deterministic: yes.** Every finding reproduced identically across two
+  dispatches, and PARITY-VAC-001's `outcome: empty` reproduced on all four
+  cells of all three classes.
+- **Disclosed on the user surfaces: no — and deliberately so.** PARITY-VAC-001
+  and PARITY-COV-001 are defects in **the measurement harness and the corpus**,
+  not in the product. Nothing a user runs behaves differently because of them,
+  so there is no honest sentence to put in readme "Known limits" or the doctor
+  `known-defects` check, both of which describe product behaviour. Writing one
+  would be disclosing a fiction to satisfy a condition.
+
+So G4 is recorded as **PARTIAL**, with the condition **not met as written**, and
+the reason stated rather than the condition reinterpreted. The `GA-LANG-java-G4`
+and `GA-LANG-kotlin-G4` evidence rows therefore stay **UNKNOWN** — an
+unpublishable dispatch cannot back a PASS — and carry this section as their
+`evidence_uri` so a reader can see what was measured.
+
+## Reproducing this measurement
+
+```bash
+# Two serial dispatches, separate persistent workdirs, from a CLEAN worktree.
+go run ./cmd/parity -family jvm -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "<your machine>" -workdir /var/tmp/jvm-l -report run-l.json
+go run ./cmd/parity -family jvm -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "<your machine>" -workdir /var/tmp/jvm-m -report run-m.json
+go run ./cmd/parity -verdict-diff run-l.json,run-m.json   # sets agree; refuses on publishability
+go run ./cmd/parity -counts-diff  run-l.json,run-m.json   # counts agree; refuses on publishability
+
+# The non-vacuity probe. For each row, index the PRISTINE tree with the same
+# binary under the same axis cell, then diff it against the row's own full store.
+# `outcome: empty` means the change class moved nothing.
+GRAPHI_INDEX_PROFILE= GRAPHI_JVM_TYPERESOLVE= \
+  <workdir>/graphi rebuild -root <workdir>/repos/okio -db /tmp/pristine.db -meta /tmp/pmeta
+<workdir>/graphi compare-branches -base /tmp/pristine.db \
+  -head '<workdir>/state/okio/jvm_change_overload[binder=off,profile=default]/full.db'
+
+# The edge-kind census behind (a): the graph has no `extends` kind at all.
+jq -r '.graph.edges[].kind' '<workdir>/state/guava/<row>/full.snapshot' | sort | uniq -c
+```
+
+---
+
 # Current measurement — the ADR 0011 candidate (2026-08-19, W0.f-5)
 
 **Status: PUBLISHED PASS — 19 of 19 rows.** Two dispatches, `outcome PASS` and

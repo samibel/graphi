@@ -470,12 +470,12 @@ gates:
     gate: G4 — Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over java pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E2 CORPUS-MEASURED. No JVM dispatch has ever been run: the published 19/19 matrix is Go-only and was measured against the ADR 0010 candidate 7574a49. A dispatch is not even publishable from this branch today — the product tree has diverged from parityreport.CandidateSHA 3b8d43f6, so CollectProvenance sets ProductDiffEmpty false. The candidate move that unblocks it is an owner decision already owed and predates this story."
+    current: "UNKNOWN — and now for MEASURED reasons rather than for want of a measurement. SW-176 (W1.c) ran the JVM matrix over the pins for the first time: 44 of 52 crossed rows PASS, 8 SKIPPED, 0 FAIL, both dispatches agreeing on every verdict AND every per-row count and snapshot digest. It stays UNKNOWN because an unpublishable dispatch cannot back a PASS, and TWO independent conditions deny publishability. (1) The product tree has diverged from parityreport.CandidateSHA 3b8d43f6 — HEAD builds 4f0e1a20, the candidate 036be635 — so CollectProvenance sets ProductDiffEmpty false; the owed candidate move is an owner decision that predates SW-176, whose own commits move no product byte. (2) The run is INCOMPLETE: jvm_change_import_shadowing and jvm_mixed_dir_change_receiver_type find no target in any pin (PARITY-COV-001), so -verdict-diff and -counts-diff return 2 rather than 0 and AC-2 is unsatisfiable from this branch. Java-specific caveat: guava hosts exactly ONE class, jvm_change_type_hierarchy, and that row is graph-vacuous (PARITY-VAC-001) — the JVM graph carries no extends edge kind at all and only 2 implements edges across guava's 46 352 nodes, so the java evidence here comes from okio's .java files rather than from the java pin. G4 recorded PARTIAL with its condition explicitly NOT met."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: "docs/rc/parity-matrix-real-repo.md#jvm-real-repository-matrix--wp-j7--gate-g4-2026-08-19-w1c"
     sha: ""
     owner: ENG (JVM)
-    next_action: "SW-176 (WP-J7) — run the real-repository parity dispatches over the JVM pins after the candidate moves, and publish a new dated matrix section."
+    next_action: "Owner decision on the candidate move (blocker 1), then re-run; and PARITY-COV-001 must be settled (add a pin exhibiting the two shapes, or re-declare the two rows harness_row: deferred) or the matrix stays INCOMPLETE and therefore unpublishable even after the candidate moves."
     due: W1
   - id: GA-LANG-java-G5
     gate: G5 — Corpus stratification and pins
@@ -569,12 +569,12 @@ gates:
     gate: G4 — Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over kotlin pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E2 CORPUS-MEASURED. No kotlin dispatch has ever been run. Same branch-level block as java G4: the product tree has diverged from parityreport.CandidateSHA 3b8d43f6, so no dispatch from here is publishable until the owner moves the candidate."
+    current: "UNKNOWN — and now for MEASURED reasons rather than for want of a measurement. SW-176 (W1.c) ran the JVM matrix over the pins for the first time; 40 of the 44 decided rows landed on okio and the remaining 4 on guava, so kotlin carries most of what this matrix measured. It stays UNKNOWN for exactly the two blockers recorded on GA-LANG-java-G4 — the owed candidate move (ProductDiffEmpty false: HEAD 4f0e1a20 vs candidate 036be635, a divergence predating this story) and the INCOMPLETE row set (PARITY-COV-001) — which together make -verdict-diff and -counts-diff return 2 rather than 0. Kotlin-specific caveat, stated because it would otherwise be invisible: kotlinx.serialization hosts ZERO decided rows. It is cloned only because the two skipping classes examine it, so this evidence rests ENTIRELY on okio and the 615-file kotlinx pin contributes nothing. Two of the kotlin-hosted classes are additionally graph-vacuous (PARITY-VAC-001): jvm_change_overload and kotlin_infer_declared_flip both measure outcome empty against the pristine tree on all four axis cells, so ADR 0008 rulings D6 and D2 were never reached. G4 recorded PARTIAL with its condition explicitly NOT met."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: "docs/rc/parity-matrix-real-repo.md#jvm-real-repository-matrix--wp-j7--gate-g4-2026-08-19-w1c"
     sha: ""
     owner: ENG (JVM)
-    next_action: "SW-176 (WP-J7) — run the real-repository parity dispatches over the kotlin pins after the candidate moves, and publish a new dated matrix section."
+    next_action: "Owner decision on the candidate move (blocker 1); PARITY-COV-001 settled (blocker 2); and for kotlin specifically, either a second kotlin pin that hosts rows or an explicit record that okio is the whole kotlin corpus for G4."
     due: W1
   - id: GA-LANG-kotlin-G5
     gate: G5 — Corpus stratification and pins
