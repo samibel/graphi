@@ -54,6 +54,33 @@ candidate:
   # they are cross-checked three ways and the tagless rebuild is recorded (§7).
   release_digest: "sha256:be64c5c090ddf08a9798877aa96f0be84ed709ec2f71f883a4d39498d6828bed (graphi-linux-amd64, v0.7.1)"
 
+# ── The GA-language axis: how GA-LANG-<lang>-G<n> rows must be shaped ───────
+# Added 2026-08-19 (SW-180). There are ZERO GA-LANG-* rows in this file today
+# (`grep -c 'GA-LANG-' docs/rc/evidence-index.yaml` -> 0), and that is why
+# internal/coverage.CheckGALanguages currently binds exactly one ga-language
+# matrix row (`go`, grandfathered — its GA evidence predates this mechanism).
+#
+# Before adding the first one, read
+# docs/plan/2026-08-per-language-ga-template-v1.md §3 slot S14 and §4. Two
+# rules it fixes that this file's own -check cannot enforce:
+#
+#   1. A SUBSTITUTED gate is never reported under the original gate's name.
+#      A language below `typed-confirmed` proves its heuristic resolver's
+#      contract instead of G2; its row id is GA-LANG-<lang>-G2SUB, never
+#      GA-LANG-<lang>-G2. Both match the GA-LANG-<lang>- prefix that
+#      CheckGALanguages (internal/coverage/galang.go:122) requires, so the
+#      distinction is free — and it keeps `grep 'GA-LANG-.*-G2:'` an honest
+#      answer to "which languages actually have a type-checker-proven tier?".
+#   2. The row's `current` field carries the gate's EVIDENCE CLASS spelled out
+#      (E0 ORACLE-PROVEN / E1 HARNESS-PROVEN / E2 CORPUS-MEASURED /
+#      E3 DECLARED-AND-CHECKED; E4 DECLARED-ONLY may never read PASS).
+#      Without it two rows that both read PASS assert claims of very different
+#      strength and nothing on the surface distinguishes them. A gate's class
+#      is the MINIMUM over the slots feeding it — e.g. a language with no
+#      ground-truth oracle publishes G2SUB at E2, not at Java's class.
+#
+# Rows are BORN UNKNOWN. UNKNOWN counts as not passed; that is the point.
+
 gates:
   # ── §6 per-work-package gates (WP0–WP10) ────────────────────────────────────
   - id: WP0

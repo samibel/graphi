@@ -127,6 +127,19 @@ returns a well-formed honest empty (the `hero-03-search-empty` pattern), and
 the trust report names the level. "GA" never appears beside a language on any
 surface without its level.
 
+> **Added 2026-08-19 (SW-180).** The per-slot generalization of §2's gates —
+> which asset each gate needs, where it lives, what a language may legitimately
+> abstain from and what its evidence class degrades to when it does — is
+> [`2026-08-per-language-ga-template-v1.md`](2026-08-per-language-ga-template-v1.md).
+> That document also records, from a measured non-JVM instantiation, that the
+> honest-empty invariant as written above is **not satisfiable at `parse-only`
+> today** (a parse-only file has no graph node at all, so three Stable-12
+> operations answer as though the anchor were mistyped) and that
+> `outcome: empty` alone — the `hero-03-search-empty` assertion — does **not**
+> discriminate an honest empty from a lying one. Both are owner decisions
+> raised there, not resolved here; this paragraph is added so a reader of §3
+> does not take the invariant as already met.
+
 ## 4. Where Java and Kotlin stand today (gap analysis, code-grounded)
 
 Both are Preview at `cross-file-heuristic`:

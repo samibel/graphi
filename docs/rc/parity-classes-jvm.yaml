@@ -49,6 +49,36 @@
 # harness row binds to it. Change the label, never the id.
 #
 # ---------------------------------------------------------------------------
+# THIS FILE IS THE WORKED EXAMPLE FOR SLOTS S6/S7 OF THE PER-LANGUAGE GA
+# TEMPLATE (added 2026-08-19, SW-180)
+# ---------------------------------------------------------------------------
+# docs/plan/2026-08-per-language-ga-template-v1.md generalizes this file into
+# the convention docs/rc/parity-classes-<family>.yaml. A story creating the
+# next family table should read §3 slots S6-S8 there rather than copying this
+# file, because the template records THREE ways this instance is weaker than
+# docs/rc/parity-classes.yaml, and a copy would inherit all three:
+#
+#   D-10  these rows omit `test_line`, `prd_source` and `delta_source`. They
+#         unmarshal empty into the shared parityRow struct, so nothing
+#         complains — and the Go-side citation guard
+#         (TestParityMatrix_HarnessCitationIsCurrent, changeclass_test.go),
+#         which asserts test_line really points at the harness func, therefore
+#         cannot exist for this file.
+#   D-11  jvmparity_matrix_test.go has MISSING / PHANTOM / DEFERRED /
+#         KIND+OWNER / RequiredRowsAreProven, but NOT the Go guard's AXIS and
+#         VOCABULARY directions. Every row below publishes profile: "both" and
+#         store: "both" and NOTHING CHECKS EITHER CLAIM. AXIS exists on the Go
+#         side because review round 1 demonstrated the hole: removing the
+#         balanced entry from parityProfiles() left the package green while 16
+#         rows kept publishing "proven under both profiles". Carried as
+#         TEMPL-P4 in the template's §12; not fixed here.
+#   D-12  every row below reads fixture: "production Go parser" while the
+#         subject under test is the JVM binder, because legalFixtures
+#         (paritymatrix_test.go) has no non-Go member. Knowingly done and
+#         stated in jvm_add_file's note; it becomes wrong for a third family.
+#         Carried as TEMPL-P3.
+#
+# ---------------------------------------------------------------------------
 # SCOPE OF THE WAVE-1 SUBSET, STATED SO IT IS NOT OVERREAD
 # ---------------------------------------------------------------------------
 # The binder is EXPERIMENTAL and default-off (GRAPHI_JVM_TYPERESOLVE); the
