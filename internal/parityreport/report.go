@@ -214,6 +214,9 @@ type RepoRef struct {
 	HeadSHA   string `json:"head_sha,omitempty"`
 	Tier      int    `json:"tier"`
 	GoFiles   int    `json:"go_files,omitempty"`
+	// SourceFiles is the manifest's primary-language file count, used by
+	// non-Go families where GoFiles is 0 by construction (WP-J7 / SW-176).
+	SourceFiles int `json:"source_files,omitempty"`
 }
 
 // ClassResult is one change-class row of the matrix.
@@ -231,6 +234,15 @@ type ClassResult struct {
 	// source exhibits the structure the class needs.
 	SelectedBecause string `json:"selected_because,omitempty"`
 	Verdict         string `json:"verdict"`
+	// AxisNote states, IN THE ROW, which cell of a family's axis crossing this
+	// row ran under (WP-J7 / SW-176: binder off/on x profile default/fast).
+	//
+	// It is carried in the row and not only in the id because an id suffix is a
+	// label a reader must decode, while this sentence says what was actually
+	// configured. A JVM row measured with the declared-type binder OFF proves
+	// nothing about the binder, and that must be legible from the artifact
+	// without knowing the harness.
+	AxisNote string `json:"axis_note,omitempty"`
 	// Mutation describes the real edit applied to real source, precisely enough
 	// to be re-applied by hand.
 	Mutation string `json:"mutation,omitempty"`
@@ -446,6 +458,15 @@ type Report struct {
 	SchemaVersion  int        `json:"schema_version"`
 	HarnessVersion string     `json:"harness_version"`
 	Provenance     Provenance `json:"provenance"`
+	// Family names the language family this matrix ran over: empty (or "go")
+	// for the PRD FR-7 Go matrix, "jvm" for the WP-J7 JVM one (SW-176).
+	//
+	// It exists so the two report families cannot be confused by a reader or by
+	// a tool: they cite DIFFERENT matrix sources, cover different change
+	// classes, and a JVM report settles none of FR-7's rows. Before this field
+	// the only discriminator was MatrixSource, which a human comparing two
+	// JSON files would plausibly skim past.
+	Family string `json:"family,omitempty"`
 	// MaxTier and Classes filter record the SHAPE of this invocation, so a
 	// partial run can never be mistaken for a full one.
 	MaxTier      int      `json:"max_tier"`

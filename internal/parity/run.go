@@ -66,9 +66,14 @@ type Runner struct {
 	// Log receives progress lines (nil = silent).
 	Log func(format string, args ...any)
 
-	models   map[string]*RepoModel
-	dirs     map[string]string
-	pristine map[string]string
+	models map[string]*RepoModel
+	// jvmModels is the WP-J7 (SW-176) JVM half's cache. It is a SECOND map
+	// rather than a widened first one because the two models share no type:
+	// see the header of jvmsource.go for why a "generalised" model would be an
+	// almost-empty intersection.
+	jvmModels map[string]*JVMModel
+	dirs      map[string]string
+	pristine  map[string]string
 }
 
 // MaxSupportedTier is the hard ceiling. Tier 4 (the kubernetes stress target) is
@@ -535,8 +540,6 @@ func applyMutation(root string, mut *Mutation) error {
 // per row so per-repo session auto-discovery can never point two rows at one
 // store.
 func (r *Runner) graphi(ctx context.Context, cwd string, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, r.Binary, args...)
-	cmd.Dir = cwd
 	// THE MEASURED PROFILE IS PINNED, NOT INHERITED (ADR 0010 review round 1,
 	// finding 7). The harness deliberately passes no -profile so it measures
 	// the DEFAULT the product resolves — but an inherited
@@ -545,7 +548,15 @@ func (r *Runner) graphi(ctx context.Context, cwd string, args ...string) ([]byte
 	// would still publish "19 of 19 PASS". That is the exact failure mode ADR
 	// 0010 exists to close, so the variable is cleared for the child and the
 	// resolved profile is recorded in the report's provenance.
-	cmd.Env = append(os.Environ(), profile.EnvName+"=")
+	return r.graphiEnv(ctx, cwd, []string{profile.EnvName + "="}, args...)
+}
+
+// graphiEnv is graphi with an explicit environment overlay, so the JVM half can
+// pin its own axis variables through the same single door.
+func (r *Runner) graphiEnv(ctx context.Context, cwd string, env []string, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, r.Binary, args...)
+	cmd.Dir = cwd
+	cmd.Env = append(os.Environ(), env...)
 	out, err := cmd.CombinedOutput()
 	if p := panicMarker(out); p != "" {
 		return out, fmt.Errorf("graphi %s: panic in output: %s", strings.Join(args, " "), p)
