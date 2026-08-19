@@ -119,6 +119,22 @@ func TestParseClassHeader_GenericBoundIsNotASuperclass(t *testing.T) {
 		{"public class a.Rate<T extends java.lang.Number> extends a.Base {", "a.Rate", "a.Base", true},
 		{"public interface a.I {", "a.I", "", true},
 		{"  public int checkout(tax.Rate);", "", "", false},
+
+		// ROUND 2 — the ninth forge. A type NAME may contain a keyword: `$`
+		// and letters are legal in a Java identifier, and `class`, `interface`
+		// and `enum` are only reserved as WHOLE tokens. Scanning for the first
+		// occurrence of the substring "class " landed inside "Subclass ", read
+		// the type name as `extends` and its superclass as `a.Base`, and so
+		// never registered the real interface at all — every call to one of its
+		// methods then scored EXTERNAL and vanished from the truth set, forging
+		// a stop-ship at by-name. Note the order dependence this also removes:
+		// "class " was tested before the line's own "interface " keyword.
+		{"public interface a.Subclass extends a.Base {", "a.Subclass", "a.Base", true},
+		{"interface a.Outer$Subclass extends a.Base {", "a.Outer$Subclass", "a.Base", true},
+		{"public interface a.Subclass {", "a.Subclass", "", true},
+		{"public class a.Subclass extends a.Base {", "a.Subclass", "a.Base", true},
+		{"public final class a.Myenum extends java.lang.Enum<a.Myenum> {", "a.Myenum", "java.lang.Enum", true},
+		{"public interface a.Superinterface extends a.Base {", "a.Superinterface", "a.Base", true},
 	}
 	for _, c := range cases {
 		h, ok := parseClassHeader(c.line)

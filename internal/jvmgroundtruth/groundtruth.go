@@ -344,8 +344,18 @@ func ParseJavap(out []byte) ([]Call, error) {
 		return nil, err
 	}
 	classSource := map[string]string{}
+	// hasDescriptorTable is a GLOBAL property of the capture: was `-s` passed?
+	// It must be answered globally, because per-type it is not answerable at
+	// all — "this class carried no `descriptor:` lines" is the shape of an
+	// `-s`-less capture AND the shape of a type that genuinely declares
+	// nothing, and reading the second as the first accuses correct code (see
+	// resolveOwner). Boolean OR over the map, so map order does not matter.
+	hasDescriptorTable := false
 	for internal, c := range classes {
 		classSource[internal] = c.source
+		if len(c.decls) > 0 {
+			hasDescriptorTable = true
+		}
 	}
 	// Pass 2: raw invokes with the caller's class/method context.
 	raws, err := parseInvokes(out)
@@ -376,7 +386,7 @@ func ParseJavap(out []byte) ([]Call, error) {
 		// walked to the declaring class or the two sides disagree on a fact
 		// they both get right. Without this walk the oracle manufactures FALSE
 		// counterexamples on every inherited call.
-		ownerInternal, ownerReason := resolveOwner(classes, r.calleeOwnerInternal, r.calleeName, r.calleeDescriptor)
+		ownerInternal, ownerReason := resolveOwner(classes, hasDescriptorTable, r.calleeOwnerInternal, r.calleeName, r.calleeDescriptor)
 
 		c := Call{
 			CallerFile:       callerFile,
@@ -443,7 +453,20 @@ type classInfo struct {
 // walked: a default method's declaring interface is not on the superclass
 // chain, and modelling interface resolution correctly needs the full
 // maximally-specific rule — so that case declines instead of guessing.
-func resolveOwner(classes map[string]*classInfo, owner, name, desc string) (string, string) {
+//
+// hasDescriptorTable says whether the CAPTURE carried `descriptor:` lines at
+// all, and it is a parameter rather than something inferred here because it
+// CANNOT be inferred from one class. An empty decl set is the shape of an
+// `-s`-less capture and equally the shape of a type that genuinely declares
+// nothing — and only an INTERFACE can be genuinely empty, because javac gives
+// every class a default constructor, so a class always declares at least
+// `<init>`. `interface B extends A {}` is therefore exactly three tokens of
+// legal Java that used to be read as "captured without -s"; that returned
+// AbstainBytecodeNoDescriptors, which does NOT zero CalleeFile and does NOT
+// open the truthDeclined rescue, so the truth fact kept the SYMBOLIC owner's
+// path, stayed decidable at ByName, and CONTRADICTED graphi's correct answer.
+// Correct Java, correct binding, fabricated stop-ship, at every precision.
+func resolveOwner(classes map[string]*classInfo, hasDescriptorTable bool, owner, name, desc string) (string, string) {
 	if desc == "" {
 		return owner, AbstainBytecodeNoDescriptors
 	}
@@ -454,9 +477,18 @@ func resolveOwner(classes map[string]*classInfo, owner, name, desc string) (stri
 		return owner, ""
 	}
 	if len(ci.decls) == 0 {
-		// The class is known but carried no `descriptor:` lines: captured
-		// without -s. Keep the symbolic owner — the pre-SW-172 answer.
-		return owner, AbstainBytecodeNoDescriptors
+		if !hasDescriptorTable {
+			// NO class anywhere carried a `descriptor:` line: captured without
+			// -s. Keep the symbolic owner — the pre-SW-172 answer.
+			return owner, AbstainBytecodeNoDescriptors
+		}
+		// The capture HAS a descriptor table, so this type really declares
+		// nothing and the ref names a member it INHERITED. For an empty
+		// interface that member comes down the superinterface chain, which
+		// this walk does not model (JVMS 5.4.3.4, maximally-specific), so the
+		// honest answer is to DECLINE — the same channel an interface default
+		// already takes — rather than to accuse.
+		return owner, AbstainBytecodeOwnerUnresolved
 	}
 	want := name + ":" + desc
 	for cur := owner; ; {
@@ -620,7 +652,18 @@ func parseInvokes(out []byte) ([]rawInvoke, error) {
 // a lambda written in a constructor compiles to `lambda$new$0` and belongs to
 // `<init>`, and one in a static initializer to `lambda$static$1`, belonging to
 // `<clinit>`. Neither `new` nor `static` can be a real method name — both are
-// keywords — so the mapping cannot collide with a user's own method.
+// keywords — so NEITHER OF THOSE TWO can collide with a user's own method.
+//
+// THE GENERAL MAPPING CAN COLLIDE, and that is a known forge, disclosed rather
+// than closed. `$` is a legal Java identifier character (JLS 3.8), so a user
+// may declare `public int lambda$run$0(...)`; this function then rewrites the
+// bytecode caller to `run` while graphi reports the declared name, and correct
+// code is accused at all three precisions. Reproduced against javac 21. It is
+// NOT fixed here because the two shapes are genuinely indistinguishable from
+// `javap -c -p -s` alone — telling them apart needs the ACC_SYNTHETIC flag,
+// which only `javap -v` prints, the same capture upgrade blind spots #6 and
+// #12 need. Frequency in the SW-173 pins is essentially zero. See AC-7 blind
+// spot #15.
 func enclosingOfSynthetic(name string) string {
 	const p = "lambda$"
 	if !strings.HasPrefix(name, p) {
@@ -667,8 +710,47 @@ func parseDescriptorLine(trimmed string) (string, bool) {
 	return d, true
 }
 
-// classKeywords precede a dotted class name in a javap type header.
+// classKeywords precede a dotted class name in a javap type header. Each
+// carries its trailing space, and typeKeywordAt requires a token boundary
+// BEFORE it too — see there for the forge that taught us why.
 var classKeywords = []string{"class ", "interface ", "enum "}
+
+// typeKeywordAt finds the type keyword in a javap type header as a WHOLE
+// TOKEN, returning its offset and the keyword matched. It scans by POSITION,
+// left to right, so the earliest keyword wins regardless of the order
+// classKeywords happens to list them in.
+//
+// Both properties are load-bearing, and neither was true before round 2.
+// `$` and letters are legal in a Java type name, so a type name may CONTAIN a
+// keyword: javap prints `public interface a.Subclass extends a.Base {`, and a
+// scan for the first occurrence of the substring "class " anywhere in the line
+// lands inside "Subclass ". The old code then read the class name as `extends`
+// and its superclass as `a.Base`, so the REAL interface was never registered
+// at all — every call to one of its methods lost its source path, scored as
+// EXTERNAL, and vanished from the truth set. A missing truth fact is the
+// direction that manufactures violations, and this one forged at by-name.
+//
+// Requiring a token boundary before the keyword is exact rather than a
+// heuristic: every javap type-header modifier (public, protected, private,
+// abstract, static, final, sealed, non-sealed, strictfp) is a distinct token,
+// and no type name can BE `class`, `interface` or `enum`, because all three
+// are reserved words (JLS 3.9). So the first whole-token match is always the
+// real keyword. Scanning by position rather than by keyword additionally
+// removes an order dependence: a name ending in "class" used to be tested
+// against "class " before the line's own "interface " was ever considered.
+func typeKeywordAt(trimmed string) (int, string, bool) {
+	for i := 0; i < len(trimmed); i++ {
+		if i > 0 && trimmed[i-1] != ' ' {
+			continue // not at a token boundary
+		}
+		for _, kw := range classKeywords {
+			if strings.HasPrefix(trimmed[i:], kw) {
+				return i, kw, true
+			}
+		}
+	}
+	return 0, "", false
+}
 
 // classHeader is a parsed type header: the dotted class name and, when the
 // header declares one, the dotted name of its superclass.
@@ -687,23 +769,25 @@ type classHeader struct {
 // first-match search: a bound such as `<T extends Number>` contains the very
 // keyword the superclass scan looks for, and reading THAT as the superclass
 // would send the JVM resolution walk up an imaginary chain.
+//
+// The KEYWORD is found by typeKeywordAt, which requires a whole token — the
+// same lesson one level down: a type NAME may contain a keyword too.
 func parseClassHeader(trimmed string) (classHeader, bool) {
 	if !strings.HasSuffix(trimmed, "{") {
 		return classHeader{}, false
 	}
-	for _, kw := range classKeywords {
-		i := strings.Index(trimmed, kw)
-		if i < 0 {
-			continue
-		}
-		rest := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(trimmed[i+len(kw):]), "{"))
-		name, tail := splitOutsideBrackets(rest)
-		if name == "" {
-			continue
-		}
-		return classHeader{name: name, super: extendsTarget(tail)}, true
+	i, kw, ok := typeKeywordAt(trimmed)
+	if !ok {
+		return classHeader{}, false
 	}
-	return classHeader{}, false
+	rest := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(trimmed[i+len(kw):]), "{"))
+	name, tail := splitOutsideBrackets(rest)
+	if name == "" {
+		// A type header always names a type after its keyword; a keyword with
+		// nothing behind it is not one.
+		return classHeader{}, false
+	}
+	return classHeader{name: name, super: extendsTarget(tail)}, true
 }
 
 // splitOutsideBrackets cuts rest at the first space or '<' that sits at
@@ -1099,6 +1183,16 @@ func CompareAt(confirmed, truth []Call, p Precision) Result {
 					continue
 				}
 				unalignableCaller[q][c.callerAgnosticKey(q)] = AbstainBytecodeCallerNotAlignable
+				// FINEST LEVEL ONLY. levels is finest-first, and the lookup
+				// walks it the same way, so registering at every coarser level
+				// too buys nothing and costs a great deal: the ByName
+				// caller-agnostic key carries neither arity nor params, so one
+				// local class calling `apply` would rescue ANY confirmed call
+				// to `apply` from that file at ANY signature — which silently
+				// swallowed the filed JVMSOUND-003 mis-binding. The coarse walk
+				// is right for coarseReason, whose facts genuinely cannot be
+				// keyed at p; these facts CAN be, by construction of this loop.
+				break
 			}
 			// NOT `continue`: the fact is real and stays in the truth set, so a
 			// confirmed call that DOES name the same caller still matches. Only

@@ -764,6 +764,150 @@ public class App {
 	assertWrongEdgeReachesTheStore(t, files, "a/App.java", "run", "a/Derived.java", "apply")
 }
 
+// TestEmptyExtensionInterface_AbstainsRatherThanAccusing is the CRITICAL-4 pin
+// (round 2). `interface B extends A {}` compiles to a class file with ZERO
+// declared methods — and an empty decl set was ALSO how resolveOwner recognised
+// a capture taken without `-s`. Only an interface can be genuinely empty (javac
+// gives every class a default constructor), so the overload was invisible until
+// a fixture declared one.
+//
+// The consequence was the worst an oracle has: AbstainBytecodeNoDescriptors
+// neither zeroes CalleeFile nor opens the truthDeclined rescue, so the truth
+// fact kept the SYMBOLIC owner's path (a/B.java), stayed fully decidable at
+// ByName, and CONTRADICTED graphi's CORRECT answer (a/A.java) — a fabricated
+// stop-ship on three tokens of legal Java, at every precision including the one
+// the pre-SW-172 gate ran at.
+//
+// The two controls are the point of the test: they prove the discriminator is
+// exactly EMPTINESS and not "is an interface" or "is a subtype".
+func TestEmptyExtensionInterface_AbstainsRatherThanAccusing(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		// wantAbstain: the empty-interface shapes must DECLINE; the controls
+		// must RESOLVE and match.
+		wantAbstain bool
+		files       map[string]string
+	}{
+		{
+			name:        "empty-extension-interface",
+			wantAbstain: true,
+			files: map[string]string{
+				"a/A.java":   "package a;\npublic interface A { default int seed() { return 1; } }\n",
+				"a/B.java":   "package a;\npublic interface B extends A {}\n",
+				"a/App.java": "package a;\npublic class App { public int viaSub(B b) { return b.seed(); } }\n",
+			},
+		},
+		{
+			name:        "control-nonempty-subinterface-resolves",
+			wantAbstain: false,
+			files: map[string]string{
+				"a/A.java":   "package a;\npublic interface A { default int seed() { return 1; } }\n",
+				"a/B.java":   "package a;\npublic interface B extends A { int other(); }\n",
+				"a/App.java": "package a;\npublic class App { public int viaSub(B b) { return b.seed(); } }\n",
+			},
+		},
+		{
+			name:        "control-empty-subclass-resolves",
+			wantAbstain: false,
+			files: map[string]string{
+				"a/A.java":   "package a;\npublic class A { public int seed() { return 1; } }\n",
+				"a/B.java":   "package a;\npublic class B extends A {}\n",
+				"a/App.java": "package a;\npublic class App { public int viaSub(B b) { return b.seed(); } }\n",
+			},
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			confirmed, truth := binderVsBytecode(t, tc.files)
+			// Precondition: graphi's answer is the CORRECT one — the declaring
+			// type, a/A.java. If this ever stops holding the test below is
+			// asserting something else.
+			if !hasFact(confirmed, "a/App.java", "viaSub", "a/A.java", "seed", 0) {
+				t.Fatalf("precondition: graphi must bind the DECLARING type a/A.java: %+v", confirmed)
+			}
+			for _, p := range precisions() {
+				res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+				t.Logf("%s: %s", p, strings.TrimSpace(res.Format()))
+				if !res.Sound() {
+					t.Fatalf("correct Java accused at %s — the oracle's one absolute obligation: %+v", p, res.Violations)
+				}
+				if tc.wantAbstain {
+					if res.AbstainReasons[jvmgroundtruth.AbstainBytecodeOwnerUnresolved] != 1 {
+						t.Fatalf("an empty intermediate interface must DECLINE under %q at %s, got %v",
+							jvmgroundtruth.AbstainBytecodeOwnerUnresolved, p, res.AbstainReasons)
+					}
+					if res.AbstainReasons[jvmgroundtruth.AbstainBytecodeNoDescriptors] != 0 {
+						t.Fatalf("a genuinely empty type is NOT an -s-less capture; %q must not be claimed at %s: %v",
+							jvmgroundtruth.AbstainBytecodeNoDescriptors, p, res.AbstainReasons)
+					}
+					continue
+				}
+				if res.Matched != 1 {
+					t.Fatalf("the control must RESOLVE and match at %s, got matched=%d reasons=%v", p, res.Matched, res.AbstainReasons)
+				}
+			}
+		})
+	}
+}
+
+// TestCallerUnalignableRescue_IsFinestLevelOnly is the MAJOR-8 pin (round 2).
+//
+// The caller-unalignable rescue used to register a synthetic-caller truth fact
+// at EVERY level in `levels`, and the ByName caller-agnostic key carries
+// neither arity nor params nor a caller method. So the mere presence of a local
+// class calling `apply` anywhere in a file rescued ANY confirmed call to
+// `apply` from that file, at ANY signature — and it silently swallowed the
+// filed, reproduced JVMSOUND-003 mis-binding sitting right beside it.
+//
+// The fix registers at the FINEST keyable level only. Both halves are asserted
+// here, because either one alone is the wrong fix: the real defect must be
+// reported, AND MAJOR-7's legitimate abstention must survive.
+func TestCallerUnalignableRescue_IsFinestLevelOnly(t *testing.T) {
+	files := map[string]string{
+		"a/Rate.java": `package a;
+public class Rate {
+    public int apply(int x) { return x; }
+    public int apply(int x, int y) { return x + y; }
+}
+`,
+		// run() carries the JVMSOUND-003 construct (the comment is counted as an
+		// argument, so the binder picks arity 2). go() carries a local class
+		// that calls the SAME NAME correctly — the rescue's trigger.
+		"a/App.java": `package a;
+public class App {
+    public int run(Rate r) { return r.apply(1 /* the scale */); }
+    public int go(final Rate r) {
+        class L { int g() { return r.apply(1); } }
+        return new L().g();
+    }
+}
+`,
+	}
+	confirmed, truth := binderVsBytecode(t, files)
+	if !hasFact(confirmed, "a/App.java", "run", "a/Rate.java", "apply", 2) {
+		t.Fatalf("precondition: the JVMSOUND-003 mis-binding (arity 2) must be present: %+v", confirmed)
+	}
+	if !hasFact(truth, "a/App.java", "g", "a/Rate.java", "apply", 1) {
+		t.Fatalf("precondition: javac must attribute the local class's call to a/App$1L.g: %+v", truth)
+	}
+
+	for _, p := range []jvmgroundtruth.Precision{jvmgroundtruth.ByArity, jvmgroundtruth.BySignature} {
+		res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+		t.Logf("%s: %s", p, strings.TrimSpace(res.Format()))
+		if res.Sound() {
+			t.Fatalf("the rescue swallowed a REAL mis-binding at %s: a local class calling the same NAME must not excuse a different SIGNATURE", p)
+		}
+		if len(res.Violations) != 1 || res.Violations[0].CallerMethod != "run" || res.Violations[0].CalleeArity != 2 {
+			t.Fatalf("the counterexample must be the arity-2 mis-binding from run(), got %+v", res.Violations)
+		}
+		// MAJOR-7's legitimate abstention must survive the narrowing: the
+		// confirmed call from go() names a caller the bytecode calls `g`.
+		if res.AbstainReasons[jvmgroundtruth.AbstainBytecodeCallerNotAlignable] != 1 {
+			t.Fatalf("MAJOR-7's abstention must still fire once at %s, got %v", p, res.AbstainReasons)
+		}
+	}
+}
+
 // --- helpers -------------------------------------------------------------
 
 // precisions is every precision, coarsest first. A guard that only holds at the
