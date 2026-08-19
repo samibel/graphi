@@ -784,8 +784,7 @@ not this story** — that is stated in the ticket's own out-of-scope list.
 | S12 | Partly — `docs/language-support.md` carries the Java/Kotlin row at `cross-file-heuristic`; the derivation is live. | — |
 | S13 | Yes — `trust_language_skips` / `trust_skip_provenance`, `AbstentionFacts.Registrants`. | — |
 | S14 | **No** — `docs/rc/evidence-index.yaml` contains **zero** `GA-LANG-*` rows. | **D-9**, instance gap: SW-174 creates them, born UNKNOWN. |
-
-| S12 (family label) | — | **D-12**, instance gap: the 13 JVM rows label their `fixture` `"production Go parser"` because the closed vocabulary has no non-Go member (§3/S6). Knowingly done and documented in the rows' `note`; it becomes wrong for a third family. |
+| S6 (fixture label) | Yes, but under a knowingly wrong value. | **D-12**, instance gap: all 13 JVM rows read `fixture: "production Go parser"` because `legalFixtures` has no non-Go member (§3/S6). Documented in the rows' own `note`; it becomes wrong at the third family. TEMPL-P3. |
 
 **Reading of AC-7.** The template reproduces the JVM asset set for every slot
 the instance has reached, and twelve divergences fell out. They split cleanly:
@@ -884,7 +883,9 @@ $ graphi related-files config.json              # parse-only
 
 `explain-symbol config.json` and `change-risk config.json` — both Stable-12 —
 return the same `unresolved` shape. Byte-identical across two consecutive
-`graphi rebuild` runs, so this is a property of the product, not a flake.
+`graphi rebuild` runs **and under all three index profiles** (`-profile fast`,
+`balanced`, `deep`), so this is a property of the product, not a flake and not a
+profile artefact.
 
 **It is not a zero-symbol rule.** `empty.py` (a comment only) and `notes.md`
 (prose only) both resolve with `method: "no_edges"`. Only the two `.json` files
