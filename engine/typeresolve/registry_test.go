@@ -13,23 +13,26 @@ import (
 func TestGoResolver_PathPredicates(t *testing.T) {
 	r := goResolver{}
 	cases := []struct {
-		path                     string
-		subject, input, triggers bool
+		path                           string
+		subject, input, triggers, owns bool
 	}{
-		{"main.go", true, true, true},
-		{"pkg/util.go", true, true, true},
+		{"main.go", true, true, true, true},
+		{"pkg/util.go", true, true, true, true},
 		// Test files steer GroupPackages' skip bookkeeping (input) but are
 		// neither checked (subject) nor able to change the result (triggers).
-		{"main_test.go", false, true, false},
-		{"pkg/util_test.go", false, true, false},
+		// They ARE owned: a node sourced there is Go's, and no other registrant
+		// may claim it (ADR 0008 D9).
+		{"main_test.go", false, true, false, true},
+		{"pkg/util_test.go", false, true, false, true},
 		// go.mod steers import resolution (input, triggers) but is never a
-		// subject: a repo with only a go.mod has nothing to check.
-		{"go.mod", false, true, true},
+		// subject: a repo with only a go.mod has nothing to check. It mints no
+		// node either, so it is outside the sweep domain.
+		{"go.mod", false, true, true, false},
 		// A nested go.mod is NOT the module file the resolver reads
 		// (files["go.mod"]); it matches none of the predicates.
-		{"sub/go.mod", false, false, false},
-		{"readme.md", false, false, false},
-		{"a.java", false, false, false},
+		{"sub/go.mod", false, false, false, false},
+		{"readme.md", false, false, false, false},
+		{"a.java", false, false, false, false},
 	}
 	for _, c := range cases {
 		if got := r.Subject(c.path); got != c.subject {
@@ -40,6 +43,43 @@ func TestGoResolver_PathPredicates(t *testing.T) {
 		}
 		if got := r.Triggers(c.path); got != c.triggers {
 			t.Errorf("Triggers(%q) = %v, want %v", c.path, got, c.triggers)
+		}
+		if got := r.Owns(c.path); got != c.owns {
+			t.Errorf("Owns(%q) = %v, want %v", c.path, got, c.owns)
+		}
+	}
+}
+
+// TestGoResolver_OwnsNarrowingIsUnobservable pins the load-bearing half of the
+// claim on goResolver.Owns: the ONLY thing D9's language key removes from the
+// Go sweep's reach is a confirmed calls/references/implements edge whose
+// from-node is sourced OUTSIDE a .go file, and under the shipped default no
+// such edge can exist, because go/types is then the only registrant and it
+// emits only from Go sources.
+//
+// It pins the predicate half mechanically. The "no other producer" half is a
+// property of other packages and is stated where it belongs — engine/link's
+// TierConfirmed prohibition (engine/link/link.go:60) and the ingest kind gate
+// (typeresolveKind: calls/references/implements only, so `defines` and
+// `notebook_cell` never enter the sweep).
+func TestGoResolver_OwnsNarrowingIsUnobservable(t *testing.T) {
+	r := goResolver{}
+	// Every path the Go sweep could previously reach in a checked directory and
+	// can no longer: none of them is a Go source, so none of them can be the
+	// from-node of an edge this pass emitted.
+	for _, p := range []string{"pkg/readme.md", "pkg/App.java", "pkg/App.kt", "pkg/notes.ipynb", "pkg/schema.sql"} {
+		if r.Owns(p) {
+			t.Errorf("Owns(%q) = true: a non-Go path must be outside the Go sweep domain", p)
+		}
+		if r.Subject(p) {
+			t.Errorf("Subject(%q) = true: the Go pass cannot emit an edge from a non-Go file", p)
+		}
+	}
+	// And the converse: every path the pass CAN emit from is still owned, so
+	// the narrowing removes nothing the pass produces.
+	for _, p := range []string{"main.go", "deep/nested/pkg/file.go"} {
+		if !r.Subject(p) || !r.Owns(p) {
+			t.Errorf("%q: Subject=%v Owns=%v, want both true", p, r.Subject(p), r.Owns(p))
 		}
 	}
 }
@@ -108,6 +148,7 @@ func (s stubResolver) Language() string   { return s.lang }
 func (stubResolver) Subject(string) bool  { return false }
 func (stubResolver) Input(string) bool    { return false }
 func (stubResolver) Triggers(string) bool { return false }
+func (stubResolver) Owns(string) bool     { return false }
 func (stubResolver) Resolve(map[string][]byte, map[model.NodeId]struct{}) (Result, error) {
 	return Result{}, nil
 }

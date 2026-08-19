@@ -102,6 +102,81 @@ func TestJVMParityMatrix_DriftGuard(t *testing.T) {
 	}
 }
 
+// jvmRequiredRowOwners is the CLOSED set of work packages permitted to own a
+// harness_row: "required" row in docs/rc/parity-classes-jvm.yaml — the JVM twin
+// of paritymatrix_test.go's requiredRowOwners.
+//
+// WHY IT IS BEING ADDED BY SW-170, WHICH DID NOT SET OUT TO BUILD A GUARD.
+// SW-170's AC-5 says that when the class count changes, "the pinned KIND count
+// and requiredRowOwners shall be updated in the same change; these guards break
+// on harness edits deliberately". Measured while adding the two W0.h rows: they
+// did NOT break, and they could not have — both live in
+// TestParityMatrix_SchemaAndDriftGuard, which loads docs/rc/parity-classes.yaml
+// (the GO matrix) and never reads this file. The JVM matrix has been carrying an
+// open owner field and an unpinned row count since it was created. Reporting the
+// AC as vacuously satisfied would have left that true; reporting it as satisfied
+// by guards that never ran would have been false. So the guards the AC describes
+// now exist for the file the story actually changed.
+var jvmRequiredRowOwners = map[string]bool{
+	"WP-J5":  true, // the wave-1 add/modify/call + signature rows
+	"WP-J5b": true, // rename cascade, supertype re-point, nested→top-level
+	"WP-J5c": true, // import shadowing, same-package symbol move
+	"M2.2":   true, // jvm_delete_file, promoted from deferred
+	"W0.h":   true, // the two mixed-language-directory rows (ADR 0008 D9)
+}
+
+// jvmRequiredRowOwnerList renders jvmRequiredRowOwners deterministically.
+func jvmRequiredRowOwnerList() []string {
+	out := make([]string, 0, len(jvmRequiredRowOwners))
+	for k := range jvmRequiredRowOwners {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// TestJVMParityMatrix_KindCountAndOwners pins the JVM matrix's row count by KIND
+// and its owner set. The count stays a PINNED literal rather than a `>=` bound
+// for the same reason the Go matrix's does: the guard's whole job is that no row
+// can be added, removed or re-kinded unnoticed, and a bound forfeits exactly
+// that. Adding a class means updating this number and saying why, here.
+//
+// 13 + 0: the eleven wave-1 classes (WP-J5/J5b/J5c plus the promoted
+// jvm_delete_file) plus the two mixed-language-directory classes W0.h added for
+// ADR 0008 ruling D9. This table has never carried a crash_condition — those
+// live in the Go matrix, which owns the two Delta PRD §9 rows.
+func TestJVMParityMatrix_KindCountAndOwners(t *testing.T) {
+	rows := loadJVMParityClasses(t)
+	var classes, crash int
+	for _, r := range rows {
+		switch r.Kind {
+		case kindChangeClass:
+			classes++
+		case kindCrashCondition:
+			crash++
+		default:
+			t.Errorf("row %q has kind %q, want %s|%s", r.ID, r.Kind, kindChangeClass, kindCrashCondition)
+		}
+	}
+	// One literal, read twice — the condition and the message can never drift
+	// apart and quietly report a number nobody is checking.
+	const wantClasses, wantCrash = 13, 0
+	if classes != wantClasses || crash != wantCrash {
+		t.Errorf("KIND: %s has %d change_class + %d crash_condition rows; want %d + %d",
+			jvmParityClassesPath, classes, crash, wantClasses, wantCrash)
+	}
+	for _, r := range rows {
+		if r.HarnessRow != harnessRequired {
+			continue
+		}
+		if !jvmRequiredRowOwners[r.Owner] {
+			t.Errorf("OWNER: %q is harness_row: %q so owner must be one of %v; got %q — "+
+				"a required row may not arrive with an empty or invented owner",
+				r.ID, harnessRequired, jvmRequiredRowOwnerList(), r.Owner)
+		}
+	}
+}
+
 // TestJVMParityMatrix_RequiredRowsAreProven pins that every required row reads
 // verdict PROVEN (the harness proves them on both stores) and every deferred
 // row reads ABSENT — the honesty rule that a deferred placeholder never claims

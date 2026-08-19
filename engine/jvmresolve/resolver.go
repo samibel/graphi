@@ -12,13 +12,29 @@ package jvmresolve
 // CHECKED units, so a registrant claiming the sibling language's directories
 // would delete the sibling's fresh edges.
 //
-// MIXED-LANGUAGE DIRECTORIES (.java and .kt side by side) are claimed by
-// NEITHER registrant: their unit rows are emitted DEGRADED with a named
-// reason, which exempts them from the stale sweep. The alternative — either
-// side claiming the dir — would let one enabled language sweep away a
-// kill-switched sibling's confirmed edges: degradation never deletes
-// knowledge, so the mixed dir keeps possibly-stale edges and says so in its
-// evidence row instead.
+// MIXED-LANGUAGE DIRECTORIES (.java and .kt side by side) are PARTITIONED, not
+// exempted — ADR 0008 ruling D9, landed by SW-170. Each registrant claims the
+// directory as its OWN unit and sweeps only the edges whose from-node is one of
+// its own language's files (typeresolve.Resolver.Owns, the language half of the
+// (directory, language) sweep key). Two units, no exemption, nothing to skip.
+//
+// WHAT THIS REPLACED, AND WHY. Until D9 a mixed directory was emitted DEGRADED
+// by BOTH registrants under a named reason, which exempted it from the stale
+// sweep. That was chosen to stop one enabled language sweeping away a
+// kill-switched sibling's confirmed edges — a real hazard, but the cure was
+// worse than the disease: an exemption is UNOBSERVABLE (no counter, no
+// diagnostic, and the unit rows claimed a degradation that had not happened),
+// and in exactly the layout Kotlin-in-Java adoption produces it kept superseded
+// confirmed edges alive across every incremental sync, forever. Measured on the
+// hermetic fixture the exemption cost one wrong surviving edge per superseded
+// call (docs/rc/parity-classes-jvm.yaml, jvm_mixed_dir_* rows). The hazard it
+// was guarding against is gone by construction: a registrant can no longer
+// reach the sibling's edges at all, because the sibling's files are not in its
+// Owns set.
+//
+// The DEGRADED slot still means what it always meant — a parse skip, an
+// unreadable file — and still exempts its unit from the sweep. Being mixed is
+// no longer one of its reasons.
 //
 // The walkers' and emitter's NAMED skip counters reach the outside world
 // through typeresolve.Result.NamedSkips — a slot of their own, never folded
@@ -34,10 +50,6 @@ import (
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/typeresolve"
 )
-
-// reasonMixedDir is the degradation reason for a directory holding both
-// languages' sources (sweep-exempt; see the package comment).
-const reasonMixedDir = "mixed-language directory (java+kotlin): stale-sweep exempt so neither registrant deletes the other's edges"
 
 // mergeSkips sums the walker's Phase-B named gaps and the emitter's Phase-C
 // identity gaps into ONE counter map — both are abstentions of the same pass
@@ -79,6 +91,14 @@ func (r Resolver) suffix() string {
 // Subject implements typeresolve.Resolver: an own-language source file.
 func (r Resolver) Subject(relPath string) bool { return strings.HasSuffix(relPath, r.suffix()) }
 
+// Owns implements typeresolve.Resolver: an own-language source file, the same
+// set as Subject. The JVM registrants have no non-subject own-language files
+// (nothing here is Go's _test.go), so Owns is Subject exactly — and because
+// ".java" and ".kt" are disjoint, the java and kotlin registrants can never
+// claim the same node. That disjointness is what makes a mixed directory two
+// sweep units instead of one exemption (ADR 0008 D9).
+func (r Resolver) Owns(relPath string) bool { return r.Subject(relPath) }
+
 // Input implements typeresolve.Resolver: every JVM source, both languages —
 // the cross-language type context (see the package comment).
 func (r Resolver) Input(relPath string) bool {
@@ -114,34 +134,34 @@ func (r Resolver) Resolve(files map[string][]byte, committed map[model.NodeId]st
 		NamedSkips:     mergeSkips(walkSkips, er.Skips),
 	}
 
-	// Directory bookkeeping: which dirs hold own-language files, which hold
-	// the sibling language too, and which own-language files failed to table.
+	// Directory bookkeeping: which dirs hold own-language files, and which
+	// own-language files failed to table. The sibling language is deliberately
+	// NOT tracked any more (ADR 0008 D9): a sibling file cannot degrade this
+	// registrant's unit, because the sweep can no longer reach the sibling's
+	// edges — see the package comment.
 	ownDirs := map[string]string{} // dir -> declared package of the first (sorted) own-language file
-	siblingDirs := map[string]bool{}
 	for fi := range tab.Files {
 		f := &tab.Files[fi]
+		if f.Language != r.lang {
+			continue
+		}
 		dir := path.Dir(f.Path)
-		if f.Language == r.lang {
-			if _, seen := ownDirs[dir]; !seen {
-				ownDirs[dir] = f.Package // tab.Files is sorted by path
-			}
-		} else {
-			siblingDirs[dir] = true
+		if _, seen := ownDirs[dir]; !seen {
+			ownDirs[dir] = f.Package // tab.Files is sorted by path
 		}
 	}
 	degraded := map[string]string{}
 	for _, s := range tab.Skipped {
+		if !r.Subject(s.Path) {
+			continue // the sibling registrant's file, and the sibling's problem
+		}
 		dir := path.Dir(s.Path)
-		if r.Subject(s.Path) {
-			res.SkippedFiles = append(res.SkippedFiles, typeresolve.SkippedFile{Path: s.Path, Reason: s.Reason})
-			if _, seen := ownDirs[dir]; !seen {
-				ownDirs[dir] = ""
-			}
-			if _, dup := degraded[dir]; !dup {
-				degraded[dir] = "jvm parse skip: " + s.Path
-			}
-		} else {
-			siblingDirs[dir] = true
+		res.SkippedFiles = append(res.SkippedFiles, typeresolve.SkippedFile{Path: s.Path, Reason: s.Reason})
+		if _, seen := ownDirs[dir]; !seen {
+			ownDirs[dir] = ""
+		}
+		if _, dup := degraded[dir]; !dup {
+			degraded[dir] = "jvm parse skip: " + s.Path
 		}
 	}
 
@@ -158,8 +178,6 @@ func (r Resolver) Resolve(files map[string][]byte, committed map[model.NodeId]st
 		}
 		if reason, isDegraded := degraded[dir]; isDegraded {
 			u.Degraded = reason
-		} else if siblingDirs[dir] {
-			u.Degraded = reasonMixedDir
 		}
 		res.Units = append(res.Units, u)
 	}

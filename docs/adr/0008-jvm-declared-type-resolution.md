@@ -1,7 +1,8 @@
 # ADR 0008 — JVM Declared-Type Semantic Resolution (`jvmresolve`, confirmed tier for Java/Kotlin)
 
-- Status: **Proposed** (decision points D1–D8 below are open and the owner
-  rules. The binder is now REGISTERED behind the ADR 0007 seam but
+- Status: **Proposed** (decision points D1–D9 below are open and the owner
+  rules; **D9 is RULED and implemented as of 2026-08-19 (W0.h/SW-170) but, like
+  the rest of this ADR, is not ratified until WP-J11**. The binder is now REGISTERED behind the ADR 0007 seam but
   DEFAULT-OFF: `engine/semantic` adds the java/kotlin registrants only under
   the experimental `GRAPHI_JVM_TYPERESOLVE` opt-in, so the shipped default —
   graph bytes, trust report, capability matrix — is unchanged until the
@@ -124,7 +125,81 @@ fixture indexes at the typed-confirmed capability).
 | D3 | Extractor deepening: field/property nodes + declared-type metadata? | **Node half LANDED 2026-08-14** (WP-J2 slice): Java field/constant declarators and Kotlin properties become variable/constant nodes, kind from the DECLARED form only (`static final` / `constant_declaration` / `const val` → constant), pinned by `TestExtractJava_FieldNodes` / `TestExtractKotlin_PropertyNodes`; the frozen golden fixtures are field-free, so their bytes are unchanged, and the full suite stayed green. Declared-TYPE metadata on nodes is DEFERRED — the binder re-parses sources itself (see above), so node-level types are not load-bearing for WP-J3; revisit only if the trust surface wants them. Known honest cost: a field sharing a bare name with a same-package symbol now marks that name dir-ambiguous in the heuristic linker (drop+count, never a wrong edge) |
 | D4 | Kill-switch shape | inherit ADR 0007 (`GRAPHI_NO_TYPERESOLVE` + per-language) |
 | D6 | Overload binding rule | **CORRECTED 2026-08-16 — the original "(name, arity) uniqueness" was UNSOUND as implemented and emitted WRONG edges (JVMSOUND-001/002, both reproduced).** The rule is now: a callable binds at (name, arity) uniqueness **over a candidate set that contains no VARIADIC or DEFAULTED member** (either can satisfy a call at other arities, so its presence forfeits the whole name — `variadic-forfeit`), **with signature identity keyed on RESOLVED type (intra-repo FQN), not written text** (so `q.Foo` and `r.Foo` do not collapse; primitives/externals key on marked text so genuine `m(int)`/`m(int)` overrides still bind). Any ambiguity drops+counts. Pinned by `TestAnalyzeJavaBodies_VariadicForfeit`/`_ResolvedSignature`, the Kotlin `_ElasticForfeit`, and the `change_overload` change class; each proven red-without-fix. NOTE on the oracle: WP-J9's differential check keys calls at method-name granularity, so it is STRUCTURALLY BLIND to same-name overload mis-binding — the unit tests are the proof of record for this class, and giving the oracle signature-aware keys is a follow-up on top of R3's corpus-scale run |
+| D9 | What is the unit of the stale-confirmed sweep in a directory holding more than one language? | **RULED 2026-08-19 (W0.h, SW-170). The sweep key is `(directory, language)`, and the mixed-directory EXEMPTION is removed rather than narrowed.** See the ruling in full below |
 | D8 | Entry criterion for JVM real-repo parity | **RE-SCOPED 2026-08-16 (independent review R8).** Was: "both PARITY-001/002 fixes land first." Now a PER-DEFECT applicability test: a Go-level ingest defect blocks the JVM real-repo run only where the JVM code path can exhibit it. PARITY-001 (deleted-path purge ordering) was language-independent and did block — it is now FIXED. PARITY-002 (Go/Python clause-keyed `imports` fan-out) CANNOT arise for Java/Kotlin, whose imports emit a single file→package edge (`engine/link/resolve_common.go`, `packageNodeByPath` lookup, no fan-out), so it does not block WP-J7. jvm_delete_file is no longer deferred — it is a required, proven row |
+
+### D9 in full — the sweep key is `(directory, language)`
+
+**Ruled 2026-08-19 by W0.h (SW-170).** Raised as an open decision point by the
+independent architect + product-owner review, §5 item 4
+([`../decisions/2026-08-language-ga-independent-review.md`](../decisions/2026-08-language-ga-independent-review.md)),
+which observed that the behaviour existed only as a code comment and that it is
+a **soundness decision**, not an implementation detail.
+
+**What the code did before.** `engine/ingest`'s reconciliation deletes a stored
+confirmed edge when this pass no longer emits it *and* the edge's from-node sits
+in a unit the pass CHECKED. That question was keyed on the **directory alone**,
+which is unanswerable when a directory holds two languages: the java registrant,
+told only "this directory checked clean", would delete the kotlin registrant's
+confirmed edges out of the same directory. `engine/jvmresolve` avoided that by
+emitting a mixed directory's unit rows **DEGRADED** under a named reason, which
+exempted the whole directory from the sweep.
+
+**Why the exemption is the wrong shape — the ruling's reasoning.**
+
+1. **An exemption is unobservable; a partition is countable.** Nothing counted
+   the skipped directories, nothing named them in a diagnostic, and the unit
+   rows claimed a *degradation* that had not happened — a parse failure and "we
+   declined to decide" reported through the same slot. Under a partition every
+   directory is a checked unit of some language and the sweep simply runs.
+2. **It was not a small hole; it was the normal shape.** `.java` beside `.kt` is
+   what Kotlin-in-Java adoption produces (the okio corpus pin carries 284 `.kt`
+   beside 29 `.java`). The exemption's cost is paid exactly where the binder is
+   supposed to earn its keep.
+3. **The consequence is a WRONG SURVIVING EDGE, not merely a missing one.** A
+   superseded confirmed edge in a mixed directory survives every incremental
+   `sync`, forever, while the full pass never has it. Measured, not argued: on a
+   hermetic fixture the incremental graph kept
+   `mix.run --calls[confirmed]--> tax.rate` after the receiver's declared type
+   had moved to `alt.Alt`, and after the file supplying that type was deleted.
+   Both are recorded as parity rows (`jvm_mixed_dir_change_receiver_type`,
+   `jvm_mixed_dir_delete_callee`), red before this ruling on both stores and both
+   profile axes.
+4. **The hazard the exemption guarded against is gone by construction, not by
+   care.** A registrant can no longer reach the sibling language's edges at all,
+   because the sibling's files are not in its `Owns` set. So a kill-switched or
+   degraded sibling cannot have its edges swept by an enabled neighbour — the
+   property the exemption was buying, now obtained without the cost.
+
+**The mechanism.** `typeresolve.Resolver` gains `Owns(relPath) bool`, the
+language half of the key: which source paths' nodes belong to this registrant.
+Its contract is `Owns ⊇ Subject` per registrant and **pairwise disjoint** across
+registrants (pinned by `engine/semantic`'s
+`TestRegistry_OwnsIsDisjointAndCoversSubject`). The ingest sweep restricts its
+candidate set to edges whose from-node is owned; the directory check is then
+applied to that set. `jvmresolve` no longer tracks sibling directories at all,
+and `reasonMixedDir` is deleted.
+
+**Scope, and what this deliberately does NOT decide.**
+
+- The `DEGRADED` slot keeps its original meaning — a parse skip still exempts
+  its unit, and degradation still never deletes knowledge. Being *mixed* is
+  simply no longer one of its reasons.
+- **This ruling changes what the go/types registrant's sweep can reach, and that
+  is stated rather than buried.** `goResolver.Owns` is `*.go` (test files
+  included), so the Go sweep no longer reaches a confirmed
+  calls/references/implements edge whose from-node is sourced outside a `.go`
+  file. Under the shipped default that set is provably empty — those three kinds
+  reach the confirmed tier only from a registered semantic resolver
+  (`engine/link` never returns `TierConfirmed`), and with
+  `GRAPHI_JVM_TYPERESOLVE` unset go/types is the only registrant. Measured:
+  this repository's canonical graph snapshot is byte-identical across the change
+  (`c9f8de76…`, 21 891 266 bytes), and the whole hermetic Go change-class table
+  is unchanged. The **Go sweep key itself is not re-decided here** — that is a
+  separate decision with its own measurement, and this ruling only removes a
+  cross-language over-reach that could not fire under the shipped default.
+- D9 is a JVM ruling and is **Proposed** like the rest of this ADR until the
+  WP-J11 ratification (SW-178) rules on D1–D9 together.
 
 ## Rejected alternatives (recorded, not silently omitted)
 

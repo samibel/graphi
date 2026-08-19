@@ -1,7 +1,6 @@
 package jvmresolve
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/engine/typeresolve"
@@ -99,21 +98,42 @@ func TestResolver_CrossLanguageResolution(t *testing.T) {
 	}
 }
 
-func TestResolver_MixedDirIsSweepExempt(t *testing.T) {
+// TestResolver_MixedDirIsPartitionedNotExempt is ADR 0008 ruling D9 as a unit
+// assertion, and it REPLACES TestResolver_MixedDirIsSweepExempt, which asserted
+// the opposite: that a directory holding .java beside .kt is emitted DEGRADED
+// under a "mixed-language directory" reason and thereby exempted from the
+// stale-confirmed sweep. D9 rules that an exemption is the wrong shape — it is
+// unobservable, and it kept superseded confirmed edges alive across every
+// incremental sync — so the directory is now PARTITIONED: each registrant
+// claims it as its own CHECKED unit and sweeps only its own language's edges.
+func TestResolver_MixedDirIsPartitionedNotExempt(t *testing.T) {
 	files := map[string][]byte{
 		"com/mix/A.java": []byte("package com.mix;\npublic class A { public void m() {} }\n"),
 		"com/mix/B.kt":   []byte("package com.mix\nclass B\n"),
 	}
 	committed, _ := committedSet(t, files)
-	res, err := NewResolver(LangJava).Resolve(files, committed)
-	if err != nil {
-		t.Fatalf("Resolve: %v", err)
+	for _, lang := range []string{LangJava, LangKotlin} {
+		r := NewResolver(lang)
+		res, err := r.Resolve(files, committed)
+		if err != nil {
+			t.Fatalf("[%s] Resolve: %v", lang, err)
+		}
+		if len(res.Units) != 1 || res.Units[0].Dir != "com/mix" {
+			t.Fatalf("[%s] units: %+v", lang, res.Units)
+		}
+		if res.Units[0].Degraded != "" {
+			t.Fatalf("[%s] a mixed-language dir must be a CHECKED unit, not degraded; got %q",
+				lang, res.Units[0].Degraded)
+		}
 	}
-	if len(res.Units) != 1 || res.Units[0].Dir != "com/mix" {
-		t.Fatalf("units: %+v", res.Units)
+	// The partition itself: the two registrants own disjoint halves of the one
+	// directory, which is what makes sweeping it safe without an exemption.
+	java, kotlin := NewResolver(LangJava), NewResolver(LangKotlin)
+	if !java.Owns("com/mix/A.java") || java.Owns("com/mix/B.kt") {
+		t.Fatal("the java registrant must own exactly the .java half of the mixed dir")
 	}
-	if res.Units[0].Degraded == "" || !strings.Contains(res.Units[0].Degraded, "mixed-language") {
-		t.Fatalf("a mixed-language dir must be degraded (sweep-exempt), got %q", res.Units[0].Degraded)
+	if !kotlin.Owns("com/mix/B.kt") || kotlin.Owns("com/mix/A.java") {
+		t.Fatal("the kotlin registrant must own exactly the .kt half of the mixed dir")
 	}
 }
 

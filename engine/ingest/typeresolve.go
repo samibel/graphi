@@ -108,6 +108,13 @@ func (i *Ingester) typeresolvePass(ctx context.Context, w graphstore.Writer, roo
 //     skipped by the sweep: degradation never deletes knowledge. Its symbols
 //     keep whatever the store holds — heuristic edges from linkFiles, or
 //     prior confirmed edges when the unit's files were not reprocessed.
+//   - THE SWEEP UNIT IS (DIRECTORY, LANGUAGE), not the directory (ADR 0008
+//     ruling D9). An edge is a candidate only when its from-node's source file
+//     is in THIS resolver's Owns set, so a directory holding two languages is
+//     two sweep units and no registrant can reach the sibling's edges. Before
+//     D9 the JVM registrants dodged that by marking a mixed directory degraded
+//     — an exemption nothing counted, which kept superseded confirmed edges
+//     alive across every incremental sync.
 func (i *Ingester) semanticResolve(ctx context.Context, w graphstore.Writer, root string, units []fileUnit, res typeresolve.Resolver) ([]string, error) {
 	hasSubject := false
 	for _, u := range units {
@@ -154,9 +161,21 @@ func (i *Ingester) semanticResolve(ctx context.Context, w graphstore.Writer, roo
 	// two derived maps — no whole-graph slice, no cache mirror.
 	committed := make(map[model.NodeId]struct{})
 	dirOf := make(map[model.NodeId]string)
+	// sweepDirOf is dirOf RESTRICTED to the nodes this resolver owns — the
+	// (directory, language) sweep key of ADR 0008 D9. A node missing from it is
+	// another language's and is not this pass's to delete, whatever its
+	// directory. It is a second map rather than a language field on the node
+	// because model.Node carries no language: a node's language is a property
+	// of its source path, and Owns is the registrant's own statement of which
+	// paths are its.
+	sweepDirOf := make(map[model.NodeId]string)
 	if err := graphstore.ForEachNode(ctx, i.store, func(n model.Node) error {
 		committed[n.ID()] = struct{}{}
-		dirOf[n.ID()] = path.Dir(n.SourcePath())
+		dir := path.Dir(n.SourcePath())
+		dirOf[n.ID()] = dir
+		if res.Owns(n.SourcePath()) {
+			sweepDirOf[n.ID()] = dir
+		}
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("ingest: typeresolve read nodes: %w", err)
@@ -204,7 +223,11 @@ func (i *Ingester) semanticResolve(ctx context.Context, w graphstore.Writer, roo
 		if _, current := fresh[e.ID()]; current {
 			return nil
 		}
-		if _, checked := checkedDirs[dirOf[e.From()]]; !checked {
+		dir, owned := sweepDirOf[e.From()]
+		if !owned {
+			return nil // another language's edge (ADR 0008 D9): not this pass's to delete
+		}
+		if _, checked := checkedDirs[dir]; !checked {
 			return nil // degraded or unknown unit: degradation never deletes knowledge
 		}
 		stale = append(stale, e.ID())

@@ -351,6 +351,112 @@ fun other(): Int = 2
 				)
 			},
 		},
+		{
+			id:   "jvm_mixed_dir_delete_callee",
+			kind: kindChangeClass,
+			description: "A caller living in a MIXED-LANGUAGE directory (.java beside .kt — the normal Kotlin-in-Java adoption shape) loses a callee: prov/Provider.java, whose declared RETURN type supplied the " +
+				"receiver of a chained call, is deleted. The caller file is NOT touched, and the chained callee (tax.rate) still exists in both graphs — so neither the per-file stale-node purge nor linkFiles' " +
+				"from-owned sweep can remove the superseded confirmed edge. Only the typeresolve stale-confirmed sweep can, and before ADR 0008 D9 the mixed directory was exempt from it.",
+			seed: map[string]string{
+				// prov/ supplies the receiver type through a declared return type,
+				// so deleting it invalidates a call whose own callee survives.
+				"prov/Provider.java": `package prov;
+import tax.Rate;
+public class Provider {
+    public Rate get() { return null; }
+}
+`,
+				// mix/ is the mixed unit: one Java file and one Kotlin file, both
+				// declaring `package mix`. It is the only mixed directory in the
+				// tree, so every other row's units keep their single-language shape.
+				"mix/Caller.java": `package mix;
+import prov.Provider;
+public class Caller {
+    public int run(Provider p) { return p.get().rate(); }
+}
+`,
+				"mix/Helper.kt": `package mix
+fun helper(): Int = 1
+`,
+			},
+			apply: func(f *fixture) {
+				f.Remove("prov/Provider.java")
+			},
+			witness: func(g *graphView) error {
+				return all(
+					g.requireAbsent("prov.get"), // the deleted callee
+					// THE ASSERTION THIS ROW EXISTS FOR: the chained call through
+					// the deleted callee's declared return type is no longer
+					// resolvable, so no stale confirmed edge may survive out of the
+					// mixed directory.
+					g.requireNoEdge("mix.run", "calls", "tax.rate"),
+					// Controls. tax.rate SURVIVES — that is what makes the sweep the
+					// only mechanism under test; if it had been purged, the row would
+					// be proving the node purge instead. Both languages' symbols are
+					// present, so the directory really is mixed, and the
+					// single-language callers are untouched.
+					g.requirePresent("tax.rate"),
+					g.requirePresent("mix.run"),
+					g.requirePresent("mix.helper"),
+					g.requireEdgeAtTier("shop.checkout", "calls", "tax.rate", confirmed),
+				)
+			},
+		},
+		{
+			id:   "jvm_mixed_dir_change_receiver_type",
+			kind: kindChangeClass,
+			description: "A call in a MIXED-LANGUAGE directory has its receiver's DECLARED type changed — in ANOTHER file, so the caller is never reprocessed: prov.Provider.get()'s declared return type flips from " +
+				"tax.Rate to alt.Alt, so the chained call re-points from tax.rate to alt.rate. The old callee's file is untouched and its nodes stay, so nothing but the typeresolve stale-confirmed sweep can remove " +
+				"the superseded edge. Before ADR 0008 D9 the mixed directory was sweep-exempt and the superseded edge survived incrementally.",
+			seed: map[string]string{
+				// Alt declares rate() too, so the flip below RE-POINTS the
+				// chained call rather than merely dropping it — strictly the
+				// stronger shape: the old edge must go AND a new one must arrive.
+				"alt/Alt.java": `package alt;
+public class Alt {
+    public int rate() { return 9; }
+}
+`,
+				"prov/Provider.java": `package prov;
+import tax.Rate;
+public class Provider {
+    public Rate get() { return null; }
+}
+`,
+				"mix/Caller.java": `package mix;
+import prov.Provider;
+public class Caller {
+    public int run(Provider p) { return p.get().rate(); }
+}
+`,
+				"mix/Helper.kt": `package mix
+fun helper(): Int = 1
+`,
+			},
+			apply: func(f *fixture) {
+				f.Write("prov/Provider.java", `package prov;
+import alt.Alt;
+public class Provider {
+    public Alt get() { return null; }
+}
+`)
+			},
+			witness: func(g *graphView) error {
+				return all(
+					// THE ASSERTION THIS ROW EXISTS FOR: the superseded edge is gone.
+					g.requireNoEdge("mix.run", "calls", "tax.rate"),
+					// and the re-pointed one is bound at the confirmed tier, so the
+					// row is not green merely because the binder stopped binding.
+					g.requireEdgeAtTier("mix.run", "calls", "alt.rate", confirmed),
+					// Controls: the old callee was NOT deleted (only the sweep can
+					// remove the old edge), the mixed sibling is present, and the
+					// single-language control caller keeps its own confirmed edge.
+					g.requirePresent("tax.rate"),
+					g.requirePresent("mix.helper"),
+					g.requireEdgeAtTier("shop.checkout", "calls", "tax.rate", confirmed),
+				)
+			},
+		},
 	}
 }
 

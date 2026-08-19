@@ -5,7 +5,21 @@
 # of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
 # and yaml.Unmarshal read it, and it diffs one row per change.
 #
-# matrix_version: 2
+# matrix_version: 3
+#
+#                      BUMPED 2 -> 3 by W0.h (SW-170, ADR 0008 ruling D9): two
+#                      MIXED-LANGUAGE-DIRECTORY rows were added,
+#                      jvm_mixed_dir_delete_callee and
+#                      jvm_mixed_dir_change_receiver_type. Until D9 the sweep
+#                      unit was the DIRECTORY, so a directory holding .java
+#                      beside .kt was marked degraded by both registrants and
+#                      exempted from the stale-confirmed sweep entirely. An
+#                      exemption is unobservable — no counter records it — and
+#                      the table had no row that could see it. D9 makes the
+#                      sweep unit (directory, language), so a mixed directory
+#                      is two units instead of one exemption, and these two
+#                      rows are what observes the difference. Both were proven
+#                      RED before the fix (see their notes).
 #
 #                      BUMPED 1 -> 2 by W0.f-4 review round 1 (finding 2): the
 #                      `profile` FIELD was added, mirroring the Go matrix. The
@@ -46,6 +60,11 @@
 # cascade, supertype-chain re-pointing, the nested/top-level node boundary, the
 # JLS import-precedence ladder, the same-package file-to-file symbol move (the
 # QN-stable BLOCK-2 re-home, Go's move_symbol direction), and the delete path.
+#
+# W0.h ADDED TWO MORE (matrix_version 3), so the required set is now THIRTEEN:
+# the two mixed-language-directory rows. They are the only rows whose fixture
+# contains a directory holding both languages' sources, which is exactly the
+# unit the pre-D9 sweep exempted.
 #
 # THERE ARE NO DEFERRED ROWS LEFT. jvm_delete_file was the last one, held back
 # by ADR 0008 D8's PARITY-001 entry criterion; PARITY-001 is fixed and the row
@@ -230,3 +249,35 @@ parity_classes:
     deferred_to: ""
     owner: "M2.2"
     note: "PROMOTED FROM DEFERRED TO REQUIRED - 2026-08-16 (language-GA execution plan M2.2), after PARITY-001 was fixed. tax/Rate.java declares the type BOTH shop.Cart (Java) and k.App (Kotlin) import and call; deleting it exercises the per-file stale-node purge, the confirmed-edge sweep and the re-link together. Witness requires tax.Rate, tax.rate and tax.apply absent, BOTH importers (shop.checkout, k.run) still present, and the confirmed edges into the deleted callee gone - a stale confirmed edge would be the worst outcome here. Inc-vs-full snapshot bytes hold on both stores. MEASURED AND STATED PLAINLY, because a row that would have passed all along must not be sold as newly enabled: this class converges BOTH WITH AND WITHOUT the PARITY-001 fix, verified by reverting engine/ingest/ingest.go to its pre-fix revision and re-running (still green on both stores). The JVM delete path therefore never carried PARITY-001 divergence in this shape, and the ADR 0008 D8 deferral was a PRECAUTION rather than a masked JVM defect. That is consistent with the witness: PARITY-001 was entirely about the full side minting an interned external node for the now-unresolvable import, and here NEITHER side mints one, so the two passes have nothing to disagree about. The row earns its place on its own terms - the JVM delete path was previously assumed to converge and is now proven to - and it closes the last deferred row in this matrix."
+  # ── MIXED-LANGUAGE DIRECTORIES (W0.h, ADR 0008 D9) ───────────────────────
+  - id: "jvm_mixed_dir_delete_callee"
+    kind: "change_class"
+    label: "Callee in gemischtem Verzeichnis löschen / delete a callee called from a mixed-language directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W0.h"
+    note: "PROVEN 2026-08-19 by W0.h (SW-170), ADR 0008 ruling D9. A caller in a MIXED-LANGUAGE directory (mix/Caller.java beside mix/Helper.kt) loses prov/Provider.java, whose declared RETURN type supplied the receiver of the chained call p.get().rate(). RED BEFORE THE FIX on all four axes (MemStore/SQLite x default/balanced): the incremental graph kept mix.run --calls[confirmed]--> tax.rate, 16 edges against the full pass's 15, 6215 bytes against 5931. GREEN after. RESHAPED, AND THE RESHAPING IS THE POINT (AC-3): the first version of this row simply deleted the callee tax/Rate.java and was GREEN BEFORE THE FIX, so it observed nothing. Measured why - deleting a callee purges its NODE, and the per-file stale-node purge cascades the incoming edges away, so the sweep is never the mechanism under test. Measured a second confound too: linkFiles deletes every from-owned linker-kind edge of a REPROCESSED file, confirmed tier included, so any shape that rewrites the caller is also blind. This fixture defeats both - the caller file is never touched and the chained callee tax.rate SURVIVES in both graphs, which the witness asserts, so only the typeresolve stale-confirmed sweep can remove the superseded edge. CONTROL: the identical change with the caller in a single-language directory converges before AND after the fix, so the discriminator is the mixed directory, not the change shape."
+
+  - id: "jvm_mixed_dir_change_receiver_type"
+    kind: "change_class"
+    label: "Receiver-Typ in gemischtem Verzeichnis ändern / change a declared receiver type in a mixed-language directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W0.h"
+    note: "PROVEN 2026-08-19 by W0.h (SW-170), ADR 0008 ruling D9. The receiver's DECLARED type is changed in ANOTHER file - prov.Provider.get() flips its declared return type from tax.Rate to alt.Alt - so the chained call in the mixed directory re-points from tax.rate to alt.rate while the caller is never reprocessed and the old callee's file is untouched. RED BEFORE THE FIX on all four axes: the incremental graph kept mix.run --calls[confirmed]--> tax.rate, 23 edges against the full pass's 22, 8802 bytes against 8518. GREEN after. RESHAPED TWICE, both times because the row was green and therefore worthless (AC-3): version 1 rewrote the CALLER to change its parameter type, which linkFiles heals by deleting every from-owned edge of a reprocessed file; version 2 moved the type change into prov/Provider.java but pointed it at a class with no matching member, so the call re-pointed to nothing and the row could not tell a correct drop from a failure to bind. alt.Alt now declares rate() as well, so this row asserts a genuine RE-POINT: the old edge must GO and the new one must ARRIVE at the confirmed tier. This is the shape the per-file stale-node purge cannot rescue - tax.rate is present in both graphs, asserted by the witness."

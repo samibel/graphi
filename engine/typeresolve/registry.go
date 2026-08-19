@@ -37,6 +37,33 @@ type Resolver interface {
 	// a superset of Subject plus whatever steers resolution without being
 	// checked itself.
 	Input(relPath string) bool
+	// Owns reports whether a node sourced at relPath belongs to THIS
+	// resolver's sweep domain — the LANGUAGE half of the (directory,
+	// language) stale-confirmed sweep key (ADR 0008 ruling D9).
+	//
+	// WHY IT EXISTS AT ALL. engine/ingest sweeps a stored confirmed edge as
+	// stale when the pass no longer emits it and the edge's FROM-node sits in
+	// a unit this pass checked. Keyed on the directory ALONE that question is
+	// unanswerable in a directory holding more than one language: the java
+	// registrant, told only "this directory checked clean", would delete the
+	// kotlin registrant's confirmed edges out of the same directory. The
+	// pre-D9 code avoided that by EXEMPTING mixed directories from the sweep
+	// entirely, which is worse — an exemption is unobservable (no unit, no
+	// counter, no diagnostic) and it kept superseded confirmed edges alive
+	// forever. Owns makes the sweep unit (directory, language) instead: a
+	// mixed directory becomes two units rather than one exemption, and every
+	// unit is swept.
+	//
+	// CONTRACT. Owns is a pure function of the path, it must be a SUPERSET of
+	// Subject (a file this resolver checks is a file whose nodes it owns), and
+	// the registrants' Owns sets must be pairwise DISJOINT — two resolvers
+	// claiming one file would each sweep the other's edges, which is the
+	// defect D9 removes. Both properties are pinned by
+	// engine/semantic's TestRegistry_OwnsIsDisjointAndCoversSubject, which is
+	// where they CAN be pinned: engine/semantic is the only package that holds
+	// every registrant at once (typeresolve importing jvmresolve would be a
+	// cycle — see that package's doc comment).
+	Owns(relPath string) bool
 	// Triggers reports whether a CHANGE to relPath can change the resolution
 	// result — the incremental site's gate for re-running the whole-repo pass.
 	Triggers(relPath string) bool
@@ -68,6 +95,25 @@ func (goResolver) Subject(relPath string) bool {
 func (goResolver) Input(relPath string) bool {
 	return relPath == "go.mod" || strings.HasSuffix(relPath, ".go")
 }
+
+// Owns implements Resolver: every Go source file, test files INCLUDED. It is
+// deliberately WIDER than Subject: _test.go is not checked, but a node sourced
+// there is still Go's, and no other registrant may claim it.
+//
+// WHAT THIS NARROWS, STATED RATHER THAN LEFT TO BE DISCOVERED. Before D9 the
+// Go sweep was keyed on the directory alone, so it swept confirmed
+// calls/references/implements edges out of ANY file in a checked Go directory,
+// whatever its extension. Under the shipped default that set is empty: those
+// three edge kinds reach the confirmed tier only from a registered semantic
+// resolver (the linker never returns TierConfirmed — engine/link/link.go:60 —
+// and the only other confirmed-tier producers are `defines` and
+// `notebook_cell`, neither of which this sweep touches), and with
+// GRAPHI_JVM_TYPERESOLVE unset go/types is the only registrant. The measured
+// delta on the shipped default is therefore ZERO, and it is measured, not
+// assumed: TestGoResolver_OwnsNarrowingIsUnobservable pins the reasoning's
+// load-bearing half, and SW-170 recorded byte-identical conformance snapshots
+// and an identical real-repository graph digest across this change.
+func (goResolver) Owns(relPath string) bool { return strings.HasSuffix(relPath, ".go") }
 
 // Triggers implements Resolver: a non-test Go source or go.mod. Test files
 // cannot change the result (the grouping skips them in v1) — but a rename
