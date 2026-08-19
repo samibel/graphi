@@ -73,6 +73,15 @@ type rpcServerNotification struct {
 type Binding struct {
 	Client client.Client
 	Close  func()
+	// Repository names the repository this binding resolved. Tool calls whose
+	// composition has to locate the repository's own state — the trust report
+	// and strict_query's abstention record — pass it instead of leaving the
+	// paths empty: an empty path resolves from the SERVER PROCESS's working
+	// directory, which is not the bound repository whenever the client launched
+	// the server from elsewhere (cwd=$HOME is the common case, and -root exists
+	// precisely for it). Leaving it zero keeps the cwd fallback, which is
+	// correct only for a socket attach, where no repository was ever bound.
+	Repository client.Repository
 }
 
 // BindFunc creates a repository-scoped binding. roots is authoritative when
@@ -83,6 +92,10 @@ type BindFunc func(ctx context.Context, roots []string) (Binding, error)
 type boundClient struct {
 	client client.Client
 	stable client.StableClient
+	// repo travels WITH the client, in the same atomically-swapped value, so a
+	// roots rebind can never leave a tool call pairing the new client with the
+	// old repository's paths.
+	repo client.Repository
 }
 
 // ServerOption configures an MCP server profile without widening the default
@@ -96,6 +109,14 @@ func WithLabs() ServerOption {
 	return func(s *Server) { s.labs = true }
 }
 
+// WithRepository records the repository a pre-bound server (NewServerWithClient)
+// was constructed over, so repository-locating tool calls address it instead of
+// the server process's working directory. A binder-driven server carries the
+// same fact on each Binding instead.
+func WithRepository(repo client.Repository) ServerOption {
+	return func(s *Server) { s.initialRepo = repo }
+}
+
 // Server is the MCP stdio handler bound to a shared surface client.
 type Server struct {
 	// bound is atomically replaced as MCP roots bind or change. Stable and Labs
@@ -103,6 +124,9 @@ type Server struct {
 	// allowing one server process to defer repository choice until initialize.
 	bound atomic.Pointer[boundClient]
 	labs  bool
+	// initialRepo is the repository a pre-bound server was constructed over
+	// (WithRepository); the binder path carries it per Binding instead.
+	initialRepo client.Repository
 
 	catalogMu      sync.Mutex
 	catalogBinding *boundClient
@@ -177,7 +201,7 @@ func NewServerWithClient(c client.Client, opts ...ServerOption) *Server {
 	for _, opt := range opts {
 		opt(s)
 	}
-	s.bound.Store(&boundClient{client: c, stable: client.AsStable(c)})
+	s.bound.Store(&boundClient{client: c, stable: client.AsStable(c), repo: s.initialRepo})
 	return s
 }
 
@@ -457,6 +481,15 @@ func (s *Server) unavailableErrorLocked() *rpcError {
 
 func (s *Server) client() client.Client {
 	return s.bound.Load().client
+}
+
+// repository is the bound session's repository, read from the SAME atomic
+// value as client() so a tool call cannot pair one binding's client with
+// another's paths. Zero when nothing was bound (socket attach): compositions
+// keep their documented cwd fallback there, because no repository exists to
+// name.
+func (s *Server) repository() client.Repository {
+	return s.bound.Load().repo
 }
 
 // stableClient is the CAP-01 consumer-owned view of the same atomic binding:

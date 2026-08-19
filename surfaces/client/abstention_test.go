@@ -17,6 +17,7 @@ package client
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -413,6 +414,191 @@ func TestAbstention_PackageRollUpIsNotMultipliedByPackageCount(t *testing.T) {
 	}
 	if pa.total != 4 {
 		t.Errorf("total = %d over 2 covered packages, want the repository-global 4 (double counting)", pa.total)
+	}
+}
+
+// TestTrustReport_RegistrantsDisambiguateAnEmptyAbstentionList is the Major-3
+// pin, and it is the exact experiment that refuted this story's round-1 claim
+// that `capabilities` already disambiguates an empty abstention list.
+//
+// The repository is indexed WITHOUT the JVM binder and read WITH the opt-in
+// set, which is what a user gets after enabling the flag on an existing store.
+// capabilities then reports java as typed-confirmed — it is derived from the
+// READING process's registry and knows nothing about the generation — beside an
+// abstention block with no languages. Those two together read as "the typed
+// binder ran and found nothing to abstain from", over a generation the binder
+// never touched. Registrants is the fact that separates them, and it comes from
+// the pass, not from the reader.
+func TestTrustReport_RegistrantsDisambiguateAnEmptyAbstentionList(t *testing.T) {
+	t.Setenv(semantic.EnvJVM, "") // indexed with NO semantic JVM registrant
+	root, dbPath, metaDir, _ := buildAbstentionFixture(t, javaAbstentionFiles)
+
+	t.Setenv(semantic.EnvJVM, "1") // ...and read by a process that has one
+	b, _, _, err := TrustReport(context.Background(), TrustReportOptions{
+		Root: root, DBPath: dbPath, MetaDir: metaDir,
+	})
+	if err != nil {
+		t.Fatalf("TrustReport: %v", err)
+	}
+	var doc struct {
+		Capabilities []struct {
+			Language string `json:"language"`
+			Level    string `json:"level"`
+		} `json:"capabilities"`
+		Abstention AbstentionFacts `json:"abstention"`
+	}
+	if err := json.Unmarshal(b, &doc); err != nil {
+		t.Fatalf("decode report: %v", err)
+	}
+
+	// The trap, asserted rather than assumed: capabilities really does claim
+	// java at the top level here. If this ever stops being true the test below
+	// is no longer testing the ambiguity it was written for.
+	claimed := ""
+	for _, c := range doc.Capabilities {
+		if c.Language == "java" {
+			claimed = c.Level
+		}
+	}
+	if claimed != "typed-confirmed" {
+		t.Fatalf("fixture assumption broken: capabilities.java = %q, want typed-confirmed (the ambiguity under test)", claimed)
+	}
+	if !doc.Abstention.Available {
+		t.Fatalf("abstention unavailable: %s", doc.Abstention.UnavailableReason)
+	}
+	if len(doc.Abstention.Languages) != 0 {
+		t.Fatalf("a pass with no JVM registrant recorded abstention languages: %#v", doc.Abstention.Languages)
+	}
+	for _, l := range doc.Abstention.Registrants {
+		if l == "java" {
+			t.Errorf("registrants claim java for a generation indexed without the binder: %#v", doc.Abstention.Registrants)
+		}
+	}
+	// And the positive half: with the binder on, the same repository's
+	// registrants DO name java — so the assertion above is discriminating, not
+	// a field that is always empty.
+	root2, db2, meta2, _ := buildAbstentionFixture(t, javaAbstentionFiles)
+	b2, _, _, err := TrustReport(context.Background(), TrustReportOptions{Root: root2, DBPath: db2, MetaDir: meta2})
+	if err != nil {
+		t.Fatalf("TrustReport (binder on): %v", err)
+	}
+	var doc2 struct {
+		Abstention AbstentionFacts `json:"abstention"`
+	}
+	if err := json.Unmarshal(b2, &doc2); err != nil {
+		t.Fatalf("decode report: %v", err)
+	}
+	found := false
+	for _, l := range doc2.Abstention.Registrants {
+		if l == "java" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("registrants with the binder ON = %#v, want java among them", doc2.Abstention.Registrants)
+	}
+}
+
+// TestAbstention_UnrecordedGenerationIsNotAnAllClear is the Critical-2 pin at
+// the surface, where the damage was done.
+//
+// A store whose generation carries no abstention provenance — every store
+// indexed before this feature existed, and still every such store after a
+// `graphi sync` migrates the sidecar without re-running the binders — must read
+// as a NAMED unavailability on both surfaces. Round 1 gated availability on the
+// sidecar's schema version instead, so the migration alone flipped those stores
+// to "available, nothing skipped": a false all-clear over passes that had
+// really abstained, reachable by the ordinary upgrade path.
+//
+// The pre-state is produced by deleting the provenance rows of a live
+// generation, which is byte-for-byte the state a pre-feature pass leaves behind.
+func TestAbstention_UnrecordedGenerationIsNotAnAllClear(t *testing.T) {
+	t.Setenv(semantic.EnvJVM, "1")
+	root, dbPath, metaDir, c := buildAbstentionFixture(t, javaAbstentionFiles)
+	target := nodeIDByName(t, dbPath, "tax.value")
+
+	// Control first: while the generation IS recorded, both surfaces answer.
+	if got, ok := findLimitation(strictEnvelope(t, c, StrictQueryOptions{
+		Operation: "callers", Symbol: target, Root: root, DBPath: dbPath, MetaDir: metaDir,
+	}), "abstention"); !ok || strings.Contains(got, "UNAVAILABLE") {
+		t.Fatalf("fixture assumption broken: the recorded generation does not report abstention: %q", got)
+	}
+
+	// Now reproduce a generation that predates the record: the counters and the
+	// package rows survive, only the provenance is absent — exactly what a
+	// migrated pre-feature store looks like.
+	meta, err := sql.Open("sqlite", filepath.Join(metaDir, "ingest-meta.db"))
+	if err != nil {
+		t.Fatalf("open sidecar: %v", err)
+	}
+	if _, err := meta.Exec("DELETE FROM trust_skip_provenance"); err != nil {
+		t.Fatalf("clear provenance: %v", err)
+	}
+	if err := meta.Close(); err != nil {
+		t.Fatalf("close sidecar: %v", err)
+	}
+
+	env := strictEnvelope(t, c, StrictQueryOptions{
+		Operation: "callers", Symbol: target, Root: root, DBPath: dbPath, MetaDir: metaDir,
+	})
+	l, ok := findLimitation(env, "UNAVAILABLE")
+	if !ok {
+		t.Fatalf("an unrecorded generation produced no unavailability notice — silence here IS the false all-clear: %#v", env.Limitations)
+	}
+	if !strings.Contains(l, "rebuild") {
+		t.Errorf("the notice does not tell the user how to record one: %s", l)
+	}
+	for _, forbidden := range []string{"java_var_inferred", "java_receiver_external"} {
+		if strings.Contains(l, forbidden) {
+			t.Errorf("counters were published for a generation with no record: %s", l)
+		}
+	}
+
+	b, _, _, err := TrustReport(context.Background(), TrustReportOptions{Root: root, DBPath: dbPath, MetaDir: metaDir})
+	if err != nil {
+		t.Fatalf("TrustReport: %v", err)
+	}
+	var doc struct {
+		Abstention AbstentionFacts `json:"abstention"`
+	}
+	if err := json.Unmarshal(b, &doc); err != nil {
+		t.Fatalf("decode report: %v", err)
+	}
+	if doc.Abstention.Available {
+		t.Errorf("the trust report reported an unrecorded generation as answered: %#v", doc.Abstention)
+	}
+	if !strings.Contains(doc.Abstention.UnavailableReason, "rebuild") {
+		t.Errorf("unavailability reason does not name the remedy: %q", doc.Abstention.UnavailableReason)
+	}
+}
+
+// TestStrictQuery_EmptyResultOverUnexaminedPackagesSaysSo covers the other way
+// an abstention notice can be silent for the wrong reason: the result is empty
+// and NO semantic registrant holds evidence for the packages it covers. Nothing
+// there was ever bound, so nothing there could be recorded as abstained — and a
+// quiet "no callers" over an unexamined package is the same laundered
+// confidence AC-6 forbids for a filtered one.
+func TestStrictQuery_EmptyResultOverUnexaminedPackagesSaysSo(t *testing.T) {
+	t.Setenv(semantic.EnvJVM, "") // no registrant claims the java packages
+	root, dbPath, metaDir, c := buildAbstentionFixture(t, javaAbstentionFiles)
+	target := nodeIDByName(t, dbPath, "shop.run") // no callers at all
+
+	env := strictEnvelope(t, c, StrictQueryOptions{
+		Operation: "callers", Symbol: target,
+		Root: root, DBPath: dbPath, MetaDir: metaDir,
+	})
+	if len(env.Result.Edges) != 0 {
+		t.Fatalf("fixture assumption broken: expected an empty result, got %d edges", len(env.Result.Edges))
+	}
+	l, ok := findLimitation(env, "unexamined")
+	if !ok {
+		t.Fatalf("an empty result over packages no binder examined carried no caveat: %#v", env.Limitations)
+	}
+	if !strings.Contains(l, "com/shop") {
+		t.Errorf("the caveat names no unexamined package: %s", l)
+	}
+	if !strings.Contains(l, "no semantic registrant ran") {
+		t.Errorf("the caveat does not say who recorded the generation: %s", l)
 	}
 }
 

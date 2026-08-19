@@ -533,7 +533,7 @@ func TestTrustEvidence_Migration2To3(t *testing.T) {
 		t.Fatalf("close read-only observer: %v", err)
 	}
 
-	// Read-write open migrates 2 -> 4 (the full remaining ladder).
+	// Read-write open migrates 2 -> 6 (the full remaining ladder).
 	store := graphstore.NewMemStore()
 	t.Cleanup(func() { _ = store.Close() })
 	ing, err := ingest.New(store, parse.NewDefaultRegistry(), metaDir)
@@ -545,10 +545,10 @@ func TestTrustEvidence_Migration2To3(t *testing.T) {
 	if err := ing.MetaDB().QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		t.Fatalf("read user_version: %v", err)
 	}
-	if version != 5 {
-		t.Errorf("user_version = %d after migration, want 5", version)
+	if version != 6 {
+		t.Errorf("user_version = %d after migration, want 6", version)
 	}
-	for _, table := range []string{"trust_file_evidence", "trust_package_evidence", "trust_language_skips"} {
+	for _, table := range []string{"trust_file_evidence", "trust_package_evidence", "trust_language_skips", "trust_skip_provenance"} {
 		var n int
 		if err := ing.MetaDB().QueryRowContext(ctx,
 			"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&n); err != nil {

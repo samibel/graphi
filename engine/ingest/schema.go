@@ -81,7 +81,16 @@ CREATE TABLE IF NOT EXISTS ingest_semantics (
 //	    counters are repository-global per language and carry no package
 //	    attribution: keying them by package would manufacture an attribution
 //	    the binder never made. See trust_evidence.go, LanguageSkips.
-const schemaVersion = 5
+//	5 -> 6 : W0.g review round 1 — add trust_skip_provenance, the record of
+//	    WHICH GENERATION the skip counters above actually describe and which
+//	    registrants wrote them. Creating trust_language_skips is not the same
+//	    event as recording one: the 4 -> 5 step migrates a store written by an
+//	    older binary, and without this table every pre-existing generation
+//	    would start reading "available, nothing skipped" the moment the table
+//	    appeared — a migration turning a correct fail-closed answer into a
+//	    false all-clear. Availability is a property of the GENERATION's
+//	    provenance, never of the sidecar's schema.
+const schemaVersion = 6
 
 // migrate applies additive schema changes exactly once, gated on PRAGMA
 // user_version, so an existing on-disk ingest-meta.db (e.g. one created by a
@@ -121,6 +130,11 @@ func (i *Ingester) migrate(ctx context.Context) error {
 	if current < 5 {
 		if err := i.migrateLanguageSkips(ctx); err != nil {
 			return fmt.Errorf("ingest: migrate language skip table: %w", err)
+		}
+	}
+	if current < 6 {
+		if err := i.migrateSkipProvenance(ctx); err != nil {
+			return fmt.Errorf("ingest: migrate skip provenance table: %w", err)
 		}
 	}
 	// PRAGMA does not accept bound parameters; schemaVersion is a trusted constant.
@@ -367,6 +381,63 @@ CREATE TABLE trust_language_skips (
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("ingest: commit trust_language_skips migration: %w", err)
+	}
+	return nil
+}
+
+// migrateSkipProvenance creates trust_skip_provenance (schema 5 -> 6): the
+// record of WHICH GENERATIONS carry an abstention record at all, and which
+// semantic registrants wrote each one.
+//
+// WHY A MIGRATION CANNOT SUPPLY THIS FACT, WHICH IS THE WHOLE POINT. Creating
+// trust_language_skips (the 4 -> 5 step) makes the table READABLE; it does not
+// make the generations already in the store RECORDED. Gating availability on
+// the schema version therefore flipped every pre-existing generation from a
+// correct "this sidecar cannot tell me" to "available, nothing was skipped" the
+// instant a `graphi sync` migrated the store — and sync does not re-record
+// (it no-ops when the index is current), so the store parked in a false
+// all-clear until an unrelated rebuild. This table is deliberately EMPTY after
+// the migration: no row exists for a generation written before the record
+// existed, so every such generation keeps failing closed, and only a pass that
+// actually writes evidence mints its own row.
+//
+// The step carries the same shape as its two predecessors — guard evaluated
+// INSIDE the transaction that performs the create, rollback on every error —
+// so a step added by copying this one inherits the discipline rather than the
+// migration race W0.b fixed.
+func (i *Ingester) migrateSkipProvenance(ctx context.Context) error {
+	tx, err := i.meta.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("ingest: begin trust_skip_provenance migration: %w", err)
+	}
+	var present int
+	if err := tx.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'trust_skip_provenance'").
+		Scan(&present); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("ingest: probe trust_skip_provenance: %w", err)
+	}
+	if present > 0 {
+		_ = tx.Rollback() // already migrated; nothing was written
+		return nil
+	}
+	// language '' is the GENERATION SENTINEL: "a provenance-aware pass recorded
+	// this generation". Registrant rows carry the language. The two are one
+	// table because they answer one question — what does the abstention record
+	// for this generation actually cover — and separating them would allow a
+	// state where a generation is recorded by nobody yet claims registrants.
+	const ddl = `
+CREATE TABLE trust_skip_provenance (
+	generation_id TEXT NOT NULL,
+	language TEXT NOT NULL,
+	PRIMARY KEY (generation_id, language)
+);`
+	if _, err := tx.ExecContext(ctx, ddl); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("ingest: create trust_skip_provenance: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("ingest: commit trust_skip_provenance migration: %w", err)
 	}
 	return nil
 }

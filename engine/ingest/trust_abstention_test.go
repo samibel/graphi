@@ -168,9 +168,11 @@ func TestAbstention_GoOnlyPassRecordsNothing(t *testing.T) {
 }
 
 // TestAbstention_StaleGenerationIsNeverServed pins the generation binding: the
-// skip record describes ONE pass, and a mismatched generation reads empty
-// rather than serving another pass's abstention as this one's. Stale evidence
-// is unusable evidence — the same rule the rest of the sidecar runs under.
+// skip record describes ONE pass, and a mismatched generation must never be
+// served another pass's abstention as its own. It now reads UNAVAILABLE rather
+// than empty — a generation nobody recorded has no record, and saying "nothing
+// was skipped" about it would be the same false all-clear a migrated
+// pre-abstention generation used to produce.
 func TestAbstention_StaleGenerationIsNeverServed(t *testing.T) {
 	ctx := context.Background()
 	t.Setenv(semantic.EnvJVM, "1")
@@ -181,11 +183,16 @@ func TestAbstention_StaleGenerationIsNeverServed(t *testing.T) {
 		t.Fatalf("IngestAll: %v", err)
 	}
 	byLang, err := ing.LanguageSkips(ctx, "some-other-generation")
-	if err != nil {
-		t.Fatalf("LanguageSkips(mismatched generation): %v", err)
+	if !errors.Is(err, ingest.ErrTrustSkipProvenanceMissing) {
+		t.Errorf("LanguageSkips(mismatched generation) = %v, want ErrTrustSkipProvenanceMissing", err)
 	}
 	if len(byLang) != 0 {
 		t.Errorf("a mismatched generation served %#v — stale abstention is not this pass's abstention", byLang)
+	}
+	// The live generation, on the same store, still answers: the refusal above
+	// is about the generation, not about the port being broken.
+	if _, err := ing.LanguageSkips(ctx, liveGeneration(ctx, t, store)); err != nil {
+		t.Errorf("the live generation must still answer: %v", err)
 	}
 	if _, err := ing.LanguageSkips(ctx, ""); !errors.Is(err, ingest.ErrTrustEvidenceNotFound) {
 		t.Errorf("LanguageSkips(\"\") = %v, want ErrTrustEvidenceNotFound", err)
@@ -199,9 +206,17 @@ func TestAbstention_StaleGenerationIsNeverServed(t *testing.T) {
 // tables present and POPULATED, no trust_language_skips. A read-only observer
 // — which never migrates, so it is the durable pre-state — must fail closed on
 // both abstention reads. Only then does a read-write open migrate, and the
-// post-migration assertions run: user_version 5, the table present, the
-// pre-existing package row intact (the migration is additive), and the same
-// reads now answering.
+// post-migration assertions run: the ladder ran, the tables are present, and
+// the pre-existing package row is intact (the migration is additive).
+//
+// WHAT THE POST-CONDITION IS, AND WHY IT IS NOT "now answered". Round 1 of this
+// story asserted that generation g1 reads SkipsAvailable=true after the
+// migration, and that assertion pinned a defect as intended behaviour: g1 was
+// written by a pass that never recorded an abstention record, and creating the
+// table it would have been recorded in does not record it. The migration is
+// proven by the SCHEMA moving and the rows surviving; the generation's
+// abstention answer must stay fail-closed, which is what
+// TestAbstention_MigrationDoesNotManufactureAnAllClear pins.
 func TestAbstention_Migration4To5(t *testing.T) {
 	ctx := context.Background()
 	metaDir := filepath.Join(t.TempDir(), "meta")
@@ -247,16 +262,18 @@ func TestAbstention_Migration4To5(t *testing.T) {
 	if err := ing.MetaDB().QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		t.Fatalf("read user_version: %v", err)
 	}
-	if version != 5 {
-		t.Errorf("user_version = %d after migration, want 5", version)
+	if version != 6 {
+		t.Errorf("user_version = %d after migration, want 6", version)
 	}
-	var present int
-	if err := ing.MetaDB().QueryRowContext(ctx,
-		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='trust_language_skips'").Scan(&present); err != nil {
-		t.Fatalf("probe skip table: %v", err)
-	}
-	if present != 1 {
-		t.Fatal("trust_language_skips missing after migration")
+	for _, table := range []string{"trust_language_skips", "trust_skip_provenance"} {
+		var present int
+		if err := ing.MetaDB().QueryRowContext(ctx,
+			"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?", table).Scan(&present); err != nil {
+			t.Fatalf("probe %s: %v", table, err)
+		}
+		if present != 1 {
+			t.Fatalf("%s missing after migration", table)
+		}
 	}
 
 	// --- the post-migration read, and the additivity of the step ---
@@ -264,18 +281,23 @@ func TestAbstention_Migration4To5(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PackageEvidence after migration: %v", err)
 	}
-	if !post.SkipsAvailable {
-		t.Error("SkipsAvailable = false after the migration")
-	}
 	if post.ConfirmedEdges != 7 || post.Language != "java" {
 		t.Errorf("migration was not additive: pre-existing row came back %+v", post)
 	}
-	if _, err := ing.LanguageSkips(ctx, "g1"); err != nil {
-		t.Errorf("LanguageSkips after migration: %v", err)
+	// The migration made the record HOLDABLE, not RECORDED: g1 was written by a
+	// pass that never wrote one, so both abstention reads must still fail
+	// closed. Asserting the opposite here is what round 1 got wrong.
+	if post.SkipsAvailable {
+		t.Error("SkipsAvailable = true for a generation the migration merely made room for — a created table is not a recorded pass")
+	}
+	if _, err := ing.LanguageSkips(ctx, "g1"); !errors.Is(err, ingest.ErrTrustSkipProvenanceMissing) {
+		t.Errorf("LanguageSkips after migration = %v, want ErrTrustSkipProvenanceMissing", err)
 	}
 
-	// The step is idempotent: a second open over the migrated sidecar is a
-	// no-op, and the injected skip row survives it.
+	// The steps are idempotent: a second open over the migrated sidecar is a
+	// no-op, and rows written into the new tables survive it. Survival is
+	// checked in the TABLE rather than through the read port, because the read
+	// port correctly refuses g1 for lack of provenance.
 	if _, err := ing.MetaDB().ExecContext(ctx,
 		"INSERT INTO trust_language_skips VALUES ('g1','java','java_var_inferred',9)"); err != nil {
 		t.Fatalf("seed skip row: %v", err)
@@ -293,12 +315,131 @@ func TestAbstention_Migration4To5(t *testing.T) {
 		t.Fatalf("re-entrant open: %v", err)
 	}
 	t.Cleanup(func() { _ = ing2.Close() })
-	again, err := ing2.LanguageSkips(ctx, "g1")
-	if err != nil {
-		t.Fatalf("LanguageSkips after re-entry: %v", err)
+	var count int
+	if err := ing2.MetaDB().QueryRowContext(ctx,
+		"SELECT count FROM trust_language_skips WHERE generation_id='g1' AND language='java' AND skip_name='java_var_inferred'").
+		Scan(&count); err != nil {
+		t.Fatalf("re-read seeded skip row: %v", err)
 	}
-	if again["java"]["java_var_inferred"] != 9 {
-		t.Errorf("re-entrant migration destroyed the seeded row: %#v", again)
+	if count != 9 {
+		t.Errorf("re-entrant migration destroyed the seeded row: count = %d, want 9", count)
+	}
+}
+
+// TestAbstention_MigrationDoesNotManufactureAnAllClear is the Critical-2
+// regression pin, and it is the whole reason this story has a provenance table.
+//
+// The reported failure was not hypothetical. A schema-4 store written by a pass
+// that abstained EIGHT times read, correctly, as "unavailable — this sidecar
+// predates the abstention record". A `graphi sync` then migrated the sidecar
+// and reported "index up to date" without re-running anything, and the SAME
+// generation began reading "available, languages: [], limitations: []" — a
+// false all-clear over a pass that had abstained, reachable by the ordinary
+// upgrade path (only `rebuild` re-records).
+//
+// This test reproduces the shape at the seam: a pre-existing generation whose
+// package rows survive the migration must keep answering "cannot tell you",
+// while a generation a provenance-aware pass actually recorded answers. Both
+// halves matter — the first alone is satisfied by refusing everything.
+func TestAbstention_MigrationDoesNotManufactureAnAllClear(t *testing.T) {
+	ctx := context.Background()
+	metaDir := filepath.Join(t.TempDir(), "meta")
+	seedV4SidecarWithRows(t, metaDir)
+
+	store := graphstore.NewMemStore()
+	t.Cleanup(func() { _ = store.Close() })
+	ing, err := ingest.New(store, parse.NewDefaultRegistry(), metaDir) // migrates
+	if err != nil {
+		t.Fatalf("ingest.New on v4 sidecar: %v", err)
+	}
+	t.Cleanup(func() { _ = ing.Close() })
+
+	// The migrated, never-re-recorded generation: fail closed on every port.
+	if _, err := ing.LanguageSkips(ctx, "g1"); !errors.Is(err, ingest.ErrTrustEvidenceUnavailable) {
+		t.Errorf("LanguageSkips(g1) = %v, want unavailable — the migration must not answer for a pass it never observed", err)
+	}
+	if _, err := ing.SkipRegistrants(ctx, "g1"); !errors.Is(err, ingest.ErrTrustSkipProvenanceMissing) {
+		t.Errorf("SkipRegistrants(g1) = %v, want ErrTrustSkipProvenanceMissing", err)
+	}
+	pe, err := ing.PackageEvidence(ctx, "g1", "com/shop")
+	if err != nil {
+		t.Fatalf("PackageEvidence(g1): %v", err)
+	}
+	if pe.SkipsAvailable || len(pe.NamedSkips) != 0 {
+		t.Errorf("migrated generation reported an abstention answer: SkipsAvailable=%v NamedSkips=%#v", pe.SkipsAvailable, pe.NamedSkips)
+	}
+
+	// The other half: a generation a provenance-aware pass DID record answers,
+	// on the very same sidecar. Without this the test would pass on an
+	// implementation that simply never reports abstention at all.
+	if _, err := ing.MetaDB().ExecContext(ctx,
+		"INSERT INTO trust_skip_provenance (generation_id, language) VALUES ('g2',''),('g2','java')"); err != nil {
+		t.Fatalf("seed provenance: %v", err)
+	}
+	if _, err := ing.MetaDB().ExecContext(ctx,
+		"INSERT INTO trust_language_skips VALUES ('g2','java','java_var_inferred',3)"); err != nil {
+		t.Fatalf("seed skips: %v", err)
+	}
+	byLang, err := ing.LanguageSkips(ctx, "g2")
+	if err != nil {
+		t.Fatalf("LanguageSkips(g2) on a recorded generation: %v", err)
+	}
+	if byLang["java"]["java_var_inferred"] != 3 {
+		t.Errorf("LanguageSkips(g2) = %#v, want the recorded java counter", byLang)
+	}
+	regs, err := ing.SkipRegistrants(ctx, "g2")
+	if err != nil {
+		t.Fatalf("SkipRegistrants(g2): %v", err)
+	}
+	if !reflect.DeepEqual(regs, []string{"java"}) {
+		t.Errorf("SkipRegistrants(g2) = %#v, want [java]", regs)
+	}
+}
+
+// TestAbstention_RegistrantsDistinguishSilenceFromAbsence is the Major-3 pin:
+// an EMPTY skip list must be readable as either "these binders ran and
+// abstained from nothing" or "no binder ran", and only the pass's own
+// provenance can tell them apart. The same repository is indexed twice — once
+// with the JVM registrants opted in, once without — and the counters agree
+// while the provenance does not.
+func TestAbstention_RegistrantsDistinguishSilenceFromAbsence(t *testing.T) {
+	ctx := context.Background()
+	index := func(t *testing.T, jvm bool) []string {
+		t.Helper()
+		if jvm {
+			t.Setenv(semantic.EnvJVM, "1")
+		} else {
+			t.Setenv(semantic.EnvJVM, "")
+		}
+		store := graphstore.NewMemStore()
+		t.Cleanup(func() { _ = store.Close() })
+		ing := newIngester(t, store, parse.NewDefaultRegistry())
+		if err := ing.IngestAll(ctx, writeRepo(t, jvmAbstentionFixture())); err != nil {
+			t.Fatalf("IngestAll: %v", err)
+		}
+		regs, err := ing.SkipRegistrants(ctx, liveGeneration(ctx, t, store))
+		if err != nil {
+			t.Fatalf("SkipRegistrants: %v", err)
+		}
+		return regs
+	}
+
+	withBinder := index(t, true)
+	found := false
+	for _, l := range withBinder {
+		if l == "java" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("registrants with the JVM binder on = %#v, want java among them", withBinder)
+	}
+
+	withoutBinder := index(t, false)
+	for _, l := range withoutBinder {
+		if l == "java" {
+			t.Errorf("registrants with the JVM binder OFF = %#v — java must not be claimed by a pass it never ran in", withoutBinder)
+		}
 	}
 }
 

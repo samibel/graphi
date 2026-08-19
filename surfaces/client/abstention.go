@@ -26,9 +26,32 @@ package client
 //
 // FAIL CLOSED. "The sidecar cannot tell me" and "nothing was skipped" are
 // different answers and are never collapsed: an unreadable store, a missing
-// generation, or a sidecar predating the schema-5 skip table all produce a
-// VISIBLE unavailability notice, because a silent absence here would read as
-// an all-clear.
+// generation, a sidecar predating the skip table, and a GENERATION that carries
+// no abstention provenance all produce a VISIBLE unavailability notice, because
+// a silent absence here would read as an all-clear.
+//
+// THE RECORD IS BOUND TO A GENERATION AND A REPOSITORY, AND BOTH BINDINGS ARE
+// LOAD-BEARING (W0.g review round 1).
+//
+//   - REPOSITORY. Every entry point takes the caller's root/db/meta and the
+//     surfaces pass the one their SESSION is bound to. An earlier revision let
+//     MCP leave them empty, which resolved the record from the server process's
+//     working directory: a session bound to repository A, launched with cwd in
+//     repository B, published B's abstention counters as A's. A surface whose
+//     purpose is honest abstention emitting another repository's numbers is the
+//     worst failure this file can have, so the paths are inputs, never ambient.
+//   - GENERATION. Availability is read from the generation's own provenance row
+//     (ingest.SkipRegistrants), never from the sidecar's schema version.
+//     Migrating a store CREATES the skip table; it does not RECORD anything, so
+//     gating on the schema flipped every pre-existing generation to
+//     "available, nothing skipped" the moment a `graphi sync` migrated it.
+//
+// And the same idea closes the last ambiguity: Registrants says WHO recorded
+// the pass, so an empty counter list is readable as "these binders ran and
+// abstained from nothing" rather than "no binder ran". The trust report's
+// capabilities block cannot serve that purpose — it is derived from the
+// registry of the process doing the READING, so it happily reports
+// java: typed-confirmed over a generation the java binder never touched.
 
 import (
 	"context"
@@ -75,10 +98,28 @@ type AbstentionLanguage struct {
 // under this generation — which is a fact about the pass, not a promise that
 // nothing was skipped by any other mechanism. Scope always restates the
 // attribution limit so the numbers cannot travel without it.
+//
+// Registrants is what makes an empty Languages list READABLE, and it is the
+// reason this block is trustworthy at all. It names the semantic registrants
+// that actually recorded THIS generation, so:
+//
+//	available, registrants [go java], languages []  -> both binders ran and
+//	                                                   abstained from nothing
+//	available, registrants [go],      languages []  -> no JVM binder ran; the
+//	                                                   Java code was never bound
+//	available:false + reason                        -> the record cannot be read
+//
+// Without it the first two are the same bytes, and the second is by far the
+// more common — the JVM registrants are opt-in until WP-J11. Do NOT substitute
+// the document's capabilities block for this: capabilities is derived from the
+// registry of the process READING the report, not from the pass that wrote the
+// generation, so it reports java as typed-confirmed over a store indexed
+// without the binder at all.
 type AbstentionFacts struct {
 	Available         bool                 `json:"available"`
 	UnavailableReason string               `json:"unavailable_reason"`
 	Scope             string               `json:"scope"`
+	Registrants       []string             `json:"registrants"`
 	Languages         []AbstentionLanguage `json:"languages"`
 }
 
@@ -143,10 +184,27 @@ func openEvidence(ctx context.Context, root, dbPath, metaDir string) (*evidenceH
 	return h, ""
 }
 
+// unavailableReasonFor names WHY the abstention record could not be read, in
+// terms a user can act on. The two unavailability shapes have different
+// remedies and must not share one sentence: an old sidecar is fixed by opening
+// the repository read-write once, while an unrecorded generation is fixed only
+// by a pass that actually re-runs the binders.
+func unavailableReasonFor(err error) string {
+	switch {
+	case errors.Is(err, ingest.ErrTrustSkipProvenanceMissing):
+		return "this graph generation carries no abstention record — it was indexed before the record existed (or by a build that never wrote one), and migrating the sidecar creates the table without re-running the binders, so only a full re-index (`graphi rebuild`) can record it"
+	case errors.Is(err, ingest.ErrTrustEvidenceUnavailable):
+		return "this store's evidence sidecar predates the abstention record and never migrates when observed read-only"
+	default:
+		return "the abstention record could not be read from the evidence sidecar"
+	}
+}
+
 // readAbstentionFacts reads the whole generation's named skip counters, keyed
-// by the registrant that recorded them. The trust report's block.
+// by the registrant that recorded them, together with the provenance that says
+// which registrants recorded the generation at all. The trust report's block.
 func readAbstentionFacts(ctx context.Context, root, dbPath, metaDir string) AbstentionFacts {
-	out := AbstentionFacts{Scope: abstentionScopeNote, Languages: []AbstentionLanguage{}}
+	out := AbstentionFacts{Scope: abstentionScopeNote, Registrants: []string{}, Languages: []AbstentionLanguage{}}
 	h, reason := openEvidence(ctx, root, dbPath, metaDir)
 	if h == nil {
 		out.UnavailableReason = reason
@@ -154,16 +212,21 @@ func readAbstentionFacts(ctx context.Context, root, dbPath, metaDir string) Abst
 	}
 	defer h.close()
 
-	byLang, err := h.ro.LanguageSkips(ctx, h.gen)
-	switch {
-	case errors.Is(err, ingest.ErrTrustEvidenceUnavailable):
-		out.UnavailableReason = "this store's evidence sidecar predates the abstention record (schema 5) and never migrates when observed read-only"
+	// Provenance FIRST: it decides availability. Reading the counters first and
+	// treating "no rows" as an answer is exactly the inversion that turned a
+	// migration into a false all-clear.
+	registrants, err := h.ro.SkipRegistrants(ctx, h.gen)
+	if err != nil {
+		out.UnavailableReason = unavailableReasonFor(err)
 		return out
-	case err != nil:
-		out.UnavailableReason = "the abstention record could not be read from the evidence sidecar"
+	}
+	byLang, err := h.ro.LanguageSkips(ctx, h.gen)
+	if err != nil {
+		out.UnavailableReason = unavailableReasonFor(err)
 		return out
 	}
 	out.Available = true
+	out.Registrants = append(out.Registrants, registrants...)
 	langs := make([]string, 0, len(byLang))
 	for l := range byLang {
 		langs = append(langs, l)
@@ -203,9 +266,19 @@ func sortedSkips(m map[string]int) []AbstentionSkip {
 // the notice to fire; it does NOT say the skips happened in them, and the
 // rendered text is explicit about that distinction.
 type packageAbstention struct {
-	skips             []AbstentionSkip
-	total             int
-	packages          []string
+	skips    []AbstentionSkip
+	total    int
+	packages []string
+	// registrants are the semantic registrants that recorded THIS generation
+	// (ingest.SkipRegistrants) — the provenance that makes a quiet notice
+	// interpretable.
+	registrants []string
+	// unclaimed are the covered packages NO semantic registrant holds evidence
+	// for under this generation. They are reported, not dropped: a directory
+	// nobody examined abstains from nothing only in the sense that nobody was
+	// there to abstain, and silence over it is the same all-clear this file
+	// exists to refuse.
+	unclaimed         []string
 	unavailableReason string
 }
 
@@ -245,36 +318,59 @@ func readPackageAbstention(ctx context.Context, root, dbPath, metaDir string, pk
 		return out
 	}
 
-	byLang, err := h.ro.LanguageSkips(ctx, h.gen)
-	if errors.Is(err, ingest.ErrTrustEvidenceUnavailable) {
-		return packageAbstention{unavailableReason: "this store's evidence sidecar predates the abstention record (schema 5) and never migrates when observed read-only"}
-	}
+	// Provenance decides availability, and it is asked BEFORE the counters:
+	// a generation with no abstention record must read "cannot answer", never
+	// "answered, nothing there".
+	registrants, err := h.ro.SkipRegistrants(ctx, h.gen)
 	if err != nil {
-		return packageAbstention{unavailableReason: "the abstention record could not be read from the evidence sidecar"}
+		return packageAbstention{unavailableReason: unavailableReasonFor(err)}
+	}
+	out.registrants = registrants
+
+	byLang, err := h.ro.LanguageSkips(ctx, h.gen)
+	if err != nil {
+		return packageAbstention{unavailableReason: unavailableReasonFor(err)}
+	}
+
+	// ONE query for every covered package's registrants, instead of one
+	// PackageEvidence read per package each re-running one skip query per
+	// language — that shape re-derived, O(packages x languages) times, the
+	// byLang map this function already holds.
+	claimed, err := h.ro.PackageRegistrants(ctx, h.gen, pkgKeys)
+	if err != nil {
+		return packageAbstention{unavailableReason: "this store's evidence sidecar cannot serve package evidence"}
 	}
 
 	covered := map[string]struct{}{}
 	for _, key := range pkgKeys {
-		pe, err := h.ro.PackageEvidence(ctx, h.gen, key)
-		if errors.Is(err, ingest.ErrTrustEvidenceUnavailable) {
-			return packageAbstention{unavailableReason: "this store's evidence sidecar cannot serve package evidence"}
+		langs, ok := claimed[key]
+		if !ok {
+			// No semantic registrant holds a row for this directory. That is
+			// NOT "abstained from nothing" — it is "never examined", and the
+			// notice below says so rather than letting silence imply the first.
+			out.unclaimed = append(out.unclaimed, key)
+			continue
 		}
-		if err != nil {
-			continue // no row for this directory: nothing claimed, nothing abstained
+		// A package is NAMED only when one of its registrants actually recorded
+		// a named skip: listing a package whose language abstained from nothing
+		// would attach the notice to a directory with no abstention behind it.
+		abstained := false
+		for _, l := range langs {
+			if len(byLang[l]) > 0 {
+				abstained = true
+			}
 		}
-		if !pe.SkipsAvailable {
-			return packageAbstention{unavailableReason: "this store's evidence sidecar predates the abstention record (schema 5) and never migrates when observed read-only"}
-		}
-		if len(pe.NamedSkips) == 0 {
+		if !abstained {
 			continue
 		}
 		out.packages = append(out.packages, key)
-		for _, l := range pe.Languages {
+		for _, l := range langs {
 			covered[l] = struct{}{}
 		}
 	}
+	sort.Strings(out.unclaimed)
 	if len(out.packages) == 0 {
-		return packageAbstention{}
+		return packageAbstention{registrants: out.registrants, unclaimed: out.unclaimed}
 	}
 	// Sum over the covered LANGUAGES, never over the covered packages. The
 	// counters are repository-global per language, so every package row of one
@@ -323,28 +419,59 @@ func addPackageKey(keys []string, key string) []string {
 //     is the "never launder confidence" rule applied to the abstention axis:
 //     the tier filter already refuses to let filtered emptiness read as proven
 //     emptiness, and abstained emptiness gets the same treatment.
+//   - an EMPTY result covering packages NO semantic registrant examined — an
+//     entry naming the gap and the registrants that did record the generation.
+//     A package with no evidence row produces no abstention record for the same
+//     reason an unread book contains no typos, so silence over it is not an
+//     all-clear. This entry is deliberately confined to the empty case: on a
+//     found result the reader already has edges to judge, while "no callers" is
+//     the answer a user acts on, and it is the one AC-6 governs. Emitting it on
+//     every found result would fire on every Python or TypeScript result in the
+//     repository — no binder exists for those languages at all — and noise on
+//     every result is how a real notice stops being read.
 func abstentionLimitations(pa packageAbstention, emptyResult bool) []string {
 	if pa.unavailableReason != "" {
 		return []string{fmt.Sprintf(
 			"abstention accounting UNAVAILABLE (%s): the semantic binders' named skip counters could not be read for this result, so the absence of an abstention notice here is not evidence that nothing was skipped",
 			pa.unavailableReason)}
 	}
-	if pa.total == 0 {
-		return nil
-	}
-	parts := make([]string, 0, len(pa.skips))
-	for _, s := range pa.skips {
-		parts = append(parts, fmt.Sprintf("%s %d", s.Name, s.Count))
-	}
-	out := []string{fmt.Sprintf(
-		"semantic binder abstention: %d call/reference sites were refused under named reasons (%s). This result covers %s, which carry a recorded abstention row — but %s, so they are reported beside this result, NOT counted inside it. A refused site produces no edge at all, so this result may be reduced by abstention.",
-		pa.total, strings.Join(parts, ", "), renderPackageList(pa.packages), abstentionScopeNote)}
-	if emptyResult {
+	var out []string
+	if pa.total > 0 {
+		parts := make([]string, 0, len(pa.skips))
+		for _, s := range pa.skips {
+			parts = append(parts, fmt.Sprintf("%s %d", s.Name, s.Count))
+		}
+		// SCOPE BEFORE ATTRIBUTION, deliberately. The earlier wording said the
+		// covered packages "carry a recorded abstention row" and only retracted
+		// the per-package reading in the following clause — a reader who stops
+		// at the first sentence has been told something untrue. The limit is
+		// now stated before the packages are named, and the packages are named
+		// as the GATE that fired, never as carriers of the counts.
 		out = append(out, fmt.Sprintf(
-			"this result is EMPTY while %d sites stand refused under named reasons — abstained emptiness is not proven emptiness, and this must not be read as \"no such relationship exists\"",
-			pa.total))
+			"semantic binder abstention: %d call/reference sites were refused under named reasons (%s). Scope first: %s, so they are reported beside this result and NOT counted inside it. %s are named because they are accounted by a language that abstained somewhere in the repository — not because the refused sites are in them. A refused site produces no edge at all, so this result may be reduced by abstention.",
+			pa.total, strings.Join(parts, ", "), abstentionScopeNote, renderPackageList(pa.packages)))
+		if emptyResult {
+			out = append(out, fmt.Sprintf(
+				"this result is EMPTY while %d sites stand refused under named reasons — abstained emptiness is not proven emptiness, and this must not be read as \"no such relationship exists\"",
+				pa.total))
+		}
+	}
+	if emptyResult && len(pa.unclaimed) > 0 {
+		out = append(out, fmt.Sprintf(
+			"this result is EMPTY and %s covered by it carry NO semantic-registrant evidence under this graph generation (the registrants that recorded it: %s). No binder examined them, so nothing there could have been recorded as abstained — this emptiness is unexamined, not proven, and must not be read as \"no such relationship exists\".",
+			renderPackageList(pa.unclaimed), renderRegistrants(pa.registrants)))
 	}
 	return out
+}
+
+// renderRegistrants names the registrants that recorded the generation, and
+// says "none" rather than printing an empty list — the case where no semantic
+// registrant ran at all is the one a reader most needs to notice.
+func renderRegistrants(langs []string) string {
+	if len(langs) == 0 {
+		return "none — no semantic registrant ran over this generation"
+	}
+	return strings.Join(langs, ", ")
 }
 
 // renderPackageList names the covered packages, bounded in both count and

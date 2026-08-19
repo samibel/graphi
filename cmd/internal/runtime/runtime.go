@@ -109,6 +109,18 @@ type Runtime struct {
 	// Root is the bound repository root; empty only in Attach mode, where a
 	// caller selected a store/socket rather than a repository.
 	Root string
+	// DBPath and MetaDir are the graph store and evidence sidecar this session
+	// resolved for Root (or the explicit ones an Attach was given; both empty
+	// for a daemon socket, which owns no local state).
+	//
+	// They are exported because a long-lived surface has to be able to name the
+	// repository it is serving. Compositions that locate repository state on
+	// their own resolve it from the process working directory when handed
+	// nothing, and for an MCP session — routinely launched from outside the
+	// repository it binds — that is a different repository (W0.g review round
+	// 1, Critical 1).
+	DBPath  string
+	MetaDir string
 
 	store  graphstore.Graphstore
 	ing    *ingest.Ingester
@@ -154,6 +166,7 @@ func Attach(dbPath, socket, metaDir string) (*Runtime, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open store: %w", err)
 	}
+	rt.DBPath, rt.MetaDir = dbPath, metaDir
 	rt.store = store
 	rt.closers = append(rt.closers, func() { _ = store.Close() })
 	asvc := analysis.NewDefaultService(store)
@@ -215,6 +228,7 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 
 	rt := newRuntime()
 	rt.Root = root
+	rt.DBPath, rt.MetaDir = p.DB, p.Meta
 	store, err := graphstore.OpenSQLite(p.DB)
 	if err != nil {
 		return nil, fmt.Errorf("open session store: %w", err)

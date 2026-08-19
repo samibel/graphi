@@ -57,6 +57,53 @@
 > — expected and precedented, see the Wave 0 handoff §8 and its 2026-08-19
 > amendment.
 
+> ## AMENDMENT — 2026-08-19 (SW-171, review round 1): `abstention.registrants`, and availability rebound to the generation
+>
+> Added, not rewritten (D6). The paragraph above titled *Fail-closed presence*
+> stated a guarantee the implementation did not keep; this amendment records
+> what the guarantee now rests on, and the two defects that made the correction
+> necessary. Both were found by independent review, reproduced, and are stated
+> here rather than only in the ticket.
+>
+> **`abstention.registrants[]` — an eighth property of the block, not of the
+> document.** It names the semantic registrants that recorded THIS graph
+> generation. Without it, `available: true` + `languages: []` is one set of
+> bytes for two different worlds: "the binders ran and abstained from nothing"
+> and "no binder ran at all". The second is by far the more common — the JVM
+> registrants are opt-in until WP-J11 — and it was being published as the first.
+> The document's `capabilities` block does not disambiguate it and must not be
+> used to: capabilities is derived from the registry of the process READING the
+> report, so a store indexed WITHOUT the binder, read by a process with
+> `GRAPHI_JVM_TYPERESOLVE=1`, reports `java: typed-confirmed` beside an empty
+> abstention list. Measured on a real store, both before and after.
+>
+> **Availability is a property of the GENERATION, never of the sidecar's
+> schema.** Round 1 gated `available` on the sidecar's schema version, so
+> creating the table answered for every pass that predated it. Reproduced on a
+> genuine schema-4 store written by a pass that abstained four times: it read
+> `available:false` (correct), then a `graphi sync` — which migrates, reports
+> *"up to date"*, and re-records nothing — flipped the SAME generation to
+> `available:true, languages: []`. A false all-clear reachable by the ordinary
+> upgrade path, since only `rebuild` re-records. The record is now bound to the
+> generation by `trust_skip_provenance` (ingest schema **6**): a sentinel row per
+> recorded generation plus one row per registrant that ran, written only by a
+> pass that actually persists evidence, and deliberately EMPTY after a
+> migration. A generation with no row reads `available:false` with a reason that
+> names the remedy.
+>
+> **Version skew, disclosed (it was not before).** An old (pre-schema-5) binary
+> running a full pass on a migrated store still succeeds and does not downgrade
+> `user_version`, but it has no `DELETE` for the two new tables, so the previous
+> generation's skip and provenance rows are orphaned — measured: 3 skip rows and
+> 2 provenance rows left under generation `dc147638…` while package evidence
+> moved to `f9ea5674…`. Reads are generation-filtered, so this is not a
+> correctness break, but it accumulates across skew cycles and now does so in two
+> tables rather than one. The compensating change is that the same skew now
+> fails CLOSED: the generation such a pass writes carries no provenance, so the
+> abstention block reads unavailable-with-a-reason instead of round 1's
+> all-clear. The opaque `NOT NULL constraint failed: trust_package_evidence.language`
+> crash belongs to the pre-existing 3 → 4 step and is unchanged by either round.
+
 | | |
 |---|---|
 | **Status** | Binding reconciliation. Records an owner decision; supersedes nothing on its own. |
