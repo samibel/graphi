@@ -268,6 +268,21 @@ func TestKnownDefectsCheck(t *testing.T) {
 			t.Errorf("known-defects message must mention %q; got: %s", want, res.Message)
 		}
 	}
+	// LINK-004 (SW-183): Python dotted module imports resolve to nothing. Pinned
+	// on the same three properties as LINK-002/003 — the id, the affected
+	// operations, and a workaround — plus the one fact that makes the workaround
+	// actionable rather than decorative: WHICH import form to rewrite it to. A
+	// disclosure that says "some imports do not resolve" without naming the
+	// working form leaves the reader unable to act, which is the failure mode the
+	// `-profile full` incident taught in its other direction (a workaround that
+	// cannot be executed at all).
+	for _, want := range []string{"LINK-004", "from pkg.util import helper", "from pkg import util"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("known-defects must disclose LINK-004 with its failing form AND the "+
+				"working form the workaround names (missing %q). See "+
+				"docs/rc/capability-audit-2026-08-19.md §3; got: %s", want, res.Message)
+		}
+	}
 	// The soundness half must be disclosed, not just the recall half.
 	for _, want := range []string{"REDIRECTED", "WRONG EDGES"} {
 		if !strings.Contains(res.Message, want) {

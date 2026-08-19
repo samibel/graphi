@@ -25,12 +25,12 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 | **Go** | **GA** | `typed-confirmed` | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) + `confirmed`-tier go/types edges ¹ |
 | JSON | Preview | `parse-only` | structural (AST) | — | — |
 | TypeScript · TSX/JSX · JavaScript | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **Python** | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Python** | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **but see open defect LINK-004** ⁵ |
 | Ruby · PHP · Lua | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
 | Java · Kotlin · C# | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
 | C · C++ · Rust | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
 | Bash/Shell | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
-| SQL | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | — (no provable cross-file refs at this tier; resolver skips+counts) ² |
+| SQL | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `references` **same-directory only** (`derived` tier) — no `imports` edge, no cross-directory resolution ⁴ |
 | CSS · YAML · TOML · Markdown · HCL/Terraform | Preview | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
 | HTML | Source-only | — (not registered) | ✖ not shipped — grammar exists upstream but is not subset-buildable in isolation (see below) | — | — |
 
@@ -46,9 +46,38 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > extraction — and `surfaces/client/capability_test.go` re-derives every expectation from
 > those same registries, so the matrix cannot drift away from what the code actually does.
 > If this table and `--json` ever disagree, `--json` is right and this table is stale.
-> SQL sits at `cross-file-heuristic` because a resolver IS registered for it; that resolver
-> currently proves no cross-file references and counts skips instead, which is a resolver
-> outcome, not a missing capability.
+>
+> ⁴ **CORRECTION, 2026-08-19 (SW-183 / [ADR 0012](adr/0012-capability-levels-graded-on-demonstrated-evidence.md)).**
+> This footnote previously read: *"SQL sits at `cross-file-heuristic` because a resolver IS
+> registered for it; that resolver currently proves no cross-file references and counts skips
+> instead, which is a resolver outcome, not a missing capability."* **The claim after the
+> semicolon was false**, and the SQL row above said the same thing. SQL's resolver **does**
+> prove cross-file references: a view referencing a table declared in a sibling file resolves
+> at the `derived` tier. Established by measurement plus two counterfactuals — removing the
+> registration makes the edge disappear, and emptying the resolver body makes the capability
+> audit report an over-claim. The **bound** is published with the capability: resolution is
+> **same-directory only** (ISO/IEC 9075 defines no file-inclusion construct, so there is
+> nothing to carry a reference across a directory boundary) and SQL emits **no `imports`
+> edge**. Record: [`rc/capability-audit-2026-08-19.md`](rc/capability-audit-2026-08-19.md) §4.
+>
+> **Levels are graded on registration, and CI now checks that against evidence.** The
+> derivation asks "is a resolver registered for L?", which a resolver that resolves nothing
+> would answer yes to. `surfaces/client/capabilityaudit_test.go` closes that gap: it ingests a
+> two-file fixture per shipped language and asserts the derived level against a measured
+> cross-file edge, in both directions. All 22 rows are published in the audit record above;
+> **no language's derived level over-claims**, and an unfixtured new language fails the build.
+
+> ⁵ **OPEN defect LINK-004 — Python dotted module imports resolve to nothing.**
+> `from pkg.util import helper` and `import pkg.util` — module paths naming a module *inside*
+> a package — produce **no edge at all**, neither `calls` nor `imports`. Single-segment forms
+> (`import util`, `from util import helper`, `from pkg import util`, `from pkg import helper`)
+> all resolve. The clause key is the module path's last dotted segment while a symbol's clause
+> is its parent **directory** base, and for `pkg.util` those differ. Affects `related_files`,
+> `callers`, `callees`, `impact` and `neighborhood` on Python. **Workaround:** import the
+> package rather than the module — `from pkg import util` then `util.helper()` resolves, and
+> additionally emits the `imports` edge. Not fixed; disclosed per the contract in
+> `readme.md` and the doctor `known-defects` check. Record:
+> [`rc/capability-audit-2026-08-19.md`](rc/capability-audit-2026-08-19.md) §3.
 
 ## How cross-file resolution actually works, language by language
 
@@ -128,7 +157,7 @@ families, because the three import mechanisms differ:
 | | **Rust** | file→file, `.rs` |
 | Interned package node | **Java · Kotlin** | ONE file→`package` edge; no directory fan-out exists to filter |
 | Exact target path | **TypeScript family · C · C++ · Ruby · PHP · Lua · Bash** | the resolver already names the exact file (`./util.ts`, `util.h`, `require './x'`); only a committed node at that path emits an edge |
-| No `imports` edge at all | **SQL** | its resolver deliberately resolves nothing (skip+count), so there is no target set |
+| No `imports` edge at all | **SQL** · **Java** · **Kotlin** · **Rust** | SQL: ISO/IEC 9075 defines no file-inclusion construct, so there is no target set — its cross-file `references` edges come from same-directory resolution instead (corrected 2026-08-19, SW-183; the earlier wording "its resolver deliberately resolves nothing" was false — see footnote ⁴). Java/Kotlin resolve through the interned `package` node and Rust through `mod`, neither of which yields a file→file edge; measured in [`rc/capability-audit-2026-08-19.md`](rc/capability-audit-2026-08-19.md) §2 |
 
 Go excludes `_test.go` because a test file is a package member but is **not
 importable** — the same ruling [`engine/typeresolve`](../engine/typeresolve)

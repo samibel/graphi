@@ -447,7 +447,25 @@ func KnownDefectsCheck() Check {
 					"unreachable OR shadowed once both defects are counted, versus 136 (6.9%) "+
 					"for LINK-002 alone — roughly 5x the surface. Filed 2026-08-19; not fixed, "+
 					"and the fix must close both defects together. Record: section 10 of "+
-					"docs/rc/link-002-clause-by-dir-recall.md.",
+					"docs/rc/link-002-clause-by-dir-recall.md.\n\n"+
+					"LINK-004 (open): a Python import whose module path has MORE THAN ONE dotted "+
+					"segment resolves to nothing — `from pkg.util import helper` and "+
+					"`import pkg.util` produce no `calls` edge AND no `imports` edge, the two "+
+					"commonest import forms in real Python. The linker keys an import path on "+
+					"its LAST dotted segment (`pkg.util` -> `util`) while a symbol's package "+
+					"clause is its PARENT DIRECTORY base (`pkg`); the two coincide only for "+
+					"single-segment module paths, which is the shape every existing test uses. "+
+					"`related_files`, `callers`, `callees`, `impact` and `neighborhood` on "+
+					"Python therefore lose those relationships with no skip and no diagnostic. "+
+					"Single-segment forms are unaffected: `import util`, "+
+					"`from util import helper`, `from pkg import util` and "+
+					"`from pkg import helper` all resolve. Workaround: import the PACKAGE, not "+
+					"the module — rewrite `from pkg.util import helper` as "+
+					"`from pkg import util` and call `util.helper()`, which resolves and "+
+					"additionally emits the file->file `imports` edge (verified against the "+
+					"built CLI, including its negative case). How much of a real Python "+
+					"repository this loses is NOT measured. Filed 2026-08-19 (SW-183); not "+
+					"fixed. Record: section 3 of docs/rc/capability-audit-2026-08-19.md.",
 				StatusInfo)
 		},
 	}

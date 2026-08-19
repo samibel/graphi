@@ -1,5 +1,75 @@
 # graphi — the per-language GA template v1 (2026-08-19)
 
+> ## AMENDMENT — 2026-08-19 (SW-183): LANGHONEST-001's *scope claim* is narrowed; the defect itself stands
+>
+> Per D6 this is **added**, not merged in. Nothing below is rewritten, re-pointed
+> or deleted, and none of this document's acceptance criteria or rulings change.
+> Read §5.2, §7, §10.3–§10.6 and §12 together with this block.
+>
+> **What stands, unqualified.** LANGHONEST-001 is real. `main.css` containing
+> `@import "base.css"` and `readme.md` containing `[base](./base.md)`, with both
+> targets tracked and indexed, receive `related_files` summary *"anchor … resolved
+> (file) but has no both edges to other files"* at `method: "no_edges"` — a
+> statement of absence that is not true of the code. SW-183 re-measured both on
+> isolated single-language fixtures and **confirms them** (audit rows 17 and 18).
+> §5.3's practice of recording earlier drafts' errors rather than swapping them
+> out is what makes this amendment possible at all, and it is why this one is
+> written the same way.
+>
+> **What is NARROWED.** This document's **root measurement** — *"the graph carries
+> 9 edges and ZERO file→file edges of any kind"*, generalised into *"the 'both
+> edges' relation is empty for every file in every language at every level, which
+> is why the outputs are byte-identical and why no level is exempt"* (§5.2/F1),
+> and into §7's *"true at THREE of the four levels"* — **does not generalise, and
+> the reason is this document's own fixture rule.**
+>
+> §10.3's Python fixture used `from pkg.util import helper`. That is the **one**
+> Python import form that resolves to nothing — not because Python is
+> cross-file-incapable, but because of a specific dotted-module binding defect now
+> filed as **LINK-004**. Measured across all five canonical forms on isolated
+> fixtures through a CLI built from this branch:
+>
+> | form | file→file `imports` edge? | cross-file `calls` edge? |
+> |---|---|---|
+> | `import util` | **yes** | **yes** |
+> | `from util import helper` | **yes** | **yes** |
+> | `from pkg import util` → `util.helper()` | **yes** (two: `pkg/util.py` and `pkg/__init__.py`) | **yes** |
+> | `from pkg import helper` | **yes** | **yes** |
+> | `from pkg.util import helper` | no | no |
+> | `import pkg.util` | no | no |
+>
+> So **file→file edges are produced in abundance** — 12 of the 16 languages with a
+> registered resolver emit them, including Python — and "zero file→file edges of
+> any kind" is a property of **that 12-file fixture**, not of the product. It is
+> therefore **not** the explanation for why css and markdown answer `no_edges`.
+>
+> **Consequence for LANGHONEST-001's scope.** The defect is an
+> **`intra-file-only` honesty defect**, not a product-wide absence of file→file
+> edges. Whether it also binds `cross-file-heuristic` is **reopened, not
+> re-decided here**: `app.py` under LINK-004 *does* receive the false sentence, so
+> the instance F1 rested on is real — but its cause is a per-language recall
+> defect with its own id and its own fix, not the structural absence F1 inferred.
+> **The `parse-only` half (`json` → `method: "unresolved"`) is untouched**, and
+> the AC-4 escalation in §12 stands exactly as written.
+>
+> **The reusable lesson is this document's own, turned on itself.** §5.3/§10.6:
+> *"a fixture that cannot express the relation under test cannot validate the rule
+> about it."* Draft 1 was caught by that rule on YAML. The same rule catches the
+> Python fixture — one that hits a latent defect cannot validate a claim about the
+> class the defect belongs to. **A single failing instance is a fixture defect
+> until the form matrix says otherwise**; SW-183 hit this three times in its own
+> first-pass fixtures (ruby's paren-less call, javascript's explicit `.js`
+> extension, and this one) and only the third survived.
+>
+> **§5.5 is unaffected and was executed as written.** All 22 audit rows apply its
+> askable/not-askable test, and `json` — which review round 2 noted was missing
+> from §5.5's table — is disposed of by the stated test (RFC 8259 defines no
+> reference construct; JSON Schema's `$ref` is a downstream vocabulary, the
+> identical argument to YAML's `include:`).
+>
+> Record: [`../rc/capability-audit-2026-08-19.md`](../rc/capability-audit-2026-08-19.md)
+> §3 and §5; ruling: [ADR 0012](../adr/0012-capability-levels-graded-on-demonstrated-evidence.md).
+
 > **Status: a specification, not a measurement.** This document says what must
 > exist for a language to be graded at the G1–G9 bar, where each asset lives,
 > and what an honest abstention costs. It grades no language. Every fact it

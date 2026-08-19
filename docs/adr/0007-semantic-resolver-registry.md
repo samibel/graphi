@@ -95,6 +95,25 @@ expectations is a defect in this ADR's implementation, not a baseline move.
   program plan §4 finding 3 / ADR-W1): the derivation still grades resolver
   REGISTRATION. This blocks no current row — Go's binding is outcome-true — and
   is wave-5 scope.
+
+  > **AMENDMENT 2026-08-19 (SW-183, [ADR 0012](0012-capability-levels-graded-on-demonstrated-evidence.md)).**
+  > Added per D6; the bullet above is left exactly as written. **"The SQL
+  > wrinkle" was not a wrinkle** — `sqlResolver` does resolve cross-file
+  > references (`derived`-tier, same-directory), proven by two counterfactuals,
+  > so SQL's `cross-file-heuristic` is earned. The false premise came from
+  > `sqlResolver`'s own doc comment and was copied into five records including
+  > this one.
+  >
+  > **The general statement — "the derivation still grades resolver
+  > REGISTRATION" — remains TRUE and remains the right thing to worry about.**
+  > What changed is the disposition: an outcome-based *predicate* is **rejected**
+  > (ADR 0012 D4 — "demonstrated" is a fixture-ingest property and cannot be
+  > computed where a pure read-time derivation runs; caching it back is the stale
+  > table this ADR exists to prevent), and the outcome binding lives in **CI**
+  > instead — `surfaces/client/capabilityaudit_test.go` grades all 22 shipped
+  > languages against measured cross-file edges in both directions. This item is
+  > therefore **closed as "still open"** and is no longer wave-5 scope.
+  > Record: [`../rc/capability-audit-2026-08-19.md`](../rc/capability-audit-2026-08-19.md).
 - The trust-facts fields (`lastTypeResolution`, `lastPackageEvidence`) are
   single-slot and hold ONE resolver's facts — exact with one registrant, and
   the pass carries a load-bearing comment requiring per-language widening

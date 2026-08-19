@@ -225,6 +225,24 @@ is hosted, there is no service to sign up for.
   LINK-002 alone. Filed 2026-08-19; **not fixed**, and the eventual fix must
   close both defects together. Record: §10 of
   [docs/rc/link-002-clause-by-dir-recall.md](docs/rc/link-002-clause-by-dir-recall.md).
+- **OPEN defect LINK-004 — Python dotted module imports resolve to nothing.**
+  `from pkg.util import helper` and `import pkg.util` — module paths naming a
+  module *inside* a package, and the two commonest import forms in real Python —
+  produce **no edge at all**: no `calls` edge and no `imports` edge. The linker
+  keys an import path on its **last dotted segment** (`pkg.util` → `util`) while
+  a symbol's package clause is its **parent directory** base (`pkg`), and the two
+  coincide only for single-segment module paths. So `related_files`, `callers`,
+  `callees`, `impact` and `neighborhood` silently lose those relationships — with
+  no skip and no diagnostic, exactly as if the import were not there.
+  **Single-segment forms are unaffected and all resolve:** `import util`,
+  `from util import helper`, `from pkg import util`, `from pkg import helper`.
+  **Workaround:** import the package, not the module — rewrite
+  `from pkg.util import helper` as `from pkg import util` and call
+  `util.helper()`, which resolves *and* additionally emits the file→file
+  `imports` edge. Verified against the built CLI, including the negative case.
+  How much of a real Python repository's import graph this loses is **not
+  measured**. Filed 2026-08-19 (SW-183); **not fixed**. Record: §3 of
+  [docs/rc/capability-audit-2026-08-19.md](docs/rc/capability-audit-2026-08-19.md).
 - **OPEN defect PARITY-004 — restoring a Go package that was missing when the
   index was built leaves `sync` permanently diverged from `rebuild`.** If you
   run `graphi rebuild` while an intra-module import points at a package that
