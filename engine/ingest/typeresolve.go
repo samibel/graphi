@@ -178,6 +178,7 @@ func (i *Ingester) semanticResolve(ctx context.Context, w graphstore.Writer, roo
 	i.recordSemanticRun(res.Language(), semanticRun{
 		facts:    trust.NewTypeResolutionFacts(result),
 		evidence: packageEvidenceFromResult(res.Language(), result, dirOf),
+		skips:    result.NamedSkips,
 	})
 
 	checkedDirs := make(map[string]struct{}, len(result.Units))

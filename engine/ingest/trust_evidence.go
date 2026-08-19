@@ -43,9 +43,17 @@ import (
 // v3 sidecar observed read-only has no such column and never migrates); the
 // FILE read keeps the older floor — its table is unchanged, and refusing to
 // serve intact rows would be a false unavailability.
+// languageSkipsSchemaVersion is the version whose 4 -> 5 step added
+// trust_language_skips. The PACKAGE read deliberately does NOT raise its floor
+// to it: a v4 sidecar's package rows are intact and refusing them would be a
+// false unavailability (the same reasoning that keeps the FILE read at 3).
+// Instead the absence is made VISIBLE — PackageEvidence.SkipsAvailable reads
+// false — so a consumer can never mistake "this sidecar cannot tell me" for
+// "nothing was skipped".
 const (
 	trustEvidenceSchemaVersion   = 3
 	packageEvidenceSchemaVersion = 4
+	languageSkipsSchemaVersion   = 5
 )
 
 // Parse-status vocabulary of FileEvidence.ParseStatus (closed set). The
@@ -128,6 +136,35 @@ type PackageEvidence struct {
 	DroppedIntents int
 	ConfirmedEdges int
 	SkippedFiles   int
+
+	// Languages names EVERY semantic registrant holding a row for this package
+	// key under the generation, sorted. Language above collapses to "" once a
+	// directory carries more than one language's row (the fold is an aggregate
+	// and cannot honestly claim one), which loses the very fact a consumer of
+	// repo-global per-language counters needs: WHICH registrants this package
+	// is accounted by. Always populated — one entry for the single-language
+	// case, so the identity fold gains a fact rather than changing one.
+	Languages []string
+
+	// NamedSkips is the LEGIBLE ABSTENTION record of the semantic registrant(s)
+	// that produced this row: skip-reason name -> count (W0.g). It is joined
+	// onto the row from trust_language_skips at read time, by language.
+	//
+	// READ THE SCOPE BEFORE USING IT. These counters are REPOSITORY-GLOBAL for
+	// the language, not this package's: the binder tallies them per pass with
+	// NO file, package, symbol or call-site attribution, and for two of the
+	// JVM reasons (java_receiver_untyped, java_receiver_external) the callee is
+	// undeterminable by definition, so no site exists to attribute them to.
+	// A surface roll-up keyed on this row is a roll-up of a repo-global
+	// number and must say so; it is NOT a per-symbol or per-package
+	// accounting, and nothing here licenses the sentence "N sites in THIS
+	// package were skipped".
+	NamedSkips map[string]int
+	// SkipsAvailable distinguishes "no named skip was recorded" (true, empty
+	// NamedSkips) from "this sidecar cannot answer" (false) — a v4 sidecar
+	// observed read-only has no trust_language_skips table and never migrates.
+	// Fail closed: absence of the table is "no answer", never "no skips".
+	SkipsAvailable bool
 }
 
 // packageEvidenceFromResult folds one whole-repo typeresolve pass into the
@@ -240,10 +277,16 @@ func (i *Ingester) persistTrustEvidenceFull(ctx context.Context, generation stri
 		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_package_evidence"); err != nil {
 			return fmt.Errorf("ingest: clear package evidence: %w", err)
 		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_language_skips"); err != nil {
+			return fmt.Errorf("ingest: clear language skips: %w", err)
+		}
 		if err := insertFileEvidenceTx(ctx, tx, generation, rows); err != nil {
 			return err
 		}
-		return insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence())
+		if err := insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence()); err != nil {
+			return err
+		}
+		return insertLanguageSkipsTx(ctx, tx, generation, i.combinedLanguageSkips())
 	})
 }
 
@@ -297,7 +340,17 @@ func (i *Ingester) persistTrustEvidenceLive(ctx context.Context, touched map[str
 		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_package_evidence"); err != nil {
 			return fmt.Errorf("ingest: clear package evidence: %w", err)
 		}
-		return insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence())
+		// The skip rows are replaced under exactly the same gate as the package
+		// rows and in the same transaction: they describe the SAME whole-repo
+		// recompute, so a state where one is this pass's and the other the
+		// previous pass's must not be reachable.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_language_skips"); err != nil {
+			return fmt.Errorf("ingest: clear language skips: %w", err)
+		}
+		if err := insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence()); err != nil {
+			return err
+		}
+		return insertLanguageSkipsTx(ctx, tx, generation, i.combinedLanguageSkips())
 	})
 }
 
@@ -324,6 +377,38 @@ func insertPackageEvidenceTx(ctx context.Context, tx *sql.Tx, generation string,
 			generation, r.Language, r.PackageKey, r.State, r.DegradedReason,
 			r.TypeErrors, r.DroppedIntents, r.ConfirmedEdges, r.SkippedFiles); err != nil {
 			return fmt.Errorf("ingest: persist package evidence for %s: %w", r.PackageKey, err)
+		}
+	}
+	return nil
+}
+
+// insertLanguageSkipsTx writes the pass's named abstention counters, one row
+// per (generation, language, skip name), in deterministic language-then-name
+// order. A zero count is never written: the row set is the list of reasons
+// the pass ACTUALLY abstained under, so an absent name means "not observed",
+// which is exactly what a reader should conclude.
+func insertLanguageSkipsTx(ctx context.Context, tx *sql.Tx, generation string, skips map[string]map[string]int) error {
+	langs := make([]string, 0, len(skips))
+	for l := range skips {
+		langs = append(langs, l)
+	}
+	sort.Strings(langs)
+	for _, lang := range langs {
+		names := make([]string, 0, len(skips[lang]))
+		for n := range skips[lang] {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			count := skips[lang][name]
+			if count <= 0 {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO trust_language_skips
+				(generation_id, language, skip_name, count) VALUES (?, ?, ?, ?)`,
+				generation, lang, name, count); err != nil {
+				return fmt.Errorf("ingest: persist language skip %s/%s: %w", lang, name, err)
+			}
 		}
 	}
 	return nil
@@ -409,12 +494,14 @@ func (i *Ingester) PackageEvidence(ctx context.Context, generation, pkgKey strin
 	pe := PackageEvidence{Generation: generation, PackageKey: pkgKey}
 	n := 0
 	var reasons []string
+	var langs []string
 	for rows.Next() {
 		var r PackageEvidence
 		if err := rows.Scan(&r.Language, &r.State, &r.DegradedReason,
 			&r.TypeErrors, &r.DroppedIntents, &r.ConfirmedEdges, &r.SkippedFiles); err != nil {
 			return PackageEvidence{}, fmt.Errorf("ingest: read package evidence: %w", err)
 		}
+		langs = append(langs, r.Language)
 		n++
 		if n == 1 {
 			r.Generation, r.PackageKey = generation, pkgKey
@@ -450,7 +537,104 @@ func (i *Ingester) PackageEvidence(ctx context.Context, generation, pkgKey strin
 	if n > 1 {
 		pe.DegradedReason = strings.Join(reasons, "; ")
 	}
+	// Join the row's languages' REPO-GLOBAL named skip counters (W0.g). The
+	// union across languages is sound because the vocabularies are
+	// language-prefixed and therefore disjoint; the numbers stay repo-global
+	// either way, which is what PackageEvidence.NamedSkips' doc forbids
+	// readers from forgetting.
+	sort.Strings(langs)
+	pe.Languages = langs
+	skips, err := i.languageSkipsFor(ctx, generation, langs)
+	if err != nil && !errors.Is(err, ErrTrustEvidenceUnavailable) {
+		return PackageEvidence{}, err
+	}
+	if err == nil {
+		pe.SkipsAvailable = true
+		pe.NamedSkips = skips
+	}
 	return pe, nil
+}
+
+// languageSkipsFor unions the named skip counters of the given languages under
+// one generation. A sidecar predating trust_language_skips is
+// ErrTrustEvidenceUnavailable — never an empty map, which would read as "no
+// skips" (fail closed).
+func (i *Ingester) languageSkipsFor(ctx context.Context, generation string, langs []string) (map[string]int, error) {
+	if err := i.trustEvidenceReadyAt(ctx, languageSkipsSchemaVersion); err != nil {
+		return nil, err
+	}
+	out := map[string]int{}
+	for _, lang := range langs {
+		rows, err := i.meta.QueryContext(ctx,
+			`SELECT skip_name, count FROM trust_language_skips
+			 WHERE generation_id = ? AND language = ? ORDER BY skip_name`, generation, lang)
+		if err != nil {
+			return nil, fmt.Errorf("ingest: read language skips: %w", err)
+		}
+		err = func() error {
+			defer rows.Close()
+			for rows.Next() {
+				var name string
+				var count int
+				if err := rows.Scan(&name, &count); err != nil {
+					return fmt.Errorf("ingest: scan language skips: %w", err)
+				}
+				out[name] += count
+			}
+			return rows.Err()
+		}()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// LanguageSkips returns the whole generation's named abstention counters,
+// keyed language -> skip name -> count: the repository-global record of every
+// site a semantic registrant refused to bind under a NAMED reason rather than
+// guessing (W0.g).
+//
+// The scope is the same one PackageEvidence.NamedSkips carries and the same
+// one every surface must restate: repository-global per language, with NO
+// file, package, symbol or call-site attribution.
+//
+// Fail-closed contract, and the distinction matters more here than anywhere
+// else: a sidecar predating the skip table is ErrTrustEvidenceUnavailable
+// ("cannot answer"), while an EMPTY map under a real generation means "no
+// named skip was recorded by any registrant this pass" — which is a fact, not
+// a claim that nothing was skipped by some other mechanism. An empty
+// generation string is ErrTrustEvidenceNotFound. Safe on read-only ingesters.
+func (i *Ingester) LanguageSkips(ctx context.Context, generation string) (map[string]map[string]int, error) {
+	if err := i.trustEvidenceReadyAt(ctx, languageSkipsSchemaVersion); err != nil {
+		return nil, err
+	}
+	if generation == "" {
+		return nil, fmt.Errorf("%w: no generation to look up", ErrTrustEvidenceNotFound)
+	}
+	rows, err := i.meta.QueryContext(ctx,
+		`SELECT language, skip_name, count FROM trust_language_skips
+		 WHERE generation_id = ? ORDER BY language, skip_name`, generation)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: list language skips: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]map[string]int{}
+	for rows.Next() {
+		var lang, name string
+		var count int
+		if err := rows.Scan(&lang, &name, &count); err != nil {
+			return nil, fmt.Errorf("ingest: scan language skips: %w", err)
+		}
+		if out[lang] == nil {
+			out[lang] = map[string]int{}
+		}
+		out[lang][name] = count
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // ListFileEvidence returns up to limit file rows of the given generation in

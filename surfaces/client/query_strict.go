@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
+	"sort"
 
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/trust"
@@ -157,12 +159,54 @@ func ComposeStrictQuery(ctx context.Context, q QueryPort, opts StrictQueryOption
 		env.Limitations = append(env.Limitations,
 			fmt.Sprintf("%d edges below the %s tier were excluded — emptiness is filtered, not proven", excluded, minTier))
 	}
+	// Legible abstention (W0.g). The tier filter above reports what THIS
+	// SURFACE withheld; this reports what the semantic binder refused to bind
+	// in the first place. Both are ways a result can be smaller than the truth,
+	// and a surface that reports only the first still hands back a confident
+	// list with a silent gap behind it.
+	//
+	// Gated on the packages the result covers, so a repository whose binders
+	// never abstained stays quiet — and read AFTER the filter so an empty
+	// result is recognized as empty here.
+	//
+	// A NOT-FOUND result is excluded entirely, including from the
+	// unavailability notice: the symbol never resolved, so there is no package
+	// the abstention could be about and no claim about it to qualify. Warning
+	// there would be noise, and noise on every miss is how a real notice stops
+	// being read.
+	if res.Found() {
+		env.Limitations = append(env.Limitations,
+			abstentionLimitations(
+				readPackageAbstention(ctx, opts.Root, opts.DBPath, opts.MetaDir, resultPackages(res), res.Symbol),
+				len(res.Edges) == 0)...)
+	}
 
 	b, err := encodeStrictEnvelope(env)
 	if err != nil {
 		return nil, verdict, state, err
 	}
 	return b, verdict, state, nil
+}
+
+// resultPackages returns the distinct package keys (repo-relative source
+// directories, "." for the root — the unit key space the evidence rows use)
+// the result's nodes live in, sorted. Empty when the result anchors nothing:
+// a not-found result covers no package and must not attract an abstention
+// notice, because there is no scope for one to be about.
+func resultPackages(res query.Result) []string {
+	seen := map[string]struct{}{}
+	for _, n := range res.Nodes {
+		if n.SourcePath == "" {
+			continue
+		}
+		seen[path.Dir(n.SourcePath)] = struct{}{}
+	}
+	out := make([]string, 0, len(seen))
+	for k := range seen {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // filterByTier drops edges below minRank and the nodes no longer justified by a

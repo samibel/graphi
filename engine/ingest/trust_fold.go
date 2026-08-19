@@ -32,6 +32,14 @@ import (
 type semanticRun struct {
 	facts    trust.TypeResolutionFacts
 	evidence []PackageEvidence
+	// skips are the registrant's REPO-GLOBAL named abstention counters for
+	// this pass (typeresolve.Result.NamedSkips). Deliberately NOT folded into
+	// facts: trust.Snapshot's canonical Encode IS the digest contract, so
+	// widening it is a schema decision — and the counters are repo-global with
+	// no attribution, which the snapshot's per-unit shapes cannot express
+	// without implying one. They persist in their own table instead
+	// (trust_language_skips, schema 5).
+	skips map[string]int
 }
 
 // recordSemanticRun stores a completed run under its language. Lazy map init:
@@ -104,6 +112,31 @@ func (i *Ingester) combinedPackageEvidence() []PackageEvidence {
 	var out []PackageEvidence
 	for _, l := range langs {
 		out = append(out, i.semanticRuns[l].evidence...)
+	}
+	return out
+}
+
+// combinedLanguageSkips returns the completed runs' named abstention counters
+// keyed BY LANGUAGE — deliberately NOT summed across languages. Summing would
+// destroy the only attribution these counters have (which registrant
+// abstained), and the language is what a surface needs in order to say
+// "the java binder abstained here" rather than an unowned total. Languages
+// with no recorded skip carry no entry; nil when no run recorded any.
+func (i *Ingester) combinedLanguageSkips() map[string]map[string]int {
+	var out map[string]map[string]int
+	for _, l := range i.semanticLanguages() {
+		s := i.semanticRuns[l].skips
+		if len(s) == 0 {
+			continue
+		}
+		if out == nil {
+			out = map[string]map[string]int{}
+		}
+		per := make(map[string]int, len(s))
+		for name, n := range s {
+			per[name] = n
+		}
+		out[l] = per
 	}
 	return out
 }

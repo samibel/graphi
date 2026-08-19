@@ -1,5 +1,62 @@
 # P1 PRD v1.0 — Delta against the shipped trust surface
 
+> ## AMENDMENT — 2026-08-19 (SW-171): a seventh additive v1 field, `abstention`
+>
+> Per D6 this amendment is **added**; nothing below is rewritten or re-pointed.
+> It exists because this repository's own guard says it must: the register test
+> at `surfaces/client/trust_report_test.go` pins the exact top-level property
+> count and states that *"a field appearing here is a contract decision that must
+> be argued in the delta document, never drift that slips in"*. This is that
+> argument.
+>
+> **What was added.** `trust_report_doc.abstention`
+> (`surfaces/client/trust_report.go`), an additive field under
+> `schema_version: 1` per contract §2.3 rule 7. It carries the semantic binders'
+> **named skip counters** — what a registrant REFUSED to bind, under which
+> reason — as `{available, unavailable_reason, scope, languages[]}`.
+>
+> **Why it exists.** The JVM binder skips every receiver it cannot type from a
+> declared form, under a named counter, rather than guessing (ADR 0008;
+> `engine/jvmresolve/body_java.go:68-78`). None of that reached a user, so an
+> agent asking `callers` on a Java method got a confident list and no signal
+> that call sites had been refused. Silent under-reporting is the confidence
+> laundering the surrounding rules forbid.
+>
+> **Composed at read time, not persisted in the snapshot — the SAME reasoning
+> §B1 recorded for `capabilities`, and it is restated rather than assumed.**
+> Adding a field to `trust.Snapshot` changes its canonical `Encode` bytes, which
+> **is** the digest contract, and would force `SnapshotSchemaVersion` to 2
+> against the `schema_version: 1` PRD v1.0 §6 itself fixes. The counters are
+> therefore persisted in their own generation-bound sidecar table
+> (`trust_language_skips`, ingest schema 5) and composed into the document at
+> read time. Measured, not assumed: indexing one fixture with a binary at the
+> parity candidate `3b8d43f` and with one carrying this change produced
+> **byte-identical** `nodes` + `edges` rows, on a Go repository and on a Java one
+> with the binder opted in.
+>
+> **The scope limit is part of the field, not a footnote.** The counters are
+> **repository-global per language** and carry NO file, package, symbol or
+> call-site attribution — for `java_receiver_untyped` and
+> `java_receiver_external` the callee is undeterminable by definition, so no
+> site exists to attribute them to even in principle. The `scope` property
+> restates this inside every document, and the `strict_query` roll-up restates
+> it inside every notice, so the numbers cannot travel without their limit.
+> A reader must not take a package roll-up for a per-symbol accounting.
+>
+> **Fail-closed presence.** `available: false` with a stated
+> `unavailable_reason` means the record could not be read; `available: true`
+> with an empty `languages` list means it was read and holds nothing. Those are
+> different answers and are never collapsed — a silent absence here would read
+> as an all-clear.
+>
+> **What did NOT change.** `query.Result` and the Stable-12 wire contract are
+> byte-untouched (`engine/query` carries no diff);
+> `parityreport.CandidateSHA` is unmoved; no published parity row or evidence
+> row was touched. Product bytes DID move (the change touches compiled files),
+> so a parity dispatch is unpublishable until the next scheduled candidate move
+> — expected and precedented, see the Wave 0 handoff §8 and its 2026-08-19
+> amendment.
+
 | | |
 |---|---|
 | **Status** | Binding reconciliation. Records an owner decision; supersedes nothing on its own. |

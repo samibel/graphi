@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -131,16 +132,20 @@ func TestTrustEvidence_FullPassWritesFixtureRows(t *testing.T) {
 		t.Error("ListFileEvidence accepted a non-positive limit — the list must stay bounded")
 	}
 
+	// SkipsAvailable is true and NamedSkips empty on a migrated sidecar with a
+	// Go-only registry: the go/types resolver has no named-skip vocabulary, so
+	// "the record was read and holds nothing" — which is exactly the state that
+	// must stay distinguishable from "the record could not be read" (W0.g).
 	wantPkgs := map[string]ingest.PackageEvidence{
-		".":    {Generation: gen, Language: "go", PackageKey: ".", State: ingest.PackageStateChecked, ConfirmedEdges: 1},
-		"util": {Generation: gen, Language: "go", PackageKey: "util", State: ingest.PackageStateChecked},
+		".":    {Generation: gen, Language: "go", PackageKey: ".", State: ingest.PackageStateChecked, ConfirmedEdges: 1, Languages: []string{"go"}, NamedSkips: map[string]int{}, SkipsAvailable: true},
+		"util": {Generation: gen, Language: "go", PackageKey: "util", State: ingest.PackageStateChecked, Languages: []string{"go"}, NamedSkips: map[string]int{}, SkipsAvailable: true},
 	}
 	for key, w := range wantPkgs {
 		pe, err := ing.PackageEvidence(ctx, gen, key)
 		if err != nil {
 			t.Fatalf("PackageEvidence(%s): %v", key, err)
 		}
-		if pe != w {
+		if !reflect.DeepEqual(pe, w) {
 			t.Errorf("PackageEvidence(%s) = %+v, want %+v", key, pe, w)
 		}
 	}
@@ -503,8 +508,9 @@ PRAGMA user_version = 2;`
 // TestTrustEvidence_Migration2To3 pins the sidecar ladder step: a version-2
 // store WITHOUT the tables reads evidence-UNAVAILABLE (never empty-healthy)
 // through a read-only observer, migrates additively on the next read-write
-// open (existing rows intact, user_version 3, tables present), and serves
-// evidence normally after the next full pass.
+// open (existing rows intact, the ladder's current head stamped, every
+// evidence table present), and serves evidence normally after the next full
+// pass.
 func TestTrustEvidence_Migration2To3(t *testing.T) {
 	ctx := context.Background()
 	metaDir := filepath.Join(t.TempDir(), "meta")
@@ -539,10 +545,10 @@ func TestTrustEvidence_Migration2To3(t *testing.T) {
 	if err := ing.MetaDB().QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		t.Fatalf("read user_version: %v", err)
 	}
-	if version != 4 {
-		t.Errorf("user_version = %d after migration, want 4", version)
+	if version != 5 {
+		t.Errorf("user_version = %d after migration, want 5", version)
 	}
-	for _, table := range []string{"trust_file_evidence", "trust_package_evidence"} {
+	for _, table := range []string{"trust_file_evidence", "trust_package_evidence", "trust_language_skips"} {
 		var n int
 		if err := ing.MetaDB().QueryRowContext(ctx,
 			"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&n); err != nil {

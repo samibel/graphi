@@ -88,14 +88,23 @@ func runQueryStrictAt(cwd string, args []string, stdout io.Writer) int {
 		return 2
 	}
 
-	root := ""
-	if *policy != "" {
-		detected, okRepo := state.DetectRepo(cwd)
-		if !okRepo {
+	// Resolve the repository from the INVOCATION's cwd, always — not only for
+	// the policy preflight. The composition reads generation-bound evidence
+	// (the trust preflight, and the W0.g abstention record) against this root;
+	// leaving it empty makes it fall back to the PROCESS working directory,
+	// which is the right answer only by coincidence and silently the wrong
+	// store whenever the two differ. A non-repository is still a hard error
+	// ONLY when a policy was requested — that path promises a verdict and must
+	// not produce one over a directory it could not identify; without a policy
+	// an unidentifiable root degrades to the composition's own fail-closed
+	// handling, which reports the unavailability rather than inventing facts.
+	root, okRepo := state.DetectRepo(cwd)
+	if !okRepo {
+		if *policy != "" {
 			printNotARepo("query-strict")
 			return 2
 		}
-		root = detected
+		root = ""
 	}
 
 	ctx := context.Background()

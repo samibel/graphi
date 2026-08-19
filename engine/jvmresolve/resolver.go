@@ -20,10 +20,11 @@ package jvmresolve
 // knowledge, so the mixed dir keeps possibly-stale edges and says so in its
 // evidence row instead.
 //
-// The walkers' and emitter's NAMED skip counters have no slot in
-// typeresolve.Result's v1 schema (TypeErrors would be a lie); they stay
-// available on the package API for the per-language evidence work and are
-// deliberately NOT smuggled into the Result.
+// The walkers' and emitter's NAMED skip counters reach the outside world
+// through typeresolve.Result.NamedSkips — a slot of their own, never folded
+// into TypeErrors (which would be a lie: a skip is a refusal to bind, not a
+// type error). They remain REPO-GLOBAL and un-attributed; see the field's own
+// doc comment for what that forbids a consumer from claiming.
 
 import (
 	"path"
@@ -37,6 +38,27 @@ import (
 // reasonMixedDir is the degradation reason for a directory holding both
 // languages' sources (sweep-exempt; see the package comment).
 const reasonMixedDir = "mixed-language directory (java+kotlin): stale-sweep exempt so neither registrant deletes the other's edges"
+
+// mergeSkips sums the walker's Phase-B named gaps and the emitter's Phase-C
+// identity gaps into ONE counter map — both are abstentions of the same pass
+// and the vocabularies are disjoint by construction. Zero counts are dropped
+// so an empty map and a map of zeros can never be told apart downstream, and
+// nil is returned when nothing was skipped (the "no named skip recorded"
+// value; see typeresolve.Result.NamedSkips).
+func mergeSkips(sets ...SkipCounts) map[string]int {
+	out := map[string]int{}
+	for _, s := range sets {
+		for name, n := range s {
+			if n > 0 {
+				out[name] += n
+			}
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
 
 // Resolver adapts the binder to the ADR 0007 seam for one language.
 type Resolver struct{ lang string }
@@ -75,17 +97,22 @@ func (r Resolver) Resolve(files map[string][]byte, committed map[model.NodeId]st
 	ix := NewIndex(tab)
 
 	var sites []TypedSite
+	var walkSkips SkipCounts
 	if r.lang == LangJava {
-		sites, _ = ix.AnalyzeJavaBodies(files)
+		sites, walkSkips = ix.AnalyzeJavaBodies(files)
 	} else {
-		sites, _ = ix.AnalyzeKotlinBodies(files)
+		sites, walkSkips = ix.AnalyzeKotlinBodies(files)
 	}
 	er, err := ix.EmitForLanguage(r.lang, sites, committed)
 	if err != nil {
 		return typeresolve.Result{}, err
 	}
 
-	res := typeresolve.Result{Edges: er.Edges, DroppedIntents: er.DroppedIntents}
+	res := typeresolve.Result{
+		Edges:          er.Edges,
+		DroppedIntents: er.DroppedIntents,
+		NamedSkips:     mergeSkips(walkSkips, er.Skips),
+	}
 
 	// Directory bookkeeping: which dirs hold own-language files, which hold
 	// the sibling language too, and which own-language files failed to table.
