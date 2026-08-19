@@ -57,6 +57,33 @@ The engineering behind these gates is real and largely green in CI; what was
 wrong is the ledger's verdict vocabulary. Green tests are an input to a gate,
 never the gate itself. **G5** partial. **G4, G7, G9** not started.
 
+> **Amended 2026-08-19 (SW-174, W1.a). Reason 1 above is superseded in its
+> factual half and unchanged in its conclusion; nothing above is rewritten.**
+> `docs/rc/evidence-index.yaml` now holds **35** gate rows — the original 17
+> (13 UNKNOWN, 4 STALE, **still zero PASS**) plus **18** `GA-LANG-*` rows
+> created by SW-174: `GA-LANG-java-G1..G9` and `GA-LANG-kotlin-G1..G9`, with
+> **G2 substituted by G2SUB** at both, since java and kotlin are
+> `cross-file-heuristic` (re-measured 2026-08-19 from the CLI built at
+> `1e440cf`). So `grep -c '^  - id: GA-LANG-'` no longer returns nothing; it
+> returns **18**.
+>
+> **The roll-up above does not move.** Every one of the 18 is **born UNKNOWN**,
+> and UNKNOWN counts as not passed, so *"every gate reads UNKNOWN"* for
+> Java/Kotlin is still exactly right — it is now recorded as data rather than
+> asserted as prose, which is the whole of what W1.a delivers. Reason 2 is
+> untouched: **JVMSOUND-003 and JVMSOUND-004** are open, reproduced,
+> deliberately unfixed wrong-confirmed-edge defects, and `GA-LANG-{java,kotlin}-G2SUB`
+> record them in their own `current` field.
+>
+> **WP-J10 in the table above is therefore half discharged:** the
+> `GA-LANG-*` rows exist (born UNKNOWN); the perf and budget runs do not, and
+> remain OWNER-gated on an attested candidate — see SW-177.
+>
+> **Go's rows are NOT part of this.** `go` already carries a `ga-language`
+> matrix row, so creating `GA-LANG-go-*` rows fails `cmd/coverage -check`
+> immediately (measured: 9 violations, exit 1). That is SW-174 AC-6 and it is
+> escalated to the owner, not resolved here.
+
 ### 1.1 STOP-SHIP — the binder emits FALSE `confirmed` edges (found 2026-08-16)
 
 Two defects in the D6 binding rule, **each reproduced against the live binder**

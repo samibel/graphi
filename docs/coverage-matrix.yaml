@@ -35,6 +35,26 @@
 # docs/rc/evidence-index.yaml (go alone is grandfathered: its GA evidence is
 # the P0/P1 program record). Adding a row here without those artifacts fails
 # `go run ./cmd/coverage -check` — a language cannot be flipped GA by prose.
+#
+# READ BEFORE CREATING GA-LANG-go-* EVIDENCE ROWS (added 2026-08-19, SW-174).
+# The grandfathering below exempts `go` from ONE rule only: it may carry NO
+# GA-LANG-* rows at all (internal/coverage/galang.go:133, `found == 0`). It does
+# NOT exempt go from the per-row rule at galang.go:129-131, which raises a
+# violation for EVERY GA-LANG-go-* row that is not PASS with evidence_uri and
+# sha. Because the `go` row below already exists, go cannot follow the ordering
+# every other language follows (rows born UNKNOWN first, matrix row last) —
+# there is no step at which its rows may be UNKNOWN.
+#
+# MEASURED, not reasoned (SW-174): nine GA-LANG-go-G1..G9 rows born UNKNOWN
+# were added to docs/rc/evidence-index.yaml and `go run ./cmd/coverage -check`
+# returned `ga-language check FAILED — 9 violation(s)`, exit 1 — one violation
+# per row. They were removed again and the gate returned to green, so the finding
+# is published (SW-174 AC-6) without leaving CI red while the owner rules.
+# The two resolutions, both the owner's: (A) measure and populate all nine so
+# they read PASS, or (B) withdraw this row until they do and restore it by the
+# SW-179 mechanism. Until one is taken, creating GA-LANG-go-* rows turns this
+# check red. Removing them again is the one resolution AC-6 forbids. This is
+# also SW-186's entry problem.
 capabilities:
   - id: go
     category: ga-language

@@ -55,21 +55,57 @@ candidate:
   release_digest: "sha256:be64c5c090ddf08a9798877aa96f0be84ed709ec2f71f883a4d39498d6828bed (graphi-linux-amd64, v0.7.1)"
 
 # ── The GA-language axis: how GA-LANG-<lang>-G<n> rows must be shaped ───────
-# Added 2026-08-19 (SW-180). There are ZERO GA-LANG-* ROWS in this file today,
-# and that is why internal/coverage.CheckGALanguages currently binds exactly one
-# ga-language matrix row (`go`, grandfathered — its GA evidence predates this
-# mechanism). Count ROWS, never mentions:
+# Added 2026-08-19 (SW-180).
 #
-#     grep -c '^  - id: GA-LANG-' docs/rc/evidence-index.yaml     # -> 0
+# AMENDED 2026-08-19 (SW-174, W1.a) — THE FIRST GA-LANG-* ROWS NOW EXIST.
+# What this block said until this commit, and what it now says:
+#
+#   WAS: "There are ZERO GA-LANG-* ROWS in this file today, and that is why
+#         internal/coverage.CheckGALanguages currently binds exactly one
+#         ga-language matrix row (`go`, grandfathered)."
+#   NOW: EIGHTEEN rows exist — GA-LANG-java-G1..G9 and GA-LANG-kotlin-G1..G9,
+#        with G2 substituted by G2SUB at both (see rule 1). Every one is
+#        UNKNOWN. `CheckGALanguages` still binds exactly the one `go`
+#        ga-language matrix row, because java and kotlin have no matrix row —
+#        that is the ordering constraint in rule 3 working, not an oversight.
+#
+# The first sentence was TRUE when written and is FALSE from this commit on. It
+# is corrected here rather than left to be discovered, and what it used to say
+# is quoted rather than deleted, per the §5.3 practice this programme runs
+# under.
+#
+# ONE MORE SENTENCE ELSEWHERE IN THE TREE GOES STALE ON THIS COMMIT AND IS
+# DELIBERATELY NOT FIXED: engine/semantic/semantic.go:11 justifies the
+# default-off JVM registrants with "no GA-LANG-* evidence row exists". Eighteen
+# now do. The REASON survives intact — none of them is green, and UNKNOWN
+# counts as not passed — but the literal clause is false. It is left standing
+# because engine/semantic is a COMPILED file, a pure comment in a compiled file
+# is a product byte under this repository's provenance gate (2026-08-wave0
+# handoff §8, measured), and SW-174 AC-8 forbids moving one. This is the
+# D8-disclosure-versus-no-product-bytes tension that handoff already recorded as
+# an open owner question, arriving again; it is disclosed here rather than
+# resolved. Whoever next moves product bytes in engine/semantic should correct
+# the clause to "no GREEN GA-LANG-* evidence row exists".
+#
+# Count ROWS, never mentions:
+#
+#     grep -c '^  - id: GA-LANG-' docs/rc/evidence-index.yaml     # -> 18
+#
+# THAT NUMBER IS EXPECTED TO RISE and is pinned only as of this commit: it is
+# 18 = 9 java + 9 kotlin, and SW-181, SW-182, SW-184, SW-185 and SW-186 each
+# add their own language's scaffold. The property that must stay TRUE under
+# every future edit is not the value — it is that the command counts ROWS and
+# never counts a mention in this comment block.
 #
 # NOTE THE `- id:` ANCHOR, and do not replace it with a bare grep. A bare
-# `grep -c 'GA-LANG-'` over this file does NOT return 0 — it counts the
-# mentions inside THIS COMMENT BLOCK. The first version of this block published
-# exactly that bare command with `-> 0` beside it: a command falsified by the
-# very comment that published it, and by its own commit. The template's §13
-# had already found and fixed that same defect in itself; the fix did not
-# propagate here, into the published record and the higher-traffic surface.
-# Row-anchored greps are stable under commentary. Bare ones are not.
+# `grep -c 'GA-LANG-'` over this file counts the mentions inside THIS COMMENT
+# BLOCK as well as the rows, so it can never be read as a row count. The first
+# version of this block published exactly that bare command with `-> 0` beside
+# it: a command falsified by the very comment that published it, and by its own
+# commit. The template's §13 had already found and fixed that same defect in
+# itself; the fix did not propagate here, into the published record and the
+# higher-traffic surface. Row-anchored greps are stable under commentary. Bare
+# ones are not.
 #
 # Before adding the first one, read
 # docs/plan/2026-08-per-language-ga-template-v1.md §3 slot S14 and §4. Two
@@ -82,18 +118,37 @@ candidate:
 #      CheckGALanguages (internal/coverage/galang.go:122) requires, so the
 #      distinction is free — and it keeps
 #
-#          grep -c '^  - id: GA-LANG-.*-G2:' docs/rc/evidence-index.yaml   # -> 0
+#          grep -c '^  - id: GA-LANG-.*-G2$' docs/rc/evidence-index.yaml   # -> 0
 #
 #      an honest answer to "which languages actually have a type-checker-proven
-#      tier?". ROW-ANCHORED, for the reason stated 20 lines above: the first
-#      version of this bullet published the BARE `grep 'GA-LANG-.*-G2:'` and
-#      called it honest. The bare form counts THIS COMMENT BLOCK, so it can
-#      never read 0 while the block exists, and its value RISES every time the
-#      block is edited — it was 1 when the defect was found and 2 after the
-#      correction was written. NO NUMBER IS PINNED FOR IT HERE, deliberately:
-#      pinning one is the same mistake one layer up, and it has already been
-#      made twice in this file's history. Same defect as the block above warns
-#      against, introduced by the same commit that fixed that one.
+#      tier?".
+#
+#      CORRECTED 2026-08-19 (SW-174). This command ended in `-G2:` until this
+#      commit and WAS DEAD: rows in this index are sequence items with no
+#      trailing colon (`  - id: WP0`), so the anchored `-G2:` form returned 0
+#      WHETHER OR NOT A G2 ROW EXISTED. It read 0 only because nothing could
+#      ever match it. Found by SW-180's round-3 review (finding F1) against a
+#      copy with a row appended; PROVEN AGAIN HERE against the real file with
+#      this story's rows in it, which is the state that matters, because it is
+#      the state that also proves the grep is not fooled by a substitute:
+#
+#        with a real GA-LANG-go-G2 row temporarily present, and the two real
+#        G2SUB rows present:   -G2$ -> 1     -G2: -> 0
+#        with the go row removed (the checked-in state):
+#                              -G2$ -> 0     -G2: -> 0
+#
+#      So `-G2$` distinguishes the two states and `-G2:` cannot, and `-G2$`
+#      does NOT match GA-LANG-java-G2SUB or GA-LANG-kotlin-G2SUB — which is the
+#      whole property this bullet claims. A grep verified only against the case
+#      where it has nothing to find is not verified.
+#
+#      ROW-ANCHORED, for the reason stated above: the first version of this
+#      bullet published the BARE `grep 'GA-LANG-.*-G2:'` and called it honest.
+#      The bare form counts THIS COMMENT BLOCK, so it can never read 0 while
+#      the block exists, and its value RISES every time the block is edited.
+#      NO NUMBER IS PINNED FOR THE BARE FORM HERE, deliberately: pinning one is
+#      the same mistake one layer up, and it has already been made twice in
+#      this file's history.
 #   2. The row's `current` field carries the gate's EVIDENCE CLASS spelled out
 #      (E0 ORACLE-PROVEN / E1 HARNESS-PROVEN / E2 CORPUS-MEASURED /
 #      E3 DECLARED-AND-CHECKED; E4 DECLARED-ONLY may never read PASS).
@@ -130,6 +185,46 @@ candidate:
 #      red build. The mechanism is right — a matrix row is a GA CLAIM, and a
 #      claim with an UNKNOWN gate under it should fail — but the claim and the
 #      evidence must be created in that order.
+#
+#   4. THE ORDERING RULE ABOVE HAS NO ANSWER FOR A LANGUAGE THAT ALREADY HAS A
+#      MATRIX ROW, AND EXACTLY ONE LANGUAGE IS IN THAT STATE: `go`.
+#      Found and measured 2026-08-19 (SW-174). Rule 3 says rows are born
+#      UNKNOWN *while the language is absent from the coverage matrix*. `go` is
+#      NOT absent — docs/coverage-matrix.yaml has carried its ga-language row
+#      since day one, grandfathered. So for `go` the two steps cannot be
+#      ordered at all: the claim already exists, and the first UNKNOWN row
+#      created under it turns the gate red immediately. Measured, not reasoned
+#      — nine GA-LANG-go-G1..G9 rows were added to this file, `go run
+#      ./cmd/coverage -check` was run, and the result was:
+#
+#        ga-language check FAILED — 9 violation(s):
+#          - ga-language row "go": evidence gate GA-LANG-go-G1 does not read
+#            PASS with evidence URI and sha (UNKNOWN/STALE/FAIL count as not
+#            passed)
+#          ... one per gate, G1 through G9 ...
+#        exit status 1
+#
+#      The nine rows were then removed and the gate returned to green. THEY ARE
+#      NOT IN THIS FILE. That is not the grandfathering being preserved — it is
+#      the finding being published without turning CI red while the OWNER
+#      decides, which is what SW-174 AC-6 asks for. Two resolutions exist and
+#      both are the owner's, not a builder's:
+#
+#        (A) EVIDENCE — measure and populate all nine go gates so they read
+#            PASS with evidence_uri and sha. That is Wave-1-scale work; this
+#            index carries ZERO PASS rows of any kind today, so go's nine would
+#            be the first, and G4 and G7 in particular cannot be measured until
+#            the candidate moves.
+#        (B) RE-GRADE — accept that under this programme's own rule (no GA
+#            claim without a PASS row carrying URI and sha, which now binds go
+#            too) go's ga-language matrix row is a claim its evidence no longer
+#            backs, and withdraw it until the nine rows are green, restoring it
+#            by exactly the SW-179 mechanism every other language uses.
+#
+#      (B) withdraws a published GA claim about the reference language and is
+#      not a builder's call. Neither was taken here. Until one is, DO NOT
+#      create GA-LANG-go-* rows: the build goes red the moment you do, and
+#      removing them again is the one resolution AC-6 forbids.
 
 gates:
   # ── §6 per-work-package gates (WP0–WP10) ────────────────────────────────────
@@ -322,3 +417,217 @@ gates:
     owner: AUDIT
     next_action: "Close WP10."
     due: W28–32
+
+  # ── GA-LANG-<lang>-G<n>: the per-language GA evidence scaffold ──────────────
+  # Added 2026-08-19 (SW-174, W1.a). These are the FIRST GA-LANG-* rows in this
+  # index. Every one is BORN UNKNOWN and UNKNOWN counts as NOT passed — the
+  # scaffold exists to make the gap visible, not to assert anything.
+  #
+  # Java and Kotlin are both `cross-file-heuristic` (measured 2026-08-19 from
+  # the CLI built at 1e440cf), so per the language-GA program §3 and the
+  # template's §7 bar their G2 is REPLACED by G2SUB, the heuristic resolver's
+  # own contract, and is never reported as G2. That is why no GA-LANG-*-G2 row
+  # exists here and the row-anchored -G2$ grep above still answers 0.
+  #
+  # Neither language has a `ga-language` row in docs/coverage-matrix.yaml, and
+  # per the ordering constraint above that is exactly why these rows may be
+  # UNKNOWN today. Adding the matrix row is the flip (WP-J11 / SW-179) and it
+  # is legal only once every row below reads PASS with evidence_uri AND sha.
+  - id: GA-LANG-java-G1
+    gate: G1 — Declared capability contract
+    section: language-GA program §2 G1
+    threshold: "Java declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). Measured 2026-08-19 with the CLI built at 1e440cf: the live derivation reports java at cross-file-heuristic, the level this scaffold is written against. That measurement is NOT this gate: the outcome-versus-registration half (the SQL wrinkle, ADR-W1) has never been audited for java, and no artefact is cited. IF SW-179 flips the JVM binders on by default the derivation moves to typed-confirmed and G2SUB is replaced by a real G2 — an owner re-scoping, not a scaffold edit."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Audit java against the outcome-derived rule (ADR-W1 shape), then cite capability_test.go and the trust-report derivation with a pinned sha. Gated by SW-178."
+    due: W1
+  - id: GA-LANG-java-G2SUB
+    gate: G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
+    threshold: "SUBSTITUTION, labelled: java is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN, with E0 ORACLE-PROVEN reachable for java through the WP-J9 differential bytecode oracle against a live JDK. NOT a pass, and there are affirmative reasons beyond absence of evidence: JVMSOUND-003 and JVMSOUND-004 are open, reproduced, deliberately unfixed wrong-confirmed-edge defects (projects backlog, found by the SW-172 signature-aware oracle), and they are invisible today only because the JVM registrants are default-off. The binding rate and the skip histogram that make drop-and-count checkable do not exist yet."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "SW-175 — publish the call-site binding rate with its denominator and the named-skip histogram. JVMSOUND-003/004 must be fixed or disclosed under D8 before this row can read PASS."
+    due: W1
+  - id: GA-LANG-java-G3
+    gate: G3 — Hermetic change-class parity
+    section: language-GA program §2 G3
+    threshold: "Rows for java in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-jvm.yaml by the same SEVEN drift-guard directions the Go table carries, plus an explicit applicability disposition per Go class."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN for the parity assertions, E3 DECLARED-AND-CHECKED for the disposition. The assets exist (WP-J5 is DONE in the execution-plan ledger; 13 rows, all profile both and store both) but the row is NOT populated, and the reason is specific rather than clerical: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the seven drift-guard directions — VERDICT, AXIS and VOCABULARY — so a PASS published today would be published under a guard known to be incomplete. That is the exact failure mode a G3 row reading PASS is supposed to exclude."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Close SW-180 divergence D-11 (add the VERDICT, AXIS and VOCABULARY directions to engine/conformance/jvmparity_matrix_test.go), then cite docs/rc/parity-classes-jvm.yaml plus the twin with their blob shas."
+    due: W1
+  - id: GA-LANG-java-G4
+    gate: G4 — Real-repository parity
+    section: language-GA program §2 G4
+    threshold: "internal/parity drives the BUILT binary over java pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E2 CORPUS-MEASURED. No JVM dispatch has ever been run: the published 19/19 matrix is Go-only and was measured against the ADR 0010 candidate 7574a49. A dispatch is not even publishable from this branch today — the product tree has diverged from parityreport.CandidateSHA 3b8d43f6, so CollectProvenance sets ProductDiffEmpty false. The candidate move that unblocks it is an owner decision already owed and predates this story."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "SW-176 (WP-J7) — run the real-repository parity dispatches over the JVM pins after the candidate moves, and publish a new dated matrix section."
+    due: W1
+  - id: GA-LANG-java-G5
+    gate: G5 — Corpus stratification and pins
+    section: language-GA program §2 G5
+    threshold: "Java corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a java-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E2 CORPUS-MEASURED. Partial by measurement, not by opinion: guava v33.0.0 is pinned and now carries a measured block (corpus/manifest.json), but stratification properties remain Go-only, so the v3 standard is met in one half and not the other. WP-J6 is PARTIAL in the execution-plan ledger. A half-met gate is UNKNOWN, never PASS."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Add java stratification properties and any further pins (WP-J6), then cite corpus/manifest.json with its blob sha."
+    due: W1
+  - id: GA-LANG-java-G6
+    gate: G6 — Hero gate
+    section: language-GA program §2 G6
+    threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for java, on a checked-in corpus/fixtures/hero-jvm fixture, including negative anchors and honest-empty or abstention scenarios."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN. The fixture and 16 hero-jvm scenarios exist (WP-J8), but the honest-empty half of the threshold is an open question rather than a formality, and the open question is stated at its true width. SW-180 divergence D-7: hjvm-03-search-empty anchors on zzz_no_such_symbol_zzz and asserts outcome empty alone — the EASY case, and the JVM instance has no scenario for the hard one, so nothing here would catch a lying empty. LANGHONEST-001 is the hard case, and its scope is NOT settled for java: SW-183 established the defect as an intra-file-only honesty defect and REOPENED, without re-deciding, whether it also binds cross-file-heuristic, which is java level. This row does not record that question as answered in either direction."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Resolve the LANGHONEST-001 owner question (template §12 options A or B) and close D-7, then cite corpus/hero-jvm plus cmd/eval/hero_jvm_test.go with their shas."
+    due: W1
+  - id: GA-LANG-java-G7
+    gate: G7 — Perf and budget evidence
+    section: language-GA program §2 G7
+    threshold: "The four perf suites include the java corpus with raw run artifacts checked in under docs/eval/runs; the grammar blob stays inside its bench/lang-budget.md allocation and inside the whole-binary budget gate."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E2 CORPUS-MEASURED. No java perf run exists, and the ledger records WP-J10 as OWNER-gated on an attested candidate plus reproducible CI runs. Two independent blocks: docs/eval/hero-budgets.json scenario_dir names corpus/hero alone, so hero-jvm has no budget entry at all (SW-180 divergence D-8), and the candidate this branch would measure against has not moved yet."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "SW-177 (W1.d) — run the G7 baselines on the post-W0.f-5 candidate and check in the raw artifacts; add the hero-jvm budget entry."
+    due: W1
+  - id: GA-LANG-java-G8
+    gate: G8 — Honest capability surface
+    section: language-GA program §2 G8
+    threshold: "The registries report java at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN, degraded by two measured holes. SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 6): java IS one of the 16 resolver-backed languages that produce a genuine cross-file edge, so the level is not an over-claim — but the edge is a calls edge and java produces NO imports edge at all, which the audit names explicitly and which a G8 row must not round up. The abstention surface is also silent, though the measurement is inherited rather than java-specific and is labelled as such: SW-180 §10.4 measured trust-report reporting files_skipped 0 and abstention.registrants empty over a NON-JVM tree whose files carry no node. The surface is registry-global, so the shape is expected to carry, but it has NOT been measured on java and this row does not claim it has. docs/language-support.md is separately and explicitly permitted to be stale by its own header. Neither is fixed by declaring the row green."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Cite capability_test.go and a trust-report capture with shas once the abstention surface reports honestly (W0.g follow-on) and the language-support row is flipped by SW-179."
+    due: W1
+  - id: GA-LANG-java-G9
+    gate: G9 — Evidence-index rows and the machine GA-language check
+    section: language-GA program §2 G9
+    threshold: "One GA-LANG-java-G<n> row per gate under the evidence-index discipline, and java present in the machine-encoded GA-language mechanism, whose check requires all of the above."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E3 DECLARED-AND-CHECKED, and honestly bounded: internal/coverage/galang.go:133 rejects only found equals zero, so ONE passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-174 discharges the first half (nine rows exist for java, this one included). The second half is the flip: java has no ga-language row in docs/coverage-matrix.yaml, and adding one is SW-179 and the owner call. This row can only read PASS after every row above it does, which is the whole point of the ordering."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "SW-179 — add the java ga-language matrix row once G1 through G8 all read PASS with evidence_uri and sha, then cite the green cmd/coverage -check run."
+    due: W1
+  - id: GA-LANG-kotlin-G1
+    gate: G1 — Declared capability contract
+    section: language-GA program §2 G1
+    threshold: "Kotlin declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN. Measured 2026-08-19 with the CLI built at 1e440cf: the live derivation reports kotlin at cross-file-heuristic, the level this scaffold is written against. Same two reservations as java: the outcome-versus-registration audit has not been run for kotlin, and no artefact is cited. Kotlin flies with java at the flip only if its own numbers carry it (SW-179 AC-2); otherwise it stays at cross-file-heuristic and its typed upgrade is a separate, later flip."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Audit kotlin against the outcome-derived rule, then cite capability_test.go and the trust-report derivation with a pinned sha. Gated by SW-178."
+    due: W1
+  - id: GA-LANG-kotlin-G2SUB
+    gate: G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
+    threshold: "SUBSTITUTION, labelled: kotlin is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN, and kotlin cannot reach java E0 on the same terms: the execution-plan ledger records the live differential-oracle path for kotlin as running in CI only, because no local kotlinc is available (WP-J9). JVMSOUND-003 and JVMSOUND-004 are open wrong-confirmed-edge defects on the shared binder and bind kotlin too. No binding rate and no skip histogram exist."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "SW-175 — publish the kotlin call-site binding rate with its denominator and the named-skip histogram, and state the oracle strategy that survives the CI-only kotlinc constraint (SW-173)."
+    due: W1
+  - id: GA-LANG-kotlin-G3
+    gate: G3 — Hermetic change-class parity
+    section: language-GA program §2 G3
+    threshold: "Rows for kotlin in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-jvm.yaml by the same SEVEN drift-guard directions the Go table carries, plus an explicit applicability disposition per Go class."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN for the parity assertions, E3 DECLARED-AND-CHECKED for the disposition. Kotlin shares the java family table, so it inherits the same blocker: SW-180 divergence D-11 measured the JVM guard missing VERDICT, AXIS and VOCABULARY. corpus/fixtures/kotlin additionally carries a self-declared Partial parity in the ledger, which is a declaration and not a measurement."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Close SW-180 divergence D-11, resolve the self-declared Partial parity of corpus/fixtures/kotlin by measurement, then cite the family table and twin with their blob shas."
+    due: W1
+  - id: GA-LANG-kotlin-G4
+    gate: G4 — Real-repository parity
+    section: language-GA program §2 G4
+    threshold: "internal/parity drives the BUILT binary over kotlin pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E2 CORPUS-MEASURED. No kotlin dispatch has ever been run. Same branch-level block as java G4: the product tree has diverged from parityreport.CandidateSHA 3b8d43f6, so no dispatch from here is publishable until the owner moves the candidate."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "SW-176 (WP-J7) — run the real-repository parity dispatches over the kotlin pins after the candidate moves, and publish a new dated matrix section."
+    due: W1
+  - id: GA-LANG-kotlin-G5
+    gate: G5 — Corpus stratification and pins
+    section: language-GA program §2 G5
+    threshold: "Kotlin corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a kotlin-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E2 CORPUS-MEASURED. okio and kotlinx.serialization are pinned in corpus/manifest.json and both carry measured blocks, so the pin half is further along than the programme doc §4 text says — but stratification properties are still Go-only, so the v3 standard is not met and the row stays UNKNOWN."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Add kotlin stratification properties (WP-J6), then cite corpus/manifest.json with its blob sha."
+    due: W1
+  - id: GA-LANG-kotlin-G6
+    gate: G6 — Hero gate
+    section: language-GA program §2 G6
+    threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for kotlin, on a checked-in corpus/fixtures/hero-jvm fixture, including negative anchors and honest-empty or abstention scenarios."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN. Same standing as java G6, and for the same reason: SW-180 divergence D-7 binds kotlin too, since the hero-jvm suite is shared, and LANGHONEST-001 scope for cross-file-heuristic is REOPENED by SW-183 rather than decided. Kotlin additionally inherits D-12, the knowingly wrong fixture label production Go parser carried by all 13 JVM rows, which is an S6 divergence rather than a hero one."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Resolve the LANGHONEST-001 owner question and close D-7, then cite corpus/hero-jvm plus cmd/eval/hero_jvm_test.go with their shas."
+    due: W1
+  - id: GA-LANG-kotlin-G7
+    gate: G7 — Perf and budget evidence
+    section: language-GA program §2 G7
+    threshold: "The four perf suites include the kotlin corpus with raw run artifacts checked in under docs/eval/runs; the 337 KB kotlin grammar blob stays inside its bench/lang-budget.md allocation and inside the whole-binary budget gate."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E2 CORPUS-MEASURED. No kotlin perf run exists. Kotlin carries the largest grammar blob in the default set at 337,236 bytes (bench/lang-budget.md), so the budget half of this gate is the one with a real chance of failing and is unmeasured on the current tree. hero-jvm has no budget entry (SW-180 divergence D-8)."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "SW-177 (W1.d) — run the G7 baselines on the post-W0.f-5 candidate, check in the raw artifacts, and re-measure the kotlin blob against its allocation."
+    due: W1
+  - id: GA-LANG-kotlin-G8
+    gate: G8 — Honest capability surface
+    section: language-GA program §2 G8
+    threshold: "The registries report kotlin at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN, degraded by the same two holes as java G8, with the same caveat: the abstention silence (files_skipped 0, abstention.registrants empty) was measured on a NON-JVM tree in SW-180 §10.4 and is inherited here, not measured on kotlin; docs/language-support.md is permitted to be stale by its own header. SW-183 audit (row 8) places kotlin among the 16 resolver-backed languages that produce a genuine cross-file edge, and records the same qualification as java: the edge is a calls edge and kotlin produces NO imports edge."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "Cite capability_test.go and a trust-report capture with shas once the abstention surface reports honestly and the language-support row is flipped by SW-179."
+    due: W1
+  - id: GA-LANG-kotlin-G9
+    gate: G9 — Evidence-index rows and the machine GA-language check
+    section: language-GA program §2 G9
+    threshold: "One GA-LANG-kotlin-G<n> row per gate under the evidence-index discipline, and kotlin present in the machine-encoded GA-language mechanism, whose check requires all of the above."
+    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E3 DECLARED-AND-CHECKED, with the same honest bound as java G9: galang.go:133 rejects only found equals zero, so one passing row would satisfy the binding and a reviewer has to count. Nine rows now exist for kotlin. Kotlin has no ga-language row in docs/coverage-matrix.yaml, and per SW-179 AC-2 it gets one only if its own numbers carry it."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (JVM)
+    next_action: "SW-179 — add the kotlin ga-language matrix row only once G1 through G8 all read PASS with evidence_uri and sha, and only if kotlin numbers carry it independently."
+    due: W1

@@ -750,9 +750,40 @@ GA-LANG-go-G2           ← would be the real thing (go alone, and go is grandfa
 
 Both match the prefix `GA-LANG-<lang>-` that `CheckGALanguages` requires, so the
 distinction costs nothing mechanically and buys a property worth having:
-`grep -c '^  - id: GA-LANG-.*-G2:'` over the index answers "which languages
+`grep -c '^  - id: GA-LANG-.*-G2$'` over the index answers "which languages
 actually have a type-checker-proven tier?" — today **0** — and cannot be fooled
-by a substitute. **Note the `^  - id:` anchor.** The first version of this
+by a substitute.
+
+> **CORRECTED 2026-08-19 (SW-174). This grep ended in `-G2:` until now, and in
+> that form it was DEAD: it returned 0 whether or not a `G2` row existed.**
+> Rows in `docs/rc/evidence-index.yaml` are sequence items with no trailing
+> colon (`  - id: WP0`), so nothing could ever match `-G2:`. It read 0 for the
+> wrong reason, and the sentence above it — *"cannot be fooled by a
+> substitute"* — was true only because it could not be satisfied by anything.
+> Found by this document's round-3 review (F1) against a copy with a row
+> appended. **Re-proven by SW-174 against the real index with real rows in it**,
+> which is the state that matters because it is the only state that tests the
+> claim actually being made:
+>
+> ```
+> # with a real GA-LANG-go-G2 row temporarily present, alongside the two real
+> # GA-LANG-{java,kotlin}-G2SUB rows this story landed:
+> grep -c '^  - id: GA-LANG-.*-G2$'  docs/rc/evidence-index.yaml   # -> 1
+> grep -c '^  - id: GA-LANG-.*-G2:'  docs/rc/evidence-index.yaml   # -> 0   DEAD
+>
+> # with the go row removed (the checked-in state):
+> grep -c '^  - id: GA-LANG-.*-G2$'  docs/rc/evidence-index.yaml   # -> 0
+> grep -c '^  - id: GA-LANG-.*-G2:'  docs/rc/evidence-index.yaml   # -> 0
+> ```
+>
+> `-G2$` separates the two states; `-G2:` cannot. And `-G2$` does **not** match
+> `GA-LANG-java-G2SUB` or `GA-LANG-kotlin-G2SUB`, which is the substitute-proof
+> property this section claims — now demonstrated against actual `G2SUB` rows
+> rather than argued. **The reusable rule, which is round 3's own closing
+> lesson: run every published command against the case it is supposed to
+> detect, not only against the case where it has nothing to find.**
+
+**Note the `^  - id:` anchor.** The first version of this
 paragraph published the *bare* `grep 'GA-LANG-.*-G2:'` and called it a grep that
 "cannot be fooled": the bare form matches this very paragraph, so it can never
 read 0 while the paragraph exists, and its value **rises with every edit to the
@@ -1322,7 +1353,7 @@ not this story** — that is stated in the ticket's own out-of-scope list.
 | S11 | Partly — `guava` is in `hero-budgets.json` `real_repos.selection` with real ceilings, and in the `eval-full.yml` matrix. | **D-8**, instance gap: no `docs/eval/runs/` directory for a JVM corpus, and `hero_suite.scenario_dir` names `corpus/hero` only, so `corpus/hero-jvm` has no budget entry. G7 is SW-177, post-candidate-move by design. |
 | S12 | Partly — `docs/language-support.md` carries the Java/Kotlin row at `cross-file-heuristic`; the derivation is live. | — |
 | S13 | Yes — `trust_language_skips` / `trust_skip_provenance`, `AbstentionFacts.Registrants`. | — |
-| S14 | **No** — `docs/rc/evidence-index.yaml` contains **zero** `GA-LANG-*` rows. | **D-9**, instance gap: SW-174 creates them, born UNKNOWN — **and SW-174 is step 1 of the ordering constraint in §3/S14, not an independent task.** Rows first, *while the language still has no `ga-language` matrix row*; the matrix row last (SW-179), only once all of them read PASS. `galang.go:129-131` violates on every non-PASS row, so the reverse order is a red build. Stating "born UNKNOWN" without the ordering is the advice §3/S14 records as build-breaking. |
+| S14 | **Partly, since 2026-08-19** — `docs/rc/evidence-index.yaml` carried **zero** `GA-LANG-*` rows when this register was written; SW-174 landed **18** (java and kotlin, G1–G9 with G2→G2SUB), all UNKNOWN. **Go still has none.** | **D-9**, instance gap, half closed: SW-174 creates the rows, born UNKNOWN — **and SW-174 is step 1 of the ordering constraint in §3/S14, not an independent task.** Rows first, *while the language still has no `ga-language` matrix row*; the matrix row last (SW-179), only once all of them read PASS. `galang.go:129-131` violates on every non-PASS row, so the reverse order is a red build. Stating "born UNKNOWN" without the ordering is the advice §3/S14 records as build-breaking. **New — D-9b, found by SW-174: the ordering constraint has no answer for `go`,** which already has a `ga-language` matrix row and therefore cannot do step 1 at all. Measured: nine `GA-LANG-go-*` rows added → `cmd/coverage -check` → `ga-language check FAILED — 9 violation(s)`, exit 1. Removed again, and the resolution (produce the evidence, or withdraw go's matrix row until it exists) escalated to the owner as SW-174 AC-6. See `evidence-index.yaml`'s rule 4. |
 | S6 (fixture label) | Yes, but under a knowingly wrong value. | **D-12**, instance gap: all 13 JVM rows read `fixture: "production Go parser"` because `legalFixtures` has no non-Go member (§3/S6). Documented in the rows' own `note`; it becomes wrong at the third family. TEMPL-P3. |
 
 **Reading of AC-7.** The template reproduces the JVM asset set for every slot
@@ -1686,18 +1717,28 @@ ls docs/rc/parity-classes-jvm.yaml engine/conformance/jvmparity_test.go \
 grep -n 'category: ga-language' -B3 docs/coverage-matrix.yaml
 go run ./cmd/coverage -check
 
-# §3/S14, §9/D-9 — zero GA-LANG-* ROWS exist today.
+# §3/S14, §9/D-9 — GA-LANG-* ROWS. CORRECTED 2026-08-19 (SW-174): this line
+# read "zero GA-LANG-* ROWS exist today" and the command below was annotated
+# "expect 0 — STABLE". Both were true when written and are FALSE from SW-174 on:
+# eighteen rows now exist (GA-LANG-java-G1..G9 and GA-LANG-kotlin-G1..G9, with
+# G2 substituted by G2SUB at both), all UNKNOWN. The count is NOT stable — it
+# rises with every language that lands its scaffold (SW-181/182/184/185/186).
+# What is stable is the PROPERTY: the command counts rows and never counts a
+# mention. Pinning "0 — STABLE" was the same class of defect the note below
+# warns about, one level up: a number that is only correct while nothing exists.
+#
 # NOTE the `- id:` anchor. A bare `grep -c 'GA-LANG-'` on that file does NOT
-# return 0: it counts the mentions in the comment block explaining the row
-# shape. Draft 1 published the bare grep with "# expect 0" beside it — a command
-# self-falsified by its own commit. Count rows, never mentions.
+# return the row count: it counts the mentions in the comment block explaining
+# the row shape as well. Draft 1 published the bare grep with "# expect 0"
+# beside it — a command self-falsified by its own commit. Count rows, never
+# mentions.
 #
 # AND DO NOT PIN THE BARE COUNT EITHER. Round 1 fixed the command but wrote
 # "a bare grep returns 6" beside it; the rebuild round edited that comment block
 # and the bare count became 10, so the ANNOTATION had acquired the same defect
 # as the command it was warning about. Any number derived from prose drifts when
 # the prose is edited. State the property, pin only the row-anchored count.
-grep -c '^  - id: GA-LANG-' docs/rc/evidence-index.yaml   # expect 0 — STABLE
+grep -c '^  - id: GA-LANG-' docs/rc/evidence-index.yaml   # 18 as of SW-174; rises per language
 go run ./cmd/evidence -check
 
 # §3/S3 — the Owns contract. The DECLARATION is at :66; :40-65 is its doc
