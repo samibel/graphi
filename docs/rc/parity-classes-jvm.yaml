@@ -64,14 +64,47 @@
 #         (TestParityMatrix_HarnessCitationIsCurrent, changeclass_test.go),
 #         which asserts test_line really points at the harness func, therefore
 #         cannot exist for this file.
-#   D-11  jvmparity_matrix_test.go has MISSING / PHANTOM / DEFERRED /
-#         KIND+OWNER / RequiredRowsAreProven, but NOT the Go guard's AXIS and
-#         VOCABULARY directions. Every row below publishes profile: "both" and
-#         store: "both" and NOTHING CHECKS EITHER CLAIM. AXIS exists on the Go
-#         side because review round 1 demonstrated the hole: removing the
-#         balanced entry from parityProfiles() left the package green while 16
-#         rows kept publishing "proven under both profiles". Carried as
-#         TEMPL-P4 in the template's §12; not fixed here.
+#   D-11  THE GO GUARD HAS SEVEN DIRECTIONS. THIS FILE'S GUARD IS MISSING
+#         THREE OF THEM. Count them from the t.Run calls in
+#         engine/conformance/paritymatrix_test.go -- NOT from that file's own
+#         comment at :167, which says "SIX" and is stale:
+#
+#           MISSING     :206   present in jvmparity_matrix_test.go
+#           PHANTOM     :225   present
+#           KIND        :240   present  (in TestJVMParityMatrix_KindCountAndOwners)
+#           VERDICT     :286   *** ABSENT ***
+#           OWNER       :408   present  (same func as KIND -- two DISTINCT
+#                                        properties, do not fold them into one)
+#           AXIS        :460   *** ABSENT ***
+#           VOCABULARY  :483   *** ABSENT ***
+#
+#         jvmparity_matrix_test.go additionally has DEFERRED and
+#         RequiredRowsAreProven, and uses no t.Run at all.
+#
+#         VERDICT rejects a row whose `verdict` does not match what its harness
+#         row actually proves. AXIS rejects a narrowed axis. VOCABULARY rejects
+#         a closed-set field outside its vocabulary. Every row below publishes
+#         profile: "both" and store: "both" and NOTHING CHECKS EITHER CLAIM.
+#         AXIS exists on the Go side because review round 1 demonstrated the
+#         hole: removing the balanced entry from parityProfiles() left the
+#         package green while 16 rows kept publishing "proven under both
+#         profiles". Carried as TEMPL-P4(a) in the template's §12; not fixed
+#         here.
+#
+#         READ THIS BEFORE COPYING: the first version of THIS COMMENT folded
+#         KIND and OWNER into one item and omitted VERDICT -- reproducing, in
+#         the file whose whole purpose is to be read before copying, the exact
+#         error the template's §3/S7 had already corrected. A family built to
+#         that list would still have been missing a guard. Take the direction
+#         list from §3/S7's table, which is authoritative.
+#
+#   D-11b AND THE GUARDS CANNOT BE FAILED BY OMISSION AT ALL. Both
+#         paritymatrix_test.go:17 and jvmparity_matrix_test.go:14 read a
+#         HARDCODED const path, and nothing in the tree globs
+#         docs/rc/parity-classes-*.yaml. A family that ships NEITHER a table
+#         NOR a guard produces zero CI signal -- silence, not a red build.
+#         The same hole exists at the hero slot (nothing globs corpus/hero-*).
+#         Carried as TEMPL-P4(b).
 #   D-12  every row below reads fixture: "production Go parser" while the
 #         subject under test is the JVM binder, because legalFixtures
 #         (paritymatrix_test.go) has no non-Go member. Knowingly done and

@@ -134,8 +134,10 @@ comment claims two, because it folds the evidence rule into one and omits the
 **live registries** derive (`surfaces/client.LanguageCapabilities()`); (2) every
 `GA-LANG-<lang>-*` row in the evidence index must read PASS with URI **and** sha
 (`:129-131`); (3) a language other than `go` with **no** such rows is rejected
-outright (`:134` — "a GA claim without evidence rows is vacuous"); and (4) the
-row must read `status: shipped` (`:106-110`) — planned or partial cannot be GA.
+outright (`:133` is the rejection; `:134` is the message it appends — "a GA claim
+without evidence rows is vacuous"); and (4) the row must read `status: shipped`
+(`:107-110`; `:106` is blank) — planned or partial cannot be GA. A fifth binding
+the source comment also omits: **duplicate row ids** are rejected at `:100-103`.
 Rule (2) is why the rows and the matrix row must land in a particular order; see
 S14.
 
@@ -192,8 +194,10 @@ as G2 — see §4.
 ### S3 — Sweep-domain declaration (G2, ADR 0008 ruling D9)
 
 **Must supply.** The S2 registrant implements
-`Owns(relPath string) bool` (`engine/typeresolve/registry.go:40-47`) — the
-LANGUAGE half of the `(directory, language)` stale-confirmed sweep key. The
+`Owns(relPath string) bool` — **declared at `engine/typeresolve/registry.go:66`**;
+`:38-65` is its doc comment, and citing that range instead of the declaration was
+draft 1's error (§13) — the LANGUAGE half of the `(directory, language)`
+stale-confirmed sweep key. The
 contract is `Owns ⊇ Subject` per registrant, and **pairwise disjoint across
 registrants**.
 
@@ -330,9 +334,14 @@ identically-empty snapshots.
 
 **The guard set. This is the slot where the JVM instance is measurably weaker
 than the Go instance, and copying the JVM instance propagates the weakness.**
-The Go guard has **seven** `t.Run` directions; the JVM guard
-(`jvmparity_matrix_test.go:43`) has **three** plus KIND/OWNER-style checks. The
-template requires all seven:
+The Go guard has **seven** `t.Run` directions, all inside one test function; the
+JVM guard has **no `t.Run` at all** and spreads its checks over three test
+functions — `TestJVMParityMatrix_DriftGuard` (`:43`, carrying MISSING / PHANTOM /
+DEFERRED), `TestJVMParityMatrix_KindCountAndOwners` (`:148`, carrying **KIND**
+and **OWNER** as two distinct properties in one function), and
+`TestJVMParityMatrix_RequiredRowsAreProven` (`:184`). Against the Go set that
+leaves **VERDICT, AXIS and VOCABULARY** absent — three, not two. The template
+requires all seven:
 
 | Direction | Go guard | Rejects | JVM has it? |
 |---|---|---|---|
@@ -377,6 +386,15 @@ E1 label.
 > they are gates a language can *skip*. Until TEMPL-P4 lands a glob, "the family
 > table exists" is a **review obligation**, and §7's `✔` for S7 at every level is
 > a statement about what the template requires, not about what CI checks.
+>
+> **And it is not only S6/S7 — S10 has the identical hole, which round 1 missed.**
+> `cmd/eval/hero_jvm_test.go:35` hardcodes `filepath.Glob(…, "corpus",
+> "hero-jvm", "*.yaml")` and **nothing in the tree globs `corpus/hero-*`**, so a
+> family shipping neither `corpus/hero-<fam>/` nor `cmd/eval/hero_<fam>_test.go`
+> is equally silent. Round 1 disclosed the hole for S6/S7 and left §3/S10 reading
+> "Class. E1" — the same defect, undisclosed on the slot a consuming story is
+> most likely to reach first. **Three slots, one bug: a hardcoded path where a
+> glob belongs.** TEMPL-P4(b) is widened accordingly.
 
 **May abstain from.** Nothing. This is the slot that turns S6 from E3 into E1.
 A family table with no drift guard is a list of intentions.
@@ -477,8 +495,13 @@ words).
 
 The gate's assertions are the template's real content here, and they are
 stronger than "twenty scenarios exist". The JVM instance
-(`cmd/eval/hero_jvm_test.go:51-97`) asserts: at least twelve tasks — a **hardcoded `len(heroes) < 12`**, not derived from `CanonicalStableOps()`, so this one states intent rather than tracking the frozen set; **every** stable operation has a task; **no** task exercises a non-frozen
-operation; every declared failure class has a task; **at least one task declares
+(`cmd/eval/hero_jvm_test.go:51-97`) asserts: at least twelve tasks — a
+**hardcoded `len(heroes) < 12`** floor (`:53`) that is a *redundant belt* on top
+of, **not a substitute for**, the derived checks that follow it; then, driving
+`for _, op := range coverage.CanonicalStableOps()` (`:61`), **bidirectionally**
+— **every** stable operation has a task (`:63-65`) and **no** task exercises a
+non-frozen operation (`:67-71`), both derived from the frozen set itself;
+every declared failure class has a task; **at least one task declares
 a negative (`absent`) anchor**; and **no** task declares `max_latency_ms`,
 because budgets are frozen from a reproducible CI run (ADR 0003 U5), not
 invented in a scenario file.
@@ -486,9 +509,18 @@ invented in a scenario file.
 **May legitimately abstain from.** Scenarios whose semantics the level cannot
 express — an `intra-file-only` language has no cross-file `callers` scenario to
 write. The abstention is recorded by the scenario that replaces it: the op still
-gets a task, and that task asserts the **honest-empty** behaviour of §5.
+gets a task, and that task asserts the **honest-empty** behaviour of §5 — or,
+where L defines no cross-file construct at all, §5.5's abstention path.
 
-**Class.** E1.
+**Class.** **E1 for the CONTENT of a hero suite that exists** — the gate's
+assertions above are strong and derived from `CanonicalStableOps()`. **E4 for
+the suite's EXISTENCE**, and this is a round-1-of-rebuild correction: the slot
+previously read a bare "Class. E1". Nothing globs `corpus/hero-*` (see the
+discoverability note under S7), so a family that ships no hero suite at all is
+**silent, not red** — the identical hole as S6/S7. By §2 rule 3 an absence is
+not an abstention, so **"the hero suite exists" is a review obligation**, and
+§7's `✔` for S10 at all four levels states what the template requires, not what
+CI checks.
 
 ### S11 — Perf + budget (G7)
 
@@ -525,9 +557,34 @@ the `docs/language-support.md` row flips; `trust-report --json` and the prose
 agree. Where they disagree, **`--json` is right and the table is stale** — the
 table says so about itself (`docs/language-support.md:43-48`).
 
+> **The tightening §10.2 measured, applied here rather than only asserted there.**
+> **"The trust report names the level" is NOT evidence that the language was
+> exercised, and a story must not cite it as such.** The capability list is
+> **registry-global, not repository-scoped**: `trust-report --json .capabilities`
+> returns all **22** registered languages regardless of what the indexed
+> repository contains — measured on a 12-file fixture holding files in five of
+> them (§10.2). So this half of S12's obligation is satisfied **by construction**,
+> for every language, including one with no file present in any repository. It
+> costs a story nothing and proves a story nothing.
+>
+> What S12 therefore actually demands, and what a reviewer must check instead:
+>
+> 1. the **`capability_test.go` re-derivation** — this is the load-bearing half,
+>    because it binds the printed level to the live registries;
+> 2. the `docs/language-support.md` row, which is **explicitly permitted to be
+>    stale** by its own text (`:43-48`) and so is E4 on its own; and
+> 3. that the surface prints the **matrix's `capability:` value rather than a
+>    literal** (§8).
+>
+> **Class consequence.** The trust-report clause is **E4 — DECLARED-ONLY** taken
+> by itself, because nothing about it is specific to the language being graded.
+> S12 reaches E1 through (1) alone. A GA-LANG row citing the trust report as its
+> G8 evidence is citing a fact that was true before the story started.
+
 **May abstain from.** Nothing.
 
-**Class.** E1.
+**Class.** E1 **via the `capability_test.go` re-derivation only** — see the
+callout; the trust-report and `language-support.md` halves do not carry it.
 
 ### S13 — Abstention legibility (G8)
 
@@ -567,7 +624,7 @@ it, two rows that both read PASS assert claims of very different strength and
 nothing on the surface distinguishes them.
 
 **May abstain from.** No gate. A gate a language cannot meet gets a row that
-reads UNKNOWN or FAIL with the reason, never no row at all — `galang.go:134`
+reads UNKNOWN or FAIL with the reason, never no row at all — `galang.go:133`
 treats "no rows" as vacuous and fails the build, which is the mechanism working.
 
 > **Round-1 correction — draft 1's advice here would have BROKEN THE BUILD, and
@@ -648,10 +705,19 @@ express the relationship, and the trust report names the level.
 > replaced.** Draft 1 claimed a single predicate over `confidence.method` could
 > police all twelve operations, and blessed `method: "no_edges"` as honest
 > *always*. **Both halves were wrong.** The predicate reaches **four** of the
-> twelve ops, and `no_edges` is the exact shape an `intra-file-only` lie takes.
+> twelve ops, and `no_edges` is the exact shape the lie takes.
 > §5.1-§5.2 below are the corrected version; §5.3 records what was wrong,
 > because a template whose own honesty rule was over-claimed is worth a reader's
 > suspicion.
+>
+> **ROUND 1 OF THE REBUILD — round 1's own correction was scoped one level too
+> narrow.** It called `no_edges` "the `intra-file-only` lie". It is not confined
+> to that level: the byte-identical output is measured on `app.py` at
+> **`cross-file-heuristic`**, a level with a registered resolver and an extractor
+> that demonstrably computes imports — **the level SW-181 and SW-182 target**.
+> §5.2's table now grades each instance separately, §5.3 items 5–6 record round
+> 1's errors on the same terms as draft 1's, and §5.5 adds the abstention path
+> for a language with no cross-file construct at all.
 
 ### 5.1 There is no single predicate, because there is no single result shape
 
@@ -702,26 +768,57 @@ table**:
 - **`unresolved`** — the anchor could not be found. Its summary is typo advice
   (§10.4). Honest only if the anchor genuinely is not in the graph *and the
   summary says why*.
-- **`no_edges` / `no_inbound_edges` / `no_links`** — **the `intra-file-only`
-  lie.** The anchor resolved, and the operation states *as fact* that it has no
-  edges. Measured, on a fixture whose ground truth is unambiguous:
+- **`no_edges` / `no_inbound_edges` / `no_links`** — **the lie, and it is NOT
+  confined to `intra-file-only`.** The anchor resolved, and the operation states
+  *as fact* that it has no edges. Measured on a single 12-file fixture whose
+  ground truth is unambiguous, with the strength of each instance graded rather
+  than asserted:
 
 ```
-main.css      contains  @import "base.css";     base.css  tracked and indexed
-readme.md     contains  [base](./base.md)       base.md   tracked and indexed
-settings.yaml contains  include: ./other.yaml   other.yaml tracked and indexed
+app.py        contains  from pkg.util import helper   pkg/util.py tracked+indexed   [python,   cross-file-heuristic]
+main.css      contains  @import "base.css";           base.css    tracked+indexed   [css,      intra-file-only]
+readme.md     contains  [base](./base.md)             base.md     tracked+indexed   [markdown, intra-file-only]
+settings.yaml contains  include: ./other.yaml         other.yaml  tracked+indexed   [yaml,     intra-file-only]
 
-$ gr related-files main.css
-{"outcome":"empty","summary":"anchor \"main.css\" resolved (file) but has no both
+$ graphi related-files app.py
+{"outcome":"empty","summary":"anchor \"app.py\" resolved (file) but has no both
  edges to other files", … "method":"no_edges"}
 ```
 
-Identical for `readme.md` and `settings.yaml`. **"has no both edges to other
-files" is false.** The relation is written in the source; graphi's walker does
-not extract it. That is a legitimate capability limit — and stating it as
-*absence of a relation* rather than as *absence of a capability* is exactly the
-"presents an abstention as an answer" failure the invariant forbids. Draft 1
-marked this method honest **always**.
+**Byte-identical for `main.css`, `readme.md` and `settings.yaml`** — the same
+sentence, the same `method`, at two different capability levels.
+
+**The instances are not equally strong, and the difference is what scopes the
+defect.** The test is whether **language L's extractor actually computes the
+relation** — that is this section's own predicate, stated below — and by it:
+
+| Fixture | Language / level | Does L's extractor compute it? | Verdict |
+|---|---|---|---|
+| `app.py` | python, `cross-file-heuristic` | **YES** — `pyImports` records `import x` and `from m import n` as `ImportSpec`s (declared at `core/parse/parser_python.go:233`; `:232` is its doc comment), called at `:75` and surfaced as `Imports:` at `:85` | **A lie, decisively.** The strongest instance in the set. |
+| `main.css` | css, `intra-file-only` | No — `parser_css.go:94`, "no import system (Imports empty)" — but **CSS the language has `@import`**, so this is a capability graphi declined, not a relation that does not exist | **A lie about a real construct.** Stands. |
+| `readme.md` | markdown, `intra-file-only` | No — `parser_markdown.go:94`, same declaration; **Markdown the language has link syntax** | **A lie about a real construct.** Stands. |
+| `settings.yaml` | yaml, `intra-file-only` | No — `parser_yaml.go:94` — and **YAML the language defines no `include` directive at all**: `include:` is an ordinary mapping key with a string value, and file inclusion is a *downstream convention* (Ansible, Compose), not YAML semantics | **CONTESTABLE — do not rely on it.** Here "has no edges to other files" is arguably **true**. Kept, relabelled, and analysed in §5.5 rather than swapped out. |
+
+**`app.py` is the instance that settles the scope**, and it is the one draft 1
+*and* round 1 both missed: Python is `cross-file-heuristic`, it has a registered
+resolver, its extractor demonstrably computes imports — and it returns the same
+sentence. **"has no both edges to other files" is false** wherever the extractor
+computes the relation. Stating a capability limit as *absence of a relation* is
+exactly the "presents an abstention as an answer" failure the invariant forbids.
+Draft 1 marked this method honest **always**; round 1 corrected that but scoped
+the correction to `intra-file-only`, which is one level too narrow.
+
+> **The measurement that makes the scope unambiguous.** On the 12-file fixture
+> the graph carries **9 edges and ZERO file→file edges of any kind** — every
+> edge is either `defines` (file→symbol, intra-file) or a single
+> `calls: function:app.py → external` stub whose target node has no source path.
+> `app.py`'s `from pkg.util import helper` produced **no `imports` edge to
+> `pkg/util.py`**. So `related_files`' "both edges" relation is empty for
+> **every file, in every language, at every level tested** — which is why the
+> output is byte-identical across levels, and why no level is exempt.
+> *(Queried directly against the store: `select count(*) from edges e join nodes
+> nf on nf.id=e.from_id join nodes nt on nt.id=e.to_id where nf.kind='file' and
+> nt.kind='file'` → 0. Recipe in §13.)*
 
 And `edge_tiers`, the default, is not an emptiness marker at all:
 
@@ -754,11 +851,14 @@ shape sees them.
 > product question, not a checklist item**, and a consuming story must record it
 > as unmet rather than as satisfied.
 
-### 5.3 What draft 1 got wrong, and why it is recorded rather than replaced
+### 5.3 What the earlier drafts got wrong, and why it is recorded rather than replaced
+
+**Draft 1:**
 
 1. It asserted one predicate over all twelve ops. There are four result shapes;
    the predicate reaches one of them.
-2. It listed `no_edges` as honest "always". It is the `intra-file-only` lie.
+2. It listed `no_edges` as honest "always". It is a lie wherever L's extractor
+   computes the relation.
 3. It omitted `edge_tiers` — the *default* method — and every `found`-outcome
    path, so the `change_risk` and `explain_symbol` cases above were outside its
    scope entirely.
@@ -767,11 +867,30 @@ shape sees them.
    that every slot "had a determinate answer for Python, YAML and JSON" was an
    artefact of that fixture, and is corrected in §10.6.
 
+**Round 1 — which fixed (1)–(4) and then made two errors of its own, recorded
+here on the same terms:**
+
+5. **It scoped the `no_edges` finding to `intra-file-only`, one level too
+   narrow**, calling it "the `intra-file-only` lie". `app.py` — Python,
+   `cross-file-heuristic`, registered resolver, extractor that demonstrably
+   computes imports — returns the byte-identical sentence (§5.2). The cause is
+   the same one as (4): round 1 *extended* draft 1's fixture with CSS and
+   Markdown but never re-asked the question of the language it had already
+   tested, so its new fixture could express the relation and its old one was
+   never re-run against the corrected rule.
+6. **It kept the YAML instance as equal evidence.** It is not (§5.2's table);
+   YAML defines no `include` directive, so that one instance is contestable.
+   The finding never depended on it — Python, CSS and Markdown carry it — but
+   presenting three instances as equivalent overstated the evidence by one.
+
 The general lesson, which binds the consuming stories: **a fixture that cannot
-express the relation under test cannot validate the rule about it.** Draft 1
-found the `parse-only` defect only because JSON differs structurally from Python;
-it missed the `intra-file-only` defect because its YAML did not differ from its
-Python in the one way that mattered.
+express the relation under test cannot validate the rule about it** — and its
+round-1 corollary, **extending a fixture is not the same as re-running the
+corrected rule over the whole of it.** Draft 1 found the `parse-only` defect only
+because JSON differs structurally from Python; it missed the `no_edges` defect
+because its YAML did not differ from its Python in the one way that mattered;
+round 1 then under-scoped the fix because it never pointed the corrected rule
+back at Python.
 
 ### 5.4 The enforcement gap — named, because it would otherwise propagate
 
@@ -806,7 +925,10 @@ nothing else are green whether the answers are honest or lies.
    construction. And a fixture file with no cross-file reference cannot expose
    the `no_edges` lie (§5.3). The honest-empty scenario anchors on a **real,
    indexed, checked-in file of language L that actually contains the reference
-   the operation is being asked about**.
+   the operation is being asked about** — **unless L has no such construct to
+   contain, in which case §5.5's abstention path applies instead.** The rule is
+   satisfiable only for languages that *have* a cross-file construct, and two
+   that SW-185 grades do not.
 2. **The harness must be able to see the difference — on the right shape.**
    **TEMPL-P1 as first written is insufficient and would be actively dangerous.**
    Carrying `summary` and `confidence.method` into `scenario.Result` helps only
@@ -817,6 +939,72 @@ nothing else are green whether the answers are honest or lies.
 3. **The seven shape-B/C/D operations are recorded as UNMET, not certified by
    silence.** A consuming story's G6 row must say which operations its
    honest-empty evidence actually covers.
+
+### 5.5 When language L has NO cross-file construct at all — the abstention path
+
+§5.4's rule 1 demands a fixture carrying "the reference the operation is being
+asked about". **For some languages there is no such reference to write**, and
+the rule as stated is not merely hard for them, it is **unsatisfiable**. This is
+not hypothetical: it is the situation of two of the five `intra-file-only`
+languages, and **SW-185 grades exactly those**.
+
+**The test — and it is about the LANGUAGE, not about graphi's parser.** All
+five `intra-file-only` parsers declare "no import system (Imports empty) —
+absent by design" (`parser_css.go:94`, `parser_hcl.go:94`,
+`parser_markdown.go:94`, `parser_toml.go:94`, `parser_yaml.go:94`), plus
+`parser_sql.go:77` at `cross-file-heuristic`. That declaration says only what
+*graphi* extracts. The question S10 needs answered is different: **does L's own
+specification define a construct that names another file?**
+
+| L | Construct | Fixture rule satisfiable? |
+|---|---|---|
+| **css** | `@import "base.css";` — in the CSS specification | **Yes.** Use it. |
+| **markdown** | `[text](./other.md)` — link syntax, in the specification | **Yes.** Use it. |
+| **hcl** | none in HCL *the syntax*. `module { source = … }` is **Terraform's schema** layered on HCL, exactly as `include:` is Ansible's layered on YAML | **No** — see the note below |
+| **toml** | none. TOML is a value-serialisation format; a path in a TOML value is a string the *reading application* interprets | **No** |
+| **yaml** | none. `include:` is an ordinary mapping key; `%YAML`/`%TAG` are directives but name no file; anchors/aliases are intra-*document* | **No** |
+
+> **Why HCL is on the "no" side, and why the distinction is worth the pedantry.**
+> The tempting move is to accept `module { source = "./mod" }` as HCL's import.
+> It is not — it is a *schema convention of one consumer*, and accepting it is
+> precisely the reasoning that made the `settings.yaml` instance contestable
+> (§5.2). **The consistent test is: would a conforming implementation of L, with
+> no application on top, resolve this to another file?** For css and markdown,
+> yes. For hcl, toml and yaml, no. A story that grades HCL against a Terraform
+> fixture is grading Terraform, and must say so in the row rather than claim HCL.
+
+**The abstention path, which is what such a language does instead.** It does not
+get to skip the honest-empty obligation — that would be the absence-masquerading-
+as-abstention failure §2 rule 3 forbids. It **substitutes a different question**,
+and labels the substitution per §4:
+
+1. **The claim changes from "the answer is honest" to "the question is not
+   askable of L."** The scenario anchors on a real, indexed, checked-in file of
+   L that carries the language's *strongest available* intra-file structure, and
+   the row states that L defines no cross-file construct, **with a citation to
+   the language specification, not to graphi's parser** — because the parser
+   comment `"no import system"` is a statement about graphi and would make the
+   abstention circular.
+2. **The abstention is recorded at E3**, per §2 rule 3: a named row in the
+   language's `parity-classes-<fam>.yaml` (or its GA record) stating *which
+   construct was looked for, why L has none, and what the substitute asserts*.
+   The `<fam>_oracle_abstention` block of §6.3 is the shape to copy.
+3. **The G6 row's class degrades E1 → E3** for the cross-file half, and says so
+   in `current`. It may **not** read like css's.
+4. **What it must still assert at full strength**, because these remain askable:
+   that the anchor **resolves** (a file node exists — non-trivial, and exactly
+   what `parse-only` fails, §10.4); that the summary does **not** state absence
+   of a relation as a fact about the code; and the intra-file operations, which
+   are the whole of what the level claims.
+
+> **The trap this closes, stated for SW-185.** Without this path, a story
+> grading yaml or toml has two bad options: fabricate a fixture with a
+> convention-level `include:` and grade a lie as though it were the language
+> (the contestable instance in §5.2), or write no honest-empty scenario at all
+> and let the omission read as compliance. **Both produce a green G6 row that
+> means nothing.** The abstention path is the third option, and it is cheaper
+> than either — but only if the story knows before it builds its fixture that
+> its language is on the "no" side of the table above.
 
 ---
 
@@ -913,32 +1101,81 @@ strong as `typed-confirmed`'s. That is deliberate: those three slots are what
 make the smaller claim *checkable*, so weakening them would make the reduced
 levels the vacuous ones.
 
-> **ROUND 1 — how much of this table is enforced, stated so the ✔ marks are not
-> read as green lights.** An adversarial probe constructed a vacuous pass at
-> `intra-file-only` and `parse-only` against draft 1 of this table. The
-> corrections are in §3 and §5; what the table itself must carry is the honest
-> reading of its own marks:
+> **A `✔` means "the template requires this". It does NOT mean "the product
+> satisfies this."** The distinction matters most at **S10, S12 and S13**, whose
+> `✔`s the shipped product does **not** currently earn — §5.2 measures Stable-12
+> operations stating a false fact about files that each carry a cross-file
+> reference the walker does not extract.
 >
-> - **S10, S12 and S13 at `intra-file-only` are marked `✔` and are NOT
->   trustworthy today.** §5.2 measures three Stable-12 operations stating a false
->   fact about `main.css`, `readme.md` and `settings.yaml` — files that each
->   contain a cross-file reference the walker does not extract. The `✔` means
->   "the template requires this", not "the product currently satisfies it".
->   **LANGHONEST-001 covers `intra-file-only` as well as `parse-only`.**
-> - **S6/S7 cannot be failed by omission** — nothing globs
->   `parity-classes-*.yaml` (§3/S7), so a family that ships neither table nor
->   guard is silent, not red.
-> - **S14's "one row per gate"** has no binary behind it; one PASS row satisfies
->   `CheckGALanguages` (§3/S14).
-> - The `↓` cells' "declared and checked" is **declared and checked *within a
->   family's own twin*** — no check compares a family's class set against the
->   Go table's 19 (§3/S8, TEMPL-P2).
->
-> **The honest summary of §7: it is a specification of the bar, and roughly half
-> of it is enforced by review rather than by CI.** That is not a reason to
-> weaken it; it is the reason D9's adversarial review is mandatory. It is
-> written here so a consuming story budgets review time instead of trusting a
-> green build.
+> **This is true at THREE of the four levels, not one.** Round 1 annotated only
+> the `intra-file-only` column; the identical output is measured on `app.py` at
+> **`cross-file-heuristic`** (§5.2), and `parse-only` fails differently and
+> worse (§10.4). **LANGHONEST-001 covers `cross-file-heuristic`,
+> `intra-file-only` and `parse-only`** — every level below `typed-confirmed`,
+> and `typed-confirmed` is untested only because `go` is the sole language
+> there. Read the S10/S12/S13 rows of those three columns as *"required, and
+> known not to be satisfied today"*.
+
+### 7.1 What actually fails a build — the `Enforced by` column
+
+**Read this before reading a single `✔` above.** The marks in §7 state **what the
+template requires**. They state nothing about what CI checks, and the two differ
+sharply.
+
+> **Round 1 disclosed this as a four-item exception list, and that structure was
+> itself the defect.** An enumerated list of exceptions invites the reader to
+> take every *unlisted* `✔` as the enforced remainder. It is not: **nine slots
+> are review-only for their own existence and round 1 named four of them.** The
+> list is replaced by a column, so the reader cannot make the inference by
+> omission. The audit below is per slot, and the question it asks is the only one
+> that matters: **for an ARBITRARY NEW LANGUAGE — not for the JVM instance, which
+> has hand-written per-family files — what fails a CI job when this property is
+> violated?**
+
+| Slot | §7 mark | **Enforced by** | What is NOT caught |
+|---|---|---|---|
+| **S1** declaration | ✔×4 | **PARTIAL CI** — `go run ./cmd/coverage -check` (`.github/workflows/coverage-matrix.yml:40`) + `go test ./internal/coverage/...` bind level, `status: shipped`, evidence PASS+URI+sha, and duplicate ids | **existence.** `CheckGALanguages` iterates *matrix rows* and `continue`s past every non-`ga-language` row (`galang.go:88-95`), so a shipped language with **no row** is never inspected. §3/S1's "fails closed" is true only for a row that exists. |
+| **S2** resolver | ✔ / SUB | **PARTIAL CI** — the declared level is bound to the live derivation | **G2a and G2b.** The NodeId golden and the under-approximation invariant live in `engine/jvmresolve/*_test.go` — a JVM-specific package. **Nothing generic requires either of a new language.** |
+| **S3** `Owns` | ✔ | **REAL CI** — `engine/semantic/semantic_test.go:52 TestRegistry_OwnsIsDisjointAndCoversSubject` holds *every registrant at once* and pins SUPERSET + pairwise disjointness. **The one slot whose `✔` is fully earned**, and it is also fail-loud on arrival: the hardcoded `len(resolvers) != 3` means a fourth registrant **breaks the test until someone edits it**. | the **path corpus is "representative rather than exhaustive"** (its own comment). A new language's extensions are not in `paths`, so its `Owns`/`Subject` behaviour over its *own* file types is unchecked until the story adds them. Registration is caught; coverage of the new extensions is not. |
+| **S4** oracle | ✔ / SUB | **REVIEW ONLY** | **everything.** Nothing requires an oracle to exist, or requires the abstention to be recorded. |
+| **S5** oracle input | follows S4 | **REVIEW ONLY** | everything |
+| **S6** class table | ✔ / ↓ | **REVIEW ONLY for existence**; CI for content *once a guard exists* | **existence** — nothing globs `parity-classes-*.yaml` (§3/S7) |
+| **S7** twin + guard | ✔×4 | **REVIEW ONLY for existence**; CI for content | **existence**, same hardcoded-const cause |
+| **S8** disposition | ✔×4 | **REVIEW ONLY for exhaustiveness** | the guard compares a family table to **its own twin only**; nothing enumerates the Go table (D-5, TEMPL-P2) |
+| **S9** real-repo | ✔ / ↓ | **REVIEW ONLY** | nothing requires a pin at all |
+| **S10** hero | ✔ / ↓ | **REVIEW ONLY for existence** — **the identical silence hole as S6/S7**: `cmd/eval/hero_jvm_test.go:35` hardcodes `filepath.Glob(…, "corpus", "hero-jvm", "*.yaml")` and **nothing in the tree globs `corpus/hero-*`** | a family shipping **neither** `corpus/hero-<fam>/` **nor** `cmd/eval/hero_<fam>_test.go` produces **zero CI signal — silence, not a red build.** Content is well guarded *once the file exists* (§3/S10). |
+| **S11** perf | ✔×4 | **REVIEW ONLY for existence** — `validateNoSilentZeroBudgets` (`cmd/eval/refscenario.go:550`) only checks values **already in the file** | a language with **no budget entry** is not caught. `hero_suite.scenario_dir` names `corpus/hero` alone (`docs/eval/hero-budgets.json:18`), so even `corpus/hero-jvm` has no entry — the JVM instance meets 1 of the 3 requirements (D-8). |
+| **S12** surface | ✔×4 | **PARTIAL CI** — `surfaces/client/capability_test.go` re-derives from the registries, and that is the whole of S12's real enforcement | the trust-report clause is **satisfied by construction** (registry-global, §3/S12 + §10.2), and `docs/language-support.md` is **explicitly permitted to be stale** (`:43-48`) |
+| **S13** abstention | ✔×4 | **REVIEW ONLY** for a new language | measured: `files_skipped: 0`, `registrants: []` while files carry no node (§10.4) |
+| **S14** evidence rows | ✔×4 | **PARTIAL CI** — the URI+sha rule **is** genuinely enforced, by `internal/evidence/evidence_test.go:227 TestCheckedInIndexIsFreshAndHonest`, which loads the **real** index and runs `Check` inside the full `go test` suite | **"one row per gate"** — `galang.go:133` rejects only `found == 0`, so one PASS row satisfies the whole binding (§3/S14) |
+
+**Result, counted: 1 slot fully CI-enforced (S3), 4 partial (S1, S2, S12, S14),
+and 9 review-only for their own existence (S4, S5, S6, S7, S8, S9, S10, S11,
+S13).** Seven marks read as mechanical and are not: **S1-existence, S2's
+G2a/G2b, S4, S5, S9, S10-omission, S11-existence.**
+
+> **A correction about S14's enforcement route, because citing the wrong one
+> would send a story to configure a job that does not exist.** `cmd/evidence
+> -check` appears in **no workflow** — the only evidence/coverage binary wired
+> into CI is `cmd/coverage -check`. What actually enforces the evidence index is
+> the **Go test** named above, via the standing full-suite run. Both reach the
+> same `Check`; only one of them runs in CI.
+
+> **The three silence holes are one bug in three places.** S6, S7 and S10 all
+> fail the same way — a hardcoded path where a glob belongs — and round 1
+> disclosed it for S6/S7 while §3/S10 assigned S10 "Class. E1". **S10's `✔` at
+> all four levels, and its E1, are claims about a file that CI never looks for.**
+> TEMPL-P4(b) is written for `parity-classes-*.yaml`; it must be widened to
+> `corpus/hero-*` and `cmd/eval/hero_*_test.go` or S10 keeps the hole after
+> S6/S7 lose it.
+
+> **The honest summary of §7.** It is a specification of the bar. **One slot of
+> fourteen is fully enforced by CI for a new language**; four more are partial;
+> the rest are review obligations wearing a `✔`. That is not a reason to weaken
+> the table — it is the reason D9's adversarial review is mandatory rather than
+> decorative, and it is written here so a consuming story budgets **review**
+> time instead of trusting a green build. **A green CI run is not evidence that
+> a language met this bar.**
 
 ---
 
@@ -973,11 +1210,11 @@ not this story** — that is stated in the ticket's own out-of-scope list.
 |---|---|---|
 | S1 | **No** — `docs/coverage-matrix.yaml` has exactly one `ga-language` row (`go`). | **D-1**, instance gap: expected. Java/Kotlin are pre-flip; the row lands at WP-J11 (SW-179). Not a defect. |
 | S2 | Yes — the declared-type binder, default-off behind `GRAPHI_JVM_TYPERESOLVE`. | — |
-| S3 | Yes — `Owns` on the registrant, `Owns ⊇ Subject`, pairwise disjoint (`engine/typeresolve/registry.go:40-47`). | **D-2**, instance gap **carried forward**: the no-registrant path has immortal confirmed edges, unreachable only because walkers hardcode `TierDerived`, guarded test-only. Already recorded in SW-170; restated here because the template's S3 is where a new language would otherwise inherit it. |
+| S3 | Yes — `Owns` on the registrant, `Owns ⊇ Subject`, pairwise disjoint (declared at `engine/typeresolve/registry.go:66`). | **D-2**, instance gap **carried forward**: the no-registrant path has immortal confirmed edges, unreachable only because walkers hardcode `TierDerived`, guarded test-only. Already recorded in SW-170; restated here because the template's S3 is where a new language would otherwise inherit it. |
 | S4 | Yes — `internal/jvmgroundtruth`, three precisions (ByName/ByArity/BySignature). | **D-3**, instance gap: JVMSOUND-003/004, JVMHARN-001 and blind spots #15/#17 are open. The oracle is E0 for what it covers and silent on those. |
 | S5 | Yes — `internal/jvmcorpus` + the `jvm_compile` blocks. | **D-4**: okio is pinned but **not compiled** — `corpus/manifest.json:411` records the negative result in full. The template calls this a correct abstention, not a gap. |
 | S6 | Yes — `docs/rc/parity-classes-jvm.yaml`, `matrix_version: 3` (comment), 13 required rows, zero deferred. | **D-10**, instance gap: the JVM rows omit `test_line`, `prd_source` and `delta_source`, which the Go rows carry. They unmarshal empty into the shared `parityRow` struct, so nothing complains. |
-| S7 | Partly — `jvmparity_test.go` + `jvmparity_matrix_test.go` carry MISSING, PHANTOM, DEFERRED, KIND/OWNER and RequiredRowsAreProven. | **D-11**, instance gap, **the most consequential one found**: the JVM guard has **no AXIS and no VOCABULARY direction**, and (because of D-10) no citation guard. The 13 JVM rows all publish `profile: "both"` and `store: "both"` — claims that on the Go side are checked and here are not. |
+| S7 | Partly — `jvmparity_test.go` + `jvmparity_matrix_test.go` carry MISSING, PHANTOM, DEFERRED, **KIND**, **OWNER** (two distinct properties, not one) and RequiredRowsAreProven. | **D-11**, instance gap, **the most consequential one found**: the JVM guard is missing **three** of the Go guard's seven directions — **VERDICT, AXIS and VOCABULARY** — and (because of D-10) the citation guard. **Round-1 correction, propagated here in round 1 of the rebuild:** the first version of this row folded KIND and OWNER into one item and named only AXIS and VOCABULARY, so it under-counted the gap by one and reproduced in §9 the exact defect §3/S7 had already corrected. The 13 JVM rows all publish `profile: "both"` and `store: "both"` — claims that on the Go side are checked and here are not. |
 | S8 | Yes — Go classes mapped/adapted/`not_applicable` with reasons; six JVM classes added. | **D-5**, **template defect, corrected in this document**: the template's first draft said the disposition was machine-checked *exhaustively*. It is not — the guard compares a family table to its own twin only, and nothing enumerates the Go table. §3/S8 now states this and §12 carries it as TEMPL-P2. |
 | S9 | Partly — guava and okio at the v3 measured standard. | **D-6**, instance gap: WP-J7 (SW-176) has not run; there is no published JVM real-repo matrix. Expected by sequencing. |
 | S10 | Yes — 16 scenarios in `corpus/hero-jvm/`, `corpus/fixtures/hero-jvm/`, `cmd/eval/hero_jvm_test.go`. | **D-7**, instance gap: `hjvm-03-search-empty` anchors on `zzz_no_such_symbol_zzz` and asserts `outcome: empty` alone. Per §5 that is the easy case; the JVM instance has **no** scenario for the hard one. |
@@ -1063,7 +1300,16 @@ names all 22 regardless of what the indexed repo contains. S12's obligation
 ("the trust report names the level") is therefore satisfied by construction for
 every language — including one with no files present. **A story must not cite
 "the trust report names the level" as evidence that its language was
-exercised.** The template's S12 wording is tightened accordingly.
+exercised.**
+
+**The tightening is applied in `§3/S12`, not merely claimed here** — see the
+callout there, which downgrades the trust-report clause to **E4 taken alone** and
+re-points S12's E1 onto the `capability_test.go` re-derivation. *(Round 1 of the
+rebuild: the previous version of this paragraph ended "The template's S12 wording
+is tightened accordingly" and §3/S12 was in fact unchanged — a claimed-but-unapplied
+edit, and an instance of the same propagation failure this section is about. A
+story working slot-by-slot through §3, as this document instructs, would never
+have reached this paragraph.)*
 
 ### 10.3 S10 — the honest-empty invariant, at three levels
 
@@ -1086,7 +1332,37 @@ $ graphi related-files config.json              # parse-only
 return the same `unresolved` shape. Byte-identical across two consecutive
 `graphi rebuild` runs **and under all three index profiles** (`-profile fast`,
 `balanced`, `deep`), so this is a property of the product, not a flake and not a
-profile artefact.
+profile artefact. *(That byte-identity claim is scoped to these `related-files`
+outputs. It does **not** extend to `trust-report`, whose `graph_generation.id`
+is fresh per pass; every substantive field of `trust-report` is stable, the id
+is not.)*
+
+> **RECONCILIATION WITH §5.2 — read this before drawing any conclusion from the
+> block above.** An earlier version of this section presented the first two
+> outputs as **"the honest shape"**, contrasted against `config.json`'s
+> `unresolved`. **That labelling was wrong and is withdrawn.** §5.2 classifies
+> the byte-identical output as a **lie** wherever L's extractor computes the
+> relation, and §5.2's predicate is the one that governs — the two sections
+> cannot both stand, and §5.2 settles it:
+>
+> - **`app.py` is the clearest case against the old label.** Python is
+>   `cross-file-heuristic`, it has a registered resolver, and `pyImports`
+>   (`core/parse/parser_python.go:232`) **does** compute imports. The file
+>   contains `from pkg.util import helper` and `pkg/util.py` is tracked and
+>   indexed. By §5.2's own predicate the sentence *"has no both edges to other
+>   files"* is **false** here — this is a lie, not an honest shape.
+> - **`settings.yaml` is the one instance where the old label may survive**, and
+>   only because YAML defines no `include` directive (§5.2's table, §5.5). Even
+>   there, "honest" is an accident of the language, not a property of the
+>   product: the identical sentence is returned either way, so the output
+>   carries no information about which case it is in.
+>
+> **What the contrast in the block above actually shows** is therefore *two
+> different failures*, not one failure and one success: at `parse-only` the
+> operation says **the anchor is unknown**; at `intra-file-only` **and at
+> `cross-file-heuristic`** it says **the relation is absent**. The second is the
+> more dangerous because `outcome` and `method` both read as a successful
+> answer. Both are LANGHONEST-001.
 
 **It is not a zero-symbol rule.** `empty.py` (a comment only) and `notes.md`
 (prose only) both resolve with `method: "no_edges"`. Only the two `.json` files
@@ -1131,8 +1407,27 @@ Two corroborating readings, both from the same run:
 
 **Classified.** This is not a soundness defect: no wrong edge is emitted, so D5
 does not fire. It is an **honesty defect in the abstention surface**, and it is
-filed as **`LANGHONEST-001`** so that SW-183 and SW-185 inherit an id rather
-than rediscover a symptom.
+filed as **`LANGHONEST-001`** so that **SW-181, SW-182**, SW-183 and SW-185
+inherit an id rather than rediscover a symptom. *(SW-181/SW-182 were added to
+that list in rebuild round 1, when the scope was widened to their level — see
+the table below.)*
+
+**Scope of LANGHONEST-001 — widened twice, and the second widening is the one
+that reaches the nearest consuming stories.** The id covers **two distinct
+failure modes at every capability level below `typed-confirmed`**:
+
+| Level | Failure mode | Measured on |
+|---|---|---|
+| `cross-file-heuristic` | says **the relation is absent** (`no_edges`) about a file whose extractor *does* compute that relation | `app.py` (§5.2) — **added in round 1 of the rebuild** |
+| `intra-file-only` | says **the relation is absent** (`no_edges`) about a file carrying an unextracted reference | `main.css`, `readme.md` (§5.2) — added in round 1 |
+| `parse-only` | says **the anchor is unknown** (`unresolved`) about a tracked, indexed, successfully parsed file | `config.json` (this section) — the original finding |
+
+**`cross-file-heuristic` is the level SW-181 (Python) and SW-182 (TypeScript
+family) target**, which is why the under-scoping mattered: a story reading a
+version of this document that exempted its own level would write the
+honest-empty G6 row on the strength of `no_edges`, and produce exactly the
+false green the invariant exists to prevent — one level up from where anyone was
+looking for it.
 
 **Disclosure (D8), analysed rather than assumed.** D8 binds "an open defect in a
 GA operation". `related_files` *is* a GA operation, but GA today is `go` alone,
@@ -1148,6 +1443,9 @@ product-byte change — which AC-8 forbids this story from making.
 1. **The slots are answerable off the JVM.** Every one of S1, S6–S14 had a
    determinate answer for Python, YAML and JSON. Only S4/S5 needed the
    abstention path — which is the split §6 predicts.
+   > **This point is too strong as written — see §10.6, which corrects it.** It
+   > is left standing rather than rewritten because the *reason* it was too
+   > strong is the reusable finding. Do not read point 1 without §10.6.
 2. **The template caught a real defect that the JVM instance could not have
    surfaced.** Java and Kotlin are `cross-file-heuristic`; nothing in the JVM
    asset set exercises `parse-only`. A template extracted from the JVM instance
@@ -1178,12 +1476,17 @@ Three consequences, all folded into the sections above rather than left here:
 - **§5 was rewritten** (§5.1–§5.4). The predicate reaches 4 of 12 operations,
   not all 12, because there are four result shapes and seven ops carry neither a
   summary nor a `confidence.method`.
-- **LANGHONEST-001 is widened** from `parse-only` to `parse-only` **and**
-  `intra-file-only`. At `parse-only` an operation says the anchor is unknown; at
-  `intra-file-only` it says the relation is absent. The second is the more
-  dangerous of the two, because it reads as a confident answer.
-- **§7's `✔` marks for S10/S12/S13 at `intra-file-only` are annotated** as
-  "required, not currently satisfied".
+- **LANGHONEST-001 is widened** — in round 1 from `parse-only` to `parse-only` +
+  `intra-file-only`, and **in round 1 of the rebuild to `cross-file-heuristic`
+  as well**, i.e. to **every level below `typed-confirmed`**. At `parse-only` an
+  operation says the anchor is unknown; at the other two it says the relation is
+  absent. The second is the more dangerous, because it reads as a confident
+  answer. **Round 1's scoping was the defect** — it stopped at `intra-file-only`
+  because it never re-ran the corrected rule against the Python file that was in
+  its fixture the whole time (§5.3 item 5). `typed-confirmed` is unannotated only
+  because `go` is the sole language at that level, not because it was cleared.
+- **§7's `✔` marks for S10/S12/S13 are annotated** as "required, not currently
+  satisfied" — across **all three** affected columns, not `intra-file-only` alone.
 
 **Recorded as a finding about method, not just about YAML:** draft 1 found the
 `parse-only` defect only because JSON differs *structurally* from Python. It
@@ -1232,11 +1535,11 @@ predating this story. This document neither causes it nor resolves it.
 
 | id | What | Why it is not done here |
 |---|---|---|
-| **TEMPL-P1** *(restated in round 1 — the first version was dangerous)* | **Two parts, and part (b) is the load-bearing one.** **(a)** `scenario.Result` carries the contract `summary` and `confidence.method` (or the schema gains `expect.confidence_method`). **(b)** The seven shape-B/C/D operations — `callers`, `callees`, `references`, `definition`, `neighborhood`, `impact`, `search` — gain *some* way to express "this relation is not extracted for language L", because today they carry neither a summary nor a confidence object and can express nothing. | A product-byte change; AC-8 forbids it here. **Do NOT land (a) alone:** it produces a gate that appears to cover twelve operations and covers four, converting a known review obligation into a false green — strictly worse than the present gap. Owner: whichever of SW-181/SW-185 first needs a hard honest-empty gate. |
+| **TEMPL-P1** *(restated in round 1 — the first version was dangerous)* | **Two parts, and part (b) is the load-bearing one.** **(a)** `scenario.Result` carries the contract `summary` and `confidence.method` (or the schema gains `expect.confidence_method`). **(b)** The seven shape-B/C/D operations — `callers`, `callees`, `references`, `definition`, `neighborhood`, `impact`, `search` — gain *some* way to express "this relation is not extracted for language L", because today they carry neither a summary nor a confidence object and can express nothing. | A product-byte change; AC-8 forbids it here. **Do NOT land (a) alone:** it produces a gate that appears to cover twelve operations and covers four, converting a known review obligation into a false green — strictly worse than the present gap. **Owner: SW-181**, as the first consuming story in programme order and therefore the first to need this — pinned to a ticket in rebuild round 1 because "whichever of SW-181/SW-185 first needs it" named no story and so scheduled nothing. If SW-181 lands without it, the obligation moves to SW-182, then SW-185, where it becomes blocking. |
 | **TEMPL-P2** | A check that enumerates `docs/rc/parity-classes.yaml` and asserts every class is dispositioned in each family table. Today the guard only compares a family table to its own twin (D-5). | A product change, and it must not run before the family-table set stabilises. |
 | **TEMPL-P3** | `legalFixtures` gains a `"production <lang> parser"` member so a family table stops labelling its rows `"production Go parser"` (D-12). | A product change; harmless but not free — every existing JVM row's value changes with it. Should land before a third family table. |
-| **TEMPL-P4** *(widened in round 1)* | Three parts. **(a)** The **AXIS**, **VOCABULARY** and **VERDICT** directions plus the `test_line` citation guard are extended to every `parity-classes-<fam>.yaml` (D-10, D-11) — note draft 1 said "six directions" and omitted VERDICT, so it under-specified its own fix. **(b)** The guards **glob** `docs/rc/parity-classes-*.yaml` instead of reading hardcoded consts, so a family that ships no table at all is red rather than silent. **(c)** `legalFixtures` gains a non-Go member (that is TEMPL-P3). | A product change. **Highest-value prerequisite in this table.** Until (a) lands, every family table's `profile: "both"` / `store: "both"` claim is E4 wearing an E1 label; until (b) lands, S6 and S7 cannot be failed by omission at all. Each new family multiplies both exposures. Owner: whichever of SW-181/SW-182 lands the second family table. |
-| **LANGHONEST-001** | Three Stable-12 operations answer about an indexed `parse-only` file as though the anchor were mistyped; `trust-report` reports `files_skipped: 0` and `registrants: []` for those files. §10.4. | Fixing it means minting file nodes for parse-only parsers, which changes `imports` targets (ADR 0011's `fileNodesByDir`) — a product-byte change with full D7 ceremony, and out of scope here. |
+| **TEMPL-P4** *(widened in round 1)* | Three parts. **(a)** The **AXIS**, **VOCABULARY** and **VERDICT** directions plus the `test_line` citation guard are extended to every `parity-classes-<fam>.yaml` (D-10, D-11) — note draft 1 said "six directions" and omitted VERDICT, so it under-specified its own fix. **(b)** *(widened in round 1 of the rebuild — it was scoped to S6/S7 and the same hole exists at S10)* The guards **glob** rather than reading hardcoded consts, in **three** places: `docs/rc/parity-classes-*.yaml` (S6/S7), **`corpus/hero-*/`** and **`cmd/eval/hero_*_test.go`** (S10). All three are the same bug — a hardcoded path where a glob belongs — and each lets a family ship nothing and be *silent* rather than red. **(c)** `legalFixtures` gains a non-Go member (that is TEMPL-P3). | A product change. **Highest-value prerequisite in this table.** Until (a) lands, every family table's `profile: "both"` / `store: "both"` claim is E4 wearing an E1 label; until (b) lands, **S6, S7 and S10** cannot be failed by omission at all. Each new family multiplies all three exposures. Owner: whichever of SW-181/SW-182 lands the second family table. |
+| **LANGHONEST-001** *(scope widened twice — now every level below `typed-confirmed`)* | **Two failure modes.** **(i)** At `parse-only`, three Stable-12 operations answer about an indexed file as though the anchor were mistyped, and `trust-report` reports `files_skipped: 0` / `registrants: []` for those files (§10.4). **(ii)** At **`cross-file-heuristic`** *and* `intra-file-only`, `related_files` states *"has no both edges to other files"* as fact over a file that carries the reference — including `app.py`, whose extractor demonstrably computes imports (§5.2). Mode (ii) is the more dangerous: `outcome` and `method` both read as a successful answer. | Mode (i) means minting file nodes for parse-only parsers, which changes `imports` targets (ADR 0011's `fileNodesByDir`) — a product-byte change with full D7 ceremony. Mode (ii) needs the summary to name the capability limit instead of asserting absence — also product bytes. Both out of scope under AC-8. **Mode (ii) lands on SW-181 and SW-182 directly**, which is why the scope is stated here rather than discovered there. |
 
 **Escalated to the owner — AC-4 presupposes a uniformity that is measurably
 false.** AC-4 requires the template to demand the honest-empty invariant *at
@@ -1274,11 +1577,17 @@ grep -n 'category: ga-language' -B3 docs/coverage-matrix.yaml
 go run ./cmd/coverage -check
 
 # §3/S14, §9/D-9 — zero GA-LANG-* ROWS exist today.
-# NOTE the `- id:` anchor. A bare `grep -c 'GA-LANG-'` returns 6, not 0, because
-# THIS CHANGE added a comment block to that file explaining the row shape — and
-# draft 1 of this document published the bare grep with "# expect 0" beside it,
-# a command self-falsified by its own commit. Count rows, never mentions.
-grep -c '^  - id: GA-LANG-' docs/rc/evidence-index.yaml   # expect 0
+# NOTE the `- id:` anchor. A bare `grep -c 'GA-LANG-'` on that file does NOT
+# return 0: it counts the mentions in the comment block explaining the row
+# shape. Draft 1 published the bare grep with "# expect 0" beside it — a command
+# self-falsified by its own commit. Count rows, never mentions.
+#
+# AND DO NOT PIN THE BARE COUNT EITHER. Round 1 fixed the command but wrote
+# "a bare grep returns 6" beside it; the rebuild round edited that comment block
+# and the bare count became 10, so the ANNOTATION had acquired the same defect
+# as the command it was warning about. Any number derived from prose drifts when
+# the prose is edited. State the property, pin only the row-anchored count.
+grep -c '^  - id: GA-LANG-' docs/rc/evidence-index.yaml   # expect 0 — STABLE
 go run ./cmd/evidence -check
 
 # §3/S3 — the Owns contract. The DECLARATION is at :66; :40-65 is its doc
@@ -1306,51 +1615,96 @@ grep -c '"AXIS"\|"VOCABULARY"\|"VERDICT"' engine/conformance/jvmparity_matrix_te
 grep -in 'parityClassesPath = ' engine/conformance/*_test.go   # both are consts
 grep -rn 'parity-classes-\*' --include='*.go' .      # expect NO hits
 
+# §7.1 — THE ENFORCEMENT AUDIT. Each command backs one "Enforced by" cell.
+# S10 has the SAME silence hole as S6/S7 -- the hero glob is hardcoded per
+# family and nothing globs corpus/hero-*:
+grep -n 'corpus", "hero' cmd/eval/hero_jvm_test.go        # :35, hardcoded "hero-jvm"
+grep -rn '"hero-\*"\|hero-\*' --include='*.go' .          # expect NO hits
+# S3 is the one fully-enforced slot -- it holds every registrant at once:
+grep -n 'func TestRegistry_OwnsIsDisjointAndCoversSubject' engine/semantic/semantic_test.go  # :52
+grep -n 'len(resolvers) != 3\|representative rather than exhaustive' engine/semantic/semantic_test.go
+# S1 is never inspected for a language with no matrix row -- it `continue`s:
+sed -n '88,96p' internal/coverage/galang.go
+# S14's URI+sha rule is enforced by the GO TEST on the real index, NOT by
+# cmd/evidence -check, which appears in no workflow:
+grep -n 'func TestCheckedInIndexIsFreshAndHonest' internal/evidence/evidence_test.go  # :227
+grep -rn 'cmd/evidence' .github/                          # expect NO hits
+grep -rn 'cmd/coverage' .github/                          # coverage-matrix.yml:40 only
+# S11 only validates budgets ALREADY PRESENT, and hero-jvm has no entry:
+grep -n 'func validateNoSilentZeroBudgets' cmd/eval/refscenario.go   # :550
+grep -n 'scenario_dir' docs/eval/hero-budgets.json        # "corpus/hero" only
+
+# §3/S12, §10.2 — the capability list is REGISTRY-GLOBAL, so "the trust report
+# names the level" is satisfied by construction and proves nothing. 22 languages
+# are reported for a fixture holding files in five of them.
+cd /tmp/fx12 && /tmp/graphi-tmpl trust-report --json | jq '.capabilities | length'   # 22
+
 # §9/D-10 — the three fields the JVM ROWS omit. Anchor on the row indentation:
-# a bare grep now matches this change's own D-10 header comment (returns 2).
-grep -c '^    test_line:\|^    prd_source:\|^    delta_source:' docs/rc/parity-classes.yaml      # >0
+# a bare grep also matches this change's own D-10 header commentary. Same rule
+# as above — the row-anchored counts are the ones that hold.
+grep -c '^    test_line:\|^    prd_source:\|^    delta_source:' docs/rc/parity-classes.yaml      # 57
 grep -c '^    test_line:\|^    prd_source:\|^    delta_source:' docs/rc/parity-classes-jvm.yaml  # 0
 
-# §9/D-12 — every JVM ROW claims a Go parser. Bare grep returns 14: 13 rows plus
-# this change's own header comment.
+# §9/D-12 — every JVM ROW claims a Go parser. Row-anchored, so header
+# commentary mentioning the value does not inflate it.
 grep -c '^    fixture: "production Go parser"' docs/rc/parity-classes-jvm.yaml   # 13
 
 # §3/S9 — the legacy (non-v3) pins Wave 2 will inherit
 grep -n '"name": "flask"' -A 8 corpus/manifest.json   # no tier, no measured block
 
-# §10 — reproduce the dry run. Build from the branch; the installed binary is stale.
+# §5.2, §10 — reproduce the whole measurement on ONE 12-file fixture.
+# Build from the branch; the installed binary is stale.
+# The fixture MUST carry the reference under test: a YAML with no `include:`
+# cannot expose the no_edges defect, which is how draft 1 missed it — and a
+# fixture that omits app.py cannot expose that the defect reaches
+# cross-file-heuristic, which is how ROUND 1 under-scoped it.
 CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/graphi-tmpl ./cmd/graphi
-mkdir -p /tmp/tmplfix/pkg && cd /tmp/tmplfix && git init -q .
-printf 'def helper(x):\n    return x + 1\n' > pkg/util.py
+mkdir -p /tmp/fx12/pkg && cd /tmp/fx12 && git init -q .
 printf 'from pkg.util import helper\n\ndef main():\n    return helper(41)\n' > app.py
-printf 'name: demo\nlisten: 8080\n' > settings.yaml
-printf '{"name": "demo", "version": 1}\n' > config.json
-printf '# only a comment\n' > empty.py
-git add -A && git -c user.email=a@b -c user.name=c commit -qm init
-/tmp/graphi-tmpl index >/dev/null
-/tmp/graphi-tmpl related-files app.py         # method: no_edges
-/tmp/graphi-tmpl related-files empty.py       # method: no_edges  (NOT a zero-symbol rule)
-/tmp/graphi-tmpl related-files settings.yaml  # method: no_edges
-/tmp/graphi-tmpl related-files config.json    # method: unresolved   <-- §10.4
-/tmp/graphi-tmpl explain-symbol config.json   # same
-/tmp/graphi-tmpl change-risk config.json      # same
-/tmp/graphi-tmpl trust-report --json | jq '.coverage, .abstention'
-# expect files_indexed == the tracked count, files_skipped: 0, registrants: []
-
-# §5.2 / §10.6 — the intra-file-only lie. The fixture MUST carry the reference;
-# a YAML with no `include:` cannot expose this, which is how draft 1 missed it.
-mkdir -p /tmp/fx3 && cd /tmp/fx3 && git init -q .
+printf 'def helper(x):\n    return x + 1\n\ndef unused_helper(y):\n    return y\n' > pkg/util.py
+printf '# only a comment\n'                             > empty.py
+printf 'just prose, no headings\n'                      > notes.md
+printf 'include: ./other.yaml\n'                        > settings.yaml
+printf 'k: v\n'                                         > other.yaml
+printf '{"name": "demo", "version": 1}\n'               > config.json
+printf '{"k":1}\n'                                      > other.json
 printf '@import "base.css";\n\n.card { color: red; }\n' > main.css
 printf '.base { color: blue; }\n'                       > base.css
 printf '[base](./base.md)\n'                            > readme.md
 printf '# Base\n'                                       > base.md
-printf 'include: ./other.yaml\n'                        > settings.yaml
-printf 'k: v\n'                                         > other.yaml
-git add -A && git -c user.email=a@b -c user.name=c commit -qm i
-/tmp/graphi-tmpl rebuild >/dev/null
-/tmp/graphi-tmpl related-files main.css       # "has no both edges" -- FALSE
-/tmp/graphi-tmpl related-files readme.md      # same
-/tmp/graphi-tmpl related-files settings.yaml  # same
+git add -A && git -c user.email=a@b -c user.name=c commit -qm init
+/tmp/graphi-tmpl index >/dev/null
+
+# The four no_edges instances. ALL FOUR RETURN THE SAME SENTENCE.
+/tmp/graphi-tmpl related-files app.py         # cross-file-heuristic -- A LIE (§5.2)
+/tmp/graphi-tmpl related-files main.css       # intra-file-only      -- A LIE
+/tmp/graphi-tmpl related-files readme.md      # intra-file-only      -- A LIE
+/tmp/graphi-tmpl related-files settings.yaml  # intra-file-only      -- CONTESTABLE (§5.5)
+/tmp/graphi-tmpl related-files empty.py       # no_edges (NOT a zero-symbol rule)
+/tmp/graphi-tmpl related-files config.json    # method: unresolved   <-- §10.4
+/tmp/graphi-tmpl explain-symbol config.json   # same
+/tmp/graphi-tmpl change-risk config.json      # same
+/tmp/graphi-tmpl trust-report --json | jq '.coverage, .abstention'
+# expect files_indexed == 12, files_skipped: 0, registrants: []
+# NOTE: trust-report is NOT byte-stable across runs (graph_generation.id is
+# fresh per pass). Every substantive field is; the id is not.
+
+# §5.2 — WHY the outputs are byte-identical across levels: the graph holds NO
+# file->file edge at all. Every edge is `defines` (file->symbol, intra-file)
+# plus one `calls` to an `external` stub. app.py's import produced NO edge to
+# pkg/util.py. Read db_path from `graphi status --json`.
+DB=$(/tmp/graphi-tmpl status --json | jq -r .db_path)
+sqlite3 "$DB" "select count(*) from edges;"                       # 9 (balanced profile)
+sqlite3 "$DB" "select count(*) from edges e
+   join nodes nf on nf.id=e.from_id join nodes nt on nt.id=e.to_id
+   where nf.kind='file' and nt.kind='file';"                      # 0  <-- the point
+sqlite3 "$DB" "select count(*) from nodes where kind='file';"     # 10 of 12 (no .json)
+
+# §5.2 — and the predicate that makes app.py the decisive instance: python's
+# extractor DOES compute imports, so `no_edges` cannot be honest for it.
+grep -n 'func pyImports' core/parse/parser_python.go              # :233 (:232 is the comment)
+grep -n 'no import system' core/parse/parser_yaml.go core/parse/parser_css.go \
+                           core/parse/parser_markdown.go core/parse/parser_toml.go
 # §5.1 — the four result shapes. Only the first carries summary + method.
 ID=$(/tmp/graphi-tmpl search card | sed 's/.*"node_id":"\([^"]*\)".*/\1/')
 /tmp/graphi-tmpl explain-symbol "$ID"   # shape A: summary + confidence.method

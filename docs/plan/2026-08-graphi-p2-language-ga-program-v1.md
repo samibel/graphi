@@ -132,13 +132,32 @@ surface without its level.
 > abstain from and what its evidence class degrades to when it does — is
 > [`2026-08-per-language-ga-template-v1.md`](2026-08-per-language-ga-template-v1.md).
 > That document also records, from a measured non-JVM instantiation, that the
-> honest-empty invariant as written above is **not satisfiable at `parse-only`
-> today** (a parse-only file has no graph node at all, so three Stable-12
-> operations answer as though the anchor were mistyped) and that
+> honest-empty invariant as written above is **not satisfiable today at ANY
+> capability level below `typed-confirmed`**, in two distinct shapes — and that
 > `outcome: empty` alone — the `hero-03-search-empty` assertion — does **not**
 > discriminate an honest empty from a lying one. Both are owner decisions
 > raised there, not resolved here; this paragraph is added so a reader of §3
 > does not take the invariant as already met.
+>
+> **Widened 2026-08-19 (SW-180, rebuild round 1), because the first version of
+> this paragraph said "`parse-only`" and that is one level too narrow — it
+> exempted the level SW-181 and SW-182 target.** Filed as **LANGHONEST-001**:
+>
+> - **`parse-only`** — a parse-only file has no graph node at all, so three
+>   Stable-12 operations answer as though the anchor were **mistyped**.
+> - **`intra-file-only` AND `cross-file-heuristic`** — `related_files` states
+>   *"anchor … resolved (file) but has no both edges to other files"* **as
+>   fact** over a file that carries the reference. Measured on `main.css`
+>   (`@import`), `readme.md` (a link), and — decisively — on **`app.py`
+>   (`from pkg.util import helper`), which is `cross-file-heuristic`, has a
+>   registered resolver, and whose extractor demonstrably computes imports**.
+>   All four return the byte-identical sentence. This shape is the more
+>   dangerous, because `outcome` and `method` both read as a **successful
+>   answer** rather than as a refusal.
+>
+> **The practical consequence for SW-181 and SW-182:** neither may treat
+> `confidence.method == "no_edges"` on its own language as the honest-empty
+> shape. It is the shape the defect takes at their level.
 
 ## 4. Where Java and Kotlin stand today (gap analysis, code-grounded)
 

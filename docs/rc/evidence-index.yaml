@@ -55,10 +55,21 @@ candidate:
   release_digest: "sha256:be64c5c090ddf08a9798877aa96f0be84ed709ec2f71f883a4d39498d6828bed (graphi-linux-amd64, v0.7.1)"
 
 # ── The GA-language axis: how GA-LANG-<lang>-G<n> rows must be shaped ───────
-# Added 2026-08-19 (SW-180). There are ZERO GA-LANG-* rows in this file today
-# (`grep -c 'GA-LANG-' docs/rc/evidence-index.yaml` -> 0), and that is why
-# internal/coverage.CheckGALanguages currently binds exactly one ga-language
-# matrix row (`go`, grandfathered — its GA evidence predates this mechanism).
+# Added 2026-08-19 (SW-180). There are ZERO GA-LANG-* ROWS in this file today,
+# and that is why internal/coverage.CheckGALanguages currently binds exactly one
+# ga-language matrix row (`go`, grandfathered — its GA evidence predates this
+# mechanism). Count ROWS, never mentions:
+#
+#     grep -c '^  - id: GA-LANG-' docs/rc/evidence-index.yaml     # -> 0
+#
+# NOTE THE `- id:` ANCHOR, and do not replace it with a bare grep. A bare
+# `grep -c 'GA-LANG-'` over this file does NOT return 0 — it counts the
+# mentions inside THIS COMMENT BLOCK. The first version of this block published
+# exactly that bare command with `-> 0` beside it: a command falsified by the
+# very comment that published it, and by its own commit. The template's §13
+# had already found and fixed that same defect in itself; the fix did not
+# propagate here, into the published record and the higher-traffic surface.
+# Row-anchored greps are stable under commentary. Bare ones are not.
 #
 # Before adding the first one, read
 # docs/plan/2026-08-per-language-ga-template-v1.md §3 slot S14 and §4. Two
@@ -80,6 +91,32 @@ candidate:
 #      ground-truth oracle publishes G2SUB at E2, not at Java's class.
 #
 # Rows are BORN UNKNOWN. UNKNOWN counts as not passed; that is the point.
+#
+#   3. AND THE TWO OBLIGATIONS COMPOSE IN ONLY ONE ORDER. Read this before
+#      creating a row: internal/coverage/galang.go:129-131 raises a violation
+#      for EVERY GA-LANG-<lang>-* row that is not PASS — not merely for a
+#      missing set. So "born UNKNOWN" is safe only while the language has NO
+#      ga-language row in docs/coverage-matrix.yaml:
+#
+#        FIRST   create the GA-LANG-<lang>-G<n> rows, born UNKNOWN, while the
+#                language is ABSENT from the coverage matrix. CheckGALanguages
+#                iterates matrix rows (galang.go:88-95) and `continue`s past
+#                everything else, so a language with no matrix row is never
+#                inspected and its UNKNOWN rows are invisible to the check.
+#                This is SW-174.
+#        LAST    add the ga-language matrix row, and only once every one of its
+#                GA-LANG-* rows reads PASS with evidence_uri AND sha. This is
+#                the flip (WP-J11 / SW-179).
+#
+#      REVERSING THAT ORDER FAILS `go run ./cmd/coverage -check` IMMEDIATELY.
+#      The first version of this comment block said "Rows are BORN UNKNOWN"
+#      and stopped there — draft 1 of the template's §3/S14 gave the same
+#      advice, and the round-1 correction that added this ordering constraint
+#      landed in the template and NOT here, in the file a story actually reads
+#      before creating a row. A story following the unqualified advice lands a
+#      red build. The mechanism is right — a matrix row is a GA CLAIM, and a
+#      claim with an UNKNOWN gate under it should fail — but the claim and the
+#      evidence must be created in that order.
 
 gates:
   # ── §6 per-work-package gates (WP0–WP10) ────────────────────────────────────
