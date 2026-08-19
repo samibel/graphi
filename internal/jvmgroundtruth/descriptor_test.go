@@ -2,12 +2,14 @@ package jvmgroundtruth
 
 // SW-172 — the toolchain-free half of the signature work: the parsing and
 // keying rules, pinned against REAL captured javap output
-// (testdata/overloads.javap.txt) so no JDK is needed to catch a regression in
-// them. The live differential lives in signature_test.go.
+// (testdata/overloads.javap.txt, testdata/refreturns.javap.txt) so no JDK is
+// needed to catch a regression in them. The live differential lives in
+// signature_test.go.
 
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -34,6 +36,17 @@ func TestParseMethodRef_CarriesDescriptor(t *testing.T) {
 		{"2: invokevirtual #7 // Method a/Rate.apply:([La/Thing;)I", "a/Rate", "apply", "([La/Thing;)I", true},
 		{`1: invokespecial #1 // Method java/lang/Object."<init>":()V`, "java/lang/Object", "<init>", "()V", true},
 		{"1: invokevirtual #7 // Method rate:()I", "", "rate", "()I", true},
+		// Reference RETURN types — the shape parseMethodHeader used to eat.
+		{"1: invokevirtual #7 // Method a/Derived.self:()La/Derived;", "a/Derived", "self", "()La/Derived;", true},
+		// INTERFACE refs. javac writes `// InterfaceMethod` for every invoke
+		// whose resolved owner is an interface, and matching only `// Method `
+		// dropped invokeinterface, interface invokestatic and `X.super.m()`
+		// from the truth set entirely — correct code calling through any
+		// interface was then accused at every precision.
+		{"1: invokeinterface #17,  1 // InterfaceMethod a/HasSeed.seed:()I", "a/HasSeed", "seed", "()I", true},
+		{"6: invokestatic  #22 // InterfaceMethod a/HasSeed.base:()I", "a/HasSeed", "base", "()I", true},
+		{"0: invokestatic  #1 // InterfaceMethod helper:()I", "", "helper", "()I", true},
+		{"1: invokespecial #7 // InterfaceMethod a/HasSeed.seed:()I", "a/HasSeed", "seed", "()I", true},
 		{"5: getfield #13 // Field stored:Ltax/Rate;", "", "", "", false},
 		{"0: iload_1", "", "", "", false},
 	}
@@ -128,6 +141,212 @@ func TestParseMethodHeader_RejectsDescriptorLine(t *testing.T) {
 	}
 	if name, ok := parseMethodHeader("public shop.Cart();"); !ok || name != "<init>" {
 		t.Fatalf("a constructor must normalize to <init>, got (%q,%v)", name, ok)
+	}
+}
+
+// TestParseMethodHeader_RejectsInvokeLines pins the SIBLING of the bug above,
+// which was PRE-EXISTING (it predates SW-172) and strictly worse.
+//
+// A javap invoke line whose callee RETURNS A REFERENCE TYPE ends with ';' and
+// contains '(' — exactly the shape a method header has — and the token before
+// '(' carries a '.', so it was read as a CONSTRUCTOR header. In parseInvokes
+// that both DROPPED the invoke fact and clobbered the current method to
+// `<init>`, re-parenting every later invoke in the method onto a caller that
+// never made the call. Missing and mis-attributed truth facts are the
+// direction that MANUFACTURES violations, so plain covariant-return Java —
+// with every graphi binding correct — was accused at every precision,
+// including by-name.
+//
+// It was invisible because every fixture in the harness returned a primitive
+// or void. It is pinned here at the parser, and reproducibly from testdata
+// alone in TestParseJavap_ReferenceReturnsAndInterfaceDispatch.
+func TestParseMethodHeader_RejectsInvokeLines(t *testing.T) {
+	rejected := []string{
+		"1: invokevirtual #7                  // Method a/Derived.self:()La/Derived;",
+		"5: invokestatic  #9                  // Method a/Rate.make:()La/Rate;",
+		"7: invokeinterface #21,  1           // InterfaceMethod a/HasSeed.seed:()La/Seed;",
+		"6: invokespecial #27                 // Method a/App$1L.\"<init>\":(La/App;La/Derived;)V",
+		"3: getfield      #13                 // Field stored:Ltax/Rate;",
+		"2: ldc           #5                  // String (a);",
+	}
+	for _, line := range rejected {
+		if name, ok := parseMethodHeader(strings.TrimSpace(line)); ok {
+			t.Errorf("parseMethodHeader(%q) = (%q,true); a javap instruction is not a member declaration", line, name)
+		}
+	}
+
+	// …and the real headers it must still read, including the ones whose own
+	// return type or throws clause is a reference type.
+	accepted := map[string]string{
+		"public a.Derived self();":                            "self",
+		"public a.Base self() throws java.io.IOException;":    "self",
+		"public <T extends java.lang.Number> int measure(T);": "measure",
+		"public abstract int seed();":                         "seed",
+		"public static int base();":                           "base",
+		"a.App$1L(a.App, a.Derived);":                         "<init>",
+		"public int descriptor(int);":                         "descriptor",
+		"public java.util.List<java.lang.String> names(java.util.Map<java.lang.String, java.lang.Integer>);": "names",
+	}
+	for line, want := range accepted {
+		name, ok := parseMethodHeader(line)
+		if !ok || name != want {
+			t.Errorf("parseMethodHeader(%q) = (%q,%v), want (%q,true)", line, name, ok, want)
+		}
+	}
+}
+
+// TestSyntheticNestedClass pins the discriminator for javac-minted anonymous
+// and local classes. It must be EXACT, not a guess: a '$' followed by a digit
+// cannot appear in a user-written nested type, because a Java identifier
+// cannot begin with a digit.
+func TestSyntheticNestedClass(t *testing.T) {
+	synthetic := []string{"a/App$1", "a/App$1L", "a/Outer$Inner$2", "a/App$12Body"}
+	plain := []string{"a/App", "a/Outer$Inner", "shop/Cart$Helper", "a/A$B$C", "a/App$L1"}
+	for _, s := range synthetic {
+		if !syntheticNestedClass(s) {
+			t.Errorf("syntheticNestedClass(%q) = false, want true", s)
+		}
+	}
+	for _, s := range plain {
+		if syntheticNestedClass(s) {
+			t.Errorf("syntheticNestedClass(%q) = true, want false", s)
+		}
+	}
+}
+
+// TestParseJavap_ReferenceReturnsAndInterfaceDispatch is the REPRODUCIBLE-FROM-
+// TESTDATA proof for the two truth-losing parser defects, so neither needs a
+// live JDK to catch. The fixture is real javap output over covariant-return
+// overrides, an interface-typed receiver, an interface static call and a local
+// class; see testdata/README.md.
+func TestParseJavap_ReferenceReturnsAndInterfaceDispatch(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "refreturns.javap.txt"))
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	// Precondition: the fixture must actually CONTAIN the constructs, or this
+	// test is green against nothing — which is how the defects survived.
+	if n := strings.Count(string(raw), "// InterfaceMethod "); n < 2 {
+		t.Fatalf("fixture lost its interface refs (%d)", n)
+	}
+	if !strings.Contains(string(raw), "// Method a/Derived.self:()La/Derived;") {
+		t.Fatal("fixture lost its reference-returning invoke line")
+	}
+
+	calls, err := ParseJavap(raw)
+	if err != nil {
+		t.Fatalf("ParseJavap: %v", err)
+	}
+	type fact struct{ callerFile, callerMethod, calleeFile, callee string }
+	got := map[fact]Call{}
+	for _, c := range calls {
+		got[fact{c.CallerFile, c.CallerMethod, c.CalleeFile, c.Callee}] = c
+	}
+
+	// The reference-returning invokes must SURVIVE, under their real caller.
+	for _, want := range []fact{
+		{"a/App.java", "run", "a/Derived.java", "self"},
+		{"a/App.java", "run", "a/Derived.java", "tag"},
+		// Interface dispatch: invokeinterface and interface invokestatic.
+		{"a/App.java", "viaIface", "a/HasSeed.java", "seed"},
+		{"a/App.java", "viaIface", "a/HasSeed.java", "base"},
+	} {
+		if _, ok := got[want]; !ok {
+			t.Errorf("missing truth fact %+v; parsed: %+v", want, calls)
+		}
+	}
+	// …and nothing may be re-parented onto <init>, which is what the header
+	// mis-read did.
+	for _, c := range calls {
+		if c.CallerMethod == "<init>" && (c.Callee == "tag" || c.Callee == "seed" || c.Callee == "self") {
+			t.Errorf("invoke re-parented onto a constructor: %+v", c)
+		}
+	}
+
+	// The local class's own call is present, and FLAGGED as a caller graphi
+	// cannot name (see AbstainBytecodeCallerNotAlignable).
+	local, ok := got[fact{"a/App.java", "go", "a/Derived.java", "tag"}]
+	if !ok {
+		t.Fatalf("the local class's call vanished: %+v", calls)
+	}
+	if !local.callerSynthetic {
+		t.Error("a call made inside a local class must be flagged unalignable")
+	}
+}
+
+// TestCompareAt_MultiLevelCoarseFallback pins that the coarse rescue walks
+// EVERY coarser precision, not one level. A truth set captured without `-s` is
+// undecidable at by-arity AND by-signature, so a single-step fallback from
+// by-signature looks for a by-arity key the fact never has and ACCUSES the
+// confirmed call — a fabricated stop-ship on a question the truth set was
+// never able to answer.
+func TestCompareAt_MultiLevelCoarseFallback(t *testing.T) {
+	truth := []Call{{
+		CallerFile: "a/App.java", CallerMethod: "run",
+		CalleeFile: "a/Rate.java", Callee: "apply",
+		CalleeArity: ArityUnknown, CalleeParams: SigUnknown,
+		ArityReason: AbstainBytecodeNoDescriptors, ParamsReason: AbstainBytecodeNoDescriptors,
+	}}
+	confirmed := []Call{{
+		CallerFile: "a/App.java", CallerMethod: "run",
+		CalleeFile: "a/Rate.java", Callee: "apply",
+		CalleeArity: 1, CalleeParams: "(I)",
+	}}
+	for _, p := range []Precision{ByArity, BySignature} {
+		res := CompareAt(confirmed, truth, p)
+		if !res.Sound() {
+			t.Fatalf("a truth set that cannot answer at %s must abstain, not accuse: %+v", p, res.Violations)
+		}
+		if res.AbstainReasons[AbstainBytecodeNoDescriptors] != 1 {
+			t.Fatalf("the abstention must carry the TRUTH side's reason at %s, got %v", p, res.AbstainReasons)
+		}
+	}
+}
+
+// TestCompareAt_OwnerUnresolvedTruthAbstains pins the fourth verdict branch. A
+// failed owner walk and an external callee both arrive as CalleeFile "", and
+// conflating them made the oracle ACCUSE every interface default method: the
+// truth fact was dropped before it could register its own named reason, so a
+// correct confirmed call found no match and no rescue.
+//
+// An owner-unresolved fact is the oracle declining, not the oracle agreeing
+// that no such call exists. It stays out of the recall denominator — it is not
+// a fact the oracle can claim to have keyed — but it must not let correct code
+// be accused.
+func TestCompareAt_OwnerUnresolvedTruthAbstains(t *testing.T) {
+	truth := []Call{{
+		CallerFile: "a/App.java", CallerMethod: "run",
+		CalleeFile: "", Callee: "seed",
+		CalleeArity: ArityUnknown, CalleeParams: SigUnknown,
+		ArityReason: AbstainBytecodeOwnerUnresolved, ParamsReason: AbstainBytecodeOwnerUnresolved,
+	}}
+	confirmed := []Call{{
+		CallerFile: "a/App.java", CallerMethod: "run",
+		CalleeFile: "a/HasSeed.java", Callee: "seed",
+		CalleeArity: 0, CalleeParams: "()",
+	}}
+	for _, p := range []Precision{ByName, ByArity, BySignature} {
+		res := CompareAt(confirmed, truth, p)
+		if !res.Sound() {
+			t.Fatalf("an owner-unresolved truth fact must abstain at %s, not accuse: %+v", p, res.Violations)
+		}
+		if res.AbstainReasons[AbstainBytecodeOwnerUnresolved] != 1 {
+			t.Fatalf("the abstention must be NAMED at %s, got %v", p, res.AbstainReasons)
+		}
+		if res.TruthIntra != 0 {
+			t.Fatalf("an unattributable truth fact must stay OUT of the recall denominator at %s, got %d", p, res.TruthIntra)
+		}
+	}
+
+	// The rescue is narrow: it is keyed on (caller, callee NAME), so a
+	// confirmed call to a DIFFERENT name is still a violation.
+	ghost := []Call{{
+		CallerFile: "a/App.java", CallerMethod: "run",
+		CalleeFile: "a/HasSeed.java", Callee: "ghost",
+		CalleeArity: 0, CalleeParams: "()",
+	}}
+	if CompareAt(ghost, truth, ByName).Sound() {
+		t.Fatal("the owner-unresolved rescue must not excuse a call the truth set never made under that name")
 	}
 }
 

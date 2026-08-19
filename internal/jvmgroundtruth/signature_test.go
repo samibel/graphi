@@ -173,49 +173,359 @@ public class App {
 }
 
 // TestVerify_CStyleArrayDeclarator pins the guard that makes stage 2 safe to
-// act on. `int xs[]` puts the brackets on the DECLARATOR, so TypeRef.Raw reads
-// "int" and the harness renders `(I)` where javac compiled `([I)`. The binder's
-// choice here is CORRECT — there is only one method — so a naive comparison
-// would emit a FABRICATED JVMSOUND stop-ship.
+// act on, in BOTH of the shapes it has to survive. `int xs[]` puts the brackets
+// on the DECLARATOR, so TypeRef.Raw reads "int" and the harness renders `(I)`
+// where javac compiled `([I)`. The binder's choice is CORRECT in both cases, so
+// a naive comparison emits a FABRICATED JVMSOUND stop-ship.
 //
-// DeclaredMethods.Verify catches it because `apply(I)` is not among the
-// descriptors javac compiled for a/Rate.java, and demotes the fact to an
-// abstention instead. The test asserts both halves: unverified renderings do
-// not become violations, AND the demotion is named.
+// The two sub-cases are not the same test:
+//
+//   - "alone" is the easy one, and the only one the first version of this test
+//     covered: `apply(I)` is simply not in javac's table for the class, so
+//     membership alone catches it.
+//
+//   - "sibling-collision" is the one that MATTERS, and the one that forged a
+//     stop-ship through the first version of the guard. Adding the scalar
+//     overload makes `(I)` a descriptor javac really did compile for that name
+//     — for the OTHER member — so a file-scoped (or even class-scoped)
+//     membership test waves the mis-rendering through and accuses correct code.
+//     Only the member-scoped rule catches it, by noticing that the two
+//     declarations RENDER THE SAME descriptor.
+//
+// Without the second sub-case this test is non-vacuous for what it asserts but
+// vacuous for the class it claims to close.
 func TestVerify_CStyleArrayDeclarator(t *testing.T) {
-	files := map[string]string{
-		"a/Rate.java": `package a;
+	cases := []struct {
+		name string
+		rate string
+	}{
+		{"alone", `package a;
 public class Rate {
     public int apply(int xs[]) { return xs.length; }
+}
+`},
+		{"sibling-collision", `package a;
+public class Rate {
+    public int apply(int xs[]) { return xs.length; }
+    public int apply(int x)    { return x; }
+}
+`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			files := map[string]string{
+				"a/Rate.java": tc.rate,
+				"a/App.java": `package a;
+public class App {
+    public int run(Rate r, int[] xs) { return r.apply(xs); }
+}
+`,
+			}
+			javac, javap := toolchain(t)
+			root := writeFixture(t, files)
+			classes := compile(t, javac, root, files)
+			truth, declared := disassembleWithDeclared(t, javap, classes)
+
+			raw := jvmgroundtruth.BinderCalls(sourceBytes(files))
+			// The binder's binding is CORRECT here — that is the whole point.
+			// Assert it, so a future binder change cannot turn this into a test
+			// of something else.
+			if !hasSig(truth, "a/Rate.java", "apply", "([I)") {
+				t.Fatalf("javac must have compiled apply([I): %+v", truth)
+			}
+			// Without the guard the rendering stands and forges a counterexample
+			// — asserted, so the guard cannot be deleted without going red.
+			unguarded := jvmgroundtruth.CompareAt(raw, truth, jvmgroundtruth.BySignature)
+			t.Logf("UNGUARDED:\n%s", unguarded.Format())
+			if unguarded.Sound() {
+				t.Fatal("precondition lost: this fixture is the one whose rendering is wrong; if it no longer is, the guard is being tested against nothing")
+			}
+
+			guarded := jvmgroundtruth.CompareAt(declared.Verify(raw), truth, jvmgroundtruth.BySignature)
+			t.Logf("GUARDED:\n%s", guarded.Format())
+			if !guarded.Sound() {
+				t.Fatalf("a rendering that is not uniquely attributable must abstain, never accuse: %+v", guarded.Violations)
+			}
+			if guarded.AbstainReasons[jvmgroundtruth.AbstainBinderSignatureUnverified] != 1 {
+				t.Fatalf("the demotion must be NAMED, got %v", guarded.AbstainReasons)
+			}
+		})
+	}
+}
+
+// TestVerify_IsClassScopedNotFileScoped pins the other half of the same fix.
+// A source file may declare more than one class, and an index keyed on the
+// SOURCE PATH silently unions their method tables — so a mis-rendering in one
+// class is "confirmed" by a descriptor javac compiled for a different class
+// that merely happens to share the file.
+//
+// Here `Pair.apply(int xs[])` renders `(I)`, which javac compiled for the
+// package-private `Sibling` in the same file and never for `Pair`.
+func TestVerify_IsClassScopedNotFileScoped(t *testing.T) {
+	files := map[string]string{
+		"a/Pair.java": `package a;
+public class Pair {
+    public int apply(int xs[]) { return xs.length; }
+}
+class Sibling {
+    public int apply(int x) { return x; }
 }
 `,
 		"a/App.java": `package a;
 public class App {
-    public int run(Rate r, int[] xs) { return r.apply(xs); }
+    public int run(Pair p, int[] xs) { return p.apply(xs); }
 }
+`,
+	}
+	confirmed, truth := binderVsBytecode(t, files)
+	res := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.BySignature)
+	t.Logf("%s", res.Format())
+	if !res.Sound() {
+		t.Fatalf("a descriptor compiled for a DIFFERENT class in the same file must not confirm a rendering: %+v", res.Violations)
+	}
+	if res.AbstainReasons[jvmgroundtruth.AbstainBinderSignatureUnverified] != 1 {
+		t.Fatalf("the demotion must be NAMED, got %v", res.AbstainReasons)
+	}
+}
+
+// TestReferenceReturns_AreNotAFalseCounterexample is the live half of the
+// pre-existing parseMethodHeader defect (see
+// TestParseMethodHeader_RejectsInvokeLines). Plain covariant-return Java, with
+// every graphi binding CORRECT, produced three fabricated stop-ships at every
+// precision — including by-name, which this story did not even touch — because
+// every `self()` invoke line was eaten as a constructor header and the
+// following invokes were re-parented onto `<init>`.
+func TestReferenceReturns_AreNotAFalseCounterexample(t *testing.T) {
+	files := map[string]string{
+		"a/Base.java": `package a;
+public class Base { public Base self() { return this; } }
+`,
+		"a/Derived.java": `package a;
+public class Derived extends Base {
+    @Override public Derived self() { return this; }
+    public int tag() { return 1; }
+}
+`,
+		"a/App.java": `package a;
+public class App {
+    public int run(Derived d)   { return d.self().tag(); }
+    public int viaBase(Base b)  { return b.self().hashCode(); }
+}
+`,
+	}
+	confirmed, truth := binderVsBytecode(t, files)
+	// The truth set must actually CARRY the reference-returning invokes, under
+	// the method that made them.
+	if !hasFact(truth, "a/App.java", "run", "a/Derived.java", "self", 0) {
+		t.Fatalf("the reference-returning invoke vanished from the truth set: %+v", truth)
+	}
+	for _, c := range truth {
+		if c.CallerMethod == "<init>" && (c.Callee == "tag" || c.Callee == "self" || c.Callee == "hashCode") {
+			t.Fatalf("an invoke was re-parented onto a constructor: %+v", c)
+		}
+	}
+	for _, p := range precisions() {
+		res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+		if !res.Sound() {
+			t.Fatalf("correct covariant-return Java must never be accused at %s:\n%s", p, res.Format())
+		}
+	}
+}
+
+// TestInterfaceDispatch_IsNotAFalseCounterexample pins the third truth-losing
+// parser defect, also pre-existing: javac writes `// InterfaceMethod` (not
+// `// Method`) for every invoke whose resolved owner is an interface, and the
+// ref parser matched only `// Method `. Every invokeinterface, every interface
+// `invokestatic`, and every `X.super.m()` was therefore MISSING from the truth
+// set — so correct code calling through any interface was accused at every
+// precision. That is most real Java.
+func TestInterfaceDispatch_IsNotAFalseCounterexample(t *testing.T) {
+	files := map[string]string{
+		"a/HasSeed.java": `package a;
+public interface HasSeed {
+    default int seed() { return 3; }
+    static int base() { return 5; }
+}
+`,
+		"a/Impl.java": `package a;
+public class Impl implements HasSeed {
+    public int seed() { return HasSeed.super.seed() + 1; }
+}
+`,
+		"a/App.java": `package a;
+public class App {
+    public int viaIface(HasSeed h) { return h.seed(); }
+    public int viaStatic()         { return HasSeed.base(); }
+}
+`,
+	}
+	confirmed, truth := binderVsBytecode(t, files)
+	for _, want := range [][4]string{
+		{"a/App.java", "viaIface", "a/HasSeed.java", "seed"},  // invokeinterface
+		{"a/App.java", "viaStatic", "a/HasSeed.java", "base"}, // interface invokestatic
+		{"a/Impl.java", "seed", "a/HasSeed.java", "seed"},     // X.super.m()
+	} {
+		if !hasFact(truth, want[0], want[1], want[2], want[3], 0) {
+			t.Fatalf("interface invoke %v missing from the truth set: %+v", want, truth)
+		}
+	}
+	for _, p := range precisions() {
+		res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+		if !res.Sound() {
+			t.Fatalf("correct interface dispatch must never be accused at %s:\n%s", p, res.Format())
+		}
+	}
+}
+
+// TestInterfaceDefault_AbstainsRatherThanAccusing pins the fourth verdict
+// branch on real bytecode. `i.seed()` on a class that INHERITS an interface
+// default compiles to `invokevirtual a/Impl.seed:()I`, and the owner walk —
+// which climbs the SUPERCLASS chain only (JVMS 5.4.3.3), not 5.4.3.4's
+// maximally-specific interface rule — runs off the end. graphi points at
+// a/HasSeed.java, which is genuinely where `seed` is declared: graphi is RIGHT.
+//
+// The oracle must therefore decline. Before the fix the owner-unresolved fact
+// was dropped before it could register its named reason, and the correct
+// confirmed call became a violation at all three precisions.
+func TestInterfaceDefault_AbstainsRatherThanAccusing(t *testing.T) {
+	files := map[string]string{
+		"a/HasSeed.java": `package a;
+public interface HasSeed { default int seed() { return 3; } }
+`,
+		"a/Impl.java": `package a;
+public class Impl implements HasSeed {}
+`,
+		"a/App.java": `package a;
+public class App { public int run(Impl i) { return i.seed(); } }
+`,
+	}
+	confirmed, truth := binderVsBytecode(t, files)
+	if !hasFact(confirmed, "a/App.java", "run", "a/HasSeed.java", "seed", 0) {
+		t.Fatalf("precondition: graphi must bind the declaring interface: %+v", confirmed)
+	}
+	for _, p := range precisions() {
+		res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+		t.Logf("%s", strings.TrimSpace(res.Format()))
+		if !res.Sound() {
+			t.Fatalf("an unmodelled interface default must abstain at %s, never accuse: %+v", p, res.Violations)
+		}
+		if res.AbstainReasons[jvmgroundtruth.AbstainBytecodeOwnerUnresolved] != 1 {
+			t.Fatalf("the abstention must be NAMED at %s, got %v", p, res.AbstainReasons)
+		}
+	}
+}
+
+// TestLocalClassCaller_AbstainsRatherThanAccusing pins the caller-side twin of
+// the lambda normalization. javac compiles a local class body into its own
+// class (`a/App$1L`) whose methods are the bytecode CALLER; graphi mints no
+// node for the body and attributes the call to the enclosing declaration. The
+// enclosing method's name lives in the EnclosingMethod attribute, which
+// `javap -c -p -s` does not print, so the two sides cannot be aligned on the
+// caller — and correct code was accused at every precision.
+func TestLocalClassCaller_AbstainsRatherThanAccusing(t *testing.T) {
+	files := map[string]string{
+		"a/Rate.java": `package a;
+public class Rate { public int rate() { return 7; } }
+`,
+		"a/App.java": `package a;
+public class App {
+    public int run(final Rate r) {
+        class L { int go() { return r.rate(); } }
+        return new L().go();
+    }
+}
+`,
+	}
+	confirmed, truth := binderVsBytecode(t, files)
+	if !hasFact(confirmed, "a/App.java", "run", "a/Rate.java", "rate", 0) {
+		t.Fatalf("precondition: graphi must attribute the call to the enclosing method: %+v", confirmed)
+	}
+	if !hasFact(truth, "a/App.java", "go", "a/Rate.java", "rate", 0) {
+		t.Fatalf("precondition: javac must attribute it to the local class's own method: %+v", truth)
+	}
+	for _, p := range precisions() {
+		res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+		t.Logf("%s", strings.TrimSpace(res.Format()))
+		if !res.Sound() {
+			t.Fatalf("a caller the bytecode cannot name must abstain at %s, never accuse: %+v", p, res.Violations)
+		}
+		if res.AbstainReasons[jvmgroundtruth.AbstainBytecodeCallerNotAlignable] != 1 {
+			t.Fatalf("the abstention must be NAMED at %s, got %v", p, res.AbstainReasons)
+		}
+	}
+}
+
+// TestCompareAt_NoDescriptorTable_AbstainsAtEveryPrecision is the live proof
+// for the multi-level coarse fallback (the unit pin is
+// TestCompareAt_MultiLevelCoarseFallback). A real `-s`-less javap capture can
+// only be keyed at by-name; a single-step fallback from by-signature accused
+// the confirmed call because it looked for a by-arity key the truth fact never
+// had. The doc comment on ParseJavap PROMISES this degrades legibly, and a
+// promise nothing enforces is how SW-173 gets surprised.
+func TestCompareAt_NoDescriptorTable_AbstainsAtEveryPrecision(t *testing.T) {
+	files := map[string]string{
+		"a/Rate.java": `package a;
+public class Rate { public int apply(int x) { return x; } }
+`,
+		"a/App.java": `package a;
+public class App { public int run(Rate r) { return r.apply(1); } }
 `,
 	}
 	javac, javap := toolchain(t)
 	root := writeFixture(t, files)
 	classes := compile(t, javac, root, files)
-	truth, declared := disassembleWithDeclared(t, javap, classes)
+	truth := disassembleWithoutDescriptors(t, javap, classes)
+	confirmed := jvmgroundtruth.BinderCalls(sourceBytes(files))
 
-	raw := jvmgroundtruth.BinderCalls(sourceBytes(files))
-	// Without the guard the rendering stands and forges a counterexample —
-	// asserted, so the guard cannot be deleted without this test going red.
-	unguarded := jvmgroundtruth.CompareAt(raw, truth, jvmgroundtruth.BySignature)
-	t.Logf("UNGUARDED:\n%s", unguarded.Format())
-	if unguarded.Sound() {
-		t.Fatal("precondition lost: this fixture is the one whose rendering is wrong; if it no longer is, the guard is being tested against nothing")
+	for _, p := range precisions() {
+		res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+		t.Logf("no -s, %s: %s", p, strings.TrimSpace(res.Format()))
+		if !res.Sound() {
+			t.Fatalf("a truth set captured without -s must decline at %s, never accuse: %+v", p, res.Violations)
+		}
 	}
+}
 
-	guarded := jvmgroundtruth.CompareAt(declared.Verify(raw), truth, jvmgroundtruth.BySignature)
-	t.Logf("GUARDED:\n%s", guarded.Format())
-	if !guarded.Sound() {
-		t.Fatalf("a rendering javac never compiled must abstain, never accuse: %+v", guarded.Violations)
+// TestJVMSOUND004_ArrayDimensionality is a SECOND instance of the array-erasure
+// defect, found by adversarial fixture rather than by the gate: `r.apply(xs)`
+// with `xs` an `int[][]` binds `apply(int[])`, because callableSig keys each
+// parameter on TypeRef.Base and Base has arrays erased — so `apply(int[])` and
+// `apply(int[][])` produce the identical signature at every dimensionality, not
+// only scalar-versus-array.
+//
+// It is recorded because it widens JVMSOUND-004's blast radius and because it
+// is a TRUE POSITIVE the strengthened rendering guard still reports: both
+// overloads render distinctly and both renderings are in javac's table, so the
+// guard verifies rather than abstains and the real defect is not hidden by the
+// fix for the forged one. Same pin discipline as the two cross-file tests: RED
+// WITH INSTRUCTIONS the moment the defect is fixed.
+func TestJVMSOUND004_ArrayDimensionality(t *testing.T) {
+	files := map[string]string{
+		"a/Rate.java": `package a;
+public class Rate {
+    public int apply(int[] xs)   { return xs.length; }
+    public int apply(int[][] xs) { return xs.length; }
+}
+`,
+		"a/App.java": `package a;
+public class App { public int run(Rate r, int[][] xs) { return r.apply(xs); } }
+`,
 	}
-	if guarded.AbstainReasons[jvmgroundtruth.AbstainBinderSignatureUnverified] != 1 {
-		t.Fatalf("the demotion must be NAMED, got %v", guarded.AbstainReasons)
+	confirmed, truth := binderVsBytecode(t, files)
+	if !hasSig(truth, "a/Rate.java", "apply", "([[I)") {
+		t.Fatalf("javac binds apply([[I); truth set says otherwise: %+v", truth)
+	}
+	if !hasSig(confirmed, "a/Rate.java", "apply", "([I)") {
+		t.Fatalf("JVMSOUND-004 APPEARS FIXED (dimensionality instance).\n"+
+			"The binder no longer binds an int[][] argument to apply(int[]).\n"+
+			"If callableSig started keying array dimensionality, DELETE this pin and\n"+
+			"add a positive regression test in engine/jvmresolve instead. Do not weaken it.\n"+
+			"confirmed: %+v", confirmed)
+	}
+	res := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.BySignature)
+	t.Logf("JVMSOUND-004 (dimensionality):\n%s", res.Format())
+	if res.Sound() {
+		t.Fatal("the strengthened rendering guard must still REPORT a real mis-binding, not abstain it away")
 	}
 }
 
@@ -377,6 +687,32 @@ public class App {
 	if res.Sound() {
 		t.Fatal("a cross-file wrong edge must be a counterexample at every precision")
 	}
+	// …and at the GRAPH-STORE level, which is the claim that matters. The
+	// binder-level set above reports binding DECISIONS and is a documented
+	// SUPERSET of emitted edges (blind spot #7), so on its own it proves a wrong
+	// choice, not a wrong edge. D5 makes a wrong EDGE the stop-ship, so the
+	// evidence has to be an edge.
+	assertWrongEdgeReachesTheStore(t, files, "a/App.java", "run", "a/Derived.java", "m")
+}
+
+// assertWrongEdgeReachesTheStore ingests the fixture with the JVM binder live
+// and asserts the mis-binding survives all the way to a CONFIRMED edge in the
+// graph store, pointing at the wrong file.
+func assertWrongEdgeReachesTheStore(t *testing.T, files map[string]string, callerFile, callerMethod, calleeFile, callee string) {
+	t.Helper()
+	edges := confirmedCalls(t, writeFixture(t, files))
+	for _, c := range edges {
+		if c.CallerFile == callerFile && c.CallerMethod == callerMethod &&
+			c.CalleeFile == calleeFile && c.Callee == callee {
+			t.Logf("GRAPH-STORE EDGE (wrong file): %s.%s --calls--> %s.%s",
+				c.CallerFile, c.CallerMethod, c.CalleeFile, c.Callee)
+			return
+		}
+	}
+	t.Fatalf("THE DEFECT NO LONGER REACHES THE STORE.\n"+
+		"Expected a confirmed edge %s.%s --calls--> %s.%s. If the binder or the\n"+
+		"emitter was fixed, delete this pin rather than weakening it.\n"+
+		"confirmed edges: %+v", callerFile, callerMethod, calleeFile, callee, edges)
 }
 
 // TestJVMSOUND004_CrossFileWrongEdge is the same, for the array-erasure defect.
@@ -425,9 +761,19 @@ public class App {
 	if res.Sound() {
 		t.Fatal("a cross-file wrong edge must be a counterexample at every precision")
 	}
+	assertWrongEdgeReachesTheStore(t, files, "a/App.java", "run", "a/Derived.java", "apply")
 }
 
 // --- helpers -------------------------------------------------------------
+
+// precisions is every precision, coarsest first. A guard that only holds at the
+// precision the story added is not a guard: two of the defects fixed in round 1
+// forged at ByName, which SW-172 did not touch.
+func precisions() []jvmgroundtruth.Precision {
+	return []jvmgroundtruth.Precision{
+		jvmgroundtruth.ByName, jvmgroundtruth.ByArity, jvmgroundtruth.BySignature,
+	}
+}
 
 func toolchain(t *testing.T) (javac, javap string) {
 	t.Helper()

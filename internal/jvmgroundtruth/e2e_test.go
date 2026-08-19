@@ -397,11 +397,8 @@ func disassemble(t *testing.T, javap, out string) []jvmgroundtruth.Call {
 	return truth
 }
 
-// disassembleWithDeclared is disassemble plus javac's own declared-method
-// index, which the binder-level differential needs to check its rendering
-// against (DeclaredMethods.Verify). `-s` is what prints the `descriptor:`
-// lines both the JVM owner walk and that index read.
-func disassembleWithDeclared(t *testing.T, javap, out string) ([]jvmgroundtruth.Call, jvmgroundtruth.DeclaredMethods) {
+// compiledClasses enumerates every `.class` under out as a dotted class name.
+func compiledClasses(t *testing.T, out string) []string {
 	t.Helper()
 	var classes []string
 	err := filepath.WalkDir(out, func(p string, d os.DirEntry, err error) error {
@@ -422,7 +419,33 @@ func disassembleWithDeclared(t *testing.T, javap, out string) ([]jvmgroundtruth.
 	if len(classes) == 0 {
 		t.Fatal("compiler produced no classes")
 	}
+	return classes
+}
 
+// disassembleWithoutDescriptors is the `-s`-LESS capture: a truth set that can
+// only be keyed at ByName. It exists so the "the truth set cannot answer at
+// this precision" branch is proven against a real javap run, not only against
+// hand-built Call values.
+func disassembleWithoutDescriptors(t *testing.T, javap, out string) []jvmgroundtruth.Call {
+	t.Helper()
+	b, err := exec.Command(javap, append([]string{"-c", "-p", "-classpath", out}, compiledClasses(t, out)...)...).Output()
+	if err != nil {
+		t.Fatalf("javap: %v", err)
+	}
+	truth, err := jvmgroundtruth.ParseJavap(b)
+	if err != nil {
+		t.Fatalf("ParseJavap: %v", err)
+	}
+	return truth
+}
+
+// disassembleWithDeclared is disassemble plus javac's own declared-method
+// index, which the binder-level differential needs to check its rendering
+// against (DeclaredMethods.Verify). `-s` is what prints the `descriptor:`
+// lines both the JVM owner walk and that index read.
+func disassembleWithDeclared(t *testing.T, javap, out string) ([]jvmgroundtruth.Call, jvmgroundtruth.DeclaredMethods) {
+	t.Helper()
+	classes := compiledClasses(t, out)
 	disasm := exec.Command(javap, append([]string{"-c", "-p", "-s", "-classpath", out}, classes...)...)
 	b, err := disasm.Output()
 	if err != nil {

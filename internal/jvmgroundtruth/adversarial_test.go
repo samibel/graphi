@@ -1,0 +1,306 @@
+package jvmgroundtruth_test
+
+// SW-172 round 1 — the DO-NOT-ACCUSE corpus.
+//
+// The review bar for an oracle is not that it finds defects; it is that it
+// never accuses correct code. Three of the defects fixed in this round were
+// found by writing legal-but-unusual Java and looking for a fabricated
+// stop-ship, and all three survived only because every fixture in the harness
+// happened to avoid the construct that triggered them: reference return types,
+// interface dispatch, and a local class as the caller.
+//
+// So this file is the standing version of that attack. Every entry is CORRECT
+// Java. The assertion is uniform and deliberately blunt: at every precision,
+// the oracle must produce ZERO violations. It may match, and it may abstain
+// with a named reason — an abstention is an honest refusal and is allowed to
+// change as the harness learns — but it may never accuse.
+//
+// A case that becomes a REAL mis-binding does not belong here: it gets its own
+// pin with a mechanism and a fix shape (see TestJVMSOUND003_*, TestJVMSOUND004_*).
+// Removing a case from this file because it started failing is therefore always
+// wrong unless the mis-binding is real and has been filed.
+//
+// Each case logs its matched/abstained split, so a case that quietly stops
+// judging anything is visible in the log rather than passing as a silent green.
+
+import (
+	"testing"
+
+	"github.com/samibel/graphi/internal/jvmgroundtruth"
+)
+
+func TestAdversarial_CorrectJavaIsNeverAccused(t *testing.T) {
+	cases := []struct {
+		name  string
+		why   string
+		files map[string]string
+	}{
+		{
+			name: "cstyle-declarator-with-reference-typed-sibling",
+			why:  "the C-style collision in its reference-typed form: (La/Thing;) is really compiled, for the OTHER overload",
+			files: map[string]string{
+				"a/Thing.java": "package a;\npublic class Thing {}\n",
+				"a/Rate.java": `package a;
+public class Rate {
+    public int apply(Thing ts[]) { return ts.length; }
+    public int apply(Thing t)    { return 1; }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Rate r, Thing[] ts) { return r.apply(ts); } }\n",
+			},
+		},
+		{
+			name: "cstyle-declarator-two-dimensions",
+			why:  "int xs[][] renders (I) while javac compiled ([[I); the one-dimensional sibling makes ([I) real too",
+			files: map[string]string{
+				"a/Rate.java": `package a;
+public class Rate {
+    public int apply(int xs[][]) { return xs.length; }
+    public int apply(int[] ys)   { return ys.length; }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Rate r, int[][] xs) { return r.apply(xs); } }\n",
+			},
+		},
+		{
+			name: "enum-constant-body-anonymous-subclass",
+			why:  "constant-specific bodies compile to a/Op$1, a/Op$2 — synthetic caller classes",
+			files: map[string]string{
+				"a/Op.java": `package a;
+public enum Op {
+    ADD { public int f(int x) { return x + 1; } },
+    SUB { public int f(int x) { return x - 1; } };
+    public abstract int f(int x);
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Op o) { return o.f(1); } }\n",
+			},
+		},
+		{
+			name: "nested-type-parameter-and-reference-return",
+			why:  "a nested static type as both a parameter type (La/Outer$Key;) and a return type",
+			files: map[string]string{
+				"a/Outer.java": `package a;
+public class Outer {
+    public static class Key {}
+    public Key make() { return new Key(); }
+    public int use(Key k) { return 1; }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Outer o) { return o.use(o.make()); } }\n",
+			},
+		},
+		{
+			name: "generic-method-erased-return",
+			why:  "T get() erases to ()Ljava/lang/Object; — a reference-returning invoke to an external erasure",
+			files: map[string]string{
+				"a/Box.java": `package a;
+public class Box<T> {
+    private T v;
+    public T get() { return v; }
+    public int tag() { return 1; }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Box<String> b) { b.get(); return b.tag(); } }\n",
+			},
+		},
+		{
+			name: "static-and-instance-initializers-as-callers",
+			why:  "javac folds these into <clinit> and <init>, names graphi never mints a node for",
+			files: map[string]string{
+				"a/Rate.java": `package a;
+public class Rate {
+    public static int base() { return 1; }
+    public int inst() { return 2; }
+    static int S;
+    int i;
+    static { S = base(); }
+    { i = inst(); }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Rate r) { return r.inst(); } }\n",
+			},
+		},
+		{
+			name: "anonymous-class-caller",
+			why:  "the caller class is a/App$1, which graphi mints no node for",
+			files: map[string]string{
+				"a/Rate.java": "package a;\npublic class Rate { public int rate() { return 7; } }\n",
+				"a/App.java": `package a;
+public class App {
+    public int run(final Rate r) {
+        Runnable x = new Runnable() { public void run() { r.rate(); } };
+        x.run();
+        return 1;
+    }
+}
+`,
+			},
+		},
+		{
+			name: "method-reference-invokedynamic",
+			why:  "r::rate is an invokedynamic bootstrap, not a method ref; both sides must ignore it",
+			files: map[string]string{
+				"a/Rate.java": "package a;\npublic class Rate { public int rate() { return 7; } }\n",
+				"a/App.java": `package a;
+public class App {
+    public int run(Rate r) {
+        java.util.function.IntSupplier s = r::rate;
+        return s.getAsInt();
+    }
+}
+`,
+			},
+		},
+		{
+			name: "record-accessor-and-compact-constructor",
+			why:  "javac synthesizes the canonical ctor, accessors, equals/hashCode/toString and an invokedynamic",
+			files: map[string]string{
+				"a/Pt.java": `package a;
+public record Pt(int x, int y) {
+    public Pt { if (x < 0) throw new IllegalArgumentException(); }
+    public int sum() { return x() + y(); }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Pt p) { return p.sum() + p.x(); } }\n",
+			},
+		},
+		{
+			name: "sealed-interface-and-permitted-record",
+			why:  "a permits clause in the class header must not be read as a supertype",
+			files: map[string]string{
+				"a/Shape.java": "package a;\npublic sealed interface Shape permits Sq {\n    int area();\n}\n",
+				"a/Sq.java":    "package a;\npublic record Sq(int side) implements Shape {\n    public int area() { return side * side; }\n}\n",
+				"a/App.java":   "package a;\npublic class App { public int run(Sq s) { return s.area(); } }\n",
+			},
+		},
+		{
+			name: "method-actually-named-descriptor",
+			why:  "the descriptor-line guard must key on `descriptor: `, not on the word",
+			files: map[string]string{
+				"a/Rate.java": `package a;
+public class Rate {
+    public int descriptor(int x) { return x; }
+    public Rate self() { return this; }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Rate r) { return r.self().descriptor(1); } }\n",
+			},
+		},
+		{
+			name: "throws-clause-and-generic-method-header",
+			why:  "both put extra tokens in the javap member header the name scan must survive",
+			files: map[string]string{
+				"a/Rate.java": `package a;
+public class Rate {
+    public Rate self() throws java.io.IOException { return this; }
+    public <T extends Number> int f(int x) { return x; }
+}
+`,
+				"a/App.java": `package a;
+public class App {
+    public int run(Rate r) throws java.io.IOException { return r.self().f(1); }
+}
+`,
+			},
+		},
+		{
+			name: "default-package",
+			why:  "no package declaration, so the source-path reconstruction has no directory to prepend",
+			files: map[string]string{
+				"Rate.java": "public class Rate { public Rate self() { return this; } public int tag() { return 1; } }\n",
+				"App.java":  "public class App { public int run(Rate r) { return r.self().tag(); } }\n",
+			},
+		},
+		{
+			name: "same-simple-name-in-two-packages",
+			why:  "a/Thing and b/Thing share a simple name; only the internal name separates them",
+			files: map[string]string{
+				"a/Thing.java": "package a;\npublic class Thing { public int tag() { return 1; } }\n",
+				"b/Thing.java": "package b;\npublic class Thing { public int tag() { return 2; } }\n",
+				"a/App.java": `package a;
+public class App {
+    public int run(a.Thing at, b.Thing bt) { return at.tag() + bt.tag(); }
+}
+`,
+			},
+		},
+		{
+			name: "variadic-sibling-at-the-same-declared-count",
+			why:  "f(int) and f(int...) both declare ONE parameter but compile to (I) and ([I)",
+			files: map[string]string{
+				"a/Rate.java": `package a;
+public class Rate {
+    public int f(int x)     { return x; }
+    public int f(int... xs) { return xs.length; }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Rate r) { return r.f(1); } }\n",
+			},
+		},
+		{
+			name: "covariant-return-chain-three-deep",
+			why:  "two levels of bridge methods, each an extra same-name descriptor in javac's table",
+			files: map[string]string{
+				"a/A.java":   "package a;\npublic class A { public A self() { return this; } public int tag() { return 0; } }\n",
+				"a/B.java":   "package a;\npublic class B extends A { @Override public B self() { return this; } }\n",
+				"a/C.java":   "package a;\npublic class C extends B { @Override public C self() { return this; } public int tag() { return 2; } }\n",
+				"a/App.java": "package a;\npublic class App { public int run(C c) { return c.self().tag(); } }\n",
+			},
+		},
+		{
+			name: "interface-constant-initializer-as-caller",
+			why:  "an interface field initializer compiles into the interface's own <clinit>",
+			files: map[string]string{
+				"a/K.java":      "package a;\npublic interface K {\n    int V = Helper.make();\n}\n",
+				"a/Helper.java": "package a;\npublic class Helper { public static int make() { return 4; } }\n",
+				"a/App.java":    "package a;\npublic class App { public int run() { return Helper.make(); } }\n",
+			},
+		},
+		{
+			name: "inner-nonstatic-constructor-and-reference-return",
+			why:  "javac gives an inner class's ctor a synthetic enclosing-instance parameter",
+			files: map[string]string{
+				"a/Outer.java": `package a;
+public class Outer {
+    public class In { public int v() { return 1; } }
+    public In make() { return new In(); }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Outer o) { return o.make().v(); } }\n",
+			},
+		},
+		{
+			name: "overloads-separated-only-by-nested-versus-toplevel-type",
+			why:  "La/Key; and La/Outer$Key; differ only in the nesting the rendering has to get right",
+			files: map[string]string{
+				"a/Key.java": "package a;\npublic class Key {}\n",
+				"a/Outer.java": `package a;
+public class Outer {
+    public static class Key {}
+    public int f(a.Key k)     { return 1; }
+    public int f(Outer.Key k) { return 2; }
+}
+`,
+				"a/App.java": "package a;\npublic class App { public int run(Outer o, Outer.Key k) { return o.f(k); } }\n",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			confirmed, truth := binderVsBytecode(t, tc.files)
+			for _, p := range precisions() {
+				res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+				if !res.Sound() {
+					t.Errorf("FORGED STOP-SHIP on correct Java at %s.\nwhy this case exists: %s\n%s",
+						p, tc.why, res.Format())
+				}
+			}
+			fine := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.BySignature)
+			t.Logf("matched=%d abstained=%d reasons=%v truthIntra=%d",
+				fine.Matched, len(fine.Abstained), fine.AbstainReasons, fine.TruthIntra)
+		})
+	}
+}

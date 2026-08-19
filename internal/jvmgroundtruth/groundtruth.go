@@ -97,6 +97,15 @@ const (
 	// the owner walk cannot run. The symbolic owner stands, which is the
 	// pre-SW-172 behaviour, and the finer precisions decline.
 	AbstainBytecodeNoDescriptors = "bytecode_no_descriptor_table"
+	// AbstainBytecodeCallerNotAlignable: the bytecode's CALLER is a method of a
+	// class javac minted for an ANONYMOUS or LOCAL class body. graphi mints no
+	// node for such a body and attributes the call to the enclosing
+	// declaration, and the enclosing method's name is NOT recoverable from
+	// `javap -c -p -s` — it lives in the EnclosingMethod attribute, which only
+	// `-v` prints. The two sides therefore cannot be aligned on the caller, so
+	// a confirmed call that agrees on everything else abstains rather than
+	// being accused of a call the bytecode plainly makes.
+	AbstainBytecodeCallerNotAlignable = "bytecode_caller_not_alignable"
 
 	// Binder side.
 
@@ -146,16 +155,24 @@ func (p Precision) String() string {
 	return "unknown"
 }
 
-// coarser returns the next-coarser precision, and false at ByName. Compare
-// uses it to tell "the truth set disagrees" from "the truth set declines":
-// when a confirmed call finds no match at p but the truth holds a fact that
-// matches one level coarser and is itself undecidable at p, the honest verdict
-// is an abstention, not a counterexample.
-func (p Precision) coarser() (Precision, bool) {
-	if p == ByName {
-		return ByName, false
+// coarserThan returns EVERY precision strictly coarser than p, finest first.
+// CompareAt uses it to tell "the truth set disagrees" from "the truth set
+// declines": when a confirmed call finds no match at p but the truth holds a
+// fact that matches at some coarser key and is itself undecidable at p, the
+// honest verdict is an abstention, not a counterexample.
+//
+// Every level, not just the next one down. A truth set captured without `-s`
+// is undecidable at by-arity AND at by-signature, so its facts can only be
+// keyed at by-name; a single-step fallback from by-signature looks for a
+// by-arity key such a fact never has, finds nothing, and ACCUSES a confirmed
+// call of contradicting a truth set that was never able to answer the question
+// — which is exactly the fabricated stop-ship this branch exists to prevent.
+func (p Precision) coarserThan() []Precision {
+	out := make([]Precision, 0, int(p))
+	for q := p - 1; q >= ByName; q-- {
+		out = append(out, q)
 	}
-	return p - 1, true
+	return out
 }
 
 // Call is one method→method binding fact, at the granularity both graphi and
@@ -203,6 +220,66 @@ type Call struct {
 	// (one of the Abstain* constants); "" when the field is decidable.
 	ArityReason  string
 	ParamsReason string
+
+	// owner and overloads are BINDER-SIDE PLUMBING for DeclaredMethods.Verify,
+	// not facts about the call — unexported precisely so no verdict can key on
+	// them and no caller outside this package can supply them.
+	//
+	// owner is the JVM internal name of the class the binder says declares the
+	// callee ("a/Rate", "a/Outer$Key"). overloads is the rendered parameter
+	// list of EVERY declaration in that class sharing the callee's compiled
+	// name AND its declared parameter count — its collision set — or nil when
+	// one of them could not be rendered. Together they are what makes the
+	// rendering check MEMBER-scoped rather than file-scoped; see Verify.
+	owner     string
+	overloads []string
+
+	// callerSynthetic marks a BYTECODE-side fact whose caller class is one
+	// javac minted for an anonymous or local class body; see
+	// AbstainBytecodeCallerNotAlignable. Unexported for the same reason as the
+	// two above: it steers an abstention, it is not a fact about the call.
+	callerSynthetic bool
+}
+
+// syntheticNestedClass reports whether an internal class name is one javac
+// MINTED for an anonymous or local class (`a/App$1`, `a/App$1L`). The marker
+// is a '$' followed immediately by a DIGIT, which is exact rather than
+// heuristic: a Java identifier cannot begin with a digit, so no user-written
+// nested type can produce that pair.
+func syntheticNestedClass(internal string) bool {
+	for i := 0; i+1 < len(internal); i++ {
+		if internal[i] == '$' && internal[i+1] >= '0' && internal[i+1] <= '9' {
+			return true
+		}
+	}
+	return false
+}
+
+// callerAgnosticKey is c's key at p with the CALLER METHOD removed — the most
+// specific key available when the bytecode names a caller graphi cannot name.
+func (c Call) callerAgnosticKey(p Precision) callKey {
+	k := c.key(p)
+	k.callerMethod = ""
+	return k
+}
+
+// declinedKey identifies a truth fact by the only parties a FAILED owner walk
+// still knows: who called, and under what name. The declaring file is exactly
+// the thing that could not be determined, so it cannot be part of this key —
+// which is also why this is a separate, deliberately coarse channel and never
+// a comparison key.
+type declinedKey struct {
+	callerFile   string
+	callerMethod string
+	callee       string
+}
+
+func (c Call) declinedKey() declinedKey {
+	return declinedKey{
+		callerFile:   c.CallerFile,
+		callerMethod: c.CallerMethod,
+		callee:       c.Callee,
+	}
 }
 
 // callKey is the comparison identity of a Call at one precision. Struct
@@ -312,6 +389,7 @@ func ParseJavap(out []byte) ([]Call, error) {
 			CalleeParams:     SigUnknown,
 			ArityReason:      ownerReason,
 			ParamsReason:     ownerReason,
+			callerSynthetic:  syntheticNestedClass(r.callerClassInternal),
 		}
 		if ownerReason == AbstainBytecodeOwnerUnresolved {
 			// The declaring class is not in the repository, so this is not an
@@ -495,10 +573,14 @@ func parseInvokes(out []byte) ([]rawInvoke, error) {
 			curMethod = ""
 			continue
 		}
-		if name, ok := parseMethodHeader(trimmed); ok {
-			curMethod = enclosingOfSynthetic(name)
-			continue
-		}
+		// A method REF is tried BEFORE a method HEADER, deliberately. The two
+		// shapes overlap (a ref to a method returning a reference type ends
+		// with ';' and contains '('), and of the two possible mistakes only one
+		// is recoverable: reading a header as a ref records nothing, while
+		// reading a ref as a header both DROPS the invoke fact and re-parents
+		// every later invoke in the method. parseMethodHeader now rejects ref
+		// lines by shape, so this ordering is belt on braces — but it is the
+		// belt that fails safe, so it is the one that runs first.
 		if owner, name, desc, ok := parseMethodRef(trimmed); ok && curClass != "" && curMethod != "" {
 			if owner == "" {
 				// javap omits the owner prefix for a SAME-CLASS call
@@ -513,6 +595,11 @@ func parseInvokes(out []byte) ([]rawInvoke, error) {
 				calleeName:          name,
 				calleeDescriptor:    desc,
 			})
+			continue
+		}
+		if name, ok := parseMethodHeader(trimmed); ok {
+			curMethod = enclosingOfSynthetic(name)
+			continue
 		}
 	}
 	if err := sc.Err(); err != nil {
@@ -674,17 +761,48 @@ func extendsTarget(tail string) string {
 // parseMethodHeader reads a member declaration line (ends with ';', has a
 // parameter list, is not an invoke/field line) and returns the method name.
 // A constructor (name-before-paren carries a '.') normalizes to "<init>".
+//
+// # The three javap line shapes that MASQUERADE as a method header
+//
+// A javap member declaration is source-like Java that ends in ';', so the
+// naive test "ends with ';' and contains '('" also accepts two other kinds of
+// line, and accepting either is worse than a blind spot — it REMOVES truth
+// facts, which is the direction that manufactures violations:
+//
+//  1. javap -s's own `descriptor: (Ltax/Rate;)Ltax/Rate;`, which would be read
+//     as a method named "descriptor:" and become the CALLER of the invokes
+//     below it. Found by the live gate while SW-172 was being built.
+//
+//  2. ANY bytecode instruction whose constant-pool trailer names a member
+//     RETURNING A REFERENCE TYPE:
+//     `1: invokevirtual #7  // Method a/Derived.self:()La/Derived;`
+//     `7: invokeinterface #21, 1 // InterfaceMethod a/HasSeed.seed:()La/Seed;`
+//     Both end with ';' and contain '(', and the token before '(' carries a
+//     '.', so they were read as a CONSTRUCTOR header. In parseInvokes that
+//     both DROPPED the invoke fact and clobbered curMethod to `<init>`, so
+//     every later invoke in the method was re-parented. This is the same bug
+//     class as (1) and was PRE-EXISTING, invisible only because every fixture
+//     in the harness returned a primitive or void — see
+//     TestParseMethodHeader_RejectsInvokeLines.
+//
+//  3. A `// String …` / `// class …` ldc trailer containing parentheses.
+//
+// All three are rejected by SHAPE — a javap constant-pool trailer is the only
+// thing here that carries `//`, and only a bytecode instruction begins with a
+// decimal offset, which no Java declaration can — rather than by check ORDER,
+// so a caller that scans in a different order cannot silently reintroduce any
+// of them.
 func parseMethodHeader(trimmed string) (string, bool) {
 	if !strings.HasSuffix(trimmed, ";") {
 		return "", false
 	}
-	// `descriptor: (Ltax/Rate;)Ltax/Rate;` — javap -s's own line — ends with
-	// ';' and contains '(', so it satisfies every test below and would be read
-	// as a method named "descriptor:". Rejected explicitly rather than by
-	// check ORDER, so a caller that scans in the other order cannot silently
-	// reintroduce the bug. (It did: the live gate caught the truth set
-	// attributing a constructor call to a caller method called "descriptor:".)
 	if strings.HasPrefix(trimmed, "descriptor: ") {
+		return "", false
+	}
+	if strings.Contains(trimmed, "//") {
+		return "", false
+	}
+	if hasBytecodeOffset(trimmed) {
 		return "", false
 	}
 	open := strings.IndexByte(trimmed, '(')
@@ -703,23 +821,52 @@ func parseMethodHeader(trimmed string) (string, bool) {
 	return name, true
 }
 
-// parseMethodRef reads the `// Method owner.name:desc` trailer of an invoke
-// instruction. Owner is an internal name (slashes) and may be ABSENT for a
-// same-class call — javap prints `// Method rate:()I` with no owner then, and
-// this returns owner "" so the caller substitutes the current class. Name may
-// be a quoted "<init>". Field refs (`// Field …`) and invokedynamic bootstraps
-// carry no `// Method ` and are ignored.
+// hasBytecodeOffset reports whether the line begins with javap's decimal
+// instruction offset (`12: invokevirtual …`). No Java declaration can begin
+// with a digit, so this is an exact discriminator, not a heuristic.
+func hasBytecodeOffset(trimmed string) bool {
+	i := 0
+	for i < len(trimmed) && trimmed[i] >= '0' && trimmed[i] <= '9' {
+		i++
+	}
+	return i > 0 && i < len(trimmed) && trimmed[i] == ':'
+}
+
+// refMarkers are the javap constant-pool trailers that name a METHOD ref.
+//
+// `// InterfaceMethod ` is not optional and not a nicety: javac writes it for
+// every invoke whose resolved owner is an INTERFACE — `invokeinterface`
+// through an interface-typed receiver, `invokestatic` on an interface static
+// method, and `invokespecial` for `X.super.m()`. Matching only `// Method `
+// dropped all three from the truth set entirely, and a MISSING truth fact is
+// the direction that manufactures violations: correct code calling through any
+// interface was accused at every precision. Found by adversarial fixture, not
+// by the gate — every fixture in the harness called through classes.
+//
+// Field refs (`// Field …`) and invokedynamic bootstraps carry neither marker
+// and stay excluded, which is right: graphi never confirms those either.
+var refMarkers = []string{"// Method ", "// InterfaceMethod "}
+
+// parseMethodRef reads the `// Method owner.name:desc` (or
+// `// InterfaceMethod …`) trailer of an invoke instruction. Owner is an
+// internal name (slashes) and may be ABSENT for a same-class call — javap
+// prints `// Method rate:()I` with no owner then, and this returns owner "" so
+// the caller substitutes the current class. Name may be a quoted "<init>".
 //
 // SW-172 (AC-3): the DESCRIPTOR is returned rather than discarded. It is the
 // only place the callee's real, javac-chosen signature exists in this output,
 // and throwing it away is what made the oracle blind to overload mis-binding.
 func parseMethodRef(trimmed string) (owner, name, desc string, ok bool) {
-	const marker = "// Method "
-	i := strings.Index(trimmed, marker)
-	if i < 0 {
+	ref := ""
+	for _, marker := range refMarkers {
+		if i := strings.Index(trimmed, marker); i >= 0 {
+			ref = trimmed[i+len(marker):]
+			break
+		}
+	}
+	if ref == "" {
 		return "", "", "", false
 	}
-	ref := trimmed[i+len(marker):]
 	colon := strings.IndexByte(ref, ':')
 	if colon < 0 {
 		return "", "", "", false
@@ -897,32 +1044,78 @@ func Compare(confirmed, truth []Call) Result {
 //   - the confirmed fact cannot be keyed at p  → ABSTAIN (its own reason)
 //   - it matches a truth fact at p             → MATCHED
 //   - no match at p, but a truth fact matches
-//     one precision COARSER and cannot itself
-//     be keyed at p                            → ABSTAIN (the truth's reason)
+//     at SOME coarser precision and cannot
+//     itself be keyed at p                     → ABSTAIN (the truth's reason)
+//   - no match at p, but the truth set holds
+//     an invoke from the same caller under the
+//     same callee NAME whose OWNER it could
+//     not resolve                              → ABSTAIN (the truth's reason)
 //   - otherwise                                → VIOLATION
 //
-// The third case is the one that keeps the oracle honest: "the truth set
-// disagrees with you" and "the truth set cannot answer at this precision" are
-// different findings, and reporting the second as a stop-ship counterexample
-// would be a fabricated defect.
+// The third and fourth cases are the ones that keep the oracle honest: "the
+// truth set disagrees with you" and "the truth set cannot answer" are different
+// findings, and reporting the second as a stop-ship counterexample would be a
+// fabricated defect.
+//
+// The fourth case exists because a FAILED OWNER WALK and an EXTERNAL callee
+// arrive here wearing the same clothes — CalleeFile "" — and conflating them
+// made the oracle accuse every interface default method. An external callee is
+// a fact the oracle has fully decided (graphi never confirms those, so there is
+// nothing to compare). An owner-unresolved fact is the oracle DECLINING: the
+// invoke is in the bytecode, but which intra-repo declaration it names could
+// not be determined, because the class walk of JVMS 5.4.3.3 does not model
+// 5.4.3.4's maximally-specific interface rule. Such a fact is still excluded
+// from the recall denominator — it is not a fact the oracle can claim to have
+// keyed — but it must not let a confirmed call be accused, because the oracle
+// has no idea whether it is wrong.
 func CompareAt(confirmed, truth []Call, p Precision) Result {
 	res := Result{Precision: p}
 
+	coarserLevels := p.coarserThan()
 	truthSet := map[callKey]struct{}{}
-	coarseUndecidable := map[callKey]string{}
-	coarse, hasCoarse := p.coarser()
+	coarseUndecidable := make(map[Precision]map[callKey]string, len(coarserLevels))
+	for _, q := range coarserLevels {
+		coarseUndecidable[q] = map[callKey]string{}
+	}
+	truthDeclined := map[declinedKey]string{}
+	// levels is p itself plus every coarser precision: an unalignable-caller
+	// truth fact must be findable at whatever precision it CAN be keyed at.
+	levels := append([]Precision{p}, coarserLevels...)
+	unalignableCaller := make(map[Precision]map[callKey]string, len(levels))
+	for _, q := range levels {
+		unalignableCaller[q] = map[callKey]string{}
+	}
 	seenTruth := map[callKey]struct{}{}
 	for _, c := range truth {
 		if c.CalleeFile == "" {
-			continue // external callee — not an intra-repo fact
+			if c.ArityReason == AbstainBytecodeOwnerUnresolved {
+				truthDeclined[c.declinedKey()] = AbstainBytecodeOwnerUnresolved
+			}
+			continue // external or unattributable — not an intra-repo fact
+		}
+		if c.callerSynthetic {
+			for _, q := range levels {
+				if _, undecidable := c.undecidableAt(q); undecidable {
+					continue
+				}
+				unalignableCaller[q][c.callerAgnosticKey(q)] = AbstainBytecodeCallerNotAlignable
+			}
+			// NOT `continue`: the fact is real and stays in the truth set, so a
+			// confirmed call that DOES name the same caller still matches. Only
+			// the caller-agnostic rescue is added.
 		}
 		if reason, undecidable := c.undecidableAt(p); undecidable {
 			if _, dup := seenTruth[c.key(ByName)]; !dup {
 				res.TruthUndecidable++
 			}
 			seenTruth[c.key(ByName)] = struct{}{}
-			if hasCoarse {
-				coarseUndecidable[c.key(coarse)] = reason
+			// Register at every coarser precision the fact CAN be keyed at,
+			// not merely the next one down; see Precision.coarserThan.
+			for _, q := range coarserLevels {
+				if _, stillUndecidable := c.undecidableAt(q); stillUndecidable {
+					continue
+				}
+				coarseUndecidable[q][c.key(q)] = reason
 			}
 			continue
 		}
@@ -945,18 +1138,48 @@ func CompareAt(confirmed, truth []Call, p Precision) Result {
 			res.Matched++
 			continue
 		}
-		if hasCoarse {
-			if reason, ok := coarseUndecidable[c.key(coarse)]; ok {
-				res.Abstained = append(res.Abstained, c)
-				res.addReason(reason)
-				continue
-			}
+		if reason, ok := coarseReason(coarseUndecidable, coarserLevels, c); ok {
+			res.Abstained = append(res.Abstained, c)
+			res.addReason(reason)
+			continue
+		}
+		if reason, ok := callerAgnosticReason(unalignableCaller, levels, c); ok {
+			res.Abstained = append(res.Abstained, c)
+			res.addReason(reason)
+			continue
+		}
+		if reason, ok := truthDeclined[c.declinedKey()]; ok {
+			res.Abstained = append(res.Abstained, c)
+			res.addReason(reason)
+			continue
 		}
 		res.Violations = append(res.Violations, c)
 	}
 	sortCalls(res.Violations)
 	sortCalls(res.Abstained)
 	return res
+}
+
+// coarseReason finds the coarsest-still-matching truth abstention for c,
+// searching finest-first so the most specific reason wins.
+func coarseReason(m map[Precision]map[callKey]string, levels []Precision, c Call) (string, bool) {
+	for _, q := range levels {
+		if reason, ok := m[q][c.key(q)]; ok {
+			return reason, true
+		}
+	}
+	return "", false
+}
+
+// callerAgnosticReason is coarseReason for the caller-unalignable channel,
+// which keys everything EXCEPT the caller method.
+func callerAgnosticReason(m map[Precision]map[callKey]string, levels []Precision, c Call) (string, bool) {
+	for _, q := range levels {
+		if reason, ok := m[q][c.callerAgnosticKey(q)]; ok {
+			return reason, true
+		}
+	}
+	return "", false
 }
 
 func (r *Result) addReason(reason string) {
