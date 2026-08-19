@@ -225,6 +225,29 @@ is hosted, there is no service to sign up for.
   LINK-002 alone. Filed 2026-08-19; **not fixed**, and the eventual fix must
   close both defects together. Record: §10 of
   [docs/rc/link-002-clause-by-dir-recall.md](docs/rc/link-002-clause-by-dir-recall.md).
+- **OPEN defect PARITY-004 — restoring a Go package that was missing when the
+  index was built leaves `sync` permanently diverged from `rebuild`.** If you
+  run `graphi rebuild` while an intra-module import points at a package that
+  does not exist in the tree (mid-refactor, a deleted directory, a partial
+  checkout), the importer's re-link record is stored under the import path
+  rather than the directory, where the incremental cascade can never find it.
+  Restore the package and `graphi sync`: the importer is **not** re-linked, so
+  a stale `external` node for the once-missing symbol and its `heuristic`
+  `calls` edge survive beside the now-correct `confirmed` edge, and the
+  `imports` edge a rebuild emits is missing. Reproduced through the CLI:
+  `graphi sync` settles at 7 nodes where `graphi rebuild` over the identical
+  tree gives 6, and three further syncs do not repair it. **What that costs, as
+  measured on that hermetic fixture rather than inferred:** `neighborhood` on
+  the importer loses the `imports` edge (5 edges against a rebuild's 6);
+  `related_files` returns the same files but in a different **rank order**, with
+  a weaker reason and less evidence; `callers`, `callees` and `impact` were
+  **identical**, because interned external nodes are excluded from them anyway
+  (first bullet above), and so was `search`. The stale node and edge are still
+  visible to the taint analyzer, which does read external nodes. **Workaround:
+  run `graphi rebuild` once after restoring a package that was missing at index
+  time** — verified: the rebuild converges to 6 nodes and 0 external nodes.
+  Filed 2026-08-19; **not fixed**. Record:
+  `docs/adr/0004-ingest-recovery-disposition.md` §"ADDED 2026-08-19", D3.
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`
 > column answers a different question ("is this one of the 12 frozen
