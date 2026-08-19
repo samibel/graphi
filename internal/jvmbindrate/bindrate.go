@@ -95,14 +95,21 @@
 //
 //	every named symbol in the embedded grammar   java 166, kotlin 198
 //	  (gts.Language.SymbolNames, filtered by SymbolMetadata.Named)
-//	× every one that OCCURS on the three pins    java 120, kotlin 141
+//	× every one that OCCURS on the three pins    java 125, kotlin 141
 //	  → each classified into exactly one of four buckets, no residue:
 //
 //	  D  in the primary denominator      java   2   kotlin   1
 //	  W  a call, in WidestDenominator    java   2   kotlin  15
 //	  P  synthesized protocol, measured  java   2   kotlin   3
 //	     and in NO denominator
-//	  N  not a call, explicitly listed   java 114   kotlin 122
+//	  N  not a call, explicitly listed   java 119   kotlin 122
+//
+// The java column read 120 / N 114 for one round because the intersection was
+// taken against GUAVA alone and published as the three pins'. It is 125 across
+// all three; the five extra are kotlinx.serialization's JPMS module-descriptor
+// types and are classified `bucketNotACall` in grammar_enumeration.go, which
+// carries the per-corpus measurement. No rate moved — none of the five can be a
+// call — but the guard was red on the corpus and no configuration ran it there.
 //
 // The N bucket is an EXPLICIT list (grammar_enumeration.go), not a default.
 // That is the whole point: with a default, a grammar upgrade that adds a
@@ -111,7 +118,7 @@
 // TestGrammarEnumeration_ClassifiesEveryOccurringNodeType walks the same symbol
 // table at test time and fails on any occurring node type in no bucket.
 //
-// 46 java and 57 kotlin named symbols never occur on the pins and are therefore
+// 41 java and 57 kotlin named symbols never occur on the pins and are therefore
 // unclassified; the test does not require them, because classifying a node type
 // no corpus produces would be a guess recorded as a decision.
 //
@@ -324,6 +331,22 @@ func (c CSTCounts) OperatorConventionCalls() int {
 // least iterator() + hasNext() + next(); each delegated property at least
 // getValue(). It is measured for both languages and belongs to NO denominator —
 // see WidestDenominator.
+//
+// It is a lower bound in TWO ways, and the second is the one worth stating: not
+// only is the per-construct multiplier a minimum, whole CONSTRUCT FAMILIES are
+// not counted here at all. Known omissions, systematic in both languages:
+//
+//	java    string concatenation      `a + b` on String -> StringConcatFactory
+//	java    autoboxing                `Integer.valueOf` / `intValue`
+//	java    implicit `super()`        emitted when a constructor writes none
+//	kotlin  string templates          `"$x"` -> toString()
+//	kotlin  collection_literal        `[1, 2]` in annotations -> arrayOf
+//
+// So this number must be read as "at least this many", never as a census of
+// synthesized calls. It is published to BOUND the exclusion, not to enumerate
+// it. Nothing here is in any denominator, so no rate depends on the gap — but a
+// reader comparing this total against a compiler's own would find it low, and
+// should.
 func (c CSTCounts) SynthesizedProtocolCalls() int {
 	return 3*c.ForInLoops + c.DestructuringComponents +
 		c.DelegatedProperties + c.TryWithResources
@@ -357,9 +380,15 @@ func (c CSTCounts) SynthesizedProtocolCalls() int {
 //	writes no identifier that a binder could resolve, yet implies three calls.
 //	This line is drawn IDENTICALLY IN BOTH LANGUAGES — java's `for (X x : xs)`
 //	is the same construct and is excluded the same way, and its size (guava
-//	3 740 loops) is published beside Kotlin's, so the exclusion cannot flatter
+//	WHOLE PIN 6 851 loops + 43 resources; guava/src 884 + 8) is published beside
+//	Kotlin's (okio 100/28/2, kotlinx 114/36/11), so the exclusion cannot flatter
 //	one language against the other. Their sizes are measured and published; they
 //	are not a residual anyone has to take on trust.
+//
+//	The figure here read "3 740 loops" for one round and matched NO scope of the
+//	pin — it was simply stale, while docs/rc/jvm-binding-rate.md carried the
+//	right one. It is the scope, not the number, that made it rot: a bare count
+//	with no scope beside it cannot be checked against a re-run. Hence both.
 //
 // Annotations and object literals also stay out. An annotation is not a call,
 // and an object literal is a type declaration whose constructor call, where it

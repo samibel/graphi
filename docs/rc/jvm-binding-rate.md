@@ -147,7 +147,7 @@ against 103 real `inc`/`dec`).
 | `method_reference` — `A::stat` | java | creates a function value; the call happens elsewhere |
 | `callable_reference` — `::stat` | kotlin | same — **and a lower bound**, see §3, F7 |
 | `array_creation_expression` — `new int[3]` | java | no callee |
-| `a!!` (`postfix_expression`) | kotlin | a null assertion; no callee. **okio 157, kotlinx 43** |
+| `a!!` (`postfix_expression`) | kotlin | a null assertion. **Not an operator convention** — no `operator fun` can be declared for `!!` and the source names nothing. It is not "no callee": on Kotlin/JVM it lowers to `Intrinsics.checkNotNull`, a callee the **compiler invents**, which by the line stated below makes it a *synthesized-protocol* construct rather than "not a call at all". Its size is published on its own row here — **okio 157, kotlinx 43** — and is in **no** denominator either way, so nothing moves. |
 | `a === b` (`equality_expression`) | kotlin | referential identity; never `equals`. **okio 29, kotlinx 59** |
 | `a = b` (plain `assignment`) | kotlin | not a call. **okio 704, kotlinx 672** |
 | `a is B` (`check_expression` / `type_test`) | kotlin | a type test. **okio 50, kotlinx 167** |
@@ -167,6 +167,17 @@ this document's operator-family figures *smaller* than the review's (§3, F9).
 | `val (a, b) = p` | kotlin | `component1()`, `component2()` — one per variable |
 | `val p by lazy {}` | kotlin | `getValue()` / `setValue()` |
 | `try (X x = …)` | java | `close()` — one per resource |
+
+**These sizes are a LOWER BOUND, in two ways** — stated here, beside the numbers,
+rather than only in the code. First, each multiplier is a minimum (`≥3` per
+loop). Second, and more importantly, **whole construct families are not counted
+at all**: Java string concatenation (`StringConcatFactory`), autoboxing
+(`Integer.valueOf`) and the implicit `super()`; Kotlin string-template
+`toString()` and `collection_literal` → `arrayOf`. The omissions are systematic
+in **both** languages, so they do not tilt the Java/Kotlin comparison, and since
+this group is in **no** denominator **no rate in this document depends on the
+gap**. Read the figure as "at least this many" — it exists to *bound* the
+exclusion, not to enumerate it.
 
 This is the line `WidestDenominator()` stops at, and it is stated rather than
 claimed: **a construct whose source names a callable is in; one where the
@@ -222,11 +233,11 @@ enumeration of the grammars themselves
 | | java | kotlin |
 |---|---:|---:|
 | named symbols in the embedded grammar | 166 | 198 |
-| …that **occur** on the three pins | **120** | **141** |
+| …that **occur** on the three pins | **125** | **141** |
 | **D** — in the primary denominator | 2 | 1 |
 | **W** — names a callable; in the widest denominator | 2 | 15 |
 | **P** — synthesized protocol; in **no** denominator | 2 | 3 |
-| **N** — not a call | 114 | 122 |
+| **N** — not a call | 119 | 122 |
 
 The **N bucket is an explicit list, never a default.** With a default, a grammar
 upgrade that adds a call-bearing node type is classified as harmless by silence —
@@ -243,13 +254,45 @@ pin produces the node, and the hermetic fixture does. It is not a call (a record
 *declares* its accessors, it does not call them) — but that is now a recorded
 decision instead of an accident of corpus coverage.
 
+**It caught a second one, and that one was the census itself (F10).** The java
+column above read **120 / N 114** when this section was first published, and
+**120 is guava's number**: the intersection had been taken against guava alone
+and published as "the three pins". Measured per corpus:
+
+| corpus | java types occurring | in no bucket |
+|---|---:|---:|
+| guava alone | 120 | 0 |
+| okio `.java` | 86 | 0 |
+| kotlinx.serialization `.java` | 8 | **5** |
+| **all three pins — the published population** | **125** | **5** |
+| kotlin, both pins | 141 | 0 |
+
+The D/W/P/N row summed to 120 only because the five unclassified types were
+dropped rather than counted. They are `module_declaration`, `module_body`,
+`requires_module_directive`, `requires_modifier` and `exports_module_directive`,
+from kotlinx.serialization's six `module-info.java` — the files
+`corpus/manifest.json` singles out. All five are JPMS module-descriptor syntax:
+they declare a module graph, contain no expression, and **cannot be a call**, so
+**no rate, denominator, exclusion size or arm in this document moves**; each was
+checked individually. They are now classified `bucketNotACall`.
+
+**What actually failed here was the guard, not the arithmetic.**
+`TestGrammarEnumeration_ClassifiesEveryOccurringNodeType` was **red** against the
+pins — and no configuration ran it there. The PR gate runs it hermetically, where
+it passes; the corpus workflow ran its step as `-run TestPins`, which excludes
+it. So the method guard had never once executed against the corpus its numbers
+come from. That step is now `-run 'TestPins|TestGrammarEnumeration'`. §10 of this
+document states that *a census that under-counts is the same defect class as a
+denominator that under-counts*; this is that rule applied to the census that
+states it.
+
 **What the enumeration does not cover, stated because it is the real residual:**
 it classifies **node types, not types**. `a + b` is counted as an
 operator-convention call whether `a` is an `Int` (a JVM intrinsic — no callee
 exists) or a `BigDecimal` (a genuine `plus` call). No CST can tell those apart.
 That is exactly why the family is excluded from the primary denominator and
 included in the widest one with both sizes published: the split is unmeasurable
-here, so it is **bounded rather than invented**. The 46 java and 57 kotlin
+here, so it is **bounded rather than invented**. The 41 java and 57 kotlin
 symbols that never occur on the pins are deliberately unclassified — recording a
 decision about a node type no corpus produces would be a guess dressed as an
 enumeration.
@@ -992,7 +1035,7 @@ reason.
    **node types, not types**: `a + b` is a real `plus` call on a `BigDecimal` and
    a JVM intrinsic with no callee on an `Int`, and nothing here can tell them
    apart. The true split is unknown and is bounded rather than invented (§1.5).
-6b. **What the 46 java and 57 kotlin grammar symbols that never occur on the pins
+6b. **What the 41 java and 57 kotlin grammar symbols that never occur on the pins
    would be.** Deliberately unclassified — see §1.5.
 7. **Anything about Go**, which is `typed-confirmed` through `go/types` and out
    of scope by the ticket, or about the other 19 shipped languages.

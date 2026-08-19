@@ -1,6 +1,7 @@
 package jvmbindrate
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -85,9 +86,20 @@ func TestGrammarEnumeration_ClassifiesEveryOccurringNodeType(t *testing.T) {
 		t.Run(tc.lang, func(t *testing.T) {
 			srcs := [][]byte{tc.fixture}
 			corpus := "the hermetic fixture"
+			// pinsOnly is the population the DOCUMENT publishes ("occur on the
+			// three pins"). The guard runs over fixture+pins, which is a strictly
+			// larger set, so its census is a different number — java reads 126 /
+			// N 120 there against the published 125 / N 119, the one extra being
+			// `record_declaration`, which only the fixture produces. Both are
+			// logged, labelled, for a reason learned the hard way in round 2: the
+			// java census was published as the three pins' when it had only been
+			// intersected against guava, and nothing printed the population it
+			// was actually taken over. An unlabelled census is how that happens.
+			var pinsOnly [][]byte
 			if pins := os.Getenv("GRAPHI_JVM_CORPUS_PINS"); pins != "" {
 				if real := pinSources(t, pins, tc.ext); len(real) > 0 {
 					srcs = append(srcs, real...)
+					pinsOnly = real
 					corpus = "the hermetic fixture + the real pins"
 				}
 			}
@@ -110,21 +122,31 @@ func TestGrammarEnumeration_ClassifiesEveryOccurringNodeType(t *testing.T) {
 
 			// Report the coverage the package doc publishes, so the two cannot
 			// drift apart unnoticed.
-			var d, w, p, n int
-			for nt := range occurring {
-				switch tc.buckets[nt] {
-				case bucketDenominator:
-					d++
-				case bucketWidestOnly:
-					w++
-				case bucketProtocol:
-					p++
-				case bucketNotACall:
-					n++
+			census := func(occ map[string]bool) string {
+				var d, w, p, n int
+				for nt := range occ {
+					switch tc.buckets[nt] {
+					case bucketDenominator:
+						d++
+					case bucketWidestOnly:
+						w++
+					case bucketProtocol:
+						p++
+					case bucketNotACall:
+						n++
+					}
 				}
+				return fmt.Sprintf("occurring %d — D %d, W %d, P %d, N %d", len(occ), d, w, p, n)
 			}
-			t.Logf("%s over %s: grammar named symbols %d, occurring %d — D %d, W %d, P %d, N %d",
-				tc.lang, corpus, len(namedSymbols(tc.g)), len(occurring), d, w, p, n)
+			t.Logf("%s over %s: grammar named symbols %d, %s",
+				tc.lang, corpus, len(namedSymbols(tc.g)), census(occurring))
+			if len(pinsOnly) > 0 {
+				// THE PUBLISHED ROW: docs/rc/jvm-binding-rate.md §1.5 and the
+				// package docs of bindrate.go / grammar_enumeration.go.
+				occPins := occurringTypes(tc.g, pinsOnly)
+				t.Logf("%s over THE THREE PINS ALONE (the published census): %s; %d named symbols never occur",
+					tc.lang, census(occPins), len(namedSymbols(tc.g))-len(occPins))
+			}
 
 			// Every classified node type must be a REAL symbol of this grammar.
 			// A typo in the enumeration would otherwise sit there looking like a

@@ -23,15 +23,40 @@ package jvmbindrate
 //	D  primary denominator                         2        1
 //	W  a call; in WidestDenominator                2       15
 //	P  synthesized protocol; in NO denominator     2        3
-//	N  not a call                                114      122
+//	N  not a call                                119      122
 //	                                             ----     ----
-//	   occurring on the pins                      120      141
+//	   occurring on the pins                      125      141
 //	   named symbols in the grammar               166      198
 //
-// The 46 java and 57 kotlin symbols that never occur on the pins are deliberately
+// The 41 java and 57 kotlin symbols that never occur on the pins are deliberately
 // NOT classified: recording a decision about a node type no corpus produces
 // would be a guess dressed as an enumeration. The test requires classification
 // only of what occurs, and fails the moment something new does.
+//
+// # Round 2: the census itself was measured against the wrong population
+//
+// The java column read 120 / N 114 for one round, and 120 is GUAVA'S number. The
+// enumeration was intersected against guava alone and published as "the three
+// pins". Measured per corpus:
+//
+//	corpus                       java types occurring   in no bucket
+//	guava alone                          120                 0
+//	okio .java                            86                 0
+//	kotlinx.serialization .java            8                 5
+//	ALL THREE PINS (published)           125                 5
+//	kotlin, both pins                    141                 0
+//
+// The five were the JPMS module-descriptor types above, and the D/W/P/N row
+// summed to 120 only because unclassified types are dropped rather than counted.
+// No rate moved — none of the five can be a call — but the guard
+// TestGrammarEnumeration_ClassifiesEveryOccurringNodeType was RED against the
+// pins, and nothing ran it there: the PR gate runs it hermetically (where it
+// passes) and the corpus workflow ran `-run TestPins`, which excludes it. So the
+// method guard had never once executed against the corpus its numbers come from.
+// The workflow step is now `-run 'TestPins|TestGrammarEnumeration'` for exactly
+// that reason. A census that under-counts is the same defect class as a
+// denominator that under-counts — the enumeration exists to say so, and had to
+// be held to it first.
 //
 // WHAT THIS ENUMERATION DOES NOT COVER, stated because it is the real residual:
 // it classifies NODE TYPES, not TYPES. `a + b` is classified as an
@@ -111,7 +136,22 @@ var javaNodeBuckets = map[string]nodeBucket{
 	"line_comment": bucketNotACall, "local_variable_declaration": bucketNotACall,
 	"marker_annotation": bucketNotACall, "method_declaration": bucketNotACall,
 	"method_reference": bucketNotACall, "modifiers": bucketNotACall,
-	"null_literal": bucketNotACall, "octal_integer_literal": bucketNotACall,
+	// JPMS module descriptors — `module-info.java`. A module declaration and its
+	// directives declare a MODULE GRAPH: which modules are required and which
+	// packages are exported. They name no callable, contain no expression and
+	// cannot invoke anything; there is no bytecode body for a call to sit in.
+	//
+	// These five reached the list the same way `record_declaration` did — by
+	// failing the enumeration guard rather than by being thought of — and they
+	// exposed a worse defect than themselves: the published census said "occurs
+	// on the three pins" but had only ever been intersected against GUAVA, whose
+	// java is 120 of the 125 that occur. The five come from kotlinx.serialization's
+	// six `module-info.java`, the exact files corpus/manifest.json singles out.
+	// See the round-2 note below the table.
+	"module_declaration": bucketNotACall, "module_body": bucketNotACall,
+	"requires_module_directive": bucketNotACall, "requires_modifier": bucketNotACall,
+	"exports_module_directive": bucketNotACall,
+	"null_literal":             bucketNotACall, "octal_integer_literal": bucketNotACall,
 	"package_declaration": bucketNotACall, "parenthesized_expression": bucketNotACall,
 	"program": bucketNotACall,
 	// A record declaration SYNTHESIZES a canonical constructor and one accessor

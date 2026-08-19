@@ -137,7 +137,18 @@ jobs:
       # and denominator, every named exclusion with its size, the operator
       # convention family, the synthesized-protocol sizes, the clean/dirty parse
       # split, the full skip histogram and the residual it does not account for.
+      #
+      # The filter matches TestGrammarEnumeration TOO, and that is the point.
+      # This step ran as `-run TestPins` for one round, which EXCLUDED the
+      # enumeration guard — and the PR gate runs that guard hermetically, where
+      # it passes. So the guard that exists to say "no occurring node type is in
+      # no bucket" had never once run against the corpus its census is published
+      # from, and it was red there: five JPMS module-descriptor types from
+      # kotlinx.serialization's module-info.java occurred in no bucket, and the
+      # published java census (120) was guava's number, not the three pins' (125).
+      # A guard that cannot run where its numbers come from is not a guard.
+      # See docs/rc/jvm-binding-rate.md §1.5 (F10).
       - name: real-pin call-site binding rate and skip histogram (W1.b)
         env:
           GRAPHI_JVM_CORPUS_PINS: /tmp/pins
-        run: go test ./internal/jvmbindrate/ -run TestPins -count=1 -v -timeout 30m
+        run: go test ./internal/jvmbindrate/ -run 'TestPins|TestGrammarEnumeration' -count=1 -v -timeout 30m

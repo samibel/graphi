@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -186,16 +187,61 @@ func git(t *testing.T, root string, arg ...string) string {
 // Guarding at BOTH ends is deliberate — the enumeration makes the defect
 // impossible and the status check makes a *different* defect (an edited pin)
 // visible rather than silent.
+//
+// # Round 2: `git status` is not a sound basis, and is no longer the basis
+//
+// Assertion 3 was the ONLY thing standing between the measurement and edited
+// bytes, because contents were read from disk. A reviewer bypassed it:
+//
+//	git update-index --assume-unchanged <file> && <edit it>
+//
+// leaves `git status --porcelain -uno` EMPTY — that is precisely what the bit
+// means, "stop stat-ing this path" — and okio's Java rate moved 16.07 % ->
+// 17.97 % (139/865 -> 159/885) with all three assertions green. `--skip-worktree`
+// gave 16.55 %. Neither is reachable by accident: no clone, gradle build or
+// kotlinc run sets those bits. But "you would have to do it deliberately" is the
+// same defence the FILESYSTEM WALK had until a plain gradle build produced 16
+// generated `.java`, so it is not a defence this file gets to use twice.
+//
+// The fix is not a fourth assertion, it is removing the premise: readSources now
+// reads blob CONTENT from the object store (`git cat-file --batch`), so what is
+// on disk cannot enter the measurement at all, whatever the index says. The
+// index-bit assertion below is kept anyway — not because the content still
+// depends on it, but so a tampered pin is REPORTED rather than silently
+// bypassed-and-corrected. A pin someone has marked assume-unchanged is a fact
+// the reader should see.
 func assertPinnedTree(t *testing.T, root, wantCommit, wantTree string) {
 	t.Helper()
 	if got := strings.TrimSpace(git(t, root, "rev-parse", "HEAD")); got != wantCommit {
 		t.Fatalf("pin checkout is at commit %s, manifest pins %s — the figures would not be about the pin", got, wantCommit)
 	}
+	// Assertion 2 closes no hole assertion 1 leaves open — a commit determines
+	// its tree — and is not claimed to. Its value is PUBLICATION: the pins table
+	// names the tree the figures were taken from, and this fails if the reader's
+	// checkout disagrees with what is published.
 	if got := strings.TrimSpace(git(t, root, "rev-parse", "HEAD^{tree}")); got != wantTree {
 		t.Fatalf("pin checkout tree is %s, this measurement pins %s — the same commit cannot have two trees, so one of them is wrong", got, wantTree)
 	}
 	if dirty := strings.TrimSpace(git(t, root, "status", "--porcelain", "--untracked-files=no")); dirty != "" {
 		t.Fatalf("pin checkout has MODIFIED TRACKED FILES — the bytes measured are not the pinned tree:\n%s", dirty)
+	}
+	// `git ls-files -v`: a lowercase tag marks assume-unchanged, `S` marks
+	// skip-worktree. Both make `git status` lie by design.
+	var hidden []string
+	for _, line := range strings.Split(git(t, root, "ls-files", "-v"), "\n") {
+		if len(line) < 2 || line[1] != ' ' {
+			continue
+		}
+		if tag := line[0]; tag == 'S' || (tag >= 'a' && tag <= 'z') {
+			hidden = append(hidden, line)
+		}
+	}
+	if len(hidden) > 0 {
+		if len(hidden) > 12 {
+			hidden = append(hidden[:12], fmt.Sprintf("… and %d more", len(hidden)-12))
+		}
+		t.Fatalf("pin checkout has %d path(s) marked assume-unchanged or skip-worktree — `git status` is suppressed for them by design, so its emptiness proves nothing:\n  %s",
+			len(hidden), strings.Join(hidden, "\n  "))
 	}
 }
 
@@ -213,26 +259,94 @@ func assertPinnedTree(t *testing.T, root, wantCommit, wantTree string) {
 // what the pin contains. Nothing is excluded from it; a file is in the
 // measurement if and only if the pinned commit contains it.
 //
-// Contents are still read from disk rather than from the object store, which is
-// safe only because assertPinnedTree has already established that no tracked
-// file differs from the tree.
+// CONTENTS come from the object store too, not from disk (SW-175 review round 2,
+// MINOR-B). An earlier draft read `os.ReadFile` and said so, with the premise
+// stated in this comment: "safe only because assertPinnedTree has already
+// established that no tracked file differs from the tree". That premise was
+// false — `git update-index --assume-unchanged` plus an edit keeps `git status`
+// empty by design and moved okio's Java rate 16.07 % -> 17.97 %.
+//
+// So the file list AND the bytes now both come from `git ls-tree` + `git
+// cat-file --batch`. The working directory is not read at all, and the pinned
+// tree is not merely asserted to be what was measured — it IS what was measured.
+// The only way to change these figures is to change the pinned commit, which
+// changes the sha in the table.
 func readSources(t *testing.T, root string) map[string][]byte {
 	t.Helper()
-	out := map[string][]byte{}
-	for _, rel := range strings.Split(git(t, root, "ls-tree", "-r", "HEAD", "--name-only", "-z"), "\x00") {
-		if rel == "" {
+
+	// `ls-tree -r HEAD -z` emits "<mode> <type> <sha>\t<path>\0". The blob sha
+	// is what makes the content addressable without touching the checkout.
+	type entry struct{ sha, rel string }
+	var want []entry
+	for _, rec := range strings.Split(git(t, root, "ls-tree", "-r", "HEAD", "-z"), "\x00") {
+		if rec == "" {
 			continue
+		}
+		meta, rel, ok := strings.Cut(rec, "\t")
+		if !ok {
+			t.Fatalf("unparseable ls-tree record %q", rec)
 		}
 		switch strings.ToLower(path.Ext(rel)) {
 		case ".java", ".kt":
 		default:
 			continue
 		}
-		b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-		if err != nil {
-			t.Fatalf("pinned tree lists %s but it cannot be read: %v", rel, err)
+		f := strings.Fields(meta)
+		if len(f) != 3 || f[1] != "blob" {
+			// A submodule (commit) or malformed record. Neither is a source
+			// file at this pin; skipping silently is how a denominator shrinks,
+			// so say so.
+			t.Logf("ls-tree: skipping non-blob entry %q (%s)", rel, meta)
+			continue
 		}
-		out[rel] = b
+		want = append(want, entry{f[2], rel})
+	}
+	if len(want) == 0 {
+		return map[string][]byte{}
+	}
+
+	// One `cat-file --batch` for the whole pin: 3 204 separate `git show`
+	// invocations would dominate the run time of the measurement.
+	var stdin bytes.Buffer
+	for _, e := range want {
+		stdin.WriteString(e.sha)
+		stdin.WriteByte('\n')
+	}
+	cmd := exec.Command("git", "-C", root, "cat-file", "--batch")
+	cmd.Stdin = &stdin
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	blob, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("git cat-file --batch in %s: %v: %s", root, err, stderr.String())
+	}
+
+	// Replies are "<sha> <type> <size>\n<size bytes>\n", in request order.
+	out := map[string][]byte{}
+	rest := blob
+	for _, e := range want {
+		nl := bytes.IndexByte(rest, '\n')
+		if nl < 0 {
+			t.Fatalf("cat-file stream truncated before %s", e.rel)
+		}
+		hdr := strings.Fields(string(rest[:nl]))
+		if len(hdr) != 3 || hdr[0] != e.sha || hdr[1] != "blob" {
+			t.Fatalf("cat-file returned %q for %s (blob %s) — the object store does not hold the pinned bytes",
+				string(rest[:nl]), e.rel, e.sha)
+		}
+		size, err := strconv.Atoi(hdr[2])
+		if err != nil {
+			t.Fatalf("cat-file size %q for %s: %v", hdr[2], e.rel, err)
+		}
+		rest = rest[nl+1:]
+		if len(rest) < size+1 {
+			t.Fatalf("cat-file stream holds %d bytes for %s, header says %d", len(rest), e.rel, size)
+		}
+		out[e.rel] = rest[:size:size]
+		rest = rest[size+1:] // trailing newline git appends after each object
+	}
+	if len(rest) != 0 {
+		t.Fatalf("cat-file stream has %d trailing bytes — the reply order did not match the request order", len(rest))
 	}
 	return out
 }
