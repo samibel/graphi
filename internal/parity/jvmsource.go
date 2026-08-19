@@ -585,8 +585,28 @@ func depthOneIn(msk []byte, lo, hi int) func(int) bool {
 // scanSuper reads the first named supertype between the type name and the body.
 func scanSuper(msk []byte, after, open int, lang string) (string, int, int) {
 	if lang == langJava {
+		// ANGLE DEPTH IS LOAD-BEARING, not defensive tidiness (PARITY-OBS-002).
+		// Java spells a bounded type parameter with the SAME keyword as an
+		// extends clause — `class A<B extends Bound, E> extends Real` — so an
+		// `extends` scan that ignores <…> returns the BOUND. On guava at
+		// 2214c636 that made this function answer `AbstractCollectionTestSuiteBuilder`
+		// for a class of that very name, and the row built on it rewrote a type
+		// parameter while publishing a sentence that said it had re-pointed a
+		// supertype. The Kotlin branch below always tracked depth; this one did
+		// not, and the asymmetry is the whole defect.
+		depth := 0
 		for i := after; i < open; i++ {
-			if !wordAt(msk, i, "extends") {
+			switch msk[i] {
+			case '<':
+				depth++
+				continue
+			case '>':
+				if depth > 0 {
+					depth--
+				}
+				continue
+			}
+			if depth != 0 || !wordAt(msk, i, "extends") {
 				continue
 			}
 			j := skipSpace(msk, i+len("extends"))

@@ -416,6 +416,67 @@ func TestDiscoverJVM_ModelsTypesMethodsImportsAndMixedDirs(t *testing.T) {
 	}
 }
 
+// TestScanSuper_IgnoresExtendsInsideATypeParameterList is the regression pin on
+// PARITY-OBS-002, and it is written from a REAL published row rather than from
+// an invented shape.
+//
+// Java spells a bounded type parameter with the SAME keyword as an extends
+// clause — `class A<B extends Bound> extends Real` — and the Java branch of
+// scanSuper took the first `extends` it saw with no angle-bracket depth,
+// exactly where the Kotlin branch below it does track depth. On guava at
+// 2214c636 that made `jvm_change_type_hierarchy` report the supertype of
+//
+//	public abstract class AbstractCollectionTestSuiteBuilder<
+//	        B extends AbstractCollectionTestSuiteBuilder<B, E>, E>
+//	    extends PerCollectionSizeTestSuiteBuilder<…>
+//
+// as `AbstractCollectionTestSuiteBuilder` — the class's own name, read out of
+// its bound — so the published row said it re-pointed a class at itself, and
+// the edit it actually applied rewrote a type-parameter bound. The row PASSed
+// on a graph BYTE-IDENTICAL to the unmutated one (measured: `compare-branches`
+// `outcome: empty`, on all four axis cells).
+//
+// The fixture is the real guava header, reduced. It fails on the pre-fix
+// scanner with Super = "Bound" and passes only when the bound is skipped.
+func TestScanSuper_IgnoresExtendsInsideATypeParameterList(t *testing.T) {
+	root := t.TempDir()
+	src := `package p;
+
+public abstract class Builder<
+        B extends Builder<B, E>, E>
+    extends RealParent<B, E> {
+  public void ping() {
+  }
+}
+`
+	if err := os.MkdirAll(filepath.Join(root, "src", "p"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "src", "p", "Builder.java"), []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m, err := discoverJVM(root)
+	if err != nil {
+		t.Fatalf("discoverJVM: %v", err)
+	}
+	f := m.fileAt("src/p/Builder.java")
+	if f == nil || len(f.Types) != 1 {
+		t.Fatalf("model = %+v, want one type", f)
+	}
+	got := f.Types[0]
+	if got.Super != "RealParent" {
+		t.Fatalf("Super = %q, want RealParent — an `extends` inside <…> is a type-parameter BOUND, "+
+			"not a supertype, and a planner that rewrites it publishes a mutation description that is "+
+			"false about the edit it made (PARITY-OBS-002)", got.Super)
+	}
+	// The offsets must bound the REAL supertype, because the planner splices
+	// over them. Asserting the name alone would pass with stale offsets that
+	// still rewrite the bound.
+	if b := string(f.Src[got.SuperStart:got.SuperEnd]); b != "RealParent" {
+		t.Fatalf("Src[SuperStart:SuperEnd] = %q, want RealParent — the splice window still covers the bound", b)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // The planners.
 // ---------------------------------------------------------------------------
