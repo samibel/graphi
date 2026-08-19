@@ -186,6 +186,23 @@ is hosted, there is no service to sign up for.
   made `sync` settle a superset of `rebuild`'s edge set (closed defect
   PARITY-003; `fast` still omits `imports` edges entirely). Record:
   [docs/rc/parity-matrix-real-repo.md](docs/rc/parity-matrix-real-repo.md).
+- **OPEN defect LINK-002 — a Go directory with two package clauses loses
+  `recv.Method` calls.** When a directory declares two package clauses — most
+  often a package beside its **external `_test` package** (`package shop` and
+  `package shop_test`) — graphi keeps only one of them, and methods under the
+  losing clause become invisible to the *heuristic* receiver-method call
+  resolver. `callers`, `callees`, `impact`, `neighborhood` and degree-ranked
+  output then return a confident but **incomplete** answer, with no skip and no
+  diagnostic. It drops true edges only and **never emits a wrong one**; it is
+  deterministic for a given tree and reproduces under all three profiles.
+  Measured on graphi's own repository: **136 of 1 979 method declarations
+  (6.9 %)** unreachable, 108 of them in one directory. `references`, `imports`
+  and `search` are unaffected. **Workaround:** where the receiver's type is
+  import-qualified (`c *shop.Cart`) the Go type-checker resolves the call
+  instead and the edge is `confirmed` — this holds under `-profile balanced`
+  (the default) and `-profile deep`, but **not** under `-profile fast`, which
+  skips type resolution. Record:
+  [docs/rc/link-002-clause-by-dir-recall.md](docs/rc/link-002-clause-by-dir-recall.md).
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`
 > column answers a different question ("is this one of the 12 frozen

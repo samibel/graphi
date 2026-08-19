@@ -240,12 +240,33 @@ func TestLocalFirstCheck(t *testing.T) {
 	}
 }
 
-// TestKnownDefectsCheck was removed with its subject, for the third time: the
-// known-defects check's only entry (LINK-001) is fixed by ADR 0011, and the
-// check's contract says an empty list removes the check. The disclosure's
-// subject is now proven by the fix's own gates — engine/link/pkgtargets_test.go
-// and engine/conformance/importstargets_test.go, the latter on both stores and
-// both profile axes.
+// TestKnownDefectsCheck pins the disclosure contract (D8): an OPEN published
+// defect that affects a GA operation is named on the doctor surface at INFO
+// severity — never silently green, never a health failure of this install.
+//
+// Restored for LINK-002 after ADR 0011 closed LINK-001 and removed the check for
+// the third time. The assertions are deliberately about the SHAPE of a
+// disclosure rather than its prose, so the message can be improved without
+// breaking the test, but cannot lose the parts that make it useful: the defect
+// id, the affected operations, and a workaround.
+func TestKnownDefectsCheck(t *testing.T) {
+	res := KnownDefectsCheck().Run(context.Background(), fakeEnv{})
+	if res.Status != StatusInfo {
+		t.Fatalf("known-defects must be INFO (an open defect is disclosed, not a local "+
+			"health failure, and never silently green), got %q", res.Status)
+	}
+	for _, want := range []string{"LINK-002", "callers", "callees", "Workaround"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("known-defects message must mention %q; got: %s", want, res.Message)
+		}
+	}
+	// The `-profile full` incident: a published workaround named a profile the
+	// CLI rejects. Pin that this disclosure names only real profiles.
+	if strings.Contains(res.Message, "-profile full") {
+		t.Errorf("known-defects names a profile the CLI rejects; the accepted set is " +
+			"fast|balanced|deep")
+	}
+}
 
 func TestDBCheckEmptyPath(t *testing.T) {
 	env := fakeEnv{dbPath: ""}

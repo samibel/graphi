@@ -54,6 +54,28 @@ type SymbolIndex struct {
 	// clauseByDir maps a directory to the package clause its symbols declare,
 	// derived from node qualified names (pkg.Symbol). Used to find the directory
 	// a selector base's import path resolves into.
+	//
+	// OPEN DEFECT LINK-002 — it holds ONE clause, and a directory can declare
+	// several. Add writes it unconditionally (see the assignment below), so a
+	// directory holding, say, `package shop` beside an external `package
+	// shop_test` keeps only whichever clause the streaming order wrote last, and
+	// every method under the losing clause becomes unreachable from the two
+	// readers of this map: Build's methodDirs seed and uniqueMethodInDir. That is
+	// the sole gate of receiverMethod, whose sole consumer is Go's recv.Method
+	// call heuristic (resolve_go.go), so the blast radius is a RECALL loss on
+	// heuristic `calls` edges — no wrong edge is ever emitted.
+	//
+	// It also falsifies BuildIndex's "in any order" promise below, and is
+	// deterministic in production only because ForEachNode's canonical NodeId
+	// order is a content hash — which is why no parity dispatch can see it and
+	// why it is pinned hermetically instead (clausebydir_test.go).
+	//
+	// NOT FIXED HERE: the fix is a product-byte change with its own ADR,
+	// candidate move and re-measurement. The direction — hold the SET of clauses
+	// and degrade only on a genuine bare-name collision, NOT the plain "degrade
+	// on ambiguity" of typeresolve/pkggraph.go, which measurably loses more
+	// recall than it recovers — plus the measured blast radius and the verified
+	// workaround are recorded in docs/rc/link-002-clause-by-dir-recall.md.
 	clauseByDir map[string]string
 
 	// packageNodeByPath maps a full package path (e.g. "com.example.service") to
@@ -220,6 +242,9 @@ func (b *IndexBuilder) Add(n model.Node) {
 		return
 	}
 	if clause != "" {
+		// LINK-002 (OPEN, disclosed): last write wins. See the clauseByDir field
+		// comment and docs/rc/link-002-clause-by-dir-recall.md. Deliberately left
+		// as-is — fixing it is a product-byte change with its own ceremony.
 		idx.clauseByDir[dir] = clause
 	}
 
@@ -272,6 +297,14 @@ func (b *IndexBuilder) Build() *SymbolIndex {
 // BuildIndex constructs a SymbolIndex from a committed node set. It is pure and
 // deterministic: identical input (in any order) yields an index that resolves
 // identically. Resolution is O(1) per lookup (no caller×candidate scans).
+//
+// THE "IN ANY ORDER" CLAUSE IS CURRENTLY FALSE, and is left standing as the
+// statement the fix must make true again rather than quietly weakened: OPEN
+// defect LINK-002 makes clauseByDir order-dependent, so the same node set in two
+// orders resolves two different recv.Method edge sets. Demonstrated by
+// TestLink002_BuildIndexOrderInvariantBroken. Every other table here — byDir,
+// dirAmbiguous, byClause, fileNodeByPath, fileNodesByDir, packageNodeByPath — is
+// genuinely order-independent, so the exception is exactly one field wide.
 func BuildIndex(nodes []model.Node) *SymbolIndex {
 	b := NewIndexBuilder()
 	for _, n := range nodes {

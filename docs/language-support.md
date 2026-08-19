@@ -66,6 +66,19 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > import resolution. A package the checker cannot prove (parse error, import cycle)
 > keeps its heuristic edges; kill switch: `GRAPHI_NO_TYPERESOLVE=1`.
 >
+> **OPEN defect LINK-002 on the Go `recv.Method` heuristic.** The heuristic half of the
+> sentence above under-resolves in one directory shape: when a directory declares **two
+> package clauses** — most often a package beside its **external `_test` package** — only
+> one clause survives in the index, and methods under the losing clause are never offered
+> to the receiver-method heuristic at all. It drops true edges only and emits no wrong
+> one, so it is a recall defect and not a soundness one; it is deterministic per tree and
+> present under `fast`, `balanced` and `deep`. **The `confirmed` layer is unaffected** —
+> where the receiver's type is import-qualified, go/types resolves the call and the edge
+> is `confirmed`, which is also the workaround (it needs `balanced` or `deep`; `fast`
+> skips type resolution). Measured on graphi's own tree: 136 of 1 979 method declarations
+> (6.9 %) unreachable. Read the Go **GA** row with this limit attached until it closes:
+> [`docs/rc/link-002-clause-by-dir-recall.md`](rc/link-002-clause-by-dir-recall.md).
+>
 > ² Intra-file extraction ships for every language above. One per-language
 > cross-file resolver (`resolve_<lang>.go`) over the same `engine/link` registry seam
 > (Open/Closed — a new language is a new `Register` call in `link.New()`, never an edit

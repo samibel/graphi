@@ -1,5 +1,80 @@
 # graphi — Wave 0 handoff v1 (2026-08-18)
 
+> ## AMENDMENT — 2026-08-19 (SW-168): the `clauseByDir` defect is now LINK-002, reproduced and disclosed
+>
+> Per D6 this amendment is **added**; nothing below is rewritten, re-pointed or
+> deleted. Two statements in the original text are superseded, and both are named
+> here rather than edited in place:
+>
+> 1. **§4, "The `clauseByDir` last-write-wins recall defect — NOT disclosed".**
+>    It now carries the id **LINK-002** and IS disclosed, on all three surfaces
+>    the disclosure contract (D8) names: `readme.md` "Known limits", the doctor
+>    `known-defects` check at info severity (`internal/doctor/checks.go`,
+>    restored for it, registered in `cmd/graphi/doctor.go`, asserted by
+>    `internal/doctor/checks_test.go`), and `docs/language-support.md` beside the
+>    Go GA row. Record:
+>    [`../rc/link-002-clause-by-dir-recall.md`](../rc/link-002-clause-by-dir-recall.md).
+>
+> 2. **§7 item 3, "The `clauseByDir` user-visible recall loss — mechanism read
+>    from source, consequence not observed".** That UNVERIFIED EXPECTATION is
+>    **discharged**: the consequence is now observed. On a hermetic Go fixture
+>    (`package shop` beside an external `package shop_test`) a caller making
+>    three `recv.Method` calls gets **one** `calls` edge from the built CLI — and
+>    the survivor is the one into the **test** package, while both production
+>    calls are dropped, with `outcome: found` and no diagnostic. Deleting the one
+>    `_test.go` file restores both. Byte-identical over five consecutive
+>    `graphi rebuild` runs, and identical under `fast`, `balanced` and `deep`.
+>    Pinned by `engine/link/clausebydir_test.go`, which fails **with
+>    instructions** the moment the defect is fixed.
+>
+> **Also now measured, where §4 had no figure.** On this repository at `a1a8a9a`,
+> reproducing `ForEachNode`'s canonical NodeId streaming order: **10 of 105**
+> directories declaring methods hold more than one package clause, and **136 of
+> 1 979** method declarations (6.9 %) are unreachable through
+> `uniqueMethodInDir` — **108** of them in `engine/ingest`, where `ingest_test`
+> took the last write. Stated with its scope: this is one repository, it counts
+> unreachable *declarations* rather than lost *edges*, and the pinned corpus
+> clones were **not** re-indexed. See §4 of the record for the full
+> not-measured list.
+>
+> **Corrections to §4's own text, for the record.** §4 cites the assignment at
+> `engine/link/index.go:158`; at `a1a8a9a` it is at **:223** (ADR 0011 moved it).
+> §4 says the consumers are "the `receiverMethod` reverse index
+> (`engine/link/index.go:195`) and `uniqueMethodInDir` (`engine/link/index.go:346`)";
+> those are now `:260` and `:418`. The mechanism §4 describes is correct as
+> described.
+>
+> **What did NOT change.** LINK-002 is **not fixed** — that is a product-byte
+> change carrying the full D7 ceremony and is scheduled separately.
+> `parityreport.CandidateSHA`, the published 19/19 real-repo matrix and every
+> evidence row are untouched. §5's package order is unchanged; this amendment
+> records the completion of its item 3 only.
+>
+> ### A finding about the provenance gate itself, surfaced by this change
+>
+> §8 measured that adding a **docs-only** file moves no product byte, and that is
+> still true. It does **not** generalise the way a reader might assume, and the
+> difference was measured rather than reasoned. Building `./cmd/graphi` with
+> `-trimpath -buildvcs=false` from this working tree:
+>
+> | tree | sha256 |
+> |---|---|
+> | candidate `3b8d43f` (= HEAD `a1a8a9a`, verified) | `036be635…` |
+> | + **one added comment line** in `engine/link/index.go`, nothing else | `5a6198aa…` |
+> | + this story's `engine/link/index.go` comments (no statement changed) | `b714d731…` |
+> | + the doctor `known-defects` disclosure | `ea3e335e…` |
+>
+> **A pure comment in a compiled source file is a product byte under this gate.**
+> Line positions reach the binary through debug and runtime metadata, so
+> `-trimpath` does not neutralise them. Two consequences worth carrying forward:
+> (1) *any* change touching a compiled file — including one whose ticket says
+> "comment/doc only" — forfeits `ProductDiffEmpty` and therefore publishability,
+> so the candidate must move for it; (2) D8's disclosure obligation and a
+> "no product bytes" constraint are **not jointly satisfiable** whenever the
+> disclosure surface is compiled in, which the doctor check is. That tension is a
+> real one for whoever schedules the next candidate move, and is recorded here
+> rather than resolved: resolving it is an owner decision, not a builder's.
+
 ## Why this file exists
 
 The plan that governs the language-GA programme ("GA für ALLE Sprachen — die

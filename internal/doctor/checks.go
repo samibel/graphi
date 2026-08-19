@@ -370,32 +370,55 @@ func LocalFirstCheck() Check {
 	}
 }
 
-// The known-defects disclosure check is REMOVED AGAIN (2026-08-19, third time):
-// its only entry, LINK-001, is fixed by ADR 0011 — an `imports` edge now targets
-// the imported package's SOURCE files, decided on the file extension in the
-// resolver at read time — and the check's own contract says an empty list
-// removes the check.
+// KnownDefectsCheck discloses OPEN, published product defects that affect a
+// GA operation. Info severity, never pass: an open defect is not a health
+// failure of THIS install, but it is also never silently green. The list is
+// maintained by hand and must shrink to removal in the same change that closes
+// a defect; an empty list removes the check.
 //
-// The pattern is worth keeping legible for the next open defect that affects a
-// GA operation: info severity so it is never silently green and never a health
-// failure of this install, a named defect id + affected operation + a workaround
-// the user can actually run (the PARITY-003 disclosure shipped "-profile full",
-// which profile.Parse rejects — verify the workaround), and removal in the same
-// change that closes the defect.
-//
-// The check's history IS the disclosure contract working, and is recorded here
+// The check's history IS the disclosure contract working, and is kept here
 // rather than lost with the code: removed when PARITY-002 closed, restored for
 // PARITY-003, removed when that closed, restored the same day for LINK-001 —
-// which the PARITY-003 fix's own review UNMASKED rather than introduced — and
-// removed now that LINK-001 is closed. Records: docs/rc/parity-matrix-real-repo.md
-// and docs/adr/0011-imports-edge-targets-package-source-files.md.
+// which the PARITY-003 fix's own review UNMASKED rather than introduced —
+// removed again when ADR 0011 closed LINK-001, and restored NOW (2026-08-19,
+// fourth time) for LINK-002.
 //
-// ONE HONEST ASYMMETRY, so this removal is not read as "no open defects exist":
-// the previous two removals were paired with a real-repository MEASUREMENT.
-// This one is not. LINK-001's fix is proven hermetically here (engine/link
-// pkgtargets_test.go, engine/conformance importstargets_test.go, red-without and
-// green-with on both stores and both profile axes); the re-measurement on the
-// moved candidate is its own change and had not run when this line was written.
+// LINK-002 is NOT a regression of LINK-001 and the two must not be conflated:
+// ADR 0011 narrowed fileNodesByDir at READ time, while LINK-002 is a different
+// map (clauseByDir) with disjoint consumers. LINK-002 predates both and was
+// simply never disclosed until it was reproduced. Record:
+// docs/rc/link-002-clause-by-dir-recall.md.
+//
+// A workaround named here must be one the CLI accepts: the PARITY-003
+// disclosure shipped "-profile full", which profile.Parse rejects, so verify
+// the string before shipping it. The workaround below was executed against the
+// built binary — including its negative case, which is why the `fast` profile
+// is named as an exception rather than quietly omitted.
+func KnownDefectsCheck() Check {
+	return checkFunc{
+		id:       "known-defects",
+		category: "known-defects",
+		fn: func(ctx context.Context, env Env) CheckResult {
+			return StringResult("known-defects", "known-defects",
+				"LINK-002 (open): in a Go directory that declares TWO package clauses — most "+
+					"often a package beside its external `_test` package — only the last clause "+
+					"the index happens to see is kept, so methods under the losing clause are "+
+					"invisible to the heuristic recv.Method call resolver. `callers`, `callees`, "+
+					"`impact`, `neighborhood` and degree-ranked output (agent_brief, "+
+					"search_hybrid) then return a confident but INCOMPLETE answer, with no skip "+
+					"and no diagnostic. It drops true edges only and never emits a wrong one; it "+
+					"is deterministic per tree and reproduces under fast, balanced and deep. "+
+					"Measured on graphi's own tree: 136 of 1979 method declarations (6.9%) "+
+					"unreachable, 108 of them in engine/ingest. `references`, `imports` and "+
+					"`search` are unaffected. Record: docs/rc/link-002-clause-by-dir-recall.md. "+
+					"Workaround: where the receiver's type is import-qualified (`*shop.Cart`) the "+
+					"go/types type-checker resolves the call instead and the edge is `confirmed` "+
+					"— this holds under `-profile balanced` (the default) and `-profile deep`, "+
+					"but NOT under `-profile fast`, which skips the type-resolution pass.",
+				StatusInfo)
+		},
+	}
+}
 
 // checkFunc is a functional adapter for the Check interface.
 type checkFunc struct {
