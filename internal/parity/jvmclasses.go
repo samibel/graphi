@@ -484,7 +484,17 @@ func planJVMChangeImportShadowing(m *JVMModel) (*Mutation, error) {
 		declared := map[string]bool{}
 		for _, im := range f.Imports {
 			if im.OnDemand {
-				if onDemand == "" {
+				// A STATIC on-demand import (`import static a.b.C.*;`) imports
+				// MEMBERS, not types, so JLS 6.4.1's single-type-import
+				// shadowing rule — which is what this row is about — does not
+				// govern it. Accepting one would let the row run under the
+				// wrong semantics and publish a verdict about a rule it never
+				// exercised. Measured relevance: across the three pinned JVM
+				// repositories the ONLY Java wildcard import at all is guava's
+				// `import static java.util.stream.Collectors.*;`, so without
+				// this condition that single line would be the shadowing base
+				// for the entire corpus.
+				if !im.Static && onDemand == "" {
 					onDemand = im.Path
 				}
 				continue

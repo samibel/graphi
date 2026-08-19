@@ -5,7 +5,73 @@
 # of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
 # and yaml.Unmarshal read it, and it diffs one row per change.
 #
-# matrix_version: 3
+# matrix_version: 4
+#
+#                      BUMPED 3 -> 4 by W1.c (SW-176, WP-J7): every row gained
+#                      FOUR real-repository axis fields — real_repo_harness,
+#                      real_repo_store, real_repo_profile, real_repo_binder —
+#                      because this table now binds to a SECOND harness. Until
+#                      W1.c the only consumer was the hermetic twin in
+#                      engine/conformance; internal/parity/jvmclasses.go now
+#                      binds the same thirteen ids to real edits on the guava /
+#                      okio / kotlinx.serialization pins, and the two harnesses
+#                      run DIFFERENT axes. Publishing one set of `store` and
+#                      `profile` values for both would have been an overclaim
+#                      about whichever harness did not run that axis.
+#
+#                      READ THE FOUR NEW FIELDS AS FOLLOWS, and note that two of
+#                      them record a LIMIT rather than a capability:
+#
+#                        real_repo_harness  the file that plans the real edit.
+#                        real_repo_binder   off+on. The JVM declared-type binder
+#                                           is experimental and default-off
+#                                           (GRAPHI_JVM_TYPERESOLVE), so the
+#                                           real-repo matrix crosses it: the
+#                                           `off` cells are the shipped default
+#                                           and exercise NO binder code at all,
+#                                           the `on` cells are the only ones
+#                                           that do. Measured on okio at the
+#                                           pin: 6946 edges off vs 7259 on, of
+#                                           which 529 confirmed calls exist only
+#                                           with the binder on.
+#                        real_repo_profile  resolved-default+fast. THIS IS NOT
+#                                           THE `profile: both` ABOVE, and the
+#                                           difference is structural rather than
+#                                           a choice. parityProfiles() runs
+#                                           {ingest.New's ZERO VALUE, Balanced};
+#                                           the zero value is a LIBRARY entry
+#                                           point that no `graphi` invocation
+#                                           can produce, because
+#                                           core/profile.ResolveProfile maps
+#                                           "no flag, no env" to Balanced. A
+#                                           harness driving the BUILT BINARY
+#                                           therefore cannot reach it. The
+#                                           CLI-side pair that IS behaviourally
+#                                           distinct is {resolved default,
+#                                           fast}, and that is what ran.
+#                        real_repo_store    sqlite. A LIMIT, stated rather than
+#                                           quietly omitted: `store: both` above
+#                                           is true of the hermetic harness,
+#                                           which builds a MemStore in-process.
+#                                           The real-repo matrix cannot, IN
+#                                           PRINCIPLE — its incremental side is
+#                                           a SEPARATE PROCESS (`graphi sync`
+#                                           after `graphi rebuild`), and a
+#                                           MemStore does not survive process
+#                                           exit. No flag can change this; only
+#                                           a persistent second backend could.
+#
+#                      AND THE AXIS GUARD GAP BELOW (D-11) IS NOT CLOSED HERE.
+#                      D-11 records that this file's guard has no AXIS
+#                      direction, so `store: both` / `profile: both` are
+#                      unchecked claims about the hermetic harness. That is
+#                      still true and is still TEMPL-P4(a). What W1.c adds is an
+#                      AXIS guard for ITS OWN four fields only —
+#                      TestJVMMatrix_RealRepoAxisClaimsMatchWhatRuns in
+#                      internal/parity — which fails if jvmAxes() is narrowed
+#                      while these rows keep claiming the full crossing. A new
+#                      claim arrives with its guard; the pre-existing unguarded
+#                      claim is named, not inherited silently.
 #
 #                      BUMPED 2 -> 3 by W0.h (SW-170, ADR 0008 ruling D9): two
 #                      MIXED-LANGUAGE-DIRECTORY rows were added,
@@ -153,6 +219,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -169,6 +239,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -185,6 +259,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -201,6 +279,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -217,6 +299,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -233,6 +319,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -249,6 +339,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -265,6 +359,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -281,6 +379,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -297,6 +399,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -314,6 +420,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -330,6 +440,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -346,6 +460,10 @@ parity_classes:
     store: "both"
     profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""

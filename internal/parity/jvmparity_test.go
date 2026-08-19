@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/samibel/graphi/internal/corpus"
 	"github.com/samibel/graphi/internal/parityreport"
 )
@@ -82,6 +84,119 @@ func TestJVMClassTable_BindsToDeclaredMatrix(t *testing.T) {
 			}
 		}
 	})
+}
+
+// jvmYAMLRow is the subset of a docs/rc/parity-classes-jvm.yaml row that
+// carries the REAL-REPOSITORY axis claims W1.c added (matrix_version 4).
+type jvmYAMLRow struct {
+	ID              string `yaml:"id"`
+	HarnessRow      string `yaml:"harness_row"`
+	RealRepoHarness string `yaml:"real_repo_harness"`
+	RealRepoStore   string `yaml:"real_repo_store"`
+	RealRepoProfile string `yaml:"real_repo_profile"`
+	RealRepoBinder  string `yaml:"real_repo_binder"`
+}
+
+// TestJVMMatrix_RealRepoAxisClaimsMatchWhatRuns is the AXIS guard for the
+// claims this story publishes.
+//
+// WHAT IT IS AND IS NOT. docs/rc/parity-classes-jvm.yaml's own header (D-11)
+// records that this file's guard has NO axis direction, so its `store: both`
+// and `profile: both` claims — which describe the HERMETIC harness — are
+// unchecked. That gap is TEMPL-P4(a) and is NOT closed here; closing it means
+// changing engine/conformance, which is another story's surface. What this test
+// does is refuse to ADD a second unchecked claim: the four real_repo_* fields
+// W1.c introduces are bound to jvmAxes(), so narrowing the crossing while the
+// rows keep advertising it fails the build.
+//
+// The Go-side AXIS direction exists because review round 1 demonstrated exactly
+// that hole: removing the balanced entry from parityProfiles() left the package
+// green while 16 rows kept publishing "proven under both profiles".
+func TestJVMMatrix_RealRepoAxisClaimsMatchWhatRuns(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", ClassesPathJVM))
+	if err != nil {
+		t.Fatalf("read %s: %v", ClassesPathJVM, err)
+	}
+	var doc struct {
+		ParityClasses []jvmYAMLRow `yaml:"parity_classes"`
+	}
+	if err := yaml.Unmarshal(raw, &doc); err != nil {
+		t.Fatalf("parse %s: %v", ClassesPathJVM, err)
+	}
+	if len(doc.ParityClasses) == 0 {
+		t.Fatalf("%s declared no rows", ClassesPathJVM)
+	}
+
+	// Render what the harness ACTUALLY crosses, from jvmAxes() itself.
+	binders, profiles := map[string]bool{}, map[string]bool{}
+	for _, a := range jvmAxes() {
+		if a.Binder {
+			binders["on"] = true
+		} else {
+			binders["off"] = true
+		}
+		if a.Profile == "" {
+			profiles["resolved-default"] = true
+		} else {
+			profiles[a.Profile] = true
+		}
+	}
+	wantBinder := joinSortedSet(binders)
+	wantProfile := joinSortedSet(profiles)
+
+	// The store claim is a LIMIT and is asserted as a constant, because it is
+	// not a configuration: `graphi sync` is a separate process from
+	// `graphi rebuild`, so the incremental side must survive process exit and a
+	// MemStore cannot. A row claiming otherwise would be claiming an axis that
+	// is unreachable in principle.
+	const wantStore = "sqlite"
+	const wantHarness = "internal/parity/jvmclasses.go"
+
+	byID := JVMSpecByID()
+	for _, r := range doc.ParityClasses {
+		if r.HarnessRow == harnessDeferred {
+			continue
+		}
+		if _, planned := byID[r.ID]; !planned {
+			continue
+		}
+		if r.RealRepoHarness != wantHarness {
+			t.Errorf("%s: real_repo_harness = %q, want %q", r.ID, r.RealRepoHarness, wantHarness)
+		}
+		if r.RealRepoStore != wantStore {
+			t.Errorf("%s: real_repo_store = %q, want %q — the real-repo matrix's incremental side is a "+
+				"separate process, so MemStore is unreachable in principle and no row may claim it",
+				r.ID, r.RealRepoStore, wantStore)
+		}
+		if r.RealRepoBinder != wantBinder {
+			t.Errorf("AXIS: %s claims real_repo_binder %q while jvmAxes() actually crosses %q. "+
+				"A row that advertises an axis the harness no longer runs is the exact hole the Go-side "+
+				"AXIS direction was added to close.", r.ID, r.RealRepoBinder, wantBinder)
+		}
+		if r.RealRepoProfile != wantProfile {
+			t.Errorf("AXIS: %s claims real_repo_profile %q while jvmAxes() actually crosses %q.",
+				r.ID, r.RealRepoProfile, wantProfile)
+		}
+	}
+}
+
+// joinSortedSet renders a set as the "a+b" wire form the YAML rows use.
+func joinSortedSet(set map[string]bool) string {
+	keys := make([]string, 0, len(set))
+	for k := range set {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	// "off" must precede "on" and "resolved-default" precede "fast" in the
+	// rendered claim, so the rows read in the order the matrix runs rather than
+	// in an arbitrary one. Both orderings below are the declared ones.
+	switch strings.Join(keys, ",") {
+	case "off,on":
+		return "off+on"
+	case "fast,resolved-default":
+		return "resolved-default+fast"
+	}
+	return strings.Join(keys, "+")
 }
 
 // TestEnvJVMBinder_MatchesEngineSemantic is the drift guard on the one product
