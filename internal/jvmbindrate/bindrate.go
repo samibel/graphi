@@ -75,11 +75,52 @@
 //	kotlin enum_entry      `enum class E { A(1) }`
 //
 //	kotlin infix_expression    `a shl b`   — a call iff `infix fun`
-//	kotlin indexing_expression `a[i]`      — a call iff `operator fun get`
+//	kotlin indexing_suffix     `a[i]`      — a call iff `operator fun get`/`set`
+//	kotlin additive/multiplicative/prefix/postfix/equality/comparison/range/
+//	       check(`in`)/augmented-assignment       — the OPERATOR CONVENTION
 //
 // Excluded for symmetry: Java's `a + b` and `a[i]` are not call nodes either,
 // and the CST cannot tell a user-defined operator from a builtin. Counted, so
 // the size of this Kotlin-only residual is published.
+//
+// # The enumeration, because patching named defects is not a method
+//
+// The first draft's denominator was wrong six ways; a review then found a
+// SEVENTH (`indexing_expression` missing the write and interpolated forms) and
+// an EIGHTH (the operator family counted nowhere) — and both were the SAME
+// defect class as F1, the `call_suffix`/`call_expression` correction, recurring
+// in a sibling counter and in a whole family. Fixing the two that were named
+// would have left the method that missed them intact, so the node types are no
+// longer chosen by inspection. They are chosen against an ENUMERATION:
+//
+//	every named symbol in the embedded grammar   java 166, kotlin 198
+//	  (gts.Language.SymbolNames, filtered by SymbolMetadata.Named)
+//	× every one that OCCURS on the three pins    java 120, kotlin 141
+//	  → each classified into exactly one of four buckets, no residue:
+//
+//	  D  in the primary denominator      java   2   kotlin   1
+//	  W  a call, in WidestDenominator    java   2   kotlin  15
+//	  P  synthesized protocol, measured  java   2   kotlin   3
+//	     and in NO denominator
+//	  N  not a call, explicitly listed   java 114   kotlin 122
+//
+// The N bucket is an EXPLICIT list (grammar_enumeration.go), not a default.
+// That is the whole point: with a default, a grammar upgrade that adds a
+// call-bearing node type is classified as "not a call" by silence, which is
+// precisely how the first eight defects got in.
+// TestGrammarEnumeration_ClassifiesEveryOccurringNodeType walks the same symbol
+// table at test time and fails on any occurring node type in no bucket.
+//
+// 46 java and 57 kotlin named symbols never occur on the pins and are therefore
+// unclassified; the test does not require them, because classifying a node type
+// no corpus produces would be a guess recorded as a decision.
+//
+// What the enumeration does NOT cover, stated because it is the residual that
+// matters: it classifies node types, not TYPES. `a + b` is counted as an
+// operator-convention call whether `a` is an `Int` (an intrinsic, no callee) or
+// a `BigDecimal` (a real `plus` call). The CST cannot tell, so the family is
+// counted in the widest denominator and excluded from the primary one, and both
+// sizes are published rather than a split being invented.
 //
 //	java   method_reference     `A::stat`   — not an invocation
 //	kotlin callable_reference   `::stat`    — not an invocation
@@ -111,7 +152,9 @@
 package jvmbindrate
 
 import (
+	"fmt"
 	"path"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -120,6 +163,44 @@ import (
 
 	"github.com/samibel/graphi/engine/jvmresolve"
 )
+
+// operatorToken joins a node's ANONYMOUS children — its operator tokens — into
+// one string, so `a !in b` yields "!in" and is distinguishable from `a !is B`,
+// which yields "!is". The two share the node type `check_expression`, and only
+// the first is a call.
+//
+// It exists because the operator-convention family CANNOT be classified by node
+// type: `postfix_expression` is `inc`/`dec` for `++`/`--` and nothing at all for
+// `!!`; `equality_expression` is `equals` for `==` and referential identity for
+// `===`. Counting node types alone overcounts, measured, by more than half of
+// okio's postfix family.
+//
+// A named first child is returned in angle brackets: the Kotlin grammar admits
+// an annotation or a label as a prefix "operator" (`@Ann a`), which is not an
+// operator call. Anything else this walk does not recognise reaches
+// UnclassifiedOperator rather than being guessed into a bucket.
+func operatorToken(g *gts.Language, n *gts.Node) string {
+	var b strings.Builder
+	for i := 0; i < n.ChildCount(); i++ {
+		ch := n.Child(i)
+		if ch == nil {
+			continue
+		}
+		if !ch.IsNamed() {
+			// An anonymous node's type IS its literal token text, verified
+			// against the real grammar ("!", "in", "!!", "===").
+			b.WriteString(ch.Type(g))
+			continue
+		}
+		if i == 0 && b.Len() == 0 {
+			switch t := ch.Type(g); t {
+			case "annotation", "label":
+				return "<" + t + ">"
+			}
+		}
+	}
+	return b.String()
+}
 
 // CSTCounts is the parse-tree side of the fraction: every count here comes from
 // walking the CST and none of it from the binder.
@@ -148,11 +229,62 @@ type CSTCounts struct {
 	EnumConstantArgs       int // java  `enum E { A(1) }`
 	EnumEntryArgs          int // kotlin `enum class E { A(1) }`
 	InfixExpression        int // kotlin `a shl b` — a call only if `infix fun`
-	IndexingExpression     int // kotlin `a[i]` — a call only if `operator fun get`
+	IndexingSuffix         int // kotlin `a[i]` READ AND WRITE — see countInvocations
 	ObjectLiteral          int // kotlin `object : X { … }` — java's `new X(){…}` IS counted
 	MethodReference        int // java  `A::stat`
 	CallableReference      int // kotlin `::stat` — LOWER BOUND, see countInvocations
 	ArrayCreation          int // java  `new int[3]` — no callee
+
+	// ---- the Kotlin OPERATOR-CONVENTION family (SW-175 review, MAJOR-3) ----
+	//
+	// Every one of these denotes a call to a named operator function whenever
+	// the operand type declares one, exactly as `infix_expression` does. They
+	// were counted in NO bucket at all in the first draft — neither in the
+	// denominator nor among the published exclusions — while a quarter of the
+	// same family (infix + indexing) WAS published, which implied the
+	// published number was the whole of it. They are excluded from the primary
+	// denominator on the same Java-symmetry rule and counted here so the size
+	// of the Kotlin-only operator residual is visible.
+	//
+	// Each is discriminated BY ITS OPERATOR TOKEN, not by its node type,
+	// because several of these node types carry both a call and a non-call
+	// form. Counting the node type alone OVERCOUNTS — measured: `a!!` is a
+	// postfix_expression and is not a call, `a === b` is an equality_expression
+	// and is not `equals`.
+	AdditiveExpression       int // kotlin `a + b`  → plus / minus
+	MultiplicativeExpression int // kotlin `a * b`  → times / div / rem
+	PrefixExpression         int // kotlin `-a` `!a` `++a` → unaryMinus / not / inc
+	PostfixExpression        int // kotlin `a++`   → inc / dec        (NOT `a!!`)
+	EqualityExpression       int // kotlin `a == b` → equals          (NOT `a === b`)
+	ComparisonExpression     int // kotlin `a < b` → compareTo
+	RangeExpression          int // kotlin `a..b`  → rangeTo
+	ContainsExpression       int // kotlin `a in b`, `when { in 1..5 ->` → contains
+	AugmentedAssignment      int // kotlin `a += b` → plusAssign / plus (NOT plain `a = b`)
+
+	// ---- measured, and deliberately NOT counted as calls ----
+	//
+	// These are the forms the operator-token discrimination above REJECTS.
+	// They are published for the same reason the exclusions are: a rejection
+	// that is not counted is a place to hide a denominator choice.
+	NotNullAssertion    int // kotlin `a!!`     — a null check, no callee
+	ReferentialEquality int // kotlin `a === b` — identity, never `equals`
+	PlainAssignment     int // kotlin `a = b`   — not a call
+	TypeTest            int // kotlin `a is B`  — not a call
+	// UnclassifiedOperator is the grammar-drift guard: an operator token this
+	// walk does not recognise lands here rather than being silently dropped
+	// into either bucket. It should be 0; if it is not, the classification is
+	// stale and the published exclusion sizes are wrong.
+	UnclassifiedOperator int
+
+	// ---- SYNTHESIZED-PROTOCOL calls, both languages ----
+	//
+	// Calls the compiler synthesizes for a construct that NAMES NO CALLABLE in
+	// the source. They are measured for BOTH languages and added to NO
+	// denominator; see WidestDenominator for the line and why it falls here.
+	ForInLoops              int // kotlin `for (x in xs)` / java `for (X x : xs)` → iterator/hasNext/next
+	DestructuringComponents int // kotlin `val (a, b) = p` → component1(), component2()
+	DelegatedProperties     int // kotlin `val p by lazy {}` → getValue / setValue
+	TryWithResources        int // java `try (X x = …)` → close()
 }
 
 // Denominator is the published denominator: invocation expressions.
@@ -160,21 +292,84 @@ func (c CSTCounts) Denominator() int {
 	return c.MethodInvocation + c.ObjectCreation + c.CallSuffix
 }
 
-// WidestDenominator adds back every excluded construct that DOES invoke a
-// callable — constructor delegation in both languages, enum constant/entry
-// argument lists, and Kotlin's operator-shaped calls. It is published beside
-// the primary rate so the size of the denominator choice is visible rather
-// than trusted, and it is deliberately the most damning variant: nothing here
-// can make the published rate look better.
+// add folds one file's counts into a running total.
 //
-// Annotations and object literals stay out. An annotation is not a call, and an
-// object literal is a type declaration whose constructor call, where it has
-// one, is already counted as DelegationCtorCall.
+// Every field of CSTCounts is an int and every one accumulates the same way, so
+// this is done by reflection RATHER than by 30 hand-written `+=` lines. That is
+// not brevity for its own sake: the hand-written form has a silent failure mode
+// — add a counter to the struct, publish it, forget one `+=`, and the counter
+// reads 0 on every real corpus while every test that measures a single file
+// still passes. TestCSTCounts_AddIsExhaustive pins the property directly.
+func (c *CSTCounts) add(o CSTCounts) {
+	dst := reflect.ValueOf(c).Elem()
+	src := reflect.ValueOf(o)
+	for i := 0; i < dst.NumField(); i++ {
+		dst.Field(i).SetInt(dst.Field(i).Int() + src.Field(i).Int())
+	}
+}
+
+// OperatorConventionCalls is the Kotlin operator-convention family: every
+// construct that invokes a NAMED operator function when the operand type
+// declares one. `infix_expression` and the indexing suffix are part of the same
+// family and are added by WidestDenominator alongside it.
+func (c CSTCounts) OperatorConventionCalls() int {
+	return c.AdditiveExpression + c.MultiplicativeExpression +
+		c.PrefixExpression + c.PostfixExpression +
+		c.EqualityExpression + c.ComparisonExpression +
+		c.RangeExpression + c.ContainsExpression + c.AugmentedAssignment
+}
+
+// SynthesizedProtocolCalls is a LOWER BOUND on the calls a compiler synthesizes
+// for constructs that name no callable in the source. Each `for` loop implies at
+// least iterator() + hasNext() + next(); each delegated property at least
+// getValue(). It is measured for both languages and belongs to NO denominator —
+// see WidestDenominator.
+func (c CSTCounts) SynthesizedProtocolCalls() int {
+	return 3*c.ForInLoops + c.DestructuringComponents +
+		c.DelegatedProperties + c.TryWithResources
+}
+
+// WidestDenominator adds back every excluded construct that NAMES a callable:
+// constructor delegation in both languages, enum constant/entry argument lists,
+// and the whole Kotlin operator-convention family (OperatorConventionCalls plus
+// `infix_expression` and the indexing suffix). It is published beside the
+// primary rate so the size of the denominator choice is visible rather than
+// trusted.
+//
+// # Where this variant stops, stated rather than claimed
+//
+// An earlier draft called this "deliberately the most damning variant: nothing
+// here can make the published rate look better." That claim was FALSE and is
+// retracted: `indexing_expression` undercounted the indexing suffix by a third
+// (the write and interpolated forms parse to a bare suffix), and the entire
+// operator-convention family above was in no bucket at all — together ~4 100
+// sites on okio and ~2 200 on kotlinx, which SHRANK this denominator and RAISED
+// this rate. A superlative that has not been tested against an enumeration of
+// the grammar is exactly the kind of claim that defect hides behind, so it is
+// replaced by a stated line:
+//
+//	INCLUDED — every construct whose source text names a callable, whether or
+//	not the name is spelled out: `f()` spells it, `a + b` names `plus` through
+//	the operator convention, `A(1)` in `class A : B(1)` names B's constructor.
+//
+//	EXCLUDED — SynthesizedProtocolCalls: constructs whose source names no
+//	callable at all and for which the compiler invents the call. `for (x in xs)`
+//	writes no identifier that a binder could resolve, yet implies three calls.
+//	This line is drawn IDENTICALLY IN BOTH LANGUAGES — java's `for (X x : xs)`
+//	is the same construct and is excluded the same way, and its size (guava
+//	3 740 loops) is published beside Kotlin's, so the exclusion cannot flatter
+//	one language against the other. Their sizes are measured and published; they
+//	are not a residual anyone has to take on trust.
+//
+// Annotations and object literals also stay out. An annotation is not a call,
+// and an object literal is a type declaration whose constructor call, where it
+// has one, is already counted as DelegationCtorCall.
 func (c CSTCounts) WidestDenominator() int {
 	return c.Denominator() +
 		c.ExplicitCtorInvocation + c.CtorDelegationCall + c.DelegationCtorCall +
 		c.EnumConstantArgs + c.EnumEntryArgs +
-		c.InfixExpression + c.IndexingExpression
+		c.InfixExpression + c.IndexingSuffix +
+		c.OperatorConventionCalls()
 }
 
 // LanguageReport is one (corpus, language) measurement.
@@ -213,6 +408,62 @@ type LanguageReport struct {
 	// as the shipped walkers count it. The two emit_* counters are absent by
 	// construction (Phase C is not run here) and that is stated, not implied.
 	Skips map[string]int
+
+	// Clean and Dirty partition THIS SAME measurement by parse quality:
+	// Clean holds the files whose CST carries zero ERROR nodes, Dirty the rest.
+	// See ParseArm for why the split is sound and what it answers.
+	Clean ParseArm
+	Dirty ParseArm
+}
+
+// ParseArm is one half of the parse-quality partition — FINDING B-0's direction,
+// which an earlier draft declared "undetermined".
+//
+// # Why the split is sound, and what would have made it a confound
+//
+// The table is built ONCE over ALL files (Measure does this before either arm
+// exists), so both arms bind against an IDENTICAL index: a clean file that
+// references a type declared in a dirty file still resolves it. Rebuilding a
+// table per arm would have measured "how well does a corpus half bind itself",
+// which is a different and much easier question, and would have made the clean
+// arm look worse by starving it of types.
+//
+// The numerator is partitioned by TypedSite.FromFile and the denominator by the
+// same file's own ERROR-node count, so the two arms PARTITION the corpus and
+// reconstitute the published totals exactly. Measure asserts nothing here; the
+// reconstitution is asserted by TestParseArms_PartitionTheCorpus, because two
+// arms that quietly failed to sum would be a silent re-measurement rather than
+// a split.
+//
+// # What it establishes: the bias is anti-flattering
+//
+// A recovered tree destroys the NUMERATOR far faster than the denominator — the
+// binder cannot walk a body it cannot parse, while the CST still contributes
+// every invocation node the recovery left standing. So dirty parses DEPRESS the
+// published Kotlin rates rather than inflating them. "Undetermined" erred
+// against the product, which is the right direction to err, but it was an
+// incomplete measurement presented as an unavailable one.
+type ParseArm struct {
+	// Files in this arm, and the ERROR nodes they carry (0 for Clean by
+	// construction — it is the definition of the arm, and it is rendered so a
+	// reader can see the partition is on what it claims to be on).
+	Files           int
+	ParseErrorNodes int
+
+	// BoundCallSites over CallSites, each counted exactly as the whole-corpus
+	// figures are, restricted to this arm's files.
+	BoundCallSites int
+	CallSites      int
+}
+
+// Rate is this arm's bound call sites ÷ its CST call sites, in percent.
+// A zero denominator yields 0; callers that publish MUST test CallSites first,
+// because 0 of 0 is not 0 % (see LanguageReport.RateText).
+func (a ParseArm) Rate() float64 {
+	if a.CallSites == 0 {
+		return 0
+	}
+	return 100 * float64(a.BoundCallSites) / float64(a.CallSites)
 }
 
 // SkipTotal is the sum of the named-skip histogram.
@@ -244,6 +495,9 @@ func (r LanguageReport) Residual() int {
 
 // Rate is bound call sites ÷ CST call sites, in percent. Zero denominator
 // yields 0 rather than NaN so a report is always printable.
+//
+// A caller that PUBLISHES the rate must not use this number without testing the
+// denominator: 0 of 0 is not 0 %. Use RateText, which cannot make that mistake.
 func (r LanguageReport) Rate() float64 {
 	d := r.CST.Denominator()
 	if d == 0 {
@@ -259,6 +513,37 @@ func (r LanguageReport) WidestRate() float64 {
 		return 0
 	}
 	return 100 * float64(r.BoundCallSites) / float64(d)
+}
+
+// rateText is the ONE place that knows a rate over an empty denominator is not
+// a rate. `0 bound / 0 sites` is "this language has no call sites here", not
+// "this binder bound nothing", and printing 0.00 % for it states a failure that
+// did not happen.
+//
+// The published record has always written `n/a` for this case; the harness log
+// printed `RATE 0.00%`, and the CI step's own comment calls that log the place
+// "every published figure lands". The document and the log now agree because
+// they go through this function.
+func rateText(num, den int) string {
+	if den == 0 {
+		return fmt.Sprintf("n/a (%d/%d — no call sites at this scope)", num, den)
+	}
+	return fmt.Sprintf("%.2f%% = %d / %d", 100*float64(num)/float64(den), num, den)
+}
+
+// RateText is Rate rendered for publication — `n/a` on an empty denominator.
+func (r LanguageReport) RateText() string {
+	return rateText(r.BoundCallSites, r.CST.Denominator())
+}
+
+// WidestRateText is WidestRate rendered for publication.
+func (r LanguageReport) WidestRateText() string {
+	return rateText(r.BoundCallSites, r.CST.WidestDenominator())
+}
+
+// RateText is this arm's rate rendered for publication.
+func (a ParseArm) RateText() string {
+	return rateText(a.BoundCallSites, a.CallSites)
 }
 
 // SkipHistogram returns the named counters sorted by descending count, then by
@@ -371,26 +656,35 @@ func Measure(files map[string][]byte) map[string]LanguageReport {
 			}
 		}
 		sort.Strings(paths)
+		// dirty records, per file, whether its parse carried ERROR nodes, so
+		// the numerator can be partitioned the same way the denominator is.
+		dirty := map[string]bool{}
 		for _, p := range paths {
 			c := countInvocations(lang, files[p])
 			r.CST.Files++
-			r.CST.FilesWithParseErrors += c.FilesWithParseErrors
-			r.CST.ParseErrorNodes += c.ParseErrorNodes
-			r.CST.MethodInvocation += c.MethodInvocation
-			r.CST.ObjectCreation += c.ObjectCreation
-			r.CST.CallSuffix += c.CallSuffix
-			r.CST.ExplicitCtorInvocation += c.ExplicitCtorInvocation
-			r.CST.CtorDelegationCall += c.CtorDelegationCall
-			r.CST.DelegationCtorCall += c.DelegationCtorCall
-			r.CST.AnnotationCtorCall += c.AnnotationCtorCall
-			r.CST.EnumConstantArgs += c.EnumConstantArgs
-			r.CST.EnumEntryArgs += c.EnumEntryArgs
-			r.CST.InfixExpression += c.InfixExpression
-			r.CST.IndexingExpression += c.IndexingExpression
-			r.CST.ObjectLiteral += c.ObjectLiteral
-			r.CST.MethodReference += c.MethodReference
-			r.CST.CallableReference += c.CallableReference
-			r.CST.ArrayCreation += c.ArrayCreation
+			r.CST.add(c)
+
+			// The parse-quality partition (FINDING B-0). The denominator half
+			// is exact here; the numerator half is attributed below, once,
+			// from TypedSite.FromFile.
+			arm := &r.Clean
+			if c.FilesWithParseErrors > 0 {
+				dirty[p] = true
+				arm = &r.Dirty
+			}
+			arm.Files++
+			arm.ParseErrorNodes += c.ParseErrorNodes
+			arm.CallSites += c.Denominator()
+		}
+		for i := range sites {
+			if sites[i].Kind != jvmresolve.SiteCall {
+				continue
+			}
+			if dirty[sites[i].FromFile] {
+				r.Dirty.BoundCallSites++
+			} else {
+				r.Clean.BoundCallSites++
+			}
 		}
 		out[lang] = r
 	}
@@ -498,10 +792,142 @@ func countInvocations(lang string, src []byte) CSTCounts {
 			// `a + b` is not a call node either. Counted so the size of the
 			// Kotlin-only residual is published rather than absorbed.
 			c.InfixExpression++
-		case "indexing_expression":
-			// kotlin `a[i]` — a call iff `get` is an `operator fun`. Same
-			// reasoning; java's `a[i]` is array_access, never a call.
-			c.IndexingExpression++
+		case "indexing_suffix":
+			// kotlin `a[i]` — a call iff `get`/`set` is an `operator fun`.
+			//
+			// `indexing_suffix` — NOT `indexing_expression` — is the marker,
+			// and this is the SAME correction `call_suffix` made over
+			// `call_expression`, in the sibling counter. Measured against the
+			// real grammar:
+			//
+			//	a[i]      read   indexing_expression → indexing_suffix
+			//	a[i] = v  `set`  assignment → directly_assignable_expression →
+			//	                 indexing_suffix — NO indexing_expression node
+			//	a[i] += v same
+			//	"${a[i]}" read   interpolated_expression → indexing_suffix
+			//
+			// so counting the expression node missed every WRITE and every
+			// interpolated read: okio 269 counted / 133 missed (+49 %),
+			// kotlinx 274 / 113 (+41 %). The direction was FLATTERING —
+			// WidestDenominator includes it, so undercounting it raised the
+			// widest rate.
+			//
+			// The adjacent error is NOT present and was checked rather than
+			// assumed: a multi-dimensional read `a[i][j]` emits one suffix per
+			// dimension, and on both pins every indexing_expression carries
+			// exactly one suffix, so nothing is undercounted there.
+			c.IndexingSuffix++
+
+		// ---- the operator-convention family (MAJOR-3) ----
+		//
+		// Discriminated by OPERATOR TOKEN, never by node type alone: several of
+		// these node types carry a call form and a non-call form, and counting
+		// the node would overcount. Anything unrecognised lands in
+		// UnclassifiedOperator rather than in either bucket.
+		case "additive_expression":
+			c.AdditiveExpression++ // `+` / `-` → plus / minus
+		case "multiplicative_expression":
+			c.MultiplicativeExpression++ // `*` `/` `%` → times / div / rem
+		case "comparison_expression":
+			c.ComparisonExpression++ // `<` `>` `<=` `>=` → compareTo
+		case "range_expression":
+			c.RangeExpression++ // `a..b` → rangeTo
+		case "range_test":
+			// `when (x) { in 1..5 -> }` — the when-condition form of `in`, and
+			// a `contains` call exactly as the expression form is. Its inner
+			// `range_expression` is a separate rangeTo call and is counted
+			// separately above, which is correct: `in 1..5` is two calls.
+			c.ContainsExpression++
+		case "type_test":
+			c.TypeTest++ // `when (x) { is Foo -> }` — not a call
+		case "prefix_expression":
+			// `-a` `+a` `!a` `++a` `--a` → unaryMinus / unaryPlus / not / inc /
+			// dec. The grammar also admits an ANNOTATION or a LABEL as a prefix
+			// operator (`@Ann a`), which is not a call — measured, 2 on
+			// kotlinx — so the token is checked.
+			switch operatorToken(g, n) {
+			case "-", "+", "!", "++", "--":
+				c.PrefixExpression++
+			case "<annotation>", "<label>":
+				// not a call, and not an operator either
+			default:
+				c.UnclassifiedOperator++
+			}
+		case "postfix_expression":
+			// `a++` / `a--` → inc / dec. `a!!` is ALSO a postfix_expression and
+			// is NOT a call — it is a null assertion with no callee. It is the
+			// larger of the two on real code (okio 157 `!!` against 103
+			// inc/dec), so counting the node type would have overcounted this
+			// family by more than half on that pin.
+			switch operatorToken(g, n) {
+			case "++", "--":
+				c.PostfixExpression++
+			case "!!":
+				c.NotNullAssertion++
+			default:
+				c.UnclassifiedOperator++
+			}
+		case "equality_expression":
+			// `==` / `!=` → equals. `===` / `!==` are REFERENTIAL identity and
+			// call nothing; they share this node type and are separated by the
+			// token (okio 29, kotlinx 59).
+			switch operatorToken(g, n) {
+			case "==", "!=":
+				c.EqualityExpression++
+			case "===", "!==":
+				c.ReferentialEquality++
+			default:
+				c.UnclassifiedOperator++
+			}
+		case "check_expression":
+			// `a in b` / `a !in b` → contains. `a is B` / `a !is B` is a type
+			// test and calls nothing. One node type, both meanings.
+			switch operatorToken(g, n) {
+			case "in", "!in":
+				c.ContainsExpression++
+			case "is", "!is":
+				c.TypeTest++
+			default:
+				c.UnclassifiedOperator++
+			}
+		case "assignment":
+			// `a += b` → plusAssign (or plus + set); plain `a = b` is NOT a
+			// call and is counted separately so the split is visible.
+			//
+			// An INDEXED target (`a[i] = v`, `a[i] += v`) invokes `set`, and
+			// that call is already counted as the indexing_suffix under the
+			// directly_assignable_expression — counting it again here would
+			// double-count the exact sites MAJOR-2 was about.
+			switch operatorToken(g, n) {
+			case "=":
+				c.PlainAssignment++
+			case "+=", "-=", "*=", "/=", "%=":
+				c.AugmentedAssignment++
+			default:
+				c.UnclassifiedOperator++
+			}
+
+		// ---- synthesized protocol: measured, in no denominator ----
+		case "for_statement", "enhanced_for_statement":
+			// kotlin `for (x in xs)` and java `for (X x : xs)` are the SAME
+			// construct and are counted the same way, which is what keeps the
+			// exclusion from flattering one language against the other.
+			c.ForInLoops++
+		case "multi_variable_declaration":
+			// `val (a, b) = p` → component1(), component2(): one call per
+			// declared variable, so the variables are counted, not the node.
+			for i := 0; i < n.ChildCount(); i++ {
+				if ch := n.Child(i); ch != nil && ch.Type(g) == "variable_declaration" {
+					c.DestructuringComponents++
+				}
+			}
+		case "property_delegate":
+			c.DelegatedProperties++ // `by lazy {}` → getValue / setValue
+		case "resource":
+			// java try-with-resources → one close() PER RESOURCE, so the
+			// resource is counted rather than the statement (a statement may
+			// declare several). On guava the two coincide at 43.
+			c.TryWithResources++
 		case "object_literal":
 			// kotlin `object : X { … }`. Its java twin `new X(){…}` IS an
 			// object_creation_expression and IS in the denominator, so this is

@@ -210,11 +210,232 @@ fun m(h: H): String {
 		if r.CST.Denominator() != 0 {
 			t.Fatalf("denominator = %d, want 0 — excluded for symmetry with java", r.CST.Denominator())
 		}
-		if r.CST.InfixExpression != 1 || r.CST.IndexingExpression != 1 {
-			t.Fatalf("infix/indexing = %d/%d, want 1/1", r.CST.InfixExpression, r.CST.IndexingExpression)
+		if r.CST.InfixExpression != 1 || r.CST.IndexingSuffix != 1 {
+			t.Fatalf("infix/indexing = %d/%d, want 1/1", r.CST.InfixExpression, r.CST.IndexingSuffix)
 		}
 		if r.CST.WidestDenominator() != 2 {
 			t.Fatalf("widest = %d, want 2 — the widest variant must be able to make the rate look WORSE", r.CST.WidestDenominator())
+		}
+	})
+}
+
+// TestIndexingSuffix_CountsWritesAndInterpolations is the MAJOR-2 regression.
+//
+// The F1 defect — the Kotlin grammar's invocation marker is the SUFFIX node,
+// not the EXPRESSION node, because some contexts emit the suffix with no
+// enclosing expression — was fixed for calls (`call_suffix` over
+// `call_expression`) and NOT carried across to indexing. `a[i] = v` invokes
+// `operator fun set`, and it parses with NO `indexing_expression` node at all.
+//
+// Measured on the pins with the old marker: okio counted 269 and missed 133
+// (+49 %), kotlinx counted 274 and missed 113 (+41 %). The direction was
+// FLATTERING, because WidestDenominator includes the counter.
+func TestIndexingSuffix_CountsWritesAndInterpolations(t *testing.T) {
+	for _, tc := range []struct {
+		name, src string
+		want      int
+	}{
+		{"read", "fun m(a: X, i: Int) {\n    val v = a[i]\n}\n", 1},
+		// The three forms the old marker missed entirely.
+		{"indexed set", "fun m(a: X, i: Int, v: Int) {\n    a[i] = v\n}\n", 1},
+		{"indexed augmented assign", "fun m(a: X, i: Int, v: Int) {\n    a[i] += v\n}\n", 1},
+		{"inside a string template", "fun m(a: X, i: Int) {\n    val s = \"${a[i]}\"\n}\n", 1},
+		// The ADJACENT error, checked rather than assumed: a multi-dimensional
+		// read emits one suffix PER DIMENSION, so nothing is undercounted here
+		// and the fix must not "correct" it.
+		{"multi-dimensional read is two suffixes", "fun m(a: X, i: Int, j: Int) {\n    val v = a[i][j]\n}\n", 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := measureOne(t, "a.kt", tc.src)["kotlin"]
+			if r.CST.ParseErrorNodes != 0 {
+				t.Fatalf("fixture parses with %d ERROR nodes — it is measuring a recovered tree", r.CST.ParseErrorNodes)
+			}
+			if r.CST.IndexingSuffix != tc.want {
+				t.Fatalf("indexing_suffix = %d, want %d", r.CST.IndexingSuffix, tc.want)
+			}
+			// It must stay OUT of the primary denominator (symmetry with java's
+			// array_access) and IN the widest one.
+			if r.CST.Denominator() != 0 {
+				t.Fatalf("primary denominator = %d, want 0 — indexing is excluded for symmetry with java", r.CST.Denominator())
+			}
+			if r.CST.WidestDenominator() < tc.want {
+				t.Fatalf("widest = %d, want >= %d", r.CST.WidestDenominator(), tc.want)
+			}
+		})
+	}
+
+	t.Run("an indexed assignment is counted ONCE, not twice", func(t *testing.T) {
+		// `a[i] = v` is one `set` call. It is counted as the indexing suffix;
+		// the enclosing `assignment` must NOT also count it, or the exact sites
+		// MAJOR-2 was about would be double-counted by the MAJOR-3 fix.
+		r := measureOne(t, "a.kt", "fun m(a: X, i: Int, v: Int) {\n    a[i] = v\n}\n")["kotlin"]
+		if r.CST.IndexingSuffix != 1 || r.CST.AugmentedAssignment != 0 || r.CST.PlainAssignment != 1 {
+			t.Fatalf("indexing_suffix/augmented/plain = %d/%d/%d, want 1/0/1",
+				r.CST.IndexingSuffix, r.CST.AugmentedAssignment, r.CST.PlainAssignment)
+		}
+		if r.CST.WidestDenominator() != 1 {
+			t.Fatalf("widest = %d, want 1 — one `set` call, counted once", r.CST.WidestDenominator())
+		}
+	})
+}
+
+// TestOperatorConvention_IsCountedAndDiscriminated is the MAJOR-3 regression.
+//
+// The whole operator-convention family was counted in NO bucket — neither in
+// the denominator nor among the published exclusions — while `infix_expression`
+// and indexing WERE published, which implied the published figure was the whole
+// Kotlin-only operator residual. It is roughly four times larger: ~4 135 on okio
+// and ~2 214 on kotlinx against the ~944 / ~1 071 that were published.
+//
+// It also pins the DISCRIMINATION, which is why the family cannot be counted by
+// node type: three of these node types carry a non-call form under the same
+// name, and counting the node would overcount okio's postfix family by more than
+// half (157 `!!` against 103 real inc/dec).
+func TestOperatorConvention_IsCountedAndDiscriminated(t *testing.T) {
+	calls := []struct {
+		name, expr string
+		get        func(jvmbindrate.CSTCounts) int
+	}{
+		{"additive → plus", "a + b", func(c jvmbindrate.CSTCounts) int { return c.AdditiveExpression }},
+		{"multiplicative → times", "a * b", func(c jvmbindrate.CSTCounts) int { return c.MultiplicativeExpression }},
+		{"prefix → unaryMinus", "-a", func(c jvmbindrate.CSTCounts) int { return c.PrefixExpression }},
+		{"prefix → not", "!a", func(c jvmbindrate.CSTCounts) int { return c.PrefixExpression }},
+		{"postfix → inc", "a++", func(c jvmbindrate.CSTCounts) int { return c.PostfixExpression }},
+		{"equality → equals", "a == b", func(c jvmbindrate.CSTCounts) int { return c.EqualityExpression }},
+		{"comparison → compareTo", "a < b", func(c jvmbindrate.CSTCounts) int { return c.ComparisonExpression }},
+		{"range → rangeTo", "a..b", func(c jvmbindrate.CSTCounts) int { return c.RangeExpression }},
+		{"check → contains", "a in b", func(c jvmbindrate.CSTCounts) int { return c.ContainsExpression }},
+	}
+	for _, tc := range calls {
+		t.Run(tc.name, func(t *testing.T) {
+			r := measureOne(t, "a.kt", "fun m() {\n    val z = "+tc.expr+"\n}\n")["kotlin"]
+			if r.CST.ParseErrorNodes != 0 {
+				t.Fatalf("fixture parses with %d ERROR nodes", r.CST.ParseErrorNodes)
+			}
+			if got := tc.get(r.CST); got != 1 {
+				t.Fatalf("counter = %d, want 1 for %q", got, tc.expr)
+			}
+			if r.CST.UnclassifiedOperator != 0 {
+				t.Fatalf("UnclassifiedOperator = %d — the operator token is not recognised", r.CST.UnclassifiedOperator)
+			}
+			// Excluded from the primary denominator (java symmetry), present in
+			// the widest one — so the family can only make the rate look WORSE.
+			if r.CST.Denominator() != 0 {
+				t.Fatalf("primary denominator = %d, want 0", r.CST.Denominator())
+			}
+			if r.CST.WidestDenominator() != 1 {
+				t.Fatalf("widest = %d, want 1", r.CST.WidestDenominator())
+			}
+		})
+	}
+
+	// The non-calls that share these node types. Counting the node type alone
+	// would have swept every one of them into the denominator.
+	notCalls := []struct {
+		name, src string
+		get       func(jvmbindrate.CSTCounts) int
+	}{
+		{"`a!!` is a null assertion, not inc/dec", "fun m() {\n    val z = a!!\n}\n",
+			func(c jvmbindrate.CSTCounts) int { return c.NotNullAssertion }},
+		{"`a === b` is identity, not equals", "fun m() {\n    val z = a === b\n}\n",
+			func(c jvmbindrate.CSTCounts) int { return c.ReferentialEquality }},
+		{"`a is B` is a type test, not contains", "fun m() {\n    val z = a is B\n}\n",
+			func(c jvmbindrate.CSTCounts) int { return c.TypeTest }},
+		{"plain `a = b` is not a call", "fun m() {\n    a = b\n}\n",
+			func(c jvmbindrate.CSTCounts) int { return c.PlainAssignment }},
+	}
+	for _, tc := range notCalls {
+		t.Run(tc.name, func(t *testing.T) {
+			r := measureOne(t, "a.kt", tc.src)["kotlin"]
+			if got := tc.get(r.CST); got != 1 {
+				t.Fatalf("counter = %d, want 1", got)
+			}
+			if r.CST.OperatorConventionCalls() != 0 {
+				t.Fatalf("operator-convention calls = %d, want 0 — a non-call reached a call counter",
+					r.CST.OperatorConventionCalls())
+			}
+			if r.CST.WidestDenominator() != 0 {
+				t.Fatalf("widest = %d, want 0 — this construct calls nothing", r.CST.WidestDenominator())
+			}
+		})
+	}
+
+	t.Run("augmented assignment is a call, plain assignment is not", func(t *testing.T) {
+		r := measureOne(t, "a.kt", "fun m() {\n    a += b\n    c = d\n}\n")["kotlin"]
+		if r.CST.AugmentedAssignment != 1 || r.CST.PlainAssignment != 1 {
+			t.Fatalf("augmented/plain = %d/%d, want 1/1", r.CST.AugmentedAssignment, r.CST.PlainAssignment)
+		}
+		if r.CST.WidestDenominator() != 1 {
+			t.Fatalf("widest = %d, want 1", r.CST.WidestDenominator())
+		}
+	})
+}
+
+// TestSynthesizedProtocol_IsMeasuredInBothLanguagesAndInNoDenominator pins the
+// line WidestDenominator stops at, and pins it SYMMETRICALLY.
+//
+// An earlier draft claimed the widest denominator was "deliberately the most
+// damning variant: nothing here can make the published rate look better". That
+// claim was false — it was missing a third of the indexing suffixes and the
+// entire operator family. The replacement is not another superlative: it is a
+// stated line (a construct whose source NAMES a callable is in; one where the
+// compiler invents the call is out) plus the measured size of what the line
+// excludes, in BOTH languages, so the exclusion cannot flatter one against the
+// other.
+func TestSynthesizedProtocol_IsMeasuredInBothLanguagesAndInNoDenominator(t *testing.T) {
+	t.Run("the for-in protocol is excluded identically in java and kotlin", func(t *testing.T) {
+		k := measureOne(t, "a.kt", "fun m(xs: List<Int>) {\n    for (x in xs) {\n        f()\n    }\n}\n")["kotlin"]
+		j := measureOne(t, "A.java", "class A { void m(java.util.List<String> xs) { for (String x : xs) { f(); } } }\n")["java"]
+		if k.CST.ForInLoops != 1 || j.CST.ForInLoops != 1 {
+			t.Fatalf("for-in loops kotlin/java = %d/%d, want 1/1 — the same construct must be counted the same way",
+				k.CST.ForInLoops, j.CST.ForInLoops)
+		}
+		// Each loop implies at least iterator() + hasNext() + next().
+		if k.CST.SynthesizedProtocolCalls() != 3 || j.CST.SynthesizedProtocolCalls() != 3 {
+			t.Fatalf("synthesized calls kotlin/java = %d/%d, want 3/3",
+				k.CST.SynthesizedProtocolCalls(), j.CST.SynthesizedProtocolCalls())
+		}
+		// The loop contributes NOTHING to either denominator; only the `f()`
+		// written in the body does.
+		if k.CST.Denominator() != 1 || j.CST.Denominator() != 1 {
+			t.Fatalf("denominator kotlin/java = %d/%d, want 1/1 (the body's f() only)",
+				k.CST.Denominator(), j.CST.Denominator())
+		}
+		if k.CST.WidestDenominator() != 1 || j.CST.WidestDenominator() != 1 {
+			t.Fatalf("widest kotlin/java = %d/%d, want 1/1 — a synthesized call is in NO denominator",
+				k.CST.WidestDenominator(), j.CST.WidestDenominator())
+		}
+	})
+
+	t.Run("destructuring counts one componentN per declared variable", func(t *testing.T) {
+		r := measureOne(t, "a.kt", "fun m(p: Pair<Int, Int>) {\n    val (a, b) = p\n}\n")["kotlin"]
+		if r.CST.DestructuringComponents != 2 {
+			t.Fatalf("components = %d, want 2 — one per variable, not one per declaration", r.CST.DestructuringComponents)
+		}
+		if r.CST.WidestDenominator() != 0 {
+			t.Fatalf("widest = %d, want 0", r.CST.WidestDenominator())
+		}
+	})
+
+	t.Run("a delegated property is measured, and its `by` expression is still a real call", func(t *testing.T) {
+		r := measureOne(t, "a.kt", "val p: Int by lazy { 1 }\n")["kotlin"]
+		if r.CST.DelegatedProperties != 1 {
+			t.Fatalf("delegated properties = %d, want 1", r.CST.DelegatedProperties)
+		}
+		// `lazy { 1 }` IS written in the source and IS a call site.
+		if r.CST.Denominator() != 1 {
+			t.Fatalf("denominator = %d, want 1 — `lazy {}` is a written call", r.CST.Denominator())
+		}
+	})
+
+	t.Run("java try-with-resources counts one close() per resource", func(t *testing.T) {
+		r := measureOne(t, "A.java", "class A { void m() throws Exception { try (X x = open(); Y y = open2()) { } } }\n")["java"]
+		if r.CST.TryWithResources != 2 {
+			t.Fatalf("resources = %d, want 2 — one close() per resource, not per statement", r.CST.TryWithResources)
+		}
+		// The two initialisers are written calls and stay in the denominator.
+		if r.CST.Denominator() != 2 {
+			t.Fatalf("denominator = %d, want 2", r.CST.Denominator())
 		}
 	})
 }
@@ -628,5 +849,102 @@ func TestNumeratorIsTheShippedBinder(t *testing.T) {
 	}
 	if r.SkipTotal() != 0 {
 		t.Fatalf("histogram = %v, want empty", r.Skips)
+	}
+}
+
+// TestParseArms_PartitionTheCorpus is FINDING B-0's direction, made measurable.
+//
+// The first draft declared the bias direction of Kotlin's 10–13 % dirty parses
+// "undetermined — both sides of the fraction shrink". That was honest in intent
+// and erred against the product, but it was an INCOMPLETE measurement presented
+// as an unavailable one: determining the direction never required knowing what
+// the grammar dropped, only comparing the two subpopulations.
+//
+// The property that makes the split a split rather than a second measurement is
+// asserted here: the arms must PARTITION. Files, numerator and denominator must
+// each reconstitute the published whole-corpus totals exactly. An arm that
+// silently rebuilt its own table, or double-counted a file, or lost the sites of
+// a file whose path key did not match, would fail this rather than quietly
+// publishing two numbers that do not add up.
+func TestParseArms_PartitionTheCorpus(t *testing.T) {
+	// One clean file and one file the Kotlin grammar cannot parse cleanly. The
+	// dirty file's calls still reach the DENOMINATOR (tree-sitter recovers), so
+	// this fixture also demonstrates the mechanism itself.
+	files := map[string][]byte{
+		"clean.kt": []byte("package p\n\nclass Clean {\n    fun a(): Int = b()\n    fun b(): Int = 1\n}\n"),
+		"dirty.kt": []byte("package p\n\nclass Dirty { fun a() { alpha(); beta(); gamma(\n"),
+	}
+	r := jvmbindrate.Measure(files)["kotlin"]
+
+	if r.Clean.Files+r.Dirty.Files != r.CST.Files {
+		t.Fatalf("arm files %d + %d != %d total — the arms do not partition the corpus",
+			r.Clean.Files, r.Dirty.Files, r.CST.Files)
+	}
+	if r.Clean.CallSites+r.Dirty.CallSites != r.CST.Denominator() {
+		t.Fatalf("arm call sites %d + %d != %d denominator — the split re-measured instead of partitioning",
+			r.Clean.CallSites, r.Dirty.CallSites, r.CST.Denominator())
+	}
+	if r.Clean.BoundCallSites+r.Dirty.BoundCallSites != r.BoundCallSites {
+		t.Fatalf("arm bound %d + %d != %d numerator — sites were lost attributing them to a file",
+			r.Clean.BoundCallSites, r.Dirty.BoundCallSites, r.BoundCallSites)
+	}
+
+	// The arms must actually be non-trivial, or the assertions above are
+	// satisfied by an empty partition.
+	if r.Clean.Files == 0 || r.Dirty.Files == 0 {
+		t.Fatalf("clean/dirty files = %d/%d — the fixture no longer produces both arms",
+			r.Clean.Files, r.Dirty.Files)
+	}
+	if r.Dirty.ParseErrorNodes == 0 {
+		t.Fatal("the dirty arm carries no ERROR nodes — the fixture no longer demonstrates a recovered parse")
+	}
+	if r.Clean.ParseErrorNodes != 0 {
+		t.Fatalf("the CLEAN arm carries %d ERROR nodes — the partition is not on what it claims to be on",
+			r.Clean.ParseErrorNodes)
+	}
+
+	// The mechanism: the recovered file still contributes a denominator. That
+	// is precisely why a dirty parse DEPRESSES the rate instead of hiding it.
+	if r.Dirty.CallSites == 0 {
+		t.Fatal("the dirty arm contributes no denominator — then dirty parses could not depress the rate, and the finding would not hold")
+	}
+	t.Logf("clean %d files → %s | dirty %d files (%d ERROR nodes) → %s",
+		r.Clean.Files, r.Clean.RateText(),
+		r.Dirty.Files, r.Dirty.ParseErrorNodes, r.Dirty.RateText())
+}
+
+// TestRateText_SaysNotApplicableForAnEmptyDenominator is MINOR-6.
+//
+// The discipline held in the published document (§7.2 writes `n/a`, §11.8 says
+// "0 of 0 is not 0 %") and failed in the harness's own log, which printed
+// `RATE 0.00% = 0 bound call sites / 0 CST call sites` for a language with no
+// sources at a scope. The CI step's comment calls that log the place "every
+// published figure lands", so the log contradicted the document on the exact
+// case the story singled out. Both now go through rateText.
+func TestRateText_SaysNotApplicableForAnEmptyDenominator(t *testing.T) {
+	// A Kotlin-only corpus: the java report exists and has no call sites at all.
+	r := jvmbindrate.Measure(map[string][]byte{
+		"a.kt": []byte("package p\n\nfun m(): Int = f()\n\nfun f(): Int = 1\n"),
+	})["java"]
+
+	if r.CST.Denominator() != 0 {
+		t.Fatalf("java denominator = %d, want 0 — the fixture no longer produces the 0/0 case", r.CST.Denominator())
+	}
+	if got := r.RateText(); !strings.Contains(got, "n/a") {
+		t.Fatalf("RateText() = %q, want it to say n/a — 0 of 0 is not 0 %%, and a log that says 0.00%% states a failure that did not happen", got)
+	}
+	if got := r.WidestRateText(); !strings.Contains(got, "n/a") {
+		t.Fatalf("WidestRateText() = %q, want n/a", got)
+	}
+	if got := (jvmbindrate.ParseArm{}).RateText(); !strings.Contains(got, "n/a") {
+		t.Fatalf("ParseArm.RateText() = %q, want n/a", got)
+	}
+
+	// And a real rate must still render as a rate.
+	k := jvmbindrate.Measure(map[string][]byte{
+		"a.kt": []byte("package p\n\nfun m(): Int = f()\n\nfun f(): Int = 1\n"),
+	})["kotlin"]
+	if got := k.RateText(); strings.Contains(got, "n/a") || !strings.Contains(got, "%") {
+		t.Fatalf("kotlin RateText() = %q, want a real percentage", got)
 	}
 }

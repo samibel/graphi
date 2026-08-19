@@ -123,9 +123,20 @@ jobs:
       # binding rate needs no compiler and covers all 3 204 at the pin. It uses
       # GRAPHI_JVM_CORPUS_PINS only — no classpath, no JDK, no kotlinc.
       #
+      # It rides the same clones SAFELY, which it did not always: the step above
+      # is a COMPILE, and a compile leaves gitignored generated sources behind.
+      # An earlier draft of this harness enumerated sources by walking the
+      # filesystem, so 16 gradle-generated .java files were enough to move
+      # okio's Java figures 16.07% -> 12.72% with the sha assertion still green.
+      # It now enumerates from `git ls-tree -r HEAD`, asserts the pin's TREE sha
+      # as well as its commit, and refuses to measure a checkout with modified
+      # tracked files — so the ordering of these two steps can no longer change
+      # a published number. See docs/rc/jvm-binding-rate.md §2.1.
+      #
       # -v so every published figure lands in the log: the rate, its numerator
-      # and denominator, every named exclusion with its size, the full skip
-      # histogram and the residual the histogram does not account for.
+      # and denominator, every named exclusion with its size, the operator
+      # convention family, the synthesized-protocol sizes, the clean/dirty parse
+      # split, the full skip histogram and the residual it does not account for.
       - name: real-pin call-site binding rate and skip histogram (W1.b)
         env:
           GRAPHI_JVM_CORPUS_PINS: /tmp/pins

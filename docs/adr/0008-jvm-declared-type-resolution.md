@@ -270,9 +270,12 @@ and never derived from the binder:
    when it dropped the ≥50 % recall threshold. It is additionally **not
    reproducible from this tree**: today's binder yields 3 433 typed sites on
    that pin (2 949 call + 484 value), 84 fewer. Recorded, not reconciled.
-2. **There is no single Kotlin number.** 19.22 % and 3.47 % are the same binder,
+2. **There is no single Kotlin number.** 19.16 % and 3.47 % are the same binder,
    the same method, two real corpora — a 5.5× spread, wider than the gap
-   between the languages. Averaging them would hide the finding.
+   between the languages. Averaging them would hide the finding. **The spread
+   survives the parse correction in (6) and widens to 5.9×** (21.15 % against
+   3.56 % over cleanly-parsed files only), so it is a real property of the binder
+   meeting two codebases and not a measurement artefact.
 3. **The scope dominates the language.** guava reads 0.13 % or 21.39 % depending
    only on whether the measurement sees one flavour of the monorepo or both,
    because `tabledType` abandons a whole body walk on a colliding FQN.
@@ -286,14 +289,27 @@ and never derived from the binder:
    under `kotlin_bytecode_shape_unproven`) and okio's at none at all. JVMSOUND-003
    and JVMSOUND-004 are open, reproduced, unfixed wrong-confirmed-edge defects.
    **A high binding rate is not evidence of a correct one.**
-6. **The Kotlin figures rest on dirtier parses than the Java ones.** The embedded
+6. **The Kotlin figures rest on dirtier parses than the Java ones, and that
+   difference does most of the work of the Java/Kotlin gap.** The embedded
    tree-sitter Kotlin grammar leaves `ERROR` nodes in **80 of 609**
    kotlinx.serialization files (13.1 %) and 28 of 284 okio files, against **0 of
-   621** for guava's JRE module. tree-sitter recovers rather than failing, so
-   both sides of the fraction lose sites in a ratio nothing measures; the bias
-   direction is **undetermined** and no correction was applied. This is a
-   measurement-quality asymmetry on top of the evidence asymmetry in (5), and it
-   points the same way.
+   621** for guava's JRE module. tree-sitter recovers rather than failing, so a
+   recovered file still contributes a full denominator while the binder can no
+   longer walk its bodies. **The bias direction is measured, and it is
+   anti-flattering: dirty parses DEPRESS the Kotlin rates.** The dirty arm binds
+   41 of 1 640 sites on kotlinx and **0 of 498** on okio — and 0 of 1 896 on
+   guava's own dirty arm, so the mechanism is parse quality, not language.
+
+   **Over cleanly-parsed files only, kotlinx.serialization binds at 21.15 %
+   against guava/src's 21.39 %.** A D2 ruling that treats the published
+   19.16 %/21.39 % difference as evidence about the *Kotlin binder* would be
+   ruling on a property of the vendored grammar. The 5.5× intra-Kotlin spread in
+   (2) is the finding that survives.
+
+   An earlier version of this amendment recorded the direction as
+   **"undetermined"**. That was an incomplete measurement presented as an
+   unavailable one; it is retracted and replaced by the split above, which is
+   published in full in §4.1 of the record.
 
 ## Rejected alternatives (recorded, not silently omitted)
 

@@ -21,20 +21,34 @@ The published Java figure is **21.39 %** — 6 065 bound call sites out of 28 35
 CST call sites, on guava's JRE module, over a parse with **zero** recovery
 errors. The published Kotlin figures are **19.16 %** (kotlinx.serialization) and
 **3.47 %** (okio), and both carry a caveat Java's do not: **the Kotlin grammar
-fails to parse 13.1 % and 9.9 % of their files cleanly** (§4), so those two
-figures are less trustworthy than their digits suggest. Every rate here is a
-*Phase B* rate; fewer than half of guava's bound Java sites survive into the
-graph as confirmed edges, and the product-visible Java figure is **9.80 %**
-(§8). The **skip histogram does not account for the unbound remainder** and
-cannot — §6 measures why. The largest single effect is in §5: **pointing graphi
-at the guava repository as checked out yields 0.13 %**, and the named skip
-vocabulary reports 2.6 % of the loss.
+fails to parse 13.1 % and 9.9 % of their files cleanly** (§4). That caveat now
+has a **measured direction**: dirty parses *depress* the Kotlin rates, and over
+cleanly-parsed files only, kotlinx binds at **21.15 %** against guava/src's
+**21.39 %** — so **the headline Java/Kotlin gap is almost entirely a parse
+artefact** (§8.0). What survives is the **5.9× spread between the two Kotlin
+corpora** (§8.1), which is real. Every rate here is a *Phase B* rate; fewer than
+half of guava's bound Java sites survive into the graph as confirmed edges, and
+the product-visible Java figure is **9.80 %** (§9). The **skip histogram does not
+account for the unbound remainder** and cannot — §6 measures why. The largest
+single effect is in §5: **pointing graphi at the guava repository as checked out
+yields 0.13 %**, and the named skip vocabulary reports 2.6 % of the loss.
 
-**This document is a second draft.** The first was adversarially reviewed, and
-the review found six errors in the denominator itself — one of which silently
-dropped every Kotlin call written inside a string template. All six were
-reproduced first-hand and fixed before publication; §3 records them, because a
-denominator's error history is part of its evidence.
+**This document is a third draft, and its error history is part of its
+evidence.** Two independent adversarial reviews have now attacked the
+denominator. The first found six errors — one silently dropped every Kotlin call
+written inside a string template. The second found **three more**, two of them
+(F8, F9) the *same defect class as the first round's largest*, recurring in a
+sibling counter and in an entire uncounted family. §3 records all nine. The
+response to the second round was not to patch the two node types that were named:
+§1.5 replaces inspection with an **enumeration of both grammars' full symbol
+tables**, tested on every run, because a defect class that recurs after being
+fixed once is a missing method rather than a missing line.
+
+**No headline rate has moved across either round.** All four reproduce to the
+digit. What moved is the *widest* denominator (okio 3.28 % → **2.74 %**, kotlinx
+17.24 % → **15.28 %**), two published exclusion sizes that were understated by
+~45 %, and a false claim that the widest variant was "the most damning" — now
+retracted and replaced by a stated line (§1.3).
 
 ---
 
@@ -86,9 +100,9 @@ reason, to the digit.
 
 ### 1.3 Every exclusion, named with its size
 
-An exclusion whose size is not published is a place to hide a bad rate. All
-twelve are tallied on every run and printed beside the rate. They split into two
-groups, and the split matters.
+An exclusion whose size is not published is a place to hide a bad rate. Every one
+is tallied on every run and printed beside the rate. They split into **three**
+groups, and the split is where the second review found two defects (§3, F8/F9).
 
 **Excluded but genuinely a call** — `WidestDenominator()` adds all of these back,
 so the widest variant can only ever make a rate look **worse**:
@@ -101,7 +115,28 @@ so the widest variant can only ever make a rate look **worse**:
 | `enum_constant` — `enum E { A(1) }` | java | invokes `E(int)`, emits no call node |
 | `enum_entry` — `enum class E { A(1) }` | kotlin | same |
 | `infix_expression` — `a shl b` | kotlin | a call **iff** `shl` is a user-declared `infix fun`, which the CST cannot tell; Java's `a + b` is not a call node either |
-| `indexing_expression` — `a[i]` | kotlin | a call **iff** `get` is an `operator fun`; Java's `a[i]` is `array_access` |
+| `indexing_suffix` — `a[i]`, `a[i] = v`, `"${a[i]}"` | kotlin | a call **iff** `get`/`set` is an `operator fun`; Java's `a[i]` is `array_access`. **The marker is the SUFFIX, not `indexing_expression`** — §3, F8 |
+| `additive_expression` — `a + b` | kotlin | → `plus` / `minus` |
+| `multiplicative_expression` — `a * b` | kotlin | → `times` / `div` / `rem` |
+| `prefix_expression` — `-a`, `!a` | kotlin | → `unaryMinus` / `not` / `inc` / `dec` |
+| `postfix_expression` — `a++` | kotlin | → `inc` / `dec`. **`a!!` is the same node type and is not a call** |
+| `equality_expression` — `a == b` | kotlin | → `equals`. **`a === b` is the same node type and is not a call** |
+| `comparison_expression` — `a < b` | kotlin | → `compareTo` |
+| `range_expression` — `a..b` | kotlin | → `rangeTo` |
+| `check_expression` / `range_test` — `a in b` | kotlin | → `contains`. **`a is B` is the same node type and is not a call** |
+| augmented `assignment` — `a += b` | kotlin | → `plusAssign`. **Plain `a = b` is the same node type and is not a call** |
+
+The nine rows below `indexing_suffix` are the **operator-convention family**, and
+they were counted in **no bucket at all** until the second review (§3, F9) —
+neither in the denominator nor among the published exclusions, while a quarter of
+the same family (`infix` + indexing) *was* published, which implied the published
+figure was the whole Kotlin-only operator residual. It is roughly four times
+larger. They are excluded on the same Java-symmetry rule and now counted.
+
+Each is discriminated **by its operator token, never by its node type**, because
+three of these node types carry a non-call form under the same name. Counting the
+node type would overcount okio's postfix family by more than half (157 `!!`
+against 103 real `inc`/`dec`).
 
 **Excluded and not a call at all** — never added back:
 
@@ -112,6 +147,43 @@ so the widest variant can only ever make a rate look **worse**:
 | `method_reference` — `A::stat` | java | creates a function value; the call happens elsewhere |
 | `callable_reference` — `::stat` | kotlin | same — **and a lower bound**, see §3, F7 |
 | `array_creation_expression` — `new int[3]` | java | no callee |
+| `a!!` (`postfix_expression`) | kotlin | a null assertion; no callee. **okio 157, kotlinx 43** |
+| `a === b` (`equality_expression`) | kotlin | referential identity; never `equals`. **okio 29, kotlinx 59** |
+| `a = b` (plain `assignment`) | kotlin | not a call. **okio 704, kotlinx 672** |
+| `a is B` (`check_expression` / `type_test`) | kotlin | a type test. **okio 50, kotlinx 167** |
+
+Those four are the forms the operator-token discrimination **rejects**. They are
+published for the same reason the exclusions are: a rejection that is not counted
+is a place to hide a denominator choice — and in this case, the choice that makes
+this document's operator-family figures *smaller* than the review's (§3, F9).
+
+**Excluded because the source names no callable at all** — the
+**synthesized-protocol** group, measured in **both** languages and added to
+**neither** denominator:
+
+| construct | language | synthesized calls |
+|---|---|---|
+| `for (x in xs)` / `for (X x : xs)` | kotlin / **java** | `iterator()`, `hasNext()`, `next()` — ≥3 per loop |
+| `val (a, b) = p` | kotlin | `component1()`, `component2()` — one per variable |
+| `val p by lazy {}` | kotlin | `getValue()` / `setValue()` |
+| `try (X x = …)` | java | `close()` — one per resource |
+
+This is the line `WidestDenominator()` stops at, and it is stated rather than
+claimed: **a construct whose source names a callable is in; one where the
+compiler invents the call is out.** `for (x in xs)` writes no identifier a binder
+could resolve, yet implies three calls. Crucially the line is drawn **identically
+in both languages** — Java's `for (X x : xs)` is the same construct and is
+excluded the same way — so it cannot flatter one language against the other. The
+sizes are published (guava **6 851** for-in loops and 43 resources; okio 100 / 28
+/ 2; kotlinx 114 / 36 / 11), so this is a bounded residual, not one taken on
+trust.
+
+An earlier draft instead claimed the widest denominator was "deliberately the
+most damning variant: nothing here can make the published rate look better."
+**That claim was false and is retracted** — it was missing a third of the indexing
+suffixes and the entire operator family. It has not been replaced with another
+superlative; it has been replaced with a stated line and an enumeration that
+tests it (§1.5).
 
 **The annotation row is the one an adversarial reader should check first**, and
 it is why Kotlin cannot simply count `constructor_invocation`: **the Kotlin
@@ -136,11 +208,69 @@ does apply is a different one, and it is §4.
 
 ---
 
-## 2. Reproducibility (AC-5)
+### 1.5 The enumeration — why the node types are no longer chosen by inspection
+
+The denominator has now been wrong **nine** times across two adversarial rounds.
+The two the second review found (F8, F9) were the **same defect class** as the
+first (F1): a call-bearing node type nobody thought to look for. A defect class
+that recurs after being fixed once is not a defect — it is a missing method.
+
+So the node types are no longer chosen by inspection. They are chosen against an
+enumeration of the grammars themselves
+(`internal/jvmbindrate/grammar_enumeration.go`):
+
+| | java | kotlin |
+|---|---:|---:|
+| named symbols in the embedded grammar | 166 | 198 |
+| …that **occur** on the three pins | **120** | **141** |
+| **D** — in the primary denominator | 2 | 1 |
+| **W** — names a callable; in the widest denominator | 2 | 15 |
+| **P** — synthesized protocol; in **no** denominator | 2 | 3 |
+| **N** — not a call | 114 | 122 |
+
+The **N bucket is an explicit list, never a default.** With a default, a grammar
+upgrade that adds a call-bearing node type is classified as harmless by silence —
+which is exactly how the nine got in.
+`TestGrammarEnumeration_ClassifiesEveryOccurringNodeType` walks the same symbol
+table at test time and fails on any occurring node type in no bucket;
+`…_CallBearingBucketsAreReachable` closes the other half by asserting that every
+node type classified as a call actually moves a counter, so the enumeration
+cannot document a fix the walk does not perform.
+
+**It has already caught one.** `record_declaration` reached the list by failing
+the test rather than by being thought of: guava v33 predates Java records, so no
+pin produces the node, and the hermetic fixture does. It is not a call (a record
+*declares* its accessors, it does not call them) — but that is now a recorded
+decision instead of an accident of corpus coverage.
+
+**What the enumeration does not cover, stated because it is the real residual:**
+it classifies **node types, not types**. `a + b` is counted as an
+operator-convention call whether `a` is an `Int` (a JVM intrinsic — no callee
+exists) or a `BigDecimal` (a genuine `plus` call). No CST can tell those apart.
+That is exactly why the family is excluded from the primary denominator and
+included in the widest one with both sizes published: the split is unmeasurable
+here, so it is **bounded rather than invented**. The 46 java and 57 kotlin
+symbols that never occur on the pins are deliberately unclassified — recording a
+decision about a node type no corpus produces would be a guess dressed as an
+enumeration.
+
+**One operator token on okio is unclassified, and it is published rather than
+absorbed.** `UnclassifiedOperator` is the grammar-drift guard: an operator token
+the walk does not recognise lands there instead of being guessed into either
+bucket. It reads **1** on okio and **0** everywhere else, and the single hit is
+fully explained — a `prefix_expression` whose operator token was consumed by
+error recovery, in
+`okio/src/commonTest/kotlin/okio/CommonRealBufferedSourceTest.kt`, a file that
+carries `ERROR` nodes (§4). It is a parse-degradation artefact, not a grammar
+gap.
+
+---
+
+## 2. Reproducibility (AC-5), and what the measurement is pinned to
 
 Every pin is measured **twice from scratch** in the same run and the two results
 are compared on their **entire rendered report** — files, types, collisions,
-numerator, denominator, widest denominator, all twelve exclusions, the parse
+numerator, denominator, widest denominator, every exclusion and rejection, the parse
 degradation counters, every histogram row and the residual — not on the headline
 rate. A difference fails the test with "publish this as a finding, never retry it
 away".
@@ -148,13 +278,54 @@ away".
 **Result: identical on all three pins, at every scope, for both languages.** No
 variance was observed and therefore none is averaged away.
 
-The pin sha is asserted from `.git/HEAD` before anything is measured. The
-hermetic half (`TestMeasure_IsDeterministic`) repeats the comparison five times
-over a fixture.
+The hermetic half (`TestMeasure_IsDeterministic`) repeats the comparison five
+times over a fixture.
+
+### 2.1 The measurement pins the TREE, not only the commit
+
+An earlier draft asserted the pin's commit sha from `.git/HEAD` and stopped
+there, then enumerated sources by **walking the filesystem**. That leaves a hole,
+and a reviewer demonstrated it rather than hypothesising it: an okio checkout
+carrying **16 gitignored gradle-generated `.java` files** under
+`.gradle/**/dependencies-accessors/**` was swallowed whole. okio's Java whole-pin
+figures moved **16.07 % → 12.72 %** (29 files / 139 / 865 → 45 / 149 / 1 171)
+while the sha assertion stayed green and the two-run reproducibility check stayed
+identical — because both runs read the same wrong file set. `git clean -xdff`
+restored exactly 29 `.java` and 284 `.kt`, so **the published numbers were
+right**; the guarantee that they stay right did not exist.
+
+The hazard was live, not theoretical: `.github/workflows/jvm-corpus.yml` runs
+SW-173's compile step over `/tmp/pins` and then this measurement over **the same
+clones**, and this document invites any reader to recompute with
+`GRAPHI_JVM_CORPUS_PINS` pointed at a directory whose cleanliness nothing
+checked.
+
+**Three assertions now run before a single byte is measured:**
+
+| # | assertion | closes |
+|---|---|---|
+| 1 | `git rev-parse HEAD` == the pinned **commit** | the checkout is the revision claimed |
+| 2 | `git rev-parse HEAD^{tree}` == the pinned **tree** | the figures name the tree they came from |
+| 3 | `git status --porcelain --untracked-files=no` is **empty** | no tracked file's bytes differ from that tree |
+
+and the file set itself now comes from **`git ls-tree -r HEAD`**, not from
+`filepath.Walk`. That is not a filter — it is the definition of what the pin
+contains, so it closes the growth hazard without reintroducing the shrinkage
+hazard the old comment feared. A file is in the measurement **iff the pinned
+commit contains it**.
+
+| pin | commit | tree | `.java` | `.kt` |
+|---|---|---|---:|---:|
+| guava | `2214c636…` | `375ac95a…` | 3 204 | 0 |
+| okio | `8b870e8e…` | `3b3cd2ef…` | 29 | 284 |
+| kotlinx.serialization | `3efe324b…` | `bf86bc14…` | 6 | 609 |
+
+Those counts are `git ls-tree`'s, and they are the counts every figure in this
+document rests on.
 
 ---
 
-## 3. The adversarial round — six denominator errors, found and fixed
+## 3. Two adversarial rounds — nine denominator errors, found and fixed
 
 The first draft of this document published figures computed by a denominator
 with six defects. An adversarial review attacked the denominator specifically —
@@ -165,19 +336,73 @@ This section exists because a denominator's error history is part of its
 evidence, and because five of the six moved the rate in the **flattering**
 direction.
 
+**A second, independent review then found three more (F8, F9 and the §10 census
+miss), and that is the more important fact about this table.** F8 and F9 are the
+*same defect class as F1* — the grammar's marker is not the node you would guess
+— recurring in a sibling counter and in an entire uncounted family, **after F1
+had been found and fixed**. Patching what a reviewer names does not close a
+defect class. §1.5 is the method that replaced the patching.
+
 | # | defect | direction | fix | measured effect on the pins |
 |---|---|---|---|---|
 | **F1** | Kotlin string-template calls have **no `call_expression`** — `"${f()}"` parses as `interpolated_expression → simple_identifier + call_suffix`. The whole construct was missing from the denominator. | flattering | count **`call_suffix`**, the grammar's exact invocation marker | +42 sites on kotlinx (15 346 → 15 388), +20 on okio. **Small — 0.3 %** — and stated as measured rather than estimated |
-| **F2** | Kotlin `infix_expression` (`a shl b`) and `indexing_expression` (`a[i]`) were counted **nowhere** | flattering | excluded for symmetry with Java, but now **counted**, and in the widest denominator | okio **675 + 269**, kotlinx **797 + 274** — this is why okio's widest rate is 0.19 pp below its primary |
+| **F2** | Kotlin `infix_expression` (`a shl b`) and `indexing_expression` (`a[i]`) were counted **nowhere** | flattering | excluded for symmetry with Java, but now **counted**, and in the widest denominator | okio **675 + 269**, kotlinx **797 + 274** — and F2's *fix* was itself defective in two ways, F8 and F9 below |
 | **F3** | The doc's symmetry claim was **wrong**: Java's `super(…)` was paired with Kotlin's `class A : B(1)`. The real twin is `constructor_delegation_call`; `: B(1)` is the *primary* constructor's superclass call, whose Java counterpart `extends B` has no node. | flattering (Kotlin's widest only) | both counted, separately, and the asymmetry published | kotlinx 15 delegation calls vs 453 superclass delegations — they are not the same population |
 | **F4** | Java `enum_constant` and Kotlin `enum_entry` argument lists counted nowhere | flattering, symmetric | counted; in the widest denominator | guava whole pin **4 103**, guava/src 166, kotlinx 182, okio 90 |
 | **F5/F6** | **Parse degradation was silent.** tree-sitter recovers instead of failing, so a file contributes a partial count with a nil error. The doc claimed "a parse error yields zero counts"; measured false. Worse, this suite's **own** grammar-pinning fixture was a one-line Kotlin class body that yields 2 ERROR nodes — it passed by luck. | unknown sign, unbounded | `ParseErrorNodes` / `FilesWithParseErrors` counted and published; `countNodes` now **fails** on any fixture with an ERROR node | §4 — and it is the largest finding of the round |
 | **F7** | Kotlin's `callable_reference` count is a **lower bound**: `::f` parses as `callable_reference` but `A::g` and `a::h` parse as `navigation_expression`. Java's `method_reference` catches all forms. | none on the rate | disclosed in code and here | the two languages' reference-exclusion columns are **not comparable** |
 
+**The second round — F8 and F9, both in F2's own fix:**
+
+| # | defect | direction | fix | measured effect on the pins |
+|---|---|---|---|---|
+| **F8** | **`indexing_expression` is the wrong marker** — exactly F1, in the sibling counter. `a[i] = v` and `a[i] += v` (`operator fun set`) parse as `assignment → directly_assignable_expression → indexing_suffix` with **no `indexing_expression` node at all**, and `"${a[i]}"` yields a bare suffix too. Every indexed **write** and every interpolated read was missing. | **flattering** — `WidestDenominator()` includes the counter, so undercounting it *raised* the widest rate | count **`indexing_suffix`**, exactly as `call_suffix` replaced `call_expression` | okio counted 269, **missed 133 (+49 %)** → **402**; kotlinx counted 274, missed 113 (+41 %) → **387** |
+| **F9** | **The operator-convention family was counted in no bucket at all** — `additive`, `multiplicative`, `prefix`, `postfix`, `equality`, `comparison`, `range`, `contains`, augmented assignment. Neither in the denominator nor among the published exclusions, while `infix` + indexing *were* published, implying the published figure was the whole residual. | flattering, and ~4× larger than what was published | counted, discriminated **by operator token**, and added to the widest denominator | okio **3 886**, kotlinx **2 073** against the 944 / 1 071 that were published |
+
+**The adjacent error to F8 was checked and is NOT present**, which matters
+because over-correcting would have been its own defect: a multi-dimensional read
+`a[i][j]` emits one suffix per dimension, and on both pins every
+`indexing_expression` carries exactly one suffix. Nothing is undercounted there,
+and the fix does not pretend otherwise. It is pinned by
+`TestIndexingSuffix_CountsWritesAndInterpolations`.
+
+**This document's F9 figures are deliberately *smaller* than the review's, and
+the difference is the point.** The review counted node types; this counts
+operator tokens. Three of those node types carry a non-call form under the same
+name, so the raw node counts include constructs that call nothing:
+
+| over-count | okio | kotlinx |
+|---|---:|---:|
+| `a!!` counted as `inc`/`dec` (`postfix_expression`) | **157** | 43 |
+| `a === b` counted as `equals` (`equality_expression`) | 29 | 59 |
+| `@Ann a` counted as an operator (`prefix_expression`) | 0 | 2 |
+| indexed set counted twice (already in `indexing_suffix`) | 132 | 100 |
+
+and one construct the review's list **missed** in the other direction:
+
+| under-count | okio | kotlinx |
+|---|---:|---:|
+| `a in b` / `when { in 1..5 -> }` → `contains` | **69** | 60 |
+
+Net: this document's widest denominators are okio **24 809** and kotlinx
+**19 295**, against the review's projected 24 926 and 19 336 — a difference of
+117 and 41. The resulting rates are **2.74 %** and **15.28 %** against the
+review's 2.73 % and 15.25 %. The correction here is very slightly *less* damning
+than the review's, and it is stated plainly for that reason: the difference is
+non-calls removed, not calls hidden, and every one of those rejections is
+published with its size in §1.3.
+
 One further asymmetry was found and is **not** fixed, because it has no correct
 answer: Java's `new X(){…}` is an `object_creation_expression` and **is** in the
 denominator, while Kotlin's `object : X { … }` is an `object_literal` and is not.
 It is counted (`object_literal`: kotlinx 22, okio 90) so its size is visible.
+
+**None of the nine moved a headline rate.** All four reproduce to the digit
+across both rounds — Java `guava/src` 21.39 %, guava whole-pin 0.13 %, kotlinx
+19.16 %, okio 3.47 % — because every defect was in the *widest* variant or in a
+published exclusion size. That is a fact about where the errors landed, not a
+defence: F8 falsified a written claim about the widest denominator, and F9 made a
+published exclusion size read as four times more complete than it was.
 
 ---
 
@@ -203,21 +428,75 @@ nothing here measures.
 | guava — java, whole pin | 3 204 | 9 (0.3 %) | 462 |
 | okio — java | 29 | 0 | 0 |
 
-**Consequences, stated without a direction I have not measured.**
+### 4.1 The direction of the bias — determined, and it is anti-flattering
+
+An earlier draft of this section said the direction was **"not determined — both
+sides of the fraction shrink"** and listed it under what the measurement does not
+establish. **That was wrong in method, and the correction does not favour the
+draft's caution.** Determining the *direction* never required knowing what the
+grammar dropped; it only required comparing the two subpopulations, which costs
+one partition.
+
+**Method, and the confound it avoids.** The binder's table is built **once over
+all files**, so both arms bind against an **identical index** — a clean file that
+references a type declared in a dirty file still resolves it. Rebuilding a table
+per arm would have measured "how well does a corpus half bind itself", a
+different and much easier question that would have starved the clean arm of
+types. The numerator is then partitioned by each site's source file and the
+denominator by that same file's own `ERROR`-node count, so the two arms
+**partition** the corpus and reconstitute the published totals exactly.
+`TestParseArms_PartitionTheCorpus` asserts the reconstitution rather than
+trusting it — two arms that quietly failed to sum would be a second measurement
+wearing a split's clothes.
+
+| pin / scope | arm | files | bound | CST sites | rate |
+|---|---|---:|---:|---:|---:|
+| **kotlinx — whole** | **clean** | 529 | 2 908 | 13 748 | **21.15 %** |
+| | **dirty** | 80 | 41 | 1 640 | **2.50 %** |
+| | *all* | *609* | *2 949* | *15 388* | *19.16 %* ✓ |
+| **okio — whole** | **clean** | 256 | 681 | 19 128 | **3.56 %** |
+| | **dirty** | 28 | **0** | 498 | **0.00 %** |
+| | *all* | *284* | *681* | *19 626* | *3.47 %* ✓ |
+| kotlinx — `core/` | clean | 89 | 535 | 2 287 | 23.39 % |
+| | dirty | 14 | 10 | 372 | 2.69 % |
+| okio — `okio/` | clean | 206 | 565 | 15 997 | 3.53 % |
+| | dirty | 26 | 0 | 493 | 0.00 % |
+| **guava — whole (java)** | clean | 3 195 | 349 | 269 996 | 0.13 % |
+| | dirty | 9 | **0** | 1 896 | **0.00 %** |
+| **guava — `guava/src`** | clean | **621** | 6 065 | 28 354 | **21.39 %** |
+| | dirty | 0 | — | — | n/a |
+
+**The direction is unambiguous: a recovered tree destroys the NUMERATOR far
+faster than the denominator.** The binder binds 41 of 1 640 sites in kotlinx's
+dirty files and **0 of 498** in okio's, while the CST still contributes a full
+denominator from those same files — because tree-sitter's recovery leaves the
+invocation nodes standing even where the binder can no longer walk the body. So
+the published Kotlin rates are **depressed** by dirty parses, not inflated.
+
+**And the effect is not a Kotlin phenomenon.** Java's dirty arm binds **0 of
+1 896** on guava's whole pin, exactly as okio's does. The mechanism is parse
+quality, not language — Kotlin merely suffers it 40× more often (§8.2).
+
+"Undetermined" therefore erred **against** the product, which is the right
+direction to err. But it was an *incomplete* measurement presented as an
+*unavailable* one, and the two are not the same thing. The split costs ~40 lines
+and is now printed on every run.
+
+**Consequences.**
 
 1. **The headline Java figure is over a completely clean parse.** 0 ERROR nodes
    in 621 files. Nothing below qualifies it.
-2. **Both Kotlin headline figures are not.** One Kotlin file in eight is parsed
-   only partially. The direction of the resulting bias is **not determined** —
-   both sides of the fraction shrink — and no correction is applied, because
-   applying one would require knowing what the grammar dropped.
+2. **Both Kotlin headline figures are understated**, by the mechanism above. No
+   correction is applied and none should be: the clean-arm rate is not a better
+   estimate of "the rate", it is the rate over a different population. Both are
+   published; neither is presented as the headline.
 3. **A per-file magnitude illustrates the mechanism**, measured on a fixture: a
    Kotlin class body whose members are not newline-separated yields 3 ERROR nodes
    and **loses two of its three calls**. Whitespace alone changes that
    denominator threefold. (`TestParseDegradation_IsCountedNotAssumedAway`)
 4. **This is a measurement-quality asymmetry between the languages**, on top of
-   the evidence asymmetry in §7.2, and it points the same way: Kotlin's numbers
-   are the weaker pair.
+   the evidence asymmetry in §7.2 — and §8 now reads very differently because of
+   it.
 
 Not filed as a defect and not fixed — it is a property of the vendored grammar,
 and changing grammars is not this story's business. It is now *visible*, which is
@@ -379,8 +658,9 @@ manifest already predicted and this run confirms independently (0 tabled types).
 ### 7.3 Kotlin — kotlinx.serialization (the headline Kotlin scope)
 
 **19.16 % = 2 949 bound call sites / 15 388 CST call sites.** Widest denominator
-17 109 → **17.24 %**. Parse: **80 of 609 files carry ERROR nodes (§4).** 1 768
-tabled types, 64 in 24 colliding FQNs. Bound value sites: 484.
+**19 295 → 15.28 %**. Parse: **80 of 609 files carry ERROR nodes (§4)** — on the
+529 that parse cleanly the rate is **21.15 %** (§4.1). 1 768 tabled types, 64 in
+24 colliding FQNs. Bound value sites: 484.
 
 | named reason | count | share |
 |---|---:|---:|
@@ -397,14 +677,21 @@ tabled types, 64 in 24 colliding FQNs. Bound value sites: 484.
 | **total** | **11 917** | |
 
 Excluded-but-a-call: superclass delegation 453 · `infix_expression` 797 ·
-`indexing_expression` 274 · `enum_entry` 182 · `constructor_delegation_call` 15.
+**`indexing_suffix` 387** · `enum_entry` 182 · `constructor_delegation_call` 15 ·
+**operator convention 2 073** (additive 372 · multiplicative 168 · prefix 307 ·
+postfix 113 · equality 615 · comparison 344 · range 55 · contains 60 ·
+augmented-assign 39).
 Excluded-not-a-call: annotation `constructor_invocation` **1 059** ·
-`callable_reference` 21 · `object_literal` 22.
+`callable_reference` 21 · `object_literal` 22 · `a!!` 43 · `a === b` 59 ·
+plain `a = b` 672 · `a is B` 167.
+Synthesized protocol (in no denominator): 114 for-in loops · 36 destructuring
+components · 11 delegated properties.
 
 ### 7.4 Kotlin — okio
 
-**3.47 % = 681 / 19 626.** Widest 20 790 → **3.28 %**. Parse: **28 of 284 files
-carry ERROR nodes.** 337 tabled types, **95 in 32 colliding FQNs**. Value sites 88.
+**3.47 % = 681 / 19 626.** Widest **24 809 → 2.74 %**. Parse: **28 of 284 files
+carry ERROR nodes** — on the 256 that parse cleanly the rate is **3.56 %** (§4.1).
+337 tabled types, **95 in 32 colliding FQNs**. Value sites 88.
 
 | named reason | count | share |
 |---|---:|---:|
@@ -420,10 +707,24 @@ carry ERROR nodes.** 337 tabled types, **95 in 32 colliding FQNs**. Value sites 
 | `kotlin_body_unmatched` | 75 | 0.4 % |
 | **total** | **19 534** | |
 
-Excluded-but-a-call: `infix_expression` **675** · `indexing_expression` 269 ·
-superclass delegation 114 · `enum_entry` 90 · `constructor_delegation_call` 16.
+Excluded-but-a-call: `infix_expression` **675** · **`indexing_suffix` 402** ·
+superclass delegation 114 · `enum_entry` 90 · `constructor_delegation_call` 16 ·
+**operator convention 3 886** (additive 957 · multiplicative 996 · prefix 712 ·
+postfix 103 · equality 519 · comparison 312 · range 20 · contains 69 ·
+augmented-assign 198).
 Excluded-not-a-call: annotation `constructor_invocation` 560 · `object_literal`
-90 · `callable_reference` 1.
+90 · `callable_reference` 1 · `a!!` **157** · `a === b` 29 · plain `a = b` 704 ·
+`a is B` 50.
+Synthesized protocol (in no denominator): 100 for-in loops · 28 destructuring
+components · 2 delegated properties.
+Unclassified operator tokens: **1** — the single parse-recovery artefact
+explained in §1.5.
+
+**okio is the pin where the operator-convention family matters most.** Its
+3 886 operator calls plus 675 infix and 402 indexing suffixes total 4 963 —
+**25 % of the size of its entire primary denominator**. That is the residual F9
+left unpublished, and it is why okio's widest rate (2.74 %) now sits 0.73 pp
+*below* its primary rather than the 0.19 pp the first draft reported.
 
 `kotlin_val_inferred` at 24.8 % is the "idiomatic-Kotlin recall cost" ADR 0008's
 D2 predicted, and okio is the pin where it is largest. It is a *closable* gap in
@@ -432,10 +733,15 @@ therefore not in the same class as `receiver_external`.
 
 ### 7.5 Kotlin — the module scopes
 
-| scope | rate | numerator | denominator | widest | histogram | parse errors |
-|---|---:|---:|---:|---:|---:|---:|
-| kotlinx `core/` | 20.50 % | 545 | 2 659 | 18.16 % | 2 019 | 14 files / 435 |
-| okio `okio/` | 3.43 % | 565 | 16 490 | 3.24 % | 16 206 | 26 files / 1 264 |
+| scope | rate | numerator | denominator | widest | histogram | parse errors | clean-arm rate |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| kotlinx `core/` | 20.50 % | 545 | 2 659 | **15.82 %** (3 446) | 2 019 | 14 files / 435 | **23.39 %** |
+| okio `okio/` | 3.43 % | 565 | 16 490 | **2.73 %** (20 667) | 16 206 | 26 files / 1 264 | **3.53 %** |
+
+For completeness, the widest rates at the Java scopes — unchanged by F8/F9,
+because Java has no operator-convention family at all and no indexing suffix:
+guava `guava/src` **20.98 %** (28 906), `android/guava/src` **22.19 %** (27 395),
+guava whole-pin **0.13 %** (277 188), okio's Java **16.01 %** (868).
 
 ---
 
@@ -443,7 +749,40 @@ therefore not in the same class as `receiver_external`.
 
 Four asymmetries. None is averaged away and none is presented as a defect.
 
-### 8.1 The rate spread within Kotlin is larger than the gap between the languages
+> **This section was rewritten after §4.1 determined the parse-bias direction,
+> and the rewrite changes its conclusion.** The earlier draft presented parse
+> dirtiness as one asymmetry among four. It is not: on the headline Kotlin pin it
+> is doing **nearly all the work** of the Java/Kotlin gap. What survives is the
+> *intra-Kotlin* spread, which is real and is not a parse artefact.
+
+### 8.0 The headline Java/Kotlin gap on kotlinx is almost entirely a parse artefact
+
+Comparing like with like — clean parses against clean parses (§4.1):
+
+| scope | rate as published | **rate over cleanly-parsed files only** |
+|---|---:|---:|
+| **java — guava `guava/src`** | 21.39 % | **21.39 %** (621 of 621 files are clean) |
+| **kotlin — kotlinx.serialization** | 19.16 % | **21.15 %** |
+| kotlin — okio | 3.47 % | **3.56 %** |
+
+**On cleanly-parsed files kotlinx.serialization binds at 21.15 % against
+guava/src's 21.39 % — a gap of 0.24 pp.** The published 2.23 pp gap between those
+two headline figures is therefore **almost entirely a measurement artefact of the
+vendored Kotlin grammar**, not a statement about the binder's capability on
+Kotlin. Anyone reading "Java 21.39 %, Kotlin 19.16 %" as evidence that the Kotlin
+binder is weaker than the Java one is reading a parse-quality difference.
+
+Three things that must not be read into this:
+
+1. **It does not make the published 19.16 % wrong.** That is the rate over the
+   pin as it exists, which is what a user pointing graphi at kotlinx.serialization
+   gets. The clean-arm rate is the rate over a *different population*, and it is
+   published beside it rather than instead of it.
+2. **It does not transfer to okio** — see §8.1, which now carries the finding.
+3. **It says nothing about whether the bindings are correct.** §8.3 is untouched
+   by this and remains the sharpest asymmetry in the document.
+
+### 8.1 The rate spread within Kotlin is larger than the gap between the languages — and it survives the parse correction
 
 Java's two clean scopes agree closely (21.39 % / 22.63 %). Kotlin's two corpora
 do not: **19.16 %** on kotlinx.serialization against **3.47 %** on okio — a 5.5×
@@ -451,18 +790,33 @@ spread. Whatever a Kotlin binding rate is, it is not one number, and a single
 published Kotlin figure would be an average across a spread wider than the
 Java/Kotlin difference itself. **No average is published.**
 
+**This is the finding that survives §8.0, and it is now the load-bearing one.**
+On cleanly-parsed files the spread is **21.15 % against 3.56 % — 5.9×**, slightly
+*wider* than the 5.5× published. So the intra-Kotlin spread is **not** a parse
+artefact: both arms of it are measured over clean parses and they still differ by
+a factor of six. Whatever explains okio's 3.56 % is a real property of the binder
+meeting that codebase, and §8.1's composition evidence below is the only
+measured lead this document has on it.
+
 The measured composition differs correspondingly: okio's largest bucket is
 `kotlin_val_inferred` (24.8 %) and its `kotlin_receiver_ambiguous` is 14.4 %
 against kotlinx's 0.7 % — consistent with okio's `expect`/`actual` multiplatform
 layout, which is also the source of its 32 colliding FQNs (§5). Stated as a
 correspondence between two measurements, **not** as a proven cause.
 
-### 8.2 Kotlin's parses are 40× dirtier
+### 8.2 Kotlin's parses are 40× dirtier — and that is now the *largest* explained effect
 
 0 ERROR-node files in 621 for the headline Java scope; 80 in 609 for the headline
 Kotlin one. §4. This is a property of the vendored grammar, not of the binder,
 and it means the two languages' figures are not equally reliable *as
 measurements*, before any question about the binder arises.
+
+§4.1 now quantifies what that costs, and it is not a rounding effect: the dirty
+arm binds **41 of 1 640** on kotlinx and **0 of 498** on okio. The mechanism is
+not Kotlin-specific — guava's own dirty arm binds **0 of 1 896** — but Kotlin
+meets it 40× more often, so it lands almost entirely on the Kotlin figures. This
+is the asymmetry §8.0 is about, and it is the one a grammar upgrade could remove
+without touching the binder at all.
 
 ### 8.3 Kotlin's bound sites are not verified at the precisions Java's are
 
@@ -570,7 +924,7 @@ registrants are default-off until SW-179.
 > **The old figure was a numerator without a denominator.** It is not corrected
 > here, and it is not deleted. It is stated, and then answered.
 
-`3517 typed sites` appears at three sites in this repository and was quoted in
+`3517 typed sites` appears at **four** sites in this repository and was quoted in
 support of ADR 0008 D2. It says how many sites the binder bound on
 kotlinx.serialization; it never said out of how many exist. The independent
 review's R6 named exactly this — *"`3517 typed sites` is not that answer"* — and
@@ -579,7 +933,7 @@ dropped Kotlin's ≥50 % recall threshold on the strength of it.
 **The replacement, on the same pin at the same sha (`3efe324b`):**
 
 > **19.16 % — 2 949 bound call sites of 15 388 CST call sites**, plus 484 bound
-> value sites, published with the ten-row skip histogram in §7.3, all twelve
+> value sites, published with the ten-row skip histogram in §7.3, every
 > exclusion sizes, the parse-degradation counters in §4 and the asymmetry table
 > in §8.3.
 
@@ -593,12 +947,26 @@ never having had a denominator. Recorded rather than smoothed over, and no
 attempt is made to reconcile the 84.
 
 Amended in place, each with the old figure kept and labelled:
-`corpus/manifest.json` (the kotlinx pin's `notes`) and
-`docs/plan/2026-08-graphi-language-ga-execution-plan-v1.md` (M1.2).
-**Not** amended: `docs/decisions/2026-08-language-ga-independent-review.md:104`,
-a dated independent-review record — D6 says a published record is never
-rewritten, and R6's whole point was that the figure is inadequate, which this
-document agrees with.
+
+| site | what it is | status |
+|---|---|---|
+| `corpus/manifest.json` (kotlinx pin `notes`) | the machine-readable pin record | **amended** |
+| `corpus/README.md:30` (kotlinx pin row) | the human-readable twin of the above | **amended** |
+| `docs/plan/2026-08-…-execution-plan-v1.md` (M1.2) | the plan's supporting figure | **amended** |
+| `docs/decisions/2026-08-language-ga-independent-review.md:104` | a **dated** independent-review record | **deliberately not amended** |
+
+D6 says a published record is never rewritten, and R6's whole point was that the
+figure is inadequate — which this document agrees with, so amending it would
+falsify the record of the objection rather than answer it.
+
+**This census was itself wrong in the first draft, and the correction is the
+point.** It said "three sites" and amended two, missing `corpus/README.md:30` —
+the human-readable twin of the manifest entry that *was* amended: same claim,
+same pin, in the file a reader is far more likely to open. It is a live
+descriptive README, not a dated record, so the D6 exemption never applied to it.
+An independent review found it. A census that under-counts is the same defect
+class as a denominator that under-counts, and it is recorded here for the same
+reason.
 
 ---
 
@@ -608,16 +976,24 @@ document agrees with.
    SW-173) and §8.3 records how unevenly it covers the two languages. A high rate
    of wrong bindings would be worse than a low rate of right ones.
 2. **A D2 threshold.** Not proposed, not implied, not hinted at. AC-7.
-3. **The direction or size of the bias from Kotlin's 10–13 % dirty parses.** §4.
-   Both sides of the fraction are affected and neither was corrected.
+3. **The SIZE of the bias from Kotlin's 10–13 % dirty parses.** Its *direction*
+   was previously listed here as undetermined; **§4.1 determines it** — dirty
+   parses depress the rate — and the clean/dirty split is published. What remains
+   unmeasurable is how many sites the recovered trees dropped from the
+   denominator, so the clean-arm rate is a rate over a different population
+   rather than a corrected estimate of the same one. No correction is applied.
 4. **Why guava loses 2 716 sites to `emit_from_no_node` and kotlinx `core/` loses
    13.** Measured, undiagnosed (§9.2).
 5. **Whether the FQN-collision behaviour in §5 should change.** Measured, not
    filed, not fixed.
-6. **Whether Kotlin's `infix`/`indexing` exclusions hide real calls.** They are
-   counted (okio 675 + 269) and in the widest denominator, but the CST cannot
-   tell a user-defined `infix fun` from a builtin operator, so the true split is
-   unknown.
+6. **Whether Kotlin's operator-convention exclusions hide real calls, and how
+   many.** The whole family is now counted (okio 4 963 including infix and
+   indexing, kotlinx 3 257) and in the widest denominator, but the CST classifies
+   **node types, not types**: `a + b` is a real `plus` call on a `BigDecimal` and
+   a JVM intrinsic with no callee on an `Int`, and nothing here can tell them
+   apart. The true split is unknown and is bounded rather than invented (§1.5).
+6b. **What the 46 java and 57 kotlin grammar symbols that never occur on the pins
+   would be.** Deliberately unclassified — see §1.5.
 7. **Anything about Go**, which is `typed-confirmed` through `go/types` and out
    of scope by the ticket, or about the other 19 shipped languages.
 8. **A rate for kotlinx.serialization's Java.** 0 of 0 is not 0 %.
@@ -636,9 +1012,10 @@ document agrees with.
 | harness | `internal/jvmbindrate` (CI-only; `TestHarnessIsAbsentFromTheShippedBinary`) |
 | CLI used for §9 | `./cmd/graphi`, `-trimpath -buildvcs=false`, sha256 `4f0e1a20689e3410ec9226511cb8e03b43fa139980427fa90ea265cf1dfa88b6` |
 | grammars | `github.com/odvcencio/gotreesitter` v0.20.2, embedded Java and Kotlin |
-| guava | `2214c63670fc161da170ac6e1a2d6d07e1531a55` (v33.0.0) — sha asserted at run time |
-| okio | `8b870e8eaacecb1c1ceffbbb47246112604a1f92` (3.9.1) |
-| kotlinx.serialization | `3efe324be422ead21ca44f2f6318e1791c166556` (v1.6.3) |
+| guava | commit `2214c63670fc161da170ac6e1a2d6d07e1531a55` (v33.0.0), **tree `375ac95aadc97ff4989a4a6fa60fd606d8122050`** |
+| okio | commit `8b870e8eaacecb1c1ceffbbb47246112604a1f92` (3.9.1), **tree `3b3cd2ef8f11b7fb43191bd2115220c2410d6f3e`** |
+| kotlinx.serialization | commit `3efe324be422ead21ca44f2f6318e1791c166556` (v1.6.3), **tree `bf86bc149a72ddef6c5bcf9dea9537d5d2506c0e`** |
+| pin assertions | commit **and** tree asserted at run time, working tree asserted clean, sources enumerated from `git ls-tree -r HEAD` (§2.1) |
 | compiler used | **none** — this measurement never touches bytecode (§1.4) |
 | `parityreport.CandidateSHA` | **unmoved** at `3b8d43f6…`; no parity row, no published matrix and no `parity-classes*.yaml` touched by this story |
 
