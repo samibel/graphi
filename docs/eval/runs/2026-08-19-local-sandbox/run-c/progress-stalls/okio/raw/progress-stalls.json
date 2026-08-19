@@ -1,0 +1,2136 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "progress_stalls",
+  "repo": "okio",
+  "collected": true,
+  "samples": 421,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/tmp/sw177-wd/cur",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "intervals": [
+    {
+      "seq": 1,
+      "phase": "walk",
+      "us": 18110
+    },
+    {
+      "seq": 2,
+      "phase": "walk",
+      "us": 24574
+    },
+    {
+      "seq": 3,
+      "phase": "walk",
+      "us": 24557
+    },
+    {
+      "seq": 4,
+      "phase": "walk",
+      "us": 26550
+    },
+    {
+      "seq": 5,
+      "phase": "walk",
+      "us": 27850
+    },
+    {
+      "seq": 6,
+      "phase": "walk",
+      "us": 33458
+    },
+    {
+      "seq": 7,
+      "phase": "parse",
+      "us": 8307
+    },
+    {
+      "seq": 8,
+      "phase": "parse",
+      "us": 385
+    },
+    {
+      "seq": 9,
+      "phase": "parse",
+      "us": 2
+    },
+    {
+      "seq": 10,
+      "phase": "parse",
+      "us": 190
+    },
+    {
+      "seq": 11,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 12,
+      "phase": "parse",
+      "us": 228
+    },
+    {
+      "seq": 13,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 14,
+      "phase": "parse",
+      "us": 797
+    },
+    {
+      "seq": 15,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 16,
+      "phase": "parse",
+      "us": 153
+    },
+    {
+      "seq": 17,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 18,
+      "phase": "parse",
+      "us": 458
+    },
+    {
+      "seq": 19,
+      "phase": "parse",
+      "us": 296
+    },
+    {
+      "seq": 20,
+      "phase": "parse",
+      "us": 2786
+    },
+    {
+      "seq": 21,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 22,
+      "phase": "parse",
+      "us": 426
+    },
+    {
+      "seq": 23,
+      "phase": "parse",
+      "us": 29
+    },
+    {
+      "seq": 24,
+      "phase": "parse",
+      "us": 274
+    },
+    {
+      "seq": 25,
+      "phase": "parse",
+      "us": 1690
+    },
+    {
+      "seq": 26,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 27,
+      "phase": "parse",
+      "us": 80
+    },
+    {
+      "seq": 28,
+      "phase": "parse",
+      "us": 131
+    },
+    {
+      "seq": 29,
+      "phase": "parse",
+      "us": 166
+    },
+    {
+      "seq": 30,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 31,
+      "phase": "parse",
+      "us": 413
+    },
+    {
+      "seq": 32,
+      "phase": "parse",
+      "us": 443
+    },
+    {
+      "seq": 33,
+      "phase": "parse",
+      "us": 272
+    },
+    {
+      "seq": 34,
+      "phase": "parse",
+      "us": 470
+    },
+    {
+      "seq": 35,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 36,
+      "phase": "parse",
+      "us": 332
+    },
+    {
+      "seq": 37,
+      "phase": "parse",
+      "us": 694
+    },
+    {
+      "seq": 38,
+      "phase": "parse",
+      "us": 204
+    },
+    {
+      "seq": 39,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 40,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 41,
+      "phase": "parse",
+      "us": 54
+    },
+    {
+      "seq": 42,
+      "phase": "parse",
+      "us": 474
+    },
+    {
+      "seq": 43,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 44,
+      "phase": "parse",
+      "us": 209
+    },
+    {
+      "seq": 45,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 46,
+      "phase": "parse",
+      "us": 92
+    },
+    {
+      "seq": 47,
+      "phase": "parse",
+      "us": 174
+    },
+    {
+      "seq": 48,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 49,
+      "phase": "parse",
+      "us": 758
+    },
+    {
+      "seq": 50,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 51,
+      "phase": "parse",
+      "us": 499
+    },
+    {
+      "seq": 52,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 53,
+      "phase": "parse",
+      "us": 698
+    },
+    {
+      "seq": 54,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 55,
+      "phase": "parse",
+      "us": 118
+    },
+    {
+      "seq": 56,
+      "phase": "parse",
+      "us": 387
+    },
+    {
+      "seq": 57,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 58,
+      "phase": "parse",
+      "us": 414
+    },
+    {
+      "seq": 59,
+      "phase": "parse",
+      "us": 4446
+    },
+    {
+      "seq": 60,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 61,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 62,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 63,
+      "phase": "parse",
+      "us": 3228
+    },
+    {
+      "seq": 64,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 65,
+      "phase": "parse",
+      "us": 178
+    },
+    {
+      "seq": 66,
+      "phase": "parse",
+      "us": 3090
+    },
+    {
+      "seq": 67,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 68,
+      "phase": "parse",
+      "us": 246
+    },
+    {
+      "seq": 69,
+      "phase": "parse",
+      "us": 832
+    },
+    {
+      "seq": 70,
+      "phase": "parse",
+      "us": 228
+    },
+    {
+      "seq": 71,
+      "phase": "parse",
+      "us": 1017
+    },
+    {
+      "seq": 72,
+      "phase": "parse",
+      "us": 1718
+    },
+    {
+      "seq": 73,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 74,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 75,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 76,
+      "phase": "parse",
+      "us": 944
+    },
+    {
+      "seq": 77,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 78,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 79,
+      "phase": "parse",
+      "us": 442
+    },
+    {
+      "seq": 80,
+      "phase": "parse",
+      "us": 176
+    },
+    {
+      "seq": 81,
+      "phase": "parse",
+      "us": 4
+    },
+    {
+      "seq": 82,
+      "phase": "parse",
+      "us": 1316
+    },
+    {
+      "seq": 83,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 84,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 85,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 86,
+      "phase": "parse",
+      "us": 122
+    },
+    {
+      "seq": 87,
+      "phase": "parse",
+      "us": 10
+    },
+    {
+      "seq": 88,
+      "phase": "parse",
+      "us": 102
+    },
+    {
+      "seq": 89,
+      "phase": "parse",
+      "us": 1131
+    },
+    {
+      "seq": 90,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 91,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 92,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 93,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 94,
+      "phase": "parse",
+      "us": 394
+    },
+    {
+      "seq": 95,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 96,
+      "phase": "parse",
+      "us": 1066
+    },
+    {
+      "seq": 97,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 98,
+      "phase": "parse",
+      "us": 238
+    },
+    {
+      "seq": 99,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 100,
+      "phase": "parse",
+      "us": 2686
+    },
+    {
+      "seq": 101,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 102,
+      "phase": "parse",
+      "us": 704
+    },
+    {
+      "seq": 103,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 104,
+      "phase": "parse",
+      "us": 94
+    },
+    {
+      "seq": 105,
+      "phase": "parse",
+      "us": 568
+    },
+    {
+      "seq": 106,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 107,
+      "phase": "parse",
+      "us": 412
+    },
+    {
+      "seq": 108,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 109,
+      "phase": "parse",
+      "us": 1092
+    },
+    {
+      "seq": 110,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 111,
+      "phase": "parse",
+      "us": 1347
+    },
+    {
+      "seq": 112,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 113,
+      "phase": "parse",
+      "us": 559
+    },
+    {
+      "seq": 114,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 115,
+      "phase": "parse",
+      "us": 2844
+    },
+    {
+      "seq": 116,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 117,
+      "phase": "parse",
+      "us": 486
+    },
+    {
+      "seq": 118,
+      "phase": "parse",
+      "us": 198
+    },
+    {
+      "seq": 119,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 120,
+      "phase": "parse",
+      "us": 800
+    },
+    {
+      "seq": 121,
+      "phase": "parse",
+      "us": 1637
+    },
+    {
+      "seq": 122,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 123,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 124,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 125,
+      "phase": "parse",
+      "us": 338
+    },
+    {
+      "seq": 126,
+      "phase": "parse",
+      "us": 707
+    },
+    {
+      "seq": 127,
+      "phase": "parse",
+      "us": 2713
+    },
+    {
+      "seq": 128,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 129,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 130,
+      "phase": "parse",
+      "us": 1394
+    },
+    {
+      "seq": 131,
+      "phase": "parse",
+      "us": 1253
+    },
+    {
+      "seq": 132,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 133,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 134,
+      "phase": "parse",
+      "us": 1528
+    },
+    {
+      "seq": 135,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 136,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 137,
+      "phase": "parse",
+      "us": 781
+    },
+    {
+      "seq": 138,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 139,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 140,
+      "phase": "parse",
+      "us": 1642
+    },
+    {
+      "seq": 141,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 142,
+      "phase": "parse",
+      "us": 96
+    },
+    {
+      "seq": 143,
+      "phase": "parse",
+      "us": 1925
+    },
+    {
+      "seq": 144,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 145,
+      "phase": "parse",
+      "us": 83
+    },
+    {
+      "seq": 146,
+      "phase": "parse",
+      "us": 1220
+    },
+    {
+      "seq": 147,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 148,
+      "phase": "parse",
+      "us": 562
+    },
+    {
+      "seq": 149,
+      "phase": "parse",
+      "us": 1016
+    },
+    {
+      "seq": 150,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 151,
+      "phase": "parse",
+      "us": 1005
+    },
+    {
+      "seq": 152,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 153,
+      "phase": "parse",
+      "us": 27
+    },
+    {
+      "seq": 154,
+      "phase": "parse",
+      "us": 973
+    },
+    {
+      "seq": 155,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 156,
+      "phase": "parse",
+      "us": 1494
+    },
+    {
+      "seq": 157,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 158,
+      "phase": "parse",
+      "us": 432
+    },
+    {
+      "seq": 159,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 160,
+      "phase": "parse",
+      "us": 105
+    },
+    {
+      "seq": 161,
+      "phase": "parse",
+      "us": 1633
+    },
+    {
+      "seq": 162,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 163,
+      "phase": "parse",
+      "us": 98
+    },
+    {
+      "seq": 164,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 165,
+      "phase": "parse",
+      "us": 1501
+    },
+    {
+      "seq": 166,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 167,
+      "phase": "parse",
+      "us": 154
+    },
+    {
+      "seq": 168,
+      "phase": "parse",
+      "us": 1992
+    },
+    {
+      "seq": 169,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 170,
+      "phase": "parse",
+      "us": 251
+    },
+    {
+      "seq": 171,
+      "phase": "parse",
+      "us": 9
+    },
+    {
+      "seq": 172,
+      "phase": "parse",
+      "us": 672
+    },
+    {
+      "seq": 173,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 174,
+      "phase": "parse",
+      "us": 855
+    },
+    {
+      "seq": 175,
+      "phase": "parse",
+      "us": 1143
+    },
+    {
+      "seq": 176,
+      "phase": "parse",
+      "us": 400
+    },
+    {
+      "seq": 177,
+      "phase": "parse",
+      "us": 841
+    },
+    {
+      "seq": 178,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 179,
+      "phase": "parse",
+      "us": 4662
+    },
+    {
+      "seq": 180,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 181,
+      "phase": "parse",
+      "us": 610
+    },
+    {
+      "seq": 182,
+      "phase": "parse",
+      "us": 1537
+    },
+    {
+      "seq": 183,
+      "phase": "parse",
+      "us": 1364
+    },
+    {
+      "seq": 184,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 185,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 186,
+      "phase": "parse",
+      "us": 1243
+    },
+    {
+      "seq": 187,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 188,
+      "phase": "parse",
+      "us": 432
+    },
+    {
+      "seq": 189,
+      "phase": "parse",
+      "us": 2896
+    },
+    {
+      "seq": 190,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 191,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 192,
+      "phase": "parse",
+      "us": 1919
+    },
+    {
+      "seq": 193,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 194,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 195,
+      "phase": "parse",
+      "us": 2679
+    },
+    {
+      "seq": 196,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 197,
+      "phase": "parse",
+      "us": 149
+    },
+    {
+      "seq": 198,
+      "phase": "parse",
+      "us": 854
+    },
+    {
+      "seq": 199,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 200,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 201,
+      "phase": "parse",
+      "us": 386
+    },
+    {
+      "seq": 202,
+      "phase": "parse",
+      "us": 232
+    },
+    {
+      "seq": 203,
+      "phase": "parse",
+      "us": 1924
+    },
+    {
+      "seq": 204,
+      "phase": "parse",
+      "us": 1122
+    },
+    {
+      "seq": 205,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 206,
+      "phase": "parse",
+      "us": 556
+    },
+    {
+      "seq": 207,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 208,
+      "phase": "parse",
+      "us": 3616
+    },
+    {
+      "seq": 209,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 210,
+      "phase": "parse",
+      "us": 60
+    },
+    {
+      "seq": 211,
+      "phase": "parse",
+      "us": 729
+    },
+    {
+      "seq": 212,
+      "phase": "parse",
+      "us": 2322
+    },
+    {
+      "seq": 213,
+      "phase": "parse",
+      "us": 6225
+    },
+    {
+      "seq": 214,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 215,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 216,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 217,
+      "phase": "parse",
+      "us": 2
+    },
+    {
+      "seq": 218,
+      "phase": "parse",
+      "us": 3986
+    },
+    {
+      "seq": 219,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 220,
+      "phase": "parse",
+      "us": 1410
+    },
+    {
+      "seq": 221,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 222,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 223,
+      "phase": "parse",
+      "us": 1745
+    },
+    {
+      "seq": 224,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 225,
+      "phase": "parse",
+      "us": 669
+    },
+    {
+      "seq": 226,
+      "phase": "parse",
+      "us": 937
+    },
+    {
+      "seq": 227,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 228,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 229,
+      "phase": "parse",
+      "us": 527
+    },
+    {
+      "seq": 230,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 231,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 232,
+      "phase": "parse",
+      "us": 1550
+    },
+    {
+      "seq": 233,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 234,
+      "phase": "parse",
+      "us": 137
+    },
+    {
+      "seq": 235,
+      "phase": "parse",
+      "us": 254
+    },
+    {
+      "seq": 236,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 237,
+      "phase": "parse",
+      "us": 857
+    },
+    {
+      "seq": 238,
+      "phase": "parse",
+      "us": 1512
+    },
+    {
+      "seq": 239,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 240,
+      "phase": "parse",
+      "us": 566
+    },
+    {
+      "seq": 241,
+      "phase": "parse",
+      "us": 607
+    },
+    {
+      "seq": 242,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 243,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 244,
+      "phase": "parse",
+      "us": 1083
+    },
+    {
+      "seq": 245,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 246,
+      "phase": "parse",
+      "us": 641
+    },
+    {
+      "seq": 247,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 248,
+      "phase": "parse",
+      "us": 775
+    },
+    {
+      "seq": 249,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 250,
+      "phase": "parse",
+      "us": 821
+    },
+    {
+      "seq": 251,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 252,
+      "phase": "parse",
+      "us": 2573
+    },
+    {
+      "seq": 253,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 254,
+      "phase": "parse",
+      "us": 149
+    },
+    {
+      "seq": 255,
+      "phase": "parse",
+      "us": 31
+    },
+    {
+      "seq": 256,
+      "phase": "parse",
+      "us": 1668
+    },
+    {
+      "seq": 257,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 258,
+      "phase": "parse",
+      "us": 134
+    },
+    {
+      "seq": 259,
+      "phase": "parse",
+      "us": 811
+    },
+    {
+      "seq": 260,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 261,
+      "phase": "parse",
+      "us": 1994
+    },
+    {
+      "seq": 262,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 263,
+      "phase": "parse",
+      "us": 274
+    },
+    {
+      "seq": 264,
+      "phase": "parse",
+      "us": 657
+    },
+    {
+      "seq": 265,
+      "phase": "parse",
+      "us": 995
+    },
+    {
+      "seq": 266,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 267,
+      "phase": "parse",
+      "us": 790
+    },
+    {
+      "seq": 268,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 269,
+      "phase": "parse",
+      "us": 1578
+    },
+    {
+      "seq": 270,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 271,
+      "phase": "parse",
+      "us": 343
+    },
+    {
+      "seq": 272,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 273,
+      "phase": "parse",
+      "us": 309
+    },
+    {
+      "seq": 274,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 275,
+      "phase": "parse",
+      "us": 1799
+    },
+    {
+      "seq": 276,
+      "phase": "parse",
+      "us": 2385
+    },
+    {
+      "seq": 277,
+      "phase": "parse",
+      "us": 310
+    },
+    {
+      "seq": 278,
+      "phase": "parse",
+      "us": 645
+    },
+    {
+      "seq": 279,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 280,
+      "phase": "parse",
+      "us": 1941
+    },
+    {
+      "seq": 281,
+      "phase": "parse",
+      "us": 1264
+    },
+    {
+      "seq": 282,
+      "phase": "parse",
+      "us": 1894
+    },
+    {
+      "seq": 283,
+      "phase": "parse",
+      "us": 231
+    },
+    {
+      "seq": 284,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 285,
+      "phase": "parse",
+      "us": 1959
+    },
+    {
+      "seq": 286,
+      "phase": "parse",
+      "us": 1255
+    },
+    {
+      "seq": 287,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 288,
+      "phase": "parse",
+      "us": 227
+    },
+    {
+      "seq": 289,
+      "phase": "parse",
+      "us": 1169
+    },
+    {
+      "seq": 290,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 291,
+      "phase": "parse",
+      "us": 747
+    },
+    {
+      "seq": 292,
+      "phase": "parse",
+      "us": 676
+    },
+    {
+      "seq": 293,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 294,
+      "phase": "parse",
+      "us": 172
+    },
+    {
+      "seq": 295,
+      "phase": "parse",
+      "us": 1512
+    },
+    {
+      "seq": 296,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 297,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 298,
+      "phase": "parse",
+      "us": 855
+    },
+    {
+      "seq": 299,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 300,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 301,
+      "phase": "parse",
+      "us": 50
+    },
+    {
+      "seq": 302,
+      "phase": "parse",
+      "us": 860
+    },
+    {
+      "seq": 303,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 304,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 305,
+      "phase": "parse",
+      "us": 429
+    },
+    {
+      "seq": 306,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 307,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 308,
+      "phase": "parse",
+      "us": 2530
+    },
+    {
+      "seq": 309,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 310,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 311,
+      "phase": "parse",
+      "us": 1257
+    },
+    {
+      "seq": 312,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 313,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 314,
+      "phase": "parse",
+      "us": 591
+    },
+    {
+      "seq": 315,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 316,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 317,
+      "phase": "parse",
+      "us": 1141
+    },
+    {
+      "seq": 318,
+      "phase": "parse",
+      "us": 574
+    },
+    {
+      "seq": 319,
+      "phase": "parse",
+      "us": 397
+    },
+    {
+      "seq": 320,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 321,
+      "phase": "parse",
+      "us": 781
+    },
+    {
+      "seq": 322,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 323,
+      "phase": "parse",
+      "us": 88
+    },
+    {
+      "seq": 324,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 325,
+      "phase": "parse",
+      "us": 888
+    },
+    {
+      "seq": 326,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 327,
+      "phase": "parse",
+      "us": 1266
+    },
+    {
+      "seq": 328,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 329,
+      "phase": "parse",
+      "us": 156
+    },
+    {
+      "seq": 330,
+      "phase": "parse",
+      "us": 770
+    },
+    {
+      "seq": 331,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 332,
+      "phase": "parse",
+      "us": 154
+    },
+    {
+      "seq": 333,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 334,
+      "phase": "parse",
+      "us": 563
+    },
+    {
+      "seq": 335,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 336,
+      "phase": "parse",
+      "us": 106
+    },
+    {
+      "seq": 337,
+      "phase": "parse",
+      "us": 1577
+    },
+    {
+      "seq": 338,
+      "phase": "parse",
+      "us": 2546
+    },
+    {
+      "seq": 339,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 340,
+      "phase": "parse",
+      "us": 348
+    },
+    {
+      "seq": 341,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 342,
+      "phase": "parse",
+      "us": 564
+    },
+    {
+      "seq": 343,
+      "phase": "parse",
+      "us": 1555
+    },
+    {
+      "seq": 344,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 345,
+      "phase": "parse",
+      "us": 2
+    },
+    {
+      "seq": 346,
+      "phase": "parse",
+      "us": 947
+    },
+    {
+      "seq": 347,
+      "phase": "parse",
+      "us": 209
+    },
+    {
+      "seq": 348,
+      "phase": "parse",
+      "us": 1579
+    },
+    {
+      "seq": 349,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 350,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 351,
+      "phase": "parse",
+      "us": 60
+    },
+    {
+      "seq": 352,
+      "phase": "parse",
+      "us": 1234
+    },
+    {
+      "seq": 353,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 354,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 355,
+      "phase": "parse",
+      "us": 880
+    },
+    {
+      "seq": 356,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 357,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 358,
+      "phase": "parse",
+      "us": 1265
+    },
+    {
+      "seq": 359,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 360,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 361,
+      "phase": "parse",
+      "us": 1167
+    },
+    {
+      "seq": 362,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 363,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 364,
+      "phase": "parse",
+      "us": 794
+    },
+    {
+      "seq": 365,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 366,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 367,
+      "phase": "parse",
+      "us": 1195
+    },
+    {
+      "seq": 368,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 369,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 370,
+      "phase": "parse",
+      "us": 436
+    },
+    {
+      "seq": 371,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 372,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 373,
+      "phase": "parse",
+      "us": 598
+    },
+    {
+      "seq": 374,
+      "phase": "parse",
+      "us": 1186
+    },
+    {
+      "seq": 375,
+      "phase": "parse",
+      "us": 1377
+    },
+    {
+      "seq": 376,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 377,
+      "phase": "parse",
+      "us": 195
+    },
+    {
+      "seq": 378,
+      "phase": "parse",
+      "us": 948
+    },
+    {
+      "seq": 379,
+      "phase": "parse",
+      "us": 670
+    },
+    {
+      "seq": 380,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 381,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 382,
+      "phase": "parse",
+      "us": 681
+    },
+    {
+      "seq": 383,
+      "phase": "parse",
+      "us": 27
+    },
+    {
+      "seq": 384,
+      "phase": "parse",
+      "us": 708
+    },
+    {
+      "seq": 385,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 386,
+      "phase": "parse",
+      "us": 248
+    },
+    {
+      "seq": 387,
+      "phase": "parse",
+      "us": 1515
+    },
+    {
+      "seq": 388,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 389,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 390,
+      "phase": "parse",
+      "us": 437
+    },
+    {
+      "seq": 391,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 392,
+      "phase": "parse",
+      "us": 78
+    },
+    {
+      "seq": 393,
+      "phase": "parse",
+      "us": 793
+    },
+    {
+      "seq": 394,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 395,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 396,
+      "phase": "parse",
+      "us": 2312
+    },
+    {
+      "seq": 397,
+      "phase": "parse",
+      "us": 1
+    },
+    {
+      "seq": 398,
+      "phase": "parse",
+      "us": 0
+    },
+    {
+      "seq": 399,
+      "phase": "parse",
+      "us": 137
+    },
+    {
+      "seq": 400,
+      "phase": "parse",
+      "us": 94
+    },
+    {
+      "seq": 401,
+      "phase": "parse",
+      "us": 22
+    },
+    {
+      "seq": 402,
+      "phase": "parse",
+      "us": 37
+    },
+    {
+      "seq": 403,
+      "phase": "parse",
+      "us": 422
+    },
+    {
+      "seq": 404,
+      "phase": "parse",
+      "us": 155
+    },
+    {
+      "seq": 405,
+      "phase": "parse",
+      "us": 44
+    },
+    {
+      "seq": 406,
+      "phase": "parse",
+      "us": 164
+    },
+    {
+      "seq": 407,
+      "phase": "parse",
+      "us": 322
+    },
+    {
+      "seq": 408,
+      "phase": "parse",
+      "us": 56
+    },
+    {
+      "seq": 409,
+      "phase": "parse",
+      "us": 396
+    },
+    {
+      "seq": 410,
+      "phase": "parse",
+      "us": 563
+    },
+    {
+      "seq": 411,
+      "phase": "write",
+      "us": 721
+    },
+    {
+      "seq": 412,
+      "phase": "link",
+      "us": 126644
+    },
+    {
+      "seq": 413,
+      "phase": "fts",
+      "us": 4785
+    },
+    {
+      "seq": 414,
+      "phase": "link",
+      "us": 34102
+    },
+    {
+      "seq": 415,
+      "phase": "link",
+      "us": 14779
+    },
+    {
+      "seq": 416,
+      "phase": "link",
+      "us": 10543
+    },
+    {
+      "seq": 417,
+      "phase": "link",
+      "us": 18666
+    },
+    {
+      "seq": 418,
+      "phase": "link",
+      "us": 6169
+    },
+    {
+      "seq": 419,
+      "phase": "resolve",
+      "us": 9572
+    },
+    {
+      "seq": 420,
+      "phase": "checkpoint",
+      "us": 125
+    },
+    {
+      "seq": 421,
+      "phase": "done",
+      "us": 11999
+    }
+  ]
+}

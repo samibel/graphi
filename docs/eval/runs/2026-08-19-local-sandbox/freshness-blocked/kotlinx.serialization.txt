@@ -1,0 +1,33 @@
+$ eval -manifest corpus/manifest.json -full-run kotlinx.serialization -incremental-changes 100 \
+       -runner-class local-sandbox -reference-scenario docs/eval/reference-scenario.json
+
+eval: NOTE - kotlinx.serialization on runner class local-sandbox (comparison) is NOT the reference scenario; these numbers are not reference evidence and freeze no budget
+eval: wrote full-run report to /tmp/sw177-wd/fb.json
+eval: query latency over kotlinx.serialization — 223 timed executions, floor 1000 per class (sufficient=false)
+eval:   class agent_tools  n=33     p50 0.08 ms  p95 41.21 ms  (sufficient=false)
+eval:   class search       n=40     p50 0.10 ms  p95 0.21 ms  (sufficient=false)
+eval:   class structural   n=150    p50 0.06 ms  p95 0.14 ms  (sufficient=false)
+eval:   gate warm_search_p95            UNKNOWN  this run is kotlinx.serialization on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only
+eval:   gate caller_callee_impact_p95   UNKNOWN  this run is kotlinx.serialization on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only
+eval:   gate agent_context_p95          UNKNOWN  this run is kotlinx.serialization on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only
+eval:   WARNING class agent_tools ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING class search ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool agent_context_p95 ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool warm_search_p95 ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval: progress stalls over kotlinx.serialization — 1007 event(s), 1006 interval(s) (observable=true)
+eval:   stall     p50 0.000 s  p95 0.003 s  max 0.207 s
+eval:   boundaries lead-in 0.000 s  tail 0.000 s (neither is a stall)
+eval:   phase checkpoint   n=1      p95 0.000 s  max 0.000 s
+eval:   phase done         n=1      p95 0.023 s  max 0.023 s
+eval:   phase fts          n=1      p95 0.014 s  max 0.014 s
+eval:   phase link         n=11     p95 0.207 s  max 0.207 s
+eval:   phase parse        n=975    p95 0.002 s  max 0.013 s
+eval:   phase resolve      n=1      p95 0.002 s  max 0.002 s
+eval:   phase walk         n=15     p95 0.030 s  max 0.030 s
+eval:   phase write        n=1      p95 0.001 s  max 0.001 s
+eval:   gate progress_stall_p95   UNKNOWN  this run is kotlinx.serialization on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only
+eval: FAIL - full run over kotlinx.serialization: incremental: the index contains no modifiable Go source files to change
+
+exit status: 1

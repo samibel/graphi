@@ -1,0 +1,61 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "scorer_version": "p0-aggregate/1",
+  "date": "2026-08-19",
+  "runner_class": "local-sandbox",
+  "repo": "cobra",
+  "report": "report.json",
+  "raw": [
+    {
+      "series": "cold_index",
+      "file": "raw/cold-index.json",
+      "sha256": "fa40076402790caf9a6c37d8444af2485c2a5f5fd636251802356bb89868bf4f",
+      "collected": true,
+      "samples": 10
+    },
+    {
+      "series": "query_latency",
+      "file": "raw/query-latency.json",
+      "sha256": "409997efe1af7f88a2d469f3f7f07a1206a368bb0707335c0c3c8bea8d18b903",
+      "collected": true,
+      "samples": 223
+    },
+    {
+      "series": "incremental",
+      "file": "raw/incremental.json",
+      "sha256": "",
+      "collected": false,
+      "samples": 0
+    },
+    {
+      "series": "progress_stalls",
+      "file": "raw/progress-stalls.json",
+      "sha256": "dd0a289a37f332d1ced175656a0f5c476a1cfd5da6458d206bc413365bbfc5ab",
+      "collected": true,
+      "samples": 75
+    }
+  ],
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.5",
+    "filesystem": "apfs",
+    "filesystem_path": "/tmp/sw177-wd/cur",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "notes": "SW-128 raw-sample export: `report` is the published aggregate; `raw/` holds the individual measurements it was derived from, in a format that carries samples and membership lists only — no percentile travels in a raw file, so reproducing the report from it is a real check rather than a comparison of a number with itself. Run `go run ./cmd/eval -aggregate \u003cthis directory\u003e` to recompute every published metric from `raw/` and diff it against `report`: a discrepancy exits non-zero, and so does a run whose raw data or environment is incomplete. `format_version` versions the file shape and `harness_version` the measurement method — a directory whose raw files disagree about either is refused rather than averaged (PRD risk 9)."
+}
