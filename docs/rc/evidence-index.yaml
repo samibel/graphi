@@ -80,8 +80,20 @@ candidate:
 #      contract instead of G2; its row id is GA-LANG-<lang>-G2SUB, never
 #      GA-LANG-<lang>-G2. Both match the GA-LANG-<lang>- prefix that
 #      CheckGALanguages (internal/coverage/galang.go:122) requires, so the
-#      distinction is free — and it keeps `grep 'GA-LANG-.*-G2:'` an honest
-#      answer to "which languages actually have a type-checker-proven tier?".
+#      distinction is free — and it keeps
+#
+#          grep -c '^  - id: GA-LANG-.*-G2:' docs/rc/evidence-index.yaml   # -> 0
+#
+#      an honest answer to "which languages actually have a type-checker-proven
+#      tier?". ROW-ANCHORED, for the reason stated 20 lines above: the first
+#      version of this bullet published the BARE `grep 'GA-LANG-.*-G2:'` and
+#      called it honest. The bare form counts THIS COMMENT BLOCK, so it can
+#      never read 0 while the block exists, and its value RISES every time the
+#      block is edited — it was 1 when the defect was found and 2 after the
+#      correction was written. NO NUMBER IS PINNED FOR IT HERE, deliberately:
+#      pinning one is the same mistake one layer up, and it has already been
+#      made twice in this file's history. Same defect as the block above warns
+#      against, introduced by the same commit that fixed that one.
 #   2. The row's `current` field carries the gate's EVIDENCE CLASS spelled out
 #      (E0 ORACLE-PROVEN / E1 HARNESS-PROVEN / E2 CORPUS-MEASURED /
 #      E3 DECLARED-AND-CHECKED; E4 DECLARED-ONLY may never read PASS).
@@ -100,7 +112,8 @@ candidate:
 #
 #        FIRST   create the GA-LANG-<lang>-G<n> rows, born UNKNOWN, while the
 #                language is ABSENT from the coverage matrix. CheckGALanguages
-#                iterates matrix rows (galang.go:88-95) and `continue`s past
+#                iterates matrix rows (loop opens galang.go:96, `continue` at
+#                :98) and `continue`s past
 #                everything else, so a language with no matrix row is never
 #                inspected and its UNKNOWN rows are invisible to the check.
 #                This is SW-174.

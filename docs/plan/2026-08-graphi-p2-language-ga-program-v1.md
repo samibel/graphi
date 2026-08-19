@@ -109,7 +109,7 @@ lighter one, and not a prose promotion. Go's bar, named by artifact:
 | Evidence Go has | Artifact |
 |---|---|
 | `confirmed`-tier semantic edges (type-checker-proven) | `engine/typeresolve` (go/types, third ingest phase; `Languages()` = `["go"]`, `engine/typeresolve/check.go:44`) |
-| Hermetic change-class parity, byte-exact, both stores | `engine/conformance` (`TestFullVsIncremental_ByteParity`), bound to [`../rc/parity-classes.yaml`](../rc/parity-classes.yaml) by the six drift-guard directions |
+| Hermetic change-class parity, byte-exact, both stores | `engine/conformance` (`TestFullVsIncremental_ByteParity`), bound to [`../rc/parity-classes.yaml`](../rc/parity-classes.yaml) by the seven drift-guard directions (corrected from "six" 2026-08-19, SW-180 — see §2's dated block) |
 | Real-repository parity with the built binary | `internal/parity` + `cmd/parity`, published at [`../rc/parity-matrix-real-repo.md`](../rc/parity-matrix-real-repo.md); defects filed (PARITY-001/002), pinned, never hidden |
 | Pinned, measured, stratified corpus | `corpus/manifest.json` v3 (six Go repos, 10-property stratification, full-sha pins, `measured` blocks from real clones) |
 | Hero gate: 20 scenarios over exactly the 12 ops | `corpus/hero/*.yaml` + `cmd/eval` hero gate on `corpus/fixtures/hero-go` |
@@ -147,8 +147,10 @@ rows will use (`GA-LANG-<lang>-G<n>`).
 - **G3 — Hermetic change-class parity.** Rows for L in the declarative
   conformance table: full-vs-incremental snapshot **byte** parity on MemStore
   **and** SQLite, non-vacuous witnesses proven red-without-the-change, bound to
-  a per-family `docs/rc/parity-classes-<family>.yaml` by the same six
-  drift-guard directions. Every Go class gets an explicit per-language
+  a per-family `docs/rc/parity-classes-<family>.yaml` by the same **seven**
+  drift-guard directions (corrected from "six" 2026-08-19, SW-180 — see the
+  dated block at the end of this section; a six-direction guard is missing
+  VERDICT and reproduces D-11). Every Go class gets an explicit per-language
   applicability disposition (`applicable` / `adapted` / `not_applicable` +
   reason), plus language-specific classes (§5, WP-J5).
 - **G4 — Real-repository parity.** `internal/parity` drives the built binary
@@ -173,6 +175,38 @@ rows will use (`GA-LANG-<lang>-G<n>`).
   `GA-LANG-<lang>-G2..G8` row per gate under the evidence-index discipline, and
   the language appears in the machine-encoded GA-language mechanism (§6), whose
   check requires all of the above.
+
+> **Corrected 2026-08-19 (SW-180, rebuild round 2). This document said SIX
+> drift-guard directions in three places. It is SEVEN, and the missing one is
+> `VERDICT`.** Counted from the `t.Run` calls in
+> `engine/conformance/paritymatrix_test.go`, each verified at its line:
+> **MISSING `:206`, PHANTOM `:225`, KIND `:240`, VERDICT `:286`, OWNER `:408`,
+> AXIS `:460`, VOCABULARY `:483`.**
+>
+> Corrected in place at three sites, none silently: **G3 above** (the normative
+> per-family requirement), **§1's "Evidence Go has" table** (which was flatly
+> wrong about the Go guard), and **WP-J5 in §5.2** (the work package that
+> *creates* a family table and its guard). The source's own header comment
+> (`paritymatrix_test.go:167-168`) also says "SIX" and is likewise stale; the
+> count here was taken from the `t.Run` calls, not from that comment.
+>
+> **Why this mattered enough to amend a PROPOSED plan.** G3 is inside the
+> authority scope that
+> [`2026-08-per-language-ga-template-v1.md`](2026-08-per-language-ga-template-v1.md)
+> §0 declares binding over itself. The template had already corrected the count
+> to seven in its §3/S7 and then handed authority back here — so a story that
+> read §0 *carefully* would have built a **six**-direction family guard missing
+> VERDICT, while a careless reader who used only the template's table would have
+> been right by accident. SW-181, SW-182, SW-184 and SW-185 each read G3 for
+> what their family guard must contain. A six-direction guard reproduces
+> divergence **D-11** — the JVM instance's own missing-guard hole — into four
+> more family tables, each under a `GA-LANG-<lang>-G3` row reading PASS. That is
+> the precise failure the template exists to prevent, and it had been promoted
+> one level up into the authority chain.
+>
+> *(Two other "six"es in this file are correct and were left alone: the §1 table
+> and §4 both say **six Go repos / six Go pins**, which is a corpus count, not a
+> guard-direction count.)*
 
 **Cross-cutting rule (not a row):** defects found on the way get IDs and stay
 published as executable data (the `known_defect`/pinned-behaviour pattern of
@@ -225,7 +259,12 @@ surface without its level.
 >   (`@import`), `readme.md` (a link), and — decisively — on **`app.py`
 >   (`from pkg.util import helper`), which is `cross-file-heuristic`, has a
 >   registered resolver, and whose extractor demonstrably computes imports**.
->   All four return the byte-identical sentence. This shape is the more
+>   All **three named above return the byte-identical sentence, and so do
+>   `settings.yaml` (CONTESTABLE — see the template's §5.2; do not rely on it),
+>   `empty.py` and `notes.md`: six of the six resolvable files in the 12-file
+>   fixture, re-measured 2026-08-19.** *(This sentence read "All four" while
+>   naming three files — left over from a version that counted `settings.yaml`
+>   as equal evidence before §5.2 reclassified it.)* This shape is the more
 >   dangerous, because `outcome` and `method` both read as a **successful
 >   answer** rather than as a refusal.
 >
@@ -349,12 +388,12 @@ The product never gains a toolchain dependency.
 | **WP-J2** | Extractor deepening: field nodes (Java) / property nodes (Kotlin) + declared-type metadata (ADR 0008 D3); then the `qn.go`-analog identity map with byte-exact golden cross-test (G2a) | Snapshot-byte change is versioned + re-baselined deliberately, conformance re-run in the same commit |
 | **WP-J3** | Java binder (phases A–C), dark behind the kill switch; purity/determinism tests (`engine/link/purity_test.go` pattern); named skip counters for every untyped path | G2b invariant tests green; zero confirmed edges to external targets |
 | **WP-J4** | Kotlin binder on the shared table infrastructure; inferred-val / scope-function / extension-receiver skip counters as first-class observability | same as WP-J3 + the D2 share measurement published |
-| **WP-J5** | Hermetic change-class rows: new `docs/rc/parity-classes-jvm.yaml` (same constrained YAML subset, own `matrix_version`, same six guard directions) + harness rows, both stores, non-vacuous witnesses | Drift guard green; every Go class dispositioned (see below) |
+| **WP-J5** | Hermetic change-class rows: new `docs/rc/parity-classes-jvm.yaml` (same constrained YAML subset, own `matrix_version`, same **seven** guard directions — corrected from "six" 2026-08-19, SW-180, see §2's dated block; six omits VERDICT) + harness rows, both stores, non-vacuous witnesses | Drift guard green; every Go class dispositioned (see below) |
 | **WP-J6** | Corpus deepening: guava to the v3 standard; new pins (candidates below — **pins must be MEASURED at pin time**); JVM stratification (~10 axes) | Manifest v3 discipline holds for every JVM entry |
 | **WP-J7** | Real-repo parity over the JVM pins via `internal/parity`; publish; file defects | Entry criterion (ADR 0008 D8): PARITY-001/002 fixes land first, else every JVM verdict starts PARTIAL for non-JVM reasons |
 | **WP-J8** | Hero-JVM: `corpus/fixtures/hero-java` + `hero-kotlin`, ~20 scenarios each over the 12 ops, incl. confirmed-tier-pinning anchors (`tier == confirmed` witnesses) and honest-empty scenarios for the untyped gaps | Hero gate green in `cmd/eval` |
 | **WP-J9** | Differential ground-truth CI job (`jvm-groundtruth.yml`, nightly/dispatch, runner-only JDK) | Soundness direction: zero counterexamples |
-| **WP-J10** | Perf + budget: the four suites over the JVM corpus; runs published; Kotlin's 337 KB blob inside the budget gate; `GA-LANG-java-*` / `GA-LANG-kotlin-*` evidence rows created (born UNKNOWN) | Raw artifacts under `docs/eval/runs/…` |
+| **WP-J10** | Perf + budget: the four suites over the JVM corpus; runs published; Kotlin's 337 KB blob inside the budget gate; `GA-LANG-java-*` / `GA-LANG-kotlin-*` evidence rows created (born UNKNOWN — **and the ordering is load-bearing: create the rows only while the language has NO `ga-language` matrix row, and add the matrix row last, once every row reads PASS. `internal/coverage/galang.go:129-131` raises a violation for EVERY non-PASS row, so an UNKNOWN row under an existing matrix row is a RED build**) | Raw artifacts under `docs/eval/runs/…` |
 | **WP-J11** | The flip: registries report java/kotlin at `typed-confirmed`; `capability_test.go` extended; `language-support.md` + `stability-tiers.md` updated; §6 check fed `java`, `kotlin` | **Stop-ship:** any open `JVMSOUND-0xx`; any evidence row UNKNOWN/STALE |
 
 **Change-class mapping (WP-J5).** Map directly: `add_file`, `modify_file`,

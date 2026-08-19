@@ -55,8 +55,9 @@
 # docs/plan/2026-08-per-language-ga-template-v1.md generalizes this file into
 # the convention docs/rc/parity-classes-<family>.yaml. A story creating the
 # next family table should read §3 slots S6-S8 there rather than copying this
-# file, because the template records THREE ways this instance is weaker than
-# docs/rc/parity-classes.yaml, and a copy would inherit all three:
+# file, because the template records FOUR ways this instance is weaker than
+# docs/rc/parity-classes.yaml, and a copy would inherit all four. (Said "THREE"
+# until 2026-08-19: D-11b was added below without updating this lead-in.)
 #
 #   D-10  these rows omit `test_line`, `prd_source` and `delta_source`. They
 #         unmarshal empty into the shared parityRow struct, so nothing
@@ -103,7 +104,13 @@
 #         HARDCODED const path, and nothing in the tree globs
 #         docs/rc/parity-classes-*.yaml. A family that ships NEITHER a table
 #         NOR a guard produces zero CI signal -- silence, not a red build.
-#         The same hole exists at the hero slot (nothing globs corpus/hero-*).
+#         THREE glob holes, not two -- this comment listed only the first two
+#         until 2026-08-19, while the template (TEMPL-P4(b)) listed all three:
+#           1. nothing globs docs/rc/parity-classes-*.yaml
+#           2. nothing globs corpus/hero-*        (every hero glob names its
+#              family dir literally: cmd/eval/hero_jvm_test.go:35 and :109)
+#           3. nothing globs cmd/eval/hero_*_test.go -- so a family that ships
+#              no hero TEST FILE at all is equally silent.
 #         Carried as TEMPL-P4(b).
 #   D-12  every row below reads fixture: "production Go parser" while the
 #         subject under test is the JVM binder, because legalFixtures

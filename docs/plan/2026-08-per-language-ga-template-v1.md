@@ -265,7 +265,8 @@ as G2 — see §4.
 
 **Must supply.** The S2 registrant implements
 `Owns(relPath string) bool` — **declared at `engine/typeresolve/registry.go:66`**;
-`:38-65` is its doc comment, and citing that range instead of the declaration was
+`:40-65` is its doc comment (`:38` is the tail of `Input`'s comment and `:39` is
+`Input(relPath string) bool`), and citing that range instead of the declaration was
 draft 1's error (§13) — the LANGUAGE half of the `(directory, language)`
 stale-confirmed sweep key. The
 contract is `Owns ⊇ Subject` per registrant, and **pairwise disjoint across
@@ -749,8 +750,21 @@ GA-LANG-go-G2           ← would be the real thing (go alone, and go is grandfa
 
 Both match the prefix `GA-LANG-<lang>-` that `CheckGALanguages` requires, so the
 distinction costs nothing mechanically and buys a property worth having:
-`grep 'GA-LANG-.*-G2:'` over the index answers "which languages actually have a
-type-checker-proven tier?" and cannot be fooled by a substitute. The row's
+`grep -c '^  - id: GA-LANG-.*-G2:'` over the index answers "which languages
+actually have a type-checker-proven tier?" — today **0** — and cannot be fooled
+by a substitute. **Note the `^  - id:` anchor.** The first version of this
+paragraph published the *bare* `grep 'GA-LANG-.*-G2:'` and called it a grep that
+"cannot be fooled": the bare form matches this very paragraph, so it can never
+read 0 while the paragraph exists, and its value **rises with every edit to the
+paragraph** — 1 when the defect was found, 2 once the correction was written.
+No number is pinned for the bare form here, for the reason §13 gives: any count
+derived from prose drifts when the prose is edited, so state the property and
+pin only the row-anchored count.
+That is the same defect §13 and `evidence-index.yaml:65-72` warn against —
+*count ROWS, never mentions* — reproduced, twice, by the commits that fixed the
+earlier instances of it, and reproduced here in the paragraph arguing the
+convention is worth having. A claim about a grep is only as honest as the
+anchoring of the grep. The row's
 `gate` field reads `G2SUB — heuristic resolver contract (substitutes G2)`, and
 its `threshold` states the substitute's own three obligations (never-confirmed,
 drop + count, deterministic) rather than G2's.
@@ -1015,8 +1029,17 @@ nothing else are green whether the answers are honest or lies.
 §5.4's rule 1 demands a fixture carrying "the reference the operation is being
 asked about". **For some languages there is no such reference to write**, and
 the rule as stated is not merely hard for them, it is **unsatisfiable**. This is
-not hypothetical: it is the situation of two of the five `intra-file-only`
-languages, and **SW-185 grades exactly those**.
+not hypothetical: it is the situation of **three of the five** `intra-file-only`
+languages — hcl, toml and yaml, per the table below — and **SW-185 grades
+exactly those**. *(Corrected 2026-08-19, rebuild round 2: this sentence said
+"two", written before hcl was moved to the "no" side, and was not updated with
+the table.)* **`json` is not in the table because it is `parse-only`, not
+`intra-file-only`** — SW-185 grades it too, and it lands on the **"no"** side by
+the same test: JSON Schema's `$ref` is a convention of one consumer layered on
+JSON, structurally identical to `include:` being Ansible's layered on YAML. At
+`parse-only` the abstention path is necessary but **not sufficient** — §10.4's
+anchor-resolution failure bites first, and item 4 below is the assertion it
+breaks.
 
 **The test — and it is about the LANGUAGE, not about graphi's parser.** All
 five `intra-file-only` parsers declare "no import system (Imports empty) —
@@ -1064,8 +1087,16 @@ and labels the substitution per §4:
 4. **What it must still assert at full strength**, because these remain askable:
    that the anchor **resolves** (a file node exists — non-trivial, and exactly
    what `parse-only` fails, §10.4); that the summary does **not** state absence
-   of a relation as a fact about the code; and the intra-file operations, which
-   are the whole of what the level claims.
+   of a relation as a fact about the code **in a way that is false of L** — the
+   qualifier matters and is not pedantry: for a language that genuinely defines
+   no cross-file construct, "has no edges to other files" is *arguably true*
+   (§5.2 concedes exactly this for `settings.yaml`), so the unqualified form of
+   this assertion would fail yaml on a true statement. What must be asserted is
+   that the summary is not false, and that it does not present a **product
+   limitation** as a **property of the code** — which is what makes the same
+   sentence a lie for css, markdown and python and merely uninformative for
+   yaml; and the intra-file operations, which are the whole of what the level
+   claims.
 
 > **The trap this closes, stated for SW-185.** Without this path, a story
 > grading yaml or toml has two bad options: fabricate a fixture with a
@@ -1204,7 +1235,7 @@ sharply.
 
 | Slot | §7 mark | **Enforced by** | What is NOT caught |
 |---|---|---|---|
-| **S1** declaration | ✔×4 | **PARTIAL CI** — `go run ./cmd/coverage -check` (`.github/workflows/coverage-matrix.yml:40`) + `go test ./internal/coverage/...` bind level, `status: shipped`, evidence PASS+URI+sha, and duplicate ids | **existence.** `CheckGALanguages` iterates *matrix rows* and `continue`s past every non-`ga-language` row (`galang.go:88-95`), so a shipped language with **no row** is never inspected. §3/S1's "fails closed" is true only for a row that exists. |
+| **S1** declaration | ✔×4 | **PARTIAL CI** — `go run ./cmd/coverage -check` (`.github/workflows/coverage-matrix.yml:40`) + `go test ./internal/coverage/...` bind level, `status: shipped`, evidence PASS+URI+sha, and duplicate ids | **existence.** `CheckGALanguages` iterates *matrix rows* and `continue`s past every non-`ga-language` row (loop opens `galang.go:96`, `continue` at `:98`), so a shipped language with **no row** is never inspected. §3/S1's "fails closed" is true only for a row that exists. |
 | **S2** resolver | ✔ / SUB | **PARTIAL CI** — the declared level is bound to the live derivation | **G2a and G2b.** The NodeId golden and the under-approximation invariant live in `engine/jvmresolve/*_test.go` — a JVM-specific package. **Nothing generic requires either of a new language.** |
 | **S3** `Owns` | ✔ | **REAL CI** — `engine/semantic/semantic_test.go:52 TestRegistry_OwnsIsDisjointAndCoversSubject` holds *every registrant at once* and pins SUPERSET + pairwise disjointness. **The one slot whose `✔` is fully earned**, and it is also fail-loud on arrival: the hardcoded `len(resolvers) != 3` means a fourth registrant **breaks the test until someone edits it**. | the **path corpus is "representative rather than exhaustive"** (its own comment). A new language's extensions are not in `paths`, so its `Owns`/`Subject` behaviour over its *own* file types is unchecked until the story adds them. Registration is caught; coverage of the new extensions is not. |
 | **S4** oracle | ✔ / SUB | **REVIEW ONLY** | **everything.** Nothing requires an oracle to exist, or requires the abstention to be recorded. |
@@ -1291,7 +1322,7 @@ not this story** — that is stated in the ticket's own out-of-scope list.
 | S11 | Partly — `guava` is in `hero-budgets.json` `real_repos.selection` with real ceilings, and in the `eval-full.yml` matrix. | **D-8**, instance gap: no `docs/eval/runs/` directory for a JVM corpus, and `hero_suite.scenario_dir` names `corpus/hero` only, so `corpus/hero-jvm` has no budget entry. G7 is SW-177, post-candidate-move by design. |
 | S12 | Partly — `docs/language-support.md` carries the Java/Kotlin row at `cross-file-heuristic`; the derivation is live. | — |
 | S13 | Yes — `trust_language_skips` / `trust_skip_provenance`, `AbstentionFacts.Registrants`. | — |
-| S14 | **No** — `docs/rc/evidence-index.yaml` contains **zero** `GA-LANG-*` rows. | **D-9**, instance gap: SW-174 creates them, born UNKNOWN. |
+| S14 | **No** — `docs/rc/evidence-index.yaml` contains **zero** `GA-LANG-*` rows. | **D-9**, instance gap: SW-174 creates them, born UNKNOWN — **and SW-174 is step 1 of the ordering constraint in §3/S14, not an independent task.** Rows first, *while the language still has no `ga-language` matrix row*; the matrix row last (SW-179), only once all of them read PASS. `galang.go:129-131` violates on every non-PASS row, so the reverse order is a red build. Stating "born UNKNOWN" without the ordering is the advice §3/S14 records as build-breaking. |
 | S6 (fixture label) | Yes, but under a knowingly wrong value. | **D-12**, instance gap: all 13 JVM rows read `fixture: "production Go parser"` because `legalFixtures` has no non-Go member (§3/S6). Documented in the rows' own `note`; it becomes wrong at the third family. TEMPL-P3. |
 
 **Reading of AC-7.** The template reproduces the JVM asset set for every slot
@@ -1417,7 +1448,7 @@ is not.)*
 >
 > - **`app.py` is the clearest case against the old label.** Python is
 >   `cross-file-heuristic`, it has a registered resolver, and `pyImports`
->   (`core/parse/parser_python.go:232`) **does** compute imports. The file
+>   (`core/parse/parser_python.go:233`) **does** compute imports. The file
 >   contains `from pkg.util import helper` and `pkg/util.py` is tracked and
 >   indexed. By §5.2's own predicate the sentence *"has no both edges to other
 >   files"* is **false** here — this is a lie, not an honest shape.
@@ -1574,9 +1605,18 @@ working tree before and after this change:
 | tree | sha256 |
 |---|---|
 | `f054bb0`, clean | `87762557ef3400c71ed7f0d275ca9a16ebbd0ba84aa2083462c6b83936647cb7` |
-| + this document, + the three cross-references | `87762557ef3400c71ed7f0d275ca9a16ebbd0ba84aa2083462c6b83936647cb7` |
+| + this document, + the three cross-references (`083e8f3`) | `87762557ef3400c71ed7f0d275ca9a16ebbd0ba84aa2083462c6b83936647cb7` |
+| `b19a3f7` (SW-183 landed on top), clean | `4f0e1a20689e3410ec9226511cb8e03b43fa139980427fa90ea265cf1dfa88b6` |
+| + this story's rebuild-round-2 docs edits | `4f0e1a20689e3410ec9226511cb8e03b43fa139980427fa90ea265cf1dfa88b6` |
 
-**Byte-identical.** The change touches four paths — this document, plus
+**Byte-identical — measured once per round, against that round's own parent, and
+NOT carried forward as a constant.** The digest changed between rounds because
+**SW-183 landed product changes** (`engine/link/resolve_bash.go`,
+`internal/doctor/checks.go`) between this story's round 1 and round 2. AC-8 is a
+statement that *this story* moves no product byte, which the pairing of each row
+with its own parent shows; it was never a claim that the repository's binary is
+frozen at `87762557…`. Re-measured 2026-08-19: quoting a digest measured against
+a stale parent is how a byte-identity claim silently becomes false. The change touches four paths — this document, plus
 cross-reference comments in `docs/plan/2026-08-graphi-p2-language-ga-program-v1.md`,
 `docs/rc/parity-classes-jvm.yaml` and `docs/rc/evidence-index.yaml` — and
 nothing under `engine/`, `core/`, `surfaces/`, `cmd/` or `internal/`. The two
@@ -1594,8 +1634,8 @@ the compiler reads, and it has to be checked each time.
 **Stated so it is not mistaken for a publishability claim:** the product tree at
 `f054bb0` already differs from the measurement candidate
 `3b8d43f6bc0a264c74424ca209b6fbd2401c9a31`
-(`internal/parityreport/report.go:87`) — HEAD builds to `87762557…`, the
-candidate to `036be635…`. A parity dispatch run here is **not publishable**, a
+(`internal/parityreport/report.go:87`) — the tree at `f054bb0` builds to
+`87762557…`, the candidate to `036be635…`. A parity dispatch run here is **not publishable**, a
 candidate move is already owed, and that is a known escalated owner decision
 predating this story. This document neither causes it nor resolves it.
 
@@ -1664,11 +1704,27 @@ go run ./cmd/evidence -check
 # comment. Draft 1 cited ":40-47" and printed a range that stopped before the
 # declaration it claimed to show.
 sed -n '27,70p' engine/typeresolve/registry.go
-grep -n 'Owns(relPath string) bool' engine/typeresolve/registry.go   # expect :66
+grep -n 'Owns(relPath string) bool' engine/typeresolve/registry.go
+  # expect TWO lines: :66 (the INTERFACE method — the one S3 cites) and :116
+  # (goResolver's implementation). Round 2 corrected an annotation that said
+  # "expect :66" and so read as though the grep returned one line.
 
-# §5.4 — the harness gap: Summary and Confidence.Method are not captured
+# §5.4 — the harness gap: Summary and Confidence.Method are not captured into
+# scenario.Result. Round 2 replaced `grep -n 'Summary' scenario.go`, which was
+# published here with the annotation "no capture into Result" and returns
+# ZERO OUTPUT — an empty result demonstrates nothing, since it is what a
+# misspelled token also returns. Show what IS captured, then show the absence
+# as a COUNT, which is a reading rather than a silence:
 sed -n '487,503p' engine/scenario/scenario.go
-grep -n 'Summary' engine/scenario/scenario.go      # no capture into Result
+grep -c 'res\.\(OpOutcome\|EvidenceCount\|ConfidenceTop\) = ' engine/scenario/scenario.go
+  # 9 — Outcome, evidence count and Confidence.TOP are captured, in several
+  # branches; the contract-envelope branch is the block printed above (:488-490).
+  # (This annotation said ":488 :489 :490" when first written in round 2 and was
+  # corrected by running it: three of the nine, quoted as though they were all.)
+grep -c 'Summary' engine/scenario/scenario.go        # 0 — the token never appears
+grep -n 'Confidence\.' engine/scenario/scenario.go   # :490 ONLY, and it is .Top
+  # So no scenario assertion can reach summary text or confidence.METHOD, which
+  # is exactly the gap TEMPL-P1(a) addresses and why (a) alone is insufficient.
 
 # §9/D-7 — the shipped honest-empty scenarios anchor on a nonexistent term
 cat corpus/hero/hero-03-search-empty.yaml corpus/hero-jvm/hjvm-03-search-empty.yaml
@@ -1688,8 +1744,15 @@ grep -rn 'parity-classes-\*' --include='*.go' .      # expect NO hits
 # §7.1 — THE ENFORCEMENT AUDIT. Each command backs one "Enforced by" cell.
 # S10 has the SAME silence hole as S6/S7 -- the hero glob is hardcoded per
 # family and nothing globs corpus/hero-*:
-grep -n 'corpus", "hero' cmd/eval/hero_jvm_test.go        # :35, hardcoded "hero-jvm"
-grep -rn '"hero-\*"\|hero-\*' --include='*.go' .          # expect NO hits
+grep -n 'corpus", "hero' cmd/eval/hero_jvm_test.go
+  # expect TWO lines, :35 and :109, BOTH hardcoding "hero-jvm" — which is the
+  # point. Round 2 corrected an annotation reading "# :35" as though it were one.
+grep -rn 'filepath.Glob.*hero-' --include='*.go' . | grep -v '"hero-jvm"\|"hero"'
+  # expect NO hits: every hero glob names its family dir literally.
+  # DO NOT use a bare `grep -rn 'hero-\*'` here. Round 2 measured it at ONE hit
+  # — surfaces/client/capabilityaudit_test.go:45, a COMMENT added by SW-183
+  # describing this very hole. Same defect as the GA-LANG greps above: a
+  # "returns 0" claim falsified by prose that quotes it. Match the CODE.
 # S3 is the one fully-enforced slot -- it holds every registrant at once:
 grep -n 'func TestRegistry_OwnsIsDisjointAndCoversSubject' engine/semantic/semantic_test.go  # :52
 grep -n 'len(resolvers) != 3\|representative rather than exhaustive' engine/semantic/semantic_test.go
@@ -1720,7 +1783,10 @@ grep -c '^    test_line:\|^    prd_source:\|^    delta_source:' docs/rc/parity-c
 grep -c '^    fixture: "production Go parser"' docs/rc/parity-classes-jvm.yaml   # 13
 
 # §3/S9 — the legacy (non-v3) pins Wave 2 will inherit
-grep -n '"name": "flask"' -A 8 corpus/manifest.json   # no tier, no measured block
+grep -n '"name": "flask"' -A 17 corpus/manifest.json
+  # -A 17 spans the WHOLE entry (to the next "name"); piping it through
+  # `grep -c 'tier\|measured'` returns 0. Round 2 widened this from -A 8, which
+  # stopped inside the entry and so showed an absence it had not covered.
 
 # §5.2, §10 — reproduce the whole measurement on ONE 12-file fixture.
 # Build from the branch; the installed binary is stale.
@@ -1774,7 +1840,10 @@ sqlite3 "$DB" "select count(*) from nodes where kind='file';"     # 10 of 12 (no
 # extractor DOES compute imports, so `no_edges` cannot be honest for it.
 grep -n 'func pyImports' core/parse/parser_python.go              # :233 (:232 is the comment)
 grep -n 'no import system' core/parse/parser_yaml.go core/parse/parser_css.go \
-                           core/parse/parser_markdown.go core/parse/parser_toml.go
+                           core/parse/parser_markdown.go core/parse/parser_toml.go \
+                           core/parse/parser_hcl.go
+  # ALL FIVE intra-file-only parsers, each at :94. Round 2 added parser_hcl.go,
+  # whose omission made this command contradict §5.5's "all five" claim.
 # §5.1 — the four result shapes. Only the first carries summary + method.
 ID=$(/tmp/graphi-tmpl search card | sed 's/.*"node_id":"\([^"]*\)".*/\1/')
 /tmp/graphi-tmpl explain-symbol "$ID"   # shape A: summary + confidence.method
