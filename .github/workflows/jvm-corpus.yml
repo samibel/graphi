@@ -114,3 +114,19 @@ jobs:
           GRAPHI_JVM_CORPUS_PINS: /tmp/pins
           GRAPHI_JVM_CORPUS_LIB: /tmp/jvmlib
         run: go test ./internal/jvmcorpus/ -run TestPins -count=1 -v -timeout 45m
+
+      # SW-175 (W1.b) — the call-site binding rate with its denominator.
+      #
+      # It rides the SAME clones and is deliberately a SEPARATE step, because it
+      # measures a different population and the two must never be read as one:
+      # the oracle scores the 623 guava sources it can COMPILE, while the
+      # binding rate needs no compiler and covers all 3 204 at the pin. It uses
+      # GRAPHI_JVM_CORPUS_PINS only — no classpath, no JDK, no kotlinc.
+      #
+      # -v so every published figure lands in the log: the rate, its numerator
+      # and denominator, every named exclusion with its size, the full skip
+      # histogram and the residual the histogram does not account for.
+      - name: real-pin call-site binding rate and skip histogram (W1.b)
+        env:
+          GRAPHI_JVM_CORPUS_PINS: /tmp/pins
+        run: go test ./internal/jvmbindrate/ -run TestPins -count=1 -v -timeout 30m

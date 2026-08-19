@@ -243,6 +243,58 @@ and `reasonMixedDir` is deleted.
 - D9 is a JVM ruling and is **Proposed** like the rest of this ADR until the
   WP-J11 ratification (SW-178) rules on D1–D9 together.
 
+### D2 — the measurement it asks for exists as of 2026-08-19 (W1.b / SW-175)
+
+> **Added, not rewritten.** D2's row above is unchanged and its recommendation
+> stands verbatim. This section supplies the artefact that row asks for —
+> *"measure the confirmed-edge share on the pinned corpus first"* — and nothing
+> more. **No threshold is proposed here, and D2 remains the owner's to rule on
+> with both numbers in hand.**
+
+The full record is [`../rc/jvm-binding-rate.md`](../rc/jvm-binding-rate.md).
+The figures D2 needs, each stated as numerator ÷ denominator, where the
+denominator is counted by an **independent tree-sitter walk of the parse tree**
+and never derived from the binder:
+
+| language | corpus (sha) | scope | binding rate | numerator | denominator |
+|---|---|---|---:|---:|---:|
+| **kotlin** | kotlinx.serialization `3efe324b` | whole pin | **19.16 %** | 2 949 bound call sites | 15 388 CST call sites |
+| **kotlin** | okio `8b870e8e` | whole pin | **3.47 %** | 681 | 19 626 |
+| **java** | guava `2214c636` | `guava/src` (JRE flavour) | **21.39 %** | 6 065 | 28 354 |
+| java | guava `2214c636` | whole pin as checked out | **0.13 %** | 349 | 271 892 |
+
+**Six things D2's ruling must not be made without.**
+
+1. **The figure D2's supporting text quoted — "3517 typed sites" — was a
+   numerator with no denominator**, which is what independent review R6 said
+   when it dropped the ≥50 % recall threshold. It is additionally **not
+   reproducible from this tree**: today's binder yields 3 433 typed sites on
+   that pin (2 949 call + 484 value), 84 fewer. Recorded, not reconciled.
+2. **There is no single Kotlin number.** 19.22 % and 3.47 % are the same binder,
+   the same method, two real corpora — a 5.5× spread, wider than the gap
+   between the languages. Averaging them would hide the finding.
+3. **The scope dominates the language.** guava reads 0.13 % or 21.39 % depending
+   only on whether the measurement sees one flavour of the monorepo or both,
+   because `tabledType` abandons a whole body walk on a colliding FQN.
+4. **The rate is Phase B, and the graph is not.** The product-visible figure —
+   confirmed `calls` edges over CST call sites — is **9.80 %** for guava's JRE
+   module and 17.58 % for kotlinx's `core/`. A threshold set against a Phase B
+   rate would be a threshold against a number no user ever sees.
+5. **A rate is not an accuracy.** Java's bindings are oracle-SOUND at by-name,
+   by-arity and by-signature over a 623-source compiled subset; Kotlin's are
+   judged at **no** precision finer than by-name (all 351 comparisons abstain
+   under `kotlin_bytecode_shape_unproven`) and okio's at none at all. JVMSOUND-003
+   and JVMSOUND-004 are open, reproduced, unfixed wrong-confirmed-edge defects.
+   **A high binding rate is not evidence of a correct one.**
+6. **The Kotlin figures rest on dirtier parses than the Java ones.** The embedded
+   tree-sitter Kotlin grammar leaves `ERROR` nodes in **80 of 609**
+   kotlinx.serialization files (13.1 %) and 28 of 284 okio files, against **0 of
+   621** for guava's JRE module. tree-sitter recovers rather than failing, so
+   both sides of the fraction lose sites in a ratio nothing measures; the bias
+   direction is **undetermined** and no correction was applied. This is a
+   measurement-quality asymmetry on top of the evidence asymmetry in (5), and it
+   points the same way.
+
 ## Rejected alternatives (recorded, not silently omitted)
 
 - **Shelling out to `javac`/`kotlinc`** — violates the no-toolchain,

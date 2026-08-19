@@ -304,6 +304,33 @@ shipped with a local proof; none touched the shipped default.
 - **M1.2 ✅** Corpus pins (WP-J6 / G5): guava→v3 measured standard (full sha +
   census, 3204 .java) and a second Kotlin pin, kotlinx.serialization v1.6.3
   (615 JVM files, binder resolves 3517 typed sites, zero crashes at pin time).
+
+  > **AMENDED 2026-08-19 (W1.b / SW-175) — the line above is kept, not
+  > rewritten, because the thing wrong with it is instructive.** "3517 typed
+  > sites" is a **numerator without a denominator**: it says how many sites
+  > bound and never out of how many exist, which is precisely what independent
+  > review R6 objected to when it dropped Kotlin's ≥50 % recall threshold. The
+  > measured replacement, same pin, same sha, is
+  > [`../rc/jvm-binding-rate.md`](../rc/jvm-binding-rate.md): **Kotlin 19.16 %
+  > = 2 949 bound call sites / 15 388 CST call sites** on kotlinx.serialization
+  > and **3.47 %** on okio, against **Java 21.39 %** on guava's JRE module —
+  > each published with its full named-skip histogram, every exclusion with its
+  > size, and the residual the histogram does **not** account for.
+  >
+  > Three findings from that measurement change how this bullet should be read.
+  > First, today's binder produces **3 433** typed sites on this pin (2 949 call
+  > + 484 value), **84 fewer** than 3 517: the old numerator is not reproducible
+  > from this tree, and no attempt is made to reconcile the difference. Second,
+  > **a binding rate is meaningless without the scope it was taken at** —
+  > pointing graphi at the guava repository *as checked out* gives **0.13 %**,
+  > not 21.39 %, because the monorepo declares every class twice and the
+  > binder's `tabledType` abandons a whole body walk on a colliding FQN. Both
+  > rows describe the same binder on the same code. Third, the **Kotlin figures
+  > rest on dirtier parses than the Java ones** — the embedded tree-sitter
+  > Kotlin grammar leaves `ERROR` nodes in 13.1 % of kotlinx.serialization's
+  > files against 0 % for guava's JRE module — so the two languages' numbers are
+  > not equally reliable as measurements, before any question about the binder
+  > arises.
 - **M1.3 ✅** Kotlin ground-truth e2e test written; SKIPS locally (no `kotlinc`),
   proven for the first time by `jvm-groundtruth.yml`. The graphi side is
   validated locally (exactly 2 confirmed calls with the keys the bytecode
