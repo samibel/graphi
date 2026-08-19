@@ -3,8 +3,14 @@
 > ## AMENDMENT — 2026-08-19 (SW-168): the `clauseByDir` defect is now LINK-002, reproduced and disclosed
 >
 > Per D6 this amendment is **added**; nothing below is rewritten, re-pointed or
-> deleted. Two statements in the original text are superseded, and both are named
-> here rather than edited in place:
+> deleted. Items 1–2 supersede statements in the original text and are named here
+> rather than edited in place. Items 3–4 were added in **review round 1** of
+> SW-168 and supersede statements made **by this amendment's own first draft**,
+> which is stated plainly rather than quietly corrected — the first draft asserted
+> that LINK-002 "drops true edges only and never emits a wrong one" and published
+> one directory count under a label describing a different one. Both were wrong,
+> both were caught in review, and the corrections are items 3 and the figure table
+> below:
 >
 > 1. **§4, "The `clauseByDir` last-write-wins recall defect — NOT disclosed".**
 >    It now carries the id **LINK-002** and IS disclosed, on all three surfaces
@@ -27,15 +33,70 @@
 >    Pinned by `engine/link/clausebydir_test.go`, which fails **with
 >    instructions** the moment the defect is fixed.
 >
+> 3. **LINK-002 is a SOUNDNESS defect as well as a recall one, and the first
+>    draft of this amendment said otherwise.** Added in review round 1 of SW-168.
+>    Where the surviving clause declares a method of the same bare name, the call
+>    is not dropped but **REDIRECTED** to that unrelated method: reproduced
+>    through the CLI on a fixture whose ground truth is unambiguous —
+>    `func run(c *shop.Cart) { c.Reset() }` resolves to `shop_test.Fixture.Reset`
+>    with the collision present and to `shop.Cart.Reset` without it, same call
+>    site, same edge slot. The mechanism is that hiding a clause manufactures
+>    **false uniqueness** and thereby defeats `receiverMethod`'s own frozen
+>    skip-on-ambiguity rule (`engine/link/index.go:415-417`), which is required
+>    to abstain when both declarations are visible — verified by showing that it
+>    *does* abstain when neither is hidden. The wrong edge is always `heuristic`
+>    tier (0.6); `balanced`/`deep` emit the correct `confirmed` edge alongside it,
+>    but under `-profile fast` the wrong edge is the only one. **Consequence for
+>    this document:** the record's `Stop-ship? No` ruling rested entirely on the
+>    false premise and is now **REOPENED as an owner question** — D5 is stated
+>    unqualified ("a wrong edge is stop-ship") and whether it binds
+>    `heuristic`-tier edges has never been decided. §9 of the record is what the
+>    owner rules on. The frequency of the substitution on a real tree is **not
+>    measured**.
+>
+> 4. **LINK-003 filed — a second, larger last-write-wins in the same function.**
+>    Also from review round 1. `idx.byClause[clause][dir][bare] = n.ID()`
+>    (`engine/link/index.go:272`) is written unconditionally too and, unlike
+>    `byDir`, has **no `dirAmbiguous` companion**, so two methods sharing a bare
+>    name in one package shadow each other invisibly — no package-clause collision
+>    required. Reproduced through the CLI (`func (a *A) String()` beside
+>    `func (b *B) String()`; a call on an `*A` resolves to `B`'s method).
+>    Measured on the same run: **663 of 1 979 (33.5 %)** method declarations
+>    unreachable **or** shadowed once both defects are counted, against 136
+>    (6.9 %) for LINK-002 alone — roughly **5×** the surface. Same false-uniqueness
+>    mechanism. Filed on `projects/graphi/backlog.md`, disclosed on the same three
+>    user surfaces, pinned by `TestLink003_BareNameShadowing`, and **not fixed**.
+>    It is recorded here because it changes the *scope* of the eventual fix story:
+>    a fix that only makes `clauseByDir` hold a set leaves LINK-003 standing, and
+>    that was verified executably — under the simulated LINK-002 fix the LINK-003
+>    pin stays green.
+>
 > **Also now measured, where §4 had no figure.** On this repository at `a1a8a9a`,
-> reproducing `ForEachNode`'s canonical NodeId streaming order: **10 of 105**
-> directories declaring methods hold more than one package clause, and **136 of
-> 1 979** method declarations (6.9 %) are unreachable through
-> `uniqueMethodInDir` — **108** of them in `engine/ingest`, where `ingest_test`
-> took the last write. Stated with its scope: this is one repository, it counts
-> unreachable *declarations* rather than lost *edges*, and the pinned corpus
-> clones were **not** re-indexed. See §4 of the record for the full
-> not-measured list.
+> read from the real committed graphstore and streamed through
+> `graphstore.ForEachNode` in production's own canonical NodeId order (13 620
+> nodes; the order was asserted ascending, not assumed): **136 of 1 979** method
+> declarations (6.9 %) are unreachable through `uniqueMethodInDir` — **108** of
+> them in `engine/ingest`, where `ingest_test` took the last write.
+>
+> **Three distinct directory counts, because one number under the wrong label is
+> how this measurement was first published.** Of the **105** directories that
+> declare methods:
+>
+> | what is counted | count |
+> |---|---:|
+> | (a) directories **holding more than one package clause** (written by *any* dotted symbol) | **21** |
+> | (b) directories where **more than one clause declares methods** | **10** |
+> | (c) directories that **actually lose at least one method** today | **11** |
+>
+> (a) is the blast-radius number, and it is the one the words "holding more than
+> one package clause" describe. (b) is the narrowest reading. (c) is what the
+> record's per-directory table lists. The three differ because `clauseByDir` is
+> written by any dotted symbol, so a directory can hold two clauses, or lose
+> methods, without a second clause declaring any — `engine/embed/ollama` is
+> exactly that case and is why (b) ≠ (c). Stated with its scope: this is one
+> repository, it counts unreachable *declarations* rather than lost *edges*, the
+> **substitution** case below is not counted at all, and the pinned corpus clones
+> were **not** re-indexed. See §4 of the record for the full not-measured list.
 >
 > **Corrections to §4's own text, for the record.** §4 cites the assignment at
 > `engine/link/index.go:158`; at `a1a8a9a` it is at **:223** (ADR 0011 moved it).
@@ -74,6 +135,18 @@
 > disclosure surface is compiled in, which the doctor check is. That tension is a
 > real one for whoever schedules the next candidate move, and is recorded here
 > rather than resolved: resolving it is an owner decision, not a builder's.
+>
+> **A PROPOSED reframing, carried as a proposal and nothing more.** SW-168's
+> independent reviewer, having measured the same digests, suggested that the rule
+> the measurement implies is *"no product **behaviour** change; publishability is
+> expected to lapse until the next scheduled candidate move"* — i.e. that the
+> constraint should bind behaviour rather than bytes, since as written it is
+> unsatisfiable for **any** ticket touching a compiled file and will therefore
+> recur on every future disclosure. **This is recorded as a proposal, not as a
+> decision, and no acceptance criterion has been rewritten on the strength of
+> it.** Adopting or rejecting it is the owner's call; it is written down so the
+> option is on the table when the owner rules, and so that the next builder to hit
+> the same contradiction finds it already stated.
 
 ## Why this file exists
 

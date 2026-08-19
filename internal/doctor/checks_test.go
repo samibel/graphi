@@ -245,20 +245,43 @@ func TestLocalFirstCheck(t *testing.T) {
 // severity — never silently green, never a health failure of this install.
 //
 // Restored for LINK-002 after ADR 0011 closed LINK-001 and removed the check for
-// the third time. The assertions are deliberately about the SHAPE of a
-// disclosure rather than its prose, so the message can be improved without
-// breaking the test, but cannot lose the parts that make it useful: the defect
-// id, the affected operations, and a workaround.
+// the third time, and extended to LINK-003 in review round 1 of the same story.
+// The assertions are deliberately about the SHAPE of a disclosure rather than its
+// prose, so the message can be improved without breaking the test, but cannot
+// lose the parts that make it useful: the defect id, the affected operations, and
+// a workaround.
+//
+// One assertion is about CONTENT rather than shape, and deliberately so. The
+// first draft of the LINK-002 disclosure told users the defect "never emits a
+// wrong one", which was false — it also REDIRECTS calls to the wrong declaration
+// (docs/rc/link-002-clause-by-dir-recall.md §3.2). A user who reads "incomplete"
+// and acts on it is misled differently from one who reads "possibly wrong", so
+// the negative assertion below pins that the retraction cannot silently come back.
 func TestKnownDefectsCheck(t *testing.T) {
 	res := KnownDefectsCheck().Run(context.Background(), fakeEnv{})
 	if res.Status != StatusInfo {
 		t.Fatalf("known-defects must be INFO (an open defect is disclosed, not a local "+
 			"health failure, and never silently green), got %q", res.Status)
 	}
-	for _, want := range []string{"LINK-002", "callers", "callees", "Workaround"} {
+	for _, want := range []string{"LINK-002", "LINK-003", "callers", "callees", "Workaround"} {
 		if !strings.Contains(res.Message, want) {
 			t.Errorf("known-defects message must mention %q; got: %s", want, res.Message)
 		}
+	}
+	// The soundness half must be disclosed, not just the recall half.
+	for _, want := range []string{"REDIRECTED", "WRONG EDGES"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("known-defects must disclose that LINK-002 emits WRONG edges and not "+
+				"only that it drops true ones (missing %q). See "+
+				"docs/rc/link-002-clause-by-dir-recall.md §3.2; got: %s", want, res.Message)
+		}
+	}
+	if strings.Contains(res.Message, "never emits a wrong one") ||
+		strings.Contains(res.Message, "drops true edges only") {
+		t.Errorf("known-defects has regressed to the FALSE claim that LINK-002 only drops " +
+			"true edges. It also redirects them — reproduced through the CLI in " +
+			"docs/rc/link-002-clause-by-dir-recall.md §3.2, and pinned by " +
+			"engine/link/clausebydir_test.go::TestLink002_RedirectsToWrongDeclaration.")
 	}
 	// The `-profile full` incident: a published workaround named a profile the
 	// CLI rejects. Pin that this disclosure names only real profiles.

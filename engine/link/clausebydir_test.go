@@ -15,8 +15,19 @@ import (
 // suite green is a defect nobody re-checks, and internal/testgate carries no
 // allowlist (internal/testgate/allowlist.go:2-4), so the only way to keep the
 // suite honest AND green is to assert the defect as data. When LINK-002 is
-// fixed, every test in this file FAILS WITH INSTRUCTIONS rather than passing
+// fixed, the six pins named below FAIL WITH INSTRUCTIONS rather than passing
 // silently — that is the whole point of the shape.
+//
+// NOT every test here is such a pin, and the difference is stated so a future
+// fixer does not "fix" the wrong failure. The six LINK-002 defect pins are
+// PinLastWriteWins, ReceiverMethodRecallLoss, UserVisibleEdgeLoss,
+// BuildIndexOrderInvariantBroken, Deterministic and RedirectsToWrongDeclaration;
+// all six were verified to go red under a simulated fix. The other four are
+// deliberately different: ConfinedToReceiverMethod pins the blast RADIUS,
+// RedirectIsCausedByTheCollision is the substitution's counterfactual,
+// ResolverAbstainsWhenItCanSeeBoth pins the CORRECT behaviour LINK-002 defeats,
+// and TestLink003_BareNameShadowing pins a DIFFERENT defect. All four stay GREEN
+// through a LINK-002 fix — measured, not assumed.
 //
 // THE MECHANISM, at engine/link/index.go:223. `Add` assigns
 // `idx.clauseByDir[dir] = clause` UNCONDITIONALLY, so a directory whose symbols
@@ -27,9 +38,29 @@ import (
 // `receiverMethod` — the sole gate of Go's recv.Method call heuristic
 // (engine/link/resolve_go.go:159, its only consumer in the tree).
 //
-// SHAPE: a RECALL defect (edges that should resolve do not), never a SOUNDNESS
-// defect (no wrong edge is emitted). It is therefore not stop-ship under the
-// zero-tolerance rule, which binds wrong edges.
+// SHAPE: BOTH a recall and a soundness defect. This comment claimed the opposite
+// in its first draft ("never a SOUNDNESS defect (no wrong edge is emitted)"),
+// and that was FALSE — see TestLink002_RedirectsToWrongDeclaration below. The
+// two effects are:
+//
+//   - DROP, when the winning clause declares no method of that bare name:
+//     uniqueMethodInDir misses and no edge is emitted. This is the recall half
+//     and it is what the record's 136 / 6.9 % figure counts.
+//   - SUBSTITUTE, when the winning clause DOES declare that bare name on an
+//     unrelated type: the edge is emitted pointing at the WRONG declaration.
+//     Hiding a clause manufactures FALSE UNIQUENESS and thereby defeats
+//     receiverMethod's own frozen skip-on-ambiguity rule (index.go:415-417),
+//     turning a mandated abstention into a confident wrong edge.
+//
+// Because a wrong edge IS emitted, the stop-ship question is REOPENED and is the
+// owner's to answer — D5 ("a wrong edge is stop-ship") is stated unqualified and
+// has never been tested against the `heuristic` tier. §9 of the record.
+//
+// LINK-003, filed alongside: byClause[clause][dir][bare] is written
+// unconditionally too and has no dirAmbiguous companion, so two methods sharing
+// a bare name in ONE package shadow each other with no clause collision at all.
+// Same mechanism, ~5x the surface (663 of 1979 = 33.5 %, against 136 = 6.9 % for
+// LINK-002 alone). Pinned by TestLink003_BareNameShadowing. NOT fixed here.
 //
 // THE FIXTURE IS THE COMMONEST GO SHAPE THERE IS: a directory holding
 // `package shop` beside an EXTERNAL test package `package shop_test`. Both
@@ -263,6 +294,194 @@ func TestLink002_ConfinedToReceiverMethod(t *testing.T) {
 	if len(got) != 1 {
 		t.Errorf("packageFileNodes returned %d targets, want 1 (shop/cart.go): ADR 0011's "+
 			"filter is independent of the clause collision", len(got))
+	}
+}
+
+// link002RedirectNodes is the SUBSTITUTION fixture. It differs from
+// link002Nodes in exactly one way that matters: the two clauses declare the SAME
+// bare method name ("Reset"). That is what turns a dropped edge into a
+// redirected one, and it is the shape the record's first draft denied could
+// exist.
+//
+// The caller's receiver is a *shop.Cart by construction, so the ONLY correct
+// target is shop.Cart.Reset. The shop_test block is placed LAST so it takes the
+// last write, matching the CLI reproduction in §3.2 of the record.
+func link002RedirectNodes(t *testing.T) []model.Node {
+	t.Helper()
+	return []model.Node{
+		mustNode(t, "file", "shop/cart.go", "shop/cart.go"),
+		mustNode(t, "type", "shop.Cart", "shop/cart.go"),
+		mustNode(t, "method", "shop.Cart.Reset", "shop/cart.go"),
+
+		mustNode(t, "file", "shop/cart_test.go", "shop/cart_test.go"),
+		mustNode(t, "type", "shop_test.Fixture", "shop/cart_test.go"),
+		mustNode(t, "method", "shop_test.Fixture.Reset", "shop/cart_test.go"),
+
+		mustNode(t, "file", "app/main.go", "app/main.go"),
+		mustNode(t, "function", "main.run", "app/main.go"),
+	}
+}
+
+// TestLink002_RedirectsToWrongDeclaration is the SOUNDNESS pin, added in review
+// round 1 of SW-168 because the other pins in this file all pin DROPPING and
+// this class would therefore have survived a fix silently.
+//
+// It asserts the current WRONG behaviour: a `calls` edge is emitted, and it
+// points at a method on a DIFFERENT type in a DIFFERENT package in a test file.
+// Reproduced end-to-end through the CLI under `-profile fast`; §3.2 of
+// docs/rc/link-002-clause-by-dir-recall.md carries that output.
+func TestLink002_RedirectsToWrongDeclaration(t *testing.T) {
+	nodes := link002RedirectNodes(t)
+	idx := BuildIndex(nodes)
+
+	wrong := nodeIDOfKind(t, nodes, "method", "shop_test.Fixture.Reset", "shop/cart_test.go")
+	right := nodeIDOfKind(t, nodes, "method", "shop.Cart.Reset", "shop/cart.go")
+
+	files := []FileRefs{{
+		SourcePath: "app/main.go",
+		Dir:        "app",
+		Pending: []parse.PendingRef{
+			{FromQN: "main.run", Name: "Reset", SelectorBase: "c", Kind: "calls", Line: 5, Selector: true},
+		},
+	}}
+	_, edges, _, err := New().Link("go", files, idx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(edges) != 1 {
+		t.Fatalf("LINK-002 PIN BROKEN: got %d calls edges, want exactly 1. Under the "+
+			"defect the call IS resolved — to the wrong declaration. If LINK-002 is "+
+			"fixed, the correct behaviour here is to ABSTAIN (0 edges): two distinct "+
+			"\"Reset\" nodes become visible in dir \"shop\", which is exactly the "+
+			"ambiguity receiverMethod's frozen rule (index.go:415-417) mandates "+
+			"skipping on. See the instructions in TestLink002_PinLastWriteWins.",
+			len(edges))
+	}
+	if edges[0].To() != wrong {
+		t.Fatalf("LINK-002 PIN BROKEN: the emitted edge points at %s; under the defect it "+
+			"must point at the WRONG declaration %s (shop_test.Fixture.Reset). If it now "+
+			"points at %s (shop.Cart.Reset) or the edge is gone, the substitution class is "+
+			"fixed — see the instructions in TestLink002_PinLastWriteWins.",
+			edges[0].To(), wrong, right)
+	}
+	if edges[0].To() == right {
+		t.Fatalf("unreachable: wrong and right resolved to the same node id")
+	}
+}
+
+// TestLink002_RedirectIsCausedByTheCollision is the counterfactual half of the
+// substitution finding, and it is what makes "redirect" a defensible word rather
+// than a characterisation of a loose heuristic. Remove ONLY the colliding clause
+// and the SAME call site resolves to the CORRECT method.
+func TestLink002_RedirectIsCausedByTheCollision(t *testing.T) {
+	all := link002RedirectNodes(t)
+	// Drop the shop_test block (indices 3..5) — nothing else changes.
+	withoutCollision := []model.Node{all[0], all[1], all[2], all[6], all[7]}
+	idx := BuildIndex(withoutCollision)
+
+	right := nodeIDOfKind(t, all, "method", "shop.Cart.Reset", "shop/cart.go")
+	got, ok := idx.receiverMethod("app", "c", "Reset")
+	if !ok || got != right {
+		t.Fatalf("without the collision, receiverMethod resolved (%s, ok=%v) but must "+
+			"resolve to shop.Cart.Reset (%s). The fixture no longer isolates the "+
+			"redirection and must be repaired before it can pin anything.", got, ok, right)
+	}
+}
+
+// TestLink002_ResolverAbstainsWhenItCanSeeBoth proves the mechanism claim rather
+// than asserting it: receiverMethod's frozen skip-on-ambiguity rule IS live.
+// Place the two same-named methods in two DIFFERENT directories, where LINK-002
+// hides neither, and the resolver abstains — which is what it is required to do
+// in the fixture above too, and cannot, because LINK-002 has hidden one of the
+// two candidates from it.
+//
+// This test does NOT pin a defect. It pins the correct behaviour that LINK-002
+// defeats, so it must stay GREEN through the fix.
+func TestLink002_ResolverAbstainsWhenItCanSeeBoth(t *testing.T) {
+	idx := BuildIndex([]model.Node{
+		mustNode(t, "file", "pkg/a.go", "pkg/a.go"),
+		mustNode(t, "type", "pkg.A", "pkg/a.go"),
+		mustNode(t, "method", "pkg.A.String", "pkg/a.go"),
+
+		mustNode(t, "file", "other/b.go", "other/b.go"),
+		mustNode(t, "type", "other.B", "other/b.go"),
+		mustNode(t, "method", "other.B.String", "other/b.go"),
+
+		mustNode(t, "file", "app/main.go", "app/main.go"),
+		mustNode(t, "function", "main.run", "app/main.go"),
+	})
+
+	if id, ok := idx.receiverMethod("app", "a", "String"); ok {
+		t.Fatalf("receiverMethod resolved to %s, but TWO distinct \"String\" methods are "+
+			"visible to it and its frozen rule (index.go:415-417) requires a "+
+			"deterministic SKIP on ambiguity. If this rule has changed, the mechanism "+
+			"argument in §3.2 of docs/rc/link-002-clause-by-dir-recall.md — that "+
+			"LINK-002 manufactures FALSE UNIQUENESS and converts a mandated abstention "+
+			"into a wrong edge — no longer holds and the record must be corrected.", id)
+	}
+}
+
+// TestLink003_BareNameShadowing pins LINK-003, the sibling defect surfaced by
+// SW-168's review: `idx.byClause[clause][dir][bare] = n.ID()` (index.go:272) is
+// ALSO written unconditionally, and unlike byDir it has NO dirAmbiguous
+// companion, so uniqueMethodInDir cannot see the collision.
+//
+// One package, one directory, one clause — no LINK-002 involvement whatsoever —
+// and two methods sharing a bare name shadow each other. Reproduced through the
+// CLI under `-profile fast`; §10 of the record carries that output. Measured at
+// 663 of 1979 (33.5 %) unreachable-or-shadowed on graphi's own tree, against 136
+// (6.9 %) for LINK-002 alone.
+//
+// NOT fixed here, and deliberately NOT folded into LINK-002's fix scope by this
+// story — but a fix that makes clauseByDir hold a set and stops here will leave
+// this defect standing, which is why it is pinned beside its sibling.
+func TestLink003_BareNameShadowing(t *testing.T) {
+	nodes := []model.Node{
+		mustNode(t, "file", "pkg/a.go", "pkg/a.go"),
+		mustNode(t, "type", "pkg.A", "pkg/a.go"),
+		mustNode(t, "method", "pkg.A.String", "pkg/a.go"),
+
+		mustNode(t, "file", "pkg/b.go", "pkg/b.go"),
+		mustNode(t, "type", "pkg.B", "pkg/b.go"),
+		mustNode(t, "method", "pkg.B.String", "pkg/b.go"),
+
+		mustNode(t, "file", "app/main.go", "app/main.go"),
+		mustNode(t, "function", "main.run", "app/main.go"),
+	}
+	idx := BuildIndex(nodes)
+
+	// Exactly ONE clause here: LINK-002 is not in play at all.
+	if got := idx.clauseByDir["pkg"]; got != "pkg" {
+		t.Fatalf("fixture defect: clauseByDir[\"pkg\"] = %q, want \"pkg\" — this test must "+
+			"isolate LINK-003 from LINK-002 and no second clause may exist", got)
+	}
+
+	a := nodeIDOfKind(t, nodes, "method", "pkg.A.String", "pkg/a.go")
+	b := nodeIDOfKind(t, nodes, "method", "pkg.B.String", "pkg/b.go")
+
+	// byClause holds ONE slot for the bare name; the last write wins.
+	if got := idx.byClause["pkg"]["pkg"]["String"]; got != b {
+		t.Fatalf("LINK-003 PIN BROKEN: byClause[\"pkg\"][\"pkg\"][\"String\"] = %s, want the "+
+			"LAST-WRITTEN node %s (pkg.B.String). If byClause now tracks ambiguity, "+
+			"LINK-003 is fixed: delete this test, remove the LINK-003 entry from "+
+			"internal/doctor/checks.go and its assertion in checks_test.go, remove the "+
+			"readme \"Known limits\" bullet and the docs/language-support.md note, "+
+			"close the backlog entry in projects/graphi/backlog.md, and add a dated "+
+			"closing amendment to §10 of "+
+			"docs/rc/link-002-clause-by-dir-recall.md.", got, b)
+	}
+
+	// The user-visible consequence: a call on an *A resolves to B's method.
+	got, ok := idx.receiverMethod("app", "a", "String")
+	if !ok {
+		t.Fatalf("LINK-003 PIN BROKEN: receiverMethod abstained. Under the defect it " +
+			"resolves — confidently, and to the wrong node. See the instructions above.")
+	}
+	if got != b {
+		t.Fatalf("LINK-003 PIN BROKEN: receiverMethod resolved to %s, want the shadowing "+
+			"node %s (pkg.B.String). The correct target for a receiver of type *pkg.A is "+
+			"%s, which the defect makes unreachable through this path. See the "+
+			"instructions above.", got, b, a)
 	}
 }
 

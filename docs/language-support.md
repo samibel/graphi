@@ -70,13 +70,30 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > sentence above under-resolves in one directory shape: when a directory declares **two
 > package clauses** — most often a package beside its **external `_test` package** — only
 > one clause survives in the index, and methods under the losing clause are never offered
-> to the receiver-method heuristic at all. It drops true edges only and emits no wrong
-> one, so it is a recall defect and not a soundness one; it is deterministic per tree and
-> present under `fast`, `balanced` and `deep`. **The `confirmed` layer is unaffected** —
-> where the receiver's type is import-qualified, go/types resolves the call and the edge
-> is `confirmed`, which is also the workaround (it needs `balanced` or `deep`; `fast`
-> skips type resolution). Measured on graphi's own tree: 136 of 1 979 method declarations
-> (6.9 %) unreachable. Read the Go **GA** row with this limit attached until it closes:
+> to the receiver-method heuristic at all. It is **both a recall and a soundness
+> defect**: where the surviving clause declares a method of the same name the call is not
+> dropped but **redirected** to that unrelated method, because hiding a clause
+> manufactures false uniqueness and defeats the resolver's own skip-on-ambiguity rule. It
+> is deterministic per tree and present under `fast`, `balanced` and `deep`. **The
+> `confirmed` layer is unaffected** — the wrong edge is always `heuristic` tier (0.6), and
+> where the receiver's type is import-qualified go/types resolves the call correctly at
+> `confirmed` tier alongside it, which is also the workaround (it needs `balanced` or
+> `deep`; under `fast` the wrong edge is the only one there is). Measured on graphi's own
+> tree: 136 of 1 979 method declarations (6.9 %) unreachable; 21 of 105 method-declaring
+> directories hold more than one package clause and 11 lose methods today. How often the
+> redirection happens is **not** measured, and the stop-ship ruling is **open**. Read the
+> Go **GA** row with this limit attached until it closes:
+> [`docs/rc/link-002-clause-by-dir-recall.md`](rc/link-002-clause-by-dir-recall.md).
+>
+> **OPEN defect LINK-003, on the same heuristic — filed 2026-08-19.** The same resolver
+> keeps only **one entry per (package, method-name) pair**, with no ambiguity companion,
+> so a package declaring both `func (a *A) String()` and `func (b *B) String()` resolves
+> every unqualified `x.String()` to whichever won the last write — a **wrong**
+> `heuristic`-tier edge needing no package-clause collision at all. Same affected
+> operations, same tier confinement and same workaround as LINK-002. Measured on graphi's
+> own tree: **663 of 1 979 (33.5 %)** method declarations unreachable *or* shadowed once
+> both defects are counted, against 136 (6.9 %) for LINK-002 alone. **Not fixed**, and the
+> eventual fix must close both together: §10 of
 > [`docs/rc/link-002-clause-by-dir-recall.md`](rc/link-002-clause-by-dir-recall.md).
 >
 > ² Intra-file extraction ships for every language above. One per-language

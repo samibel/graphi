@@ -193,15 +193,37 @@ is hosted, there is no service to sign up for.
   losing clause become invisible to the *heuristic* receiver-method call
   resolver. `callers`, `callees`, `impact`, `neighborhood` and degree-ranked
   output then return a confident but **incomplete** answer, with no skip and no
-  diagnostic. It drops true edges only and **never emits a wrong one**; it is
+  diagnostic. **It also emits wrong edges.** When the surviving clause happens to
+  declare a method with the same name, the call is not dropped but **redirected**
+  to that unrelated method — so a `c.Reset()` on a `*shop.Cart` can point at
+  `shop_test.Fixture.Reset`. The wrong edge is always at the `heuristic` tier
+  (confidence 0.6), never `confirmed`; under `-profile balanced` (the default)
+  and `-profile deep` the correct `confirmed` edge is emitted alongside it, but
+  under `-profile fast` the wrong edge is the only one you get. The defect is
   deterministic for a given tree and reproduces under all three profiles.
   Measured on graphi's own repository: **136 of 1 979 method declarations
-  (6.9 %)** unreachable, 108 of them in one directory. `references`, `imports`
-  and `search` are unaffected. **Workaround:** where the receiver's type is
+  (6.9 %)** unreachable, 108 of them in one directory; **21 of 105** directories
+  declaring methods hold more than one package clause and **11** lose methods
+  today. How often the *redirection* happens is **not** measured. `references`,
+  `imports` and `search` are unaffected. **Workaround:** where the receiver's type is
   import-qualified (`c *shop.Cart`) the Go type-checker resolves the call
   instead and the edge is `confirmed` — this holds under `-profile balanced`
   (the default) and `-profile deep`, but **not** under `-profile fast`, which
   skips type resolution. Record:
+  [docs/rc/link-002-clause-by-dir-recall.md](docs/rc/link-002-clause-by-dir-recall.md).
+- **OPEN defect LINK-003 — two Go methods sharing a name in one package shadow
+  each other.** The same *heuristic* receiver-method resolver keeps only one
+  entry per `(package, method-name)` pair, so where a package declares
+  `func (a *A) String()` **and** `func (b *B) String()`, one of them is
+  unreachable and every unqualified `x.String()` call resolves to whichever won —
+  a **wrong** `heuristic`-tier edge, with no package-clause collision needed.
+  Same operations affected as LINK-002, same `heuristic`-tier confinement, same
+  workaround (import-qualified receivers resolve through go/types at `confirmed`
+  tier under `-profile balanced`/`deep`; `-profile fast` has no cover). Measured
+  on graphi's own repository: **663 of 1 979 method declarations (33.5 %)** are
+  unreachable *or* shadowed once both defects are counted, versus 136 (6.9 %) for
+  LINK-002 alone. Filed 2026-08-19; **not fixed**, and the eventual fix must
+  close both defects together. Record: §10 of
   [docs/rc/link-002-clause-by-dir-recall.md](docs/rc/link-002-clause-by-dir-recall.md).
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`

@@ -62,8 +62,19 @@ type SymbolIndex struct {
 	// every method under the losing clause becomes unreachable from the two
 	// readers of this map: Build's methodDirs seed and uniqueMethodInDir. That is
 	// the sole gate of receiverMethod, whose sole consumer is Go's recv.Method
-	// call heuristic (resolve_go.go), so the blast radius is a RECALL loss on
-	// heuristic `calls` edges — no wrong edge is ever emitted.
+	// call heuristic (resolve_go.go).
+	//
+	// IT IS NOT ONLY A RECALL LOSS. This comment said "no wrong edge is ever
+	// emitted" in its first draft and that was FALSE. Where the WINNING clause
+	// declares a method of the same bare name, the call is not dropped but
+	// REDIRECTED to that unrelated method: hiding a clause manufactures FALSE
+	// UNIQUENESS, which defeats receiverMethod's own frozen skip-on-ambiguity
+	// rule (it is REQUIRED to abstain when both declarations are visible) and
+	// turns a mandated abstention into a confident wrong edge. Reproduced through
+	// the CLI — §3.2 of the record — and pinned by
+	// TestLink002_RedirectsToWrongDeclaration. The wrong edge is always
+	// `heuristic` tier; the stop-ship ruling is consequently REOPENED as an owner
+	// question (§9 of the record), not settled here.
 	//
 	// It also falsifies BuildIndex's "in any order" promise below, and is
 	// deterministic in production only because ForEachNode's canonical NodeId
@@ -269,6 +280,17 @@ func (b *IndexBuilder) Add(n model.Node) {
 		if idx.byClause[clause][dir] == nil {
 			idx.byClause[clause][dir] = map[string]model.NodeId{}
 		}
+		// LINK-003 (OPEN, disclosed): last write wins HERE TOO, and unlike byDir
+		// above this map has no dirAmbiguous companion — so two methods sharing a
+		// bare name in one package shadow each other and uniqueMethodInDir cannot
+		// see the collision. Same false-uniqueness mechanism as LINK-002 four lines
+		// up, ~5x the surface (663 of 1979 = 33.5 % unreachable-or-shadowed on this
+		// tree, against 136 = 6.9 % for LINK-002 alone). See §10 of
+		// docs/rc/link-002-clause-by-dir-recall.md and the backlog entry. Deliberately
+		// left as-is — fixing it is a product-byte change with its own ceremony, and
+		// it must be fixed TOGETHER with LINK-002: a fix that only makes clauseByDir
+		// hold a set leaves this one standing (verified — TestLink003_BareNameShadowing
+		// stays green under a simulated LINK-002 fix).
 		idx.byClause[clause][dir][bare] = n.ID()
 	}
 }
