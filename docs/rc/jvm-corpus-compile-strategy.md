@@ -23,9 +23,13 @@ the summary.
 | okio 3.9.1 `8b870e8e` | `not-compiled` | not in the required layout | no | **no** |
 
 **Why full resolution rather than accept-errors, for guava.** This was measured,
-not preferred. With no classpath, `javac` over guava's 621 sources reports
-**6 960 errors and emits ZERO class files** — so the accept-errors denominator
-for this pin is 0 and the pin would contribute nothing. Every one of those
+not preferred. With no classpath, `javac` over guava's 623 staged sources reports
+**6 940 errors and emits ZERO class files** — so the accept-errors denominator
+for this pin is 0 and the pin would contribute nothing. (Round 1 corrected both
+numbers: this paragraph said "621 sources" and "6 960 errors" while §4.1 said
+623. The re-measurement is 623 / 6 940 / **0 class files**. In a document whose
+thesis is that a figure without its denominator is unreadable, its own two
+source counts have to agree.) Every one of those
 errors is a missing annotation package, and the pin's own `pom.xml` names all
 four with exact versions. Pinning those four by URL + sha256 gives a **complete**
 classpath with no resolver, no version ranges and no transitive discovery, and
@@ -91,7 +95,7 @@ defect if omitted:
    directory walk.
 2. **A pinned locale for `javac`.** `-J-Duser.language=en -J-Duser.country=US`.
    This is not cosmetic: the sandbox this was developed in emits javac
-   diagnostics in **German** ("6960 Fehler"), so anything that counts or
+   diagnostics in **German** ("6940 Fehler"), so anything that counts or
    classifies compiler output is environment-dependent until the locale is
    pinned — a difference that would otherwise have surfaced only as a mysterious
    disagreement between two runners.
@@ -128,9 +132,24 @@ confirmed **5 121** calls over the 623 staged files.
 
 | precision | verdict | counterexamples | judged | truth facts | recall | abstained |
 |---|---|---:|---:|---:|---:|---:|
-| by-name | **SOUND** | **0** | 4 721 | 14 505 | 32.5 % | 315 |
-| by-arity | **SOUND** | **0** | 4 082 | 14 535 | 28.1 % | 1 035 |
-| by-signature | **SOUND** | **0** | 2 023 | 8 047 | 25.1 % | 3 098 |
+| by-name | **SOUND** | **0** | 4 721 | 14 521 | 32.5 % | 315 |
+| by-arity | **SOUND** | **0** | 4 082 | 14 565 | 28.0 % | 1 035 |
+| by-signature | **SOUND** | **0** | 2 023 | 8 066 | 25.1 % | 3 098 |
+
+**What moved in round 1, and what did not.** The round-1 reviewer reproduced this
+table exactly at the first commit, so every difference from that run is stated
+here rather than left for a reader to spot. **Only the truth-fact column moved**
+(14 505 → 14 521, 14 535 → 14 565, 8 047 → 8 066, taking by-arity recall from
+28.1 % to 28.0 %); counterexamples, judged, abstained and every reason below are
+identical to the digit, and so are both capture digests. The cause is isolated,
+not inferred: re-running the pin with each round-1 code change applied alone
+gives **14 505 / 14 535 / 8 047 for the demangling fix (§5, fix 5) — bit-identical
+to the first publication — and the new numbers for the anonymous-constructor
+narrowing alone** (§5, fix 2's minor-1 correction). javac's local classes
+(`Outer$1L`) were being redirected onto their superclass like true anonymous
+ones, which COLLAPSED several distinct constructions onto one fact; declining to
+fabricate them un-collapses 16 by-name facts. A slightly larger denominator with
+the same numerator is a slightly lower recall and a strictly more honest one.
 
 Abstention reasons, so the green is legible rather than assumed:
 
@@ -145,7 +164,7 @@ Abstention reasons, so the green is legible rather than assumed:
 | `binder_signature_unverified` | — | — | 1 |
 
 **This is not a vacuous green.** 4 721 confirmed calls were actually judged at
-by-name and 2 023 at by-signature, against a truth set of 14 505 bytecode facts.
+by-name and 2 023 at by-signature, against a truth set of 14 521 bytecode facts.
 Abstention runs at 6.2 % / 20.2 % / 60.5 % of confirmed calls — the by-signature
 figure dominated, as SW-172's reviewer predicted, by `binder_param_type_unresolved`
 (external parameter types), not by anything this story changed.
@@ -171,12 +190,105 @@ precisions.
 
 Fixes 1, 2 and 4 convert the forge into a **named abstention** through the
 existing `truthDeclined` rescue rather than into a guess. Fix 3 keeps the fact
-decidable at by-name and declines at the two finer levels. Fix 5 demangles only
-when the suffix is exactly `$` + the owner class's simple name, so a legally
-`$`-containing name is left alone and declines instead.
+decidable at by-name and declines at the two finer levels.
 
 **The whole pre-existing suite — including the 25-case adversarial corpus and all
 five JVMSOUND pins — stays green through every one of these changes.**
+
+*Round 1, minor-3 — respectfully declined, with the measurement.* The reviewer
+read this count as an off-by-one ("`go test -v` prints 26 subtests"). It prints
+26 `=== RUN` lines, of which **one is the parent test**: `--- PASS` at subtest
+indentation is **25**, and the `name:` entries in the table are 25. The published
+figure was right. Round 1 adds a second corpus of 8 more in
+`internal/jvmgroundtruth/demangle_test.go::TestDemangle_LegalDollarNameIsNotRewritten`,
+so the do-not-accuse corpora now total 33 cases.
+
+### 5.1 Fix 5 was itself a forge — found in round 1, narrowed, and the residual disclosed
+
+**The first version of this section claimed a safety property that does not
+hold**, and it is corrected here rather than quietly rewritten. It said fix 5
+"demangles only when the suffix is exactly `$` + the owner class's simple name,
+so a legally `$`-containing name is left alone and declines instead". `$` is a
+legal Java identifier character (JLS 3.8), so a legal name can BE that suffix:
+
+```java
+package a; public class Bar { public int foo$Bar() { return 1; } }
+package a; public class App { public int run(Bar b) { return b.foo$Bar(); } }
+```
+
+graphi answers `foo$Bar` — what the source wrote — and the rule rewrote the
+bytecode fact to `foo` and accused it at by-name. The caller side forged
+independently (`run$App` declared in class `App`). Both were **regressions**: the
+parent commit scored the same fixtures `matched=1`. Correct Java, correct
+binding, fabricated stop-ship — the one thing an oracle may never do.
+
+**The narrowed rule.** Demangling now requires the owner to be a class kotlinc
+could have minted the mangling for: its simple name contains `__` (kotlinc names
+a multifile part class `<Facade>__<PartFile>`) **and** it was compiled from a
+`.kt` file in this capture. Java is now immune whatever it is named — including
+a Java class literally called `Foo__Bar` with a method `m$Foo__Bar`, which the
+`__` test alone would still have rewritten.
+
+**The residual, measured rather than claimed closed.** Writing this, the tempting
+next sentence was "and Kotlin cannot spell such a name". That is false, and it
+was killed by trying it: kotlinc 1.9.24 accepts `$` inside a backquoted
+identifier, so
+
+```kotlin
+package k
+class Foo__Bar { fun `x$Foo__Bar`(): Int = 1 }
+```
+
+compiles to exactly the shape the rule matches
+(`TestDemangle_KotlinCanSpellTheResidual` measures it). It is recorded as
+**blind spot #17**, not as a closed case. The exact discriminator exists and is named: a genuine multifile
+part class carries `kotlin.Metadata(k=5)` (kind 5 = multi-file class part) where
+an ordinary Kotlin class carries `k=1` — printed by `javap -v`, **not** by the
+`javap -c -p -s` this capture takes. That is the same capture upgrade the
+`ACC_SYNTHETIC` bridge discriminator needs; both are filed as JVMCAP-001.
+
+**The cost of declining, stated.** A legal `$`-containing callee name now
+abstains under `bytecode_owner_unresolved` rather than matching, which is one
+fewer judged call than the parent produced for that fixture. That is the trade
+this programme takes every time: an oracle that declines is worse than one that
+answers, and far better than one that accuses.
+
+### 5.2 The bridge guard's price (fix 1), measured
+
+Fix 1 declines whenever the callee's `(name, descriptor)` is declared both on the
+receiver's static type and somewhere above it. **The first version of this
+document did not publish what that costs, and its code comment understated what
+it does** — it said the cost was "recall on genuine overrides called from within
+the overriding class". It is not scoped to self-calls: it fires on **any** call
+whose static receiver type declares the same `(name, descriptor)` as a supertype,
+which is the ordinary way an overridden method is called.
+
+Measured on guava at this commit, the single condition neutered and nothing else
+changed (same pin, same capture digest `7f1aa8d6…`):
+
+| by-name | guard ON (shipped) | guard OFF |
+|---|---:|---:|
+| counterexamples | **0** | **3** |
+| judged (matched) | 4 721 | 4 932 |
+| truth facts | 14 521 | 15 539 |
+| recall | 32.5 % | 31.7 % |
+| abstained | 315 | 101 |
+| — `bytecode_owner_unresolved` | 271 | 65 |
+
+So the SOUND verdict at by-name is bought with **211 confirmed calls moved from
+judged to abstained — 4.1 % of guava's 5 121 confirmed — and 206 extra
+`bytecode_owner_unresolved` abstentions, 76 % of that bucket and 65 % of the
+whole by-name abstention budget, to close 3 forged stop-ships.** Roughly 70
+declines per forge. 1 034 truth facts also leave the recall denominator, which is
+why the **ratio moves the wrong way round**: recall *rises* from 31.7 % to 32.5 %
+while absolute coverage falls. That is exactly why the absolute counts are
+published beside it — a guard that improves the headline percentage by covering
+less is the shape of figure this programme exists to refuse.
+
+The trade is still the right one under the never-accuse rule, and it is not
+reversed here. But it widens the `truthDeclined` channel that SW-172's round-2
+MAJOR-9 showed can swallow a real defect, by the same 206, and that exposure is
+now written down instead of being rediscovered.
 
 ---
 
@@ -228,15 +340,52 @@ evidence, so it backs no figure.
 This pin publishes **no coverage figure and no counterexample count**. What is
 established is in §3 and §4.1: the compile and its reproducibility.
 
-The by-name differential still reports **27 of 351** confirmed calls as unbacked.
-Those 27 are **not** classified as product defects, and are deliberately **not**
-filed as JVMSOUND defects. They are measured to concentrate in two Kotlin
-lowerings the harness does not yet model — interface members lowered into
-`Encoder$DefaultImpls`, and self-calls to inherited interface **default** methods
-where the symbolic owner is the implementing class. Calling them product defects
-without finishing the classification would be exactly the claim-outrunning-evidence
-failure this programme keeps having, so until they are classified no figure from
-this pin is publishable. That is the same rule AC-4 applies to a denominator.
+The by-name differential reports **27 of 351** confirmed calls as unbacked. The
+finer precisions are published too (round 1, minor-6), because "no figure" was
+never meant to mean "no result":
+
+| precision | verdict | counterexamples | judged | truth facts | recall | abstained |
+|---|---|---:|---:|---:|---:|---:|
+| by-name | **SOUNDNESS FAILURE** | **27** | 310 | 990 | 31.3 % | 14 (`bytecode_owner_unresolved`) |
+| by-arity | SOUND | 0 | 0 | 1 009 | 0.0 % | 351 (`kotlin_bytecode_shape_unproven`) |
+| by-signature | SOUND | 0 | 0 | 670 | 0.0 % | 351 (`kotlin_bytecode_shape_unproven`) |
+
+The two SOUND rows are **vacuously** sound — every confirmed call abstains, so
+nothing is judged — and are printed exactly so that cannot be read as a pass. The
+by-name row accounts for every confirmed call: 310 matched + 27 unbacked + 14
+abstained = 351.
+
+**The classification, done (round 1, MAJOR-2).** The first version of this
+section said the 27 were "measured to concentrate in two Kotlin lowerings the
+harness does not yet model" and that classifying them was real work. The
+reviewer classified them in fifteen minutes and showed the dominant mechanism was
+neither of the two named. All 27 were then re-diagnosed here, against the pin's
+own source, and the account below is that measurement:
+
+| cluster | count | mechanism | verdict |
+|---|---:|---|---|
+| **A — value-class (inline-class) name mangling** | **22** | kotlinc mangles any function taking an inline-class parameter to `name-<hash>` and emits a bridge under the plain name. The real body's calls are attributed to the MANGLED caller: `serialize-2TYgG_w`, `deserialize-BwKQO78`, `toBuilder-GBYM_sE`, `writeContent-Coi6ktg`, `computeIfAbsent-gIAlu-s`. graphi answers `serialize` — what `ValueClasses.kt:16` declares | oracle accusing correct code |
+| **B — interface member lowered onto the implementing class** | **4** | `AbstractEncoder.kt:80` calls `encodeSerializableValue`, declared on interface `Encoder` at `Encoding.kt:278`. graphi answers `Encoding.kt` — correct. kotlinc emits a real member on `AbstractEncoder` delegating to `Encoder$DefaultImpls`, so the owner walk stops there. The bridge guard (§5.2) cannot catch it: `parseClassHeader` records `extends` only, never `implements` | oracle accusing correct code |
+| **C — `internal` visibility mangling, compounded** | **1** | `PrimitiveArraysSerializers.kt:55` declares `internal fun append`; kotlinc appends the module name and the value-class hash, giving `append$main` and `append-7apg3OU$main`. The fact declines, but the decline is keyed on the MANGLED callee name so it never reaches the rescue | oracle accusing correct code |
+
+**Every one of the 27 is the oracle accusing correct code. None is a product
+defect.** That is a more serious statement than "shapes the harness does not yet
+model", and it means the Kotlin leg of this oracle is 27 forged accusations wide
+at corpus scale — which has to be read together with §2's "kotlinc compiles here
+and the Kotlin gate passes locally, recall 2/2".
+
+Cluster A is a **second Kotlin name-mangling scheme**, directly analogous to the
+`$PartClass` one §5 closed in this same change, and it was named nowhere in the
+first version of this record. It is registered as **blind spot #18** and filed on
+`projects/graphi/backlog.md` as JVMHARN-001 so it exists as work rather than as
+prose inside a JSON string.
+
+**It is still not fixed here, and the pin still publishes no coverage figure.**
+Fixing cluster A means demangling a second scheme on the caller side, which would
+move this pin's counterexample count — the one number a reviewer has already
+reproduced independently — inside a round whose job is to correct the record, not
+to change what it measures. The count stays 27, the classification is now
+correct, and the fix has a ticket.
 
 ### 6.3 What could not be made reproducible
 
@@ -248,6 +397,22 @@ this pin is publishable. That is the same rule AC-4 applies to a denominator.
   builds. Closing this needs a digest-pinned JDK, the same treatment kotlinc got.
 - **okio, at all** — §6.1.
 - **Kotlin scoring** — §6.2.
+
+### 6.4 The two blind spots this round ADDED to the register (AC-7)
+
+Both are appended to SW-172's AC-7 list, which is the programme's designated
+place for them, and both are on `backlog.md` so they exist as work:
+
+- **#17 — the multifile demangle residual** (§5.1). A Kotlin-compiled class whose
+  simple name contains `__` and which declares a member named `<x>$<that name>`
+  is still rewritten. Reachable — kotlinc accepts `$` in a backquoted identifier,
+  and it was measured, not argued. Exact closure: `kotlin.Metadata(k=5)` via
+  `javap -v` (**JVMCAP-001**).
+- **#18 — Kotlin value-class name mangling** (§6.2, cluster A). `name-<hash>` is
+  a second mangling scheme, unmodelled, and it is the largest source of forged
+  accusations on the Kotlin half of the corpus: **22 of kotlinx.serialization's
+  27** by-name counterexamples (**JVMHARN-001**). Unlike #17 this one is not rare
+  — it fires on every function taking an inline-class parameter.
 
 ---
 

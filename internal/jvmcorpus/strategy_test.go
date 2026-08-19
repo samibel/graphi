@@ -197,6 +197,40 @@ func TestValidate_RejectsSilentExclusion(t *testing.T) {
 	}
 }
 
+// TestValidate_RejectsUnExcludingACompilingPin is the other direction of AC-7,
+// added in SW-173 round 1 (minor-5). The rule above binds only pins recorded as
+// not-compiled. A pin that COMPILES but cannot be scored — kotlinx.serialization,
+// with 27 open by-name counterexamples — carried its exclusion as data that any
+// edit could flip off while leaving the reason behind, which is precisely a
+// silent re-admission to the corpus-scale claim.
+func TestValidate_RejectsUnExcludingACompilingPin(t *testing.T) {
+	compiling := func(excluded bool) jvmcorpus.Manifest {
+		return jvmcorpus.Manifest{Entries: []jvmcorpus.Entry{{
+			Name: "kotlinx.serialization", Language: "kotlin", URL: "https://example.invalid/kx",
+			Compile: &jvmcorpus.Strategy{
+				Strategy:                jvmcorpus.StrategyFullResolution,
+				Reason:                  "a reason long enough to pass the length rule for a compiling pin here",
+				Toolchain:               map[string]string{"kotlinc": "1.9.24"},
+				Compiler:                "kotlinc",
+				SourceRoots:             []string{"core/commonMain/src"},
+				ExcludedFromCorpusScale: excluded,
+				ExclusionReason:         "compiles and is reproducible; scoring is not established, 27 of 351 unbacked",
+			},
+		}}}
+	}
+	if err := compiling(true).Validate(); err != nil {
+		t.Fatalf("the checked-in shape must stay valid: %v", err)
+	}
+	err := compiling(false).Validate()
+	if err == nil {
+		t.Fatal("flipping excluded_from_corpus_scale to false while KEEPING the exclusion reason " +
+			"must be rejected — that is a pin re-admitted to the corpus-scale claim silently (AC-7)")
+	}
+	if !strings.Contains(err.Error(), "excluded loudly") {
+		t.Errorf("the failure must say what the rule protects, got: %v", err)
+	}
+}
+
 func names(pins []jvmcorpus.Entry) []string {
 	var out []string
 	for _, p := range pins {

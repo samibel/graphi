@@ -21,14 +21,29 @@ var toolchainWorkflows = []string{
 // commit can compile differently on two days; every figure produced by such a
 // run is unreproducible, and unreproducible evidence is not evidence.
 //
-// It asserts three things, because pinning the URL alone is not pinning: an
-// exact version in the URL, a sha256 checked BEFORE the archive is unpacked,
-// and no moving reference anywhere in the file.
+// It asserts four things, because pinning the URL alone is not pinning: an
+// exact version in the URL, a sha256, that digest CHECKED, and the check
+// happening BEFORE the archive is unpacked.
+//
+// VACUITY, closed in SW-173 round 1 (minor-4). This loop used to `continue`
+// when the file did not mention `kotlin-compiler`, so DELETING THE WHOLE
+// INSTALL STEP made the test pass — the reviewer demonstrated it. Both named
+// workflows exist to produce JVM compile evidence and both compile a Kotlin
+// pin, so there is no legitimate "this one does not install kotlinc" case to
+// skip for; the requirement is now unconditional and a workflow that stops
+// needing kotlinc is removed from the list deliberately, in the diff, rather
+// than by a silently smaller scan. The string checks are executable-line-scoped
+// for the same reason `releases/latest` is: a YAML COMMENT saying
+// `sha256sum -c -` used to satisfy a whole-file Contains.
 func TestWorkflows_KotlincIsPinned(t *testing.T) {
 	for _, path := range toolchainWorkflows {
 		yaml := read(t, path)
-		if !strings.Contains(yaml, "kotlin-compiler") {
-			continue // this workflow does not install kotlinc
+		name := filepath.Base(path)
+		if _, found := firstExecutableMatch(yaml, `kotlin-compiler`); !found {
+			t.Errorf("%s installs no pinned kotlinc archive; both toolchain workflows compile a "+
+				"Kotlin pin, so this is either a deleted install step or a list that needs "+
+				"updating in this diff (AC-1)", name)
+			continue
 		}
 		// Scanned over EXECUTABLE lines only. The rule is about what the
 		// workflow does, not about what its prose says — and these files
@@ -36,19 +51,27 @@ func TestWorkflows_KotlincIsPinned(t *testing.T) {
 		// whole-file grep would fail on the documentation of its own fix.
 		if line, found := firstExecutableMatch(yaml, `releases/latest`); found {
 			t.Errorf("%s installs kotlinc from a MOVING reference: %q; "+
-				"the same commit would compile differently on two days (AC-1)",
-				filepath.Base(path), line)
+				"the same commit would compile differently on two days (AC-1)", name, line)
 		}
 		if !regexp.MustCompile(`KOTLIN_VERSION:\s*"\d+\.\d+\.\d+"`).MatchString(yaml) {
-			t.Errorf("%s must pin KOTLIN_VERSION to an exact x.y.z (AC-1)", filepath.Base(path))
+			t.Errorf("%s must pin KOTLIN_VERSION to an exact x.y.z (AC-1)", name)
 		}
 		if !regexp.MustCompile(`KOTLIN_SHA256:\s*"[0-9a-f]{64}"`).MatchString(yaml) {
 			t.Errorf("%s must pin the kotlinc archive by sha256 — a version alone does not "+
-				"stop the artifact changing under it (AC-1)", filepath.Base(path))
+				"stop the artifact changing under it (AC-1)", name)
 		}
-		if !strings.Contains(yaml, "sha256sum -c -") {
+		verify, checked := executableLineNumber(yaml, `sha256sum -c -`)
+		if !checked {
 			t.Errorf("%s must VERIFY the kotlinc digest before unpacking; a recorded digest "+
-				"that is never checked pins nothing (AC-1)", filepath.Base(path))
+				"that is never checked pins nothing, and a digest named only in a COMMENT "+
+				"is not checked (AC-1)", name)
+			continue
+		}
+		unpack, unpacked := executableLineNumber(yaml, `unzip`)
+		if unpacked && unpack < verify {
+			t.Errorf("%s unpacks the kotlinc archive (line %d) BEFORE verifying its digest "+
+				"(line %d); a check after the bytes are already on disk and on PATH is not "+
+				"a fail-closed check (AC-1)", name, unpack, verify)
 		}
 	}
 }
@@ -57,18 +80,25 @@ func TestWorkflows_KotlincIsPinned(t *testing.T) {
 // major line, so the exact build is only knowable from the run — which is why
 // the workflow must also PRINT it. A version that is requested but never
 // recorded cannot be cited beside a figure.
+//
+// Same vacuity closure as above (SW-173 round 1, minor-4): the `setup-java`
+// anchor used to make its own precondition optional, so removing the JDK
+// install passed. Both workflows run javac or javap, so both must install and
+// record a JDK.
 func TestWorkflows_JavaIsPinnedAndRecorded(t *testing.T) {
 	for _, path := range toolchainWorkflows {
 		yaml := read(t, path)
-		if !strings.Contains(yaml, "setup-java") {
+		name := filepath.Base(path)
+		if _, found := firstExecutableMatch(yaml, `setup-java`); !found {
+			t.Errorf("%s installs no JDK; both toolchain workflows run javac/javap (AC-2)", name)
 			continue
 		}
 		if !regexp.MustCompile(`java-version:\s*"\d+"`).MatchString(yaml) {
-			t.Errorf("%s must pin java-version (AC-2)", filepath.Base(path))
+			t.Errorf("%s must pin java-version (AC-2)", name)
 		}
-		if !strings.Contains(yaml, "javac -version") {
+		if _, found := firstExecutableMatch(yaml, `javac -version`); !found {
 			t.Errorf("%s must RECORD the javac version it actually installed, beside the "+
-				"evidence it produces (AC-2)", filepath.Base(path))
+				"evidence it produces — and record it in a RUN step, not a comment (AC-2)", name)
 		}
 	}
 }
@@ -119,6 +149,22 @@ func firstExecutableMatch(yaml, pattern string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// executableLineNumber is firstExecutableMatch's positional form: the 1-based
+// line number of the first non-comment match, used to assert ORDER between two
+// steps (verify before unpack).
+func executableLineNumber(yaml, pattern string) (int, bool) {
+	re := regexp.MustCompile(pattern)
+	for i, line := range strings.Split(yaml, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		if re.MatchString(line) {
+			return i + 1, true
+		}
+	}
+	return 0, false
 }
 
 func read(t *testing.T, path string) string {

@@ -254,11 +254,54 @@ type Call struct {
 // syntheticNestedClass reports whether an internal class name is one javac
 // MINTED for an anonymous or local class (`a/App$1`, `a/App$1L`). The marker
 // is a '$' followed immediately by a DIGIT, which is exact rather than
-// heuristic: a Java identifier cannot begin with a digit, so no user-written
-// nested type can produce that pair.
+// heuristic for the question it is asked: a Java identifier cannot begin with a
+// digit, so no user-written nested type can produce that pair.
+//
+// It is used for ONE thing — marking a bytecode fact whose CALLER class graphi
+// mints no node for (callerSynthetic). Over-matching there is safe by
+// construction: the fact stays in the truth set and only an extra
+// caller-agnostic ABSTENTION is registered, so a wrong yes costs recall and can
+// never accuse. The constructor redirect asks a different and much less
+// forgiving question and uses anonymousNestedClass instead.
 func syntheticNestedClass(internal string) bool {
 	for i := 0; i+1 < len(internal); i++ {
 		if internal[i] == '$' && internal[i+1] >= '0' && internal[i+1] <= '9' {
+			return true
+		}
+	}
+	return false
+}
+
+// anonymousNestedClass reports whether an internal class name is one javac
+// minted for an ANONYMOUS class specifically: some segment between '$'
+// separators is ENTIRELY digits (`a/App$1`, `a/Outer$1$2`).
+//
+// SW-173 round 1, minor-1. The constructor redirect used the digit-PREFIX test
+// above, which also matches javac's LOCAL classes (`a/App$1L`) and the legal
+// user-declared type `a.Foo$1Bar` — and for those the redirect does not merely
+// abstain, it REWRITES the fact to name the superclass and the superclass's
+// file, so the truth set gains a fact claiming the source constructed a type it
+// never named. That is a fabrication, latent today only because graphi mints no
+// confirmed constructor edge for either shape.
+//
+// A local class `class L {}` compiles to `Outer$1L`: javac's disambiguating
+// counter, then the SOURCE name. So `1L` is digit-prefixed but not all-digits,
+// and requiring the whole segment to be digits is exactly the anonymous-class
+// test — `new X(){…}` is the only construct whose class has no source name at
+// all, which is why javac has nothing to append.
+func anonymousNestedClass(internal string) bool {
+	for _, seg := range strings.Split(internal, "$")[1:] {
+		if seg == "" {
+			continue
+		}
+		allDigits := true
+		for i := 0; i < len(seg); i++ {
+			if seg[i] < '0' || seg[i] > '9' {
+				allDigits = false
+				break
+			}
+		}
+		if allDigits {
 			return true
 		}
 	}
@@ -348,6 +391,16 @@ func (c Call) undecidableAt(p Precision) (string, bool) {
 // rather than degrading silently.
 //
 // Pure and deterministic: identical input yields an identical, sorted slice.
+//
+// SINGLE-EXEC CALLERS ONLY (SW-173 round 1, minor-7). This function trusts its
+// argument to be a COMPLETE disassembly of the classes whose calls should be
+// resolvable; an owner missing from it resolves to no source path and silently
+// leaves the truth set, which is exactly the incomplete-capture forge
+// TestIncompleteCapture_ForgesWithoutTheGate_RefusedWithIt reproduces. Any
+// caller that assembles javap output from MORE THAN ONE exec must go through
+// NewCapture, which refuses a merge unless every class the compiler wrote is
+// present. That obligation is a convention this comment states, not an
+// invariant the type system enforces.
 func ParseJavap(out []byte) ([]Call, error) {
 	classes, err := parseClasses(out)
 	if err != nil {
@@ -387,8 +440,15 @@ func ParseJavap(out []byte) ([]Call, error) {
 		// `builtinParametrizedSerializer$SerializersKt__SerializersKt`, so every
 		// fact naming it as the caller disagreed with graphi about a method both
 		// sides had right. Same exact rule as the callee side.
+		//
+		// There is deliberately NO decline fallback on this side, and the
+		// asymmetry is not an oversight: a truth fact nobody claims is harmless
+		// (an accusation needs a CONFIRMED call with no truth fact, never a
+		// truth fact with no confirmed call), so leaving an unrecognised
+		// `$`-bearing caller name alone costs nothing. Rewriting one that was
+		// never mangled is what costs — see demangleMultifilePart.
 		callerMethod := r.callerMethod
-		if base, ok := demangleMultifilePart(callerMethod, r.callerClassInternal); ok {
+		if base, ok := demangleMultifilePart(classes, callerMethod, r.callerClassInternal); ok {
 			callerMethod = base
 		}
 		callee := r.calleeName
@@ -418,7 +478,15 @@ func ParseJavap(out []byte) ([]Call, error) {
 			// merely implements X, and `javap -c -p -s` prints no implements
 			// clause this parser reads — so the constructed type is genuinely
 			// unrecoverable and the fact DECLINES rather than guessing.
-			if syntheticNestedClass(r.calleeOwnerInternal) {
+			//
+			// ANONYMOUS specifically, not merely javac-minted (SW-173 round 1,
+			// minor-1): the redirect rewrites the fact to name the superclass
+			// and the superclass's FILE, which is only the type the source named
+			// when the class has no source name of its own. A local class
+			// (`a/App$1L`) and the legal user type `a.Foo$1Bar` both have one,
+			// and redirecting either fabricates a construction the source never
+			// wrote.
+			if anonymousNestedClass(r.calleeOwnerInternal) {
 				anonCtorOwner, anonCtorReason = anonymousCtorTarget(classes, r.calleeOwnerInternal)
 			}
 			if anonCtorOwner != "" {
@@ -463,7 +531,7 @@ func ParseJavap(out []byte) ([]Call, error) {
 		// both sides got right. Constructors are exempt: their callee has
 		// already been normalised to a simple type name above.
 		if !ctor {
-			if base, ok := demangleMultifilePart(callee, r.calleeOwnerInternal); ok {
+			if base, ok := demangleMultifilePart(classes, callee, r.calleeOwnerInternal); ok {
 				callee = base
 			} else if strings.Contains(callee, "$") {
 				ownerReason = AbstainBytecodeOwnerUnresolved
@@ -615,10 +683,44 @@ func resolveOwner(classes map[string]*classInfo, hasDescriptorTable bool, owner,
 			// Since the two cases are indistinguishable here, the honest answer
 			// when the name is ALSO declared further up the chain is to decline.
 			// That routes the fact into the truthDeclined channel, where the
-			// confirmed call is ABSTAINED rather than accused. The cost is
-			// recall on genuine overrides called from within the overriding
-			// class; the alternative is fabricating stop-ships, and an oracle
-			// that accuses correct code is worse than one that declines.
+			// confirmed call is ABSTAINED rather than accused.
+			//
+			// WHAT THIS DECLINES, stated exactly (SW-173 round 1, MAJOR-3 —
+			// the earlier wording said "genuine overrides called from within
+			// the overriding class", which understates it by a lot). It fires
+			// on ANY call whose static receiver type declares the same (name,
+			// descriptor) as some supertype — i.e. every call to an overridden
+			// method made through the overriding type, from anywhere, plus
+			// self-calls, plus calls through a type further down a chain. That
+			// is the ordinary way an overridden method is called.
+			//
+			// WHAT IT COSTS, measured on guava at this commit rather than
+			// described (both runs at capture digest 7f1aa8d6…, this single
+			// condition neutered and nothing else changed):
+			//
+			//	by-name          guard ON      guard OFF
+			//	counterexamples         0              3
+			//	matched              4721           4932
+			//	truth facts         14505          15539
+			//	abstained             315            101
+			//	  owner_unresolved    271             65
+			//
+			// So 3 forged stop-ships are bought with 211 confirmed calls moved
+			// from judged to abstained (4.1% of guava's 5121 confirmed) and 206
+			// extra `bytecode_owner_unresolved` abstentions — 76% of that
+			// bucket, 65% of the whole by-name abstention budget — plus 1034
+			// truth facts leaving the recall denominator. Roughly 70 declines
+			// per forge closed. Note the RATIO moves the other way (31.7% →
+			// 32.5%) because the denominator shrinks faster than the numerator:
+			// the guard makes recall look better while covering less, which is
+			// why the absolute counts are the ones published.
+			//
+			// By this programme's rule that is still the right trade — an
+			// oracle that accuses correct code is worse than one that declines
+			// — but it is a large one, and it widens the truthDeclined channel
+			// that SW-172's round-2 MAJOR-9 showed can swallow a real defect.
+			// The precise discriminator is ACC_SYNTHETIC, which needs the
+			// `javap -v` capture upgrade (JVMCAP-001 on the backlog).
 			if ci.super != "" && declaredAbove(classes, ci.super, want) {
 				return cur, AbstainBytecodeOwnerUnresolved
 			}
@@ -644,15 +746,62 @@ func resolveOwner(classes map[string]*classInfo, hasDescriptorTable bool, owner,
 // resolved correctly. SW-173 measured 48 such forged stop-ships on
 // kotlinx.serialization, on both the caller and the callee side.
 //
-// The rule is EXACT rather than a guess at Kotlin's conventions: the suffix must
-// be `$` followed by the simple name of the very class the member belongs to.
-// A user-declared `foo$bar` does not satisfy that unless the enclosing class is
-// literally named `bar`, and stripping is skipped whenever it does not hold —
-// so a legally `$`-containing name is left alone and declines instead (see the
-// caller of this function).
-func demangleMultifilePart(name, ownerInternal string) (string, bool) {
-	suffix := "$" + simpleName(ownerInternal)
-	base, ok := strings.CutSuffix(name, suffix)
+// # Why the OWNER is tested, and not only the suffix
+//
+// SW-173 round 1, found by the reviewer: matching the suffix alone ACCUSES
+// CORRECT CODE. `$` is a legal Java identifier character (JLS 3.8), so
+//
+//	package a; public class Bar { public int foo$Bar() { return 1; } }
+//
+// declares a real method whose name ends in `$` + its own owner's simple name.
+// graphi answers `foo$Bar`, which is what the source wrote; the suffix-only rule
+// rewrote the bytecode fact to `foo` and forged a stop-ship at by-name against a
+// call the parent commit scored correctly. The caller side forged the same way
+// (`run$App` declared in class `App`).
+//
+// So the owner must be a class kotlinc could actually have MINTED this mangling
+// for. Two properties are checked, both exact rather than heuristic:
+//
+//  1. Its simple name contains `__`. A multifile part class is always named
+//     `<Facade>__<PartFile>` — the double underscore is kotlinc's own separator
+//     and is what distinguishes a part class from any ordinary type.
+//  2. It was compiled from a `.kt` file in THIS capture. The lowering is
+//     kotlinc's; a javac-compiled owner cannot have produced it, whatever it is
+//     named. An owner absent from the capture is not demangled either: an
+//     external class is not one this repository's compiler lowered.
+//
+// A user-declared `foo$Bar` therefore no longer satisfies the rule, and neither
+// does `m$Foo__Bar` in a Java class named `Foo__Bar` — both are left alone, and
+// on the callee side they decline (see the caller of this function).
+//
+// # The residual, MEASURED and disclosed rather than claimed away
+//
+// A KOTLIN-compiled class whose simple name contains `__` and which declares a
+// member whose name ends in `$` + that same simple name is still rewritten. The
+// first draft of this comment claimed Kotlin could not spell such a member. That
+// claim is false, and it was killed by trying it: kotlinc 1.9.24 accepts `$`
+// inside a backquoted identifier, so
+//
+//	package k
+//	class Foo__Bar { fun `x$Foo__Bar`(): Int = 1 }
+//
+// compiles and produces exactly the shape the rule matches
+// (TestDemangle_KotlinCanSpellTheResidual measures it). The residual is
+// REACHABLE, it is recorded as blind spot #17 in SW-172's AC-7 register, and it
+// is not asserted closed — SW-173's round-1 finding was precisely a safety
+// property asserted without being attacked. It is narrow (two `_`, a Kotlin
+// source, and a member named after its own owner) and the corpus contains no
+// instance, but "narrow" is a frequency claim, not a soundness one.
+func demangleMultifilePart(classes map[string]*classInfo, name, ownerInternal string) (string, bool) {
+	simple := simpleName(ownerInternal)
+	if !strings.Contains(simple, "__") {
+		return name, false
+	}
+	ci, known := classes[ownerInternal]
+	if !known || !strings.HasSuffix(ci.source, ".kt") {
+		return name, false
+	}
+	base, ok := strings.CutSuffix(name, "$"+simple)
 	if !ok || base == "" {
 		return name, false
 	}

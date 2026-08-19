@@ -252,10 +252,25 @@ func (s *Strategy) validate(pin string) error {
 		}
 	}
 
-	// The exclusion axis, checked for every strategy.
+	// The exclusion axis, checked for every strategy — in BOTH directions.
 	if s.ExcludedFromCorpusScale && strings.TrimSpace(s.ExclusionReason) == "" {
 		return fmt.Errorf("jvmcorpus: pin %q is excluded from the corpus-scale claim with no reason; "+
 			"an exclusion without a stated reason is indistinguishable from a silent omission (AC-7)", pin)
+	}
+	// SW-173 round 1, minor-5. The rule above only bound the NOT-COMPILED pins:
+	// for a pin that compiles but cannot be scored, `excluded_from_corpus_scale`
+	// was data rather than a gate, and the reviewer showed that flipping
+	// kotlinx.serialization's flag to false passed Validate and every manifest
+	// test — silently re-admitting a pin with 27 open counterexamples to the
+	// corpus-scale claim. A recorded reason is a statement that the pin does not
+	// back the claim; un-setting the flag while leaving the reason in place says
+	// two contradictory things, and the loud one must win.
+	if !s.ExcludedFromCorpusScale && strings.TrimSpace(s.ExclusionReason) != "" {
+		return fmt.Errorf("jvmcorpus: pin %q records an exclusion_reason but is NOT marked "+
+			"excluded_from_corpus_scale; the reason says the pin does not back the corpus-scale "+
+			"claim while the flag re-admits it. Either drop the reason deliberately or keep the "+
+			"exclusion — a pin is excluded loudly, never un-excluded silently (AC-7).\n  reason: %s",
+			pin, strings.TrimSpace(s.ExclusionReason))
 	}
 
 	switch s.Strategy {
