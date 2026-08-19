@@ -340,6 +340,49 @@
      "expect_nonempty": true
     }
    ],
+   "jvm_compile": {
+    "strategy": "full-dependency-resolution",
+    "reason": "guava's ENTIRE external compile classpath is four annotation JARs, and the pin's own root pom.xml names all four with exact versions (jsr305 3.0.2, checker-qual 3.41.0, error_prone_annotations 2.23.0, j2objc-annotations 2.8). Pinning those four by URL+sha256 makes the classpath complete without invoking Maven at all \u2014 no resolver, no version ranges, no transitive discovery, no plugin download \u2014 so the compile is reproducible in a way `mvn compile` is not. Accept-errors was measured and REJECTED for this pin: with no classpath, javac reports 6960 errors and emits ZERO class files, so the accept-errors denominator here would be 0 and the pin would contribute nothing. The 6 remaining `com.google.common.util.concurrent.internal` errors are satisfied from within the pin itself (futures/failureaccess/src is a second Maven module of the same repository, added as a source root rather than as a dependency).",
+    "toolchain": {
+     "javac": "21.0.6"
+    },
+    "compiler": "javac",
+    "source_roots": [
+     "guava/src",
+     "futures/failureaccess/src"
+    ],
+    "compiler_args": [
+     "-proc:none",
+     "-nowarn",
+     "-g",
+     "-encoding",
+     "UTF-8",
+     "-Xmaxerrs",
+     "100000"
+    ],
+    "classpath": [
+     {
+      "coordinate": "com.google.code.findbugs:jsr305:3.0.2",
+      "url": "https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
+      "sha256": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7"
+     },
+     {
+      "coordinate": "org.checkerframework:checker-qual:3.41.0",
+      "url": "https://repo1.maven.org/maven2/org/checkerframework/checker-qual/3.41.0/checker-qual-3.41.0.jar",
+      "sha256": "2f9f245bf68e4259d610894f2406dc1f6363dc639302bd566e8272e4f4541172"
+     },
+     {
+      "coordinate": "com.google.errorprone:error_prone_annotations:2.23.0",
+      "url": "https://repo1.maven.org/maven2/com/google/errorprone/error_prone_annotations/2.23.0/error_prone_annotations-2.23.0.jar",
+      "sha256": "ec6f39f068b6ff9ac323c68e28b9299f8c0a80ca512dccb1d4a70f40ac3ec054"
+     },
+     {
+      "coordinate": "com.google.j2objc:j2objc-annotations:2.8",
+      "url": "https://repo1.maven.org/maven2/com/google/j2objc/j2objc-annotations/2.8/j2objc-annotations-2.8.jar",
+      "sha256": "f02a95fa1a5e95edb3ed859fd0fb7df709d121a35290eff8b74dce2ab7f4d6ed"
+     }
+    ]
+   },
    "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) \u2014 the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate. Brought to the v3 measured standard (WP-J6): the 12-char prefix expanded to the full 40-char sha and a measured census added (3204 .java of 3298 tracked, via the source_files field non-Go entries use)."
   },
   {
@@ -363,6 +406,39 @@
      "expect_nonempty": true
     }
    ],
+   "jvm_compile": {
+    "strategy": "not-compiled",
+    "reason": "NEGATIVE RESULT (AC-7), and a precise one: okio's JVM source set COMPILES — that was proven, not assumed — but it cannot be compiled IN THE LAYOUT THIS ORACLE REQUIRES, so within this pipeline the pin is not compiled and does not back the corpus-scale claim. The oracle keys a call on the callee's source path, and javap supplies that path from the SourceFile attribute, which carries only the file NAME plus the package. okio's Kotlin-multiplatform expect/actual layout gives 18 package-relative paths TWO claimants each (okio/Buffer.kt exists in both commonMain and jvmMain, likewise BufferedSink, BufferedSource, ByteString, DeflaterSink, FileSystem, FileSystem.System, ForwardingSource, HashingSink, HashingSource, InflaterSource, Path, RealBufferedSink, RealBufferedSource, SegmentPool, SegmentedByteString, Sink, Timeout), covering 36 of the 89 files in the JVM source-set closure. Keeping one claimant of a pair would attribute the other's calls to the survivor — a fabricated fact, stop-ship under D5. Excluding all 36 leaves 53 files that DO NOT COMPILE, because the expect and actual halves are each other's dependencies. So okio is compilable-but-unscorable or scorable-but-uncompilable, and neither state is evidence. Recorded here rather than dropped, per AC-7. Unblocking it needs a capture that carries the FULL source path — `javap -v`'s SourceDebugExtension, or compiling each source set to its own output tree and keying on that — which is a capture-strategy change beyond this story.",
+    "toolchain": {
+     "kotlinc": "1.9.24"
+    },
+    "compiler": "kotlinc",
+    "source_roots": [
+     "okio/src/commonMain/kotlin",
+     "okio/src/zlibMain/kotlin",
+     "okio/src/systemFileSystemMain/kotlin",
+     "okio/src/jvmMain/kotlin"
+    ],
+    "common_source_roots": [
+     "okio/src/commonMain/kotlin",
+     "okio/src/zlibMain/kotlin",
+     "okio/src/systemFileSystemMain/kotlin"
+    ],
+    "compiler_args": [
+     "-Xmulti-platform",
+     "-Xexpect-actual-classes",
+     "-nowarn"
+    ],
+    "tried": [
+     "kotlinc 1.9.24 over commonMain+jvmMain only, in the pin's NATURAL layout: FAILED, 15 errors, all 'actual X has no corresponding expected declaration' — the JVM target's source-set closure is wider than two directories.",
+     "kotlinc 1.9.24 over the FULL closure read from okio/build.gradle.kts (jvmMain dependsOn zlibMain + systemFileSystemMain, both dependOn commonMain), natural layout, -Xmulti-platform -Xexpect-actual-classes -Xcommon-sources: SUCCEEDED — 89 sources, 0 errors, 114 classes. This is why the pin is recorded as compilable; it is the scoring layout that defeats it.",
+     "kotlinc 1.9.24 over the same closure STAGED into the package-relative tree the oracle requires, with the 36 collision-affected files excluded: FAILED, 1158 errors, 0 classes — the expect and actual halves are each other's dependencies, so removing the ambiguity removes the program.",
+     "Gradle, the project's own build: FAILED at CONFIGURATION time with 'Unknown Kotlin JVM target: 21' — okio 3.9.1's Kotlin Gradle plugin predates JDK 21. Independently of that failure, a Gradle route resolves a transitive plugin set that cannot be digest-pinned, which is exactly the drift AC-1 forbids.",
+     "NOT tried, and named so the next attempt does not restart from zero: `javap -v` SourceDebugExtension (carries the full source path and would dissolve the collision), and per-source-set output trees keyed separately. Both are capture-strategy changes and belong to their own story."
+    ],
+    "excluded_from_corpus_scale": true,
+    "exclusion_reason": "Not compiled in the oracle's required layout — see `tried`. MEASURED, not assumed: the staged compile fails with 1158 errors and 0 classes. The pin therefore backs no coverage figure, no counterexample count and no corpus-scale claim, and is excluded loudly rather than omitted silently."
+   },
    "notes": "First Kotlin corpus pin (language-GA program G5): Square's okio, a Kotlin-multiplatform IO library (284 .kt + 29 .java at the pin). Tier 3 (nightly/manual, never the PR gate). Cross-language regression + JVM-binder capability: graphi parses all 313 JVM files with zero parse crashes and produces confirmed Java+Kotlin call sites (verified at pin time). Brings a non-Go entry to the v3 measured standard via the new source_files census field."
   },
   {
@@ -390,6 +466,41 @@
      "expect_nonempty": true
     }
    ],
+   "jvm_compile": {
+    "strategy": "full-dependency-resolution",
+    "reason": "kotlinx.serialization is the compiler-plugin case, and the plugin is exactly what makes it pinnable: kotlin-serialization-compiler-plugin is a single JAR on Maven Central, pinned here by URL+sha256 like any other artifact, so the 'transitively fetched compiler plugin' hazard is closed by data rather than trusted. The opt-in flags are not invented — they are read from the pin's own build.gradle and gradle/configure-source-sets.gradle (-opt-in=kotlin.ExperimentalMultiplatform, kotlin.ExperimentalStdlibApi, kotlinx.serialization.InternalSerializationApi, kotlinx.serialization.ExperimentalSerializationApi). Scope is core/ (commonMain + jvmMain): the formats/ modules add json/cbor/protobuf/hocon and their own dependencies, and each is a separate resolution question that would be answered separately rather than bundled into one figure. NOTE the toolchain skew, stated rather than hidden: the pin builds with Kotlin 1.9.22 (gradle.properties) and this strategy pins kotlinc 1.9.24, because 1.9.24 is the last 1.9.x and the plugin must match the compiler exactly. Both are exact versions, so the compile is reproducible; it is simply not byte-identical to what the project's own CI produced, and no claim here says it is.",
+    "toolchain": {
+     "kotlinc": "1.9.24",
+     "kotlin-serialization-compiler-plugin": "1.9.24"
+    },
+    "compiler": "kotlinc",
+    "source_roots": [
+     "core/commonMain/src",
+     "core/jvmMain/src"
+    ],
+    "common_source_roots": [
+     "core/commonMain/src"
+    ],
+    "compiler_args": [
+     "-Xmulti-platform",
+     "-Xexpect-actual-classes",
+     "-nowarn",
+     "-opt-in=kotlin.ExperimentalMultiplatform",
+     "-opt-in=kotlin.ExperimentalStdlibApi",
+     "-opt-in=kotlinx.serialization.InternalSerializationApi",
+     "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
+    ],
+    "classpath": [
+     {
+      "coordinate": "org.jetbrains.kotlin:kotlin-serialization-compiler-plugin:1.9.24",
+      "url": "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-serialization-compiler-plugin/1.9.24/kotlin-serialization-compiler-plugin-1.9.24.jar",
+      "sha256": "05615e38cc6798f64e8b6ff61bc4a2ea4588beada9244dcb8e9b6357652f6506",
+      "role": "compiler-plugin"
+     }
+    ],
+    "excluded_from_corpus_scale": true,
+    "exclusion_reason": "COMPILES AND IS REPRODUCIBLE; SCORING IS NOT YET ESTABLISHED, so this pin publishes no coverage figure and no counterexample count. What IS established and published: the compile (52 sources, 0 errors, 255 classes, kotlinc 1.9.24 + the digest-pinned serialization plugin) and its reproducibility (two independent runs, byte-identical capture digest e6d39791efb4203d35110f9952f3feb2cf40abf01a89680ba35df55eef23d599). What is NOT: the by-name differential still reports 27 of 351 confirmed calls as unbacked, and those 27 are NOT yet classified as product defects. They are MEASURED to be concentrated in two Kotlin-specific bytecode shapes the harness does not yet model — calls to interface members lowered into `Encoder$DefaultImpls`, and self-calls to inherited interface DEFAULT methods, where the symbolic owner is the implementing class and the class walk correctly declines but the decline does not reach the rescue channel. SW-173 closed four such shapes after finding them here (synthetic bridge, anonymous-subclass constructor and its descriptor, sourceless multifile facade, multifile private-function mangling on both caller and callee), taking the count from 50 to 27 and guava from 7 violations to SOUND at all three precisions. The remaining 27 are recorded as an OPEN HARNESS FINDING rather than filed as JVMSOUND defects, because calling them product defects without the classification would be exactly the claim-outrunning-evidence failure this programme keeps having. Until they are classified, no figure from this pin is publishable — which is the same rule AC-4 applies to a denominator."
+   },
    "notes": "Second Kotlin corpus pin (language-GA program G5, WP-J6): JetBrains' kotlinx.serialization, a reflectionless Kotlin-multiplatform serialization library (609 .kt + 6 .java at the pin; the 6 .java are module-info.java JPMS declarations, which carry no methods and produce no sites — expected). Tier 3 (nightly/manual, never the PR gate). Complements okio with a compiler-plugin-heavy, densely-generic Kotlin codebase for cross-language regression + JVM-binder breadth. Verified at pin time: graphi tables all 615 JVM files with ZERO parse or tabling crashes and the declared-type binder resolves 3517 typed Kotlin sites."
   },
   {

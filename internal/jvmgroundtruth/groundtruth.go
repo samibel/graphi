@@ -97,6 +97,16 @@ const (
 	// the owner walk cannot run. The symbolic owner stands, which is the
 	// pre-SW-172 behaviour, and the finer precisions decline.
 	AbstainBytecodeNoDescriptors = "bytecode_no_descriptor_table"
+	// AbstainBytecodeAnonymousCtorParams: the call constructs a javac-minted
+	// ANONYMOUS SUBCLASS. The constructed TYPE is recoverable (it is the
+	// anonymous class's superclass, which is what the source `new X(){…}`
+	// named), so the fact stands at ByName — but the DESCRIPTOR is the synthetic
+	// constructor's, carrying the enclosing instance and every captured local,
+	// and the source-level parameter list cannot be recovered from it. So the
+	// two finer precisions decline rather than compare an arity the source never
+	// wrote. SW-173 found this on guava, where it accused 29 correct calls at
+	// by-arity and 12 at by-signature.
+	AbstainBytecodeAnonymousCtorParams = "bytecode_anonymous_ctor_synthetic_params"
 	// AbstainBytecodeCallerNotAlignable: the bytecode's CALLER is a method of a
 	// class javac minted for an ANONYMOUS or LOCAL class body. graphi mints no
 	// node for such a body and attributes the call to the enclosing
@@ -372,10 +382,50 @@ func ParseJavap(out []byte) ([]Call, error) {
 			// product fact — skip rather than invent a path.
 			continue
 		}
+		// The caller carries kotlinc's multifile mangling too, and on this side
+		// it is the DOMINANT form: a private top-level function is DECLARED as
+		// `builtinParametrizedSerializer$SerializersKt__SerializersKt`, so every
+		// fact naming it as the caller disagreed with graphi about a method both
+		// sides had right. Same exact rule as the callee side.
+		callerMethod := r.callerMethod
+		if base, ok := demangleMultifilePart(callerMethod, r.callerClassInternal); ok {
+			callerMethod = base
+		}
 		callee := r.calleeName
 		ctor := callee == "<init>"
+		// anonCtorReason is set when a constructor call names a class javac
+		// MINTED for an anonymous subclass, and the type the SOURCE named
+		// cannot be recovered from this capture.
+		anonCtorOwner, anonCtorReason := "", ""
 		if ctor {
-			callee = simpleName(r.calleeOwnerInternal)
+			// SW-173, found at corpus scale on guava. `new TypeTable() { … }`
+			// does not construct TypeTable — it constructs a synthetic anonymous
+			// subclass, and javac writes `invokespecial TypeResolver$2.<init>`.
+			// Normalising that owner to its own simple name yields the callee
+			// "2", while graphi correctly reports the constructed type the
+			// source names, TypeTable. Four forged stop-ships on guava
+			// (TypeResolver$TypeTable, TypeResolver$WildcardCapturer and two
+			// AbstractScheduledService$Scheduler cases) came from exactly this.
+			//
+			// The type the source named is the anonymous class's SUPERCLASS —
+			// exactly, not heuristically, because `new X(){…}` with X a class
+			// compiles to an anonymous class extending X. So redirect to it, and
+			// take its file too: the anonymous class's own SourceFile is the
+			// file holding the `new` expression, which is the CALLER's file and
+			// not necessarily where X is declared.
+			//
+			// When X is an INTERFACE the anonymous class extends Object and
+			// merely implements X, and `javap -c -p -s` prints no implements
+			// clause this parser reads — so the constructed type is genuinely
+			// unrecoverable and the fact DECLINES rather than guessing.
+			if syntheticNestedClass(r.calleeOwnerInternal) {
+				anonCtorOwner, anonCtorReason = anonymousCtorTarget(classes, r.calleeOwnerInternal)
+			}
+			if anonCtorOwner != "" {
+				callee = simpleName(anonCtorOwner)
+			} else if anonCtorReason == "" {
+				callee = simpleName(r.calleeOwnerInternal)
+			}
 		}
 
 		// JVM method resolution (JVMS 5.4.3.3): the constant-pool ref names
@@ -387,10 +437,42 @@ func ParseJavap(out []byte) ([]Call, error) {
 		// they both get right. Without this walk the oracle manufactures FALSE
 		// counterexamples on every inherited call.
 		ownerInternal, ownerReason := resolveOwner(classes, hasDescriptorTable, r.calleeOwnerInternal, r.calleeName, r.calleeDescriptor)
+		// An anonymous-subclass constructor overrides the walk: the walk would
+		// stop at the synthetic class, which declares its own <init>, and name
+		// the wrong type and the wrong file.
+		if anonCtorReason != "" {
+			ownerInternal, ownerReason = r.calleeOwnerInternal, anonCtorReason
+		} else if anonCtorOwner != "" {
+			ownerInternal, ownerReason = anonCtorOwner, ""
+		}
+		// An owner that IS in the capture but carries no source path is
+		// intra-repo and unattributable — not external. Saying nothing would let
+		// it score as external and drop out of the truth set, which is the
+		// incomplete-capture forge by another route; declining routes it into
+		// the truthDeclined rescue instead, where the confirmed call abstains.
+		if ownerReason == "" {
+			if ci, known := classes[ownerInternal]; known && ci.source == "" {
+				ownerReason = AbstainBytecodeOwnerUnresolved
+			}
+		}
+		// A callee name containing '$' is a name the COMPILER minted, not one
+		// any source declares: kotlinc mangles a private top-level function into
+		// `serializerByKTypeImpl$SerializersKt__SerializersKt` when it lowers a
+		// multifile class. graphi reports the name the source wrote, so keying
+		// the mangled form against it manufactures a disagreement about a call
+		// both sides got right. Constructors are exempt: their callee has
+		// already been normalised to a simple type name above.
+		if !ctor {
+			if base, ok := demangleMultifilePart(callee, r.calleeOwnerInternal); ok {
+				callee = base
+			} else if strings.Contains(callee, "$") {
+				ownerReason = AbstainBytecodeOwnerUnresolved
+			}
+		}
 
 		c := Call{
 			CallerFile:       callerFile,
-			CallerMethod:     r.callerMethod,
+			CallerMethod:     callerMethod,
 			CalleeFile:       classSource[ownerInternal], // "" = external
 			Callee:           callee,
 			CalleeCtor:       ctor,
@@ -413,7 +495,20 @@ func ParseJavap(out []byte) ([]Call, error) {
 		// key, kept exactly) but is not a foundation a finer verdict may rest
 		// on: a fact keyed on the wrong file is wrong at every precision, and
 		// adding arity to a wrong file would dress it up as more certain.
-		if ownerReason == "" {
+		if ownerReason == "" && anonCtorOwner != "" {
+			// SW-173, guava: the owner was redirected to the type the source
+			// named, but the DESCRIPTOR still belongs to the synthetic anonymous
+			// constructor, which javac gives extra parameters for the enclosing
+			// instance and every captured local. `new ImmutableList<E>() {…}` in
+			// CartesianList.get compiles to `CartesianList$1.<init>
+			// (Lcom/google/common/collect/CartesianList;I)V` — arity 2 where the
+			// source wrote 0. Using it accused 29 correct calls at by-arity and
+			// 12 at by-signature. The source-level signature is not recoverable
+			// from the synthetic one, so the fact stays decidable at ByName
+			// (where it is right) and declines at both finer levels.
+			c.ArityReason = AbstainBytecodeAnonymousCtorParams
+			c.ParamsReason = AbstainBytecodeAnonymousCtorParams
+		} else if ownerReason == "" {
 			if params, ok := descriptorParams(r.calleeDescriptor); ok {
 				c.CalleeArity = len(params)
 				c.ArityReason = ""
@@ -499,6 +594,34 @@ func resolveOwner(classes map[string]*classInfo, hasDescriptorTable bool, owner,
 			return cur, AbstainBytecodeOwnerUnresolved
 		}
 		if _, has := ci.decls[want]; has {
+			// SW-173, found at corpus scale on guava: stopping here is only
+			// correct if this declaration is a REAL one. javac also emits
+			// SYNTHETIC BRIDGE methods, which declare the same (name,
+			// descriptor) in a subclass purely to satisfy a supertype, and
+			// `javap -c -p -s` does not print ACC_SYNTHETIC — so a bridge is
+			// byte-identical to a genuine override in this capture.
+			//
+			// guava's `AbstractGraph extends AbstractBaseGraph implements Graph`
+			// is the live case. AbstractGraph declares no `edges()` IN SOURCE,
+			// but javac gives it a bridge, so `edges()` inside equals/hashCode/
+			// toString compiles to `invokevirtual AbstractGraph.edges` and this
+			// walk stopped at AbstractGraph — naming AbstractGraph.java as the
+			// declaring file when the source declaration is in
+			// AbstractBaseGraph.java. graphi answered AbstractBaseGraph.java,
+			// which is CORRECT, and was accused at all three precisions. Three
+			// forged stop-ships against correct code, on the first corpus-scale
+			// run.
+			//
+			// Since the two cases are indistinguishable here, the honest answer
+			// when the name is ALSO declared further up the chain is to decline.
+			// That routes the fact into the truthDeclined channel, where the
+			// confirmed call is ABSTAINED rather than accused. The cost is
+			// recall on genuine overrides called from within the overriding
+			// class; the alternative is fabricating stop-ships, and an oracle
+			// that accuses correct code is worse than one that declines.
+			if ci.super != "" && declaredAbove(classes, ci.super, want) {
+				return cur, AbstainBytecodeOwnerUnresolved
+			}
 			return cur, ""
 		}
 		if ci.super == "" {
@@ -506,6 +629,78 @@ func resolveOwner(classes map[string]*classInfo, hasDescriptorTable bool, owner,
 		}
 		cur = ci.super
 	}
+}
+
+// demangleMultifilePart strips kotlinc's MULTIFILE-CLASS name mangling from a
+// method name, and only that.
+//
+// When a Kotlin file declares `@file:JvmName("SerializersKt")
+// @file:JvmMultifileClass`, kotlinc lowers its top-level declarations into a
+// part class `SerializersKt__SerializersKt` and renames every PRIVATE top-level
+// function to `<name>$<partClassSimpleName>` — so `serializerByKTypeImpl`
+// becomes `serializerByKTypeImpl$SerializersKt__SerializersKt`, on the
+// declaration AND at every call site. graphi reports the name the source wrote,
+// so comparing the two forms manufactures a disagreement about a call both sides
+// resolved correctly. SW-173 measured 48 such forged stop-ships on
+// kotlinx.serialization, on both the caller and the callee side.
+//
+// The rule is EXACT rather than a guess at Kotlin's conventions: the suffix must
+// be `$` followed by the simple name of the very class the member belongs to.
+// A user-declared `foo$bar` does not satisfy that unless the enclosing class is
+// literally named `bar`, and stripping is skipped whenever it does not hold —
+// so a legally `$`-containing name is left alone and declines instead (see the
+// caller of this function).
+func demangleMultifilePart(name, ownerInternal string) (string, bool) {
+	suffix := "$" + simpleName(ownerInternal)
+	base, ok := strings.CutSuffix(name, suffix)
+	if !ok || base == "" {
+		return name, false
+	}
+	return base, true
+}
+
+// anonymousCtorTarget maps a javac-minted anonymous class to the type the
+// SOURCE `new` expression named: its superclass. It returns ("", reason) when
+// that type is not recoverable from this capture — an anonymous class extending
+// Object is one that implemented an INTERFACE, and the interface is not printed
+// in a form this parser reads.
+func anonymousCtorTarget(classes map[string]*classInfo, anon string) (owner, reason string) {
+	ci, ok := classes[anon]
+	if !ok || ci.super == "" || ci.super == "java/lang/Object" {
+		return "", AbstainBytecodeOwnerUnresolved
+	}
+	if _, known := classes[ci.super]; !known {
+		// The named supertype is outside the repository: an external
+		// construction, which scores as external rather than as a fact.
+		return "", AbstainBytecodeOwnerUnresolved
+	}
+	return ci.super, ""
+}
+
+// declaredAbove reports whether any class from `start` upwards declares `want`.
+// It is the bridge-ambiguity test: a subclass declaration that is ALSO present
+// on the superclass chain may be a genuine override or a synthetic bridge, and
+// this capture cannot tell them apart.
+//
+// The walk is bounded by a seen-set rather than by trusting the chain to be
+// acyclic: a malformed or adversarial capture must not hang the oracle.
+func declaredAbove(classes map[string]*classInfo, start, want string) bool {
+	seen := map[string]struct{}{}
+	for cur := start; cur != ""; {
+		if _, dup := seen[cur]; dup {
+			return false
+		}
+		seen[cur] = struct{}{}
+		ci, ok := classes[cur]
+		if !ok {
+			return false
+		}
+		if _, has := ci.decls[want]; has {
+			return true
+		}
+		cur = ci.super
+	}
+	return false
 }
 
 // parseClasses scans for the `Compiled from "X.java"` + class-header pairs and
@@ -529,13 +724,25 @@ func parseClasses(out []byte) (map[string]*classInfo, error) {
 			internal := strings.ReplaceAll(hdr.name, ".", "/")
 			pkg := packageOf(hdr.name)
 			src := pendingSource
-			if src == "" {
-				// A class with no preceding Compiled-from (synthetic?) still
-				// deserves a path so its own methods resolve; fall back to the
-				// simple name + .java.
-				src = simpleName(internal) + ".java"
-			}
-			if pkg != "" {
+			// SW-173, found at corpus scale on kotlinx.serialization: this used
+			// to FABRICATE a path when javap printed no `Compiled from` line,
+			// falling back to `simpleName + ".java"`. That invents a fact.
+			//
+			// Kotlin's multifile-class FACADE is the live case. `@file:JvmName
+			// ("SerializersKt") @file:JvmMultifileClass` makes kotlinc emit a
+			// facade class assembled from several source files, and a class with
+			// no single source file carries no SourceFile attribute — so javap
+			// prints no `Compiled from` for it. The fallback then claimed
+			// `kotlinx/serialization/SerializersKt.java`, a path that exists in
+			// no repository, and every call whose owner resolved to the facade
+			// contradicted graphi's correct `Serializers.kt`. 50 forged
+			// stop-ships on one pin, all against correct code.
+			//
+			// An unattributable class now gets NO path. That is not a silent
+			// downgrade: the empty path is what ParseJavap reads as "not an
+			// intra-repo fact", and it pairs with the explicit decline below so
+			// the affected confirmed calls are ABSTAINED rather than accused.
+			if src != "" && pkg != "" {
 				src = pkg + "/" + src
 			}
 			ci := &classInfo{source: src, decls: map[string]struct{}{}}
