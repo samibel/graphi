@@ -125,8 +125,8 @@ fixture indexes at the typed-confirmed capability).
 | D3 | Extractor deepening: field/property nodes + declared-type metadata? | **Node half LANDED 2026-08-14** (WP-J2 slice): Java field/constant declarators and Kotlin properties become variable/constant nodes, kind from the DECLARED form only (`static final` / `constant_declaration` / `const val` → constant), pinned by `TestExtractJava_FieldNodes` / `TestExtractKotlin_PropertyNodes`; the frozen golden fixtures are field-free, so their bytes are unchanged, and the full suite stayed green. Declared-TYPE metadata on nodes is DEFERRED — the binder re-parses sources itself (see above), so node-level types are not load-bearing for WP-J3; revisit only if the trust surface wants them. Known honest cost: a field sharing a bare name with a same-package symbol now marks that name dir-ambiguous in the heuristic linker (drop+count, never a wrong edge) |
 | D4 | Kill-switch shape | inherit ADR 0007 (`GRAPHI_NO_TYPERESOLVE` + per-language) |
 | D6 | Overload binding rule | **CORRECTED 2026-08-16 — the original "(name, arity) uniqueness" was UNSOUND as implemented and emitted WRONG edges (JVMSOUND-001/002, both reproduced).** The rule is now: a callable binds at (name, arity) uniqueness **over a candidate set that contains no VARIADIC or DEFAULTED member** (either can satisfy a call at other arities, so its presence forfeits the whole name — `variadic-forfeit`), **with signature identity keyed on RESOLVED type (intra-repo FQN), not written text** (so `q.Foo` and `r.Foo` do not collapse; primitives/externals key on marked text so genuine `m(int)`/`m(int)` overrides still bind). Any ambiguity drops+counts. Pinned by `TestAnalyzeJavaBodies_VariadicForfeit`/`_ResolvedSignature`, the Kotlin `_ElasticForfeit`, and the `change_overload` change class; each proven red-without-fix. NOTE on the oracle: WP-J9's differential check keys calls at method-name granularity, so it is STRUCTURALLY BLIND to same-name overload mis-binding — the unit tests are the proof of record for this class, and giving the oracle signature-aware keys is a follow-up on top of R3's corpus-scale run |
-| D9 | What is the unit of the stale-confirmed sweep in a directory holding more than one language? | **RULED 2026-08-19 (W0.h, SW-170). The sweep key is `(directory, language)`, and the mixed-directory EXEMPTION is removed rather than narrowed.** See the ruling in full below |
 | D8 | Entry criterion for JVM real-repo parity | **RE-SCOPED 2026-08-16 (independent review R8).** Was: "both PARITY-001/002 fixes land first." Now a PER-DEFECT applicability test: a Go-level ingest defect blocks the JVM real-repo run only where the JVM code path can exhibit it. PARITY-001 (deleted-path purge ordering) was language-independent and did block — it is now FIXED. PARITY-002 (Go/Python clause-keyed `imports` fan-out) CANNOT arise for Java/Kotlin, whose imports emit a single file→package edge (`engine/link/resolve_common.go`, `packageNodeByPath` lookup, no fan-out), so it does not block WP-J7. jvm_delete_file is no longer deferred — it is a required, proven row |
+| D9 | What is the unit of the stale-confirmed sweep in a directory holding more than one language? | **RULED 2026-08-19 (W0.h, SW-170). The sweep key is `(directory, language)`, and the mixed-directory EXEMPTION is removed rather than narrowed.** See the ruling in full below |
 
 ### D9 in full — the sweep key is `(directory, language)`
 
@@ -194,10 +194,52 @@ and `reasonMixedDir` is deleted.
   (`engine/link` never returns `TierConfirmed`), and with
   `GRAPHI_JVM_TYPERESOLVE` unset go/types is the only registrant. Measured:
   this repository's canonical graph snapshot is byte-identical across the change
-  (`c9f8de76…`, 21 891 266 bytes), and the whole hermetic Go change-class table
+  (`9c5eb1f9c1db1ca469b2a8fb3bbcaa1105a6d5c9fceabb35898300c7c2fd6539`,
+  21 895 857 bytes), and the whole hermetic Go change-class table
   is unchanged. The **Go sweep key itself is not re-decided here** — that is a
   separate decision with its own measurement, and this ruling only removes a
   cross-language over-reach that could not fire under the shipped default.
+
+  *The instrument, so the digest is reproducible rather than merely asserted*
+  (corrected 2026-08-19, SW-170 review round 1 finding 2 — the first draft of
+  this bullet published `c9f8de76…` / 21 891 266 B, which no clean checkout
+  reproduces): build `./cmd/graphi` with
+  `CGO_ENABLED=0 go build -trimpath -buildvcs=false`, run `index --full` from a
+  **pristine checkout of the commit that carries this ruling** with an isolated
+  `XDG_STATE_HOME`, then serialize the resulting store through
+  `core/graphstore`'s `Snapshot` and digest those bytes. The value above is
+  identical for the before-binary, the after-binary and a repeat run. The
+  superseded figure was taken over an intermediate working tree rather than the
+  committed one: the same instrument returns 21 885 083 B over the parent commit
+  `98ba4a6` and 21 895 857 B over this one, and 21 891 266 B falls between them.
+  **A digest published in an ADR names the tree it was taken over.**
+- **THE RESIDUAL RISK THIS RULING CREATES, named rather than left implicit —
+  `Owns` is a PARTITION, not a COVER (raised by the SW-170 review, finding 3).**
+  The registrants own exactly `*.go`, `*.java` and `*.kt`, so *every other path
+  is owned by nobody*, and a stored confirmed `calls`/`references`/`implements`
+  edge whose from-node sits in such a file could never be swept by any
+  registrant — it would be **immortal**, surviving every incremental `sync`
+  while the full pass never has it. That is the same wrong-surviving-edge class
+  D9 exists to close, and before D9 the Go pass reached those edges incidentally
+  because the key was the directory alone. **It is unreachable today**, and the
+  argument has exactly one load-bearing step — *no parser mints a confirmed-tier
+  edge of a sweepable kind*: `engine/link/link.go` never returns
+  `TierConfirmed`; every tree-sitter walker hardcodes `TierDerived`
+  (`core/parse/parser_tswalk.go`, `core/parse/parser_ts.go`), as does
+  `extract_go.go` for calls/references; the only confirmed producers are
+  `defines`, `notebook_cell` and the semantic resolvers themselves, and neither
+  `defines` nor `notebook_cell` is in `engine/ingest`'s `typeresolveKind` set.
+  That step was **unenforced** — `core/parse/mapping.go` honours a
+  parser-supplied `spec.Tier` verbatim — so it is now pinned by
+  `core/parse/confirmed_tier_guard_test.go::TestNoConfirmedTierOutsideDefines`,
+  a test-only allow-list guard that fails closed on any new confirmed-tier site
+  in the parser layer. The guard holds the line; it does not close the gap. The
+  durable fixes are a **residual-owner rule** (an edge whose from-node is owned
+  by nobody is swept by whichever registrant checked its directory, which
+  restores the pre-D9 reach without breaking disjointness) or a product-wide
+  assertion that no confirmed `typeresolveKind` edge has an unowned from-node.
+  Choosing between them is **deferred to SW-178's D9 ratification**, on the
+  strength of a measured delta of zero.
 - D9 is a JVM ruling and is **Proposed** like the rest of this ADR until the
   WP-J11 ratification (SW-178) rules on D1–D9 together.
 
