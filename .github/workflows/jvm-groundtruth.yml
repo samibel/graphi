@@ -60,8 +60,19 @@ jobs:
             echo "/opt/kotlinc/bin" >> "$GITHUB_PATH"
           fi
 
-      - name: parser + comparator unit tests (checked-in real javap fixture)
-        run: go test ./internal/jvmgroundtruth/ -run 'TestParseJavap|TestParseMethodRef|TestCompare|TestConfirmed' -count=1
+      # The whole package, not a hand-maintained -run list. The previous list
+      # named four prefixes and would have silently skipped every test added
+      # since; a gate that only runs the tests someone remembered to add to a
+      # regex is not a gate. -v so the measured recall, the abstention counts
+      # and the named refusal reasons land in the log, where the D2 coverage
+      # number is read from.
+      - name: jvm ground-truth suite (parser, comparator, live differential)
+        run: go test ./internal/jvmgroundtruth/... -count=1 -v
 
-      - name: live differential soundness (javac/kotlinc + the binder)
-        run: go test ./internal/jvmgroundtruth/ -run 'TestGroundTruth' -count=1 -v
+      # SW-172: the signature-aware differential is the one that can fail on an
+      # overload mis-binding. The by-name gate above is structurally incapable
+      # of it — node identity collapses overloads (engine/jvmresolve/qn.go) —
+      # so it is called out separately to keep that distinction visible in the
+      # job's step list rather than buried in one green tick.
+      - name: signature-aware soundness (arity + erased parameter types)
+        run: go test ./internal/jvmgroundtruth/ -run 'TestArity_|TestSignature_|TestVerify_|TestOwnerWalk|TestJVMSOUND' -count=1 -v

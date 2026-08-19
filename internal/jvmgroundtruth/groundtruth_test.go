@@ -124,7 +124,7 @@ func TestParseMethodRef(t *testing.T) {
 		{"0: iload_1", "", "", false},
 	}
 	for _, c := range cases {
-		owner, name, ok := parseMethodRef(c.line)
+		owner, name, _, ok := parseMethodRef(c.line)
 		if ok != c.ok || owner != c.owner || name != c.name {
 			t.Errorf("parseMethodRef(%q) = (%q,%q,%v), want (%q,%q,%v)", c.line, owner, name, ok, c.owner, c.name, c.ok)
 		}
@@ -149,10 +149,14 @@ func TestConfirmedCallsDeterministic(t *testing.T) {
 	}
 }
 
+// assertHasCall matches at ByName precision — the key these legacy assertions
+// were written against, and the only one `cart.javap.txt` supports (it was
+// captured without -s, so it carries no `descriptor:` lines; see
+// TestParseJavap_NoDescriptorsDegradesLegibly).
 func assertHasCall(t *testing.T, calls []Call, want Call) {
 	t.Helper()
 	for _, c := range calls {
-		if c == want {
+		if c.key(ByName) == want.key(ByName) {
 			return
 		}
 	}

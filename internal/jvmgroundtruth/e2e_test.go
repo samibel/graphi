@@ -125,6 +125,121 @@ public class Derived extends Base {
 	}
 }
 
+// TestGroundTruth_Java_SignatureAware_LiveJDK is the SW-172 gate: the same
+// differential as above, run at all three precisions against the binder's own
+// binding decisions rather than the graph store's projection of them.
+//
+// It exists because the by-name gate above is structurally incapable of failing
+// on an overload mis-binding — `apply(int)` and `apply(String)` are one node and
+// one fact — so a green run of it says nothing about overload resolution. This
+// one keys on arity and on erased parameter types, and it reports its own
+// coverage: how many facts it DECLINED to judge and why, so a green verdict can
+// never be read as covering more than it did.
+//
+// The graph-store gate is not replaced. The two answer different questions:
+// that one asks whether the EMITTED EDGES are backed by bytecode, this one
+// whether the BINDING DECISIONS behind them are.
+func TestGroundTruth_Java_SignatureAware_LiveJDK(t *testing.T) {
+	javac, err := exec.LookPath("javac")
+	if err != nil {
+		t.Skip("javac unavailable; the jvm-groundtruth CI workflow installs it")
+	}
+	javap, err := exec.LookPath("javap")
+	if err != nil {
+		t.Skip("javap unavailable")
+	}
+
+	files := map[string]string{
+		"tax/Rate.java": `package tax;
+public class Rate {
+    public Rate(int seed) {}
+    public int rate() { return 7; }
+    public int scaled(Rate other) { return other.rate(); }
+    public int apply(int x) { return x; }
+    public int apply(String s) { return 0; }
+    public static int base() { return 1; }
+}
+`,
+		"shop/Cart.java": `package shop;
+import tax.Rate;
+public class Cart {
+    public int checkout(Rate r) { return r.rate() + r.apply(1); }
+    public Rate build() { return new Rate(9); }
+    public int total() { return Rate.base(); }
+}
+`,
+		"tax/Base.java": `package tax;
+public class Base {
+    public int seed() { return 3; }
+}
+`,
+		"tax/Derived.java": `package tax;
+public class Derived extends Base {
+    public int reseed() { return super.seed(); }
+}
+`,
+	}
+
+	root := t.TempDir()
+	for rel, content := range files {
+		full := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	out := filepath.Join(t.TempDir(), "classes")
+	if err := os.MkdirAll(out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	compile := exec.Command(javac, append([]string{"-g", "-d", out}, sourcePaths(root, files)...)...)
+	if b, err := compile.CombinedOutput(); err != nil {
+		t.Fatalf("javac: %v\n%s", err, b)
+	}
+	truth, declared := disassembleWithDeclared(t, javap, out)
+
+	src := map[string][]byte{}
+	for rel, content := range files {
+		src[rel] = []byte(content)
+	}
+	// Verify FIRST: no verdict may rest on a rendering javac never compiled.
+	confirmed := declared.Verify(jvmgroundtruth.BinderCalls(src))
+
+	for _, p := range []jvmgroundtruth.Precision{
+		jvmgroundtruth.ByName, jvmgroundtruth.ByArity, jvmgroundtruth.BySignature,
+	} {
+		res := jvmgroundtruth.CompareAt(confirmed, truth, p)
+		t.Log(strings.TrimSpace(res.Format()))
+		if !res.Sound() {
+			t.Fatalf("SOUNDNESS FAILURE at %s:\n%s\nconfirmed: %+v\ntruth: %+v", p, res.Format(), confirmed, truth)
+		}
+	}
+
+	// NON-VACUITY. A differential that judges nothing is green for free, so the
+	// finest precision must be shown to have actually DECIDED something on this
+	// fixture — not merely abstained its way to silence.
+	fine := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.BySignature)
+	if fine.Matched == 0 {
+		t.Fatalf("by-signature judged nothing on this fixture — a vacuous green:\n%s", fine.Format())
+	}
+	// And the arity key must genuinely separate facts the name key merges: the
+	// two `apply` overloads are one by-name key and two by-arity ones.
+	byNameKeys, byArityKeys := map[string]struct{}{}, map[string]struct{}{}
+	for _, c := range truth {
+		if c.Callee != "apply" {
+			continue
+		}
+		byNameKeys[c.CallerFile+"|"+c.CallerMethod+"|"+c.CalleeFile] = struct{}{}
+		byArityKeys[c.CallerFile+"|"+c.CallerMethod+"|"+c.CalleeFile+"|"+c.CalleeParams] = struct{}{}
+	}
+	if len(byNameKeys) == 0 {
+		t.Fatal("the fixture's overloaded call vanished from the truth set")
+	}
+}
+
 // TestGroundTruth_Kotlin_LiveKotlinc is the Kotlin half of the WP-J9 soundness
 // gate, run END TO END with a real kotlinc: it builds a graphi graph with the
 // binder live, compiles the SAME .kt sources with kotlinc, extracts the
@@ -273,10 +388,20 @@ func sourcePaths(root string, files map[string]string) []string {
 	return srcs
 }
 
-// disassemble enumerates every compiled class under out, runs `javap -c -p`
+// disassemble enumerates every compiled class under out, runs `javap -c -p -s`
 // over them, and parses the call facts. Shared by the Java and Kotlin gates —
 // once the class files exist, the disassembly path is identical.
 func disassemble(t *testing.T, javap, out string) []jvmgroundtruth.Call {
+	t.Helper()
+	truth, _ := disassembleWithDeclared(t, javap, out)
+	return truth
+}
+
+// disassembleWithDeclared is disassemble plus javac's own declared-method
+// index, which the binder-level differential needs to check its rendering
+// against (DeclaredMethods.Verify). `-s` is what prints the `descriptor:`
+// lines both the JVM owner walk and that index read.
+func disassembleWithDeclared(t *testing.T, javap, out string) ([]jvmgroundtruth.Call, jvmgroundtruth.DeclaredMethods) {
 	t.Helper()
 	var classes []string
 	err := filepath.WalkDir(out, func(p string, d os.DirEntry, err error) error {
@@ -298,7 +423,7 @@ func disassemble(t *testing.T, javap, out string) []jvmgroundtruth.Call {
 		t.Fatal("compiler produced no classes")
 	}
 
-	disasm := exec.Command(javap, append([]string{"-c", "-p", "-classpath", out}, classes...)...)
+	disasm := exec.Command(javap, append([]string{"-c", "-p", "-s", "-classpath", out}, classes...)...)
 	b, err := disasm.Output()
 	if err != nil {
 		t.Fatalf("javap: %v", err)
@@ -307,5 +432,9 @@ func disassemble(t *testing.T, javap, out string) []jvmgroundtruth.Call {
 	if err != nil {
 		t.Fatalf("ParseJavap: %v", err)
 	}
-	return truth
+	declared, err := jvmgroundtruth.ParseDeclaredMethods(b)
+	if err != nil {
+		t.Fatalf("ParseDeclaredMethods: %v", err)
+	}
+	return truth, declared
 }

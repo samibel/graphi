@@ -1,0 +1,117 @@
+Compiled from "App.java"
+public class a.App {
+  public a.App();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public int run(a.Rate<java.lang.Integer>, a.Thing, a.Thing[]);
+    descriptor: (La/Rate;La/Thing;[La/Thing;)I
+    Code:
+       0: aload_1
+       1: iconst_1
+       2: invokevirtual #7                  // Method a/Rate.apply:(I)I
+       5: aload_1
+       6: iconst_1
+       7: iconst_2
+       8: invokevirtual #13                 // Method a/Rate.apply:(II)I
+      11: iadd
+      12: aload_1
+      13: aload_2
+      14: invokevirtual #16                 // Method a/Rate.apply:(La/Thing;)I
+      17: iadd
+      18: aload_1
+      19: aload_3
+      20: invokevirtual #19                 // Method a/Rate.apply:([La/Thing;)I
+      23: iadd
+      24: aload_1
+      25: invokevirtual #22                 // Method a/Rate.seed:()I
+      28: iadd
+      29: ireturn
+
+  public int lam(a.Base);
+    descriptor: (La/Base;)I
+    Code:
+       0: aload_1
+       1: invokedynamic #26,  0             // InvokeDynamic #0:getAsInt:(La/Base;)Ljava/util/function/IntSupplier;
+       6: astore_2
+       7: aload_2
+       8: invokeinterface #30,  1           // InterfaceMethod java/util/function/IntSupplier.getAsInt:()I
+      13: ireturn
+
+  private static int lambda$lam$0(a.Base);
+    descriptor: (La/Base;)I
+    Code:
+       0: aload_0
+       1: invokevirtual #34                 // Method a/Base.seed:()I
+       4: ireturn
+}
+Compiled from "Base.java"
+public class a.Base {
+  public a.Base();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public int seed();
+    descriptor: ()I
+    Code:
+       0: iconst_3
+       1: ireturn
+}
+Compiled from "Rate.java"
+public class a.Rate<T extends java.lang.Number> extends a.Base {
+  public a.Rate();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method a/Base."<init>":()V
+       4: return
+
+  public int apply(int);
+    descriptor: (I)I
+    Code:
+       0: iload_1
+       1: ireturn
+
+  public int apply(int, int);
+    descriptor: (II)I
+    Code:
+       0: iload_1
+       1: iload_2
+       2: iadd
+       3: ireturn
+
+  public int apply(a.Thing);
+    descriptor: (La/Thing;)I
+    Code:
+       0: iconst_1
+       1: ireturn
+
+  public int apply(a.Thing[]);
+    descriptor: ([La/Thing;)I
+    Code:
+       0: aload_1
+       1: arraylength
+       2: ireturn
+
+  public int tag(java.lang.String);
+    descriptor: (Ljava/lang/String;)I
+    Code:
+       0: aload_1
+       1: invokevirtual #7                  // Method java/lang/String.length:()I
+       4: ireturn
+}
+Compiled from "Thing.java"
+public class a.Thing {
+  public a.Thing();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+}
