@@ -42,7 +42,8 @@ import (
 //     rather than a graph.
 //   - TestIncrementalBatchShapeGuard_IsNonVacuous proves the guard OBSERVES a
 //     difference where one exists, by feeding its matcher the pre-fix shape and
-//     four other mutations and requiring each to be rejected.
+//     five other mutations and requiring each to be rejected (6 mutations in
+//     total), plus a control requiring a REAL log to be accepted.
 //
 // The disposition ruling (separate committed purge batch, NOT folded into
 // batch 1) and the reverse-dependency-translation ordering ruling are recorded
@@ -601,7 +602,8 @@ func sortedKeys(m map[string]model.NodeId) []string {
 // the resulting tree.
 //
 // It is red against the pre-fix ordering (linkFiles before the purge) and green
-// against the current one, on MemStore and SQLite, in all five shapes.
+// against the current one, on MemStore and SQLite, in all seven shapes
+// (14 axes = 7 shapes x {mem, sqlite}).
 //
 // Read the witness assertions as the load-bearing half: byte parity alone can
 // be satisfied by two identically wrong graphs, so each side is additionally
@@ -756,14 +758,29 @@ func TestPurgeOrdering_DeleteThenReaddConverges(t *testing.T) {
 // What this guard cannot see, stated rather than left for the next reviewer to
 // find: it observes WRITES. PARITY-001 was caused by a READ — `linkFiles`
 // streaming the live store — so a drift in read ordering that leaves the write
-// shape intact is invisible here. Two such mutations were constructed in review:
-// hoisting `sweepOrphanExternalNodes` to just after the purge commit (caught by
-// TestPurgeOrdering_DeleteThenReaddConverges and the pre-existing
-// TestLink_GoExternalNode_InterningLifecycle, NOT by this guard), and sharing
-// the reverse-dep pass's SymbolIndex with linkFiles, which reintroduces
-// PARITY-001 with an unchanged batch shape (caught by the kill test, and by the
-// graphstore's own `edge references unknown node` endpoint check). The guard is
-// one layer of three; it is not the whole net.
+// shape intact is invisible here. The real example is sharing the reverse-dep
+// pass's SymbolIndex with linkFiles, which reintroduces PARITY-001 with an
+// unchanged batch shape (caught by the kill test, and by the graphstore's own
+// `edge references unknown node` endpoint check, never by this guard).
+//
+// CORRECTED in review round 1. This comment used to name a SECOND such blind
+// spot — hoisting `sweepOrphanExternalNodes` to just after the purge commit —
+// and claimed it passes this guard. It does NOT. The hoist was performed and
+// measured: this guard FAILS on both stores on shapeOrphansExternal with
+//
+//	batch 2 does not match required phase "3-link (cross-file re-link; mints the
+//	  interned external node)": the link batch did not mint the external node
+//	  "example.com/m/tax.Rate"
+//
+// because hoisting the sweep puts its batch BEFORE the link batch, so spec 3's
+// content check lands on a pure-delete batch. The hoist is invisible to the
+// guard only on shapes that orphan NO external node and so open no sweep batch:
+// measured PASS on shapeSoleFile, shapePkgSurvives, shapeImporterNamed and
+// shapeShrinkingSurvivor, FAIL on shapeOrphansExternal. So the optional,
+// content-identified row 4 is not just false-positive insurance — it is what
+// makes the hoist visible at all. TestPurgeOrdering_DeleteThenReaddConverges and
+// TestLink_GoExternalNode_InterningLifecycle do also catch it, as first stated.
+// The guard is one layer of three; it is not the whole net.
 type batchSpec struct {
 	name     string
 	optional bool
@@ -978,9 +995,28 @@ func nodeIDsOfFile(t *testing.T, s graphstore.Graphstore, rel string) []string {
 //
 // It is a runtime observation, not a source-shape assertion, so it also catches
 // a reordering achieved without touching ingestChanged's text.
+//
+// COVERAGE, stated because review round 1 found it silently narrower than the
+// kill test's and unexplained. The guard runs on SIX of the kill test's SEVEN
+// shapes. The one omission is shapeMixedMove, and the reason is a HARNESS
+// limitation, not a product one: shapeContext.purgedNodeIDs is built from a
+// single sh.deletedFile (see the seeding below), but shapeMixedMove vanishes TWO
+// paths (tax/tax.go is deleted and shop/price.go is moved to shop/moved.go). The
+// real purge correctly deletes the nodes of both, so spec 2's exact-equality
+// check under-declares the expected set and the guard rejects CORRECT product
+// code. Measured: declaring every vanished path instead makes it pass. Deriving
+// purgedNodeIDs from "every path in initial absent from after" is the proper
+// fix; it is deliberately NOT taken here because this story is pinned
+// test-and-docs-only under AC-7 and the change would widen the diff on the one
+// file the reviewer asked to ship as-is. Filed as a follow-up in the story.
+//
+// shapeMixedRename was ALSO excluded in the first version, and that exclusion
+// was simply unnecessary — it passes as shipped (verified), so it is now in the
+// list. The exclusion set is therefore exactly one shape, for exactly one
+// measured reason.
 func TestIncrementalBatchShape_DeleteShapedOrderingGuard(t *testing.T) {
 	ctx := context.Background()
-	for _, name := range []string{shapeSoleFile, shapePkgSurvives, shapeImporterNamed, shapeShrinkingSurvivor, shapeOrphansExternal} {
+	for _, name := range []string{shapeSoleFile, shapePkgSurvives, shapeImporterNamed, shapeMixedRename, shapeShrinkingSurvivor, shapeOrphansExternal} {
 		for _, backend := range []string{"mem", "sqlite"} {
 			t.Run(name+"/"+backend, func(t *testing.T) {
 				sh := deleteShapedFixture(name)

@@ -39,14 +39,40 @@
 >
 > **What the guard cannot see, recorded so it is not assumed away.** It observes
 > WRITES; PARITY-001 was caused by a READ (`linkFiles` streaming the live store).
-> A reordering that leaves the write shape intact is invisible to it — verified:
-> hoisting `sweepOrphanExternalNodes` to just after the purge commit passes the
-> guard and is caught instead by `TestPurgeOrdering_DeleteThenReaddConverges` and
-> the pre-existing `TestLink_GoExternalNode_InterningLifecycle`; sharing the
-> reverse-dep pass's `SymbolIndex` with `linkFiles` reintroduces PARITY-001 with
-> an unchanged batch shape and is caught by the kill test and by the graphstore's
-> own `edge references unknown node` endpoint check. The guard is one layer of
-> three, not the whole net.
+> A reordering that leaves the write shape intact is invisible to it. The
+> load-bearing example is sharing the reverse-dep pass's `SymbolIndex` with
+> `linkFiles`: that reintroduces PARITY-001 with an unchanged batch shape, and is
+> caught by the kill test and by the graphstore's own `edge references unknown
+> node` endpoint check, never by the guard.
+>
+> The **second** example first recorded here was wrong, and is corrected in place
+> rather than left standing (review round 1 refuted it, and the section it sits in
+> is this story's own and not yet approved). The draft said that hoisting
+> `sweepOrphanExternalNodes` to just after the purge commit "passes the guard".
+> **It does not.** The hoist was performed and measured: the guard **fails**, on
+> both stores, on the `delete_that_also_orphans_an_external` fixture *this story
+> added* —
+>
+> ```
+> batch 2 does not match required phase "3-link (cross-file re-link; mints the
+>   interned external node)": the link batch did not mint the external node
+>   "example.com/m/tax.Rate"
+> ```
+>
+> because hoisting the sweep puts its batch **before** the link batch, so row 3's
+> content check is applied to a pure-delete batch. The hoist is invisible to the
+> guard only on fixtures that orphan **no** external node and therefore open no
+> sweep batch at all — measured: it passes on `sole_file_of_package`,
+> `package_survives_via_second_file`, `importer_named_in_change_set` and
+> `delete_plus_surviving_file_loses_a_symbol`, and fails only on the orphan shape.
+> `TestPurgeOrdering_DeleteThenReaddConverges` and the pre-existing
+> `TestLink_GoExternalNode_InterningLifecycle` do also catch it, as originally
+> stated. The error direction was conservative — the guard was **understated**,
+> never overstated — but a published ADR must not understate its own coverage
+> either, and the corrected fact is the stronger one: row 4's conditional,
+> content-identified declaration is what makes the hoist visible.
+>
+> The guard is one layer of three, not the whole net.
 >
 > The alternative — folding the purge into batch 1, the way `IngestAll` folds
 > it — is **rejected**, and the reason is measured rather than argued. A folded
@@ -123,11 +149,56 @@
 > **Escalation, not a decision.** The surviving heuristic edge is a WRONG edge,
 > which D5 (zero-tolerance soundness) calls stop-ship unqualified — and whether
 > D5 binds `heuristic`-tier edges is the same owner question LINK-002 §9 already
-> raised and that is still open. The doctor `known-defects` half of the D8
-> disclosure contract is **not** landed here, because `internal/doctor/checks.go`
-> is compiled and AC-7 pins this story to a byte-unchanged product tree; that is
-> the same D8-versus-bytes tension the Wave 0 handoff already escalated, and it
-> is named here rather than quietly resolved.
+> raised and that is still open. The edge is not merely stale: its reason reads
+> *"unresolved import example.com/m/tax"* while a `confirmed` edge to the
+> now-resolved `tax.Rate` sits beside it, so it asserts something the same graph
+> refutes.
+>
+> **D8's doctor half is NOT landed here, and the first statement of why was
+> wrong.** Corrected in review round 1. The draft said the reason was that
+> `internal/doctor/checks.go` is compiled and AC-7 pins a byte-unchanged product
+> tree — implying a **publishability** cost. There is no such cost left to pay:
+> publishability has **already lapsed** at this branch's HEAD. The candidate
+> `3b8d43f` builds to `036be635…`; this branch's HEAD builds to
+> `128486624372a838…` (re-verified this round from both the working tree and a
+> pristine `f9177c6`). The product bytes moved past the candidate long before this
+> story, so a candidate move is **already owed** by this branch regardless of what
+> this story does. **The abstention does not rest on protecting publishability,
+> and must not be read that way.**
+>
+> What is actually being protected is narrower and should be named honestly: an
+> **acceptance criterion** (AC-7's byte-unchanged branch) and the **D7 ceremony
+> that criterion triggers** — a new ADR number, a candidate move with a move
+> record, and a two-dispatch re-measurement with `-verdict-diff` and
+> `-counts-diff` at exit 0. That ceremony is real, scheduled work; it is not
+> work a test-and-docs hardening story was scoped to carry. It is a
+> bookkeeping-and-cost argument, not a user-visible-property argument.
+>
+> **The owner's choice, stated as an actual choice.** D8 is ratified with *and*
+> (readme **and** the doctor check), `sync` is Stable/GA, Go is a GA language, so
+> D8 binds and is presently **half-met** — PARITY-004's two peer defects
+> (LINK-002, LINK-003) are disclosed on both surfaces, so the disclosure is now
+> inconsistent across defects of the same class.
+>
+> - **(a) Land the doctor row now.** Cost: one added string literal in
+>   `KnownDefectsCheck()` (the surrounding structure already takes multi-defect
+>   text, so it is a small edit), plus the **full D7 ceremony** above, plus AC-7
+>   flipping to its product-byte branch. Benefit: D8 satisfied; the machine-checked
+>   surface warns the affected user, and PARITY-004 is exactly the kind of defect
+>   `doctor` exists for because it has a one-command workaround.
+> - **(b) Keep AC-7's pin and defer the doctor half.** Cost: **the owner is
+>   explicitly waiving half a ratified contract.** That must be recorded as a
+>   waiver with a named owner and a landing ticket — never as compliance.
+>
+> **Builder's recommendation: (b) for this story, on the explicit condition that
+> the doctor row lands with the candidate move this branch already owes.** The
+> reasoning is scheduling, not merit: the row *should* exist — that part is not in
+> doubt — but forcing a full two-dispatch re-measurement through a hardening story
+> in order to add one disclosure string spends the ceremony twice, since the
+> already-owed candidate move will have to run it anyway. Landing the row on that
+> move gets D8 satisfied for the same single ceremony. If the owner prefers (a),
+> the edit is small and this builder can land it on request; what is **not**
+> acceptable is (b) recorded as if D8 were met.
 >
 > ### D4 — The carried product question (PARITY-001's open item), answered
 >

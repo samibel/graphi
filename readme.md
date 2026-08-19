@@ -234,15 +234,37 @@ is hosted, there is no service to sign up for.
   Restore the package and `graphi sync`: the importer is **not** re-linked, so
   a stale `external` node for the once-missing symbol and its `heuristic`
   `calls` edge survive beside the now-correct `confirmed` edge, and the
-  `imports` edge a rebuild emits is missing. Reproduced through the CLI:
+  `imports` edge a rebuild emits is missing. **The surviving edge is not merely
+  stale, it is false**: its reason still reads *"external calls (unresolved
+  import example.com/m/tax)"* while a `confirmed` edge to the now-resolved
+  `tax.Rate` sits beside it in the same graph — the import is resolved, and the
+  edge says it is not. Reproduced through the CLI:
   `graphi sync` settles at 7 nodes where `graphi rebuild` over the identical
   tree gives 6, and three further syncs do not repair it. **What that costs, as
   measured on that hermetic fixture rather than inferred:** `neighborhood` on
   the importer loses the `imports` edge (5 edges against a rebuild's 6);
   `related_files` returns the same files but in a different **rank order**, with
-  a weaker reason and less evidence; `callers`, `callees` and `impact` were
-  **identical**, because interned external nodes are excluded from them anyway
-  (first bullet above), and so was `search`. The stale node and edge are still
+  a weaker reason and less evidence; `search` returns the **same matches in the
+  same order but with different `rank` scores** (e.g. for query `tax`, sync
+  `-0.3408 / -0.2865` against rebuild `-0.7652 / -0.6402`, deterministic over
+  three runs), because `search` excludes external nodes from its *results* but
+  **not from its FTS5 corpus** — the stale node is a seventh document where a
+  rebuild has six, and BM25 scores every other document against corpus-wide
+  statistics, so all of them move. On this two-result fixture the ordering
+  happens to survive; **a reordering is not excluded on a larger tree**, since
+  the shift is not a uniform monotone one (the gap between the two `tax` scores
+  is 0.054 on the sync side against 0.125 on the rebuild side).
+  `callers`, `callees`, `impact` and `definition` **were identical** — but that
+  was checked **by node id, not by qualified name**: by qualified name every one
+  of these operations returns `not_found` on *both* sides, which would
+  "confirm" identity vacuously. Comparing every node id present in both graphs
+  across all five structural operations plus `impact`, the identical results
+  include **twelve non-empty ones** — `callers` on `tax.Rate` and on
+  `shop.price`, `callees` on `shop.Checkout`, `impact` on `tax.Rate` and on
+  `shop.price`, `definition` ×4 and `neighborhood` ×3 — so the agreement is
+  real and not an artifact of both sides returning nothing. (`references` is
+  empty on both sides on this fixture and therefore proves nothing about it.)
+  The stale node and edge are still
   visible to the taint analyzer, which does read external nodes. **Workaround:
   run `graphi rebuild` once after restoring a package that was missing at index
   time** — verified: the rebuild converges to 6 nodes and 0 external nodes.
