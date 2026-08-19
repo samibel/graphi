@@ -128,12 +128,16 @@ abstain from**, and what the slot's evidence class **degrades to** when it does.
 **Must supply.** One row in `docs/coverage-matrix.yaml` under
 `category: ga-language`, `status: shipped`, carrying `capability:` from the
 closed vocabulary in `engine/trust/capability.go`. `CheckGALanguages`
-(`internal/coverage/galang.go:88`) binds it three ways: the row's declared level
-must equal the level the **live registries** derive
-(`surfaces/client.LanguageCapabilities()`); every `GA-LANG-<lang>-*` row in the
-evidence index must read PASS with URI **and** sha; and a language other than
-`go` with **no** such rows is rejected outright
-(`galang.go:133` — "a GA claim without evidence rows is vacuous").
+(`internal/coverage/galang.go:88`) binds it **four** ways — the source's own
+comment claims two, because it folds the evidence rule into one and omits the
+`status` check entirely: (1) the row's declared level must equal the level the
+**live registries** derive (`surfaces/client.LanguageCapabilities()`); (2) every
+`GA-LANG-<lang>-*` row in the evidence index must read PASS with URI **and** sha
+(`:129-131`); (3) a language other than `go` with **no** such rows is rejected
+outright (`:134` — "a GA claim without evidence rows is vacuous"); and (4) the
+row must read `status: shipped` (`:106-110`) — planned or partial cannot be GA.
+Rule (2) is why the rows and the matrix row must land in a particular order; see
+S14.
 
 **May abstain from.** Nothing. Every level is declarable; no level is exempt.
 
@@ -141,7 +145,7 @@ evidence index must read PASS with URI **and** sha; and a language other than
 (`internal/coverage/galang_test.go`), and it fails closed.
 
 > **A trap this slot hides.** The derivation is *registration*-derived, not
-> *outcome*-derived. `engine/trust/capability.go:96-127` is a first-match-wins
+> *outcome*-derived. `engine/trust/capability.go:96-128` is a first-match-wins
 > ladder over `TypeChecked` / `CrossFileLinked` / `SymbolExtraction`. A resolver
 > that registers and proves nothing still reads `cross-file-heuristic` — which
 > is the SQL wrinkle named in the programme doc's G1, and which the live read
@@ -326,17 +330,28 @@ identically-empty snapshots.
 
 **The guard set. This is the slot where the JVM instance is measurably weaker
 than the Go instance, and copying the JVM instance propagates the weakness.**
-The Go guard (`paritymatrix_test.go:183`) has **six** directions; the JVM guard
-(`jvmparity_matrix_test.go:43`) has **three**. The template requires all six:
+The Go guard has **seven** `t.Run` directions; the JVM guard
+(`jvmparity_matrix_test.go:43`) has **three** plus KIND/OWNER-style checks. The
+template requires all seven:
 
-| Direction | Rejects | JVM has it? |
-|---|---|---|
-| **MISSING** | a `required` row with no harness row of the same id | ✔ |
-| **PHANTOM** | a harness row id not declared in the YAML | ✔ |
-| **DEFERRED** | a `deferred` row that HAS a harness row, or names no `deferred_to` | ✔ |
-| **KIND/OWNER** | a `kind` outside the vocabulary; a count other than the **pinned literal** (adding a class means editing the number and saying why); a `required` row with an invented `owner` | ✔ |
-| **AXIS** | a narrowed axis — `parityProfiles()` dropping an entry while rows still publish `profile: "both"`, or `len(parityBackends()) != 2` while rows publish `store: "both"` | **✘** |
-| **VOCABULARY** | a closed-set field outside its vocabulary; an `ABSENT` row still citing `fixture`/`store`/`profile`/`assertion`; a `required` row with `profile != "both"`; `known_defect` containing whitespace; `store: "none"` with a byte assertion | **✘** |
+| Direction | Go guard | Rejects | JVM has it? |
+|---|---|---|---|
+| **MISSING** | `:206` | a `required` row with no harness row of the same id | ✔ |
+| **PHANTOM** | `:225` | a harness row id not declared in the YAML | ✔ |
+| **KIND** | `:240` | a `kind` outside the vocabulary; a count other than the **pinned literal** (adding a class means editing the number and saying why) | ✔ |
+| **VERDICT** | `:286` | a row whose `verdict` does not match what its harness row actually proves | **✘** |
+| **OWNER** | `:408` | a `required` row with an owner outside the closed `requiredRowOwners` set | ✔ |
+| **AXIS** | `:460` | a narrowed axis — `parityProfiles()` dropping an entry while rows still publish `profile: "both"`, or `len(parityBackends()) != 2` while rows publish `store: "both"` | **✘** |
+| **VOCABULARY** | `:483` | a closed-set field outside its vocabulary; an `ABSENT` row still citing `fixture`/`store`/`profile`/`assertion`; a `required` row with `profile != "both"`; `known_defect` containing whitespace; `store: "none"` with a byte assertion | **✘** |
+
+> **Round-1 correction, and a warning about where the number came from.** Draft 1
+> of this document said **six** directions and folded KIND and OWNER into one
+> row, which silently dropped **VERDICT**. A family implementing exactly draft
+> 1's list would still have been missing a guard — the template reproducing the
+> very defect (D-11) it was written to catch. Note also that
+> `paritymatrix_test.go:167`'s **own comment says "SIX"** and is stale; the
+> number here was counted from the `t.Run` calls, not read from the prose. **Do
+> not take a guard count from a comment.**
 
 Plus the Go-only **citation** guard (`changeclass_test.go:1681`): every row's
 `test_line` must parse and **that exact line must read
@@ -350,11 +365,25 @@ hole*: deleting the balanced entry from `parityProfiles()` left the package
 "both"` without an AXIS guard is publishing an unchecked claim — E4 wearing an
 E1 label.
 
+> **The discoverability hole, found in round 1 and worse than the missing
+> directions.** Both guards read a **hardcoded const path** —
+> `parityClassesPath = "../../docs/rc/parity-classes.yaml"`
+> (`paritymatrix_test.go:17`) and
+> `jvmParityClassesPath = "../../docs/rc/parity-classes-jvm.yaml"`
+> (`jvmparity_matrix_test.go:14`). **Nothing in the tree globs
+> `docs/rc/parity-classes-*.yaml`.** Therefore a family that ships **no** table
+> and **no** guard produces **zero CI signal** — the absence is not a failing
+> test, it is silence. S6 and S7 are not gates a language can fail by omission;
+> they are gates a language can *skip*. Until TEMPL-P4 lands a glob, "the family
+> table exists" is a **review obligation**, and §7's `✔` for S7 at every level is
+> a statement about what the template requires, not about what CI checks.
+
 **May abstain from.** Nothing. This is the slot that turns S6 from E3 into E1.
 A family table with no drift guard is a list of intentions.
 
-**Class.** E1 with all six directions; **E3** for any claim carried only by a
-field no guard reads.
+**Class.** E1 with all seven directions **for a table the guard actually
+reads**; **E3** for any claim carried only by a field no guard reads; **E4** for
+the existence of the table itself, which nothing enumerates.
 
 ### S8 — Applicability disposition (G3, AC-6)
 
@@ -436,7 +465,7 @@ without a `measured` block is not a pin.
    entry in `corpus/manifest.json` carrying `path`, `tier: 1`, a **family**
    `language` id (the JVM entry reads `language: "jvm"`, not `java`), a
    `scenario_ref`, and an entry in the hermetic-fixture allowlist
-   (`internal/corpus/corpus_test.go:530-534`).
+   (`wantPRGate`, `internal/corpus/corpus_test.go:527-535`).
 
 A **separate scenario directory per family is mandatory, not stylistic**:
 `corpus/hero/` is frozen at exactly 20 scenarios by `cmd/eval/hero_test.go`, so
@@ -448,8 +477,7 @@ words).
 
 The gate's assertions are the template's real content here, and they are
 stronger than "twenty scenarios exist". The JVM instance
-(`cmd/eval/hero_jvm_test.go:54-97`) asserts: at least as many tasks as stable
-ops; **every** stable operation has a task; **no** task exercises a non-frozen
+(`cmd/eval/hero_jvm_test.go:51-97`) asserts: at least twelve tasks — a **hardcoded `len(heroes) < 12`**, not derived from `CanonicalStableOps()`, so this one states intent rather than tracking the frozen set; **every** stable operation has a task; **no** task exercises a non-frozen
 operation; every declared failure class has a task; **at least one task declares
 a negative (`absent`) anchor**; and **no** task declares `max_latency_ms`,
 because budgets are frozen from a reproducible CI run (ADR 0003 U5), not
@@ -539,10 +567,36 @@ it, two rows that both read PASS assert claims of very different strength and
 nothing on the surface distinguishes them.
 
 **May abstain from.** No gate. A gate a language cannot meet gets a row that
-reads UNKNOWN or FAIL with the reason, never no row at all — `galang.go:133`
+reads UNKNOWN or FAIL with the reason, never no row at all — `galang.go:134`
 treats "no rows" as vacuous and fails the build, which is the mechanism working.
 
-**Class.** E1 for the check; the row's own claim is whatever §2 rule 2 yields.
+> **Round-1 correction — draft 1's advice here would have BROKEN THE BUILD, and
+> the ordering constraint it missed is the real content of this slot.**
+> `internal/coverage/galang.go:129-131` raises a violation for **every**
+> `GA-LANG-<lang>-*` row that is not PASS, not merely for a missing set. So the
+> two obligations only compose in one order:
+>
+> 1. **Create the rows first, born UNKNOWN, while the language has NO
+>    `ga-language` matrix row.** `CheckGALanguages` iterates matrix rows, so a
+>    language absent from the matrix is never inspected and its UNKNOWN rows are
+>    invisible to the check. This is where SW-174 lives.
+> 2. **Add the matrix row LAST, only once every one of its `GA-LANG-*` rows
+>    reads PASS with URI and sha.** This is the flip (WP-J11 / SW-179).
+>
+> Reversing that order fails `go run ./cmd/coverage -check` immediately. The
+> mechanism is right — a matrix row is a GA *claim*, and a claim with an UNKNOWN
+> gate under it should fail — but draft 1 stated the obligation without the
+> ordering and would have sent a story into a red build.
+>
+> **The vacuity this slot still admits, stated because the check does not close
+> it:** `galang.go:122-135` only counts rows matching the prefix and rejects
+> `found == 0`. **One** row named `GA-LANG-<lang>-G1` reading PASS satisfies the
+> entire evidence binding; G2–G9 need not exist. "One row per gate" is a
+> **template requirement with no binary behind it** — E3 at best, and the cheapest
+> conforming artefact is also the least honest one. A reviewer must count rows.
+
+**Class.** E1 for the check's own two bindings; **E3** for "one row per gate",
+which nothing enforces. The row's own claim is whatever §2 rule 2 yields.
 
 ---
 
@@ -551,8 +605,15 @@ treats "no rows" as vacuous and fails the build, which is the mechanism working.
 Where a gate is **substituted** rather than met, the substitution is reported
 under its own name and never under the original gate's.
 
-**The rule, made mechanical.** The evidence-row id suffix for a substituted G2 is
-**`G2SUB`**, never `G2`:
+**The rule, made GREPPABLE — not mechanical.** Draft 1 titled this "made
+mechanical", which over-claimed: `CheckGALanguages` matches on
+`strings.HasPrefix(g.ID, "GA-LANG-<lang>-")` and constrains the suffix **not at
+all**, so `GA-LANG-python-G2` for a heuristic resolver passes exactly as
+`GA-LANG-python-G2SUB` does. The convention buys a reliable `grep`, and a
+reviewer who runs it; it buys **no** build failure. Stated plainly so nobody
+schedules work on the belief that a binary is watching.
+
+The evidence-row id suffix for a substituted G2 is **`G2SUB`**, never `G2`:
 
 ```
 GA-LANG-java-G2SUB      ← the heuristic-resolver contract proof
@@ -582,42 +643,137 @@ The invariant at every level is **no operation lies**: each of the twelve stable
 operations returns a well-formed honest result for a language that cannot
 express the relationship, and the trust report names the level.
 
-### 5.1 The predicate, stated precisely
+> **ROUND 1 — this section was rewritten after an adversarial probe broke its
+> first version, and the first version's error is stated rather than quietly
+> replaced.** Draft 1 claimed a single predicate over `confidence.method` could
+> police all twelve operations, and blessed `method: "no_edges"` as honest
+> *always*. **Both halves were wrong.** The predicate reaches **four** of the
+> twelve ops, and `no_edges` is the exact shape an `intra-file-only` lie takes.
+> §5.1-§5.2 below are the corrected version; §5.3 records what was wrong,
+> because a template whose own honesty rule was over-claimed is worth a reader's
+> suspicion.
 
-`outcome: empty` is **not** the predicate. Structurally different answers all
-serialize with `"outcome":"empty"`, and the field that separates them is
-`confidence.method`:
+### 5.1 There is no single predicate, because there is no single result shape
 
-| `confidence.method` | Where it is set | What it means | Honest when |
+**The twelve stable operations return four structurally different answers.**
+Measured through the CLI built from this branch (§10.1's method), against a CSS
+symbol in an indexed fixture:
+
+| Shape | Ops | Carries `summary`? | Carries `confidence.method`? |
 |---|---|---|---|
-| `no_edges` | `engine/agenttools/related/related.go:236`, `changeimpact/changeimpact.go:506` | The anchor **resolved**; it has no edges of the requested kind. | always |
-| `empty_graph`, `empty_history`, `no_git_provider`, `no_framework_annotations` | `engine/agenttools/*` | A **named** reason for the emptiness. | always — a named reason is the honest shape |
-| `unavailable`, `ambiguous` | `engine/agenttools/*` | A typed refusal to answer. | always |
-| **`unresolved`** | `engine/agenttools/*` | The operation **could not find the anchor at all**. | only if the anchor really is not in the graph **and the summary says why** |
+| **A — contract envelope** | `explain_symbol`, `change_risk`, `related_files`, `agent_brief` | **yes** | **yes** |
+| **B — legacy graph envelope** | `callers`, `callees`, `references`, `definition`, `neighborhood` | no | no |
+| **C — analyzer envelope** | `impact` | no | no |
+| **D — bespoke** | `search` | no (no `outcome` field at all) | no |
 
-Note what that table shows: the vocabulary already has the right *shape* — most
-methods name a reason. `unresolved` is the one that names none, and it is the
-one a `parse-only` file lands on. (`definition_only`,
-`engine/agenttools/explain/explain.go:99`, accompanies `outcome: found`, not
-`empty`; it is listed nowhere above for that reason.)
+```
+$ gr callers 8dcaa2dd711c2526
+{"operation":"callers","symbol":"8dcaa2dd711c2526","outcome":"empty","nodes":[],"edges":[]}
+$ gr impact 8dcaa2dd711c2526
+{"analyzer":"impact","outcome":"empty","symbol":"8dcaa2dd711c2526"}
+$ gr search card
+{"query":"card","matches":[{"node_id":"8dcaa2dd711c2526",…}]}
+```
 
-`unresolved` is where an operation lies. Its summary today reads
+**Consequence, and it is the most important sentence in this document:** any
+honest-empty rule phrased over `confidence.method` is **vacuously satisfied** on
+shapes B and C — the field is absent, so `method != "unresolved"` is trivially
+true — and **inexpressible** on shape D. Excluding `index` (lifecycle-only),
+that is **4 of 11 answering operations covered and 7 not**. A consuming story
+that checks the field on the four ops that have it and certifies the other seven
+by silence has done nothing.
 
-> `related_files: no symbol or file matched "X"; try `search` for discovery, a
-> repo-relative path, a qualified name, or a 16-hex node id`
+### 5.2 On shape A, `method` discriminates — but not the way draft 1 said
 
-which is advice for a **typo**. Given an indexed, tracked, successfully parsed
-file, that sentence is false in the only way that matters to an agent: it says
-"you asked wrong" when the truth is "this file kind carries no graph nodes".
+The real vocabulary, read from the `Confidence(fallbackLabel, fallbackMethod)`
+call sites in `engine/` plus the default in
+`engine/agenttools/shape/shape.go:102-110`:
 
-**So the template's honest-empty predicate is:**
+`edge_tiers` (the **default**, used whenever the tier distribution is non-empty)
+· `no_edges` · `no_inbound_edges` · `no_links` · `seeds_only` · `definition_only`
+· `aggregate` · `community_graph` · `unresolved` · `ambiguous` · `unavailable` ·
+`empty_graph` · `empty_history` · `no_git_provider` · `no_framework_annotations`
+· `recorded_annotations` · `hybrid_ranking` · `integer_signal_model` ·
+`brief_sections` · `churn_x_centrality`.
 
-> For every in-repo artefact of language L that a Stable-12 operation is asked
-> about, the operation must resolve the anchor (`method != "unresolved"`), **or**
-> its summary must state that the artefact's *file kind* is not represented in
-> the graph. It must never answer as though the anchor were mistyped.
+Two of these are where an operation lies, and **only one of them was in draft 1's
+table**:
 
-### 5.2 The enforcement gap — named, because it would otherwise propagate
+- **`unresolved`** — the anchor could not be found. Its summary is typo advice
+  (§10.4). Honest only if the anchor genuinely is not in the graph *and the
+  summary says why*.
+- **`no_edges` / `no_inbound_edges` / `no_links`** — **the `intra-file-only`
+  lie.** The anchor resolved, and the operation states *as fact* that it has no
+  edges. Measured, on a fixture whose ground truth is unambiguous:
+
+```
+main.css      contains  @import "base.css";     base.css  tracked and indexed
+readme.md     contains  [base](./base.md)       base.md   tracked and indexed
+settings.yaml contains  include: ./other.yaml   other.yaml tracked and indexed
+
+$ gr related-files main.css
+{"outcome":"empty","summary":"anchor \"main.css\" resolved (file) but has no both
+ edges to other files", … "method":"no_edges"}
+```
+
+Identical for `readme.md` and `settings.yaml`. **"has no both edges to other
+files" is false.** The relation is written in the source; graphi's walker does
+not extract it. That is a legitimate capability limit — and stating it as
+*absence of a relation* rather than as *absence of a capability* is exactly the
+"presents an abstention as an answer" failure the invariant forbids. Draft 1
+marked this method honest **always**.
+
+And `edge_tiers`, the default, is not an emptiness marker at all:
+
+```
+$ gr change-risk 8dcaa2dd711c2526      # a CSS selector
+{"outcome":"found","summary":"risk: low — fan-in 1 (0 calls) from 0 file(s),
+ fan-out 0; …","method":"edge_tiers"}
+$ gr explain-symbol 8dcaa2dd711c2526
+{"outcome":"found","summary":"type main..card defined at main.css:3 — 0 callers,
+ 0 callees, 0 references …","method":"definition_only"}
+```
+
+A **risk verdict** and **three counts**, stated as fact, over relations graphi
+never computes for CSS. Both carry `outcome: found`, so no emptiness rule of any
+shape sees them.
+
+**The corrected predicate, stated per shape and honestly bounded:**
+
+> **Shape A.** For an in-repo artefact of language L, an operation must either
+> (i) resolve the anchor and report a *named, true* reason for emptiness, or
+> (ii) state that the relation is **not extracted for L** — never that it is
+> absent, and never as typo advice. `no_edges`, `no_inbound_edges` and `no_links`
+> satisfy this **only** where L's extractor actually computes that relation;
+> where it does not, they are a lie and the summary must name the capability
+> limit instead.
+>
+> **Shapes B, C, D.** The predicate **cannot be expressed today.** These seven
+> operations carry no summary and no confidence object, so they can report
+> neither a reason nor a capability limit. **For them the invariant is an open
+> product question, not a checklist item**, and a consuming story must record it
+> as unmet rather than as satisfied.
+
+### 5.3 What draft 1 got wrong, and why it is recorded rather than replaced
+
+1. It asserted one predicate over all twelve ops. There are four result shapes;
+   the predicate reaches one of them.
+2. It listed `no_edges` as honest "always". It is the `intra-file-only` lie.
+3. It omitted `edge_tiers` — the *default* method — and every `found`-outcome
+   path, so the `change_risk` and `explain_symbol` cases above were outside its
+   scope entirely.
+4. Its validation fixture (§10.1) used `settings.yaml` with **no cross-file
+   reference**, which is structurally incapable of exposing (2). §10.5's claim
+   that every slot "had a determinate answer for Python, YAML and JSON" was an
+   artefact of that fixture, and is corrected in §10.6.
+
+The general lesson, which binds the consuming stories: **a fixture that cannot
+express the relation under test cannot validate the rule about it.** Draft 1
+found the `parse-only` defect only because JSON differs structurally from Python;
+it missed the `intra-file-only` defect because its YAML did not differ from its
+Python in the one way that mattered.
+
+### 5.4 The enforcement gap — named, because it would otherwise propagate
 
 **The hero harness cannot express this predicate today.** In
 `engine/scenario/scenario.go:487-503`, a contract result is reduced to
@@ -633,17 +789,34 @@ exactly what `corpus/hero/hero-03-search-empty.yaml` and
 `corpus/hero-jvm/hjvm-03-search-empty.yaml` assert, and nothing more — passes on
 both.
 
-**Therefore the template requires two things of every consuming story:**
+Two further harness facts, both verified, that make the gap worse than the
+capture window alone suggests: `finish()` (`scenario.go:528-564`) fails only on
+**declared** expectations, so a scenario with an empty `expect:` block always
+passes; and `cmd/eval/hero_jvm_test.go:51-97` asserts only *coverage* — that
+every stable op has a task, four failure classes appear, one `absent` anchor
+exists, no `max_latency_ms` — and **nothing about the content of any individual
+task's expectations**. Twelve scenario files asserting `outcome: empty` and
+nothing else are green whether the answers are honest or lies.
 
-1. **The scenario must anchor on an artefact that EXISTS.** Both shipped
-   honest-empty scenarios query `zzz_no_such_symbol_zzz` — a term that genuinely
-   does not exist, so `empty` is honest by construction and the scenario proves
-   nothing about the hard case. The template's honest-empty scenario anchors on
-   a **real, indexed, checked-in file of language L**.
-2. **The harness must be able to see the difference.** Until
-   `scenario.Result` carries the summary and `confidence.method`, requirement 1
-   is asserted by review and not by a gate. That prerequisite is **TEMPL-P1**
-   (§12). It is a product-byte change and is deliberately **not** made here.
+**Therefore the template requires three things of every consuming story:**
+
+1. **The scenario must anchor on an artefact that EXISTS, and — new in round 1 —
+   on one that CARRIES THE RELATION UNDER TEST.** Both shipped honest-empty
+   scenarios query `zzz_no_such_symbol_zzz`, so `empty` is honest by
+   construction. And a fixture file with no cross-file reference cannot expose
+   the `no_edges` lie (§5.3). The honest-empty scenario anchors on a **real,
+   indexed, checked-in file of language L that actually contains the reference
+   the operation is being asked about**.
+2. **The harness must be able to see the difference — on the right shape.**
+   **TEMPL-P1 as first written is insufficient and would be actively dangerous.**
+   Carrying `summary` and `confidence.method` into `scenario.Result` helps only
+   shape A. Landing it as specified would produce a gate that *looks* like it
+   covers all twelve operations and in fact covers four — converting an
+   acknowledged review obligation into a false green, which is worse than the
+   gap. TEMPL-P1 is restated in §12 accordingly.
+3. **The seven shape-B/C/D operations are recorded as UNMET, not certified by
+   silence.** A consuming story's G6 row must say which operations its
+   honest-empty evidence actually covers.
 
 ---
 
@@ -740,6 +913,33 @@ strong as `typed-confirmed`'s. That is deliberate: those three slots are what
 make the smaller claim *checkable*, so weakening them would make the reduced
 levels the vacuous ones.
 
+> **ROUND 1 — how much of this table is enforced, stated so the ✔ marks are not
+> read as green lights.** An adversarial probe constructed a vacuous pass at
+> `intra-file-only` and `parse-only` against draft 1 of this table. The
+> corrections are in §3 and §5; what the table itself must carry is the honest
+> reading of its own marks:
+>
+> - **S10, S12 and S13 at `intra-file-only` are marked `✔` and are NOT
+>   trustworthy today.** §5.2 measures three Stable-12 operations stating a false
+>   fact about `main.css`, `readme.md` and `settings.yaml` — files that each
+>   contain a cross-file reference the walker does not extract. The `✔` means
+>   "the template requires this", not "the product currently satisfies it".
+>   **LANGHONEST-001 covers `intra-file-only` as well as `parse-only`.**
+> - **S6/S7 cannot be failed by omission** — nothing globs
+>   `parity-classes-*.yaml` (§3/S7), so a family that ships neither table nor
+>   guard is silent, not red.
+> - **S14's "one row per gate"** has no binary behind it; one PASS row satisfies
+>   `CheckGALanguages` (§3/S14).
+> - The `↓` cells' "declared and checked" is **declared and checked *within a
+>   family's own twin*** — no check compares a family's class set against the
+>   Go table's 19 (§3/S8, TEMPL-P2).
+>
+> **The honest summary of §7: it is a specification of the bar, and roughly half
+> of it is enforced by review rather than by CI.** That is not a reason to
+> weaken it; it is the reason D9's adversarial review is mandatory. It is
+> written here so a consuming story budgets review time instead of trusting a
+> green build.
+
 ---
 
 ## 8. The naming rule (AC-5)
@@ -763,7 +963,8 @@ should check that its surface reads the field.
 ## 9. The template applied to the JVM instance (AC-7)
 
 Applying the template to Java and Kotlin, slot by slot, against the tree at
-`f054bb0`. `D-n` rows are divergences; each is classified as a **template
+`f054bb0` (this story's parent; the story's own commits are docs-only, so every
+code fact below holds unchanged at HEAD). `D-n` rows are divergences; each is classified as a **template
 defect** (the template asked for the wrong thing) or a **JVM-instance gap** (the
 template is right and the instance does not yet have it). **Closing the gaps is
 not this story** — that is stated in the ticket's own out-of-scope list.
@@ -893,8 +1094,8 @@ do not. The mechanism: `core/parse/mapping.go:106` mints the `file` node inside
 `MapTreeSitter`, **before** the node-spec loop, so every symbol-extracting
 parser yields a file node even for zero symbols; `core/parse/parser_json.go:53-62`
 returns `Meta` and `Root` only and calls no extractor at all —
-`ExtractsSymbols() == false` (`parser_json.go:29`), the sole `false` among 25
-registered parsers. `engine/ingest` mints no file node of its own
+`ExtractsSymbols() == false` (`parser_json.go:29`), the sole `false` among the **22**
+parsers `RegisterDefaults` installs (23 with `zig`, CGO-only under `graphi-broad`). `engine/ingest` mints no file node of its own
 (`engine/ingest/parsefile.go:227-277`), so a `parse-only` file has **no node of
 any kind**.
 
@@ -954,8 +1155,41 @@ product-byte change — which AC-8 forbids this story from making.
    SW-185.
 3. **The anti-vacuity rule earns its place.** All three `.json` responses carry
    `"outcome":"empty"`. A hero scenario copied from `hero-03`/`hjvm-03` would be
-   **green** on every one of them. §5's predicate is what separates them, and
-   §5.2's TEMPL-P1 is what would let a gate see it.
+   **green** on every one of them.
+
+### 10.6 What the dry run MISSED, found by the round-1 adversarial probe
+
+Point 1 above is **too strong, and its own fixture is why.** §10.1's
+`settings.yaml` reads `name: demo / listen: 8080 / nested: {key: value}` — an
+`intra-file-only` file with **no cross-file reference in it**. A fixture that
+cannot express the relation under test cannot validate the rule about it, so the
+dry run concluded YAML was fine when it had never been asked the question that
+matters.
+
+Re-run on a fixture that does ask it — `main.css` containing
+`@import "base.css";`, `readme.md` containing `[base](./base.md)`,
+`settings.yaml` containing `include: ./other.yaml`, every target tracked and
+indexed — `related_files` answers `"anchor \"main.css\" resolved (file) but has
+no both edges to other files"` with `method: "no_edges"` for all three. **That
+statement is false**, and draft 1's §5.1 marked `no_edges` honest *always*.
+
+Three consequences, all folded into the sections above rather than left here:
+
+- **§5 was rewritten** (§5.1–§5.4). The predicate reaches 4 of 12 operations,
+  not all 12, because there are four result shapes and seven ops carry neither a
+  summary nor a `confidence.method`.
+- **LANGHONEST-001 is widened** from `parse-only` to `parse-only` **and**
+  `intra-file-only`. At `parse-only` an operation says the anchor is unknown; at
+  `intra-file-only` it says the relation is absent. The second is the more
+  dangerous of the two, because it reads as a confident answer.
+- **§7's `✔` marks for S10/S12/S13 at `intra-file-only` are annotated** as
+  "required, not currently satisfied".
+
+**Recorded as a finding about method, not just about YAML:** draft 1 found the
+`parse-only` defect only because JSON differs *structurally* from Python. It
+missed the `intra-file-only` defect because its YAML did not differ from its
+Python in the one dimension under test. Both consuming waves should read that as
+a fixture-design rule, not as a YAML anecdote.
 
 ---
 
@@ -998,10 +1232,10 @@ predating this story. This document neither causes it nor resolves it.
 
 | id | What | Why it is not done here |
 |---|---|---|
-| **TEMPL-P1** | `scenario.Result` must carry the contract `summary` and `confidence.method` (or the schema must gain an `expect.confidence_method`), so §5's honest-empty predicate is gate-checkable rather than review-checked. | A product-byte change; AC-8 forbids it in this story. Owner: whichever of SW-181/SW-185 first needs a hard honest-empty gate. |
+| **TEMPL-P1** *(restated in round 1 — the first version was dangerous)* | **Two parts, and part (b) is the load-bearing one.** **(a)** `scenario.Result` carries the contract `summary` and `confidence.method` (or the schema gains `expect.confidence_method`). **(b)** The seven shape-B/C/D operations — `callers`, `callees`, `references`, `definition`, `neighborhood`, `impact`, `search` — gain *some* way to express "this relation is not extracted for language L", because today they carry neither a summary nor a confidence object and can express nothing. | A product-byte change; AC-8 forbids it here. **Do NOT land (a) alone:** it produces a gate that appears to cover twelve operations and covers four, converting a known review obligation into a false green — strictly worse than the present gap. Owner: whichever of SW-181/SW-185 first needs a hard honest-empty gate. |
 | **TEMPL-P2** | A check that enumerates `docs/rc/parity-classes.yaml` and asserts every class is dispositioned in each family table. Today the guard only compares a family table to its own twin (D-5). | A product change, and it must not run before the family-table set stabilises. |
 | **TEMPL-P3** | `legalFixtures` gains a `"production <lang> parser"` member so a family table stops labelling its rows `"production Go parser"` (D-12). | A product change; harmless but not free — every existing JVM row's value changes with it. Should land before a third family table. |
-| **TEMPL-P4** | The AXIS and VOCABULARY guard directions, and the `test_line` citation guard, are extended to every `parity-classes-<fam>.yaml` (D-10, D-11). | A product change. **This is the highest-value prerequisite in the table**: until it lands, every family table's `profile: "both"` / `store: "both"` claim is E4 wearing an E1 label, and each new family multiplies the exposure. Owner: whichever of SW-181/SW-182 lands the second family table. |
+| **TEMPL-P4** *(widened in round 1)* | Three parts. **(a)** The **AXIS**, **VOCABULARY** and **VERDICT** directions plus the `test_line` citation guard are extended to every `parity-classes-<fam>.yaml` (D-10, D-11) — note draft 1 said "six directions" and omitted VERDICT, so it under-specified its own fix. **(b)** The guards **glob** `docs/rc/parity-classes-*.yaml` instead of reading hardcoded consts, so a family that ships no table at all is red rather than silent. **(c)** `legalFixtures` gains a non-Go member (that is TEMPL-P3). | A product change. **Highest-value prerequisite in this table.** Until (a) lands, every family table's `profile: "both"` / `store: "both"` claim is E4 wearing an E1 label; until (b) lands, S6 and S7 cannot be failed by omission at all. Each new family multiplies both exposures. Owner: whichever of SW-181/SW-182 lands the second family table. |
 | **LANGHONEST-001** | Three Stable-12 operations answer about an indexed `parse-only` file as though the anchor were mistyped; `trust-report` reports `files_skipped: 0` and `registrants: []` for those files. §10.4. | Fixing it means minting file nodes for parse-only parsers, which changes `imports` targets (ADR 0011's `fileNodesByDir`) — a product-byte change with full D7 ceremony, and out of scope here. |
 
 **Escalated to the owner — AC-4 presupposes a uniformity that is measurably
@@ -1039,31 +1273,47 @@ ls docs/rc/parity-classes-jvm.yaml engine/conformance/jvmparity_test.go \
 grep -n 'category: ga-language' -B3 docs/coverage-matrix.yaml
 go run ./cmd/coverage -check
 
-# §3/S14, §9/D-9 — zero GA-LANG-* rows exist today
-grep -c 'GA-LANG-' docs/rc/evidence-index.yaml     # expect 0
+# §3/S14, §9/D-9 — zero GA-LANG-* ROWS exist today.
+# NOTE the `- id:` anchor. A bare `grep -c 'GA-LANG-'` returns 6, not 0, because
+# THIS CHANGE added a comment block to that file explaining the row shape — and
+# draft 1 of this document published the bare grep with "# expect 0" beside it,
+# a command self-falsified by its own commit. Count rows, never mentions.
+grep -c '^  - id: GA-LANG-' docs/rc/evidence-index.yaml   # expect 0
 go run ./cmd/evidence -check
 
-# §3/S3 — the Owns contract
-sed -n '27,60p' engine/typeresolve/registry.go
+# §3/S3 — the Owns contract. The DECLARATION is at :66; :40-65 is its doc
+# comment. Draft 1 cited ":40-47" and printed a range that stopped before the
+# declaration it claimed to show.
+sed -n '27,70p' engine/typeresolve/registry.go
+grep -n 'Owns(relPath string) bool' engine/typeresolve/registry.go   # expect :66
 
-# §5.2 — the harness gap: Summary and Confidence.Method are not captured
+# §5.4 — the harness gap: Summary and Confidence.Method are not captured
 sed -n '487,503p' engine/scenario/scenario.go
 grep -n 'Summary' engine/scenario/scenario.go      # no capture into Result
 
 # §9/D-7 — the shipped honest-empty scenarios anchor on a nonexistent term
 cat corpus/hero/hero-03-search-empty.yaml corpus/hero-jvm/hjvm-03-search-empty.yaml
 
-# §3/S7, §9/D-11 — the JVM guard is missing AXIS and VOCABULARY
-grep -c 'func Test' engine/conformance/jvmparity_matrix_test.go     # 3
-grep -n '"AXIS"\|"VOCABULARY"' engine/conformance/paritymatrix_test.go
-grep -n '"AXIS"\|"VOCABULARY"' engine/conformance/jvmparity_matrix_test.go   # no hits
+# §3/S7, §9/D-11 — the Go guard has SEVEN t.Run directions; the JVM guard is
+# missing VERDICT, AXIS and VOCABULARY. Count the t.Run calls, NOT the source's
+# own comment at paritymatrix_test.go:167, which says "SIX" and is stale.
+grep -n 't.Run("' engine/conformance/paritymatrix_test.go
+  # expect MISSING PHANTOM KIND VERDICT OWNER AXIS VOCABULARY
+grep -c '"AXIS"\|"VOCABULARY"\|"VERDICT"' engine/conformance/jvmparity_matrix_test.go  # 0
 
-# §9/D-10 — the three fields the JVM rows omit
-grep -c 'test_line\|prd_source\|delta_source' docs/rc/parity-classes.yaml      # >0
-grep -c 'test_line\|prd_source\|delta_source' docs/rc/parity-classes-jvm.yaml  # 0
+# §3/S7 — the discoverability hole: both guards use a HARDCODED const path and
+# nothing globs the family tables, so a missing family table is silent, not red.
+grep -in 'parityClassesPath = ' engine/conformance/*_test.go   # both are consts
+grep -rn 'parity-classes-\*' --include='*.go' .      # expect NO hits
 
-# §9/D-12 — every JVM row claims a Go parser
-grep -c 'fixture: "production Go parser"' docs/rc/parity-classes-jvm.yaml      # 13
+# §9/D-10 — the three fields the JVM ROWS omit. Anchor on the row indentation:
+# a bare grep now matches this change's own D-10 header comment (returns 2).
+grep -c '^    test_line:\|^    prd_source:\|^    delta_source:' docs/rc/parity-classes.yaml      # >0
+grep -c '^    test_line:\|^    prd_source:\|^    delta_source:' docs/rc/parity-classes-jvm.yaml  # 0
+
+# §9/D-12 — every JVM ROW claims a Go parser. Bare grep returns 14: 13 rows plus
+# this change's own header comment.
+grep -c '^    fixture: "production Go parser"' docs/rc/parity-classes-jvm.yaml   # 13
 
 # §3/S9 — the legacy (non-v3) pins Wave 2 will inherit
 grep -n '"name": "flask"' -A 8 corpus/manifest.json   # no tier, no measured block
@@ -1086,6 +1336,28 @@ git add -A && git -c user.email=a@b -c user.name=c commit -qm init
 /tmp/graphi-tmpl change-risk config.json      # same
 /tmp/graphi-tmpl trust-report --json | jq '.coverage, .abstention'
 # expect files_indexed == the tracked count, files_skipped: 0, registrants: []
+
+# §5.2 / §10.6 — the intra-file-only lie. The fixture MUST carry the reference;
+# a YAML with no `include:` cannot expose this, which is how draft 1 missed it.
+mkdir -p /tmp/fx3 && cd /tmp/fx3 && git init -q .
+printf '@import "base.css";\n\n.card { color: red; }\n' > main.css
+printf '.base { color: blue; }\n'                       > base.css
+printf '[base](./base.md)\n'                            > readme.md
+printf '# Base\n'                                       > base.md
+printf 'include: ./other.yaml\n'                        > settings.yaml
+printf 'k: v\n'                                         > other.yaml
+git add -A && git -c user.email=a@b -c user.name=c commit -qm i
+/tmp/graphi-tmpl rebuild >/dev/null
+/tmp/graphi-tmpl related-files main.css       # "has no both edges" -- FALSE
+/tmp/graphi-tmpl related-files readme.md      # same
+/tmp/graphi-tmpl related-files settings.yaml  # same
+# §5.1 — the four result shapes. Only the first carries summary + method.
+ID=$(/tmp/graphi-tmpl search card | sed 's/.*"node_id":"\([^"]*\)".*/\1/')
+/tmp/graphi-tmpl explain-symbol "$ID"   # shape A: summary + confidence.method
+/tmp/graphi-tmpl change-risk    "$ID"   # shape A: outcome=found, method=edge_tiers
+/tmp/graphi-tmpl callers        "$ID"   # shape B: no summary, no confidence
+/tmp/graphi-tmpl impact         "$ID"   # shape C: {analyzer,outcome,symbol}
+/tmp/graphi-tmpl search card            # shape D: {query,matches} -- no outcome
 
 # §10.3 mechanism
 sed -n '25,32p;53,62p' core/parse/parser_json.go
