@@ -1,0 +1,12 @@
+id: hts-15-explain-partial
+description: A capped explain_symbol returns partial.
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: explain_symbol
+  args:
+    symbol: impl.core
+    max_items: "1"
+  area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true

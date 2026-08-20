@@ -1,0 +1,38 @@
+id: hts-06-callers-cross-module
+description: >
+  Callers of impl.core span modules — the impl-internal impl.salute and three
+  cross-module callers (app.serve, app.twice, app.run). The cross-module edges
+  are emitted at the heuristic tier by the G2SUB heuristic resolver
+  (engine/link/resolve_typescript.go): the TS family has no typed binder
+  exposed as a default product surface, so the heuristic tier IS the language's
+  honest level. The writers carry `import { core } from "../impl"` (the
+  named-import bare binding, registered in both bareNameDirs and selBaseDirs
+  at resolve_typescript.go:69-71), so each cross-file call resolves through
+  the heuristic resolver and lands as `calls` in the inbound callers of
+  impl.core. org.salute, which honours the Speaker contract without
+  delegating to core, must NOT appear (negative anchor).
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: callers
+  args:
+    symbol: impl.core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.serve
+      match: contains
+    - kind: symbol
+      value: app.run
+      match: contains
+    - kind: symbol
+      value: app.twice
+      match: contains
+    - kind: symbol
+      value: impl.salute
+      match: contains
+  absent:
+    - kind: symbol
+      value: org.salute
+      match: contains

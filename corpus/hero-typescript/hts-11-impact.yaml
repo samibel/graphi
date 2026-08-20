@@ -1,0 +1,17 @@
+id: hts-11-impact
+description: The blast radius of impl.core reaches its cross-module callers (app.serve, app.run, app.twice).
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: impact
+  args:
+    symbol: impl.core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.serve
+      match: contains
+    - kind: symbol
+      value: app.run
+      match: contains

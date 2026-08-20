@@ -1,0 +1,15 @@
+id: hts-13-related-files
+description: >
+  The files dependent on impl.core are the caller files — app/Service.ts and
+  app/Report.ts — reached through the heuristic cross-module call edges.
+  impl/English.ts (which defines core) is the seed and is excluded.
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: related_files
+  args:
+    anchor: impl.core
+    direction: dependents
+  area: agent_mcp
+expect:
+  outcome: found
+  contains_path: app/Service.ts

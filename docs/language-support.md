@@ -28,7 +28,7 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 |---|---|---|---|---|---|
 | **Go** | **GA** | `typed-confirmed` | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) + `confirmed`-tier go/types edges ¹ |
 | JSON | Preview | `parse-only` | structural (AST) | — | — |
-| TypeScript · TSX/JSX · JavaScript | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **TypeScript · TSX/JSX · JavaScript** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
 | **Python** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **but see open defect LINK-004** ⁵ |
 | Ruby · PHP · Lua | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
 | Java · Kotlin · C# | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
@@ -82,6 +82,22 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > additionally emits the `imports` edge. Not fixed; disclosed per the contract in
 > `readme.md` and the doctor `known-defects` check. Record:
 > [`rc/capability-audit-2026-08-19.md`](rc/capability-audit-2026-08-19.md) §3.
+>
+> ⁶ **TypeScript family — exact-path resolution; immune to LINK-001 by construction.**
+> The TS family (`typescript`, `tsx`, `javascript`) is registered as **one** resolver impl
+> because the three parsers emit the same ESM/CJS import surface and the same
+> `cstWalk`-extracted binding shapes. Path resolution is **relative-only** (D1): `./x` /
+> `../x` resolve against the importing file's directory; non-relative / aliased specifiers
+> (`react`, `@app/x`, `tsconfig` `paths`) are external and skip+counted — no tsconfig
+> path-mapping. **The target set is the specifier's resolved FILE, never the directory.**
+> `import { g } from "../lib/util"` lands exactly one `imports` edge at `lib/util.ts` and
+> no edge at `lib/extra.ts` / `lib/README.md` / `lib/util.test.ts` siblings, because there is
+> no directory fan-out to filter — the specifier already names the file. This is the
+> principled reason the TS family is **structurally immune** to the LINK-001 target-set
+> class (Go's directory-fan-out filter, which would let a `import "./util"` land on
+> every committed `.go` source sibling in the package instead of on the single
+> import-named file). The control test pinning this is
+> `engine/link/resolve_typescript_test.go::TestTSLink_NoDirectoryFanOut` (SW-182 AC-4).
 
 ## How cross-file resolution actually works, language by language
 

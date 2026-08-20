@@ -194,3 +194,115 @@ func TestTSLink_JavascriptAndTsxRegistered(t *testing.T) {
 		}
 	}
 }
+
+// TestTSLink_NoDirectoryFanOut is the SW-182 AC-4 control test: it pins the
+// TypeScript family's exact-path resolution and demonstrates immunity to the
+// LINK-001 target-set class (Go's directory-fan-out, where a `import "./util"`
+// would resolve to every committed `.go` source sibling inside `lib/` instead
+// of to the single path the specifier names).
+//
+// The fixture deliberately stages the failure mode:
+//
+//   - `lib/util.ts`  — committed (`file` + `function lib.greet`); the import target.
+//   - `lib/extra.ts` — committed (`function lib.extra`); a sibling whose NAME has
+//     nothing to do with the specifier but which lives in the same `lib/`
+//     directory. If the resolver ever fans out over the directory, an edge
+//     `app.run -> lib.extra` would appear here. That edge IS the LINK-001 defect
+//     class materialised in TypeScript.
+//   - `lib/README.md`, `lib/util.test.ts` — NOT committed. They are present in
+//     the directory as co-located siblings but graphi never minted `file` nodes
+//     for them, so they cannot be targets either way. The test would still pass
+//     at the index-level even if the resolver fanned out to "every path under
+//     lib/" — see the `lib/extra.ts` half for the load-bearing negative proof.
+//
+// `app/main.ts` imports `{ greet } from "../lib/util"` and `app.run` references
+// `greet`. The cross-file resolution follows the specifier EXACTLY: an `imports`
+// edge lands at `lib/util.ts` and a `calls` edge lands at `lib.greet`. `lib.extra`
+// gets nothing from `app.run`, ever.
+func TestTSLink_NoDirectoryFanOut(t *testing.T) {
+	nodes := []model.Node{
+		mustNode(t, "file", "app/main.ts", "app/main.ts"),
+		mustNode(t, "function", "app.run", "app/main.ts"),
+
+		// The named import target.
+		mustNode(t, "file", "lib/util.ts", "lib/util.ts"),
+		mustNode(t, "function", "lib.greet", "lib/util.ts"),
+
+		// Sibling in the SAME directory as `lib/util.ts`. A directory-fan-out
+		// resolver would (wrongly) wire an `app.run -> lib.extra` edge here.
+		mustNode(t, "file", "lib/extra.ts", "lib/extra.ts"),
+		mustNode(t, "function", "lib.extra", "lib/extra.ts"),
+
+		// NOTE: `lib/README.md` and `lib/util.test.ts` are deliberately NOT
+		// committed nodes. Graphi has no markdown parser and no .test.ts file
+		// kind, so they never enter the index. They cannot be targets and are
+		// therefore not part of the load-bearing assertion — the load-bearing
+		// piece is `lib/extra.ts`, which IS committed and would be hit by a
+		// fan-out.
+	}
+	files := []FileRefs{{
+		SourcePath: "app/main.ts",
+		Dir:        "app",
+		Language:   "typescript",
+		Imports: []parse.ImportSpec{
+			{Alias: "greet", Path: "../lib/util"},
+		},
+		Pending: []parse.PendingRef{
+			{FromQN: "app.run", Name: "greet", Kind: "calls", Line: 5, Selector: false},
+		},
+	}}
+
+	idx := BuildIndex(nodes)
+	_, edges, _, err := New().Link("typescript", files, idx)
+	if err != nil {
+		t.Fatalf("Link: %v", err)
+	}
+
+	mainFile := idOfQN(t, nodes, "app/main.ts")
+	utilFile := idOfQN(t, nodes, "lib/util.ts")
+	extraFile := idOfQN(t, nodes, "lib/extra.ts")
+	greet := idOfQN(t, nodes, "lib.greet")
+	extra := idOfQN(t, nodes, "lib.extra")
+	run := idOfQN(t, nodes, "app.run")
+
+	// 1. EXACTLY ONE `imports` edge out of `app/main.ts`, and it MUST target
+	//    `lib/util.ts`. No `imports` edge at all would mean the resolver did
+	//    nothing; an `imports` edge to any other path (notably `lib/extra.ts`)
+	//    is exactly the LINK-001 defect.
+	var importsEdges int
+	for _, e := range edges {
+		if e.From() == mainFile && e.Kind() == "imports" {
+			importsEdges++
+			if e.To() != utilFile {
+				t.Errorf("imports edge from app/main.ts -> %s (kind %s, tier %s); want lib/util.ts — directory fan-out regression (LINK-001 class)",
+					e.To(), e.Kind(), e.Tier())
+			}
+		}
+	}
+	if importsEdges != 1 {
+		t.Errorf("imports edges from app/main.ts = %d, want exactly 1 (target lib/util.ts)", importsEdges)
+	}
+
+	// 2. The named-import call resolves to `lib.greet` at heuristic tier.
+	assertEdgeTier(t, edges, run, greet, "calls", model.TierHeuristic)
+
+	// 3. LOAD-BEARING NEGATIVE PROOF: NO edge of ANY kind from `app.run` to
+	//    `lib.extra`, despite `lib/extra.ts` being committed in the same
+	//    directory as the import target. A directory-fan-out resolver would
+	//    land here (and on lib/extra), so this assertion is the canary for
+	//    the LINK-001 defect class.
+	for _, e := range edges {
+		if e.From() == run && e.To() == extra {
+			t.Errorf("app.run -> lib.extra edge emitted (kind %s, tier %s) — directory fan-out over lib/ landed at a sibling (LINK-001 defect class)",
+				e.Kind(), e.Tier())
+		}
+	}
+
+	// 4. No `imports` edge to `lib/extra.ts` either: the resolved target set is
+	//    the specifier-named path only.
+	for _, e := range edges {
+		if e.From() == mainFile && e.To() == extraFile && e.Kind() == "imports" {
+			t.Errorf("app/main.ts emitted an imports edge to lib/extra.ts — resolver fanned out over lib/ instead of resolving ../lib/util to its single named target (LINK-001 defect class)")
+		}
+	}
+}

@@ -1,11 +1,11 @@
 {
  "version": 3,
- "notes": "Real-repository corpus (internal/corpus). v3 gives the corpus GO DEPTH: six pinned Go repositories (uuid, lo, cobra, gin, grpc-go, kubernetes) carry the P0 FR-2 stratification, beside the non-Go repositories kept for cross-language regression detection (flask, sinatra, ky, express, guava, and okio \u2014 the first Kotlin pin, language-GA program G5). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars \u2014 the Go entries pin the FULL 40-char commit sha). If an upstream tag is ever re-pointed, the pin step fails closed. Every count under `measured` was taken from a real clone at the pinned sha on the recorded date, never from repository metadata; `go_files` is the strict count the stress threshold is asserted on, and `source_files` is its non-Go analog (the entry's primary-language source count). Tiers: 1 = PR gate (local fixtures), 2 = pinned SHAs, 3 = nightly/manual, 4 = manual-only stress (corpus.yml caps the scheduled run at -max-tier 3, so tier 4 never runs on a schedule or a PR). Adding a repository is a data change here, never a code change. Per-repository selection rationale: corpus/README.md.",
+ "notes": "Real-repository corpus (internal/corpus). v3 gives the corpus GO DEPTH: six pinned Go repositories (uuid, lo, cobra, gin, grpc-go, kubernetes) carry the P0 FR-2 stratification, beside the non-Go repositories kept for cross-language regression detection (flask, sinatra, ky, express, guava, and okio — the first Kotlin pin, language-GA program G5). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars — the Go entries pin the FULL 40-char commit sha). If an upstream tag is ever re-pointed, the pin step fails closed. Every count under `measured` was taken from a real clone at the pinned sha on the recorded date, never from repository metadata; `go_files` is the strict count the stress threshold is asserted on, and `source_files` is its non-Go analog (the entry's primary-language source count). Tiers: 1 = PR gate (local fixtures), 2 = pinned SHAs, 3 = nightly/manual, 4 = manual-only stress (corpus.yml caps the scheduled run at -max-tier 3, so tier 4 never runs on a schedule or a PR). Adding a repository is a data change here, never a code change. Per-repository selection rationale: corpus/README.md.",
  "stratification": [
   {
    "property": "small library",
    "repo": "uuid",
-   "evidence": "21 Go files in a single package, 31 tracked files \u2014 the smallest real repository in the corpus."
+   "evidence": "21 Go files in a single package, 31 tracked files — the smallest real repository in the corpus."
   },
   {
    "property": "mid-size CLI application",
@@ -61,7 +61,7 @@
    "sha": "a0a6ae020bb3899ff0276067863e50523f897370",
    "language": "go",
    "license": "Apache-2.0",
-   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only \u2014 no source is redistributed.",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only — no source is redistributed.",
    "properties": [
     "mid-size CLI application"
    ],
@@ -89,7 +89,7 @@
      "min": 1
     }
    ],
-   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() \u2014 a receiver-method dispatch the name heuristic cannot prove \u2014 and the go/types pass must carry it at the confirmed tier. v3 widened the sha pin from the 12-char prefix to the full commit sha; the tag and the assertion are unchanged."
+   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() — a receiver-method dispatch the name heuristic cannot prove — and the go/types pass must carry it at the confirmed tier. v3 widened the sha pin from the 12-char prefix to the full commit sha; the tag and the assertion are unchanged."
   },
   {
    "name": "uuid",
@@ -120,7 +120,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Small single-package Go library \u2014 the floor of the size range, and the case where a whole repository fits inside one index pass. Tier 3: never on the PR gate."
+   "notes": "Small single-package Go library — the floor of the size range, and the case where a whole repository fits inside one index pass. Tier 3: never on the PR gate."
   },
   {
    "name": "lo",
@@ -183,7 +183,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Web/API service shape (router, middleware chain, binding, render) and the corpus's build-tag carrier: 16 files sit behind //go:build constraints, so a pass that ignores tags either drops or double-counts symbols. Tier 3: never on the PR gate. The second search asserts RouterGroup rather than the more obvious Context: `graphi search Context` returns no matches on ANY indexed repository (observed on gin and kubernetes, 2026-07-27) \u2014 a search-side observation recorded in SW-122, not a property of this repository."
+   "notes": "Web/API service shape (router, middleware chain, binding, render) and the corpus's build-tag carrier: 16 files sit behind //go:build constraints, so a pass that ignores tags either drops or double-counts symbols. Tier 3: never on the PR gate. The second search asserts RouterGroup rather than the more obvious Context: `graphi search Context` returns no matches on ANY indexed repository (observed on gin and kubernetes, 2026-07-27) — a search-side observation recorded in SW-122, not a property of this repository."
   },
   {
    "name": "grpc-go",
@@ -249,7 +249,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "The FR-2 stress target: 15718 Go files (>= the 10000 threshold) across 3611 package directories and 34 modules. Tier 4 \u2014 deliberately outside BOTH the PR gate and the nightly schedule: a measured full index costs ~3m16s wall and ~9 GB peak RSS on an 8-core laptop (2026-07-27, v0.6.7 dev build), which no hosted runner should absorb on a schedule. Run it explicitly: `go run ./cmd/corpus -manifest corpus/manifest.json -tier 4` or `go run ./cmd/eval -full-run kubernetes` once SW-123 has named a runner class and SW-124 the budgets."
+   "notes": "The FR-2 stress target: 15718 Go files (>= the 10000 threshold) across 3611 package directories and 34 modules. Tier 4 — deliberately outside BOTH the PR gate and the nightly schedule: a measured full index costs ~3m16s wall and ~9 GB peak RSS on an 8-core laptop (2026-07-27, v0.6.7 dev build), which no hosted runner should absorb on a schedule. Run it explicitly: `go run ./cmd/corpus -manifest corpus/manifest.json -tier 4` or `go run ./cmd/eval -full-run kubernetes` once SW-123 has named a runner class and SW-124 the budgets."
   },
   {
    "name": "flask",
@@ -298,33 +298,45 @@
    "name": "ky",
    "url": "https://github.com/sindresorhus/ky",
    "ref": "v1.2.0",
-   "sha": "38ac18bc1ac3",
+   "sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
    "language": "typescript",
    "license": "MIT",
    "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "measured": {
+    "source_files": 34,
+    "tracked_files": 48,
+    "measured_at": "2026-08-20",
+    "method": "git clone --depth 1 --branch v1.2.0; git ls-files '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs' | wc -l (34) and git ls-files | wc -l (48) at the pinned sha 38ac18bc1ac3268130de766891ce9b718eb8145a"
+   },
    "searches": [
     {
      "query": "request",
      "expect_nonempty": true
     }
    ],
-   "notes": "TypeScript library; tsconfig/ESM import shapes."
+   "notes": "TypeScript library; tsconfig/ESM import shapes. Brought to the v3 measured standard (SW-182): 12-char sha prefix expanded to the full 40-char sha and a measured census added (34 TypeScript-family source files of 48 tracked, 2026-08-20, .ts/.tsx/.js/.jsx/.mjs/.cjs extensions covering the family’s static extension set at engine/link/resolve_typescript.go:25)."
   },
   {
    "name": "express",
    "url": "https://github.com/expressjs/express",
    "ref": "4.18.2",
-   "sha": "8368dc178af1",
+   "sha": "8368dc178af16b91b576c4c1d135f701a0007e5d",
    "language": "javascript",
    "license": "MIT",
    "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "measured": {
+    "source_files": 153,
+    "tracked_files": 231,
+    "measured_at": "2026-08-20",
+    "method": "git clone --depth 1 --branch 4.18.2; git ls-files '*.js' | wc -l (153) and git ls-files | wc -l (231) at the pinned sha 8368dc178af16b91b576c4c1d135f701a0007e5d"
+   },
    "searches": [
     {
      "query": "Router",
      "expect_nonempty": true
     }
    ],
-   "notes": "JavaScript + many JSON fixtures and markdown \u2014 the malformed-asset bug class."
+   "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class. Brought to the v3 measured standard (SW-182): 12-char sha prefix expanded to the full 40-char sha and a measured census added (153 .js of 231 tracked, 2026-08-20)."
   },
   {
    "name": "guava",
@@ -353,7 +365,7 @@
    ],
    "jvm_compile": {
     "strategy": "full-dependency-resolution",
-    "reason": "guava's ENTIRE external compile classpath is four annotation JARs, and the pin's own root pom.xml names all four with exact versions (jsr305 3.0.2, checker-qual 3.41.0, error_prone_annotations 2.23.0, j2objc-annotations 2.8). Pinning those four by URL+sha256 makes the classpath complete without invoking Maven at all \u2014 no resolver, no version ranges, no transitive discovery, no plugin download \u2014 so the compile is reproducible in a way `mvn compile` is not. Accept-errors was measured and REJECTED for this pin: with no classpath, javac reports 6960 errors and emits ZERO class files, so the accept-errors denominator here would be 0 and the pin would contribute nothing. The 6 remaining `com.google.common.util.concurrent.internal` errors are satisfied from within the pin itself (futures/failureaccess/src is a second Maven module of the same repository, added as a source root rather than as a dependency).",
+    "reason": "guava's ENTIRE external compile classpath is four annotation JARs, and the pin's own root pom.xml names all four with exact versions (jsr305 3.0.2, checker-qual 3.41.0, error_prone_annotations 2.23.0, j2objc-annotations 2.8). Pinning those four by URL+sha256 makes the classpath complete without invoking Maven at all — no resolver, no version ranges, no transitive discovery, no plugin download — so the compile is reproducible in a way `mvn compile` is not. Accept-errors was measured and REJECTED for this pin: with no classpath, javac reports 6960 errors and emits ZERO class files, so the accept-errors denominator here would be 0 and the pin would contribute nothing. The 6 remaining `com.google.common.util.concurrent.internal` errors are satisfied from within the pin itself (futures/failureaccess/src is a second Maven module of the same repository, added as a source root rather than as a dependency).",
     "toolchain": {
      "javac": "21.0.6"
     },
@@ -394,7 +406,7 @@
      }
     ]
    },
-   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) \u2014 the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate. Brought to the v3 measured standard (WP-J6): the 12-char prefix expanded to the full 40-char sha and a measured census added (3204 .java of 3298 tracked, via the source_files field non-Go entries use)."
+   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) — the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate. Brought to the v3 measured standard (WP-J6): the 12-char prefix expanded to the full 40-char sha and a measured census added (3204 .java of 3298 tracked, via the source_files field non-Go entries use)."
   },
   {
    "name": "okio",
@@ -403,7 +415,7 @@
    "sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
    "language": "kotlin",
    "license": "Apache-2.0",
-   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only \u2014 no source is redistributed.",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only — no source is redistributed.",
    "tier": 3,
    "measured": {
     "source_files": 313,
@@ -581,6 +593,24 @@
     }
    ],
    "notes": "Tier-1 pinned multi-file Python fixture for the SW-181 hero-python tasks. The hero-python gate (cmd/eval/hero_python_test.go) asserts the 12 stable ops over the HEURISTIC tier (engine/link/resolve_python.go), since Python has no typed binder — the G2SUB substitution is the language's honest level. The writers carry the heuristic resolver's from-import bare binding (`from impl.english import core`) so callers/callees/impact/related_files reach across modules at the heuristic tier. Negative anchor: org.salute (does NOT call core) must not appear in callers-of-core. No network, no Python interpreter."
+  },
+  {
+   "name": "tier1-fixture-hero-typescript",
+   "path": "corpus/fixtures/hero-typescript",
+   "tier": 1,
+   "language": "typescript",
+   "scenario_ref": "hero-typescript",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    },
+    {
+     "query": "salute",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file TypeScript-family fixture for the SW-182 hero-typescript tasks. The hero-typescript gate (cmd/eval/hero_typescript_test.go) asserts the 12 stable ops over the HEURISTIC tier (engine/link/resolve_typescript.go, registered for typescript/tsx/javascript). The writers carry the heuristic resolver's named-import bare binding (`import { core } from \"../impl\"`) so callers/callees/impact/related_files reach across modules at the heuristic tier. Negative anchor: org.salute (does NOT call core) must not appear in callers-of-core. No network, no Node."
   }
  ]
 }

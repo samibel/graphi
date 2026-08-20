@@ -1,0 +1,11 @@
+id: hts-12-agent-brief
+description: An agent brief on impl.core carries evidence.
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: agent_brief
+  args:
+    topic: impl.core
+  area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

@@ -1,0 +1,10 @@
+id: hts-16-change-risk
+description: Change risk of impl.core reflects its inbound callers.
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: change_risk
+  args:
+    target: impl.core
+  area: agent_mcp
+expect:
+  outcome: found
