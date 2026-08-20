@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/samibel/graphi/core/profile"
 )
 
 // jvmParityClassesPath is docs/rc/parity-classes-jvm.yaml relative to this
@@ -195,6 +197,127 @@ func TestJVMParityMatrix_RequiredRowsAreProven(t *testing.T) {
 			if r.Verdict != verdictAbsent {
 				t.Errorf("deferred row %q reads verdict %q, want ABSENT", r.ID, r.Verdict)
 			}
+		}
+	}
+}
+
+// TestJVMParityMatrix_Verdict binds the JVM matrix's verdict to what its harness
+// row actually proves — the VERDICT direction (paritymatrix_test.go:286) mirrored
+// for the JVM family. Required rows claim PROVEN only when TestJVMFullVsIncremental_ByteParity
+// ran them; deferred rows claim ABSENT and cite nothing.
+//
+// The CITATION sub-assertion closes the same attack the Go guard's CITATION
+// closes: five coordinated edits would otherwise buy a free PROVEN by setting
+// harness_row: "deferred" yet pointing at the harness driver. With CITATION in
+// place, that contradiction is mechanically caught.
+func TestJVMParityMatrix_Verdict(t *testing.T) {
+	const harnessFile = "engine/conformance/jvmparity_test.go"
+	const harnessName = "TestJVMFullVsIncremental_ByteParity"
+	for _, r := range loadJVMParityClasses(t) {
+		switch r.HarnessRow {
+		case harnessRequired:
+			if r.Verdict == verdictAbsent {
+				t.Errorf("VERDICT: JVM %q has a harness table row but still reads verdict: %q in %s",
+					r.ID, r.Verdict, jvmParityClassesPath)
+			}
+			if r.TestFile != harnessFile {
+				t.Errorf("VERDICT: JVM %q is proven by the harness table but test_file reads %q; want %q",
+					r.ID, r.TestFile, harnessFile)
+			}
+			if r.TestName != harnessName {
+				t.Errorf("VERDICT: JVM %q test_name reads %q; want %q", r.ID, r.TestName, harnessName)
+			}
+			if r.TestLine == "" {
+				t.Errorf("VERDICT: JVM %q is a required row but test_line is empty; cite the line of %s in %s",
+					r.ID, harnessName, harnessFile)
+			}
+			if r.KnownDefect != "" && r.Verdict == verdictProven {
+				t.Errorf("VERDICT: JVM %q declares known_defect %q so it may NOT read verdict: %q",
+					r.ID, r.KnownDefect, verdictProven)
+			}
+		case harnessDeferred:
+			if r.TestFile == harnessFile || r.TestName == harnessName {
+				t.Errorf("CITATION: JVM %q is harness_row: %q yet cites the harness driver "+
+					"(test_file=%q test_name=%q). A deferred row cannot claim a verdict the "+
+					"harness produced; either give it a real table row and mark %q, or cite the "+
+					"proof that actually covers it.",
+					r.ID, harnessDeferred, r.TestFile, r.TestName, harnessRequired)
+			}
+		}
+	}
+}
+
+// TestJVMParityMatrix_Axis binds the JVM matrix's profile/store claim to the
+// axes the harness actually runs — the AXIS direction (paritymatrix_test.go:460)
+// mirrored for the JVM family. Without it, deleting balanced from parityProfiles()
+// would leave this guard green while 13 rows kept publishing "proven under both
+// profiles" — the same hole review round 1 demonstrated on the Go side.
+//
+// THIS TEST IS THE FAIL-ON-MUTATION SANITY CHECK the SW-189 ticket asks for:
+// removing the balanced entry from parityProfiles() makes this test go red, by
+// construction.
+func TestJVMParityMatrix_Axis(t *testing.T) {
+	profilesSeen := map[profile.Profile]bool{}
+	for _, pr := range parityProfiles() {
+		profilesSeen[pr.p] = true
+	}
+	if !profilesSeen[""] || !profilesSeen[profile.Balanced] {
+		t.Errorf("AXIS: parityProfiles() runs {default=%v, balanced=%v}; the JVM matrix claims profile: \"both\" "+
+			"on every required row, so both must run — a narrowed axis must fail the family guards too",
+			profilesSeen[""], profilesSeen[profile.Balanced])
+	}
+	if n := len(parityBackends()); n != 2 {
+		t.Errorf("AXIS: parityBackends() runs %d backend(s); the JVM matrix claims store: \"both\", so 2 are required", n)
+	}
+	for _, r := range loadJVMParityClasses(t) {
+		if r.HarnessRow != harnessRequired {
+			continue
+		}
+		if r.Store != "both" {
+			t.Errorf("AXIS: JVM %q is harness_row: %q but reads store: %q; want \"both\"", r.ID, harnessRequired, r.Store)
+		}
+		if r.Profile != "both" {
+			t.Errorf("AXIS: JVM %q is harness_row: %q but reads profile: %q; want \"both\"", r.ID, harnessRequired, r.Profile)
+		}
+	}
+}
+
+// TestJVMParityMatrix_Vocabulary enforces the closed vocabularies on every JVM
+// row — the VOCABULARY direction (paritymatrix_test.go:483) mirrored for the JVM
+// family. The shared constants (legalFixtures, legalStores, legalProfiles,
+// legalAssertions, legalHarnessRows, legalVerdicts, legalKinds) live in
+// paritymatrix_test.go and are the SAME closed set the Go guard enforces; this
+// guard is a structural mirror for the JVM YAML's claim.
+func TestJVMParityMatrix_Vocabulary(t *testing.T) {
+	oneOf := func(v string, legal []string) bool {
+		for _, l := range legal {
+			if v == l {
+				return true
+			}
+		}
+		return false
+	}
+	for _, r := range loadJVMParityClasses(t) {
+		check := func(field, value string, legal []string, allowEmpty bool) {
+			if value == "" && allowEmpty {
+				return
+			}
+			if !oneOf(value, legal) {
+				t.Errorf("VOCABULARY: JVM %q has %s: %q, which is outside the declared vocabulary %v",
+					r.ID, field, value, legal)
+			}
+		}
+		check("kind", r.Kind, legalKinds, false)
+		check("verdict", r.Verdict, legalVerdicts, false)
+		check("harness_row", r.HarnessRow, legalHarnessRows, false)
+		check("fixture", r.Fixture, legalFixtures, false)
+		check("store", r.Store, legalStores, false)
+		check("profile", r.Profile, legalProfiles, false)
+		check("assertion", r.Assertion, legalAssertions, false)
+		if r.Store == storeNone &&
+			(r.Assertion == assertionSnapshotBytes || r.Assertion == assertionEnvelopeBytes) {
+			t.Errorf("VOCABULARY: JVM %q claims assertion: %q with store: %q — bytes can only come from a store",
+				r.ID, r.Assertion, storeNone)
 		}
 	}
 }

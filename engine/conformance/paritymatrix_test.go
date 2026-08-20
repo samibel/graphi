@@ -90,7 +90,17 @@ const (
 var (
 	legalKinds    = []string{kindChangeClass, kindCrashCondition}
 	legalVerdicts = []string{verdictProven, verdictPartial, verdictAbsent}
-	legalFixtures = []string{"synthetic stub parser", "production Go parser", "real pinned repository"}
+	// legalFixtures lists every parser-kind label a row may publish. Closed by
+	// construction: the template's TEMPL-P3 (docs/plan/2026-08-per-language-ga-template-v1.md)
+	// requires a non-Go member before the third family ships, and the JVM rows
+	// (parity-classes-jvm.yaml) carry fixture: "production Go parser" only because
+	// the JVM/JVM-language work predated the template's vocabulary expansion — the
+	// label is a placeholder, not a refusal to add members. Adding a member here
+	// means every existing row's value still passes; the JVM rows stay on
+	// "production Go parser" (their binder is parsed by the Go parser registry,
+	// which is the same fact as on Go) and the Python / TS rows pick the member
+	// that names their production backend.
+	legalFixtures = []string{"synthetic stub parser", "production Go parser", "production Python parser", "production TypeScript parser", "real pinned repository"}
 	legalStores   = []string{"MemStore", "SQLite", "both", storeNone}
 	// legalProfiles is the INDEX-PROFILE axis (W0.f-4, ADR 0010): "default" is
 	// ingest.New's zero value, "balanced" is what the CLI resolves for every

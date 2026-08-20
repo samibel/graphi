@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/samibel/graphi/core/profile"
 )
 
 // pythonParityClassesPath is docs/rc/parity-classes-python.yaml relative to
@@ -203,6 +205,114 @@ func TestPythonParityMatrix_RequiredRowsAreProven(t *testing.T) {
 			if r.Verdict != verdictAbsent {
 				t.Errorf("deferred row %q reads verdict %q, want ABSENT", r.ID, r.Verdict)
 			}
+		}
+	}
+}
+
+// TestPythonParityMatrix_Verdict binds the Python matrix's verdict to what its
+// harness row actually proves — the VERDICT direction mirrored for the Python
+// family. Required rows claim PROVEN only when
+// TestPythonFullVsIncremental_ByteParity ran them; deferred rows claim ABSENT
+// and cite nothing. The CITATION sub-assertion closes the same attack the Go
+// guard closes (paritymatrix_test.go:392-405).
+func TestPythonParityMatrix_Verdict(t *testing.T) {
+	const harnessFile = "engine/conformance/pythonparity_test.go"
+	const harnessName = "TestPythonFullVsIncremental_ByteParity"
+	for _, r := range loadPythonParityClasses(t) {
+		switch r.HarnessRow {
+		case harnessRequired:
+			if r.Verdict == verdictAbsent {
+				t.Errorf("VERDICT: Python %q has a harness table row but still reads verdict: %q in %s",
+					r.ID, r.Verdict, pythonParityClassesPath)
+			}
+			if r.TestFile != harnessFile {
+				t.Errorf("VERDICT: Python %q is proven by the harness table but test_file reads %q; want %q",
+					r.ID, r.TestFile, harnessFile)
+			}
+			if r.TestName != harnessName {
+				t.Errorf("VERDICT: Python %q test_name reads %q; want %q", r.ID, r.TestName, harnessName)
+			}
+			if r.TestLine == "" {
+				t.Errorf("VERDICT: Python %q is a required row but test_line is empty; cite the line of %s in %s",
+					r.ID, harnessName, harnessFile)
+			}
+			if r.KnownDefect != "" && r.Verdict == verdictProven {
+				t.Errorf("VERDICT: Python %q declares known_defect %q so it may NOT read verdict: %q",
+					r.ID, r.KnownDefect, verdictProven)
+			}
+		case harnessDeferred:
+			if r.TestFile == harnessFile || r.TestName == harnessName {
+				t.Errorf("CITATION: Python %q is harness_row: %q yet cites the harness driver "+
+					"(test_file=%q test_name=%q). A deferred row cannot claim a verdict the "+
+					"harness produced.",
+					r.ID, harnessDeferred, r.TestFile, r.TestName)
+			}
+		}
+	}
+}
+
+// TestPythonParityMatrix_Axis binds the Python matrix's profile/store claim to
+// the axes the harness actually runs — the AXIS direction mirrored for the
+// Python family. Removing the balanced entry from parityProfiles() makes this
+// test go red, by construction.
+func TestPythonParityMatrix_Axis(t *testing.T) {
+	profilesSeen := map[profile.Profile]bool{}
+	for _, pr := range parityProfiles() {
+		profilesSeen[pr.p] = true
+	}
+	if !profilesSeen[""] || !profilesSeen[profile.Balanced] {
+		t.Errorf("AXIS: parityProfiles() runs {default=%v, balanced=%v}; the Python matrix claims profile: \"both\" "+
+			"on every required row, so both must run",
+			profilesSeen[""], profilesSeen[profile.Balanced])
+	}
+	if n := len(parityBackends()); n != 2 {
+		t.Errorf("AXIS: parityBackends() runs %d backend(s); the Python matrix claims store: \"both\", so 2 are required", n)
+	}
+	for _, r := range loadPythonParityClasses(t) {
+		if r.HarnessRow != harnessRequired {
+			continue
+		}
+		if r.Store != "both" {
+			t.Errorf("AXIS: Python %q is harness_row: %q but reads store: %q; want \"both\"", r.ID, harnessRequired, r.Store)
+		}
+		if r.Profile != "both" {
+			t.Errorf("AXIS: Python %q is harness_row: %q but reads profile: %q; want \"both\"", r.ID, harnessRequired, r.Profile)
+		}
+	}
+}
+
+// TestPythonParityMatrix_Vocabulary enforces the closed vocabularies on every
+// Python row — the VOCABULARY direction mirrored for the Python family.
+func TestPythonParityMatrix_Vocabulary(t *testing.T) {
+	oneOf := func(v string, legal []string) bool {
+		for _, l := range legal {
+			if v == l {
+				return true
+			}
+		}
+		return false
+	}
+	for _, r := range loadPythonParityClasses(t) {
+		check := func(field, value string, legal []string, allowEmpty bool) {
+			if value == "" && allowEmpty {
+				return
+			}
+			if !oneOf(value, legal) {
+				t.Errorf("VOCABULARY: Python %q has %s: %q, which is outside the declared vocabulary %v",
+					r.ID, field, value, legal)
+			}
+		}
+		check("kind", r.Kind, legalKinds, false)
+		check("verdict", r.Verdict, legalVerdicts, false)
+		check("harness_row", r.HarnessRow, legalHarnessRows, false)
+		check("fixture", r.Fixture, legalFixtures, false)
+		check("store", r.Store, legalStores, false)
+		check("profile", r.Profile, legalProfiles, false)
+		check("assertion", r.Assertion, legalAssertions, false)
+		if r.Store == storeNone &&
+			(r.Assertion == assertionSnapshotBytes || r.Assertion == assertionEnvelopeBytes) {
+			t.Errorf("VOCABULARY: Python %q claims assertion: %q with store: %q — bytes can only come from a store",
+				r.ID, r.Assertion, storeNone)
 		}
 	}
 }
