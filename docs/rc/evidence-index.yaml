@@ -441,10 +441,116 @@ gates:
   # own contract, and is never reported as G2. That is why no GA-LANG-*-G2 row
   # exists here and the row-anchored -G2$ grep above still answers 0.
   #
+  # SW-186 (W3 close, 2026-08-20): the grandfathering is REMOVED. Go now
+  # carries its own GA-LANG-go-G1..G9 rows (G2 canonical, NOT G2SUB — go is
+  # typed-confirmed), and `go` joins every other language in the AXIS. Java
+  # and Kotlin each pick up a ga-language row in docs/coverage-matrix.yaml in
+  # the same change. The total scaffold is 22 languages × 9 gates = 198 rows;
+  # all UNKNOWN by design — the F5-dispatch work follows; the AXIS is closed.
+  #
   # Neither language has a `ga-language` row in docs/coverage-matrix.yaml, and
   # per the ordering constraint above that is exactly why these rows may be
   # UNKNOWN today. Adding the matrix row is the flip (WP-J11 / SW-179) and it
   # is legal only once every row below reads PASS with evidence_uri AND sha.
+  - id: GA-LANG-go-G1
+    gate: G1 — Declared capability contract
+    section: language-GA program §2 G1
+    threshold: "Go declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The live derivation reports go at typed-confirmed, the level this scaffold is written against. SW-186 closed the axis: the historical `go` grandfathering is removed, and go now binds to its own GA-LANG-go-G1..G9 rows like every other language. The G2 row carries the canonical form (typed-confirmed), NOT G2SUB — only cross-file-heuristic languages substitute G2SUB per docs/plan/2026-08-per-language-ga-template-v1.md §4."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Cite capability_test.go and the trust-report derivation with a pinned sha. Gated by the F5-dispatch work (the SW-186 follow-on that discharges the 198 UNKNOWN rows)."
+    due: W3+
+  - id: GA-LANG-go-G2
+    gate: G2 — Type-checker-proven resolver contract
+    section: language-GA program §2 G2 (typed-confirmed)
+    threshold: "Go's symbol binder, seeded from the go/ast extractor, produces type-checker-proven edges at the `confirmed` tier; the row passes when the confirmed-tier binding rate (with its deny-and-count half) is published with a pinned sha. This is the CANONICAL G2 — typed-confirmed is the only level at which G2 is not SUBSTITUTED."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E1 HARNESS-PROVEN. The historical go binder is the durable evidence base (the docs/rc/focused-core-rc.md record, the candidate freeze records, docs/rc/parity-classes.yaml), but the WP0 honesty rule requires every row to carry evidence URI AND sha, and the F5-dispatch work is the gate that publishes both for the new AXIS. SW-186 closes the AXIS; the discharge is the next phase."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Cite the go typed-binder contract (engine/link/resolve_go.go + the matching binder_test.go + a hermetic fixture) with a published confirmed-tier binding rate and a pinned sha. Gated by the F5-dispatch work."
+    due: W3+
+  - id: GA-LANG-go-G3
+    gate: G3 — Hermetic change-class parity
+    section: language-GA program §2 G3
+    threshold: "Rows for go in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes.yaml by the seven drift-guard directions the Go table already carries."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E1 HARNESS-PROVEN. The Go parity table is the durable evidence base — the conformance suite (engine/conformance) ships the rows — but the row is honest about the WP0 contract: this scaffold row carries no evidence URI and sha, and the F5-dispatch work is the gate that publishes both. SW-186 closes the AXIS; the discharge is the next phase."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Cite docs/rc/parity-classes.yaml and the Go parity table (engine/conformance/goparity_test.go + goparity_matrix_test.go) with their blob shas. Gated by the F5-dispatch work."
+    due: W3+
+  - id: GA-LANG-go-G4
+    gate: G4 — Real-repository parity
+    section: language-GA program §2 G4
+    threshold: "internal/parity drives the BUILT binary over go pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E2 CORPUS-MEASURED. The historical go matrix (docs/rc/parity-matrix-real-repo.md) is the durable evidence base, but the WP0 contract requires fresh evidence URI and sha for every GA-LANG-go-G4 row, and the F5-dispatch work is the gate that publishes both."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Re-run internal/parity over the go pinned clones at the W3-frozen candidate; publish two dispatches that agree at verdict AND count granularity; cite the matrix with a pinned sha. Gated by the F5-dispatch work."
+    due: W3+
+  - id: GA-LANG-go-G5
+    gate: G5 — Corpus stratification and pins
+    section: language-GA program §2 G5
+    threshold: "Go corpus entries reach the v3 standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and the ten-property stratification."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E2 CORPUS-MEASURED. The Go corpus (corpus/manifest.json) is the durable evidence base, but the WP0 contract requires fresh evidence URI and sha for this row, and the F5-dispatch work is the gate that publishes both."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Cite corpus/manifest.json with its blob sha. Gated by the F5-dispatch work."
+    due: W3+
+  - id: GA-LANG-go-G6
+    gate: G6 — Hero gate
+    section: language-GA program §2 G6
+    threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for go, on the checked-in corpus/fixtures/hero-go fixture, including negative anchors and honest-empty / abstention scenarios."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E1 HARNESS-PROVEN. The go hero fixture and scenarios (corpus/fixtures/hero-go + corpus/hero-go) are the durable evidence base, but the WP0 contract requires fresh evidence URI and sha for this row, and the F5-dispatch work is the gate that publishes both."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Cite corpus/fixtures/hero-go and cmd/eval/hero_go_test.go with their shas. Gated by the F5-dispatch work."
+    due: W3+
+  - id: GA-LANG-go-G7
+    gate: G7 — Perf and budget evidence
+    section: language-GA program §2 G7
+    threshold: "The four perf suites for go carry raw run artifacts checked in under docs/eval/runs; the binary stays inside its bench/lang-budget.md allocation and inside the whole-binary budget gate."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E2 CORPUS-MEASURED. The go perf suite (docs/eval/runs) is the durable evidence base, but the WP0 contract requires fresh evidence URI and sha for this row, and the F5-dispatch work is the gate that publishes both."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Re-run the four perf suites on the W3-frozen candidate; check raw run artefacts under docs/eval/runs; cite with their shas. Gated by the F5-dispatch work."
+    due: W3+
+  - id: GA-LANG-go-G8
+    gate: G8 — Honest capability surface
+    section: language-GA program §2 G8
+    threshold: "The registries report go at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (`Go — GA (typed-confirmed)`)."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `Go — GA (typed-confirmed)`, never GA alone. The naming rule is checked at the matrix row (capability: typed-confirmed carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-186 AC-6 binds the asset to its language: the per-language follow-on verifies the surface consistency end-to-end."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Bind the naming rule across every user-facing surface for go: docs/language-support.md (typed-confirmed printed beside GA), docs/stability-tiers.md (typed-confirmed bound to GA), trust-report --json (typed-confirmed in the JSON), docs/coverage-matrix.yaml (capability: typed-confirmed). Gated by the F5-dispatch work."
+    due: W3+
+  - id: GA-LANG-go-G9
+    gate: G9 — Evidence-index rows and the machine GA-language check
+    section: language-GA program §2 G9
+    threshold: "One GA-LANG-go-G<n> row per gate under the evidence-index discipline, and go present in the machine-encoded GA-language mechanism, whose check requires all of the above."
+    current: "UNKNOWN — born UNKNOWN by SW-186. Target class E3 DECLARED-AND-CHECKED. SW-186 ships the nine rows per language for go (9 rows, the canonical G2 form because go is typed-confirmed), and the matrix row lands in the same change. The first half of the ordering is satisfied. This row can only read PASS after every row above it does, which is the whole point of the ordering."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: ENG (Go)
+    next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. Gated by the F5-dispatch work."
+    due: W3+
   - id: GA-LANG-java-G1
     gate: G1 — Declared capability contract
     section: language-GA program §2 G1

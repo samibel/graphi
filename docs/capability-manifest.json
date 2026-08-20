@@ -694,7 +694,7 @@
       "category": "ga-language",
       "status": "shipped",
       "tier": "labs",
-      "note": "The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA.",
+      "note": "The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA. SW-186 (W3 close): the grandfathering clause is REMOVED — go binds to its own GA-LANG-go-G1..G9 evidence rows like every other language (typed-confirmed → canonical G2, never G2SUB). The level is typed-confirmed, Go's type checker proves relationships, edges can reach the confirmed tier; the G2 row exists when the F5-dispatch work populates it with evidence URI and sha.",
       "capability": "typed-confirmed"
     },
     {
@@ -704,6 +704,14 @@
       "tier": "labs",
       "note": "HCL at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: HCL in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 21 measurement is the load-bearing citation — `module { source }` is Terraform's schema layered on HCL, not HCL's own cross-file mechanism). The naming rule from the spec binds every user-facing surface: `HCL — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-hcl-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`.",
       "capability": "intra-file-only"
+    },
+    {
+      "id": "java",
+      "category": "ga-language",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "Java at GA (cross-file-heuristic) per the language-GA program G3 (SW-174, Wave 1). SW-186 (W3 close): the matrix row lands in the same change as the GA-LANG-java-G1..G9 rows and the grandfathering clause is removed. The level is heuristic, not typed-confirmed — java has no default-on typed binder (JVM binders are default-off pending SW-179), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Java — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-java-G1..G9, born UNKNOWN).",
+      "capability": "cross-file-heuristic"
     },
     {
       "id": "javascript",
@@ -720,6 +728,14 @@
       "tier": "labs",
       "note": "JSON at GA (parse-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is parse-only: JSON in graphi mints no node of any kind (RFC 8259, parse-only by construction), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 22 measurement is the load-bearing citation — `question NOT askable`, JSON has no construct to bind). The naming rule from the spec binds every user-facing surface: `JSON — GA (parse-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-json-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`.",
       "capability": "parse-only"
+    },
+    {
+      "id": "kotlin",
+      "category": "ga-language",
+      "status": "shipped",
+      "tier": "labs",
+      "note": "Kotlin at GA (cross-file-heuristic) per the language-GA program G3 (SW-174, Wave 1). SW-186 (W3 close): the matrix row lands in the same change as the GA-LANG-kotlin-G1..G9 rows and the grandfathering clause is removed. The level is heuristic, not typed-confirmed — kotlin shares java's typed-binder story (default-off pending SW-179), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Kotlin — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-kotlin-G1..G9, born UNKNOWN).",
+      "capability": "cross-file-heuristic"
     },
     {
       "id": "lua",

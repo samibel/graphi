@@ -32,29 +32,17 @@
 # declares a language GA at a stated `capability` level (engine/trust's closed
 # vocabulary); internal/coverage.CheckGALanguages binds the declaration to the
 # live capability derivation AND to green GA-LANG-<lang>-* rows in
-# docs/rc/evidence-index.yaml (go alone is grandfathered: its GA evidence is
-# the P0/P1 program record). Adding a row here without those artifacts fails
+# docs/rc/evidence-index.yaml. Adding a row here without those artifacts fails
 # `go run ./cmd/coverage -check` — a language cannot be flipped GA by prose.
 #
-# READ BEFORE CREATING GA-LANG-go-* EVIDENCE ROWS (added 2026-08-19, SW-174).
-# The grandfathering below exempts `go` from ONE rule only: it may carry NO
-# GA-LANG-* rows at all (internal/coverage/galang.go:133, `found == 0`). It does
-# NOT exempt go from the per-row rule at galang.go:129-131, which raises a
-# violation for EVERY GA-LANG-go-* row that is not PASS with evidence_uri and
-# sha. Because the `go` row below already exists, go cannot follow the ordering
-# every other language follows (rows born UNKNOWN first, matrix row last) —
-# there is no step at which its rows may be UNKNOWN.
-#
-# MEASURED, not reasoned (SW-174): nine GA-LANG-go-G1..G9 rows born UNKNOWN
-# were added to docs/rc/evidence-index.yaml and `go run ./cmd/coverage -check`
-# returned `ga-language check FAILED — 9 violation(s)`, exit 1 — one violation
-# per row. They were removed again and the gate returned to green, so the finding
-# is published (SW-174 AC-6) without leaving CI red while the owner rules.
-# The two resolutions, both the owner's: (A) measure and populate all nine so
-# they read PASS, or (B) withdraw this row until they do and restore it by the
-# SW-179 mechanism. Until one is taken, creating GA-LANG-go-* rows turns this
-# check red. Removing them again is the one resolution AC-6 forbids. This is
-# also SW-186's entry problem.
+# SW-186 (W3 close, 2026-08-20): the grandfathering clause is REMOVED. Go now
+# binds to its own GA-LANG-go-G1..G9 evidence rows like every other language —
+# `internal/coverage/galang.go` no longer exempts `go` from the `found == 0`
+# rule, and the matrix carries a `ga-language` row for each of the 22 shipped
+# languages (typed-confirmed: 1; cross-file-heuristic: 15; intra-file-only: 5;
+# parse-only: 1). The 22 × 9 = 198 GA-LANG-* rows in docs/rc/evidence-index.yaml
+# are born UNKNOWN by design — the F5-dispatch work follows; the AXIS is
+# closed.
 capabilities:
   - id: go
     category: ga-language
@@ -62,7 +50,21 @@ capabilities:
     tier: labs
     capability: typed-confirmed
     epic: "-"
-    note: "The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA."
+    note: "The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA. SW-186 (W3 close): the grandfathering clause is REMOVED — go binds to its own GA-LANG-go-G1..G9 evidence rows like every other language (typed-confirmed → canonical G2, never G2SUB). The level is typed-confirmed, Go's type checker proves relationships, edges can reach the confirmed tier; the G2 row exists when the F5-dispatch work populates it with evidence URI and sha."
+  - id: java
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: cross-file-heuristic
+    epic: "-"
+    note: "Java at GA (cross-file-heuristic) per the language-GA program G3 (SW-174, Wave 1). SW-186 (W3 close): the matrix row lands in the same change as the GA-LANG-java-G1..G9 rows and the grandfathering clause is removed. The level is heuristic, not typed-confirmed — java has no default-on typed binder (JVM binders are default-off pending SW-179), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Java — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-java-G1..G9, born UNKNOWN)."
+  - id: kotlin
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: cross-file-heuristic
+    epic: "-"
+    note: "Kotlin at GA (cross-file-heuristic) per the language-GA program G3 (SW-174, Wave 1). SW-186 (W3 close): the matrix row lands in the same change as the GA-LANG-kotlin-G1..G9 rows and the grandfathering clause is removed. The level is heuristic, not typed-confirmed — kotlin shares java's typed-binder story (default-off pending SW-179), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Kotlin — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-kotlin-G1..G9, born UNKNOWN)."
   - id: python
     category: ga-language
     status: shipped

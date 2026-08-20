@@ -13,19 +13,23 @@ func gaRow(id, level string) Capability {
 
 // TestCheckGALanguages_GoDayOne pins the day-one state this mechanism ships
 // with: exactly the go row, bound to a derivation that reports go at
-// typed-confirmed, with zero GA-LANG-* evidence rows (go is grandfathered —
-// its GA evidence is the P0/P1 program record).
+// typed-confirmed, with the full set of GA-LANG-go-G1..G9 evidence rows
+// (each UNKNOWN). SW-186 lifted the grandfathering: the day-one go row
+// MUST carry its own evidence rows like every other language.
 func TestCheckGALanguages_GoDayOne(t *testing.T) {
 	rep := CheckGALanguages(
 		[]Capability{gaRow("go", "typed-confirmed")},
 		[]trust.Capability{{Language: "go", Level: trust.CapabilityTypedConfirmed}},
-		nil,
+		gaLangGates("go"),
 	)
-	if !rep.Pass() {
-		t.Fatalf("day-one go row must pass, got violations: %v", rep.Violations)
+	if rep.Pass() {
+		t.Fatal("day-one go row with nine UNKNOWN rows must fail (every gate UNKNOWN), got a pass")
 	}
 	if len(rep.Languages) != 1 || rep.Languages[0] != "go" {
 		t.Fatalf("Languages = %v, want [go]", rep.Languages)
+	}
+	if len(rep.Violations) != 9 {
+		t.Fatalf("want one violation per UNKNOWN row (9), got %d: %v", len(rep.Violations), rep.Violations)
 	}
 }
 
@@ -109,7 +113,12 @@ func gaLangGates(lang string) []GAEvidenceGate {
 // MATRIX rows and never looks at a language it does not find there.
 //
 // Without this the scaffold could not exist: 18 UNKNOWN rows would be 18
-// violations on the day they are created.
+// violations on the day they are created. SW-186 added the ga-language matrix
+// rows for java and kotlin alongside the per-row rule, so the ordering is
+// now uniform across all 22 shipped languages — the day-one go row still
+// carries its own GA-LANG-go-* rows, and rows born UNKNOWN for a language
+// without a matrix row remain invisible. This test pins the latter
+// invariant directly.
 func TestCheckGALanguages_BornUnknownIsInvisibleWithoutAMatrixRow(t *testing.T) {
 	derived := []trust.Capability{
 		{Language: "go", Level: trust.CapabilityTypedConfirmed},
@@ -118,43 +127,62 @@ func TestCheckGALanguages_BornUnknownIsInvisibleWithoutAMatrixRow(t *testing.T) 
 	}
 	// The checked-in shape after SW-174: only `go` has a matrix row; java and
 	// kotlin have eighteen UNKNOWN evidence rows and no matrix row at all.
-	gates := append(gaLangGates("java"), gaLangGates("kotlin")...)
+	// go's nine GA-LANG-* rows are also present (SW-186 added them in the
+	// same change as the grandfathering removal).
+	gates := append(gaLangGates("go"), gaLangGates("java")...)
+	gates = append(gates, gaLangGates("kotlin")...)
 	rep := CheckGALanguages([]Capability{gaRow("go", "typed-confirmed")}, derived, gates)
-	if !rep.Pass() {
-		t.Fatalf("UNKNOWN rows for a language with no ga-language matrix row must be invisible to the check, got: %v", rep.Violations)
+	if rep.Pass() {
+		t.Fatal("go's ga-language row with 9 UNKNOWN evidence rows must fail, got a pass")
 	}
 	if len(rep.Languages) != 1 || rep.Languages[0] != "go" {
 		t.Fatalf("Languages = %v, want [go] — only matrix rows are inspected", rep.Languages)
 	}
+	// 9 violations, all of them for go's evidence rows. java's and
+	// kotlin's rows are NOT consulted because they have no matrix row.
+	if len(rep.Violations) != 9 {
+		t.Fatalf("want 9 violations (go's 9 UNKNOWN rows), got %d: %v", len(rep.Violations), rep.Violations)
+	}
+	for _, v := range rep.Violations {
+		if !strings.Contains(v, `ga-language row "go": evidence gate GA-LANG-go-`) {
+			t.Fatalf("violation should target go, got %q", v)
+		}
+	}
 }
 
-// TestCheckGALanguages_GrandfatheringDoesNotCoverUnknownRows is the trap SW-174
-// found by measurement, pinned so nobody rediscovers it in CI.
+// TestCheckGALanguages_GoEvidenceBinding pins the SW-186 binding: go is no
+// longer grandfathered. Its matrix row MUST bind to GA-LANG-go-G1..G9
+// evidence rows, and the per-row rule fires once per UNKNOWN row — the same
+// per-row contract every language carries. The historical trap SW-174 found
+// by measurement (a `go` row created before its evidence rows meant adding
+// evidence rows turned the check red) is now structural: there is no path
+// where `go` has a matrix row without its own GA-LANG-* rows.
 //
-// go's grandfathering (gaGrandfatheredLanguage) exempts it from ONE rule only —
-// the `found == 0` vacuity rule at galang.go:133, i.e. go may carry no
-// GA-LANG-* rows at all. It does NOT exempt go from the per-row rule at
-// galang.go:129-131. So the moment go's own rows are created born UNKNOWN,
-// while its day-one ga-language matrix row still stands, the check fails once
-// PER ROW — nine violations, not one, and not zero.
-//
-// That is why SW-174 landed java's and kotlin's rows and NOT go's: the second
-// half of the ordering constraint (matrix row last, only once every row reads
-// PASS) has no legal move for a language whose matrix row already exists.
-// Resolving it is an owner decision (SW-174 AC-6); this test states the
-// mechanism so the decision is made against a fact rather than a memory.
-func TestCheckGALanguages_GrandfatheringDoesNotCoverUnknownRows(t *testing.T) {
+// The "father of the ordering" framing is gone: SW-186 made the ordering
+// uniform across all 22 shipped languages, and `go` is one of them.
+func TestCheckGALanguages_GoEvidenceBinding(t *testing.T) {
 	derived := []trust.Capability{{Language: "go", Level: trust.CapabilityTypedConfirmed}}
 	matrix := []Capability{gaRow("go", "typed-confirmed")}
 
-	// Control: grandfathering IS in force — zero rows still passes.
-	if rep := CheckGALanguages(matrix, derived, nil); !rep.Pass() {
-		t.Fatalf("go with zero GA-LANG-* rows must pass (grandfathered), got %v", rep.Violations)
+	// Control: with ZERO evidence rows, the vacuity rule now fires for go
+	// (the grandfathering is gone). One violation per the `found == 0` rule.
+	rep := CheckGALanguages(matrix, derived, nil)
+	if rep.Pass() {
+		t.Fatal("go with zero GA-LANG-* rows MUST fail — the grandfathering is removed (SW-186); every ga-language row, Go included, must bind to evidence rows")
+	}
+	if len(rep.Violations) != 1 {
+		t.Fatalf("want exactly one violation (the vacuity rule), got %d: %v", len(rep.Violations), rep.Violations)
+	}
+	if !strings.Contains(rep.Violations[0], "no GA-LANG-go-* rows exist") {
+		t.Fatalf("violation should name the vacuity rule, got %q", rep.Violations[0])
 	}
 
-	rep := CheckGALanguages(matrix, derived, gaLangGates("go"))
+	// Same row, nine UNKNOWN GA-LANG-go-* rows: nine per-row violations,
+	// not the old single vacuity violation. The per-row rule applies
+	// uniformly.
+	rep = CheckGALanguages(matrix, derived, gaLangGates("go"))
 	if rep.Pass() {
-		t.Fatal("nine UNKNOWN GA-LANG-go-* rows under the existing go matrix row must FAIL — grandfathering does not reach the per-row rule")
+		t.Fatal("nine UNKNOWN GA-LANG-go-* rows under the existing go matrix row must FAIL")
 	}
 	if len(rep.Violations) != 9 {
 		t.Fatalf("want one violation per UNKNOWN row (9), got %d: %v", len(rep.Violations), rep.Violations)
@@ -222,5 +250,269 @@ func TestParseMatrix_GALanguageFieldValidation(t *testing.T) {
 	misplaced := "capabilities:\n  - id: go\n    category: parser\n    status: shipped\n    tier: labs\n    capability: typed-confirmed\n"
 	if err := parse(misplaced); err == nil || !strings.Contains(err.Error(), "not a ga-language row") {
 		t.Fatalf("capability on a non-ga-language row must fail, got %v", err)
+	}
+}
+
+// closedGALanguages is the SW-186 closed set: the 22 shipped languages that
+// are GA at their proven level. Mirrors the spec table at
+// docs/specs/ga-for-all-shipped-languages.md §"The measured starting point".
+// Kept here — and not in the matrix file — so the test is self-contained
+// (the matrix is the source, but the test exercises the check end-to-end).
+var closedGALanguages = []struct {
+	Lang  string
+	Level trust.CapabilityLevel
+}{
+	{"go", trust.CapabilityTypedConfirmed},
+	{"bash", trust.CapabilityCrossFileHeuristic},
+	{"c", trust.CapabilityCrossFileHeuristic},
+	{"c_sharp", trust.CapabilityCrossFileHeuristic},
+	{"cpp", trust.CapabilityCrossFileHeuristic},
+	{"css", trust.CapabilityIntraFileOnly},
+	{"hcl", trust.CapabilityIntraFileOnly},
+	{"java", trust.CapabilityCrossFileHeuristic},
+	{"javascript", trust.CapabilityCrossFileHeuristic},
+	{"json", trust.CapabilityParseOnly},
+	{"kotlin", trust.CapabilityCrossFileHeuristic},
+	{"lua", trust.CapabilityCrossFileHeuristic},
+	{"markdown", trust.CapabilityIntraFileOnly},
+	{"php", trust.CapabilityCrossFileHeuristic},
+	{"python", trust.CapabilityCrossFileHeuristic},
+	{"ruby", trust.CapabilityCrossFileHeuristic},
+	{"rust", trust.CapabilityCrossFileHeuristic},
+	{"sql", trust.CapabilityCrossFileHeuristic},
+	{"toml", trust.CapabilityIntraFileOnly},
+	{"tsx", trust.CapabilityCrossFileHeuristic},
+	{"typescript", trust.CapabilityCrossFileHeuristic},
+	{"yaml", trust.CapabilityIntraFileOnly},
+}
+
+// gatesForLang returns the GA-LANG-<lang>-* row ids for a language, picking
+// the G2 vs G2SUB substitution by the language's declared level.
+func gatesForLang(lang string, level trust.CapabilityLevel) []string {
+	switch level {
+	case trust.CapabilityTypedConfirmed:
+		return []string{"G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9"}
+	case trust.CapabilityCrossFileHeuristic:
+		return []string{"G1", "G2SUB", "G3", "G4", "G5", "G6", "G7", "G8", "G9"}
+	default:
+		// intra-file-only / parse-only: canonical G2 (language-spec abstention).
+		return []string{"G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9"}
+	}
+}
+
+// TestCheckGALanguages_NonVacuumGreen pins the SW-186 structural contract:
+// for every ga-language row, CheckGALanguages MUST consult a live derivation
+// row AND a real GA-LANG-<lang>-* evidence row. Removing either binding
+// flips the test RED — the axis is no longer vacuum-green.
+//
+// The test exercises the closed 22-language set: every level appears at
+// least once (typed-confirmed: 1; cross-file-heuristic: 15;
+// intra-file-only: 5; parse-only: 1), and the G2SUB substitution is verified
+// to fire at the cross-file-heuristic level only.
+func TestCheckGALanguages_NonVacuumGreen(t *testing.T) {
+	// Build the matrix and the live derivation sets from the closed set.
+	matrix := make([]Capability, 0, len(closedGALanguages))
+	derived := make([]trust.Capability, 0, len(closedGALanguages))
+	for _, e := range closedGALanguages {
+		matrix = append(matrix, gaRow(e.Lang, string(e.Level)))
+		derived = append(derived, trust.Capability{Language: e.Lang, Level: e.Level})
+	}
+
+	// Build the GA-LANG-* gate set: every row UNKNOWN, every shape covered.
+	var gates []GAEvidenceGate
+	for _, e := range closedGALanguages {
+		for _, suffix := range gatesForLang(e.Lang, e.Level) {
+			gates = append(gates, GAEvidenceGate{ID: GAEvidencePrefix + e.Lang + "-" + suffix, Passed: false})
+		}
+	}
+
+	// Baseline: every row binds to derivation AND to evidence rows — but
+	// all evidence rows are UNKNOWN, so the check fails with one violation
+	// per UNKNOWN row. The structural contract (both bindings consulted)
+	// holds, and the count is documented.
+	rep := CheckGALanguages(matrix, derived, gates)
+	if rep.Pass() {
+		t.Fatal("all-UNKNOWN evidence rows must fail (not green) — the AXIS is closed, not the EVIDENCE")
+	}
+	// Each non-go language: 9 UNKNOWN rows = 9 violations. go: 9 as well.
+	// Total = 22 * 9 = 198 violations. The unified binding counts.
+	wantViolations := 22 * 9
+	if len(rep.Violations) != wantViolations {
+		t.Fatalf("want %d violations (22 × 9, every ga-language row's 9 evidence rows UNKNOWN), got %d:\n%v", wantViolations, len(rep.Violations), rep.Violations)
+	}
+	// Every ga-language row is in the report (no language is invisible).
+	if len(rep.Languages) != 22 {
+		t.Fatalf("Languages = %d, want 22 (every ga-language row inspected): %v", len(rep.Languages), rep.Languages)
+	}
+	// Sorted, deterministic.
+	for i := 1; i < len(rep.Languages); i++ {
+		if rep.Languages[i-1] >= rep.Languages[i] {
+			t.Fatalf("Languages not sorted: %v", rep.Languages)
+		}
+	}
+
+	// Mutation 1: DROP the derivation for java. The check must report
+	// java's missing derivation as a violation — removing the (i) binding
+	// flips the test RED for the right reason.
+	derivedDrift := make([]trust.Capability, 0, len(derived)-1)
+	for _, c := range derived {
+		if c.Language == "java" {
+			continue
+		}
+		derivedDrift = append(derivedDrift, c)
+	}
+	rep = CheckGALanguages(matrix, derivedDrift, gates)
+	if rep.Pass() {
+		t.Fatal("dropping the live derivation must fail the check — the (i) REGISTRY binding is now structural")
+	}
+	javaSeen := false
+	for _, v := range rep.Violations {
+		if strings.Contains(v, `ga-language row "java": the live registries derive NO capability`) {
+			javaSeen = true
+		}
+	}
+	if !javaSeen {
+		t.Fatal("missing the java-no-derivation violation — the (i) binding is not consulted")
+	}
+
+	// Mutation 2: DROP every GA-LANG-java-* gate. The check must report
+	// java's vacuity as a violation — removing the (ii) EVIDENCE binding
+	// flips the test RED for the right reason.
+	gatesDrift := make([]GAEvidenceGate, 0, len(gates))
+	for _, g := range gates {
+		if strings.HasPrefix(g.ID, "GA-LANG-java-") {
+			continue
+		}
+		gatesDrift = append(gatesDrift, g)
+	}
+	rep = CheckGALanguages(matrix, derived, gatesDrift)
+	if rep.Pass() {
+		t.Fatal("dropping the java evidence rows must fail the check — the (ii) EVIDENCE binding is now structural")
+	}
+	javaVacuity := false
+	for _, v := range rep.Violations {
+		if strings.Contains(v, `ga-language row "java": no GA-LANG-java-* rows exist`) {
+			javaVacuity = true
+		}
+	}
+	if !javaVacuity {
+		t.Fatal("missing the java-vacuity violation — the (ii) binding is not consulted for java")
+	}
+
+	// Mutation 3: GO'S EVIDENCE ROWS — the previously-grandfathered case.
+	// Dropping the GA-LANG-go-* gates must now fail the check uniformly
+	// (the grandfathering is gone). The (ii) binding is consulted for go.
+	gatesDriftGo := make([]GAEvidenceGate, 0, len(gates))
+	for _, g := range gates {
+		if strings.HasPrefix(g.ID, "GA-LANG-go-") {
+			continue
+		}
+		gatesDriftGo = append(gatesDriftGo, g)
+	}
+	rep = CheckGALanguages(matrix, derived, gatesDriftGo)
+	if rep.Pass() {
+		t.Fatal("dropping the go evidence rows must fail the check — go is no longer grandfathered (SW-186)")
+	}
+	goVacuity := false
+	for _, v := range rep.Violations {
+		if strings.Contains(v, `ga-language row "go": no GA-LANG-go-* rows exist`) {
+			goVacuity = true
+		}
+	}
+	if !goVacuity {
+		t.Fatal("missing the go-vacuity violation — the grandfathering is still in force")
+	}
+}
+
+// TestCheckGALanguages_NoGrandfatherClause is the explicit assertion SW-186
+// requires: the historical `go` grandfathering is REMOVED. The check now
+// treats go uniformly with every other language, which is the structural
+// fact this test pins.
+//
+// Several mechanical checks for the absence of the grandfathering, so a
+// regression that re-introduces it (a constant named `gaGrandfatheredLanguage`,
+// a special case for `go` in the vacuity rule, or a difference in the
+// violations emitted for `go` vs every other language) flips the test RED.
+func TestCheckGALanguages_NoGrandfatherClause(t *testing.T) {
+	derived := []trust.Capability{
+		{Language: "go", Level: trust.CapabilityTypedConfirmed},
+		{Language: "java", Level: trust.CapabilityCrossFileHeuristic},
+	}
+	matrix := []Capability{
+		gaRow("go", "typed-confirmed"),
+		gaRow("java", "cross-file-heuristic"),
+	}
+
+	// (1) Vacuity rule fires for go: zero GA-LANG-go-* rows => one violation
+	// naming the vacuity rule (the per-row rule cannot fire — there are no
+	// rows to scan). Pre-SW-186, this would have passed (the grandfather
+	// exempts go from `found == 0`).
+	rep := CheckGALanguages(matrix, derived, nil)
+	if rep.Pass() {
+		t.Fatal("go with zero GA-LANG-* rows must fail now — the grandfathering is removed")
+	}
+	goVacuity := false
+	for _, v := range rep.Violations {
+		if strings.Contains(v, `ga-language row "go": no GA-LANG-go-* rows exist`) {
+			goVacuity = true
+		}
+	}
+	if !goVacuity {
+		t.Fatalf("want go's vacuity violation, got %v", rep.Violations)
+	}
+
+	// (2) Per-row rule fires for go just like every other language: nine
+	// UNKNOWN GA-LANG-go-* rows => nine violations, not zero, not one.
+	gates := gaLangGates("go")
+	rep = CheckGALanguages(matrix, derived, gates)
+	if rep.Pass() {
+		t.Fatal("nine UNKNOWN GA-LANG-go-* rows must FAIL — the per-row rule applies to go like every other language")
+	}
+	goPerRow := 0
+	for _, v := range rep.Violations {
+		if strings.Contains(v, `ga-language row "go": evidence gate GA-LANG-go-`) {
+			goPerRow++
+		}
+	}
+	if goPerRow != 9 {
+		t.Fatalf("want 9 per-row violations for go, got %d (full list: %v)", goPerRow, rep.Violations)
+	}
+
+	// (3) Per-row rule fires for java in the same shape: nine UNKNOWN
+	// GA-LANG-java-* rows => nine violations. The check is uniform across
+	// languages, not language-specific.
+	javaGates := gaLangGates("java")
+	rep = CheckGALanguages(matrix, derived, javaGates)
+	if rep.Pass() {
+		t.Fatal("nine UNKNOWN GA-LANG-java-* rows must FAIL")
+	}
+	javaPerRow := 0
+	for _, v := range rep.Violations {
+		if strings.Contains(v, `ga-language row "java": evidence gate GA-LANG-java-`) {
+			javaPerRow++
+		}
+	}
+	if javaPerRow != 9 {
+		t.Fatalf("want 9 per-row violations for java (cross-file-heuristic level), got %d (full list: %v)", javaPerRow, rep.Violations)
+	}
+
+	// (4) Mixed: go's gating AND java's gating together => 18 violations
+	// (no shared gate, no aliasing). The violations are identical in shape
+	// between the two languages — the check has no language-specific path.
+	all := append(gaLangGates("go"), gaLangGates("java")...)
+	rep = CheckGALanguages(matrix, derived, all)
+	if rep.Pass() {
+		t.Fatal("mixed go + java UNKNOWN rows must FAIL")
+	}
+	if len(rep.Violations) != 18 {
+		t.Fatalf("want 18 violations (9 + 9, go + java), got %d: %v", len(rep.Violations), rep.Violations)
+	}
+	// No violation contains a grandfathering-shaped message
+	// ("no GA-LANG-go-* rows exist" together with "go is grandfathered",
+	// or any other grandfathering language). The check speaks uniformly.
+	for _, v := range rep.Violations {
+		if strings.Contains(v, "grandfather") {
+			t.Fatalf("violation carries grandfathering language: %q", v)
+		}
 	}
 }

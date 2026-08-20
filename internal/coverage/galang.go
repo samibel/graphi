@@ -12,12 +12,11 @@ package coverage
 //	     by surfaces/client.LanguageCapabilities — the SAME derivation the
 //	     trust report serves, so the gate and the product cannot disagree).
 //	(ii) EVIDENCE: every GA-LANG-<lang>-* row in docs/rc/evidence-index.yaml
-//	     must read PASS with evidence URI and sha (the WP0 honesty rule), and a
-//	     language other than go must HAVE such rows — a GA flip without
-//	     evidence rows would be vacuously green. Go alone carries no
-//	     GA-LANG-* rows: its GA evidence predates this mechanism (the P0/P1
-//	     programs — docs/rc/focused-core-rc.md, the candidate freeze records,
-//	     docs/rc/parity-classes.yaml) and is not re-keyed retroactively.
+//	     must read PASS with evidence URI and sha (the WP0 honesty rule). A
+//	     GA row without them is vacuously green — the SW-186 story closed
+//	     this hole by removing the previous single-language `go` exemption
+//	     and binding go to its own GA-LANG-go-* rows like every other
+//	     language.
 //
 // The third binding the program names — demotion is legal but loud — needs
 // run-over-run state (a removed row is invisible to a stateless check) and is
@@ -38,12 +37,8 @@ import (
 )
 
 // GAEvidencePrefix prefixes the evidence-index gate ids that bind a language's
-// GA claim: GA-LANG-<lang>-<gate> (language-GA program §2, gate ids G2..G9).
+// GA claim: GA-LANG-<lang>-<gate> (language-GA program §2, gate ids G1..G9).
 const GAEvidencePrefix = "GA-LANG-"
-
-// gaGrandfatheredLanguage is the one language whose GA claim needs no
-// GA-LANG-* evidence rows (see the package comment above).
-const gaGrandfatheredLanguage = "go"
 
 // GAEvidenceGate is one evidence-index row fact the GA-language check
 // consumes: the gate id, and whether the row reads PASS with BOTH evidence URI
@@ -83,8 +78,12 @@ func (r GALanguageReport) Format() string {
 // CheckGALanguages verifies every `category: ga-language` matrix row against
 // the live capability derivation and the evidence-index facts. An empty
 // ga-language set passes vacuously (the matrix then simply encodes "no GA
-// language", which the day-one go row makes unreachable in the checked-in
-// tree).
+// language"; the 22 shipped languages makes that unreachable in the
+// checked-in tree).
+//
+// SW-186: the historical `go` grandfathering is REMOVED — every ga-language
+// row, Go included, MUST bind to live derivation AND to green GA-LANG-<lang>-*
+// evidence rows. The check is now uniform across all 22 shipped languages.
 func CheckGALanguages(matrix []Capability, derived []trust.Capability, gates []GAEvidenceGate) GALanguageReport {
 	levelOf := map[string]trust.CapabilityLevel{}
 	for _, c := range derived {
@@ -118,7 +117,9 @@ func CheckGALanguages(matrix []Capability, derived []trust.Capability, gates []G
 			rep.Violations = append(rep.Violations, fmt.Sprintf("ga-language row %q declares capability %q but the live registries derive %q — the declaration must follow the code, never lead it", row.ID, row.CapabilityLevel, lvl))
 		}
 
-		// (ii) evidence binding.
+		// (ii) evidence binding. SW-186: no language is exempt. The
+		// `found == 0` rule below fires for every row whose GA-LANG-<lang>-*
+		// rows are absent — including go, which now MUST carry them.
 		prefix := GAEvidencePrefix + row.ID + "-"
 		found := 0
 		for _, g := range gates {
@@ -130,7 +131,7 @@ func CheckGALanguages(matrix []Capability, derived []trust.Capability, gates []G
 				rep.Violations = append(rep.Violations, fmt.Sprintf("ga-language row %q: evidence gate %s does not read PASS with evidence URI and sha (UNKNOWN/STALE/FAIL count as not passed)", row.ID, g.ID))
 			}
 		}
-		if found == 0 && row.ID != gaGrandfatheredLanguage {
+		if found == 0 {
 			rep.Violations = append(rep.Violations, fmt.Sprintf("ga-language row %q: no %s* rows exist in the evidence index — a GA claim without evidence rows is vacuous (create them per the language-GA program §2, born UNKNOWN)", row.ID, prefix))
 		}
 	}
