@@ -1,5 +1,107 @@
 # Full/incremental parity matrix over pinned real repositories
 
+# TS family real-repository matrix — WP-TS / gate G4 — BLOCKED (2026-08-20, W5.g)
+
+> **THIS SECTION IS NOT A MEASUREMENT.** SW-193 attempted the corpus-scale
+> TypeScript-family parity measurement that SW-182 AC-2 / AC-8 named as G4's
+> evidence, and found the harness BLOCKED rather than unbuilt. The section
+> below — "JVM real-repository matrix — WP-J7 / gate G4 (2026-08-19, W1.c)"
+> — remains the current JVM measurement. Two matrices live in this file: the
+> Go one over `docs/rc/parity-classes.yaml` and the JVM one over
+> `docs/rc/parity-classes-jvm.yaml`. The TS-family section that would carry
+> the third is **deliberately empty** below, with the blocker stated rather
+> than hidden. Per D6 nothing below this section is rewritten, re-pointed or
+> deleted.
+
+**Status: NOT BUILT — measurement cannot run. 0 dispatches. 0 PASS / FAIL /
+SKIPPED.** The TypeScript family G4 row was bound to the corpus-scale
+measurement by SW-182 AC-2 / AC-8 (ky + express, two dispatches, family-share
+discipline on tsx). SW-193 is the story scheduled to land that measurement.
+It could not, and the reason is the harness itself.
+
+| | |
+|---|---|
+| Story | SW-193 (W5.g, 2026-08-20) |
+| Gate | language-GA program G4 / WP-TS — real-repository full-vs-incremental parity for TypeScript-family |
+| Family / matrix source | `internal/parity` + a TS-family driver + `docs/rc/parity-classes-ts.yaml` |
+| Pins (intended) | ky `38ac18bc1ac3268130de766891ce9b718eb8145a` (typescript, tier 3, 34 source of 48 tracked) + express `8368dc178af16b91b576c4c1d135f701a0007e5d` (javascript, tier 3, 153 source of 231 tracked) — both at v3 measured standard as of 2026-08-20 |
+| Family-share discipline (SW-182 AC-2) | ky is typescript-only; express is javascript-only; tsx has NO representative pin. The G4 row for tsx is discharged by family-share iff the typescript pin genuinely covers it (the resolver at engine/link/resolve_typescript.go registers under all three family ids and the file-extension match is what selects the candidate path, not the language id, so family-share holds by construction — but the discipline says state this, do not assume it) |
+| Report artifacts | **none** — see "What is missing" |
+
+## What is missing — the blocker, stated before any number, because it bounds what any number here means
+
+**The TS-family parity driver does not exist in `internal/parity/`.** The
+harness as it stands today:
+
+| family | runner | source model | class table | cmd/parity wiring |
+|---|---|---|---|---|
+| Go | `Run` (`internal/parity/run.go:106`) | `RepoModel` (`gosource.go`) | `ClassesPath = "docs/rc/parity-classes.yaml"` (`classes.go:25`) | `-family go` is the default (`main.go:44`) |
+| JVM | `RunJVM` (`internal/parity/jvmrun.go:183`) | `JVMModel` (`jvmsource.go`) | `ClassesPathJVM = "docs/rc/parity-classes-jvm.yaml"` (`jvmclasses.go:15`) | `-family jvm` (`main.go:46`) |
+| **TS** | **does not exist** | **does not exist** | **does not exist** | **no `-family typescript` option, no `-ts-pin` flag** |
+
+`internal/parity/run.go:680` (the only language filter today) is
+hard-coded `e.Language != "go"`, and `cmd/parity/main.go:77` accepts only
+`-family go` or `-family jvm`. **There is no path on this tree that runs
+`internal/parity` against `corpus/manifest.json`'s ky or express pin.** A
+direct build of a driver would have the same shape as SW-176's WP-J7 JVM
+half — `tsrun.go` (the run method), `tssource.go` (the TS source model
+covering the family's static extension set [.ts/.tsx/.js/.jsx/.mjs/.cjs] at
+`engine/link/resolve_typescript.go:25`), `tsclasses.go` (the real-repo
+class table), `docs/rc/parity-classes-ts-real-repo.yaml` (the YAML), plus
+the `-family typescript` wiring in `cmd/parity/main.go` and the
+`-verdict-diff` / `-counts-diff` plumbing — which is the work the JVM half
+took four commits (SW-176 efdc77f / 803f7c7 / a761cfa / df2f43b) to land.
+SW-193 cannot honestly produce the matrices within its scope, and producing
+a *partial* matrix (e.g., a Go-shaped parity run against a TS pin that
+every Go change class SKIPPed because of language filter, then claiming it
+measured the TS family) would be the exact failure mode the matrix exists
+to prevent.
+
+**Filed as PARITY-TS-FAMILY-DRIVER-001.** The defect is structural — the
+harness missing a family — and not a row-level finding, so it is named in
+the row `current` fields of `docs/rc/evidence-index.yaml` for
+`GA-LANG-typescript-G4`, `GA-LANG-tsx-G4`, and `GA-LANG-javascript-G4`
+(2026-08-20 amendment), and the rows stay UNKNOWN.
+
+**The family-share-one-resolver judgement (SW-182 AC-2, SW-193 AC-3) is
+RECORDED in the tsx G4 row's `current`**, per the per-language discharge
+rule: the TS family shares one resolver impl at
+`engine/link/resolve_typescript.go` and registers under all three ids, so
+once the TS family driver lands and the typescript pin (ky) PASSes at
+cross-file-heuristic, the tsx row CAN be discharged by family-share with
+the family-share fact stated in current. The discipline is recorded, not
+assumed; the discharge happens only when the driver lands.
+
+## What this section does and does not say
+
+**Says.** The TS family G4 row's blocker is a missing driver, not a missing
+measurement. The hermetic twin at
+`engine/conformance/typescriptparity_test.go` (8 rows, all PROVEN on both
+stores, both profile axes, byte-identical full-vs-incremental across 5
+runs per SW-182 AC-5) is the parity statement the matrix currently
+protects — it asserts the heuristic resolver's *contract* (never
+confirmed, drop-and-count, exact-path resolution) but cannot, by
+construction, assert the resolver on real source.
+
+**Does not say.** Anything about the resolver on real TypeScript-family
+repositories. A measurement that has not happened cannot ground a row.
+
+## What would close this
+
+A new story — likely W6's TS-family parity driver, in the same shape as
+SW-176's WP-J7 — that lands `tsrun.go` + `tssource.go` + `tsclasses.go` +
+a real-repo `docs/rc/parity-classes-ts.yaml` (the same file the hermetic
+table binds to, plus a real-repo annex if the family needs different
+classes) and the `-family typescript` wiring. SW-193 cannot do this work
+without losing its single-commit discipline (SW-176 took four commits and
+a candidate move).
+
+When that story lands, **SW-193's verdict + count diff + per-import
+fan-out rows can be re-driven against the new driver**, and the G4 rows
+will flip — ky covering typescript, express covering javascript, and the
+tsx row by family-share if the reviewer's judgement (recorded in current)
+upholds it.
+
 # JVM real-repository matrix — WP-J7 / gate G4 (2026-08-19, W1.c)
 
 > **THIS SECTION SUPERSEDES NOTHING. It is a DIFFERENT FAMILY, not a newer
