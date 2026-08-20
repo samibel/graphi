@@ -398,17 +398,60 @@ func TestGoPackageClause(t *testing.T) {
 }
 
 // The file filter keeps the sequence on files a user edits.
-func TestModifiableGoFile(t *testing.T) {
+func TestModifiableSourceFile(t *testing.T) {
 	included := []string{"a/one.go", "main.go", "internal/deep/x.go"}
-	excluded := []string{"a/one_test.go", "vendor/x/y.go", "testdata/a.go", "a/readme.md", "third_party/z.go"}
+	// Markdown (.md) is a registered source language — the filter admits it.
+	// The original Go-only test listed readme.md under "excluded" only because
+	// the parser registry did not register markdown at the time; SW-191's
+	// registry-driven filter does not invent carve-outs the registry has not
+	// declared.
+	excluded := []string{"a/one_test.go", "vendor/x/y.go", "testdata/a.go", "third_party/z.go"}
 	for _, p := range included {
-		if !modifiableGoFile(p) {
+		if !modifiableSourceFile(p) {
 			t.Errorf("%s should be modifiable", p)
 		}
 	}
 	for _, p := range excluded {
-		if modifiableGoFile(p) {
+		if modifiableSourceFile(p) {
 			t.Errorf("%s should not be modifiable", p)
 		}
+	}
+}
+
+// TestModifiableSourceFile_AcceptsPythonFixture pins EVALFRESH-001's fix. The
+// filter used to be `.go`-only, so a pure-Python clone (corpus/hero-python
+// pins, or any future corpus pin without a Go file) had zero candidates and
+// the suite aborted with "the index contains no modifiable Go source files to
+// change" before doing any measurement. The registry-driven filter admits any
+// registered-language extension; this test asserts that on a real Python
+// fixture path so a future regression to the `.go`-only check is caught.
+func TestModifiableSourceFile_AcceptsPythonFixture(t *testing.T) {
+	// Real corpus paths from corpus/hero-python and the G4 evidence rows:
+	// a Python module, a Python class, and a deep-nested package path. All
+	// three must be admitted by the filter.
+	paths := []string{
+		"shop/cart/checkout.py",
+		"tax/rates/calc.py",
+		"internal/transport/http2_client.py",
+	}
+	for _, p := range paths {
+		if !modifiableSourceFile(p) {
+			t.Errorf("modifiableSourceFile(%q) = false, want true: the filter must accept the "+
+				"registered Python extension or EVALFRESH-001 reopens (the freshness/incremental "+
+				"suite aborts on every non-Go pin with 'the index contains no modifiable Go source "+
+				"files to change').", p)
+		}
+	}
+	// And the sym/asymmetry: Go test files are still excluded (Go's build
+	// shape would otherwise make change classes incomparable), but Python
+	// test files are first-class modules and MUST be admitted — pinning that
+	// distinction here keeps a future refactor from collapsing them.
+	if !modifiableSourceFile("pkg/test_helper.py") {
+		t.Error("modifiableSourceFile(pkg/test_helper.py) = false, want true: Python test files " +
+			"are first-class modules, not a build-mode carve-out like Go's _test.go")
+	}
+	if modifiableSourceFile("pkg/handler_test.go") {
+		t.Error("modifiableSourceFile(pkg/handler_test.go) = true, want false: Go's _test.go " +
+			"build shape must still be excluded so change classes stay comparable")
 	}
 }

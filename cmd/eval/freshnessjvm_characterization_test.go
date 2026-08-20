@@ -15,17 +15,51 @@ package main
 //	source files to change
 //
 // and the same holds for guava and kotlinx.serialization, which contain no `.go`
-// file at all. The mechanism is `modifiableGoFile` (cmd/eval/incremental.go),
-// the single filter every change class is drawn through, plus
-// `goPackageClause`, which supplies the package a newly added sibling must
-// declare and only understands Go's `package <ident>` line.
+// file at all.
+//
+// THREE INDEPENDENT MECHANISMS STACK TO BLOCK JVM PINS.
+//
+//   1. The file filter (was `modifiableGoFile`, now `modifiableSourceFile` in
+//      cmd/eval/incremental.go).
+//   2. The package-clause reader (`goPackageClause`) which supplies the package
+//      a newly added sibling must declare and only understands Go's
+//      `package <ident>` line.
+//   3. The published determinism string (`changeSequenceMethod`) which is
+//      emitted verbatim into every freshness artifact and currently says
+//      "Go source files".
+//
+// SW-191 fix-half closed MECHANISM (1): the file filter is now registry-driven
+// (it admits any extension registered in parse.NewDefaultRegistry(), so
+// `.java`, `.kt`, `.py`, `.ts`, … all qualify). Mechanisms (2) and (3) are
+// UNCHANGED and remain the active block on a JVM pin. The four tests below
+// are split so that fixing any one of them is a named event, not a silent
+// collapse of the pin:
+//
+//   - TestChangeSequence_FileFilterAdmitsJVMSource  pins mechanism (1)
+//     REVERSED: the filter must now admit JVM source. This test goes RED the
+//     moment someone reverts to the `.go`-only check.
+//   - TestChangeSequence_StillAcceptsGoFiles        unchanged control.
+//   - TestChangeSequenceMethod_StatesItsGoScope     pins mechanism (3).
+//   - TestGoPackageClause_DoesNotUnderstandJVMPackageDeclarations  pins (2).
+//
+// WHAT A FULL CLOSE WOULD HAVE TO MOVE, so it is recorded in one place rather
+// than rederived each time the next story revisits it:
+//
+//   - goPackageClause becomes language-aware (Java's `package a.b.c;`, Kotlin
+//     defaults, Python's __init__.py/absence, …).
+//   - changeSequenceMethod describes the new scope truthfully.
+//   - The ADD class (changeseq.go: newFileName) stops hard-coding
+//     graphi_eval_step<N>.go and instead writes a file whose name AND content
+//     match the directory's language (a Java class name, a Kotlin top-level,
+//     …).
+//   - GA-LANG-{java,kotlin}-G7 in docs/rc/evidence-index.yaml move from
+//     3-of-4 to 4-of-4, with the published g7-jvm-baseline.md §5 updated.
 //
 // WHY A TEST AND NOT ONLY A DOCUMENT. The block is the reason
 // GA-LANG-{java,kotlin}-G7 cannot read "the four perf suites include L's
 // corpus", and a reason recorded only in prose is a reason that silently stops
-// being true. When someone extends the change sequence to the JVM languages,
-// TestChangeSequence_IsGoOnly_SoTheFreshnessSuiteCannotIncludeAJVMPin goes RED
-// and says what else has to move with it.
+// being true. When someone closes mechanism (2) and (3), the two remaining
+// tests go RED and say what else has to move with them.
 //
 // Deliberately NOT done here: extending the sequence. That is new measurement
 // machinery — the story's own test notes scope this work to "corpus wiring and
@@ -57,27 +91,26 @@ var jvmCorpusPaths = []string{
 	"core/jvmMain/src/kotlinx/serialization/internal/Platform.kt",
 }
 
-// TestChangeSequence_IsGoOnly_SoTheFreshnessSuiteCannotIncludeAJVMPin pins the
-// block itself. It fails the moment the filter admits a JVM source file, which
-// is the moment the rest of the sequence has to be re-examined.
-func TestChangeSequence_IsGoOnly_SoTheFreshnessSuiteCannotIncludeAJVMPin(t *testing.T) {
+// TestChangeSequence_FileFilterAdmitsJVMSource pins MECHANISM (1) REVERSED:
+//
+// the file filter is now registry-driven (SW-191 fix-half), so a JVM source
+// file MUST be admitted by modifiableSourceFile. This test catches a revert
+// to the `.go`-only check that was EVALFRESH-001's root cause.
+//
+// Mechanisms (2) and (3) — goPackageClause speaks only Go, and
+// changeSequenceMethod still publishes "Go source files" verbatim — are the
+// ACTIVE block on a JVM pin and remain pinned by the two tests below. They
+// have to move together the moment the file filter alone is no longer the
+// reason a JVM pin aborts.
+func TestChangeSequence_FileFilterAdmitsJVMSource(t *testing.T) {
 	for _, p := range jvmCorpusPaths {
-		if modifiableGoFile(p) {
-			t.Fatalf("modifiableGoFile(%q) = true, want false.\n\n"+
-				"The freshness/incremental suite now admits a JVM source file. That is a\n"+
-				"change in what the suite covers, so it is NOT enough to relax this test:\n"+
-				"  1. changeSequenceMethod (cmd/eval/changeseq.go) still says the sequence\n"+
-				"     runs over \"the indexed Go source files\" — it is published verbatim\n"+
-				"     beside the sequence digest and would now be false;\n"+
-				"  2. the ADD class writes graphi_eval_step<N>.go with a Go package clause\n"+
-				"     (changeseq.go, newFileName/goPackageClause) — a .java sibling needs a\n"+
-				"     matching public class name and a .kt one needs neither, so the class\n"+
-				"     is language-dependent and is currently not;\n"+
-				"  3. GA-LANG-java-G7 and GA-LANG-kotlin-G7 in docs/rc/evidence-index.yaml\n"+
-				"     record 3-of-4 suite coverage BECAUSE of this block, and\n"+
-				"     docs/eval/runs/2026-08-19-local-sandbox/g7-jvm-baseline.md §5 is the\n"+
-				"     published statement of it. Both must move with the code.\n"+
-				"Update all three, then update this test.", p)
+		if !modifiableSourceFile(p) {
+			t.Fatalf("modifiableSourceFile(%q) = false, want true.\n\n"+
+				"The file filter reverted to Go-only, which is EVALFRESH-001's root cause.\n"+
+				"A pure-Java clone (guava) or pure-Kotlin clone (okio) has zero `.go` files\n"+
+				"and would again abort with 'the index contains no modifiable Go source\n"+
+				"files to change'. The filter is registry-driven and must accept every\n"+
+				"extension parse.NewDefaultRegistry() registers.", p)
 		}
 	}
 }
@@ -90,8 +123,8 @@ func TestChangeSequence_StillAcceptsGoFiles(t *testing.T) {
 		"server/server.go",
 		"internal/transport/http2_client.go",
 	} {
-		if !modifiableGoFile(p) {
-			t.Fatalf("modifiableGoFile(%q) = false, want true: the Go path the freshness "+
+		if !modifiableSourceFile(p) {
+			t.Fatalf("modifiableSourceFile(%q) = false, want true: the Go path the freshness "+
 				"suite actually measures must still qualify, or the test above is vacuous", p)
 		}
 	}
