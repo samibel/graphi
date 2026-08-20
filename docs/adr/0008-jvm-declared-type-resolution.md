@@ -1,49 +1,53 @@
 # ADR 0008 — JVM Declared-Type Semantic Resolution (`jvmresolve`, confirmed tier for Java/Kotlin)
 
-- Status: **Proposed** (decision points D1–D9 below are open and the owner
-  rules; **D9 is RULED and implemented as of 2026-08-19 (W0.h/SW-170) but, like
-  the rest of this ADR, is not ratified until WP-J11**. The binder is now REGISTERED behind the ADR 0007 seam but
-  DEFAULT-OFF: `engine/semantic` adds the java/kotlin registrants only under
-  the experimental `GRAPHI_JVM_TYPERESOLVE` opt-in, so the shipped default —
-  graph bytes, trust report, capability matrix — is unchanged until the
-  rulings and the GA-LANG evidence land; flipping the default is WP-J11
-  scope. The live path is proven under the flag: a real IngestAll produces
-  the confirmed cross-language edge, full-vs-incremental byte parity holds,
-  and the per-language kill switches reach the registrants
-  (engine/ingest/jvmresolve_e2e_test.go). WP-J5 proves hermetic
-  full-vs-incremental snapshot-byte parity for a wave-1 change-class subset on
-  BOTH MemStore and SQLite with the binder live — including the two signature
-  behaviours, the D6 overload drop (jvm_change_overload) and the D2
-  declared/inferred flip (kotlin_infer_declared_flip) — bound to
-  docs/rc/parity-classes-jvm.yaml by a drift guard. Groundwork: the D3 node half; `engine/jvmresolve`
-  slice 1 — the declaration→node identity map with its golden cross-test
-  (gate G2a), which PINNED three collector facts (Java enum members, Kotlin
-  enum-class members, Kotlin companions + their members mint NO nodes);
-  slice 2 — Phase A: the declaration table (`table.go`, both CST walkers) and
-  the JLS-approximation type-name resolution with the strict ambiguity rule
-  (`resolve.go`); slice 3 — supertype chains + member lookup
-  (`hierarchy.go`): the D6 rule implemented as identical-signature override
-  chains binding most-derived, differing same-arity signatures ambiguous, and
-  ANY open chain (external/ambiguous supertype) forfeiting every binding —
-  even a receiver-declared member, since an external overload could be the
-  more applicable javac target; slices 4/5 — Phase B for BOTH languages
-  (`body_java.go`, `body_kotlin.go`): declared-type receiver propagation with
-  block-scoped environments and the named-gap counters, including Kotlin's
-  lambda-rebinding forfeit (`this`/bare calls inside any lambda) and the
-  trailing-lambda arity forfeit; and slice 6 — Phase C emission (`emit.go`):
-  confirmed@1.0 calls/references edges with the D1 reason string, nominal
-  implements from interface clauses only (class-extends stays heuristic
-  `inherits`, which ingest's sweep excludes from the confirmed set),
-  constructor calls targeting the TYPE node (the heuristic FQN binder's shape,
-  so confirmed upserts replace rather than duplicate), and the committed-set
-  gate as the structural never-fabricate — proven end-to-end in tests whose
-  committed sets come from the REAL core/parse extractors)
+- Status: **Accepted** (decision points D1–D9 ratified together under the
+  WP-J11 flip gate, 2026-08-20, W1.e / SW-178 — see the dated ratification
+  block at the top of this ADR). The binder is REGISTERED behind the ADR 0007
+  seam but DEFAULT-OFF under `GRAPHI_JVM_TYPERESOLVE`; the WP-J11 default-flip
+  is its own change (W1.f / SW-179) and is owner-gated on this gate being
+  green end-to-end.
 - Date: 2026-08-14
 - Program: [`docs/plan/2026-08-graphi-p2-language-ga-program-v1.md`](../plan/2026-08-graphi-p2-language-ga-program-v1.md)
   §5.1 (design), §5.2 WP-J2…WP-J4, WP-J9 (ground truth)
 - Depends on: ADR 0007 (registry seam) accepted and landed
 - Feeds: WP-J11 (the Java/Kotlin GA flip); the wave-2/3 binders (TS, C#) reuse
   this ADR's declared-type regime as precedent
+
+> ## RATIFICATION — 2026-08-20 (W1.e / SW-178): D1–D9 ruled together
+>
+> Per D6 this block is **added**, nothing below is rewritten, re-pointed or
+> deleted. The decision points D1–D9 were Proposed on 2026-08-14; rulings
+> shifted under the ADR during Wave 0 and Wave 1 — D6 was reformulated after
+> JVMSOUND-001/002, D8 was re-scoped from a blanket parity gate to a
+> per-defect applicability test, and D9 was introduced by SW-170. An ADR
+> whose rulings have shifted under it cannot be the authority for a GA flip
+> until it is ratified as a whole, and this is that ratification. The flip
+> gate itself — the nine conditions SW-179 is measured against — is stated
+> in [`../decisions/2026-08-language-ga-wpj11-flip-gate.md`](../decisions/2026-08-language-ga-wpj11-flip-gate.md).
+>
+> **SW-178 ratifies D1–D9 as a single decision and records the state each
+> ruling reached during Wave 0 / Wave 1.** No individual ruling is renamed
+> or removed; the table row above is unchanged; the amendments below name
+> the date, the wave and the evidence.
+>
+> | ID | Status | Recorded state |
+> |---|---|---|
+> | **D1** — confirmed semantics = static binding | **Accepted** | Unchanged from the 2026-08-14 recommendation. The D1 contract (a confirmed JVM `calls` edge asserts static binding — the same contract Go GA'd under `go/types`, and exactly what `javac` encodes in bytecode method refs) was reproduced end-to-end on the WP-J6 hermetic Java+Kotlin fixture with the binder live, including cross-file and cross-language confirmed callers/callees/references and nominal implements. The reasoning holds: declared-types-only, never inference, with `javap -c -p` constant-pool method refs as the differential ground truth for soundness (WP-J9). |
+> | **D2** — Kotlin `typed-confirmed`-eligibility given inference | **Accepted, with measurement (threshold ruled by owner)** | The D2 row's supporting text quoted "3517 typed sites" as a numerator with no denominator — that figure is **not reproducible** from today's binder (3 433 typed sites: 2 949 call + 484 value, 84 fewer, recorded, not reconciled). SW-175 (W1.b) supplies the denominator D2's row asked for, in [`../rc/jvm-binding-rate.md`](../rc/jvm-binding-rate.md). Headline numbers (numerator ÷ denominator, denominator an independent CST walk): Kotlin kotlinx.serialization `3efe324b` whole pin **19.16 %** (2 949 / 15 388); Kotlin okio `8b870e8e` whole pin **3.47 %** (681 / 19 626); Java guava `2214c636` JRE module **21.39 %** (6 065 / 28 354). The 5.5× intra-Kotlin spread survives a clean-parse subset and is the finding the binder carries. **No threshold is proposed here; D2 stays the owner's to rule on with both numbers in hand, and the stand-down fallback "Kotlin GA at `cross-file-heuristic`, typed deferred" stands.** |
+> | **D3** — Extractor deepening (field/property nodes + declared-type metadata) | **Accepted, node half landed 2026-08-14; type half DEFERRED** | Node half unchanged from 2026-08-14: Java field/constant declarators and Kotlin properties become variable/constant nodes with the kind from the declared form only. Declared-TYPE metadata on nodes is DEFERRED — the binder re-parses sources itself, so node-level types are not load-bearing for WP-J3, and the trust surface never requested them. The known honest cost (a bare-name collision now marks that name dir-ambiguous in the heuristic linker) stands. |
+> | **D4** — Kill-switch shape | **Accepted** | Unchanged. Inherits ADR 0007's shape: `GRAPHI_NO_TYPERESOLVE` (global) plus `GRAPHI_NO_TYPERESOLVE_<LANG>` (per-language), with `GRAPHI_JVM_TYPERESOLVE` as the **opt-in** that lifts the JVM registrants from default-off to live. `engine/semantic/semantic.go:35-48` is the registration site, and `TestCapabilities_JVMOptInFlip` plus its kill-switch sibling pin the surface output both ways. |
+> | **D5** — Stop-ship: any demonstrated false `confirmed` edge | **Accepted (already in force)** | The language-GA programme plan §2 ("Cross-cutting rule") states the rule absolutely. Two open JVM defects carry the rule today: **JVMSOUND-003** and **JVMSOUND-004** — both reproduced wrong-confirmed-edge defects, open and deliberately unfixed; see `projects/graphi/backlog.md`, "Found by the SW-172 signature-aware JVM oracle". They are invisible today only because the JVM registrants are default-OFF, which is precisely what the WP-J11 flip changes; **SW-179 AC-9** discharges the disclosure obligation before the flip. |
+> | **D6** — Overload binding rule | **Accepted as reformulated 2026-08-16 (JVMSOUND-001/002 fix)** | The original "(name, arity) uniqueness" ruling was UNSOUND as implemented and emitted WRONG edges (JVMSOUND-001, JVMSOUND-002, both reproduced). Both defects sat in **tabling**, not emission — the varargs marker (`spread_parameter`) was conflated with `formal_parameter` and signature identity was concatenated from the written text (`sigOf` concatenates `p.Type.Base`). The reformulated rule (a) requires the candidate set to contain no VARIADIC or DEFAULTED member — `variadic-forfeit` / `elastic-forfeit` — and (b) keys signature identity on the **resolved** type (intra-repo FQN) rather than the written text, with primitives/externals keyed on marked text. Pinned by `TestAnalyzeJavaBodies_VariadicForfeit` / `_ResolvedSignature`, the Kotlin `_ElasticForfeit`, and the `change_overload` change class; **each proven red-without-fix.** The WP-J9 oracle is structurally BLIND to same-name overload mis-binding (it keys at method-name granularity); signature-aware keys are a follow-up on top of R3's corpus-scale run. |
+> | **D7** — Stage-gated binder behind ADR 0007 | **Accepted (already implemented)** | The `engine/jvmresolve` package registers behind the `engine/semantic` registry seam; live under `GRAPHI_JVM_TYPERESOLVE`, default-off otherwise. |
+> | **D8** — Entry criterion for JVM real-repo parity | **Accepted as re-scoped 2026-08-16 (independent review R8)** | The original ruling — "both PARITY-001/002 fixes land first" — was over-broad and blocked JVM real-repo work for reasons that did not apply. Re-scoped to a per-defect applicability test: a Go-level ingest defect blocks the JVM real-repo run only where the JVM code path can exhibit it. PARITY-001 (deleted-path purge ordering) was language-independent and DID block — it is FIXED. PARITY-002 (Go/Python clause-keyed `imports` fan-out) CANNOT arise for Java/Kotlin, whose imports emit a single file→package edge (`engine/link/resolve_common.go`, `packageNodeByPath` lookup, no fan-out) — it does not block WP-J7. The ruling's net effect was to unblock `jvm_delete_file` from a deferred to a required, proven row. |
+> | **D9** — Sweep unit in a mixed-language directory | **Accepted as ruled 2026-08-19 (W0.h / SW-170)** | The sweep key is **(directory, language)**, and the mixed-directory EXEMPTION at `engine/jvmresolve/resolver.go` and `engine/ingest/typeresolve.go` is REMOVED rather than narrowed. SW-170 evidence (the story is `projects/graphi/stories/SW-170/story.md` and its two reviews): the `Owns` seam (`typeresolve.Resolver.Owns(relPath) bool`) holds `Owns ⊇ Subject` per registrant and pairwise disjoint across registrants (pinned by `engine/semantic`'s `TestRegistry_OwnsIsDisjointAndCoversSubject`); the ingest sweep restricts its candidate set to edges whose from-node is owned; the directory check applies to that set. Two new parity rows — `jvm_mixed_dir_delete_callee` and `jvm_mixed_dir_change_receiver_type` — each running on both stores × both profile axes, **proven red without the fix** and **green with it**; controls (`jvm_delete_file` single-language; single-language mixed controls) verified. Graph bytes for this repository's canonical snapshot are byte-identical across the change (`9c5eb1f9c1db1ca469b2a8fb3bbcaa1105a6d5c9fceabb35898300c7c2fd6539`, 21 895 857 bytes — *the published figure was corrected in SW-170 review round 1*; supersedes `c9f8de76…` / 21 891 266 B which was taken over an intermediate tree). **The residual risk D9 creates, named rather than left implicit** (SW-170 review finding 3): `Owns` is a PARTITION, not a COVER. Registrants own exactly `*.go`, `*.java`, `*.kt`; every other path is owned by nobody, and a stored confirmed `calls`/`references`/`implements` edge whose from-node sits in such a file could not be swept by any registrant — immortal. **Unreachable today** (no parser mints a confirmed-tier edge of a sweepable kind except via `defines`/`notebook_cell`, neither in `typeresolveKind`'s set), and now pinned by `core/parse/confirmed_tier_guard_test.go::TestNoConfirmedTierOutsideDefines`. The durable fixes — a residual-owner rule (sweep an edge whose from-node is owned by nobody when some registrant checked its directory) or a product-wide assertion that no confirmed `typeresolveKind` edge has an unowned from-node — are **deferred to the WP-J11 flip**, on the strength of a measured delta of zero, and **MUST be decided before the flip** (the index-migration story's whole point is that a flip that silently invalidates a user's index is not a flip that can be shipped). |
+>
+> **Where this ratification stops.** It records the rulings as they stand on
+> 2026-08-20; it does not perform the flip. Flipping `GRAPHI_JVM_TYPERESOLVE`
+> from default-off to default-on is W1.f / SW-179, owner-gated on the WP-J11
+> flip gate being green end-to-end. The flip gate, including the
+> **index-migration story** D9's residual risk makes mandatory, lives in
+> [`../decisions/2026-08-language-ga-wpj11-flip-gate.md`](../decisions/2026-08-language-ga-wpj11-flip-gate.md).
 
 ## Problem
 
