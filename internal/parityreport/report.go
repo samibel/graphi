@@ -58,33 +58,33 @@ const (
 
 // CandidateSHA is the candidate the product tree is compared against.
 //
-// CANDIDATE MOVE (2026-08-19, deliberate): the previous candidate was 7574a49
-// (the ADR 0010 commit), which superseded c4209dd (the ADR 0009 merge), which
-// superseded the P0 v0.7.1 SHA 80d67ed586723ab22704cf7aada316138cb1360e.
-// ADR 0011 (the LINK-001 fix: an `imports` edge targets the imported package's
-// SOURCE files, decided on the file extension, with in-package `_test.go`
-// files excluded because they are package members but are not importable)
-// changes product bytes on the SHIPPED DEFAULT profile — balanced graphs lose
-// the `imports` edges that pointed at `README.md`, `.yml` and `.sh` files — so
-// the candidate moves again by the same rule, and every measurement against
-// 7574a49 is historical.
+// CANDIDATE MOVE (2026-08-20, deliberate, SW-188): the previous candidate was
+// 3b8d43f (the ADR 0011 commit), which superseded 7574a49 (the ADR 0010
+// commit), which superseded c4209dd (the ADR 0009 merge), which superseded
+// the P0 v0.7.1 SHA 80d67ed586723ab22704cf7aada316138cb1360e. ADR 0013 (the
+// SW-188 closure of JVMSOUND-003, JVMSOUND-004 and JVMHARN-001: comment
+// nodes in `argument_list` are not arguments; `callableSig` carries array
+// dimensionality; the Kotlin value-class name mangling `foo-<hash>` is
+// recognized as a binding shape) changes product bytes on the JVM tier
+// (anything depending on `engine/jvmresolve` — most of it, once
+// `GRAPHI_JVM_TYPERESOLVE` is on) — so the candidate moves again by the same
+// rule, and every measurement against 3b8d43f is historical.
 //
-// WHY THIS SHA AND NOT THE FIRST COMMIT OF THE FIX. The LINK-001 fix landed
-// over three commits (01f95cf, 3b8d43f, 7e4291f). The candidate is not the
-// first of them but the one where the PRODUCT BYTES SETTLED, and that was
-// decided by building, not by reading subjects: `./cmd/graphi` built with
-// -trimpath -buildvcs=false is fcd26b6e… at 01f95cf and 036be635… at 3b8d43f,
-// which is what 7e4291f (docs plus one _test.go) also builds to. 3b8d43f is
-// the adversarial-review commit that closed an undisclosed break in
-// engine/link/index.go, so it — not 01f95cf — is the boundary the provenance
-// gate must compare against.
+// WHY THIS SHA. The SW-188 closure lands in a single commit (the code fix,
+// the ADR, the positive regression tests, and the pin-test skip stubs all
+// ride together) so the candidate is the obvious one: that commit. The
+// commit SHA is 9f68784, and `./cmd/graphi` built with
+// `-trimpath -buildvcs=false` at 9f68784 is the boundary the provenance
+// gate reads verbatim. The ADR-0011 candidate's wording is now retired; the
+// new provenance sentence names the ADR 0013 candidate, and the old wording
+// is in the forbidden-phrasing list at `internal/parity/parity_test.go:651`.
 //
 // Each move is recorded before its first published measurement:
-// docs/decisions/2026-08-parity-candidate-move-adr0011.md, which cites its
-// ADR-0010 predecessor. The provenance statement keeps run SHA and candidate
+// docs/decisions/2026-08-parity-candidate-move-adr0013.md, which cites its
+// ADR-0011 predecessor. The provenance statement keeps run SHA and candidate
 // SHA separate, because a run may happen at any later commit whose product
 // bytes are identical to the candidate's.
-const CandidateSHA = "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31"
+const CandidateSHA = "9f687849cec2b26311401191e90b60e40b5f6cee"
 
 // FR7ChangeClasses is the size of the authoritative matrix: PRD FR-7 lists
 // EXACTLY 15 change classes (heading "Änderungsklassen", prefix "Mindestens:"),
@@ -196,7 +196,7 @@ func NewProvenance(runSHA string) Provenance {
 		CandidateSHA:   CandidateSHA,
 		RunSHA:         runSHA,
 		IndexProfile:   string(profile.Balanced) + " (the product's resolved default; GRAPHI_INDEX_PROFILE cleared for the measured child processes)",
-		Statement:      "product source byte-identical to the ADR 0011 candidate at " + CandidateSHA,
+		Statement:      "product source byte-identical to the ADR 0013 candidate at " + CandidateSHA,
 		HarnessVersion: HarnessVersion,
 		SchemaVersion:  SchemaVersion,
 	}

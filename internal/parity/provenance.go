@@ -36,7 +36,7 @@ var ProductPaths = []string{"engine", "core", "surfaces", "cmd/graphi", "interna
 //
 // PROVENANCE IS STATED HONESTLY AND NEVER OVERSTATED. The run may happen at a
 // commit other than the candidate, so the statement this produces is "product
-// source byte-identical to the ADR 0011 candidate at <sha>" and both SHAs are
+// source byte-identical to the ADR 0013 candidate at <sha>" and both SHAs are
 // recorded. No record may say the run happened AT the candidate —
 // parityreport.NewProvenance owns that sentence so no caller can phrase it any
 // other way. (Under the original P0 candidate the harness did not even exist
