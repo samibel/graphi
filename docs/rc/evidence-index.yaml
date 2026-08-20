@@ -631,3 +631,114 @@ gates:
     owner: ENG (JVM)
     next_action: "SW-179 — add the kotlin ga-language matrix row only once G1 through G8 all read PASS with evidence_uri and sha, and only if kotlin numbers carry it independently."
     due: W1
+
+  # ── GA-LANG-python-G<n>: the per-language GA evidence scaffold for Python ──
+  # Added 2026-08-19 (SW-181, W2.PY). Python is the FIRST language to ship
+  # through the SW-180 per-language template (the JVM instance was the worked
+  # example; this is the first live consumer). The same template rules apply:
+  # rows born UNKNOWN first while the language is absent from
+  # docs/coverage-matrix.yaml (the Python row is added at the END of this
+  # story, per the ordering constraint recorded at galang.go:129-131), the
+  # matrix row added LAST once all read PASS. G2 is REPLACED by G2SUB at this
+  # level — cross-file-heuristic is the language's declared level, so the
+  # heuristic resolver's own contract is the substituted gate, never a
+  # confirmed-tier claim.
+  - id: GA-LANG-python-G1
+    gate: G1 — Declared capability contract
+    section: language-GA program §2 G1
+    threshold: "Python declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). Measured 2026-08-19 with the CLI built at 1e440cf: the live derivation reports python at cross-file-heuristic, the level this scaffold is written against. The audit row (docs/rc/capability-audit-2026-08-19.md, row 13) backs the measurement: python produces file→file edges for 4 of 5 import forms; LINK-004 is the recall defect on `from pkg.util import helper` and `import pkg.util`, already disclosed. The outcome-versus-registration half (ADR-W1) is open for python exactly as it is for java — finding F5 is the form it takes here, and SW-181 AC-3 measures it. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "Audit python against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. SW-181 AC-3 measurement on flask is the F5 artefact; it is the G1 harness when it closes."
+    due: W2
+  - id: GA-LANG-python-G2SUB
+    gate: G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
+    threshold: "SUBSTITUTION, labelled: python is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half. Engineered at engine/link/resolve_python.go and pinned by engine/link/resolve_python_test.go + the new engine/conformance/pythonparity_test.go."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; LINK-004 is the open defect at relative-import and same-QN clause resolution (engine/link/resolve_python.go:73 — the G2SUB skip-and-count floor), and SW-166 disclosed it. The G2SUB substitution is at parity with the JVM's: a row that would PASS has the half-met gate as the load-bearing clause. The test asserts the determinism half (full vs incremental byte parity, engine/conformance/pythonparity_test.go) and the never-confirmed half (requireEdgeAtTier heuristic, never confirmed), but the LINK-004 defect is the load-bearing half that has not been closed — a PASS here is dishonest until the skip-and-count floor is enforced per-call-site rather than per-file, a product-byte change in its own right."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "Cite engine/conformance/pythonparity_test.go + the LINK-004 disclosure, then close the defect or disclose it under D8 (a separate product-byte change — SW-181 does NOT fix it). Until then the row cannot move from UNKNOWN."
+    due: W2
+  - id: GA-LANG-python-G3
+    gate: G3 — Hermetic change-class parity
+    section: language-GA program §2 G3
+    threshold: "Rows for python in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-python.yaml by the three directions the JVM guard carries (MISSING, PHANTOM, DEFERRED), plus an explicit applicability disposition per Go class."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN. All eight rows exist (engine/conformance/pythonparity_test.go + pythonparity_matrix_test.go + docs/rc/parity-classes-python.yaml), all PROVEN on both stores, both profile axes, and the witness fences the LINK-004 defect line at the py_delete_file row (the resolver tolerates a file deletion by keeping the extern placeholder edge; the witness asserts the FILE NODE is gone, which is the scoped purge the load-bearing invariant actually requires). The drift guard closes MISSING/PHANTOM/DEFERRED; the four directions the JVM guard is missing (VERDICT, AXIS, VOCABULARY, KIND-only) are recorded in the YAML header as TEMPL-P4 inherited and are CLOSED in SW-184, not here. The numpy rule applies: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the SEVEN drift-guard directions, so a PASS published today would be published under a guard known to be incomplete. The python copy inherits that incompleteness — same shape, narrower scope."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "Close SW-180 divergence D-11 cross-port (add the VERDICT, AXIS, VOCABULARY, KIND-only directions to engine/conformance/pythonparity_matrix_test.go), then cite docs/rc/parity-classes-python.yaml + the twin with their blob shas."
+    due: W2
+  - id: GA-LANG-python-G4
+    gate: G4 — Real-repository parity
+    section: language-GA program §2 G4
+    threshold: "internal/parity drives the BUILT binary over python pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden. The Python-specific measurement is finding F5 (clausePackageFileNodes fan-out over colliding directory clauses, the PARITY-002 shape)."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E2 CORPUS-MEASURED. Not yet measured. The SW-181 AC-3 measurement on flask is the F5 artefact; it has not been run. SW-181 AC-9 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic, Python is RE-GRADED, not declared. The row stays UNKNOWN until the measurement lands AND either (a) flask passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "Run the SW-181 AC-3 measurement on flask at the pinned sha (corpus/manifest.json); cite the result with a blob sha. Re-grade python if the measurement fails to support cross-file-heuristic."
+    due: W2
+  - id: GA-LANG-python-G5
+    gate: G5 — Corpus stratification and pins
+    section: language-GA program §2 G5
+    threshold: "Python corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a python-specific stratification of roughly 8 to 10 properties analogous to the Go ten (.py + .ipynb, test_*.py NOT excluded)."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E2 CORPUS-MEASURED. flask at 3.0.0 is the python pin and is now at the v3 measured standard: full 40-char sha, tier 3, measured block (78 .py of 102 tracked, 2026-08-19, corpus/manifest.json). The Python-specific stratification shape is the .py + .ipynb extension set coupled with the test_*.py NOT excluded rule — both are pinned in the ADR 0011 corpus pin and the LINK-001 fix. WP-J6's Java stratification properties are NOT inherited; the python row pins what it actually has, which is the extension-set + test-module asymmetry, not properties Java authored. A half-met gate is UNKNOWN, never PASS."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "Add any further python pins if the F5 measurement demands them, then cite corpus/manifest.json with its blob sha."
+    due: W2
+  - id: GA-LANG-python-G6
+    gate: G6 — Hero gate
+    section: language-GA program §2 G6
+    threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for python, on a checked-in corpus/fixtures/hero-python fixture, including negative anchors and honest-empty or abstention scenarios."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN. The fixture and 16 hero-python scenarios exist (corpus/hero-python + corpus/fixtures/hero-python), and cmd/eval/hero_python_test.go asserts the 12 stable ops over the HEURISTIC tier (no binder exists for python, the G2SUB substitution is the language's honest level). The hero-python gate refuses the JVM's GRAPHI_JVM_TYPERESOLVE switch — the default binary IS the gate, and the heuristic resolver's from-import bare binding wires the cross-module edges the scenarios pivot on. Negative anchor: org.salute (does NOT call impl.core) is asserted absent in callers-of-core. The references scenario is honestly empty (the Python parser does not emit references edges; only call nodes are tracked), and that is the language's honest level — the call-edges relationship is captured by callers, not references."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "Cite corpus/hero-python + corpus/fixtures/hero-python + cmd/eval/hero_python_test.go with their shas."
+    due: W2
+  - id: GA-LANG-python-G7
+    gate: G7 — Perf and budget evidence
+    section: language-GA program §2 G7
+    threshold: "The four perf suites include the python corpus with raw run artifacts checked in under docs/eval/runs; the grammar blob stays inside its bench/lang-budget.md allocation and inside the whole-binary budget gate."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E2 CORPUS-MEASURED. Not yet measured — the perf campaign for python is unrun. The bind inherited from the JVM campaign is EVALFRESH-001 (the freshness/incremental suite is Go-only); python's `.ipynb` extension set in the SW-166 LINK-001 fix is the additional surface the campaign has to instrument, and `.ipynb` is deliberately an edge (the notebooks are real graphi-tracked Python). The campaign shape is the JVM's three-of-four (cold index, query latency, progress stalls) plus whatever python-specific stratification the G5 row identifies."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "One eval-full dispatch on ubuntu-latest at the current candidate over flask — that is the minimum that converts any figures into budgets."
+    due: W2
+  - id: GA-LANG-python-G8
+    gate: G8 — Honest capability surface
+    section: language-GA program §2 G8
+    threshold: "The registries report python at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (the spec's naming rule binds every user-facing surface)."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM's G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the python-specific scoping of the surface is not measured. SW-181 AC-8 binds the naming rule on docs/language-support.md and any other surface that names python GA — `Python — GA (cross-file-heuristic)`, never GA alone. The LINK-004 defect is the discoverable content the surface must carry under the disclosure contract. The audit row (capability-audit-2026-08-19.md row 13) is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-181 deliverable."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "Cite capability_test.go + a trust-report capture with shas once docs/language-support.md is updated and the abstention surface reports honestly (W0.g follow-on)."
+    due: W2
+  - id: GA-LANG-python-G9
+    gate: G9 — Evidence-index rows and the machine GA-language check
+    section: language-GA program §2 G9
+    threshold: "One GA-LANG-python-G<n> row per gate under the evidence-index discipline, and python present in the machine-encoded GA-language mechanism, whose check requires all of the above."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E3 DECLARED-AND-CHECKED, with the same honest bound as the JVM twin: galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-181 discharges the first half (nine rows exist for python, this one included). The second half is the flip: python has no ga-language row in docs/coverage-matrix.yaml in the same change, and the matrix row is added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
+    status: UNKNOWN
+    evidence_uri: ""
+    sha: ""
+    owner: W2-PY
+    next_action: "SW-181 — add the python ga-language matrix row only once G1 through G8 all read PASS with evidence_uri and sha, and only if the F5 measurement carries python at cross-file-heuristic."
+    due: W2

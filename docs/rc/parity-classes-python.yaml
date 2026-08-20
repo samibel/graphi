@@ -1,0 +1,225 @@
+# graphi — Python change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-181). Python is `cross-file-heuristic`
+#                      and binds at the heuristic tier; the JVM-style typed-
+#                      confirmed binder does not exist for Python, so the rows
+#                      here prove full-vs-incremental snapshot BYTE parity on
+#                      MemStore AND SQLite with non-vacuous witnesses — NOT the
+#                      PRD §12.3 gate, NOT the real-repository matrix (G4), and
+#                      the binder is not exercised (Python has none).
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go and JVM
+#                      tables. The Python rows reuse the Go conformance harness
+#                      pattern (both stores, both index-profile axes, the
+#                      non-vacuity witness first) and bind to it via the
+#                      pythonParityClassesPath const in
+#                      engine/conformance/pythonparity_matrix_test.go. AC-3's
+#                      F5 measurement (does Python's package-import resolution
+#                      fan out over colliding clauses, the PARITY-002 shape)
+#                      is the only Python-specific measurement this story adds;
+#                      it lives in the G4 evidence row and the real-repository
+#                      sweep, not here.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The JVM instance diverges from the
+#                      template in four named ways (D-10, D-11, D-11b, D-12);
+#                      Python inherits ALL FOUR by following the same shape —
+#                      fixture label `production Go parser` (D-12), the
+#                      Go-style seven-direction drift guard (D-11, narrowed
+#                      by D-11b to MISSING/PHANTOM/DEFERRED/KIND/OWNER for
+#                      this first copy), omitted test_line/prd_source/
+#                      delta_source (D-10). Each divergence is documented
+#                      below. The next family should NOT inherit them by
+#                      copying this file — the template is the source.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestPythonParityMatrix_DriftGuard (engine/conformance/
+# pythonparity_matrix_test.go) binds this file to the harness table
+# pythonChangeClassTable() in pythonparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+#   MISSING/PHANTOM/DEFERRED are the three directions the JVM guard has, and
+#   they are the three this guard has for SW-181. The four the JVM guard is
+#   missing (VERDICT, AXIS, VOCABULARY, KIND-as-distinct-from-OWNER) are
+#   recorded below as a TEMPL-P4 inheritance and not closed in this copy —
+#   this file's KIND count is a pinned literal, like the Go and JVM tables,
+#   but nothing yet rejects a row whose verdict does not match what its
+#   harness row proves, nothing binds the YAML profile/store claim to the
+#   axis that actually runs, and nothing enforces the closed vocabulary.
+#   Closing them is its own product-byte change (the template's §12,
+#   TEMPL-P4).
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+#
+# ---------------------------------------------------------------------------
+# PYTHON-SPECIFIC NOTES
+# ---------------------------------------------------------------------------
+# Python is `cross-file-heuristic` (live derivation 2026-08-19, measured at
+# 1e440cf). The level is honest (SW-183 audit row 13, python: produces file→file
+# edges for 4 of 5 import forms; LINK-004 is the recall defect on
+# `from pkg.util import helper` and `import pkg.util`). The binder is the
+# heuristic resolver at engine/link/resolve_python.go; no G2/G2a/G2b typed
+# binder exists, so the rows here assert PARITY, not CORRECTNESS — parity
+# compares two passes of the same rule, so a PASS certifies the rule is
+# REGRESSION-CLEAN between incremental and full, never that it is correct.
+# Correctness evidence lives in engine/link/resolve_python_test.go and in the
+# real-repository matrix (G4), not here.
+#
+# All five canonical Python import forms (`import x`, `from x import n`,
+# `from pkg import n`, `from pkg import util → util.helper()`, `from pkg.util
+# import helper`, `import pkg.util`) bind through pyResolver. AC-3 measures
+# F5 — the directory-resolution fan-out over colliding clauses — on flask
+# at the pinned sha, and the G4 evidence row carries that measurement.
+#
+# Python's static package-source extension set is `.py` and `.ipynb`
+# (engine/link/resolve_python.go:45, LINK-001 / ADR 0011). `test_*.py` is NOT
+# excluded (a Python test module is an ordinary importable module, the
+# asymmetry with Go's `_test.go` is the point).
+
+parity_classes:
+  - id: "py_add_file"
+    kind: "change_class"
+    label: "Python-Datei hinzufügen / add a Python file in a new package"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/pythonparity_test.go"
+    test_name: "TestPythonFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-PY.a"
+    note: "A new Python file arrives in a new package: pure add path. The witness asserts the new callee resolves cross-module at the heuristic tier — the resolver's only tier — and the control symbols survive. Fixture label reads production Go parser to satisfy the shared closed vocabulary (D-12); the subject under test is the Python heuristic resolver at engine/link/resolve_python.go."
+
+  - id: "py_modify_file"
+    kind: "change_class"
+    label: "Python-Datei ändern / rewrite a Python file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/pythonparity_test.go"
+    test_name: "TestPythonFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-PY.a"
+    note: "An indexed Python file is rewritten in place: a function is added while existing nodes keep identity. The witness asserts the new node is present and the existing callee survives — pins the same-package identity-stability contract every rewrite class asserts."
+
+  - id: "py_add_call_heuristic"
+    kind: "change_class"
+    label: "Heuristischen Aufruf hinzufügen / add a heuristic-tier cross-module call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/pythonparity_test.go"
+    test_name: "TestPythonFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-PY.a"
+    note: "A new cross-module call is added: `from shop.cart import build; build(...)` — the resolver's from-import bare-binding path. The witness asserts the edge lands at HEURISTIC tier (model.TierHeuristic), never at confirmed: the Python resolver is heuristic and must not mint confirmed edges (the G2SUB never-confirmed half)."
+
+  - id: "py_import_alias_selector"
+    kind: "change_class"
+    label: "Import-Alias-Selector hinzufügen / add an import-alias selector call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/pythonparity_test.go"
+    test_name: "TestPythonFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-PY.a"
+    note: "An import-alias selector is added: `import tax.rates as rates; rates.compute(...)`. The witness pins the resolver's selector-base path and asserts the bound FQN is tax.rates.compute, not rates.rates.compute — the dotted module path resolution. Tier heuristic, never confirmed."
+
+  - id: "py_relative_import_skip"
+    kind: "change_class"
+    label: "Relativen Import überspringen + zählen / skip + count a relative import target"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/pythonparity_test.go"
+    test_name: "TestPythonFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-PY.a"
+    note: "A relative import (`from . import util`) targets a module that is absent from the indexed tree. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids."
+
+  - id: "py_ambiguous_clauses"
+    kind: "change_class"
+    label: "Mehrdeutige Klauseln / two dirs claiming the same clause"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/pythonparity_test.go"
+    test_name: "TestPythonFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-PY.b"
+    note: "Two package directories both declare a function `pkg.dup` (the clause-keyed lookup is identical to Go's PARITY-002 shape, measured in the template §10.3 fixture). The witness asserts NEITHER call site resolves to a single edge and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity, not on an absent module. This is the row that pins the deterministic, never-guess half of the G2SUB contract against a SHAPE that has a Go precedent (PARITY-002, ADR 0009)."
+
+  - id: "py_delete_file"
+    kind: "change_class"
+    label: "Python-Datei löschen / delete a Python file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/pythonparity_test.go"
+    test_name: "TestPythonFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-PY.a"
+    note: "A Python file declaring a function that TWO other packages import is deleted, so the per-file stale-node purge, the heuristic-edge sweep and the re-link all run over it. The witness requires the deleted callee absent, both importers still present, and the heuristic edges into the deleted callee gone — a stale heuristic edge would be the worst outcome here, even though the edge tier is lower than confirmed. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on Python as well as on Go. The witness targets the clause-keyed QN `tax.rates.calc.compute` (Python's QN keys on the LAST package directory along the import path, not the function name), and the importer file shop/cart/build.py yields `cart.build`."
+
+  - id: "py_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / same-package file-to-file move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/pythonparity_test.go"
+    test_name: "TestPythonFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-PY.b"
+    note: "A Python top-level function moves file-to-file WITHIN one package. Python's clause-keyed QN keys on the directory, not the filename (mirror of qn.go filePackage), so the moved function's identity is STABLE while its source file changes — two files then claim one qualified name inside a single change set, the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The witness asserts the function identity is preserved and its cross-module edge survives the re-home — pins the QN-stable re-home as a parity-holding transition."

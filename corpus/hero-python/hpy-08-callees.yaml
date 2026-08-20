@@ -1,0 +1,14 @@
+id: hpy-08-callees
+description: Callees of app.twice are impl.core (the cross-module call).
+fixture_ref: tier1-fixture-hero-python
+operation:
+  name: callees
+  args:
+    symbol: app.twice
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: impl.core
+      match: contains

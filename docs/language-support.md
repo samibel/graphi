@@ -8,11 +8,15 @@ the [coverage matrix](coverage-matrix.md).
 The parser registry is open/closed — languages plug in behind a stable seam
 without touching existing code.
 
-> **Go is the only GA language.** Every other language in the table below is
+> **Languages at GA at their declared capability level.** Go is the only language
+> at `GA (typed-confirmed)` and additionally gets type-checker-`confirmed` edges
+> (`engine/typeresolve`). A language at `GA (cross-file-heuristic)` ships at that
+> level with the level printed beside the word GA — `Python — GA (cross-file-heuristic)`,
+> never GA alone — and its evidence rows are bound to the G1–G9 gate discipline
+> (see `docs/rc/evidence-index.yaml`). Every other language in the table below is
 > **Preview**: it ships, it is usable, it runs the same 12 GA operations — but it
 > is outside the GA promise and its accuracy is unproven. Preview languages resolve
-> cross-file references at the `heuristic` tier only; **Go alone** additionally gets
-> type-checker-`confirmed` edges (`engine/typeresolve`).
+> cross-file references at the `heuristic` tier only.
 
 **Default tier (CGo-free, shipped binary).** Two stdlib parsers plus **20**
 subset-tagged pure-Go `gotreesitter` grammars. The shipped default is built with
@@ -25,7 +29,7 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 | **Go** | **GA** | `typed-confirmed` | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) + `confirmed`-tier go/types edges ¹ |
 | JSON | Preview | `parse-only` | structural (AST) | — | — |
 | TypeScript · TSX/JSX · JavaScript | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **Python** | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **but see open defect LINK-004** ⁵ |
+| **Python** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **but see open defect LINK-004** ⁵ |
 | Ruby · PHP · Lua | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
 | Java · Kotlin · C# | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
 | C · C++ · Rust | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |

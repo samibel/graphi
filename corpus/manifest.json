@@ -255,17 +255,28 @@
    "name": "flask",
    "url": "https://github.com/pallets/flask",
    "ref": "3.0.0",
-   "sha": "735a4701d6d5",
+   "sha": "735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b",
+   "tier": 3,
    "language": "python",
    "license": "BSD-3-Clause",
    "permitted_use": "Public repository under BSD-3-Clause; read-only shallow clone in CI, measurements only, no redistribution.",
+   "measured": {
+    "source_files": 78,
+    "tracked_files": 102,
+    "measured_at": "2026-08-19",
+    "method": "git clone --depth 1 --branch 3.0.0; git ls-files '*.py' | wc -l (78) and git ls-files | wc -l (102) at the pinned sha 735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b. .ipynb files counted in tracked_files but not source_files (notebooks are CLAS lab material in this pin)."
+   },
    "searches": [
     {
      "query": "Flask",
      "expect_nonempty": true
+    },
+    {
+     "query": "Blueprint",
+     "expect_nonempty": true
     }
    ],
-   "notes": "Python package; docs, JSON, and mixed non-source assets."
+   "notes": "Python package; docs, JSON, and mixed non-source assets. Brought to the v3 measured standard (SW-181): the 12-char prefix expanded to the full 40-char sha, a tier-3 designation added, and a measured census added (78 .py of 102 tracked, via the source_files field non-Go entries use). Python's extension set is .py AND .ipynb (engine/link/resolve_python.go:45, LINK-001 / ADR 0011); .ipynb files are present in flask but are CLAS lab material, not graphi-tracked source. test_*.py files are NOT excluded (Python's test modules are importable, the asymmetry with Go's _test.go is the point)."
   },
   {
    "name": "sinatra",
@@ -552,6 +563,24 @@
     }
    ],
    "notes": "Tier-1 pinned multi-file JVM (Java+Kotlin) fixture for the WP-J6 hero-jvm tasks. The hero-jvm gate (cmd/eval/hero_jvm_test.go) sets GRAPHI_JVM_TYPERESOLVE and asserts the 12 stable ops over the CONFIRMED tier. This corpus smoke entry deliberately carries NO confirmed_edges assertion: the corpus runner drives the DEFAULT binary (binder off, JVM is Preview/heuristic), so a confirmed-edge assertion would be unsatisfiable here and would contradict the default-off contract. The heuristic search assertion is what the default product proves. No network, no JDK."
+  },
+  {
+   "name": "tier1-fixture-hero-python",
+   "path": "corpus/fixtures/hero-python",
+   "tier": 1,
+   "language": "python",
+   "scenario_ref": "hero-python",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    },
+    {
+     "query": "salute",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file Python fixture for the SW-181 hero-python tasks. The hero-python gate (cmd/eval/hero_python_test.go) asserts the 12 stable ops over the HEURISTIC tier (engine/link/resolve_python.go), since Python has no typed binder — the G2SUB substitution is the language's honest level. The writers carry the heuristic resolver's from-import bare binding (`from impl.english import core`) so callers/callees/impact/related_files reach across modules at the heuristic tier. Negative anchor: org.salute (does NOT call core) must not appear in callers-of-core. No network, no Python interpreter."
   }
  ]
 }

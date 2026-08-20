@@ -1,0 +1,33 @@
+id: hpy-06-callers-cross-module
+description: >
+  Callers of impl.core span modules — the impl-internal impl.salute and three
+  cross-module callers (app.serve, app.twice, app.run). The cross-module edges
+  are emitted at the heuristic tier by the G2SUB heuristic resolver
+  (engine/link/resolve_python.go): no typed binder exists for Python, so these
+  are the language's honest tier. org.salute, which honours the Speaker contract
+  without delegating to core, must NOT appear (negative anchor).
+fixture_ref: tier1-fixture-hero-python
+operation:
+  name: callers
+  args:
+    symbol: impl.core
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.serve
+      match: contains
+    - kind: symbol
+      value: app.run
+      match: contains
+    - kind: symbol
+      value: app.twice
+      match: contains
+    - kind: symbol
+      value: impl.salute
+      match: contains
+  absent:
+    - kind: symbol
+      value: org.salute
+      match: contains

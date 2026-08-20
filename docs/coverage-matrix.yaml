@@ -63,6 +63,13 @@ capabilities:
     capability: typed-confirmed
     epic: "-"
     note: "The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA."
+  - id: python
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: cross-file-heuristic
+    epic: "-"
+    note: "Python at GA (cross-file-heuristic) per the language-GA program G3 (SW-181). The level is heuristic, not typed-confirmed — the binder does not exist for Python, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Python — GA (cross-file-heuristic)`, never GA alone. LINK-004 is disclosed in the row's language-support entry; the G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-python-G1..G9, ordered after java and kotlin per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
   - id: bash
     category: parser
     status: shipped
