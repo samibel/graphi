@@ -109,6 +109,22 @@ machine-independent, so **re-running the baseline at `5815db5` any number of tim
 produces 975 again**. It reproduced in both published runs, on an Intel Xeon Platinum
 8573C and an AMD EPYC 9V74, and on 4 of the 5 pinned repositories.
 
+> **CORRECTION 2026-08-20 (SW-150, CPU attribution sweep) — added, nothing above is
+> rewritten.** "Intel Xeon Platinum 8573C and an AMD EPYC 9V74" is the run-summary
+> shorthand. The published `environment.json` files show FOUR CPU models across
+> the 40 per-job records (`AMD EPYC 7763`, `AMD EPYC 9V74`, `Intel Xeon Platinum
+> 8573C`, `Intel Xeon Platinum 8370C`; run-a spans 3 models, run-b spans 4). The
+> per-job truth for the gate-bearing `query-latency/grpc-go` job that produced the
+> 25-execution shortfall is at
+> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:272-304`: **AMD EPYC
+> 9V74 in run-a, AMD EPYC 7763 in run-b — both AMD EPYC**. The cross-silicon
+> reproduction claim is *weakened* for that gate (reproduced across AMD
+> generations, not across Intel and AMD) and the determinism claim is
+> *strengthened* (a 3-model run and a 4-model run, not a 2-model one). The
+> per-run reproducibility and the machine-independent terms of the C4 argument
+> are untouched. Sweep record:
+> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
+
 The full argument, including why Outcome A was tested seriously and fails, is in the
 decision record and is not restated here.
 
@@ -169,6 +185,20 @@ measured** (AC-9). Concretely:
   of 10 against a shipped default of 20 ([§8](#8-what-this-record-does-not-do)). Both
   push the measured distribution up. Anyone expecting a number near the old
   undersampled 471.250 ms is expecting the wrong thing.
+
+  > **CORRECTION 2026-08-20 (SW-150, one-sided gate-9 p95) — added, nothing above
+  > is rewritten.** The "old undersampled 471.250 ms" above quotes run-a only.
+  > The harness recorded the pooled p95 for BOTH runs over the SAME 975-of-1000
+  > pool, and they fall on OPPOSITE sides of the 500 ms gate: run-a **471.250 ms**
+  > (below), run-b **601.732 ms** (above, by 20.3%) — a **+27.7%** run-to-run
+  > spread. The two runs disagree about which side of the gate this falls on, so
+  > the UNKNOWN is not readable as a withheld PASS. Sources:
+  > `run-{a,b}/query-latency/grpc-go/report.json` `.repo.query_latency.pools[]`
+  > (`p95_us` `471250` / `601732`), each independently recomputed from
+  > `run-{a,b}/.../raw/query-latency.json` at nearest rank
+  > `ceil(0.95 × 975) = 927`. The verdict is unchanged (UNKNOWN); no figure
+  > above is withdrawn. Sweep record:
+  > `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
 
 Producing an actual reading is the Final Runs slice (SW-143–145): two complete runs
 on the reference runner class with `candidate_match` true in every

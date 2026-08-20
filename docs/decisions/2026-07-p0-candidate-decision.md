@@ -128,6 +128,23 @@ drops its slow tail non-randomly is not measuring what it reports. That is C2, a
 proven, not argued: it is reproduced in both published runs, on two CPU families, and
 pinned by `cmd/eval/partialoutcome_characterization_test.go`.
 
+> **CORRECTION 2026-08-20 (SW-150, CPU attribution sweep) — added, nothing above is
+> rewritten.** "Two CPU families" is a run-summary shorthand; the published
+> `environment.json` files show FOUR CPU models across the 40 per-job records
+> (`AMD EPYC 7763`, `AMD EPYC 9V74`, `Intel Xeon Platinum 8573C`,
+> `Intel Xeon Platinum 8370C`; run-a spans 3 models, run-b spans 4). The per-job
+> truth for the gate-bearing grpc-go jobs is at
+> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:272-304`. The
+> determinism claim above is therefore *strengthened* (reproduced across a 3-model
+> and a 4-model run, not a 2-model one). The cross-silicon reproduction claim is
+> *weakened*: the C2/C4 shortfall's host was the `progress-stalls/grpc-go` job,
+> which ran `AMD EPYC 7763 → AMD EPYC 7763` — one model in both runs — so this
+> sentence's "reproduced across CPU families" qualifier has no silicon backing for
+> that gate. The artifact-property half of the claim stands on the per-job
+> reproducibility inside each run (the symbol sample digest and the
+> degree-ordered count), not on cross-run silicon diversity. Sweep record:
+> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
+
 ### 2.2 Why F1–F3 are also C4
 
 At `5815db5` the agent-tools pool reaches **975** of FR-8's floor of **1000**
@@ -138,6 +155,24 @@ degree-ordered symbol sample published with digest `332036d65a7ec805`, a compile
 cap of 10, and pure graph properties — is machine-independent (diagnosis §4.2). It
 reproduces on 4 of the 5 pinned repos (`lo` 0, `uuid` 14, `gin` 23, `grpc-go` 25,
 `cobra` 39; diagnosis §4.4).
+
+> **CORRECTION 2026-08-20 (SW-150, CPU attribution sweep) — added, nothing above is
+> rewritten.** "Intel Xeon Platinum 8573C and an AMD EPYC 9V74" is the run-summary
+> shorthand, not the per-job truth. The published `environment.json` files show
+> FOUR CPU models across the 40 per-job records (`AMD EPYC 7763`,
+> `AMD EPYC 9V74`, `Intel Xeon Platinum 8573C`, `Intel Xeon Platinum 8370C`;
+> run-a spans 3 models, run-b spans 4). The per-job truth for the
+> `query-latency/grpc-go` job that produced the 25-execution shortfall is at
+> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:284-287`:
+> **AMD EPYC 9V74 in run-a, AMD EPYC 7763 in run-b — both AMD EPYC**. So the
+> shortfall was reproduced across AMD generations, but **not** across Intel and
+> AMD, and §2.2's "two CPU families" framing of the cross-silicon reading is
+> weakened rather than supported by the per-job data. The per-run reproducibility
+> and the machine-independent terms of the reject count (the symbol sample digest
+> and the degree-ordered count) are untouched: the determinism claim is *stronger*
+> (a 3-model run and a 4-model run, not a 2-model one) even as the cross-silicon
+> framing is weaker. Sweep record:
+> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
 
 Therefore: **re-running the baseline at `5815db5` any number of times produces 975 again.**
 Gate 9 has no path to a verdict on this candidate. That is exactly *“a failure that makes
@@ -183,6 +218,23 @@ D1 forces the move under **C4** (proven, deterministic, both runs, two CPU famil
 independently under **C2** ([§2.1](#21-why-f1f3-are-c2--and-not-merely-an-undercount)).
 No other finding is needed to reach Outcome B, and the decision would be the same if
 F4 and F5 did not exist.
+
+> **CORRECTION 2026-08-20 (SW-150, CPU attribution sweep) — added, nothing above is
+> rewritten.** "Both runs, two CPU families" is the run-summary shorthand; the
+> per-job truth is four CPU models across the 40 jobs (see §2.2 and
+> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:272-304`). The C4
+> argument is *strengthened* (reproduced across a 3-model and a 4-model run), but
+> the cross-silicon reading is *weakened* for the C2/C4 host: the
+> `query-latency/grpc-go` job that produced the 25-execution shortfall ran
+> `AMD EPYC 9V74 → AMD EPYC 7763` (both AMD EPYC), so the shortfall was never
+> reproduced across Intel and AMD, only across AMD generations; and the
+> `progress-stalls/grpc-go` job ran `AMD EPYC 7763 → AMD EPYC 7763` (one model in
+> both runs), so this section's "reproduced across CPU families" qualifier has no
+> silicon backing at all for the 15.5 s stall tail. The decision is unchanged:
+> the per-job reproducibility inside each run, the determinism of the reject
+> count, and the machine-independent terms of the C2/C4 argument are not touched
+> by silicon diversity. §3.1 must not be read alone without this. Sweep record:
+> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
 
 ### 3.2 Why F4 does not independently force this move
 

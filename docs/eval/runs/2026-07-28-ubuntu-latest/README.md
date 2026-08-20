@@ -117,6 +117,27 @@ reproduced every verdict. It does **not** rule out a shared defect in the
 harness, the workflow or the operator's method, because one operator dispatched
 both runs from the same repository state.
 
+> **CORRECTION 2026-08-20 (SW-150, CPU attribution sweep) — added, nothing above
+> is rewritten.** "Run-b landed on a different CPU family" is the run-summary
+> shorthand; the published `environment.json` files show FOUR CPU models
+> across the 40 per-job records (`AMD EPYC 7763`, `AMD EPYC 9V74`, `Intel
+> Xeon Platinum 8573C`, `Intel Xeon Platinum 8370C`; run-a spans 3 models,
+> run-b spans 4). The per-job truth for the gate-bearing grpc-go jobs is at
+> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:272-304`. The
+> sentence's "every verdict" claim is *strengthened* by this — reproduced
+> across a 3-model and a 4-model run, not a 2-model one. The "different CPU
+> family" framing is *weakened* for the C2/C4 host: `query-latency/grpc-go`
+> ran `AMD EPYC 9V74 → AMD EPYC 7763` (both AMD EPYC) and
+> `progress-stalls/grpc-go` ran `AMD EPYC 7763 → AMD EPYC 7763` (one
+> model in both runs), so the cross-silicon reproducibility of those two
+> verdicts was not actually across CPU families. The verdict-level
+> reproducibility is preserved by the per-run machine-independent terms
+> (the symbol sample digest, the degree-ordered count, the published
+> raw samples), not by silicon diversity. The file's own SW-130
+> correction at `:20-28` scopes itself to the run tree 85 lines above
+> and does not reach this paragraph. Sweep record:
+> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
+
 ## Scope limitation (PRD FR-8)
 
 Every §12.2 gate here holds for **the reference scenario** — grpc-go v1.60.1 on

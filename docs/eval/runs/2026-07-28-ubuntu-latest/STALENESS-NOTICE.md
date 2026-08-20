@@ -54,6 +54,20 @@ The consequence for **this** directory, precisely:
   systematically the most expensive. The distribution here is missing its heaviest
   members **by construction**. That is a reason for caution in both directions, not
   a hidden PASS.
+
+  > **CORRECTION 2026-08-20 (SW-150, one-sided gate-9 p95) — added, nothing above
+  > is rewritten.** The "471.250 ms (run-a)" above names one figure. The
+  > harness recorded the pooled p95 for BOTH runs over the same 975-of-1000
+  > pool, and they fall on OPPOSITE sides of the 500 ms gate: run-a
+  > **471.250 ms** (below), run-b **601.732 ms** (above, by 20.3%) — a
+  > **+27.7%** run-to-run spread. The two runs disagree about which side of
+  > the gate this falls on, so the UNKNOWN is not readable as a withheld
+  > PASS. Sources: `run-{a,b}/query-latency/grpc-go/report.json`
+  > `.repo.query_latency.pools[]` (`p95_us 471250 / 601732`), each
+  > independently recomputed from `run-{a,b}/.../raw/query-latency.json` at
+  > nearest rank `ceil(0.95 × 975) = 927`. The verdict is unchanged
+  > (UNKNOWN); no figure above is withdrawn. Sweep record:
+  > `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
 - **The other nine verdicts are unaffected as statements about v0.7.0.** Eight PASS
   and one FAIL (`freshness_p95`, ~3.2× budget) were measured on parts of the harness
   D1 does not touch. They stay true about `5815db5`. They are **not** carried across
@@ -100,6 +114,23 @@ at an item cap of **10** while every shipped surface defaults to **20** (F4, on
 the measured distribution **upward**. Anyone reading the 471.250 ms above as a
 preview of the corrected number is reading it wrong, and this paragraph is the
 reason.
+
+> **CORRECTION 2026-08-20 (SW-150, one-sided gate-9 p95) — added, nothing above
+> is rewritten.** The "the 471.250 ms above" sentence names one figure while
+> the paragraph above says "caution in both directions" about the
+> distribution. The harness recorded the pooled p95 for BOTH runs over the
+> same 975-of-1000 pool, and they fall on OPPOSITE sides of the 500 ms gate:
+> run-a **471.250 ms** (below), run-b **601.732 ms** (above, by 20.3%) — a
+> **+27.7%** run-to-run spread. The "caution in both directions" the
+> paragraph already names is therefore not a framing choice but a fact: the
+> two runs disagree about which side of the gate this falls on, so the
+> UNKNOWN may equally be a withheld PASS or a withheld FAIL. Sources:
+> `run-{a,b}/query-latency/grpc-go/report.json` `.repo.query_latency.pools[]`
+> (`p95_us 471250 / 601732`), each independently recomputed from
+> `run-{a,b}/.../raw/query-latency.json` at nearest rank
+> `ceil(0.95 × 975) = 927`. The verdict is unchanged (UNKNOWN); no figure
+> above is withdrawn. Sweep record:
+> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
 
 ## References
 
