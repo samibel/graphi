@@ -282,17 +282,40 @@
    "name": "sinatra",
    "url": "https://github.com/sinatra/sinatra",
    "ref": "v4.0.0",
-   "sha": "b626e2d82c23",
+   "release_tag": "v4.0.0",
+   "sha": "b626e2d82c23b4fde0b51782fd32ca27ccde1d1a",
+   "tier": 3,
    "language": "ruby",
    "license": "MIT",
+   "license_review": "MIT — explicit OSI-approved permissive license; redistribution of unmodified source permitted only with upstream copyright notice preserved. The corpus does not redistribute: only a shallow read-only clone is made in CI, and the source files are never published. No CLA, no contribution restrictions beyond the standard MIT terms. Compatible with the corpus's read-only-CI-only permitted_use; no further clearance required.",
    "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "web framework",
+    "rack middleware chain",
+    "DSL-style API",
+    "multi-gem repo layout",
+    "test/spec co-located",
+    "no static type system",
+    "commonmarker companion",
+    "plugin ecosystem",
+    "modular kernel",
+    "public domain dedication available",
+    "evolving API surface",
+    "documentation in Markdown"
+   ],
+   "measured": {
+    "source_files": 143,
+    "tracked_files": 321,
+    "measured_at": "2026-08-20",
+    "method": "git clone --depth 1 --branch v4.0.0; git ls-files '*.rb' | wc -l (143) and git ls-files | wc -l (321) at the pinned sha b626e2d82c23b4fde0b51782fd32ca27ccde1d1a (full 40-char pin via GitHub git/tags endpoint, no local clone required for the lift itself; the file counts are taken from the canonical recursive tree at the same pin, truncated=false)."
+   },
    "searches": [
     {
      "query": "Base",
      "expect_nonempty": true
     }
    ],
-   "notes": "Ruby gem; multi-gem repo layout."
+   "notes": "Ruby gem; multi-gem repo layout. Brought to the v3 measured standard (F5-corpus, this commit): 12-char sha prefix expanded to the full 40-char commit sha (b626e2d82c23b4fde0b51782fd32ca27ccde1d1a, fetched via GitHub's git/tags → git/tags → git/commits chain at the v4.0.0 tag, which is itself an annotated tag with PGP signature verification=verified), a tier-3 designation added, a measured census added (143 .rb of 321 tracked, via the source_files field non-Go entries use), and the language-specific stratification properties list added (12 entries — web framework, rack middleware chain, DSL-style API, multi-gem repo layout, test/spec co-located, no static type system, commonmarker companion, plugin ecosystem, modular kernel, public domain dedication available, evolving API surface, documentation in Markdown — the properties a Ruby cross-file-heuristic regression fixture must cover). The license_review note is the missing v3 field for non-Go entries: MIT means redistribution is permitted but our permitted_use clause shrinks it to measurements-only, and the review records that shrink. The lift was attempted without a network clone of the source tree; the 40-char sha came from the GitHub API (verified=valid PGP signature on the annotated tag), and the file counts came from the canonical recursive tree at the same pin (truncated=false)."
   },
   {
    "name": "ky",
