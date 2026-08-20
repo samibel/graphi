@@ -154,6 +154,48 @@ capabilities:
     capability: cross-file-heuristic
     epic: "-"
     note: "SQL at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — SQL is an honest no-op at the cross-file tier per the resolver-side admission (no provable cross-file references at this tier → skip+count), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `SQL — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-sql-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+  - id: css
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: intra-file-only
+    epic: "-"
+    note: "CSS at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: CSS in graphi has no cross-file resolver (`parser_css.go:94` declares \"no import system (Imports empty)\"), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (CSS the language has `@import`, but graphi deliberately declines the relation — the audit's row 17 measurement is the load-bearing citation). The naming rule from the spec binds every user-facing surface: `CSS — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-css-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+  - id: hcl
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: intra-file-only
+    epic: "-"
+    note: "HCL at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: HCL in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 21 measurement is the load-bearing citation — `module { source }` is Terraform's schema layered on HCL, not HCL's own cross-file mechanism). The naming rule from the spec binds every user-facing surface: `HCL — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-hcl-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+  - id: json
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: parse-only
+    epic: "-"
+    note: "JSON at GA (parse-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is parse-only: JSON in graphi mints no node of any kind (RFC 8259, parse-only by construction), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 22 measurement is the load-bearing citation — `question NOT askable`, JSON has no construct to bind). The naming rule from the spec binds every user-facing surface: `JSON — GA (parse-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-json-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+  - id: markdown
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: intra-file-only
+    epic: "-"
+    note: "Markdown at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: Markdown in graphi has no cross-file resolver (`parser_markdown.go:94` declares \"no import system (Imports empty)\"), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (Markdown the language has link syntax, but graphi deliberately declines the relation — the audit's row 18 measurement is the load-bearing citation). Markdown MINTS REAL SYMBOLS (README headings become `type` nodes) — the SW-166 fact that makes a clause-based filter unworkable. The naming rule from the spec binds every user-facing surface: `Markdown — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-markdown-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+  - id: toml
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: intra-file-only
+    epic: "-"
+    note: "TOML at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: TOML in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 20 measurement is the load-bearing citation — TOML v1.0.0 defines no include, the question is NOT askable). The naming rule from the spec binds every user-facing surface: `TOML — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-toml-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+  - id: yaml
+    category: ga-language
+    status: shipped
+    tier: labs
+    capability: intra-file-only
+    epic: "-"
+    note: "YAML at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: YAML in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 19 measurement is the load-bearing citation — YAML 1.2.2 defines no include; `include:` is an ordinary mapping key, not a language-level include directive). YAML MINTS REAL SYMBOLS (key/value pairs become `type` nodes) — the SW-166 fact that makes a clause-based filter unworkable. The naming rule from the spec binds every user-facing surface: `YAML — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-yaml-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
   - id: bash
     category: parser
     status: shipped

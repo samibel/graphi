@@ -260,9 +260,9 @@ func TestCrossFileHeuristicResidual_MatrixRowsExist(t *testing.T) {
 
 	// No residual UNRELATED ga-language rows: the matrix has only the
 	// `go` grandfather row + the 6 already-shipped (java/kotlin/python/
-	// typescript/tsx/javascript) + the 9 residual = 16. If this number
-	// changes outside a SW-184 follow-on, the assertion below fails
-	// loudly.
+	// typescript/tsx/javascript) + the 9 residual + the 6 intra-file-only /
+	// parse-only residual (SW-185) = 22. If this number changes outside a
+	// SW-184 or SW-185 follow-on, the assertion below fails loudly.
 	var extra []string
 	for lang := range matrixGALangs {
 		if lang == "go" {
@@ -272,8 +272,12 @@ func TestCrossFileHeuristicResidual_MatrixRowsExist(t *testing.T) {
 			continue
 		}
 		switch lang {
-		case "java", "kotlin", "python", "typescript", "tsx", "javascript":
-			continue // already shipped by SW-174 / SW-181 / SW-182
+		case "java", "kotlin", "python", "typescript", "tsx", "javascript",
+			"css", "hcl", "json", "markdown", "toml", "yaml":
+			// SW-174 (java, kotlin), SW-181 (python), SW-182 (typescript,
+			// tsx, javascript), SW-185 (css, hcl, json, markdown, toml,
+			// yaml) — each language's scaffold is its own story.
+			continue
 		default:
 			extra = append(extra, lang)
 		}
