@@ -405,6 +405,15 @@ func insertFileEvidenceTx(ctx context.Context, tx *sql.Tx, generation string, ro
 
 func insertPackageEvidenceTx(ctx context.Context, tx *sql.Tx, generation string, rows []PackageEvidence) error {
 	for _, r := range rows {
+		// trust_package_evidence.language is NOT NULL (schema 3 -> 4): the
+		// language column is the registry seam's honest statement of WHICH
+		// semantic registrant produced the row, and a row whose registrant is
+		// unknown has no claim on this table. Surface empty language as a
+		// skip — the row is NOT this table's to remember, and a write that
+		// would raise the constraint must not fail the whole pass.
+		if r.Language == "" {
+			continue
+		}
 		if _, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO trust_package_evidence
 			(generation_id, language, package_key, state, degraded_reason,
 			 type_errors, dropped_intents, confirmed_edges, skipped_files)
