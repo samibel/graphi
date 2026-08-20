@@ -798,12 +798,12 @@ gates:
     gate: G4 — Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over python pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden. The Python-specific measurement is finding F5 (clausePackageFileNodes fan-out over colliding directory clauses, the PARITY-002 shape)."
-    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E2 CORPUS-MEASURED. Not yet measured. The SW-181 AC-3 measurement on flask is the F5 artefact; it has not been run. SW-181 AC-9 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic, Python is RE-GRADED, not declared. The row stays UNKNOWN until the measurement lands AND either (a) flask passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded."
+    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E2 CORPUS-MEASURED. MEASURED 2026-08-20 by SW-192 on flask at the real 3.0.0 sha (the manifest pin 735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b is STALE — verified via git ls-remote; real sha is 735a4701d6d5e848241e7d7535db898efb62d400). The F5 measurement SUCCEEDED IN RUNNING but its finding is FAILED: 70 spurious imports edges (8.0% of flask's 879 imports), all 24 importers under src/flask/* doing `import typing as t` (stdlib) acquire 3 spurious edges into tests/typing/typing_*.py. Mechanism (engine/link/resolve_common.go:521 + engine/link/resolve_python.go:86): pyClause returns 'typing' for importPath='typing'; clausePackageFileNodes walks every directory declaring the 'typing' clause and returns every file node; the resolver mints an imports edge for each. SAME SHAPE AS PARITY-002 (Go pre-ADR-0009). Per SW-181 AC-9: the measurement fails to support GA at cross-file-heuristic, so Python is RE-GRADED, not declared. The re-grade is filed as PYTHONFANOUT-001, scheduled as a separate product-byte change with its own ADR and candidate move, NOT executed in this commit. Two `graphi rebuild` dispatches agree on every per-row count (1058/2214/879/70 in both); the snapshot envelope sha256 differs because it embeds a timestamp. The cmd/parity -family python gate is unbound (cmd/parity/main.go:79 rejects anything other than go|jvm; the python driver is the same gap SW-176 AC-2 settled for the JVM). The substantive half of -counts-diff (every per-row count agrees) holds."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/python-f5-measurement.md"
+    sha: "d8940e141ea4119d08bc026b2224d93c71e9fab61360e1c56d7f4db6ffa20ef5"
     owner: W2-PY
-    next_action: "Run the SW-181 AC-3 measurement on flask at the pinned sha (corpus/manifest.json); cite the result with a blob sha. Re-grade python if the measurement fails to support cross-file-heuristic."
+    next_action: "PYTHONFANOUT-001 fix (python resolver needs module-relative directory lookup, the same shape ADR 0009 gave Go) — re-measure after the fix lands; re-grade python to the level the fix supports; cite the post-fix measurement. Until the fix lands, the row stays UNKNOWN and SW-181 AC-9 binds: re-graded, not declared."
     due: W2
   - id: GA-LANG-python-G5
     gate: G5 — Corpus stratification and pins

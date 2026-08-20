@@ -1,0 +1,33 @@
+{
+  "format_version": 1,
+  "kind": "f5-dispatch-determinism",
+  "harness_version": "f5-fanout-measurement/1",
+  "captures": [
+    {
+      "dispatch": "a",
+      "name": "flask-full",
+      "snapshot_path": "/var/tmp/graphi-74d870a2c7f729e8/snapshots/flask-full.sqlite",
+      "snapshot_sha256": "c8808aef5c2d4c414ab951166d8b3c2660d4083563ed5348361615f3a52a7a80",
+      "nodes": 1058,
+      "edges": 2214,
+      "imports": 879,
+      "spurious_typing": 70
+    },
+    {
+      "dispatch": "b",
+      "name": "flask-full-rerun",
+      "snapshot_path": "/var/tmp/graphi-74d870a2c7f729e8/snapshots/flask-full-rerun.sqlite",
+      "snapshot_sha256": "800216204b1903080254c95750a17f9ee8bd9ed87d972f5de12ef14becb5d898",
+      "nodes": 1058,
+      "edges": 2214,
+      "imports": 879,
+      "spurious_typing": 70
+    }
+  ],
+  "verdict_agree": true,
+  "count_agree": true,
+  "snapshot_byte_identical": false,
+  "snapshot_byte_identical_note": "snapshot envelope embeds a timestamp; per-row counts are byte-identical. F5 is reproducible at the count granularity that matters.",
+  "spurious_typing_appears_in_both_dispatches": true,
+  "f5_verdict": "FAILED \u2014 Python's package-import resolution fans out over colliding directory clauses on flask"
+}

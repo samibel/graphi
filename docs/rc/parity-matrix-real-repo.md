@@ -437,7 +437,215 @@ jq -r '.graph.edges[].kind' '<workdir>/state/guava/<row>/full.snapshot' | sort |
 
 ---
 
-# Current measurement — the ADR 0011 candidate (2026-08-19, W0.f-5)
+# Python real-repository measurement — F5 measurement — MEASURED, G4 STAYS UNKNOWN (2026-08-20, W5.f)
+
+> **THIS SECTION IS NOT A PUBLISHED MATRIX.** SW-192 ran the SW-181 AC-3 F5
+> measurement over flask — the python pin — and produced a real-repo
+> measurement of whether Python's package-import resolution fans out over
+> colliding directory clauses (the F5 finding, PARITY-002 shape). The
+> measurement found the F5 fan-out **IS REAL** on flask, and per SW-181 AC-9
+> Python is **RE-GRADED, not declared** at `cross-file-heuristic`. The G4
+> evidence row stays UNKNOWN with the F5 finding named. The python parity
+> driver does not exist in `internal/parity/` (the same gap SW-193 settled for
+> the TypeScript family in the section above); the F5 measurement was
+> performed manually by driving `./cmd/graphi` directly, the same shape
+> SW-176's AC-2 escalation settled for the JVM matrix. Per D6 nothing below
+> this section is rewritten, re-pointed or deleted.
+
+**Status: MEASURED, G4 STAYS UNKNOWN. 1 repo (flask), 2 dispatches agreeing
+at per-row count granularity, 70 spurious `imports` edges (8.0% of flask's
+879 imports) — same shape as PARITY-002 (Go pre-ADR-0009).**
+
+| | |
+|---|---|
+| Story | SW-192 (W5.f, 2026-08-20) |
+| Gate | language-GA program G4 / work package WP-Py — real-repository F5 measurement for Python |
+| Family / matrix source | `internal/parity` has **no python family driver**; F5 measurement performed by driving `./cmd/graphi` directly (the same workaround SW-176 AC-2 settled for the JVM) |
+| Pin | flask `3.0.0` at the REAL sha `735a4701d6d5e848241e7d7535db898efb62d400` (the manifest pin `735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b` is STALE — see "Pin discrepancy" below) |
+| Two dispatches | 2 × `graphi rebuild` of the same flask pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite inspection per dispatch |
+| Provenance | both dispatches at run SHA `3f23901`, runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, clean worktree |
+| Report artifacts | [`docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/`](../../eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/) — `report.json`, `aggregate.json`, `raw/f5-measurement.json`, `raw/dispatch-determinism.json`, snapshot digests `dispatch-{a,b}.snapshot.sha256` |
+| Measurement file | [`python-f5-measurement.md`](../python-f5-measurement.md) (the full F5 measurement document; the section you are reading is its summary) |
+
+## The F5 measurement, in one paragraph
+
+Python's package-import resolution resolves through `clausePackageFileNodes`
+(`engine/link/resolve_common.go:521`), the same clause-keyed fan-out Go used
+before ADR 0009. The python resolver derives the clause from the
+import-path's trailing segment (`pyClause` at
+`engine/link/resolve_python.go:86`), and `clausePackageFileNodes` walks every
+directory declaring that clause and returns every committed source file node
+in each.
+
+flask at the real `3.0.0` sha carries a `typing` clause collision:
+`tests/typing/` declares `typing` as its package clause, and every
+`src/flask/*.py` file does `import typing as t` (the stdlib `typing`
+module). The resolver records `importPath="typing"`, derives
+`clause="typing"`, and `clausePackageFileNodes` fans out — emitting
+spurious `imports` edges from each `src/flask/*.py` importer to EVERY file
+node under `tests/typing/`. **70 spurious edges, 24 distinct importers, 3
+distinct targets**, all reproducible across two rebuilds.
+
+## The 70 spurious edges — distribution
+
+| importer kind | importers (distinct) | spurious edges |
+|---|---:|---:|
+| `src/flask/*.py` (production files) | 22 | 66 |
+| `tests/typing/*.py` (self) | 2 | 4 |
+| **total** | **24** | **70** |
+
+| target | spurious edges |
+|---|---:|
+| `tests/typing/typing_app_decorators.py` | 24 |
+| `tests/typing/typing_error_handler.py` | 24 |
+| `tests/typing/typing_route.py` | 22 |
+| **total** | **70** |
+
+The 22 src/flask/*.py importers carry the 3-edge pattern uniformly — every
+file doing `import typing as t` (or `import typing`) acquires the same 3
+spurious targets. The 22 importers are the full production surface of
+flask: `__init__.py`, `__main__.py`, `app.py`, `blueprints.py`, `cli.py`,
+`config.py`, `ctx.py`, `debughelpers.py`, `globals.py`, `helpers.py`,
+`logging.py`, `sessions.py`, `templating.py`, `testing.py`, `typing.py`,
+`views.py`, `wrappers.py`, plus 5 in `src/flask/json/` and 3 in
+`src/flask/sansio/`.
+
+## Two-dispatch determinism — every count agrees
+
+| metric | dispatch A | dispatch B | agree? |
+|---|---:|---:|---|
+| total nodes | 1058 | 1058 | yes |
+| total edges | 2214 | 2214 | yes |
+| `imports` edges | 879 | 879 | yes |
+| `defines` edges | 867 | 867 | yes |
+| `calls` edges | 468 | 468 | yes |
+| imports edges to `tests/typing/*` | 70 | 70 | yes |
+| snapshot envelope sha256 | `c8808aef…` | `80021620…` | **no — envelope embeds a timestamp** |
+
+The two snapshots agree on every per-row count that matters. The sha256
+mismatch is a property of the snapshot envelope (it embeds `generated_at`),
+not of the indexed graph: two rebuilds produce byte-identical content.
+**F5 is reproducible at count granularity**, which is the granularity
+`-counts-diff` compares under.
+
+The formal `-verdict-diff` / `-counts-diff` exit-0 gates are NOT
+assertable from this measurement: `cmd/parity -family python` is rejected
+by `cmd/parity/main.go:79` (`-family must be "go" or "jvm"`). The
+substantive half of `-counts-diff` (every per-row count agrees) holds;
+the formal gate is unbound — same shape SW-176 AC-2 settled for the JVM
+matrix when the candidate had not moved.
+
+## Why G4 stays UNKNOWN — the binary verdict
+
+The SW-181 AC-9 rule is explicit: *"IF any measurement fails to support
+GA at `cross-file-heuristic`, THEN the honest outcome shall be published
+and Python shall be re-graded rather than declared."* The F5 measurement
+fails. The honest outcome is published here. **Python is RE-GRADED, not
+declared**, and the re-grade itself is filed as a separate product-byte
+change:
+
+> **PYTHONFANOUT-001** — Python's `clausePackageFileNodes` resolver fans
+> out over colliding directory clauses; SAME shape as PARITY-002
+> (Go pre-ADR-0009). The python resolver needs module-relative directory
+> lookup, the same fix ADR 0009 gave Go. OPEN, DISCLOSED, scheduled as a
+> separate product-byte change with its own ADR and candidate move. NOT
+> fixed in SW-192.
+
+The G4 evidence row stays **UNKNOWN** with the measurement file as
+`evidence_uri` and the measurement's sha256 as `sha` — the row carries
+the F5 finding's record, not a PASS that the finding contradicts.
+
+**The level printed beside GA stays `cross-file-heuristic` for now.** The
+re-grade that AC-9 names is the next story's responsibility: that story
+either closes the fan-out and keeps the level, or fails to close it and
+forces a down-grade. SW-192 records the measurement and lets the next
+story decide. Per AC-9, "re-graded, not declared" is what the user sees
+on the docs surfaces — the prose is unchanged, the level is what
+changes, and the change happens with the fix.
+
+## Pin discrepancy — manifest STALE, no silent re-pin
+
+`corpus/manifest.json` line 258 pins flask at
+`"sha": "735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b"`. That sha does not
+exist on `pallets/flask`:
+
+```
+$ git ls-remote https://github.com/pallets/flask.git refs/tags/3.0.0
+735a4701d6d5e848241e7d7535db898efb62d400	refs/tags/3.0.0
+```
+
+The real `3.0.0` tag is `735a4701d6d5e848241e7d7535db898efb62d400`;
+both SHAs share the 12-char prefix `735a4701d6d5` (which is what the
+pre-v3 12-char pin would have used). The manifest sha is a
+fabrication that survived the SW-181 v3 measured-standard uplift.
+
+**SW-192 AC-7 binds**: no silent re-pin. This measurement uses the real
+sha and marks the manifest entry **STALE**. The follow-on fix is a
+one-line manifest edit, owned by SW-181's correctness follow-on, not by
+SW-192.
+
+## What this measurement does and does not say
+
+**Says.** On the only python pin at the v3 measured standard, Python's
+package-import resolution does fan out over colliding directory clauses
+in the exact shape Go had before ADR 0009. The fan-out is reproducible
+across two rebuilds at per-row count granularity. Per SW-181 AC-9, Python
+is re-graded rather than declared.
+
+**Does not say.** Anything about the python parity matrix (the harness
+has no python family driver; the python parity classes YAML is a
+hermetic-fixture table only). Anything about other python pins (flask
+is the only one at v3). Anything about performance. Anything about the
+correctness of the edges beyond "they exist where nothing imports
+them". The fix direction (module-relative lookup, ADR 0009 shape) is
+named, not executed — that is PYTHONFANOUT-001.
+
+## Reproducing this measurement
+
+```bash
+# 1. Clone flask at the REAL 3.0.0 sha (the manifest's sha is STALE).
+mkdir -p /tmp/flask-test && cd /tmp/flask-test
+git clone --depth 1 --branch 3.0.0 https://github.com/pallets/flask.git flask-src
+cd flask-src && git log -1 --format="%H"
+# → 735a4701d6d5e848241e7d7535db898efb62d400
+
+# 2. Build the binary used in this measurement (HEAD 3f23901 at run time).
+cd /Users/redacted/dev/private/mcp_tools/workspace/graphi
+go build -o /tmp/graphi-f5 ./cmd/graphi
+
+# 3. Two rebuilds into separate workdirs.
+mkdir -p /var/tmp/parity-flask-A /var/tmp/parity-flask-B
+/tmp/graphi-f5 rebuild -root /tmp/flask-test/flask-src \
+                        -db /var/tmp/parity-flask-A/flask.db \
+                        -meta /var/tmp/parity-flask-A/flask-meta
+cd /tmp/flask-test/flask-src && /tmp/graphi-f5 snapshot flask-full
+
+/tmp/graphi-f5 rebuild -root /tmp/flask-test/flask-src \
+                        -db /var/tmp/parity-flask-B/flask.db \
+                        -meta /var/tmp/parity-flask-B/flask-meta
+cd /tmp/flask-test/flask-src && /tmp/graphi-f5 snapshot flask-full-rerun
+
+# 4. The F5 probe — should return 70 in both snapshots.
+SNAP_A=/var/tmp/graphi-<fingerprint>/snapshots/flask-full.sqlite
+sqlite3 "$SNAP_A" "SELECT COUNT(*) FROM edges WHERE kind='imports'
+                   AND to_id IN (SELECT id FROM nodes WHERE source_path LIKE 'tests/typing/%')"
+# → 70
+
+# 5. The fan-out reproducer (per importer + target):
+sqlite3 "$SNAP_A" <<'SQL'
+SELECT ef.source_path, et.source_path, et.qualified_name
+FROM edges e
+JOIN nodes ef ON ef.id = e.from_id
+JOIN nodes et ON et.id = e.to_id
+WHERE e.kind = 'imports' AND et.source_path LIKE 'tests/typing/%'
+ORDER BY ef.source_path, et.source_path;
+SQL
+# → 70 rows; every importer is src/flask/* or tests/typing/*.
+```
+
+---
+
+
 
 **Status: PUBLISHED PASS — 19 of 19 rows.** Two dispatches, `outcome PASS` and
 `publishable: true` in both, agreeing on **every verdict** (`-verdict-diff`
