@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "notes": "HISTORICAL compatibility ceilings copied from the cited retired-harness run. cmd/eval enforces them fail-closed when -budgets is supplied — historical does not mean disabled — but they are NOT comparable post-change ratchets and must not be read as ones. Replace them only from a new current-harness run on the reference runner class declared in docs/eval/reference-scenario.json, against the re-frozen candidate; never rewrite historical reports. SW-123 (P0-A4) added the explicit historical/ratcheting declaration below and REMOVED the all-zero hero latency map that used to sit in this file.",
+  "notes": "HISTORICAL compatibility ceilings copied from the cited retired-harness run. cmd/eval enforces them fail-closed when -budgets is supplied — historical does not mean disabled — but they are NOT comparable post-change ratchets and must not be read as ones. Replace them only from a new current-harness run on the reference runner class declared in docs/eval/reference-scenario.json, against the re-frozen candidate; never rewrite historical reports. SW-123 (P0-A4) added the explicit historical/ratcheting declaration below and REMOVED the all-zero hero latency map that used to sit in this file. SW-191 (EVALBUDGET-001 closure) added the `historical_ceilings` block: comparison-class ceilings derived from the SW-191 two-dispatch campaign over guava, okio, kotlinx.serialization (SW-177 JVM matrix), flask, ky, and express. cmd/eval/budgets.go:97 now accepts a historical budget on the comparison class `local-sandbox`, which is the only class this block is read from. Each `notes` field carries the EVALFRESH-001 freshness block per repo.",
   "runner_class": "ubuntu-latest",
   "historical": true,
   "ratcheting": false,
@@ -55,5 +55,93 @@
       }
     },
     "notes": "These values came from the previous harness and are retained only as fail-closed upper compatibility limits. In those reports impact was absent from the structural pool and peak_rss_mb was sampled immediately after IngestAll; the 11821 MB guava value therefore cannot be attributed to agent_brief or Stable cache reads. The current harness includes impact, degree-stratified sampling, semantic checks, and stable_peak_rss_mb after all Stable operations. Until a new green ubuntu-latest matrix run is pinned, current comparable latency/RSS baselines and the cause of the historical guava peak are UNKNOWN."
+  },
+  "historical_ceilings": {
+    "schema_version": 1,
+    "notes": "SW-191 (EVALBUDGET-001 closure). Comparison-class upper limits derived from the two-dispatch campaign over each pin; the worst per-dispatch value across both dispatches seeds `baseline`, and `budget` is a 2x-3x round-up to leave room for developer-machine variance and for the local-to-CI translation (the local-to-CI agent_brief ratio measured on Go pins is 0.61-0.81, so this block is NOT comparable post-change ratchets and must NOT be read as such — apply via the SW-191 historical branch in cmd/eval/budgets.go, never via the ratcheting one. EVALFRESH-001 freshness block per repo: the freshness/incremental suite is Go-only and aborts on every non-Go pin; this is documented per-repo below and is a known limitation, NOT a budget miss. The four perf suites listed per repo are cold_index, query_latency, incremental (Go-only) and progress_stalls; the python/ts/js pins publish three of four (incremental UNKNOWN, the others PASS).",
+    "selection": ["guava", "okio", "kotlinx_serialization", "flask", "ky", "express"],
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "recorded_from": {
+      "campaign": "SW-191 (EVALBUDGET-001 closure + perf re-run)",
+      "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+      "dispatches_per_repo": 2,
+      "dispatches_agree_at": "verdict+count per pin",
+      "jvm_source": "SW-177 (W1.d) JVM matrix — guava / okio / kotlinx.serialization over 3 dispatches",
+      "python_ts_source": "SW-191 — flask / ky / express over 2 dispatches",
+      "raw_dir": "docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/",
+      "raw_dir_jvm": "docs/eval/runs/2026-08-19-local-sandbox/jvm-perf/{guava,okio,kotlinx_serialization}/ (SW-177)",
+      "freshness_blocked_dir": "docs/eval/runs/2026-08-20-local-sandbox/freshness-blocked/",
+      "recorded_at": "2026-08-20"
+    },
+    "per_repo": {
+      "guava": {
+        "index_wallclock_ms": { "baseline": 6200, "budget": 15000 },
+        "peak_rss_mb": { "baseline": 2827, "budget": 4000 },
+        "db_size_mb": { "baseline": 42.18, "budget": 64 },
+        "warm_p95_us": {
+          "structural": { "baseline": 400, "budget": 800 },
+          "search": { "baseline": 700, "budget": 1500 },
+          "agent_tools": { "baseline": 425518, "budget": 600000 }
+        },
+        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (guava is java-only at the pinned sha). 3 of 4 suites is not 4."
+      },
+      "okio": {
+        "index_wallclock_ms": { "baseline": 631, "budget": 1500 },
+        "peak_rss_mb": { "baseline": 781, "budget": 1200 },
+        "db_size_mb": { "baseline": 3.58, "budget": 8 },
+        "warm_p95_us": {
+          "structural": { "baseline": 200, "budget": 500 },
+          "search": { "baseline": 400, "budget": 1000 },
+          "agent_tools": { "baseline": 44012, "budget": 80000 }
+        },
+        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (okio is kotlin-only at the pinned sha). 3 of 4 suites is not 4."
+      },
+      "kotlinx_serialization": {
+        "index_wallclock_ms": { "baseline": 1425, "budget": 3500 },
+        "peak_rss_mb": { "baseline": 1331, "budget": 2000 },
+        "db_size_mb": { "baseline": 5.43, "budget": 12 },
+        "warm_p95_us": {
+          "structural": { "baseline": 300, "budget": 800 },
+          "search": { "baseline": 600, "budget": 1500 },
+          "agent_tools": { "baseline": 51687, "budget": 100000 }
+        },
+        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (kotlinx.serialization is kotlin-only at the pinned sha). 3 of 4 suites is not 4."
+      },
+      "flask": {
+        "index_wallclock_ms": { "baseline": 814, "budget": 1500 },
+        "peak_rss_mb": { "baseline": 329, "budget": 600 },
+        "db_size_mb": { "baseline": 0.97, "budget": 2 },
+        "warm_p95_us": {
+          "structural": { "baseline": 439, "budget": 1000 },
+          "search": { "baseline": 1124, "budget": 3000 },
+          "agent_tools": { "baseline": 64168, "budget": 100000 }
+        },
+        "notes": "SW-191 first-time campaign over flask-3.0.0 @ 735a4701d6d5e848241e7d7535db898efb62d400. 2 dispatches (run-a/run-b) at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS, incremental UNKNOWN. Graph counts bit-identical (1058 nodes / 2214 edges / 106 files / 0.97 MiB DB). warm_p95_us.agent_tools varies 9049-64168 us between dispatches — single sample on a 33-sample pool, so the higher value is the honest ceiling. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (flask is python-only at the pinned sha). 3 of 4 suites is not 4. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/flask-report.json."
+      },
+      "ky": {
+        "index_wallclock_ms": { "baseline": 83, "budget": 250 },
+        "peak_rss_mb": { "baseline": 295, "budget": 500 },
+        "db_size_mb": { "baseline": 0.17, "budget": 1 },
+        "warm_p95_us": {
+          "structural": { "baseline": 82, "budget": 300 },
+          "search": { "baseline": 101, "budget": 500 },
+          "agent_tools": { "baseline": 950, "budget": 2000 }
+        },
+        "notes": "SW-191 first-time campaign over ky-v1.2.0 @ 38ac18bc1ac3268130de766891ce9b718eb8145a. 2 dispatches at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS, incremental UNKNOWN. Graph counts bit-identical (182 nodes / 157 edges / 37 files / 0.17 MiB DB). Numbers agree within rounding across dispatches (wallclock_ms 83/83, peak_rss_mb 295/294). EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (ky is typescript-only at the pinned sha; the change sequence can't mutate .ts files because mechanism 2/3 are still Go-only). 3 of 4 suites is not 4. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/ky-report.json."
+      },
+      "express": {
+        "index_wallclock_ms": { "baseline": 638, "budget": 1500 },
+        "peak_rss_mb": { "baseline": 743, "budget": 1500 },
+        "db_size_mb": { "baseline": 0.5, "budget": 2 },
+        "warm_p95_us": {
+          "structural": { "baseline": 95, "budget": 500 },
+          "search": { "baseline": 271, "budget": 1000 },
+          "agent_tools": { "baseline": 3955, "budget": 10000 }
+        },
+        "notes": "SW-191 first-time campaign over express-4.18.2 @ 8368dc178af16b91b576c4c1d135f701a0007e5d. 2 dispatches at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS, incremental UNKNOWN. Graph counts bit-identical (877 nodes / 711 edges / 172 files / 0.50 MiB DB). warm_p95_us.agent_tools 3929-3955 us — agrees within rounding across dispatches. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (express is javascript-only at the pinned sha; the change sequence can't mutate .js files because mechanism 2/3 are still Go-only). 3 of 4 suites is not 4. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/express-report.json."
+      }
+    }
   }
 }

@@ -255,7 +255,7 @@
    "name": "flask",
    "url": "https://github.com/pallets/flask",
    "ref": "3.0.0",
-   "sha": "735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b",
+   "sha": "735a4701d6d5e848241e7d7535db898efb62d400",
    "tier": 3,
    "language": "python",
    "license": "BSD-3-Clause",
@@ -263,8 +263,8 @@
    "measured": {
     "source_files": 78,
     "tracked_files": 102,
-    "measured_at": "2026-08-19",
-    "method": "git clone --depth 1 --branch 3.0.0; git ls-files '*.py' | wc -l (78) and git ls-files | wc -l (102) at the pinned sha 735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b. .ipynb files counted in tracked_files but not source_files (notebooks are CLAS lab material in this pin)."
+    "measured_at": "2026-08-20",
+    "method": "git clone --depth 1 --branch 3.0.0; git ls-files '*.py' | wc -l (78) and git ls-files | wc -l (102) at the pinned sha 735a4701d6d5e848241e7d7535db898efb62d400. .ipynb files counted in tracked_files but not source_files (notebooks are CLAS lab material in this pin). SW-191 re-pinned: the prior 735a4701d6d56f3... sha did not match the actual tag 3.0.0 HEAD (735a4701d6d5e8482...) — verified 2026-08-20 via a fresh clone."
    },
    "searches": [
     {

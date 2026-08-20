@@ -98,8 +98,27 @@ func evaluateFullRunBudgets(manifest fullBudgetManifest, runnerClass string, run
 	if err := validateBudgetDeclaration(manifest); err != nil {
 		return nil, err
 	}
-	if manifest.RunnerClass == "" || runnerClass != manifest.RunnerClass {
+	// SW-191 (EVALBUDGET-001 closure): the comparison class
+	// (`local-sandbox`) is now an ACCEPTED budget source IF AND ONLY IF the
+	// budget is declared historical (non-ratcheting) — historical ceilings
+	// are an upper compatibility limit recorded on whatever runner class the
+	// author had, NOT a ratchet that pins a measurement to the reference
+	// class. Accepting `local-sandbox` for a ratcheting budget would let
+	// developer-machine numbers silently become the reference-class ceiling,
+	// which is the whole defect the gate exists to prevent.
+	if manifest.RunnerClass == "" {
+		return nil, fmt.Errorf("budget manifest declares no runner_class; SW-191 requires an explicit reference-class runner_class")
+	}
+	switch runnerClass {
+	case manifest.RunnerClass, "local-sandbox":
+		// accepted: exact reference-class match OR a historical ceiling
+		// recorded on the declared runner, applied for comparison on a
+		// developer machine.
+	default:
 		return nil, fmt.Errorf("runner class %q does not match budget runner %q", runnerClass, manifest.RunnerClass)
+	}
+	if runnerClass == "local-sandbox" && !manifest.Historical {
+		return nil, fmt.Errorf("runner class %q is the comparison class; a comparison-class budget must declare historical=true (non-ratcheting) so developer-machine numbers cannot silently become a reference-class ceiling", runnerClass)
 	}
 	if !slices.Contains(manifest.RealRepos.Selection, run.Name) {
 		return nil, fmt.Errorf("repo %q is not in budget selection", run.Name)
