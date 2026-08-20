@@ -26,16 +26,28 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 
 | Language | Tier | Capability level ³ | Symbol nodes | Intra-file edges | Cross-file/package edges |
 |---|---|---|---|---|---|
-| **Go** | **GA** | `typed-confirmed` | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) + `confirmed`-tier go/types edges ¹ |
-| JSON | Preview | `parse-only` | structural (AST) | — | — |
-| **TypeScript · TSX/JSX · JavaScript** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
+| **Go** | **GA (typed-confirmed)** | `typed-confirmed` | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) + `confirmed`-tier go/types edges ¹ |
 | **Python** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **but see open defect LINK-004** ⁵ |
-| Ruby · PHP · Lua | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| Java · Kotlin · C# | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| C · C++ · Rust | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| Bash/Shell | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
-| SQL | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `references` **same-directory only** (`derived` tier) — no `imports` edge, no cross-directory resolution ⁴ |
-| CSS · YAML · TOML · Markdown · HCL/Terraform | Preview | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **TypeScript** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
+| **TSX** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
+| **JavaScript** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
+| **Bash/Shell** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
+| **C** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **C++** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Java** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
+| **Kotlin** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
+| **C#** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Ruby** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **PHP** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Lua** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Rust** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
+| **SQL** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `references` **same-directory only** (`derived` tier) — no `imports` edge, no cross-directory resolution ⁴ |
+| **CSS** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **YAML** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **TOML** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **Markdown** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **HCL/Terraform** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **JSON** | **GA (parse-only)** ⁷ | `parse-only` | structural (AST) | — | — |
 | HTML | Source-only | — (not registered) | ✖ not shipped — grammar exists upstream but is not subset-buildable in isolation (see below) | — | — |
 
 > ³ **Capability level** is the machine-readable grade the P1 trust surface reports per
@@ -98,6 +110,38 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > every committed `.go` source sibling in the package instead of on the single
 > import-named file). The control test pinning this is
 > `engine/link/resolve_typescript_test.go::TestTSLink_NoDirectoryFanOut` (SW-182 AC-4).
+>
+> ⁷ **Capability-audit row attestation (F5-surface, this commit).** Every GA row in the
+> table above binds to a numbered row in
+> [`rc/capability-audit-2026-08-19.md`](rc/capability-audit-2026-08-19.md) (pinned at
+> sha `deecee9e3a51707aa2d198abf91dc0b0a01573e6`, the audit record's own commit):
+>
+> | Row | Language | Audit row |
+> |---|---|---|
+> | 2 | Bash/Shell | row 2 |
+> | 3 | C | row 3 |
+> | 4 | Java | row 4 |
+> | 5 | C++ | row 5 |
+> | 6 | Kotlin | row 6 |
+> | 8 | C# | row 8 |
+> | 9 | Ruby | row 9 |
+> | 10 | PHP | row 10 |
+> | 12 | Lua | row 12 |
+> | 13 | Rust | row 13 |
+> | 14 | SQL | row 14 |
+> | 17 | CSS | row 17 |
+> | 18 | YAML | row 18 |
+> | 19 | TOML | row 19 |
+> | 20 | Markdown | row 20 |
+> | 21 | HCL/Terraform | row 21 |
+> | 22 | JSON | row 22 |
+>
+> The Go row (1) is the canonical typed-confirmed attestation that predates the
+> 2026-08-19 audit and is not in the table; the Python row (11) is row 11 with the
+> LINK-004 annotation already in footnote ⁵; the TypeScript / TSX / JavaScript rows
+> (15 / 16 / 7) are bound to footnote ⁶. **The level printed beside the word GA is the
+> same word the audit row asserts — never GA alone — and the audit's sha is the
+> cite.**
 
 ## How cross-file resolution actually works, language by language
 
