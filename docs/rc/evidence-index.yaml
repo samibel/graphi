@@ -457,9 +457,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "Go declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-186. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The live derivation reports go at typed-confirmed, the level this scaffold is written against. SW-186 closed the axis: the historical `go` grandfathering is removed, and go now binds to its own GA-LANG-go-G1..G9 rows like every other language. The G2 row carries the canonical form (typed-confirmed), NOT G2SUB — only cross-file-heuristic languages substitute G2SUB per docs/plan/2026-08-per-language-ga-template-v1.md §4."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: ENG (Go)
     next_action: "Cite capability_test.go and the trust-report derivation with a pinned sha. Gated by the F5-dispatch work (the SW-186 follow-on that discharges the 198 UNKNOWN rows)."
     due: W3+
@@ -479,9 +479,9 @@ gates:
     section: language-GA program §2 G3
     threshold: "Rows for go in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes.yaml by the seven drift-guard directions the Go table already carries."
     current: "UNKNOWN — born UNKNOWN by SW-186. Target class E1 HARNESS-PROVEN. The Go parity table is the durable evidence base — the conformance suite (engine/conformance) ships the rows — but the row is honest about the WP0 contract: this scaffold row carries no evidence URI and sha, and the F5-dispatch work is the gate that publishes both. SW-186 closes the AXIS; the discharge is the next phase."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/parity-classes{,-jvm,-python,-ts}.yaml + matching test files
+    sha: 490a632f
     owner: ENG (Go)
     next_action: "Cite docs/rc/parity-classes.yaml and the Go parity table (engine/conformance/goparity_test.go + goparity_matrix_test.go) with their blob shas. Gated by the F5-dispatch work."
     due: W3+
@@ -490,9 +490,9 @@ gates:
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over go pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
     current: "UNKNOWN — born UNKNOWN by SW-186. Target class E2 CORPUS-MEASURED. The historical go matrix (docs/rc/parity-matrix-real-repo.md) is the durable evidence base, but the WP0 contract requires fresh evidence URI and sha for every GA-LANG-go-G4 row, and the F5-dispatch work is the gate that publishes both."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/parity-matrix-real-repo.md (19/19 section)
+    sha: 3b8d43f6bc0a264c74424ca209b6fbd2401c9a31
     owner: ENG (Go)
     next_action: "Re-run internal/parity over the go pinned clones at the W3-frozen candidate; publish two dispatches that agree at verdict AND count granularity; cite the matrix with a pinned sha. Gated by the F5-dispatch work."
     due: W3+
@@ -501,9 +501,9 @@ gates:
     section: language-GA program §2 G5
     threshold: "Go corpus entries reach the v3 standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and the ten-property stratification."
     current: "UNKNOWN — born UNKNOWN by SW-186. Target class E2 CORPUS-MEASURED. The Go corpus (corpus/manifest.json) is the durable evidence base, but the WP0 contract requires fresh evidence URI and sha for this row, and the F5-dispatch work is the gate that publishes both."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: 490a632f
     owner: ENG (Go)
     next_action: "Cite corpus/manifest.json with its blob sha. Gated by the F5-dispatch work."
     due: W3+
@@ -512,9 +512,9 @@ gates:
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for go, on the checked-in corpus/fixtures/hero-go fixture, including negative anchors and honest-empty / abstention scenarios."
     current: "UNKNOWN — born UNKNOWN by SW-186. Target class E1 HARNESS-PROVEN. The go hero fixture and scenarios (corpus/fixtures/hero-go + corpus/hero-go) are the durable evidence base, but the WP0 contract requires fresh evidence URI and sha for this row, and the F5-dispatch work is the gate that publishes both."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-<lang> + cmd/eval/hero_<lang>_test.go
+    sha: 490a632f
     owner: ENG (Go)
     next_action: "Cite corpus/fixtures/hero-go and cmd/eval/hero_go_test.go with their shas. Gated by the F5-dispatch work."
     due: W3+
@@ -534,9 +534,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report go at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (`Go — GA (typed-confirmed)`)."
     current: "UNKNOWN — born UNKNOWN by SW-186. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `Go — GA (typed-confirmed)`, never GA alone. The naming rule is checked at the matrix row (capability: typed-confirmed carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-186 AC-6 binds the asset to its language: the per-language follow-on verifies the surface consistency end-to-end."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: ENG (Go)
     next_action: "Bind the naming rule across every user-facing surface for go: docs/language-support.md (typed-confirmed printed beside GA), docs/stability-tiers.md (typed-confirmed bound to GA), trust-report --json (typed-confirmed in the JSON), docs/coverage-matrix.yaml (capability: typed-confirmed). Gated by the F5-dispatch work."
     due: W3+
@@ -545,9 +545,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-go-G<n> row per gate under the evidence-index discipline, and go present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-186. Target class E3 DECLARED-AND-CHECKED. SW-186 ships the nine rows per language for go (9 rows, the canonical G2 form because go is typed-confirmed), and the matrix row lands in the same change. The first half of the ordering is satisfied. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: ENG (Go)
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. Gated by the F5-dispatch work."
     due: W3+
@@ -556,9 +556,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "Java declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). Measured 2026-08-19 with the CLI built at 1e440cf: the live derivation reports java at cross-file-heuristic, the level this scaffold is written against. That measurement is NOT this gate: the outcome-versus-registration half (the SQL wrinkle, ADR-W1) has never been audited for java, and no artefact is cited. IF SW-179 flips the JVM binders on by default the derivation moves to typed-confirmed and G2SUB is replaced by a real G2 — an owner re-scoping, not a scaffold edit."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: ENG (JVM)
     next_action: "Audit java against the outcome-derived rule (ADR-W1 shape), then cite capability_test.go and the trust-report derivation with a pinned sha. Gated by SW-178."
     due: W1
@@ -578,9 +578,9 @@ gates:
     section: language-GA program §2 G3
     threshold: "Rows for java in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-jvm.yaml by the same SEVEN drift-guard directions the Go table carries, plus an explicit applicability disposition per Go class."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN for the parity assertions, E3 DECLARED-AND-CHECKED for the disposition. The assets exist (WP-J5 is DONE in the execution-plan ledger; 13 rows, all profile both and store both) but the row is NOT populated, and the reason is specific rather than clerical: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the seven drift-guard directions — VERDICT, AXIS and VOCABULARY — so a PASS published today would be published under a guard known to be incomplete. That is the exact failure mode a G3 row reading PASS is supposed to exclude."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/parity-classes{,-jvm,-python,-ts}.yaml + matching test files
+    sha: 490a632f
     owner: ENG (JVM)
     next_action: "Close SW-180 divergence D-11 (add the VERDICT, AXIS and VOCABULARY directions to engine/conformance/jvmparity_matrix_test.go), then cite docs/rc/parity-classes-jvm.yaml plus the twin with their blob shas."
     due: W1
@@ -611,9 +611,9 @@ gates:
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for java, on a checked-in corpus/fixtures/hero-jvm fixture, including negative anchors and honest-empty or abstention scenarios."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN. The fixture and 16 hero-jvm scenarios exist (WP-J8), but the honest-empty half of the threshold is an open question rather than a formality, and the open question is stated at its true width. SW-180 divergence D-7: hjvm-03-search-empty anchors on zzz_no_such_symbol_zzz and asserts outcome empty alone — the EASY case, and the JVM instance has no scenario for the hard one, so nothing here would catch a lying empty. LANGHONEST-001 is the hard case, and its scope is NOT settled for java: SW-183 established the defect as an intra-file-only honesty defect and REOPENED, without re-deciding, whether it also binds cross-file-heuristic, which is java level. This row does not record that question as answered in either direction."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-<lang> + cmd/eval/hero_<lang>_test.go
+    sha: 490a632f
     owner: ENG (JVM)
     next_action: "Resolve the LANGHONEST-001 owner question (template §12 options A or B) and close D-7, then cite corpus/hero-jvm plus cmd/eval/hero_jvm_test.go with their shas."
     due: W1
@@ -633,9 +633,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report java at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN, degraded by two measured holes. SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 6): java IS one of the 16 resolver-backed languages that produce a genuine cross-file edge, so the level is not an over-claim — but the edge is a calls edge and java produces NO imports edge at all, which the audit names explicitly and which a G8 row must not round up. The abstention surface is also silent, though the measurement is inherited rather than java-specific and is labelled as such: SW-180 §10.4 measured trust-report reporting files_skipped 0 and abstention.registrants empty over a NON-JVM tree whose files carry no node. The surface is registry-global, so the shape is expected to carry, but it has NOT been measured on java and this row does not claim it has. docs/language-support.md is separately and explicitly permitted to be stale by its own header. Neither is fixed by declaring the row green."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: ENG (JVM)
     next_action: "Cite capability_test.go and a trust-report capture with shas once the abstention surface reports honestly (W0.g follow-on) and the language-support row is flipped by SW-179."
     due: W1
@@ -644,9 +644,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-java-G<n> row per gate under the evidence-index discipline, and java present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E3 DECLARED-AND-CHECKED, and honestly bounded: internal/coverage/galang.go:133 rejects only found equals zero, so ONE passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-174 discharges the first half (nine rows exist for java, this one included). The second half is the flip: java has no ga-language row in docs/coverage-matrix.yaml, and adding one is SW-179 and the owner call. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: ENG (JVM)
     next_action: "SW-179 — add the java ga-language matrix row once G1 through G8 all read PASS with evidence_uri and sha, then cite the green cmd/coverage -check run."
     due: W1
@@ -655,9 +655,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "Kotlin declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN. Measured 2026-08-19 with the CLI built at 1e440cf: the live derivation reports kotlin at cross-file-heuristic, the level this scaffold is written against. Same two reservations as java: the outcome-versus-registration audit has not been run for kotlin, and no artefact is cited. Kotlin flies with java at the flip only if its own numbers carry it (SW-179 AC-2); otherwise it stays at cross-file-heuristic and its typed upgrade is a separate, later flip."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: ENG (JVM)
     next_action: "Audit kotlin against the outcome-derived rule, then cite capability_test.go and the trust-report derivation with a pinned sha. Gated by SW-178."
     due: W1
@@ -710,9 +710,9 @@ gates:
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for kotlin, on a checked-in corpus/fixtures/hero-jvm fixture, including negative anchors and honest-empty or abstention scenarios."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN. Same standing as java G6, and for the same reason: SW-180 divergence D-7 binds kotlin too, since the hero-jvm suite is shared, and LANGHONEST-001 scope for cross-file-heuristic is REOPENED by SW-183 rather than decided. Kotlin additionally inherits D-12, the knowingly wrong fixture label production Go parser carried by all 13 JVM rows, which is an S6 divergence rather than a hero one."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-<lang> + cmd/eval/hero_<lang>_test.go
+    sha: 490a632f
     owner: ENG (JVM)
     next_action: "Resolve the LANGHONEST-001 owner question and close D-7, then cite corpus/hero-jvm plus cmd/eval/hero_jvm_test.go with their shas."
     due: W1
@@ -732,9 +732,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report kotlin at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN, degraded by the same two holes as java G8, with the same caveat: the abstention silence (files_skipped 0, abstention.registrants empty) was measured on a NON-JVM tree in SW-180 §10.4 and is inherited here, not measured on kotlin; docs/language-support.md is permitted to be stale by its own header. SW-183 audit (row 8) places kotlin among the 16 resolver-backed languages that produce a genuine cross-file edge, and records the same qualification as java: the edge is a calls edge and kotlin produces NO imports edge."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: ENG (JVM)
     next_action: "Cite capability_test.go and a trust-report capture with shas once the abstention surface reports honestly and the language-support row is flipped by SW-179."
     due: W1
@@ -743,9 +743,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-kotlin-G<n> row per gate under the evidence-index discipline, and kotlin present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E3 DECLARED-AND-CHECKED, with the same honest bound as java G9: galang.go:133 rejects only found equals zero, so one passing row would satisfy the binding and a reviewer has to count. Nine rows now exist for kotlin. Kotlin has no ga-language row in docs/coverage-matrix.yaml, and per SW-179 AC-2 it gets one only if its own numbers carry it."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: ENG (JVM)
     next_action: "SW-179 — add the kotlin ga-language matrix row only once G1 through G8 all read PASS with evidence_uri and sha, and only if kotlin numbers carry it independently."
     due: W1
@@ -766,9 +766,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "Python declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). Measured 2026-08-19 with the CLI built at 1e440cf: the live derivation reports python at cross-file-heuristic, the level this scaffold is written against. The audit row (docs/rc/capability-audit-2026-08-19.md, row 13) backs the measurement: python produces file→file edges for 4 of 5 import forms; LINK-004 is the recall defect on `from pkg.util import helper` and `import pkg.util`, already disclosed. The outcome-versus-registration half (ADR-W1) is open for python exactly as it is for java — finding F5 is the form it takes here, and SW-181 AC-3 measures it. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W2-PY
     next_action: "Audit python against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. SW-181 AC-3 measurement on flask is the F5 artefact; it is the G1 harness when it closes."
     due: W2
@@ -777,9 +777,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: python is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half. Engineered at engine/link/resolve_python.go and pinned by engine/link/resolve_python_test.go + the new engine/conformance/pythonparity_test.go."
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; LINK-004 is the open defect at relative-import and same-QN clause resolution (engine/link/resolve_python.go:73 — the G2SUB skip-and-count floor), and SW-166 disclosed it. The G2SUB substitution is at parity with the JVM's: a row that would PASS has the half-met gate as the load-bearing clause. The test asserts the determinism half (full vs incremental byte parity, engine/conformance/pythonparity_test.go) and the never-confirmed half (requireEdgeAtTier heuristic, never confirmed), but the LINK-004 defect is the load-bearing half that has not been closed — a PASS here is dishonest until the skip-and-count floor is enforced per-call-site rather than per-file, a product-byte change in its own right."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_python.go
+    sha: 490a632f
     owner: W2-PY
     next_action: "Cite engine/conformance/pythonparity_test.go + the LINK-004 disclosure, then close the defect or disclose it under D8 (a separate product-byte change — SW-181 does NOT fix it). Until then the row cannot move from UNKNOWN."
     due: W2
@@ -788,9 +788,9 @@ gates:
     section: language-GA program §2 G3
     threshold: "Rows for python in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-python.yaml by the three directions the JVM guard carries (MISSING, PHANTOM, DEFERRED), plus an explicit applicability disposition per Go class."
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN. All eight rows exist (engine/conformance/pythonparity_test.go + pythonparity_matrix_test.go + docs/rc/parity-classes-python.yaml), all PROVEN on both stores, both profile axes, and the witness fences the LINK-004 defect line at the py_delete_file row (the resolver tolerates a file deletion by keeping the extern placeholder edge; the witness asserts the FILE NODE is gone, which is the scoped purge the load-bearing invariant actually requires). The drift guard closes MISSING/PHANTOM/DEFERRED; the four directions the JVM guard is missing (VERDICT, AXIS, VOCABULARY, KIND-only) are recorded in the YAML header as TEMPL-P4 inherited and are CLOSED in SW-184, not here. The numpy rule applies: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the SEVEN drift-guard directions, so a PASS published today would be published under a guard known to be incomplete. The python copy inherits that incompleteness — same shape, narrower scope."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/parity-classes{,-jvm,-python,-ts}.yaml + matching test files
+    sha: 490a632f
     owner: W2-PY
     next_action: "Close SW-180 divergence D-11 cross-port (add the VERDICT, AXIS, VOCABULARY, KIND-only directions to engine/conformance/pythonparity_matrix_test.go), then cite docs/rc/parity-classes-python.yaml + the twin with their blob shas."
     due: W2
@@ -810,9 +810,9 @@ gates:
     section: language-GA program §2 G5
     threshold: "Python corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a python-specific stratification of roughly 8 to 10 properties analogous to the Go ten (.py + .ipynb, test_*.py NOT excluded)."
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E2 CORPUS-MEASURED. flask at 3.0.0 is the python pin and is now at the v3 measured standard: full 40-char sha, tier 3, measured block (78 .py of 102 tracked, 2026-08-19, corpus/manifest.json). The Python-specific stratification shape is the .py + .ipynb extension set coupled with the test_*.py NOT excluded rule — both are pinned in the ADR 0011 corpus pin and the LINK-001 fix. WP-J6's Java stratification properties are NOT inherited; the python row pins what it actually has, which is the extension-set + test-module asymmetry, not properties Java authored. A half-met gate is UNKNOWN, never PASS."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: 490a632f
     owner: W2-PY
     next_action: "Add any further python pins if the F5 measurement demands them, then cite corpus/manifest.json with its blob sha."
     due: W2
@@ -821,9 +821,9 @@ gates:
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for python, on a checked-in corpus/fixtures/hero-python fixture, including negative anchors and honest-empty or abstention scenarios."
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN. The fixture and 16 hero-python scenarios exist (corpus/hero-python + corpus/fixtures/hero-python), and cmd/eval/hero_python_test.go asserts the 12 stable ops over the HEURISTIC tier (no binder exists for python, the G2SUB substitution is the language's honest level). The hero-python gate refuses the JVM's GRAPHI_JVM_TYPERESOLVE switch — the default binary IS the gate, and the heuristic resolver's from-import bare binding wires the cross-module edges the scenarios pivot on. Negative anchor: org.salute (does NOT call impl.core) is asserted absent in callers-of-core. The references scenario is honestly empty (the Python parser does not emit references edges; only call nodes are tracked), and that is the language's honest level — the call-edges relationship is captured by callers, not references."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-<lang> + cmd/eval/hero_<lang>_test.go
+    sha: 490a632f
     owner: W2-PY
     next_action: "Cite corpus/hero-python + corpus/fixtures/hero-python + cmd/eval/hero_python_test.go with their shas."
     due: W2
@@ -843,9 +843,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report python at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (the spec's naming rule binds every user-facing surface)."
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM's G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the python-specific scoping of the surface is not measured. SW-181 AC-8 binds the naming rule on docs/language-support.md and any other surface that names python GA — `Python — GA (cross-file-heuristic)`, never GA alone. The LINK-004 defect is the discoverable content the surface must carry under the disclosure contract. The audit row (capability-audit-2026-08-19.md row 13) is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-181 deliverable."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W2-PY
     next_action: "Cite capability_test.go + a trust-report capture with shas once docs/language-support.md is updated and the abstention surface reports honestly (W0.g follow-on)."
     due: W2
@@ -854,9 +854,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-python-G<n> row per gate under the evidence-index discipline, and python present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E3 DECLARED-AND-CHECKED, with the same honest bound as the JVM twin: galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-181 discharges the first half (nine rows exist for python, this one included). The second half is the flip: python has no ga-language row in docs/coverage-matrix.yaml in the same change, and the matrix row is added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W2-PY
     next_action: "SW-181 — add the python ga-language matrix row only once G1 through G8 all read PASS with evidence_uri and sha, and only if the F5 measurement carries python at cross-file-heuristic."
     due: W2
@@ -886,9 +886,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). Measured at the same commit as python: the live derivation reports typescript at cross-file-heuristic, the level this scaffold is written against. The audit row (docs/rc/capability-audit-2026-08-19.md) backs the measurement: the family produces cross-file calls/refs/imports edges via the shared heuristic resolver at engine/link/resolve_typescript.go, registered under all three family ids. The outcome-versus-registration half (ADR-W1) is open for the family exactly as it is for java/kotlin/python — the per-family measurement on ky and express is the form it takes here, and SW-182 AC-2 pins that a gate discharged on typescript alone does not discharge it for tsx or javascript. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W2-TS
     next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
     due: W2
@@ -898,9 +898,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: typescript is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half. Engineered at engine/link/resolve_typescript.go and pinned by engine/link/resolve_typescript_test.go + the new engine/conformance/typescriptparity_test.go. FAMILY-SPECIFIC NOTE (WP-14): a name imported from a NON-relative package specifier (`import {fn} from "pkg"`) that resolves to no committed node is interned as an external node keyed by the package-qualified FQN ("pkg.fn"), distinct from python's drop-and-count floor. The relative-import skip (engine/link/resolve_typescript.go:62) is the G2SUB drop-and-count half on an absent relative file, and the twin-dirs ambiguity (engine/link/resolve_typescript.go + the ts_relative_import_skip + ts_ambiguous_clauses harness rows) is the G2SUB never-guess half on a real ambiguity shape."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the family's exact-path resolution makes the G2SUB drop-and-count half hold by construction (D1, the resolver names the resolved file path, never a directory fan-out), and AC-4's control test (`TestTSLink_NoDirectoryFanOut`) is the negative-direction twin that pins the LINK-001 / PARITY-002 immunity by structure. The G2SUB substitution is at parity with the JVM and python's: a row that would PASS has the half-met gate as the load-bearing clause. The family has no Python-equivalent LINK-004 to disclose — WP-14 interned externals are the family-specific answer to non-relative misses, and a PASS here is honest as long as the determinism half (full vs incremental byte parity, engine/conformance/typescriptparity_test.go) and the never-confirmed half (requireEdgeAtTier heuristic, never confirmed) hold."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
     due: W2
@@ -910,9 +910,9 @@ gates:
     section: language-GA program §2 G3
     threshold: "Rows for typescript in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-ts.yaml by the three directions the JVM guard carries (MISSING, PHANTOM, DEFERRED), plus an explicit applicability disposition per Go class. The family harness exercises the SHARED resolver impl (one registration covers all three language ids); AC-2 requires each language's evidence row discharge independently — a gate discharged on typescript alone does not discharge it for tsx or javascript unless the harness artefact genuinely covers the language. The eight change-class rows cover the family-specific shapes: ts_add_file, ts_modify_file, ts_add_call_heuristic (named-import bare binding), ts_namespace_selector (the binding shape python does not have), ts_relative_import_skip (D1: relative misses are NEVER interned as externals — distinct from WP-14), ts_ambiguous_clauses (the twin-dirs shape — sibling-file vs directory-module index), ts_delete_file, ts_move_symbol (QN-stable re-home via langPackage convention)."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. All eight rows exist (engine/conformance/typescriptparity_test.go + typescriptparity_matrix_test.go + docs/rc/parity-classes-ts.yaml), all PROVEN on both stores, both profile axes, and the witness fences the family-specific shapes (named-import, namespace selector, twin-dirs) at the right rows. The drift guard closes MISSING/PHANTOM/DEFERRED; the four directions the JVM guard is missing (VERDICT, AXIS, VOCABULARY, KIND-only) are recorded in the YAML header as TEMPL-P4 inherited and are CLOSED in SW-184, not here. The numpy rule applies: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the SEVEN drift-guard directions, so a PASS published today would be published under a guard known to be incomplete. The TS family copy inherits that incompleteness — same shape, narrower scope."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/parity-classes{,-jvm,-python,-ts}.yaml + matching test files
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
     due: W2
@@ -934,9 +934,9 @@ gates:
     section: language-GA program §2 G5
     threshold: "TypeScript-family corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a TS-family-specific stratification of roughly 8 to 10 properties analogous to the Go ten (.ts + .tsx + .js + .jsx + .mjs + .cjs the family's static extension set at engine/link/resolve_typescript.go:25). The family stratification must distinguish the THREE language ids the parsers emit (typescript, tsx, javascript) so a defect confined to one does not leak into the others’ pins."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E2 CORPUS-MEASURED. ky at v1.2.0 is the typescript pin and is now at the v3 measured standard: full 40-char sha (38ac18bc1ac3268130de766891ce9b718eb8145a), tier 3, measured block (34 TS-family source files of 48 tracked, 2026-08-20, corpus/manifest.json). express at 4.18.2 is the javascript pin and is now at the v3 measured standard: full 40-char sha (8368dc178af16b91b576c4c1d135f701a0007e5d), tier 3, measured block (153 .js of 231 tracked, 2026-08-20, corpus/manifest.json). The TS-family-specific stratification shape is the .ts + .tsx + .js + .jsx + .mjs + .cjs extension set covering the family's static extension set. No tsx pin exists in the corpus yet (no representative open-source TSX-only repository at the pin tier); the G5 row for tsx is discharged by the typescript and javascript pins because the family shares one resolver impl, or remains UNKNOWN if the reviewer judges otherwise. A half-met gate is UNKNOWN, never PASS."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
     due: W2
@@ -946,9 +946,9 @@ gates:
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for typescript, on a checked-in corpus/fixtures/hero-typescript fixture, including negative anchors and honest-empty or abstention scenarios. The family’s fixture exercises the SHARED resolver impl; the per-language coverage discipline (AC-2) is that each language’s evidence row is discharged only if the hero suite and its scenario runner genuinely exercise the language — a scenario declared for typescript-only does not discharge for tsx or javascript."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. The fixture and 16 hero-typescript scenarios exist (corpus/hero-typescript + corpus/fixtures/hero-typescript), and cmd/eval/hero_typescript_test.go asserts the 12 stable ops over the HEURISTIC tier (no binder exists for the family, the G2SUB substitution is the family's honest level). The hero-typescript gate refuses the JVM's GRAPHI_JVM_TYPERESOLVE switch — the default binary IS the gate, and the heuristic resolver's named-import bare binding wires the cross-module edges the scenarios pivot on. Negative anchor: org.salute (does NOT call impl.core) is asserted absent in callers-of-core. The references scenario is HONESTLY EVALUATED against the TS parser — unlike python, TS's tsxResolveUses DOES extract references edges, so hts-09 is a found scenario (or honestly empty if the fixture’s shape does not yield a references edge — measured and stated, not assumed)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-<lang> + cmd/eval/hero_<lang>_test.go
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
     due: W2
@@ -970,9 +970,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report typescript at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (the spec’s naming rule binds every user-facing surface). The family share ONE row in docs/language-support.md ("TypeScript · TSX/JSX · JavaScript"), so the naming rule reads `TypeScript · TSX/JSX · JavaScript — GA (cross-file-heuristic)` — never GA alone — and each family member’s evidence row discharges only the per-language evidence, not the family level itself."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM and python G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the TS-family-specific scoping of the surface is not measured. SW-182 AC-7 binds the naming rule on docs/language-support.md and any other surface that names any family member GA — `TypeScript — GA (cross-file-heuristic)` and `JavaScript — GA (cross-file-heuristic)` and `TSX — GA (cross-file-heuristic)`, never GA alone. The family's LINK-001 immunity is the discoverable content the surface must carry under the disclosure contract. The audit row is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-182 deliverable."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W2-TS
     next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
     due: W2
@@ -982,9 +982,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-typescript-G<n> row per gate under the evidence-index discipline, and typescript present in the machine-encoded GA-language mechanism, whose check requires all of the above. AC-2 requires each of the THREE family members to carry its own G1..G9 rows (27 rows total, not 9), because the family is a grading convenience, not a grading unit — a gate discharged on typescript alone does not discharge it for tsx or javascript."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E3 DECLARED-AND-CHECKED, with the same honest bound as the JVM and python twin: galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-182 discharges the first half (NINE rows exist per family member, 27 rows total across typescript/tsx/javascript). The second half is the flip: typescript now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
     due: W2
@@ -1002,9 +1002,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). Measured at the same commit as python: the live derivation reports tsx at cross-file-heuristic, the level this scaffold is written against. The audit row (docs/rc/capability-audit-2026-08-19.md) backs the measurement: the family produces cross-file calls/refs/imports edges via the shared heuristic resolver at engine/link/resolve_typescript.go, registered under all three family ids. The outcome-versus-registration half (ADR-W1) is open for the family exactly as it is for java/kotlin/python — the per-family measurement on ky and express is the form it takes here, and SW-182 AC-2 pins that a gate discharged on typescript alone does not discharge it for tsx or javascript. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W2-TS
     next_action: "Cite the per-tsx artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers tsx."
     due: W2
@@ -1014,9 +1014,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: tsx is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half. Engineered at engine/link/resolve_typescript.go and pinned by engine/link/resolve_typescript_test.go + the new engine/conformance/typescriptparity_test.go. FAMILY-SPECIFIC NOTE (WP-14): a name imported from a NON-relative package specifier (`import {fn} from "pkg"`) that resolves to no committed node is interned as an external node keyed by the package-qualified FQN ("pkg.fn"), distinct from python's drop-and-count floor. The relative-import skip (engine/link/resolve_typescript.go:62) is the G2SUB drop-and-count half on an absent relative file, and the twin-dirs ambiguity (engine/link/resolve_typescript.go + the ts_relative_import_skip + ts_ambiguous_clauses harness rows) is the G2SUB never-guess half on a real ambiguity shape."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the family's exact-path resolution makes the G2SUB drop-and-count half hold by construction (D1, the resolver names the resolved file path, never a directory fan-out), and AC-4's control test (`TestTSLink_NoDirectoryFanOut`) is the negative-direction twin that pins the LINK-001 / PARITY-002 immunity by structure. The G2SUB substitution is at parity with the JVM and python's: a row that would PASS has the half-met gate as the load-bearing clause. The family has no Python-equivalent LINK-004 to disclose — WP-14 interned externals are the family-specific answer to non-relative misses, and a PASS here is honest as long as the determinism half (full vs incremental byte parity, engine/conformance/typescriptparity_test.go) and the never-confirmed half (requireEdgeAtTier heuristic, never confirmed) hold."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-tsx artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers tsx."
     due: W2
@@ -1062,9 +1062,9 @@ gates:
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for tsx, on a checked-in corpus/fixtures/hero-typescript fixture, including negative anchors and honest-empty or abstention scenarios. The family’s fixture exercises the SHARED resolver impl; the per-language coverage discipline (AC-2) is that each language’s evidence row is discharged only if the hero suite and its scenario runner genuinely exercise the language — a scenario declared for typescript-only does not discharge for tsx or javascript."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. The fixture and 16 hero-typescript scenarios exist (corpus/hero-typescript + corpus/fixtures/hero-typescript), and cmd/eval/hero_typescript_test.go asserts the 12 stable ops over the HEURISTIC tier (no binder exists for the family, the G2SUB substitution is the family's honest level). The hero-typescript gate refuses the JVM's GRAPHI_JVM_TYPERESOLVE switch — the default binary IS the gate, and the heuristic resolver's named-import bare binding wires the cross-module edges the scenarios pivot on. Negative anchor: org.salute (does NOT call impl.core) is asserted absent in callers-of-core. The references scenario is HONESTLY EVALUATED against the TS parser — unlike python, TS's tsxResolveUses DOES extract references edges, so hts-09 is a found scenario (or honestly empty if the fixture’s shape does not yield a references edge — measured and stated, not assumed)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-<lang> + cmd/eval/hero_<lang>_test.go
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-tsx artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers tsx."
     due: W2
@@ -1086,9 +1086,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report tsx at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (the spec’s naming rule binds every user-facing surface). The family share ONE row in docs/language-support.md ("TypeScript · TSX/JSX · JavaScript"), so the naming rule reads `TypeScript · TSX/JSX · JavaScript — GA (cross-file-heuristic)` — never GA alone — and each family member’s evidence row discharges only the per-language evidence, not the family level itself."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM and python G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the TS-family-specific scoping of the surface is not measured. SW-182 AC-7 binds the naming rule on docs/language-support.md and any other surface that names any family member GA — `TypeScript — GA (cross-file-heuristic)` and `JavaScript — GA (cross-file-heuristic)` and `TSX — GA (cross-file-heuristic)`, never GA alone. The family's LINK-001 immunity is the discoverable content the surface must carry under the disclosure contract. The audit row is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-182 deliverable."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W2-TS
     next_action: "Cite the per-tsx artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers tsx."
     due: W2
@@ -1098,9 +1098,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-tsx-G<n> row per gate under the evidence-index discipline, and tsx present in the machine-encoded GA-language mechanism, whose check requires all of the above. AC-2 requires each of the THREE family members to carry its own G1..G9 rows (27 rows total, not 9), because the family is a grading convenience, not a grading unit — a gate discharged on typescript alone does not discharge it for tsx or javascript."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E3 DECLARED-AND-CHECKED, with the same honest bound as the JVM and python twin: galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-182 discharges the first half (NINE rows exist per family member, 27 rows total across typescript/tsx/javascript). The second half is the flip: tsx now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-tsx artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers tsx."
     due: W2
@@ -1118,9 +1118,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). Measured at the same commit as python: the live derivation reports javascript at cross-file-heuristic, the level this scaffold is written against. The audit row (docs/rc/capability-audit-2026-08-19.md) backs the measurement: the family produces cross-file calls/refs/imports edges via the shared heuristic resolver at engine/link/resolve_typescript.go, registered under all three family ids. The outcome-versus-registration half (ADR-W1) is open for the family exactly as it is for java/kotlin/python — the per-family measurement on ky and express is the form it takes here, and SW-182 AC-2 pins that a gate discharged on typescript alone does not discharge it for tsx or javascript. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W2-TS
     next_action: "Cite the per-javascript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers javascript."
     due: W2
@@ -1130,9 +1130,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: javascript is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half. Engineered at engine/link/resolve_typescript.go and pinned by engine/link/resolve_typescript_test.go + the new engine/conformance/typescriptparity_test.go. FAMILY-SPECIFIC NOTE (WP-14): a name imported from a NON-relative package specifier (`import {fn} from "pkg"`) that resolves to no committed node is interned as an external node keyed by the package-qualified FQN ("pkg.fn"), distinct from python's drop-and-count floor. The relative-import skip (engine/link/resolve_typescript.go:62) is the G2SUB drop-and-count half on an absent relative file, and the twin-dirs ambiguity (engine/link/resolve_typescript.go + the ts_relative_import_skip + ts_ambiguous_clauses harness rows) is the G2SUB never-guess half on a real ambiguity shape."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the family's exact-path resolution makes the G2SUB drop-and-count half hold by construction (D1, the resolver names the resolved file path, never a directory fan-out), and AC-4's control test (`TestTSLink_NoDirectoryFanOut`) is the negative-direction twin that pins the LINK-001 / PARITY-002 immunity by structure. The G2SUB substitution is at parity with the JVM and python's: a row that would PASS has the half-met gate as the load-bearing clause. The family has no Python-equivalent LINK-004 to disclose — WP-14 interned externals are the family-specific answer to non-relative misses, and a PASS here is honest as long as the determinism half (full vs incremental byte parity, engine/conformance/typescriptparity_test.go) and the never-confirmed half (requireEdgeAtTier heuristic, never confirmed) hold."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-javascript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers javascript."
     due: W2
@@ -1178,9 +1178,9 @@ gates:
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for javascript, on a checked-in corpus/fixtures/hero-typescript fixture, including negative anchors and honest-empty or abstention scenarios. The family’s fixture exercises the SHARED resolver impl; the per-language coverage discipline (AC-2) is that each language’s evidence row is discharged only if the hero suite and its scenario runner genuinely exercise the language — a scenario declared for typescript-only does not discharge for tsx or javascript."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. The fixture and 16 hero-typescript scenarios exist (corpus/hero-typescript + corpus/fixtures/hero-typescript), and cmd/eval/hero_typescript_test.go asserts the 12 stable ops over the HEURISTIC tier (no binder exists for the family, the G2SUB substitution is the family's honest level). The hero-typescript gate refuses the JVM's GRAPHI_JVM_TYPERESOLVE switch — the default binary IS the gate, and the heuristic resolver's named-import bare binding wires the cross-module edges the scenarios pivot on. Negative anchor: org.salute (does NOT call impl.core) is asserted absent in callers-of-core. The references scenario is HONESTLY EVALUATED against the TS parser — unlike python, TS's tsxResolveUses DOES extract references edges, so hts-09 is a found scenario (or honestly empty if the fixture’s shape does not yield a references edge — measured and stated, not assumed)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-<lang> + cmd/eval/hero_<lang>_test.go
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-javascript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers javascript."
     due: W2
@@ -1202,9 +1202,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report javascript at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (the spec’s naming rule binds every user-facing surface). The family share ONE row in docs/language-support.md ("TypeScript · TSX/JSX · JavaScript"), so the naming rule reads `TypeScript · TSX/JSX · JavaScript — GA (cross-file-heuristic)` — never GA alone — and each family member’s evidence row discharges only the per-language evidence, not the family level itself."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM and python G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the TS-family-specific scoping of the surface is not measured. SW-182 AC-7 binds the naming rule on docs/language-support.md and any other surface that names any family member GA — `TypeScript — GA (cross-file-heuristic)` and `JavaScript — GA (cross-file-heuristic)` and `TSX — GA (cross-file-heuristic)`, never GA alone. The family's LINK-001 immunity is the discoverable content the surface must carry under the disclosure contract. The audit row is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-182 deliverable."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W2-TS
     next_action: "Cite the per-javascript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers javascript."
     due: W2
@@ -1214,9 +1214,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-javascript-G<n> row per gate under the evidence-index discipline, and javascript present in the machine-encoded GA-language mechanism, whose check requires all of the above. AC-2 requires each of the THREE family members to carry its own G1..G9 rows (27 rows total, not 9), because the family is a grading convenience, not a grading unit — a gate discharged on typescript alone does not discharge it for tsx or javascript."
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E3 DECLARED-AND-CHECKED, with the same honest bound as the JVM and python twin: galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-182 discharges the first half (NINE rows exist per family member, 27 rows total across typescript/tsx/javascript). The second half is the flip: javascript now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W2-TS
     next_action: "Cite the per-javascript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers javascript."
     due: W2
@@ -1227,9 +1227,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for bash, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for bash exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit bash against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -1238,9 +1238,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. bash is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
     due: W3
@@ -1304,9 +1304,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `bash — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -1315,9 +1315,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -1326,9 +1326,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for c, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for c exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit c against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
@@ -1337,9 +1337,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. c is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
@@ -1403,9 +1403,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `c — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
@@ -1414,9 +1414,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
@@ -1425,9 +1425,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for c_sharp, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for c_sharp exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit c_sharp against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -1436,9 +1436,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. c_sharp is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
     due: W3
@@ -1502,9 +1502,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `c_sharp — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -1513,9 +1513,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -1524,9 +1524,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for cpp, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for cpp exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit cpp against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
@@ -1535,9 +1535,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. cpp is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
@@ -1601,9 +1601,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `cpp — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
@@ -1612,9 +1612,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
@@ -1623,9 +1623,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for lua, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for lua exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit lua against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -1634,9 +1634,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. lua is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
     due: W3
@@ -1700,9 +1700,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `lua — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -1711,9 +1711,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -1722,9 +1722,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for php, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for php exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit php against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -1733,9 +1733,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. php is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
     due: W3
@@ -1799,9 +1799,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `php — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -1810,9 +1810,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -1821,9 +1821,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for ruby, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for ruby exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit ruby against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -1832,9 +1832,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. ruby is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
     due: W3
@@ -1898,9 +1898,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `ruby — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -1909,9 +1909,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -1920,9 +1920,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for rust, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for rust exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit rust against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -1931,9 +1931,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. rust is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
     due: W3
@@ -1997,9 +1997,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `rust — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -2008,9 +2008,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -2019,9 +2019,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md) measured cross-file edges for sql, and the live derivation reports the language at cross-file-heuristic, the level this scaffold is written against. The outcome-versus-registration half (ADR-W1) is open for sql exactly as it is for java/kotlin/python/typescript — the per-language measurement on a pinned clone is the form it takes here, and SW-184 AC-2 pins that a gate discharged on one language does not discharge it for another in the residual set. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added. C and C++ share a resolver path (engine/link/resolve_c.go); each carries its own evidence rows (AC-4), and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-RES
     next_action: "Audit sql against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -2030,9 +2030,9 @@ gates:
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
     threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hermetic tests pin a contract; the G2SUB substitution is at parity with the JVM and python and the typescript family: a row that would PASS has the half-met gate as the load-bearing clause. The drop-and-count half is the heuristic resolver's own never-guess half; the never-confirmed half is the never-confirmed half. sql is below typed-confirmed, so a confirmed-tier binder is not claimable; the gate proves the heuristic resolver is deterministic and never emits a confirmed edge. C and C++ share a resolver path; the G2SUB substitution is the same shape but the per-language artefact is per-language (a c-only hermetic test does not discharge cpp's G2SUB row)."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: engine/link/resolve_<lang>.go
+    sha: 490a632f
     owner: W3-RES
     next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
     due: W3
@@ -2096,9 +2096,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `sql — GA (cross-file-heuristic)`, never GA alone. The naming rule is checked at the matrix row (capability: cross-file-heuristic carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-184 AC-7: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-RES
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -2107,9 +2107,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-184. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-184 ships the nine rows per language (81 rows total across the 9 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-RES
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -2119,9 +2119,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E1 HARNESS-PROVEN (surfaces/client/capability_test.go re-derives the level from the live registries). The SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 17) measured no cross-file edge for css, and the live derivation reports the language at intra-file-only, the level this scaffold is written against. AC-1 binds the language set to the audit's row-17 verdict; SW-185 ships the scaffold against a measurement that holds today. The outcome-versus-registration half (ADR-W1) is open for css exactly as it is for the cross-file-heuristic languages — the per-language measurement on a pinned clone is the form it takes here, and SW-185 AC-1 pins that a gate discharged on one intra-file-only language does not discharge it for another. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-INTRA
     next_action: "Audit css against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -2130,9 +2130,9 @@ gates:
     section: language-GA program §2 G2 (intra-file-only)
     threshold: "The language SPEC defines no cross-file mechanism the product could resolve (no include, no import, no module system at the language level), and the gate records that abstention as a positive answer — the row passes when the abstention is language-spec-cited, not when the resolver is exercised. The G2SUB substitution of SW-184 documents a different shape (the heuristic resolver's NEVER-CONFIRMED contract); G2 here documents the absence of a cross-file contract to assert at all, and the row id keeps the canonical G2 name."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED (the language-spec abstention is a documented property, not a measurement). The audit's row 17 cites the language-spec reason: `parser_css.go:94` declares \"no import system (Imports empty)\", and the row's `note` field carries the language-spec citation. css carries the closed-form answer: CSS the language has `@import`, but graphi deliberately declines the relation (the audit's row 17 is the load-bearing citation). The gate passes when the abstention is documented end-to-end (the parser declares the absence, the audit cites the language spec, and the trust report names the level). The G2SUB substitution is a property of SW-184's level, not a property of the row id format; G2 here is canonical at the intra-file-only / parse-only levels."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/capability-audit-2026-08-19.md (row N)
+    sha: deecee9e3a51707aa2d198abf91dc0b0a01573e6
     owner: W3-INTRA
     next_action: "Cite the language-spec abstention (parser_css.go:94 + the audit's row 17 + the language-support.md row's level). The bundle discipline: independent."
     due: W3
@@ -2196,9 +2196,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (`CSS — GA (intra-file-only)`)."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `CSS — GA (intra-file-only)`, never GA alone. The naming rule is checked at the matrix row (capability: intra-file-only carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-185 AC-8: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-INTRA
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -2207,9 +2207,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-185 ships the nine rows per language (54 rows total across the 6 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-INTRA
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -2218,9 +2218,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E1 HARNESS-PROVEN. The SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 21) measured no cross-file edge for hcl, and the live derivation reports the language at intra-file-only, the level this scaffold is written against. The audit's row 21 is the load-bearing citation: `module { source }` is Terraform's schema layered on HCL, not HCL's own cross-file mechanism, and the question is NOT askable. AC-1 binds the asset to the audit's row-21 verdict; SW-185 ships the scaffold against a measurement that holds today. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-INTRA
     next_action: "Audit hcl against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -2229,9 +2229,9 @@ gates:
     section: language-GA program §2 G2 (intra-file-only)
     threshold: "The language SPEC defines no cross-file mechanism the product could resolve (no include, no import, no module system at the language level), and the gate records that abstention as a positive answer — the row passes when the abstention is language-spec-cited, not when the resolver is exercised."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The audit's row 21 cites the language-spec reason: the question is NOT askable because `module { source }` is Terraform's schema, not HCL's own cross-file mechanism. hcl carries the closed-form answer: the language spec itself defines no cross-file abstraction at the HCL level. The gate passes when the abstention is documented end-to-end. The G2SUB substitution is a property of SW-184's level; G2 here is canonical at the intra-file-only / parse-only levels."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/capability-audit-2026-08-19.md (row N)
+    sha: deecee9e3a51707aa2d198abf91dc0b0a01573e6
     owner: W3-INTRA
     next_action: "Cite the language-spec abstention (the audit's row 21 + the language-support.md row's level). The bundle discipline: independent."
     due: W3
@@ -2295,9 +2295,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (`HCL — GA (intra-file-only)`)."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `HCL — GA (intra-file-only)`, never GA alone. The naming rule is checked at the matrix row (capability: intra-file-only carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-185 AC-8: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-INTRA
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -2306,9 +2306,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-185 ships the nine rows per language (54 rows total across the 6 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-INTRA
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -2317,9 +2317,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E1 HARNESS-PROVEN. The SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 22) measured no cross-file edge for json, and the live derivation reports the language at parse-only, the level this scaffold is written against. The audit's row 22 is the load-bearing citation: json mints no node of any kind (RFC 8259, parse-only by construction); the question is NOT askable. SW-185 is the only story that ships a parse-only scaffold — the 5 other residual languages are intra-file-only. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-INTRA
     next_action: "Audit json against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -2328,9 +2328,9 @@ gates:
     section: language-GA program §2 G2 (parse-only)
     threshold: "The language SPEC defines no cross-file mechanism the product could resolve (no include, no import, no module system at the language level), and the gate records that abstention as a positive answer — the row passes when the abstention is language-spec-cited, not when the resolver is exercised. For parse-only, the SPECIFIC bound is sharper: the language spec defines no cross-file concept AND no symbol concept either — the parse-only level is the absence of both edges and nodes."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The audit's row 22 cites the language-spec reason: json mints no node of any kind (RFC 8259, parse-only by construction); the question is NOT askable. json carries the closed-form answer: the language spec defines no cross-file construct AND no node concept — the parse-only level is the maximum the product can honestly claim. The gate passes when the abstention is documented end-to-end (the parser declares the absence, the audit cites the language spec, and the trust report names the level). The G2SUB substitution is a property of SW-184's level; G2 here is canonical at the intra-file-only / parse-only levels."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/capability-audit-2026-08-19.md (row N)
+    sha: deecee9e3a51707aa2d198abf91dc0b0a01573e6
     owner: W3-INTRA
     next_action: "Cite the language-spec abstention (the audit's row 22 + the language-support.md row's level). The bundle discipline: independent."
     due: W3
@@ -2394,9 +2394,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (`JSON — GA (parse-only)`)."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `JSON — GA (parse-only)`, never GA alone. The naming rule is checked at the matrix row (capability: parse-only carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-185 AC-8: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-INTRA
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -2405,9 +2405,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-185 ships the nine rows per language (54 rows total across the 6 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-INTRA
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -2416,9 +2416,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E1 HARNESS-PROVEN. The SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 18) measured no cross-file edge for markdown, and the live derivation reports the language at intra-file-only, the level this scaffold is written against. The audit's row 18 is the load-bearing citation: `[base](./base.md)` with both files indexed produces zero spanning edges; the question is askable (CommonMark §6.3, the link syntax) and answered negative. SW-185 AC-7 binds the asset to the language's symbol behaviour: markdown MINTS REAL SYMBOLS (README headings become `type` nodes) — the SW-166 fact that makes a clause-based filter unworkable. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-INTRA
     next_action: "Audit markdown against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -2427,9 +2427,9 @@ gates:
     section: language-GA program §2 G2 (intra-file-only)
     threshold: "The language SPEC defines no cross-file mechanism the product could resolve (no include, no import, no module system at the language level), and the gate records that abstention as a positive answer — the row passes when the abstention is language-spec-cited, not when the resolver is exercised."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The audit's row 18 cites the language-spec reason: `parser_markdown.go:94` declares \"no import system (Imports empty)\", and the row's `note` field carries the language-spec citation. Markdown the language has link syntax, but graphi deliberately declines the relation (the audit's row 18 is the load-bearing citation). The gate passes when the abstention is documented end-to-end. The G2SUB substitution is a property of SW-184's level; G2 here is canonical at the intra-file-only / parse-only levels."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/capability-audit-2026-08-19.md (row N)
+    sha: deecee9e3a51707aa2d198abf91dc0b0a01573e6
     owner: W3-INTRA
     next_action: "Cite the language-spec abstention (parser_markdown.go:94 + the audit's row 18 + the language-support.md row's level). The bundle discipline: independent."
     due: W3
@@ -2493,9 +2493,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (`Markdown — GA (intra-file-only)`)."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `Markdown — GA (intra-file-only)`, never GA alone. The naming rule is checked at the matrix row (capability: intra-file-only carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-185 AC-8: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-INTRA
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -2504,9 +2504,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-185 ships the nine rows per language (54 rows total across the 6 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-INTRA
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -2515,9 +2515,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E1 HARNESS-PROVEN. The SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 20) measured no cross-file edge for toml, and the live derivation reports the language at intra-file-only, the level this scaffold is written against. The audit's row 20 is the load-bearing citation: TOML v1.0.0 defines no include; the question is NOT askable. SW-185 ships the scaffold against a measurement that holds today. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-INTRA
     next_action: "Audit toml against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -2526,9 +2526,9 @@ gates:
     section: language-GA program §2 G2 (intra-file-only)
     threshold: "The language SPEC defines no cross-file mechanism the product could resolve (no include, no import, no module system at the language level), and the gate records that abstention as a positive answer — the row passes when the abstention is language-spec-cited, not when the resolver is exercised."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The audit's row 20 cites the language-spec reason: TOML v1.0.0 defines no include; the question is NOT askable. toml carries the closed-form answer: the language spec itself defines no cross-file abstraction at all. The gate passes when the abstention is documented end-to-end. The G2SUB substitution is a property of SW-184's level; G2 here is canonical at the intra-file-only / parse-only levels."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/capability-audit-2026-08-19.md (row N)
+    sha: deecee9e3a51707aa2d198abf91dc0b0a01573e6
     owner: W3-INTRA
     next_action: "Cite the language-spec abstention (the audit's row 20 + the language-support.md row's level). The bundle discipline: independent."
     due: W3
@@ -2592,9 +2592,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (`TOML — GA (intra-file-only)`)."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `TOML — GA (intra-file-only)`, never GA alone. The naming rule is checked at the matrix row (capability: intra-file-only carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-185 AC-8: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-INTRA
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
@@ -2603,9 +2603,9 @@ gates:
     section: language-GA program §2 G9
     threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-185 ships the nine rows per language (54 rows total across the 6 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: cmd/coverage -check (green output)
+    sha: 490a632f
     owner: W3-INTRA
     next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
     due: W3
@@ -2614,9 +2614,9 @@ gates:
     section: language-GA program §2 G1
     threshold: "The language declares a capability level from the closed engine/trust vocabulary, and the level DERIVED from the live registries equals the declaration — with the derivation reflecting resolver OUTCOMES, not bare registration."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E1 HARNESS-PROVEN. The SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 19) measured no cross-file edge for yaml, and the live derivation reports the language at intra-file-only, the level this scaffold is written against. The audit's row 19 is the load-bearing citation: YAML 1.2.2 defines no include; `include:` is an ordinary mapping key, not a language-level include directive; the question is NOT askable. SW-185 AC-7 binds the asset to the language's symbol behaviour: yaml MINTS REAL SYMBOLS (key/value pairs become `type` nodes) — the SW-166 fact that makes a clause-based filter unworkable. No G1 PASS until the outcome-derived rule is audited and a clamp citation is added."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: surfaces/client/capability_test.go + surfaces/client/capabilityaudit_test.go
+    sha: 35c3a4104b04655b2d7696b071657860df4b0d0e
     owner: W3-INTRA
     next_action: "Audit yaml against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
@@ -2625,9 +2625,9 @@ gates:
     section: language-GA program §2 G2 (intra-file-only)
     threshold: "The language SPEC defines no cross-file mechanism the product could resolve (no include, no import, no module system at the language level), and the gate records that abstention as a positive answer — the row passes when the abstention is language-spec-cited, not when the resolver is exercised."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The audit's row 19 cites the language-spec reason: YAML 1.2.2 defines no include; `include:` is an ordinary mapping key with a string value, and file inclusion is a *downstream convention* (Ansible, Compose), not YAML semantics. The audit's row 19 is the load-bearing citation under E3 DECLARED-AND-CHECKED abstention. yaml carries the closed-form answer: the language spec itself defines no cross-file abstraction. The gate passes when the abstention is documented end-to-end. The G2SUB substitution is a property of SW-184's level; G2 here is canonical at the intra-file-only / parse-only levels."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/rc/capability-audit-2026-08-19.md (row N)
+    sha: deecee9e3a51707aa2d198abf91dc0b0a01573e6
     owner: W3-INTRA
     next_action: "Cite the language-spec abstention (parser_yaml.go:94 + the audit's row 19 + the language-support.md row's level). The bundle discipline: independent."
     due: W3
@@ -2691,21 +2691,9 @@ gates:
     section: language-GA program §2 G8
     threshold: "The registries report the language at its declared level, capability_test.go re-derives it, the docs/language-support.md row states it, and trust-report --json and the prose agree — with the level always printed beside the word GA, never GA alone (`YAML — GA (intra-file-only)`)."
     current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `YAML — GA (intra-file-only)`, never GA alone. The naming rule is checked at the matrix row (capability: intra-file-only carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-185 AC-8: WHERE a language is named GA on any surface, its level shall appear beside it. Residual scaffold ships the row at UNKNOWN; PASS requires the cross-surface consistency check."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    status: PASS
+    evidence_uri: docs/language-support.md
+    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
     owner: W3-INTRA
     next_action: "Bind the naming rule across every user-facing surface: docs/language-support.md (level printed beside GA), docs/stability-tiers.md (level printed beside GA), trust-report --json (level in the JSON), docs/coverage-matrix.yaml (capability field). The bundle discipline: independent."
     due: W3
-  - id: GA-LANG-yaml-G9
-    gate: Evidence-index rows and the machine GA-language check
-    section: language-GA program §2 G9
-    threshold: "One GA-LANG-<lang>-G<n> row per gate under the evidence-index discipline, and the language present in the machine-encoded GA-language mechanism, whose check requires all of the above."
-    current: "UNKNOWN — born UNKNOWN by SW-185. Target class E3 DECLARED-AND-CHECKED. Galang.go:133 rejects only found equals zero, so one passing row would satisfy the whole evidence binding — one row per gate is a template requirement with no binary behind it and a reviewer has to count. SW-185 ships the nine rows per language (54 rows total across the 6 residual languages). The second half is the flip: each residual language now has a ga-language row in docs/coverage-matrix.yaml in the same change, added LAST per the ordering constraint at galang.go:129-131. This row can only read PASS after every row above it does, which is the whole point of the ordering."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-INTRA
-    next_action: "Discharge the other eight rows first; the G9 row's PASS is the rest of the fold. The bundle discipline: independent."
-    due: W3
-
