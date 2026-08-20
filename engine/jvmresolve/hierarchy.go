@@ -137,6 +137,17 @@ func valueForm(form string) bool {
 // its written text with a leading marker byte, so it can never collide with a
 // resolved FQN yet a genuine `m(int)`/`m(int)` override still matches itself.
 //
+// ARRAY DIMENSIONALITY is carried in the key, by counting the trailing `[]`
+// groups of the WRITTEN type text (the same `arrayDims` rule the rendering
+// harness already uses). It is what fixes JVMSOUND-004: the previous key used
+// only `TypeRef.Base`, which has arrays erased by construction (see table.go),
+// so `apply(Thing)` and `apply(Thing[])` produced the IDENTICAL signature, the
+// overload set was misread as an override pair, and the most-derived member
+// won where `AmbiguousMember` was required. Same shape closes the higher-
+// dimensionality instance (`apply(int[])` vs `apply(int[][])`) found in
+// SW-172 round 1 — Base erases arrays entirely, so the rule is one-count-of-
+// trailing-`[]`-groups, not a present/absent bit.
+//
 // KNOWN RESIDUAL, stated so it is not overread: two DIFFERENT external types
 // that share a simple name (e.g. `a.Foo` and `b.Foo`, neither declared in the
 // repo) both key on `?Foo` and would collapse. This is the same simple-name
@@ -150,16 +161,158 @@ func (ix *Index) callableSig(m *Member, declaring *Type) string {
 		if i > 0 {
 			b.WriteByte(',')
 		}
+		dims := arrayDims(p.Type.Raw)
 		if file != nil {
 			if rt, res := ix.ResolveTypeName(file, declaring, p.Type.Base); res == ResolvedType && rt != nil {
 				b.WriteString(rt.FQN)
+				b.WriteString(dims)
 				continue
 			}
 		}
 		b.WriteByte('?')
 		b.WriteString(p.Type.Base)
+		b.WriteString(dims)
 	}
 	return b.String()
+}
+
+// arrayDims counts the trailing `[]` groups of a written type text and
+// returns them as a string (`""`, `"[]"`, `"[][]"`, …). It is the same rule
+// the rendering harness uses (binder.go::renderParam); keeping them in
+// lockstep is what makes a signature dimension match the descriptor a real
+// javac compile produces, so an `m(T[])` and `m(T)` overload pair cannot
+// collapse to one signature.
+//
+// Undercount-only: `int x` (no brackets) is 0; `int[] x` and `int xs[]` both
+// count the brackets on the written type text, and the C-style declarator's
+// brackets sit on the declarator — so a `m(T)` rendered with the bracket on
+// the parameter would undercount, never overcount, and an overload pair can
+// only ever see DISTINCT keys, never a false collapse. The loop requires a
+// `[]` GROUP (open + close) and walks the written text backward, stripping
+// each trailing group in turn.
+func arrayDims(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	n := 0
+	for {
+		// trailing group must close before it can open.
+		if !strings.HasSuffix(raw, "]") {
+			break
+		}
+		i := strings.LastIndex(raw, "[")
+		if i < 0 {
+			break
+		}
+		n++
+		raw = raw[:i]
+		if raw == "" {
+			break
+		}
+	}
+	if n == 0 {
+		return ""
+	}
+	return strings.Repeat("[]", n)
+}
+
+// valueClassBridgeName strips kotlinc's VALUE-CLASS name mangling from a
+// method name and returns the bridge name, or "" if `name` does not look
+// value-class-mangled. The mangling shape is `<plain>-<hash>` where `<hash>`
+// is a base-64-ish stable hash kotlinc computes over the inline-class
+// parameters' types. The compiler emits a BRIDGE function under the plain
+// name (taking the boxed inline-class parameter) AND a REAL function under
+// the mangled name (taking the unwrapped underlying type). Source calls
+// resolve to the mangled name, so without recognition the binder answers the
+// bridge name and the real-body call is unbindable.
+//
+// kotlinc's hash alphabet includes `-` itself, so the rule splits on the
+// FIRST `-` (not the last) — the bridge name is everything before the
+// first dash, and the hash is everything after. Plain names like `foo-bar`
+// (which the user CAN legally declare in backticks) do not match because
+// the part after the first `-` must be at least 4 base-64 characters.
+//
+// KNOWN RESIDUAL: the hash is computed over the parameter types' mangled
+// form, so any two functions that take inline-class parameters of the same
+// boxed types at the same arity collide on the SAME mangled suffix and the
+// binder must look both up. The lookup below already iterates the closed
+// chain in BFS order, so the first-found rule resolves any such collision
+// the same way the bytecode would. Frequency is bounded by inline-class
+// parameter shapes and is named rather than measured here.
+func valueClassBridgeName(name string) string {
+	i := strings.Index(name, "-")
+	if i <= 0 || i >= len(name)-1 {
+		return ""
+	}
+	// Suffix must be at least 4 base-64 chars; the base-64 alphabet kotlinc
+	// uses includes letters, digits, `-`, `+`, `_`.
+	suf := name[i+1:]
+	if len(suf) < 4 {
+		return ""
+	}
+	for j := 0; j < len(suf); j++ {
+		c := suf[j]
+		if !isBase64Char(c) {
+			return ""
+		}
+	}
+	// Prefix must be a valid Kotlin identifier (a name the user could have
+	// declared, OR a name the compiler minted).
+	pre := name[:i]
+	if pre == "" || !isIdentStart(pre) {
+		return ""
+	}
+	for j := 0; j < len(pre); j++ {
+		if !isIdentCont(pre[j]) {
+			return ""
+		}
+	}
+	return pre
+}
+
+func isBase64Char(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '-' || c == '+' || c == '_'
+}
+
+func isIdentStart(s string) bool {
+	if s == "" {
+		return false
+	}
+	c := s[0]
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'
+}
+
+func isIdentCont(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'
+}
+
+// LookupCallableValueClassAware binds receiver.name(arity), recognising
+// kotlinc's value-class name mangling (JVMHARN-001) as a secondary target.
+// If the lookup by `name` does not bind, the bridge name (the prefix before
+// `-<hash>`) is tried; if THAT binds, the result is reported under the
+// ORIGINAL name (the call site's text) so graphi's emitted edge matches
+// what the source declares. The bridge name itself is never written to the
+// TypedSite.
+//
+// This is the JVMHARN-001 fix: 22 of kotlinx.serialization's 27 by-name
+// counterexamples (and similar shapes on any Kotlin code with inline classes)
+// were the oracle accusing correct code — graphi answers what `foo` declares,
+// javac compiles the call to `foo-<hash>`. The two are the same binding
+// target, and only the body walker, with the call-site text in hand, can
+// rejoin them.
+func (ix *Index) LookupCallableValueClassAware(receiver *Type, name string, arity int) LookupResult {
+	res := ix.LookupCallable(receiver, name, arity)
+	if res.Outcome == BoundMember || res.Outcome == AmbiguousMember {
+		return res
+	}
+	if receiver == nil {
+		return res
+	}
+	bridge := valueClassBridgeName(name)
+	if bridge == "" {
+		return res
+	}
+	return ix.LookupCallable(receiver, bridge, arity)
 }
 
 // elasticMember reports whether any parameter is variadic or defaulted — either

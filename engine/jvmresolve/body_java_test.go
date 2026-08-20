@@ -335,3 +335,91 @@ public class Factory {
 		t.Errorf("expected %s > 0 for new Missing(): %+v", SkipReceiverExternal, skips)
 	}
 }
+
+// TestCountArgs_SkipsComments pins the JVMSOUND-003 fix (SW-188): countArgs
+// does not count COMMENT children of an `argument_list`. Three shapes are
+// asserted: a trailing `/* ... */` after the last argument; an inline
+// `/* ... */` between two arguments; a `// ...` end-of-line comment after
+// the last argument. The first two are the load-bearing ones — the
+// pre-fix binder reported arity +1 to the lookup, which selected a
+// DIFFERENT overload at the call site and emitted a wrong edge to
+// (name, arity+1) where javac compiled (name, arity).
+func TestCountArgs_SkipsComments(t *testing.T) {
+	files := map[string][]byte{
+		"a/Thing.java": []byte(`package a;
+public class Thing {
+    public int f1(int x) { return x; }
+    public int f1(int x, int y) { return x + y; }
+    public int f2(int x) { return x; }
+    public int f2(int x, int y) { return x + y; }
+    public int f3(int x) { return x; }
+    public int f3(int x, int y) { return x + y; }
+}
+`),
+		"a/App.java": []byte(`package a;
+public class App {
+    public int run(Thing t) {
+        // shape 1: trailing block comment after the only argument.
+        int a = t.f1(1 /* the scale */);
+        // shape 2: inline block comment between two arguments.
+        int b = t.f2(/* first */ 1, 2 /* second */);
+        // shape 3: trailing line comment after the only argument.
+        int c = t.f3(1); // the scale
+        return a + b + c;
+    }
+}
+`),
+	}
+	tab := BuildTable(files)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("fixture must table cleanly: %+v", tab.Skipped)
+	}
+	sites, _ := NewIndex(tab).AnalyzeJavaBodies(files)
+
+	// Each f<N> call site is at the f<N> declaration, arity as written:
+	// 1 for f1 and f3, 2 for f2. A pre-fix binder would report arity 2 for
+	// f1 and arity 3 for f2, binding the wrong overload.
+	if s, ok := findSite(sites, SiteCall, "f1", 5); !ok || s.Declaring.FQN != "a.Thing" || s.Arity != 1 {
+		t.Errorf("f1(1 /* ... */) must bind f1(int) at arity 1: %+v ok=%v", s, ok)
+	}
+	if s, ok := findSite(sites, SiteCall, "f2", 7); !ok || s.Declaring.FQN != "a.Thing" || s.Arity != 2 {
+		t.Errorf("f2(/* */ 1, 2 /* */) must bind f2(int,int) at arity 2: %+v ok=%v", s, ok)
+	}
+	if s, ok := findSite(sites, SiteCall, "f3", 9); !ok || s.Declaring.FQN != "a.Thing" || s.Arity != 1 {
+		t.Errorf("f3(1); // ... must bind f3(int) at arity 1: %+v ok=%v", s, ok)
+	}
+}
+
+// TestCountArgs_CrossFileBindsBase pins the JVMSOUND-003 cross-file
+// closure: with the fix, a same-arity overload in the same file as the
+// comment-bearing call is still resolved correctly. The negative pin in
+// internal/jvmgroundtruth/signature_test.go's
+// TestJVMSOUND003_CrossFileWrongEdge turned RED-with-instructions when
+// the fix landed and is replaced by this positive regression.
+func TestCountArgs_CrossFileBindsBase(t *testing.T) {
+	files := map[string][]byte{
+		"a/Thing.java": []byte(`package a;
+public class Thing {
+    public int apply(int x) { return x; }
+    public int apply(int x, int y) { return x + y; }
+}
+`),
+		"a/App.java": []byte(`package a;
+public class App {
+    public int run(Thing t) {
+        return t.apply(1 /* the scale */);
+    }
+}
+`),
+	}
+	tab := BuildTable(files)
+	if len(tab.Skipped) != 0 {
+		t.Fatalf("fixture must table cleanly: %+v", tab.Skipped)
+	}
+	sites, _ := NewIndex(tab).AnalyzeJavaBodies(files)
+	// With the fix, the comment after `1` is not counted, the call binds
+	// at arity 1, and a.Thing.apply(int) is the target.
+	if s, ok := findSite(sites, SiteCall, "apply", 4); !ok || s.Declaring.FQN != "a.Thing" || s.Arity != 1 {
+		t.Errorf("apply(1 /* ... */) must bind apply(int) at arity 1: %+v ok=%v", s, ok)
+	}
+}

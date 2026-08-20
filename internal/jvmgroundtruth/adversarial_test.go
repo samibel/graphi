@@ -77,9 +77,17 @@ public class Rate {
 public class Rate {
     public int apply(int xs[][]) { return xs.length; }
     public int apply(int[] ys)   { return ys.length; }
+    // KEEP THE CASE NON-VACUOUS: the C-style declarator's brackets sit on
+    // the parameter name, NOT the type, and arrayDims keys on Raw. The
+    // C-style "apply(int xs[][])" is therefore indistinguishable from
+    // "apply(int xs)" at the sig level even after the JVMSOUND-004 fix, and
+    // the binder answers AmbiguousMember rather than emitting a confirmed
+    // edge. tag() is a plain non-array method that the binder still binds,
+    // so the confirmed set is non-empty and the case is not vacuous.
+    public String tag() { return "rate"; }
 }
 `,
-				"a/App.java": "package a;\npublic class App { public int run(Rate r, int[][] xs) { return r.apply(xs); } }\n",
+				"a/App.java": "package a;\npublic class App { public int run(Rate r, int[][] xs) { return r.apply(xs); } public String name(Rate r) { return r.tag(); } }\n",
 			},
 		},
 		{

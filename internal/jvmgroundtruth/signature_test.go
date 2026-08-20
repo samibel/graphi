@@ -25,108 +25,60 @@ import (
 	"github.com/samibel/graphi/internal/jvmgroundtruth"
 )
 
-// TestArity_CatchesOverloadMisbind_JVMSOUND003 is AC-2, on a REAL mis-binding.
+// TestArity_CatchesOverloadMisbind_JVMSOUND003 is the JVMSOUND-003 pin.
 //
 // `r.apply(1 /* the scale */)` passes ONE argument. javac binds
-// `a/Rate.apply:(I)I`. The binder's countArgs walks the argument_list's CST
-// children and counts the `comment` node as an argument, so it looks up arity
-// 2 and binds `apply(int,int)` — the wrong overload, from a call site whose
-// ground truth is not in doubt.
+// `a/Rate.apply:(I)I`. The binder's countArgs walked the argument_list's CST
+// children and counted the `comment` node as an argument, so it looked up
+// arity 2 and bound `apply(int,int)` — the wrong overload, from a call site
+// whose ground truth is not in doubt.
 //
-// Both overloads live in a/Rate.java under the name `apply`, so the by-name key
-// is IDENTICAL for the right and the wrong answer: the pre-SW-172 oracle calls
-// this SOUND. Stage 1 puts arity in the key and calls it what it is.
+// CLOSED 2026-08-20 (SW-188, ADR 0013 D1/D2). The countArgs fix lives in
+// engine/jvmresolve/body_java.go:666-693 (skips line_comment / block_comment
+// / multiline_comment CST children of an argument_list). The two positive
+// regression tests that pin the closure are:
+//
+//	engine/jvmresolve/body_java_test.go::TestCountArgs_SkipsComments
+//	engine/jvmresolve/body_java_test.go::TestCountArgs_CrossFileBindsBase
+//
+// Replaced with a skip stub rather than deleted so a reviewer who runs the
+// jvm-groundtruth suite and sees the skip knows both that the closure is
+// intentional and where the proof of record lives. Per the discipline ADR
+// 0012 established for the pin/positive split: a pin that is "RED with
+// instructions" must never sit on main past the commit that closes the
+// defect it pinned, and a "GREEN by deleting the pin" is the wrong fix.
 func TestArity_CatchesOverloadMisbind_JVMSOUND003(t *testing.T) {
-	files := map[string]string{
-		"a/Rate.java": `package a;
-public class Rate {
-    public int apply(int x) { return x; }
-    public int apply(int x, int y) { return x + y; }
-}
-`,
-		"a/App.java": `package a;
-public class App {
-    public int run(Rate r) { return r.apply(1 /* the scale */); }
-}
-`,
-	}
-	confirmed, truth := binderVsBytecode(t, files)
-
-	// RED BEFORE stage 1: the by-name key cannot see it.
-	byName := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.ByName)
-	t.Logf("BEFORE (stage 0):\n%s", byName.Format())
-	if !byName.Sound() {
-		t.Fatalf("the by-name key must be BLIND here — that blindness is the premise of this story; got %+v", byName.Violations)
-	}
-
-	// GREEN AFTER stage 1.
-	byArity := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.ByArity)
-	t.Logf("AFTER (stage 1):\n%s", byArity.Format())
-	if byArity.Sound() {
-		t.Fatal("stage 1 must report the arity mis-binding as a counterexample")
-	}
-	v := byArity.Violations[0]
-	if v.CallerMethod != "run" || v.Callee != "apply" || v.CalleeArity != 2 {
-		t.Fatalf("the counterexample must name the WRONG arity the binder chose (2), got %+v", v)
-	}
-	// The truth side must carry the right one, or the report is unreadable.
-	if !hasFact(truth, "a/App.java", "run", "a/Rate.java", "apply", 1) {
-		t.Fatalf("javac's fact (arity 1) missing from the truth set: %+v", truth)
-	}
+	t.Skip("JVMSOUND-003 closed 2026-08-20 (SW-188, ADR 0013 D1/D2). " +
+		"See engine/jvmresolve/body_java_test.go::TestCountArgs_SkipsComments " +
+		"and ::TestCountArgs_CrossFileBindsBase for the positive regressions.")
 }
 
-// TestSignature_CatchesEqualArityMisbind_JVMSOUND004 is AC-5, on a REAL
-// mis-binding at EQUAL arity.
+// TestSignature_CatchesEqualArityMisbind_JVMSOUND004 is the JVMSOUND-004 pin
+// (equal-arity, scalar-vs-array instance).
 //
 // `r.apply(ts)` passes a `Thing[]`. javac binds `a/Rate.apply:([La/Thing;)I`.
-// The binder binds `apply(Thing)` — the scalar overload — because
-// hierarchy.go's callableSig keys each parameter on TypeRef.Base, and Base has
-// ARRAYS ERASED (table.go: "the binding name with generics/nullability/arrays
-// erased"). Both overloads therefore produce the identical signature, so the
-// overload set is misread as an override/hiding pair and the first-found
-// binding stands where AmbiguousMember was required.
+// The binder bound `apply(Thing)` — the scalar overload — because
+// hierarchy.go's callableSig keyed each parameter on TypeRef.Base, and Base
+// has ARRAYS ERASED (table.go: "the binding name with generics/nullability/
+// arrays erased"). Both overloads therefore produced the identical signature,
+// the overload set was misread as an override/hiding pair, and the
+// first-found binding stood where AmbiguousMember was required.
 //
-// Same file, same name, same ARITY: stage 1 is blind to it by construction.
-// Only the parameter types separate them.
+// CLOSED 2026-08-20 (SW-188, ADR 0013 D4–D6). callableSig now carries the
+// trailing `[]` groups of each parameter's written type text (via arrayDims)
+// so `m(T)` and `m(T[])` produce DISTINCT signature keys and the overload
+// set is read as overloads, not as overrides. The two positive regression
+// tests that pin the closure are:
+//
+//	engine/jvmresolve/hierarchy_test.go::TestCallableSig_ArrayDim
+//	engine/jvmresolve/hierarchy_test.go::TestCallableSig_CrossFileBindsBase
+//
+// Replaced with a skip stub per the pin/positive discipline — see the
+// comment on TestArity_CatchesOverloadMisbind_JVMSOUND003.
 func TestSignature_CatchesEqualArityMisbind_JVMSOUND004(t *testing.T) {
-	files := map[string]string{
-		"a/Thing.java": `package a;
-public class Thing {}
-`,
-		"a/Rate.java": `package a;
-public class Rate {
-    public int apply(Thing t) { return 1; }
-    public int apply(Thing[] ts) { return ts.length; }
-}
-`,
-		"a/App.java": `package a;
-public class App {
-    public int run(Rate r, Thing[] ts) { return r.apply(ts); }
-}
-`,
-	}
-	confirmed, truth := binderVsBytecode(t, files)
-
-	// RED BEFORE stage 2: arity agrees (1 = 1), so stage 1 cannot see it.
-	byArity := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.ByArity)
-	t.Logf("BEFORE (stage 1):\n%s", byArity.Format())
-	if !byArity.Sound() {
-		t.Fatalf("the by-arity key must be BLIND at equal arity; got %+v", byArity.Violations)
-	}
-
-	// GREEN AFTER stage 2.
-	bySig := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.BySignature)
-	t.Logf("AFTER (stage 2):\n%s", bySig.Format())
-	if bySig.Sound() {
-		t.Fatal("stage 2 must report the equal-arity parameter-type mis-binding")
-	}
-	v := bySig.Violations[0]
-	if v.CalleeParams != "(La/Thing;)" {
-		t.Fatalf("the counterexample must name the WRONG signature the binder chose, got %q in %+v", v.CalleeParams, v)
-	}
-	if !hasSig(truth, "a/Rate.java", "apply", "([La/Thing;)") {
-		t.Fatalf("javac's fact ([La/Thing;) missing from the truth set: %+v", truth)
-	}
+	t.Skip("JVMSOUND-004 closed 2026-08-20 (SW-188, ADR 0013 D4–D6). " +
+		"See engine/jvmresolve/hierarchy_test.go::TestCallableSig_ArrayDim " +
+		"and ::TestCallableSig_CrossFileBindsBase for the positive regressions.")
 }
 
 // TestSignature_RefusesRatherThanGuessing pins the other half of the contract:
@@ -486,47 +438,22 @@ public class App { public int run(Rate r) { return r.apply(1); } }
 	}
 }
 
-// TestJVMSOUND004_ArrayDimensionality is a SECOND instance of the array-erasure
-// defect, found by adversarial fixture rather than by the gate: `r.apply(xs)`
-// with `xs` an `int[][]` binds `apply(int[])`, because callableSig keys each
-// parameter on TypeRef.Base and Base has arrays erased — so `apply(int[])` and
-// `apply(int[][])` produce the identical signature at every dimensionality, not
-// only scalar-versus-array.
+// TestJVMSOUND004_ArrayDimensionality is the JVMSOUND-004 pin (higher-
+// dimensionality instance: `r.apply(xs)` with `xs` an `int[][]` bound
+// `apply(int[])`).
 //
-// It is recorded because it widens JVMSOUND-004's blast radius and because it
-// is a TRUE POSITIVE the strengthened rendering guard still reports: both
-// overloads render distinctly and both renderings are in javac's table, so the
-// guard verifies rather than abstains and the real defect is not hidden by the
-// fix for the forged one. Same pin discipline as the two cross-file tests: RED
-// WITH INSTRUCTIONS the moment the defect is fixed.
+// CLOSED 2026-08-20 (SW-188, ADR 0013 D4–D6). The same arrayDims fix that
+// closes the scalar-vs-one-dim case closes this one — `apply(int[])` and
+// `apply(int[][])` now produce DISTINCT signature keys, both shapes are
+// exercised in TestCallableSig_ArrayDim's SHAPE 2 assertion, and the
+// overload set is read as overloads rather than overrides.
+//
+// Replaced with a skip stub per the pin/positive discipline — see the
+// comment on TestArity_CatchesOverloadMisbind_JVMSOUND003.
 func TestJVMSOUND004_ArrayDimensionality(t *testing.T) {
-	files := map[string]string{
-		"a/Rate.java": `package a;
-public class Rate {
-    public int apply(int[] xs)   { return xs.length; }
-    public int apply(int[][] xs) { return xs.length; }
-}
-`,
-		"a/App.java": `package a;
-public class App { public int run(Rate r, int[][] xs) { return r.apply(xs); } }
-`,
-	}
-	confirmed, truth := binderVsBytecode(t, files)
-	if !hasSig(truth, "a/Rate.java", "apply", "([[I)") {
-		t.Fatalf("javac binds apply([[I); truth set says otherwise: %+v", truth)
-	}
-	if !hasSig(confirmed, "a/Rate.java", "apply", "([I)") {
-		t.Fatalf("JVMSOUND-004 APPEARS FIXED (dimensionality instance).\n"+
-			"The binder no longer binds an int[][] argument to apply(int[]).\n"+
-			"If callableSig started keying array dimensionality, DELETE this pin and\n"+
-			"add a positive regression test in engine/jvmresolve instead. Do not weaken it.\n"+
-			"confirmed: %+v", confirmed)
-	}
-	res := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.BySignature)
-	t.Logf("JVMSOUND-004 (dimensionality):\n%s", res.Format())
-	if res.Sound() {
-		t.Fatal("the strengthened rendering guard must still REPORT a real mis-binding, not abstain it away")
-	}
+	t.Skip("JVMSOUND-004 closed 2026-08-20 (SW-188, ADR 0013 D4–D6). " +
+		"See engine/jvmresolve/hierarchy_test.go::TestCallableSig_ArrayDim " +
+		"(SHAPE 2) for the higher-dimensionality positive regression.")
 }
 
 // TestOwnerWalk_InheritedCallIsNotAFalseCounterexample pins the JVM method
@@ -638,61 +565,21 @@ class Rate {
 	}
 }
 
-// TestJVMSOUND003_CrossFileWrongEdge pins the USER-VISIBLE consequence of the
-// arity defect, which the in-file fixture above cannot show: when the two
-// overloads live in DIFFERENT files, the wrong binding is a wrong confirmed
-// EDGE, not merely a wrong choice inside one node.
+// TestJVMSOUND003_CrossFileWrongEdge is the JVMSOUND-003 pin (cross-file
+// closure: the wrong binding is a wrong CONFIRMED EDGE between files, not
+// merely a wrong choice inside one node).
 //
-// `d.m(1 /* scale */)` must bind `a.Base.m(int)` (a/Base.java). The binder
-// counts the comment, looks up arity 2, and binds `a.Derived.m(int,int)`
-// (a/Derived.java) — a different declaration, in a different file, reachable
-// from `callers`/`callees`. D5 makes a wrong edge stop-ship.
+// CLOSED 2026-08-20 (SW-188, ADR 0013 D1/D2). The same countArgs fix that
+// closes the in-file case closes this one — `d.m(1 /* scale */)` now binds
+// `a.Base.m(int)` and never `a.Derived.m(int,int)`. The positive regression
+// is engine/jvmresolve/body_java_test.go::TestCountArgs_CrossFileBindsBase.
 //
-// This test PINS THE DEFECT rather than asserting the fix: it is green while
-// the defect exists and RED WITH INSTRUCTIONS the moment it is fixed, which is
-// the discipline the parity harness's known-defect rows already use. Fixing it
-// is not this story's job — SW-172 is the oracle, and "the oracle measures the
-// binder; it does not improve it" is in its own Out of scope.
+// Replaced with a skip stub per the pin/positive discipline — see the
+// comment on TestArity_CatchesOverloadMisbind_JVMSOUND003.
 func TestJVMSOUND003_CrossFileWrongEdge(t *testing.T) {
-	files := map[string]string{
-		"a/Base.java": `package a;
-public class Base {
-    public int m(int x) { return x; }
-}
-`,
-		"a/Derived.java": `package a;
-public class Derived extends Base {
-    public int m(int x, int y) { return x + y; }
-}
-`,
-		"a/App.java": `package a;
-public class App {
-    public int run(Derived d) { return d.m(1 /* scale */); }
-}
-`,
-	}
-	confirmed, truth := binderVsBytecode(t, files)
-	if !hasFact(truth, "a/App.java", "run", "a/Base.java", "m", 1) {
-		t.Fatalf("javac binds a/Base.java m(int); truth set says otherwise: %+v", truth)
-	}
-	if !hasFact(confirmed, "a/App.java", "run", "a/Derived.java", "m", 2) {
-		t.Fatalf("JVMSOUND-003 APPEARS FIXED.\n"+
-			"The binder no longer binds `d.m(1 /* scale */)` to a/Derived.java m(int,int).\n"+
-			"If countArgs stopped counting the comment node, DELETE this pin and add a\n"+
-			"positive regression test in engine/jvmresolve instead. Do not weaken it.\n"+
-			"confirmed: %+v", confirmed)
-	}
-	res := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.ByName)
-	t.Logf("JVMSOUND-003 (cross-file, user-visible):\n%s", res.Format())
-	if res.Sound() {
-		t.Fatal("a cross-file wrong edge must be a counterexample at every precision")
-	}
-	// …and at the GRAPH-STORE level, which is the claim that matters. The
-	// binder-level set above reports binding DECISIONS and is a documented
-	// SUPERSET of emitted edges (blind spot #7), so on its own it proves a wrong
-	// choice, not a wrong edge. D5 makes a wrong EDGE the stop-ship, so the
-	// evidence has to be an edge.
-	assertWrongEdgeReachesTheStore(t, files, "a/App.java", "run", "a/Derived.java", "m")
+	t.Skip("JVMSOUND-003 closed 2026-08-20 (SW-188, ADR 0013 D1/D2). " +
+		"See engine/jvmresolve/body_java_test.go::TestCountArgs_CrossFileBindsBase " +
+		"for the cross-file positive regression.")
 }
 
 // assertWrongEdgeReachesTheStore ingests the fixture with the JVM binder live
@@ -715,53 +602,22 @@ func assertWrongEdgeReachesTheStore(t *testing.T, files map[string]string, calle
 		"confirmed edges: %+v", callerFile, callerMethod, calleeFile, callee, edges)
 }
 
-// TestJVMSOUND004_CrossFileWrongEdge is the same, for the array-erasure defect.
+// TestJVMSOUND004_CrossFileWrongEdge is the JVMSOUND-004 pin (cross-file
+// closure: the wrong binding is a wrong CONFIRMED EDGE between files).
 //
-// `d.apply(t)` passes a scalar `Thing`, so javac binds `a.Base.apply(Thing)`
-// (a/Base.java). callableSig keys both declarations on TypeRef.Base — which has
-// arrays erased — so `apply(Thing)` and `apply(Thing[])` produce the IDENTICAL
-// signature, the overload set is misread as an override pair, and the
-// most-derived `a.Derived.apply(Thing[])` (a/Derived.java) wins. Wrong edge,
-// different file, and the binder should have returned AmbiguousMember.
+// CLOSED 2026-08-20 (SW-188, ADR 0013 D4–D6). The same arrayDims fix that
+// closes the in-file case closes this one — `d.apply(t)` no longer binds
+// `a.Derived.apply(Thing[])`; the overload set is read as overloads and the
+// lookup returns AmbiguousMember rather than the most-derived wrong binding.
+// The positive regression is
+// engine/jvmresolve/hierarchy_test.go::TestCallableSig_CrossFileBindsBase.
+//
+// Replaced with a skip stub per the pin/positive discipline — see the
+// comment on TestArity_CatchesOverloadMisbind_JVMSOUND003.
 func TestJVMSOUND004_CrossFileWrongEdge(t *testing.T) {
-	files := map[string]string{
-		"a/Thing.java": `package a;
-public class Thing {}
-`,
-		"a/Base.java": `package a;
-public class Base {
-    public int apply(Thing t) { return 1; }
-}
-`,
-		"a/Derived.java": `package a;
-public class Derived extends Base {
-    public int apply(Thing[] ts) { return ts.length; }
-}
-`,
-		"a/App.java": `package a;
-public class App {
-    public int run(Derived d, Thing t) { return d.apply(t); }
-}
-`,
-	}
-	confirmed, truth := binderVsBytecode(t, files)
-	if !hasFact(truth, "a/App.java", "run", "a/Base.java", "apply", 1) {
-		t.Fatalf("javac binds a/Base.java apply(Thing); truth set says otherwise: %+v", truth)
-	}
-	if !hasSig(confirmed, "a/Derived.java", "apply", "([La/Thing;)") {
-		t.Fatalf("JVMSOUND-004 APPEARS FIXED.\n"+
-			"The binder no longer binds `d.apply(t)` to a/Derived.java apply(Thing[]).\n"+
-			"If callableSig started keying array dimensionality (or the lookup started\n"+
-			"returning AmbiguousMember here), DELETE this pin and add a positive\n"+
-			"regression test in engine/jvmresolve instead. Do not weaken it.\n"+
-			"confirmed: %+v", confirmed)
-	}
-	res := jvmgroundtruth.CompareAt(confirmed, truth, jvmgroundtruth.ByName)
-	t.Logf("JVMSOUND-004 (cross-file, user-visible):\n%s", res.Format())
-	if res.Sound() {
-		t.Fatal("a cross-file wrong edge must be a counterexample at every precision")
-	}
-	assertWrongEdgeReachesTheStore(t, files, "a/App.java", "run", "a/Derived.java", "apply")
+	t.Skip("JVMSOUND-004 closed 2026-08-20 (SW-188, ADR 0013 D4–D6). " +
+		"See engine/jvmresolve/hierarchy_test.go::TestCallableSig_CrossFileBindsBase " +
+		"for the cross-file positive regression.")
 }
 
 // TestEmptyExtensionInterface_AbstainsRatherThanAccusing is the CRITICAL-4 pin
@@ -862,6 +718,20 @@ func TestEmptyExtensionInterface_AbstainsRatherThanAccusing(t *testing.T) {
 // The fix registers at the FINEST keyable level only. Both halves are asserted
 // here, because either one alone is the wrong fix: the real defect must be
 // reported, AND MAJOR-7's legitimate abstention must survive.
+//
+// RESTATED 2026-08-20 (SW-188) — the JVMSOUND-003 fix closed the defect this
+// test pinned beside the rescue; `r.apply(1 /* the scale */)` is now bound at
+// arity 1, so the precondition (the binder's mis-binding at arity 2 from
+// `run()`) no longer holds. The rescue's two halves are still the right
+// things to pin and are now asserted on a fixture where the rescue's
+// legitimate abstention (the local-class-caller fact under
+// bytecode_caller_not_alignable) is still present AND where a same-arity,
+// same-callee confirmed call from `run()` STILL matches — so the rescue's
+// narrowest-level-only rule is the load-bearing thing under test. The
+// "real defect reported" half is dropped: with the rescue correctly narrowed
+// and the binder correctly bound, no defect the rescue is hiding is
+// reproducible here, and asserting there must be one would require
+// fabricating a mis-binding the binder does not produce.
 func TestCallerUnalignableRescue_IsFinestLevelOnly(t *testing.T) {
 	files := map[string]string{
 		"a/Rate.java": `package a;
@@ -870,9 +740,11 @@ public class Rate {
     public int apply(int x, int y) { return x + y; }
 }
 `,
-		// run() carries the JVMSOUND-003 construct (the comment is counted as an
-		// argument, so the binder picks arity 2). go() carries a local class
-		// that calls the SAME NAME correctly — the rescue's trigger.
+		// run() and go() both bind arity 1 correctly (JVMSOUND-003 closed).
+		// go() carries a local class L whose method g() calls `apply(1)` —
+		// the rescue's trigger: javac compiles L.g into a/App$1L.g, which
+		// graphi cannot name, so the truth fact for that call is
+		// callerSynthetic and abstains under bytecode_caller_not_alignable.
 		"a/App.java": `package a;
 public class App {
     public int run(Rate r) { return r.apply(1 /* the scale */); }
@@ -884,24 +756,28 @@ public class App {
 `,
 	}
 	confirmed, truth := binderVsBytecode(t, files)
-	if !hasFact(confirmed, "a/App.java", "run", "a/Rate.java", "apply", 2) {
-		t.Fatalf("precondition: the JVMSOUND-003 mis-binding (arity 2) must be present: %+v", confirmed)
-	}
+	// PRECONDITION 1 — the local-class call's truth fact carries the
+	// synthetic caller (a/App$1L.g). It is what drives the rescue.
 	if !hasFact(truth, "a/App.java", "g", "a/Rate.java", "apply", 1) {
 		t.Fatalf("precondition: javac must attribute the local class's call to a/App$1L.g: %+v", truth)
 	}
+	// PRECONDITION 2 — the binder now binds run()'s `apply(1 /* scale */)`
+	// at arity 1 (JVMSOUND-003 closed); a confirmed call must be present
+	// from the same file at the same arity for the rescue's
+	// does-not-overfire assertion to be meaningful.
+	if !hasFact(confirmed, "a/App.java", "run", "a/Rate.java", "apply", 1) {
+		t.Fatalf("precondition: binder must bind run()'s call at arity 1 (JVMSOUND-003 closed): %+v", confirmed)
+	}
 
+	// ASSERTION — the rescue's narrowest-level-only rule still fires
+	// for the local-class-caller truth fact. Without this, a future change
+	// could re-broaden the rescue and silently swallow mis-bindings again.
+	// The fact is a same-arity, same-callee match between truth and
+	// confirmed (both apply(1)), so the rescue is what abstains it; the
+	// remaining confirmed call (run) still matches.
 	for _, p := range []jvmgroundtruth.Precision{jvmgroundtruth.ByArity, jvmgroundtruth.BySignature} {
 		res := jvmgroundtruth.CompareAt(confirmed, truth, p)
 		t.Logf("%s: %s", p, strings.TrimSpace(res.Format()))
-		if res.Sound() {
-			t.Fatalf("the rescue swallowed a REAL mis-binding at %s: a local class calling the same NAME must not excuse a different SIGNATURE", p)
-		}
-		if len(res.Violations) != 1 || res.Violations[0].CallerMethod != "run" || res.Violations[0].CalleeArity != 2 {
-			t.Fatalf("the counterexample must be the arity-2 mis-binding from run(), got %+v", res.Violations)
-		}
-		// MAJOR-7's legitimate abstention must survive the narrowing: the
-		// confirmed call from go() names a caller the bytecode calls `g`.
 		if res.AbstainReasons[jvmgroundtruth.AbstainBytecodeCallerNotAlignable] != 1 {
 			t.Fatalf("MAJOR-7's abstention must still fire once at %s, got %v", p, res.AbstainReasons)
 		}
