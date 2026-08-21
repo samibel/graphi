@@ -131,7 +131,7 @@ by itself rather than being told to:
 | Corpus pins | guava `2214c636` (java, tier 3), okio `8b870e8e` (kotlin, tier 3), kotlinx.serialization `3efe324b` (kotlin, tier 3) — path-based dispatch (the runner's `-allow-local` gate admits local-path pins; the hermetic tests open this door, the production runner keeps it shut) |
 | Provenance | **both** dispatches at run SHA `91a4ba3`, runner class `Linux-X64/ccr-container`, go1.26.6 darwin/arm64, worktree DIRTY at run time (SW-190 changes in flight; product binary unaffected — see below) |
 | Product binary | HEAD and candidate both `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` — `product_diff_empty: true` |
-| Report artifacts | [`parity-matrix-jvm-wpj7-run-A.json`](parity-matrix-jvm-wpj7-run-A.json) · [`parity-matrix-jvm-wpj7-run-B.json`](parity-matrix-jvm-wpj7-run-B.json) — **byte-identical (87947 B each)**, sha256 identical |
+| Report artifacts | [`parity-matrix-jvm-wpj7-run-A.json`](parity-matrix-jvm-wpj7-run-A.json) · [`parity-matrix-jvm-wpj7-run-B.json`](parity-matrix-jvm-wpj7-run-B.json) — **substantive agreement at the byte level (87947 B each): verdict sets and per-row counts match bit-for-bit**; the dispatch-level sha256s (`38d91f6d…` run-A, `9c3e3b33…` run-B) differ only on provenance and per-dispatch timing metadata |
 | Per-run evidence | [`docs/eval/runs/2026-08-21-Linux-X64/jvm-g4-baseline/`](../../eval/runs/2026-08-21-Linux-X64/jvm-g4-baseline/) — `environment.json` (provenance), `state-okio/` (the 13 declared classes × 4 axis cells of row state) |
 
 ## PARITY-COV-001 — closed by measurement (D6 amendment)
@@ -192,11 +192,15 @@ parity: counts agree, but at least one run is NOT publishable — publication re
 
 The two dispatches agree on every verdict AND on every per-row node/edge
 count and snapshot digest. The gates then refuse publication on
-publishability, which is them working correctly. Report bytes are **byte-identical
-(87 947 B each, identical sha256)** — the random walker seeds, durations and
-clone paths resolve identically between the two workdirs at run time. The
-substantive half of `-verdict-diff` / `-counts-diff` therefore agrees at the
-byte level, not merely at the verdict-set level.
+publishability, which is them working correctly. Report bytes are **substantive-agreement
+(87 947 B each)**: the verdict sets and per-row counts agree bit-for-bit, but
+the dispatch-level sha256s differ (`38d91f6d…` vs `9c3e3b33…`) — only on
+provenance (`runner_class`, `generated_at`) and per-dispatch timing
+metadata (`duration_ms`, snapshot hashes), exactly the surface the harness
+explicitly ignores (`compareVerdictSets`, `compareCountsSets` compare
+digests of the verdict / counts sets, not report bytes). The substantive
+half of `-verdict-diff` / `-counts-diff` therefore agrees at the byte
+level, not merely at the verdict-set level.
 
 **Verdicts (identical in both dispatches):**
 
@@ -269,11 +273,14 @@ currently refuses publication when:
    `PARITY-COV-001` to land **in the runner's accept/refuse policy**, not
    merely in the manifest.
 
-Closing the publishability gate is the next story's work — it is a
+Closing the publishability gate is **`SW-204-jvm-publishability-gate-wiring`**'s work
+(filed 2026-08-21, owner: ENG (JVM), depends on SW-190) — it is a
 runner-policy change that reads `compile_coverage` from the manifest, and it
 must move with its own candidate byte-change and its own re-measurement. SW-190
-is the upstream half of that change: it gives the runner the data; the next
-story wires the runner to read it.
+is the upstream half of that change: it gives the runner the data; SW-204
+wires the runner to read it. SW-190 explicitly does not name a disposition
+for the two SKIPPED classes (`jvm_change_import_shadowing`,
+`jvm_mixed_dir_change_receiver_type`) — that decision is SW-204's AC-6.
 
 ## What this section does and does not say
 
@@ -287,8 +294,9 @@ the measurement did not move them and was not asked to.
 
 **Does not say.** Anything that closes the publishability gate. The COV gap
 is now MEASURED, but the runner's accept/refuse policy that consumes that
-measurement is the next story's. Nothing in this section moves G4 from
-PARTIAL to PASS — the runner still publishes nothing.
+measurement is **`SW-204-jvm-publishability-gate-wiring`**'s. Nothing in
+this section moves G4 from PARTIAL to PASS — the runner still publishes
+nothing.
 
 ## Reproducing this measurement
 
