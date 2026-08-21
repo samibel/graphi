@@ -129,6 +129,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/engine/trust"
@@ -194,6 +195,14 @@ const intraFileParseOnlyMatrixPath = "../../docs/coverage-matrix.yaml"
 // crossfileheuristicresidual_test.go.
 const intraFileParseOnlyEvidencePath = "../../docs/rc/evidence-index.yaml"
 
+// intraFileParseOnlyWithdrawalsPath is the relative path to the
+// SW-178 matrix-discipline withdrawals document, the same file the
+// cross-file-heuristic tests reference. The intra-file-only / parse-
+// only tests classify each residual language against this doc to
+// distinguish ACTIVE (matrix row present) from WITHDRAWN (matrix row
+// absent + re-introducer recorded) states.
+const intraFileParseOnlyWithdrawalsPath = "../../docs/rc/ga-language-withdrawals-2026-08-21.md"
+
 // TestIntraFileParseOnly_LanguageSetFromAudit pins AC-1 / AC-4: the
 // closed set of languages SW-185 grades matches the SW-183 audit rows
 // 17–22 (the five intra-file-only rows plus the one parse-only row).
@@ -254,20 +263,38 @@ func TestIntraFileParseOnly_LanguageSetFromAudit(t *testing.T) {
 }
 
 // TestIntraFileParseOnly_MatrixRowsExist pins the matrix-side GA claim
-// for each residual language. The matrix row is a pending GA declaration
-// at SW-185 close — CheckGALanguages will report one violation per
-// UNKNOWN evidence row, which is the EXPECTED state, but the row itself
-// MUST exist (the spec's AC-2: `GA-LANG-<lang>-G1..G9` rows for each
-// language). A language that appears in the residual set but not in the
-// matrix has no scaffold at all, vacuous or otherwise.
+// for each residual language under the SW-178 matrix-discipline. Per
+// SW-178, a `category: ga-language` matrix row is in place ONLY when
+// its gate is green — every GA-LANG-<lang>-* row reads PASS — and
+// absent (commented out per SW-178 §D) only when the language has a
+// re-introducer story id in
+// docs/rc/ga-language-withdrawals-2026-08-21.md.
 //
-// Both directions are asserted: every residual language has a matrix
-// row, and no extra ga-language row exists that the residual set did
-// not authorize (otherwise a future addition silently leaks in). The
-// level is asserted per-language — a `yaml` row that carried
-// `cross-file-heuristic` would match the row-existence check but fail
-// the level check, which is the property the audit (re-grade) path
-// requires.
+// The test asserts the three valid states per residual language:
+//
+//  1. ACTIVE — the matrix row is present with `capability:` matching
+//     the residual set's level (intra-file-only or parse-only),
+//     `status: shipped`, `tier: labs`. The level is asserted per-
+//     language — a `yaml` row that carried `cross-file-heuristic`
+//     would match the row-existence check but fail the level check,
+//     which is the property the audit (re-grade) path requires.
+//  2. WITHDRAWN — the matrix row is absent, AND every
+//     GA-LANG-<lang>-{G1,G2,G3..G9} evidence row reads UNKNOWN, AND
+//     the language is recorded in the SW-178 withdrawals doc with a
+//     non-empty re-introducer story id.
+//  3. UNAUTHORIZED — neither of the above, OR both — is a CH-FAIL.
+//
+// A language that is BOTH active and withdrawn is the third illegal
+// state (the matrix row was uncommented before the withdrawals doc
+// was updated to remove the language); flagged separately so the
+// author of the bad change sees both sides of the conflict.
+//
+// The "no extra ga-language rows" check at the bottom guards against
+// phantom additions: any ga-language row in the matrix that is NOT
+// `go` (the grandfathered typed-confirmed row) and NOT in the
+// residual set is an extra row this guard did not authorise. After
+// SW-178, only `go` is active in the matrix at this commit; future
+// F5-dispatch work will move languages from WITHDRAWN to ACTIVE.
 func TestIntraFileParseOnly_MatrixRowsExist(t *testing.T) {
 	caps, err := LoadMatrix(intraFileParseOnlyMatrixPath)
 	if err != nil {
@@ -282,79 +309,119 @@ func TestIntraFileParseOnly_MatrixRowsExist(t *testing.T) {
 		matrixGALangs[c.ID] = c
 	}
 
-	var missing []string
-	var levelMismatch []string
-	for _, entry := range residualIntraFileParseOnlyLanguages {
-		row, ok := matrixGALangs[entry.Lang]
-		if !ok {
-			missing = append(missing, entry.Lang)
-			continue
-		}
-		if row.Status != StatusShipped {
-			t.Errorf("ga-language row %q: status %q, want %q (a GA "+
-				"language must be shipped; planned/partial cannot be GA — galang.go:108)",
-				entry.Lang, row.Status, StatusShipped)
-		}
-		if row.CapabilityLevel != string(entry.Level) {
-			levelMismatch = append(levelMismatch, fmt.Sprintf("%q declared %q, audit measured %q",
-				entry.Lang, row.CapabilityLevel, entry.Level))
-		}
-		if row.Tier != TierLabs {
-			t.Errorf("ga-language row %q: tier %q, want %q (tier is "+
-				"structural — ga-language rows are NOT operation ids and carry no "+
-				"information about GA, so they read %q by definition; coverage-matrix.yaml:30-37)",
-				entry.Lang, row.Tier, TierLabs, TierLabs)
-		}
-	}
-	if len(missing) > 0 {
-		t.Errorf("ga-language rows missing for residual languages %v — "+
-			"every SW-185 language needs a `category: ga-language` row in "+
-			"docs/coverage-matrix.yaml with the correct capability level. "+
-			"Without a row, the language cannot be GA at any gate value and "+
-			"the evidence rows are invisible to CheckGALanguages (galang.go:96-98).",
-			missing)
-	}
-	if len(levelMismatch) > 0 {
-		t.Errorf("ga-language rows declare a capability level that does not match the "+
-			"SW-183 audit %v. The matrix row's level is the language's CLAIMED level, and "+
-			"it must match the level the audit measured for the language to be GA at the "+
-			"declared level. A mismatch means either (a) the audit re-graded the language "+
-			"and the matrix row was not updated, or (b) the matrix row carries a stale "+
-			"level. Either is a CH-FAIL — the language cannot be GA at a level its evidence "+
-			"does not support.", levelMismatch)
+	withdrawn, err := loadWithdrawnLanguages(intraFileParseOnlyWithdrawalsPath)
+	if err != nil {
+		t.Fatalf("read withdrawals doc %s: %v", intraFileParseOnlyWithdrawalsPath, err)
 	}
 
-	// No extra ga-language rows: the matrix has only the `go` grandfather row
-	// + the 9 already-shipped (java, kotlin, python, typescript, tsx,
-	// javascript, bash, c, c_sharp, cpp, lua, php, ruby, rust, sql — 15
-	// cross-file-heuristic + java/kotlin from SW-174 + python from SW-181
-	// + typescript/tsx/javascript from SW-182) + the 6 residual = 22. If
-	// this number changes outside a SW-185 follow-on, the assertion below
-	// fails loudly.
+	var (
+		activeAndWithdrawn   []string
+		withdrawnBadContract []string
+		unauthorized         []string
+	)
+
 	residualSet := map[string]bool{}
 	for _, entry := range residualIntraFileParseOnlyLanguages {
 		residualSet[entry.Lang] = true
 	}
+
+	for _, entry := range residualIntraFileParseOnlyLanguages {
+		switch classifyResidualLang(entry.Lang, matrixGALangs, withdrawn) {
+		case stateActive:
+			row := matrixGALangs[entry.Lang]
+			if row.Status != StatusShipped {
+				t.Errorf("active ga-language row %q: status %q, want %q (a GA "+
+					"language must be shipped; planned/partial cannot be GA — galang.go:108)",
+					entry.Lang, row.Status, StatusShipped)
+			}
+			if row.CapabilityLevel != string(entry.Level) {
+				t.Errorf("active ga-language row %q: capability %q, want %q (the "+
+					"residual set's measured level per SW-183 audit; a mismatch means the "+
+					"audit re-graded the language and the matrix row was not updated)",
+					entry.Lang, row.CapabilityLevel, entry.Level)
+			}
+			if row.Tier != TierLabs {
+				t.Errorf("active ga-language row %q: tier %q, want %q (tier is "+
+					"structural — ga-language rows are NOT operation ids and carry no "+
+					"information about GA, so they read %q by definition; coverage-matrix.yaml:30-37)",
+					entry.Lang, row.Tier, TierLabs, TierLabs)
+			}
+		case stateWithdrawn:
+			// SW-178 WITHDRAWN contract: the matrix row is absent
+			// (by the state classifier), AND every GA-LANG-<lang>-
+			// {G1,G2,G3..G9} evidence row reads UNKNOWN, AND the
+			// language is recorded in the withdrawals doc with a
+			// re-introducer story id. All three halves are pinned.
+			gateStatus := evidenceRowsByID(t, intraFileParseOnlyEvidencePath, entry.Lang)
+			var notUnknown, missing []string
+			for _, g := range residualIntraFileParseOnlyRowGates {
+				status, ok := gateStatus[g]
+				if !ok {
+					missing = append(missing, g)
+					continue
+				}
+				if status != "UNKNOWN" {
+					notUnknown = append(notUnknown, fmt.Sprintf("%s=%s", g, status))
+				}
+			}
+			if len(missing) > 0 || len(notUnknown) > 0 {
+				withdrawnBadContract = append(withdrawnBadContract,
+					fmt.Sprintf("%s (missing gates: %v; non-UNKNOWN evidence: %v)",
+						entry.Lang, missing, notUnknown))
+			}
+			if w, ok := withdrawn[entry.Lang]; !ok || strings.TrimSpace(w.Reintroducer) == "" {
+				withdrawnBadContract = append(withdrawnBadContract,
+					fmt.Sprintf("%s (no re-introducer story id in withdrawals doc)", entry.Lang))
+			}
+		case stateUnauthorized:
+			// Distinguish "both" from "neither" for clearer error
+			// messages — a "both" failure is a SW-178 violation; a
+			// "neither" failure is a scaffold that never landed.
+			_, inMatrix := matrixGALangs[entry.Lang]
+			_, inWithdrawals := withdrawn[entry.Lang]
+			if inMatrix && inWithdrawals {
+				activeAndWithdrawn = append(activeAndWithdrawn, entry.Lang)
+			} else {
+				unauthorized = append(unauthorized, entry.Lang)
+			}
+		}
+	}
+	if len(activeAndWithdrawn) > 0 {
+		t.Errorf("residual languages BOTH active (matrix row present) AND withdrawn "+
+			"(in SW-178 withdrawals doc) — these states are mutually exclusive: %v",
+			activeAndWithdrawn)
+	}
+	if len(withdrawnBadContract) > 0 {
+		t.Errorf("WITHDRAWN residual languages fail the SW-178 withdrawal contract "+
+			"(matrix row absent + all GA-LANG-<lang>-* rows UNKNOWN + re-introducer "+
+			"recorded in docs/rc/ga-language-withdrawals-2026-08-21.md): %v",
+			withdrawnBadContract)
+	}
+	if len(unauthorized) > 0 {
+		t.Errorf("residual languages are NEITHER active nor withdrawn — neither "+
+			"the matrix row nor the SW-178 withdrawal entry exists. The scaffold "+
+			"never landed (or was withdrawn without recording a re-introducer): %v",
+			unauthorized)
+	}
+
+	// No extra ga-language rows: the matrix may carry `go` (the
+	// grandfathered typed-confirmed row, not a residual language) and
+	// any active residual rows. Anything else is an unauthorised
+	// addition this guard did not anticipate.
 	var extra []string
 	for lang := range matrixGALangs {
 		if lang == "go" {
-			continue // grandfathered; carries no GA-LANG-* rows
+			continue // grandfathered; carries its own GA-LANG-go-G1..G9
 		}
 		if residualSet[lang] {
-			continue
+			continue // SW-185 residual set; state checked above
 		}
-		switch lang {
-		case "java", "kotlin", "python", "typescript", "tsx", "javascript",
-			"bash", "c", "c_sharp", "cpp", "lua", "php", "ruby", "rust", "sql":
-			continue // already shipped by SW-174 / SW-181 / SW-182 / SW-184
-		default:
-			extra = append(extra, lang)
-		}
+		extra = append(extra, lang)
 	}
 	sort.Strings(extra)
 	if len(extra) > 0 {
 		t.Errorf("ga-language rows in the matrix for languages outside the SW-185 "+
-			"residual and the already-shipped set %v — the matrix change for "+
+			"residual and the `go` grandfather %v — the matrix change for "+
 			"this story must NOT add ga-language rows the residual scope did not authorise",
 			extra)
 	}
@@ -480,101 +547,101 @@ func TestIntraFileParseOnly_AllRowsUnknown(t *testing.T) {
 }
 
 // TestIntraFileParseOnly_OrderingConstraint pins AC-2's ordering
-// constraint — the rule from CheckGALanguages / galang.go:129-131:
+// constraint — the rows-born-UNKNOWN-first / matrix-row-LAST rule
+// from galang.go:129-131 — for ACTIVE residual languages under the
+// SW-178 matrix-discipline.
 //
-//	Rows for a language are born UNKNOWN FIRST while the language has
-//	NO ga-language matrix row; the matrix row is added LAST, only
-//	once every GA-LANG-<lang>-* row reads PASS with evidence URI
-//	and sha.
+// The rule, stated precisely: rows for a language are born UNKNOWN
+// FIRST while the language has NO ga-language matrix row; the matrix
+// row is added LAST, only once every GA-LANG-<lang>-* row reads PASS
+// with evidence URI and sha.
 //
-// This test pins that the matrix row exists for each residual language
-// (the scaffold is structurally complete) AND that the per-language
-// evidence rows all read UNKNOWN. The combination is what makes the
-// `go run ./cmd/coverage -check` RED-with-the-right-violations shape
-// (one violation per UNKNOWN row) rather than RED-with-the-wrong-shape
-// (phantom rows, missing rows, premature PASS). The "ordering
-// constraint" is the property, not the file position — the test reads
-// the YAMLs and asserts the structural shape.
+// Under SW-178, the contract becomes a state machine:
+//
+//	ACTIVE:     matrix row present, all GA-LANG-<lang>-* rows PASS
+//	            (matrix row in place ONLY when gate is green)
+//	WITHDRAWN:  matrix row absent, all GA-LANG-<lang>-* rows UNKNOWN,
+//	            re-introducer recorded in
+//	            docs/rc/ga-language-withdrawals-2026-08-21.md
+//
+// This test asserts the ACTIVE half: for every residual language with
+// a matrix row, the rows-born-UNKNOWN-first / matrix-row-LAST rule
+// is preserved (the matrix row was added AFTER the evidence rows
+// went from UNKNOWN to PASS; structurally, all nine evidence rows
+// exist AND read PASS). WITHDRAWN languages are exempt — by the
+// SW-178 withdrawal contract, their matrix rows are absent and their
+// evidence rows are all UNKNOWN; the structural ordering is satisfied
+// vacuously because the matrix row is not present.
 func TestIntraFileParseOnly_OrderingConstraint(t *testing.T) {
 	caps, err := LoadMatrix(intraFileParseOnlyMatrixPath)
 	if err != nil {
 		t.Fatalf("read coverage matrix %s: %v", intraFileParseOnlyMatrixPath, err)
 	}
 
-	matrixResidualSet := map[string]bool{}
-	matrixResidualLevel := map[string]trust.CapabilityLevel{}
+	matrixGALangs := map[string]Capability{}
 	for _, c := range caps {
 		if c.Category != CategoryGALanguage {
 			continue
 		}
-		if !isIntraFileParseOnlyLang(c.ID) {
-			continue
-		}
-		matrixResidualSet[c.ID] = true
-		matrixResidualLevel[c.ID] = trust.CapabilityLevel(c.CapabilityLevel)
+		matrixGALangs[c.ID] = c
 	}
 
-	rows, err := loadEvidenceIndexGALangRows(intraFileParseOnlyEvidencePath)
+	withdrawn, err := loadWithdrawnLanguages(intraFileParseOnlyWithdrawalsPath)
 	if err != nil {
-		t.Fatalf("load evidence index: %v", err)
+		t.Fatalf("read withdrawals doc %s: %v", intraFileParseOnlyWithdrawalsPath, err)
 	}
 
-	var perLangEvidenceMissing, perLangMatrixMissing, perLangLevelMismatch []string
+	var (
+		activeNotAllPass []string
+		unauthorized     []string
+	)
 	for _, entry := range residualIntraFileParseOnlyLanguages {
-		evidencePresent := false
-		for _, r := range rows {
-			l, _, ok := splitGALangRowID(r.ID)
-			if !ok || l != entry.Lang {
-				continue
+		switch classifyResidualLang(entry.Lang, matrixGALangs, withdrawn) {
+		case stateActive:
+			// ACTIVE: rows-born-UNKNOWN-first / matrix-row-LAST
+			// (galang.go:129-131) requires the matrix row to be in
+			// place ONLY when all nine evidence rows PASS. A matrix
+			// row with non-PASS evidence is the stale-row condition
+			// SW-178 was introduced to prevent.
+			gateStatus := evidenceRowsByID(t, intraFileParseOnlyEvidencePath, entry.Lang)
+			var notPass, missing []string
+			for _, g := range residualIntraFileParseOnlyRowGates {
+				status, ok := gateStatus[g]
+				if !ok {
+					missing = append(missing, g)
+					continue
+				}
+				if status != "PASS" {
+					notPass = append(notPass, fmt.Sprintf("%s=%s", g, status))
+				}
 			}
-			evidencePresent = true
-			break
+			if len(missing) > 0 || len(notPass) > 0 {
+				activeNotAllPass = append(activeNotAllPass,
+					fmt.Sprintf("%s (missing gates: %v; non-PASS evidence: %v)",
+						entry.Lang, missing, notPass))
+			}
+		case stateWithdrawn:
+			// WITHDRAWN: exempt — by the SW-178 withdrawal contract,
+			// the matrix row is absent and the evidence rows are all
+			// UNKNOWN. The structural ordering is satisfied vacuously.
+			// (The withdrawal contract itself — matrix row absent +
+			// all evidence rows UNKNOWN + re-introducer recorded —
+			// is checked in TestIntraFileParseOnly_MatrixRowsExist.)
+		case stateUnauthorized:
+			unauthorized = append(unauthorized, entry.Lang)
 		}
-		if !evidencePresent {
-			perLangEvidenceMissing = append(perLangEvidenceMissing, entry.Lang)
-		}
-		if !matrixResidualSet[entry.Lang] {
-			perLangMatrixMissing = append(perLangMatrixMissing, entry.Lang)
-		}
-		// The matrix row's level must match the audit's measured level
-		// for the residual set. A mismatch is a re-grade that did not
-		// propagate, and the language's GA claim would be at a level
-		// its evidence does not support.
-		if matrixResidualSet[entry.Lang] && matrixResidualLevel[entry.Lang] != entry.Level {
-			perLangLevelMismatch = append(perLangLevelMismatch, fmt.Sprintf("%q declared %q, audit measured %q",
-				entry.Lang, matrixResidualLevel[entry.Lang], entry.Level))
-		}
+	}
+	if len(activeNotAllPass) > 0 {
+		t.Errorf("ACTIVE residual languages have a matrix row but evidence rows not all PASS %v\n"+
+			"the rows-born-UNKNOWN-first / matrix-row-LAST rule (galang.go:129-131) requires the matrix row to be present ONLY when all GA-LANG-<lang>-* rows read PASS — a matrix row in place with non-PASS evidence is the stale-row condition SW-178 was introduced to prevent.",
+			activeNotAllPass)
+	}
+	if len(unauthorized) > 0 {
+		t.Errorf("residual languages are NEITHER active nor withdrawn — neither the matrix row nor the SW-178 withdrawal entry exists: %v", unauthorized)
 	}
 
-	if len(perLangEvidenceMissing) > 0 {
-		t.Errorf("residual languages with NO GA-LANG-* evidence rows in docs/rc/evidence-index.yaml %v\n"+
-			"the ordering constraint at galang.go:129-131 is rows-first, matrix-row-LAST; "+
-			"a matrix row without evidence rows inverts it and would let CheckGALanguages "+
-			"report the row as having no evidence (galang.go:133-134).", perLangEvidenceMissing)
-	}
-	if len(perLangMatrixMissing) > 0 {
-		t.Errorf("residual languages present in evidence rows but MISSING from the coverage "+
-			"matrix %v\n"+
-			"the ordering constraint at galang.go:129-131 is rows-FIRST, matrix-row-LAST "+
-			"in the SAME change. A language with evidence rows but no matrix row never "+
-			"becomes GA — it lives in the index but never reaches the user-facing surface.",
-			perLangMatrixMissing)
-	}
-	if len(perLangLevelMismatch) > 0 {
-		t.Errorf("residual languages whose matrix row level does not match the SW-183 audit "+
-			"measured level %v. The matrix row's level is the language's CLAIMED level, and "+
-			"it must match the level the audit measured for the language to be GA at the "+
-			"declared level. A mismatch means the audit re-graded the language and the "+
-			"matrix row was not updated, or the matrix row carries a stale level. Either is "+
-			"a CH-FAIL — the language cannot be GA at a level its evidence does not support.",
-			perLangLevelMismatch)
-	}
-
-	// The test file is hermetic; confirm the loader helpers are
-	// reachable from this package by exercising the path it touches.
-	// The matrix path is read twice across the suite; a missing file
-	// would surface as a t.Fatalf with a clear path, not a silent
-	// skip.
+	// Hermeticity: matrix path is reachable from the test cwd. A
+	// missing file surfaces here as a clear path, not a silent skip.
 	if _, err := os.Stat(intraFileParseOnlyMatrixPath); err != nil {
 		t.Errorf("matrix path %s is not reachable from the test cwd: %v", intraFileParseOnlyMatrixPath, err)
 	}

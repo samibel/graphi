@@ -157,6 +157,15 @@ const crossFileResidualMatrixPath = "../../docs/coverage-matrix.yaml"
 // engine/conformance/typescriptparity_matrix_test.go.
 const crossFileResidualEvidencePath = "../../docs/rc/evidence-index.yaml"
 
+// crossFileResidualWithdrawalsPath is the relative path to the SW-178
+// matrix-discipline withdrawals document. Each ga-language matrix row
+// that is commented out per SW-178 §D MUST have a re-introducer story
+// id in this document; the matrix-discipline tests below use it to
+// distinguish ACTIVE (matrix row present, evidence PASS) from
+// WITHDRAWN (matrix row absent, evidence UNKNOWN, re-introducer
+// recorded).
+const crossFileResidualWithdrawalsPath = "../../docs/rc/ga-language-withdrawals-2026-08-21.md"
+
 // TestCrossFileHeuristicResidual_LanguageSetFromAudit pins AC-1: the
 // closed set of languages SW-184 grades matches the SW-183 audit rows
 // 2-14 minus the six already shipped to GA. This is the "language set
@@ -194,17 +203,36 @@ func TestCrossFileHeuristicResidual_LanguageSetFromAudit(t *testing.T) {
 }
 
 // TestCrossFileHeuristicResidual_MatrixRowsExist pins the matrix-side
-// GA claim for each residual language. The matrix row is a pending GA
-// declaration at SW-184 close — CheckGALanguages will report one
-// violation per UNKNOWN evidence row, which is the EXPECTED state,
-// but the row itself MUST exist (the spec's AC-2: `GA-LANG-<lang>-G1..G9`
-// rows for each language). A language that appears in the residual
-// set but not in the matrix has no scaffold at all, vacuous or
-// otherwise.
+// GA claim for each residual language under the SW-178 matrix-
+// discipline. Per SW-178, a `category: ga-language` matrix row is in
+// place ONLY when its gate is green — every GA-LANG-<lang>-* row
+// reads PASS — and absent (commented out per SW-178 §D) only when the
+// language has a re-introducer story id in
+// docs/rc/ga-language-withdrawals-2026-08-21.md.
 //
-// Both directions are asserted: every residual language has a matrix
-// row, and no extra ga-language row exists that the residual set did
-// not authorize (otherwise a future addition silently leaks in).
+// The test asserts the three valid states per residual language:
+//
+//  1. ACTIVE — the matrix row is present with `capability:
+//     cross-file-heuristic`, `status: shipped`, `tier: labs`. The
+//     language is GA at its declared level and the scaffold is
+//     complete.
+//  2. WITHDRAWN — the matrix row is absent, AND every
+//     GA-LANG-<lang>-{G1,G2SUB,G3..G9} evidence row reads UNKNOWN,
+//     AND the language is recorded in the SW-178 withdrawals doc
+//     with a non-empty re-introducer story id.
+//  3. UNAUTHORIZED — neither of the above, OR both — is a CH-FAIL.
+//
+// A language that is BOTH active and withdrawn is the third illegal
+// state (the matrix row was uncommented before the withdrawals doc
+// was updated to remove the language); flagged separately so the
+// author of the bad change sees both sides of the conflict.
+//
+// The "no extra ga-language rows" check at the bottom guards against
+// phantom additions: any ga-language row in the matrix that is NOT
+// `go` (the grandfathered typed-confirmed row) and NOT in the
+// residual set is an extra row this guard did not authorise. After
+// SW-178, only `go` is active in the matrix at this commit; future
+// F5-dispatch work will move languages from WITHDRAWN to ACTIVE.
 func TestCrossFileHeuristicResidual_MatrixRowsExist(t *testing.T) {
 	caps, err := LoadMatrix(crossFileResidualMatrixPath)
 	if err != nil {
@@ -224,68 +252,114 @@ func TestCrossFileHeuristicResidual_MatrixRowsExist(t *testing.T) {
 		matrixGALangs[c.ID] = c
 	}
 
-	var missing []string
-	for _, lang := range residualCrossFileHeuristicLanguages {
-		row, ok := matrixGALangs[lang]
-		if !ok {
-			missing = append(missing, lang)
-			continue
-		}
-		if row.Status != StatusShipped {
-			t.Errorf("ga-language row %q: status %q, want %q (a GA "+
-				"language must be shipped; planned/partial cannot be GA — galang.go:108)",
-				lang, row.Status, StatusShipped)
-		}
-		if row.CapabilityLevel != string(trust.CapabilityCrossFileHeuristic) {
-			t.Errorf("ga-language row %q: capability %q, want %q (the "+
-				"residual set is the cross-file-heuristic half per SW-183; a different level "+
-				"means a re-grade happened and SW-184's scope changed)",
-				lang, row.CapabilityLevel, trust.CapabilityCrossFileHeuristic)
-		}
-		if row.Tier != TierLabs {
-			t.Errorf("ga-language row %q: tier %q, want %q (tier is "+
-				"structural — ga-language rows are NOT operation ids and carry no "+
-				"information about GA, so they read %q by definition; coverage-matrix.yaml:30-37)",
-				lang, row.Tier, TierLabs, TierLabs)
-		}
-	}
-	if len(missing) > 0 {
-		t.Errorf("ga-language rows missing for residual languages %v — "+
-			"every SW-184 language needs a `category: ga-language` row in "+
-			"docs/coverage-matrix.yaml with `capability: cross-file-heuristic`. "+
-			"Without a row, the language cannot be GA at any gate value and "+
-			"the evidence rows are invisible to CheckGALanguages (galang.go:96-98).",
-			missing)
+	withdrawn, err := loadWithdrawnLanguages(crossFileResidualWithdrawalsPath)
+	if err != nil {
+		t.Fatalf("read withdrawals doc %s: %v", crossFileResidualWithdrawalsPath, err)
 	}
 
-	// No residual UNRELATED ga-language rows: the matrix has only the
-	// `go` grandfather row + the 6 already-shipped (java/kotlin/python/
-	// typescript/tsx/javascript) + the 9 residual + the 6 intra-file-only /
-	// parse-only residual (SW-185) = 22. If this number changes outside a
-	// SW-184 or SW-185 follow-on, the assertion below fails loudly.
+	var (
+		activeAndWithdrawn   []string
+		withdrawnBadContract []string
+		unauthorized         []string
+	)
+
+	for _, lang := range residualCrossFileHeuristicLanguages {
+		switch classifyResidualLang(lang, matrixGALangs, withdrawn) {
+		case stateActive:
+			row := matrixGALangs[lang]
+			if row.Status != StatusShipped {
+				t.Errorf("active ga-language row %q: status %q, want %q (a GA "+
+					"language must be shipped; planned/partial cannot be GA — galang.go:108)",
+					lang, row.Status, StatusShipped)
+			}
+			if row.CapabilityLevel != string(trust.CapabilityCrossFileHeuristic) {
+				t.Errorf("active ga-language row %q: capability %q, want %q (the "+
+					"residual set is the cross-file-heuristic half per SW-183; a different level "+
+					"means a re-grade happened and SW-184's scope changed)",
+					lang, row.CapabilityLevel, trust.CapabilityCrossFileHeuristic)
+			}
+			if row.Tier != TierLabs {
+				t.Errorf("active ga-language row %q: tier %q, want %q (tier is "+
+					"structural — ga-language rows are NOT operation ids and carry no "+
+					"information about GA, so they read %q by definition; coverage-matrix.yaml:30-37)",
+					lang, row.Tier, TierLabs, TierLabs)
+			}
+		case stateWithdrawn:
+			// SW-178 WITHDRAWN contract: the matrix row is absent
+			// (by the state classifier), AND every GA-LANG-<lang>-
+			// {G1,G2SUB,G3..G9} evidence row reads UNKNOWN, AND the
+			// language is recorded in the withdrawals doc with a
+			// re-introducer story id. All three halves are pinned.
+			gateStatus := evidenceRowsByID(t, crossFileResidualEvidencePath, lang)
+			var notUnknown, missing []string
+			for _, g := range residualGALangRowGates {
+				status, ok := gateStatus[g]
+				if !ok {
+					missing = append(missing, g)
+					continue
+				}
+				if status != "UNKNOWN" {
+					notUnknown = append(notUnknown, fmt.Sprintf("%s=%s", g, status))
+				}
+			}
+			if len(missing) > 0 || len(notUnknown) > 0 {
+				withdrawnBadContract = append(withdrawnBadContract,
+					fmt.Sprintf("%s (missing gates: %v; non-UNKNOWN evidence: %v)",
+						lang, missing, notUnknown))
+			}
+			if w, ok := withdrawn[lang]; !ok || strings.TrimSpace(w.Reintroducer) == "" {
+				withdrawnBadContract = append(withdrawnBadContract,
+					fmt.Sprintf("%s (no re-introducer story id in withdrawals doc)", lang))
+			}
+		case stateUnauthorized:
+			// Distinguish "both" from "neither" for clearer error
+			// messages — a "both" failure is a SW-178 violation; a
+			// "neither" failure is a scaffold that never landed.
+			_, inMatrix := matrixGALangs[lang]
+			_, inWithdrawals := withdrawn[lang]
+			if inMatrix && inWithdrawals {
+				activeAndWithdrawn = append(activeAndWithdrawn, lang)
+			} else {
+				unauthorized = append(unauthorized, lang)
+			}
+		}
+	}
+	if len(activeAndWithdrawn) > 0 {
+		t.Errorf("residual languages BOTH active (matrix row present) AND withdrawn "+
+			"(in SW-178 withdrawals doc) — these states are mutually exclusive: %v",
+			activeAndWithdrawn)
+	}
+	if len(withdrawnBadContract) > 0 {
+		t.Errorf("WITHDRAWN residual languages fail the SW-178 withdrawal contract "+
+			"(matrix row absent + all GA-LANG-<lang>-* rows UNKNOWN + re-introducer "+
+			"recorded in docs/rc/ga-language-withdrawals-2026-08-21.md): %v",
+			withdrawnBadContract)
+	}
+	if len(unauthorized) > 0 {
+		t.Errorf("residual languages are NEITHER active nor withdrawn — neither "+
+			"the matrix row nor the SW-178 withdrawal entry exists. The scaffold "+
+			"never landed (or was withdrawn without recording a re-introducer): %v",
+			unauthorized)
+	}
+
+	// No extra ga-language rows: the matrix may carry `go` (the
+	// grandfathered typed-confirmed row, not a residual language) and
+	// any active residual rows. Anything else is an unauthorised
+	// addition this guard did not anticipate.
 	var extra []string
 	for lang := range matrixGALangs {
 		if lang == "go" {
-			continue // grandfathered; carries no GA-LANG-* rows
+			continue // grandfathered; carries its own GA-LANG-go-G1..G9
 		}
 		if residual[lang] {
-			continue
+			continue // SW-184 residual set; state checked above
 		}
-		switch lang {
-		case "java", "kotlin", "python", "typescript", "tsx", "javascript",
-			"css", "hcl", "json", "markdown", "toml", "yaml":
-			// SW-174 (java, kotlin), SW-181 (python), SW-182 (typescript,
-			// tsx, javascript), SW-185 (css, hcl, json, markdown, toml,
-			// yaml) — each language's scaffold is its own story.
-			continue
-		default:
-			extra = append(extra, lang)
-		}
+		extra = append(extra, lang)
 	}
 	sort.Strings(extra)
 	if len(extra) > 0 {
 		t.Errorf("ga-language rows in the matrix for languages outside the SW-184 "+
-			"residual and the already-shipped set %v — the matrix change for "+
+			"residual and the `go` grandfather %v — the matrix change for "+
 			"this story must NOT add ga-language rows the residual scope did not authorise",
 			extra)
 	}
@@ -410,81 +484,103 @@ func TestCrossFileHeuristicResidual_AllRowsUnknown(t *testing.T) {
 }
 
 // TestCrossFileHeuristicResidual_OrderingConstraint pins AC-2's
-// ordering constraint — the rule from
-// CheckGALanguages / galang.go:129-131:
+// ordering constraint — the rows-born-UNKNOWN-first / matrix-row-LAST
+// rule from galang.go:129-131 — for ACTIVE residual languages under
+// the SW-178 matrix-discipline.
 //
-//	Rows for a language are born UNKNOWN FIRST while the language has
-//	NO ga-language matrix row; the matrix row is added LAST, only
-//	once every GA-LANG-<lang>-* row reads PASS with evidence URI
-//	and sha.
+// The rule, stated precisely: rows for a language are born UNKNOWN
+// FIRST while the language has NO ga-language matrix row; the matrix
+// row is added LAST, only once every GA-LANG-<lang>-* row reads PASS
+// with evidence URI and sha.
 //
-// This test pins that the matrix row exists for each residual
-// language (the scaffold is structurally complete) AND that the
-// per-language evidence rows all read UNKNOWN. The combination is
-// what makes the `go run ./cmd/coverage -check` RED-with-the-right-
-// violations shape (one violation per UNKNOWN row) rather than
-// RED-with-the-wrong-shape (phantom rows, missing rows, premature
-// PASS). The "ordering constraint" is the property, not the file
-// position — the test reads the YAMLs and asserts the structural
-// shape.
+// Under SW-178, the contract becomes a state machine:
+//
+//	ACTIVE:     matrix row present, all GA-LANG-<lang>-* rows PASS
+//	            (matrix row in place ONLY when gate is green)
+//	WITHDRAWN:  matrix row absent, all GA-LANG-<lang>-* rows UNKNOWN,
+//	            re-introducer recorded in
+//	            docs/rc/ga-language-withdrawals-2026-08-21.md
+//
+// This test asserts the ACTIVE half: for every residual language with
+// a matrix row, the rows-born-UNKNOWN-first / matrix-row-LAST rule
+// is preserved (the matrix row was added AFTER the evidence rows
+// went from UNKNOWN to PASS; structurally, all nine evidence rows
+// exist AND read PASS). WITHDRAWN languages are exempt — by the
+// SW-178 withdrawal contract, their matrix rows are absent and their
+// evidence rows are all UNKNOWN; the structural ordering is satisfied
+// vacuously because the matrix row is not present.
 func TestCrossFileHeuristicResidual_OrderingConstraint(t *testing.T) {
 	caps, err := LoadMatrix(crossFileResidualMatrixPath)
 	if err != nil {
 		t.Fatalf("read coverage matrix %s: %v", crossFileResidualMatrixPath, err)
 	}
 
-	matrixResidualSet := map[string]bool{}
+	matrixGALangs := map[string]Capability{}
 	for _, c := range caps {
 		if c.Category != CategoryGALanguage {
 			continue
 		}
-		if isResidualLang(c.ID) {
-			matrixResidualSet[c.ID] = true
-		}
+		matrixGALangs[c.ID] = c
 	}
 
-	rows, err := loadEvidenceIndexGALangRows(crossFileResidualEvidencePath)
+	withdrawn, err := loadWithdrawnLanguages(crossFileResidualWithdrawalsPath)
 	if err != nil {
-		t.Fatalf("load evidence index: %v", err)
+		t.Fatalf("read withdrawals doc %s: %v", crossFileResidualWithdrawalsPath, err)
 	}
 
-	var perLangEvidence, perLangMatrixMissing []string
+	var (
+		activeNotAllPass []string
+		unauthorized     []string
+	)
 	for _, lang := range residualCrossFileHeuristicLanguages {
-		evidencePresent := false
-		for _, r := range rows {
-			l, _, ok := splitGALangRowID(r.ID)
-			if !ok || l != lang {
-				continue
+		switch classifyResidualLang(lang, matrixGALangs, withdrawn) {
+		case stateActive:
+			// ACTIVE: rows-born-UNKNOWN-first / matrix-row-LAST
+			// (galang.go:129-131) requires the matrix row to be in
+			// place ONLY when all nine evidence rows PASS. A matrix
+			// row with non-PASS evidence is the stale-row condition
+			// SW-178 was introduced to prevent.
+			gateStatus := evidenceRowsByID(t, crossFileResidualEvidencePath, lang)
+			var notPass, missing []string
+			for _, g := range residualGALangRowGates {
+				status, ok := gateStatus[g]
+				if !ok {
+					missing = append(missing, g)
+					continue
+				}
+				if status != "PASS" {
+					notPass = append(notPass, fmt.Sprintf("%s=%s", g, status))
+				}
 			}
-			evidencePresent = true
-			break
+			if len(missing) > 0 || len(notPass) > 0 {
+				activeNotAllPass = append(activeNotAllPass,
+					fmt.Sprintf("%s (missing gates: %v; non-PASS evidence: %v)",
+						lang, missing, notPass))
+			}
+		case stateWithdrawn:
+			// WITHDRAWN: exempt — by the SW-178 withdrawal contract,
+			// the matrix row is absent and the evidence rows are all
+			// UNKNOWN. The structural ordering is satisfied vacuously.
+			// (The withdrawal contract itself — matrix row absent +
+			// all evidence rows UNKNOWN + re-introducer recorded —
+			// is checked in TestCrossFileHeuristicResidual_MatrixRowsExist.)
+		case stateUnauthorized:
+			unauthorized = append(unauthorized, lang)
 		}
-		if !evidencePresent {
-			perLangEvidence = append(perLangEvidence, lang)
-		}
-		if !matrixResidualSet[lang] {
-			perLangMatrixMissing = append(perLangMatrixMissing, lang)
-		}
+	}
+	if len(activeNotAllPass) > 0 {
+		t.Errorf("ACTIVE residual languages have a matrix row but evidence rows not all PASS %v\n"+
+			"the rows-born-UNKNOWN-first / matrix-row-LAST rule (galang.go:129-131) requires the matrix row to be present ONLY when all GA-LANG-<lang>-* rows read PASS — a matrix row in place with non-PASS evidence is the stale-row condition SW-178 was introduced to prevent.",
+			activeNotAllPass)
+	}
+	if len(unauthorized) > 0 {
+		t.Errorf("residual languages are NEITHER active nor withdrawn — neither the matrix row nor the SW-178 withdrawal entry exists: %v", unauthorized)
 	}
 
-	// The structural half: every residual language must appear in
-	// BOTH the evidence index (with all nine rows; pinned above) and
-	// the coverage matrix. Lopsided growth (evidence rows without a
-	// matrix row, or a matrix row without evidence rows) violates the
-	// ordering constraint in either direction.
-	if len(perLangEvidence) > 0 {
-		t.Errorf("residual languages with NO GA-LANG-* evidence rows in docs/rc/evidence-index.yaml %v\n"+
-			"the ordering constraint at galang.go:129-131 is rows-first, matrix-row-LAST; "+
-			"a matrix row without evidence rows inverts it and would let CheckGALanguages "+
-			"report the row as having no evidence (galang.go:133-134).", perLangEvidence)
-	}
-	if len(perLangMatrixMissing) > 0 {
-		t.Errorf("residual languages present in evidence rows but MISSING from the coverage "+
-			"matrix %v\n"+
-			"the ordering constraint at galang.go:129-131 is rows-FIRST, matrix-row-LAST "+
-			"in the SAME change. A language with evidence rows but no matrix row never "+
-			"becomes GA — it lives in the index but never reaches the user-facing surface.",
-			perLangMatrixMissing)
+	// Hermeticity: matrix path is reachable from the test cwd. A
+	// missing file surfaces here as a clear path, not a silent skip.
+	if _, err := os.Stat(crossFileResidualMatrixPath); err != nil {
+		t.Errorf("matrix path %s is not reachable from the test cwd: %v", crossFileResidualMatrixPath, err)
 	}
 }
 
@@ -651,5 +747,124 @@ func uniqSortedStrings(ss []string) []string {
 		out = append(out, s)
 	}
 	sort.Strings(out)
+	return out
+}
+
+// SW-178 matrix-discipline helpers. The discipline names three states
+// for each ga-language matrix row (active / withdrawn / unauthorized);
+// the helpers below classify a residual language against the loaded
+// matrix + withdrawals doc and assert the per-state contract.
+
+// gaLanguageWithdrawal is one row of the SW-178 withdrawals table:
+// the language id (matching the ga-language matrix row's id) and the
+// re-introducer story id (per
+// docs/rc/ga-language-withdrawals-2026-08-21.md). The Markdown table
+// also carries a Notes column; the loader captures only the two
+// fields the matrix-discipline checks need.
+type gaLanguageWithdrawal struct {
+	Language     string
+	Reintroducer string
+}
+
+// loadWithdrawnLanguages parses the SW-178 withdrawals Markdown and
+// returns the per-language re-introducer mapping. The scan is
+// text-based and depends only on the leading-pipe table shape — the
+// file's only structured content is the `| Language | Re-introducer
+// story | Notes |` table at lines 22–44.
+//
+// The loader treats a `| Language` header line and `|---` separator
+// line as skip rows; every other leading-pipe line is a data row.
+func loadWithdrawnLanguages(path string) (map[string]gaLanguageWithdrawal, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", path, err)
+	}
+	defer f.Close()
+	out := map[string]gaLanguageWithdrawal{}
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 1<<16), 1<<24)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if !strings.HasPrefix(line, "|") {
+			continue
+		}
+		cells := strings.Split(line, "|")
+		// cells is [empty, Lang, Reintroducer, Notes?, empty]
+		if len(cells) < 3 {
+			continue
+		}
+		lang := strings.TrimSpace(cells[1])
+		reintroducer := strings.TrimSpace(cells[2])
+		if lang == "" || lang == "Language" || strings.HasPrefix(lang, "---") {
+			continue
+		}
+		out[lang] = gaLanguageWithdrawal{
+			Language:     lang,
+			Reintroducer: reintroducer,
+		}
+	}
+	if err := sc.Err(); err != nil && err != io.EOF {
+		return nil, fmt.Errorf("scan %s: %w", path, err)
+	}
+	return out, nil
+}
+
+// residualLangState is the SW-178 classification of a residual
+// language against the matrix-discipline:
+//
+//   - stateActive: the matrix row is present (and the language is NOT
+//     in the withdrawals doc) — the language is GA at its declared
+//     level, with all GA-LANG-<lang>-* rows PASS.
+//   - stateWithdrawn: the matrix row is absent (commented out per
+//     SW-178 §D) AND the language is recorded in
+//     docs/rc/ga-language-withdrawals-2026-08-21.md with a
+//     re-introducer story id — the WITHDRAWN contract holds.
+//   - stateUnauthorized: the matrix row is present AND the language
+//     is in the withdrawals doc (both = illegal), OR neither — the
+//     scaffold never landed or was withdrawn without recording a
+//     re-introducer.
+type residualLangState int
+
+const (
+	stateActive residualLangState = iota
+	stateWithdrawn
+	stateUnauthorized
+)
+
+// classifyResidualLang returns the residualLangState for lang given
+// the loaded matrix and the loaded withdrawals doc.
+func classifyResidualLang(lang string, matrixGALangs map[string]Capability, withdrawn map[string]gaLanguageWithdrawal) residualLangState {
+	_, inMatrix := matrixGALangs[lang]
+	_, inWithdrawals := withdrawn[lang]
+	switch {
+	case inMatrix && inWithdrawals:
+		return stateUnauthorized // BOTH = illegal
+	case inMatrix:
+		return stateActive
+	case inWithdrawals:
+		return stateWithdrawn
+	default:
+		return stateUnauthorized // neither = scaffold never landed
+	}
+}
+
+// evidenceRowsByID returns the (gate → status) map for a specific
+// language id from the evidence index. Reuses the scaffold's text-
+// based loadEvidenceIndexGALangRows loader so the matrix-discipline
+// tests share the same row-scanning contract.
+func evidenceRowsByID(t *testing.T, path, lang string) map[string]string {
+	t.Helper()
+	rows, err := loadEvidenceIndexGALangRows(path)
+	if err != nil {
+		t.Fatalf("load evidence index %s: %v", path, err)
+	}
+	out := map[string]string{}
+	for _, r := range rows {
+		l, gate, ok := splitGALangRowID(r.ID)
+		if !ok || l != lang {
+			continue
+		}
+		out[gate] = r.Status
+	}
 	return out
 }
