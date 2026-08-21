@@ -1235,17 +1235,16 @@ gates:
     next_action: "Audit bash against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
   - id: GA-LANG-bash-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: bash is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-bash.yaml is the substituted-contract pin. SW-194b will ship the per-language conformance table (engine/conformance/bashparity_test.go + bashparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
-    due: W3
+    owner: "ENG (bash)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-bash-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3
@@ -1338,17 +1337,16 @@ gates:
     next_action: "Audit c against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
   - id: GA-LANG-c-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: c is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met. The C/C++ bundle: c and cpp share the resolver impl at engine/link/resolve_c.go (SW-184's SW-166 extension-filtering precedent); each language still carries its own G2SUB row, and a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-c-cpp.yaml is the substituted-contract pin (shared with cpp, per the SW-184 bundle discipline). SW-194b will ship the per-language conformance table (engine/conformance/ccppparity_test.go + ccppparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    due: W3
+    owner: "ENG (c)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-c-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3
@@ -1441,17 +1439,16 @@ gates:
     next_action: "Audit c_sharp against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
   - id: GA-LANG-c_sharp-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: c_sharp is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-c_sharp.yaml is the substituted-contract pin. SW-194b will ship the per-language conformance table (engine/conformance/csharpparity_test.go + csharpparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
-    due: W3
+    owner: "ENG (c_sharp)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-c_sharp-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3
@@ -1544,17 +1541,16 @@ gates:
     next_action: "Audit cpp against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
     due: W3
   - id: GA-LANG-cpp-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: cpp is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met. The C/C++ bundle: cpp and c share the resolver impl at engine/link/resolve_c.go (SW-184's SW-166 extension-filtering precedent); each language still carries its own G2SUB row, and a gate discharged on cpp does not discharge it for c unless the artefact genuinely covers c."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-c-cpp.yaml is the substituted-contract pin (shared with c, per the SW-184 bundle discipline). SW-194b will ship the per-language conformance table (engine/conformance/ccppparity_test.go + ccppparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    due: W3
+    owner: "ENG (cpp)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-cpp-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3
@@ -1647,17 +1643,16 @@ gates:
     next_action: "Audit lua against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
   - id: GA-LANG-lua-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: lua is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-lua.yaml is the substituted-contract pin. SW-194b will ship the per-language conformance table (engine/conformance/luaparity_test.go + luaparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
-    due: W3
+    owner: "ENG (lua)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-lua-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3
@@ -1750,17 +1745,16 @@ gates:
     next_action: "Audit php against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
   - id: GA-LANG-php-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: php is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-php.yaml is the substituted-contract pin. SW-194b will ship the per-language conformance table (engine/conformance/phpparity_test.go + phpparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
-    due: W3
+    owner: "ENG (php)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-php-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3
@@ -1853,17 +1847,16 @@ gates:
     next_action: "Audit ruby against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
   - id: GA-LANG-ruby-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: ruby is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-ruby.yaml is the substituted-contract pin. SW-194b will ship the per-language conformance table (engine/conformance/rubyparity_test.go + rubyparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
-    due: W3
+    owner: "ENG (ruby)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-ruby-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3
@@ -1956,17 +1949,16 @@ gates:
     next_action: "Audit rust against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
   - id: GA-LANG-rust-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: rust is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-rust.yaml is the substituted-contract pin. SW-194b will ship the per-language conformance table (engine/conformance/rustparity_test.go + rustparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
-    due: W3
+    owner: "ENG (rust)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-rust-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3
@@ -2059,17 +2051,16 @@ gates:
     next_action: "Audit sql against the outcome-derived rule (ADR-W1 shape, F5 form), then cite capability_test.go + the trust-report derivation with a pinned sha. The bundle discipline: independent."
     due: W3
   - id: GA-LANG-sql-G2SUB
-    gate: heuristic resolver contract (SUBSTITUTES G2, never reported as G2)
+    gate: "G2SUB — heuristic resolver contract (SUBSTITUTES G2, never reported as G2)"
     section: language-GA program §2 G2 (substituted per §3, cross-file-heuristic)
-    threshold: "SUBSTITUTION, labelled: the language is below typed-confirmed, so instead of a confirmed-tier resolver it proves the heuristic resolver's own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. The drop-and-count half is the G2SUB never-guess half (the same property a confirmed-tier row would have asserted as `drop on ambiguity`); the never-confirmed half is the G2SUB never-confirmed half."
-    current: "UNKNOWN — per-language heuristic resolver contract not yet cited. SW-178 matrix-discipline withdraws the citation-only PASS. Re-introducer: SW-194..SW-198."
-
+    threshold: "SUBSTITUTION, labelled: sql is below typed-confirmed, so instead of a confirmed-tier resolver it proves its heuristic resolver own contract at equal test strength — never emits a confirmed edge, drops and COUNTS what it cannot resolve, and is deterministic. G2a and G2b as written do not apply and are recorded here as substituted rather than as met. SW-183/ADR 0012 narrowed SQL's substitute: SQL has NO import binding (ISO/IEC 9075 defines no file-inclusion construct), so the heuristic resolver is the EMPTY BINDER plus the same-directory derived-tier pass; cross-file resolution is structurally same-directory only, and the drop-and-count half is the WHOLE contract."
+    current: "UNKNOWN — born UNKNOWN by SW-194a. Target class E1 HARNESS-PROVEN. Per-language parity-class YAML at docs/rc/parity-classes-sql.yaml is the substituted-contract pin. SW-194b will ship the per-language conformance table (engine/conformance/sqlparity_test.go + sqlparity_matrix_test.go); SW-194c flips this row to PASS with the parity-class YAML + conformance twin citations."
     status: UNKNOWN
     evidence_uri: ""
     sha: ""
-    owner: W3-RES
-    next_action: "Cite the per-language heuristic-resolver contract (engine/link/resolve_<lang>.go + the matching resolver test + a hermetic fixture for the relative-import skip and the twin-dirs ambiguity, where the bundle has them). The bundle discipline: independent."
-    due: W3
+    owner: "ENG (sql)"
+    next_action: "SW-194b conformance + SW-194c G3 evidence rows will close this row. The substitution label is the verdict basis."
+    due: "W3+"
   - id: GA-LANG-sql-G3
     gate: Hermetic change-class parity
     section: language-GA program §2 G3

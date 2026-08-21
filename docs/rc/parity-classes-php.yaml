@@ -1,0 +1,205 @@
+# graphi — PHP change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-194a, W5-RES.f). PHP is
+#                      `cross-file-heuristic` (live derivation at the W1.f tip
+#                      91a4ba3); the heuristic resolver at engine/link/
+#                      link.go's `phpResolver{}` registration handles PHP's
+#                      `use Namespace\Class;` and `require_once "file.php";`
+#                      directives — use pulls a class into scope, and
+#                      require_once loads a file at the heuristic tier.
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go, JVM,
+#                      Python and TS tables. PHP has no typed binder at the
+#                      cross-file-heuristic level, so the rows here assert
+#                      PARITY, not CORRECTNESS — parity compares two passes of
+#                      the same rule, so a PASS certifies the rule is
+#                      REGRESSION-CLEAN between incremental and full, never
+#                      that it is correct. Correctness evidence lives in the
+#                      FU-5 script harness (engine/link/resolve_script_test.go)
+#                      and in the real-repository matrix (G4), not here.
+#
+#                      SW-194a SCOPE, STATED. This file DEFINES the eight
+#                      change-class rows at the cross-file-heuristic level.
+#                      The conformance twin (engine/conformance/phpparity_test.go
+#                      + phpparity_matrix_test.go) lands in SW-194b and is
+#                      what proves these rows PROVEN. SW-194c flips the G3
+#                      evidence row to PASS by citing this YAML + the twin
+#                      with their blob shas.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The Python instance (parity-classes-
+#                      python.yaml) is the closest template; this copy
+#                      diverges on THREE named points recorded in the row
+#                      notes: (a) PHP's `use` directive is NAMESPACE-KEYED for
+#                      classes and FILE-RELATIVE for `require_once` — the
+#                      resolver handles BOTH shapes; (b) the resolver already
+#                      names the exact target file path (the requireBinder
+#                      helper at engine/link/resolve_common.go), so the family
+#                      has the same LINK-001 / PARITY-002 immunity by
+#                      construction; (c) PHP's static package-source extension
+#                      set is `.php` (the requireBinder call), modelled on the
+#                      SW-166 extension filter.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestPhpParityMatrix_DriftGuard (engine/conformance/
+# phpparity_matrix_test.go, lands in SW-194b) binds this file to the harness
+# table phpChangeClassTable() in phpparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+
+parity_classes:
+  - id: "php_add_file"
+    kind: "change_class"
+    label: "PHP-Datei hinzufügen / add a PHP file in a new namespace"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/phpparity_test.go"
+    test_line: "0"
+    test_name: "TestPhpFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.f"
+    note: "A new PHP file arrives in a new namespace: pure add path. The witness asserts the new callee resolves cross-module at the heuristic tier — the resolver's only tier — and the control symbols survive. Fixture label reads production Go parser to satisfy the shared closed vocabulary (D-12); the subject under test is the PHP heuristic resolver at engine/link/link.go's phpResolver{} registration. SW-194b ships the harness row; SW-194a ships this YAML row as the substituted-contract pin."
+
+  - id: "php_modify_file"
+    kind: "change_class"
+    label: "PHP-Datei ändern / rewrite a PHP file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/phpparity_test.go"
+    test_line: "0"
+    test_name: "TestPhpFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.f"
+    note: "An indexed PHP file is rewritten in place: a function or method is added while existing nodes keep identity. The witness asserts the new node is present and the existing callee survives — pins the same-package identity-stability contract every rewrite class asserts. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "php_add_call_heuristic"
+    kind: "change_class"
+    label: "Heuristischen Use-Aufruf hinzufügen / add a heuristic-tier cross-file use call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/phpparity_test.go"
+    test_line: "0"
+    test_name: "TestPhpFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.f"
+    note: "A new cross-file use call is added: `use Lib\\Util; Util::func(...)` — the resolver's namespace-keyed path. The witness asserts the file→file `imports` edge lands AND the call edge lands at HEURISTIC tier (model.TierHeuristic), never at confirmed — the PHP resolver is heuristic and must not mint confirmed edges (the G2SUB never-confirmed half). The exact-path resolution gives the family the same LINK-001 / PARITY-002 immunity by construction. SW-194b ships the harness row."
+
+  - id: "php_require_skip"
+    kind: "change_class"
+    label: "Require überspringen + zählen / skip + count a missing require target"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/phpparity_test.go"
+    test_line: "0"
+    test_name: "TestPhpFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.f"
+    note: "A require_once directive (`require_once \"missing.php\";`) targets a file that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids. SW-194b ships the harness row."
+
+  - id: "php_ambiguous_clauses"
+    kind: "change_class"
+    label: "Mehrdeutige Namespaces / two namespaces claiming the same class"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/phpparity_test.go"
+    test_line: "0"
+    test_name: "TestPhpFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.f"
+    note: "A use directive is ambiguous because two namespaces both declare a class with the same name (e.g. `use A\\Foo; use B\\Foo; Foo::bar(...)`). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used. SW-194b ships the harness row."
+
+  - id: "php_delete_file"
+    kind: "change_class"
+    label: "PHP-Datei löschen / delete a PHP file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/phpparity_test.go"
+    test_line: "0"
+    test_name: "TestPhpFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.f"
+    note: "A PHP file declaring a function or class that TWO other files import via `use`/`require_once` is deleted, so the per-file stale-node purge, the heuristic-edge sweep and the re-link all run over it. The witness requires the deleted callee absent, both importers still present, and the heuristic edges into the deleted callee gone — a stale heuristic edge would be the worst outcome here, even though the edge tier is lower than confirmed. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on PHP as well as on Go. SW-194b ships the harness row."
+
+  - id: "php_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / same-namespace file-to-file function move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/phpparity_test.go"
+    test_line: "0"
+    test_name: "TestPhpFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.f"
+    note: "A PHP top-level function (or class) moves file-to-file WITHIN one namespace. The class's identity is keyed on its qualified name (QN), which the resolver derives from the namespace's directory; a same-namespace file move preserves QN while changing source_path and line. Two files then claim one QN inside a single change set — the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The witness asserts the function/class identity is preserved and its cross-namespace use edge survives the re-home. SW-194b ships the harness row."
+
+  - id: "php_add_class_definition"
+    kind: "change_class"
+    label: "Klassendefinition hinzufügen / add a class or interface definition"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/phpparity_test.go"
+    test_line: "0"
+    test_name: "TestPhpFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.f"
+    note: "A class (or interface) definition is added to a PHP namespace. The witness asserts the new type node is present and the existing callees survive — pins the type-definition identity-stability contract. PHP's QN keys on the namespace, so the same row id covers both classes and interfaces within a namespace. SW-194b ships the harness row."

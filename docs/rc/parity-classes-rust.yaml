@@ -1,0 +1,205 @@
+# graphi — Rust change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-194a, W5-RES.h). Rust is
+#                      `cross-file-heuristic` (live derivation at the W1.f tip
+#                      91a4ba3); the heuristic resolver at engine/link/
+#                      resolve_rust.go handles Rust's `mod foo;` and
+#                      `use crate::path::item;` directives — mod declares a
+#                      sub-module file and use pulls a path into scope.
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go, JVM,
+#                      Python and TS tables. Rust has no typed binder at the
+#                      cross-file-heuristic level (Rust has rustc, but graphi
+#                      has no rustc-driven third-phase resolver), so the rows
+#                      here assert PARITY, not CORRECTNESS — parity compares
+#                      two passes of the same rule, so a PASS certifies the
+#                      rule is REGRESSION-CLEAN between incremental and full,
+#                      never that it is correct. Correctness evidence lives in
+#                      engine/link/resolve_rust_test.go and in the real-
+#                      repository matrix (G4), not here.
+#
+#                      SW-194a SCOPE, STATED. This file DEFINES the eight
+#                      change-class rows at the cross-file-heuristic level.
+#                      The conformance twin (engine/conformance/
+#                      rustparity_test.go + rustparity_matrix_test.go) lands
+#                      in SW-194b and is what proves these rows PROVEN.
+#                      SW-194c flips the G3 evidence row to PASS by citing
+#                      this YAML + the twin with their blob shas.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The Python instance (parity-classes-
+#                      python.yaml) is the closest template; this copy
+#                      diverges on THREE named points recorded in the row
+#                      notes: (a) Rust's `mod`/`use` directives are CRATE-
+#                      rooted (`crate::path::item`) — the resolver walks the
+#                      crate root and returns the resolved file; (b) the
+#                      resolver already names the exact target file path (the
+#                      requireBinder helper at engine/link/resolve_common.go),
+#                      so the family has the same LINK-001 / PARITY-002
+#                      immunity by construction; (c) Rust's static package-
+#                      source extension set is `.rs` (the requireBinder call),
+#                      modelled on the SW-166 extension filter.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestRustParityMatrix_DriftGuard (engine/conformance/
+# rustparity_matrix_test.go, lands in SW-194b) binds this file to the harness
+# table rustChangeClassTable() in rustparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+
+parity_classes:
+  - id: "rust_add_file"
+    kind: "change_class"
+    label: "Rust-Datei hinzufügen / add a Rust file in a new module"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rustparity_test.go"
+    test_line: "0"
+    test_name: "TestRustFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.h"
+    note: "A new Rust file arrives in a new module: pure add path. The witness asserts the new callee resolves cross-module at the heuristic tier — the resolver's only tier — and the control symbols survive. Fixture label reads production Go parser to satisfy the shared closed vocabulary (D-12); the subject under test is the Rust heuristic resolver at engine/link/resolve_rust.go. SW-194b ships the harness row; SW-194a ships this YAML row as the substituted-contract pin."
+
+  - id: "rust_modify_file"
+    kind: "change_class"
+    label: "Rust-Datei ändern / rewrite a Rust file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rustparity_test.go"
+    test_line: "0"
+    test_name: "TestRustFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.h"
+    note: "An indexed Rust file is rewritten in place: a function is added while existing nodes keep identity. The witness asserts the new node is present and the existing callee survives — pins the same-package identity-stability contract every rewrite class asserts. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "rust_add_call_heuristic"
+    kind: "change_class"
+    label: "Heuristischen Use-Aufruf hinzufügen / add a heuristic-tier cross-module use call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rustparity_test.go"
+    test_line: "0"
+    test_name: "TestRustFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.h"
+    note: "A new cross-module use call is added: `use crate::lib::util; util::func(...)` — the resolver's crate-rooted path. The witness asserts the file→file `imports` edge lands AND the call edge lands at HEURISTIC tier (model.TierHeuristic), never at confirmed — the Rust resolver is heuristic and must not mint confirmed edges (the G2SUB never-confirmed half). The exact-path resolution gives the family the same LINK-001 / PARITY-002 immunity by construction. SW-194b ships the harness row."
+
+  - id: "rust_use_skip"
+    kind: "change_class"
+    label: "Use überspringen + zählen / skip + count a missing use target"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rustparity_test.go"
+    test_line: "0"
+    test_name: "TestRustFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.h"
+    note: "A use directive (`use crate::missing::foo;`) targets a path that does not exist in the crate. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids. SW-194b ships the harness row."
+
+  - id: "rust_ambiguous_clauses"
+    kind: "change_class"
+    label: "Mehrdeutige Pfade / two modules claiming the same use path"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rustparity_test.go"
+    test_line: "0"
+    test_name: "TestRustFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.h"
+    note: "A use directive is ambiguous because two candidate paths resolve to committed nodes (e.g. both `crate::lib::util` and `crate::vendor::util` exist). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used. SW-194b ships the harness row."
+
+  - id: "rust_delete_file"
+    kind: "change_class"
+    label: "Rust-Datei löschen / delete a Rust file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rustparity_test.go"
+    test_line: "0"
+    test_name: "TestRustFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.h"
+    note: "A Rust file declaring a function that TWO other modules use is deleted, so the per-file stale-node purge, the heuristic-edge sweep and the re-link all run over it. The witness requires the deleted callee absent, both importers still present, and the heuristic edges into the deleted callee gone — a stale heuristic edge would be the worst outcome here, even though the edge tier is lower than confirmed. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on Rust as well as on Go. SW-194b ships the harness row."
+
+  - id: "rust_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / same-module file-to-file function move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rustparity_test.go"
+    test_line: "0"
+    test_name: "TestRustFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.h"
+    note: "A Rust top-level function moves file-to-file WITHIN one module (util.rs -> moved.rs, in the same directory). The function's identity is keyed on its qualified name (QN), which the resolver derives from the source file path; a same-directory move preserves QN while changing source_path and line. Two files then claim one QN inside a single change set — the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The witness asserts the function identity is preserved and its cross-module use edge survives the re-home. SW-194b ships the harness row."
+
+  - id: "rust_add_struct_definition"
+    kind: "change_class"
+    label: "Strukturdefinition hinzufügen / add a struct or enum definition"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rustparity_test.go"
+    test_line: "0"
+    test_name: "TestRustFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.h"
+    note: "A struct (or enum) definition is added to a Rust file. The witness asserts the new type node is present and the existing callees survive — pins the type-definition identity-stability contract. Rust's QN keys on the crate-rooted path, so the same row id covers both structs and enums within a module. SW-194b ships the harness row."

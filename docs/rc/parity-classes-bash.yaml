@@ -1,0 +1,244 @@
+# graphi — Bash change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-194a, W5-RES.a). Bash is
+#                      `cross-file-heuristic` (live derivation at the W1.f tip
+#                      91a4ba3); the heuristic resolver at engine/link/
+#                      resolve_bash.go binds `source ./util.sh` (and `. ./util.sh`)
+#                      to the importer's directory — a relative source becomes
+#                      a file→file `imports` edge at the heuristic tier, and the
+#                      sourced script's directory becomes an ambient lookup dir.
+#                      Same-directory calls resolve at the `derived` tier.
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go, JVM,
+#                      Python and TS tables. Bash has no typed binder, so the
+#                      rows here assert PARITY, not CORRECTNESS — parity
+#                      compares two passes of the same rule, so a PASS certifies
+#                      the rule is REGRESSION-CLEAN between incremental and full,
+#                      never that it is correct. Correctness evidence lives in
+#                      engine/link/resolve_bash_test.go (and the broader FU-5
+#                      script harness) and in the real-repository matrix (G4),
+#                      not here.
+#
+#                      SW-194a SCOPE, STATED. This file DEFINES the eight change-
+#                      class rows at the cross-file-heuristic level. The
+#                      conformance twin (engine/conformance/bashparity_test.go +
+#                      bashparity_matrix_test.go) lands in SW-194b and is what
+#                      proves these rows PROVEN. SW-194c flips the G3 evidence
+#                      row to PASS by citing this YAML + the twin with their
+#                      blob shas. Until then the YAML is the substituted-contract
+#                      pin for the G2SUB row.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The Python and TS instances
+#                      (parity-classes-python.yaml, parity-classes-ts.yaml)
+#                      are the closest templates; this copy diverges on THREE
+#                      named points recorded in the row notes: (a) Bash's
+#                      `.`/`source` directive resolves RELATIVE TO THE IMPORTER,
+#                      not via any package mechanism — the SW-166 extension
+#                      filter (`.sh`/`.bash`) is what selects the candidate file;
+#                      (b) the resolver already names the exact target file path
+#                      (engine/link/resolve_bash.go, the `requireBinder` helper
+#                      at engine/link/resolve_common.go) so the file→file
+#                      `imports` edge is exactly the resolved path — IMMUNE by
+#                      construction to the LINK-001 / PARITY-002 target-set class
+#                      the Go and Python resolvers carry; (c) Bash's static
+#                      package-source extension set is [".sh", ".bash"] at
+#                      engine/link/resolve_bash.go (the requireBinder call),
+#                      modelled on the SW-166 extension filter.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestBashParityMatrix_DriftGuard (engine/conformance/
+# bashparity_matrix_test.go, lands in SW-194b) binds this file to the harness
+# table bashChangeClassTable() in bashparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+#   MISSING/PHANTOM/DEFERRED are the three directions the JVM/Python/TS guards
+#   have, and they are the three this guard has for SW-194b. The four the JVM
+#   guard is missing (VERDICT, AXIS, VOCABULARY, KIND-as-distinct-from-OWNER)
+#   are recorded below as a TEMPL-P4 inheritance and not closed in this copy —
+#   SW-189 closed D-11 across JVM/Python/TS guards; SW-194b inherits the closed
+#   shape from W1.f, so a row that ships only MISSING/PHANTOM/KIND/OWNER
+#   reproduces D-11 at a 10th site, and SW-194a's review must catch that.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+#
+# ---------------------------------------------------------------------------
+# BASH-SPECIFIC NOTES
+# ---------------------------------------------------------------------------
+# Bash is `cross-file-heuristic`. The resolver is heuristic at
+# engine/link/resolve_bash.go; no G2/G2a/G2b typed binder exists, so the rows
+# here assert PARITY, not CORRECTNESS. The G2SUB row's verdict basis is the
+# substituted contract: never emits a confirmed edge, drops and COUNTS what it
+# cannot resolve, and is deterministic. Same property a confirmed-tier row
+# would have asserted as `drop on ambiguity`.
+#
+# Bash's source directive (`.` / `source`) resolves RELATIVE TO THE IMPORTER'S
+# DIRECTORY, not via any package mechanism (no Go-module analog, no Python
+# package-import analog). The resolver is `bashResolver` at
+# engine/link/resolve_bash.go; the resolved file path is exact (the
+# requireBinder helper at engine/link/resolve_common.go opens the file by
+# candidate extensions `.sh` / `.bash` and returns the committed file node if
+# found). The exact-path resolution gives the family the same LINK-001 /
+# PARITY-002 immunity the TS family has by construction.
+#
+# Bash's heuristic tier applies to every cross-file source: a sourced script's
+# top-level definitions are in scope in the importer, so a function call to a
+# sourced function binds a heuristic edge. A SAME-DIRECTORY function call
+# (defined in a sibling script) resolves at the `derived` tier — engine/link/
+# resolve_common.go's same-directory pass.
+
+parity_classes:
+  - id: "bash_add_file"
+    kind: "change_class"
+    label: "Bash-Datei hinzufügen / add a Bash file in a new directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/bashparity_test.go"
+    test_line: "0"
+    test_name: "TestBashFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.a"
+    note: "A new Bash file arrives in a new directory: pure add path. The witness asserts the new callee resolves cross-module at the heuristic tier — the resolver's only tier — and the control symbols survive. Fixture label reads production Go parser to satisfy the shared closed vocabulary (D-12); the subject under test is the Bash heuristic resolver at engine/link/resolve_bash.go. SW-194b ships the harness row; SW-194a ships this YAML row as the substituted-contract pin."
+
+  - id: "bash_modify_file"
+    kind: "change_class"
+    label: "Bash-Datei ändern / rewrite a Bash file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/bashparity_test.go"
+    test_line: "0"
+    test_name: "TestBashFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.a"
+    note: "An indexed Bash file is rewritten in place: a function is added while existing nodes keep identity. The witness asserts the new node is present and the existing callee survives — pins the same-package identity-stability contract every rewrite class asserts. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "bash_add_call_heuristic"
+    kind: "change_class"
+    label: "Heuristischen Source-Aufruf hinzufügen / add a heuristic-tier cross-file source call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/bashparity_test.go"
+    test_line: "0"
+    test_name: "TestBashFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.a"
+    note: "A new cross-file source call is added: `. ./lib/util.sh; util_func(...)`. The witness asserts the file→file `imports` edge lands AND the call edge lands at HEURISTIC tier (model.TierHeuristic), never at confirmed — the Bash resolver is heuristic and must not mint confirmed edges (the G2SUB never-confirmed half). The exact-path resolution (engine/link/resolve_common.go's requireBinder) gives the family the same LINK-001 / PARITY-002 immunity as TS. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "bash_source_import_skip"
+    kind: "change_class"
+    label: "Source-Import überspringen + zählen / skip + count a missing source target"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/bashparity_test.go"
+    test_line: "0"
+    test_name: "TestBashFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.a"
+    note: "A source directive (`. ./missing.sh`) targets a path that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "bash_ambiguous_clauses"
+    kind: "change_class"
+    label: "Mehrdeutige Quellen / two scripts claiming the same basename"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/bashparity_test.go"
+    test_line: "0"
+    test_name: "TestBashFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.a"
+    note: "A relative source (`. ./util.sh`) is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.sh` and `vendor/util.sh` both exist). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but Bash's exact-path resolution makes the ambiguity a structural two-candidate case, not a directory-fan-out bug. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "bash_delete_file"
+    kind: "change_class"
+    label: "Bash-Datei löschen / delete a Bash file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/bashparity_test.go"
+    test_line: "0"
+    test_name: "TestBashFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.a"
+    note: "A Bash file declaring a function that TWO other scripts source is deleted, so the per-file stale-node purge, the heuristic-edge sweep and the re-link all run over it. The witness requires the deleted callee absent, both importers still present, and the heuristic edges into the deleted callee gone — a stale heuristic edge would be the worst outcome here, even though the edge tier is lower than confirmed. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on Bash as well as on Go. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "bash_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / same-directory file-to-file function move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/bashparity_test.go"
+    test_line: "0"
+    test_name: "TestBashFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.a"
+    note: "A Bash top-level function moves file-to-file WITHIN one directory (util.sh -> moved.sh). The function's identity is keyed on its qualified name (QN), which the resolver derives from the script file path; a same-directory move preserves QN while changing source_path and line. Two files then claim one QN inside a single change set — the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The witness asserts the function identity is preserved and its cross-file source edge survives the re-home — pins the QN-stable re-home as a parity-holding transition. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "bash_add_control_flow"
+    kind: "change_class"
+    label: "Kontrollfluss hinzufügen / add a control-flow construct (case/select/if)"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/bashparity_test.go"
+    test_line: "0"
+    test_name: "TestBashFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.a"
+    note: "A control-flow construct (a `case` statement with multiple branches) is added to a Bash script. The witness asserts the new nodes are present and the existing callees survive — pins the control-flow / statement-level identity-stability contract. Same-package identity-stability holds for control-flow as for the function-addition rewrite class. SW-194b ships the harness row; SW-194a ships this YAML row."
