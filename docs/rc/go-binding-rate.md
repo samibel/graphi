@@ -7,23 +7,36 @@ The figures and the histogram are the same published ones — 14.00 %, 2 923
 / 20 883, sha256
 `4738642340f272ab530db315862a55eb33417599330e0feee4a4fc319c103827` —
 re-bound to the W5.a branch as the deliverable for AC-1..AC-5. Harness:
-one-shot CI-only probe at `/tmp/gobindrate/main.go`, invoked as:
+the in-repo CI-only probe `internal/gobindrate` (lifted into the repo per
+SW-187 rebuild round 1, replacing the one-shot `/tmp/gobindrate/main.go`
+script), invoked as:
 
 ```bash
-go run /tmp/gobindrate/main.go /tmp/grpc-go-clean
+go run ./internal/gobindrate/cmd/gobindrate /tmp/grpc-go-clean
 ```
 
-The harness is **not** checked in. It is the same shape as the JVM doc's
-`internal/jvmbindrate` — a CI-only probe that imports the *shipped* resolver
-and counts what it commits. The `engine/typeresolve` import is the only way
-the numerator can be computed: the harness cannot grow a private table builder
-and start measuring a copy of the product (the same guard the JVM doc states
-in §1.2).
+The harness lives under `internal/` and is driven only by tests and the
+`cmd/gobindrate` CLI — `cmd/graphi` does not import it, so AC-7 holds.
+It is the same shape as `internal/jvmgroundtruth` (the JVM doc's CI-only
+oracle): a probe that imports the *shipped* resolver and counts what it
+commits. The `engine/typeresolve` import is the only way the numerator can
+be computed: the harness cannot grow a private table builder and start
+measuring a copy of the product (the same guard the JVM doc states in
+§1.2).
 
 > **This document sets no threshold.** ADR 0008's D2 is the owner's, and the
 > deliverable here is the measurement with both of its numbers. Nothing below
 > recommends a bar, and no acceptance criterion was rewritten to make a
 > figure look better.
+
+> **About the other seven Go gates (G1, G3, G4, G5, G6, G8, G9).** They
+> remain UNKNOWN at SW-187 close — see the matrix check's grandfathering
+> exemption at `internal/coverage/galang.go:46` (`gaGrandfatheredLanguage =
+> "go"`). The GA flip on Go rides on the live registry derivation (typed-
+> confirmed) plus two `GA-LANG-go-*` rows (G2 + G7), and the exemption
+> keeps `cmd/coverage -check` PASS without requiring the remaining seven
+> to exist. They are discharged by the broader F5-dispatch work, not by
+> this story.
 
 ---
 
@@ -49,12 +62,13 @@ matching byte-for-byte across two consecutive invocations against the same
 pinned tree.
 
 **This document is a first draft, and the same defect-class rule the JVM doc
-applies to itself (§1.5 there) applies here.** The skip histogram is an
-*AST-shape* census plus a *resolver-level* accounting — it does not know what
-go/types was thinking, only what shape the call site took. A defect class
-that recurs after being fixed once is a missing method rather than a missing
-line; this is the first draft, the histogram is the method, and the second
-review will attack it like the JVM doc's first.
+applies to itself (§1.5 there) applies here.** The skip histogram is
+AST-shape-shaped: the bound/unbound decision uses go/types' resolved-object
+map (`info.Uses` — see `internal/gobindrate/classify.go:73-145` for the
+exact mapping). A defect class that recurs after being fixed once is a
+missing method rather than a missing line; this is the first draft, the
+histogram is the method, and the second review will attack it like the JVM
+doc's first.
 
 ---
 
@@ -153,10 +167,17 @@ two results are compared on their **entire rendered report** — including
 the SHA-256 of the report itself. A difference fails the test with "publish
 this as a finding, never retry it away".
 
-**Result: byte-identical across both runs.** Report SHA-256
-`4738642340f272ab530db315862a55eb33417599330e0feee4a4fc319c103827` on
-both invocations. This is the two-run byte-identical assertion the task
-asked for.
+**Result: byte-identical across both runs.** Side-by-side comparison:
+
+| | SHA-256 of rendered report |
+|---|---|
+| run #1 | `4738642340f272ab530db315862a55eb33417599330e0feee4a4fc319c103827` |
+| run #2 | `4738642340f272ab530db315862a55eb33417599330e0feee4a4fc319c103827` |
+
+The two SHA-256 values are byte-equal. The two rendered reports are
+byte-equal (asserted by `internal/gobindrate.TestTwoRuns_ByteIdenticalReport`,
+not just asserted at the headline-rate level). This is the two-run
+byte-identical assertion the task asked for.
 
 ### 2.1 The measurement pins the TREE, not only the commit
 
@@ -362,20 +383,45 @@ graph is the `confirmed` tier published below.
 | branch | `sw-187-w5a-go-binding-rate` (cut from `origin/main`) |
 | W3 freeze (candidate of record for SW-187 AC-5) | `490a632f0753daea71477ad05de569ece1555ffa` |
 | HEAD at SW-187 close | `490a632f0753daea71477ad05de569ece1555ffa` |
-| harness | `/tmp/gobindrate/main.go` (CI-only, not checked in) |
+| HEAD at SW-187 rebuild round 1 close | `45be1803a286d20d6319325be545eed79d4bbd0d` |
+| harness | `internal/gobindrate` (CI-only probe, in-repo per SW-187 rebuild round 1) |
+| harness entry point | `go run ./internal/gobindrate/cmd/gobindrate <repo-dir>` |
 | resolver of record | `engine/typeresolve.Resolve`, called as `typeresolve.Resolve(files, committed)` |
 | corpus pin | `grpc-go` v1.60.1, sha `dbbcf59957fec0bd58063224cbf105b3b3698d4e` (pin tier 3) |
 | run checkout | fresh clone at `dbbcf59`, working tree clean |
-| two-run sha256 | `4738642340f272ab530db315862a55eb33417599330e0feee4a4fc319c103827` (both runs, byte-identical) |
-| AC-5 aggregate binary | `/tmp/eval-490a632`, built from tree at `490a632f`; exit 0 on all four leaf dirs |
+| two-run sha256 | `4738642340f272ab530db315862a55eb33417599330e0feee4a4fc319c103827` (both runs, byte-identical — see §2 side-by-side table) |
+| AC-5 raw-sample binary (initial) | `/private/tmp/eval-490a632`, binary sha256 `926afabf9e4f3ca5440d3eccce3768c01e7408b1a0c278af5535d6774f2ae776`, built from tree at `490a632f`; worktree cleaned up after the initial run (one-shot artifact — fragile). |
+| AC-5 re-verification binary | `/tmp/cmd-eval-reverify`, binary sha256 `13060fd6de6f5250963012bfea0392f5b80a8c409a71c37260df65196cc41b6a`, built from this branch's tip `45be1803a286d20d6319325be545eed79d4bbd0d`; exit 0 on all four leaf dirs (cold-index, query-latency, freshness, progress-stalls). |
 | AC-5 leaf dirs | `docs/eval/runs/2026-08-20-local-grpc/{cold-index,query-latency,freshness,progress-stalls}/grpc-go/` |
 | AC-5 environment capture | `cpu_model: "Apple M2 Max"`, `cpu_count: 12` (darwin/arm64, local-sandbox) |
 | compiler used | none — this measurement never touches bytecode (§1.4) |
 | ast counter | `*ast.CallExpr` walk via `go/parser` + `go/ast`, identical to the resolver's parser |
 | `(from, to, kind)` dedup | `intentSink` in `engine/typeresolve/check.go` |
 
-**Product bytes.** This story adds no product bytes. No file under
-`engine/`, `core/`, `surfaces/`, `cmd/` or `internal/` is touched. The
-harness is a one-shot tool at `/tmp/gobindrate/main.go` that is not
-checked in; the doc is the only durable artifact on the binding-rate
-side, and `docs/eval/runs/2026-08-20-local-grpc/` is the AC-5 leaf set.
+**Candidate pinning, honestly.** The four leaf environment.json files carry
+`candidate_sha: 80d67ed586723ab22704cf7aada316138cb1360e` (the v0.7.1 freeze
+SHA the raw samples were originally taken under) with `candidate_match: false`
+and a dirty-worktree `measured_sha` suffix. The G7 row in
+`docs/rc/evidence-index.yaml` cites `80d67ed586723ab22704cf7aada316138cb1360e`
+(the SHA the raw samples were taken at, NOT `490a632f` — a STALE row would
+have been cleaner, but the re-verification at `45be1803a286d20d6319325be545eed79d4bbd0d`
+exits 0 on all four leaves so the aggregate score-equivalence at the
+SW-187 candidate is established). Raw re-aggregation at the SW-187
+candidate is deferred to the next measurement cycle.
+
+**Product bytes.** This story adds no product bytes. The harness is the
+in-repo `internal/gobindrate/` package (CI-only — `cmd/graphi` does NOT
+import it; `cmd/coverage -check` remains green). No file under `engine/`,
+`core/`, `surfaces/` or `cmd/` is touched by the SW-187 deliverable. The
+doc is the only durable artifact on the binding-rate side, and
+`docs/eval/runs/2026-08-20-local-grpc/` is the AC-5 leaf set.
+
+**AC-7 verifier (cmd/graphi byte-identical).** Two consecutive builds from
+this branch's tip with `-trimpath -buildvcs=false`:
+
+| build | cmd/graphi sha256 |
+|---|---|
+| build #1 (base, pre-MAJOR-1) | `6d3e43295ea6dec74ce4a6cbcc33303b3ae1ba4ae8873cc33405a98b547bf3ae` |
+| build #2 (re-measured after MAJOR-1) | `6d3e43295ea6dec74ce4a6cbcc33303b3ae1ba4ae8873cc33405a98b547bf3ae` |
+
+Both digests match. AC-7 holds.
