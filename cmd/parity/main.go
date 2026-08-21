@@ -60,6 +60,9 @@ func run() int {
 			"this can never retry a row into green")
 	verdictDiff := flag.String("verdict-diff", "", "compare the verdict sets of two reports (a.json,b.json) and exit non-zero if they differ")
 	countsDiff := flag.String("counts-diff", "", "compare per-row node/edge counts and snapshot digests of two reports (a.json,b.json) and exit non-zero if they differ — the Wave-0 determinism gate that -verdict-diff is structurally blind to")
+	allowLocal := flag.Bool("allow-local", false,
+		"admit manifest entries that point at a LOCAL PATH instead of a URL clone (dispatch-only; "+
+			"the hermetic tests open this door, the production runner keeps it shut — using it on a PR-gate run would let a row silently fall back to a fixture)")
 	flag.Parse()
 
 	if *verdictDiff != "" {
@@ -130,6 +133,7 @@ func run() int {
 		PerClassTimeout: *timeout,
 		RunnerClass:     *runnerClass,
 		LifecycleRepeat: *lifecycleRepeat,
+		AllowLocal:      *allowLocal,
 		Log: func(format string, args ...any) {
 			fmt.Fprintf(os.Stderr, format+"\n", args...)
 		},

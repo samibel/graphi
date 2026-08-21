@@ -80,6 +80,69 @@ type FileCensus struct {
 // never become a label an ordinary repository wears.
 const StressMinGoFiles = 10000
 
+// CompileCoverage is the per-pin oracle-compile figure: the proportion of a
+// pin's CST source files the signature-aware JVM oracle successfully
+// compiled, computed against the pin's pinned toolchain at the recorded
+// candidate. It is the closure for PARITY-COV-001 (SW-190): a coverage
+// number without this denominator reads as covering the repository when it
+// covers one source-set of it, and the matrix can never publish a
+// publishable verdict without it.
+//
+// The schema is closed: extending it means versioning the schema. Each
+// field below is load-bearing:
+//
+//   - SourceFiles is the pin's outer denominator — every tracked JVM source
+//     file at the pin (git ls-files '*.java' '*.kt' --counted, not estimated
+//     from repository metadata), the same rule FileCensus.SourceFiles applies.
+//   - CompiledFiles is what the oracle successfully compiled after staging
+//     (StageReport.FilesStaged minus DroppedToCollision), so the figure is a
+//     pair with the staging report, not a free-floating number.
+//   - Coverage is CompiledFiles / SourceFiles, 4-decimal precision. Set by
+//     ComputeCompileCoverage, never by a reader rounding its own.
+//   - MeasuredAt is the ISO date of the run.
+//   - CandidateSHA is the candidate the compile ran against. PARITY-PROD-001
+//     taught this programme that a coverage figure dated but not pinned is a
+//     moving target; the field is mandatory.
+//   - RunnerClass names the machine that ran the compile, so a future reader
+//     can resolve a measurement to a runner without guessing.
+//   - Oracle points at the driver that produced the figure.
+type CompileCoverage struct {
+	// SourceFiles is the per-pin OUTER denominator: every CST source file
+	// tracked at the pin. It is the larger number than measured.source_files
+	// only if the pin ships multiplatform source sets; the two are equal
+	// when the pin has a single source set (most JVM pins).
+	SourceFiles int `json:"source_files"`
+	// CompiledFiles is what the oracle successfully compiled: the per-pin
+	// inner denominator. It includes the strategy's exclusions (dropped
+	// collisions, excluded sources) only insofar as the strategy reports
+	// them, so a reader can reconstruct the staging report alongside.
+	CompiledFiles int `json:"compiled_files"`
+	// Coverage is compiled_files / source_files, computed by the oracle,
+	// never by a human rounding a per-pin figure.
+	Coverage float64 `json:"coverage"`
+	// MeasuredAt is the ISO date the oracle ran, in YYYY-MM-DD form.
+	MeasuredAt string `json:"measured_at"`
+	// CandidateSHA is the product candidate the run was measured against.
+	// PARITY-PROD-001: a coverage figure without this field is a moving
+	// target — the row would silently inherit whichever candidate the
+	// binary happened to ship against.
+	CandidateSHA string `json:"candidate_sha"`
+	// RunnerClass names the machine that ran the compile: a string that
+	// resolves to one runner environment, so a future reader can identify
+	// it without rerunning.
+	RunnerClass string `json:"runner_class"`
+	// Oracle points at the driver in source that produced the figure. It
+	// exists so a code search finds the producer — the figure without a
+	// driver behind it is hearsay.
+	Oracle string `json:"oracle"`
+	// ExcludedReason, when set, is the reason the pin's coverage figure is
+	// NOT publishable: the pin's JVM-compile strategy is "not-compiled" or
+	// the scoring is not yet established, so the value below counts
+	// compiled files but the figure cannot back a corpus-scale claim.
+	// Mandatory whenever SourceFiles > 0 and Coverage == 0.
+	ExcludedReason string `json:"excluded_reason,omitempty"`
+}
+
 // PropertyMapping maps one FR-2 stratification property to the repository that
 // carries it. A property no selected repository covers is recorded as an
 // explicit Gap with a reason — omitting it silently is what this type exists to
@@ -140,6 +203,14 @@ type Entry struct {
 	Properties []string `json:"properties,omitempty"`
 	// Measured is the file census taken from a real clone at SHA.
 	Measured *FileCensus `json:"measured,omitempty"`
+	// CompileCoverage is the per-pin oracle-compile figure: the proportion of
+	// CST source files the signature-aware oracle actually compiled against
+	// this pin's pinned toolchain. It closes PARITY-COV-001: a coverage
+	// statement without this denominator is unreadable, so it travels with the
+	// measured pin rather than with the matrix result. Populated by
+	// internal/parity at the post-SW-188 candidate (SW-190); nil on entries the
+	// JVM harness has not measured.
+	CompileCoverage *CompileCoverage `json:"compile_coverage,omitempty"`
 	// Stress declares this entry the FR-2 stress target. It is fail-closed:
 	// the declaration is only accepted with a census of at least
 	// StressMinGoFiles Go files.

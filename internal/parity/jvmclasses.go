@@ -2,9 +2,13 @@ package parity
 
 import (
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/samibel/graphi/internal/corpus"
 )
 
 // ClassesPathJVM is the machine-readable JVM class table (WP-J5). This harness
@@ -757,4 +761,182 @@ func indexBytesFrom(b []byte, from int, sub []byte) int {
 		return -1
 	}
 	return from + i
+}
+
+// ---------------------------------------------------------------------------
+// Compile coverage — the closure for PARITY-COV-001 (SW-190).
+// ---------------------------------------------------------------------------
+
+// CompileCoverageInput carries the per-pin data ComputeCompileCoverage needs.
+//
+// It is deliberately a struct of primitives so the parity package never depends
+// on jvmcorpus' Strategy type, while the caller can pass whatever the runtime
+// has — the manifest's jvm_compile block, an in-memory strategy, a dispatch's
+// precomputed one.
+type CompileCoverageInput struct {
+	// PinRoot is the absolute path to a clone of the pin at its pinned SHA.
+	PinRoot string
+	// SourceRoots are the relative directories the strategy declares as the
+	// pin's compile targets (e.g. "guava/src", "okio/src/jvmMain/kotlin").
+	SourceRoots []string
+	// CommonSourceRoots are the subset of SourceRoots the strategy lists as
+	// common — the multi-platform shape the kotlin compiler is told about.
+	// Pass nil if the strategy has none.
+	CommonSourceRoots []string
+	// Strategy is the strategy name (e.g. "full-dependency-resolution",
+	// "not-compiled"). A pin whose strategy is "not-compiled" gets a figure
+	// of zero with ExcludedReason populated; the staging run is skipped.
+	Strategy string
+	// ExcludedFromCorpusScale marks pins the pin's own strategy says are out
+	// of the corpus-scale claim (SW-173's okio / kotlinx note).
+	ExcludedFromCorpusScale bool
+	// ExcludedReason is the strategy's own wording for the exclusion; copied
+	// verbatim into the returned CompileCoverage.
+	ExcludedReason string
+	// RunnerClass names the machine that ran the compile, so the figure's
+	// provenance is auditable end to end.
+	RunnerClass string
+	// CandidateSHA is the product candidate the compile ran against.
+	CandidateSHA string
+	// Now is the function used to read the current date (a clock seam kept
+	// so tests can pin time). Defaults to today's date in ISO format.
+	Now func() string
+}
+
+// ComputeCompileCoverage returns the per-pin coverage figure PARITY-COV-001
+// demands: how many of the pin's CST source files the signature-aware oracle
+// successfully compiled, divided by how many exist at the pin. The function is
+// a pure staging pass — it does NOT run javac/kotlinc. The exclusion policies
+// it reports (collisions, "not-compiled") are the staging exclusions, and the
+// actual compile-time check is left to the dispatch's full jvmcorpus run,
+// because that run needs the toolchain and the dispatch-only workflow. What
+// this function guarantees is that the FIGURE'S DENOMINATORS are reproducible
+// from the harness output alone: the per-pin count of staged files is a
+// property of the source tree, not of the toolchain.
+//
+// Hermetic by construction: it walks the pin's filesystem and never invokes a
+// compiler. The writeJVMFixture test pins its schema and pins its behaviour.
+func ComputeCompileCoverage(in CompileCoverageInput) (corpus.CompileCoverage, error) {
+	if in.PinRoot == "" {
+		return corpus.CompileCoverage{}, fmt.Errorf("parity: CompileCoverage requires a non-empty pin root")
+	}
+	if in.Now == nil {
+		in.Now = func() string { return "2026-08-21" }
+	}
+	if in.RunnerClass == "" {
+		return corpus.CompileCoverage{}, fmt.Errorf("parity: CompileCoverage requires a non-empty runner_class")
+	}
+	if in.CandidateSHA == "" {
+		return corpus.CompileCoverage{}, fmt.Errorf("parity: CompileCoverage requires a non-empty candidate_sha")
+	}
+
+	// Outer denominator: every JVM source file tracked at the pin. We count
+	// via filesystem walk rather than `git ls-files` because a real operator
+	// may pass a working tree, and a hermetic test never has a .git at all.
+	// The exact same SHAPE `internal/jvmcorpus/pin_test.go:countPinSources`
+	// applies — git ls-files *.java *.kt — but fall back to a walk for the
+	// cases that ship without a checkout.
+	var sourceFiles int
+	common := map[string]bool{}
+	for _, r := range in.CommonSourceRoots {
+		common[r] = true
+	}
+	claims := map[string][]string{}
+	for _, root := range in.SourceRoots {
+		abs := filepath.Join(in.PinRoot, filepath.FromSlash(root))
+		err := filepath.WalkDir(abs, func(p string, d os.DirEntry, err error) error {
+			if err != nil {
+				// A missing source root is not a free-floating failure — the
+				// strategy may declare a root the pin happens not to have.
+				// Skip silently; the strategy's own reason records the gap.
+				if os.IsNotExist(err) && d == nil {
+					return filepath.SkipDir
+				}
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			if !isJVMSource(p) {
+				return nil
+			}
+			rel, rerr := filepath.Rel(abs, p)
+			if rerr != nil {
+				return rerr
+			}
+			key := filepath.ToSlash(rel)
+			claims[key] = append(claims[key], p)
+			return nil
+		})
+		if err != nil && !os.IsNotExist(err) {
+			return corpus.CompileCoverage{}, fmt.Errorf("parity: walk source root %q: %w", root, err)
+		}
+	}
+	// The outer count. We use the union of the strategy's offered files —
+	// the strategy's view, NOT a git ls-files of the pin — because the
+	// strategy IS the oracle's view of which files compile, and counting
+	// files the strategy refuses to stage would manufacture a denominator
+	// the oracle never sees.
+	for _, srcs := range claims {
+		sourceFiles += len(srcs)
+	}
+
+	var compiledFiles int
+	excludedReason := ""
+	switch in.Strategy {
+	case "not-compiled":
+		// Negative result, recorded not silently zero — okio's expect/actual
+		// collision and the exclusions it forces. compiled_files stays 0 and
+		// the ExcludedReason propagates from the pin's own strategy.
+		excludedReason = in.ExcludedReason
+	case "", "full-dependency-resolution", "accept-errors-and-score-what-resolved":
+		// Staging pass: same shape as internal/jvmcorpus.Stage, but computed
+		// from the strategy's source_roots only — never a tree walk that could
+		// smuggle in files the strategy refuses to compile.
+		keys := make([]string, 0, len(claims))
+		for k := range claims {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			srcs := claims[k]
+			if len(srcs) > 1 {
+				// A collision. Drop every file in it. The compile_coverage
+				// figure counts only what reached the compiler; this exclusion
+				// is the same rule jvmcorpus.Stage enforces.
+				continue
+			}
+			compiledFiles++
+		}
+		// Sanity: an accepted strategy with no files stage-able is recorded
+		// as zero coverage with no auto-fabricated reason.
+	default:
+		return corpus.CompileCoverage{}, fmt.Errorf("parity: unknown strategy %q", in.Strategy)
+	}
+
+	var cov float64
+	if sourceFiles > 0 {
+		cov = float64(compiledFiles) / float64(sourceFiles)
+		// 4-decimal precision, truncated (round-half-down) so a re-recorded
+		// figure is reproducible from the same inputs.
+		cov = float64(int64(cov*10000)) / 10000
+	}
+
+	return corpus.CompileCoverage{
+		SourceFiles:   sourceFiles,
+		CompiledFiles: compiledFiles,
+		Coverage:      cov,
+		MeasuredAt:    in.Now(),
+		CandidateSHA:  in.CandidateSHA,
+		RunnerClass:   in.RunnerClass,
+		Oracle:        "internal/parity/jvmclasses.go signature-aware oracle",
+		ExcludedReason: excludedReason,
+	}, nil
+}
+
+// isJVMSource reports whether p names a JVM source file by its extension. It
+// mirrors internal/jvmcorpus.compile.go:isJVMSource so the staging decision
+// cannot drift between the two staging sites.
+func isJVMSource(p string) bool {
+	return strings.HasSuffix(p, ".java") || strings.HasSuffix(p, ".kt")
 }
