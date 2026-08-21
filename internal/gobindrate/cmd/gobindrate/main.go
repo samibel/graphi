@@ -43,6 +43,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
+	if r.ASTDenominator == 0 {
+		fmt.Fprintln(os.Stderr, "error: denominator is zero — corpus unreadable or empty")
+		os.Exit(3)
+	}
 	fmt.Print(r.Rendered)
 	fmt.Printf("\nreport_sha256=%s\n", r.ReportSHA256)
 }

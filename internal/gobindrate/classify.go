@@ -1,7 +1,7 @@
 package gobindrate
 
 // This file: per-call-site classification against go/types' resolved-object
-// map (info.Uses). The 5 AST-shape buckets that account for every call site
+// map (info.Uses). The 6 AST-shape buckets that account for every call site
 // in the denominator fall out of the Fun switch below. A call that resolved
 // to a *types.Func in an internal package is counted separately as
 // "bound_internal_func" rather than as a skip reason (it feeds the numerator
@@ -19,35 +19,71 @@ import (
 
 // Reason is one named-reason bucket a call expression falls into. The
 // vocabulary is closed (see AllReasons); a call that resolved to a
-// *types.Func in an internal package returns Reason("") and the *types.Func
-// in obj.
+// *types.Func in an internal package returns Reason("bound_internal_func")
+// and the *types.Func in obj.
+//
+// The "no resolved object" buckets are explicit about cross-package intent
+// because the SW-187 path A vocabulary split calls the OLD `/tmp/gobindrate/
+// main.go` script's "*_no_resolved_object_cross_package" names conflated: a selector whose
+// qualifier was a known *types.PkgName but whose method (.Sel) had no
+// info.Uses entry is not the same kind of miss as a selector whose
+// qualifier itself had no info.Uses — the former is "package found, method
+// un-introspectable at parse time" (a stubImporter artifact: cross-package
+// imports are served as empty stubs whose methods have no *types.Func
+// entries), the latter is "qualifier not found at all" (a real resolver
+// miss). Folding both into one bucket hid a real category from the
+// published histogram, which is the granularity collapse the rebuild
+// round 1 review named as Path A's motivation.
 type Reason string
 
 const (
-	// AST-shape buckets — sum to the entire denominator.
-	ReasonNoObjectForSelectorQualifier Reason = "no_object_for_selector_qualifier"
-	ReasonNoObjectForBareIdent         Reason = "no_object_for_bare_ident"
-	ReasonSelectorWithNonIdentReceiver Reason = "selector_with_non_ident_receiver"
-	ReasonCallPositionOther            Reason = "call_position_other"
-	ReasonGenericCallSiteSkippedByCST  Reason = "generic_call_site_skipped_by_cst"
+	// bound_internal_func is a histogram row, NOT an AST-shape bucket. It
+	// counts sites classifyAll identified as bound via info.Uses (the
+	// per-call-site go/types view); the resolver-emitted bound count
+	// (r.BoundSites) is the published rate numerator and may differ from
+	// this row by a small amount because the resolver drops sites whose
+	// endpoint was not committed to the graph (the gap is published in
+	// the doc, never silently rounded away).
+	ReasonBoundInternalFunc Reason = "bound_internal_func"
+
+	// AST-shape buckets — sum to the denominator minus bound_internal_func.
+	//
+	// "Cross-package" in the bucket name means: this site would resolve to
+	// an internal symbol IF such a symbol existed, but it does NOT —
+	// because the callee lives in another package (stdlib, third-party,
+	// intra-module). The three cross-package buckets are mutually exclusive:
+	// a selector is either qualifier-unresolved or method-unresolved-or-bound,
+	// and a bare ident is either bound or unresolved.
+	ReasonSelectorQualifierNoResolvedObjectCrossPackage Reason = "selector_qualifier_no_resolved_object_cross_package"
+	ReasonSelectorMethodNoResolvedObjectCrossPackage    Reason = "selector_method_no_resolved_object_cross_package"
+	ReasonBareIdentNoResolvedObjectCrossPackage         Reason = "bare_ident_no_resolved_object_cross_package"
+	ReasonSelectorWithNonIdentReceiver                  Reason = "selector_with_non_ident_receiver"
+	ReasonCallPositionOther                             Reason = "call_position_other"
+	ReasonGenericCallSiteSkippedByCST                   Reason = "generic_call_site_skipped_by_cst"
 
 	// Resolver-level accounting rows — NOT a portion of the denominator.
-	ReasonGoTypesTypeErrors                  Reason = "go_types_type_errors"
-	ReasonFileDidNotParse                    Reason = "file_did_not_parse"
-	ReasonResolverDroppedIntents             Reason = "resolver_dropped_intents"
-	ReasonUnitsDegradedTypeCheckPanic        Reason = "units_degraded:type-check panic"
-	ReasonUnitsDegradedTypeCheckNoPackage    Reason = "units_degraded:type-check produced no package"
+	ReasonGoTypesTypeErrors               Reason = "go_types_type_errors"
+	ReasonFileDidNotParse                 Reason = "file_did_not_parse"
+	ReasonResolverDroppedIntents          Reason = "resolver_dropped_intents"
+	ReasonUnitsDegradedTypeCheckPanic     Reason = "units_degraded:type-check panic"
+	ReasonUnitsDegradedTypeCheckNoPackage Reason = "units_degraded:type-check produced no package"
 )
 
-// AllReasons is the closed 10-row vocabulary in render order (resolver-level
-// rows first, then AST-shape buckets, both alphabetically within their
-// group). The histogram is a CLOSED vocabulary — a reason not in this list
-// cannot appear in the rendered report.
+// AllReasons is the closed 12-row vocabulary in render order (bound row
+// first, then resolver-level rows, then AST-shape buckets, all
+// alphabetically within their group). The histogram is a CLOSED vocabulary
+// — a reason not in this list cannot appear in the rendered report.
+//
+// Structural invariant: bound_internal_func + sum(AST-shape) ==
+// ASTDenominator. Resolver-level rows are environmental and NOT a portion
+// of the denominator.
 func AllReasons() []Reason {
 	return []Reason{
+		ReasonBoundInternalFunc,
 		ReasonGoTypesTypeErrors,
-		ReasonNoObjectForSelectorQualifier,
-		ReasonNoObjectForBareIdent,
+		ReasonSelectorQualifierNoResolvedObjectCrossPackage,
+		ReasonSelectorMethodNoResolvedObjectCrossPackage,
+		ReasonBareIdentNoResolvedObjectCrossPackage,
 		ReasonSelectorWithNonIdentReceiver,
 		ReasonCallPositionOther,
 		ReasonGenericCallSiteSkippedByCST,
@@ -62,17 +98,21 @@ func AllReasons() []Reason {
 // go/types' resolved-object map. obj is non-nil iff isInternal is true, in
 // which case the call resolved to a *types.Func in an internal package.
 //
-// Every non-bound call falls into exactly one of the 5 AST-shape buckets
+// Every non-bound call falls into exactly one of the 6 AST-shape buckets
 // so the histogram remains exhaustive at the denominator (bound +
 // AST-shape == denominator for every well-formed corpus). Local-variable
 // calls, builtins, package names in call position, and function literals
-// all fold into ReasonCallPositionOther.
+// all fold into ReasonCallPositionOther. The three cross-package buckets
+// distinguish "qualifier not found at all" (a real resolver miss) from
+// "package found but method not introspectable" (a stubImporter artifact:
+// cross-package imports are served as empty stubs whose methods carry no
+// *types.Func entries, so info.Uses[fun.Sel] is nil).
 func classifyCall(call *ast.CallExpr, info *types.Info, modules map[string]string) (reason Reason, obj *types.Func, isInternal bool) {
 	switch fun := call.Fun.(type) {
 	case *ast.Ident:
 		objUse, ok := info.Uses[fun]
 		if !ok || objUse == nil {
-			return ReasonNoObjectForBareIdent, nil, false
+			return ReasonBareIdentNoResolvedObjectCrossPackage, nil, false
 		}
 		if f, ok := objUse.(*types.Func); ok {
 			// Bare ident that resolved to a *types.Func — internal
@@ -92,13 +132,20 @@ func classifyCall(call *ast.CallExpr, info *types.Info, modules map[string]strin
 		}
 		objUse, ok := info.Uses[pkgSel]
 		if !ok || objUse == nil {
-			return ReasonNoObjectForSelectorQualifier, nil, false
+			return ReasonSelectorQualifierNoResolvedObjectCrossPackage, nil, false
 		}
 		if _, ok := objUse.(*types.PkgName); !ok {
 			// Selector base is not a package name → receiver-method
 			// call. Try to resolve the .Sel ident directly.
 			objUseSel, okSel := info.Uses[fun.Sel]
 			if !okSel || objUseSel == nil {
+				// The qualifier was resolved (to a local var or a
+				// receiver-type *types.Var) but the method itself
+				// was not. The OLD code folded this into
+				// call_position_other; the granularity collapse
+				// fixed here keeps it in call_position_other too —
+				// a method-on-receiver miss is not "cross-package",
+				// it is "method miss on a non-package qualifier".
 				return ReasonCallPositionOther, nil, false
 			}
 			f, okF := objUseSel.(*types.Func)
@@ -113,7 +160,18 @@ func classifyCall(call *ast.CallExpr, info *types.Info, modules map[string]strin
 		// Package-name selector: pkg.Func(...)
 		objUseSel, ok := info.Uses[fun.Sel]
 		if !ok || objUseSel == nil {
-			return ReasonCallPositionOther, nil, false
+			// GRANULARITY COLLAPSE FIX: the package qualifier WAS
+			// resolved (as a *types.PkgName) — the import was found —
+			// but the method's .Sel has no info.Uses entry because
+			// the cross-package import was served as an empty stub
+			// by miniStubImporter. This is a real category that
+			// must NOT be folded into call_position_other, because
+			// from a Go programmer's perspective it is a call to
+			// an external package whose internal symbols graphi
+			// cannot introspect at parse time. The OLD vocabulary
+			// hid this in call_position_other; the rebuilt
+			// vocabulary names it explicitly.
+			return ReasonSelectorMethodNoResolvedObjectCrossPackage, nil, false
 		}
 		f, okF := objUseSel.(*types.Func)
 		if !okF {
@@ -122,6 +180,15 @@ func classifyCall(call *ast.CallExpr, info *types.Info, modules map[string]strin
 		if isInternalPkg(f.Pkg(), modules) {
 			return Reason("bound_internal_func"), f, true
 		}
+		// Package-name selector whose method resolved to an external
+		// *types.Func — the package qualifier's package is external
+		// (stdlib or third-party) and graphi does not commit those as
+		// internal edges. This is also a "cross-package" miss but it
+		// resolved to a *types.Func, so it is NOT a stubImporter
+		// artifact — it is a deliberate non-bound because the
+		// destination is outside the corpus. It folds into
+		// call_position_other alongside other non-bound cases that
+		// resolved to a real object.
 		return ReasonCallPositionOther, nil, false
 	case *ast.IndexExpr, *ast.IndexListExpr:
 		// Generic instantiation: f[T](...) or pkg.F[T](...)
@@ -151,7 +218,7 @@ func isInternalPkg(p *types.Package, modules map[string]string) bool {
 //
 // Files whose per-unit types.Info is absent (degraded unit) accumulate in
 // Reason("unit_degraded_skip_cst_calls") — a separate, NOT-AST-shape
-// bucket; the closed 10-row vocabulary never counts it. Caller is
+// bucket; the closed 11-row vocabulary never counts it. Caller is
 // responsible for merging those into the resolver-level rows.
 func classifyAll(parsedByFile map[string]*ast.File, typeInfoByFile map[string]*types.Info, modules map[string]string) map[Reason]int {
 	hist := map[Reason]int{}

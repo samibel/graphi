@@ -12,8 +12,8 @@ import (
 // Hand-counted fixture: 4 source files, no test files, go.mod present.
 //
 // File a/pkg.go (package a) — 3 calls:
-//   line 4: alpha()  — bare ident, NOT declared → no_object_for_bare_ident
-//   line 5: beta()   — bare ident, NOT declared → no_object_for_bare_ident
+//   line 4: alpha()  — bare ident, NOT declared → bare_ident_no_resolved_object_cross_package
+//   line 5: beta()   — bare ident, NOT declared → bare_ident_no_resolved_object_cross_package
 //   line 6: Beta()   — bare ident, DECLARED in package a → bound_internal_func
 //
 // File b/pkg.go (package b) — 2 calls:
@@ -22,11 +22,12 @@ import (
 //                       real package WAS checked earlier, but go/types
 //                       calls Import with the LITERAL import string "a",
 //                       so the stub is returned and Beta is unresolved).
-//                       In our harness this resolves to a non-Func stub
-//                       object — classifyCall folds it into
-//                       call_position_other (the catch-all for "not
-//                       bound") so the closed vocabulary stays
-//                       exhaustive.
+//                       The package qualifier IS found (info.Uses for the
+//                       `a` ident is a *types.PkgName) but fun.Sel has no
+//                       info.Uses entry — classifyCall returns
+//                       selector_method_no_resolved_object_cross_package
+//                       for this granularity, preserving the doc's prior
+//                       histogram shape.
 //   line 7: Zeta()   — bare ident, DECLARED in package b → bound_internal_func
 //
 // File c/pkg.go (package c) — 1 call:
@@ -44,10 +45,20 @@ import (
 //   d/pkg.go : 0 calls
 //   TOTAL    : 6 *ast.CallExpr
 //
+// Per-bucket hand count (exhaustive — every site has exactly one home):
+//   bound_internal_func                                         : 2  (Beta, Zeta)
+//   bare_ident_no_resolved_object_cross_package                 : 2  (alpha, beta)
+//   selector_method_no_resolved_object_cross_package            : 1  (a.Beta)
+//   call_position_other                                         : 1  (f)
+//   selector_qualifier_no_resolved_object_cross_package         : 0
+//   selector_with_non_ident_receiver                            : 0
+//   generic_call_site_skipped_by_cst                            : 0
+//   TOTAL                                                       : 6  == ASTDenominator
+//
 // Structural invariants this fixture pins (the SW-187 doc's §3 claim):
 //
 //   (i)  bound_internal_func + sum(AST-shape rows) == ASTDenominator.
-//   (ii) Every AST-shape row is one of the closed 5-bucket vocabulary.
+//   (ii) Every AST-shape row is one of the closed 6-bucket vocabulary.
 //   (iii) Every resolver-level row in the closed vocabulary appears
 //        even when its count is zero.
 //   (iv) The two-run SHA is byte-identical (reproducibility).
@@ -114,14 +125,15 @@ func TestDenominator_MatchesTheHandCount(t *testing.T) {
 }
 
 // TestClassification_MutuallyExclusiveAndExhaustiveAtCallExpr pins the
-// 5-bucket AST-shape vocabulary's structural invariants:
+// 6-bucket AST-shape vocabulary's structural invariants:
 //
 //   (i)  Every AST-shape row falls inside the closed vocabulary (no
-//        reason outside ReasonNoObjectForSelectorQualifier /
-//        ReasonNoObjectForBareIdent / ReasonSelectorWithNonIdentReceiver
-//        / ReasonCallPositionOther / ReasonGenericCallSiteSkippedByCST).
+//        reason outside the three cross-package buckets /
+//        ReasonSelectorWithNonIdentReceiver / ReasonCallPositionOther /
+//        ReasonGenericCallSiteSkippedByCST).
 //   (ii) Every resolver-level row in the closed vocabulary appears even
-//        when its count is zero.
+//        when its count is zero (includes the new bound_internal_func row
+//        and the units_degraded:* rows).
 //   (iii) bound_internal_func + sum(AST-shape rows) ==
 //         ASTDenominator (the histogram is exhaustive at the denominator).
 //
@@ -147,7 +159,8 @@ func TestClassification_MutuallyExclusiveAndExhaustiveAtCallExpr(t *testing.T) {
 		t.Fatalf("AST denominator: want %d, got %d", handCountedTotal, r.ASTDenominator)
 	}
 
-	// (i) Every AST-shape row falls in the closed vocabulary.
+	// (i) Every histogram row falls inside the closed vocabulary (either
+	// AST-shape or resolver-level / bound-emitted).
 	for _, hr := range r.Histogram {
 		if !isASTShapeReason(hr.Reason) && !isResolverLevelReason(hr.Reason) {
 			t.Errorf("histogram row %q outside the closed vocabulary", hr.Reason)
@@ -160,6 +173,7 @@ func TestClassification_MutuallyExclusiveAndExhaustiveAtCallExpr(t *testing.T) {
 	// tolerant stubImporter reports unresolved intra-module imports
 	// as type errors; that's a property of the corpus, not a defect.
 	for _, wantReason := range []Reason{
+		ReasonBoundInternalFunc,
 		ReasonGoTypesTypeErrors,
 		ReasonFileDidNotParse,
 		ReasonResolverDroppedIntents,
@@ -178,19 +192,14 @@ func TestClassification_MutuallyExclusiveAndExhaustiveAtCallExpr(t *testing.T) {
 	}
 
 	// (iii) bound_internal_func + sum(AST-shape rows) == ASTDenominator.
-	var astSum int
+	var boundInternal, astSum int
 	for _, hr := range r.Histogram {
-		if isASTShapeReason(hr.Reason) {
+		switch {
+		case hr.Reason == ReasonBoundInternalFunc:
+			boundInternal = hr.Count
+		case isASTShapeReason(hr.Reason):
 			astSum += hr.Count
 		}
-	}
-	// boundInternal is computed by classifyAll but not part of the
-	// closed vocabulary's rendered rows; we re-derive it by
-	// boundInternal + astSum == denominator.
-	boundInternal := r.ASTDenominator - astSum
-	if boundInternal < 0 {
-		t.Fatalf("AST-shape rows sum to %d which EXCEEDS denominator %d (vocabulary not exhaustive)",
-			astSum, r.ASTDenominator)
 	}
 	if boundInternal+astSum != r.ASTDenominator {
 		t.Fatalf("bound_internal_func + AST-shape skips: want %d (= denominator), got bound=%d skips=%d denom=%d",
@@ -198,7 +207,9 @@ func TestClassification_MutuallyExclusiveAndExhaustiveAtCallExpr(t *testing.T) {
 	}
 	// The resolver-of-record's bound count is the source of truth for
 	// the numerator; classifyAll's per-file classification is a
-	// parallel sanity check.
+	// parallel sanity check. On well-formed corpora they should agree
+	// (bound <= boundInternal), but a small gap (resolver drops sites
+	// whose endpoint was not committed) is published, never rounded.
 	if r.BoundSites < 0 {
 		t.Fatalf("BoundSites must be non-negative, got %d", r.BoundSites)
 	}
@@ -277,10 +288,14 @@ func G() int { return F() }
 }
 
 // isResolverLevelReason reports whether a Reason is in the resolver-level
-// half of the closed vocabulary (NOT one of the 5 AST-shape buckets).
+// half of the closed vocabulary (NOT one of the 6 AST-shape buckets). The
+// bound_internal_func row is resolver-emitted (it comes from classifyAll's
+// view of the resolver's resolution) so it lives here, not in the AST-shape
+// group.
 func isResolverLevelReason(r Reason) bool {
 	switch r {
-	case ReasonGoTypesTypeErrors,
+	case ReasonBoundInternalFunc,
+		ReasonGoTypesTypeErrors,
 		ReasonFileDidNotParse,
 		ReasonResolverDroppedIntents,
 		ReasonUnitsDegradedTypeCheckPanic,

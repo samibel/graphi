@@ -8,7 +8,7 @@
 //
 // The contract it enforces is SW-187 AC-1..AC-4: a published binding rate
 // (bound call sites ÷ CST call sites), with the denominator counted from the
-// parse tree independently of the binder, a closed 10-row skip histogram,
+// parse tree independently of the binder, a closed 11-row skip histogram,
 // and a two-run byte-identical rendered report. The method mirrors SW-175's
 // JVM bind-rate measurement, re-targeted to Go's grammar.
 //

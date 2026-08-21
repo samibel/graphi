@@ -5,7 +5,7 @@
 // Run is the only entry point. It walks the source set twice (once for the
 // denominator, once via engine/typeresolve.Resolve for the numerator +
 // resolver-level accounting), classifies every call site against go/types'
-// resolved-object map, and renders the closed 10-row histogram. The
+// resolved-object map, and renders the closed 11-row histogram. The
 // rendered report's SHA-256 is the reproducibility token: two Run calls
 // against the same files map produce the same SHA, byte-for-byte.
 package gobindrate
@@ -42,7 +42,7 @@ type Report struct {
 	// [0, 1]. The published Go figure is a percentage (e.g. 14.00%); callers
 	// multiply by 100.
 	Rate float64
-	// Histogram is the closed 10-row skip vocabulary, sorted in render order
+	// Histogram is the closed 11-row skip vocabulary, sorted in render order
 	// (resolver-level rows first, then AST-shape buckets, both alphabetically
 	// within their group).
 	Histogram []HistogramRow
@@ -81,6 +81,11 @@ type EdgeCount struct {
 // The error return is construction-plumbing only; per-file or per-unit
 // failures NEVER surface as errors — they degrade the unit and the
 // measurement continues, the same way engine/typeresolve.Resolve behaves.
+//
+// The skip histogram is a closed 11-row vocabulary (6 AST-shape buckets +
+// 5 resolver-level accounting rows), enumerated by AllReasons(). Every
+// non-bound call falls into exactly one AST-shape bucket, so bound +
+// sum(AST-shape) == ASTDenominator for every well-formed corpus.
 func Run(files map[string][]byte) (Report, error) {
 	// 1. Independent denominator.
 	denom := WalkASTCounts(files)
@@ -153,25 +158,29 @@ func Run(files map[string][]byte) (Report, error) {
 	modules, parsedByFile, typeInfoByFile, _ := runPerUnitTypeInfo(files)
 	hist := classifyAll(parsedByFile, typeInfoByFile, modules)
 	// Merge AST-shape rows back into the closed vocabulary.
+	boundInternal := hist[ReasonBoundInternalFunc]
 	astShapeRows := map[Reason]int{
-		ReasonNoObjectForSelectorQualifier: hist[ReasonNoObjectForSelectorQualifier],
-		ReasonNoObjectForBareIdent:         hist[ReasonNoObjectForBareIdent],
-		ReasonSelectorWithNonIdentReceiver: hist[ReasonSelectorWithNonIdentReceiver],
-		ReasonCallPositionOther:            hist[ReasonCallPositionOther],
-		ReasonGenericCallSiteSkippedByCST:  hist[ReasonGenericCallSiteSkippedByCST],
+		ReasonSelectorQualifierNoResolvedObjectCrossPackage: hist[ReasonSelectorQualifierNoResolvedObjectCrossPackage],
+		ReasonSelectorMethodNoResolvedObjectCrossPackage:    hist[ReasonSelectorMethodNoResolvedObjectCrossPackage],
+		ReasonBareIdentNoResolvedObjectCrossPackage:         hist[ReasonBareIdentNoResolvedObjectCrossPackage],
+		ReasonSelectorWithNonIdentReceiver:                  hist[ReasonSelectorWithNonIdentReceiver],
+		ReasonCallPositionOther:                             hist[ReasonCallPositionOther],
+		ReasonGenericCallSiteSkippedByCST:                   hist[ReasonGenericCallSiteSkippedByCST],
 	}
 
-	// 7. Render the closed vocabulary. Resolver-level rows first (5),
-	// then AST-shape buckets (5), both in alphabetical-within-group order.
-	histogram := []HistogramRow{}
-	for _, r := range []Reason{
-		ReasonGoTypesTypeErrors,
-	} {
-		histogram = append(histogram, HistogramRow{Reason: r, Count: totalTypeErrors})
+	// 7. Render the closed 12-row vocabulary: bound_internal_func row (1),
+	// then resolver-level rows (5), then AST-shape buckets (6), all
+	// alphabetically within their group. The structural invariant is
+	// bound_internal_func + sum(AST-shape) == ASTDenominator; the
+	// resolver-level rows are environmental and not part of that sum.
+	histogram := []HistogramRow{
+		{Reason: ReasonBoundInternalFunc, Count: boundInternal},
+		{Reason: ReasonGoTypesTypeErrors, Count: totalTypeErrors},
 	}
 	for _, r := range []Reason{
-		ReasonNoObjectForSelectorQualifier,
-		ReasonNoObjectForBareIdent,
+		ReasonSelectorQualifierNoResolvedObjectCrossPackage,
+		ReasonSelectorMethodNoResolvedObjectCrossPackage,
+		ReasonBareIdentNoResolvedObjectCrossPackage,
 		ReasonSelectorWithNonIdentReceiver,
 		ReasonCallPositionOther,
 		ReasonGenericCallSiteSkippedByCST,
@@ -234,9 +243,11 @@ func (r Report) render() string {
 	fmt.Fprintf(&b, "bound_calls_edges_dedup=%d\n", r.BoundCallEdges)
 	fmt.Fprintf(&b, "rate_bound_call_sites_per_denominator=%.4f\n", r.Rate)
 	fmt.Fprintln(&b)
-	fmt.Fprintln(&b, "## Skip histogram (closed 10-row vocabulary)")
-	// Deterministic row order: resolver-level rows first (sorted), then
-	// AST-shape buckets (sorted), each with a stable key.
+	fmt.Fprintln(&b, "## Skip histogram (closed 12-row vocabulary)")
+	// Deterministic row order: bound_internal_func + resolver-level rows
+	// first (sorted alphabetically), then AST-shape buckets (sorted). The
+	// bound + AST-shape sum equals ASTDenominator by construction; the
+	// resolver-level rows are environmental and not part of that sum.
 	resolverFirst := []HistogramRow{}
 	astShape := []HistogramRow{}
 	for _, hr := range r.Histogram {
@@ -274,8 +285,9 @@ func (r Report) render() string {
 
 func isASTShapeReason(r Reason) bool {
 	switch r {
-	case ReasonNoObjectForSelectorQualifier,
-		ReasonNoObjectForBareIdent,
+	case ReasonSelectorQualifierNoResolvedObjectCrossPackage,
+		ReasonSelectorMethodNoResolvedObjectCrossPackage,
+		ReasonBareIdentNoResolvedObjectCrossPackage,
 		ReasonSelectorWithNonIdentReceiver,
 		ReasonCallPositionOther,
 		ReasonGenericCallSiteSkippedByCST:
