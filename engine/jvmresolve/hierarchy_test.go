@@ -113,10 +113,10 @@ func TestLookup_OpenChainForfeitsEverything(t *testing.T) {
 // keys and an overload set is read as overloads, not as overrides.
 //
 // THREE shapes are asserted:
-//   1. scalar vs one-dim across a BASE/DERIVED chain → AmbiguousMember, NOT
-//      the most-derived-wins override pair the old key produced;
-//   2. one-dim vs two-dim on the same class → AmbiguousMember, NOT an
-//      override pair (the WIDENED blast radius SW-172 round 1 found).
+//  1. scalar vs one-dim across a BASE/DERIVED chain → AmbiguousMember, NOT
+//     the most-derived-wins override pair the old key produced;
+//  2. one-dim vs two-dim on the same class → AmbiguousMember, NOT an
+//     override pair (the WIDENED blast radius SW-172 round 1 found).
 //
 // Each is a positive regression test: the fix lands here, the binder is
 // correct on these fixtures, and a future change that re-erases array
