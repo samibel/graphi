@@ -27,27 +27,27 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 | Language | Tier | Capability level ³ | Symbol nodes | Intra-file edges | Cross-file/package edges |
 |---|---|---|---|---|---|
 | **Go** | **GA (typed-confirmed)** | `typed-confirmed` | ✅ func / method / type / var / const / file | ✅ `defines`, `calls`, `references` | ✅ `calls` / `references` / `imports` (linker pass, heuristic tier) + `confirmed`-tier go/types edges ¹ |
-| **Python** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **but see open defect LINK-004** ⁵ |
-| **TypeScript** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
-| **TSX** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
-| **JavaScript** | **GA (cross-file-heuristic)** | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
-| **Bash/Shell** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
-| **C** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **C++** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **Java** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
-| **Kotlin** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
-| **C#** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **Ruby** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **PHP** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **Lua** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
-| **Rust** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
-| **SQL** | **GA (cross-file-heuristic)** ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `references` **same-directory only** (`derived` tier) — no `imports` edge, no cross-directory resolution ⁴ |
-| **CSS** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
-| **YAML** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
-| **TOML** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
-| **Markdown** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
-| **HCL/Terraform** | **GA (intra-file-only)** ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
-| **JSON** | **GA (parse-only)** ⁷ | `parse-only` | structural (AST) | — | — |
+| **Python** | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **but see open defect LINK-004** ⁵ |
+| **TypeScript** | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
+| **TSX** | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
+| **JavaScript** | Preview | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **family share one resolver impl, immune to LINK-001 by exact-path resolution** ⁶ |
+| **Bash/Shell** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `imports` (per-language resolver, heuristic tier) ² |
+| **C** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **C++** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Java** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
+| **Kotlin** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
+| **C#** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Ruby** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **PHP** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Lua** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² |
+| **Rust** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `calls` / `references` / `imports` (per-language resolver, heuristic tier) ² — **no `imports` edge** |
+| **SQL** | Preview ⁷ | `cross-file-heuristic` | ✅ symbol nodes | ✅ intra-file | ✅ `references` **same-directory only** (`derived` tier) — no `imports` edge, no cross-directory resolution ⁴ |
+| **CSS** | Preview ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **YAML** | Preview ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **TOML** | Preview ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **Markdown** | Preview ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **HCL/Terraform** | Preview ⁷ | `intra-file-only` | ✅ symbol nodes | ✅ intra-file | ⏳ per-language resolver (roadmap) ² — no `resolve_<lang>.go` registered in `engine/link`; intra-file nodes only |
+| **JSON** | Preview ⁷ | `parse-only` | structural (AST) | — | — |
 | HTML | Source-only | — (not registered) | ✖ not shipped — grammar exists upstream but is not subset-buildable in isolation (see below) | — | — |
 
 > ³ **Capability level** is the machine-readable grade the P1 trust surface reports per

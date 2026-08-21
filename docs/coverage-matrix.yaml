@@ -51,153 +51,161 @@ capabilities:
     capability: typed-confirmed
     epic: "-"
     note: "The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA. SW-186 (W3 close): the grandfathering clause is REMOVED — go binds to its own GA-LANG-go-G1..G9 evidence rows like every other language (typed-confirmed → canonical G2, never G2SUB). The level is typed-confirmed, Go's type checker proves relationships, edges can reach the confirmed tier; the G2 row exists when the F5-dispatch work populates it with evidence URI and sha."
-  - id: java
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "Java at GA (cross-file-heuristic) per the language-GA program G3 (SW-174, Wave 1). SW-186 (W3 close): the matrix row lands in the same change as the GA-LANG-java-G1..G9 rows and the grandfathering clause is removed. The level is heuristic, not typed-confirmed — java has no default-on typed binder (JVM binders are default-off pending SW-179), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Java — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-java-G1..G9, born UNKNOWN)."
-  - id: kotlin
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "Kotlin at GA (cross-file-heuristic) per the language-GA program G3 (SW-174, Wave 1). SW-186 (W3 close): the matrix row lands in the same change as the GA-LANG-kotlin-G1..G9 rows and the grandfathering clause is removed. The level is heuristic, not typed-confirmed — kotlin shares java's typed-binder story (default-off pending SW-179), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Kotlin — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-kotlin-G1..G9, born UNKNOWN)."
-  - id: python
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "Python at GA (cross-file-heuristic) per the language-GA program G3 (SW-181). The level is heuristic, not typed-confirmed — the binder does not exist for Python, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Python — GA (cross-file-heuristic)`, never GA alone. LINK-004 is disclosed in the row's language-support entry; the G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-python-G1..G9, ordered after java and kotlin per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
-  - id: typescript
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "TypeScript at GA (cross-file-heuristic) per the language-GA program G4 (SW-182, family member). One resolver impl at engine/link/resolve_typescript.go shared across the family (typescript, tsx, javascript); the matrix carries three rows because each is a separate language in the live derivation and AC-2 requires them tracked separately. The level is heuristic, not typed-confirmed — no typed binder exists for the family, and the G2SUB substitution is the family's honest level. The naming rule binds every user-facing surface: `TypeScript — GA (cross-file-heuristic)`, never GA alone. The family's exact-path resolution makes it immune to LINK-001 / PARITY-002 by construction (the resolver names the resolved path, never a directory fan-out); AC-4's control test pins that immunity. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-typescript-G1..G9, ordered after java/kotlin/python per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
-  - id: tsx
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "TSX at GA (cross-file-heuristic) per the language-GA program G4 (SW-182, family member). Same shared resolver impl as typescript at engine/link/resolve_typescript.go (registered under all three family ids); tracked separately in the matrix because the live derivation lists it as a distinct language and AC-2 requires the G1..G9 evidence rows be per-language — a gate discharged on typescript does not discharge it for tsx unless the artefact genuinely covers tsx. The level, naming rule, LINK-001 immunity and G2SUB substitution are identical to typescript; the G1–G9 evidence rows are GA-LANG-tsx-G1..G9 in docs/rc/evidence-index.yaml."
-  - id: javascript
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "JavaScript at GA (cross-file-heuristic) per the language-GA program G4 (SW-182, family member). Same shared resolver impl as typescript at engine/link/resolve_typescript.go (registered under all three family ids); tracked separately in the matrix because the live derivation lists it as a distinct language and AC-2 requires the G1..G9 evidence rows be per-language — a gate discharged on typescript does not discharge it for javascript unless the artefact genuinely covers javascript. The level, naming rule, LINK-001 immunity and G2SUB substitution are identical to typescript; the G1–G9 evidence rows are GA-LANG-javascript-G1..G9 in docs/rc/evidence-index.yaml."
-  - id: bash
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "Bash at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — bash has no typed binder, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Bash — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-bash-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered after java/kotlin/python/typescript/tsx/javascript per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: c
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "C at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — C has no typed binder in graphi, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `C — GA (cross-file-heuristic)`, never GA alone. C and C++ share ONE resolver impl at engine/link/resolve_c.go (the precedent SW-166's extension filtering follows); the matrix carries two rows because each is a separate language in the live derivation and AC-4 requires them tracked separately — a gate discharged on c alone does not discharge it for cpp unless the artefact genuinely covers cpp. The G1–G9 evidence rows are GA-LANG-c-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
-  - id: c_sharp
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "C# at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — C# has no typed binder in graphi, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `C# — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-c_sharp-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
-  - id: cpp
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "C++ at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — C++ has no typed binder in graphi, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `C++ — GA (cross-file-heuristic)`, never GA alone. C++ shares the resolver impl at engine/link/resolve_c.go with c (the SW-166 precedent); the matrix carries two rows because each is a separate language in the live derivation and AC-4 requires them tracked separately — a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp. The G1–G9 evidence rows are GA-LANG-cpp-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
-  - id: lua
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "Lua at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — Lua has no typed binder, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Lua — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-lua-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: php
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "PHP at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — PHP has no typed binder, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `PHP — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-php-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: ruby
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "Ruby at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — Ruby has no typed binder, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Ruby — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-ruby-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). The `sinatra` corpus pin exists in corpus/manifest.json at the v3 measured standard; the G5 row's `current` field states the pin's measured block explicitly. SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: rust
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "Rust at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — Rust has no typed binder in graphi, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Rust — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-rust-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: sql
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: cross-file-heuristic
-    epic: "-"
-    note: "SQL at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — SQL is an honest no-op at the cross-file tier per the resolver-side admission (no provable cross-file references at this tier → skip+count), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `SQL — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-sql-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: css
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: intra-file-only
-    epic: "-"
-    note: "CSS at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: CSS in graphi has no cross-file resolver (`parser_css.go:94` declares \"no import system (Imports empty)\"), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (CSS the language has `@import`, but graphi deliberately declines the relation — the audit's row 17 measurement is the load-bearing citation). The naming rule from the spec binds every user-facing surface: `CSS — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-css-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: hcl
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: intra-file-only
-    epic: "-"
-    note: "HCL at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: HCL in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 21 measurement is the load-bearing citation — `module { source }` is Terraform's schema layered on HCL, not HCL's own cross-file mechanism). The naming rule from the spec binds every user-facing surface: `HCL — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-hcl-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: json
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: parse-only
-    epic: "-"
-    note: "JSON at GA (parse-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is parse-only: JSON in graphi mints no node of any kind (RFC 8259, parse-only by construction), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 22 measurement is the load-bearing citation — `question NOT askable`, JSON has no construct to bind). The naming rule from the spec binds every user-facing surface: `JSON — GA (parse-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-json-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: markdown
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: intra-file-only
-    epic: "-"
-    note: "Markdown at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: Markdown in graphi has no cross-file resolver (`parser_markdown.go:94` declares \"no import system (Imports empty)\"), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (Markdown the language has link syntax, but graphi deliberately declines the relation — the audit's row 18 measurement is the load-bearing citation). Markdown MINTS REAL SYMBOLS (README headings become `type` nodes) — the SW-166 fact that makes a clause-based filter unworkable. The naming rule from the spec binds every user-facing surface: `Markdown — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-markdown-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: toml
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: intra-file-only
-    epic: "-"
-    note: "TOML at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: TOML in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 20 measurement is the load-bearing citation — TOML v1.0.0 defines no include, the question is NOT askable). The naming rule from the spec binds every user-facing surface: `TOML — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-toml-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
-  - id: yaml
-    category: ga-language
-    status: shipped
-    tier: labs
-    capability: intra-file-only
-    epic: "-"
-    note: "YAML at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: YAML in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 19 measurement is the load-bearing citation — YAML 1.2.2 defines no include; `include:` is an ordinary mapping key, not a language-level include directive). YAML MINTS REAL SYMBOLS (key/value pairs become `type` nodes) — the SW-166 fact that makes a clause-based filter unworkable. The naming rule from the spec binds every user-facing surface: `YAML — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-yaml-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+  # WITHDRAWN 2026-08-21 per SW-178 matrix-discipline: 21 ga-language rows
+  # (java, kotlin, python, typescript, tsx, javascript, bash, c, c_sharp,
+  #  cpp, lua, php, ruby, rust, sql, css, hcl, json, markdown, toml, yaml)
+  # are commented out because their GA-LANG-* evidence rows are not all PASS.
+  # Each withdrawn row has a re-introducer story id in docs/rc/ga-language-withdrawals-2026-08-21.md
+  # and is re-introduced by the named F5-dispatch story as its gates flip green.
+  # The 17 stories SW-187..SW-203 in projects/graphi/stories/ own the re-introductions.
+
+#   - id: java
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "Java at GA (cross-file-heuristic) per the language-GA program G3 (SW-174, Wave 1). SW-186 (W3 close): the matrix row lands in the same change as the GA-LANG-java-G1..G9 rows and the grandfathering clause is removed. The level is heuristic, not typed-confirmed — java has no default-on typed binder (JVM binders are default-off pending SW-179), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Java — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-java-G1..G9, born UNKNOWN)."
+#   - id: kotlin
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "Kotlin at GA (cross-file-heuristic) per the language-GA program G3 (SW-174, Wave 1). SW-186 (W3 close): the matrix row lands in the same change as the GA-LANG-kotlin-G1..G9 rows and the grandfathering clause is removed. The level is heuristic, not typed-confirmed — kotlin shares java's typed-binder story (default-off pending SW-179), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Kotlin — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-kotlin-G1..G9, born UNKNOWN)."
+#   - id: python
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "Python at GA (cross-file-heuristic) per the language-GA program G3 (SW-181). The level is heuristic, not typed-confirmed — the binder does not exist for Python, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Python — GA (cross-file-heuristic)`, never GA alone. LINK-004 is disclosed in the row's language-support entry; the G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-python-G1..G9, ordered after java and kotlin per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
+#   - id: typescript
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "TypeScript at GA (cross-file-heuristic) per the language-GA program G4 (SW-182, family member). One resolver impl at engine/link/resolve_typescript.go shared across the family (typescript, tsx, javascript); the matrix carries three rows because each is a separate language in the live derivation and AC-2 requires them tracked separately. The level is heuristic, not typed-confirmed — no typed binder exists for the family, and the G2SUB substitution is the family's honest level. The naming rule binds every user-facing surface: `TypeScript — GA (cross-file-heuristic)`, never GA alone. The family's exact-path resolution makes it immune to LINK-001 / PARITY-002 by construction (the resolver names the resolved path, never a directory fan-out); AC-4's control test pins that immunity. The G1–G9 evidence rows are in docs/rc/evidence-index.yaml (GA-LANG-typescript-G1..G9, ordered after java/kotlin/python per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
+#   - id: tsx
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "TSX at GA (cross-file-heuristic) per the language-GA program G4 (SW-182, family member). Same shared resolver impl as typescript at engine/link/resolve_typescript.go (registered under all three family ids); tracked separately in the matrix because the live derivation lists it as a distinct language and AC-2 requires the G1..G9 evidence rows be per-language — a gate discharged on typescript does not discharge it for tsx unless the artefact genuinely covers tsx. The level, naming rule, LINK-001 immunity and G2SUB substitution are identical to typescript; the G1–G9 evidence rows are GA-LANG-tsx-G1..G9 in docs/rc/evidence-index.yaml."
+#   - id: javascript
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "JavaScript at GA (cross-file-heuristic) per the language-GA program G4 (SW-182, family member). Same shared resolver impl as typescript at engine/link/resolve_typescript.go (registered under all three family ids); tracked separately in the matrix because the live derivation lists it as a distinct language and AC-2 requires the G1..G9 evidence rows be per-language — a gate discharged on typescript does not discharge it for javascript unless the artefact genuinely covers javascript. The level, naming rule, LINK-001 immunity and G2SUB substitution are identical to typescript; the G1–G9 evidence rows are GA-LANG-javascript-G1..G9 in docs/rc/evidence-index.yaml."
+#   - id: bash
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "Bash at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — bash has no typed binder, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Bash — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-bash-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered after java/kotlin/python/typescript/tsx/javascript per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: c
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "C at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — C has no typed binder in graphi, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `C — GA (cross-file-heuristic)`, never GA alone. C and C++ share ONE resolver impl at engine/link/resolve_c.go (the precedent SW-166's extension filtering follows); the matrix carries two rows because each is a separate language in the live derivation and AC-4 requires them tracked separately — a gate discharged on c alone does not discharge it for cpp unless the artefact genuinely covers cpp. The G1–G9 evidence rows are GA-LANG-c-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
+#   - id: c_sharp
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "C# at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — C# has no typed binder in graphi, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `C# — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-c_sharp-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
+#   - id: cpp
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "C++ at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — C++ has no typed binder in graphi, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `C++ — GA (cross-file-heuristic)`, never GA alone. C++ shares the resolver impl at engine/link/resolve_c.go with c (the SW-166 precedent); the matrix carries two rows because each is a separate language in the live derivation and AC-4 requires them tracked separately — a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp. The G1–G9 evidence rows are GA-LANG-cpp-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131)."
+#   - id: lua
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "Lua at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — Lua has no typed binder, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Lua — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-lua-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: php
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "PHP at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — PHP has no typed binder, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `PHP — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-php-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: ruby
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "Ruby at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — Ruby has no typed binder, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Ruby — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-ruby-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). The `sinatra` corpus pin exists in corpus/manifest.json at the v3 measured standard; the G5 row's `current` field states the pin's measured block explicitly. SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: rust
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "Rust at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — Rust has no typed binder in graphi, and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `Rust — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-rust-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: sql
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: cross-file-heuristic
+#     epic: "-"
+#     note: "SQL at GA (cross-file-heuristic) per the language-GA program G5 (SW-184, Wave 3 residual). The level is heuristic, not typed-confirmed — SQL is an honest no-op at the cross-file tier per the resolver-side admission (no provable cross-file references at this tier → skip+count), and the G2SUB substitution is the language's honest level. The naming rule from the spec binds every user-facing surface: `SQL — GA (cross-file-heuristic)`, never GA alone. The G1–G9 evidence rows are GA-LANG-sql-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-184 ships the SCAFFOLD; the per-language parity-class YAML, conformance table, corpus pin, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: css
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: intra-file-only
+#     epic: "-"
+#     note: "CSS at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: CSS in graphi has no cross-file resolver (`parser_css.go:94` declares \"no import system (Imports empty)\"), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (CSS the language has `@import`, but graphi deliberately declines the relation — the audit's row 17 measurement is the load-bearing citation). The naming rule from the spec binds every user-facing surface: `CSS — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-css-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: hcl
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: intra-file-only
+#     epic: "-"
+#     note: "HCL at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: HCL in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 21 measurement is the load-bearing citation — `module { source }` is Terraform's schema layered on HCL, not HCL's own cross-file mechanism). The naming rule from the spec binds every user-facing surface: `HCL — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-hcl-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: json
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: parse-only
+#     epic: "-"
+#     note: "JSON at GA (parse-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is parse-only: JSON in graphi mints no node of any kind (RFC 8259, parse-only by construction), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 22 measurement is the load-bearing citation — `question NOT askable`, JSON has no construct to bind). The naming rule from the spec binds every user-facing surface: `JSON — GA (parse-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-json-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: markdown
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: intra-file-only
+#     epic: "-"
+#     note: "Markdown at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: Markdown in graphi has no cross-file resolver (`parser_markdown.go:94` declares \"no import system (Imports empty)\"), and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (Markdown the language has link syntax, but graphi deliberately declines the relation — the audit's row 18 measurement is the load-bearing citation). Markdown MINTS REAL SYMBOLS (README headings become `type` nodes) — the SW-166 fact that makes a clause-based filter unworkable. The naming rule from the spec binds every user-facing surface: `Markdown — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-markdown-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: toml
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: intra-file-only
+#     epic: "-"
+#     note: "TOML at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: TOML in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 20 measurement is the load-bearing citation — TOML v1.0.0 defines no include, the question is NOT askable). The naming rule from the spec binds every user-facing surface: `TOML — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-toml-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
+#   - id: yaml
+#     category: ga-language
+#     status: shipped
+#     tier: labs
+#     capability: intra-file-only
+#     epic: "-"
+#     note: "YAML at GA (intra-file-only) per the language-GA program G6 (SW-185, Wave 3 residual). The level is intra-file-only: YAML in graphi has no cross-file resolver, and the G3 applicability disposition names every cross-file change class as `not_applicable` with the language-spec reason (the audit's row 19 measurement is the load-bearing citation — YAML 1.2.2 defines no include; `include:` is an ordinary mapping key, not a language-level include directive). YAML MINTS REAL SYMBOLS (key/value pairs become `type` nodes) — the SW-166 fact that makes a clause-based filter unworkable. The naming rule from the spec binds every user-facing surface: `YAML — GA (intra-file-only)`, never GA alone. The G1–G9 evidence rows are GA-LANG-yaml-G1..G9 in docs/rc/evidence-index.yaml (born UNKNOWN, all nine, ordered per the rows-born-UNKNOWN-first / matrix-row-LAST rule at galang.go:129-131). SW-185 ships the SCAFFOLD; the per-language parity-class YAML, applicability disposition, conformance table, hero fixture, and perf wiring are the per-language follow-on named on each G row's `next_action`."
   - id: bash
     category: parser
     status: shipped
