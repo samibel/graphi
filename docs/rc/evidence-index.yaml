@@ -574,16 +574,16 @@ gates:
     next_action: "SW-175 published the binding rate and histogram (docs/rc/jvm-binding-rate.md) and this row deliberately stays UNKNOWN — see current. Remaining for PASS: JVMSOUND-003/004 fixed or disclosed under D8, and an owner reading of whether 'drops and COUNTS what it cannot resolve' is met by counters that are per-body rather than per-site (SW-175 FINDING B-2). SW-178 is where the second question belongs."
     due: W1
   - id: GA-LANG-java-G3
-    gate: G3 — Hermetic change-class parity
+    gate: G3 — Conformance-twin parity matrix evidence
     section: language-GA program §2 G3
-    threshold: "Rows for java in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-jvm.yaml by the same SEVEN drift-guard directions the Go table carries, plus an explicit applicability disposition per Go class."
-    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN for the parity assertions, E3 DECLARED-AND-CHECKED for the disposition. The assets exist (WP-J5 is DONE in the execution-plan ledger; 13 rows, all profile both and store both) but the row is NOT populated, and the reason is specific rather than clerical: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the seven drift-guard directions — VERDICT, AXIS and VOCABULARY — so a PASS published today would be published under a guard known to be incomplete. That is the exact failure mode a G3 row reading PASS is supposed to exclude."
+    threshold: "Per-language parity-class YAML (docs/rc/parity-classes-jvm.yaml) + the conformance twin table are cited with blob shas; conformance satisfies the §5 twin parity policy; the FAMILY guard at engine/conformance/jvmparity_matrix_test.go carries all 7 directions (MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS, VOCABULARY) per SW-189."
+    current: "UNKNOWN — TEMPL-P4 D-11 retracted by SW-189 (W5.c, 2026-08-21). java family guard at engine/conformance/jvmparity_matrix_test.go now carries VERDICT, AXIS, VOCABULARY, KIND-only alongside the inherited MISSING, PHANTOM, KIND, OWNER; cross-family enumeration guard at engine/conformance/parity_matrix_directions_test.go asserts all 7 directions present across every family file (so a fourth table written later cannot silently inherit the gap). G3 PASS requires the parity-class YAML + twin table blob shas plus a measured matrix citation per SW-189 AC-5 follow-ups; the row stays UNKNOWN until each language's G3 is closed."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: docs/rc/parity-classes-jvm.yaml
     sha: ""
     owner: ENG (JVM)
-    next_action: "Close SW-180 divergence D-11 (add the VERDICT, AXIS and VOCABULARY directions to engine/conformance/jvmparity_matrix_test.go), then cite docs/rc/parity-classes-jvm.yaml plus the twin with their blob shas."
-    due: W1
+    next_action: "Per-language G3 closure: cite parity-class YAML blob sha + twin table blob sha + measured matrix citation per SW-187's method."
+    due: W3+
   - id: GA-LANG-java-G4
     gate: G4 — Real-repository parity
     section: language-GA program §2 G4
@@ -673,16 +673,16 @@ gates:
     next_action: "SW-175 published the kotlin binding rate and histogram (docs/rc/jvm-binding-rate.md) and this row deliberately stays UNKNOWN — see current. Remaining for PASS: JVMSOUND-003/004; the FINDING B-2 counting question; and the kotlin-only gap that no oracle judges kotlin bindings below by-name (JVMHARN-001 value-class mangling is the named blocker, SW-173 §6.2)."
     due: W1
   - id: GA-LANG-kotlin-G3
-    gate: G3 — Hermetic change-class parity
+    gate: G3 — Conformance-twin parity matrix evidence
     section: language-GA program §2 G3
-    threshold: "Rows for kotlin in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-jvm.yaml by the same SEVEN drift-guard directions the Go table carries, plus an explicit applicability disposition per Go class."
-    current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN for the parity assertions, E3 DECLARED-AND-CHECKED for the disposition. Kotlin shares the java family table, so it inherits the same blocker: SW-180 divergence D-11 measured the JVM guard missing VERDICT, AXIS and VOCABULARY. corpus/fixtures/kotlin additionally carries a self-declared Partial parity in the ledger, which is a declaration and not a measurement."
+    threshold: "Per-language parity-class YAML (docs/rc/parity-classes-jvm.yaml) + the conformance twin table are cited with blob shas; conformance satisfies the §5 twin parity policy; the FAMILY guard at engine/conformance/jvmparity_matrix_test.go carries all 7 directions (MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS, VOCABULARY) per SW-189."
+    current: "UNKNOWN — TEMPL-P4 D-11 retracted by SW-189 (W5.c, 2026-08-21). kotlin family guard at engine/conformance/jvmparity_matrix_test.go now carries VERDICT, AXIS, VOCABULARY, KIND-only alongside the inherited MISSING, PHANTOM, KIND, OWNER; cross-family enumeration guard at engine/conformance/parity_matrix_directions_test.go asserts all 7 directions present across every family file (so a fourth table written later cannot silently inherit the gap). G3 PASS requires the parity-class YAML + twin table blob shas plus a measured matrix citation per SW-189 AC-5 follow-ups; the row stays UNKNOWN until each language's G3 is closed."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: docs/rc/parity-classes-jvm.yaml
     sha: ""
     owner: ENG (JVM)
-    next_action: "Close SW-180 divergence D-11, resolve the self-declared Partial parity of corpus/fixtures/kotlin by measurement, then cite the family table and twin with their blob shas."
-    due: W1
+    next_action: "Per-language G3 closure: cite parity-class YAML blob sha + twin table blob sha + measured matrix citation per SW-187's method."
+    due: W3+
   - id: GA-LANG-kotlin-G4
     gate: G4 — Real-repository parity
     section: language-GA program §2 G4
@@ -784,16 +784,16 @@ gates:
     next_action: "Cite engine/conformance/pythonparity_test.go + the LINK-004 disclosure, then close the defect or disclose it under D8 (a separate product-byte change — SW-181 does NOT fix it). Until then the row cannot move from UNKNOWN."
     due: W2
   - id: GA-LANG-python-G3
-    gate: G3 — Hermetic change-class parity
+    gate: G3 — Conformance-twin parity matrix evidence
     section: language-GA program §2 G3
-    threshold: "Rows for python in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-python.yaml by the three directions the JVM guard carries (MISSING, PHANTOM, DEFERRED), plus an explicit applicability disposition per Go class."
-    current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN. All eight rows exist (engine/conformance/pythonparity_test.go + pythonparity_matrix_test.go + docs/rc/parity-classes-python.yaml), all PROVEN on both stores, both profile axes, and the witness fences the LINK-004 defect line at the py_delete_file row (the resolver tolerates a file deletion by keeping the extern placeholder edge; the witness asserts the FILE NODE is gone, which is the scoped purge the load-bearing invariant actually requires). The drift guard closes MISSING/PHANTOM/DEFERRED; the four directions the JVM guard is missing (VERDICT, AXIS, VOCABULARY, KIND-only) are recorded in the YAML header as TEMPL-P4 inherited and are CLOSED in SW-184, not here. The numpy rule applies: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the SEVEN drift-guard directions, so a PASS published today would be published under a guard known to be incomplete. The python copy inherits that incompleteness — same shape, narrower scope."
+    threshold: "Per-language parity-class YAML (docs/rc/parity-classes-python.yaml) + the conformance twin table are cited with blob shas; conformance satisfies the §5 twin parity policy; the FAMILY guard at engine/conformance/pythonparity_matrix_test.go carries all 7 directions (MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS, VOCABULARY) per SW-189."
+    current: "UNKNOWN — TEMPL-P4 D-11 retracted by SW-189 (W5.c, 2026-08-21). python family guard at engine/conformance/pythonparity_matrix_test.go now carries VERDICT, AXIS, VOCABULARY, KIND-only alongside the inherited MISSING, PHANTOM, KIND, OWNER; cross-family enumeration guard at engine/conformance/parity_matrix_directions_test.go asserts all 7 directions present across every family file (so a fourth table written later cannot silently inherit the gap). G3 PASS requires the parity-class YAML + twin table blob shas plus a measured matrix citation per SW-189 AC-5 follow-ups; the row stays UNKNOWN until each language's G3 is closed."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: docs/rc/parity-classes-python.yaml
     sha: ""
     owner: W2-PY
-    next_action: "Close SW-180 divergence D-11 cross-port (add the VERDICT, AXIS, VOCABULARY, KIND-only directions to engine/conformance/pythonparity_matrix_test.go), then cite docs/rc/parity-classes-python.yaml + the twin with their blob shas."
-    due: W2
+    next_action: "Per-language G3 closure: cite parity-class YAML blob sha + twin table blob sha + measured matrix citation per SW-187's method."
+    due: W3+
   - id: GA-LANG-python-G4
     gate: G4 — Real-repository parity
     section: language-GA program §2 G4
@@ -906,16 +906,16 @@ gates:
     due: W2
 
   - id: GA-LANG-typescript-G3
-    gate: Hermetic change-class parity
+    gate: G3 — Conformance-twin parity matrix evidence
     section: language-GA program §2 G3
-    threshold: "Rows for typescript in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-ts.yaml by the three directions the JVM guard carries (MISSING, PHANTOM, DEFERRED), plus an explicit applicability disposition per Go class. The family harness exercises the SHARED resolver impl (one registration covers all three language ids); AC-2 requires each language's evidence row discharge independently — a gate discharged on typescript alone does not discharge it for tsx or javascript unless the harness artefact genuinely covers the language. The eight change-class rows cover the family-specific shapes: ts_add_file, ts_modify_file, ts_add_call_heuristic (named-import bare binding), ts_namespace_selector (the binding shape python does not have), ts_relative_import_skip (D1: relative misses are NEVER interned as externals — distinct from WP-14), ts_ambiguous_clauses (the twin-dirs shape — sibling-file vs directory-module index), ts_delete_file, ts_move_symbol (QN-stable re-home via langPackage convention)."
-    current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. All eight rows exist (engine/conformance/typescriptparity_test.go + typescriptparity_matrix_test.go + docs/rc/parity-classes-ts.yaml), all PROVEN on both stores, both profile axes, and the witness fences the family-specific shapes (named-import, namespace selector, twin-dirs) at the right rows. The drift guard closes MISSING/PHANTOM/DEFERRED; the four directions the JVM guard is missing (VERDICT, AXIS, VOCABULARY, KIND-only) are recorded in the YAML header as TEMPL-P4 inherited and are CLOSED in SW-184, not here. The numpy rule applies: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the SEVEN drift-guard directions, so a PASS published today would be published under a guard known to be incomplete. The TS family copy inherits that incompleteness — same shape, narrower scope."
+    threshold: "Per-language parity-class YAML (docs/rc/parity-classes-ts.yaml) + the conformance twin table are cited with blob shas; conformance satisfies the §5 twin parity policy; the FAMILY guard at engine/conformance/typescriptparity_matrix_test.go carries all 7 directions (MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS, VOCABULARY) per SW-189."
+    current: "UNKNOWN — TEMPL-P4 D-11 retracted by SW-189 (W5.c, 2026-08-21). typescript family guard at engine/conformance/typescriptparity_matrix_test.go now carries VERDICT, AXIS, VOCABULARY, KIND-only alongside the inherited MISSING, PHANTOM, KIND, OWNER; cross-family enumeration guard at engine/conformance/parity_matrix_directions_test.go asserts all 7 directions present across every family file (so a fourth table written later cannot silently inherit the gap). G3 PASS requires the parity-class YAML + twin table blob shas plus a measured matrix citation per SW-189 AC-5 follow-ups; the row stays UNKNOWN until each language's G3 is closed."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: docs/rc/parity-classes-ts.yaml
     sha: ""
     owner: W2-TS
-    next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
-    due: W2
+    next_action: "Per-language G3 closure: cite parity-class YAML blob sha + twin table blob sha + measured matrix citation per SW-187's method."
+    due: W3+
 
   - id: GA-LANG-typescript-G4
     gate: Real-repository parity
@@ -1022,16 +1022,16 @@ gates:
     due: W2
 
   - id: GA-LANG-tsx-G3
-    gate: Hermetic change-class parity
+    gate: G3 — Conformance-twin parity matrix evidence
     section: language-GA program §2 G3
-    threshold: "Rows for tsx in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-ts.yaml by the three directions the JVM guard carries (MISSING, PHANTOM, DEFERRED), plus an explicit applicability disposition per Go class. The family harness exercises the SHARED resolver impl (one registration covers all three language ids); AC-2 requires each language's evidence row discharge independently — a gate discharged on typescript alone does not discharge it for tsx or javascript unless the harness artefact genuinely covers the language. The eight change-class rows cover the family-specific shapes: ts_add_file, ts_modify_file, ts_add_call_heuristic (named-import bare binding), ts_namespace_selector (the binding shape python does not have), ts_relative_import_skip (D1: relative misses are NEVER interned as externals — distinct from WP-14), ts_ambiguous_clauses (the twin-dirs shape — sibling-file vs directory-module index), ts_delete_file, ts_move_symbol (QN-stable re-home via langPackage convention)."
-    current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. All eight rows exist (engine/conformance/typescriptparity_test.go + typescriptparity_matrix_test.go + docs/rc/parity-classes-ts.yaml), all PROVEN on both stores, both profile axes, and the witness fences the family-specific shapes (named-import, namespace selector, twin-dirs) at the right rows. The drift guard closes MISSING/PHANTOM/DEFERRED; the four directions the JVM guard is missing (VERDICT, AXIS, VOCABULARY, KIND-only) are recorded in the YAML header as TEMPL-P4 inherited and are CLOSED in SW-184, not here. The numpy rule applies: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the SEVEN drift-guard directions, so a PASS published today would be published under a guard known to be incomplete. The TS family copy inherits that incompleteness — same shape, narrower scope."
+    threshold: "Per-language parity-class YAML (docs/rc/parity-classes-ts.yaml) + the conformance twin table are cited with blob shas; conformance satisfies the §5 twin parity policy; the FAMILY guard at engine/conformance/typescriptparity_matrix_test.go carries all 7 directions (MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS, VOCABULARY) per SW-189."
+    current: "UNKNOWN — TEMPL-P4 D-11 retracted by SW-189 (W5.c, 2026-08-21). tsx family guard at engine/conformance/typescriptparity_matrix_test.go now carries VERDICT, AXIS, VOCABULARY, KIND-only alongside the inherited MISSING, PHANTOM, KIND, OWNER; cross-family enumeration guard at engine/conformance/parity_matrix_directions_test.go asserts all 7 directions present across every family file (so a fourth table written later cannot silently inherit the gap). G3 PASS requires the parity-class YAML + twin table blob shas plus a measured matrix citation per SW-189 AC-5 follow-ups; the row stays UNKNOWN until each language's G3 is closed."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: docs/rc/parity-classes-ts.yaml
     sha: ""
     owner: W2-TS
-    next_action: "Cite the per-tsx artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers tsx."
-    due: W2
+    next_action: "Per-language G3 closure: cite parity-class YAML blob sha + twin table blob sha + measured matrix citation per SW-187's method."
+    due: W3+
 
   - id: GA-LANG-tsx-G4
     gate: Real-repository parity
@@ -1138,16 +1138,16 @@ gates:
     due: W2
 
   - id: GA-LANG-javascript-G3
-    gate: Hermetic change-class parity
+    gate: G3 — Conformance-twin parity matrix evidence
     section: language-GA program §2 G3
-    threshold: "Rows for javascript in the declarative conformance table: full-versus-incremental snapshot BYTE parity on MemStore AND SQLite, non-vacuous witnesses proven red-without-the-change, bound to docs/rc/parity-classes-ts.yaml by the three directions the JVM guard carries (MISSING, PHANTOM, DEFERRED), plus an explicit applicability disposition per Go class. The family harness exercises the SHARED resolver impl (one registration covers all three language ids); AC-2 requires each language's evidence row discharge independently — a gate discharged on typescript alone does not discharge it for tsx or javascript unless the harness artefact genuinely covers the language. The eight change-class rows cover the family-specific shapes: ts_add_file, ts_modify_file, ts_add_call_heuristic (named-import bare binding), ts_namespace_selector (the binding shape python does not have), ts_relative_import_skip (D1: relative misses are NEVER interned as externals — distinct from WP-14), ts_ambiguous_clauses (the twin-dirs shape — sibling-file vs directory-module index), ts_delete_file, ts_move_symbol (QN-stable re-home via langPackage convention)."
-    current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN. All eight rows exist (engine/conformance/typescriptparity_test.go + typescriptparity_matrix_test.go + docs/rc/parity-classes-ts.yaml), all PROVEN on both stores, both profile axes, and the witness fences the family-specific shapes (named-import, namespace selector, twin-dirs) at the right rows. The drift guard closes MISSING/PHANTOM/DEFERRED; the four directions the JVM guard is missing (VERDICT, AXIS, VOCABULARY, KIND-only) are recorded in the YAML header as TEMPL-P4 inherited and are CLOSED in SW-184, not here. The numpy rule applies: SW-180 divergence D-11 measured the JVM guard to be missing THREE of the SEVEN drift-guard directions, so a PASS published today would be published under a guard known to be incomplete. The TS family copy inherits that incompleteness — same shape, narrower scope."
+    threshold: "Per-language parity-class YAML (docs/rc/parity-classes-ts.yaml) + the conformance twin table are cited with blob shas; conformance satisfies the §5 twin parity policy; the FAMILY guard at engine/conformance/typescriptparity_matrix_test.go carries all 7 directions (MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS, VOCABULARY) per SW-189."
+    current: "UNKNOWN — TEMPL-P4 D-11 retracted by SW-189 (W5.c, 2026-08-21). javascript family guard at engine/conformance/typescriptparity_matrix_test.go now carries VERDICT, AXIS, VOCABULARY, KIND-only alongside the inherited MISSING, PHANTOM, KIND, OWNER; cross-family enumeration guard at engine/conformance/parity_matrix_directions_test.go asserts all 7 directions present across every family file (so a fourth table written later cannot silently inherit the gap). G3 PASS requires the parity-class YAML + twin table blob shas plus a measured matrix citation per SW-189 AC-5 follow-ups; the row stays UNKNOWN until each language's G3 is closed."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: docs/rc/parity-classes-ts.yaml
     sha: ""
     owner: W2-TS
-    next_action: "Cite the per-javascript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers javascript."
-    due: W2
+    next_action: "Per-language G3 closure: cite parity-class YAML blob sha + twin table blob sha + measured matrix citation per SW-187's method."
+    due: W3+
 
   - id: GA-LANG-javascript-G4
     gate: Real-repository parity
