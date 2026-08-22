@@ -12,56 +12,61 @@ import (
 // Hand-counted fixture: 4 source files, no test files, go.mod present.
 //
 // File a/pkg.go (package a) — 3 calls:
-//   line 4: alpha()  — bare ident, NOT declared → bare_ident_no_resolved_object_cross_package
-//   line 5: beta()   — bare ident, NOT declared → bare_ident_no_resolved_object_cross_package
-//   line 6: Beta()   — bare ident, DECLARED in package a → bound_internal_func
+//
+//	line 4: alpha()  — bare ident, NOT declared → bare_ident_no_resolved_object_cross_package
+//	line 5: beta()   — bare ident, NOT declared → bare_ident_no_resolved_object_cross_package
+//	line 6: Beta()   — bare ident, DECLARED in package a → bound_internal_func
 //
 // File b/pkg.go (package b) — 2 calls:
-//   line 5: a.Beta() — selector on intra-module package qualifier; the
-//                       tolerant stubImporter serves "a" as a stub (the
-//                       real package WAS checked earlier, but go/types
-//                       calls Import with the LITERAL import string "a",
-//                       so the stub is returned and Beta is unresolved).
-//                       The package qualifier IS found (info.Uses for the
-//                       `a` ident is a *types.PkgName) but fun.Sel has no
-//                       info.Uses entry — classifyCall returns
-//                       selector_method_no_resolved_object_cross_package
-//                       for this granularity, preserving the doc's prior
-//                       histogram shape.
-//   line 7: Zeta()   — bare ident, DECLARED in package b → bound_internal_func
+//
+//	line 5: a.Beta() — selector on intra-module package qualifier; the
+//	                    tolerant stubImporter serves "a" as a stub (the
+//	                    real package WAS checked earlier, but go/types
+//	                    calls Import with the LITERAL import string "a",
+//	                    so the stub is returned and Beta is unresolved).
+//	                    The package qualifier IS found (info.Uses for the
+//	                    `a` ident is a *types.PkgName) but fun.Sel has no
+//	                    info.Uses entry — classifyCall returns
+//	                    selector_method_no_resolved_object_cross_package
+//	                    for this granularity, preserving the doc's prior
+//	                    histogram shape.
+//	line 7: Zeta()   — bare ident, DECLARED in package b → bound_internal_func
 //
 // File c/pkg.go (package c) — 1 call:
-//   line 6: f()      — bare ident bound to a *types.Var (local variable
-//                       declared inside Iota). classifyCall folds
-//                       non-Func idents into call_position_other so the
-//                       closed vocabulary stays exhaustive.
+//
+//	line 6: f()      — bare ident bound to a *types.Var (local variable
+//	                    declared inside Iota). classifyCall folds
+//	                    non-Func idents into call_position_other so the
+//	                    closed vocabulary stays exhaustive.
 //
 // File d/pkg.go (package d) — 0 calls.
 //
 // Hand count:
-//   a/pkg.go : 3 calls (alpha, beta, Beta)
-//   b/pkg.go : 2 calls (a.Beta, Zeta)
-//   c/pkg.go : 1 call (f)
-//   d/pkg.go : 0 calls
-//   TOTAL    : 6 *ast.CallExpr
+//
+//	a/pkg.go : 3 calls (alpha, beta, Beta)
+//	b/pkg.go : 2 calls (a.Beta, Zeta)
+//	c/pkg.go : 1 call (f)
+//	d/pkg.go : 0 calls
+//	TOTAL    : 6 *ast.CallExpr
 //
 // Per-bucket hand count (exhaustive — every site has exactly one home):
-//   bound_internal_func                                         : 2  (Beta, Zeta)
-//   bare_ident_no_resolved_object_cross_package                 : 2  (alpha, beta)
-//   selector_method_no_resolved_object_cross_package            : 1  (a.Beta)
-//   call_position_other                                         : 1  (f)
-//   selector_qualifier_no_resolved_object_cross_package         : 0
-//   selector_with_non_ident_receiver                            : 0
-//   generic_call_site_skipped_by_cst                            : 0
-//   TOTAL                                                       : 6  == ASTDenominator
+//
+//	bound_internal_func                                         : 2  (Beta, Zeta)
+//	bare_ident_no_resolved_object_cross_package                 : 2  (alpha, beta)
+//	selector_method_no_resolved_object_cross_package            : 1  (a.Beta)
+//	call_position_other                                         : 1  (f)
+//	selector_qualifier_no_resolved_object_cross_package         : 0
+//	selector_with_non_ident_receiver                            : 0
+//	generic_call_site_skipped_by_cst                            : 0
+//	TOTAL                                                       : 6  == ASTDenominator
 //
 // Structural invariants this fixture pins (the SW-187 doc's §3 claim):
 //
-//   (i)  bound_internal_func + sum(AST-shape rows) == ASTDenominator.
-//   (ii) Every AST-shape row is one of the closed 6-bucket vocabulary.
-//   (iii) Every resolver-level row in the closed vocabulary appears
-//        even when its count is zero.
-//   (iv) The two-run SHA is byte-identical (reproducibility).
+//	(i)  bound_internal_func + sum(AST-shape rows) == ASTDenominator.
+//	(ii) Every AST-shape row is one of the closed 6-bucket vocabulary.
+//	(iii) Every resolver-level row in the closed vocabulary appears
+//	     even when its count is zero.
+//	(iv) The two-run SHA is byte-identical (reproducibility).
 const handCountedTotal = 6
 
 const handCountedModule = "module fixture\n\ngo 1.22\n"
@@ -127,15 +132,15 @@ func TestDenominator_MatchesTheHandCount(t *testing.T) {
 // TestClassification_MutuallyExclusiveAndExhaustiveAtCallExpr pins the
 // 6-bucket AST-shape vocabulary's structural invariants:
 //
-//   (i)  Every AST-shape row falls inside the closed vocabulary (no
-//        reason outside the three cross-package buckets /
-//        ReasonSelectorWithNonIdentReceiver / ReasonCallPositionOther /
-//        ReasonGenericCallSiteSkippedByCST).
-//   (ii) Every resolver-level row in the closed vocabulary appears even
-//        when its count is zero (includes the new bound_internal_func row
-//        and the units_degraded:* rows).
-//   (iii) bound_internal_func + sum(AST-shape rows) ==
-//         ASTDenominator (the histogram is exhaustive at the denominator).
+//	(i)  Every AST-shape row falls inside the closed vocabulary (no
+//	     reason outside the three cross-package buckets /
+//	     ReasonSelectorWithNonIdentReceiver / ReasonCallPositionOther /
+//	     ReasonGenericCallSiteSkippedByCST).
+//	(ii) Every resolver-level row in the closed vocabulary appears even
+//	     when its count is zero (includes the new bound_internal_func row
+//	     and the units_degraded:* rows).
+//	(iii) bound_internal_func + sum(AST-shape rows) ==
+//	      ASTDenominator (the histogram is exhaustive at the denominator).
 //
 // The test does NOT pin SPECIFIC bucket counts (the per-call-site count
 // depends on the tolerant stubImporter's behavior with cross-package

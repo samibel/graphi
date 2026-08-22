@@ -102,15 +102,15 @@ func main() {
 			continue
 		}
 		cov, cerr := parity.ComputeCompileCoverage(parity.CompileCoverageInput{
-			PinRoot:                  pinRoot,
-			SourceRoots:              e.JVMCompile.SourceRoots,
-			CommonSourceRoots:        e.JVMCompile.CommonSourceRoots,
-			Strategy:                 e.JVMCompile.Strategy,
-			ExcludedFromCorpusScale:  e.JVMCompile.ExcludedFromCorpusScale,
-			ExcludedReason:           e.JVMCompile.ExclusionReason,
-			RunnerClass:              *runnerClass,
-			CandidateSHA:             *candidateSha,
-			Now:                      func() string { return *date },
+			PinRoot:                 pinRoot,
+			SourceRoots:             e.JVMCompile.SourceRoots,
+			CommonSourceRoots:       e.JVMCompile.CommonSourceRoots,
+			Strategy:                e.JVMCompile.Strategy,
+			ExcludedFromCorpusScale: e.JVMCompile.ExcludedFromCorpusScale,
+			ExcludedReason:          e.JVMCompile.ExclusionReason,
+			RunnerClass:             *runnerClass,
+			CandidateSHA:            *candidateSha,
+			Now:                     func() string { return *date },
 		})
 		if cerr != nil {
 			results = append(results, result{Name: e.Name, Path: pinRoot, Errors: []string{cerr.Error()}})

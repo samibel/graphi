@@ -193,7 +193,7 @@ checkout() {
 			kind:        kindChangeClass,
 			description: "A relative source (`. ../util.sh`) is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.sh` and `vendor/util.sh` both exist). The witness asserts NEITHER candidate edge is minted — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but Bash's exact-path resolution makes the ambiguity a structural two-candidate case.",
 			seed: map[string]string{
-				"lib/util.sh":    `#!/usr/bin/env bash
+				"lib/util.sh": `#!/usr/bin/env bash
 helper() {
     echo "from lib"
 }
@@ -203,7 +203,7 @@ helper() {
     echo "from vendor"
 }
 `,
-				"app/main.sh":    `#!/usr/bin/env bash
+				"app/main.sh": `#!/usr/bin/env bash
 checkout() {
     echo "x"
 }

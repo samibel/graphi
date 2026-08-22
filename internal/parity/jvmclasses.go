@@ -923,13 +923,13 @@ func ComputeCompileCoverage(in CompileCoverageInput) (corpus.CompileCoverage, er
 	}
 
 	return corpus.CompileCoverage{
-		SourceFiles:   sourceFiles,
-		CompiledFiles: compiledFiles,
-		Coverage:      cov,
-		MeasuredAt:    in.Now(),
-		CandidateSHA:  in.CandidateSHA,
-		RunnerClass:   in.RunnerClass,
-		Oracle:        "internal/parity/jvmclasses.go signature-aware oracle",
+		SourceFiles:    sourceFiles,
+		CompiledFiles:  compiledFiles,
+		Coverage:       cov,
+		MeasuredAt:     in.Now(),
+		CandidateSHA:   in.CandidateSHA,
+		RunnerClass:    in.RunnerClass,
+		Oracle:         "internal/parity/jvmclasses.go signature-aware oracle",
 		ExcludedReason: excludedReason,
 	}, nil
 }

@@ -460,13 +460,13 @@ func TestCompileCoverage_SchemaPinnedOnTheFixture(t *testing.T) {
 	const wantSHA = "9f687849cec2b26311401191e90b60e40b5f6cee"
 
 	cov, err := ComputeCompileCoverage(CompileCoverageInput{
-		PinRoot:                  root,
-		SourceRoots:              []string{sourceRoot},
-		CommonSourceRoots:        nil,
-		Strategy:                 "full-dependency-resolution",
-		RunnerClass:              wantRunner,
-		CandidateSHA:             wantSHA,
-		Now:                      func() string { return "2026-08-21" },
+		PinRoot:           root,
+		SourceRoots:       []string{sourceRoot},
+		CommonSourceRoots: nil,
+		Strategy:          "full-dependency-resolution",
+		RunnerClass:       wantRunner,
+		CandidateSHA:      wantSHA,
+		Now:               func() string { return "2026-08-21" },
 	})
 	if err != nil {
 		t.Fatalf("ComputeCompileCoverage: %v", err)
@@ -567,7 +567,6 @@ func TestCompileCoverage_SchemaPinnedOnTheFixture(t *testing.T) {
 	}
 }
 
-//
 // Java spells a bounded type parameter with the SAME keyword as an extends
 // clause — `class A<B extends Bound> extends Real` — and the Java branch of
 // scanSuper took the first `extends` it saw with no angle-bracket depth,
@@ -748,7 +747,8 @@ func TestJVMRepos_LocalFixturesAreRefusedByDefault(t *testing.T) {
 // green-only test cannot: alongside the real classes it runs a row whose
 // planner is deliberately absent from the table, and requires that row to come
 // back ERROR rather than quietly PASS.
-func TestJVMRunner_EndToEndOnALocalFixture(t *testing.T) {	if testing.Short() {
+func TestJVMRunner_EndToEndOnALocalFixture(t *testing.T) {
+	if testing.Short() {
 		t.Skip("drives the built binary")
 	}
 	bin := buildGraphi(t)

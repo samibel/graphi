@@ -183,7 +183,7 @@ function checkout() {
 			kind:        kindChangeClass,
 			description: "A relative require (`require_once '../util.php'`) is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.php` and `vendor/util.php` both exist). The witness asserts NEITHER candidate edge is minted — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
 			seed: map[string]string{
-				"lib/util.php":    `<?php
+				"lib/util.php": `<?php
 function helper() {
     return 1;
 }
@@ -193,7 +193,7 @@ function helper() {
     return 2;
 }
 `,
-				"app/main.php":    `<?php
+				"app/main.php": `<?php
 function checkout() {
     return 0;
 }

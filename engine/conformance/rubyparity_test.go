@@ -175,7 +175,7 @@ end
 			kind:        kindChangeClass,
 			description: "A relative require (`require_relative '../util'`) is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.rb` and `vendor/util.rb` both exist). The witness asserts NEITHER candidate edge is minted — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
 			seed: map[string]string{
-				"lib/util.rb":    `def helper
+				"lib/util.rb": `def helper
   1
 end
 `,
@@ -183,7 +183,7 @@ end
   2
 end
 `,
-				"app/main.rb":    `def checkout
+				"app/main.rb": `def checkout
   0
 end
 `,

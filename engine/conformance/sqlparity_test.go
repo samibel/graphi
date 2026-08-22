@@ -89,7 +89,7 @@ CREATE TABLE orders (oid INT);
 			seed: map[string]string{
 				"db/schema.sql": `CREATE TABLE users (id INT);
 `,
-				"db/views.sql":  `-- (no view yet)
+				"db/views.sql": `-- (no view yet)
 SELECT id FROM users;
 `,
 			},
@@ -113,7 +113,7 @@ SELECT id FROM users;
 			seed: map[string]string{
 				"db/schema.sql": `CREATE TABLE users (id INT);
 `,
-				"db/views.sql":  `-- (no view yet)
+				"db/views.sql": `-- (no view yet)
 SELECT id FROM users;
 `,
 			},
@@ -186,9 +186,9 @@ SELECT id FROM users;
 				// declared ONLY in db/users.sql (no duplicate that
 				// would create ambiguity BEFORE the delete). After the
 				// delete, no users node exists; the references drop.
-				"db/schema.sql":    `-- (users removed from base; see db/users.sql)
+				"db/schema.sql": `-- (users removed from base; see db/users.sql)
 `,
-				"db/users.sql":     `CREATE TABLE users (id INT);
+				"db/users.sql": `CREATE TABLE users (id INT);
 `,
 				"db/views_one.sql": `CREATE VIEW one AS SELECT id FROM users;
 `,

@@ -167,11 +167,11 @@ pub fn checkout() -> i32 {
 			kind:        kindChangeClass,
 			description: "Two modules with the same clause both declare a function with the same name (e.g. `shop::price` and `vendor::price`). The witness asserts NEITHER call site resolves to a single edge — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
 			seed: map[string]string{
-				"src/shop/price.rs":   `pub fn price() -> i32 { 1 }
+				"src/shop/price.rs": `pub fn price() -> i32 { 1 }
 `,
 				"src/vendor/price.rs": `pub fn price() -> i32 { 2 }
 `,
-				"src/main.rs":         `pub fn checkout() -> i32 {
+				"src/main.rs": `pub fn checkout() -> i32 {
     0
 }
 `,

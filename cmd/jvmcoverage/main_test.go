@@ -100,12 +100,12 @@ func TestJVMCoverageCmd_FlagsAndShape(t *testing.T) {
 	// figure for the same input — a future divergence between the cmd's
 	// per-pin record and the parity package's own output is a bug.
 	cov2, err := parity.ComputeCompileCoverage(parity.CompileCoverageInput{
-		PinRoot:     root,
-		SourceRoots: []string{"src"},
-		Strategy:    "full-dependency-resolution",
-		RunnerClass: runnerClass,
+		PinRoot:      root,
+		SourceRoots:  []string{"src"},
+		Strategy:     "full-dependency-resolution",
+		RunnerClass:  runnerClass,
 		CandidateSHA: candidateSHA,
-		Now:         func() string { return measuredAt },
+		Now:          func() string { return measuredAt },
 	})
 	if err != nil {
 		t.Fatalf("parity.ComputeCompileCoverage (control): %v", err)
@@ -212,6 +212,11 @@ func runJVMCoverageCmd(t *testing.T, args []string, timeout time.Duration) (stri
 		return stdout.String(), stderr.String(), err
 	case <-time.After(timeout):
 		_ = cmd.Process.Kill()
+		// Wait for cmd.Run() to return after Kill so the writer
+		// goroutine finishes draining stdout/stderr before the test
+		// reads the buffers. Without this, `go test -race` reports a
+		// DATA RACE between the writer goroutine and stdout.String().
+		<-done
 		return stdout.String(), stderr.String(), context.DeadlineExceeded
 	}
 }
