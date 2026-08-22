@@ -12,6 +12,80 @@
   which superseded the P0 v0.7.1 freeze record for the same reason
 - ADR: [`0013-jvmsound-003-004-jvmharn-001-closure.md`](0013-jvmsound-003-004-jvmharn-001-closure.md)
 
+## CORRECTION — 2026-08-23 (SW-188): four statements in this record were not true when it published
+
+Per ADR 0008 D6 this section is **added**; nothing below it is rewritten,
+re-pointed or deleted. Each correction was verified before it was written, and
+the command that verified it is given.
+
+**C-1 — the "Moves:" line names a value that `parityreport.CandidateSHA` does
+not hold.** The header at `:4-8` says the constant moves to
+`1a0425c5539567dde100b02479c0cf478c97c251709e5f33e06a0d7c6be3dbbc` and
+describes it, in the same sentence, as "the `./cmd/graphi` SHA256 built with
+`-trimpath -buildvcs=false` at the SW-188 commit". Those are two different kinds
+of thing, and neither reading holds:
+
+- The constant holds a **40-hex commit sha**. `internal/parityreport/report.go:87`
+  reads `const CandidateSHA = "9f687849cec2b26311401191e90b60e40b5f6cee"`. The
+  value in the header is 64 hex characters.
+- The **binary digest at that commit is not that value either**. Built from a
+  detached worktree at `9f68784` with
+  `CGO_ENABLED=0 go build -trimpath -buildvcs=false ./cmd/graphi` (go1.26.6,
+  darwin/arm64), `./cmd/graphi` digests
+  `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` — which is
+  exactly what both published dispatches record as
+  `provenance.product_binary_candidate`.
+
+The value `1a0425c5…` occurs nowhere in the tree except this record, three times
+(`:6`, `:41`, `:80`). **The candidate is the commit `9f687849…`; its product
+binary digests `0de6e64d6174…`.** What `1a0425c5…` was measured over is not
+recoverable from anything in the repository, and nothing here guesses.
+
+**C-2 — `docs/rc/parity-matrix-adr0013-run-{a,b}.json` were never published.**
+The paragraph at `:206-209` states they are "PUBLISHED in this commit". Those
+two paths have no commit on any branch —
+`git log --all --diff-filter=A -- 'docs/rc/parity-matrix-adr0013-run-*'` returns
+nothing — and no such file exists in the working tree. The two-dispatch
+re-measure at this candidate that **did** publish is
+`docs/rc/parity-matrix-jvm-wpj7-run-A.json` and `…-run-B.json`, delivered by
+SW-190. Read this record's promise against those files, under C-3's terms.
+
+**C-3 — what the two dispatches establish, and what they do not.** Measured on
+the two published reports, not inherited:
+
+- **They agree bit-for-bit.** The verdict map is identical over all **52**
+  declared change classes — **44 PASS, 8 SKIPPED, 0 FAIL** on both — as is
+  `store_counts`, as is every per-class field (`full_nodes`, `inc_nodes`,
+  `full_edges`, `inc_edges`, `snapshot_full_sha256`, `snapshot_inc_sha256`,
+  `mutation`, `repo`, `kind`, `label`, `detail`, `axis_note`,
+  `selected_because`), with the single exception of `duration_ms`.
+- **The publishability gate still refuses.** Both `-verdict-diff` and
+  `-counts-diff` exit **2** — "verdict sets agree, but at least one run is NOT
+  publishable — publication refused", and its counts twin — because both reports
+  carry `publishable: false` for two stated reasons: `incomplete run: 44 of 52
+  declared change classes decided` and a dirty worktree at run time. Exit 0 is
+  the publishable outcome and neither dispatch reaches it.
+- **So the matrix at this candidate is NOT published as a parity result.**
+  Agreement between two dispatches is a determinism property, not a publication.
+  The 8 SKIPPED cells and the gate wiring are **SW-204**'s declared work
+  (`projects/graphi/memory/decisions/2026-08-22-jvm-parity-8-skipped-cells-disposition.md`),
+  and until it lands the JVM matrix stays NOT PUBLISHABLE by design.
+
+**C-4 — the `g7-jvm-baseline.md` refresh named in the same paragraph did not
+happen.** `:206-209` also states the figure side of `g7-jvm-baseline.md` is
+"refreshed under the new candidate in the same commit". `git show --stat 9f68784`
+lists nine files and none is under `docs/eval/`; the file —
+`docs/eval/runs/2026-08-19-local-sandbox/g7-jvm-baseline.md` — has exactly one
+commit in its history, `38d5ad0` (SW-177), and still carries the `3b8d43f6…`
+candidate. That refresh is outstanding work, not a delivered one, and it is not
+done here either: `docs/eval/` is owned by another in-flight story.
+
+**What this correction does NOT change.** The move itself stands: the ADR 0013
+closure is a JVM-tier product change, a run over the fixed tree measures a
+different product than `3b8d43f`, and the candidate had to move. The retired
+candidate's forbidden-phrasing entry, the sanctioned provenance sentence and the
+supersession chain are untouched and correct.
+
 ## Why the move is forced, not chosen
 
 ADR 0013 closes three reproduced wrong-confirmed-edge defects in

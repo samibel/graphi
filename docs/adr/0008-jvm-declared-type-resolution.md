@@ -13,6 +13,60 @@
 - Feeds: WP-J11 (the Java/Kotlin GA flip); the wave-2/3 binders (TS, C#) reuse
   this ADR's declared-type regime as precedent
 
+
+> ## AMENDMENT — 2026-08-23 (SW-188): JVMSOUND-003 and JVMSOUND-004 are closed; this ADR's two "open, unfixed" statements are retracted
+>
+> Per D6 this block is **added**; nothing below is rewritten, re-pointed or
+> deleted. It retracts exactly two statements and leaves everything else,
+> including the ratification block that follows, standing.
+>
+> **What is retracted.** Two places in this ADR say the two defects are open:
+>
+> - the **D5** row (`:93`) — "**JVMSOUND-003** and **JVMSOUND-004** — both
+>   reproduced wrong-confirmed-edge defects, open and deliberately unfixed";
+> - **Consequences item 5** (`:347-348`) — "JVMSOUND-003 and JVMSOUND-004 are
+>   open, reproduced, unfixed wrong-confirmed-edge defects".
+>
+> Both were true when written and are **no longer true**. The defects closed on
+> 2026-08-20 under [`../decisions/0013-jvmsound-003-004-jvmharn-001-closure.md`](../decisions/0013-jvmsound-003-004-jvmharn-001-closure.md)
+> (ADR 0013), D1–D2 and D4–D6:
+>
+> | Defect | Fix, in code | Positive regression, green |
+> |---|---|---|
+> | **JVMSOUND-003** — arity miscount from CST comment nodes | `countArgs` no-ops over the tree-sitter comment node types — `engine/jvmresolve/body_java.go:675` | `engine/jvmresolve/body_java_test.go::TestCountArgs_SkipsComments`, `::TestCountArgs_CrossFileBindsBase` |
+> | **JVMSOUND-004** — array-erased signature key | `callableSig` carries array dimensionality via `arrayDims` — `engine/jvmresolve/hierarchy.go:193` | `engine/jvmresolve/hierarchy_test.go::TestCallableSig_ArrayDim` |
+>
+> The five pin tests that held them open (two for 003, three for 004) are
+> `t.Skip` stubs in `internal/jvmgroundtruth/signature_test.go`, each naming the
+> positive regression that replaced it.
+>
+> **D5 itself is unchanged and still in force.** The rule — any demonstrated
+> false `confirmed` edge is a stop-ship — is not weakened by the two instances
+> closing. What changes is only that the two instances the row cited are no
+> longer open.
+>
+> **What is NOT retracted, and is repeated here so the amendment is not read as
+> more than it is:**
+>
+> - **The Kotlin half of Consequences item 5 stands, verbatim.** Kotlin
+>   bindings are still judged at **no precision finer than by-name**: all 351
+>   kotlinx comparisons abstain under `kotlin_bytecode_shape_unproven`, and okio
+>   is judged at none at all. That is a declared-Kotlin → JVM-descriptor mapping
+>   gap in the oracle, filed as **JVMHARN-003**, and nothing in ADR 0013 or in
+>   SW-188 touches it. Java is judged at three precisions; Kotlin at one.
+> - **"A high binding rate is not evidence of a correct one" stands.** Two
+>   closed defects are two closed defects, not an accuracy measurement.
+> - **The frequencies stay unmeasured.** How often an inline comment appears
+>   inside an argument list, and how often same-name overloads differ only in
+>   array dimensionality, on a real corpus: neither number exists. The fixes
+>   never needed them and do not supply them.
+> - **JVMHARN-001** (Kotlin value-class name mangling) is closed on 2026-08-23
+>   in the **harness** — `demangleValueClass` in
+>   `internal/jvmgroundtruth/groundtruth.go` — with positive regressions and no
+>   re-measurement: the kotlinx by-name differential re-run needs `kotlinc` and
+>   is a CI dispatch that has not run. ADR 0013's own 2026-08-23 correction
+>   block carries the detail, including the withdrawal of its attribution of
+>   that closure to `engine/jvmresolve`.
 > ## RATIFICATION — 2026-08-20 (W1.e / SW-178): D1–D9 ruled together
 >
 > Per D6 this block is **added**, nothing below is rewritten, re-pointed or

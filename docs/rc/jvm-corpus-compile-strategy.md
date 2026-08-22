@@ -7,6 +7,54 @@ Per discipline D6 this is a new record; it rewrites nothing and re-points
 nothing. It publishes what was measured, states the denominators beside every
 figure, and records the negative results rather than omitting them.
 
+> ## AMENDMENT — 2026-08-23 (SW-188): cluster A is now modelled; the counts below are NOT re-measured
+>
+> Per D6 this block is **added**; nothing below is rewritten, re-pointed or
+> deleted. Every figure in this document remains the measurement it was, at
+> capture digest `e6d39791…`.
+>
+> **What changed in the code.** §6.2's cluster A — kotlinc's value-class
+> mangling, `name-<hash>`, registered as blind spot **#18** at `:459` and
+> filed as **JVMHARN-001** — is now modelled in the oracle.
+> `internal/jvmgroundtruth/groundtruth.go::demangleValueClass` demangles it on
+> both `ParseJavap` paths (caller attribution and callee naming). The rewrite is
+> accepted only when the plain name is declared as a member of the SAME class in
+> the capture, the owner is present in the capture, and the owner was compiled
+> from a `.kt` file. That same-class reading is a conservative application of
+> cluster A's own row ("emits a bridge under the plain name"): a value-class
+> function with no plain-name sibling in its own class is DECLINED, which costs
+> recall and never soundness.
+>
+> **What did NOT change, and must not be read as changed.**
+>
+> - **The 27, and the 22/4/1 split, stand as the measurement they are.** The
+>   by-name differential has **not been re-run**. It needs `kotlinc`, which is
+>   absent from the local sandbox and installed unpinned from `releases/latest`
+>   only in the `jvm-groundtruth` workflow, so the re-run is a CI dispatch and
+>   is open work.
+> - **The post-fix residual of 5 of 351 is a PROJECTION**, read off the hand
+>   classification in §6.2 — the 4 `Encoder$DefaultImpls` interface-lowering rows
+>   (cluster B) plus the 1 compound `append-7apg3OU$main` (cluster C), both of
+>   which the demangler provably declines. It is not a measured result and no
+>   surface may state it as one until the dispatch publishes.
+> - **§6.3's "Kotlin scoring" entry stands.** The pin still publishes no
+>   coverage figure.
+> - **Blind spot #17 stands** (§6.4), and so does the register.
+> - **The blind spot the demangler adds** is disclosed at the function: a Kotlin
+>   class declaring BOTH a backquoted dash-name and a plain member with exactly
+>   that prefix is rewritten. It is wider than "hash-shaped" — the hash alphabet
+>   includes `-`, so `parse-json-value` beside `parse` qualifies — and it is
+>   pinned as a case in
+>   `internal/jvmgroundtruth/valueclass_test.go::TestDemangleValueClass_Guards`.
+>   The corpus contains no instance, which is a frequency claim and not a
+>   soundness one.
+> - **The descriptor-level gap is untouched and is not cluster A.** All 351
+>   kotlinx comparisons still abstain under `kotlin_bytecode_shape_unproven`
+>   (`internal/jvmgroundtruth/binder.go:236`, unconditional for every Kotlin
+>   site); by-arity and by-signature remain vacuously sound at 0 judged of 1 009
+>   and 670 truth facts. Filed as **JVMHARN-003**, with a `kotlinc`-digest pin as
+>   its prerequisite.
+
 ---
 
 ## 1. The decision, per pin, with its reason

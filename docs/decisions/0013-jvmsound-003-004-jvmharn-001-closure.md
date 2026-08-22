@@ -11,6 +11,101 @@
   found by SW-172 / SW-173 and carried in `projects/graphi/backlog.md` as the
   load-bearing findings that kept the WP-J11 flip gated
 
+> ## CORRECTION — 2026-08-23 (SW-188): JVMHARN-001's closure was attributed to the wrong code, and cited a test that does not exist
+>
+> Per ADR 0008 D6 this block is **added**; nothing below is rewritten,
+> re-pointed or deleted. It corrects what this record says about
+> **JVMHARN-001 only**. D1–D6 (JVMSOUND-003 and JVMSOUND-004) are untouched
+> and stand exactly as ruled.
+>
+> **R-1 — the mechanism named below cannot reach the defect.** D7 and D9, and
+> the JVMHARN-001 row of the defect table at `:152`, attribute the closure to
+> `LookupCallableValueClassAware` in `engine/jvmresolve`. JVMHARN-001 was filed
+> for a **truth-set** defect: kotlinc renames a function taking an inline-class
+> parameter to `<name>-<hash>`, `javap` prints that mangled name as the
+> declaration, and `internal/jvmgroundtruth` therefore attributes the
+> function's body calls to it while graphi answers the name the source
+> declares. No lookup rule in the binder changes the name `javap` prints.
+>
+> **What `LookupCallableValueClassAware` does close is real, and is kept.** It
+> binds a call site whose SOURCE TEXT spells the mangled form — a Java caller
+> into a Kotlin value-class function, or Kotlin source that names it — and
+> reports the binding under the original name. Its two regressions
+> (`engine/jvmresolve/hierarchy_test.go::TestValueClassBridgeName` and
+> `::TestLookupCallableValueClassAware`) are green. It is a separate binding
+> gap, correctly fixed; it is not JVMHARN-001.
+>
+> **R-2 — a cited pin test has never existed.** D9 (`:131`) and the defect table's JVMHARN-001 row (`:152`)
+> both cite
+> `internal/jvmgroundtruth/signature_test.go::TestKotlinValueClassMangledName_JVMHARN001`,
+> D9 as "replaced with a `t.Skip` stub". That citation is **withdrawn**. No
+> `.go` file on any branch has ever contained that identifier:
+> `git log --all -S'TestKotlinValueClassMangledName' -- '*.go'` returns no
+> commits, and the only commits naming it at all are prose. There is no stub
+> to find, because there was never a pin.
+>
+> **R-3 — what actually closes JVMHARN-001**, at the site it was filed
+> against: `demangleValueClass` in `internal/jvmgroundtruth/groundtruth.go`,
+> beside `demangleMultifilePart`, applied on both `ParseJavap` paths — caller
+> attribution and callee naming. The recognition rule is a verbatim copy of
+> `engine/jvmresolve`'s (importing it would mean exporting the product symbol,
+> and that rename moves the product binary digest: measured, `0de6e64d6174…` →
+> `fa8a2867d489…`). The rewrite fires only when the plain name is declared as
+> a member of the SAME class in the capture, the owner is in the capture, and
+> the owner was compiled from a `.kt` file; every other case declines, which
+> costs recall and never soundness. Regressions, all green with no compiler
+> present: `internal/jvmgroundtruth/valueclass_test.go::TestValueClassBridgeName_MirrorsJVMResolve`,
+> `::TestDemangleValueClass_Guards`, `::TestParseJavap_ValueClassCallerAndCallee`
+> (confirmed RED with the two call sites removed), `::TestParseJavap_BackquotedDashNameIsNotRewritten`,
+> and the drift guard on the copy in `valueclass_drift_test.go`
+> (`TestValueClassRule_IdenticalToJVMResolve`, `::TestValueClassRule_CopySetIsClosed`,
+> `::TestValueClassRule_QualifiersResolveAlike`). Product bytes do not move:
+> `go list -deps ./cmd/graphi` does not contain `internal/jvmgroundtruth`, and
+> `./cmd/graphi` built `-trimpath -buildvcs=false` digests
+> `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` before and
+> after the change.
+>
+> **R-4 — D8 disclosure: the descriptor-level residual, which is NOT
+> JVMHARN-001 and is not closed by it.** Below by-name the oracle does not
+> judge Kotlin at all. `internal/jvmgroundtruth/binder.go:236` returns
+> `AbstainKotlinShapeUnproven` unconditionally for every Kotlin site, before a
+> single parameter is inspected, because the declared-Kotlin → JVM-descriptor
+> mapping is unproven (nullability boxing, extension receivers, suspend
+> continuations). Measured and published at `corpus/manifest.json:567`: **351
+> of 351** kotlinx comparisons abstain; by-arity and by-signature are
+> **vacuously sound — 0 judged of 1 009 and 670 truth facts**; okio judges none
+> at all. Closing JVMHARN-001 removes **zero** of those abstentions. The named
+> successor is **JVMHARN-003** on `projects/graphi/backlog.md`, whose hard
+> prerequisite is pinning `kotlinc` by digest in the `jvm-groundtruth`
+> workflow. `internal/jvmgroundtruth/signature_test.go::TestKotlinAbstainsAtFinerPrecisions`
+> stays standing and green: while it is, nobody has quietly filled the
+> descriptor gap with a guess.
+>
+> **R-5 — what may NOT be claimed after this correction.**
+>
+> - NOT that Kotlin is judged below by-name. It is not. Java is judged at three
+>   precisions; Kotlin at one, and any row asserting the Kotlin half of "never
+>   emits a wrong confirmed edge" must carry that asymmetry in the same
+>   sentence.
+> - NOT that the kotlinx by-name differential improved. It has **not been
+>   re-run**: that needs `kotlinc`, which is absent locally and installed
+>   unpinned from `releases/latest` only in the `jvm-groundtruth` workflow, so
+>   the re-run is a CI dispatch and is open work. The expected residual of 5 of
+>   351 — the 4 `Encoder$DefaultImpls` interface-lowering rows plus the 1
+>   compound `append-7apg3OU$main` — is a **projection from the published hand
+>   classification**, not a measurement, and no surface may state it as
+>   measured until that dispatch publishes.
+> - NOT that the same-class-bridge premise is a general kotlinc rule. It is
+>   this record's reading of §6.2's cluster A row ("emits a bridge under the
+>   plain name") applied conservatively; a value-class function with no
+>   plain-name sibling in its own class is declined, not rewritten.
+>
+> **Left to the owner, stated and not taken:** whether `GA-LANG-kotlin-G2SUB`
+> keeps its 2026-08-20 PASS, whose stated flip ground was a JVMHARN-001 closure
+> in `LookupCallableValueClassAware`. R-1 removes that ground as stated. The
+> row is byte-untouched by this change and any edit to it lands on the story
+> that owns those rows.
+
 > ## SW-188 (this commit) — D1…D9 ruled together, **Accepted**
 >
 > Per ADR 0008 D6's discipline, a closure that fixes more than one defect is
