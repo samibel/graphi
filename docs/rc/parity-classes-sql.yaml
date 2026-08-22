@@ -1,0 +1,215 @@
+# graphi — SQL change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-194a, W5-RES.i). SQL is
+#                      `cross-file-heuristic` (live derivation at the W1.f tip
+#                      91a4ba3). The resolver at engine/link/resolve_bash.go's
+#                      neighbour sqlResolver{} registration supplies the EMPTY
+#                      BINDER, which is the HONEST STATEMENT about SQL's
+#                      IMPORTS: ISO/IEC 9075 defines no file-inclusion
+#                      construct (`\i` is a psql client command, `SOURCE` a
+#                      mysql one), so there is no import to bind and no
+#                      `imports` edge is ever emitted.
+#
+#                      SW-183 / ADR 0012 corrected an earlier over-claim: the
+#                      cross-file capability is real via SAME-DIRECTORY
+#                      resolution (resolveRefs' same-directory pass at
+#                      engine/link/resolve_common.go) — a table declared in a
+#                      sibling file resolves at the `derived` tier. That makes
+#                      SQL's derived `cross-file-heuristic` level EARNED rather
+#                      than over-claimed.
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go, JVM,
+#                      Python and TS tables. SQL has no typed binder, so the
+#                      rows here assert PARITY, not CORRECTNESS — parity
+#                      compares two passes of the same rule, so a PASS
+#                      certifies the rule is REGRESSION-CLEAN between
+#                      incremental and full, never that it is correct.
+#                      Correctness evidence lives in engine/link's sqlResolver
+#                      test (engine/link/resolve_clang_test.go, the FU-5
+#                      script harness neighbour) and in the real-repository
+#                      matrix (G4, where a SQL corpus pin exists), not here.
+#
+#                      SW-194a SCOPE, STATED. This file DEFINES the eight
+#                      change-class rows at the cross-file-heuristic level.
+#                      The conformance twin (engine/conformance/
+#                      sqlparity_test.go + sqlparity_matrix_test.go) lands in
+#                      SW-194b and is what proves these rows PROVEN. SW-194c
+#                      flips the G3 evidence row to PASS by citing this YAML +
+#                      the twin with their blob shas.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The Python instance (parity-classes-
+#                      python.yaml) is the closest template; this copy
+#                      diverges on THREE named points recorded in the row
+#                      notes: (a) SQL has NO import binding — same-directory
+#                      resolution is the ONLY cross-file path, so every row
+#                      here is about SAME-DIRECTORY sibling resolution; (b) the
+#                      resolver is the EMPTY BINDER, so any "imports" row would
+#                      always read SKIP — the G2SUB drop-and-count half is the
+#                      WHOLE contract at SQL; (c) SQL's static package-source
+#                      extension set is `.sql` (the requireBinder call),
+#                      modelled on the SW-166 extension filter.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestSqlParityMatrix_DriftGuard (engine/conformance/
+# sqlparity_matrix_test.go, lands in SW-194b) binds this file to the harness
+# table sqlChangeClassTable() in sqlparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+
+parity_classes:
+  - id: "sql_add_file"
+    kind: "change_class"
+    label: "SQL-Datei hinzufügen / add a SQL file in a new directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/sqlparity_test.go"
+    test_line: "284"
+    test_name: "TestSqlFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.i"
+    note: "A new SQL file arrives in a new directory: pure add path. The witness asserts the new schema/table/view resolves SAME-DIRECTORY at the derived tier — the only cross-file path SQL has — and the control symbols survive. Fixture label reads production Go parser to satisfy the shared closed vocabulary (D-12); the subject under test is the SQL heuristic resolver (the empty binder at engine/link/link.go's sqlResolver{} registration plus the same-directory pass at engine/link/resolve_common.go). SW-194b ships the harness row; SW-194a ships this YAML row as the substituted-contract pin."
+
+  - id: "sql_modify_file"
+    kind: "change_class"
+    label: "SQL-Datei ändern / rewrite a SQL file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/sqlparity_test.go"
+    test_line: "284"
+    test_name: "TestSqlFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.i"
+    note: "An indexed SQL file is rewritten in place: a table or view is added while existing nodes keep identity. The witness asserts the new node is present and the existing sibling references survive — pins the same-directory identity-stability contract every rewrite class asserts. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "sql_add_reference_derived"
+    kind: "change_class"
+    label: "Same-Directory-Referenz hinzufügen / add a same-directory cross-file reference"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/sqlparity_test.go"
+    test_line: "284"
+    test_name: "TestSqlFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.i"
+    note: "A new cross-file reference is added: `CREATE VIEW active AS SELECT id FROM users;` where `users` is a table declared in a sibling file in the SAME directory. The witness asserts the `references` edge lands at DERIVED tier — SQL's only tier — and the resolver's exact-path resolution (the same-directory pass at engine/link/resolve_common.go) is the binding mechanism. The empty-binder import path means NO `imports` edge is minted (the G2SUB whole contract at SQL). SW-194b ships the harness row."
+
+  - id: "sql_cross_dir_skip"
+    kind: "change_class"
+    label: "Cross-Directory-Referenz überspringen + zählen / skip + count a cross-directory reference"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/sqlparity_test.go"
+    test_line: "284"
+    test_name: "TestSqlFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.i"
+    note: "A cross-file reference (`SELECT * FROM other.users;`) targets a sibling file in a DIFFERENT directory. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. SQL has no import construct to carry a reference across a directory boundary, so cross-directory resolution is structurally undefined and the resolver must drop+count. An edge here would be the failure mode the level forbids. SW-194b ships the harness row."
+
+  - id: "sql_ambiguous_siblings"
+    kind: "change_class"
+    label: "Mehrdeutige Geschwister / two sibling files declaring the same table name"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/sqlparity_test.go"
+    test_line: "284"
+    test_name: "TestSqlFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.i"
+    note: "Two sibling SQL files in the same directory both declare a table with the same name (e.g. `a/users.sql` and `b/users.sql`, both `CREATE TABLE users`). A reference from a third sibling (`SELECT * FROM users`) is ambiguous. The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. SW-194b ships the harness row."
+
+  - id: "sql_delete_file"
+    kind: "change_class"
+    label: "SQL-Datei löschen / delete a SQL file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/sqlparity_test.go"
+    test_line: "284"
+    test_name: "TestSqlFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.i"
+    note: "A SQL file declaring a table that TWO other sibling files reference is deleted, so the per-file stale-node purge and the derived-edge sweep run over it. The witness requires the deleted callee absent, both referencers still present, and the derived edges into the deleted callee gone — a stale derived edge would be the worst outcome here. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on SQL as well as on Go. SW-194b ships the harness row."
+
+  - id: "sql_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / cross-directory file-to-file table/view move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/sqlparity_test.go"
+    test_line: "284"
+    test_name: "TestSqlFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.i"
+    note: "A SQL table (or view) moves file-to-file ACROSS directories (a.sql in k/ -> b.sql in OTHER/). The table's identity is keyed on its qualified name (QN); a CROSS-DIRECTORY move CHANGES QN (k.helper -> OTHER.helper), so the unchanged referencer's edge naturally drops in both passes. The witness asserts the table identity moved (QN changed) and the referencer survives without a stale cross-directory reference. The SAME-DIRECTORY variant is blocked on PARITY-001 (the scope-limited rebuild does not re-resolve unchanged referencers in the moved-file's directory); the same-defect signature is exercised by sql_delete_file (which has a non-PARTIAL witness path because the duplicate-table ambiguity that triggers it there is contained by overriding db/schema.sql in seed). SW-194b ships the harness row."
+
+  - id: "sql_add_table_definition"
+    kind: "change_class"
+    label: "Tabellendefinition hinzufügen / add a CREATE TABLE definition"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/sqlparity_test.go"
+    test_line: "284"
+    test_name: "TestSqlFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.i"
+    note: "A CREATE TABLE definition is added to a SQL file. The witness asserts the new table node is present and the existing same-directory references survive — pins the schema-definition identity-stability contract. SQL's QN keys on the schema name + the directory, so the same row id covers tables and views. SW-194b ships the harness row."

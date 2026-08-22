@@ -1,5 +1,16 @@
 package coverage
 
+// WITHDRAWN-contract: a language is in the WITHDRAWN state iff its matrix
+// row is absent in docs/coverage-matrix.yaml. Evidence rows can flip to
+// PASS independently as their gates are measured (G2SUB from SW-194-a,
+// G3 from SW-194-c, G4 from SW-195, etc.). The matrix row is uncommented
+// to ACTIVE only when G1..G9 are ALL PASS — that ordering invariant is
+// held by TestCrossFileHeuristicResidual_OrderingConstraint.
+//
+// Pre-SW-194 the guards assumed all 9 rows flipped together; SW-194-a/b/c
+// decomposed the slice and the guards were updated accordingly. See
+// docs/rc/ga-language-withdrawals-2026-08-21.md for the discipline.
+
 // SW-184 (language-GA program, Wave 3 residual) — THE LIGHT GATE SET for the
 // cross-file-heuristic residual.
 //
@@ -46,10 +57,17 @@ package coverage
 //     matrix row is a pending GA claim and the CheckGALanguages output
 //     legitimately fails with one violation per UNKNOWN row — that is
 //     the EXPECTED state at SW-184 close.
-//  5. Every GA-LANG-<lang>-* row for every residual language reads
-//     `status: UNKNOWN` at SW-184 close — the scaffold is not a
-//     discharged claim, by the spec's own rule that AC-8's "may finish
-//     without a GA declaration" is an outcome, not a failure.
+//  5. The matrix-row-absence invariant at SW-194 close (post-slice
+//     decomposition): all nine residual languages have their
+//     `category: ga-language` matrix row ABSENT in
+//     docs/coverage-matrix.yaml. Evidence rows CAN flip to PASS for the
+//     gates their respective slices measured (G2SUB from SW-194-a, G3
+//     from SW-194-c, G4 from SW-195, etc.) while the matrix row stays
+//     withdrawn — that is the WITHDRAWN discipline under SW-178
+//     (docs/rc/ga-language-withdrawals-2026-08-21.md). The full
+//     evidence-row-UNKNOWN assertion was retired by the slice
+//     decomposition; the matrix-row-absence check is the load-bearing
+//     invariant at this layer.
 //
 // What this guard does NOT pin. The per-language parity-class YAML, the
 // conformance table, the hero fixture, the perf wiring, the per-language
@@ -285,27 +303,36 @@ func TestCrossFileHeuristicResidual_MatrixRowsExist(t *testing.T) {
 					lang, row.Tier, TierLabs, TierLabs)
 			}
 		case stateWithdrawn:
-			// SW-178 WITHDRAWN contract: the matrix row is absent
-			// (by the state classifier), AND every GA-LANG-<lang>-
-			// {G1,G2SUB,G3..G9} evidence row reads UNKNOWN, AND the
-			// language is recorded in the withdrawals doc with a
-			// re-introducer story id. All three halves are pinned.
+			// SW-178 WITHDRAWN contract under the SW-194-a/b/c slice
+			// decomposition: the matrix row is absent (by the state
+			// classifier), AND the language is recorded in the
+			// withdrawals doc with a re-introducer story id. The
+			// matrix-row-absence invariant is load-bearing. Evidence
+			// rows can flip to PASS for gates measured by their
+			// respective shipped slices (G2SUB from SW-194-a, G3 from
+			// SW-194-c, G4 from SW-195, etc.); the matrix row stays
+			// absent until all nine gates are PASS — that is the
+			// ACTIVE half held by TestCrossFileHeuristicResidual_OrderingConstraint.
+			//
+			// We pin the row-set (every residual language carries the
+			// closed set G1, G2SUB, G3..G9 — not missing rows) so a
+			// deletion of evidence rows cannot silently launder a
+			// gate to PASS; we do NOT pin "all rows UNKNOWN" because
+			// that is the per-slice disposition, not the matrix
+			// discipline.
 			gateStatus := evidenceRowsByID(t, crossFileResidualEvidencePath, lang)
-			var notUnknown, missing []string
+			var missing []string
 			for _, g := range residualGALangRowGates {
-				status, ok := gateStatus[g]
-				if !ok {
+				if _, ok := gateStatus[g]; !ok {
 					missing = append(missing, g)
-					continue
-				}
-				if status != "UNKNOWN" {
-					notUnknown = append(notUnknown, fmt.Sprintf("%s=%s", g, status))
 				}
 			}
-			if len(missing) > 0 || len(notUnknown) > 0 {
+			if len(missing) > 0 {
 				withdrawnBadContract = append(withdrawnBadContract,
-					fmt.Sprintf("%s (missing gates: %v; non-UNKNOWN evidence: %v)",
-						lang, missing, notUnknown))
+					fmt.Sprintf("%s (missing evidence rows: %v — every "+
+						"residual language must carry the closed set "+
+						"G1, G2SUB, G3..G9 even when WITHDRAWN)",
+						lang, missing))
 			}
 			if w, ok := withdrawn[lang]; !ok || strings.TrimSpace(w.Reintroducer) == "" {
 				withdrawnBadContract = append(withdrawnBadContract,
@@ -444,42 +471,55 @@ func TestCrossFileHeuristicResidual_GALangRowsExist(t *testing.T) {
 	}
 }
 
-// TestCrossFileHeuristicResidual_AllRowsUnknown pins the
-// HONEST-UNKNOWN state at SW-184 close. Every GA-LANG-<lang>-* row
-// for every residual language MUST read `status: UNKNOWN`. This is
-// the expected state — the rows are the SCAFFOLD, not a discharged
-// claim, and the spec is explicit about it (AC-8: "may finish this
-// story without a GA declaration; that is an outcome, not a
-// failure"). A row that reads PASS at SW-184 close would mean
-// somebody moved a gate without evidence and silently made CI green,
-// the exact failure mode the "rows born UNKNOWN" convention exists
-// to prevent.
+// TestCrossFileHeuristicResidual_AllRowsUnknown pins the MATRIX-ROW-
+// ABSENCE invariant at the SW-194 slice-decomposition layer. Every
+// residual language's `category: ga-language` matrix row MUST be
+// ABSENT in docs/coverage-matrix.yaml — the WITHDRAWN discipline
+// under SW-178 (docs/rc/ga-language-withdrawals-2026-08-21.md).
+//
+// The pre-SW-194 form of this guard asserted "every GA-LANG-<lang>-*
+// row reads UNKNOWN"; that assertion was retired by the SW-194-a/b/c
+// slice decomposition, which lets evidence rows flip to PASS for the
+// gates their respective slices measured (G2SUB from SW-194-a, G3
+// from SW-194-c, G4 from SW-195, etc.) while the matrix row stays
+// absent. The matrix-row-absence check is the load-bearing invariant
+// at this layer — a row that uncomments without all 9 gates PASS is
+// the stale-row condition SW-178 was introduced to prevent.
+//
+// The ACTIVE ordering constraint (all 9 gates PASS in order) is held
+// by TestCrossFileHeuristicResidual_OrderingConstraint, and the per-
+// row evidence presence is held by
+// TestCrossFileHeuristicResidual_GALangRowsExist. Together they cover
+// what this guard used to cover before the slice decomposition.
 func TestCrossFileHeuristicResidual_AllRowsUnknown(t *testing.T) {
-	rows, err := loadEvidenceIndexGALangRows(crossFileResidualEvidencePath)
+	caps, err := LoadMatrix(crossFileResidualMatrixPath)
 	if err != nil {
-		t.Fatalf("load evidence index: %v", err)
+		t.Fatalf("read coverage matrix %s: %v", crossFileResidualMatrixPath, err)
 	}
 
-	var prematurePass []string
-	for _, r := range rows {
-		lang, _, ok := splitGALangRowID(r.ID)
-		if !ok {
+	matrixGALangs := map[string]Capability{}
+	for _, c := range caps {
+		if c.Category != CategoryGALanguage {
 			continue
 		}
-		if !isResidualLang(lang) {
-			continue
-		}
-		if r.Status != "UNKNOWN" {
-			prematurePass = append(prematurePass, fmt.Sprintf("%s (status=%q)", r.ID, r.Status))
+		matrixGALangs[c.ID] = c
+	}
+
+	var present []string
+	for _, lang := range residualCrossFileHeuristicLanguages {
+		if _, ok := matrixGALangs[lang]; ok {
+			present = append(present, lang)
 		}
 	}
-	if len(prematurePass) > 0 {
-		t.Errorf("residual GA-LANG-* rows not all UNKNOWN at SW-184 close %v. "+
-			"Either the rows are prematurely PASS (gate moved without evidence — "+
-			"the failure mode rows-born-UNKNOWN exists to prevent) or a non-UNKNOWN "+
-			"status string was introduced. SW-184 ships the SCAFFOLD; the per-gate "+
-			"discharge is a separate, owner-gated story with its own evidence artefact.",
-			prematurePass)
+	if len(present) > 0 {
+		t.Errorf("residual languages have their ga-language matrix row PRESENT "+
+			"in docs/coverage-matrix.yaml: %v. The SW-178 WITHDRAWN discipline "+
+			"(docs/rc/ga-language-withdrawals-2026-08-21.md) requires the matrix "+
+			"row to be ABSENT until every GA-LANG-<lang>-* evidence row reads "+
+			"PASS — a matrix row uncommented under partial evidence is the "+
+			"stale-row condition SW-178 was introduced to prevent. The ACTIVE "+
+			"ordering invariant is held by TestCrossFileHeuristicResidual_OrderingConstraint.",
+			present)
 	}
 }
 
