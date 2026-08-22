@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"os"
 	"sort"
+
+	"github.com/samibel/graphi/core/profile"
 )
 
 // SchemaVersion versions this report envelope. Bump when a field is added,
@@ -56,16 +58,33 @@ const (
 
 // CandidateSHA is the candidate the product tree is compared against.
 //
-// CANDIDATE MOVE (2026-08-16, deliberate): the previous candidate was the P0
-// v0.7.1 SHA 80d67ed586723ab22704cf7aada316138cb1360e. ADR 0009 (module-aware
-// Go import resolution, the PARITY-002 fix) is a product-byte change — the
-// candidate MOVES by that ADR's own consequence section, and every measurement
-// against the old candidate is historical. The new candidate is the merge
-// commit that landed ADR 0009 on main (PR #125 incl. review rounds 1+2).
-// Unlike the P0 candidate, the harness DOES exist at this SHA; the provenance
-// statement still records run SHA and candidate SHA separately, because the
-// run may happen at any later commit whose product bytes are identical.
-const CandidateSHA = "c4209dd3be146c1d965acf4ea36a00aea5a3e70f"
+// CANDIDATE MOVE (2026-08-20, deliberate, SW-188): the previous candidate was
+// 3b8d43f (the ADR 0011 commit), which superseded 7574a49 (the ADR 0010
+// commit), which superseded c4209dd (the ADR 0009 merge), which superseded
+// the P0 v0.7.1 SHA 80d67ed586723ab22704cf7aada316138cb1360e. ADR 0013 (the
+// SW-188 closure of JVMSOUND-003, JVMSOUND-004 and JVMHARN-001: comment
+// nodes in `argument_list` are not arguments; `callableSig` carries array
+// dimensionality; the Kotlin value-class name mangling `foo-<hash>` is
+// recognized as a binding shape) changes product bytes on the JVM tier
+// (anything depending on `engine/jvmresolve` — most of it, once
+// `GRAPHI_JVM_TYPERESOLVE` is on) — so the candidate moves again by the same
+// rule, and every measurement against 3b8d43f is historical.
+//
+// WHY THIS SHA. The SW-188 closure lands in a single commit (the code fix,
+// the ADR, the positive regression tests, and the pin-test skip stubs all
+// ride together) so the candidate is the obvious one: that commit. The
+// commit SHA is 9f68784, and `./cmd/graphi` built with
+// `-trimpath -buildvcs=false` at 9f68784 is the boundary the provenance
+// gate reads verbatim. The ADR-0011 candidate's wording is now retired; the
+// new provenance sentence names the ADR 0013 candidate, and the old wording
+// is in the forbidden-phrasing list at `internal/parity/parity_test.go:651`.
+//
+// Each move is recorded before its first published measurement:
+// docs/decisions/2026-08-parity-candidate-move-adr0013.md, which cites its
+// ADR-0011 predecessor. The provenance statement keeps run SHA and candidate
+// SHA separate, because a run may happen at any later commit whose product
+// bytes are identical to the candidate's.
+const CandidateSHA = "9f687849cec2b26311401191e90b60e40b5f6cee"
 
 // FR7ChangeClasses is the size of the authoritative matrix: PRD FR-7 lists
 // EXACTLY 15 change classes (heading "Änderungsklassen", prefix "Mindestens:"),
@@ -115,8 +134,8 @@ const (
 // stop a reader from over-reading the result.
 type Provenance struct {
 	// CandidateSHA is the frozen candidate the product tree is compared
-	// AGAINST (the ADR 0009 merge since the 2026-08-16 candidate move). It is
-	// not necessarily the SHA the run happened at.
+	// AGAINST (the ADR 0010 fix commit since the second 2026-08-16 candidate
+	// move). It is not necessarily the SHA the run happened at.
 	CandidateSHA string `json:"candidate_sha"`
 	// RunSHA is the HEAD the harness actually ran at.
 	RunSHA string `json:"run_sha"`
@@ -141,6 +160,13 @@ type Provenance struct {
 	WorktreeClean bool `json:"worktree_clean"`
 	// WorktreeDirtyDetail carries the dirty paths when it is not.
 	WorktreeDirtyDetail string `json:"worktree_dirty_detail,omitempty"`
+	// IndexProfile is the INDEX PROFILE the measured passes ran under (ADR
+	// 0010 review round 1, finding 7). The harness passes no -profile so it
+	// measures the product's resolved DEFAULT, and clears
+	// GRAPHI_INDEX_PROFILE for the child so an inherited value cannot silently
+	// change what was measured — this field is what makes that checkable from
+	// the artifact instead of trusted.
+	IndexProfile string `json:"index_profile"`
 	// RunnerClass names the machine class (e.g. "ubuntu-latest"). A run with no
 	// runner class is not publishable: an unattributed measurement is an
 	// anecdote.
@@ -169,7 +195,8 @@ func NewProvenance(runSHA string) Provenance {
 	return Provenance{
 		CandidateSHA:   CandidateSHA,
 		RunSHA:         runSHA,
-		Statement:      "product source byte-identical to the ADR 0009 candidate at " + CandidateSHA,
+		IndexProfile:   string(profile.Balanced) + " (the product's resolved default; GRAPHI_INDEX_PROFILE cleared for the measured child processes)",
+		Statement:      "product source byte-identical to the ADR 0013 candidate at " + CandidateSHA,
 		HarnessVersion: HarnessVersion,
 		SchemaVersion:  SchemaVersion,
 	}
@@ -187,6 +214,9 @@ type RepoRef struct {
 	HeadSHA   string `json:"head_sha,omitempty"`
 	Tier      int    `json:"tier"`
 	GoFiles   int    `json:"go_files,omitempty"`
+	// SourceFiles is the manifest's primary-language file count, used by
+	// non-Go families where GoFiles is 0 by construction (WP-J7 / SW-176).
+	SourceFiles int `json:"source_files,omitempty"`
 }
 
 // ClassResult is one change-class row of the matrix.
@@ -204,6 +234,15 @@ type ClassResult struct {
 	// source exhibits the structure the class needs.
 	SelectedBecause string `json:"selected_because,omitempty"`
 	Verdict         string `json:"verdict"`
+	// AxisNote states, IN THE ROW, which cell of a family's axis crossing this
+	// row ran under (WP-J7 / SW-176: binder off/on x profile default/fast).
+	//
+	// It is carried in the row and not only in the id because an id suffix is a
+	// label a reader must decode, while this sentence says what was actually
+	// configured. A JVM row measured with the declared-type binder OFF proves
+	// nothing about the binder, and that must be legible from the artifact
+	// without knowing the harness.
+	AxisNote string `json:"axis_note,omitempty"`
 	// Mutation describes the real edit applied to real source, precisely enough
 	// to be re-applied by hand.
 	Mutation string `json:"mutation,omitempty"`
@@ -419,6 +458,15 @@ type Report struct {
 	SchemaVersion  int        `json:"schema_version"`
 	HarnessVersion string     `json:"harness_version"`
 	Provenance     Provenance `json:"provenance"`
+	// Family names the language family this matrix ran over: empty (or "go")
+	// for the PRD FR-7 Go matrix, "jvm" for the WP-J7 JVM one (SW-176).
+	//
+	// It exists so the two report families cannot be confused by a reader or by
+	// a tool: they cite DIFFERENT matrix sources, cover different change
+	// classes, and a JVM report settles none of FR-7's rows. Before this field
+	// the only discriminator was MatrixSource, which a human comparing two
+	// JSON files would plausibly skim past.
+	Family string `json:"family,omitempty"`
 	// MaxTier and Classes filter record the SHAPE of this invocation, so a
 	// partial run can never be mistaken for a full one.
 	MaxTier      int      `json:"max_tier"`

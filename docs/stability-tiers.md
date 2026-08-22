@@ -96,8 +96,12 @@ collapse Preview into Labs and say so here.)
 `related_files`, `explain_symbol`, `change_risk`. `index` is lifecycle-only, so
 the default MCP profile advertises **11** tools.
 
-**Language.** **Go only** — the sole `ga-language` matrix row. Every other
-language is Preview.
+**Language.** **Go at `GA (typed-confirmed)`, Python at `GA (cross-file-heuristic)`,
+and the TypeScript family (typescript, tsx, javascript) at `GA (cross-file-heuristic)`**
+— the three current `ga-language` matrix rows. Every other language is Preview. The
+level is printed beside the word GA on every user-facing surface — the spec's naming
+rule binds even though the matrix says only `category: ga-language` and the level
+itself lives in the trust-report `--json` output.
 
 **Surfaces.** **CLI** and **MCP stdio** only.
 
@@ -108,7 +112,7 @@ promise, and none of it receives feature work in the current program.
 
 | Not GA | Tier | Why |
 |---|---|---|
-| Every non-Go language (Python, TypeScript, Java, Rust, C/C++, …) | Preview | shipped and usable; outside the GA promise |
+| Every non-Go, non-Python, non-TypeScript-family language (Java, Rust, C/C++, …) | Preview | shipped and usable; outside the GA promise |
 | HTTP / SSE surface | Labs | not an operation; not a GA surface |
 | Daemon | Labs | not an operation; not a GA surface |
 | Web / browser UI | Labs | not an operation; not a GA surface |

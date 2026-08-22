@@ -14,6 +14,14 @@ package link
 // modules of the same clause is counted, never guessed.
 type rustResolver struct{}
 
+// rustPkgExts is Rust's static package-source extension set (LINK-001, ADR 0011).
+// The registered Rust parser claims exactly `.rs` (core/parse/parser_rust.go:39).
+// `Cargo.toml` sits in every crate directory and is emphatically not a module, so
+// it must not be an `imports` target. Rust has no separate test-file extension —
+// `#[cfg(test)]` modules live inside the `.rs` file that declares them — so there
+// is no Go-style `_test` exclusion to make here.
+var rustPkgExts = []string{".rs"}
+
 // Language implements Resolver.
 func (rustResolver) Language() string { return "rust" }
 
@@ -24,6 +32,7 @@ func (rustResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 		bareNameImportPath: map[string]string{},
 		clauseOf:           func(p string) string { return packageSegment(p, "::") },
 		selBaseAsClause:    true,
+		pkgTargetExts:      rustPkgExts,
 	}
 	for _, imp := range in.Imports {
 		if imp.Path == "" {

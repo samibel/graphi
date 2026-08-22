@@ -69,6 +69,26 @@ type Result struct {
 	// reconstructed NodeId was not in the committed set (the never-fabricate
 	// counter; one count per use site, before edge merging).
 	DroppedIntents int
+	// NamedSkips is the resolver's LEGIBLE ABSTENTION record: skip-reason name
+	// -> count, for every site the resolver refused to bind under a NAMED
+	// reason rather than guessing (the JVM binder's vocabulary lives at
+	// engine/jvmresolve/body_java.go; the go/types resolver has none and
+	// leaves this nil — its abstention is already carried by TypeErrors and
+	// DroppedIntents).
+	//
+	// SCOPE, AND IT IS THE WHOLE POINT OF THE FIELD: these counters are
+	// REPOSITORY-GLOBAL for the pass and carry NO file, package, symbol or
+	// call-site attribution. Two of the JVM reasons
+	// (java_receiver_untyped, java_receiver_external) have no determinable
+	// callee by definition, so there is no site to attribute them to even in
+	// principle. Anything downstream that presents these numbers MUST say so;
+	// a per-package roll-up built from this field is a roll-up of a
+	// repo-global number, never a per-package accounting.
+	//
+	// nil and empty mean the same thing to readers — no named skip was
+	// recorded — and neither means "nothing was skipped by any other
+	// mechanism".
+	NamedSkips map[string]int
 }
 
 // UnitResult is the per-unit observability record.

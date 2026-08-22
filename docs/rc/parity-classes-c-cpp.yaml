@@ -1,0 +1,233 @@
+# graphi — C/C++ change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-194a, W5-RES.b + W5-RES.d). The C
+#                      family is TWO declared languages (c, cpp) at
+#                      `cross-file-heuristic`, sharing ONE resolver impl at
+#                      engine/link/resolve_c.go registered under both ids
+#                      (the SW-166 extension-filtering precedent, per
+#                      SW-184's audit: c uses `.c`/`.h` extensions and cpp
+#                      uses `.cpp`/`.cc`/`.cxx`/`.hpp`/`.hxx`/`.hh`). The
+#                      resolver handles `#include` directives — relative
+#                      includes resolve relative to the importer's directory;
+#                      angle-bracket includes are external and skipped+counted.
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go, JVM,
+#                      Python and TS tables. C/C++ has no typed binder, so the
+#                      rows here assert PARITY, not CORRECTNESS — parity
+#                      compares two passes of the same rule, so a PASS certifies
+#                      the rule is REGRESSION-CLEAN between incremental and full,
+#                      never that it is correct. Correctness evidence lives in
+#                      engine/link/resolve_clang_test.go and in the real-
+#                      repository matrix (G4), not here.
+#
+#                      SW-194a SCOPE, STATED. This file DEFINES the eight
+#                      change-class rows for the C family at cross-file-
+#                      heuristic. The conformance twin (engine/conformance/
+#                      ccppparity_test.go + ccppparity_matrix_test.go) lands
+#                      in SW-194b and is what proves these rows PROVEN.
+#                      SW-194c flips the G3 evidence row to PASS by citing this
+#                      YAML + the twin with their blob shas.
+#
+#                      BUNDLE DISCIPLINE. C and CPP share this YAML, and each
+#                      language still carries its OWN evidence rows (SW-184
+#                      AC-4: a gate discharged on one shall not be recorded as
+#                      discharged for the other without an artefact covering
+#      it). The eight rows here apply to BOTH languages; the conformance
+#                      harness (SW-194b) drives the SHARED resolver path with
+#                      language-specific extensions selected by file extension
+#                      (.c/.h for c, .cpp/.hpp for cpp), so a single harness
+#                      row covers both languages' row ids. The `owner:` field
+#                      carries BOTH suffixes (W5-RES.b/W5-RES.d) so a row
+#                      discharge is recorded against both languages, not one
+#                      at the other's expense.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The TS instance (parity-classes-ts.yaml)
+#                      is the closest template — a 3-language family on one
+#                      shared resolver — and this copy diverges on THREE named
+#                      points recorded in the row notes: (a) C/C++ includes
+#                      resolve RELATIVE TO THE IMPORTER for `#include "..."`
+#                      (the quote-form), while `#include <...>` (angle-bracket)
+#                      is treated as external and skipped+counted — the
+#                      `cExts`/`cppExts` sets at engine/link/resolve_c.go
+#                      distinguish the two by file extension; (b) the resolver
+#                      already names the exact target file path (the requireBinder
+#                      helper at engine/link/resolve_common.go), so the family
+#                      has the same LINK-001 / PARITY-002 immunity by
+#                      construction as the TS and Bash families; (c) the C
+#                      family has a SEPARATE extension set for each declared
+#                      language — `.c`/`.h` for c, `.cpp`/`.cc`/`.cxx`/`.hpp`/
+#                      `.hxx`/`.hh` for cpp — registered under one resolver impl
+#                      so the family shares the conformance harness row ids
+#                      while keeping per-language evidence rows.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestCCppParityMatrix_DriftGuard (engine/conformance/
+# ccppparity_matrix_test.go, lands in SW-194b) binds this file to the harness
+# table ccppChangeClassTable() in ccppparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+#   MISSING/PHANTOM/DEFERRED are the three directions the JVM/Python/TS guards
+#   have, and they are the three this guard has for SW-194b. The four the JVM
+#   guard is missing (VERDICT, AXIS, VOCABULARY, KIND-as-distinct-from-OWNER)
+#   are recorded below as a TEMPL-P4 inheritance and not closed in this copy —
+#   SW-189 closed D-11 across JVM/Python/TS guards; SW-194b inherits the closed
+#   shape from W1.f.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+
+parity_classes:
+  - id: "ccpp_add_file"
+    kind: "change_class"
+    label: "C/C++-Datei hinzufügen / add a C or C++ file in a new directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/ccppparity_test.go"
+    test_line: "350"
+    test_name: "TestCCppFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.b/W5-RES.d"
+    note: "A new C (or C++) file arrives in a new directory: pure add path. The witness asserts the new callee resolves cross-module at the heuristic tier — the resolver's only tier — and the control symbols survive. Both languages are covered (the harness drives the SHARED resolve_c.go impl under both ids, with file extension selecting `.c` vs `.cpp`). Bundle discipline: BOTH owner suffixes recorded; a discharge against one discharges both. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "ccpp_modify_file"
+    kind: "change_class"
+    label: "C/C++-Datei ändern / rewrite a C or C++ file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/ccppparity_test.go"
+    test_line: "350"
+    test_name: "TestCCppFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.b/W5-RES.d"
+    note: "An indexed C (or C++) file is rewritten in place: a function is added while existing nodes keep identity. The witness asserts the new node is present and the existing callee survives — pins the same-package identity-stability contract every rewrite class asserts. Both languages are covered. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "ccpp_add_call_heuristic"
+    kind: "change_class"
+    label: "Heuristischen Include-Aufruf hinzufügen / add a heuristic-tier cross-file include"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/ccppparity_test.go"
+    test_line: "350"
+    test_name: "TestCCppFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.b/W5-RES.d"
+    note: "A new cross-file include call is added: `#include \"../lib/util.h\"` (the quote-form resolves RELATIVE to the importer, the angle-bracket form is external). The witness asserts the file→file `imports` edge lands AND the call edge lands at HEURISTIC tier (model.TierHeuristic), never at confirmed — the C/C++ resolver is heuristic and must not mint confirmed edges (the G2SUB never-confirmed half). The exact-path resolution (engine/link/resolve_common.go's requireBinder) gives the family the same LINK-001 / PARITY-002 immunity as TS and Bash. Both languages covered. SW-194b ships the harness row."
+
+  - id: "ccpp_include_skip"
+    kind: "change_class"
+    label: "Include überspringen + zählen / skip + count a missing include target"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/ccppparity_test.go"
+    test_line: "350"
+    test_name: "TestCCppFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.b/W5-RES.d"
+    note: "A relative include (`#include \"missing.h\"`) targets a path that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids. Both languages covered. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "ccpp_ambiguous_includes"
+    kind: "change_class"
+    label: "Mehrdeutige Includes / two headers claiming the same symbol"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/ccppparity_test.go"
+    test_line: "350"
+    test_name: "TestCCppFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.b/W5-RES.d"
+    note: "A relative include is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.h` and `vendor/util.h` both exist). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but C/C++'s exact-path resolution makes the ambiguity a structural two-candidate case, not a directory-fan-out bug. Both languages covered. SW-194b ships the harness row."
+
+  - id: "ccpp_delete_file"
+    kind: "change_class"
+    label: "C/C++-Datei löschen / delete a C or C++ file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/ccppparity_test.go"
+    test_line: "350"
+    test_name: "TestCCppFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.b/W5-RES.d"
+    note: "A C (or C++) file declaring a function that TWO other translation units include is deleted, so the per-file stale-node purge, the heuristic-edge sweep and the re-link all run over it. The witness requires the deleted callee absent, both importers still present, and the heuristic edges into the deleted callee gone — a stale heuristic edge would be the worst outcome here, even though the edge tier is lower than confirmed. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on C/C++ as well as on Go. Both languages covered. SW-194b ships the harness row."
+
+  - id: "ccpp_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / same-package file-to-file function move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/ccppparity_test.go"
+    test_line: "350"
+    test_name: "TestCCppFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.b/W5-RES.d"
+    note: "A C (or C++) top-level function moves file-to-file WITHIN one directory (util.h -> moved.h, or util.c -> moved.c). The function's identity is keyed on its qualified name (QN), which the resolver derives from the source file path; a same-directory move preserves QN while changing source_path and line. Two files then claim one QN inside a single change set — the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The witness asserts the function identity is preserved and its cross-file include edge survives the re-home. Both languages covered. SW-194b ships the harness row."
+
+  - id: "ccpp_add_type_definition"
+    kind: "change_class"
+    label: "Typdefinition hinzufügen / add a struct or class definition"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/ccppparity_test.go"
+    test_line: "350"
+    test_name: "TestCCppFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.b/W5-RES.d"
+    note: "A struct (C) or class (C++) definition is added to a header file. The witness asserts the new type node is present and the existing callees survive — pins the type-definition identity-stability contract. C and C++ differ in the type definition syntax (`struct Foo { ... };` vs `class Foo { ... };`) but share the QN-stable identity convention, so the same row id covers both. Both languages covered. SW-194b ships the harness row."

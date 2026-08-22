@@ -1,11 +1,11 @@
 {
  "version": 3,
- "notes": "Real-repository corpus (internal/corpus). v3 gives the corpus GO DEPTH: six pinned Go repositories (uuid, lo, cobra, gin, grpc-go, kubernetes) carry the P0 FR-2 stratification, beside the non-Go repositories kept for cross-language regression detection (flask, sinatra, ky, express, guava, and okio \u2014 the first Kotlin pin, language-GA program G5). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars \u2014 the Go entries pin the FULL 40-char commit sha). If an upstream tag is ever re-pointed, the pin step fails closed. Every count under `measured` was taken from a real clone at the pinned sha on the recorded date, never from repository metadata; `go_files` is the strict count the stress threshold is asserted on, and `source_files` is its non-Go analog (the entry's primary-language source count). Tiers: 1 = PR gate (local fixtures), 2 = pinned SHAs, 3 = nightly/manual, 4 = manual-only stress (corpus.yml caps the scheduled run at -max-tier 3, so tier 4 never runs on a schedule or a PR). Adding a repository is a data change here, never a code change. Per-repository selection rationale: corpus/README.md.",
+ "notes": "Real-repository corpus (internal/corpus). v3 gives the corpus GO DEPTH: six pinned Go repositories (uuid, lo, cobra, gin, grpc-go, kubernetes) carry the P0 FR-2 stratification, beside the non-Go repositories kept for cross-language regression detection (flask, sinatra, ky, express, guava, and okio — the first Kotlin pin, language-GA program G5). Refs pin RELEASE TAGS; sha additionally pins the checkout HEAD (case-insensitive prefix, >=12 hex chars — the Go entries pin the FULL 40-char commit sha). If an upstream tag is ever re-pointed, the pin step fails closed. Every count under `measured` was taken from a real clone at the pinned sha on the recorded date, never from repository metadata; `go_files` is the strict count the stress threshold is asserted on, and `source_files` is its non-Go analog (the entry's primary-language source count). Tiers: 1 = PR gate (local fixtures), 2 = pinned SHAs, 3 = nightly/manual, 4 = manual-only stress (corpus.yml caps the scheduled run at -max-tier 3, so tier 4 never runs on a schedule or a PR). Adding a repository is a data change here, never a code change. Per-repository selection rationale: corpus/README.md.",
  "stratification": [
   {
    "property": "small library",
    "repo": "uuid",
-   "evidence": "21 Go files in a single package, 31 tracked files \u2014 the smallest real repository in the corpus."
+   "evidence": "21 Go files in a single package, 31 tracked files — the smallest real repository in the corpus."
   },
   {
    "property": "mid-size CLI application",
@@ -61,7 +61,7 @@
    "sha": "a0a6ae020bb3899ff0276067863e50523f897370",
    "language": "go",
    "license": "Apache-2.0",
-   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only \u2014 no source is redistributed.",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only — no source is redistributed.",
    "properties": [
     "mid-size CLI application"
    ],
@@ -89,7 +89,7 @@
      "min": 1
     }
    ],
-   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() \u2014 a receiver-method dispatch the name heuristic cannot prove \u2014 and the go/types pass must carry it at the confirmed tier. v3 widened the sha pin from the 12-char prefix to the full commit sha; the tag and the assertion are unchanged."
+   "notes": "Go CLI framework; the typeresolve (v0.2.0) acceptance target. The confirmed_edges assertion is the acceptance gate: Command.Execute calls c.ExecuteC() — a receiver-method dispatch the name heuristic cannot prove — and the go/types pass must carry it at the confirmed tier. v3 widened the sha pin from the 12-char prefix to the full commit sha; the tag and the assertion are unchanged."
   },
   {
    "name": "uuid",
@@ -120,7 +120,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Small single-package Go library \u2014 the floor of the size range, and the case where a whole repository fits inside one index pass. Tier 3: never on the PR gate."
+   "notes": "Small single-package Go library — the floor of the size range, and the case where a whole repository fits inside one index pass. Tier 3: never on the PR gate."
   },
   {
    "name": "lo",
@@ -183,7 +183,7 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Web/API service shape (router, middleware chain, binding, render) and the corpus's build-tag carrier: 16 files sit behind //go:build constraints, so a pass that ignores tags either drops or double-counts symbols. Tier 3: never on the PR gate. The second search asserts RouterGroup rather than the more obvious Context: `graphi search Context` returns no matches on ANY indexed repository (observed on gin and kubernetes, 2026-07-27) \u2014 a search-side observation recorded in SW-122, not a property of this repository."
+   "notes": "Web/API service shape (router, middleware chain, binding, render) and the corpus's build-tag carrier: 16 files sit behind //go:build constraints, so a pass that ignores tags either drops or double-counts symbols. Tier 3: never on the PR gate. The second search asserts RouterGroup rather than the more obvious Context: `graphi search Context` returns no matches on ANY indexed repository (observed on gin and kubernetes, 2026-07-27) — a search-side observation recorded in SW-122, not a property of this repository."
   },
   {
    "name": "grpc-go",
@@ -249,71 +249,117 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "The FR-2 stress target: 15718 Go files (>= the 10000 threshold) across 3611 package directories and 34 modules. Tier 4 \u2014 deliberately outside BOTH the PR gate and the nightly schedule: a measured full index costs ~3m16s wall and ~9 GB peak RSS on an 8-core laptop (2026-07-27, v0.6.7 dev build), which no hosted runner should absorb on a schedule. Run it explicitly: `go run ./cmd/corpus -manifest corpus/manifest.json -tier 4` or `go run ./cmd/eval -full-run kubernetes` once SW-123 has named a runner class and SW-124 the budgets."
+   "notes": "The FR-2 stress target: 15718 Go files (>= the 10000 threshold) across 3611 package directories and 34 modules. Tier 4 — deliberately outside BOTH the PR gate and the nightly schedule: a measured full index costs ~3m16s wall and ~9 GB peak RSS on an 8-core laptop (2026-07-27, v0.6.7 dev build), which no hosted runner should absorb on a schedule. Run it explicitly: `go run ./cmd/corpus -manifest corpus/manifest.json -tier 4` or `go run ./cmd/eval -full-run kubernetes` once SW-123 has named a runner class and SW-124 the budgets."
   },
   {
    "name": "flask",
    "url": "https://github.com/pallets/flask",
    "ref": "3.0.0",
-   "sha": "735a4701d6d5",
+   "sha": "735a4701d6d5e848241e7d7535db898efb62d400",
+   "tier": 3,
    "language": "python",
    "license": "BSD-3-Clause",
    "permitted_use": "Public repository under BSD-3-Clause; read-only shallow clone in CI, measurements only, no redistribution.",
+   "measured": {
+    "source_files": 78,
+    "tracked_files": 102,
+    "measured_at": "2026-08-20",
+    "method": "git clone --depth 1 --branch 3.0.0; git ls-files '*.py' | wc -l (78) and git ls-files | wc -l (102) at the pinned sha 735a4701d6d5e848241e7d7535db898efb62d400. .ipynb files counted in tracked_files but not source_files (notebooks are CLAS lab material in this pin). SW-191 re-pinned: the prior 735a4701d6d56f3... sha did not match the actual tag 3.0.0 HEAD (735a4701d6d5e8482...) — verified 2026-08-20 via a fresh clone."
+   },
    "searches": [
     {
      "query": "Flask",
      "expect_nonempty": true
+    },
+    {
+     "query": "Blueprint",
+     "expect_nonempty": true
     }
    ],
-   "notes": "Python package; docs, JSON, and mixed non-source assets."
+   "notes": "Python package; docs, JSON, and mixed non-source assets. Brought to the v3 measured standard (SW-181): the 12-char prefix expanded to the full 40-char sha, a tier-3 designation added, and a measured census added (78 .py of 102 tracked, via the source_files field non-Go entries use). Python's extension set is .py AND .ipynb (engine/link/resolve_python.go:45, LINK-001 / ADR 0011); .ipynb files are present in flask but are CLAS lab material, not graphi-tracked source. test_*.py files are NOT excluded (Python's test modules are importable, the asymmetry with Go's _test.go is the point)."
   },
   {
    "name": "sinatra",
    "url": "https://github.com/sinatra/sinatra",
    "ref": "v4.0.0",
-   "sha": "b626e2d82c23",
+   "release_tag": "v4.0.0",
+   "sha": "b626e2d82c23b4fde0b51782fd32ca27ccde1d1a",
+   "tier": 3,
    "language": "ruby",
    "license": "MIT",
+   "license_review": "MIT — explicit OSI-approved permissive license; redistribution of unmodified source permitted only with upstream copyright notice preserved. The corpus does not redistribute: only a shallow read-only clone is made in CI, and the source files are never published. No CLA, no contribution restrictions beyond the standard MIT terms. Compatible with the corpus's read-only-CI-only permitted_use; no further clearance required.",
    "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "web framework",
+    "rack middleware chain",
+    "DSL-style API",
+    "multi-gem repo layout",
+    "test/spec co-located",
+    "no static type system",
+    "commonmarker companion",
+    "plugin ecosystem",
+    "modular kernel",
+    "public domain dedication available",
+    "evolving API surface",
+    "documentation in Markdown"
+   ],
+   "measured": {
+    "source_files": 143,
+    "tracked_files": 321,
+    "measured_at": "2026-08-20",
+    "method": "git clone --depth 1 --branch v4.0.0; git ls-files '*.rb' | wc -l (143) and git ls-files | wc -l (321) at the pinned sha b626e2d82c23b4fde0b51782fd32ca27ccde1d1a (full 40-char pin via GitHub git/tags endpoint, no local clone required for the lift itself; the file counts are taken from the canonical recursive tree at the same pin, truncated=false)."
+   },
    "searches": [
     {
      "query": "Base",
      "expect_nonempty": true
     }
    ],
-   "notes": "Ruby gem; multi-gem repo layout."
+   "notes": "Ruby gem; multi-gem repo layout. Brought to the v3 measured standard (F5-corpus, this commit): 12-char sha prefix expanded to the full 40-char commit sha (b626e2d82c23b4fde0b51782fd32ca27ccde1d1a, fetched via GitHub's git/tags → git/tags → git/commits chain at the v4.0.0 tag, which is itself an annotated tag with PGP signature verification=verified), a tier-3 designation added, a measured census added (143 .rb of 321 tracked, via the source_files field non-Go entries use), and the language-specific stratification properties list added (12 entries — web framework, rack middleware chain, DSL-style API, multi-gem repo layout, test/spec co-located, no static type system, commonmarker companion, plugin ecosystem, modular kernel, public domain dedication available, evolving API surface, documentation in Markdown — the properties a Ruby cross-file-heuristic regression fixture must cover). The license_review note is the missing v3 field for non-Go entries: MIT means redistribution is permitted but our permitted_use clause shrinks it to measurements-only, and the review records that shrink. The lift was attempted without a network clone of the source tree; the 40-char sha came from the GitHub API (verified=valid PGP signature on the annotated tag), and the file counts came from the canonical recursive tree at the same pin (truncated=false)."
   },
   {
    "name": "ky",
    "url": "https://github.com/sindresorhus/ky",
    "ref": "v1.2.0",
-   "sha": "38ac18bc1ac3",
+   "sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
    "language": "typescript",
    "license": "MIT",
    "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "measured": {
+    "source_files": 34,
+    "tracked_files": 48,
+    "measured_at": "2026-08-20",
+    "method": "git clone --depth 1 --branch v1.2.0; git ls-files '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs' | wc -l (34) and git ls-files | wc -l (48) at the pinned sha 38ac18bc1ac3268130de766891ce9b718eb8145a"
+   },
    "searches": [
     {
      "query": "request",
      "expect_nonempty": true
     }
    ],
-   "notes": "TypeScript library; tsconfig/ESM import shapes."
+   "notes": "TypeScript library; tsconfig/ESM import shapes. Brought to the v3 measured standard (SW-182): 12-char sha prefix expanded to the full 40-char sha and a measured census added (34 TypeScript-family source files of 48 tracked, 2026-08-20, .ts/.tsx/.js/.jsx/.mjs/.cjs extensions covering the family’s static extension set at engine/link/resolve_typescript.go:25)."
   },
   {
    "name": "express",
    "url": "https://github.com/expressjs/express",
    "ref": "4.18.2",
-   "sha": "8368dc178af1",
+   "sha": "8368dc178af16b91b576c4c1d135f701a0007e5d",
    "language": "javascript",
    "license": "MIT",
    "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "measured": {
+    "source_files": 153,
+    "tracked_files": 231,
+    "measured_at": "2026-08-20",
+    "method": "git clone --depth 1 --branch 4.18.2; git ls-files '*.js' | wc -l (153) and git ls-files | wc -l (231) at the pinned sha 8368dc178af16b91b576c4c1d135f701a0007e5d"
+   },
    "searches": [
     {
      "query": "Router",
      "expect_nonempty": true
     }
    ],
-   "notes": "JavaScript + many JSON fixtures and markdown \u2014 the malformed-asset bug class."
+   "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class. Brought to the v3 measured standard (SW-182): 12-char sha prefix expanded to the full 40-char sha and a measured census added (153 .js of 231 tracked, 2026-08-20)."
   },
   {
    "name": "guava",
@@ -340,7 +386,59 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) \u2014 the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate. Brought to the v3 measured standard (WP-J6): the 12-char prefix expanded to the full 40-char sha and a measured census added (3204 .java of 3298 tracked, via the source_files field non-Go entries use)."
+   "jvm_compile": {
+    "strategy": "full-dependency-resolution",
+    "reason": "guava's ENTIRE external compile classpath is four annotation JARs, and the pin's own root pom.xml names all four with exact versions (jsr305 3.0.2, checker-qual 3.41.0, error_prone_annotations 2.23.0, j2objc-annotations 2.8). Pinning those four by URL+sha256 makes the classpath complete without invoking Maven at all — no resolver, no version ranges, no transitive discovery, no plugin download — so the compile is reproducible in a way `mvn compile` is not. Accept-errors was measured and REJECTED for this pin: with no classpath, javac reports 6960 errors and emits ZERO class files, so the accept-errors denominator here would be 0 and the pin would contribute nothing. The 6 remaining `com.google.common.util.concurrent.internal` errors are satisfied from within the pin itself (futures/failureaccess/src is a second Maven module of the same repository, added as a source root rather than as a dependency).",
+    "toolchain": {
+     "javac": "21.0.6"
+    },
+    "compiler": "javac",
+    "source_roots": [
+     "guava/src",
+     "futures/failureaccess/src"
+    ],
+    "compiler_args": [
+     "-proc:none",
+     "-nowarn",
+     "-g",
+     "-encoding",
+     "UTF-8",
+     "-Xmaxerrs",
+     "100000"
+    ],
+    "classpath": [
+     {
+      "coordinate": "com.google.code.findbugs:jsr305:3.0.2",
+      "url": "https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
+      "sha256": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7"
+     },
+     {
+      "coordinate": "org.checkerframework:checker-qual:3.41.0",
+      "url": "https://repo1.maven.org/maven2/org/checkerframework/checker-qual/3.41.0/checker-qual-3.41.0.jar",
+      "sha256": "2f9f245bf68e4259d610894f2406dc1f6363dc639302bd566e8272e4f4541172"
+     },
+     {
+      "coordinate": "com.google.errorprone:error_prone_annotations:2.23.0",
+      "url": "https://repo1.maven.org/maven2/com/google/errorprone/error_prone_annotations/2.23.0/error_prone_annotations-2.23.0.jar",
+      "sha256": "ec6f39f068b6ff9ac323c68e28b9299f8c0a80ca512dccb1d4a70f40ac3ec054"
+     },
+     {
+      "coordinate": "com.google.j2objc:j2objc-annotations:2.8",
+      "url": "https://repo1.maven.org/maven2/com/google/j2objc/j2objc-annotations/2.8/j2objc-annotations-2.8.jar",
+      "sha256": "f02a95fa1a5e95edb3ed859fd0fb7df709d121a35290eff8b74dce2ab7f4d6ed"
+     }
+    ]
+   },
+   "compile_coverage": {
+    "source_files": 623,
+    "compiled_files": 623,
+    "coverage": 1.0000,
+    "measured_at": "2026-08-21",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "runner_class": "Linux-X64/ccr-container",
+    "oracle": "internal/parity/jvmclasses.go signature-aware oracle"
+   },
+   "notes": "Java/JVM Maven monorepo (guava, guava-testlib, guava-gwt, android flavor) — the master-plan EVAL-01 monorepo requirement. Tier 3: large repo, runs nightly/manual and in the EVAL-02 workflow, never in the PR gate. Brought to the v3 measured standard (WP-J6): the 12-char prefix expanded to the full 40-char sha and a measured census added (3204 .java of 3298 tracked, via the source_files field non-Go entries use). Compile coverage (SW-190, PARITY-COV-001 closure): 623 of 623 sources stage under the strategy's two source roots (guava/src + futures/failureaccess/src), every collision is single-claimant, and the oracle covers the whole compile set — measured 2026-08-21 against the post-SW-188 candidate, runner class Linux-X64/ccr-container."
   },
   {
    "name": "okio",
@@ -349,7 +447,7 @@
    "sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
    "language": "kotlin",
    "license": "Apache-2.0",
-   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only \u2014 no source is redistributed.",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only — no source is redistributed.",
    "tier": 3,
    "measured": {
     "source_files": 313,
@@ -363,7 +461,50 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "First Kotlin corpus pin (language-GA program G5): Square's okio, a Kotlin-multiplatform IO library (284 .kt + 29 .java at the pin). Tier 3 (nightly/manual, never the PR gate). Cross-language regression + JVM-binder capability: graphi parses all 313 JVM files with zero parse crashes and produces confirmed Java+Kotlin call sites (verified at pin time). Brings a non-Go entry to the v3 measured standard via the new source_files census field."
+   "jvm_compile": {
+    "strategy": "not-compiled",
+    "reason": "NEGATIVE RESULT (AC-7), and a precise one: okio's JVM source set COMPILES — that was proven, not assumed — but it cannot be compiled IN THE LAYOUT THIS ORACLE REQUIRES, so within this pipeline the pin is not compiled and does not back the corpus-scale claim. The oracle keys a call on the callee's source path, and javap supplies that path from the SourceFile attribute, which carries only the file NAME plus the package. okio's Kotlin-multiplatform expect/actual layout gives 18 package-relative paths TWO claimants each (okio/Buffer.kt exists in both commonMain and jvmMain, likewise BufferedSink, BufferedSource, ByteString, DeflaterSink, FileSystem, FileSystem.System, ForwardingSource, HashingSink, HashingSource, InflaterSource, Path, RealBufferedSink, RealBufferedSource, SegmentPool, SegmentedByteString, Sink, Timeout), covering 36 of the 89 files in the JVM source-set closure. Keeping one claimant of a pair would attribute the other's calls to the survivor — a fabricated fact, stop-ship under D5. Excluding all 36 leaves 53 files that DO NOT COMPILE, because the expect and actual halves are each other's dependencies. So okio is compilable-but-unscorable or scorable-but-uncompilable, and neither state is evidence. Recorded here rather than dropped, per AC-7. Unblocking it needs a capture that carries the FULL source path — `javap -v`'s SourceDebugExtension, or compiling each source set to its own output tree and keying on that — which is a capture-strategy change beyond this story.",
+    "toolchain": {
+     "kotlinc": "1.9.24"
+    },
+    "compiler": "kotlinc",
+    "source_roots": [
+     "okio/src/commonMain/kotlin",
+     "okio/src/zlibMain/kotlin",
+     "okio/src/systemFileSystemMain/kotlin",
+     "okio/src/jvmMain/kotlin"
+    ],
+    "common_source_roots": [
+     "okio/src/commonMain/kotlin",
+     "okio/src/zlibMain/kotlin",
+     "okio/src/systemFileSystemMain/kotlin"
+    ],
+    "compiler_args": [
+     "-Xmulti-platform",
+     "-Xexpect-actual-classes",
+     "-nowarn"
+    ],
+    "tried": [
+     "kotlinc 1.9.24 over commonMain+jvmMain only, in the pin's NATURAL layout: FAILED, 15 errors, all 'actual X has no corresponding expected declaration' — the JVM target's source-set closure is wider than two directories.",
+     "kotlinc 1.9.24 over the FULL closure read from okio/build.gradle.kts (jvmMain dependsOn zlibMain + systemFileSystemMain, both dependOn commonMain), natural layout, -Xmulti-platform -Xexpect-actual-classes -Xcommon-sources: SUCCEEDED — 89 sources, 0 errors, 114 classes. This is why the pin is recorded as compilable; it is the scoring layout that defeats it.",
+     "kotlinc 1.9.24 over the same closure STAGED into the package-relative tree the oracle requires, with the 36 collision-affected files excluded: FAILED, 1158 errors, 0 classes — the expect and actual halves are each other's dependencies, so removing the ambiguity removes the program.",
+     "Gradle, the project's own build: FAILED at CONFIGURATION time with 'Unknown Kotlin JVM target: 21' — okio 3.9.1's Kotlin Gradle plugin predates JDK 21. Independently of that failure, a Gradle route resolves a transitive plugin set that cannot be digest-pinned, which is exactly the drift AC-1 forbids.",
+     "NOT tried, and named so the next attempt does not restart from zero: `javap -v` SourceDebugExtension (carries the full source path and would dissolve the collision), and per-source-set output trees keyed separately. Both are capture-strategy changes and belong to their own story."
+    ],
+    "excluded_from_corpus_scale": true,
+    "exclusion_reason": "Not compiled in the oracle's required layout — see `tried`. MEASURED, not assumed: the staged compile fails with 1158 errors and 0 classes. The pin therefore backs no coverage figure, no counterexample count and no corpus-scale claim, and is excluded loudly rather than omitted silently."
+   },
+   "compile_coverage": {
+    "source_files": 89,
+    "compiled_files": 0,
+    "coverage": 0.0000,
+    "measured_at": "2026-08-21",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "runner_class": "Linux-X64/ccr-container",
+    "oracle": "internal/parity/jvmclasses.go signature-aware oracle",
+    "excluded_reason": "Not compiled in the oracle's required layout — see `tried`. MEASURED, not assumed: the staged compile fails with 1158 errors and 0 classes. The pin therefore backs no coverage figure, no counterexample count and no corpus-scale claim, and is excluded loudly rather than omitted silently."
+   },
+   "notes": "First Kotlin corpus pin (language-GA program G5): Square's okio, a Kotlin-multiplatform IO library (284 .kt + 29 .java at the pin). Tier 3 (nightly/manual, never the PR gate). Cross-language regression + JVM-binder capability: graphi parses all 313 JVM files with zero parse crashes and produces confirmed Java+Kotlin call sites (verified at pin time). Brings a non-Go entry to the v3 measured standard via the new source_files census field. Compile coverage (SW-190, PARITY-COV-001 closure): 0 of 89 staged sources compiled — 0.0000 — because the staging collisions reduce the staging set from 313 to 89 sources (36 expect/actual collisions dropped) but the remaining 53 are each other's dependencies; `compiled_files: 0` records the negative result honestly, the figure excludes zero silently exactly nowhere."
   },
   {
    "name": "kotlinx.serialization",
@@ -390,7 +531,51 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "Second Kotlin corpus pin (language-GA program G5, WP-J6): JetBrains' kotlinx.serialization, a reflectionless Kotlin-multiplatform serialization library (609 .kt + 6 .java at the pin; the 6 .java are module-info.java JPMS declarations, which carry no methods and produce no sites — expected). Tier 3 (nightly/manual, never the PR gate). Complements okio with a compiler-plugin-heavy, densely-generic Kotlin codebase for cross-language regression + JVM-binder breadth. Verified at pin time: graphi tables all 615 JVM files with ZERO parse or tabling crashes and the declared-type binder resolves 3517 typed Kotlin sites."
+   "jvm_compile": {
+    "strategy": "full-dependency-resolution",
+    "reason": "kotlinx.serialization is the compiler-plugin case, and the plugin is exactly what makes it pinnable: kotlin-serialization-compiler-plugin is a single JAR on Maven Central, pinned here by URL+sha256 like any other artifact, so the 'transitively fetched compiler plugin' hazard is closed by data rather than trusted. The opt-in flags are not invented — they are read from the pin's own build.gradle and gradle/configure-source-sets.gradle (-opt-in=kotlin.ExperimentalMultiplatform, kotlin.ExperimentalStdlibApi, kotlinx.serialization.InternalSerializationApi, kotlinx.serialization.ExperimentalSerializationApi). Scope is core/ (commonMain + jvmMain): the formats/ modules add json/cbor/protobuf/hocon and their own dependencies, and each is a separate resolution question that would be answered separately rather than bundled into one figure. NOTE the toolchain skew, stated rather than hidden: the pin builds with Kotlin 1.9.22 (gradle.properties) and this strategy pins kotlinc 1.9.24, because 1.9.24 is the last 1.9.x and the plugin must match the compiler exactly. Both are exact versions, so the compile is reproducible; it is simply not byte-identical to what the project's own CI produced, and no claim here says it is.",
+    "toolchain": {
+     "kotlinc": "1.9.24",
+     "kotlin-serialization-compiler-plugin": "1.9.24"
+    },
+    "compiler": "kotlinc",
+    "source_roots": [
+     "core/commonMain/src",
+     "core/jvmMain/src"
+    ],
+    "common_source_roots": [
+     "core/commonMain/src"
+    ],
+    "compiler_args": [
+     "-Xmulti-platform",
+     "-Xexpect-actual-classes",
+     "-nowarn",
+     "-opt-in=kotlin.ExperimentalMultiplatform",
+     "-opt-in=kotlin.ExperimentalStdlibApi",
+     "-opt-in=kotlinx.serialization.InternalSerializationApi",
+     "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
+    ],
+    "classpath": [
+     {
+      "coordinate": "org.jetbrains.kotlin:kotlin-serialization-compiler-plugin:1.9.24",
+      "url": "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-serialization-compiler-plugin/1.9.24/kotlin-serialization-compiler-plugin-1.9.24.jar",
+      "sha256": "05615e38cc6798f64e8b6ff61bc4a2ea4588beada9244dcb8e9b6357652f6506",
+      "role": "compiler-plugin"
+     }
+    ],
+    "excluded_from_corpus_scale": true,
+    "exclusion_reason": "COMPILES AND IS REPRODUCIBLE; SCORING IS NOT YET ESTABLISHED, so this pin publishes no coverage figure and no counterexample count. What IS established and published: the compile (52 sources, 0 errors, 255 classes, kotlinc 1.9.24 + the digest-pinned serialization plugin) and its reproducibility (two independent runs, byte-identical capture digest e6d39791efb4203d35110f9952f3feb2cf40abf01a89680ba35df55eef23d599). What is NOT: the by-name differential reports 27 of 351 confirmed calls as unbacked (310 matched + 27 unbacked + 14 abstained = 351; by-arity and by-signature are VACUOUSLY sound, 0 judged of 1009 and 670 truth facts, all 351 abstaining under kotlin_bytecode_shape_unproven). CLASSIFICATION, RE-STATED IN SW-173 ROUND 1 — the first version of this field said the 27 were concentrated in two shapes and that classifying them was real work. Both halves were wrong: the reviewer classified all 27 in fifteen minutes, and the dominant mechanism was neither shape named. MEASURED against the pin's own source: 22 of 27 are Kotlin VALUE-CLASS (inline-class) name mangling, a SECOND mangling scheme in which kotlinc renames any function taking an inline-class parameter to `name-<hash>` and emits a bridge under the plain name, so the body's calls carry the mangled caller (serialize-2TYgG_w, deserialize-BwKQO78, toBuilder-GBYM_sE, writeContent-Coi6ktg, computeIfAbsent-gIAlu-s) while graphi answers `serialize`, which is what ValueClasses.kt:16 declares; 4 are an interface member lowered onto the implementing class through Encoder$DefaultImpls (graphi answers Encoding.kt:278, which is correct, and the bridge guard cannot catch it because parseClassHeader records extends and never implements); 1 is `internal` visibility mangling compounded with the value-class hash (append-7apg3OU$main). EVERY ONE IS THE ORACLE ACCUSING CORRECT CODE — none is a product defect, which is why none is filed as a JVMSOUND row; the value-class scheme is filed as JVMHARN-001 on the backlog and registered as AC-7 blind spot #18. SW-173 closed four other such shapes after finding them here (synthetic bridge, anonymous-subclass constructor and its descriptor, sourceless multifile facade, multifile private-function mangling on both caller and callee), taking the count from 50 to 27 and guava from 7 violations to SOUND at all three precisions. The pin still publishes NO coverage figure: the 27 are now classified but not fixed, and a Kotlin coverage number read without JVMHARN-001 beside it would cover less than it appears to — the same rule AC-4 applies to a denominator."
+   },
+   "compile_coverage": {
+    "source_files": 52,
+    "compiled_files": 52,
+    "coverage": 1.0000,
+    "measured_at": "2026-08-21",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "runner_class": "Linux-X64/ccr-container",
+    "oracle": "internal/parity/jvmclasses.go signature-aware oracle"
+   },
+   "notes": "Second Kotlin corpus pin (language-GA program G5, WP-J6): JetBrains' kotlinx.serialization, a reflectionless Kotlin-multiplatform serialization library (609 .kt + 6 .java at the pin; the 6 .java are module-info.java JPMS declarations, which carry no methods and produce no sites — expected). Tier 3 (nightly/manual, never the PR gate). Complements okio with a compiler-plugin-heavy, densely-generic Kotlin codebase for cross-language regression + JVM-binder breadth. Verified at pin time: graphi tables all 615 JVM files with ZERO parse or tabling crashes and the declared-type binder resolves 3517 typed Kotlin sites. SUPERSEDED 2026-08-19 (W1.b / SW-175), and the old sentence is kept above rather than overwritten because of what was wrong with it: 3517 is a NUMERATOR WITHOUT A DENOMINATOR — it says how many sites bound, never out of how many exist, which is the defect independent-review R6 named when it dropped Kotlin's recall threshold. The measured answer, same pin, same sha: the call-site binding rate is 19.16% = 2949 bound call sites / 15388 CST call sites (denominator counted by an INDEPENDENT tree-sitter walk, never from the binder), published with the full ten-reason skip histogram and every named exclusion in docs/rc/jvm-binding-rate.md. READ IT WITH ITS PARSE CAVEAT: the embedded tree-sitter Kotlin grammar leaves ERROR nodes in 80 of this pin's 609 .kt files (13.1%), so a recovered file still contributes a full denominator while the binder can no longer walk its bodies — guava's java equivalent is 0 of 621. The bias DIRECTION is measured and is anti-flattering: dirty parses DEPRESS the rate. Over the 529 cleanly-parsed files the rate is 21.15% (2908/13748); over the 80 dirty ones it is 2.50% (41/1640). An earlier version of this note said the direction was 'undetermined'; that was an incomplete measurement presented as an unavailable one and is retracted. SECOND FINDING: today's binder produces 3433 typed sites here (2949 call + 484 value), 84 FEWER than 3517, so the old numerator is not reproducible from this tree either — what it counted could not be determined, and the binder has changed since (ADR 0008 D6 corrected 2026-08-16 after JVMSOUND-001/002; SW-170 re-keyed the sweep). No attempt is made to reconcile the 84. Note the scope difference from the jvm_compile block above: the binding rate needs NO compiler and therefore covers ALL 615 files at the pin, not the 52 that compile. Compile coverage (SW-190, PARITY-COV-001 closure): 52 of 52 staged sources compile — coverage 1.0000 — measured 2026-08-21 against the post-SW-188 candidate. The 27 of 351 unbacked calls (the JVMHARN-001 value-class shape, recorded above) are a separate counterexample count, NOT bound to this figure: the figure answers 'does the source set compile', the unbacked calls answer 'does the binder's output agree with the bytecode'. A reader must read both to know the pin's evidence base."
   },
   {
    "name": "tier1-fixture-go",
@@ -441,6 +626,42 @@
     }
    ],
    "notes": "Tier-1 pinned multi-file JVM (Java+Kotlin) fixture for the WP-J6 hero-jvm tasks. The hero-jvm gate (cmd/eval/hero_jvm_test.go) sets GRAPHI_JVM_TYPERESOLVE and asserts the 12 stable ops over the CONFIRMED tier. This corpus smoke entry deliberately carries NO confirmed_edges assertion: the corpus runner drives the DEFAULT binary (binder off, JVM is Preview/heuristic), so a confirmed-edge assertion would be unsatisfiable here and would contradict the default-off contract. The heuristic search assertion is what the default product proves. No network, no JDK."
+  },
+  {
+   "name": "tier1-fixture-hero-python",
+   "path": "corpus/fixtures/hero-python",
+   "tier": 1,
+   "language": "python",
+   "scenario_ref": "hero-python",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    },
+    {
+     "query": "salute",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file Python fixture for the SW-181 hero-python tasks. The hero-python gate (cmd/eval/hero_python_test.go) asserts the 12 stable ops over the HEURISTIC tier (engine/link/resolve_python.go), since Python has no typed binder — the G2SUB substitution is the language's honest level. The writers carry the heuristic resolver's from-import bare binding (`from impl.english import core`) so callers/callees/impact/related_files reach across modules at the heuristic tier. Negative anchor: org.salute (does NOT call core) must not appear in callers-of-core. No network, no Python interpreter."
+  },
+  {
+   "name": "tier1-fixture-hero-typescript",
+   "path": "corpus/fixtures/hero-typescript",
+   "tier": 1,
+   "language": "typescript",
+   "scenario_ref": "hero-typescript",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    },
+    {
+     "query": "salute",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file TypeScript-family fixture for the SW-182 hero-typescript tasks. The hero-typescript gate (cmd/eval/hero_typescript_test.go) asserts the 12 stable ops over the HEURISTIC tier (engine/link/resolve_typescript.go, registered for typescript/tsx/javascript). The writers carry the heuristic resolver's named-import bare binding (`import { core } from \"../impl\"`) so callers/callees/impact/related_files reach across modules at the heuristic tier. Negative anchor: org.salute (does NOT call core) must not appear in callers-of-core. No network, no Node."
   }
  ]
 }

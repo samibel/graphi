@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/samibel/graphi/surfaces/mcp"
 )
 
 // TestCharacterization_HTTPRoutes_Snapshot is the SW-110 (TEST-01) AC3 snapshot of
@@ -176,5 +178,167 @@ func TestSAFE01_StableCapabilityVariantsRemainAvailable(t *testing.T) {
 		if rec.Code == http.StatusForbidden {
 			t.Errorf("GET %s: stable capability was rejected by Labs guard: %s", path, rec.Body.String())
 		}
+	}
+}
+
+// representativeProbe describes one probe of a registered HTTP route, pinned
+// to a representative stable or labs operation the capability resolver will
+// recognise. The matrix-driven CI guard below walks every route in
+// production with one or more of these probes.
+type representativeProbe struct {
+	method     string
+	path       string
+	capability string
+}
+
+// representativeProbesFor returns one or more probe requests per registered
+// route. Mixed routes (/query/{op}, /analyze/{analyzer}, /events) yield TWO
+// probes — one stable, one labs — so the matrix-driven gate is checked at
+// both tiers. POST routes use POST so the request reaches the route handler
+// (a GET on a POST route falls through to the SPA catch-all and would not
+// exercise the gate). Infrastructure routes get a single bare probe with
+// capability "" and the matching branch in the test treats them as exempt
+// from the matrix-driven gate.
+func representativeProbesFor(registered route) []representativeProbe {
+	parts := strings.SplitN(registered.Pattern, " ", 2)
+	method, _ := parts[0], parts[1]
+	switch registered.Pattern {
+	case "GET /query/{op}":
+		return []representativeProbe{
+			{method: method, path: "/query/callers?symbol=x", capability: "callers"},
+			{method: method, path: "/query/implementers?symbol=x", capability: "implementers"},
+		}
+	case "GET /analyze/{analyzer}":
+		return []representativeProbe{
+			{method: method, path: "/analyze/impact?symbol=x", capability: "impact"},
+			{method: method, path: "/analyze/taint?symbol=x", capability: "taint"},
+		}
+	case "GET /events":
+		return []representativeProbe{
+			{method: method, path: "/events?analyzer=impact&symbol=x", capability: "impact"},
+			{method: method, path: "/events?analyzer=taint", capability: "taint"},
+		}
+	case "POST /compound", "POST /query-ast", "POST /find-clones",
+		"POST /memory", "POST /distill", "POST /skillgen":
+		// Capability is fixed by the route registration; look it up via a bare
+		// resolver invocation so this list is the source of truth for what the
+		// test thinks the capability is. Probe at the registered path so Go
+		// 1.22 ServeMux routes the request to the same handler the production
+		// surface does (no SPA-fallback or 405 noise).
+		parts := strings.SplitN(registered.Pattern, " ", 2)
+		req := newLocalRequest(parts[0], parts[1], nil)
+		cap := registered.capability(req)
+		return []representativeProbe{{method: parts[0], path: parts[1], capability: cap}}
+	}
+	// Default: probe the pattern's bare path; the capability is whatever the
+	// route's resolver returns for it. Infrastructure resolvers return "".
+	probe := representativeProbe{method: method, path: strings.TrimPrefix(registered.Pattern, method+" "), capability: registered.capability(newLocalRequest(method, "/", nil))}
+	if probe.path == "" {
+		probe.path = "/"
+	}
+	return []representativeProbe{probe}
+}
+
+// TestSAFE01_HTTPGateFollowsStableMatrixTags is the CI guard that ties the
+// HTTP capability gate to the frozen stable operations matrix (SCOPE-01).
+// It walks every route in the production route table (no hand-maintained list),
+// exercises each with the SAME resolver the handler uses at runtime, and
+// asserts the default-server response matches the matrix tag: a Labs
+// capability MUST answer 403 labs_disabled, every Stable capability MUST
+// remain reachable, and infrastructure routes are exempt from the gate. This
+// prevents the HTTP gate from drifting out of agreement with
+// surfaces/mcp.IsStableOperation — the single membership check the MCP tools
+// list, the internal/coverage stable-tier gate, and now the HTTP gate share.
+//
+// If a future change drops capabilityGuard from Handler(), narrows the
+// membership check away from mcp.IsStableOperation, or adds a route whose
+// capability resolver returns "" for a non-infrastructure surface, this test
+// fails on the next CI run. Verified by removing capabilityGuard from
+// Handler() during the rebuild: the test reports every leaked Labs route
+// (`GET /branches/compare`, `GET /reviews/critique`, `POST /memory`,
+// `POST /distill`, `POST /skillgen`, `GET /events (taint)`,
+// `GET /wiki (communities)`) by name and capability.
+func TestSAFE01_HTTPGateFollowsStableMatrixTags(t *testing.T) {
+	t.Setenv(LabsEnvVar, "")
+
+	srv := New(&stubClient{}, nil)
+	for _, registered := range srv.routes() {
+		for _, probe := range representativeProbesFor(registered) {
+			req := newLocalRequest(probe.method, probe.path, nil)
+			// Mirror the dynamic path values representativeProbesFor built so the
+			// capability resolver at runtime sees the SAME shape it saw while
+			// classifying the probe above.
+			switch registered.Pattern {
+			case "GET /query/{op}":
+				req.SetPathValue("op", probe.capability)
+			case "GET /analyze/{analyzer}":
+				req.SetPathValue("analyzer", probe.capability)
+			}
+			capability := registered.capability(req)
+			if capability != probe.capability {
+				t.Errorf("%s probe %q: resolver returned %q, want %q (probe fixture drift)",
+					registered.Pattern, probe.path, capability, probe.capability)
+				continue
+			}
+
+			rec := httptest.NewRecorder()
+			srv.Handler().ServeHTTP(rec, req)
+
+			switch {
+			case capability == "":
+				// Infrastructure routes (/healthz, /contract, /) are exempt from
+				// the matrix-driven gate; we assert no panic and nothing else.
+			case isLabsCapability(capability):
+				// Matrix says Labs: the gate MUST fail-closed with labs_disabled.
+				if rec.Code != http.StatusForbidden {
+					t.Errorf("%s (%s): matrix=Labs but gate did not 403: code=%d body=%s",
+						registered.Pattern, capability, rec.Code, rec.Body.String())
+					continue
+				}
+				if !strings.Contains(rec.Body.String(), `"code":"labs_disabled"`) {
+					t.Errorf("%s (%s): matrix=Labs but missing labs_disabled error: %s",
+						registered.Pattern, capability, rec.Body.String())
+				}
+			default:
+				// Matrix says Stable: the gate MUST NOT intercept. The handler
+				// may answer 200/400/503 (service unavailable) but NEVER 403.
+				if rec.Code == http.StatusForbidden {
+					t.Errorf("%s (%s): matrix=Stable but gate 403-ed: %s",
+						registered.Pattern, capability, rec.Body.String())
+				}
+			}
+		}
+	}
+}
+
+// TestSAFE01_HTTPCapabilityGateUsesStableMatrixMembership is the second half
+// of the matrix-gate CI guard: it asserts the HTTP gate's membership function
+// is the SAME membership function the matrix pins
+// (surfaces/mcp.IsStableOperation), not a hand-maintained parallel list. The
+// probe is deliberately synthetic: it asks isLabsCapability what the verdict
+// would be for every frozen stable op and a representative set of Labs ops
+// and verifies the gate and the matrix agree. If a future change introduces
+// a second membership check (e.g. a hardcoded Labs allowlist in routes.go),
+// this test will be the first to fail.
+func TestSAFE01_HTTPCapabilityGateUsesStableMatrixMembership(t *testing.T) {
+	// Every frozen stable op is reported by isLabsCapability as NOT labs.
+	for _, op := range mcp.StableOperations {
+		if isLabsCapability(op) {
+			t.Errorf("isLabsCapability(%q) = true; surfaces/mcp.IsStableOperation says %q is stable — gate and matrix disagree",
+				op, op)
+		}
+	}
+	// A few representative non-stable ops are reported as labs by the gate.
+	// Using operations the route table actually exercises so the disagreement
+	// would be visible at runtime too.
+	for _, op := range []string{"implementers", "taint", "memory", "distill", "skillgen"} {
+		if !isLabsCapability(op) {
+			t.Errorf("isLabsCapability(%q) = false; this is a Labs operation and the matrix/HTTP gate should agree — they disagree",
+				op)
+		}
+	}
+	// Infrastructure ("") is not a capability and is exempt from the gate.
+	if isLabsCapability("") {
+		t.Errorf("isLabsCapability(\"\") = true; an empty capability is not a Labs capability — the gate must treat it as exempt")
 	}
 }

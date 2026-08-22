@@ -1,0 +1,11 @@
+id: hts-04-definition-found
+description: The definition of core resolves to the impl/English.ts file.
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: definition
+  args:
+    symbol: impl.core
+  area: agent_mcp
+expect:
+  outcome: found
+  contains_path: impl/English.ts

@@ -14,6 +14,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/agenttools/brief"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/explain"
@@ -70,11 +71,25 @@ func removeFile(t *testing.T, root, rel string) {
 	}
 }
 
-func newIngester(t *testing.T, store graphstore.Graphstore) *ingest.Ingester {
+// newIngester builds the harness's ingester under an explicit INDEX PROFILE.
+//
+// The profile is a parameter, not a default, because the asymmetry between the
+// two defaults is what hid PARITY-003 for two releases: ingest.New leaves the
+// profile at its zero value, which takes NEITHER the Fast nor the Balanced
+// branch in engine/ingest/linkfiles.go, while every shipped `graphi
+// index/sync/rebuild` resolves to Balanced (core/profile.ResolveProfile). A
+// hermetic table that only ever ran the zero value was therefore blind to
+// every defect living in the profile the product actually ships. Pass "" for
+// the library default; parityProfiles() crosses the change-class table over
+// both.
+func newIngester(t *testing.T, store graphstore.Graphstore, prof profile.Profile) *ingest.Ingester {
 	t.Helper()
 	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), t.TempDir())
 	if err != nil {
 		t.Fatalf("ingest.New: %v", err)
+	}
+	if prof != "" {
+		ing.WithProfile(prof)
 	}
 	return ing
 }
@@ -135,10 +150,10 @@ type incBuild struct {
 // harness that compares two orderings that never differed. Only the store became
 // a parameter, so the change-class table can run the identical build against both
 // backends.
-func buildIncrementalParallel(t *testing.T, root string, store graphstore.Graphstore, steps []func()) *incBuild {
+func buildIncrementalParallel(t *testing.T, root string, store graphstore.Graphstore, prof profile.Profile, steps []func()) *incBuild {
 	t.Helper()
 	ctx := context.Background()
-	ing := newIngester(t, store)
+	ing := newIngester(t, store, prof)
 	cfg := watch.Config{DebounceMs: 20, PoolSize: 4, PoolHardCap: 8, ReconcileInterval: time.Hour}
 	svc, err := watch.NewService(root, ing, cfg)
 	if err != nil {
@@ -181,11 +196,16 @@ func TestFullVsIncremental_ByteParity(t *testing.T) {
 	for _, b := range parityBackends() {
 		b := b
 		t.Run(b.name, func(t *testing.T) {
-			for _, row := range table {
-				row := row
-				t.Run(row.id, func(t *testing.T) {
-					t.Parallel()
-					runChangeClassRow(t, b, row)
+			for _, pr := range parityProfiles() {
+				pr := pr
+				t.Run(pr.name, func(t *testing.T) {
+					for _, row := range table {
+						row := row
+						t.Run(row.id, func(t *testing.T) {
+							t.Parallel()
+							runChangeClassRow(t, b, pr, row)
+						})
+					}
 				})
 			}
 		})
@@ -288,11 +308,11 @@ func Extra() {}
 
 	incStore := graphstore.NewMemStore()
 	defer incStore.Close()
-	buildIncrementalParallel(t, root, incStore, steps)
+	buildIncrementalParallel(t, root, incStore, "", steps)
 
 	fullStore := graphstore.NewMemStore()
 	defer fullStore.Close()
-	fullIng := newIngester(t, fullStore)
+	fullIng := newIngester(t, fullStore, "")
 	if err := fullIng.IngestAll(ctx, root); err != nil {
 		t.Fatalf("full IngestAll: %v", err)
 	}
@@ -561,7 +581,7 @@ func TestRepeatRun_Determinism(t *testing.T) {
 	}
 	store := graphstore.NewMemStore()
 	defer store.Close()
-	buildIncrementalParallel(t, root, store, steps)
+	buildIncrementalParallel(t, root, store, "", steps)
 
 	for _, op := range ep017Ops {
 		first := envelope(t, store, op)

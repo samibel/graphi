@@ -1,0 +1,221 @@
+# graphi — Lua change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-194a, W5-RES.e). Lua is
+#                      `cross-file-heuristic` (live derivation at the W1.f tip
+#                      91a4ba3); the heuristic resolver at engine/link/
+#                      link.go's `luaResolver{}` registration handles Lua's
+#                      `require "module"` directive — a require resolves to a
+#                      file path under `package.path` search patterns (default
+#                      `./?.lua`, `./?/init.lua`, etc.), and the resolver mints
+#                      a file→file `imports` edge at the heuristic tier.
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go, JVM,
+#                      Python and TS tables. Lua has no typed binder, so the
+#                      rows here assert PARITY, not CORRECTNESS — parity
+#                      compares two passes of the same rule, so a PASS certifies
+#                      the rule is REGRESSION-CLEAN between incremental and full,
+#                      never that it is correct. Correctness evidence lives in
+#                      the FU-5 script harness (engine/link/resolve_script_test.go)
+#                      and in the real-repository matrix (G4), not here.
+#
+#                      SW-194a SCOPE, STATED. This file DEFINES the eight
+#                      change-class rows at the cross-file-heuristic level.
+#                      The conformance twin (engine/conformance/luaparity_test.go
+#                      + luaparity_matrix_test.go) lands in SW-194b and is what
+#                      proves these rows PROVEN. SW-194c flips the G3 evidence
+#                      row to PASS by citing this YAML + the twin with their
+#                      blob shas.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The Python instance (parity-classes-
+#                      python.yaml) is the closest template; this copy
+#                      diverges on TWO named points recorded in the row notes:
+#                      (a) Lua's `require "module"` resolves via package.path
+#                      search patterns, NOT relative to the importer — the
+#                      resolver walks `package.path` and returns the FIRST
+#                      match, so ambiguity is structural (multiple matches);
+#                      (b) the resolver already names the exact target file
+#                      path (the requireBinder helper at engine/link/
+#                      resolve_common.go), so the family has the same LINK-001 /
+#                      PARITY-002 immunity by construction as TS and Bash.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestLuaParityMatrix_DriftGuard (engine/conformance/
+# luaparity_matrix_test.go, lands in SW-194b) binds this file to the harness
+# table luaChangeClassTable() in luaparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+#
+# ---------------------------------------------------------------------------
+# LUA-SPECIFIC NOTES
+# ---------------------------------------------------------------------------
+# Lua is `cross-file-heuristic`. The resolver is heuristic at engine/link/
+# link.go's luaResolver{} registration (resolved against the FU-5 script
+# harness); no G2/G2a/G2b typed binder exists, so the rows here assert PARITY,
+# not CORRECTNESS. The G2SUB row's verdict basis is the substituted contract:
+# never emits a confirmed edge, drops and COUNTS what it cannot resolve, and
+# is deterministic.
+#
+# Lua's `require "module"` resolves via Lua's `package.path` search patterns
+# (`./?.lua`, `./?/init.lua`, etc.) rather than relative to the importer's
+# directory. The resolver walks `package.path` and returns the FIRST match,
+# so ambiguity is structural when multiple paths resolve to committed nodes.
+# The exact-path resolution (engine/link/resolve_common.go's requireBinder)
+# gives the family the same LINK-001 / PARITY-002 immunity by construction.
+
+parity_classes:
+  - id: "lua_add_file"
+    kind: "change_class"
+    label: "Lua-Datei hinzufügen / add a Lua file in a new directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/luaparity_test.go"
+    test_line: "373"
+    test_name: "TestLuaFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.e"
+    note: "A new Lua file arrives in a new directory: pure add path. The witness asserts the new callee resolves cross-module at the heuristic tier — the resolver's only tier — and the control symbols survive. Fixture label reads production Go parser to satisfy the shared closed vocabulary (D-12); the subject under test is the Lua heuristic resolver at engine/link/link.go's luaResolver{} registration. SW-194b ships the harness row; SW-194a ships this YAML row as the substituted-contract pin."
+
+  - id: "lua_modify_file"
+    kind: "change_class"
+    label: "Lua-Datei ändern / rewrite a Lua file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/luaparity_test.go"
+    test_line: "373"
+    test_name: "TestLuaFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.e"
+    note: "An indexed Lua file is rewritten in place: a function is added while existing nodes keep identity. The witness asserts the new node is present and the existing callee survives — pins the same-package identity-stability contract every rewrite class asserts. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "lua_add_call_heuristic"
+    kind: "change_class"
+    label: "Heuristischen Require-Aufruf hinzufügen / add a heuristic-tier cross-file require call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/luaparity_test.go"
+    test_line: "373"
+    test_name: "TestLuaFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.e"
+    note: "A new cross-file require call is added: `local mod = require \"lib.util\"; mod.func(...)`. The witness asserts the file→file `imports` edge lands AND the call edge lands at HEURISTIC tier (model.TierHeuristic), never at confirmed — the Lua resolver is heuristic and must not mint confirmed edges (the G2SUB never-confirmed half). Lua's `package.path` resolution gives the family the same LINK-001 / PARITY-002 immunity by construction. SW-194b ships the harness row."
+
+  - id: "lua_require_skip"
+    kind: "change_class"
+    label: "Require überspringen + zählen / skip + count a missing require target"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/luaparity_test.go"
+    test_line: "373"
+    test_name: "TestLuaFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.e"
+    note: "A require directive (`require \"missing\"`) targets a module that does not exist on disk (no match under `package.path`). The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids. SW-194b ships the harness row."
+
+  - id: "lua_ambiguous_clauses"
+    kind: "change_class"
+    label: "Mehrdeutige Pfade / two modules claiming the same require name"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/luaparity_test.go"
+    test_line: "373"
+    test_name: "TestLuaFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.e"
+    note: "A require directive is ambiguous because `package.path` matches multiple committed nodes (e.g. both `./lib/util.lua` and `./vendor/lib/util.lua` exist). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used. SW-194b ships the harness row."
+
+  - id: "lua_delete_file"
+    kind: "change_class"
+    label: "Lua-Datei löschen / delete a Lua file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/luaparity_test.go"
+    test_line: "373"
+    test_name: "TestLuaFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.e"
+    note: "A Lua file declaring a function that TWO other modules require is deleted, so the per-file stale-node purge, the heuristic-edge sweep and the re-link all run over it. The witness requires the deleted callee absent, both importers still present, and the heuristic edges into the deleted callee gone — a stale heuristic edge would be the worst outcome here, even though the edge tier is lower than confirmed. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on Lua as well as on Go. SW-194b ships the harness row."
+
+  - id: "lua_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / same-package file-to-file function move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/luaparity_test.go"
+    test_line: "373"
+    test_name: "TestLuaFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.e"
+    note: "A Lua top-level function moves file-to-file WITHIN one directory (util.lua -> moved.lua). The function's identity is keyed on its qualified name (QN), which the resolver derives from the module file path; a same-directory move preserves QN while changing source_path and line. Two files then claim one QN inside a single change set — the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The witness asserts the function identity is preserved and its cross-file require edge survives the re-home. SW-194b ships the harness row."
+
+  - id: "lua_add_local_definition"
+    kind: "change_class"
+    label: "Lokale Definition hinzufügen / add a local function definition"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/luaparity_test.go"
+    test_line: "373"
+    test_name: "TestLuaFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.e"
+    note: "A `local function name(...)` definition is added to a Lua file. The witness asserts the new local node is present and the existing callees survive — pins the local-definition identity-stability contract. Lua's locals are scoped to the file, so the same row id covers both module-level and function-level locals. SW-194b ships the harness row."

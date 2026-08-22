@@ -232,6 +232,22 @@ Hence the identical 25 on an Intel Xeon 8573C (run-a) and an AMD EPYC 9V74
 (run-b), and the identical tallies for all five pinned repos across both runs.
 Pinned by `TestPublishedBaseline_TalliesAreRunInvariantAndLoIsClean`.
 
+> **CORRECTION 2026-08-20 (SW-150, CPU attribution sweep) — added, nothing above
+> is rewritten.** "Intel Xeon 8573C (run-a) and an AMD EPYC 9V74 (run-b)" is the
+> cold-index job's CPUs, NOT the `query-latency/grpc-go` job that produced the
+> 25-execution shortfall. The published `environment.json` files show FOUR CPU
+> models across the 40 per-job records (`AMD EPYC 7763`, `AMD EPYC 9V74`,
+> `Intel Xeon Platinum 8573C`, `Intel Xeon Platinum 8370C`; run-a spans 3
+> models, run-b spans 4). The per-job truth at
+> `docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md:272-304`:
+> `query-latency/grpc-go` ran **AMD EPYC 9V74 → AMD EPYC 7763** (both AMD EPYC),
+> so the 25-execution shortfall was never reproduced across Intel and AMD.
+> The §4.2 machine-independence argument is *strengthened* (a 3-model run and
+> a 4-model run reproduce the identical tally), but the "reproduced across CPU
+> families" qualifier is *weakened* — for the gate that produced the shortfall,
+> both runs were AMD. Sweep record:
+> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
+
 ### 4.3 An independent confirmation from `uuid`
 
 `uuid`'s degree-stratified sample returned only **137** symbols, yet each
@@ -491,6 +507,23 @@ document or in the tests may be read that way:
 exists to keep it that way: it fails if the published gate verdict ever becomes
 anything other than `UNKNOWN` while the pool is still 975 of 1000.
 
+> **CORRECTION 2026-08-20 (SW-150, one-sided gate-9 p95) — added, nothing above
+> is rewritten.** The "the observed 471.250 ms" sentence above quotes run-a only,
+> and the rest of §11 reasons about it as if it were the only figure. The
+> harness recorded the pooled p95 for BOTH runs over the same 975-of-1000 pool,
+> and they fall on **opposite** sides of the 500 ms gate: run-a **471.250 ms**
+> (below), run-b **601.732 ms** (above, by 20.3%), a **+27.7%** run-to-run
+> spread. That single additional figure is **strictly stronger support for
+> §11's own argument** — the two runs disagree about which side of the gate the
+> value falls on, so the UNKNOWN is not a conservatively-withheld PASS: it may
+> equally be a conservatively-withheld FAIL. The pool is still 975 of 1000 and
+> the verdict is still UNKNOWN; no figure above is withdrawn. Sources:
+> `run-{a,b}/query-latency/grpc-go/report.json` `.repo.query_latency.pools[]`
+> (`p95_us 471250` / `601732`), each independently recomputed from
+> `run-{a,b}/.../raw/query-latency.json` at nearest rank
+> `ceil(0.95 × 975) = 927`. Sweep record:
+> `docs/eval/p0/sw-150-cpu-attribution-sweep.md`.
+
 ---
 
 ## 12. Evidence index
@@ -501,7 +534,7 @@ anything other than `UNKNOWN` while the pool is still 975 of 1000.
 | Per-operation outcome tallies (found / empty / partial) | `run-{a,b}/query-latency/<repo>/report.json` → `.repo.stable_checks` |
 | Retained sample counts per operation | same → `.repo.query_latency.operations[].latency.n` |
 | Symbol sample size, agent symbols, digest | same → `.repo.query_latency.symbol_sample` |
-| Undersampled pool p95 = 471 250 µs | same → `.repo.query_latency.pools[]` (`agent_context_p95`) |
+| Undersampled pool p95 = 471 250 µs (run-a) / 601 732 µs (run-b) — the two runs disagree about which side of the 500 ms gate the value falls on (run-a below, run-b above by 20.3%, +27.7 % run-to-run spread) | same → `.repo.query_latency.pools[]` (`agent_context_p95`) |
 | `run_failures` naming the three operations | same → `.repo.failures` |
 | Pool membership and threshold | `docs/eval/reference-scenario.json`, gate `agent_context_p95` |
 | FR-8 floor of 1000 | `internal/evalreport/querylatency.go:40` |

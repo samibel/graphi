@@ -1,0 +1,401 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "kotlinx.serialization",
+  "collected": true,
+  "samples": 10,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/tmp/sw177-wd/cur",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:10:52Z",
+      "clone_ms": 2584,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-01/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-01/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1168,
+        "peak_rss_mb": 1130,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1133,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:10:57Z",
+      "clone_ms": 2449,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-02/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-02/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1184,
+        "peak_rss_mb": 1254,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1256,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:11:01Z",
+      "clone_ms": 2410,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-03/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-03/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1177,
+        "peak_rss_mb": 1207,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1210,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-03.json"
+    },
+    {
+      "run": 4,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:11:05Z",
+      "clone_ms": 2559,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-04/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-04/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1160,
+        "peak_rss_mb": 1156,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1159,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-04.json"
+    },
+    {
+      "run": 5,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:11:09Z",
+      "clone_ms": 2375,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-05/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-05/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1170,
+        "peak_rss_mb": 1230,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1232,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-05.json"
+    },
+    {
+      "run": 6,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:11:14Z",
+      "clone_ms": 2538,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-06/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-06/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1174,
+        "peak_rss_mb": 1201,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1204,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-06.json"
+    },
+    {
+      "run": 7,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:11:18Z",
+      "clone_ms": 2749,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-07/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-07/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1174,
+        "peak_rss_mb": 1134,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1137,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-07.json"
+    },
+    {
+      "run": 8,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:11:22Z",
+      "clone_ms": 2675,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-08/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-08/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1178,
+        "peak_rss_mb": 1160,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1163,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-08.json"
+    },
+    {
+      "run": 9,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:11:27Z",
+      "clone_ms": 2690,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-09/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-09/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1181,
+        "peak_rss_mb": 1239,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1242,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-09.json"
+    },
+    {
+      "run": 10,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "3efe324be422ead21ca44f2f6318e1791c166556",
+      "started_at": "2026-08-19T20:11:31Z",
+      "clone_ms": 2372,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-10/kotlinx.serialization.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-10/kotlinx.serialization-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 1179,
+        "peak_rss_mb": 1242,
+        "db_size_bytes": 5697536,
+        "nodes": 6369,
+        "edges": 8906,
+        "files": 638
+      },
+      "stable_peak_rss_mb": 1245,
+      "bytes_per_edge": 639.7412980013474,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-10.json"
+    }
+  ]
+}

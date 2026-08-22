@@ -8,6 +8,40 @@ import (
 	"github.com/samibel/graphi/core/model"
 )
 
+// goPackageFile is Go's packageFileFilter: which files in a resolved package
+// directory an `imports` edge may target (LINK-001, ADR 0011).
+//
+// THE RULE: a Go package's importable source files are its `.go` files, minus
+// its test files. A `README.md`, a `.golangci.yml`, a `Makefile` or a `.proto`
+// sitting in the directory is not part of the package in any sense the import
+// declaration expresses, so an edge onto one is wrong in every profile.
+//
+// WHY `_test.go` IS EXCLUDED, stated explicitly because it is the one genuinely
+// arguable case. Test files ARE package members — `go build` compiles them into
+// the package under `go test` — but they are NOT IMPORTABLE: no import
+// declaration anywhere can reach a symbol declared in `foo_test.go`. An
+// `imports` edge models the import declaration, so the importable set is the
+// right one. This is also the ruling engine/typeresolve/pkggraph.go:103 already
+// makes for the same question on the type-checked side, which means the
+// heuristic and type-checked layers now agree instead of contradicting.
+//
+// Written as a plain predicate rather than extSetFilter because the `_test.go`
+// exclusion is a suffix rule, not an extension-set membership.
+//
+// THE TWO HALVES DIFFER IN CASE-SENSITIVITY, deliberately. The extension is
+// matched case-INSENSITIVELY, because parse.Registry.ParserFor lowercases before
+// selecting a parser, so a `Main.GO` is an indexed Go file and dropping it would
+// be a recall regression. The `_test.go` suffix is matched case-SENSITIVELY,
+// because that is what go/build itself does: a file literally named `x_TEST.go`
+// is NOT a test file to the Go toolchain, so it is importable and must stay a
+// target. engine/typeresolve/pkggraph.go:103 matches it the same way.
+func goPackageFile(sourcePath string) bool {
+	if !strings.EqualFold(path.Ext(sourcePath), ".go") {
+		return false
+	}
+	return !strings.HasSuffix(sourcePath, "_test.go")
+}
+
 // goResolver is the Go registration behind the Resolver seam. It is pure and
 // store-free; it produces resolved intents only against committed NodeIds in idx
 // and never fabricates a target.
@@ -178,14 +212,21 @@ func (goResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 
 	// Imports edges: file→file. Each import path that resolves to an indexed
 	// package directory yields one imports edge from this file node to that
-	// package's file node(s). For FU-1 we link the importing file to the
-	// directory's file node when uniquely determinable.
+	// package's SOURCE file node(s) — see goPackageFile (LINK-001 / ADR 0011).
+	// For FU-1 we link the importing file to the directory's file node when
+	// uniquely determinable.
+	//
+	// NOTE THE ASYMMETRY, it is deliberate: the filter binds the TARGET side
+	// only. The `from` side is idx.fileNode(in.SourcePath), unfiltered, so an
+	// external test file `foo_test.go` importing another package still emits its
+	// own edges — a `_test.go` file is a first-class importer, it is merely not
+	// an importable target.
 	if fileID, ok := idx.fileNode(in.SourcePath); ok {
 		for _, imp := range in.Imports {
 			if imp.Path == "" {
 				continue
 			}
-			for _, targetFile := range idx.packageFileNodes(imp.Path) {
+			for _, targetFile := range idx.packageFileNodes(imp.Path, goPackageFile) {
 				if targetFile == fileID {
 					continue
 				}

@@ -156,6 +156,15 @@ by `TestParseModuleDirective_AgreesWithTyperesolve` (test-only dependency).
 
 ## Consequences
 
+> **Made precise 2026-08-19 by [ADR 0011](0011-imports-edge-targets-package-source-files.md),
+> which supersedes NOTHING here.** Everything below is about **which DIRECTORY**
+> an import resolves to, and that half stands unchanged and unqualified. It was
+> silent on **which files inside that directory are targets**, and the answer it
+> tacitly carried — all of them — was wrong: that is LINK-001, fixed by ADR 0011.
+> Read every "`imports` edge set" sentence below as "the resolved directory",
+> and ADR 0011 as the rule for the target set within it. No sentence is edited;
+> this note is added on top, per the never-rewrite-a-published-record discipline.
+
 - Product-byte change: `imports` edge sets change on clause-colliding
   repositories (they lose semantically wrong edges). Additionally, an import
   that names a module path NOT present in the tree — the mid-refactor state
@@ -179,12 +188,15 @@ by `TestParseModuleDirective_AgreesWithTyperesolve` (test-only dependency).
   across them where the historical record had three distinct snapshots over
   six executions, and no fan-out-signature edge appears anywhere. PARITY-002
   is closed BY MEASUREMENT, both halves. The same measurement isolated a
-  SECOND, previously-conflated defect the fixture gates cannot see —
+  SECOND, previously-conflated defect the fixture gates could not see —
   PARITY-003, the Balanced profile's pass-scoped import aggregation
-  (`engine/ingest/linkfiles.go`), filed and disclosed in the record, NOT
-  fixed by this ADR: three real-repo rows still FAIL deterministically under
-  the shipped default profile, and the historical "PARITY-002" gin/grpc-go
-  FAILs are now understood as two overlapping mechanisms.
+  (`engine/ingest/linkfiles.go`). It was filed and disclosed here, deliberately
+  NOT fixed by this ADR, and is now **fixed by
+  [ADR 0010](0010-relink-unit-invariant.md)** (W0.f-4), which also generalizes
+  this ADR's closure lesson into one invariant: an edge's value may not depend
+  on more files than the re-link unit. The historical "PARITY-002" gin/grpc-go
+  FAILs are therefore two overlapping mechanisms, each closed by its own ADR
+  and its own measurement.
 
 ## Review round 2 (independent adversarial reviewer, 2026-08-16)
 

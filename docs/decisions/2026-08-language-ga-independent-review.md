@@ -33,6 +33,20 @@
 > The rulings below remain the substance; only §5's open questions 2 and 3, and
 > §7's pause, are resolved by this header. Where a ruling merely records a
 > verified fact (§1), it never needed ratification.
+>
+> ## Cross-reference — 2026-08-20 (W1.e / SW-178): the WP-J11 flip gate
+>
+> Per D6 this is **added**, nothing below is rewritten. SW-178 ratifies the
+> nine R1 conditions this record identified as "zero met" into a single
+> machine-checkable list — the **WP-J11 flip gate** — and adds the
+> index-migration story SW-179's flip demands. The gate is the instrument
+> the flip is measured against; the gate is not a decision to flip. Full
+> text:
+> [`2026-08-language-ga-wpj11-flip-gate.md`](2026-08-language-ga-wpj11-flip-gate.md).
+> ADR 0008 is ratified as a whole in the same change
+> ([`../adr/0008-jvm-declared-type-resolution.md`](../adr/0008-jvm-declared-type-resolution.md)),
+> with D6, D8 and D9 each recorded with the reformulation, re-scope and rule
+> from Wave 0 / Wave 1.
 
 - **Date:** 2026-08-16
 - **Scope:** the language-GA program (Java/Kotlin first), ADR 0008 D1–D8, the

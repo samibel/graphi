@@ -31,7 +31,7 @@ here with a local proof), **BLOCKED** (a dependency must clear first),
 | WP-J4 | Kotlin binder on the shared table | **DONE** | D2 inferred/declared boundary proven |
 | WP-J5 | Hermetic change-class parity | **DONE** | **11** required classes, both stores, byte parity; **no deferred rows left** (M2.2) |
 | WP-J6 | Corpus deepening (pins + stratification) | **PARTIAL** | okio pinned (G5); guava→v3 + more pins outstanding |
-| WP-J7 | Real-repo parity over JVM pins (**G4**) | **BLOCKED again** | PARITY-001 ✅ + PARITY-002 ✅ CLOSED BY MEASUREMENT (W0.f-3), but the measurement isolated **PARITY-003** (Balanced-profile aggregation, ⛔ open, W0.f-4) — D8's per-defect test applies to it before J7 runs |
+| WP-J7 | Real-repo parity over JVM pins (**G4**) | **READY** | All three parity defects CLOSED BY MEASUREMENT (W0.f-3 + W0.f-4): the Go matrix is 19/19 PASS over two dispatches identical at count granularity. ADR 0008 D8's entry criterion is met; what remains is running J7 over the JVM pins |
 | WP-J8 | Hero-JVM (~20 scenarios × 12 ops) | **DONE** | `corpus/fixtures/hero-jvm`, hero gate green |
 | WP-J9 | Differential bytecode ground-truth (soundness) | **DONE** (Java) | live JDK, 4 dispatch forms; **Kotlin live path runs in CI only** (no local `kotlinc`) |
 | WP-J10 | Perf + budget runs; create `GA-LANG-*` rows (born UNKNOWN) | **OWNER** | needs an attested candidate + reproducible CI runs |
@@ -56,6 +56,33 @@ independent reasons — either alone is sufficient:
 The engineering behind these gates is real and largely green in CI; what was
 wrong is the ledger's verdict vocabulary. Green tests are an input to a gate,
 never the gate itself. **G5** partial. **G4, G7, G9** not started.
+
+> **Amended 2026-08-19 (SW-174, W1.a). Reason 1 above is superseded in its
+> factual half and unchanged in its conclusion; nothing above is rewritten.**
+> `docs/rc/evidence-index.yaml` now holds **35** gate rows — the original 17
+> (13 UNKNOWN, 4 STALE, **still zero PASS**) plus **18** `GA-LANG-*` rows
+> created by SW-174: `GA-LANG-java-G1..G9` and `GA-LANG-kotlin-G1..G9`, with
+> **G2 substituted by G2SUB** at both, since java and kotlin are
+> `cross-file-heuristic` (re-measured 2026-08-19 from the CLI built at
+> `1e440cf`). So `grep -c '^  - id: GA-LANG-'` no longer returns nothing; it
+> returns **18**.
+>
+> **The roll-up above does not move.** Every one of the 18 is **born UNKNOWN**,
+> and UNKNOWN counts as not passed, so *"every gate reads UNKNOWN"* for
+> Java/Kotlin is still exactly right — it is now recorded as data rather than
+> asserted as prose, which is the whole of what W1.a delivers. Reason 2 is
+> untouched: **JVMSOUND-003 and JVMSOUND-004** are open, reproduced,
+> deliberately unfixed wrong-confirmed-edge defects, and `GA-LANG-{java,kotlin}-G2SUB`
+> record them in their own `current` field.
+>
+> **WP-J10 in the table above is therefore half discharged:** the
+> `GA-LANG-*` rows exist (born UNKNOWN); the perf and budget runs do not, and
+> remain OWNER-gated on an attested candidate — see SW-177.
+>
+> **Go's rows are NOT part of this.** `go` already carries a `ga-language`
+> matrix row, so creating `GA-LANG-go-*` rows fails `cmd/coverage -check`
+> immediately (measured: 9 violations, exit 1). That is SW-174 AC-6 and it is
+> escalated to the owner, not resolved here.
 
 ### 1.1 STOP-SHIP — the binder emits FALSE `confirmed` edges (found 2026-08-16)
 
@@ -152,10 +179,12 @@ rows had been conflating:
 ```
 PARITY-001  ✅ CLOSED BY MEASUREMENT 2026-08-16 (fix M2.1; delete_file FAIL→PASS on real cobra)
 PARITY-002  ✅ CLOSED BY MEASUREMENT 2026-08-16 (fix W0.f/ADR 0009; determinism proven via -counts-diff)
-PARITY-003  ⛔ OPEN — Balanced-profile import aggregation is PASS-SCOPED (engine/ingest/linkfiles.go):
-      │     sync keeps a SUPERSET of rebuild's imports edges; deterministic; default profile;
-      │     invisible to every hermetic gate (engine default profile ≠ CLI default balanced);
-      │     filed + user-disclosed (readme, sync -h, doctor) in W0.f-3 → fix is W0.f-4
+PARITY-003  ✅ FIXED AND MEASURED 2026-08-16 (W0.f-4, ADR 0010) — 19/19 PASS, two dispatches count-identical.
+      │     The pass-scoped Balanced import aggregation is
+      │     REMOVED (it had no legitimate prey in any language, dropped true edges, and merged
+      │     other files' evidence). The gate gap that hid it is closed structurally: the
+      │     conformance change-class table now runs a PROFILE axis (default + balanced) crossed
+      │     with both stores, so a defect in the shipped profile can no longer pass a green table.
       ▼
 WP-J7  (real-repo parity over JVM pins)   ← ADR 0008 D8 makes the fixes the ENTRY CRITERION
       ▼
@@ -165,10 +194,12 @@ GA-LANG-java/kotlin-G4 = PASS
 ```
 
 Everything else is either DONE, BUILDABLE by me now, or an OWNER sign-off.
-**If G4 is required for GA-at-declared-capability, PARITY-003 (W0.f-4) is now
-the schedule** (updated twice on 2026-08-16: "PARITY-002 is the schedule" →
-"the measurement run is the schedule" → the measurement ran and found
-PARITY-003 — each supersession kept, that is what a measurement is FOR).
+**If G4 is required for GA-at-declared-capability, the schedule is now WP-J7
+itself — no parity defect stands in front of it** (updated four times on
+2026-08-16, each supersession kept because that sequence is what a measurement
+is FOR: "PARITY-002 is the schedule" → "the measurement run is the schedule" →
+the measurement ran and found PARITY-003 → PARITY-003 is fixed and measured,
+19/19 PASS, two dispatches count-identical).
 Note WP-J7's JVM rows may be less exposed than Go's (Java/Kotlin emit a single
 interned file→package edge, not per-file fan-out — the aggregation path is
 Go-shaped), but that is an argument, not a measurement.
@@ -273,6 +304,33 @@ shipped with a local proof; none touched the shipped default.
 - **M1.2 ✅** Corpus pins (WP-J6 / G5): guava→v3 measured standard (full sha +
   census, 3204 .java) and a second Kotlin pin, kotlinx.serialization v1.6.3
   (615 JVM files, binder resolves 3517 typed sites, zero crashes at pin time).
+
+  > **AMENDED 2026-08-19 (W1.b / SW-175) — the line above is kept, not
+  > rewritten, because the thing wrong with it is instructive.** "3517 typed
+  > sites" is a **numerator without a denominator**: it says how many sites
+  > bound and never out of how many exist, which is precisely what independent
+  > review R6 objected to when it dropped Kotlin's ≥50 % recall threshold. The
+  > measured replacement, same pin, same sha, is
+  > [`../rc/jvm-binding-rate.md`](../rc/jvm-binding-rate.md): **Kotlin 19.16 %
+  > = 2 949 bound call sites / 15 388 CST call sites** on kotlinx.serialization
+  > and **3.47 %** on okio, against **Java 21.39 %** on guava's JRE module —
+  > each published with its full named-skip histogram, every exclusion with its
+  > size, and the residual the histogram does **not** account for.
+  >
+  > Three findings from that measurement change how this bullet should be read.
+  > First, today's binder produces **3 433** typed sites on this pin (2 949 call
+  > + 484 value), **84 fewer** than 3 517: the old numerator is not reproducible
+  > from this tree, and no attempt is made to reconcile the difference. Second,
+  > **a binding rate is meaningless without the scope it was taken at** —
+  > pointing graphi at the guava repository *as checked out* gives **0.13 %**,
+  > not 21.39 %, because the monorepo declares every class twice and the
+  > binder's `tabledType` abandons a whole body walk on a colliding FQN. Both
+  > rows describe the same binder on the same code. Third, the **Kotlin figures
+  > rest on dirtier parses than the Java ones** — the embedded tree-sitter
+  > Kotlin grammar leaves `ERROR` nodes in 13.1 % of kotlinx.serialization's
+  > files against 0 % for guava's JRE module — so the two languages' numbers are
+  > not equally reliable as measurements, before any question about the binder
+  > arises.
 - **M1.3 ✅** Kotlin ground-truth e2e test written; SKIPS locally (no `kotlinc`),
   proven for the first time by `jvm-groundtruth.yml`. The graphi side is
   validated locally (exactly 2 confirmed calls with the keys the bytecode

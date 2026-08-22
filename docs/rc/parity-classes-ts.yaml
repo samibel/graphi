@@ -1,0 +1,256 @@
+# graphi — TypeScript-family change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-182). The TypeScript family is THREE
+#                      declared languages (typescript, tsx, javascript) at
+#                      `cross-file-heuristic`, sharing ONE resolver impl at
+#                      engine/link/resolve_typescript.go registered under all
+#                      three ids. The rows here prove full-vs-incremental
+#                      snapshot BYTE parity on MemStore AND SQLite with non-
+#                      vacuous witnesses — NOT the PRD §12.3 gate, NOT the
+#                      real-repository matrix (G4), and the binder is not
+#                      exercised (no typed binder exists for the family). The
+#                      harness re-uses engine/conformance/pythonparity_test.go's
+#                      structure (same row count, same witnesses on the same
+#                      change-class shapes), adapted to the TS resolver's exact-
+#                      path semantics; the family differs from Python on THREE
+#                      named points: (a) D1 RELATIVE-ONLY resolution — non-
+#                      relative specifiers are external, never a repo package;
+#                      (b) the resolver already names the exact file path
+#                      (engine/link/resolve_typescript.go:25 tsExts +
+#                      relModuleFileCandidates) so it is IMMUNE by construction
+#                      to the LINK-001 / PARITY-002 target-set class; (c)
+#                      WP-14 interned external nodes for non-relative bindings
+#                      ("react.useState"), distinct from Python's drop-and-count
+#                      floor.
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go, JVM and
+#                      Python tables. AC-4's control test
+#                      (engine/link/resolve_typescript_test.go) is the
+#                      negative-direction pinning of (b) — the only AC whose
+#                      proof is the absence of a defect, not the presence of
+#                      edges.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The Python instance (parity-classes-python.yaml)
+#                      is the closest template; this copy diverges on three
+#                      named points recorded in the row notes (D1, the LINK-001
+#                      immunity asserted by AC-4, WP-14 external intern). The
+#                      next family should NOT inherit them by copying this file
+#                      — the template is the source.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestTSParityMatrix_DriftGuard (engine/conformance/
+# typescriptparity_matrix_test.go) binds this file to the harness table
+# tsChangeClassTable() in typescriptparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+#   MISSING/PHANTOM/DEFERRED are the three directions the JVM and Python guards
+#   have, and they are the three this guard has for SW-182. The four the JVM
+#   guard is missing (VERDICT, AXIS, VOCABULARY, KIND-as-distinct-from-OWNER)
+#   are recorded below as a TEMPL-P4 inheritance and not closed in this copy —
+#   this file's KIND count is a pinned literal, like the Go, JVM and Python
+#   tables, but nothing yet rejects a row whose verdict does not match what
+#   its harness row proves, nothing binds the YAML profile/store claim to
+#   the axis that actually runs, and nothing enforces the closed vocabulary.
+#   Closing them is its own product-byte change (the template's §12,
+#   TEMPL-P4).
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+#
+# ---------------------------------------------------------------------------
+# TYPESCRIPT-FAMILY NOTES
+# ---------------------------------------------------------------------------
+# The family is `cross-file-heuristic` (live derivation 2026-08-20, measured at
+# the same commit as python). The resolver is heuristic and shared across the
+# three language ids; the binder is the heuristic resolver at
+# engine/link/resolve_typescript.go. No G2/G2a/G2b typed binder exists, so the
+# rows here assert PARITY, not CORRECTNESS — parity compares two passes of the
+# same rule, so a PASS certifies the rule is REGRESSION-CLEAN between
+# incremental and full, never that it is correct. Correctness evidence lives
+# in engine/link/resolve_typescript_test.go and in the real-repository matrix
+# (G4), not here.
+#
+# TS module resolution is RELATIVE-ONLY (D1): "./x" / "../x" resolve against
+# the importing file's directory; non-relative / aliased specifiers ("react",
+# "@app/x", tsconfig `paths`) are treated as external and skipped+counted —
+# no tsconfig path-mapping is attempted. Every cross-file resolution is
+# heuristic tier; nothing is fabricated (unresolved/ambiguous → st.Skipped /
+# st.Ambiguous).
+#
+# The TS resolver already names the exact target file path
+# (`relModuleFileCandidates` at engine/link/resolve_typescript.go:73), so the
+# file→file `imports` edge is exactly the resolved path. This is the LINK-001
+# / PARITY-002 immunity the family has by construction, and AC-4's control
+# test pins it as a negative proof (the test fails if the resolver is changed
+# to fan out over a directory).
+#
+# WP-14 interned external nodes: a name imported from a NON-relative package
+# specifier (`import {fn} from "pkg"`, `import * as ns from "pkg"`) that
+# resolves to no committed node is a genuine external reference — the
+# resolver interns an external node keyed by the package-qualified FQN
+# ("pkg.fn", "@scope/pkg.member"). This is the family-specific difference
+# from Python's drop-and-count floor (engine/link/resolve_typescript.go:58-61).
+#
+# The TypeScript family's static extension set is [".ts", ".tsx", ".js",
+# ".jsx", ".mjs", ".cjs"] at engine/link/resolve_typescript.go:25 (`tsExts`),
+# the precedent SW-166's extension filter was modelled on. The harness fixture
+# exercises .ts; the same wiring covers .tsx and .javascript because the
+# resolver is registered under all three ids and the file-extension match is
+# what selects the candidate path, not the language id (it is the same
+# heuristic for the three).
+
+parity_classes:
+  - id: "ts_add_file"
+    kind: "change_class"
+    label: "TypeScript-Datei hinzufügen / add a TypeScript file in a new package"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/typescriptparity_test.go"
+    test_line: "346"
+    test_name: "TestTSFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-TS.a"
+    note: "A new TypeScript file arrives in a new package: pure add path. The witness asserts the new callee resolves cross-module at the heuristic tier — the resolver's only tier — and the control symbols survive. The witness lands a heuristic edge into the new file and asserts the cross-module from-import was the synthesis path that produced it. Fixture label reads production Go parser to satisfy the shared closed vocabulary (D-12); the subject under test is the TS heuristic resolver at engine/link/resolve_typescript.go."
+
+  - id: "ts_modify_file"
+    kind: "change_class"
+    label: "TypeScript-Datei ändern / rewrite a TypeScript file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/typescriptparity_test.go"
+    test_line: "346"
+    test_name: "TestTSFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-TS.a"
+    note: "An indexed TypeScript file is rewritten in place: a function is added while existing nodes keep identity. The witness asserts the new node is present and the existing callee survives — pins the same-package identity-stability contract every rewrite class asserts."
+
+  - id: "ts_add_call_heuristic"
+    kind: "change_class"
+    label: "Heuristischen Aufruf hinzufügen / add a heuristic-tier cross-module call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/typescriptparity_test.go"
+    test_line: "346"
+    test_name: "TestTSFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-TS.a"
+    note: "A new cross-module call is added: `import { greet } from '../lib/util'; greet(...)` — the resolver's named-import bare-binding path. The witness asserts the edge lands at HEURISTIC tier (model.TierHeuristic), never at confirmed: the TS resolver is heuristic and must not mint confirmed edges (the G2SUB never-confirmed half). Tier heuristic, never confirmed."
+
+  - id: "ts_namespace_selector"
+    kind: "change_class"
+    label: "Namespace-Selector hinzufügen / add a namespace selector call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/typescriptparity_test.go"
+    test_line: "346"
+    test_name: "TestTSFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-TS.a"
+    note: "A namespace-selector call is added: `import * as mathx from '../lib/calc'; mathx.add(...)`. The TS family has BOTH the named-import bare binding AND the namespace selector (Python has only the bare binding; JVM has both). The witness pins the namespace selector's FQN resolution: the bound target is lib.add, the symbol in mathx's target file, and the edge lands at HEURISTIC tier. The two binding shapes share one resolver impl and run through one Resolve path; the witness pins the second shape separately because the linkage differs in the bareNameDirs vs selBaseDirs map keys."
+
+  - id: "ts_relative_import_skip"
+    kind: "change_class"
+    label: "Relativen Import überspringen + zählen / skip + count a relative import target"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/typescriptparity_test.go"
+    test_line: "346"
+    test_name: "TestTSFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-TS.b"
+    note: "A relative import (`import { x } from './missing'`) targets a path that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) — the G2SUB drop-and-count half on an absent file. The TS family's D1 rule keeps relative-path misses deterministic: a missing relative file is SKIPPED, not fabricated as an external node (only NON-relative misses are interned as externals — WP-14). An edge here would be the failure mode the level forbids."
+
+  - id: "ts_ambiguous_clauses"
+    kind: "change_class"
+    label: "Mehrdeutige Klauseln / two dirs claiming the same clause"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/typescriptparity_test.go"
+    test_line: "346"
+    test_name: "TestTSFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-TS.b"
+    note: "A relative path resolves to a directory that has BOTH a sibling file (`x/shared.ts`) AND a directory-module index (`x/shared/index.ts`) claiming the same `Cfg` symbol. This is the family-specific ambiguity shape: TS module resolution (D1) treats `./x/shared` as either candidate, and the resolver must drop the edge rather than guess. The witness asserts NEITHER call site resolves to a single edge and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but the TS resolver's `relModuleDir` returns BOTH candidates so the ambiguity is structural, not a directory-fan-out bug."
+
+  - id: "ts_delete_file"
+    kind: "change_class"
+    label: "TypeScript-Datei löschen / delete a TypeScript file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/typescriptparity_test.go"
+    test_line: "346"
+    test_name: "TestTSFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-TS.a"
+    note: "A TypeScript file declaring a function that TWO other packages import is deleted, so the per-file stale-node purge, the heuristic-edge sweep and the re-link all run over it. The witness requires the deleted callee absent, both importers still present, and the heuristic edges into the deleted callee gone — a stale heuristic edge would be the worst outcome here, even though the edge tier is lower than confirmed. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on TS as well as on Go. AC-4's control test (`TestTSLink_NoDirectoryFanOut`) is the negative-direction twin: it asserts the exact-path LINK-001 immunity separately, because the defect is symmetric — the family has it by construction, and that fact is the asset AC-4 pins."
+
+  - id: "ts_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / same-package file-to-file move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/typescriptparity_test.go"
+    test_line: "346"
+    test_name: "TestTSFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W2-TS.b"
+    note: "A TypeScript top-level function moves file-to-file WITHIN one package. The TS QN keys on the LAST package directory along the file path (langPackage convention, mirror of qn.go filePackage), so the moved function's identity is STABLE while its source file changes — two files then claim one qualified name inside a single change set, the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The witness asserts the function identity is preserved and its cross-module edge survives the re-home — pins the QN-stable re-home as a parity-holding transition."

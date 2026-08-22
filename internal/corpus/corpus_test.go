@@ -532,6 +532,19 @@ func TestCheckedInManifest_PRGateUnchanged(t *testing.T) {
 		// grammars parse it and the binder runs in-process), so it belongs on
 		// the PR gate exactly like hero-go.
 		"tier1-fixture-hero-jvm": true,
+		// SW-181 (language-GA program G3): the hero-python suite is a hermetic
+		// local fixture (Python, no network, no Python interpreter — the
+		// pure-Go gotreesitter grammar parses it and the heuristic resolver
+		// runs in-process), so it belongs on the PR gate exactly like
+		// hero-jvm and hero-go. The python pin (flask) is already on the gate.
+		"tier1-fixture-hero-python": true,
+		// SW-182 (language-GA program G6): the hero-typescript suite is a
+		// hermetic local fixture (TypeScript, no network, no TS toolchain —
+		// the pure-Go gotreesitter grammar parses it and the family resolver
+		// runs in-process, including the exact-path target set proven immune
+		// to LINK-001 directory fan-out), so it belongs on the PR gate
+		// exactly like hero-python, hero-jvm and hero-go.
+		"tier1-fixture-hero-typescript": true,
 	}
 	for _, e := range m.Entries {
 		if e.Tier > 2 {

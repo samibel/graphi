@@ -43,9 +43,25 @@ import (
 // v3 sidecar observed read-only has no such column and never migrates); the
 // FILE read keeps the older floor — its table is unchanged, and refusing to
 // serve intact rows would be a false unavailability.
+// languageSkipsSchemaVersion is the version whose 4 -> 5 step added
+// trust_language_skips. The PACKAGE read deliberately does NOT raise its floor
+// to it: a v4 sidecar's package rows are intact and refusing them would be a
+// false unavailability (the same reasoning that keeps the FILE read at 3).
+// Instead the absence is made VISIBLE — PackageEvidence.SkipsAvailable reads
+// false — so a consumer can never mistake "this sidecar cannot tell me" for
+// "nothing was skipped".
+// skipProvenanceSchemaVersion is the version whose 5 -> 6 step added
+// trust_skip_provenance. A schema floor is a NECESSARY condition for the
+// abstention reads and never a sufficient one: the sufficient condition is the
+// GENERATION's own provenance row, checked by skipProvenance below. The two are
+// different questions — "can this sidecar hold an abstention record" versus
+// "does the pass I am reporting on HAVE one" — and answering the second with
+// the first is what let a migration publish a false all-clear.
 const (
 	trustEvidenceSchemaVersion   = 3
 	packageEvidenceSchemaVersion = 4
+	languageSkipsSchemaVersion   = 5
+	skipProvenanceSchemaVersion  = 6
 )
 
 // Parse-status vocabulary of FileEvidence.ParseStatus (closed set). The
@@ -88,6 +104,18 @@ const (
 // tables is "no answer", never "no findings".
 var ErrTrustEvidenceUnavailable = errors.New("ingest: trust evidence unavailable")
 
+// ErrTrustSkipProvenanceMissing marks the one unavailability a schema probe
+// cannot see: the sidecar CAN hold an abstention record, but the generation
+// being read carries no provenance row, so no pass ever recorded one for it.
+// Every generation written before the record existed is in this state, and it
+// stays in it after a migration — a migration creates a table, it does not
+// re-run the binder. It wraps ErrTrustEvidenceUnavailable so every existing
+// fail-closed caller keeps treating it as "no answer", while a surface that
+// wants to print WHY can tell the two apart.
+var ErrTrustSkipProvenanceMissing = fmt.Errorf(
+	"%w: this generation carries no abstention provenance (it was recorded before the abstention record existed, or by a pass that wrote none)",
+	ErrTrustEvidenceUnavailable)
+
 // ErrTrustEvidenceNotFound marks a selective lookup that found no row for the
 // requested (generation, key) — including every generation mismatch: evidence
 // of another generation is stale evidence and is never served silently.
@@ -128,6 +156,38 @@ type PackageEvidence struct {
 	DroppedIntents int
 	ConfirmedEdges int
 	SkippedFiles   int
+
+	// Languages names EVERY semantic registrant holding a row for this package
+	// key under the generation, sorted. Language above collapses to "" once a
+	// directory carries more than one language's row (the fold is an aggregate
+	// and cannot honestly claim one), which loses the very fact a consumer of
+	// repo-global per-language counters needs: WHICH registrants this package
+	// is accounted by. Always populated — one entry for the single-language
+	// case, so the identity fold gains a fact rather than changing one.
+	Languages []string
+
+	// NamedSkips is the LEGIBLE ABSTENTION record of the semantic registrant(s)
+	// that produced this row: skip-reason name -> count (W0.g). It is joined
+	// onto the row from trust_language_skips at read time, by language.
+	//
+	// READ THE SCOPE BEFORE USING IT. These counters are REPOSITORY-GLOBAL for
+	// the language, not this package's: the binder tallies them per pass with
+	// NO file, package, symbol or call-site attribution, and for two of the
+	// JVM reasons (java_receiver_untyped, java_receiver_external) the callee is
+	// undeterminable by definition, so no site exists to attribute them to.
+	// A surface roll-up keyed on this row is a roll-up of a repo-global
+	// number and must say so; it is NOT a per-symbol or per-package
+	// accounting, and nothing here licenses the sentence "N sites in THIS
+	// package were skipped".
+	NamedSkips map[string]int
+	// SkipsAvailable distinguishes "no named skip was recorded" (true, empty
+	// NamedSkips) from "this cannot be answered for this generation" (false).
+	// It is a property of THE GENERATION, not of the sidecar's schema: a v4
+	// sidecar observed read-only has no skip table at all, and a generation
+	// written before the abstention record existed keeps reading false even
+	// after a migration created the table, because a migration cannot re-run
+	// the binder. Fail closed: absence is "no answer", never "no skips".
+	SkipsAvailable bool
 }
 
 // packageEvidenceFromResult folds one whole-repo typeresolve pass into the
@@ -240,10 +300,22 @@ func (i *Ingester) persistTrustEvidenceFull(ctx context.Context, generation stri
 		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_package_evidence"); err != nil {
 			return fmt.Errorf("ingest: clear package evidence: %w", err)
 		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_language_skips"); err != nil {
+			return fmt.Errorf("ingest: clear language skips: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_skip_provenance"); err != nil {
+			return fmt.Errorf("ingest: clear skip provenance: %w", err)
+		}
 		if err := insertFileEvidenceTx(ctx, tx, generation, rows); err != nil {
 			return err
 		}
-		return insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence())
+		if err := insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence()); err != nil {
+			return err
+		}
+		if err := insertLanguageSkipsTx(ctx, tx, generation, i.combinedLanguageSkips()); err != nil {
+			return err
+		}
+		return insertSkipProvenanceTx(ctx, tx, generation, i.semanticLanguages())
 	})
 }
 
@@ -297,7 +369,23 @@ func (i *Ingester) persistTrustEvidenceLive(ctx context.Context, touched map[str
 		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_package_evidence"); err != nil {
 			return fmt.Errorf("ingest: clear package evidence: %w", err)
 		}
-		return insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence())
+		// The skip rows are replaced under exactly the same gate as the package
+		// rows and in the same transaction: they describe the SAME whole-repo
+		// recompute, so a state where one is this pass's and the other the
+		// previous pass's must not be reachable.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_language_skips"); err != nil {
+			return fmt.Errorf("ingest: clear language skips: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM trust_skip_provenance"); err != nil {
+			return fmt.Errorf("ingest: clear skip provenance: %w", err)
+		}
+		if err := insertPackageEvidenceTx(ctx, tx, generation, i.combinedPackageEvidence()); err != nil {
+			return err
+		}
+		if err := insertLanguageSkipsTx(ctx, tx, generation, i.combinedLanguageSkips()); err != nil {
+			return err
+		}
+		return insertSkipProvenanceTx(ctx, tx, generation, i.semanticLanguages())
 	})
 }
 
@@ -317,6 +405,15 @@ func insertFileEvidenceTx(ctx context.Context, tx *sql.Tx, generation string, ro
 
 func insertPackageEvidenceTx(ctx context.Context, tx *sql.Tx, generation string, rows []PackageEvidence) error {
 	for _, r := range rows {
+		// trust_package_evidence.language is NOT NULL (schema 3 -> 4): the
+		// language column is the registry seam's honest statement of WHICH
+		// semantic registrant produced the row, and a row whose registrant is
+		// unknown has no claim on this table. Surface empty language as a
+		// skip — the row is NOT this table's to remember, and a write that
+		// would raise the constraint must not fail the whole pass.
+		if r.Language == "" {
+			continue
+		}
 		if _, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO trust_package_evidence
 			(generation_id, language, package_key, state, degraded_reason,
 			 type_errors, dropped_intents, confirmed_edges, skipped_files)
@@ -327,6 +424,136 @@ func insertPackageEvidenceTx(ctx context.Context, tx *sql.Tx, generation string,
 		}
 	}
 	return nil
+}
+
+// insertLanguageSkipsTx writes the pass's named abstention counters, one row
+// per (generation, language, skip name), in deterministic language-then-name
+// order. A zero count is never written: the row set is the list of reasons
+// the pass ACTUALLY abstained under, so an absent name means "not observed",
+// which is exactly what a reader should conclude.
+func insertLanguageSkipsTx(ctx context.Context, tx *sql.Tx, generation string, skips map[string]map[string]int) error {
+	langs := make([]string, 0, len(skips))
+	for l := range skips {
+		langs = append(langs, l)
+	}
+	sort.Strings(langs)
+	for _, lang := range langs {
+		names := make([]string, 0, len(skips[lang]))
+		for n := range skips[lang] {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			count := skips[lang][name]
+			if count <= 0 {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO trust_language_skips
+				(generation_id, language, skip_name, count) VALUES (?, ?, ?, ?)`,
+				generation, lang, name, count); err != nil {
+				return fmt.Errorf("ingest: persist language skip %s/%s: %w", lang, name, err)
+			}
+		}
+	}
+	return nil
+}
+
+// insertSkipProvenanceTx records WHAT THE ABSTENTION RECORD OF THIS GENERATION
+// COVERS: one sentinel row (language ”) saying a provenance-aware pass wrote
+// it at all, plus one row per semantic registrant that COMPLETED a run —
+// whether or not that registrant abstained from anything.
+//
+// The sentinel is written UNCONDITIONALLY, and that is the entire fix for the
+// two failure modes this feature had. Without it, "no skip rows" is ambiguous
+// between three states a user must be able to tell apart:
+//
+//	no provenance row          -> the record does not exist for this pass
+//	                              (pre-schema generation, or an old binary)
+//	sentinel, no registrants   -> no semantic registrant ran; nothing could
+//	                              have been recorded
+//	sentinel + registrants,
+//	  no skip rows             -> those registrants ran and abstained from
+//	                              nothing under a named reason
+//
+// Only the third is an all-clear. Collapsing them — which is what gating on the
+// sidecar's schema version did — publishes the first two as the third.
+func insertSkipProvenanceTx(ctx context.Context, tx *sql.Tx, generation string, langs []string) error {
+	if _, err := tx.ExecContext(ctx,
+		`INSERT OR REPLACE INTO trust_skip_provenance (generation_id, language) VALUES (?, '')`,
+		generation); err != nil {
+		return fmt.Errorf("ingest: persist skip provenance sentinel: %w", err)
+	}
+	for _, lang := range langs {
+		if lang == "" {
+			continue // never let a nameless registrant impersonate the sentinel
+		}
+		if _, err := tx.ExecContext(ctx,
+			`INSERT OR REPLACE INTO trust_skip_provenance (generation_id, language) VALUES (?, ?)`,
+			generation, lang); err != nil {
+			return fmt.Errorf("ingest: persist skip provenance for %s: %w", lang, err)
+		}
+	}
+	return nil
+}
+
+// skipProvenance answers the question every abstention read must ask FIRST:
+// does an abstention record exist for THIS generation, and which registrants
+// wrote it? It returns the registrant languages, sorted (empty but non-nil when
+// a pass recorded the generation with no semantic registrant at all).
+//
+// A generation with no sentinel row is ErrTrustSkipProvenanceMissing — never an
+// empty list. That is the fail-closed direction, and the distinction is the
+// feature: an empty registrant list means "nobody was in a position to abstain"
+// while a missing record means "I cannot tell you whether anybody was".
+func (i *Ingester) skipProvenance(ctx context.Context, generation string) ([]string, error) {
+	if err := i.trustEvidenceReadyAt(ctx, skipProvenanceSchemaVersion); err != nil {
+		return nil, err
+	}
+	if generation == "" {
+		return nil, fmt.Errorf("%w: no generation to look up", ErrTrustEvidenceNotFound)
+	}
+	rows, err := i.meta.QueryContext(ctx,
+		`SELECT language FROM trust_skip_provenance WHERE generation_id = ? ORDER BY language`, generation)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: read skip provenance: %w", err)
+	}
+	defer rows.Close()
+	recorded := false
+	out := []string{}
+	for rows.Next() {
+		var lang string
+		if err := rows.Scan(&lang); err != nil {
+			return nil, fmt.Errorf("ingest: scan skip provenance: %w", err)
+		}
+		if lang == "" {
+			recorded = true
+			continue
+		}
+		out = append(out, lang)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if !recorded {
+		return nil, fmt.Errorf("%w: generation %q", ErrTrustSkipProvenanceMissing, generation)
+	}
+	return out, nil
+}
+
+// SkipRegistrants returns the semantic registrants that recorded the abstention
+// record of the given generation — the provenance a reader needs in order to
+// interpret an EMPTY skip list. "java ran and abstained from nothing" and "the
+// java binder never ran over this generation" produce the same counters and
+// must not produce the same conclusion; only this list separates them, and it
+// is a fact about the PASS, unlike a capability matrix, which is derived from
+// the registry of whatever process happens to be reading.
+//
+// Fail-closed exactly like the counters themselves: a generation with no
+// provenance is ErrTrustSkipProvenanceMissing (wrapping
+// ErrTrustEvidenceUnavailable), never an empty list. Safe on read-only
+// ingesters.
+func (i *Ingester) SkipRegistrants(ctx context.Context, generation string) ([]string, error) {
+	return i.skipProvenance(ctx, generation)
 }
 
 // trustEvidenceReady fails closed when the sidecar's schema predates the
@@ -409,12 +636,14 @@ func (i *Ingester) PackageEvidence(ctx context.Context, generation, pkgKey strin
 	pe := PackageEvidence{Generation: generation, PackageKey: pkgKey}
 	n := 0
 	var reasons []string
+	var langs []string
 	for rows.Next() {
 		var r PackageEvidence
 		if err := rows.Scan(&r.Language, &r.State, &r.DegradedReason,
 			&r.TypeErrors, &r.DroppedIntents, &r.ConfirmedEdges, &r.SkippedFiles); err != nil {
 			return PackageEvidence{}, fmt.Errorf("ingest: read package evidence: %w", err)
 		}
+		langs = append(langs, r.Language)
 		n++
 		if n == 1 {
 			r.Generation, r.PackageKey = generation, pkgKey
@@ -450,7 +679,169 @@ func (i *Ingester) PackageEvidence(ctx context.Context, generation, pkgKey strin
 	if n > 1 {
 		pe.DegradedReason = strings.Join(reasons, "; ")
 	}
+	// Join the row's languages' REPO-GLOBAL named skip counters (W0.g). The
+	// union across languages is sound because the vocabularies are
+	// language-prefixed and therefore disjoint; the numbers stay repo-global
+	// either way, which is what PackageEvidence.NamedSkips' doc forbids
+	// readers from forgetting.
+	sort.Strings(langs)
+	pe.Languages = langs
+	skips, err := i.languageSkipsFor(ctx, generation, langs)
+	if err != nil && !errors.Is(err, ErrTrustEvidenceUnavailable) {
+		return PackageEvidence{}, err
+	}
+	if err == nil {
+		pe.SkipsAvailable = true
+		pe.NamedSkips = skips
+	}
 	return pe, nil
+}
+
+// PackageRegistrants answers, in ONE query, which semantic registrants hold an
+// evidence row for each of the given package keys under one generation —
+// package key -> sorted languages. A key with no row is ABSENT from the map,
+// and that absence is itself the answer a surface needs: no registrant claimed
+// that directory, so nothing there was ever in a position to abstain, and a
+// quiet abstention notice over it means "unexamined", not "clean".
+//
+// It exists so a surface that already holds the whole generation's counters
+// (LanguageSkips) does not re-read them once per package through
+// PackageEvidence — that shape cost O(packages x languages) round trips to
+// re-derive numbers the caller had. Same fail-closed contract as
+// PackageEvidence; safe on read-only ingesters. An empty key list is an empty
+// map, not a scan.
+func (i *Ingester) PackageRegistrants(ctx context.Context, generation string, pkgKeys []string) (map[string][]string, error) {
+	if err := i.trustEvidenceReadyAt(ctx, packageEvidenceSchemaVersion); err != nil {
+		return nil, err
+	}
+	if generation == "" {
+		return nil, fmt.Errorf("%w: no generation to look up", ErrTrustEvidenceNotFound)
+	}
+	out := map[string][]string{}
+	if len(pkgKeys) == 0 {
+		return out, nil
+	}
+	// The placeholder list is built from the key COUNT, never from the keys
+	// themselves: the keys stay bound parameters (repository-controlled paths
+	// are never concatenated into SQL).
+	args := make([]any, 0, len(pkgKeys)+1)
+	args = append(args, generation)
+	placeholders := make([]string, 0, len(pkgKeys))
+	for _, k := range pkgKeys {
+		placeholders = append(placeholders, "?")
+		args = append(args, k)
+	}
+	rows, err := i.meta.QueryContext(ctx, fmt.Sprintf(
+		`SELECT package_key, language FROM trust_package_evidence
+		 WHERE generation_id = ? AND package_key IN (%s)
+		 ORDER BY package_key, language`, strings.Join(placeholders, ", ")), args...)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: read package registrants: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var key, lang string
+		if err := rows.Scan(&key, &lang); err != nil {
+			return nil, fmt.Errorf("ingest: scan package registrants: %w", err)
+		}
+		out[key] = append(out[key], lang)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// languageSkipsFor unions the named skip counters of the given languages under
+// one generation. A sidecar predating trust_language_skips, or a GENERATION
+// with no abstention provenance, is ErrTrustEvidenceUnavailable — never an
+// empty map, which would read as "no skips" (fail closed). The provenance check
+// is what keeps a migrated pre-abstention generation reading "cannot answer"
+// instead of "nothing was skipped".
+func (i *Ingester) languageSkipsFor(ctx context.Context, generation string, langs []string) (map[string]int, error) {
+	if err := i.trustEvidenceReadyAt(ctx, languageSkipsSchemaVersion); err != nil {
+		return nil, err
+	}
+	if _, err := i.skipProvenance(ctx, generation); err != nil {
+		return nil, err
+	}
+	out := map[string]int{}
+	for _, lang := range langs {
+		rows, err := i.meta.QueryContext(ctx,
+			`SELECT skip_name, count FROM trust_language_skips
+			 WHERE generation_id = ? AND language = ? ORDER BY skip_name`, generation, lang)
+		if err != nil {
+			return nil, fmt.Errorf("ingest: read language skips: %w", err)
+		}
+		err = func() error {
+			defer rows.Close()
+			for rows.Next() {
+				var name string
+				var count int
+				if err := rows.Scan(&name, &count); err != nil {
+					return fmt.Errorf("ingest: scan language skips: %w", err)
+				}
+				out[name] += count
+			}
+			return rows.Err()
+		}()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// LanguageSkips returns the whole generation's named abstention counters,
+// keyed language -> skip name -> count: the repository-global record of every
+// site a semantic registrant refused to bind under a NAMED reason rather than
+// guessing (W0.g).
+//
+// The scope is the same one PackageEvidence.NamedSkips carries and the same
+// one every surface must restate: repository-global per language, with NO
+// file, package, symbol or call-site attribution.
+//
+// Fail-closed contract, and the distinction matters more here than anywhere
+// else. A sidecar predating the skip table, AND a generation that carries no
+// abstention provenance of its own, are both ErrTrustEvidenceUnavailable
+// ("cannot answer"); an EMPTY map under a RECORDED generation means "no named
+// skip was recorded by any registrant this pass" — which is a fact, not a claim
+// that nothing was skipped by some other mechanism. Pair it with
+// SkipRegistrants to learn who recorded it. An empty generation string is
+// ErrTrustEvidenceNotFound. Safe on read-only ingesters.
+func (i *Ingester) LanguageSkips(ctx context.Context, generation string) (map[string]map[string]int, error) {
+	if err := i.trustEvidenceReadyAt(ctx, languageSkipsSchemaVersion); err != nil {
+		return nil, err
+	}
+	if generation == "" {
+		return nil, fmt.Errorf("%w: no generation to look up", ErrTrustEvidenceNotFound)
+	}
+	if _, err := i.skipProvenance(ctx, generation); err != nil {
+		return nil, err
+	}
+	rows, err := i.meta.QueryContext(ctx,
+		`SELECT language, skip_name, count FROM trust_language_skips
+		 WHERE generation_id = ? ORDER BY language, skip_name`, generation)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: list language skips: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]map[string]int{}
+	for rows.Next() {
+		var lang, name string
+		var count int
+		if err := rows.Scan(&lang, &name, &count); err != nil {
+			return nil, fmt.Errorf("ingest: scan language skips: %w", err)
+		}
+		if out[lang] == nil {
+			out[lang] = map[string]int{}
+		}
+		out[lang][name] = count
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // ListFileEvidence returns up to limit file rows of the given generation in

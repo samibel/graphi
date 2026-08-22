@@ -15,12 +15,21 @@ package link
 // not over-resolved — honest per Invariant 2.
 type csharpResolver struct{}
 
+// csharpPkgExts is C#'s static package-source extension set (LINK-001, ADR 0011).
+// The registered C# parser claims exactly `.cs` (core/parse/parser_csharp.go:39);
+// `.csproj`, `.sln`, `.cshtml` and `.razor` declare no C# namespace member this
+// resolver can bind, so a `using` must not fan out onto them.
+var csharpPkgExts = []string{".cs"}
+
 // Language implements Resolver. The C# parser's language id is "c_sharp".
 func (csharpResolver) Language() string { return "c_sharp" }
 
 // Resolve implements Resolver for C# via ambient namespace clauses.
 func (csharpResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
-	b := binder{clauseOf: func(p string) string { return lastSegment(p, ".") }}
+	b := binder{
+		clauseOf:      func(p string) string { return lastSegment(p, ".") },
+		pkgTargetExts: csharpPkgExts,
+	}
 	seen := map[string]struct{}{}
 	for _, imp := range in.Imports {
 		if imp.Path == "" {

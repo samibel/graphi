@@ -663,8 +663,15 @@ func (w *javaBodyWalk) typeRefOf(n *gts.Node) (TypeRef, bool) {
 	return jw.typeRef(n)
 }
 
-// countArgs counts an argument_list's expression children (token children
-// excluded).
+// countArgs counts an argument_list's expression children (token children and
+// comment nodes excluded). The pre-fix implementation counted every child that
+// was not a syntactic token — which folded COMMENT nodes into the count, and
+// a call site like `r.apply(1 /* the scale */)` therefore reported arity 2 to
+// the binder while javac compiled arity 1. The defect (JVMSOUND-003) emitted a
+// WRONG most-derived overload edge at every same-arity overload pair sitting
+// beside the comment-bearing call. The fix is the per-type exclusion of the
+// tree-sitter comment node types, the same set Java parses as "the rest of the
+// line" / "until the next */" / "until the end of the block".
 func countArgs(args *gts.Node, lang *gts.Language) int {
 	n := 0
 	for i := 0; i < args.ChildCount(); i++ {
@@ -674,6 +681,10 @@ func countArgs(args *gts.Node, lang *gts.Language) int {
 		}
 		switch c.Type(lang) {
 		case "(", ")", ",":
+		case "line_comment", "block_comment", "multiline_comment":
+			// JVMSOUND-003 fix (SW-188, ADR 0013 D1/D2): a comment node inside
+			// an argument_list is not an argument — the arity javac compiles
+			// is the count of EXPRESSIONS, not the count of CST children.
 		default:
 			n++
 		}

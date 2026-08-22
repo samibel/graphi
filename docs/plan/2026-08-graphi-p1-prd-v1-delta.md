@@ -1,5 +1,109 @@
 # P1 PRD v1.0 — Delta against the shipped trust surface
 
+> ## AMENDMENT — 2026-08-19 (SW-171): a seventh additive v1 field, `abstention`
+>
+> Per D6 this amendment is **added**; nothing below is rewritten or re-pointed.
+> It exists because this repository's own guard says it must: the register test
+> at `surfaces/client/trust_report_test.go` pins the exact top-level property
+> count and states that *"a field appearing here is a contract decision that must
+> be argued in the delta document, never drift that slips in"*. This is that
+> argument.
+>
+> **What was added.** `trust_report_doc.abstention`
+> (`surfaces/client/trust_report.go`), an additive field under
+> `schema_version: 1` per contract §2.3 rule 7. It carries the semantic binders'
+> **named skip counters** — what a registrant REFUSED to bind, under which
+> reason — as `{available, unavailable_reason, scope, languages[]}`.
+>
+> **Why it exists.** The JVM binder skips every receiver it cannot type from a
+> declared form, under a named counter, rather than guessing (ADR 0008;
+> `engine/jvmresolve/body_java.go:68-78`). None of that reached a user, so an
+> agent asking `callers` on a Java method got a confident list and no signal
+> that call sites had been refused. Silent under-reporting is the confidence
+> laundering the surrounding rules forbid.
+>
+> **Composed at read time, not persisted in the snapshot — the SAME reasoning
+> §B1 recorded for `capabilities`, and it is restated rather than assumed.**
+> Adding a field to `trust.Snapshot` changes its canonical `Encode` bytes, which
+> **is** the digest contract, and would force `SnapshotSchemaVersion` to 2
+> against the `schema_version: 1` PRD v1.0 §6 itself fixes. The counters are
+> therefore persisted in their own generation-bound sidecar table
+> (`trust_language_skips`, ingest schema 5) and composed into the document at
+> read time. Measured, not assumed: indexing one fixture with a binary at the
+> parity candidate `3b8d43f` and with one carrying this change produced
+> **byte-identical** `nodes` + `edges` rows, on a Go repository and on a Java one
+> with the binder opted in.
+>
+> **The scope limit is part of the field, not a footnote.** The counters are
+> **repository-global per language** and carry NO file, package, symbol or
+> call-site attribution — for `java_receiver_untyped` and
+> `java_receiver_external` the callee is undeterminable by definition, so no
+> site exists to attribute them to even in principle. The `scope` property
+> restates this inside every document, and the `strict_query` roll-up restates
+> it inside every notice, so the numbers cannot travel without their limit.
+> A reader must not take a package roll-up for a per-symbol accounting.
+>
+> **Fail-closed presence.** `available: false` with a stated
+> `unavailable_reason` means the record could not be read; `available: true`
+> with an empty `languages` list means it was read and holds nothing. Those are
+> different answers and are never collapsed — a silent absence here would read
+> as an all-clear.
+>
+> **What did NOT change.** `query.Result` and the Stable-12 wire contract are
+> byte-untouched (`engine/query` carries no diff);
+> `parityreport.CandidateSHA` is unmoved; no published parity row or evidence
+> row was touched. Product bytes DID move (the change touches compiled files),
+> so a parity dispatch is unpublishable until the next scheduled candidate move
+> — expected and precedented, see the Wave 0 handoff §8 and its 2026-08-19
+> amendment.
+
+> ## AMENDMENT — 2026-08-19 (SW-171, review round 1): `abstention.registrants`, and availability rebound to the generation
+>
+> Added, not rewritten (D6). The paragraph above titled *Fail-closed presence*
+> stated a guarantee the implementation did not keep; this amendment records
+> what the guarantee now rests on, and the two defects that made the correction
+> necessary. Both were found by independent review, reproduced, and are stated
+> here rather than only in the ticket.
+>
+> **`abstention.registrants[]` — an eighth property of the block, not of the
+> document.** It names the semantic registrants that recorded THIS graph
+> generation. Without it, `available: true` + `languages: []` is one set of
+> bytes for two different worlds: "the binders ran and abstained from nothing"
+> and "no binder ran at all". The second is by far the more common — the JVM
+> registrants are opt-in until WP-J11 — and it was being published as the first.
+> The document's `capabilities` block does not disambiguate it and must not be
+> used to: capabilities is derived from the registry of the process READING the
+> report, so a store indexed WITHOUT the binder, read by a process with
+> `GRAPHI_JVM_TYPERESOLVE=1`, reports `java: typed-confirmed` beside an empty
+> abstention list. Measured on a real store, both before and after.
+>
+> **Availability is a property of the GENERATION, never of the sidecar's
+> schema.** Round 1 gated `available` on the sidecar's schema version, so
+> creating the table answered for every pass that predated it. Reproduced on a
+> genuine schema-4 store written by a pass that abstained four times: it read
+> `available:false` (correct), then a `graphi sync` — which migrates, reports
+> *"up to date"*, and re-records nothing — flipped the SAME generation to
+> `available:true, languages: []`. A false all-clear reachable by the ordinary
+> upgrade path, since only `rebuild` re-records. The record is now bound to the
+> generation by `trust_skip_provenance` (ingest schema **6**): a sentinel row per
+> recorded generation plus one row per registrant that ran, written only by a
+> pass that actually persists evidence, and deliberately EMPTY after a
+> migration. A generation with no row reads `available:false` with a reason that
+> names the remedy.
+>
+> **Version skew, disclosed (it was not before).** An old (pre-schema-5) binary
+> running a full pass on a migrated store still succeeds and does not downgrade
+> `user_version`, but it has no `DELETE` for the two new tables, so the previous
+> generation's skip and provenance rows are orphaned — measured: 3 skip rows and
+> 2 provenance rows left under generation `dc147638…` while package evidence
+> moved to `f9ea5674…`. Reads are generation-filtered, so this is not a
+> correctness break, but it accumulates across skew cycles and now does so in two
+> tables rather than one. The compensating change is that the same skew now
+> fails CLOSED: the generation such a pass writes carries no provenance, so the
+> abstention block reads unavailable-with-a-reason instead of round 1's
+> all-clear. The opaque `NOT NULL constraint failed: trust_package_evidence.language`
+> crash belongs to the pre-existing 3 → 4 step and is unchanged by either round.
+
 | | |
 |---|---|
 | **Status** | Binding reconciliation. Records an owner decision; supersedes nothing on its own. |

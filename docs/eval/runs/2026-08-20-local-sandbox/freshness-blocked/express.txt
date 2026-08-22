@@ -1,0 +1,8 @@
+=== express ===
+eval:   WARNING class agent_tools ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING class search ran 20 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool agent_context_p95 ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool warm_search_p95 ran 20 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval: FAIL - full run over express: incremental: the index contains no modifiable Go source files to change

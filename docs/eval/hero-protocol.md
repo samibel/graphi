@@ -110,6 +110,22 @@ silently counts as met is worse than no budget, because it renders green;
 limit, and `cmd/eval` rejects **any** numeric zero anywhere in the budget
 artifact.
 
+### Comparison-class budgets (SW-191 · EVALBUDGET-001 closure)
+
+The historical block (`real_repos.selection`) is and remains the reference-class
+ceiling. **SW-191** adds a sibling block, `historical_ceilings`, that records
+comparison-class ceilings (`runner_class: local-sandbox`) derived from the
+two-dispatch campaign over each pin — `guava`/`okio`/`kotlinx_serialization`
+from SW-177 and `flask`/`ky`/`express` from the SW-191 perf re-run. The CLI
+applies them via the new branch in `cmd/eval/budgets.go:97-122`: a budget is
+accepted on the comparison class **only when** it is declared historical. A
+ratcheting budget on the comparison class fails closed — that's the whole
+defect the EVALBUDGET-001 fix prevents — and a comparison-class ceiling
+applied through this branch is **not** comparable to a reference-class run
+and must never be read as one. The `historical_ceilings.per_repo[<repo>].notes`
+field carries the EVALFRESH-001 freshness block per repo (the freshness
+suite is Go-only and aborts on every non-Go pin).
+
 ## Pinned real repositories (EVAL-02 selection)
 
 Three of the SHA-pinned `corpus/manifest.json` repos, per the master plan (one

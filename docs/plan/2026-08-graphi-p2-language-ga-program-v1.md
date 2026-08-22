@@ -1,5 +1,79 @@
 # graphi P2 — Language GA program v1 (every shipped language to canonical GA, starting with Java/Kotlin)
 
+> ## AMENDMENT — 2026-08-19 (SW-183): ADR-W1's premise is withdrawn; its concern is not
+>
+> Per D6 this amendment is **added**. Nothing below is rewritten, re-pointed or
+> deleted — the statements it supersedes are named here rather than edited in
+> place, so a reader who arrives at them sees what they said and why they are
+> wrong.
+>
+> **1. Three statements in this document are FALSE and are withdrawn.** All three
+> say the same thing in different words:
+>
+> | where | statement | status |
+> |---|---|---|
+> | **§3, G1** | *"today SQL reads `cross-file-heuristic` while its resolver deliberately proves nothing"* | **FALSE** |
+> | **§4, finding 3** | *"SQL's capability label is registration-derived, not outcome-derived"* — as a claim about SQL | **FALSE as applied to SQL**; true as a claim about the derivation in general |
+> | **§7, wave 5** | *"SQL first requires the ADR-W1 re-grade: either the resolver learns something provable or the declared level drops"* | **DISCHARGED with no re-grade** — the resolver already proves something |
+>
+> SQL's resolver **does** resolve cross-file references. A view referencing a
+> table declared in a sibling file yields
+> `references query.active_users → schema.users` at the `derived` tier.
+> Established by measurement plus **two counterfactuals**: removing
+> `l.Register(sqlResolver{})` makes the edge disappear, and replacing
+> `sqlResolver.Resolve`'s body with `return nil` makes the capability audit report
+> an over-claim. The mechanism the original claim missed: an empty binder disables
+> the **import-keyed** mechanisms only, while `resolveRefs`' same-directory
+> resolution still runs. The false claim originated in `sqlResolver`'s own doc
+> comment (*"it emits no edge"*) and was copied verbatim into all five downstream
+> records, this document's three included.
+>
+> **The bound is published with the capability**, so the correction does not
+> become the next over-claim: SQL resolves cross-file **within one directory
+> only** and emits **no `imports` edge**. That is inside `cross-file-heuristic`'s
+> own definition, not a defect.
+>
+> **2. G1's general requirement STANDS and is now met differently than G1
+> imagined.** G1 says *"the derivation must reflect resolver **outcomes**, not
+> bare registration"*. The concern is correct — a registered resolver that
+> resolves nothing would still grade `cross-file-heuristic`, and mutation M4
+> manufactures exactly that state. But the fix G1 implies (a stronger predicate
+> inside `trust.Capabilities`) is **rejected**, because "demonstrated" is a
+> property of a fixture ingest and cannot be evaluated where a pure read-time
+> derivation runs; caching it back reintroduces the hand-maintained table the
+> design exists to avoid. **The outcome binding lives in CI instead**:
+> `surfaces/client/capabilityaudit_test.go` asserts every shipped language's
+> derived level against a measured cross-file edge, in both directions, and fails
+> the build for an unfixtured new language. Ruling:
+> [ADR 0012](../adr/0012-capability-levels-graded-on-demonstrated-evidence.md) D4.
+>
+> **3. §7's Wave 3 sketch assumption about `bash` is withdrawn.** The sketch
+> assumed bash was `intra-file-only`; the live derivation says
+> `cross-file-heuristic` and **the live derivation is right** — `source ./util.sh`
+> followed by a call to a function the sourced script defines yields both a
+> `calls` edge (derived) and an `imports` edge (heuristic). Measured; row 2 of the
+> audit.
+>
+> **4. All 22 shipped languages are now graded against evidence, and none
+> over-claims.** 16 of 16 languages with a registered resolver produce a genuine
+> cross-file edge; 6 of 6 without one produce none. Levels are unmoved
+> (`typed-confirmed` 1 · `cross-file-heuristic` 15 · `intra-file-only` 5 ·
+> `parse-only` 1), so **no re-grade was made** and the Wave 3 grading stories
+> (SW-184, SW-185) may consume the published table instead of re-deriving levels:
+> [`../rc/capability-audit-2026-08-19.md`](../rc/capability-audit-2026-08-19.md).
+>
+> **5. One genuine defect was found, in a language this document did not
+> suspect.** **LINK-004** — Python's dotted module imports (`from pkg.util import
+> helper`, `import pkg.util`) resolve to **nothing**. Filed, disclosed per D8, not
+> fixed, and pinned by a test that fails with instructions when it closes.
+> Python's **level** is untouched and remains SW-181's to prove. Audit §3.
+>
+> **What did NOT change.** `parityreport.CandidateSHA` is unmoved; the published
+> parity matrix and every evidence row are untouched; no graph byte moves. The
+> product-byte ceremony this story incurs is **owed, not performed** — product
+> bytes had already diverged from candidate `3b8d43f` before it, and that
+> divergence is a known escalated owner decision.
+
 - **Status:** PROPOSED — no work package has started; every evidence row this
   program names is born UNKNOWN, and UNKNOWN counts as *not passed*.
 - **Date:** 2026-08-14
@@ -35,7 +109,7 @@ lighter one, and not a prose promotion. Go's bar, named by artifact:
 | Evidence Go has | Artifact |
 |---|---|
 | `confirmed`-tier semantic edges (type-checker-proven) | `engine/typeresolve` (go/types, third ingest phase; `Languages()` = `["go"]`, `engine/typeresolve/check.go:44`) |
-| Hermetic change-class parity, byte-exact, both stores | `engine/conformance` (`TestFullVsIncremental_ByteParity`), bound to [`../rc/parity-classes.yaml`](../rc/parity-classes.yaml) by the six drift-guard directions |
+| Hermetic change-class parity, byte-exact, both stores | `engine/conformance` (`TestFullVsIncremental_ByteParity`), bound to [`../rc/parity-classes.yaml`](../rc/parity-classes.yaml) by the seven drift-guard directions (corrected from "six" 2026-08-19, SW-180 — see §2's dated block) |
 | Real-repository parity with the built binary | `internal/parity` + `cmd/parity`, published at [`../rc/parity-matrix-real-repo.md`](../rc/parity-matrix-real-repo.md); defects filed (PARITY-001/002), pinned, never hidden |
 | Pinned, measured, stratified corpus | `corpus/manifest.json` v3 (six Go repos, 10-property stratification, full-sha pins, `measured` blocks from real clones) |
 | Hero gate: 20 scenarios over exactly the 12 ops | `corpus/hero/*.yaml` + `cmd/eval` hero gate on `corpus/fixtures/hero-go` |
@@ -73,8 +147,10 @@ rows will use (`GA-LANG-<lang>-G<n>`).
 - **G3 — Hermetic change-class parity.** Rows for L in the declarative
   conformance table: full-vs-incremental snapshot **byte** parity on MemStore
   **and** SQLite, non-vacuous witnesses proven red-without-the-change, bound to
-  a per-family `docs/rc/parity-classes-<family>.yaml` by the same six
-  drift-guard directions. Every Go class gets an explicit per-language
+  a per-family `docs/rc/parity-classes-<family>.yaml` by the same **seven**
+  drift-guard directions (corrected from "six" 2026-08-19, SW-180 — see the
+  dated block at the end of this section; a six-direction guard is missing
+  VERDICT and reproduces D-11). Every Go class gets an explicit per-language
   applicability disposition (`applicable` / `adapted` / `not_applicable` +
   reason), plus language-specific classes (§5, WP-J5).
 - **G4 — Real-repository parity.** `internal/parity` drives the built binary
@@ -99,6 +175,38 @@ rows will use (`GA-LANG-<lang>-G<n>`).
   `GA-LANG-<lang>-G2..G8` row per gate under the evidence-index discipline, and
   the language appears in the machine-encoded GA-language mechanism (§6), whose
   check requires all of the above.
+
+> **Corrected 2026-08-19 (SW-180, rebuild round 2). This document said SIX
+> drift-guard directions in three places. It is SEVEN, and the missing one is
+> `VERDICT`.** Counted from the `t.Run` calls in
+> `engine/conformance/paritymatrix_test.go`, each verified at its line:
+> **MISSING `:206`, PHANTOM `:225`, KIND `:240`, VERDICT `:286`, OWNER `:408`,
+> AXIS `:460`, VOCABULARY `:483`.**
+>
+> Corrected in place at three sites, none silently: **G3 above** (the normative
+> per-family requirement), **§1's "Evidence Go has" table** (which was flatly
+> wrong about the Go guard), and **WP-J5 in §5.2** (the work package that
+> *creates* a family table and its guard). The source's own header comment
+> (`paritymatrix_test.go:167-168`) also says "SIX" and is likewise stale; the
+> count here was taken from the `t.Run` calls, not from that comment.
+>
+> **Why this mattered enough to amend a PROPOSED plan.** G3 is inside the
+> authority scope that
+> [`2026-08-per-language-ga-template-v1.md`](2026-08-per-language-ga-template-v1.md)
+> §0 declares binding over itself. The template had already corrected the count
+> to seven in its §3/S7 and then handed authority back here — so a story that
+> read §0 *carefully* would have built a **six**-direction family guard missing
+> VERDICT, while a careless reader who used only the template's table would have
+> been right by accident. SW-181, SW-182, SW-184 and SW-185 each read G3 for
+> what their family guard must contain. A six-direction guard reproduces
+> divergence **D-11** — the JVM instance's own missing-guard hole — into four
+> more family tables, each under a `GA-LANG-<lang>-G3` row reading PASS. That is
+> the precise failure the template exists to prevent, and it had been promoted
+> one level up into the authority chain.
+>
+> *(Two other "six"es in this file are correct and were left alone: the §1 table
+> and §4 both say **six Go repos / six Go pins**, which is a corpus count, not a
+> guard-direction count.)*
 
 **Cross-cutting rule (not a row):** defects found on the way get IDs and stay
 published as executable data (the `known_defect`/pinned-behaviour pattern of
@@ -126,6 +234,43 @@ The invariant at every level: **no operation lies.** `callers` on a YAML file
 returns a well-formed honest empty (the `hero-03-search-empty` pattern), and
 the trust report names the level. "GA" never appears beside a language on any
 surface without its level.
+
+> **Added 2026-08-19 (SW-180).** The per-slot generalization of §2's gates —
+> which asset each gate needs, where it lives, what a language may legitimately
+> abstain from and what its evidence class degrades to when it does — is
+> [`2026-08-per-language-ga-template-v1.md`](2026-08-per-language-ga-template-v1.md).
+> That document also records, from a measured non-JVM instantiation, that the
+> honest-empty invariant as written above is **not satisfiable today at ANY
+> capability level below `typed-confirmed`**, in two distinct shapes — and that
+> `outcome: empty` alone — the `hero-03-search-empty` assertion — does **not**
+> discriminate an honest empty from a lying one. Both are owner decisions
+> raised there, not resolved here; this paragraph is added so a reader of §3
+> does not take the invariant as already met.
+>
+> **Widened 2026-08-19 (SW-180, rebuild round 1), because the first version of
+> this paragraph said "`parse-only`" and that is one level too narrow — it
+> exempted the level SW-181 and SW-182 target.** Filed as **LANGHONEST-001**:
+>
+> - **`parse-only`** — a parse-only file has no graph node at all, so three
+>   Stable-12 operations answer as though the anchor were **mistyped**.
+> - **`intra-file-only` AND `cross-file-heuristic`** — `related_files` states
+>   *"anchor … resolved (file) but has no both edges to other files"* **as
+>   fact** over a file that carries the reference. Measured on `main.css`
+>   (`@import`), `readme.md` (a link), and — decisively — on **`app.py`
+>   (`from pkg.util import helper`), which is `cross-file-heuristic`, has a
+>   registered resolver, and whose extractor demonstrably computes imports**.
+>   All **three named above return the byte-identical sentence, and so do
+>   `settings.yaml` (CONTESTABLE — see the template's §5.2; do not rely on it),
+>   `empty.py` and `notes.md`: six of the six resolvable files in the 12-file
+>   fixture, re-measured 2026-08-19.** *(This sentence read "All four" while
+>   naming three files — left over from a version that counted `settings.yaml`
+>   as equal evidence before §5.2 reclassified it.)* This shape is the more
+>   dangerous, because `outcome` and `method` both read as a **successful
+>   answer** rather than as a refusal.
+>
+> **The practical consequence for SW-181 and SW-182:** neither may treat
+> `confidence.method == "no_edges"` on its own language as the honest-empty
+> shape. It is the shape the defect takes at their level.
 
 ## 4. Where Java and Kotlin stand today (gap analysis, code-grounded)
 
@@ -243,12 +388,12 @@ The product never gains a toolchain dependency.
 | **WP-J2** | Extractor deepening: field nodes (Java) / property nodes (Kotlin) + declared-type metadata (ADR 0008 D3); then the `qn.go`-analog identity map with byte-exact golden cross-test (G2a) | Snapshot-byte change is versioned + re-baselined deliberately, conformance re-run in the same commit |
 | **WP-J3** | Java binder (phases A–C), dark behind the kill switch; purity/determinism tests (`engine/link/purity_test.go` pattern); named skip counters for every untyped path | G2b invariant tests green; zero confirmed edges to external targets |
 | **WP-J4** | Kotlin binder on the shared table infrastructure; inferred-val / scope-function / extension-receiver skip counters as first-class observability | same as WP-J3 + the D2 share measurement published |
-| **WP-J5** | Hermetic change-class rows: new `docs/rc/parity-classes-jvm.yaml` (same constrained YAML subset, own `matrix_version`, same six guard directions) + harness rows, both stores, non-vacuous witnesses | Drift guard green; every Go class dispositioned (see below) |
+| **WP-J5** | Hermetic change-class rows: new `docs/rc/parity-classes-jvm.yaml` (same constrained YAML subset, own `matrix_version`, same **seven** guard directions — corrected from "six" 2026-08-19, SW-180, see §2's dated block; six omits VERDICT) + harness rows, both stores, non-vacuous witnesses | Drift guard green; every Go class dispositioned (see below) |
 | **WP-J6** | Corpus deepening: guava to the v3 standard; new pins (candidates below — **pins must be MEASURED at pin time**); JVM stratification (~10 axes) | Manifest v3 discipline holds for every JVM entry |
 | **WP-J7** | Real-repo parity over the JVM pins via `internal/parity`; publish; file defects | Entry criterion (ADR 0008 D8): PARITY-001/002 fixes land first, else every JVM verdict starts PARTIAL for non-JVM reasons |
 | **WP-J8** | Hero-JVM: `corpus/fixtures/hero-java` + `hero-kotlin`, ~20 scenarios each over the 12 ops, incl. confirmed-tier-pinning anchors (`tier == confirmed` witnesses) and honest-empty scenarios for the untyped gaps | Hero gate green in `cmd/eval` |
 | **WP-J9** | Differential ground-truth CI job (`jvm-groundtruth.yml`, nightly/dispatch, runner-only JDK) | Soundness direction: zero counterexamples |
-| **WP-J10** | Perf + budget: the four suites over the JVM corpus; runs published; Kotlin's 337 KB blob inside the budget gate; `GA-LANG-java-*` / `GA-LANG-kotlin-*` evidence rows created (born UNKNOWN) | Raw artifacts under `docs/eval/runs/…` |
+| **WP-J10** | Perf + budget: the four suites over the JVM corpus; runs published; Kotlin's 337 KB blob inside the budget gate; `GA-LANG-java-*` / `GA-LANG-kotlin-*` evidence rows created (born UNKNOWN — **and the ordering is load-bearing: create the rows only while the language has NO `ga-language` matrix row, and add the matrix row last, once every row reads PASS. `internal/coverage/galang.go:129-131` raises a violation for EVERY non-PASS row, so an UNKNOWN row under an existing matrix row is a RED build**) | Raw artifacts under `docs/eval/runs/…` |
 | **WP-J11** | The flip: registries report java/kotlin at `typed-confirmed`; `capability_test.go` extended; `language-support.md` + `stability-tiers.md` updated; §6 check fed `java`, `kotlin` | **Stop-ship:** any open `JVMSOUND-0xx`; any evidence row UNKNOWN/STALE |
 
 **Change-class mapping (WP-J5).** Map directly: `add_file`, `modify_file`,

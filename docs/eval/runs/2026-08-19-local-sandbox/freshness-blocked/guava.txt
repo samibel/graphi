@@ -1,0 +1,33 @@
+$ eval -manifest corpus/manifest.json -full-run guava -incremental-changes 100 \
+       -runner-class local-sandbox -reference-scenario docs/eval/reference-scenario.json
+
+eval: NOTE - guava on runner class local-sandbox (comparison) is NOT the reference scenario; these numbers are not reference evidence and freeze no budget
+eval: wrote full-run report to /tmp/sw177-wd/fb.json
+eval: query latency over guava — 223 timed executions, floor 1000 per class (sufficient=false)
+eval:   class agent_tools  n=33     p50 0.11 ms  p95 366.68 ms  (sufficient=false)
+eval:   class search       n=40     p50 0.19 ms  p95 0.28 ms  (sufficient=false)
+eval:   class structural   n=150    p50 0.06 ms  p95 0.16 ms  (sufficient=false)
+eval:   gate warm_search_p95            UNKNOWN  this run is guava on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only
+eval:   gate caller_callee_impact_p95   UNKNOWN  this run is guava on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only
+eval:   gate agent_context_p95          UNKNOWN  this run is guava on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only
+eval:   WARNING class agent_tools ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING class search ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool agent_context_p95 ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval:   WARNING gate pool warm_search_p95 ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS
+eval: progress stalls over guava — 3408 event(s), 3407 interval(s) (observable=true)
+eval:   stall     p50 0.000 s  p95 0.002 s  max 1.632 s
+eval:   boundaries lead-in 0.000 s  tail 0.000 s (neither is a stall)
+eval:   phase checkpoint   n=1      p95 0.000 s  max 0.000 s
+eval:   phase done         n=1      p95 0.124 s  max 0.124 s
+eval:   phase fts          n=1      p95 0.089 s  max 0.089 s
+eval:   phase link         n=52     p95 0.026 s  max 1.632 s
+eval:   phase parse        n=3299   p95 0.002 s  max 0.227 s
+eval:   phase resolve      n=1      p95 0.045 s  max 0.045 s
+eval:   phase walk         n=51     p95 0.034 s  max 0.053 s
+eval:   phase write        n=1      p95 0.001 s  max 0.001 s
+eval:   gate progress_stall_p95   UNKNOWN  this run is guava on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only
+eval: FAIL - full run over guava: incremental: the index contains no modifiable Go source files to change
+
+exit status: 1

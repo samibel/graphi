@@ -25,12 +25,21 @@ produces each row is in the last column.
 | # | Metric | Before | After | Reproduce |
 |---|--------|--------|-------|-----------|
 | 1 | Taint recall (vuln-go) | **0/4**, silent all-clear | **5/5**, 0 false positives, precision ~1.0 | `go test ./engine/ingest/ -run TestTaintE2E_VulnGoRecall -v` |
-| 2 | Import edges/node (fan-out) | **15.56** (→ 4.27M edges on Spring) | **0.96** (budget < 8) | `go test ./engine/ingest/ -run TestLinkFanout_EdgeExplosionBudget -v` |
+| 2 | Edges/node after the import fan-out fix | **15.56** (→ 4.27M edges on Spring; that figure was import edges per node) | **0.96** (budget < 8) | `go test ./engine/ingest/ -run TestLinkFanout_EdgeExplosionBudget -v` |
 | 3 | Storage bytes/edge | **~500** (→ 2.3 GB) | **226.7** (budget < 360) | `go test ./engine/ingest/ -run TestStorageBudget_BytesPerEdge -v` |
 | 4 | Full index time | 4m48s | proxied¹ | `go run ./cmd/bench -budget bench/bench-budget.yml` |
 | 5 | Link-phase progress | minutes of silence | **5 incremental events** (0→200) | `go test ./engine/ingest/ -run TestLinkProgress_Incremental -v` |
 | 6 | dead_symbol false positives | "very many" (@Test/@Bean/main) | **0 warnings** on entry points | `go test ./engine/ingest/ -run TestDiagnose_EntryPointsNotDead -v` |
 | 7 | unresolved_reference diagnostics | O(edges) — one per edge | **1 per target** (with a count) | `go test ./engine/diagnostic/ -run TestUnresolvedRef_AggregatedByTarget -v` |
+
+² Metric 2's "after" figure is **total** edges per node, not imports-only: the
+cited test asserts `len(edges)/len(nodes)` over its fixture (416 nodes, 400
+edges, of which 256 `defines` and 144 `imports`), so imports-only would read
+0.35. The "before" figure is imports-per-node on Spring, so the two columns are
+not the same ratio — the budget the gate enforces (< 8) is on the total. Noted
+2026-08-16 while cross-checking this metric against ADR 0010's real-repo
+imports-per-node figures (cobra 0.36, gin 0.15, grpc-go 1.58); the label was
+mislabelled, the measurement and the budget were not.
 
 ¹ Full-index wall-clock time is machine-bound and flaky as a checked-in
 assertion, so it is not a synthetic gate. It is covered by the bench harness's

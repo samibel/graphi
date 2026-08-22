@@ -52,9 +52,7 @@ var subcommandHelp = map[string]subHelp{
 		"graphi index -root . -db ~/.graphi/graph.db -meta ~/.graphi/meta",
 	},
 	"sync": {
-		"bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch). " +
-			"Known open defect PARITY-003: under the default balanced profile, sync can keep a superset of the imports edges rebuild produces " +
-			"(deterministic, imports only, dotted module paths); use rebuild or -profile full when exact imports fidelity matters — see docs/rc/parity-matrix-real-repo.md",
+		"bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch)",
 		"graphi sync [-root <repo>] [-db path] [-meta dir] [-profile name]",
 		"git switch feature/login && graphi sync",
 	},

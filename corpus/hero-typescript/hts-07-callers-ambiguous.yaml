@@ -1,0 +1,16 @@
+id: hts-07-callers-ambiguous
+description: >
+  salute is declared in three modules (api.Speaker, impl.English, org.German),
+  so resolving the symbol is ambiguous — the result reports the three
+  candidates and never picks one. This is the G2SUB ambiguous-clauses shape
+  (the same drop-and-count force AD-0009 ruled for Go and the Python hero
+  fixture inherited) — the heuristic resolver never guesses among clauses
+  that collide.
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: callers
+  args:
+    symbol: salute
+  area: agent_mcp
+expect:
+  outcome: ambiguous

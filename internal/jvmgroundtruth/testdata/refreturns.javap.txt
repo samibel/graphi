@@ -1,0 +1,129 @@
+Compiled from "App.java"
+public class a.App {
+  public a.App();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public int run(a.Derived);
+    descriptor: (La/Derived;)I
+    Code:
+       0: aload_1
+       1: invokevirtual #7                  // Method a/Derived.self:()La/Derived;
+       4: invokevirtual #13                 // Method a/Derived.tag:()I
+       7: ireturn
+
+  public int viaIface(a.HasSeed);
+    descriptor: (La/HasSeed;)I
+    Code:
+       0: aload_1
+       1: invokeinterface #17,  1           // InterfaceMethod a/HasSeed.seed:()I
+       6: invokestatic  #22                 // InterfaceMethod a/HasSeed.base:()I
+       9: iadd
+      10: ireturn
+
+  public int local(a.Derived);
+    descriptor: (La/Derived;)I
+    Code:
+       0: new           #25                 // class a/App$1L
+       3: dup
+       4: aload_0
+       5: aload_1
+       6: invokespecial #27                 // Method a/App$1L."<init>":(La/App;La/Derived;)V
+       9: invokevirtual #30                 // Method a/App$1L.go:()I
+      12: ireturn
+}
+Compiled from "App.java"
+class a.App$1L {
+  final a.Derived val$d;
+    descriptor: La/Derived;
+
+  a.App$1L();
+    descriptor: (La/App;La/Derived;)V
+    Code:
+       0: aload_0
+       1: aload_2
+       2: putfield      #1                  // Field val$d:La/Derived;
+       5: aload_0
+       6: invokespecial #7                  // Method java/lang/Object."<init>":()V
+       9: return
+
+  int go();
+    descriptor: ()I
+    Code:
+       0: aload_0
+       1: getfield      #1                  // Field val$d:La/Derived;
+       4: invokevirtual #13                 // Method a/Derived.tag:()I
+       7: ireturn
+}
+Compiled from "Base.java"
+public class a.Base {
+  public a.Base();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public a.Base self();
+    descriptor: ()La/Base;
+    Code:
+       0: aload_0
+       1: areturn
+}
+Compiled from "Derived.java"
+public class a.Derived extends a.Base {
+  public a.Derived();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method a/Base."<init>":()V
+       4: return
+
+  public a.Derived self();
+    descriptor: ()La/Derived;
+    Code:
+       0: aload_0
+       1: areturn
+
+  public int tag();
+    descriptor: ()I
+    Code:
+       0: iconst_1
+       1: ireturn
+
+  public a.Base self();
+    descriptor: ()La/Base;
+    Code:
+       0: aload_0
+       1: invokevirtual #7                  // Method self:()La/Derived;
+       4: areturn
+}
+Compiled from "HasSeed.java"
+public interface a.HasSeed {
+  public abstract int seed();
+    descriptor: ()I
+
+  public static int base();
+    descriptor: ()I
+    Code:
+       0: iconst_5
+       1: ireturn
+}
+Compiled from "Impl.java"
+public class a.Impl implements a.HasSeed {
+  public a.Impl();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  public int seed();
+    descriptor: ()I
+    Code:
+       0: iconst_3
+       1: ireturn
+}

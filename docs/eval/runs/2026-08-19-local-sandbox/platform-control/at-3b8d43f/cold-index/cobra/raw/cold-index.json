@@ -1,0 +1,401 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "cobra",
+  "collected": true,
+  "samples": 10,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/tmp/sw177-wd/cur",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:11Z",
+      "clone_ms": 1925,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-01/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-01/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 193,
+        "peak_rss_mb": 354,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 356,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:13Z",
+      "clone_ms": 1953,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-02/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-02/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 193,
+        "peak_rss_mb": 309,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 313,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:16Z",
+      "clone_ms": 2059,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-03/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-03/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 188,
+        "peak_rss_mb": 336,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 338,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-03.json"
+    },
+    {
+      "run": 4,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:19Z",
+      "clone_ms": 2060,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-04/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-04/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 196,
+        "peak_rss_mb": 328,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 329,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-04.json"
+    },
+    {
+      "run": 5,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:22Z",
+      "clone_ms": 2122,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-05/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-05/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 191,
+        "peak_rss_mb": 311,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 316,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-05.json"
+    },
+    {
+      "run": 6,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:24Z",
+      "clone_ms": 2091,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-06/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-06/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 191,
+        "peak_rss_mb": 326,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 328,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-06.json"
+    },
+    {
+      "run": 7,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:27Z",
+      "clone_ms": 2060,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-07/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-07/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 193,
+        "peak_rss_mb": 363,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 365,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-07.json"
+    },
+    {
+      "run": 8,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:30Z",
+      "clone_ms": 2148,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-08/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-08/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 192,
+        "peak_rss_mb": 323,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 328,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-08.json"
+    },
+    {
+      "run": 9,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:33Z",
+      "clone_ms": 2009,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-09/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-09/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 196,
+        "peak_rss_mb": 351,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 352,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-09.json"
+    },
+    {
+      "run": 10,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "started_at": "2026-08-19T20:24:36Z",
+      "clone_ms": 2002,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-10/cobra.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-10/cobra-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 193,
+        "peak_rss_mb": 338,
+        "db_size_bytes": 1413120,
+        "nodes": 938,
+        "edges": 4036,
+        "files": 58
+      },
+      "stable_peak_rss_mb": 339,
+      "bytes_per_edge": 350.12884043607534,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-10.json"
+    }
+  ]
+}

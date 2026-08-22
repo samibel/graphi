@@ -1,0 +1,39 @@
+{
+  "format_version": 1,
+  "harness_version": "f5-fanout-measurement/1",
+  "scorer_version": "f5-fanout-scorer/1",
+  "repo": "flask",
+  "runner_class": "Darwin-ARM64/apple-m2-max",
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6 darwin/arm64",
+    "filesystem": "apfs",
+    "filesystem_path": "/var/tmp/graphi-74d870a2c7f729e8",
+    "cache_state": "not_dropped",
+    "runner_class": "Darwin-ARM64/apple-m2-max",
+    "measured_sha": "3f239014959970b5b2770f904dd7756628130bf7",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "f5-fanout-measurement/1",
+    "scorer_version": "f5-fanout-scorer/1",
+    "capture_errors": {
+      "candidate_sha": "no frozen candidate was cited for this run (-candidate / -reference-scenario)",
+      "pin_discrepancy": "flask pin in corpus/manifest.json (735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b) does NOT match the real 3.0.0 tag (735a4701d6d5e848241e7d7535db898efb62d400); per SW-192 AC-7, no silent re-pin, marked STALE",
+      "family_driver_missing": "cmd/parity has no -family python driver; F5 measurement performed via ./cmd/graphi directly"
+    }
+  },
+  "environment_complete": false,
+  "missing_environment": [
+    "candidate_sha"
+  ],
+  "f5_verdict": "FAILED",
+  "f5_spurious_edges": 70,
+  "f5_spurious_target_count": 3,
+  "f5_importer_count_affected": 24,
+  "g4_decision": "RE-GRADE (stays UNKNOWN, filed PYTHONFANOUT-001)"
+}

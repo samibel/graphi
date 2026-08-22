@@ -1,0 +1,401 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "okio",
+  "collected": true,
+  "samples": 10,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/tmp/sw177-wd/cur",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:21:49Z",
+      "clone_ms": 2353,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-01/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-01/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 614,
+        "peak_rss_mb": 708,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 711,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:21:52Z",
+      "clone_ms": 2283,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-02/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-02/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 610,
+        "peak_rss_mb": 616,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 618,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:21:56Z",
+      "clone_ms": 2463,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-03/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-03/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 602,
+        "peak_rss_mb": 681,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 683,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-03.json"
+    },
+    {
+      "run": 4,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:21:59Z",
+      "clone_ms": 2462,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-04/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-04/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 631,
+        "peak_rss_mb": 662,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 664,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-04.json"
+    },
+    {
+      "run": 5,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:22:03Z",
+      "clone_ms": 2348,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-05/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-05/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 602,
+        "peak_rss_mb": 706,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 709,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-05.json"
+    },
+    {
+      "run": 6,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:22:06Z",
+      "clone_ms": 2426,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-06/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-06/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 617,
+        "peak_rss_mb": 759,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 761,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-06.json"
+    },
+    {
+      "run": 7,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:22:10Z",
+      "clone_ms": 2459,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-07/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-07/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 608,
+        "peak_rss_mb": 740,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 743,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-07.json"
+    },
+    {
+      "run": 8,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:22:14Z",
+      "clone_ms": 2473,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-08/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-08/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 607,
+        "peak_rss_mb": 768,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 771,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-08.json"
+    },
+    {
+      "run": 9,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:22:17Z",
+      "clone_ms": 2394,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-09/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-09/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 608,
+        "peak_rss_mb": 660,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 663,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-09.json"
+    },
+    {
+      "run": 10,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "8b870e8eaacecb1c1ceffbbb47246112604a1f92",
+      "started_at": "2026-08-19T20:22:21Z",
+      "clone_ms": 2595,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-10/okio.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-10/okio-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 608,
+        "peak_rss_mb": 779,
+        "db_size_bytes": 3756032,
+        "nodes": 4397,
+        "edges": 6946,
+        "files": 339
+      },
+      "stable_peak_rss_mb": 781,
+      "bytes_per_edge": 540.7474805643536,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-10.json"
+    }
+  ]
+}

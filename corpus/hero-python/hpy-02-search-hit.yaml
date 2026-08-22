@@ -1,0 +1,14 @@
+id: hpy-02-search-hit
+description: Searching for English finds the impl function.
+fixture_ref: tier1-fixture-hero-python
+operation:
+  name: search
+  args:
+    query: core
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: impl.core
+      match: contains

@@ -5,7 +5,96 @@
 # of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
 # and yaml.Unmarshal read it, and it diffs one row per change.
 #
-# matrix_version: 1
+# matrix_version: 4
+#
+#                      BUMPED 3 -> 4 by W1.c (SW-176, WP-J7): every row gained
+#                      FOUR real-repository axis fields — real_repo_harness,
+#                      real_repo_store, real_repo_profile, real_repo_binder —
+#                      because this table now binds to a SECOND harness. Until
+#                      W1.c the only consumer was the hermetic twin in
+#                      engine/conformance; internal/parity/jvmclasses.go now
+#                      binds the same thirteen ids to real edits on the guava /
+#                      okio / kotlinx.serialization pins, and the two harnesses
+#                      run DIFFERENT axes. Publishing one set of `store` and
+#                      `profile` values for both would have been an overclaim
+#                      about whichever harness did not run that axis.
+#
+#                      READ THE FOUR NEW FIELDS AS FOLLOWS, and note that two of
+#                      them record a LIMIT rather than a capability:
+#
+#                        real_repo_harness  the file that plans the real edit.
+#                        real_repo_binder   off+on. The JVM declared-type binder
+#                                           is experimental and default-off
+#                                           (GRAPHI_JVM_TYPERESOLVE), so the
+#                                           real-repo matrix crosses it: the
+#                                           `off` cells are the shipped default
+#                                           and exercise NO binder code at all,
+#                                           the `on` cells are the only ones
+#                                           that do. Measured on okio at the
+#                                           pin: 6946 edges off vs 7259 on, of
+#                                           which 529 confirmed calls exist only
+#                                           with the binder on.
+#                        real_repo_profile  resolved-default+fast. THIS IS NOT
+#                                           THE `profile: both` ABOVE, and the
+#                                           difference is structural rather than
+#                                           a choice. parityProfiles() runs
+#                                           {ingest.New's ZERO VALUE, Balanced};
+#                                           the zero value is a LIBRARY entry
+#                                           point that no `graphi` invocation
+#                                           can produce, because
+#                                           core/profile.ResolveProfile maps
+#                                           "no flag, no env" to Balanced. A
+#                                           harness driving the BUILT BINARY
+#                                           therefore cannot reach it. The
+#                                           CLI-side pair that IS behaviourally
+#                                           distinct is {resolved default,
+#                                           fast}, and that is what ran.
+#                        real_repo_store    sqlite. A LIMIT, stated rather than
+#                                           quietly omitted: `store: both` above
+#                                           is true of the hermetic harness,
+#                                           which builds a MemStore in-process.
+#                                           The real-repo matrix cannot, IN
+#                                           PRINCIPLE — its incremental side is
+#                                           a SEPARATE PROCESS (`graphi sync`
+#                                           after `graphi rebuild`), and a
+#                                           MemStore does not survive process
+#                                           exit. No flag can change this; only
+#                                           a persistent second backend could.
+#
+#                      AND THE AXIS GUARD GAP BELOW (D-11) IS NOT CLOSED HERE.
+#                      D-11 records that this file's guard has no AXIS
+#                      direction, so `store: both` / `profile: both` are
+#                      unchecked claims about the hermetic harness. That is
+#                      still true and is still TEMPL-P4(a). What W1.c adds is an
+#                      AXIS guard for ITS OWN four fields only —
+#                      TestJVMMatrix_RealRepoAxisClaimsMatchWhatRuns in
+#                      internal/parity — which fails if jvmAxes() is narrowed
+#                      while these rows keep claiming the full crossing. A new
+#                      claim arrives with its guard; the pre-existing unguarded
+#                      claim is named, not inherited silently.
+#
+#                      BUMPED 2 -> 3 by W0.h (SW-170, ADR 0008 ruling D9): two
+#                      MIXED-LANGUAGE-DIRECTORY rows were added,
+#                      jvm_mixed_dir_delete_callee and
+#                      jvm_mixed_dir_change_receiver_type. Until D9 the sweep
+#                      unit was the DIRECTORY, so a directory holding .java
+#                      beside .kt was marked degraded by both registrants and
+#                      exempted from the stale-confirmed sweep entirely. An
+#                      exemption is unobservable — no counter records it — and
+#                      the table had no row that could see it. D9 makes the
+#                      sweep unit (directory, language), so a mixed directory
+#                      is two units instead of one exemption, and these two
+#                      rows are what observes the difference. Both were proven
+#                      RED before the fix (see their notes).
+#
+#                      BUMPED 1 -> 2 by W0.f-4 review round 1 (finding 2): the
+#                      `profile` FIELD was added, mirroring the Go matrix. The
+#                      JVM table now runs the same INDEX-PROFILE axis
+#                      (parityProfiles: the library default + the shipped
+#                      balanced), because the aggregation PARITY-003 removed hit
+#                      dotted Java/Kotlin package paths hardest — N importers of
+#                      one package collapsed to one edge — and a default-only
+#                      table could not see it.
 #
 # ---------------------------------------------------------------------------
 # WHAT THIS FILE BINDS TO
@@ -26,6 +115,76 @@
 # harness row binds to it. Change the label, never the id.
 #
 # ---------------------------------------------------------------------------
+# THIS FILE IS THE WORKED EXAMPLE FOR SLOTS S6/S7 OF THE PER-LANGUAGE GA
+# TEMPLATE (added 2026-08-19, SW-180)
+# ---------------------------------------------------------------------------
+# docs/plan/2026-08-per-language-ga-template-v1.md generalizes this file into
+# the convention docs/rc/parity-classes-<family>.yaml. A story creating the
+# next family table should read §3 slots S6-S8 there rather than copying this
+# file, because the template records FOUR ways this instance is weaker than
+# docs/rc/parity-classes.yaml, and a copy would inherit all four. (Said "THREE"
+# until 2026-08-19: D-11b was added below without updating this lead-in.)
+#
+#   D-10  these rows omit `test_line`, `prd_source` and `delta_source`. They
+#         unmarshal empty into the shared parityRow struct, so nothing
+#         complains — and the Go-side citation guard
+#         (TestParityMatrix_HarnessCitationIsCurrent, changeclass_test.go),
+#         which asserts test_line really points at the harness func, therefore
+#         cannot exist for this file.
+#   D-11  THE GO GUARD HAS SEVEN DIRECTIONS. THIS FILE'S GUARD IS MISSING
+#         THREE OF THEM. Count them from the t.Run calls in
+#         engine/conformance/paritymatrix_test.go -- NOT from that file's own
+#         comment at :167, which says "SIX" and is stale:
+#
+#           MISSING     :206   present in jvmparity_matrix_test.go
+#           PHANTOM     :225   present
+#           KIND        :240   present  (in TestJVMParityMatrix_KindCountAndOwners)
+#           VERDICT     :286   *** ABSENT ***
+#           OWNER       :408   present  (same func as KIND -- two DISTINCT
+#                                        properties, do not fold them into one)
+#           AXIS        :460   *** ABSENT ***
+#           VOCABULARY  :483   *** ABSENT ***
+#
+#         jvmparity_matrix_test.go additionally has DEFERRED and
+#         RequiredRowsAreProven, and uses no t.Run at all.
+#
+#         VERDICT rejects a row whose `verdict` does not match what its harness
+#         row actually proves. AXIS rejects a narrowed axis. VOCABULARY rejects
+#         a closed-set field outside its vocabulary. Every row below publishes
+#         profile: "both" and store: "both" and NOTHING CHECKS EITHER CLAIM.
+#         AXIS exists on the Go side because review round 1 demonstrated the
+#         hole: removing the balanced entry from parityProfiles() left the
+#         package green while 16 rows kept publishing "proven under both
+#         profiles". Carried as TEMPL-P4(a) in the template's §12; not fixed
+#         here.
+#
+#         READ THIS BEFORE COPYING: the first version of THIS COMMENT folded
+#         KIND and OWNER into one item and omitted VERDICT -- reproducing, in
+#         the file whose whole purpose is to be read before copying, the exact
+#         error the template's §3/S7 had already corrected. A family built to
+#         that list would still have been missing a guard. Take the direction
+#         list from §3/S7's table, which is authoritative.
+#
+#   D-11b AND THE GUARDS CANNOT BE FAILED BY OMISSION AT ALL. Both
+#         paritymatrix_test.go:17 and jvmparity_matrix_test.go:14 read a
+#         HARDCODED const path, and nothing in the tree globs
+#         docs/rc/parity-classes-*.yaml. A family that ships NEITHER a table
+#         NOR a guard produces zero CI signal -- silence, not a red build.
+#         THREE glob holes, not two -- this comment listed only the first two
+#         until 2026-08-19, while the template (TEMPL-P4(b)) listed all three:
+#           1. nothing globs docs/rc/parity-classes-*.yaml
+#           2. nothing globs corpus/hero-*        (every hero glob names its
+#              family dir literally: cmd/eval/hero_jvm_test.go:35 and :109)
+#           3. nothing globs cmd/eval/hero_*_test.go -- so a family that ships
+#              no hero TEST FILE at all is equally silent.
+#         Carried as TEMPL-P4(b).
+#   D-12  every row below reads fixture: "production Go parser" while the
+#         subject under test is the JVM binder, because legalFixtures
+#         (paritymatrix_test.go) has no non-Go member. Knowingly done and
+#         stated in jvm_add_file's note; it becomes wrong for a third family.
+#         Carried as TEMPL-P3.
+#
+# ---------------------------------------------------------------------------
 # SCOPE OF THE WAVE-1 SUBSET, STATED SO IT IS NOT OVERREAD
 # ---------------------------------------------------------------------------
 # The binder is EXPERIMENTAL and default-off (GRAPHI_JVM_TYPERESOLVE); the
@@ -37,6 +196,11 @@
 # cascade, supertype-chain re-pointing, the nested/top-level node boundary, the
 # JLS import-precedence ladder, the same-package file-to-file symbol move (the
 # QN-stable BLOCK-2 re-home, Go's move_symbol direction), and the delete path.
+#
+# W0.h ADDED TWO MORE (matrix_version 3), so the required set is now THIRTEEN:
+# the two mixed-language-directory rows. They are the only rows whose fixture
+# contains a directory holding both languages' sources, which is exactly the
+# unit the pre-D9 sweep exempted.
 #
 # THERE ARE NO DEFERRED ROWS LEFT. jvm_delete_file was the last one, held back
 # by ADR 0008 D8's PARITY-001 entry criterion; PARITY-001 is fixed and the row
@@ -50,10 +214,16 @@ parity_classes:
     label: "Java-Datei hinzufügen / add a Java file in a new package"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -65,10 +235,16 @@ parity_classes:
     label: "Java-Datei ändern / rewrite a Java file in place"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -80,10 +256,16 @@ parity_classes:
     label: "Aufruf hinzufügen (confirmed) / add a confirmed call"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -95,10 +277,16 @@ parity_classes:
     label: "Overload hinzufügen (drop) / add a same-arity overload"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -110,10 +298,16 @@ parity_classes:
     label: "Kotlin declared↔inferred / val x: T = … ↔ val x = …"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -125,10 +319,16 @@ parity_classes:
     label: "Java-Package umbenennen / rename a package (dir + clause + importers)"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -140,10 +340,16 @@ parity_classes:
     label: "Typ-Hierarchie ändern / re-point extends"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -155,10 +361,16 @@ parity_classes:
     label: "Nested-Klasse verschieben / inner→top-level"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -170,10 +382,16 @@ parity_classes:
     label: "Import-Shadowing / single-type import shadows on-demand"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -185,10 +403,16 @@ parity_classes:
     label: "Symbol verschieben / same-package file-to-file move"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
@@ -201,12 +425,60 @@ parity_classes:
     label: "Java-Datei löschen / delete a Java file"
     verdict: "PROVEN"
     test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
     test_name: "TestJVMFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
     harness_row: "required"
     known_defect: ""
     deferred_to: ""
     owner: "M2.2"
     note: "PROMOTED FROM DEFERRED TO REQUIRED - 2026-08-16 (language-GA execution plan M2.2), after PARITY-001 was fixed. tax/Rate.java declares the type BOTH shop.Cart (Java) and k.App (Kotlin) import and call; deleting it exercises the per-file stale-node purge, the confirmed-edge sweep and the re-link together. Witness requires tax.Rate, tax.rate and tax.apply absent, BOTH importers (shop.checkout, k.run) still present, and the confirmed edges into the deleted callee gone - a stale confirmed edge would be the worst outcome here. Inc-vs-full snapshot bytes hold on both stores. MEASURED AND STATED PLAINLY, because a row that would have passed all along must not be sold as newly enabled: this class converges BOTH WITH AND WITHOUT the PARITY-001 fix, verified by reverting engine/ingest/ingest.go to its pre-fix revision and re-running (still green on both stores). The JVM delete path therefore never carried PARITY-001 divergence in this shape, and the ADR 0008 D8 deferral was a PRECAUTION rather than a masked JVM defect. That is consistent with the witness: PARITY-001 was entirely about the full side minting an interned external node for the now-unresolvable import, and here NEITHER side mints one, so the two passes have nothing to disagree about. The row earns its place on its own terms - the JVM delete path was previously assumed to converge and is now proven to - and it closes the last deferred row in this matrix."
+  # ── MIXED-LANGUAGE DIRECTORIES (W0.h, ADR 0008 D9) ───────────────────────
+  - id: "jvm_mixed_dir_delete_callee"
+    kind: "change_class"
+    label: "Callee in gemischtem Verzeichnis löschen / delete a callee called from a mixed-language directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W0.h"
+    note: "PROVEN 2026-08-19 by W0.h (SW-170), ADR 0008 ruling D9. A caller in a MIXED-LANGUAGE directory (mix/Caller.java beside mix/Helper.kt) loses prov/Provider.java, whose declared RETURN type supplied the receiver of the chained call p.get().rate(). RED BEFORE THE FIX on all four axes (MemStore/SQLite x default/balanced): the incremental graph kept mix.run --calls[confirmed]--> tax.rate, 16 edges against the full pass's 15, 6215 bytes against 5931. GREEN after. RESHAPED, AND THE RESHAPING IS THE POINT (AC-3): the first version of this row simply deleted the callee tax/Rate.java and was GREEN BEFORE THE FIX, so it observed nothing. Measured why - deleting a callee purges its NODE, and the per-file stale-node purge cascades the incoming edges away, so the sweep is never the mechanism under test. Measured a second confound too: linkFiles deletes every from-owned linker-kind edge of a REPROCESSED file, confirmed tier included, so any shape that rewrites the caller is also blind. This fixture defeats both - the caller file is never touched and the chained callee tax.rate SURVIVES in both graphs, which the witness asserts, so only the typeresolve stale-confirmed sweep can remove the superseded edge. CONTROL: the identical change with the caller in a single-language directory converges before AND after the fix, so the discriminator is the mixed directory, not the change shape."
+
+  - id: "jvm_mixed_dir_change_receiver_type"
+    kind: "change_class"
+    label: "Receiver-Typ in gemischtem Verzeichnis ändern / change a declared receiver type in a mixed-language directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jvmparity_test.go"
+    test_line: "468"
+    test_name: "TestJVMFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    real_repo_harness: "internal/parity/jvmclasses.go"
+    real_repo_store: "sqlite"
+    real_repo_profile: "resolved-default+fast"
+    real_repo_binder: "off+on"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W0.h"
+    note: "PROVEN 2026-08-19 by W0.h (SW-170), ADR 0008 ruling D9. The receiver's DECLARED type is changed in ANOTHER file - prov.Provider.get() flips its declared return type from tax.Rate to alt.Alt - so the chained call in the mixed directory re-points from tax.rate to alt.rate while the caller is never reprocessed and the old callee's file is untouched. RED BEFORE THE FIX on all four axes: the incremental graph kept mix.run --calls[confirmed]--> tax.rate, 24 edges against the full pass's 23, 9086 bytes against 8802. GREEN after. FIGURES CORRECTED 2026-08-19 (SW-170 review round 1, finding 1), IN PLACE AND NAMED RATHER THAN SILENTLY: this row's first draft published 23/22 edges and 8802/8518 bytes, which were the RED of the SUPERSEDED VERSION-2 FIXTURE, taken before the third reshaping below landed. The red was re-taken on the fixture that actually shipped, by the same procedure (stash only the six source files carrying the fix, harness and YAML at the fixed revision), and the version-2 figures were reproduced deliberately by re-introducing an arity-mismatched alt.Alt.rate(int) - which returns exactly 27 nodes / 23 edges / 8802 bytes against 27 / 22 / 8518, confirming the misattribution rather than asserting it. D6 (published records are never rewritten, a new dated section goes on top) protects the PUBLISHED record; this row was authored by this same unapproved story and had never been published or approved, so it is corrected where it stands, with the error stated. RESHAPED TWICE, both times because the row was green and therefore worthless (AC-3): version 1 rewrote the CALLER to change its parameter type, which linkFiles heals by deleting every from-owned edge of a reprocessed file; version 2 moved the type change into prov/Provider.java but pointed it at a class with no matching member, so the call re-pointed to nothing and the row could not tell a correct drop from a failure to bind. alt.Alt now declares rate() as well, so this row asserts a genuine RE-POINT: the old edge must GO and the new one must ARRIVE at the confirmed tier. This is the shape the per-file stale-node purge cannot rescue - tax.rate is present in both graphs, asserted by the witness."

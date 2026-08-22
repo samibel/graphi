@@ -1,0 +1,401 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "guava",
+  "collected": true,
+  "samples": 10,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/tmp/sw177-wd/cur",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:17:49Z",
+      "clone_ms": 3291,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-01/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-01/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 6035,
+        "peak_rss_mb": 2536,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2560,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:18:01Z",
+      "clone_ms": 3221,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-02/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-02/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 5982,
+        "peak_rss_mb": 2419,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2442,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:18:13Z",
+      "clone_ms": 3370,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-03/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-03/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 5998,
+        "peak_rss_mb": 2613,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2636,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-03.json"
+    },
+    {
+      "run": 4,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:18:25Z",
+      "clone_ms": 3505,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-04/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-04/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 5991,
+        "peak_rss_mb": 2683,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2706,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-04.json"
+    },
+    {
+      "run": 5,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:18:37Z",
+      "clone_ms": 3403,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-05/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-05/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 5977,
+        "peak_rss_mb": 2646,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2669,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-05.json"
+    },
+    {
+      "run": 6,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:18:49Z",
+      "clone_ms": 3487,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-06/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-06/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 6012,
+        "peak_rss_mb": 2714,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2738,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-06.json"
+    },
+    {
+      "run": 7,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:19:01Z",
+      "clone_ms": 3485,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-07/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-07/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 5953,
+        "peak_rss_mb": 2271,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2294,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-07.json"
+    },
+    {
+      "run": 8,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:19:13Z",
+      "clone_ms": 3503,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-08/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-08/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 5969,
+        "peak_rss_mb": 2709,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2733,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-08.json"
+    },
+    {
+      "run": 9,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:19:26Z",
+      "clone_ms": 3242,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-09/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-09/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 5936,
+        "peak_rss_mb": 2604,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2627,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-09.json"
+    },
+    {
+      "run": 10,
+      "status": "completed",
+      "commit": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+      "runner_class": "local-sandbox",
+      "repo_sha": "2214c63670fc161da170ac6e1a2d6d07e1531a55",
+      "started_at": "2026-08-19T20:19:37Z",
+      "clone_ms": 3497,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-10/guava.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-10/guava-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 5958,
+        "peak_rss_mb": 2641,
+        "db_size_bytes": 44224512,
+        "nodes": 46352,
+        "edges": 73780,
+        "files": 3223
+      },
+      "stable_peak_rss_mb": 2665,
+      "bytes_per_edge": 599.4105719707238,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-10.json"
+    }
+  ]
+}

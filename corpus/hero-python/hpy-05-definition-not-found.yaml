@@ -1,0 +1,10 @@
+id: hpy-05-definition-not-found
+description: An unknown symbol is a clean not_found.
+fixture_ref: tier1-fixture-hero-python
+operation:
+  name: definition
+  args:
+    symbol: zzz_no_such_symbol_zzz
+area: agent_mcp
+expect:
+  outcome: not_found

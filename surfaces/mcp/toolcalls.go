@@ -946,10 +946,18 @@ func (s *Server) changeRiskCall(ctx context.Context, p callParams) (any, *rpcErr
 // trust-report document through the shared client.TrustReport composition, so
 // MCP and `graphi trust-report --json` emit byte-identical documents for the
 // same inputs (ONE composition, ONE encoder — the explain_symbol template). The
-// surface constructs TrustReportOptions from the PRD §17 arguments only;
-// Root/DBPath/MetaDir stay empty so the composition resolves the server
-// process's repository and its auto-managed store exactly as `graphi status`
-// does (a pure read-only observer — nothing is created or repaired).
+// surface constructs TrustReportOptions from the PRD §17 arguments plus the
+// repository THIS SESSION IS BOUND TO (s.repository()), and the composition
+// stays a pure read-only observer over it — nothing is created or repaired.
+//
+// The bound paths are passed explicitly rather than left empty (W0.g review
+// round 1, Critical 1). An empty Root/DBPath/MetaDir makes the composition
+// resolve from the server PROCESS's working directory, which is not the bound
+// repository whenever the client launched the server from elsewhere — the
+// situation -root and GRAPHI_ROOT exist for. That divergence published one
+// repository's evidence as another's: a session bound to a Go repository,
+// launched with cwd inside an unrelated Java repository, reported the Java
+// repository's binder abstention counters in the Go repository's document.
 //
 // Error model (contract §4): operational failures are TYPED tool errors, never
 // an empty success. An unknown policy is an input error (trust.ErrPolicyUnknown
@@ -966,7 +974,11 @@ func (s *Server) graphHealthCall(ctx context.Context, p callParams) (any, *rpcEr
 		// lists (fail closed on out-of-domain input, contract §4).
 		return nil, &rpcError{Code: -32602, Message: fmt.Sprintf("invalid limit %d: must be non-negative", limit)}
 	}
+	repo := s.repository()
 	b, _, _, err := s.client().TrustReport(ctx, client.TrustReportOptions{
+		Root:    repo.Root,
+		DBPath:  repo.DBPath,
+		MetaDir: repo.MetaDir,
 		Target:  p.Arguments.Target,
 		Policy:  p.Arguments.Policy,
 		Details: p.Arguments.Details,
@@ -987,9 +999,13 @@ func (s *Server) graphHealthCall(ctx context.Context, p callParams) (any, *rpcEr
 // so MCP and `graphi query-strict` emit byte-identical envelopes for the same
 // inputs (ONE composition, ONE encoder).
 //
-// Root/DBPath/MetaDir stay empty so the optional policy preflight resolves the
-// server process's repository and its auto-managed store exactly as
-// `graphi status` does (a pure read-only observer).
+// Root/DBPath/MetaDir carry the repository THIS SESSION IS BOUND TO, so the
+// optional policy preflight and the abstention record are read from the store
+// the session actually serves — not from whatever repository the server
+// process's working directory happens to sit in. See graphHealthCall for the
+// defect that motivated passing them (W0.g review round 1, Critical 1): both
+// tools read repository state through the same compositions, and both were
+// resolving it from ambient process state.
 //
 // It calls s.client(), not s.stableClient(): strict_query is Labs, and routing
 // it through the stable port would advertise a Labs capability on the frozen
@@ -1022,12 +1038,16 @@ func (s *Server) strictQueryCall(ctx context.Context, p callParams) (any, *rpcEr
 			return nil, &rpcError{Code: -32602, Message: fmt.Sprintf("invalid minimum_tier %q: want confirmed|derived|heuristic", t)}
 		}
 	}
+	repo := s.repository()
 	b, verdict, state, err := client.ComposeStrictQuery(ctx, s.client(), client.StrictQueryOptions{
 		Operation:   p.Arguments.Operation,
 		Symbol:      p.Arguments.Symbol,
 		Depth:       derefInt(p.Arguments.Depth),
 		MinimumTier: p.Arguments.MinimumTier,
 		Policy:      p.Arguments.Policy,
+		Root:        repo.Root,
+		DBPath:      repo.DBPath,
+		MetaDir:     repo.MetaDir,
 	})
 	switch {
 	case errors.Is(err, client.ErrStrictQueryBlocked):

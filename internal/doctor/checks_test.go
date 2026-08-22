@@ -240,23 +240,69 @@ func TestLocalFirstCheck(t *testing.T) {
 	}
 }
 
-// TestKnownDefectsCheck pins the disclosure contract: an OPEN published defect
-// in a GA operation is reported at info severity — never pass (that would be
-// silently green) and never fail (it is not a health problem of this install).
-// The message must name the defect id, the affected operation and the
-// workaround, so a user learns the limitation from the tool itself.
+// TestKnownDefectsCheck pins the disclosure contract (D8): an OPEN published
+// defect that affects a GA operation is named on the doctor surface at INFO
+// severity — never silently green, never a health failure of this install.
 //
-// (Removed 2026-08-16 when PARITY-002 closed; restored the same day for
-// PARITY-003, which the ADR 0009 real-repo re-measurement isolated.)
+// Restored for LINK-002 after ADR 0011 closed LINK-001 and removed the check for
+// the third time, and extended to LINK-003 in review round 1 of the same story.
+// The assertions are deliberately about the SHAPE of a disclosure rather than its
+// prose, so the message can be improved without breaking the test, but cannot
+// lose the parts that make it useful: the defect id, the affected operations, and
+// a workaround.
+//
+// One assertion is about CONTENT rather than shape, and deliberately so. The
+// first draft of the LINK-002 disclosure told users the defect "never emits a
+// wrong one", which was false — it also REDIRECTS calls to the wrong declaration
+// (docs/rc/link-002-clause-by-dir-recall.md §3.2). A user who reads "incomplete"
+// and acts on it is misled differently from one who reads "possibly wrong", so
+// the negative assertion below pins that the retraction cannot silently come back.
 func TestKnownDefectsCheck(t *testing.T) {
 	res := KnownDefectsCheck().Run(context.Background(), fakeEnv{})
 	if res.Status != StatusInfo {
-		t.Fatalf("expected info for known-defects disclosure, got %q", res.Status)
+		t.Fatalf("known-defects must be INFO (an open defect is disclosed, not a local "+
+			"health failure, and never silently green), got %q", res.Status)
 	}
-	for _, want := range []string{"PARITY-003", "sync", "rebuild", "imports", "profile"} {
+	for _, want := range []string{"LINK-002", "LINK-003", "callers", "callees", "Workaround"} {
 		if !strings.Contains(res.Message, want) {
-			t.Errorf("disclosure must mention %q; got: %s", want, res.Message)
+			t.Errorf("known-defects message must mention %q; got: %s", want, res.Message)
 		}
+	}
+	// LINK-004 (SW-183): Python dotted module imports resolve to nothing. Pinned
+	// on the same three properties as LINK-002/003 — the id, the affected
+	// operations, and a workaround — plus the one fact that makes the workaround
+	// actionable rather than decorative: WHICH import form to rewrite it to. A
+	// disclosure that says "some imports do not resolve" without naming the
+	// working form leaves the reader unable to act, which is the failure mode the
+	// `-profile full` incident taught in its other direction (a workaround that
+	// cannot be executed at all).
+	for _, want := range []string{"LINK-004", "from pkg.util import helper", "from pkg import util"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("known-defects must disclose LINK-004 with its failing form AND the "+
+				"working form the workaround names (missing %q). See "+
+				"docs/rc/capability-audit-2026-08-19.md §3; got: %s", want, res.Message)
+		}
+	}
+	// The soundness half must be disclosed, not just the recall half.
+	for _, want := range []string{"REDIRECTED", "WRONG EDGES"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("known-defects must disclose that LINK-002 emits WRONG edges and not "+
+				"only that it drops true ones (missing %q). See "+
+				"docs/rc/link-002-clause-by-dir-recall.md §3.2; got: %s", want, res.Message)
+		}
+	}
+	if strings.Contains(res.Message, "never emits a wrong one") ||
+		strings.Contains(res.Message, "drops true edges only") {
+		t.Errorf("known-defects has regressed to the FALSE claim that LINK-002 only drops " +
+			"true edges. It also redirects them — reproduced through the CLI in " +
+			"docs/rc/link-002-clause-by-dir-recall.md §3.2, and pinned by " +
+			"engine/link/clausebydir_test.go::TestLink002_RedirectsToWrongDeclaration.")
+	}
+	// The `-profile full` incident: a published workaround named a profile the
+	// CLI rejects. Pin that this disclosure names only real profiles.
+	if strings.Contains(res.Message, "-profile full") {
+		t.Errorf("known-defects names a profile the CLI rejects; the accepted set is " +
+			"fast|balanced|deep")
 	}
 }
 

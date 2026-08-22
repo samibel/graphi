@@ -1,0 +1,30 @@
+id: hts-09-references
+description: >
+  A type symbol that exists in the indexed tree (impl._format) returns the
+  in-file referrer (impl.core) for the references operation. The TS parser
+  DOES extract `references` edges via tsxResolveUses — but only for type
+  identifiers that resolve to an in-file type definition
+  (core/parse/parser_tswalk.go:88 — `w.types[bare] = struct{}{}` is populated
+  only when kind == KindType, and core/parse/parser_tswalk.go:180-183 emits
+  an EdgeReferences edge when a `type_identifier` matches an in-file
+  definition). So `_format` being declared as a TypeScript `interface` in
+  impl/English.ts, and `core`'s return type using `_format`, generates the
+  in-file reference edge `impl.core -> impl._format`, and
+  `references(impl._format)` returns `impl.core` as a positive anchor.
+  This is the TS-specific shape that lets the references operation be
+  FOUND here, where the Python fixture is empty (Python has no
+  references-edge path at all). The deliberate fixture choice — making
+  `_format` an interface rather than a helper function as in the Python
+  twin — is documented in impl/English.ts.
+fixture_ref: tier1-fixture-hero-typescript
+operation:
+  name: references
+  args:
+    symbol: impl._format
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: impl.core
+      match: contains

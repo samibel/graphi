@@ -236,4 +236,4 @@ Total capabilities: **173**. See [`architecture-plan.md`](architecture-plan.md) 
 
 | id | capability | tier | status | epic | note |
 |---|---|---|---|---|---|
-| `go` | `typed-confirmed` | 🧪 labs | ✅ shipped | - | The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA. |
+| `go` | `typed-confirmed` | 🧪 labs | ✅ shipped | - | The GA language set (stability-tiers.md conjunction, language axis). tier is structural (not one of the 12 operation ids) and carries no information about GA. SW-186 (W3 close): the grandfathering clause is REMOVED — go binds to its own GA-LANG-go-G1..G9 evidence rows like every other language (typed-confirmed → canonical G2, never G2SUB). The level is typed-confirmed, Go's type checker proves relationships, edges can reach the confirmed tier; the G2 row exists when the F5-dispatch work populates it with evidence URI and sha. |

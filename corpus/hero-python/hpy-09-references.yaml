@@ -1,0 +1,18 @@
+id: hpy-09-references
+description: >
+  A function symbol that exists in the indexed tree (impl._format) returns an
+  honest empty for the references operation — the Python parser does not emit
+  `references` edges (it only tracks `call` nodes: core/parse/parser_python.go:200),
+  so the references operation finds none. This is the language's honest level:
+  the call-edges relationship is captured by `callers`, not `references`, and an
+  empty result is the well-formed honest answer the G2SUB substitution requires.
+  SHOULD a Python module record `references` edges in the future, this scenario
+  flips to the JVM-shape anchors without a code change here.
+fixture_ref: tier1-fixture-hero-python
+operation:
+  name: references
+  args:
+    symbol: impl._format
+area: agent_mcp
+expect:
+  outcome: empty

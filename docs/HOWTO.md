@@ -138,6 +138,16 @@ full-indexes a tree you didn't mean. A full rebuild is never
 needed for branch switches; graphi keeps ONE graph per repository (under
 `~/.graphi/<fingerprint>/`) that always tracks whatever is checked out.
 
+> **Upgrading across the WP-J11 default-on flip?** The JVM binders move from
+> opt-in to default-on, so a pre-flip store's `*.java`/`*.kt` files carry no
+> confirmed `calls` / `references` / `implements` edges where the flipped
+> binary would mint them — content hashes cannot see the binary change, so
+> the only safe path is a cold re-index. Existing stores are **not** migrated
+> in place: run `graphi rebuild` once after upgrading to land the new
+> semantics-version stamp, and from then on `graphi sync` resumes the
+> usual incremental updates. `graphi status --json` exits 1 (actionable)
+> while the store is still pre-flip, which is the cue to rebuild.
+
 Inside that per-repo state dir (`$XDG_STATE_HOME/graphi/<fingerprint>/` when
 set), `repo.json` records which repository the fingerprint belongs to,
 `db.sqlite` is the graph, and `meta/` holds the ingest sidecar

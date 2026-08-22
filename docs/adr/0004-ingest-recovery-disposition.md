@@ -1,5 +1,229 @@
 # ADR 0004 — Ingest Cross-DB Recovery Disposition (SW-118 / ING-DEC)
 
+> ## ADDED 2026-08-19 (SW-169) — the incremental write-batch ordering invariant
+>
+> Per D6 nothing below is rewritten; this section is **added on top** and names
+> what it supersedes. It records the PARITY-001 *hardening* ruling: the defect
+> was closed by measurement on 2026-08-16 (`d8f1fbb`), but nothing structural
+> stopped the ordering drifting back. It also answers the reverse-dependency
+> ordering question carried from ADR 0009 review round 2, finding 6, and the
+> product question PARITY-001's record left open.
+>
+> **Correction to §"The two-store problem" below, stated rather than edited.**
+> That section says the graphstore takes "one batched session per incremental
+> pass". At the time of writing it did. It does not now: a delete-shaped
+> incremental pass opens **four, or five when it orphans an interned external
+> node** — measured, not read off the source, by instrumenting the store
+> (`engine/ingest/purge_ordering_test.go`). The kill-point matrix's K5/K6 rows
+> are unaffected, because they classify *when* the graph can be ahead of the meta
+> transaction, not how many batches carry it.
+>
+> ### D1 — Disposition: the deleted-path purge KEEPS ITS OWN COMMITTED BATCH
+>
+> The declared shape of an incremental pass over a Go change set that deletes a
+> file, enforced by `TestIncrementalBatchShape_DeleteShapedOrderingGuard`:
+>
+> | # | batch | content |
+> |---|---|---|
+> | 1 | parse-write | nodes and intra-file edges of every reprocessed file. It **may** delete a node a reprocessed file no longer declares (`commitParsed`'s identity-not-reproduced delete); it may **not** delete a node of a purged path |
+> | 2 | **purge** | `DeleteNode` of exactly the vanished files' nodes, **and nothing else**, committed before batch 3 opens |
+> | 3 | link | the cross-file re-link: stale-edge sweep, the interned external node, cross-file edges; **no deletes of nodes** |
+> | 4 | orphan-sweep | **conditional** — present only when this pass orphaned an interned external node. Pure node deletes, none of them a purged path's |
+> | 5 | typeresolve | whole-repo confirmed-tier edge upserts |
+>
+> Rows 1 and 4 are stated this precisely because an adversarial review defeated
+> the first, strictly positional version of the guard with two ordinary change
+> sets against **correct** product code — a surviving file that loses a symbol,
+> and a delete that orphans a stdlib reference. Both are now permanent fixtures
+> rather than caveats.
+>
+> **What the guard cannot see, recorded so it is not assumed away.** It observes
+> WRITES; PARITY-001 was caused by a READ (`linkFiles` streaming the live store).
+> A reordering that leaves the write shape intact is invisible to it. The
+> load-bearing example is sharing the reverse-dep pass's `SymbolIndex` with
+> `linkFiles`: that reintroduces PARITY-001 with an unchanged batch shape, and is
+> caught by the kill test and by the graphstore's own `edge references unknown
+> node` endpoint check, never by the guard.
+>
+> The **second** example first recorded here was wrong, and is corrected in place
+> rather than left standing (review round 1 refuted it, and the section it sits in
+> is this story's own and not yet approved). The draft said that hoisting
+> `sweepOrphanExternalNodes` to just after the purge commit "passes the guard".
+> **It does not.** The hoist was performed and measured: the guard **fails**, on
+> both stores, on the `delete_that_also_orphans_an_external` fixture *this story
+> added* —
+>
+> ```
+> batch 2 does not match required phase "3-link (cross-file re-link; mints the
+>   interned external node)": the link batch did not mint the external node
+>   "example.com/m/tax.Rate"
+> ```
+>
+> because hoisting the sweep puts its batch **before** the link batch, so row 3's
+> content check is applied to a pure-delete batch. The hoist is invisible to the
+> guard only on fixtures that orphan **no** external node and therefore open no
+> sweep batch at all — measured: it passes on `sole_file_of_package`,
+> `package_survives_via_second_file`, `importer_named_in_change_set` and
+> `delete_plus_surviving_file_loses_a_symbol`, and fails only on the orphan shape.
+> `TestPurgeOrdering_DeleteThenReaddConverges` and the pre-existing
+> `TestLink_GoExternalNode_InterningLifecycle` do also catch it, as originally
+> stated. The error direction was conservative — the guard was **understated**,
+> never overstated — but a published ADR must not understate its own coverage
+> either, and the corrected fact is the stronger one: row 4's conditional,
+> content-identified declaration is what makes the hoist visible.
+>
+> The guard is one layer of three, not the whole net.
+>
+> The alternative — folding the purge into batch 1, the way `IngestAll` folds
+> it — is **rejected**, and the reason is measured rather than argued. A folded
+> prototype was built and run: the full suite passes, `engine/conformance`
+> passes, and the delete-shaped kill test passes. What flips is a **two-step**
+> sequence: delete a file that another package imports, then restore it. With
+> the separate purge batch that sequence converges with a full rebuild; with the
+> purge folded into batch 1 it **diverges permanently**
+> (`TestPurgeOrdering_DeleteThenReaddConverges`, red on MemStore and SQLite
+> under the fold).
+>
+> The mechanism is the reverse-dependency translation, which sits between batch
+> 1's commit and the purge. `reverseDepKeys` translates the importer's forward
+> ref into the directory key space through `SymbolIndex.DirsForImport`, and both
+> of that function's bases read the **live index**. Folding the purge into batch
+> 1 moves the translation to the far side of the purge, so the deleted
+> package's directory is already gone, `DirsForImport` returns nothing, and the
+> importer's cascade row is stored under the raw import path
+> `example.com/m/tax`. `dependentsOf` only ever looks a row up by the changed
+> file's **directory** or its **file path**, so that row is unreachable forever
+> and the importer is never re-linked. The fold therefore imports PARITY-004
+> (D3 below) into the incremental path.
+>
+> Second reason, stated because it is real and not merely procedural: under
+> AC-7 this story is test-and-docs-only, and folding is a product-byte change
+> that would need its own ADR, a candidate move and a two-dispatch
+> re-measurement (D7) that is currently not publishable at all.
+>
+> ### D2 — Reverse-dependency translation ordering: DELIBERATELY ASYMMETRIC
+>
+> The incremental pass runs the translation **before** the purge; the full pass
+> runs it **after**. ADR 0009 review round 2 finding 6 recorded that asymmetry
+> as meta-only and harmless "because the translation is metadata rather than
+> graph bytes". **That justification is refuted by measurement and must not be
+> re-used.** The translation does write only metadata, but the metadata is the
+> reverse-dependency index, and that index decides which files a LATER pass
+> re-links — which decides graph bytes. The two orders produce different keys
+> for the same tree (`tax` vs `example.com/m/tax`), and only one of them is
+> reachable by `dependentsOf`.
+>
+> The asymmetry is therefore retained **deliberately, and for the opposite
+> reason to the one previously given**: the incremental order is the one that
+> produces the reachable key. Aligning it with the full pass would spread a
+> defect, not remove one.
+>
+> The invariant that DOES hold, and that is pinned rather than asserted
+> (`TestReverseDepTranslation_WritesNoGraphBytes`): within the pass that runs
+> it, the translation issues **no graph write at all** — no unbatched write, and
+> no batch open across its window — so its position relative to the purge cannot
+> move a graph byte in that pass. Its effect is entirely on the NEXT pass.
+>
+> ### D3 — PARITY-004, found while ruling on D2, filed and NOT fixed
+>
+> A **full** pass over a tree containing a dangling intra-module import writes
+> the importer's reverse-dependency row under the unresolvable import path,
+> where `dependentsOf` can never find it. Restore the missing package and
+> `graphi sync`, and the importer is never cascaded: the stale interned external
+> node and its `heuristic` `calls` edge survive beside the now-correct
+> `confirmed` edge, and the `imports` edge a rebuild emits is missing.
+> Reproduced through the built CLI on SQLite — `graphi sync` 7 nodes against
+> `graphi rebuild` 6, unrepaired by three further syncs — and pinned as
+> executable data by `TestParity004_DanglingIntraModuleImportBreaksTheCascade`,
+> which fails **with instructions** the moment the defect is fixed. Filed on
+> `projects/graphi/backlog.md`; disclosed in readme "Known limits".
+>
+> Its user-visible cost is **measured, and smaller than the node-count
+> difference suggests**: on the same fixture `neighborhood` loses the `imports`
+> edge (5 edges against a rebuild's 6), `related_files` returns the same files
+> in a different rank order with weaker evidence, and `callers`, `callees`,
+> `impact` and `search` are identical — interned external nodes are excluded
+> from those operations anyway. One fixture, one profile, one shape of dangling
+> import; that is not a frequency estimate.
+>
+> **Escalation, not a decision.** The surviving heuristic edge is a WRONG edge,
+> which D5 (zero-tolerance soundness) calls stop-ship unqualified — and whether
+> D5 binds `heuristic`-tier edges is the same owner question LINK-002 §9 already
+> raised and that is still open. The edge is not merely stale: its reason reads
+> *"unresolved import example.com/m/tax"* while a `confirmed` edge to the
+> now-resolved `tax.Rate` sits beside it, so it asserts something the same graph
+> refutes.
+>
+> **D8's doctor half is NOT landed here, and the first statement of why was
+> wrong.** Corrected in review round 1. The draft said the reason was that
+> `internal/doctor/checks.go` is compiled and AC-7 pins a byte-unchanged product
+> tree — implying a **publishability** cost. There is no such cost left to pay:
+> publishability has **already lapsed** at this branch's HEAD. The candidate
+> `3b8d43f` builds to `036be635…`; this branch's HEAD builds to
+> `128486624372a838…` (re-verified this round from both the working tree and a
+> pristine `f9177c6`). The product bytes moved past the candidate long before this
+> story, so a candidate move is **already owed** by this branch regardless of what
+> this story does. **The abstention does not rest on protecting publishability,
+> and must not be read that way.**
+>
+> What is actually being protected is narrower and should be named honestly: an
+> **acceptance criterion** (AC-7's byte-unchanged branch) and the **D7 ceremony
+> that criterion triggers** — a new ADR number, a candidate move with a move
+> record, and a two-dispatch re-measurement with `-verdict-diff` and
+> `-counts-diff` at exit 0. That ceremony is real, scheduled work; it is not
+> work a test-and-docs hardening story was scoped to carry. It is a
+> bookkeeping-and-cost argument, not a user-visible-property argument.
+>
+> **The owner's choice, stated as an actual choice.** D8 is ratified with *and*
+> (readme **and** the doctor check), `sync` is Stable/GA, Go is a GA language, so
+> D8 binds and is presently **half-met** — PARITY-004's two peer defects
+> (LINK-002, LINK-003) are disclosed on both surfaces, so the disclosure is now
+> inconsistent across defects of the same class.
+>
+> - **(a) Land the doctor row now.** Cost: one added string literal in
+>   `KnownDefectsCheck()` (the surrounding structure already takes multi-defect
+>   text, so it is a small edit), plus the **full D7 ceremony** above, plus AC-7
+>   flipping to its product-byte branch. Benefit: D8 satisfied; the machine-checked
+>   surface warns the affected user, and PARITY-004 is exactly the kind of defect
+>   `doctor` exists for because it has a one-command workaround.
+> - **(b) Keep AC-7's pin and defer the doctor half.** Cost: **the owner is
+>   explicitly waiving half a ratified contract.** That must be recorded as a
+>   waiver with a named owner and a landing ticket — never as compliance.
+>
+> **Builder's recommendation: (b) for this story, on the explicit condition that
+> the doctor row lands with the candidate move this branch already owes.** The
+> reasoning is scheduling, not merit: the row *should* exist — that part is not in
+> doubt — but forcing a full two-dispatch re-measurement through a hardening story
+> in order to add one disclosure string spends the ceremony twice, since the
+> already-owed candidate move will have to run it anyway. Landing the row on that
+> move gets D8 satisfied for the same single ceremony. If the owner prefers (a),
+> the edit is small and this builder can land it on request; what is **not**
+> acceptable is (b) recorded as if D8 were met.
+>
+> ### D4 — The carried product question (PARITY-001's open item), answered
+>
+> *"Is minting an external node for a vanished intra-module symbol the right
+> behaviour at all?"* Ruling: **keep it, and stop treating the question as
+> open** — with one modelling defect recorded rather than fixed.
+>
+> Keeping it is right because the fact the node records is TRUE: the call site
+> still exists in the source, and its target is no longer in the indexed graph.
+> Dropping the edge instead would make `callers`/`callees`/`impact` silently
+> under-report a live call site, which is the failure mode this programme treats
+> as worse than an honest heuristic. The alternative ("emit nothing") also
+> cannot be reached without diverging from the full pass, which is the reference
+> by definition.
+>
+> What is NOT right, and is recorded as a modelling defect rather than fixed: a
+> **dangling intra-module** target and a **third-party/stdlib** target are the
+> same fact to the node model (`kind: "external"`), and they are not the same
+> fact. Only the edge's `reason` string distinguishes them today. D3's measured
+> consequence is the first evidence that the conflation costs something: the
+> external node's edge is exactly what keeps the stale node alive across a
+> re-add, because the orphan sweep reaps only externals with **no** incident
+> edge. Splitting the kinds is a product-byte change with its own ceremony and
+> its own ADR, and it is the owner's call, not this story's.
+
 - Status: Accepted (disposition of record for the `ING-REWRITE` trigger)
 - Date: 2026-07-14
 - Story: SW-118 — ING-DEC: cross-DB fault injection and recovery disposition

@@ -68,7 +68,13 @@ import (
 //	    names + a `decorated` flag to decorated classes/methods (Angular/NestJS
 //	    framework entry points), so an older store with empty meta on decorated TS
 //	    declarations must re-index for the dead_symbol decorator exemption to apply.
-const ingestSemanticsVersion = "11"
+//	12: WP-J11 — the JVM binders move from default-off to default-on
+//	    (engine/semantic/semantic.go), so the same `*.java`/`*.kt` files index
+//	    into a graph whose confirmed `calls`/`references`/`implements` edges
+//	    exist where the pre-flip binary dropped them; a flipped binary greeting
+//	    a pre-flip store with "up to date" would serve bytes it could never
+//	    produce, so the bump forces one cold re-index via `graphi rebuild`.
+const ingestSemanticsVersion = "12"
 
 const (
 	semanticsVersionKey        = "semantics_version"

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samibel/graphi/core/profile"
 	"gopkg.in/yaml.v3"
 )
 
@@ -58,6 +59,7 @@ type parityRow struct {
 	TestName    string `yaml:"test_name"`
 	Fixture     string `yaml:"fixture"`
 	Store       string `yaml:"store"`
+	Profile     string `yaml:"profile"`
 	Assertion   string `yaml:"assertion"`
 	HarnessRow  string `yaml:"harness_row"`
 	KnownDefect string `yaml:"known_defect"`
@@ -86,10 +88,24 @@ const (
 )
 
 var (
-	legalKinds       = []string{kindChangeClass, kindCrashCondition}
-	legalVerdicts    = []string{verdictProven, verdictPartial, verdictAbsent}
-	legalFixtures    = []string{"synthetic stub parser", "production Go parser", "real pinned repository"}
-	legalStores      = []string{"MemStore", "SQLite", "both", storeNone}
+	legalKinds    = []string{kindChangeClass, kindCrashCondition}
+	legalVerdicts = []string{verdictProven, verdictPartial, verdictAbsent}
+	// legalFixtures lists every parser-kind label a row may publish. Closed by
+	// construction: the template's TEMPL-P3 (docs/plan/2026-08-per-language-ga-template-v1.md)
+	// requires a non-Go member before the third family ships, and the JVM rows
+	// (parity-classes-jvm.yaml) carry fixture: "production Go parser" only because
+	// the JVM/JVM-language work predated the template's vocabulary expansion — the
+	// label is a placeholder, not a refusal to add members. Adding a member here
+	// means every existing row's value still passes; the JVM rows stay on
+	// "production Go parser" (their binder is parsed by the Go parser registry,
+	// which is the same fact as on Go) and the Python / TS rows pick the member
+	// that names their production backend.
+	legalFixtures = []string{"synthetic stub parser", "production Go parser", "production Python parser", "production TypeScript parser", "real pinned repository"}
+	legalStores   = []string{"MemStore", "SQLite", "both", storeNone}
+	// legalProfiles is the INDEX-PROFILE axis (W0.f-4, ADR 0010): "default" is
+	// ingest.New's zero value, "balanced" is what the CLI resolves for every
+	// shipped pass, "both" is the two-value axis parityProfiles() runs.
+	legalProfiles    = []string{"default", "balanced", "both"}
 	legalAssertions  = []string{assertionSnapshotBytes, assertionEnvelopeBytes, "spot query"}
 	legalHarnessRows = []string{harnessRequired, harnessDeferred}
 
@@ -443,6 +459,37 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 		}
 	})
 
+	// AXIS binds the YAML's `profile: both` CLAIM to the axis the harness
+	// actually runs. Without it the guard is one-directional — exactly the hole
+	// review round 1 (finding 3) demonstrated: deleting the balanced entry from
+	// parityProfiles() left `go test ./engine/conformance/` green while 16 rows
+	// kept publishing "proven under both profiles", silently reverting coverage
+	// to the pre-PARITY-003 state the axis exists to prevent. The same
+	// direction is asserted for the store axis, which had the identical
+	// weakness against parityBackends().
+	t.Run("AXIS", func(t *testing.T) {
+		wantProfiles := map[profile.Profile]bool{"": false, profile.Balanced: false}
+		for _, pr := range parityProfiles() {
+			if _, declared := wantProfiles[pr.p]; !declared {
+				t.Errorf("AXIS: parityProfiles() runs profile %q, which no row can describe: the "+
+					"vocabulary is %v, so widening the axis means widening the YAML field too", pr.p, legalProfiles)
+				continue
+			}
+			wantProfiles[pr.p] = true
+		}
+		for p, seen := range wantProfiles {
+			if !seen {
+				t.Errorf("AXIS: parityProfiles() no longer runs profile %q, but rows still publish "+
+					"profile: \"both\" — the axis was narrowed without saying so. Either restore the "+
+					"axis entry or re-verdict every affected row (ADR 0010).", p)
+			}
+		}
+		if n := len(parityBackends()); n != 2 {
+			t.Errorf("AXIS: parityBackends() runs %d backend(s), but rows publish store: \"both\"; "+
+				"the store axis was narrowed without saying so", n)
+		}
+	})
+
 	t.Run("VOCABULARY", func(t *testing.T) {
 		// ADDED BY SW-157, and the reason is worth recording because it is a hole
 		// SW-156's own review found and had no instruction for.
@@ -488,15 +535,26 @@ func TestParityMatrix_DriftGuard(t *testing.T) {
 			absent := r.Verdict == verdictAbsent
 			check("fixture", r.Fixture, legalFixtures, absent)
 			check("store", r.Store, legalStores, absent)
+			check("profile", r.Profile, legalProfiles, absent)
 			check("assertion", r.Assertion, legalAssertions, absent)
 			if absent {
-				if r.Fixture != "" || r.Store != "" || r.Assertion != "" {
-					t.Errorf("VOCABULARY: %q reads verdict: %q but still cites fixture=%q store=%q assertion=%q",
-						r.ID, verdictAbsent, r.Fixture, r.Store, r.Assertion)
+				if r.Fixture != "" || r.Store != "" || r.Assertion != "" || r.Profile != "" {
+					t.Errorf("VOCABULARY: %q reads verdict: %q but still cites fixture=%q store=%q profile=%q assertion=%q",
+						r.ID, verdictAbsent, r.Fixture, r.Store, r.Profile, r.Assertion)
 				}
-			} else if r.Fixture == "" || r.Store == "" || r.Assertion == "" {
-				t.Errorf("VOCABULARY: %q reads verdict: %q so fixture/store/assertion must all be set; "+
-					"got fixture=%q store=%q assertion=%q", r.ID, r.Verdict, r.Fixture, r.Store, r.Assertion)
+			} else if r.Fixture == "" || r.Store == "" || r.Assertion == "" || r.Profile == "" {
+				t.Errorf("VOCABULARY: %q reads verdict: %q so fixture/store/profile/assertion must all be set; "+
+					"got fixture=%q store=%q profile=%q assertion=%q",
+					r.ID, r.Verdict, r.Fixture, r.Store, r.Profile, r.Assertion)
+			}
+			// A row proven by the conformance change-class table runs the FULL
+			// profile axis, so it may not claim a single profile: that is the
+			// machine-checked half of ADR 0010's gate-gap closure. Rows proven
+			// elsewhere (the fault matrix drives the library default) say which.
+			if r.HarnessRow == harnessRequired && r.Profile != "both" && !absent {
+				t.Errorf("VOCABULARY: %q is a required harness row but records profile=%q; the "+
+					"change-class table runs parityProfiles() (default + balanced), so a required row "+
+					"is proven under BOTH or the axis has been narrowed without saying so", r.ID, r.Profile)
 			}
 			// known_defect is an open string (a defect id), not a closed set, so
 			// VOCABULARY checks only that it looks like an ID rather than prose —

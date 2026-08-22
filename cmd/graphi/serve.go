@@ -61,6 +61,13 @@ func runMCP(args []string) int {
 			return 1
 		}
 		defer rt.Close()
+		// The attach path knows its store outright: name it, so the trust and
+		// strict-query compositions read THAT store rather than re-resolving one
+		// from the process working directory. A socket attach leaves it zero —
+		// no local repository was bound, and there is nothing honest to name.
+		options = append(options, mcp.WithRepository(client.Repository{
+			Root: rt.Root, DBPath: rt.DBPath, MetaDir: rt.MetaDir,
+		}))
 		srv = mcp.NewServerWithClient(rt.Client, options...)
 	} else {
 		cwd := getwd()
@@ -95,7 +102,18 @@ func runMCP(args []string) int {
 			if err != nil {
 				return mcp.Binding{}, err
 			}
-			return mcp.Binding{Client: rt.Client, Close: rt.Close}, nil
+			// The binding names the repository it just resolved. Every
+			// repository-locating tool call then addresses THIS root — the one
+			// -root/GRAPHI_ROOT/client roots selected — instead of resolving
+			// from the server process's cwd, which for an MCP session is
+			// routinely a different repository altogether.
+			return mcp.Binding{
+				Client: rt.Client,
+				Close:  rt.Close,
+				Repository: client.Repository{
+					Root: rt.Root, DBPath: rt.DBPath, MetaDir: rt.MetaDir,
+				},
+			}, nil
 		}, options...)
 	}
 	defer srv.Close()

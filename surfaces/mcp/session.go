@@ -320,7 +320,7 @@ func (s *Server) runBind(ctx context.Context, gen uint64, roots []string) {
 	oldCleanup := s.cleanup
 	s.cleanup = binding.Close
 	s.bindErr = nil
-	s.bound.Store(&boundClient{client: binding.Client, stable: client.AsStable(binding.Client)})
+	s.bound.Store(&boundClient{client: binding.Client, stable: client.AsStable(binding.Client), repo: binding.Repository})
 	notify := s.optimisticList
 	s.optimisticList = false
 	s.mu.Unlock()

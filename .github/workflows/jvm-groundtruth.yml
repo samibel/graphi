@@ -48,20 +48,61 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # kotlinc for the Kotlin ground truth (the sandbox that developed this
-      # gate had javac but no kotlinc, so the Kotlin e2e path is proven for the
-      # first time HERE). Best-effort install; the Kotlin e2e test skips if it
-      # is unavailable rather than failing the job.
-      - name: install kotlinc
+      # kotlinc for the Kotlin ground truth, PINNED TO AN EXACT VERSION AND
+      # DIGEST (SW-173 AC-1). This step used to fetch
+      # `releases/latest/download/kotlin-compiler.zip`, which meant the same
+      # commit could compile differently on two days — and evidence produced by
+      # an unpinned compiler is not evidence under this programme's rules. The
+      # version is recorded beside every figure it produces, in
+      # corpus/manifest.json's per-pin `jvm_compile.toolchain` block.
+      #
+      # 1.9.24 is the last 1.9.x, which is the line both Kotlin corpus pins were
+      # written against (okio 3.9.1, kotlinx.serialization 1.6.3 at Kotlin
+      # 1.9.22), and a compiler plugin must match its compiler exactly.
+      #
+      # The digest is verified BEFORE the archive is unpacked, and the step fails
+      # closed: a compiler fetched without a digest check can change under the
+      # pin, which is the whole failure mode this replaces.
+      #
+      # SW-173 also proved this path locally for the first time — the sandbox
+      # that wrote it had no kotlinc, and the standing note that "kotlinc has
+      # never compiled in this environment" is no longer true: with this exact
+      # pin it compiles, and TestGroundTruth_Kotlin_LiveKotlinc passes.
+      - name: install kotlinc (pinned)
+        env:
+          KOTLIN_VERSION: "1.9.24"
+          KOTLIN_SHA256: "eb7b68e01029fa67bc8d060ee54c12018f2c60ddc438cf21db14517229aa693b"
         run: |
-          curl -fsSL https://github.com/JetBrains/kotlin/releases/latest/download/kotlin-compiler.zip -o /tmp/kotlinc.zip || true
-          if [ -f /tmp/kotlinc.zip ]; then
-            unzip -q /tmp/kotlinc.zip -d /opt || true
-            echo "/opt/kotlinc/bin" >> "$GITHUB_PATH"
-          fi
+          set -euo pipefail
+          url="https://github.com/JetBrains/kotlin/releases/download/v${KOTLIN_VERSION}/kotlin-compiler-${KOTLIN_VERSION}.zip"
+          curl -fsSL "$url" -o /tmp/kotlinc.zip
+          echo "${KOTLIN_SHA256}  /tmp/kotlinc.zip" | sha256sum -c -
+          unzip -q /tmp/kotlinc.zip -d /opt
+          echo "/opt/kotlinc/bin" >> "$GITHUB_PATH"
 
-      - name: parser + comparator unit tests (checked-in real javap fixture)
-        run: go test ./internal/jvmgroundtruth/ -run 'TestParseJavap|TestParseMethodRef|TestCompare|TestConfirmed' -count=1
+      # AC-2: the javac version is recorded beside the evidence, not merely
+      # requested. setup-java above asks for Temurin 21; this prints what was
+      # actually installed, so the log carries the exact version every figure
+      # below was produced with.
+      - name: record the pinned toolchain versions
+        run: |
+          javac -version
+          javap -version
+          kotlinc -version
 
-      - name: live differential soundness (javac/kotlinc + the binder)
-        run: go test ./internal/jvmgroundtruth/ -run 'TestGroundTruth' -count=1 -v
+      # The whole package, not a hand-maintained -run list. The previous list
+      # named four prefixes and would have silently skipped every test added
+      # since; a gate that only runs the tests someone remembered to add to a
+      # regex is not a gate. -v so the measured recall, the abstention counts
+      # and the named refusal reasons land in the log, where the D2 coverage
+      # number is read from.
+      - name: jvm ground-truth suite (parser, comparator, live differential)
+        run: go test ./internal/jvmgroundtruth/... -count=1 -v
+
+      # SW-172: the signature-aware differential is the one that can fail on an
+      # overload mis-binding. The by-name gate above is structurally incapable
+      # of it — node identity collapses overloads (engine/jvmresolve/qn.go) —
+      # so it is called out separately to keep that distinction visible in the
+      # job's step list rather than buried in one green tick.
+      - name: signature-aware soundness (arity + erased parameter types)
+        run: go test ./internal/jvmgroundtruth/ -run 'TestArity_|TestSignature_|TestVerify_|TestOwnerWalk|TestJVMSOUND' -count=1 -v

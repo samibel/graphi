@@ -1,0 +1,377 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "query_latency",
+  "repo": "kotlinx.serialization",
+  "collected": true,
+  "samples": 223,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/tmp/sw177-wd/cur",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "3b8d43f6bc0a264c74424ca209b6fbd2401c9a31",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "query_operations": [
+    {
+      "operation": "agent_brief",
+      "class": "agent_tools",
+      "samples_us": [
+        41168,
+        41196,
+        40585
+      ]
+    },
+    {
+      "operation": "callees",
+      "class": "structural",
+      "samples_us": [
+        79,
+        284,
+        256,
+        95,
+        68,
+        166,
+        87,
+        44,
+        44,
+        59,
+        59,
+        58,
+        57,
+        40,
+        63,
+        41,
+        41,
+        43,
+        43,
+        39,
+        44,
+        40,
+        41,
+        42,
+        40
+      ]
+    },
+    {
+      "operation": "callers",
+      "class": "structural",
+      "samples_us": [
+        254,
+        55,
+        40,
+        55,
+        57,
+        45,
+        40,
+        56,
+        56,
+        40,
+        40,
+        40,
+        39,
+        57,
+        39,
+        39,
+        39,
+        39,
+        39,
+        37,
+        38,
+        39,
+        38,
+        39,
+        39
+      ]
+    },
+    {
+      "operation": "change_risk",
+      "class": "agent_tools",
+      "samples_us": [
+        392,
+        131,
+        93,
+        101,
+        101,
+        71,
+        72,
+        81,
+        77,
+        69
+      ]
+    },
+    {
+      "operation": "definition",
+      "class": "structural",
+      "samples_us": [
+        56,
+        56,
+        57,
+        55,
+        66,
+        63,
+        55,
+        56,
+        55,
+        55,
+        60,
+        63,
+        56,
+        54,
+        58,
+        57,
+        55,
+        66,
+        56,
+        53,
+        59,
+        55,
+        65,
+        63,
+        57
+      ]
+    },
+    {
+      "operation": "explain_symbol",
+      "class": "agent_tools",
+      "samples_us": [
+        399,
+        146,
+        134,
+        152,
+        129,
+        136,
+        154,
+        126,
+        125,
+        125
+      ]
+    },
+    {
+      "operation": "impact",
+      "class": "structural",
+      "samples_us": [
+        3059,
+        303,
+        73,
+        143,
+        136,
+        71,
+        71,
+        134,
+        144,
+        94,
+        78,
+        70,
+        81,
+        144,
+        75,
+        71,
+        71,
+        85,
+        76,
+        73,
+        73,
+        70,
+        76,
+        81,
+        78
+      ]
+    },
+    {
+      "operation": "neighborhood",
+      "class": "structural",
+      "samples_us": [
+        319,
+        117,
+        107,
+        87,
+        118,
+        90,
+        102,
+        101,
+        81,
+        84,
+        85,
+        85,
+        84,
+        86,
+        86,
+        70,
+        71,
+        68,
+        70,
+        70,
+        71,
+        72,
+        72,
+        72,
+        70
+      ]
+    },
+    {
+      "operation": "references",
+      "class": "structural",
+      "samples_us": [
+        40,
+        38,
+        39,
+        37,
+        39,
+        38,
+        41,
+        41,
+        41,
+        39,
+        39,
+        38,
+        39,
+        38,
+        39,
+        38,
+        43,
+        38,
+        41,
+        37,
+        38,
+        38,
+        38,
+        41,
+        39
+      ]
+    },
+    {
+      "operation": "related_files",
+      "class": "agent_tools",
+      "samples_us": [
+        305,
+        93,
+        87,
+        78,
+        79,
+        75,
+        79,
+        73,
+        70,
+        73
+      ]
+    },
+    {
+      "operation": "search",
+      "class": "search",
+      "samples_us": [
+        221,
+        109,
+        220,
+        91,
+        212,
+        100,
+        301,
+        135,
+        282,
+        98,
+        228,
+        89,
+        202,
+        84,
+        194,
+        86,
+        199,
+        89,
+        190,
+        84,
+        191,
+        86,
+        200,
+        90,
+        212,
+        89,
+        219,
+        91,
+        206,
+        88,
+        217,
+        89,
+        205,
+        88,
+        203,
+        87,
+        208,
+        88,
+        210,
+        87
+      ]
+    }
+  ],
+  "query_pools": [
+    {
+      "id": "agent_tools",
+      "kind": "class",
+      "operations": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ]
+    },
+    {
+      "id": "search",
+      "kind": "class",
+      "operations": [
+        "search"
+      ]
+    },
+    {
+      "id": "structural",
+      "kind": "class",
+      "operations": [
+        "callees",
+        "callers",
+        "definition",
+        "impact",
+        "neighborhood",
+        "references"
+      ]
+    },
+    {
+      "id": "agent_context_p95",
+      "kind": "gate_pool",
+      "operations": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ]
+    },
+    {
+      "id": "caller_callee_impact_p95",
+      "kind": "gate_pool",
+      "operations": [
+        "callees",
+        "callers",
+        "impact"
+      ]
+    },
+    {
+      "id": "warm_search_p95",
+      "kind": "gate_pool",
+      "operations": [
+        "search"
+      ]
+    }
+  ]
+}

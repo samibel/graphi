@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
@@ -137,7 +136,6 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, moduleMap
 	sort.Strings(langs)
 
 	edgeIDs := make([]string, 0)
-	var importEdges []model.Edge
 	// WP-03: interned external nodes minted by the linker (Go stdlib / 3rd-party
 	// call/ref targets) are committed BEFORE their incident edges so the batch's
 	// endpoint check (ErrUnknownEdgeEndpoint) passes. Any node that ends up
@@ -182,13 +180,35 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, moduleMap
 				if i.profile == profile.Fast && e.Kind() == "imports" {
 					continue
 				}
-				// Balanced mode aggregates external imports by target package.
-				if i.profile == profile.Balanced && e.Kind() == "imports" {
-					if path, ok := importPathFromReason(e.Reason()); ok && isExternalImport(path) {
-						importEdges = append(importEdges, e)
-						continue
-					}
-				}
+				// NO BALANCED IMPORT AGGREGATION HERE — REMOVED, NOT MOVED
+				// (PARITY-003, ADR 0010). Balanced used to divert "external"
+				// imports edges and collapse them to ONE edge per target node,
+				// from a representative source. Two independent wrongs:
+				//
+				//  1. PARITY-UNSAFE BY CONSTRUCTION. The collapse is a function
+				//     of the file set of ONE pass, while a re-link only carries
+				//     a subset — so `sync` re-aggregated the subset while the
+				//     previous pass's aggregated edges survived the from-owned
+				//     sweep, and settled a superset of what `rebuild` produces.
+				//     Deterministic, imports-only, measured on gin (+5) and
+				//     grpc-go (+120): docs/rc/parity-matrix-real-repo.md.
+				//  2. IT DROPPED TRUE EDGES. With two importers of one target,
+				//     only the representative kept an edge — so a file that
+				//     really does import a package had no `imports` edge at
+				//     all, and the surviving edge carried the OTHER importers'
+				//     file:line evidence. That is a recall defect in a GA
+				//     operation (related_files / imports), not a size
+				//     optimization.
+				//
+				// It also had no legitimate prey in ANY language: a true
+				// external import mints no imports edge at all (Go
+				// packageFileNodes, clausePackageFileNodes and packageNodeByPath
+				// all return nothing for a package the repo does not declare),
+				// so every edge it could see was intra-repo. `isExternalImport`
+				// split on "/" only, which classified the repository's OWN
+				// dotted module path (github.com/…, and every Java/Python/C#
+				// package path) as external. Balanced therefore now behaves
+				// exactly like Deep for imports edges; Fast still drops them.
 				// WP-08 (deferred): chunk this edge commit into ~50k-edge durable
 				// transactions instead of accumulating the whole pass in one batch.
 				if err := w.PutEdge(ctx, e); err != nil {
@@ -213,17 +233,6 @@ func (i *Ingester) linkFiles(ctx context.Context, w graphstore.Writer, moduleMap
 			if progress != nil {
 				progress(ProgressEvent{Phase: PhaseLink, Done: done, Total: total})
 			}
-		}
-	}
-
-	// Aggregate external imports in balanced mode by target package.
-	if i.profile == profile.Balanced && len(importEdges) > 0 {
-		groups := aggregateImportsByTarget(importEdges)
-		for _, e := range groups {
-			if err := w.PutEdge(ctx, e); err != nil {
-				return nil, fmt.Errorf("ingest: link put aggregated edge %s: %w", e.ID(), err)
-			}
-			edgeIDs = append(edgeIDs, string(e.ID()))
 		}
 	}
 
@@ -292,64 +301,4 @@ func (i *Ingester) sweepOrphanExternalNodes(ctx context.Context) error {
 		}
 	}
 	return batch.Commit(ctx)
-}
-
-// importPathFromReason extracts the import path from a linker import edge reason.
-func importPathFromReason(reason string) (string, bool) {
-	const prefix = "file imports package "
-	if idx := strings.LastIndex(reason, prefix); idx >= 0 {
-		return reason[idx+len(prefix):], true
-	}
-	return "", false
-}
-
-// isExternalImport reports whether path looks like an external (vendored or
-// third-party) import path rather than a same-repo module path. The heuristic
-// is: any import path containing a dot in its first segment is treated as
-// external (e.g. github.com/..., example.com/..., golang.org/...).
-func isExternalImport(path string) bool {
-	if path == "" {
-		return false
-	}
-	first := path
-	if i := strings.Index(first, "/"); i >= 0 {
-		first = first[:i]
-	}
-	return strings.Contains(first, ".")
-}
-
-// aggregateImportsByTarget groups external import edges by their target node and
-// returns one aggregated edge per target, preserving the target and the first
-// source while summarizing the count in the reason. The returned slice is
-// sorted by EdgeId for deterministic iteration.
-func aggregateImportsByTarget(edges []model.Edge) []model.Edge {
-	groups := map[model.NodeId][]model.Edge{}
-	for _, e := range edges {
-		groups[e.To()] = append(groups[e.To()], e)
-	}
-	var out []model.Edge
-	for _, group := range groups {
-		if len(group) == 1 {
-			out = append(out, group[0])
-			continue
-		}
-		// Use the first edge as the representative source; all edges share
-		// the same kind, so the aggregated edge points from that source to the target.
-		rep := group[0]
-		var evidence []string
-		for _, e := range group {
-			evidence = append(evidence, e.Evidence()...)
-		}
-		reason := fmt.Sprintf("aggregated %d imports of %s", len(group), rep.Reason())
-		agg, err := model.NewEdge(rep.From(), rep.To(), rep.Kind(), rep.Tier(), rep.Confidence(), reason, graphstore.CompactEvidence(evidence))
-		if err != nil {
-			// Deterministic edge construction should never fail for these inputs;
-			// fall back to the representative edge so indexing does not abort.
-			out = append(out, rep)
-			continue
-		}
-		out = append(out, agg)
-	}
-	sort.Slice(out, func(i, j int) bool { return out[i].ID() < out[j].ID() })
-	return out
 }

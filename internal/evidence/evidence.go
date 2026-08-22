@@ -82,6 +82,7 @@ type Gate struct {
 	Owner       string
 	NextAction  string
 	Due         string
+	Provenance  string
 }
 
 // Index is the whole evidence index: the cited candidate plus the gate rows in
@@ -240,6 +241,8 @@ func assignGate(g *Gate, key, val string) error {
 		g.NextAction = val
 	case "due":
 		g.Due = val
+	case "provenance":
+		g.Provenance = val
 	default:
 		return fmt.Errorf("unknown gate field %q", key)
 	}

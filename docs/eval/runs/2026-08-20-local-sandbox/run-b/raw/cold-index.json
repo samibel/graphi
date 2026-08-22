@@ -1,0 +1,401 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "ky",
+  "collected": true,
+  "samples": 10,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/var/tmp/perf-ky-b",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+    "candidate_match": false,
+    "worktree_dirty": true,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:56:41Z",
+      "clone_ms": 2041,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-01/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-01/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 83,
+        "peak_rss_mb": 294,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 294,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:56:43Z",
+      "clone_ms": 1998,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-02/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-02/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 80,
+        "peak_rss_mb": 290,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 290,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:56:45Z",
+      "clone_ms": 2132,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-03/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-03/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 82,
+        "peak_rss_mb": 291,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 292,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-03.json"
+    },
+    {
+      "run": 4,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:56:48Z",
+      "clone_ms": 1941,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-04/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-04/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 81,
+        "peak_rss_mb": 293,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 293,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-04.json"
+    },
+    {
+      "run": 5,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:56:50Z",
+      "clone_ms": 1856,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-05/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-05/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 100,
+        "peak_rss_mb": 283,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 284,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-05.json"
+    },
+    {
+      "run": 6,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:56:53Z",
+      "clone_ms": 2081,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-06/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-06/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 82,
+        "peak_rss_mb": 296,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 296,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-06.json"
+    },
+    {
+      "run": 7,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:56:55Z",
+      "clone_ms": 1898,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-07/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-07/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 80,
+        "peak_rss_mb": 291,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 292,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-07.json"
+    },
+    {
+      "run": 8,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:56:57Z",
+      "clone_ms": 1951,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-08/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-08/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 80,
+        "peak_rss_mb": 297,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 298,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-08.json"
+    },
+    {
+      "run": 9,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:57:00Z",
+      "clone_ms": 1952,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-09/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-09/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 78,
+        "peak_rss_mb": 286,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 287,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-09.json"
+    },
+    {
+      "run": 10,
+      "status": "completed",
+      "commit": "6812b879ef5629cd65caf00c21af7fa24f7dbaa4+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "38ac18bc1ac3268130de766891ce9b718eb8145a",
+      "started_at": "2026-08-20T20:57:02Z",
+      "clone_ms": 1930,
+      "cold": {
+        "store_path": "/var/tmp/perf-ky-b/run-10/ky.db",
+        "meta_path": "/var/tmp/perf-ky-b/run-10/ky-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 82,
+        "peak_rss_mb": 293,
+        "db_size_bytes": 176128,
+        "nodes": 182,
+        "edges": 157,
+        "files": 37
+      },
+      "stable_peak_rss_mb": 293,
+      "bytes_per_edge": 1121.8343949044586,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/tmp/perf-ky-b/cold-run-10.json"
+    }
+  ]
+}

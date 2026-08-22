@@ -1,5 +1,68 @@
 # Per-Language Binary-Budget Sub-Allocation (SW-052, EP-009 STEP-0)
 
+> ## AMENDMENT — 2026-08-19 (SW-177, W1.d): Kotlin re-measured against the gate, and the gate has 0.25 % headroom
+>
+> Per D6 this amendment is **added**; nothing below is rewritten, re-pointed or
+> deleted. Measured at the W0.f-5 candidate `3b8d43f`, using
+> `internal/release.CanonicalBuildArgs`' own contract
+> (`-trimpath -buildvcs=true -tags <the 21 registered subset tags> -ldflags -X …version.Version=dev`,
+> `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1`) — i.e. the artifact
+> `internal/bench` actually gates, not a lookalike.
+>
+> **1. The 337,236 B figure in the per-language table below is CORRECT for the
+> blob** — `gotreesitter@v0.20.2/grammars/grammar_blobs/kotlin.bin` stats at
+> exactly 337,236 bytes.
+>
+> **2. But the blob size is NOT the budget-relevant number, and the gap is 14 %.**
+> Building the shipped default with and without `grammar_subset_kotlin`:
+>
+> | build | bytes |
+> |---|---|
+> | shipped default, all 21 registered subset tags | **34,162,926** |
+> | same build, `grammar_subset_kotlin` removed | 33,777,508 |
+> | **Kotlin's marginal cost in the shipped binary** | **385,418** |
+>
+> The tag links `kotlin_scanner.go`, the parser-result and the registry
+> registration as well as the blob. **The per-language table below lists BLOB
+> sizes, so it understates every language's true binary cost by a similar
+> margin.** The table is left exactly as published; this note is the correction,
+> and re-measuring the other 18 languages the same way is not in SW-177's scope.
+>
+> **3. The whole-binary gate is met, with 0.25 % of headroom left.**
+> `bench-budget.yml` reads `binary_size_bytes: baseline 32,509,872, budget
+> 34,250,000`.
+>
+> ```
+> measured 34,162,926  ≤  budget 34,250,000     PASS
+> headroom     87,074 B  =  0.25 % of budget
+> Kotlin costs 385,418 B  =  4.4× the remaining headroom
+> ```
+>
+> **No baseline and no budget is moved by SW-177.** The gate is stated rather
+> than silently widened, which is what AC-2 asks for: Kotlin is comfortably
+> *inside* the gate, and the gate itself is *not* comfortable — one further
+> grammar of Kotlin's size would breach it.
+>
+> **4. The growth is CODE, not the toolchain — measured, not assumed.** The
+> +5.1 % over the recorded baseline could plausibly have been go1.26.5 → go1.26.6.
+> It is not. Rebuilding the *same* older tree with the *newer* toolchain isolates
+> it:
+>
+> | tree | toolchain | bytes |
+> |---|---|---|
+> | `80d67ed` (v0.7.1) | go1.26.5 (its own `go` directive) | 32,741,344 |
+> | `80d67ed` | **go1.26.6** | 32,750,198 |
+> | `3b8d43f` (candidate) | go1.26.6 | 34,162,926 |
+>
+> Toolchain alone: **+8,854 B (+0.03 %)**. Code alone: **+1,412,728 B (+4.31 %)**.
+>
+> **5. What was NOT verified.** These are cross-builds from darwin/arm64; the
+> gate runs natively on `ubuntu-latest`. Every **delta** above is same-method and
+> therefore robust to any cross-vs-native offset, but the **absolute** headroom
+> figure assumes a cross-built linux/amd64 binary is byte-identical to a natively
+> built one, and that assumption was **not tested** — it needs one CI dispatch.
+> Full record: [`../docs/eval/runs/2026-08-19-local-sandbox/g7-jvm-baseline.md`](../docs/eval/runs/2026-08-19-local-sandbox/g7-jvm-baseline.md) §8.
+
 This file defines the per-worker binary-size budget for graphi's tier-1 language
 grammars: which languages are in scope, how the size cost is modeled, and the
 measured deltas each worker recorded. It's for contributors adding or auditing

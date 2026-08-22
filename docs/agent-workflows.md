@@ -254,3 +254,6 @@ graphi diagnose -db graph.db -all                 # everything
 - `unavailable` outcomes mean no graph services are wired: pass `-db` or run
   `graphi index` first.
 - Index profiles trade speed for depth: `graphi index -profile fast|balanced|deep`.
+  Today only `fast` reduces the graph (it skips type resolution and omits
+  `imports` edges); `balanced` (the default) and `deep` produce identical graphs
+  since ADR 0010.

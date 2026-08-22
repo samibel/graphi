@@ -3,8 +3,17 @@
 # Companion to docs/rc/parity-class-matrix.md (SW-156). The prose document carries
 # the findings and the reasoning; THIS file is what code binds to.
 #
-# matrix_version: 2   (bump when a row is added, removed, or re-kinded — never for
+# matrix_version: 3   (bump when a row is added, removed, or re-kinded — never for
 #                      a verdict change, which is evidence moving, not shape moving)
+#
+#                      BUMPED 2 -> 3 by W0.f-4 (ADR 0010), for the same reason
+#                      the 1 -> 2 bump below records: a FIELD was added
+#                      (`profile`), which is a schema change a consumer must
+#                      parse. No row was added, removed or re-kinded. The field
+#                      exists because the harness gained a second axis — the
+#                      INDEX PROFILE — after PARITY-003 proved that a table
+#                      running only the library's zero-value profile is blind to
+#                      every defect in the profile the product actually ships.
 #
 #                      BUMPED 1 -> 2 by SW-157 review round 1, for a case the rule
 #                      above did not contemplate: a FIELD was added
@@ -267,7 +276,8 @@
 # ---------------------------------------------------------------------------
 # WHAT THE ROWS SAY
 # ---------------------------------------------------------------------------
-# Exactly 17 rows: 15 change classes (PRD FR-7) + 2 crash conditions (Delta §9).
+# Exactly 19 rows: 17 change classes (PRD FR-7's 15 + the two ADR 0009 rows,
+# change_colliding_package_dir and add_nested_gomod) + 2 crash conditions (Delta §9).
 # The kinds are distinct and each row states its own kind. See the .md for the
 # 15-vs-16 resolution.
 #
@@ -296,6 +306,16 @@
 #              snapshot bytes (it omits node `meta`). No row's VERDICT rests on
 #              it; tests using it are cited in `note` as supporting only. See
 #              Finding 9 in the .md.
+# profile      default | balanced | both
+#              WHICH INDEX PROFILE the row is proven under, added by W0.f-4
+#              (ADR 0010). `default` is ingest.New's zero value (what an
+#              embedder gets); `balanced` is what core/profile.ResolveProfile
+#              returns for every shipped `graphi index/sync/rebuild`. The two
+#              differ in engine/ingest/linkfiles.go, and PARITY-003 lived
+#              exclusively in the second — so a row proven only under `default`
+#              says nothing about the product's own configuration. `both` is the
+#              two-value axis parityProfiles() runs, the same way `store: both`
+#              collapses the two-backend axis.
 # harness_row  required | deferred   (the drift-guard MISSING/VERDICT directions)
 # known_defect the id of a TRACKED PRODUCT DEFECT that makes this class genuinely
 #              non-parity today; "" when the class holds. It is NOT a waiver and
@@ -340,10 +360,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1053"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -358,10 +379,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1054"
     verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -376,10 +398,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1055"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -394,10 +417,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1056"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -412,10 +436,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1057"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -430,10 +455,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1058"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -448,10 +474,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1059"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -466,10 +493,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1060"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -484,10 +512,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1061"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -502,10 +531,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1062"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -520,10 +550,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1063"
     verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -542,6 +573,7 @@ parity_classes:
     test_name: ""
     fixture: ""
     store: ""
+    profile: ""
     assertion: ""
     harness_row: "deferred"
     known_defect: ""
@@ -556,10 +588,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1064"
     verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -574,10 +607,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1065"
     verdict: "PARTIAL"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -592,10 +626,11 @@ parity_classes:
     delta_source: "docs/plan/2026-07-graphi-p0-completion-delta-prd.md:1066"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -614,6 +649,7 @@ parity_classes:
     test_name: "TestFaultMatrix_FullPass_KillAtEveryBatchBoundary"
     fixture: "synthetic stub parser"
     store: "MemStore"
+    profile: "default"
     assertion: "snapshot bytes"
     harness_row: "deferred"
     known_defect: ""
@@ -632,6 +668,7 @@ parity_classes:
     test_name: "TestFaultMatrix_Incremental_KillAfterDurableGraphWrite"
     fixture: "synthetic stub parser"
     store: "MemStore"
+    profile: "default"
     assertion: "snapshot bytes"
     harness_row: "deferred"
     known_defect: ""
@@ -646,10 +683,11 @@ parity_classes:
     delta_source: "none"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""
@@ -664,10 +702,11 @@ parity_classes:
     delta_source: "none"
     verdict: "PROVEN"
     test_file: "engine/conformance/conformance_test.go"
-    test_line: "179"
+    test_line: "194"
     test_name: "TestFullVsIncremental_ByteParity"
     fixture: "production Go parser"
     store: "both"
+    profile: "both"
     assertion: "snapshot bytes"
     harness_row: "required"
     known_defect: ""

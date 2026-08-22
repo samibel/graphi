@@ -41,7 +41,11 @@ func main() { os.Exit(run()) }
 
 func run() int {
 	manifest := flag.String("manifest", "corpus/manifest.json", "corpus manifest path")
-	classesPath := flag.String("classes-file", parity.ClassesPath, "declared change-class matrix")
+	family := flag.String("family", "go",
+		"language family to run: \"go\" (the PRD FR-7 matrix over the Go pins) or \"jvm\" "+
+			"(WP-J7: the JVM change classes over the guava / okio / kotlinx.serialization pins, "+
+			"crossed over binder{off,on} x profile{resolved default, fast})")
+	classesPath := flag.String("classes-file", "", "declared change-class matrix (default: the family's own table)")
 	binary := flag.String("binary", "", "graphi binary to drive (default: build ./cmd/graphi into the workdir)")
 	workdir := flag.String("workdir", "", "work dir for clones, stores and snapshots (default: a temp dir)")
 	report := flag.String("report", "", "when set, write the machine-readable JSON report here")
@@ -56,6 +60,9 @@ func run() int {
 			"this can never retry a row into green")
 	verdictDiff := flag.String("verdict-diff", "", "compare the verdict sets of two reports (a.json,b.json) and exit non-zero if they differ")
 	countsDiff := flag.String("counts-diff", "", "compare per-row node/edge counts and snapshot digests of two reports (a.json,b.json) and exit non-zero if they differ — the Wave-0 determinism gate that -verdict-diff is structurally blind to")
+	allowLocal := flag.Bool("allow-local", false,
+		"admit manifest entries that point at a LOCAL PATH instead of a URL clone (dispatch-only; "+
+			"the hermetic tests open this door, the production runner keeps it shut — using it on a PR-gate run would let a row silently fall back to a fixture)")
 	flag.Parse()
 
 	if *verdictDiff != "" {
@@ -63,6 +70,23 @@ func run() int {
 	}
 	if *countsDiff != "" {
 		return compareCountsSets(*countsDiff)
+	}
+
+	// The family decides which declared class table is authoritative. Defaulting
+	// -classes-file per family (rather than to the Go table for both) is what
+	// stops a `-family jvm` run from silently measuring the Go row set and
+	// publishing it under a JVM heading.
+	switch *family {
+	case "go", "jvm":
+	default:
+		fmt.Fprintf(os.Stderr, "parity: -family must be \"go\" or \"jvm\", got %q\n", *family)
+		return 2
+	}
+	if *classesPath == "" {
+		*classesPath = parity.ClassesPath
+		if *family == "jvm" {
+			*classesPath = parity.ClassesPathJVM
+		}
 	}
 
 	rows, err := parity.LoadClasses(*classesPath)
@@ -109,11 +133,16 @@ func run() int {
 		PerClassTimeout: *timeout,
 		RunnerClass:     *runnerClass,
 		LifecycleRepeat: *lifecycleRepeat,
+		AllowLocal:      *allowLocal,
 		Log: func(format string, args ...any) {
 			fmt.Fprintf(os.Stderr, format+"\n", args...)
 		},
 	}
-	rep, err := r.Run(ctx, m, rows, prov)
+	run := r.Run
+	if *family == "jvm" {
+		run = r.RunJVM
+	}
+	rep, err := run(ctx, m, rows, prov)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "parity: %v\n", err)
 		return 2
@@ -130,6 +159,9 @@ func run() int {
 
 func printAndScore(rep parityreport.Report) int {
 	fmt.Printf("\nparity matrix — %s\n", rep.Provenance.Statement)
+	if rep.Family != "" {
+		fmt.Printf("  family        %s (%s)\n", rep.Family, rep.MatrixSource)
+	}
 	fmt.Printf("  run sha       %s\n", rep.Provenance.RunSHA)
 	fmt.Printf("  runner class  %s\n", orNone(rep.Provenance.RunnerClass))
 	fmt.Printf("  max tier      %d\n\n", rep.MaxTier)
@@ -138,7 +170,11 @@ func printAndScore(rep parityreport.Report) int {
 		if where == "" {
 			where = "-"
 		}
-		fmt.Printf("  %-24s %-9s %-10s %s\n", c.ID, c.Verdict, where, firstLine(c.Detail))
+		width := 24
+		if rep.Family == "jvm" {
+			width = 52 // the axis suffix is part of the id
+		}
+		fmt.Printf("  %-*s %-9s %-10s %s\n", width, c.ID, c.Verdict, where, firstLine(c.Detail))
 	}
 	fmt.Println()
 	// The lifecycle rows print their WHOLE SAMPLE, not a summary of it. A row

@@ -371,32 +371,101 @@ func LocalFirstCheck() Check {
 }
 
 // KnownDefectsCheck discloses OPEN, published product defects that affect a
-// GA operation — the claims-discipline rule applied to doctor: a user must be
-// able to learn a shipped limitation from the tool itself, not only from the
-// engineering record. Info severity, never pass: an open defect is not a
-// health failure of THIS install, but it is also never silently green. The
-// list is maintained by hand and must shrink to removal in the same change
-// that closes a defect; an empty list removes the check.
+// GA operation. Info severity, never pass: an open defect is not a health
+// failure of THIS install, but it is also never silently green. The list is
+// maintained by hand and must shrink to removal in the same change that closes
+// a defect; an empty list removes the check.
 //
-// The check was removed 2026-08-16 when its only entry (PARITY-002) closed,
-// and RESTORED the same day when the ADR 0009 re-measurement over pinned real
-// repositories isolated a SECOND, distinctly-mechanismed defect the fixture
-// gates cannot see: PARITY-003, in the Balanced profile's import aggregation.
+// The check's history IS the disclosure contract working, and is kept here
+// rather than lost with the code: removed when PARITY-002 closed, restored for
+// PARITY-003, removed when that closed, restored the same day for LINK-001 —
+// which the PARITY-003 fix's own review UNMASKED rather than introduced —
+// removed again when ADR 0011 closed LINK-001, and restored NOW (2026-08-19,
+// fourth time) for LINK-002 — and, from review round 1 of the same story, for
+// LINK-003 alongside it.
+//
+// LINK-002's entry here first shipped in draft claiming the defect "drops true
+// edges only and never emits a wrong one". That was FALSE and is corrected
+// below: the defect also REDIRECTS edges. It is recorded rather than quietly
+// rewritten because the correction is the whole reason the entry is trustworthy
+// — the same over-claim was published on three user surfaces at once, and the
+// stop-ship ruling that rested on it is now reopened as an owner question.
+//
+// LINK-002 is NOT a regression of LINK-001 and the two must not be conflated:
+// ADR 0011 narrowed fileNodesByDir at READ time, while LINK-002 is a different
+// map (clauseByDir) with disjoint consumers. LINK-002 predates both and was
+// simply never disclosed until it was reproduced. Record:
+// docs/rc/link-002-clause-by-dir-recall.md.
+//
+// A workaround named here must be one the CLI accepts: the PARITY-003
+// disclosure shipped "-profile full", which profile.Parse rejects, so verify
+// the string before shipping it. The workaround below was executed against the
+// built binary — including its negative case, which is why the `fast` profile
+// is named as an exception rather than quietly omitted.
 func KnownDefectsCheck() Check {
 	return checkFunc{
 		id:       "known-defects",
 		category: "known-defects",
 		fn: func(ctx context.Context, env Env) CheckResult {
 			return StringResult("known-defects", "known-defects",
-				"PARITY-003 (open): under the DEFAULT index profile (balanced), `graphi sync` "+
-					"can settle a superset of the file→file imports edges `graphi rebuild` "+
-					"produces over the identical tree — deterministic, only imports edges, only "+
-					"repositories whose module path has a dotted first segment (github.com/…). "+
-					"Cause: the profile's per-target import aggregation is computed over the "+
-					"files of ONE pass, so a re-link re-aggregates a subset while the previous "+
-					"pass's aggregated edges survive. Record: docs/rc/parity-matrix-real-repo.md. "+
-					"Workaround: run `graphi rebuild` when exact imports/related_files fidelity "+
-					"matters, or index with -profile full.",
+				"LINK-002 (open): in a Go directory that declares TWO package clauses — most "+
+					"often a package beside its external `_test` package — only the last clause "+
+					"the index happens to see is kept, so methods under the losing clause are "+
+					"invisible to the heuristic recv.Method call resolver. `callers`, `callees`, "+
+					"`impact`, `neighborhood` and degree-ranked output (agent_brief, "+
+					"search_hybrid) then return a confident but INCOMPLETE answer, with no skip "+
+					"and no diagnostic. IT ALSO EMITS WRONG EDGES: where the surviving clause "+
+					"declares a method of the same name, the call is not dropped but REDIRECTED "+
+					"to that unrelated method (a `c.Reset()` on a `*shop.Cart` pointing at "+
+					"`shop_test.Fixture.Reset`) — hiding a clause manufactures false uniqueness "+
+					"and defeats the resolver's own skip-on-ambiguity rule. The wrong edge is "+
+					"always `heuristic` tier (0.6), never `confirmed`; under `-profile balanced` "+
+					"and `-profile deep` the correct `confirmed` edge is emitted alongside it, "+
+					"but under `-profile fast` the wrong edge is the only one. It "+
+					"is deterministic per tree and reproduces under fast, balanced and deep. "+
+					"Measured on graphi's own tree: 136 of 1979 method declarations (6.9%) "+
+					"unreachable, 108 of them in engine/ingest; 21 of 105 method-declaring "+
+					"directories hold more than one package clause and 11 lose methods today. "+
+					"How often the REDIRECTION happens is NOT measured. `references`, `imports` "+
+					"and `search` are unaffected. Record: docs/rc/link-002-clause-by-dir-recall.md. "+
+					"Workaround: where the receiver's type is import-qualified (`*shop.Cart`) the "+
+					"go/types type-checker resolves the call instead and the edge is `confirmed` "+
+					"— this holds under `-profile balanced` (the default) and `-profile deep`, "+
+					"but NOT under `-profile fast`, which skips the type-resolution pass. "+
+					"STOP-SHIP RULING IS OPEN and is the owner's: D5 (\"a wrong edge is "+
+					"stop-ship\") is stated unqualified, and whether it binds heuristic-tier "+
+					"edges has never been decided. See section 9 of the record.\n\n"+
+					"LINK-003 (open): the same resolver keeps only ONE entry per (package, "+
+					"method-name) pair — `idx.byClause[clause][dir][bare]` is also written "+
+					"unconditionally, and unlike `byDir` it has no `dirAmbiguous` companion, so "+
+					"the collision is invisible to the resolver. A package declaring both "+
+					"`func (a *A) String()` and `func (b *B) String()` therefore resolves every "+
+					"unqualified `x.String()` to whichever won the last write — a WRONG "+
+					"heuristic-tier edge, with no package-clause collision involved. Same "+
+					"affected operations, same tier confinement and same workaround as LINK-002. "+
+					"Measured on graphi's own tree: 663 of 1979 method declarations (33.5%) are "+
+					"unreachable OR shadowed once both defects are counted, versus 136 (6.9%) "+
+					"for LINK-002 alone — roughly 5x the surface. Filed 2026-08-19; not fixed, "+
+					"and the fix must close both defects together. Record: section 10 of "+
+					"docs/rc/link-002-clause-by-dir-recall.md.\n\n"+
+					"LINK-004 (open): a Python import whose module path has MORE THAN ONE dotted "+
+					"segment resolves to nothing — `from pkg.util import helper` and "+
+					"`import pkg.util` produce no `calls` edge AND no `imports` edge, the two "+
+					"commonest import forms in real Python. The linker keys an import path on "+
+					"its LAST dotted segment (`pkg.util` -> `util`) while a symbol's package "+
+					"clause is its PARENT DIRECTORY base (`pkg`); the two coincide only for "+
+					"single-segment module paths, which is the shape every existing test uses. "+
+					"`related_files`, `callers`, `callees`, `impact` and `neighborhood` on "+
+					"Python therefore lose those relationships with no skip and no diagnostic. "+
+					"Single-segment forms are unaffected: `import util`, "+
+					"`from util import helper`, `from pkg import util` and "+
+					"`from pkg import helper` all resolve. Workaround: import the PACKAGE, not "+
+					"the module — rewrite `from pkg.util import helper` as "+
+					"`from pkg import util` and call `util.helper()`, which resolves and "+
+					"additionally emits the file->file `imports` edge (verified against the "+
+					"built CLI, including its negative case). How much of a real Python "+
+					"repository this loses is NOT measured. Filed 2026-08-19 (SW-183); not "+
+					"fixed. Record: section 3 of docs/rc/capability-audit-2026-08-19.md.",
 				StatusInfo)
 		},
 	}

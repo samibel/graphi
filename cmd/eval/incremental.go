@@ -43,6 +43,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
@@ -434,7 +435,7 @@ func incrementalSourceFiles(ctx context.Context, store graphstore.Graphstore, ro
 	packages := map[string]string{}
 	var files []string
 	for _, f := range stats.Files {
-		if !modifiableGoFile(f.Path) {
+		if !modifiableSourceFile(f.Path) {
 			continue
 		}
 		abs := filepath.Join(root, filepath.FromSlash(f.Path))
@@ -461,19 +462,44 @@ func incrementalSourceFiles(ctx context.Context, store graphstore.Graphstore, ro
 	return files, packages, nil
 }
 
-// modifiableGoFile is the filter: Go source the sequence may edit. Test files
-// are excluded because a `_test.go` change exercises a different ingest shape
-// and would make the classes incomparable; vendored and generated trees are
-// excluded because they are not what a user edits.
-func modifiableGoFile(p string) bool {
-	if !strings.HasSuffix(p, ".go") || strings.HasSuffix(p, "_test.go") {
-		return false
-	}
+// modifiableSourceFile is the filter: source files of any registered language
+// the sequence may edit. Test files are excluded where the build shape would
+// change (Go's `_test.go` has a different ingest shape and would make the
+// change classes incomparable); vendored and generated trees are excluded
+// because they are not what a user edits.
+//
+// Extension selection is REGISTRY-DRIVEN, NOT hardcoded: the filter accepts
+// every file whose extension is registered in parse.NewDefaultRegistry() and
+// rejects everything else. That is what closes EVALFRESH-001 — the
+// freshness/incremental suite was aborting on every non-Go pin with "the
+// index contains no modifiable Go source files to change", because
+// modifiableGoFile only accepted `.go`. A pin built from a pure-Java clone
+// (guava) or pure-Kotlin clone (okio) has zero `.go` files and therefore zero
+// candidates; the sequence exited 1 before doing any measurement.
+//
+// SW-191 fix-half closes the file-filter half of EVALFRESH-001. The other two
+// JVM-blocking mechanisms (goPackageClause speaks Go's `package <ident>` line,
+// changeSequenceMethod publishes "Go source files" verbatim) are pinned
+// unchanged by cmd/eval/freshnessjvm_characterization_test.go's other tests
+// and must move in their own stories. Closing them all here would conflate
+// separate product changes; "fix-half" is honest about that.
+func modifiableSourceFile(p string) bool {
 	for _, part := range strings.Split(p, "/") {
 		switch part {
 		case "vendor", "testdata", "third_party", "node_modules":
 			return false
 		}
+	}
+	// Go-specific test-file exclusion. Other languages have no parallel
+	// ingest-shape distinction that would make change classes incomparable.
+	if strings.HasSuffix(p, "_test.go") {
+		return false
+	}
+	// Registry-driven extension check. NewDefaultRegistry() reads the same
+	// default backend registration engine/ingest uses, so the set of accepted
+	// extensions stays in lockstep with the languages the index can ingest.
+	if _, err := parse.NewDefaultRegistry().ParserFor(p); err != nil {
+		return false
 	}
 	return true
 }
@@ -533,7 +559,7 @@ func crossPackageTargets(ctx context.Context, store graphstore.Graphstore, query
 	for _, node := range candidates {
 		out.Examined++
 		src := node.SourcePath()
-		if !modifiableGoFile(src) || seen[src] {
+		if !modifiableSourceFile(src) || seen[src] {
 			continue
 		}
 		target, ok := qualifyCrossPackage(ctx, querySvc, node)

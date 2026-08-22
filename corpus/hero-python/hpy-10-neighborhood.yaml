@@ -1,0 +1,15 @@
+id: hpy-10-neighborhood
+description: The depth-1 neighborhood of impl.core includes its callers and the constant it reads (impl.ENGLISH_PREFIX).
+fixture_ref: tier1-fixture-hero-python
+operation:
+  name: neighborhood
+  args:
+    symbol: impl.core
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.serve
+      match: contains

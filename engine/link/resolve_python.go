@@ -24,6 +24,26 @@ import "strings"
 // package — otherwise skip+count.
 type pyResolver struct{}
 
+// pyPkgExts is Python's static package-source extension set (LINK-001, ADR 0011)
+// — which files in an imported package directory an `imports` edge may target.
+//
+// `.ipynb` IS INCLUDED, and that is not an oversight to "clean up": a Jupyter
+// notebook is ingested through NotebookParser, which decodes its code cells into
+// per-language buffers but leaves the committed file node's source path as the
+// `.ipynb` path (engine/ingest/notebook.go). The notebook's symbols are real,
+// resolvable Python symbols in that directory, so dropping `.ipynb` would delete
+// working edges.
+//
+// `test_*.py` IS NOT EXCLUDED, deliberately, and the asymmetry with Go's
+// `_test.go` is the point: Python test modules are ordinary importable modules
+// (`import test_helpers` works, conftest/pytest fixtures are imported across the
+// suite). The Go exclusion rests on non-importability, not on the word "test",
+// so applying it here would be cargo-culting a rule past its reason.
+//
+// `.pyi` is NOT included: a stub file declares no runtime module and graphi's
+// registered Python parser claims only `.py` (core/parse/parser_python.go:40).
+var pyPkgExts = []string{".ipynb", ".py"}
+
 // Language implements Resolver.
 func (pyResolver) Language() string { return "python" }
 
@@ -39,7 +59,8 @@ func (pyResolver) Resolve(in FileRefs, idx *SymbolIndex, st *Stats) []intent {
 		// ("os.system", "subprocess.run") — mint an interned external node. RELATIVE
 		// imports are excluded (externalIneligible below): their target is in-repo,
 		// so an unresolved use is an honest skip, not a fabricated stdlib node.
-		externalQN: externalMemberQN,
+		externalQN:    externalMemberQN,
+		pkgTargetExts: pyPkgExts,
 	}
 	for _, imp := range in.Imports {
 		if imp.Path == "" {

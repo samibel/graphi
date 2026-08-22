@@ -334,7 +334,7 @@ func (w *kotlinBodyWalk) bareOrConstructorCall(callee *gts.Node, arity int, ty *
 		return
 	}
 	if ty != nil {
-		res := w.ix.LookupCallable(ty, name, arity)
+		res := w.ix.LookupCallableValueClassAware(ty, name, arity)
 		switch res.Outcome {
 		case BoundMember:
 			w.sites = append(w.sites, TypedSite{
@@ -491,7 +491,7 @@ func (w *kotlinBodyWalk) typeOfExpr(n *gts.Node, ty *Type, member *Member, env *
 				return exprBinding{reason: SkipKtLambdaRebound}
 			}
 			if ty != nil {
-				if res := w.ix.LookupCallable(ty, name, arity); res.Outcome == BoundMember {
+				if res := w.ix.LookupCallableValueClassAware(ty, name, arity); res.Outcome == BoundMember {
 					return w.memberTypeBindingKt(res)
 				} else if res.Outcome != NotFoundMember {
 					return exprBinding{reason: lookupSkipKt(res.Outcome)}
@@ -515,7 +515,7 @@ func (w *kotlinBodyWalk) typeOfExpr(n *gts.Node, ty *Type, member *Member, env *
 		if recv.t == nil {
 			return recv
 		}
-		res := w.ix.LookupCallable(recv.t, w.text(nameNode), arity)
+		res := w.ix.LookupCallableValueClassAware(recv.t, w.text(nameNode), arity)
 		if res.Outcome != BoundMember {
 			return exprBinding{reason: lookupSkipKt(res.Outcome)}
 		}
@@ -590,7 +590,7 @@ func lookupSkipKt(o LookupOutcome) string {
 
 // emit records a call site bound through the D6 lookup on a typed receiver.
 func (w *kotlinBodyWalk) emit(ty *Type, member *Member, recv exprBinding, name string, arity, line int, kind SiteKind) {
-	res := w.ix.LookupCallable(recv.t, name, arity)
+	res := w.ix.LookupCallableValueClassAware(recv.t, name, arity)
 	switch res.Outcome {
 	case BoundMember:
 		w.sites = append(w.sites, TypedSite{

@@ -1,0 +1,15 @@
+id: hpy-13-related-files
+description: >
+  The files dependent on impl.core are the caller files — app/Service.py
+  and app/Report.py — reached through the heuristic cross-module call edges.
+  impl/English.py (which defines core) is the seed and is excluded.
+fixture_ref: tier1-fixture-hero-python
+operation:
+  name: related_files
+  args:
+    anchor: impl.core
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: app/Service.py

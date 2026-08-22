@@ -1,0 +1,154 @@
+# SW-173 (W0.e stage 3) — the reproducible compile strategy for the JVM corpus
+# pins, run against the real pins.
+#
+# This is DISPATCH-ONLY and deliberately network-touching: it clones three
+# pinned repositories and fetches a digest-pinned classpath. It is therefore a
+# sibling of corpus.yml and parity.yml, never a PR gate — a hermetic test that
+# clones is not hermetic, and the PR gate must not pay for a JDK, a kotlinc and
+# three checkouts. AC-8's posture is unchanged: nothing here reaches
+# cmd/graphi, which stays CGo-free and zero-egress; `go list -deps ./cmd/graphi`
+# reaches neither internal/jvmcorpus nor internal/jvmgroundtruth.
+#
+# What it proves, and what it refuses to claim:
+#
+#   - Every toolchain is pinned to an EXACT version and verified by digest
+#     (AC-1, AC-2). No `releases/latest` anywhere; a test asserts it.
+#   - Every pin's compile strategy and its REASON travel with the run's output
+#     (AC-3), read from corpus/manifest.json rather than from this file.
+#   - Each pin is compiled TWICE from scratch and the two captures must be
+#     byte-identical (AC-5). A difference is a finding to publish, never a
+#     flake to retry away, and the test says so in its failure message.
+#   - The signature-aware oracle runs over every pin that compiles AND is
+#     scorable, and reports counterexamples-and-denominator (AC-6).
+#   - A pin that cannot be compiled or scored reproducibly is EXCLUDED loudly,
+#     with what was tried, and backs no figure (AC-7).
+name: jvm-corpus
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  jvm-corpus:
+    name: jvm-corpus
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CGO_ENABLED: "0"
+      GRAPHI_JVM_TYPERESOLVE: "1"
+      KOTLIN_VERSION: "1.9.24"
+      KOTLIN_SHA256: "eb7b68e01029fa67bc8d060ee54c12018f2c60ddc438cf21db14517229aa693b"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: install kotlinc (pinned)
+        run: |
+          set -euo pipefail
+          url="https://github.com/JetBrains/kotlin/releases/download/v${KOTLIN_VERSION}/kotlin-compiler-${KOTLIN_VERSION}.zip"
+          curl -fsSL "$url" -o /tmp/kotlinc.zip
+          echo "${KOTLIN_SHA256}  /tmp/kotlinc.zip" | sha256sum -c -
+          unzip -q /tmp/kotlinc.zip -d /opt
+          echo "/opt/kotlinc/bin" >> "$GITHUB_PATH"
+
+      - name: record the pinned toolchain versions
+        run: |
+          javac -version
+          javap -version
+          kotlinc -version
+
+      # Checkouts at the manifest's EXACT sha, not at its tag. A tag can be
+      # re-pointed; a sha cannot. `git fetch <sha>` fails closed if the object
+      # is gone, which is the behaviour we want over a silent fallback to HEAD.
+      - name: clone the pins at their exact shas
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pins
+          clone() {
+            local name="$1" url="$2" sha="$3"
+            rm -rf "/tmp/pins/$name"
+            mkdir -p "/tmp/pins/$name"
+            cd "/tmp/pins/$name"
+            git init -q
+            git remote add origin "$url"
+            git fetch -q --depth 1 origin "$sha"
+            git checkout -q FETCH_HEAD
+            test "$(git rev-parse HEAD)" = "$sha"
+            cd - >/dev/null
+          }
+          clone guava https://github.com/google/guava 2214c63670fc161da170ac6e1a2d6d07e1531a55
+          clone okio https://github.com/square/okio 8b870e8eaacecb1c1ceffbbb47246112604a1f92
+          clone kotlinx.serialization https://github.com/Kotlin/kotlinx.serialization 3efe324be422ead21ca44f2f6318e1791c166556
+
+      # The URLs and digests live in corpus/manifest.json; this step only
+      # fetches. Go re-verifies every sha256 before a single artifact reaches a
+      # classpath and aborts on a mismatch, so a wrong download cannot silently
+      # become the compile the figures are attributed to.
+      - name: fetch the digest-pinned classpath artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/jvmlib
+          while read -r url; do
+            [ -n "$url" ] || continue
+            curl -fsSL "$url" -o "/tmp/jvmlib/$(basename "$url")"
+          done < <(grep -oE 'https://repo1\.maven\.org/[^"]+\.jar' corpus/manifest.json | sort -u)
+          ls -l /tmp/jvmlib
+
+      - name: strategy validation (hermetic — no clones, no toolchain)
+        run: go test ./internal/jvmcorpus/ -run 'TestCheckedInManifest|TestValidate' -count=1 -v
+
+      - name: the anti-forge capture gate
+        run: go test ./internal/jvmgroundtruth/ -run 'TestIncompleteCapture|TestCapture_|TestShardClasses' -count=1 -v
+
+      # The evidence run. -v so the per-pin strategy, its reason, both capture
+      # digests and the full counterexamples-and-denominator block land in the
+      # log, which is where the published figures are read from.
+      - name: real-pin compile, reproducibility and oracle run
+        env:
+          GRAPHI_JVM_CORPUS_PINS: /tmp/pins
+          GRAPHI_JVM_CORPUS_LIB: /tmp/jvmlib
+        run: go test ./internal/jvmcorpus/ -run TestPins -count=1 -v -timeout 45m
+
+      # SW-175 (W1.b) — the call-site binding rate with its denominator.
+      #
+      # It rides the SAME clones and is deliberately a SEPARATE step, because it
+      # measures a different population and the two must never be read as one:
+      # the oracle scores the 623 guava sources it can COMPILE, while the
+      # binding rate needs no compiler and covers all 3 204 at the pin. It uses
+      # GRAPHI_JVM_CORPUS_PINS only — no classpath, no JDK, no kotlinc.
+      #
+      # It rides the same clones SAFELY, which it did not always: the step above
+      # is a COMPILE, and a compile leaves gitignored generated sources behind.
+      # An earlier draft of this harness enumerated sources by walking the
+      # filesystem, so 16 gradle-generated .java files were enough to move
+      # okio's Java figures 16.07% -> 12.72% with the sha assertion still green.
+      # It now enumerates from `git ls-tree -r HEAD`, asserts the pin's TREE sha
+      # as well as its commit, and refuses to measure a checkout with modified
+      # tracked files — so the ordering of these two steps can no longer change
+      # a published number. See docs/rc/jvm-binding-rate.md §2.1.
+      #
+      # -v so every published figure lands in the log: the rate, its numerator
+      # and denominator, every named exclusion with its size, the operator
+      # convention family, the synthesized-protocol sizes, the clean/dirty parse
+      # split, the full skip histogram and the residual it does not account for.
+      #
+      # The filter matches TestGrammarEnumeration TOO, and that is the point.
+      # This step ran as `-run TestPins` for one round, which EXCLUDED the
+      # enumeration guard — and the PR gate runs that guard hermetically, where
+      # it passes. So the guard that exists to say "no occurring node type is in
+      # no bucket" had never once run against the corpus its census is published
+      # from, and it was red there: five JPMS module-descriptor types from
+      # kotlinx.serialization's module-info.java occurred in no bucket, and the
+      # published java census (120) was guava's number, not the three pins' (125).
+      # A guard that cannot run where its numbers come from is not a guard.
+      # See docs/rc/jvm-binding-rate.md §1.5 (F10).
+      - name: real-pin call-site binding rate and skip histogram (W1.b)
+        env:
+          GRAPHI_JVM_CORPUS_PINS: /tmp/pins
+        run: go test ./internal/jvmbindrate/ -run 'TestPins|TestGrammarEnumeration' -count=1 -v -timeout 30m

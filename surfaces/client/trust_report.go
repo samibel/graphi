@@ -81,6 +81,14 @@ type trustReportDoc struct {
 	Details         trustReportDetails    `json:"details"`
 	ScopeEvidence   trust.ScopeFacts      `json:"scope_evidence"`
 	Capabilities    []trust.Capability    `json:"capabilities"`
+	// Abstention is the W0.g legible-abstention roll-up: what the semantic
+	// binders REFUSED to bind, under which named reason, for this generation.
+	// It sits beside capabilities and boundaries on purpose — capabilities say
+	// what a language CAN express here, boundaries what the graph does not
+	// reach, and abstention what the binder declined to claim within its own
+	// reach. Additive v1 field (contract §2.3 rule 7); always present, and
+	// fail-closed via its own Available flag.
+	Abstention AbstentionFacts `json:"abstention"`
 }
 
 // trustReportGeneration is the §2.2 graph_generation object. Every value is a
@@ -280,6 +288,7 @@ func composeTrustReport(ctx context.Context, opts TrustReportOptions) ([]byte, t
 		Details:       detailsBlock(facts.snap, opts),
 		ScopeEvidence: facts.scopeFacts,
 		Capabilities:  languageCapabilities(),
+		Abstention:    readAbstentionFacts(ctx, opts.Root, opts.DBPath, opts.MetaDir),
 	}
 	b, err := encodeTrustReport(doc)
 	if err != nil {

@@ -22,7 +22,9 @@ func ConfirmedCalls(nodes []model.Node, edges []model.Edge) []Call {
 	for _, n := range nodes {
 		byID[n.ID()] = n
 	}
-	seen := map[Call]struct{}{}
+	// Keyed on the comparison identity, not on the struct: Call carries slice
+	// plumbing for the binder-side rendering check and is not comparable.
+	seen := map[callKey]struct{}{}
 	var out []Call
 	for _, e := range edges {
 		if e.Kind() != "calls" || e.Tier() != model.TierConfirmed {
@@ -42,10 +44,11 @@ func ConfirmedCalls(nodes []model.Node, edges []model.Edge) []Call {
 			CalleeFile:   to.SourcePath(),
 			Callee:       lastSegment(to.QualifiedName()),
 		}
-		if _, dup := seen[c]; dup {
+		k := c.key(BySignature)
+		if _, dup := seen[k]; dup {
 			continue
 		}
-		seen[c] = struct{}{}
+		seen[k] = struct{}{}
 		out = append(out, c)
 	}
 	sortCalls(out)

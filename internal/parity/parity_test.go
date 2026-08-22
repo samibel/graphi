@@ -112,6 +112,17 @@ func TestSnapshotBoundary_OnlyGraphstoreIsImported(t *testing.T) {
 		// prevent. It runs NO ingest and opens no graph store, so it does not
 		// touch the instrument boundary above.
 		"github.com/samibel/graphi/internal/ingestlock": true,
+		// ADR 0010 review round 1, finding 7: the harness must PIN the index
+		// profile of the child processes it measures (an inherited
+		// GRAPHI_INDEX_PROFILE would silently change what "19 of 19 PASS"
+		// describes) and record it in the report. core/profile is where that
+		// variable's name and the resolution rule live; re-deriving either here
+		// would create the second dialect the ingestlock reasoning above
+		// rejects. It is a pure constants/parse package — no store, no ingest,
+		// no I/O — so linking it cannot perturb the instrument, which is the
+		// property this guard protects. It is also linked transitively through
+		// internal/parityreport, which records the profile in provenance.
+		"github.com/samibel/graphi/core/profile": true,
 	}
 	for _, d := range strings.Split(string(out), "\n") {
 		d = strings.TrimSpace(d)
@@ -621,15 +632,26 @@ func TestReport_FailsClosed(t *testing.T) {
 }
 
 // TestProvenance_NeverClaimsItRanAtTheCandidate pins the sentence AC-12
-// governs. (The candidate moved 2026-08-16 — ADR 0009 is a product-byte
-// change — so the sanctioned sentence names the ADR 0009 candidate now, and
-// the old v0.7.1 wording is among the forbidden phrasings.)
+// governs. (The candidate moved TWICE on 2026-08-16 — ADR 0009 and then ADR
+// 0010 — a THIRD time on 2026-08-19 for ADR 0011, the LINK-001 fix, and a
+// FOURTH time on 2026-08-20 for ADR 0013, the SW-188 closure of
+// JVMSOUND-003/004 + JVMHARN-001. All four are product-byte changes, so the
+// sanctioned sentence names the ADR 0013 candidate now, and every retired
+// candidate's wording is among the forbidden phrasings. Each move has its
+// own record under docs/decisions/.)
+//
+// The forbidden list is the load-bearing half of this test and it only works
+// if it GROWS at every move: a sentence still naming the previous candidate
+// would otherwise read as a correct provenance claim about the wrong product.
+// That is why "adr 0011 candidate" joins "adr 0009 candidate", "adr 0010
+// candidate" and "v0.7.1" here rather than replacing them — a retired name
+// is retired forever.
 func TestProvenance_NeverClaimsItRanAtTheCandidate(t *testing.T) {
 	p := parityreport.NewProvenance("cafebabe")
-	if !strings.Contains(p.Statement, "byte-identical to the ADR 0009 candidate at "+parityreport.CandidateSHA) {
+	if !strings.Contains(p.Statement, "byte-identical to the ADR 0013 candidate at "+parityreport.CandidateSHA) {
 		t.Fatalf("statement must say the product SOURCE is byte-identical to the current candidate: %q", p.Statement)
 	}
-	for _, bad := range []string{"measured at the candidate", "ran at the candidate", "v0.7.1"} {
+	for _, bad := range []string{"measured at the candidate", "ran at the candidate", "v0.7.1", "adr 0009 candidate", "adr 0010 candidate", "adr 0011 candidate"} {
 		if strings.Contains(strings.ToLower(p.Statement), bad) {
 			t.Fatalf("statement implies the run happened AT the candidate, or names the retired candidate: %q", p.Statement)
 		}

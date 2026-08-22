@@ -130,3 +130,48 @@ func TestCheckFullRunBudgetsFailsClosedOnDisk(t *testing.T) {
 		t.Fatal("a zero budget on disk must fail closed before it can render as met")
 	}
 }
+
+// SW-191 (EVALBUDGET-001 closure): the comparison class (`local-sandbox`) is
+// now an ACCEPTED budget source IF AND ONLY IF the budget is declared
+// historical. Historical ceilings are an upper compatibility limit recorded
+// on whatever runner class the author had; they are NOT a ratchet that pins a
+// measurement to the reference class. Accepting `local-sandbox` for a
+// ratcheting budget would let developer-machine numbers silently become the
+// reference-class ceiling — the whole defect the gate exists to prevent.
+func TestEvaluateFullRunBudgetsAcceptsLocalSandboxOnlyWhenHistorical(t *testing.T) {
+	manifest, run := budgetFixture()
+
+	// 1. historical + local-sandbox → accepted
+	if _, err := evaluateFullRunBudgets(manifest, "local-sandbox", run); err != nil {
+		t.Fatalf("historical budget must be accepted on the comparison class: %v", err)
+	}
+
+	// 2. ratcheting + local-sandbox → rejected
+	manifest, run = budgetFixture()
+	manifest.Historical = false
+	manifest.Ratcheting = true
+	if _, err := evaluateFullRunBudgets(manifest, "local-sandbox", run); err == nil {
+		t.Fatal("a ratcheting budget on the comparison class must fail closed (EVALBUDGET-001 closure)")
+	}
+
+	// 3. historical on a third runner class (neither reference nor comparison) → rejected
+	manifest, run = budgetFixture()
+	if _, err := evaluateFullRunBudgets(manifest, "macos-local", run); err == nil {
+		t.Fatal("only the declared runner class AND the comparison class are accepted")
+	}
+
+	// 4. historical + reference class → accepted (unchanged behaviour)
+	manifest, run = budgetFixture()
+	if _, err := evaluateFullRunBudgets(manifest, "ubuntu-latest", run); err != nil {
+		t.Fatalf("historical budget on its own declared class must keep working: %v", err)
+	}
+
+	// 5. ratcheting + reference class → accepted (unchanged behaviour: ratchets
+	//    pin to the reference class)
+	manifest, run = budgetFixture()
+	manifest.Historical = false
+	manifest.Ratcheting = true
+	if _, err := evaluateFullRunBudgets(manifest, "ubuntu-latest", run); err != nil {
+		t.Fatalf("a ratcheting budget on the reference class must keep working: %v", err)
+	}
+}

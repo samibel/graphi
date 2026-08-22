@@ -1,0 +1,401 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "grpc-go",
+  "collected": true,
+  "samples": 10,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/tmp/sw177-wd/cur",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "5815db5b053c2bb1bf3119cdb9939c1dea03cc45",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v070.md",
+    "measured_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:38:04Z",
+      "clone_ms": 2566,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-01/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-01/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11143,
+        "peak_rss_mb": 686,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 704,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:38:21Z",
+      "clone_ms": 2316,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-02/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-02/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11267,
+        "peak_rss_mb": 683,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 701,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:38:37Z",
+      "clone_ms": 2540,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-03/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-03/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11362,
+        "peak_rss_mb": 683,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 701,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-03.json"
+    },
+    {
+      "run": 4,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:38:53Z",
+      "clone_ms": 2463,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-04/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-04/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11223,
+        "peak_rss_mb": 682,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 700,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-04.json"
+    },
+    {
+      "run": 5,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:39:09Z",
+      "clone_ms": 2501,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-05/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-05/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11059,
+        "peak_rss_mb": 683,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 701,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-05.json"
+    },
+    {
+      "run": 6,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:39:25Z",
+      "clone_ms": 2483,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-06/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-06/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11284,
+        "peak_rss_mb": 683,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 701,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-06.json"
+    },
+    {
+      "run": 7,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:39:41Z",
+      "clone_ms": 2748,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-07/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-07/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11253,
+        "peak_rss_mb": 677,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 695,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-07.json"
+    },
+    {
+      "run": 8,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:39:58Z",
+      "clone_ms": 4082,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-08/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-08/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11135,
+        "peak_rss_mb": 663,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 681,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-08.json"
+    },
+    {
+      "run": 9,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:40:16Z",
+      "clone_ms": 2644,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-09/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-09/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11011,
+        "peak_rss_mb": 685,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 703,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-09.json"
+    },
+    {
+      "run": 10,
+      "status": "completed",
+      "commit": "80d67ed586723ab22704cf7aada316138cb1360e",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-19T20:40:32Z",
+      "clone_ms": 2564,
+      "cold": {
+        "store_path": "/tmp/sw177-wd/cur/run-10/grpc-go.db",
+        "meta_path": "/tmp/sw177-wd/cur/run-10/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11016,
+        "peak_rss_mb": 661,
+        "db_size_bytes": 34275328,
+        "nodes": 14896,
+        "edges": 99736,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 679,
+      "bytes_per_edge": 343.66054383572634,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/tmp/sw177-wd/cur/cold-run-10.json"
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+# graphi — Ruby change-class parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-family companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — one top-level key, a block sequence
+# of FLAT maps, every value double-quoted — so both cmd/coverage-style parsers
+# and yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-194a, W5-RES.g). Ruby is
+#                      `cross-file-heuristic` (live derivation at the W1.f tip
+#                      91a4ba3); the heuristic resolver at engine/link/
+#                      resolve_ruby.go handles Ruby's `require "module"` and
+#                      `require_relative "file"` directives — require walks
+#                      `$LOAD_PATH` (Ruby's package.path analog) while
+#                      require_relative is file-relative.
+#
+#                      SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof
+#                      over t.TempDir() fixtures, exactly like the Go, JVM,
+#                      Python and TS tables. Ruby has no typed binder, so the
+#                      rows here assert PARITY, not CORRECTNESS — parity
+#                      compares two passes of the same rule, so a PASS certifies
+#                      the rule is REGRESSION-CLEAN between incremental and full,
+#                      never that it is correct. Correctness evidence lives in
+#                      engine/link/resolve_ruby_test.go and in the real-
+#                      repository matrix (G4, over sinatra per corpus/manifest
+#                      pin), not here.
+#
+#                      SW-194a SCOPE, STATED. This file DEFINES the eight
+#                      change-class rows at the cross-file-heuristic level.
+#                      The conformance twin (engine/conformance/
+#                      rubyparity_test.go + rubyparity_matrix_test.go) lands
+#                      in SW-194b and is what proves these rows PROVEN.
+#                      SW-194c flips the G3 evidence row to PASS by citing
+#                      this YAML + the twin with their blob shas.
+#
+#                      READ BEFORE EXTENDING: the template's §3 slots S6-S8
+#                      (docs/plan/2026-08-per-language-ga-template-v1.md) are
+#                      authoritative. The Python instance (parity-classes-
+#                      python.yaml) is the closest template; this copy
+#                      diverges on THREE named points recorded in the row
+#                      notes: (a) Ruby has TWO require shapes — `require` walks
+#                      `$LOAD_PATH` and `require_relative` is file-relative;
+#                      the resolver handles both, and the same row covers the
+#                      require shape via the resolver's exact-path resolution;
+#                      (b) the resolver already names the exact target file
+#                      path (the requireBinder helper at engine/link/
+#                      resolve_common.go), so the family has the same LINK-001 /
+#                      PARITY-002 immunity by construction; (c) Ruby's static
+#                      package-source extension set is `.rb` (the
+#                      requireBinder call), modelled on the SW-166 extension
+#                      filter.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO
+# ---------------------------------------------------------------------------
+# The drift guard TestRubyParityMatrix_DriftGuard (engine/conformance/
+# rubyparity_matrix_test.go, lands in SW-194b) binds this file to the harness
+# table rubyChangeClassTable() in rubyparity_test.go, in the same bidirectional
+# shape docs/rc/parity-classes.yaml uses:
+#
+#   MISSING  every row with harness_row: "required" MUST have a harness row of
+#            the same id. A required class with no harness row FAILS.
+#   PHANTOM  every harness row id MUST be declared here. A harness row for an
+#            undeclared id FAILS.
+#   DEFERRED a row with harness_row: "deferred" MUST NOT have a harness row and
+#            MUST name a deferred_to. It is a declared placeholder, not proof.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id.
+
+parity_classes:
+  - id: "ruby_add_file"
+    kind: "change_class"
+    label: "Ruby-Datei hinzufügen / add a Ruby file in a new directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rubyparity_test.go"
+    test_line: "346"
+    test_name: "TestRubyFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.g"
+    note: "A new Ruby file arrives in a new directory: pure add path. The witness asserts the new callee resolves cross-module at the heuristic tier — the resolver's only tier — and the control symbols survive. Fixture label reads production Go parser to satisfy the shared closed vocabulary (D-12); the subject under test is the Ruby heuristic resolver at engine/link/resolve_ruby.go. SW-194b ships the harness row; SW-194a ships this YAML row as the substituted-contract pin."
+
+  - id: "ruby_modify_file"
+    kind: "change_class"
+    label: "Ruby-Datei ändern / rewrite a Ruby file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rubyparity_test.go"
+    test_line: "346"
+    test_name: "TestRubyFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.g"
+    note: "An indexed Ruby file is rewritten in place: a method or class is added while existing nodes keep identity. The witness asserts the new node is present and the existing callee survives — pins the same-package identity-stability contract every rewrite class asserts. SW-194b ships the harness row; SW-194a ships this YAML row."
+
+  - id: "ruby_add_call_heuristic"
+    kind: "change_class"
+    label: "Heuristischen Require-Aufruf hinzufügen / add a heuristic-tier cross-file require call"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rubyparity_test.go"
+    test_line: "346"
+    test_name: "TestRubyFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.g"
+    note: "A new cross-file require call is added: `require_relative \"../lib/util\"; Util.func(...)`. The witness asserts the file→file `imports` edge lands AND the call edge lands at HEURISTIC tier (model.TierHeuristic), never at confirmed — the Ruby resolver is heuristic and must not mint confirmed edges (the G2SUB never-confirmed half). Ruby's `require_relative` is file-relative (TS/Bash-style), giving the family the same LINK-001 / PARITY-002 immunity by construction. SW-194b ships the harness row."
+
+  - id: "ruby_require_skip"
+    kind: "change_class"
+    label: "Require überspringen + zählen / skip + count a missing require target"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rubyparity_test.go"
+    test_line: "346"
+    test_name: "TestRubyFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.g"
+    note: "A require_relative directive (`require_relative \"missing\"`) targets a file that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids. SW-194b ships the harness row."
+
+  - id: "ruby_ambiguous_clauses"
+    kind: "change_class"
+    label: "Mehrdeutige Pfade / two modules claiming the same require name"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rubyparity_test.go"
+    test_line: "346"
+    test_name: "TestRubyFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.g"
+    note: "A require directive is ambiguous because two candidate paths resolve to committed nodes (e.g. both `lib/util.rb` and `vendor/lib/util.rb` exist). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used. SW-194b ships the harness row."
+
+  - id: "ruby_delete_file"
+    kind: "change_class"
+    label: "Ruby-Datei löschen / delete a Ruby file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rubyparity_test.go"
+    test_line: "346"
+    test_name: "TestRubyFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.g"
+    note: "A Ruby file declaring a method that TWO other files require is deleted, so the per-file stale-node purge, the heuristic-edge sweep and the re-link all run over it. The witness requires the deleted callee absent, both importers still present, and the heuristic edges into the deleted callee gone — a stale heuristic edge would be the worst outcome here, even though the edge tier is lower than confirmed. Measured and stated because PARITY-001 was a heuristic path defect in origin (engine/ingest/ingest.go): the deleted-path purge must run before linkFiles, and this row is the assertion that it does on Ruby as well as on Go. SW-194b ships the harness row."
+
+  - id: "ruby_move_symbol"
+    kind: "change_class"
+    label: "Symbol verschieben / same-directory file-to-file method/class move"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rubyparity_test.go"
+    test_line: "346"
+    test_name: "TestRubyFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.g"
+    note: "A Ruby top-level method (or class) moves file-to-file WITHIN one directory (util.rb -> moved.rb). The method's identity is keyed on its qualified name (QN), which the resolver derives from the source file path; a same-directory move preserves QN while changing source_path and line. Two files then claim one QN inside a single change set — the same-package direction of Go's move_symbol and the BLOCK-2 stale-purge hazard. The witness asserts the method/class identity is preserved and its cross-file require edge survives the re-home. SW-194b ships the harness row."
+
+  - id: "ruby_add_class_definition"
+    kind: "change_class"
+    label: "Klassendefinition hinzufügen / add a class or module definition"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/rubyparity_test.go"
+    test_line: "346"
+    test_name: "TestRubyFullVsIncremental_ByteParity"
+    fixture: "production Go parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-RES.g"
+    note: "A class (or module) definition is added to a Ruby file. The witness asserts the new type node is present and the existing callees survive — pins the type-definition identity-stability contract. Ruby's QN keys on the source file path, so the same row id covers both classes and modules. SW-194b ships the harness row."

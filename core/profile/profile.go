@@ -6,14 +6,27 @@ import (
 )
 
 // Profile selects the speed/depth trade-off for an index pass.
+//
+// HONEST STATE OF THE LADDER (ADR 0010, 2026-08-16): only Fast is behaviourally
+// distinct today. Balanced and Deep produce IDENTICAL graphs — verified by
+// indexing a real clone under both and comparing node/edge sets and per-kind
+// histograms — because the one thing that separated them was an import
+// aggregation that turned out to be parity-unsafe and to drop true edges, and
+// it was removed rather than repaired (PARITY-003). The two names stay: they are
+// CLI values and the persisted `index.profile` metadata that `graphi status`,
+// `trust-report` and `doctor` report. Do not read "bounded" as a reduction that
+// still happens.
 type Profile string
 
 const (
-	// Fast skips expensive resolve passes and low-value import fanout.
+	// Fast skips expensive resolve passes (no typeresolve) and drops `imports`
+	// edges entirely. This is the only profile that reduces the graph today.
 	Fast Profile = "fast"
-	// Balanced is the default: bounded linking/resolve.
+	// Balanced is the default. It runs full linking and resolve; since ADR 0010
+	// it is graph-identical to Deep.
 	Balanced Profile = "balanced"
-	// Deep runs full linking and maximum useful edge recall.
+	// Deep runs full linking and maximum useful edge recall — currently the
+	// same graph as Balanced.
 	Deep Profile = "deep"
 )
 

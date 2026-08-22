@@ -1,0 +1,48 @@
+{
+  "format_version": 1,
+  "harness_version": "f5-fanout-measurement/1",
+  "scorer_version": "f5-fanout-scorer/1",
+  "date": "2026-08-20",
+  "runner_class": "Darwin-ARM64/apple-m2-max",
+  "repo": "flask",
+  "report": "report.json",
+  "raw": [
+    {
+      "series": "f5_measurement",
+      "file": "raw/f5-measurement.json",
+      "sha256": "d8940e141ea4119d08bc026b2224d93c71e9fab61360e1c56d7f4db6ffa20ef5",
+      "collected": true,
+      "samples": 1
+    },
+    {
+      "series": "dispatch_determinism",
+      "file": "raw/dispatch-determinism.json",
+      "sha256": "8bb4a017b76cf3095617d8fa444eff3488862719415192c55128ac46278952cf",
+      "collected": true,
+      "samples": 2
+    }
+  ],
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6 darwin/arm64",
+    "filesystem": "apfs",
+    "filesystem_path": "/var/tmp/graphi-74d870a2c7f729e8",
+    "cache_state": "not_dropped",
+    "runner_class": "Darwin-ARM64/apple-m2-max",
+    "measured_sha": "3f239014959970b5b2770f904dd7756628130bf7",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "f5-fanout-measurement/1",
+    "scorer_version": "f5-fanout-scorer/1",
+    "capture_errors": {
+      "candidate_sha": "no frozen candidate was cited for this run (-candidate / -reference-scenario)",
+      "pin_discrepancy": "flask pin in corpus/manifest.json (735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b) does NOT match the real 3.0.0 tag (735a4701d6d5e848241e7d7535db898efb62d400); per SW-192 AC-7, no silent re-pin, marked STALE",
+      "family_driver_missing": "cmd/parity has no -family python driver; the F5 measurement was performed manually by driving ./cmd/graphi directly (graphi rebuild + snapshot + SQLite inspection) rather than via cmd/parity"
+    }
+  }
+}

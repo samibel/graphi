@@ -257,6 +257,30 @@ func AnalyzerSymbolOptional(name string) bool {
 	}
 }
 
+// Repository names the repository a surface SESSION is bound to: the root it
+// resolved, and the graph store / evidence sidecar that belong to it.
+//
+// It exists because "which repository" is a property of the session, not of the
+// process, and a long-lived surface must not re-derive it from ambient state.
+// The MCP server binds a repository once (-root, GRAPHI_ROOT, client roots, or
+// the cwd walk) and then serves tool calls from a process whose working
+// directory may be anywhere at all — a client that launches `graphi mcp -root
+// /repo/a` from $HOME or from /repo/b is the normal case, not the exotic one.
+// Any composition that resolves its own paths from "" in that situation answers
+// over whatever repository the cwd happens to sit in, which is how a
+// trust-report document came to publish one repository's abstention counters as
+// another's (W0.g review round 1, Critical 1). Surfaces therefore carry this
+// value from the binding into every option struct that locates a store.
+//
+// A zero Repository means "not bound to a known repository" — the pre-RUN-01
+// attach-by-socket case — and the compositions keep their documented
+// resolve-from-cwd fallback for it, because there is nothing better to use.
+type Repository struct {
+	Root    string `json:"root"`
+	DBPath  string `json:"db_path"`
+	MetaDir string `json:"meta_dir"`
+}
+
 // TrustReportOptions is the transport-agnostic input for the P1 trust-report
 // composition (Labs). Both surfaces (CLI flags, MCP tool args) construct the
 // SAME options so the one shared composition receives identical inputs (parity
