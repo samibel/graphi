@@ -39,6 +39,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -398,7 +399,9 @@ func measureIncremental(ctx context.Context, setup incrementalSetup) (*evalrepor
 		return nil, err
 	}
 	if len(files) == 0 {
-		return nil, errors.New("the index contains no modifiable Go source files to change")
+		return nil, fmt.Errorf("the index contains no modifiable source files to change: "+
+			"no indexed file matched a language family the change sequence knows how to mutate (%s)",
+			strings.Join(familyNames(), ", "))
 	}
 	in := changeSequenceInput{
 		files:        files,
@@ -445,15 +448,7 @@ func incrementalSourceFiles(ctx context.Context, store graphstore.Graphstore, ro
 			// skipped rather than fatal: the sequence needs SOME files, not all.
 			continue
 		}
-		dir := path.Dir(f.Path)
-		if _, known := packages[dir]; !known {
-			if pkg := goPackageClause(raw); pkg != "" {
-				packages[dir] = pkg
-			}
-		}
-		if packages[dir] == "" {
-			// Without a package clause an added file in this directory would not
-			// parse, so the directory contributes no targets at all.
+		if !admitSourceFile(f.Path, raw, packages) {
 			continue
 		}
 		files = append(files, f.Path)
@@ -462,68 +457,93 @@ func incrementalSourceFiles(ctx context.Context, store graphstore.Graphstore, ro
 	return files, packages, nil
 }
 
-// modifiableSourceFile is the filter: source files of any registered language
-// the sequence may edit. Test files are excluded where the build shape would
-// change (Go's `_test.go` has a different ingest shape and would make the
-// change classes incomparable); vendored and generated trees are excluded
-// because they are not what a user edits.
+// admitSourceFile is the per-file directory gate, split out from the graph walk
+// so it can be pinned hermetically: given an indexed path and its bytes, it
+// records that directory's package clause (for the families that HAVE one) and
+// reports whether the file is a candidate.
 //
-// Extension selection is REGISTRY-DRIVEN, NOT hardcoded: the filter accepts
-// every file whose extension is registered in parse.NewDefaultRegistry() and
-// rejects everything else. That is what closes EVALFRESH-001 — the
-// freshness/incremental suite was aborting on every non-Go pin with "the
-// index contains no modifiable Go source files to change", because
-// modifiableGoFile only accepted `.go`. A pin built from a pure-Java clone
-// (guava) or pure-Kotlin clone (okio) has zero `.go` files and therefore zero
-// candidates; the sequence exited 1 before doing any measurement.
+// SW-191 (EVALFRESH-001) — THE GATE IS PER-FAMILY, and "this language has no
+// package clause" is an ADMISSIBLE answer rather than a missing one. The gate it
+// replaces read
 //
-// SW-191 fix-half closes the file-filter half of EVALFRESH-001. The other two
-// JVM-blocking mechanisms (goPackageClause speaks Go's `package <ident>` line,
-// changeSequenceMethod publishes "Go source files" verbatim) are pinned
-// unchanged by cmd/eval/freshnessjvm_characterization_test.go's other tests
-// and must move in their own stories. Closing them all here would conflate
-// separate product changes; "fix-half" is honest about that.
+//	if packages[dir] == "" { continue }
+//
+// unconditionally, so a Python or TypeScript directory — which can NEVER declare
+// a clause — was dropped along with every candidate in it, and the run then
+// aborted claiming the index held no modifiable source. That is why ky and
+// express exited 1 even after the file filter stopped being Go-only. Only Go
+// genuinely needs a clause: a `.go` file without one does not parse. The JVM
+// default package is legal, and the rest have nothing to declare.
+func admitSourceFile(p string, raw []byte, packages map[string]string) bool {
+	// One family lookup, not two: modifiableSourceFamily is the shared spine of
+	// this function and modifiableSourceFile (SW-191 review MIN-8).
+	family := modifiableSourceFamily(p)
+	if family == nil {
+		return false
+	}
+	key := packageKey(path.Dir(p), family)
+	if _, known := packages[key]; !known {
+		if pkg := family.packageClause(raw); pkg != "" {
+			packages[key] = pkg
+		}
+	}
+	return !family.clauseRequired || packages[key] != ""
+}
+
+// modifiableSourceFile is the filter: source files of a language family the
+// change sequence knows how to MUTATE. Vendored and generated trees are
+// excluded because they are not what a user edits, and each family excludes the
+// paths whose ingest shape would make its change classes incomparable (Go's
+// `_test.go`, TypeScript's `.d.ts`).
+//
+// SW-191 (EVALFRESH-001 closure) makes this FAMILY-DRIVEN rather than
+// registry-driven. The registry-driven filter that preceded it was a strict
+// improvement on `modifiableGoFile` — it stopped rejecting `.java` and `.kt` —
+// but it over-corrected: parse.NewDefaultRegistry() also registers json, yaml,
+// toml, css, sql, hcl and markdown, and "append one exported function" has no
+// meaning in any of them. A sequence that targeted a package.json planned a
+// change it could not render and then published the failure as a freshness
+// result. cmd/eval/sourcefamily.go now states, per family, what a change in
+// that language IS; a file with no family is not a candidate.
+//
+// The narrowing is asserted from both sides: TestSourceFamilies_*
+// (sourcefamily_test.go) pins that every family's generated declaration is
+// really extracted by the shipped parser for its extension, and
+// TestSourceFamilies_NonCodeExtensionsAreNotCandidates pins that the data
+// languages stay out.
 func modifiableSourceFile(p string) bool {
+	return modifiableSourceFamily(p) != nil
+}
+
+// modifiableSourceFamily is modifiableSourceFile's answer with the family kept
+// rather than discarded, so the directory gate does not repeat the lookup.
+// Callers that only need the yes/no use modifiableSourceFile.
+func modifiableSourceFamily(p string) *sourceFamily {
 	for _, part := range strings.Split(p, "/") {
 		switch part {
 		case "vendor", "testdata", "third_party", "node_modules":
-			return false
+			return nil
 		}
 	}
-	// Go-specific test-file exclusion. Other languages have no parallel
-	// ingest-shape distinction that would make change classes incomparable.
-	if strings.HasSuffix(p, "_test.go") {
-		return false
+	family := familyForPath(p)
+	if family == nil {
+		return nil
 	}
-	// Registry-driven extension check. NewDefaultRegistry() reads the same
-	// default backend registration engine/ingest uses, so the set of accepted
-	// extensions stays in lockstep with the languages the index can ingest.
-	if _, err := parse.NewDefaultRegistry().ParserFor(p); err != nil {
-		return false
+	// The family table is a SUBSET of what the index can parse, never a
+	// superset: a file the shipped registry cannot parse could not have been
+	// ingested, so mutating it would measure nothing.
+	if _, err := sharedParserRegistry().ParserFor(p); err != nil {
+		return nil
 	}
-	return true
+	return family
 }
 
-// goPackageClause reads the package name off a Go file's first package line.
-// A line scan rather than go/parser: the harness only needs the identifier, and
-// a file that does not parse is one this sequence should not be adding siblings
-// to anyway.
-func goPackageClause(raw []byte) string {
-	for _, line := range strings.Split(string(raw), "\n") {
-		rest, ok := strings.CutPrefix(strings.TrimSpace(line), "package ")
-		if !ok {
-			continue
-		}
-		name := strings.TrimSpace(rest)
-		if i := strings.IndexAny(name, " \t/"); i >= 0 {
-			name = name[:i]
-		}
-		if name != "" {
-			return name
-		}
-	}
-	return ""
-}
+// sharedParserRegistry is the shipped registry, built once. This predicate runs
+// per indexed file and the registry is immutable after construction and
+// mutex-guarded on read, so rebuilding it per call was pure waste — and it got
+// hotter with SW-191, because every language's files now reach this filter
+// rather than only `.go` ones (SW-191 review MIN-8).
+var sharedParserRegistry = sync.OnceValue(parse.NewDefaultRegistry)
 
 // crossPackageTargets finds the files whose symbols really are referenced from
 // other directories, so AC-2's cross-package class is evidence rather than a

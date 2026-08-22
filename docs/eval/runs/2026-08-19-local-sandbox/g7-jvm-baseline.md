@@ -184,6 +184,13 @@ what the control does and does not license there.
 
 ## 5. The freshness suite cannot include a Java or Kotlin pin — measured
 
+> **SUPERSEDED, 2026-08-22 (SW-191). EVALFRESH-001 IS CLOSED.** Everything in
+> this section is a correct record of what SW-177 measured on 2026-08-19 and is
+> kept unedited for that reason — the transcripts under `freshness-blocked/` are
+> what it cites, and rewriting them would leave this page citing something that
+> never said what it says. But **it no longer describes the harness.** A run
+> today does NOT reproduce the refusals below. See §5.1 for what replaced them.
+
 Running it is the evidence. On each of the three JVM pins:
 
 ```
@@ -236,6 +243,225 @@ measurement machinery"* — and it would mint a new sequence digest, making ever
 existing freshness artifact incomparable to every new one. It is **not a JVM
 defect**: it blocks Python (SW-181), the TypeScript family (SW-182) and every
 language in SW-184/185 identically.
+
+### 5.1 What SW-191 changed (dated amendment, 2026-08-22)
+
+`EVALFRESH-001` is closed. The per-language change-class family §5 declined to
+build is built: `cmd/eval/sourcefamily.go` states, per language family, the
+shape of its package clause (or that it **has** none), whether a directory needs
+one before a sibling can be added there, the declaration an append introduces in
+that language's syntax, and the name a newly added file carries. All three
+mechanisms §5 names moved:
+
+1. the file filter is family-driven, so `.java`, `.kt`, `.py`, `.ts`, `.tsx`,
+   `.js` and the rest qualify — and, deliberately, `.json`/`.yaml`/`.md` do
+   **not**, because there is no top-level declaration to append to them;
+2. the package-clause reader is per family. The JVM reader strips Java's
+   terminator and reads Kotlin's unterminated clause; Python and the TypeScript
+   family read **nothing**, because they have nothing to read — and the
+   directory gate now treats that as admissible instead of dropping the
+   directory, which is what made `ky` and `express` abort even after the filter
+   was widened;
+3. the ADD class writes `GraphiEvalStepNNNN.java`, `graphi_eval_stepNNNN.kt`,
+   `…​.py`, `…​.ts`, `…​.js` — the family's own name and extension — and the
+   MODIFY class appends that family's own declaration.
+
+`changeSequenceMethod` was rewritten to describe the sequence that now runs.
+
+#### 5.1.1 The sequence digest — retraction and measurement
+
+**Retracted, 2026-08-22.** The first version of this amendment said the sequence
+digest "moved with" `changeSequenceMethod`, "exactly as §5 predicted", and
+concluded that freshness artifacts produced before 2026-08-22 are not comparable
+to ones produced after. **The mechanism was wrong and the conclusion is false for
+every freshness artifact this repository holds.** The independent review of
+SW-191 caught it by measuring instead of reading, and the correction below was
+re-measured here rather than copied from the review.
+
+**The method string is not an input to the digest.** `changeSequenceDigest`
+(`cmd/eval/changeseq.go`) is `evalreport.SampleDigest` over each step's
+`descriptor()`, and `descriptor()` is exactly `class + "|" + path + "|" + symbol`.
+Rewriting the published method text cannot move the digest by construction. What
+moves the digest is the **candidate file list** — and, through it, the planned
+paths and the cross-package targets.
+
+**Measured on the cobra Go control, `-full-run cobra -incremental-changes 100`,
+darwin/arm64 `local-sandbox`, 2026-08-22, at three revisions:**
+
+| revision | filter | completed | candidate files | sequence digest |
+|---|---|---|---|---|
+| `bed3578^` — pre-SW-191 | `modifiableGoFile`, `.go` only | 100/100, 0 failed | 19 | `628cbd282b5bf6ea…6198eb428b48` |
+| `96a3fcd` — `main` today | registry-driven (`bed3578`) | **95/100, 5 failed** | 24 | `8f367ec68e7ddcae…fc6bbf31f9570500` |
+| this change | family-driven (`sourcefamily.go`) | 100/100, 0 failed | 19 | `628cbd282b5bf6ea…6198eb428b48` |
+
+Cobra's candidate list, its 100-step sequence and its digest are **byte-identical
+to pre-SW-191**, while the method string demonstrably differs between those two
+revisions (`bed3578^` publishes *"the indexed Go source files"*; this change
+publishes *"the indexed, LANGUAGE-SCOPED modifiable source files"*). That pair —
+same digest, different method text — is the direct demonstration that the method
+is not hashed.
+
+Cobra alone does not license a statement about *every* Go pin, and the first
+version of this subsection made one anyway ("the Go candidate list … is
+byte-identical"). So all five Go pins that have ever produced a freshness
+artifact were measured at **both** revisions, `-incremental-changes 100`,
+darwin/arm64 `local-sandbox`, 2026-08-22 (rebuild round 1). Every cell below
+completed 100/100 with 0 failures.
+
+| pin | pre-SW-191 (`bed3578^`) | this change | checked-in artifact |
+|---|---|---|---|
+| cobra | 19 files, `628cbd28…b428b48` | 19, `628cbd28…b428b48` | 2026-07-28 run-a+b: 19, `628cbd28…b428b48` — **reproduced** |
+| uuid | 16 files, `178c9318…be7f262349` | 16, `178c9318…be7f262349` | 2026-07-28 run-a+b: 16, `178c9318…be7f262349` — **reproduced** |
+| lo | 17 files, `de7e287e…b63c59804a` | 17, `de7e287e…b63c59804a` | 2026-07-28 run-a+b: 17, `de7e287e…b63c59804a` — **reproduced** |
+| gin | 53 files, `3b49e5a4…bbefcc0527` | 53, `3b49e5a4…bbefcc0527` | 2026-07-28 run-a+b: 53, `1ea0b445…9ee31593f6` — **differs, and differed before SW-191** |
+| grpc-go | **542** files, `4a6a7756…b4b785b062` | **558**, `4a6a7756…b4b785b062` | 2026-08-20-local-grpc: 542, `4a6a7756…b4b785b062`; 2026-07-28 run-a+b: 542, `5aa55a06…e508d79c871` |
+
+Two of those rows have to be said out loud rather than rounded to "unchanged".
+
+**grpc-go's candidate population does move: 542 → 558.** `bash` is one of the
+fifteen families — the shipped registry parses `.sh`/`.bash` — and grpc-go ships
+exactly 16 shell scripts outside `vendor/`, `testdata/`, `third_party/` and
+`node_modules/`. 542 + 16 = 558. The **sequence** does not move: all 100
+`class|path|symbol` triples are identical between the two revisions (diffed, not
+eyeballed), no step touches a `.sh` file — 100 changes walk 25 cycles and the
+shell scripts sort past them — and the digest is the same `4a6a7756…b4b785b062`
+at both. So grpc-go's published freshness figures stay comparable, but a NEW
+grpc-go artifact will report `source_files: 558` where the existing ones report
+542, and a run longer than 100 changes would eventually mutate a shell script.
+grpc-go is the reference scenario (`docs/eval/reference-scenario.json`), so this
+is stated here rather than left to be discovered by whoever next diffs two
+grpc-go artifacts.
+
+**gin's digest already failed to match its July artifact, at both revisions.**
+Same 53 candidate files everywhere; what differs is the cross-package target set
+the graph yields — `gin.Engine.NoRoute` today where the July run recorded
+`gin.Engine.RunFd`. The divergence is present at `bed3578^` as well, so it
+belongs to index/parser changes made between 2026-07-28 and now and **not** to
+SW-191. It is recorded because a reader comparing gin against its July artifact
+will hit it, and should not attribute it here.
+
+**So, stated at the precision the measurement supports: no pre-existing freshness
+artifact is made incomparable by this change.** Three of the five Go pins
+reproduce their checked-in digest byte-for-byte today; the fourth (gin) diverged
+before SW-191 and diverges identically with and without it; the fifth (grpc-go)
+keeps its digest and gains 16 candidates the sequence never reaches. Every
+freshness artifact in `docs/eval/runs/` was produced on a Go pin — cobra, uuid,
+lo, gin, grpc-go — because every non-Go pin aborted at exit 1, which is what §5
+above records. The one digest that genuinely moved is `main`'s intermediate state
+(`8f367ec6…`, 24 candidate files including five `.md`), and that state never
+produced a published artifact.
+
+§5's prediction that closing EVALFRESH-001 "would mint a new sequence digest,
+making every existing freshness artifact incomparable to every new one" was a
+reasonable worry and it did not come true. Narrowing the filter back to what can
+actually be mutated is why.
+
+#### 5.1.2 A regression on `main`, introduced under this ticket and closed by it
+
+The intermediate registry-driven filter that SW-191's own first commit
+(`bed3578`) shipped — and that is on `main` at `96a3fcd` as of this writing —
+admitted `.md` as a mutation candidate. Cobra's candidate list grew from 19 files
+to 24, and the harness appended a Go function to five markdown files:
+`site/content/docgen/{man,md,rest,yaml}.md` and `site/content/user_guide.md`.
+None of the five could ever become answerable by a search, so all five changes
+failed at the converge stage.
+
+**The Go control — the thing whose entire job is to prove that a non-Go abort is
+language scope and not a broken harness — fell to 95/100 on `main`, below FR-8's
+100-change floor, and that was disclosed nowhere.** It is disclosed here. Not
+every pin was hit: `uuid` measures 100/100 at `178c93184c3d9aeb…be7f262349` at
+all three revisions. The control was, which is the pin that matters.
+
+The family-driven narrowing in this change is what repairs it — markdown has no
+top-level declaration to append, so it is not a candidate — and it is the
+strongest argument for the narrowing that exists. `TestSourceFamilies_ComplementIsCompleteAgainstTheShippedRegistry`
+now walks every extension the shipped parser registry registers and forces each
+one to be either a declared mutation family or a declared data language, so the
+same class of over-admission cannot land quietly again.
+
+**Re-measured, `-incremental-changes 100`, same machine class (darwin/arm64,
+`local-sandbox`), 2026-08-22 — every pin exits 0:**
+
+| pin | language | completed | classes | note |
+|---|---|---|---|---|
+| cobra | go | 100/100 | true | the control, unchanged |
+| guava | java | 99/100 | false | 1 failure: the Java extractor yields no symbols for `guava-testlib/…/Helpers.java` |
+| okio | kotlin | 73/100 | false | 27 failures: the Kotlin extractor stops at the first top-level `suspend fun` |
+| kotlinx.serialization | kotlin | 97/100 | false | 3 failures, same Kotlin cutoff |
+| flask | python | 100/100 | **true** | |
+| ky | typescript | 98/100 | false | 2 failures: the TS extractor yields no symbols for a file with a type-predicate arrow function |
+| express | javascript | 100/100 | false | |
+| sinatra | ruby | 99/100 | **true** | NOT in AC-2 and not measured before rebuild round 1; it exited 1 pre-SW-191 and exits 0 here. 1 failure: `examples/chat.rb` — see below |
+
+`classes=false` on guava, kotlinx.serialization, ky and express is a property of
+those **repositories**, not of the harness: none of their highest-degree symbols
+has an inbound edge from another directory, so the `cross_package` class is left
+visibly uncovered rather than quietly substituted. On okio the class **is**
+available and fails, because its only qualifying target is the file the Kotlin
+`suspend fun` cutoff blanks.
+
+**Three of the four remaining shortfalls are parser-coverage gaps. The fourth,
+sinatra's, is a HARNESS gap in code SW-191 itself wrote.** Their reproductions are
+not all of the same strength, and saying so matters more than the symmetry of a
+sentence:
+
+- **Kotlin — minimal repro, three lines.**
+  `fun a(): Int = 1` / `internal suspend fun collect(p: Int) { }` / `fun c(): Int = 3`
+  yields the file node and `a` only. With `suspend` removed, all three extract.
+  The trigger is isolated.
+- **TypeScript — minimal repro, two lines.**
+  `export const isObject = (value: unknown): value is object => value !== null;`
+  followed by `export function after(): number { return 2; }` yields the file
+  node ALONE: one type-predicate arrow function suppresses every symbol in the
+  file, including ordinary functions declared after it.
+- **Java — a whole-file observation, no minimal repro.** The shipped Java
+  extractor returns `nodes=2` (the file node and the package node) for
+  `android/guava-testlib/src/com/google/common/collect/testing/Helpers.java` at
+  the pinned sha `2214c636…` — 578 lines, zero types, zero methods — unmodified,
+  before the harness touches it. The observation reproduces every time; the
+  *trigger* has not been isolated. Bisecting by prefix, and probing the file's
+  distinctive constructs individually (`@GwtCompatible(emulated = true)`,
+  `@ElementTypesAreNonnullByDefault`, `<E extends @Nullable Object>` in both
+  method and class type-parameter position, a generic nested `private static
+  class`, an anonymous `new AbstractList<T>() { … }`), each extract normally.
+  So this one is recorded as what it is — a reproducible whole-file failure with
+  an unknown cause — and not dressed up as a three-line repro.
+
+- **Ruby — NOT a parser gap. The harness appends past `__END__`.**
+  sinatra's single failure is step 1, `modify examples/chat.rb`, failing at the
+  converge stage after 40 probes. The cause was measured, not guessed:
+  `examples/chat.rb` declares `__END__` at line 38 of 75 and everything after it
+  is inline ERB template data, not Ruby code. The ruby family appends its
+  declaration to the END of the file, so the generated `def GraphiEvalStep0001`
+  lands after `__END__` and is not code at all. Probed against
+  `parse.NewDefaultRegistry()`: the file yields `nodes=1` (the file node alone)
+  both before and after the append, while `def Foo` / `def foo` in a two-line
+  file yield `nodes=2` each — so neither the declaration template nor the Ruby
+  extractor is at fault. The append POINT is. **This is a defect in
+  `cmd/eval/sourcefamily.go`, which SW-191 wrote**, not in a product extractor,
+  and it is the one shortfall here that this story owns. It is not fixed in this
+  pass: `sourceFamily.excluded` takes a path and not the file's bytes, so
+  refusing an `__END__` file (or inserting before the marker) needs a new
+  per-family content hook, and adding unreviewed surface to the family table
+  after the independent review had already accepted its shape is the worse trade.
+  It is on the ship gate's decision list with the three parser findings.
+
+An earlier version of this paragraph said the three parser findings "are
+reproducible in three lines each". That was true of two of them; the ruby
+finding above was not in it at all, because sinatra had not been measured.
+
+The three PARSER findings are recorded on the `GA-LANG-{java,kotlin,typescript}-G7`
+rows in `docs/rc/evidence-index.yaml` and are out of SW-191's scope. They are
+**not yet filed as defects** — see the closure note on `EVALFRESH-001` in the
+backlog; they need defect IDs, and the TypeScript one especially, since
+TypeScript is a GA-track language and the failure blanks a whole file. The ruby
+harness finding is likewise unfiled and there is no ruby G7 row to carry it: the
+backlog closure note and this section are the only places it exists.
+
+**Those rows stay `UNKNOWN`.** Closing EVALFRESH-001 and EVALBUDGET-001 removes
+two named blockers; it does not supply what G7's PASS still needs — a
+reference-class (`ubuntu-latest`) dispatch at the current candidate, on a clean
+tree, with a fresh evidence URI and sha per pin.
 
 ---
 

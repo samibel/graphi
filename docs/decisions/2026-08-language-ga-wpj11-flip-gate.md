@@ -168,6 +168,20 @@ and EVALBUDGET-001 (no JVM budget was derived because the run is on
 projection for `agent_brief` straddles the 500 ms gate; recorded as a
 projection, NO verdict drawn.
 
+**Amended (2026-08-22, SW-191):** **STILL NOT MET, for a shorter list of
+reasons.** Both named blockers are closed. EVALFRESH-001: the change sequence
+is language-scoped (`cmd/eval/sourcefamily.go`) and `-incremental-changes 100`
+now exits 0 on every JVM, python and TS-family pin — guava 99/100, okio 73/100,
+kotlinx.serialization 97/100, flask 100/100, ky 98/100, express 100/100, with
+the cobra control at 100/100. EVALBUDGET-001: `docs/eval/hero-budgets.json`'s
+`historical_ceilings` block is now READ by `cmd/eval/budgets.go`, so a
+comparison-class run is bounded by a non-ratcheting ceiling instead of refused.
+What is still missing is what it always was: a **reference-class**
+(`ubuntu-latest`) dispatch at the current candidate, on a clean tree, with a
+fresh URI + sha per pin. The remaining freshness shortfalls (okio, ky, guava)
+are parser-coverage gaps in the Kotlin / TypeScript / Java extractors, recorded
+on the G7 rows, not harness gaps.
+
 ### C7 — capability surface (G8) and `cmd/coverage -check` bind java/kotlin at their declared capability
 
 **Artefact:** `docs/coverage-matrix.yaml` (the `category: ga-language` rows

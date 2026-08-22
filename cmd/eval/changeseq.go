@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/samibel/graphi/internal/evalreport"
 )
@@ -40,12 +41,28 @@ var changeSequenceCycle = len(evalreport.RequiredChangeClasses)
 
 // changeSequenceMethod is the sequence's determinism claim, stated in the
 // artifact beside the digest so it can be checked rather than believed.
-const changeSequenceMethod = "A fixed four-step cycle over the indexed Go source files in canonical (sorted, repo-relative POSIX) order: " +
-	"(1) MODIFY file[c] by appending one exported function; (2) ADD a new file beside it in the same package containing " +
-	"one exported function; (3) CROSS_PACKAGE — modify a file whose symbols have inbound edges from other directories, " +
-	"rotating over the qualifying targets; (4) DELETE the file step 2 added in this same cycle. c advances by one per " +
-	"cycle, so a long run walks the whole file list. The sequence is a pure function of the sorted file list, the " +
-	"cross-package targets and the requested count: no randomness, no wall-clock, no map iteration."
+//
+// A function over sync.OnceValue rather than a package-level `var`: the string
+// interpolates familyNames() so it cannot be a `const`, but a determinism claim
+// that any code in the package could reassign is a claim about mutable state
+// (SW-191 review MIN-8). Computed once, immutable thereafter.
+var changeSequenceMethod = sync.OnceValue(buildChangeSequenceMethod)
+
+func buildChangeSequenceMethod() string {
+	return "A fixed four-step cycle over the indexed, LANGUAGE-SCOPED modifiable source files in canonical " +
+		"(sorted, repo-relative POSIX) order: (1) MODIFY file[c] by appending one top-level declaration written in THAT FILE'S " +
+		"language; (2) ADD a new file beside it, in the same package where the language has one and in the same directory " +
+		"where it does not, containing one top-level declaration; (3) CROSS_PACKAGE — modify a file whose symbols have " +
+		"inbound edges from other directories, rotating over the qualifying targets; (4) DELETE the file step 2 added in " +
+		"this same cycle. c advances by one per cycle, so a long run walks the whole file list. A file is a candidate only " +
+		"when its extension belongs to one of the families cmd/eval/sourcefamily.go states a mutation shape for (" +
+		strings.Join(familyNames(), ", ") + "); the data/markup languages the index can parse are deliberately NOT " +
+		"candidates, because there is no top-level declaration to append to them. Each family supplies its own package-clause " +
+		"reader (Go's bare identifier, the JVM's dotted-and-optionally-terminated name, or none at all for the languages " +
+		"that locate a module by path), its own declaration text and its own added-file name. The sequence is a pure " +
+		"function of the sorted file list, the per-directory package clauses, the cross-package targets and the requested " +
+		"count: no randomness, no wall-clock, no map iteration."
+}
 
 // changeStep is one planned change. It is data: nothing here reads or writes
 // the filesystem, so the whole sequence can be built and asserted without a
@@ -56,8 +73,9 @@ type changeStep struct {
 	class string
 	// path is the repo-relative POSIX path the change targets.
 	path string
-	// pkg is the Go package clause a newly added file must carry. Empty for the
-	// classes that modify an existing file.
+	// pkg is the package clause a newly added file must carry, in its own
+	// language's shape. Empty for the classes that modify an existing file, and
+	// also for the families that HAVE no package clause.
 	pkg string
 	// symbol is the exported identifier the change introduces (add, modify,
 	// cross_package) or, for a delete, the one the removed file defined.
@@ -81,10 +99,13 @@ func (s changeStep) descriptor() string {
 // changeSequenceInput is everything the sequence is a function of. Building it
 // touches the graph and the filesystem; turning it into steps does not.
 type changeSequenceInput struct {
-	// files are the indexed, modifiable Go source files in canonical order.
+	// files are the indexed, modifiable source files — of every language family
+	// with a mutation shape — in canonical order.
 	files []string
-	// packages maps a directory to the package clause its files declare, so an
-	// added file compiles into the same package as its siblings.
+	// packages maps packageKey(directory, family) to the package clause that
+	// family's files declare there, so an added file joins the same package as
+	// its siblings. A family with no package clause records no entry, and that
+	// absence is admissible rather than disqualifying.
 	packages map[string]string
 	// crossPackage are the files whose symbols carry inbound edges from other
 	// directories, in the order the graph ranked them, with their evidence.
@@ -109,6 +130,14 @@ func buildChangeSequence(in changeSequenceInput) []changeStep {
 	for cycle := 0; len(steps) < in.count; cycle++ {
 		base := in.files[cycle%len(in.files)]
 		dir := path.Dir(base)
+		// The ADD/DELETE pair is rendered in the language of the file the cycle
+		// is anchored on, so the sibling it creates is parseable in that
+		// directory. A base with no family cannot happen (the file list is
+		// already family-filtered) but is skipped rather than assumed.
+		family := familyForPath(base)
+		if family == nil {
+			continue
+		}
 
 		// (1) MODIFY: append one exported function to an existing file.
 		if len(steps) < in.count {
@@ -129,8 +158,8 @@ func buildChangeSequence(in changeSequenceInput) []changeStep {
 			steps = append(steps, changeStep{
 				index:  index,
 				class:  evalreport.ChangeClassAdd,
-				path:   addedFilePath(dir, index),
-				pkg:    in.packages[dir],
+				path:   addedFilePath(dir, family, symbol, index),
+				pkg:    in.packages[packageKey(dir, family)],
 				symbol: symbol,
 				expect: "the added file's function " + symbol + " is answerable by a search",
 			})
@@ -157,7 +186,7 @@ func buildChangeSequence(in changeSequenceInput) []changeStep {
 			steps = append(steps, changeStep{
 				index:         index,
 				class:         evalreport.ChangeClassDelete,
-				path:          addedFilePath(dir, addIndex),
+				path:          addedFilePath(dir, family, changeSymbol(addIndex), addIndex),
 				symbol:        changeSymbol(addIndex),
 				expect:        "the deleted file's function " + changeSymbol(addIndex) + " is no longer answerable",
 				deleteTargets: addIndex,
@@ -182,10 +211,13 @@ func changeSymbol(n int) string {
 	return fmt.Sprintf("GraphiEvalStep%04d", n)
 }
 
-// addedFilePath is the file an `add` step creates. The name carries the step
-// index so the paired delete addresses exactly the file its cycle added.
-func addedFilePath(dir string, n int) string {
-	name := fmt.Sprintf("graphi_eval_step%04d.go", n)
+// addedFilePath is the file an `add` step creates, named by the family whose
+// directory it lands in. The name is a pure function of (family, symbol, step
+// index) so the paired delete addresses exactly the file its cycle added, and
+// it carries the family's own extension so the added file is parsed by the
+// parser its siblings are.
+func addedFilePath(dir string, family *sourceFamily, symbol string, n int) string {
+	name := family.addedFileBase(symbol, n)
 	if dir == "." || dir == "" {
 		return name
 	}
@@ -209,7 +241,7 @@ func changeSequenceInfo(in changeSequenceInput, steps []changeStep) evalreport.C
 	return evalreport.ChangeSequenceInfo{
 		Steps:        len(steps),
 		Cycle:        changeSequenceCycle,
-		Method:       changeSequenceMethod,
+		Method:       changeSequenceMethod(),
 		Digest:       changeSequenceDigest(steps),
 		SourceFiles:  len(in.files),
 		CrossPackage: in.crossPackage,
@@ -217,30 +249,36 @@ func changeSequenceInfo(in changeSequenceInput, steps []changeStep) evalreport.C
 }
 
 // modifiedFileContent is the appended text for a modify or cross-package step.
-// One exported function, no imports, no dependency on the file's existing
-// content: it is valid Go in any package, so the change cannot break a file for
-// a reason that has nothing to do with the measurement.
+// One top-level declaration, no imports, no dependency on the file's existing
+// content, written in the language of the file being modified — so the change
+// cannot break a file for a reason that has nothing to do with the measurement,
+// and the appended symbol is really extractable by the parser that file's
+// siblings go through.
+//
+// The language comes from the PATH BEING MODIFIED, not from the cycle's anchor:
+// a cross-package step targets whatever file the graph ranked, which may belong
+// to a different family than the file the cycle started on.
 func modifiedFileContent(existing []byte, s changeStep) []byte {
-	body := "\n// " + s.symbol + " is appended by the SW-126 freshness harness (step " +
-		fmt.Sprint(s.index) + "). It is removed with the working tree.\nfunc " + s.symbol +
-		"() int { return " + fmt.Sprint(s.index) + " }\n"
+	family := familyForPath(s.path)
+	if family == nil {
+		// The step would not have been planned; returning the file unchanged
+		// makes the step fail its convergence probe honestly rather than
+		// corrupting a file the harness cannot write.
+		return append([]byte(nil), existing...)
+	}
+	body := family.appended(s.symbol, s.index)
 	if len(existing) > 0 && !strings.HasSuffix(string(existing), "\n") {
 		body = "\n" + body
 	}
 	return append(append([]byte(nil), existing...), []byte(body)...)
 }
 
-// addedFileContent is a whole new file in the sibling package.
+// addedFileContent is a whole new file beside its siblings, in their language
+// and — where the language has one — in their package.
 func addedFileContent(s changeStep) []byte {
-	pkg := s.pkg
-	if pkg == "" {
-		// Unreachable while the package clause is read from a sibling; a
-		// deliberate placeholder rather than an empty package clause, which
-		// would not parse and would fail the step for the wrong reason.
-		pkg = "main"
+	family := familyForPath(s.path)
+	if family == nil {
+		return nil
 	}
-	return []byte("package " + pkg + "\n\n// " + s.symbol +
-		" is added by the SW-126 freshness harness (step " + fmt.Sprint(s.index) +
-		") and deleted later in the same cycle.\nfunc " + s.symbol +
-		"() int { return " + fmt.Sprint(s.index) + " }\n")
+	return []byte(family.added(s.pkg, s.symbol, s.index))
 }
