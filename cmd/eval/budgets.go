@@ -117,6 +117,20 @@ func validateBudgetDeclaration(manifest fullBudgetManifest) error {
 	if manifest.Historical && manifest.HistoricalReason == "" {
 		return fmt.Errorf("historical budget manifest records no historical_reason")
 	}
+	// SW-191 review MIN-4. evaluateFullRunBudgets routes on a switch whose first
+	// arm is `manifest.RunnerClass` and whose second is the comparison class. Go
+	// takes the FIRST matching arm, so a manifest that declared its own
+	// runner_class as the comparison class would make a comparison-class run
+	// read `real_repos` — precisely the reference-class substitution the split
+	// exists to prevent — and every check inside comparisonCeilings would be
+	// skipped because the block is never reached. Refusing the collision here,
+	// at load and at evaluation, is what makes that function's doc comment true
+	// rather than true-in-practice-because-another-command-checks.
+	if manifest.RunnerClass == comparisonRunnerClass {
+		return fmt.Errorf("budget manifest declares runner_class %q; the top-level runner_class names the REFERENCE class, "+
+			"and the comparison class is served only from historical_ceilings (a manifest claiming both would route a "+
+			"comparison-class run into the reference-class real_repos table)", comparisonRunnerClass)
+	}
 	return nil
 }
 
@@ -145,7 +159,10 @@ func evaluateFullRunBudgets(manifest fullBudgetManifest, runnerClass string, run
 	// reference class, and the two must not share a table. The routing below is
 	// the whole of the acceptance — there is no path on which a
 	// comparison-class run reads a reference-class figure, and none on which a
-	// reference-class run reads a ceiling.
+	// reference-class run reads a ceiling. The one way that could have been
+	// evaded — a manifest declaring its OWN runner_class as the comparison
+	// class, so the first switch arm shadows the second — is refused up front by
+	// validateBudgetDeclaration, which this function calls before routing.
 	selection := manifest.RealRepos.Selection
 	perRepo := manifest.RealRepos.PerRepo
 	switch runnerClass {

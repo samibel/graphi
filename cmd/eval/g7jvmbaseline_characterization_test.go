@@ -359,7 +359,7 @@ func TestPublishedG7_FreshnessBlockDoesNotReproduce(t *testing.T) {
 				"message the frozen transcripts record", p)
 		}
 	}
-	if strings.Contains(changeSequenceMethod, "Go source files") {
+	if strings.Contains(changeSequenceMethod(), "Go source files") {
 		t.Error("the published determinism string still claims a Go-only scope")
 	}
 }

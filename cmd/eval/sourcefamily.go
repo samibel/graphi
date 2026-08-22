@@ -117,8 +117,9 @@ func lineComment(marker, symbol string, index int) string {
 }
 
 // sourceFamilies is the closed table. Order is irrelevant (lookup is by
-// extension and no extension appears twice); it is grouped by the corpus pin
-// each family has, then by the languages that have a GA row but no pin.
+// extension and no extension appears twice). The ordering is roughly by how
+// early the language entered the corpus; pin status is NOT the grouping and is
+// stated per family at the divider below, because grouping by it was wrong.
 var sourceFamilies = []sourceFamily{
 	// ---------------------------------------------------------------- go ---
 	// The control. cobra is the pin, and this entry must stay byte-for-byte
@@ -246,12 +247,31 @@ var sourceFamilies = []sourceFamily{
 		},
 		preamble: func(string) string { return "" },
 	},
-	// -------------------------------------------- languages with no pin ---
-	// These have a GA row but no corpus pin, so nothing below is exercised by
-	// a -full-run today. They are entered anyway because the alternative is
-	// that the FIRST pin in one of them re-opens EVALFRESH-001 by surprise;
-	// each is pinned by a hermetic parse test instead of by a corpus run, and
-	// that difference is stated rather than glossed.
+	// ------------------------------------------- pin status, per family ---
+	// SW-191 rebuild round 1. This divider used to read "languages with no
+	// pin" and to claim that nothing below it "is exercised by a -full-run
+	// today". Both halves were wrong about the very first entry: `ruby` HAS a
+	// corpus pin — sinatra, tier 3, corpus/manifest.json — and
+	// `-full-run sinatra -incremental-changes 100` reaches 99/100 on this
+	// change where it exited 1 before it. So the pin status is stated as a
+	// fact rather than implied by where the entry sits.
+	//
+	// WITH a corpus pin (7): go (cobra, uuid, lo, gin, grpc-go, kubernetes),
+	// java (guava), kotlin (okio, kotlinx.serialization), python (flask),
+	// typescript (ky), javascript (express), ruby (sinatra).
+	//
+	// WITHOUT one (8): tsx — listed above beside typescript for readability,
+	// but ky is a `.ts` pin, not a `.tsx` one — plus rust, c, cpp, csharp,
+	// php, lua and bash below.
+	//
+	// An unpinned family is exercised only by the hermetic parse tests in
+	// sourcefamily_test.go, never by a -full-run. It is entered anyway because
+	// the alternative is that the FIRST pin in one of them re-opens
+	// EVALFRESH-001 by surprise; that difference is stated rather than glossed.
+	// One caveat the pinned/unpinned split does NOT capture: bash has no pin,
+	// yet grpc-go's 16 shell scripts DO enter its candidate list (542 -> 558
+	// candidate files). 100 changes never reach them, so no bash file is
+	// mutated today, but a longer run would mutate one.
 	{
 		name:          "ruby",
 		exts:          []string{".rb"},

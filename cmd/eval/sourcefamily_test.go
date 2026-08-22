@@ -18,6 +18,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -180,7 +183,14 @@ func TestSourceFamilies_GeneratedDeclarationsAreExtractable(t *testing.T) {
 func TestSourceFamilies_NonCodeExtensionsAreNotCandidates(t *testing.T) {
 	for _, p := range []string{
 		"package.json", "config/app.yaml", "config/app.yml", "Cargo.toml",
-		"README.md", "docs/site.css", "schema/init.sql", "infra/main.tf", "infra/main.hcl",
+		// `.markdown` sits beside `.md` in the registry and was missing from this
+		// list (SW-191 review MIN-8). Markdown is not a cosmetic entry here: the
+		// intermediate registry-driven filter this narrowing replaced admitted
+		// `.md`, which is what regressed the cobra Go control to 95/100 — the
+		// harness appended a Go function to five markdown files and then could
+		// never find the symbol.
+		"README.md", "docs/guide.markdown",
+		"docs/site.css", "schema/init.sql", "infra/main.tf", "infra/main.hcl",
 	} {
 		if f := familyForPath(p); f != nil {
 			t.Errorf("familyForPath(%q) = %s; a data/markup file is not a mutation candidate", p, f.name)
@@ -188,6 +198,128 @@ func TestSourceFamilies_NonCodeExtensionsAreNotCandidates(t *testing.T) {
 		if modifiableSourceFile(p) {
 			t.Errorf("modifiableSourceFile(%q) = true; the sequence would plan a change it cannot render", p)
 		}
+	}
+}
+
+// TestSourceFamilies_ComplementIsCompleteAgainstTheShippedRegistry closes the
+// hole the list above cannot close on its own: a hand-written list of data
+// extensions omits whatever nobody thought of, and `.markdown` was exactly that
+// omission (SW-191 review MIN-8). Rather than trusting the list, this walks
+// EVERY extension the shipped registry registers and requires each one to be
+// either a mutation family or an explicitly-declared data language. A parser
+// added to the registry with a new extension therefore fails here until someone
+// decides, in writing, which side of the line it is on.
+func TestSourceFamilies_ComplementIsCompleteAgainstTheShippedRegistry(t *testing.T) {
+	// The data/markup languages: parsed and indexed, but with no top-level
+	// declaration a change class could append. Declared, not inferred.
+	dataLanguages := map[string]bool{
+		"json": true, "yaml": true, "toml": true, "css": true,
+		"sql": true, "hcl": true, "markdown": true,
+	}
+
+	registry := parse.NewDefaultRegistry()
+	sawFamily, sawData := 0, 0
+	for _, lang := range registry.Languages() {
+		parser, err := registry.ParserForLang(lang)
+		if err != nil {
+			t.Fatalf("registry lists language %q but has no parser for it: %v", lang, err)
+		}
+		for _, ext := range parser.Extensions() {
+			probe := "probe" + ext
+			family := familyForPath(probe)
+			switch {
+			case dataLanguages[lang]:
+				sawData++
+				if family != nil {
+					t.Errorf("%s (%s) is a declared data language but claims mutation family %s; "+
+						"the sequence would plan an append it cannot render", ext, lang, family.name)
+				}
+				if modifiableSourceFile(probe) {
+					t.Errorf("modifiableSourceFile(%q) = true for data language %s", probe, lang)
+				}
+			default:
+				sawFamily++
+				if family == nil {
+					t.Errorf("%s (%s) is a CODE language the registry parses, but cmd/eval/sourcefamily.go "+
+						"states no mutation shape for it and it is not declared a data language; the "+
+						"complement has drifted from the registry", ext, lang)
+				}
+			}
+		}
+	}
+	// Non-vacuity in both directions: a registry that stopped reporting
+	// languages, or a dataLanguages map that swallowed everything, must not
+	// leave this test green.
+	if sawFamily == 0 || sawData == 0 {
+		t.Fatalf("walked %d code extensions and %d data extensions; the complement check is vacuous",
+			sawFamily, sawData)
+	}
+}
+
+// TestSourceFamilies_EveryCorpusPinLanguageHasAFamily reads the REAL
+// corpus/manifest.json and requires every pinned repository's declared language
+// to be a mutation family.
+//
+// SW-191 rebuild round 1. The table's divider comment used to group `ruby` under
+// "languages with no pin" and state that nothing in that group "is exercised by
+// a -full-run today". sinatra is a tier-3 ruby pin in the manifest, so the
+// statement was false and nothing failed. A comment cannot be tested; the
+// derivation it claims can be, and this is that derivation. It also fails when a
+// NEW pin is added in a language the table has no family for — which would
+// re-open EVALFRESH-001 for that pin without anybody noticing.
+func TestSourceFamilies_EveryCorpusPinLanguageHasAFamily(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "corpus", "manifest.json"))
+	if err != nil {
+		t.Fatalf("read corpus/manifest.json: %v", err)
+	}
+	var manifest struct {
+		Entries []struct {
+			Name     string `json:"name"`
+			URL      string `json:"url"`
+			Language string `json:"language"`
+		} `json:"entries"`
+	}
+	if err := json.Unmarshal(raw, &manifest); err != nil {
+		t.Fatalf("parse corpus/manifest.json: %v", err)
+	}
+
+	families := map[string]bool{}
+	for _, f := range sourceFamilies {
+		families[f.name] = true
+	}
+	pinned := map[string]bool{}
+	for _, e := range manifest.Entries {
+		// Tier-1 entries are local fixtures with no upstream URL; they are not
+		// corpus pins and their "jvm" pseudo-language is not a family.
+		if e.URL == "" || e.Language == "" {
+			continue
+		}
+		if !families[e.Language] {
+			t.Errorf("corpus pin %q declares language %q, and cmd/eval/sourcefamily.go states no "+
+				"mutation shape for it; -full-run %s -incremental-changes N would abort with an "+
+				"empty candidate set, which is EVALFRESH-001 re-opened for that pin",
+				e.Name, e.Language, e.Name)
+			continue
+		}
+		pinned[e.Language] = true
+	}
+
+	// Non-vacuity, and the specific fact the old comment got wrong: ruby is
+	// pinned. If sinatra is ever removed from the corpus this fails and the
+	// divider comment in sourcefamily.go has to be re-stated, not silently left
+	// wrong again.
+	if !pinned["ruby"] {
+		t.Error("no ruby corpus pin found; sourcefamily.go's divider comment states ruby IS pinned " +
+			"(sinatra) and that statement now has nothing behind it")
+	}
+	if len(pinned) < 2 {
+		t.Fatalf("only %d pinned language(s) derived from the manifest; the check is vacuous", len(pinned))
+	}
+	// And the count the divider comment publishes: 7 of the 15 families carry a
+	// corpus pin, 8 do not.
+	if len(pinned) != 7 || len(families) != 15 {
+		t.Errorf("sourcefamily.go's divider comment publishes 7 pinned of 15 families; the manifest "+
+			"and the table now give %d pinned of %d (pinned: %v)", len(pinned), len(families), pinned)
 	}
 }
 

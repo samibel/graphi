@@ -39,6 +39,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -474,10 +475,9 @@ func incrementalSourceFiles(ctx context.Context, store graphstore.Graphstore, ro
 // genuinely needs a clause: a `.go` file without one does not parse. The JVM
 // default package is legal, and the rest have nothing to declare.
 func admitSourceFile(p string, raw []byte, packages map[string]string) bool {
-	if !modifiableSourceFile(p) {
-		return false
-	}
-	family := familyForPath(p)
+	// One family lookup, not two: modifiableSourceFamily is the shared spine of
+	// this function and modifiableSourceFile (SW-191 review MIN-8).
+	family := modifiableSourceFamily(p)
 	if family == nil {
 		return false
 	}
@@ -512,24 +512,38 @@ func admitSourceFile(p string, raw []byte, packages map[string]string) bool {
 // TestSourceFamilies_NonCodeExtensionsAreNotCandidates pins that the data
 // languages stay out.
 func modifiableSourceFile(p string) bool {
+	return modifiableSourceFamily(p) != nil
+}
+
+// modifiableSourceFamily is modifiableSourceFile's answer with the family kept
+// rather than discarded, so the directory gate does not repeat the lookup.
+// Callers that only need the yes/no use modifiableSourceFile.
+func modifiableSourceFamily(p string) *sourceFamily {
 	for _, part := range strings.Split(p, "/") {
 		switch part {
 		case "vendor", "testdata", "third_party", "node_modules":
-			return false
+			return nil
 		}
 	}
 	family := familyForPath(p)
 	if family == nil {
-		return false
+		return nil
 	}
 	// The family table is a SUBSET of what the index can parse, never a
 	// superset: a file the shipped registry cannot parse could not have been
 	// ingested, so mutating it would measure nothing.
-	if _, err := parse.NewDefaultRegistry().ParserFor(p); err != nil {
-		return false
+	if _, err := sharedParserRegistry().ParserFor(p); err != nil {
+		return nil
 	}
-	return true
+	return family
 }
+
+// sharedParserRegistry is the shipped registry, built once. This predicate runs
+// per indexed file and the registry is immutable after construction and
+// mutex-guarded on read, so rebuilding it per call was pure waste — and it got
+// hotter with SW-191, because every language's files now reach this filter
+// rather than only `.go` ones (SW-191 review MIN-8).
+var sharedParserRegistry = sync.OnceValue(parse.NewDefaultRegistry)
 
 // crossPackageTargets finds the files whose symbols really are referenced from
 // other directories, so AC-2's cross-package class is evidence rather than a

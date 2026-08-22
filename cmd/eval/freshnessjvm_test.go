@@ -88,18 +88,18 @@ func TestChangeSequence_StillAcceptsGoFiles(t *testing.T) {
 // now it must name the language-scoped shape and enumerate the families, and it
 // must NOT still claim a Go-only scope.
 func TestChangeSequenceMethod_StatesItsRealScope(t *testing.T) {
-	if strings.Contains(changeSequenceMethod, "Go source files") {
+	if strings.Contains(changeSequenceMethod(), "Go source files") {
 		t.Fatalf("changeSequenceMethod still publishes a Go-only scope while the sequence is "+
 			"language-scoped; the string is emitted into every freshness artifact and would "+
-			"describe a run that did not happen:\n%s", changeSequenceMethod)
+			"describe a run that did not happen:\n%s", changeSequenceMethod())
 	}
-	if !strings.Contains(changeSequenceMethod, "LANGUAGE-SCOPED") {
-		t.Errorf("changeSequenceMethod does not state its language scope:\n%s", changeSequenceMethod)
+	if !strings.Contains(changeSequenceMethod(), "LANGUAGE-SCOPED") {
+		t.Errorf("changeSequenceMethod does not state its language scope:\n%s", changeSequenceMethod())
 	}
 	for _, family := range familyNames() {
-		if !strings.Contains(changeSequenceMethod, family) {
+		if !strings.Contains(changeSequenceMethod(), family) {
 			t.Errorf("changeSequenceMethod does not name the %s family; a reader of the artifact "+
-				"cannot tell which languages the sequence could have touched:\n%s", family, changeSequenceMethod)
+				"cannot tell which languages the sequence could have touched:\n%s", family, changeSequenceMethod())
 		}
 	}
 }

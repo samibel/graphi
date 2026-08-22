@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/samibel/graphi/internal/evalreport"
 )
@@ -40,19 +41,28 @@ var changeSequenceCycle = len(evalreport.RequiredChangeClasses)
 
 // changeSequenceMethod is the sequence's determinism claim, stated in the
 // artifact beside the digest so it can be checked rather than believed.
-var changeSequenceMethod = "A fixed four-step cycle over the indexed, LANGUAGE-SCOPED modifiable source files in canonical " +
-	"(sorted, repo-relative POSIX) order: (1) MODIFY file[c] by appending one top-level declaration written in THAT FILE'S " +
-	"language; (2) ADD a new file beside it, in the same package where the language has one and in the same directory " +
-	"where it does not, containing one top-level declaration; (3) CROSS_PACKAGE — modify a file whose symbols have " +
-	"inbound edges from other directories, rotating over the qualifying targets; (4) DELETE the file step 2 added in " +
-	"this same cycle. c advances by one per cycle, so a long run walks the whole file list. A file is a candidate only " +
-	"when its extension belongs to one of the families cmd/eval/sourcefamily.go states a mutation shape for (" +
-	strings.Join(familyNames(), ", ") + "); the data/markup languages the index can parse are deliberately NOT " +
-	"candidates, because there is no top-level declaration to append to them. Each family supplies its own package-clause " +
-	"reader (Go's bare identifier, the JVM's dotted-and-optionally-terminated name, or none at all for the languages " +
-	"that locate a module by path), its own declaration text and its own added-file name. The sequence is a pure " +
-	"function of the sorted file list, the per-directory package clauses, the cross-package targets and the requested " +
-	"count: no randomness, no wall-clock, no map iteration."
+//
+// A function over sync.OnceValue rather than a package-level `var`: the string
+// interpolates familyNames() so it cannot be a `const`, but a determinism claim
+// that any code in the package could reassign is a claim about mutable state
+// (SW-191 review MIN-8). Computed once, immutable thereafter.
+var changeSequenceMethod = sync.OnceValue(buildChangeSequenceMethod)
+
+func buildChangeSequenceMethod() string {
+	return "A fixed four-step cycle over the indexed, LANGUAGE-SCOPED modifiable source files in canonical " +
+		"(sorted, repo-relative POSIX) order: (1) MODIFY file[c] by appending one top-level declaration written in THAT FILE'S " +
+		"language; (2) ADD a new file beside it, in the same package where the language has one and in the same directory " +
+		"where it does not, containing one top-level declaration; (3) CROSS_PACKAGE — modify a file whose symbols have " +
+		"inbound edges from other directories, rotating over the qualifying targets; (4) DELETE the file step 2 added in " +
+		"this same cycle. c advances by one per cycle, so a long run walks the whole file list. A file is a candidate only " +
+		"when its extension belongs to one of the families cmd/eval/sourcefamily.go states a mutation shape for (" +
+		strings.Join(familyNames(), ", ") + "); the data/markup languages the index can parse are deliberately NOT " +
+		"candidates, because there is no top-level declaration to append to them. Each family supplies its own package-clause " +
+		"reader (Go's bare identifier, the JVM's dotted-and-optionally-terminated name, or none at all for the languages " +
+		"that locate a module by path), its own declaration text and its own added-file name. The sequence is a pure " +
+		"function of the sorted file list, the per-directory package clauses, the cross-package targets and the requested " +
+		"count: no randomness, no wall-clock, no map iteration."
+}
 
 // changeStep is one planned change. It is data: nothing here reads or writes
 // the filesystem, so the whole sequence can be built and asserted without a
@@ -231,7 +241,7 @@ func changeSequenceInfo(in changeSequenceInput, steps []changeStep) evalreport.C
 	return evalreport.ChangeSequenceInfo{
 		Steps:        len(steps),
 		Cycle:        changeSequenceCycle,
-		Method:       changeSequenceMethod,
+		Method:       changeSequenceMethod(),
 		Digest:       changeSequenceDigest(steps),
 		SourceFiles:  len(in.files),
 		CrossPackage: in.crossPackage,
