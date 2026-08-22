@@ -380,8 +380,11 @@ func TestIncrementalSeries_MissingClassIsNotCovered(t *testing.T) {
 	}
 }
 
-// goPackageClause is what makes an added file join its siblings' package; it
-// must survive build tags, comments and a trailing comment on the clause.
+// The GO family's package-clause reader is what makes an added Go file join its
+// siblings' package; it must survive build tags, comments and a trailing
+// comment on the clause. SW-191 moved it behind the family table
+// (readPackageClause with packageClauseGoIdent); the CASES ARE UNCHANGED,
+// because the cobra control is only a control if the Go path did not move.
 func TestGoPackageClause(t *testing.T) {
 	cases := map[string]string{
 		"package alpha\n": "alpha",
@@ -391,21 +394,29 @@ func TestGoPackageClause(t *testing.T) {
 		"// no package clause at all\n":                     "",
 	}
 	for src, want := range cases {
-		if got := goPackageClause([]byte(src)); got != want {
-			t.Errorf("goPackageClause(%q) = %q, want %q", src, got, want)
+		if got := readPackageClause(packageClauseGoIdent, []byte(src)); got != want {
+			t.Errorf("readPackageClause(go, %q) = %q, want %q", src, got, want)
 		}
+	}
+	// And it is reached through the family the way production reaches it.
+	if got := familyForPath("a/one.go").packageClause([]byte("package alpha\n")); got != "alpha" {
+		t.Errorf("familyForPath(.go).packageClause = %q, want \"alpha\"", got)
 	}
 }
 
 // The file filter keeps the sequence on files a user edits.
 func TestModifiableSourceFile(t *testing.T) {
 	included := []string{"a/one.go", "main.go", "internal/deep/x.go"}
-	// Markdown (.md) is a registered source language — the filter admits it.
-	// The original Go-only test listed readme.md under "excluded" only because
-	// the parser registry did not register markdown at the time; SW-191's
-	// registry-driven filter does not invent carve-outs the registry has not
-	// declared.
-	excluded := []string{"a/one_test.go", "vendor/x/y.go", "testdata/a.go", "third_party/z.go"}
+	// SW-191 final shape: the filter is FAMILY-driven, not registry-driven.
+	// Markdown is a registered source language and the intermediate
+	// registry-driven filter therefore admitted `readme.md` — but there is no
+	// top-level declaration to append to a markdown file, so the sequence would
+	// have planned a change it could not render. It is excluded again, this
+	// time for a stated reason rather than because `.go` was hardcoded.
+	excluded := []string{
+		"a/one_test.go", "vendor/x/y.go", "testdata/a.go", "third_party/z.go",
+		"readme.md", "package.json", "app.yaml",
+	}
 	for _, p := range included {
 		if !modifiableSourceFile(p) {
 			t.Errorf("%s should be modifiable", p)
@@ -428,7 +439,9 @@ func TestModifiableSourceFile(t *testing.T) {
 func TestModifiableSourceFile_AcceptsPythonFixture(t *testing.T) {
 	// Real corpus paths from corpus/hero-python and the G4 evidence rows:
 	// a Python module, a Python class, and a deep-nested package path. All
-	// three must be admitted by the filter.
+	// three must be admitted by the filter, and python declares no package
+	// clause at all — which SW-191 makes an admissible answer rather than a
+	// disqualifying one.
 	paths := []string{
 		"shop/cart/checkout.py",
 		"tax/rates/calc.py",

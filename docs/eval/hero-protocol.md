@@ -116,15 +116,36 @@ The historical block (`real_repos.selection`) is and remains the reference-class
 ceiling. **SW-191** adds a sibling block, `historical_ceilings`, that records
 comparison-class ceilings (`runner_class: local-sandbox`) derived from the
 two-dispatch campaign over each pin — `guava`/`okio`/`kotlinx_serialization`
-from SW-177 and `flask`/`ky`/`express` from the SW-191 perf re-run. The CLI
-applies them via the new branch in `cmd/eval/budgets.go:97-122`: a budget is
-accepted on the comparison class **only when** it is declared historical. A
-ratcheting budget on the comparison class fails closed — that's the whole
-defect the EVALBUDGET-001 fix prevents — and a comparison-class ceiling
-applied through this branch is **not** comparable to a reference-class run
-and must never be read as one. The `historical_ceilings.per_repo[<repo>].notes`
-field carries the EVALFRESH-001 freshness block per repo (the freshness
-suite is Go-only and aborts on every non-Go pin).
+from SW-177 and `flask`/`ky`/`express` from the SW-191 perf run.
+
+**The two tables are not interchangeable, and neither can reach the other.**
+`evaluateFullRunBudgets` routes on the RUN's `-runner-class`: the reference
+class reads `real_repos` and nothing else; the comparison class
+(`local-sandbox`) reads `historical_ceilings` and nothing else, through
+`fullBudgetManifest.comparisonCeilings()`. That routing is the whole of the
+acceptance. The ceiling block is fail-closed on its OWN declaration rather than
+on the manifest's: it must declare `runner_class: local-sandbox`,
+`runner_role: comparison`, and `ratcheting: false` **written down** (the field
+is a pointer, so an omitted declaration is refused rather than defaulted). Any
+of those bent — including re-pointing the block at `ubuntu-latest` — is an
+error, not a widened gate. Pinned by
+`cmd/eval/budgets_test.go::TestEvaluateFullRunBudgets_CeilingBlockCannotBeRepointed`
+and, on the checked-in file, by `TestHeroBudgets_HistoricalCeilingsSchema`.
+
+A comparison-class ceiling applied through this branch is **not** comparable to
+a reference-class run and must never be read as one. Concretely:
+`-full-run ky -budgets docs/eval/hero-budgets.json -runner-class local-sandbox`
+scores six checks and exits 0; the same invocation at
+`-runner-class ubuntu-latest` still exits 1 with
+`repo "ky" is not in budget selection`.
+
+The `historical_ceilings.per_repo[<repo>].notes` field carries each pin's
+freshness result. **EVALFRESH-001 is closed** (SW-191): the change sequence is
+language-scoped (`cmd/eval/sourcefamily.go`) and `-incremental-changes` now
+exits 0 on every pin. It does not follow that every pin MEETS FR-8's
+100-change floor — the notes record the completed-change count per pin, and the
+shortfalls that remain are parser-coverage gaps in the Kotlin, TypeScript and
+Java extractors rather than harness gaps.
 
 ## Pinned real repositories (EVAL-02 selection)
 
