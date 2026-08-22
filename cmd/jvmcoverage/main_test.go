@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -14,6 +15,51 @@ import (
 
 	"github.com/samibel/graphi/internal/parity"
 )
+
+// testBinaryPath is the absolute path to a pre-built copy of the
+// cmd/jvmcoverage binary, populated by TestMain. The tests run the
+// binary directly rather than `go run ./cmd/jvmcoverage`, for two
+// reasons:
+//
+//  1. `go run` re-compiles the package on every invocation. On CI
+//     runners the -race test build uses a different build cache key
+//     than the non-race `go run`, so the per-invocation compile hits
+//     a cold cache; on a slow CI runner the compile alone can take
+//     longer than the test's 10s timeout, leaving stderr empty and
+//     causing TestJVMCoverageCmd_RefusesWithoutRunnerClass to fail.
+//  2. Killing `go run` only kills the parent process — the child
+//     binary it spawned keeps writing to a now-broken pipe. The
+//     race detector flagged this as a concurrent access between the
+//     writer goroutine and the test's `stdout.String()`/`stderr.String()`
+//     read. Running the binary directly removes the parent-process
+//     indirection: Kill() now reaches the actual writer.
+var testBinaryPath string
+
+func TestMain(m *testing.M) {
+	root, err := findRepoRoot()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "TestMain: locate repo root: %v\n", err)
+		os.Exit(2)
+	}
+	bin, err := os.CreateTemp("", "jvmcoverage-test-*.bin")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "TestMain: create temp binary: %v\n", err)
+		os.Exit(2)
+	}
+	bin.Close()
+	testBinaryPath = bin.Name()
+	defer os.Remove(testBinaryPath)
+
+	build := exec.CommandContext(context.Background(),
+		"go", "build", "-o", testBinaryPath, "./cmd/jvmcoverage")
+	build.Dir = root
+	if out, err := build.CombinedOutput(); err != nil {
+		fmt.Fprintf(os.Stderr, "TestMain: go build: %v\n%s\n", err, out)
+		os.Exit(2)
+	}
+
+	os.Exit(m.Run())
+}
 
 // The cmd/jvmcoverage binary is a thin adapter over
 // parity.ComputeCompileCoverage (already hermetic-tested at
@@ -189,17 +235,20 @@ func TestJVMCoverageCmd_PinPathMissingIsReportedPerPin(t *testing.T) {
 	}
 }
 
-// runJVMCoverageCmd runs the cmd/jvmcoverage binary against the given
-// flags and returns (stdout, stderr, err). It is hermetic: it uses the
-// current test binary (built via `go test -c` already on disk) and a
-// per-test tempdir, so it never touches the project's corpus or pins.
+// runJVMCoverageCmd runs the pre-built cmd/jvmcoverage binary (built by
+// TestMain) against the given flags and returns (stdout, stderr, err).
+// It is hermetic: the binary is rebuilt once per `go test` invocation
+// from the working tree the test is running against, and every test
+// uses a per-test tempdir, so it never touches the project's corpus or
+// pins.
 func runJVMCoverageCmd(t *testing.T, args []string, timeout time.Duration) (string, string, error) {
 	t.Helper()
 
-	// The cmd runs from the package directory (cmd/jvmcoverage) so the
-	// default -manifest path resolves to corpus/manifest.json — we MUST
-	// override it for hermetic runs.
-	cmd := exec.CommandContext(context.Background(), "go", append([]string{"run", "./cmd/jvmcoverage"}, args...)...)
+	// The cmd runs from the repo root so the default -manifest path
+	// resolves relative to a stable location; we always pass absolute
+	// paths for -manifest and -pins-root, so the cwd is only needed
+	// for the binary itself.
+	cmd := exec.CommandContext(context.Background(), testBinaryPath, args...)
 	cmd.Dir = repoRoot(t)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -280,29 +329,38 @@ func writeMinimalJVMCoverageManifest(t *testing.T, pinName string) string {
 	return path
 }
 
-// repoRoot finds the workspace root so the cmd can be `go run` against
-// the package directory. `go run ./cmd/jvmcoverage` needs a go.mod
-// somewhere up the tree; we run from the workspace root.
+// repoRoot finds the workspace root so the pre-built binary can be
+// invoked from a directory where its `-manifest` and `-pins-root` flag
+// defaults make sense. The cmd itself does NOT need the cwd for flag
+// resolution (the tests pass absolute paths), but having a stable cwd
+// means the cmd's stderr banner and any future relative-path lookups
+// behave deterministically.
 func repoRoot(t *testing.T) string {
 	t.Helper()
-	// The test runs from cmd/jvmcoverage/ when invoked via `go test
-	// ./cmd/jvmcoverage/...`. `go test` leaves the cwd where the user
-	// invoked it from, but the path resolution for the `-manifest` and
-	// `-pins-root` flags is fine because we pass absolute paths. We
-	// only need a working directory for `go run` itself.
+	dir, err := findRepoRoot()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	return dir
+}
+
+// findRepoRoot is the non-fatal variant of repoRoot, used by TestMain
+// (which has no *testing.T to call Fatalf on). It first checks the
+// current working directory for go.mod and otherwise walks up at most
+// 8 parent directories looking for one.
+func findRepoRoot() (string, error) {
 	if wd, err := os.Getwd(); err == nil {
 		if _, err := os.Stat(filepath.Join(wd, "go.mod")); err == nil {
-			return wd
+			return wd, nil
 		}
 	}
-	// Fall back: walk up from this test file looking for go.mod.
 	dir, err := os.Getwd()
 	if err != nil {
-		t.Fatalf("getwd: %v", err)
+		return "", fmt.Errorf("getwd: %w", err)
 	}
 	for i := 0; i < 8; i++ {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
+			return dir, nil
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -310,8 +368,7 @@ func repoRoot(t *testing.T) string {
 		}
 		dir = parent
 	}
-	t.Fatalf("could not locate repo root from %s", dir)
-	return ""
+	return "", fmt.Errorf("could not locate repo root from %s (no go.mod within 8 parent directories)", dir)
 }
 
 // keep imports happy even when the test binary is built without some
