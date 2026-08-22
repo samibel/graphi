@@ -447,8 +447,19 @@ func ParseJavap(out []byte) ([]Call, error) {
 		// truth fact with no confirmed call), so leaving an unrecognised
 		// `$`-bearing caller name alone costs nothing. Rewriting one that was
 		// never mangled is what costs — see demangleMultifilePart.
+		//
+		// kotlinc's VALUE-CLASS mangling reaches this side independently of the
+		// multifile one, and it is where JVMHARN-001 lives: a function taking an
+		// inline-class parameter is DECLARED as `serialize-2TYgG_w`, so javap
+		// attributes its body's invokes to that name while graphi answers
+		// `serialize`, which is what the source declares. Same defect class,
+		// same safe direction, same shape of fix — see demangleValueClass for
+		// the guard and the named residual.
 		callerMethod := r.callerMethod
 		if base, ok := demangleMultifilePart(classes, callerMethod, r.callerClassInternal); ok {
+			callerMethod = base
+		}
+		if base, ok := demangleValueClass(classes, callerMethod, r.callerClassInternal); ok {
 			callerMethod = base
 		}
 		callee := r.calleeName
@@ -535,6 +546,15 @@ func ParseJavap(out []byte) ([]Call, error) {
 				callee = base
 			} else if strings.Contains(callee, "$") {
 				ownerReason = AbstainBytecodeOwnerUnresolved
+			}
+			// The value-class scheme reaches the callee side whenever the call
+			// target takes an inline-class parameter. There is deliberately no
+			// `-`-bearing decline fallback mirroring the `$` one above: `-` is
+			// not a legal identifier character outside backquotes, so an
+			// unrecognised dash-name is not by itself evidence of a
+			// compiler-minted name the way an unrecognised `$`-name is.
+			if base, ok := demangleValueClass(classes, callee, r.calleeOwnerInternal); ok {
+				callee = base
 			}
 		}
 
@@ -806,6 +826,177 @@ func demangleMultifilePart(classes map[string]*classInfo, name, ownerInternal st
 		return name, false
 	}
 	return base, true
+}
+
+// demangleValueClass strips kotlinc's VALUE-CLASS (inline-class) name mangling
+// from a method name. It is the JVMHARN-001 fix, and it is in the HARNESS
+// because that is where JVMHARN-001 lives: javap prints the mangled
+// DECLARATION name, so no rule on the product side can change it.
+//
+// # The defect
+//
+// kotlinc renames any function taking an inline-class parameter to
+// `<name>-<hash>` and emits a bridge under the plain name. The rename lands on
+// the DECLARATION, so every invoke inside such a function's body is attributed
+// by this oracle to the mangled caller while graphi answers the name the source
+// declares. `docs/rc/jvm-corpus-compile-strategy.md` §6.2 measured this as
+// cluster A on the kotlinx.serialization pin: 22 of that pin's 27 by-name
+// unbacked calls, with the shapes `serialize-2TYgG_w`, `deserialize-BwKQO78`,
+// `toBuilder-GBYM_sE`, `writeContent-Coi6ktg` and `computeIfAbsent-gIAlu-s`,
+// against a source that declares `serialize` at `ValueClasses.kt:16`. Every one
+// of the 27 is the oracle accusing correct code; none is a product defect.
+//
+// # The guard, and what it is inherited from
+//
+// The recognition rule alone is not enough: Kotlin lets a user declare a name
+// containing `-` inside backquotes, so a hand-written backquoted `foo-abcd` is
+// legal source and matches the shape exactly. Rewriting THAT would repeat
+// SW-173's round-1 defect — accusing correct code by rewriting a name the source
+// wrote. So the rewrite is accepted only when the plain name is ALSO declared as
+// a member of the SAME class in this capture.
+//
+// The premise is that kotlinc emits the bridge under the plain name, which is
+// what §6.2's cluster A row states and is not re-measured here. That the bridge
+// lands in the same class is this function's own conservative reading of it: a
+// value-class function whose plain-name sibling is elsewhere (or absent, as for
+// one that overrides nothing) is DECLINED. Declining costs recall, never
+// soundness — see the asymmetry demangleMultifilePart states. Two further
+// conditions, both cheap and both failing toward decline:
+//
+//   - The owner must be in the capture and compiled from a `.kt` file. The
+//     lowering is kotlinc's; a javac-compiled or external owner cannot have
+//     produced it.
+//   - The declaration table must be populated, which it is only for a `javap -s`
+//     capture (parseClasses fills decls from `descriptor:` lines). Without it the
+//     guard cannot be evaluated and the rewrite declines.
+//
+// # What this does NOT reach, and what it can over-reach
+//
+// Not reached, both measured on the kotlinx pin and both left standing as the
+// disclosed residual: cluster C's single `append-7apg3OU$main` (`internal`
+// visibility mangling compounded with the value-class hash — `$` is not a
+// base-64 character, so valueClassBridgeName declines), and cluster B's four
+// `Encoder$DefaultImpls` interface-lowering rows, which are not a name-mangling
+// shape at all.
+//
+// Over-reach, named rather than claimed away: a Kotlin class that declares BOTH
+// a backquoted dash-name and a plain member with exactly the prefix satisfies
+// the rule and IS rewritten. The reach is wider than "hash-shaped", because
+// isBase64Char accepts `-`: the tail after the FIRST dash need only be four or
+// more characters of [A-Za-z0-9+_-], so a backquoted `parse-json-value` beside a
+// plain `parse` qualifies exactly as `foo-abcd` beside `foo` does. Both are
+// pinned in TestDemangleValueClass_Guards. Tightening the alphabet is not
+// available: `computeIfAbsent-gIAlu-s` is one of the measured shapes and its
+// hash contains a `-`. The corpus contains no instance of the over-reach, but
+// that is a frequency claim, not a soundness one — the same disclosure blind
+// spot #17 carries for the multifile demangle.
+//
+// On the CALLEE path the rewrite can also mint a fact the source never wrote: a
+// bridge's forward call to its own mangled real body becomes `serialize →
+// serialize`. Under the asymmetry above that is not an accusation — an
+// accusation needs a confirmed edge with no truth fact, and an extra truth fact
+// can only back an edge — but it does cost the oracle its power to accuse a
+// graphi self-edge on such a method. TestParseJavap_ValueClassCallerAndCallee
+// asserts it as the expected outcome so it is on the record.
+func demangleValueClass(classes map[string]*classInfo, name, ownerInternal string) (string, bool) {
+	base := valueClassBridgeName(name)
+	if base == "" {
+		return name, false
+	}
+	ci, known := classes[ownerInternal]
+	if !known || !strings.HasSuffix(ci.source, ".kt") {
+		return name, false
+	}
+	if !declaresMemberNamed(ci, base) {
+		return name, false
+	}
+	return base, true
+}
+
+// declaresMemberNamed reports whether ci declares a member called name at ANY
+// descriptor. decls is keyed `name:descriptor`, and a descriptor never contains
+// `:`, so the prefix test is exact.
+func declaresMemberNamed(ci *classInfo, name string) bool {
+	want := name + ":"
+	for k := range ci.decls {
+		if strings.HasPrefix(k, want) {
+			return true
+		}
+	}
+	return false
+}
+
+// valueClassBridgeName recognises kotlinc's value-class mangled shape and
+// returns the bridge name (the prefix before the first dash), or "" when the
+// name is not mangled. Split on the FIRST `-` because the hash alphabet
+// contains `-` itself; the suffix must be at least 4 base-64 characters and the
+// prefix a legal identifier.
+//
+// This is a VERBATIM COPY of engine/jvmresolve.valueClassBridgeName — the
+// declaration text, not merely the behaviour. Importing the original instead
+// would require exporting it, and that rename moves the product binary's digest:
+// measured, not argued — renaming it to ValueClassBridgeName in
+// engine/jvmresolve/hierarchy.go and rebuilding `./cmd/graphi` with
+// `-trimpath -buildvcs=false` takes the digest from
+// 0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf to
+// fa8a2867d48986cddd5b7fc105eb68e7ef731e8ec50bb91a52a1c5d0d57b84cd, and SW-188
+// must not move the product bytes the published parity candidate stands on.
+// This package is not linked into cmd/graphi (`go list -deps ./cmd/graphi` does
+// not contain it), so the copy itself is product-byte-neutral.
+//
+// The copy's cost is drift, and what pays it down is
+// valueclass_drift_test.go::TestValueClassRule_IdenticalToJVMResolve, a
+// SOURCE-IDENTITY guard: it parses both files and compares the copied
+// declarations as printed syntax. A mirrored table cannot do that job —
+// see that test's doc for the divergence a table stays green on, and for the
+// two things source identity still does not catch.
+func valueClassBridgeName(name string) string {
+	i := strings.Index(name, "-")
+	if i <= 0 || i >= len(name)-1 {
+		return ""
+	}
+	// Suffix must be at least 4 base-64 chars; the base-64 alphabet kotlinc
+	// uses includes letters, digits, `-`, `+`, `_`.
+	suf := name[i+1:]
+	if len(suf) < 4 {
+		return ""
+	}
+	for j := 0; j < len(suf); j++ {
+		c := suf[j]
+		if !isBase64Char(c) {
+			return ""
+		}
+	}
+	// Prefix must be a valid Kotlin identifier (a name the user could have
+	// declared, OR a name the compiler minted).
+	pre := name[:i]
+	if pre == "" || !isIdentStart(pre) {
+		return ""
+	}
+	for j := 0; j < len(pre); j++ {
+		if !isIdentCont(pre[j]) {
+			return ""
+		}
+	}
+	return pre
+}
+
+// isBase64Char, isIdentStart and isIdentCont are the rest of the copy; see
+// valueClassBridgeName for why it is a copy and what guards it.
+func isBase64Char(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '-' || c == '+' || c == '_'
+}
+
+func isIdentStart(s string) bool {
+	if s == "" {
+		return false
+	}
+	c := s[0]
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'
+}
+
+func isIdentCont(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'
 }
 
 // anonymousCtorTarget maps a javac-minted anonymous class to the type the
