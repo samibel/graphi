@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "notes": "HISTORICAL compatibility ceilings copied from the cited retired-harness run. cmd/eval enforces them fail-closed when -budgets is supplied — historical does not mean disabled — but they are NOT comparable post-change ratchets and must not be read as ones. Replace them only from a new current-harness run on the reference runner class declared in docs/eval/reference-scenario.json, against the re-frozen candidate; never rewrite historical reports. SW-123 (P0-A4) added the explicit historical/ratcheting declaration below and REMOVED the all-zero hero latency map that used to sit in this file. SW-191 (EVALBUDGET-001 closure) added the `historical_ceilings` block: comparison-class ceilings derived from the SW-191 two-dispatch campaign over guava, okio, kotlinx.serialization (SW-177 JVM matrix), flask, ky, and express. cmd/eval/budgets.go:97 now accepts a historical budget on the comparison class `local-sandbox`, which is the only class this block is read from. Each `notes` field carries the EVALFRESH-001 freshness block per repo.",
+  "notes": "HISTORICAL compatibility ceilings copied from the cited retired-harness run. cmd/eval enforces them fail-closed when -budgets is supplied — historical does not mean disabled — but they are NOT comparable post-change ratchets and must not be read as ones. Replace them only from a new current-harness run on the reference runner class declared in docs/eval/reference-scenario.json, against the re-frozen candidate; never rewrite historical reports. SW-123 (P0-A4) added the explicit historical/ratcheting declaration below and REMOVED the all-zero hero latency map that used to sit in this file. SW-191 (EVALBUDGET-001 closure) added the `historical_ceilings` block: comparison-class ceilings derived from the two-dispatch campaign over guava, okio, kotlinx.serialization (SW-177 JVM matrix), flask, ky, and express. That block was INERT when it was first written — no Go code read it — and is now LOAD-BEARING: fullBudgetManifest.HistoricalCeilings plus fullBudgetManifest.comparisonCeilings() in cmd/eval/budgets.go serve a run whose -runner-class is `local-sandbox` from this block and ONLY from this block, fail-closed on the block's own runner_class, runner_role and explicitly-written ratcheting=false. The reference class never reads it and it never reads real_repos.",
   "runner_class": "ubuntu-latest",
   "historical": true,
   "ratcheting": false,
@@ -58,7 +58,8 @@
   },
   "historical_ceilings": {
     "schema_version": 1,
-    "notes": "SW-191 (EVALBUDGET-001 closure). Comparison-class upper limits derived from the two-dispatch campaign over each pin; the worst per-dispatch value across both dispatches seeds `baseline`, and `budget` is a 2x-3x round-up to leave room for developer-machine variance and for the local-to-CI translation (the local-to-CI agent_brief ratio measured on Go pins is 0.61-0.81, so this block is NOT comparable post-change ratchets and must NOT be read as such — apply via the SW-191 historical branch in cmd/eval/budgets.go, never via the ratcheting one. EVALFRESH-001 freshness block per repo: the freshness/incremental suite is Go-only and aborts on every non-Go pin; this is documented per-repo below and is a known limitation, NOT a budget miss. The four perf suites listed per repo are cold_index, query_latency, incremental (Go-only) and progress_stalls; the python/ts/js pins publish three of four (incremental UNKNOWN, the others PASS).",
+    "ratcheting": false,
+    "notes": "SW-191 (EVALBUDGET-001 closure). Comparison-class upper limits derived from the two-dispatch campaign over each pin; the worst per-dispatch value across both dispatches seeds `baseline`, and `budget` is a 2x-3x round-up to leave room for developer-machine variance and for the local-to-CI translation (the local-to-CI agent_brief ratio measured on Go pins is 0.61-0.81, so this block is NOT comparable post-change ratchets and must NOT be read as such — apply via the SW-191 historical branch in cmd/eval/budgets.go, never via the ratcheting one. EVALFRESH-001 IS CLOSED (SW-191, 2026-08-22): the change sequence is language-scoped (cmd/eval/sourcefamily.go) and -full-run now exits 0 on every pin here. The per-repo `notes` below record the freshness result each pin ACTUALLY reaches, which is not the same as reaching FR-8's 100-change floor: the completed-change counts were measured on darwin/arm64 at the comparison class and are stated as such. The four perf suites per repo are cold_index, query_latency, incremental and progress_stalls; the incremental figures below are NEW and were not part of the two-dispatch campaign that produced the ceilings, so they are reported beside the ceilings rather than folded into them.",
     "selection": ["guava", "okio", "kotlinx_serialization", "flask", "ky", "express"],
     "runner_class": "local-sandbox",
     "runner_role": "comparison",
@@ -72,7 +73,7 @@
       "python_ts_source": "SW-191 — flask / ky / express over 2 dispatches",
       "raw_dir": "docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/",
       "raw_dir_jvm": "docs/eval/runs/2026-08-19-local-sandbox/jvm-perf/{guava,okio,kotlinx_serialization}/ (SW-177)",
-      "freshness_blocked_dir": "docs/eval/runs/2026-08-20-local-sandbox/freshness-blocked/",
+      "freshness_blocked_dir": "docs/eval/runs/2026-08-20-local-sandbox/freshness-blocked/ — a FROZEN record of EVALFRESH-001 as it was; SW-191 closed the defect and those transcripts no longer reproduce",
       "recorded_at": "2026-08-20"
     },
     "per_repo": {
@@ -85,7 +86,7 @@
           "search": { "baseline": 700, "budget": 1500 },
           "agent_tools": { "baseline": 425518, "budget": 600000 }
         },
-        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (guava is java-only at the pinned sha). 3 of 4 suites is not 4."
+        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. FRESHNESS (SW-191, EVALFRESH-001 closed): -incremental-changes 100 now exits 0 at 99/100 completed, classes=false. The one failure (step 52, modify android/guava-testlib/src/com/google/common/collect/testing/Helpers.java) is a Java-EXTRACTOR gap, not a harness gap: that 583-line file yields zero symbols even unmodified. classes=false because none of the 50 highest-degree symbols has an inbound edge from another directory, so cross_package is honestly uncovered on this pin. Measured on darwin/arm64, comparison class; below FR-8's floor of 100."
       },
       "okio": {
         "index_wallclock_ms": { "baseline": 631, "budget": 1500 },
@@ -96,7 +97,7 @@
           "search": { "baseline": 400, "budget": 1000 },
           "agent_tools": { "baseline": 44012, "budget": 80000 }
         },
-        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (okio is kotlin-only at the pinned sha). 3 of 4 suites is not 4."
+        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. FRESHNESS (SW-191, EVALFRESH-001 closed): -incremental-changes 100 now exits 0 at 73/100 completed, classes=false. The 27 failures are a Kotlin-EXTRACTOR gap, not a harness gap: extraction stops at the first top-level `suspend fun` in a file, and okio/src/commonMain/kotlin/okio/internal/FileSystem.kt declares one at line 107 of 154 — that file is both the pin's only cross_package target and the target of 24 of the 27 failures. Measured on darwin/arm64, comparison class; below FR-8's floor of 100."
       },
       "kotlinx_serialization": {
         "index_wallclock_ms": { "baseline": 1425, "budget": 3500 },
@@ -107,7 +108,7 @@
           "search": { "baseline": 600, "budget": 1500 },
           "agent_tools": { "baseline": 51687, "budget": 100000 }
         },
-        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (kotlinx.serialization is kotlin-only at the pinned sha). 3 of 4 suites is not 4."
+        "notes": "SW-177 baseline; cold_index/query_latency/progress_stalls PASS over 3 dispatches. FRESHNESS (SW-191, EVALFRESH-001 closed): -incremental-changes 100 now exits 0 at 97/100 completed, classes=false. The 3 failures are the same Kotlin top-level-`suspend fun` extractor gap as okio. classes=false because the pin exposes no cross-directory inbound edges to the harness. Measured on darwin/arm64, comparison class; below FR-8's floor of 100."
       },
       "flask": {
         "index_wallclock_ms": { "baseline": 814, "budget": 1500 },
@@ -118,7 +119,7 @@
           "search": { "baseline": 1124, "budget": 3000 },
           "agent_tools": { "baseline": 64168, "budget": 100000 }
         },
-        "notes": "SW-191 first-time campaign over flask-3.0.0 @ 735a4701d6d5e848241e7d7535db898efb62d400. 2 dispatches (run-a/run-b) at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS, incremental UNKNOWN. Graph counts bit-identical (1058 nodes / 2214 edges / 106 files / 0.97 MiB DB). warm_p95_us.agent_tools varies 9049-64168 us between dispatches — single sample on a 33-sample pool, so the higher value is the honest ceiling. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (flask is python-only at the pinned sha). 3 of 4 suites is not 4. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/flask-report.json."
+        "notes": "SW-191 first-time campaign over flask-3.0.0 @ 735a4701d6d5e848241e7d7535db898efb62d400. 2 dispatches (run-a/run-b) at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS; incremental was UNKNOWN in that campaign because EVALFRESH-001 was still open. Graph counts bit-identical (1058 nodes / 2214 edges / 106 files / 0.97 MiB DB). warm_p95_us.agent_tools varies 9049-64168 us between dispatches — single sample on a 33-sample pool, so the higher value is the honest ceiling. FRESHNESS (SW-191, EVALFRESH-001 closed): -incremental-changes 100 now exits 0 at 100/100 completed with classes=TRUE — the only non-Go pin that matches the cobra control on both counts. Measured on darwin/arm64, comparison class: sufficient=true against FR-8's 100-change floor, but not a reference-class figure. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/flask-report.json."
       },
       "ky": {
         "index_wallclock_ms": { "baseline": 83, "budget": 250 },
@@ -129,7 +130,7 @@
           "search": { "baseline": 101, "budget": 500 },
           "agent_tools": { "baseline": 950, "budget": 2000 }
         },
-        "notes": "SW-191 first-time campaign over ky-v1.2.0 @ 38ac18bc1ac3268130de766891ce9b718eb8145a. 2 dispatches at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS, incremental UNKNOWN. Graph counts bit-identical (182 nodes / 157 edges / 37 files / 0.17 MiB DB). Numbers agree within rounding across dispatches (wallclock_ms 83/83, peak_rss_mb 295/294). EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (ky is typescript-only at the pinned sha; the change sequence can't mutate .ts files because mechanism 2/3 are still Go-only). 3 of 4 suites is not 4. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/ky-report.json."
+        "notes": "SW-191 first-time campaign over ky-v1.2.0 @ 38ac18bc1ac3268130de766891ce9b718eb8145a. 2 dispatches at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS; incremental was UNKNOWN in that campaign because EVALFRESH-001 was still open. Graph counts bit-identical (182 nodes / 157 edges / 37 files / 0.17 MiB DB). Numbers agree within rounding across dispatches (wallclock_ms 83/83, peak_rss_mb 295/294). FRESHNESS (SW-191, EVALFRESH-001 closed): -incremental-changes 100 now exits 0 at 98/100 completed (reproduced twice, same two steps), classes=false. Both failures are a TypeScript-EXTRACTOR gap, not a harness gap: a file containing a type-predicate arrow function (`export const isObject = (value: unknown): value is object => ...`) yields zero symbols, which covers source/utils/is.ts and source/utils/options.ts. classes=false because ky exposes no cross-directory inbound edges to the harness. Measured on darwin/arm64, comparison class; below FR-8's floor of 100. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/ky-report.json."
       },
       "express": {
         "index_wallclock_ms": { "baseline": 638, "budget": 1500 },
@@ -140,7 +141,7 @@
           "search": { "baseline": 271, "budget": 1000 },
           "agent_tools": { "baseline": 3955, "budget": 10000 }
         },
-        "notes": "SW-191 first-time campaign over express-4.18.2 @ 8368dc178af16b91b576c4c1d135f701a0007e5d. 2 dispatches at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS, incremental UNKNOWN. Graph counts bit-identical (877 nodes / 711 edges / 172 files / 0.50 MiB DB). warm_p95_us.agent_tools 3929-3955 us — agrees within rounding across dispatches. EVALFRESH-001 freshness: ABORTS — `the index contains no modifiable Go source files to change` (express is javascript-only at the pinned sha; the change sequence can't mutate .js files because mechanism 2/3 are still Go-only). 3 of 4 suites is not 4. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/express-report.json."
+        "notes": "SW-191 first-time campaign over express-4.18.2 @ 8368dc178af16b91b576c4c1d135f701a0007e5d. 2 dispatches at the W0.f-5 candidate 80d67ed. Both dispatches: cold_index/query_latency/progress_stalls PASS; incremental was UNKNOWN in that campaign because EVALFRESH-001 was still open. Graph counts bit-identical (877 nodes / 711 edges / 172 files / 0.50 MiB DB). warm_p95_us.agent_tools 3929-3955 us — agrees within rounding across dispatches. FRESHNESS (SW-191, EVALFRESH-001 closed): -incremental-changes 100 now exits 0 at 100/100 completed, classes=false. The generated declaration is a bare `function`, not an ESM `export`, because express-4.18.2 is CommonJS. classes=false because express exposes no cross-directory inbound edges to the harness. Measured on darwin/arm64, comparison class: sufficient=true against FR-8's 100-change floor, but not a reference-class figure. raw: docs/eval/runs/2026-08-20-local-sandbox/{run-a,run-b}/express-report.json."
       }
     }
   }

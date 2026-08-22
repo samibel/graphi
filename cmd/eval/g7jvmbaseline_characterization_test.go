@@ -290,12 +290,29 @@ func TestPublishedG7_GuavaAgentBriefIsP0Shaped(t *testing.T) {
 	}
 }
 
-// TestPublishedG7_FreshnessBlockTranscriptsRecordTheRefusalAndTheGoControl pins
-// the evidence for §5. The three refusals alone would be consistent with a
-// harness that does not work off CI; the cobra control is what makes them a
-// statement about LANGUAGE, so it is asserted together with them and never
-// separately.
-func TestPublishedG7_FreshnessBlockTranscriptsRecordTheRefusalAndTheGoControl(t *testing.T) {
+// TestPublishedG7_FreshnessBlockTranscriptsAreAFrozenRecordOfAClosedDefect pins
+// the evidence for §5.
+//
+// SW-191 CHANGED WHAT THIS TEST MEANS, so its name and its failure messages
+// changed with it. When SW-177 wrote it, the transcripts recorded a LIVE
+// constraint: the freshness suite could not run on a JVM pin, and the assertion
+// was the tripwire that would fire when someone closed EVALFRESH-001 without
+// moving §5 and the G7 rows. EVALFRESH-001 is now closed
+// (cmd/eval/sourcefamily.go, cmd/eval/freshness{jvm,python,typescript}_test.go),
+// so what these files hold is a FROZEN HISTORICAL RECORD of a defect that no
+// longer reproduces — the same bytes, a different claim.
+//
+// The assertion is kept, rather than deleted, because the record is the
+// evidence §5 rests on and a silently-rewritten transcript would leave §5
+// citing something that never said what it says. What it must NOT do any more
+// is read as a statement about the harness's present behaviour: running
+// `-full-run guava -incremental-changes 100` today does NOT reproduce these
+// transcripts. That is stated here and in §5 rather than left to be inferred.
+//
+// The cobra control is asserted together with the three refusals and never
+// separately: without it the refusals say nothing about LANGUAGE, only that
+// something failed.
+func TestPublishedG7_FreshnessBlockTranscriptsAreAFrozenRecordOfAClosedDefect(t *testing.T) {
 	dir := filepath.Join(g7RunDir, "freshness-blocked")
 	for _, repo := range g7JVMRepos {
 		raw, err := os.ReadFile(filepath.Join(dir, repo+".txt"))
@@ -304,9 +321,11 @@ func TestPublishedG7_FreshnessBlockTranscriptsRecordTheRefusalAndTheGoControl(t 
 		}
 		text := string(raw)
 		if !strings.Contains(text, "the index contains no modifiable Go source files to change") {
-			t.Errorf("%s transcript no longer records the refusal. If the freshness suite "+
-				"now runs on a JVM pin, EVALFRESH-001 is closed and §5 of the baseline "+
-				"document plus the GA-LANG-{java,kotlin}-G7 rows must move with it.", repo)
+			t.Errorf("%s transcript no longer records the refusal it was captured for. These "+
+				"files are a FROZEN record of EVALFRESH-001 as SW-177 measured it; §5 of the "+
+				"baseline document cites them, so editing them leaves the document citing "+
+				"something that never said what it says. (The defect itself is closed — a "+
+				"fresh run does not reproduce this text, and §5 says so.)", repo)
 		}
 		if !strings.Contains(text, "exit status: 1") {
 			t.Errorf("%s transcript does not record a failing exit status", repo)
@@ -320,5 +339,27 @@ func TestPublishedG7_FreshnessBlockTranscriptsRecordTheRefusalAndTheGoControl(t 
 	if !strings.Contains(string(raw), "8/8 changes completed") {
 		t.Errorf("the cobra control no longer records a completed change sequence. Without " +
 			"it the three JVM refusals say nothing about language, and §5's claim is unsupported.")
+	}
+}
+
+// TestPublishedG7_FreshnessBlockDoesNotReproduce is the live half of the pair
+// above: the code path those frozen transcripts recorded is gone, so the
+// mechanism that produced them must no longer be present. It is a MECHANISM
+// assertion (no clone, no network) — the corpus-level proof is the -full-run
+// evidence recorded in the SW-191 verification record.
+func TestPublishedG7_FreshnessBlockDoesNotReproduce(t *testing.T) {
+	for _, p := range []string{
+		"guava/src/com/google/common/collect/ImmutableList.java",
+		"okio/src/commonMain/kotlin/okio/Buffer.kt",
+		"core/commonMain/src/kotlinx/serialization/Serializer.kt",
+	} {
+		packages := map[string]string{}
+		if !admitSourceFile(p, []byte("package com.example;\n\nclass X {}\n"), packages) {
+			t.Errorf("admitSourceFile(%q) = false: the JVM pins would abort again with the "+
+				"message the frozen transcripts record", p)
+		}
+	}
+	if strings.Contains(changeSequenceMethod, "Go source files") {
+		t.Error("the published determinism string still claims a Go-only scope")
 	}
 }

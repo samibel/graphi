@@ -14,9 +14,12 @@ import (
 func testSequenceInput(count int) changeSequenceInput {
 	return changeSequenceInput{
 		files: []string{"a/one.go", "a/two.go", "b/three.go"},
+		// SW-191: the clause map is keyed per (family, directory), because two
+		// families can share a directory and their clauses are not
+		// interchangeable. The Go family and the Go paths above are unchanged.
 		packages: map[string]string{
-			"a": "alpha",
-			"b": "beta",
+			packageKey("a", familyForPath("a/one.go")):   "alpha",
+			packageKey("b", familyForPath("b/three.go")): "beta",
 		},
 		crossPackage: evalreport.CrossPackageEvidence{
 			Satisfied: true,

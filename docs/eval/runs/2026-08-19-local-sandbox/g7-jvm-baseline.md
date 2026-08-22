@@ -184,6 +184,13 @@ what the control does and does not license there.
 
 ## 5. The freshness suite cannot include a Java or Kotlin pin — measured
 
+> **SUPERSEDED, 2026-08-22 (SW-191). EVALFRESH-001 IS CLOSED.** Everything in
+> this section is a correct record of what SW-177 measured on 2026-08-19 and is
+> kept unedited for that reason — the transcripts under `freshness-blocked/` are
+> what it cites, and rewriting them would leave this page citing something that
+> never said what it says. But **it no longer describes the harness.** A run
+> today does NOT reproduce the refusals below. See §5.1 for what replaced them.
+
 Running it is the evidence. On each of the three JVM pins:
 
 ```
@@ -236,6 +243,64 @@ measurement machinery"* — and it would mint a new sequence digest, making ever
 existing freshness artifact incomparable to every new one. It is **not a JVM
 defect**: it blocks Python (SW-181), the TypeScript family (SW-182) and every
 language in SW-184/185 identically.
+
+### 5.1 What SW-191 changed (dated amendment, 2026-08-22)
+
+`EVALFRESH-001` is closed. The per-language change-class family §5 declined to
+build is built: `cmd/eval/sourcefamily.go` states, per language family, the
+shape of its package clause (or that it **has** none), whether a directory needs
+one before a sibling can be added there, the declaration an append introduces in
+that language's syntax, and the name a newly added file carries. All three
+mechanisms §5 names moved:
+
+1. the file filter is family-driven, so `.java`, `.kt`, `.py`, `.ts`, `.tsx`,
+   `.js` and the rest qualify — and, deliberately, `.json`/`.yaml`/`.md` do
+   **not**, because there is no top-level declaration to append to them;
+2. the package-clause reader is per family. The JVM reader strips Java's
+   terminator and reads Kotlin's unterminated clause; Python and the TypeScript
+   family read **nothing**, because they have nothing to read — and the
+   directory gate now treats that as admissible instead of dropping the
+   directory, which is what made `ky` and `express` abort even after the filter
+   was widened;
+3. the ADD class writes `GraphiEvalStepNNNN.java`, `graphi_eval_stepNNNN.kt`,
+   `…​.py`, `…​.ts`, `…​.js` — the family's own name and extension — and the
+   MODIFY class appends that family's own declaration.
+
+`changeSequenceMethod` was rewritten to describe the sequence that now runs, and
+**the sequence digest moved with it**, exactly as §5 predicted: freshness
+artifacts produced before 2026-08-22 are not comparable to ones produced after.
+
+**Re-measured, `-incremental-changes 100`, same machine class (darwin/arm64,
+`local-sandbox`), 2026-08-22 — every pin exits 0:**
+
+| pin | language | completed | classes | note |
+|---|---|---|---|---|
+| cobra | go | 100/100 | true | the control, unchanged |
+| guava | java | 99/100 | false | 1 failure: the Java extractor yields no symbols for `guava-testlib/…/Helpers.java` |
+| okio | kotlin | 73/100 | false | 27 failures: the Kotlin extractor stops at the first top-level `suspend fun` |
+| kotlinx.serialization | kotlin | 97/100 | false | 3 failures, same Kotlin cutoff |
+| flask | python | 100/100 | **true** | |
+| ky | typescript | 98/100 | false | 2 failures: the TS extractor yields no symbols for a file with a type-predicate arrow function |
+| express | javascript | 100/100 | false | |
+
+`classes=false` on guava, kotlinx.serialization, ky and express is a property of
+those **repositories**, not of the harness: none of their highest-degree symbols
+has an inbound edge from another directory, so the `cross_package` class is left
+visibly uncovered rather than quietly substituted. On okio the class **is**
+available and fails, because its only qualifying target is the file the Kotlin
+`suspend fun` cutoff blanks.
+
+**The remaining shortfalls are parser-coverage gaps, not harness gaps**, and
+they are reproducible in three lines each — for example
+`fun a(): Int = 1; internal suspend fun collect(p: Int) { }; fun c(): Int = 3`
+yields `a` and not `c`. They are recorded on the
+`GA-LANG-{java,kotlin,typescript}-G7` rows in `docs/rc/evidence-index.yaml` and
+are out of SW-191's scope.
+
+**Those rows stay `UNKNOWN`.** Closing EVALFRESH-001 and EVALBUDGET-001 removes
+two named blockers; it does not supply what G7's PASS still needs — a
+reference-class (`ubuntu-latest`) dispatch at the current candidate, on a clean
+tree, with a fresh evidence URI and sha per pin.
 
 ---
 
