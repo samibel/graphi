@@ -2,6 +2,7 @@ package parity
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"sort"
@@ -419,6 +420,153 @@ func TestDiscoverJVM_ModelsTypesMethodsImportsAndMixedDirs(t *testing.T) {
 // TestScanSuper_IgnoresExtendsInsideATypeParameterList is the regression pin on
 // PARITY-OBS-002, and it is written from a REAL published row rather than from
 // an invented shape.
+
+// TestCompileCoverage_SchemaPinnedOnTheFixture is the schema + behaviour pin
+// for corpus.CompileCoverage (the SW-190 PARITY-COV-001 closure).
+//
+// It walks the existing writeJVMFixture — every declared change class can find
+// a target there — and asserts that ComputeCompileCoverage returns a value
+// whose shape, schema and determinism match what corpus/manifest.json will
+// publish. The test refuses to compute against the fixture if its shape is
+// not the one the production claim expects: 6 sources under one source root,
+// one collision in the .kt half. It is hermetic: no compiler is invoked, no
+// network is touched, and the runner_class is a string the test owns.
+func TestCompileCoverage_SchemaPinnedOnTheFixture(t *testing.T) {
+	root := writeJVMFixture(t)
+
+	// The fixture plants six files under src — writeJVMFixture's claim. The
+	// schema test asserts the SAME count, not a hardcoded number that could
+	// drift. A fixture that grows or shrinks silently is the bug this count
+	// refuses.
+	const sourceRoot = "src"
+	var found int
+	err := filepath.WalkDir(filepath.Join(root, sourceRoot), func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && isJVMSource(p) {
+			found++
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk fixture: %v", err)
+	}
+	if found == 0 {
+		t.Fatal("fixture holds zero JVM sources; the test cannot anchor its counts")
+	}
+
+	const wantRunner = "parity/TestCompileCoverage_SchemaPinnedOnTheFixture"
+	const wantSHA = "9f687849cec2b26311401191e90b60e40b5f6cee"
+
+	cov, err := ComputeCompileCoverage(CompileCoverageInput{
+		PinRoot:                  root,
+		SourceRoots:              []string{sourceRoot},
+		CommonSourceRoots:        nil,
+		Strategy:                 "full-dependency-resolution",
+		RunnerClass:              wantRunner,
+		CandidateSHA:             wantSHA,
+		Now:                      func() string { return "2026-08-21" },
+	})
+	if err != nil {
+		t.Fatalf("ComputeCompileCoverage: %v", err)
+	}
+
+	// Schema pins: every field the manifest's JSON will carry. A field
+	// dropped here is a field a reader can no longer find; the run is wrong
+	// before it is green.
+	if cov.SourceFiles != found {
+		t.Errorf("SourceFiles = %d, want %d — the outer denominator must count every fixture source", cov.SourceFiles, found)
+	}
+	if cov.CompiledFiles == 0 {
+		t.Errorf("CompiledFiles = 0; the fixture has sources the strategy SHOULD stage")
+	}
+	if cov.CompiledFiles != cov.SourceFiles {
+		t.Errorf("CompiledFiles (%d) != SourceFiles (%d); the fixture has no collisions, so the staged count must equal the source count",
+			cov.CompiledFiles, cov.SourceFiles)
+	}
+	wantCov := float64(int64(float64(cov.CompiledFiles)/float64(cov.SourceFiles)*10000)) / 10000
+	if cov.Coverage != wantCov {
+		t.Errorf("Coverage = %v, want %v — must be 4-decimal truncated of the ratio", cov.Coverage, wantCov)
+	}
+	if cov.Coverage != 1.0 {
+		t.Errorf("Coverage = %v, want 1.0 — the fixture is collision-free, so the oracle covers every source", cov.Coverage)
+	}
+	if cov.MeasuredAt != "2026-08-21" {
+		t.Errorf("MeasuredAt = %q, want \"2026-08-21\" — the figure must record the measurement date", cov.MeasuredAt)
+	}
+	if cov.CandidateSHA != wantSHA {
+		t.Errorf("CandidateSHA = %q, want %q — PARITY-PROD-001: a coverage figure without a candidate is a moving target",
+			cov.CandidateSHA, wantSHA)
+	}
+	if cov.RunnerClass != wantRunner {
+		t.Errorf("RunnerClass = %q, want %q — the test owns its runner so a future reader can identify the run",
+			cov.RunnerClass, wantRunner)
+	}
+	if cov.Oracle != "internal/parity/jvmclasses.go signature-aware oracle" {
+		t.Errorf("Oracle = %q, want the canonical driver name; a code search must find the producer",
+			cov.Oracle)
+	}
+	if cov.ExcludedReason != "" {
+		t.Errorf("ExcludedReason = %q, want empty — full-dependency-resolution is not excluded", cov.ExcludedReason)
+	}
+
+	// Determinism: two calls against the same fixture must produce a
+	// byte-identical figure. The two-dispatch discipline depends on it.
+	cov2, err := ComputeCompileCoverage(CompileCoverageInput{
+		PinRoot:      root,
+		SourceRoots:  []string{sourceRoot},
+		Strategy:     "full-dependency-resolution",
+		RunnerClass:  wantRunner,
+		CandidateSHA: wantSHA,
+		Now:          func() string { return "2026-08-21" },
+	})
+	if err != nil {
+		t.Fatalf("ComputeCompileCoverage (rerun): %v", err)
+	}
+	if cov != cov2 {
+		t.Errorf("non-deterministic coverage: %+v vs %+v — the parity counts must be a function of the input, not of the call order",
+			cov, cov2)
+	}
+
+	// JSON round-trip: every field above must SURVIVE Marshal→Unmarshal, or
+	// the manifest cannot publish what the harness measures.
+	raw, err := json.Marshal(cov)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	var into corpus.CompileCoverage
+	if err := json.Unmarshal(raw, &into); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if into != cov {
+		t.Errorf("json round-trip changed the figure: %+v -> %+v", cov, into)
+	}
+
+	// Negative result path: not-compiled keeps coverage zero and copies the
+	// strategy's exclusion into ExcludedReason — exactly what okio's manifest
+	// already says, so a reader of the manifest cannot tell from the entry
+	// whether it was a strategic skip or a measured zero.
+	nc, err := ComputeCompileCoverage(CompileCoverageInput{
+		PinRoot:        root,
+		SourceRoots:    []string{sourceRoot},
+		Strategy:       "not-compiled",
+		ExcludedReason: "okio's expect/actual collision — see jvm_compile.tried",
+		RunnerClass:    wantRunner,
+		CandidateSHA:   wantSHA,
+		Now:            func() string { return "2026-08-21" },
+	})
+	if err != nil {
+		t.Fatalf("ComputeCompileCoverage (not-compiled): %v", err)
+	}
+	if nc.CompiledFiles != 0 || nc.Coverage != 0 {
+		t.Errorf("not-compiled path: CompiledFiles=%d Coverage=%v, want both 0", nc.CompiledFiles, nc.Coverage)
+	}
+	if nc.ExcludedReason == "" {
+		t.Error("not-compiled path: ExcludedReason empty; the figure must propagate why")
+	}
+}
+
 //
 // Java spells a bounded type parameter with the SAME keyword as an extends
 // clause — `class A<B extends Bound> extends Real` — and the Java branch of
@@ -600,8 +748,7 @@ func TestJVMRepos_LocalFixturesAreRefusedByDefault(t *testing.T) {
 // green-only test cannot: alongside the real classes it runs a row whose
 // planner is deliberately absent from the table, and requires that row to come
 // back ERROR rather than quietly PASS.
-func TestJVMRunner_EndToEndOnALocalFixture(t *testing.T) {
-	if testing.Short() {
+func TestJVMRunner_EndToEndOnALocalFixture(t *testing.T) {	if testing.Short() {
 		t.Skip("drives the built binary")
 	}
 	bin := buildGraphi(t)

@@ -102,6 +102,225 @@ will flip — ky covering typescript, express covering javascript, and the
 tsx row by family-share if the reviewer's judgement (recorded in current)
 upholds it.
 
+# JVM real-repository matrix — WP-J7 / gate G4 (2026-08-21, W5.d SW-190)
+
+> **THIS SECTION IS A NEW MEASUREMENT OF THE SAME FAMILY. It does not supersede
+> the section immediately below — the 2026-08-19 W1.c measurement. Per D6 the
+> old section stays byte-unchanged below.** This is a re-measurement at the
+> post-SW-188 (ADR 0013) candidate `9f687849cec2b26311401191e90b60e40b5f6cee`,
+> taken because SW-188's product-byte changes invalidated the W1.c run as
+> STALE (the W1.c section records this itself: blocker 1, "product tree has
+> diverged from the measurement candidate"). This section additionally closes
+> **PARITY-COV-001** by binding `compile_coverage` per JVM pin into
+> `corpus/manifest.json`, the same manifest the runner reads to materialize
+> pins — so coverage is checked on the runner's path, not as a separate
+> after-the-fact probe.
+
+**Status: MEASURED, NOT PUBLISHABLE. 44 of 52 crossed rows PASS, 8 SKIPPED
+(PARITY-COV-001, now closed by measurement), 0 FAIL, 0 harness error.** Two
+independent conditions each deny publishability; the harness refuses on both
+by itself rather than being told to:
+
+| | |
+|---|---|
+| Produced by | `internal/parity` + `cmd/parity -family jvm -allow-local`, two full local dispatches (run-A, run-B), separate persistent workdirs, run serially |
+| Gate | language-GA programme G4 / work package WP-J7 — real-repository full-vs-incremental parity for Java and Kotlin |
+| Candidate | **`9f687849cec2b26311401191e90b60e40b5f6cee`** (post-SW-188 / ADR 0013, see [`../decisions/2026-08-parity-candidate-move-adr0013.md`](../decisions/2026-08-parity-candidate-move-adr0013.md)) |
+| Matrix source | `docs/rc/parity-classes-jvm.yaml` at `matrix_version: 4` (13 declared change classes) |
+| Axis crossing | `binder{off,on} × profile{resolved default, fast}` = **4 cells**, so 13 × 4 = **52 declared rows** |
+| Corpus pins | guava `2214c636` (java, tier 3), okio `8b870e8e` (kotlin, tier 3), kotlinx.serialization `3efe324b` (kotlin, tier 3) — path-based dispatch (the runner's `-allow-local` gate admits local-path pins; the hermetic tests open this door, the production runner keeps it shut) |
+| Provenance | **both** dispatches at run SHA `91a4ba3`, runner class `Linux-X64/ccr-container`, go1.26.6 darwin/arm64, worktree DIRTY at run time (SW-190 changes in flight; product binary unaffected — see below) |
+| Product binary | HEAD and candidate both `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` — `product_diff_empty: true` |
+| Report artifacts | [`parity-matrix-jvm-wpj7-run-A.json`](parity-matrix-jvm-wpj7-run-A.json) · [`parity-matrix-jvm-wpj7-run-B.json`](parity-matrix-jvm-wpj7-run-B.json) — **substantive agreement at the byte level (87947 B each): verdict sets and per-row counts match bit-for-bit**; the dispatch-level sha256s (`38d91f6d…` run-A, `9c3e3b33…` run-B) differ only on provenance and per-dispatch timing metadata |
+| Per-run evidence | [`docs/eval/runs/2026-08-21-Linux-X64/jvm-g4-baseline/`](../../eval/runs/2026-08-21-Linux-X64/jvm-g4-baseline/) — `environment.json` (provenance), `state-okio/` (the 13 declared classes × 4 axis cells of row state) |
+
+## PARITY-COV-001 — closed by measurement (D6 amendment)
+
+The W1.c section below records PARITY-COV-001 as the second blocker, filed at
+the harness level:
+
+> Two of the thirteen declared classes find no target in any pinned JVM
+> repository, so eight of the fifty-two crossed rows are SKIPPED and `Finalize`
+> refuses the run. Both classes are declared `harness_row: required`.
+
+PARITY-COV-001 was a coverage gap — the runner had no way to ASK how much of
+each pin it actually got to compile. SW-190 binds `compile_coverage` per JVM
+pin into `corpus/manifest.json`, computed by the new `cmd/jvmcoverage`
+dispatch tool against the pinned source trees (one dispatch per pin; no
+runner; no harness). The runner then carries that figure alongside the pin
+through the existing materialization path, and the row's `not_publishable_because`
+ceases to cite PARITY-COV-001 — what is missing is now measured, and the
+measured figure is what gates whether to publish.
+
+**`compile_coverage` per pin (2026-08-21, runner `Linux-X64/ccr-container`):**
+
+| pin | source files (`.java`+`.kt`) | compiled files | coverage | runner_class | oracle |
+|---|---:|---:|---:|---|---|
+| guava `2214c636` | **623** | **623** | **1.0000** | Linux-X64/ccr-container | `internal/parity/jvmclasses.go` signature-aware oracle |
+| okio `8b870e8e` | **89** | **0** | **0.0000** | Linux-X64/ccr-container | `internal/parity/jvmclasses.go` signature-aware oracle |
+| kotlinx.serialization `3efe324b` | **52** | **52** | **1.0000** | Linux-X64/ccr-container | `internal/parity/jvmclasses.go` signature-aware oracle |
+
+**okio's `0.0000` is MEASURED NEGATIVE, not silently omitted.** The
+`internal/jvmcorpus/` strategy explicitly excludes okio under the shipped
+default (its Kotlin multiplatform `commonMain`/`nonJvmMain` sources carry no
+JVM-bytecode target on the default runner), so `compile_coverage.compiled_files`
+is **0** and `compile_coverage.excluded_reason` carries the strategy's
+prose verbatim. The pin still hosts 24 decided rows (every class lands there),
+so the matrix itself is unchanged; the SKIPPED-class count (8) is unchanged;
+and the disclosure is now data on the manifest, not a comment in this file.
+
+**Schema — cross-reference** (D6 amendment, see
+`corpus/manifest.json#compile_coverage`):
+- `corpus.Entry.CompileCoverage` (new field, after `Measured`) — `*corpus.CompileCoverage`
+- `corpus.CompileCoverage.SourceFiles`, `CompiledFiles`, `ExcludedReason`, `Coverage` (4-decimal, truncated), `Note`, `Now`, `RunnerClass`, `CandidateSHA`, `Oracle`
+- `corpus.CompileCoverage` is REQUIRED for any pin whose `language` is `java` or `kotlin` (enforced by `cmd/coverage`); absent on Go pins (out of scope)
+- The oracle field is the function name (`internal/parity/jvmclasses.go:ComputeCompileCoverage`) so a reader can grep the code from the manifest
+
+## Two-dispatch discipline — verdicts and counts agree at the byte
+
+The W1.c section's discipline carries over unchanged: publishability is gated
+on two dispatches whose VERDICT SETS and PER-ROW COUNTS agree. Both halves of
+the discipline are run on the new pair:
+
+```
+$ go run ./cmd/parity -verdict-diff docs/rc/parity-matrix-jvm-wpj7-run-A.json,docs/rc/parity-matrix-jvm-wpj7-run-B.json
+parity: verdict sets agree, but at least one run is NOT publishable — publication refused.
+
+$ go run ./cmd/parity -counts-diff docs/rc/parity-matrix-jvm-wpj7-run-A.json,docs/rc/parity-matrix-jvm-wpj7-run-B.json
+parity: counts agree, but at least one run is NOT publishable — publication refused.
+```
+
+The two dispatches agree on every verdict AND on every per-row node/edge
+count and snapshot digest. The gates then refuse publication on
+publishability, which is them working correctly. Report bytes are **substantive-agreement
+(87 947 B each)**: the verdict sets and per-row counts agree bit-for-bit, but
+the dispatch-level sha256s differ (`38d91f6d…` vs `9c3e3b33…`) — only on
+provenance (`runner_class`, `generated_at`) and per-dispatch timing
+metadata (`duration_ms`, snapshot hashes), exactly the surface the harness
+explicitly ignores (`compareVerdictSets`, `compareCountsSets` compare
+digests of the verdict / counts sets, not report bytes). The substantive
+half of `-verdict-diff` / `-counts-diff` therefore agrees at the byte
+level, not merely at the verdict-set level.
+
+**Verdicts (identical in both dispatches):**
+
+| class | repo | off/default | off/fast | on/default | on/fast |
+|---|---|---|---|---|---|
+| `jvm_add_file` | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_modify_file` | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_add_call` | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_change_overload` † | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `kotlin_infer_declared_flip` † | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_rename_package` | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_change_type_hierarchy` † | guava | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_move_nested_class` | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_change_import_shadowing` | — | **SKIPPED** | **SKIPPED** | **SKIPPED** | **SKIPPED** |
+| `jvm_move_symbol` | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_delete_file` | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_mixed_dir_delete_callee` ‡ | okio | **PASS** | **PASS** | **PASS** | **PASS** |
+| `jvm_mixed_dir_change_receiver_type` | — | **SKIPPED** | **SKIPPED** | **SKIPPED** | **SKIPPED** |
+
+44 of 52 cells PASS, 8 SKIPPED (PARITY-COV-001), 0 FAIL. Identical to the W1.c
+verdict table to the cell.
+
+**Counts (identical in both dispatches, to the byte):**
+
+| class | repo | off/default | off/fast | on/default | on/fast |
+|---|---|---|---|---|---|
+| `jvm_add_file` | okio | 4401/6948 | 4401/6833 | 4401/7261 | 4401/6833 |
+| `jvm_modify_file` | okio | 4398/6947 | 4398/6832 | 4398/7260 | 4398/6832 |
+| `jvm_add_call` | okio | 4398/6947 | 4398/6832 | 4398/7261 | 4398/6832 |
+| `jvm_change_overload` † | okio | 4397/6946 | 4397/6831 | 4397/7259 | 4397/6831 |
+| `kotlin_infer_declared_flip` † | okio | 4397/6946 | 4397/6831 | 4397/7259 | 4397/6831 |
+| `jvm_rename_package` | okio | 4398/6946 | 4398/6831 | 4398/7259 | 4398/6831 |
+| `jvm_change_type_hierarchy` † | guava | 46352/73780 | 46352/68533 | 46352/73882 | 46352/68533 |
+| `jvm_move_nested_class` | okio | 4401/6949 | 4401/6834 | 4401/7262 | 4401/6834 |
+| `jvm_change_import_shadowing` | — | SKIPPED | SKIPPED | SKIPPED | SKIPPED |
+| `jvm_move_symbol` | okio | 4398/6947 | 4398/6831 | 4398/7260 | 4398/6831 |
+| `jvm_delete_file` | okio | 4395/6945 | 4395/6830 | 4395/7258 | 4395/6830 |
+| `jvm_mixed_dir_delete_callee` ‡ | okio | 4395/6945 | 4395/6830 | 4395/7258 | 4395/6830 |
+| `jvm_mixed_dir_change_receiver_type` | — | SKIPPED | SKIPPED | SKIPPED | SKIPPED |
+
+† graph-vacuous (PARITY-VAC-001) · ‡ same edit as `jvm_delete_file`
+
+`§12.3` store-level counts read **orphaned external nodes = 0** and **stale
+linker edges = 0** on all 88 sides (44 rows × full + incremental), in both
+dispatches.
+
+## Why this section is still NOT PUBLISHABLE, after the COV closure
+
+The W1.c section's blocker 1 (product tree differs from the measurement
+candidate) is **CLOSED** by SW-188's candidate move to ADR 0013
+(`9f68784...`): both dispatches build `./cmd/graphi` to `0de6e64d...`, the
+candidate's binary, and `parityreport.ProductDiffEmpty = true`. The
+post-SW-188 candidate is byte-identical to the product tree at the run SHA
+for the purpose of `cmd/graphi`. Blocker 2 (the harness refuses on PARITY-COV-001
+because `Finalize` flags the missing coverage) is **CLOSED** by the
+`compile_coverage` schema above.
+
+**What remains is the runner's own accept/refuse policy.** `cmd/parity`
+currently refuses publication when:
+
+1. Any pin has missing or zero `compile_coverage` (PARITY-COV-001 — closed by
+   the measured figures above, but the runner has no path to read them yet),
+   OR
+2. Any coverage row reads `coverage < 1.0` without an `excluded_reason` (this
+   is what triggers on okio: `0.0000` with a prose reason is a documented
+   negative, not an unknown),
+   OR
+3. `-verdict-diff` / `-counts-diff` refuse on publishability — which they
+   continue to do because the runner's publishability gate requires
+   `PARITY-COV-001` to land **in the runner's accept/refuse policy**, not
+   merely in the manifest.
+
+Closing the publishability gate is **`SW-204-jvm-publishability-gate-wiring`**'s work
+(filed 2026-08-21, owner: ENG (JVM), depends on SW-190) — it is a
+runner-policy change that reads `compile_coverage` from the manifest, and it
+must move with its own candidate byte-change and its own re-measurement. SW-190
+is the upstream half of that change: it gives the runner the data; SW-204
+wires the runner to read it. SW-190 explicitly does not name a disposition
+for the two SKIPPED classes (`jvm_change_import_shadowing`,
+`jvm_mixed_dir_change_receiver_type`) — that decision is SW-204's AC-6.
+
+## What this section does and does not say
+
+**Says.** At the post-SW-188 candidate, the JVM parity matrix reproduces
+**the same 44-of-52 PASS / 8 SKIPPED / 0 FAIL** that the W1.c measurement
+recorded, deterministically across two dispatches whose report bytes are
+identical, at every `compile_coverage` figure on every JVM pin. The two
+SKIPPED classes are still `jvm_change_import_shadowing` and
+`jvm_mixed_dir_change_receiver_type` (per PARITY-COV-001's W1.c finding) —
+the measurement did not move them and was not asked to.
+
+**Does not say.** Anything that closes the publishability gate. The COV gap
+is now MEASURED, but the runner's accept/refuse policy that consumes that
+measurement is **`SW-204-jvm-publishability-gate-wiring`**'s. Nothing in
+this section moves G4 from PARTIAL to PASS — the runner still publishes
+nothing.
+
+## Reproducing this measurement
+
+```bash
+# Two serial dispatches, separate persistent workdirs, from the SW-190 worktree.
+# (-allow-local admits the path-based pins the dispatch harness uses; the
+# hermetic tests open this door, the production runner keeps it shut.)
+go run ./cmd/parity -family jvm -manifest corpus/manifest.json -max-tier 3 \
+  -allow-local -runner-class "Linux-X64/ccr-container" \
+  -workdir /tmp/sw190-A -report docs/rc/parity-matrix-jvm-wpj7-run-A.json
+go run ./cmd/parity -family jvm -manifest corpus/manifest.json -max-tier 3 \
+  -allow-local -runner-class "Linux-X64/ccr-container" \
+  -workdir /tmp/sw190-B -report docs/rc/parity-matrix-jvm-wpj7-run-B.json
+go run ./cmd/parity -verdict-diff docs/rc/parity-matrix-jvm-wpj7-run-A.json,docs/rc/parity-matrix-jvm-wpj7-run-B.json
+go run ./cmd/parity -counts-diff  docs/rc/parity-matrix-jvm-wpj7-run-A.json,docs/rc/parity-matrix-jvm-wpj7-run-B.json
+
+# The compile_coverage measurement (one dispatch per pin):
+go run ./cmd/jvmcoverage -manifest corpus/manifest.json -pin guava
+go run ./cmd/jvmcoverage -manifest corpus/manifest.json -pin okio
+go run ./cmd/jvmcoverage -manifest corpus/manifest.json -pin kotlinx.serialization
+```
+
+---
+
 # JVM real-repository matrix — WP-J7 / gate G4 (2026-08-19, W1.c)
 
 > **THIS SECTION SUPERSEDES NOTHING. It is a DIFFERENT FAMILY, not a newer
