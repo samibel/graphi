@@ -8,13 +8,18 @@ package conformance_test
 // (DEFERRED) fails the build.
 //
 // The TS guard is the JVM / Python twin's structure, focused on the three
-// directions the wave-2 family subset needs: MISSING, PHANTOM, DEFERRED.
-// The four directions the JVM guard is MISSING (VERDICT, AXIS, VOCABULARY,
-// KIND-as-distinct-from-OWNER) are not closed here — recording them is the
-// template's TEMPL-P4, and this copy inherits the JVM / Python narrowing.
-// The closing guard belongs to SW-184 (the light gate set + GA-LANG rows
-// for the cross-file-heuristic residual) and is a separate product-byte
-// change.
+// directions the wave-2 family subset starts with: MISSING, PHANTOM,
+// DEFERRED. The remaining four directions (VERDICT, AXIS, VOCABULARY,
+// KIND-as-distinct-from-OWNER) WERE recorded here as the template's
+// TEMPL-P4 — measured by SW-180 D-11 and inherited from the JVM / Python
+// narrowing with the closing guard scheduled for SW-184. SW-189 (W5.c,
+// 2026-08-21) closes TEMPL-P4 D-11 across the JVM, python and
+// TypeScript-family guards in the same change — VERDICT, AXIS, VOCABULARY
+// and KIND-only each have a top-level test below, the inherited ones live
+// in TestTSParityMatrix_DriftGuard (MISSING/PHANTOM) and
+// TestTSParityMatrix_KindCountAndOwners (KIND/OWNER), and the cross-family
+// enumeration guard at engine/conformance/parity_matrix_directions_test.go
+// pins the seven-direction set across every family file.
 
 import (
 	"os"
@@ -54,10 +59,12 @@ func loadTSParityClasses(t *testing.T) []parityRow {
 
 // TestTSParityMatrix_DriftGuard is the TypeScript-family twin of
 // TestPythonParityMatrix_DriftGuard. The three directions the guard runs
-// (MISSING, PHANTOM, DEFERRED) are the three this matrix needs at SW-182
-// gate — the other four directions (VERDICT, AXIS, VOCABULARY, KIND-as-
-// distinct-from-OWNER) are documented in the YAML header as TEMPL-P4
-// inherited and are CLOSED in SW-184, not here.
+// (MISSING, PHANTOM, DEFERRED) live here as the wave-2 subset; the
+// remaining four directions (VERDICT, AXIS, VOCABULARY, KIND-as-
+// distinct-from-OWNER) were TEMPL-P4 inherited and are CLOSED here by
+// SW-189 — see TestTSParityMatrix_Verdict, _Axis, _Vocabulary and
+// _KindCountAndOwners, plus the cross-family enumeration guard at
+// engine/conformance/parity_matrix_directions_test.go.
 func TestTSParityMatrix_DriftGuard(t *testing.T) {
 	rows := loadTSParityClasses(t)
 
