@@ -36,13 +36,16 @@ of thing, and neither reading holds:
   exactly what both published dispatches record as
   `provenance.product_binary_candidate`.
 
-The value `1a0425c5…` occurs nowhere in the tree except this record, three times
-(`:6`, `:41`, `:80`). **The candidate is the commit `9f687849…`; its product
-binary digests `0de6e64d6174…`.** What `1a0425c5…` was measured over is not
-recoverable from anything in the repository, and nothing here guesses.
+The value `1a0425c5…` occurs nowhere in the tree except this record. Three of
+those occurrences are in the body as it published — `:6`, `:118` and `:157`,
+anchored in this file **as it stands with this correction block in it**, not in
+its parent — and the remainder are this block's own citations of the value.
+**The candidate is the commit `9f687849…`; its product binary digests
+`0de6e64d6174…`.** What `1a0425c5…` was measured over is not recoverable from
+anything in the repository, and nothing here guesses.
 
 **C-2 — `docs/rc/parity-matrix-adr0013-run-{a,b}.json` were never published.**
-The paragraph at `:206-209` states they are "PUBLISHED in this commit". Those
+The paragraph at `:209-212` states they are "PUBLISHED in this commit". Those
 two paths have no commit on any branch —
 `git log --all --diff-filter=A -- 'docs/rc/parity-matrix-adr0013-run-*'` returns
 nothing — and no such file exists in the working tree. The two-dispatch
@@ -72,7 +75,7 @@ the two published reports, not inherited:
   and until it lands the JVM matrix stays NOT PUBLISHABLE by design.
 
 **C-4 — the `g7-jvm-baseline.md` refresh named in the same paragraph did not
-happen.** `:206-209` also states the figure side of `g7-jvm-baseline.md` is
+happen.** `:209-212` also states the figure side of `g7-jvm-baseline.md` is
 "refreshed under the new candidate in the same commit". `git show --stat 9f68784`
 lists nine files and none is under `docs/eval/`; the file —
 `docs/eval/runs/2026-08-19-local-sandbox/g7-jvm-baseline.md` — has exactly one
