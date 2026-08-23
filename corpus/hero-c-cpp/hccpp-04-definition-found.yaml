@@ -1,0 +1,15 @@
+id: hccpp-04-definition-found
+description: The definition of shop.core resolves to the shared header.
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: definition
+  args:
+    symbol: shop.core
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: shop/core.h
+  absent:
+    - kind: file
+      value: c/c-caller.c
+      match: contains
