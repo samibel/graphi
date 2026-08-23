@@ -43,11 +43,18 @@ import (
 // The decision, and why it is not (a):
 //
 //   - The only mechanically available check is "the file still has at least NNN
-//     lines". That is vacuous against every instance of the defect it would be
-//     written for. Five `GA-LANG-<lang>-G3` rows cited `line 38` for a guard that
-//     sat at line 39; the file has hundreds of lines, so a bounds check passes on
-//     all five. A gate that cannot fail on the defect that motivated it is worse
-//     than no gate: it manufactures confidence.
+//     lines". That is vacuous against the defect it would be written for: a line
+//     citation drifts by ONE line, or by a handful, and a bounds check passes on
+//     every such drift in any file longer than the number cited. A gate that
+//     cannot fail on the shape that motivated it is worse than no gate — it
+//     manufactures confidence. (The instance that prompted this AC — five
+//     `GA-LANG-<lang>-G3` rows citing line 38 for a guard at line 39 — is no
+//     longer present at `main`: SW-194 re-recorded those rows. It is quoted here
+//     as the reported shape, not as a measurement SW-205 took.)
+//   - The volume is real and measured: 200 `path:NNN` citations across the
+//     governed record set, 56 of them inside `docs/rc/evidence-index.yaml`
+//     itself. Standing behind numbers that drift on every edit to the cited file
+//     would put the gate into permanent, uninformative failure.
 //   - Verifying that line NNN still *contains the thing meant* is semantic, and
 //     semantic verification is this story's declared out-of-scope.
 //   - The replacement is the `::Symbol` form, which IS verified (AC-5). Where a
@@ -62,7 +69,7 @@ import (
 // "Per ADR 0008 D6" in `docs/decisions/2026-08-parity-candidate-move-adr0013.md`
 // names a genuine D6 in a genuine ADR; it is simply not the D6 that was meant
 // (ADR 0008's D6 is the overload binding rule; the never-rewrite discipline is
-// `docs/plan/2026-08-wave0-handoff-v1.md` §6). Existence checks and sha
+// `docs/plan/2026-08-wave0-handoff-v1.md` §6 D6). Existence checks and sha
 // comparison both pass on that citation. SW-206 covers part of the semantic
 // class; this variant is covered by neither and is a standing limit of the gate.
 

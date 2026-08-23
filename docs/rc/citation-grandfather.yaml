@@ -22,10 +22,15 @@
 # top does not silently un-suppress or re-suppress anything.
 #
 # SIZE AT LANDING (SW-205, 2026-08-23): 2 entries. The measured backlog was larger
-# — 40 violations at `main` @ 3fe97f0 — but 8 were drained by this story's own
-# `-record-citations` run, 5 were false positives of a first-cut rule set that was
-# then corrected, and the rest were exempted by the declared AC-7 markers the
-# records already carry. Only these two need an owner.
+# — 40 violations on the first complete run at `main` @ 3fe97f0 — and it broke down
+# like this, counted from the runs and adding to 40:
+#
+#     8   stale or unresolvable recorded shas   -> FIXED by -record-citations
+#     9   citations in a corrected record       -> EXEMPT under AC-7
+#    21   false positives of a first-cut rule   -> the RULES were corrected
+#     2   cite an artifact another story owns   -> the two entries below
+#
+# Only these two need an owner. The list can only shrink from here.
 
 entries:
   - target: "docs/rc/parity-matrix-real-repo.md :: missing-path :: docs/rc/parity-classes-ts-real-repo.yaml"
