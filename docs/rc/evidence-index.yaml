@@ -1272,12 +1272,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
+    current: "UNKNOWN — honest abstention at SW-196 W5.j close. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json bash-abstention declares no_pin: true with the named reason: 'no representative open-source bash project at the pin tier — bash is per-project glue, every project's scripts are an idiosyncratic DSL extension of POSIX sh, and any single repo's bash surface covers one project's vocabulary, not the language.' A low-quality substitution (a toy repo, a stale fork) would launder silence as evidence and is the false-GA-row defect class this programme exists to prevent (SW-184 AC-5, SW-196 AC-2). The bashResolver at engine/link/resolve_bash.go is exercised at the heuristic tier by the tier-1 fixture baseline and the G2SUB row; the corpus-scale G5 claim cannot be backed by an open-source bash corpus. The runner's no_pin short-circuit records a single abstention step that passes by name (internal/corpus/run.go: runEntry NoPin branch) so the manifest is runnable, and the gap is declared loudly rather than silently substituted. The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins + TestCheckedInManifest_V3CorpusPins_HonestNoSubstitution) pins both shapes — a v3 pin must carry ref / 40-char sha / tier / measured / >=8 stratification properties; a no_pin entry must carry no url / path / ref / sha / measured and a named no_pin_reason."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: corpus/manifest.json
     sha: ""
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: independent."
+    next_action: "G5 row stays UNKNOWN at the W5.j close. The honest gap is declared in corpus/manifest.json bash-abstention (no_pin: true with the named reason); the G5 row's re-introduction would require either (a) a real open-source bash corpus at the pin tier that satisfies the v3 standard — none has surfaced in the audit, so the burden is on the audit to surface one, not on SW-196 to invent one — or (b) an ADR accepting the cross-file-heuristic tier for bash WITHOUT a corpus-scale G5 (a separate decision). The bundle discipline: independent."
     due: W3
   - id: GA-LANG-bash-G6
     gate: Hero gate
@@ -1375,12 +1375,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    current: "PASS — flipped 2026-08-23 by SW-196 W5.j. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json cjson carries the v3 standard: ref v1.7.19 (release tag, lightweight), full 40-character sha c859b25da02955fef659d658b8f324b5cde87be3 (verified via `git ls-remote` at the v1.7.19 tag object — tag-object sha equals commit sha for lightweight tags), tier 3 (nightly/manual, never the PR gate), measured census 99 source files (.c + .h) of 229 tracked at the pinned sha (git ls-files '*.c' '*.h' | wc -l, 2026-08-23), and a C-specific stratification list of 10 properties (ANSI C99 portable, single-file C parser, embedded-friendly footprint, manual memory management, exposed error codes enum, preprocessor-conditional code, no external runtime dependencies, cross-translation-unit via #include, amalgamation build pattern, UTF-8/UTF-16/UTF-32 codec support). Cross-file resolution uses the shared include-directory binder at engine/link/resolve_c.go (cResolver for `c`, sharing includeBinder with cppResolver). The bundle discipline: a c pin does NOT discharge cpp's G5 row — cpp's pin is nlohmann_json, separately pinned. The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins) pins the v3 standard's required fields: ref / 40-char sha / tier / measured.source_files / measured.tracked_files / measured.measured_at / measured.method / >=8 stratification properties / license — a missing field fails with language + field named."
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: c859b25da02955fef659d658b8f324b5cde87be3
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
+    next_action: "G5 row flipped to PASS at SW-196 close. The next asset for c is the real-repository parity measurement (SW-195 / GA-LANG-c-G4), which consumes this pin."
     due: W3
   - id: GA-LANG-c-G6
     gate: Hero gate
@@ -1478,12 +1478,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    current: "PASS — flipped 2026-08-23 by SW-196 W5.j. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json Newtonsoft.Json carries the v3 standard: ref 13.0.3 (release tag, lightweight), full 40-character sha 0a2e291c0d9c0c7675d445703e51750363a549ef (verified via `git ls-remote` at the 13.0.3 tag object — tag-object sha equals commit sha for lightweight tags), tier 3 (nightly/manual, never the PR gate), measured census 933 source files (.cs) of 1158 tracked at the pinned sha (git ls-files '*.cs' | wc -l, 2026-08-23), and a C#-specific stratification list of 10 properties (multi-target .NET, strong static type system, cross-translation-unit via using/namespace, namespace-organized file layout, attribute-driven serialization config, LINQ integration, deep generic-method coverage, async API surface, JSON LINQ, performance-oriented contract resolver). Cross-file resolution uses the csharpResolver at engine/link/resolve_csharp.go (registered for language id 'c_sharp', csharpPkgExts = ['.cs'], ADR 0011). The bundle discipline: independent (C# has its own resolver path; the resolver is NOT shared with c/cpp). The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins) pins the v3 standard's required fields."
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: 0a2e291c0d9c0c7675d445703e51750363a549ef
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: independent."
+    next_action: "G5 row flipped to PASS at SW-196 close. The next asset for c_sharp is the real-repository parity measurement (SW-195 / GA-LANG-c_sharp-G4), which consumes this pin."
     due: W3
   - id: GA-LANG-c_sharp-G6
     gate: Hero gate
@@ -1581,12 +1581,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    current: "PASS — flipped 2026-08-23 by SW-196 W5.j. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json nlohmann_json carries the v3 standard: ref v3.11.3 (release tag, lightweight), full 40-character sha 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03 (verified via `git ls-remote` at the v3.11.3 tag object — tag-object sha equals commit sha for lightweight tags), tier 3 (nightly/manual, never the PR gate), measured census 455 cpp-relevant source files (.cpp + .hpp + .cc + .hh + .hxx + .cxx + .h) of 1090 tracked at the pinned sha (git ls-files '*.cpp' '*.hpp' '*.cc' '*.hh' '*.hxx' '*.cxx' '*.h' | wc -l, 2026-08-23 — the .h is included because nlohmann/json is a header-only library), and a C++-specific stratification list of 10 properties (single-header C++ library, C++11 standard required, template-metaprogramming-heavy, cross-translation-unit via #include, STL-style API surface, compile-time polymorphism via templates, strong static type system, header-only public API, no external runtime dependencies, macro-conditional code). Cross-file resolution uses the shared include-directory binder at engine/link/resolve_c.go (cppResolver for `cpp`, sharing includeBinder with cResolver). The bundle discipline: a cpp pin does NOT discharge c's G5 row — c's pin is cjson, separately pinned. The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins) pins the v3 standard's required fields."
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
+    next_action: "G5 row flipped to PASS at SW-196 close. The next asset for cpp is the real-repository parity measurement (SW-195 / GA-LANG-cpp-G4), which consumes this pin."
     due: W3
   - id: GA-LANG-cpp-G6
     gate: Hero gate
@@ -1684,12 +1684,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    current: "PASS — flipped 2026-08-23 by SW-196 W5.j. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json lua-resty-core carries the v3 standard: ref v0.1.26 (release tag, lightweight), full 40-character sha 407000a9856d3a5aab34e8c73f6ab0f049f8b8d7 (verified via `git ls-remote` at the v0.1.26 tag object — tag-object sha equals commit sha for lightweight tags), tier 3 (nightly/manual, never the PR gate), measured census 35 source files (.lua) of 176 tracked at the pinned sha (git ls-files '*.lua' | wc -l, 2026-08-23 — small but real; the 141 non-.lua tracked files are C sources, documentation, build scripts and tests; the size reflects the FFI-handle role rather than an application code surface). The Lua-specific stratification list carries 10 properties (nginx FFI bindings via LuaJIT, small library footprint, LuaJIT-only runtime, per-project script style, cross-translation-unit via require, no static type system, test/spec co-located, C-module companion sources, Lua module ecosystem (OpenResty), documentation in Markdown). Cross-file resolution uses the luaResolver at engine/link/resolve_ruby.go (registered for language id 'lua', sibling of rubyResolver and phpResolver). The bundle discipline: independent. The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins) pins the v3 standard's required fields."
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: 407000a9856d3a5aab34e8c73f6ab0f049f8b8d7
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: independent."
+    next_action: "G5 row flipped to PASS at SW-196 close. The next asset for lua is the real-repository parity measurement (SW-195 / GA-LANG-lua-G4), which consumes this pin."
     due: W3
   - id: GA-LANG-lua-G6
     gate: Hero gate
@@ -1787,12 +1787,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    current: "PASS — flipped 2026-08-23 by SW-196 W5.j. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json composer carries the v3 standard: ref 2.9.8 (release tag, annotated), full 40-character sha 39ee8baff8e97a1b657bbfcd6a236ff93a5efbb2 (the deref result of `git ls-remote ... refs/tags/2.9.8^{}` per SW-196 AC-3 — the tag-object sha 42f5b18cb4e61fcb21c228867297b51436a07939 was rejected), tier 3 (nightly/manual, never the PR gate), measured census 581 source files (.php) of 1029 tracked at the pinned sha (git ls-files '*.php' | wc -l, 2026-08-23), and a PHP-specific stratification list of 10 properties (CLI tool primary, PSR-4 autoloading, cross-translation-unit via require/include, no static type system, Composer package manager, large CLI command set, GitHub API integration, JSON-driven config, plugin ecosystem, tarball/zip download flow). Cross-file resolution uses the phpResolver at engine/link/resolve_ruby.go (registered for language id 'php', sibling of rubyResolver and luaResolver). The bundle discipline: independent. The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins) pins the v3 standard's required fields."
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: 39ee8baff8e97a1b657bbfcd6a236ff93a5efbb2
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: independent."
+    next_action: "G5 row flipped to PASS at SW-196 close. The next asset for php is the real-repository parity measurement (SW-195 / GA-LANG-php-G4), which consumes this pin."
     due: W3
   - id: GA-LANG-php-G6
     gate: Hero gate
@@ -1890,12 +1890,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    current: "PASS — flipped 2026-08-23 by SW-196 W5.j. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json sinatra already carries the v3 standard (was raised to v3 at SW-195 / F5-corpus lift): ref v4.0.0 (release tag, annotated), release_tag v4.0.0, full 40-character sha b626e2d82c23b4fde0b51782fd32ca27ccde1d1a (the deref result of `git ls-remote ... refs/tags/v4.0.0^{}` per SW-196 AC-3 — the tag-object sha 4d3f92dde14977bd312565f8080f6183f1fa44b6 was rejected), tier 3 (nightly/manual, never the PR gate), measured census 143 source files (.rb) of 321 tracked at the pinned sha (git ls-files '*.rb' | wc -l, 2026-08-20), and a Ruby-specific stratification list of 12 properties (web framework, rack middleware chain, DSL-style API, multi-gem repo layout, test/spec co-located, no static type system, commonmarker companion, plugin ecosystem, modular kernel, public domain dedication available, evolving API surface, documentation in Markdown). Cross-file resolution uses the rubyResolver at engine/link/resolve_ruby.go (registered for language id 'ruby'). The bundle discipline: independent. The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins) pins the v3 standard's required fields — the sinatra entry satisfies them all (raised-to-v3 was SW-195's contribution; SW-196 confirms the row against the v3 schema)."
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: b626e2d82c23b4fde0b51782fd32ca27ccde1d1a
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: independent."
+    next_action: "G5 row flipped to PASS at SW-196 close. The next asset for ruby is the real-repository parity measurement (SW-195 / GA-LANG-ruby-G4), which consumes this pin."
     due: W3
   - id: GA-LANG-ruby-G6
     gate: Hero gate
@@ -1993,12 +1993,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    current: "PASS — flipped 2026-08-23 by SW-196 W5.j. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json serde carries the v3 standard: ref v1.0.219 (release tag, annotated), full 40-character sha 49d098debdf8b5c38bfb6868f455c6ce542c422c (the deref result of `git ls-remote ... refs/tags/v1.0.219^{}` per SW-196 AC-3 — the tag-object sha 04dfb40175ee5bd289f6b5fadccaf6d77a0a8306 was rejected), tier 3 (nightly/manual, never the PR gate), measured census 188 source files (.rs) of 333 tracked at the pinned sha (git ls-files '*.rs' | wc -l, 2026-08-23 — the 145 non-.rs tracked files are Cargo.toml, README, build scripts, test fixtures and examples), and a Rust-specific stratification list of 10 properties (derive-macro heavy, trait-based abstraction, generics-heavy API, cargo workspace layout, cross-translation-unit via mod/use, strong static type system with traits, no runtime reflection, large ecosystem, test/spec co-located, documentation in Markdown). Cross-file resolution uses the rustResolver at engine/link/resolve_rust.go (registered for language id 'rust', rustPkgExts = ['.rs'], ADR 0011). The bundle discipline: independent. The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins) pins the v3 standard's required fields."
+    status: PASS
+    evidence_uri: corpus/manifest.json
+    sha: 49d098debdf8b5c38bfb6868f455c6ce542c422c
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: independent."
+    next_action: "G5 row flipped to PASS at SW-196 close. The next asset for rust is the real-repository parity measurement (SW-195 / GA-LANG-rust-G4), which consumes this pin."
     due: W3
   - id: GA-LANG-rust-G6
     gate: Hero gate
@@ -2096,12 +2096,12 @@ gates:
     gate: Corpus stratification and pins
     section: language-GA program §2 G5
     threshold: "The language's corpus entries reach the v3 Go standard: release-tag ref plus full 40-character sha, a measured block taken from a real clone at the pinned sha, a tier assignment, and a language-specific stratification of roughly 8 to 10 properties analogous to the Go ten."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Where a corpus pin exists at the v3 Go standard (release-tag ref + full 40-character sha + measured block taken from a real clone at the pinned sha + tier assignment + language-specific stratification), the G5 row is discharged by the pin. Where no pin exists (some residual languages have no representative open-source repository at the pin tier), the G5 row is honestly UNKNOWN and the next_action names the per-language follow-on. SW-184 AC-5: WHERE a corpus pin must be added, it shall be added as DATA in corpus/manifest.json at the v3 measured standard, never as code. C and C++ share a resolver path but each language's G5 row is per-language — a c pin does not discharge cpp's G5 unless the cpp-specific stratification is also present."
+    current: "UNKNOWN — honest abstention at SW-196 W5.j close. Target class E2 CORPUS-MEASURED. The manifest entry corpus/manifest.json sql-abstention declares no_pin: true with the named reason: 'no representative open-source SQL corpus at the pin tier — SQL is not an import-driven language, its cross-file construct is JOIN / VIEW not import, and any pin's surface would not match the corpus's per-file CST plus cross-file references model.' ADR-W1 documents the over-claim that the SW-184 scaffold's audit named SQL at the cross-file-heuristic tier; SW-196 publishes the gap and does NOT substitute a low-quality pin (e.g. psql's regression tests — too narrow; MySQL's server repo — not a SQL corpus; sqlfluff — a tool, not a SQL corpus). The sqlResolver at engine/link/resolve_bash.go (language id 'sql', sibling of bashResolver) is exercised by the resolver's hermetic fixtures; the corpus-scale G5 claim cannot be backed by an open-source SQL corpus, and SW-196 publishes the gap rather than silently substituting a fake pin. The runner's no_pin short-circuit records a single abstention step that passes by name (internal/corpus/run.go: runEntry NoPin branch) so the manifest is runnable, and the gap is declared loudly rather than silently substituted. The schema guard at internal/corpus/pin_test.go (TestCheckedInManifest_V3CorpusPins + TestCheckedInManifest_V3CorpusPins_HonestNoSubstitution) pins both shapes."
     status: UNKNOWN
-    evidence_uri: ""
+    evidence_uri: corpus/manifest.json
     sha: ""
     owner: W3-RES
-    next_action: "Lift the language's corpus pins to the v3 measured standard (release-tag ref + full 40-char sha + measured block + tier + language-specific stratification of ~8 to 10 properties). Add as DATA in corpus/manifest.json, never as code. The bundle discipline: independent."
+    next_action: "G5 row stays UNKNOWN at the W5.j close. The honest gap is declared in corpus/manifest.json sql-abstention (no_pin: true with the named reason); the G5 row's re-introduction would require either (a) an open-source SQL corpus at the pin tier that satisfies the v3 standard — none has surfaced in the audit, so the burden is on the audit to surface one, not on SW-196 to invent one — or (b) an ADR accepting the cross-file-heuristic tier for SQL WITHOUT a corpus-scale G5 (a separate decision, ADR-W1's lesson). The bundle discipline: independent."
     due: W3
   - id: GA-LANG-sql-G6
     gate: Hero gate

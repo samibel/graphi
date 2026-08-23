@@ -315,10 +315,10 @@ func TestSourceFamilies_EveryCorpusPinLanguageHasAFamily(t *testing.T) {
 	if len(pinned) < 2 {
 		t.Fatalf("only %d pinned language(s) derived from the manifest; the check is vacuous", len(pinned))
 	}
-	// And the count the divider comment publishes: 7 of the 15 families carry a
-	// corpus pin, 8 do not.
-	if len(pinned) != 7 || len(families) != 15 {
-		t.Errorf("sourcefamily.go's divider comment publishes 7 pinned of 15 families; the manifest "+
+	// And the count the divider comment publishes: 13 of the 15 families carry a
+	// corpus pin (post-SW-196 W5.j), 2 do not (tsx + bash).
+	if len(pinned) != 13 || len(families) != 15 {
+		t.Errorf("sourcefamily.go's divider comment publishes 13 pinned of 15 families; the manifest "+
 			"and the table now give %d pinned of %d (pinned: %v)", len(pinned), len(families), pinned)
 	}
 }

@@ -197,6 +197,13 @@ type Entry struct {
 	// written down must not be cloned by an evaluation.
 	License      string `json:"license,omitempty"`
 	PermittedUse string `json:"permitted_use,omitempty"`
+	// NoPin marks an entry with NO representative open-source repository at
+	// the pin tier. Such entries declare the gap loudly (NoPinReason is
+	// mandatory), carry no URL/Path/Ref/SHA, and the runner records an
+	// abstention step that passes by name — silence is the defect class the
+	// honest-gap discipline exists to prevent (SW-196 AC-2).
+	NoPin       bool   `json:"no_pin,omitempty"`
+	NoPinReason string `json:"no_pin_reason,omitempty"`
 	// Properties are the FR-2 stratification properties this entry carries;
 	// Manifest.Stratification is the authoritative property -> repo map and
 	// this is the per-entry view of it.
@@ -258,6 +265,23 @@ func LoadManifest(path string) (Manifest, error) {
 	for i, e := range m.Entries {
 		if e.Name == "" {
 			return Manifest{}, fmt.Errorf("corpus: entry %d has no name", i)
+		}
+		// NoPin entries declare an honest gap: no representative open-source
+		// repository at the pin tier. They skip the URL/Path/Ref/License/
+		// Language/SHA requirements entirely (no clone materializes) and
+		// must carry a NoPinReason — silence is the defect class the honest-
+		// gap discipline exists to prevent (SW-196 AC-2).
+		if e.NoPin {
+			if e.URL != "" || e.Path != "" {
+				return Manifest{}, fmt.Errorf("corpus: entry %q declares no_pin but also sets url/path", e.Name)
+			}
+			if e.NoPinReason == "" {
+				return Manifest{}, fmt.Errorf("corpus: entry %q declares no_pin without no_pin_reason (the gap must be named)", e.Name)
+			}
+			if e.Tier == 0 {
+				m.Entries[i].Tier = 3
+			}
+			continue
 		}
 		if (e.URL == "") == (e.Path == "") {
 			return Manifest{}, fmt.Errorf("corpus: entry %q must set exactly one of url or path", e.Name)

@@ -662,6 +662,274 @@
     }
    ],
    "notes": "Tier-1 pinned multi-file TypeScript-family fixture for the SW-182 hero-typescript tasks. The hero-typescript gate (cmd/eval/hero_typescript_test.go) asserts the 12 stable ops over the HEURISTIC tier (engine/link/resolve_typescript.go, registered for typescript/tsx/javascript). The writers carry the heuristic resolver's named-import bare binding (`import { core } from \"../impl\"`) so callers/callees/impact/related_files reach across modules at the heuristic tier. Negative anchor: org.salute (does NOT call core) must not appear in callers-of-core. No network, no Node."
+  },
+  {
+   "name": "cjson",
+   "url": "https://github.com/DaveGamble/cJSON",
+   "ref": "v1.7.19",
+   "release_tag": "v1.7.19",
+   "sha": "c859b25da02955fef659d658b8f324b5cde87be3",
+   "tier": 3,
+   "language": "c",
+   "license": "MIT",
+   "license_review": "MIT — explicit OSI-approved permissive license; redistribution of unmodified source permitted only with upstream copyright notice preserved. The corpus does not redistribute: only a shallow read-only clone is made in CI, and the source files are never published. No CLA, no contribution restrictions beyond the standard MIT terms. Compatible with the corpus's read-only-CI-only permitted_use; no further clearance required.",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "ANSI C99 portable",
+    "single-file C parser",
+    "embedded-friendly footprint",
+    "manual memory management",
+    "exposed error codes enum",
+    "preprocessor-conditional code",
+    "no external runtime dependencies",
+    "cross-translation-unit via #include",
+    "amalgamation build pattern",
+    "UTF-8/UTF-16/UTF-32 codec support"
+   ],
+   "measured": {
+    "source_files": 99,
+    "tracked_files": 229,
+    "measured_at": "2026-08-23",
+    "method": "git clone --depth 1 --branch v1.7.19; git ls-files '*.c' '*.h' | wc -l (99) and git ls-files | wc -l (229) at the pinned sha c859b25da02955fef659d658b8f324b5cde87be3"
+   },
+   "searches": [
+    {
+     "query": "cJSON",
+     "expect_nonempty": true
+    },
+    {
+     "query": "parse",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "C JSON parser (Dave Gamble's cJSON, ultra-lightweight embeddable library). Brought to the v3 measured standard (SW-196 W5.j): the 40-character commit sha is c859b25da02955fef659d658b8f324b5cde87be3 (lightweight tag, verified via git ls-remote at the v1.7.19 tag object — tag-object sha equals commit sha for lightweight tags), tier-3 designation added (nightly/manual, never the PR gate), a measured census added (99 .c/.h of 229 tracked, via the source_files field non-Go entries use), and the C-specific stratification properties list added (10 entries — ANSI C99 portable, single-file C parser, embedded-friendly footprint, manual memory management, exposed error codes enum, preprocessor-conditional code, no external runtime dependencies, cross-translation-unit via #include, amalgamation build pattern, UTF-8/UTF-16/UTF-32 codec support — the properties a C cross-file-heuristic regression fixture must cover). The license_review note is the missing v3 field for non-Go entries: MIT means redistribution is permitted but our permitted_use clause shrinks it to measurements-only, and the review records that shrink. Cross-file resolution for C uses the shared include-directory binder (engine/link/resolve_c.go: cResolver for `c`, cppResolver for `cpp`, sharing includeBinder)."
+  },
+  {
+   "name": "Newtonsoft.Json",
+   "url": "https://github.com/JamesNK/Newtonsoft.Json",
+   "ref": "13.0.3",
+   "release_tag": "13.0.3",
+   "sha": "0a2e291c0d9c0c7675d445703e51750363a549ef",
+   "tier": 3,
+   "language": "csharp",
+   "license": "MIT",
+   "license_review": "MIT — explicit OSI-approved permissive license; redistribution of unmodified source permitted only with upstream copyright notice preserved. The corpus does not redistribute: only a shallow read-only clone is made in CI, and the source files are never published. No CLA, no contribution restrictions beyond the standard MIT terms. Compatible with the corpus's read-only-CI-only permitted_use; no further clearance required.",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "multi-target .NET (netstandard2.0/net6+/.NET Framework)",
+    "strong static type system",
+    "cross-translation-unit via using/namespace",
+    "namespace-organized file layout",
+    "attribute-driven serialization config",
+    "LINQ integration",
+    "deep generic-method coverage",
+    "async API surface (Task-based)",
+    "JSON LINQ (JObject/JArray/JToken)",
+    "performance-oriented contract resolver"
+   ],
+   "measured": {
+    "source_files": 933,
+    "tracked_files": 1158,
+    "measured_at": "2026-08-23",
+    "method": "git clone --depth 1 --branch 13.0.3; git ls-files '*.cs' | wc -l (933) and git ls-files | wc -l (1158) at the pinned sha 0a2e291c0d9c0c7675d445703e51750363a549ef"
+   },
+   "searches": [
+    {
+     "query": "JsonConvert",
+     "expect_nonempty": true
+    },
+    {
+     "query": "SerializeObject",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "C# JSON library (Newtonsoft.Json / Json.NET, the de-facto standard pre-System.Text.Json). Brought to the v3 measured standard (SW-196 W5.j): the 40-character commit sha is 0a2e291c0d9c0c7675d445703e51750363a549ef (lightweight tag, verified via git ls-remote at the 13.0.3 tag object — tag-object sha equals commit sha for lightweight tags), tier-3 designation added (nightly/manual, never the PR gate), a measured census added (933 .cs of 1158 tracked, via the source_files field non-Go entries use), and the C#-specific stratification properties list added (10 entries — multi-target .NET, strong static type system, cross-translation-unit via using/namespace, namespace-organized file layout, attribute-driven serialization config, LINQ integration, deep generic-method coverage, async API surface, JSON LINQ (JObject/JArray/JToken), performance-oriented contract resolver — the properties a C# cross-file-heuristic regression fixture must cover). The license_review note is the missing v3 field for non-Go entries: MIT means redistribution is permitted but our permitted_use clause shrinks it to measurements-only, and the review records that shrink. Cross-file resolution for C# uses the csharpResolver at engine/link/resolve_csharp.go (registered for language id 'c_sharp' — csharpPkgExts = ['.cs'], ADR 0011)."
+  },
+  {
+   "name": "nlohmann_json",
+   "url": "https://github.com/nlohmann/json",
+   "ref": "v3.11.3",
+   "release_tag": "v3.11.3",
+   "sha": "9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03",
+   "tier": 3,
+   "language": "cpp",
+   "license": "MIT",
+   "license_review": "MIT — explicit OSI-approved permissive license; redistribution of unmodified source permitted only with upstream copyright notice preserved. The corpus does not redistribute: only a shallow read-only clone is made in CI, and the source files are never published. No CLA, no contribution restrictions beyond the standard MIT terms. Compatible with the corpus's read-only-CI-only permitted_use; no further clearance required.",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "single-header C++ library (json.hpp)",
+    "C++11 standard required",
+    "template-metaprogramming-heavy",
+    "cross-translation-unit via #include",
+    "STL-style API surface",
+    "compile-time polymorphism via templates",
+    "strong static type system",
+    "header-only public API",
+    "no external runtime dependencies",
+    "macro-conditional code (JSON_BUILD_TESTS etc.)"
+   ],
+   "measured": {
+    "source_files": 455,
+    "tracked_files": 1090,
+    "measured_at": "2026-08-23",
+    "method": "git clone --depth 1 --branch v3.11.3; git ls-files '*.cpp' '*.hpp' '*.cc' '*.hh' '*.hxx' '*.cxx' '*.h' | wc -l (455) and git ls-files | wc -l (1090) at the pinned sha 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03"
+   },
+   "searches": [
+    {
+     "query": "json",
+     "expect_nonempty": true
+    },
+    {
+     "query": "parse",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "C++ JSON library (nlohmann/json, the canonical modern C++ JSON pin). Brought to the v3 measured standard (SW-196 W5.j): the 40-character commit sha is 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03 (lightweight tag, verified via git ls-remote at the v3.11.3 tag object — tag-object sha equals commit sha for lightweight tags), tier-3 designation added (nightly/manual, never the PR gate), a measured census added (455 cpp-relevant source files of 1090 tracked, the cpp-extension set covers .cpp/.hpp/.cc/.hh/.hxx/.cxx/.h — the .h is included because nlohmann/json is a header-only library whose single-header form sits in include/nlohmann/json.hpp plus extension headers), and the C++-specific stratification properties list added (10 entries — single-header C++ library, C++11 standard required, template-metaprogramming-heavy, cross-translation-unit via #include, STL-style API surface, compile-time polymorphism via templates, strong static type system, header-only public API, no external runtime dependencies, macro-conditional code — the properties a C++ cross-file-heuristic regression fixture must cover). The license_review note is the missing v3 field for non-Go entries: MIT means redistribution is permitted but our permitted_use clause shrinks it to measurements-only, and the review records that shrink. Cross-file resolution for C++ shares the include-directory binder with C (engine/link/resolve_c.go: cppResolver for `cpp`, sharing includeBinder with cResolver). The bundle discipline: a c pin does NOT discharge cpp's G5 row, and this pin is for cpp only — c's pin is cjson."
+  },
+  {
+   "name": "lua-resty-core",
+   "url": "https://github.com/openresty/lua-resty-core",
+   "ref": "v0.1.26",
+   "release_tag": "v0.1.26",
+   "sha": "407000a9856d3a5aab34e8c73f6ab0f049f8b8d7",
+   "tier": 3,
+   "language": "lua",
+   "license": "BSD-3-Clause",
+   "license_review": "BSD-3-Clause — explicit OSI-approved permissive license; redistribution of unmodified source permitted only with upstream copyright notice preserved. The corpus does not redistribute: only a shallow read-only clone is made in CI, and the source files are never published. No CLA, no contribution restrictions beyond the standard BSD-3-Clause terms. Compatible with the corpus's read-only-CI-only permitted_use; no further clearance required.",
+   "permitted_use": "Public repository under BSD-3-Clause; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "nginx FFI bindings via LuaJIT",
+    "small library footprint (35 .lua tracked)",
+    "LuaJIT-only runtime (not PUC-Rio Lua)",
+    "per-project script style",
+    "cross-translation-unit via require",
+    "no static type system",
+    "test/spec co-located (busted/tap)",
+    "C-module companion sources (src/)",
+    "Lua module ecosystem (OpenResty)",
+    "documentation in Markdown"
+   ],
+   "measured": {
+    "source_files": 35,
+    "tracked_files": 176,
+    "measured_at": "2026-08-23",
+    "method": "git clone --depth 1 --branch v0.1.26; git ls-files '*.lua' | wc -l (35) and git ls-files | wc -l (176) at the pinned sha 407000a9856d3a5aab34e8c73f6ab0f049f8b8d7"
+   },
+   "searches": [
+    {
+     "query": "require",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Lua FFI bindings for nginx (OpenResty lua-resty-core). Brought to the v3 measured standard (SW-196 W5.j): the 40-character commit sha is 407000a9856d3a5aab34e8c73f6ab0f049f8b8d7 (lightweight tag, verified via git ls-remote at the v0.1.26 tag object — tag-object sha equals commit sha for lightweight tags), tier-3 designation added (nightly/manual, never the PR gate), a measured census added (35 .lua of 176 tracked — small but real, the size reflects the FFI-handle role rather than an application code surface; the 141 non-.lua tracked files are C sources, documentation, build scripts and tests). The Lua-specific stratification properties list carries 10 entries — nginx FFI bindings via LuaJIT, small library footprint, LuaJIT-only runtime, per-project script style, cross-translation-unit via require, no static type system, test/spec co-located, C-module companion sources, Lua module ecosystem (OpenResty), documentation in Markdown — the properties a Lua cross-file-heuristic regression fixture must cover. The license_review note is the missing v3 field for non-Go entries: BSD-3-Clause means redistribution is permitted but our permitted_use clause shrinks it to measurements-only, and the review records that shrink. Cross-file resolution for Lua uses the luaResolver at engine/link/resolve_ruby.go (registered for language id 'lua' — shareResolvePharo, sibling of rubyResolver and phpResolver in the same file)."
+  },
+  {
+   "name": "composer",
+   "url": "https://github.com/composer/composer",
+   "ref": "2.9.8",
+   "release_tag": "2.9.8",
+   "sha": "39ee8baff8e97a1b657bbfcd6a236ff93a5efbb2",
+   "tier": 3,
+   "language": "php",
+   "license": "MIT",
+   "license_review": "MIT — explicit OSI-approved permissive license; redistribution of unmodified source permitted only with upstream copyright notice preserved. The corpus does not redistribute: only a shallow read-only clone is made in CI, and the source files are never published. No CLA, no contribution restrictions beyond the standard MIT terms. Compatible with the corpus's read-only-CI-only permitted_use; no further clearance required.",
+   "permitted_use": "Public repository under MIT; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "CLI tool primary (bin/composer)",
+    "PSR-4 autoloading convention",
+    "cross-translation-unit via require/include",
+    "no static type system (PHP 5+ era baseline)",
+    "Composer package manager itself",
+    "large CLI command set (commands/* subcommands)",
+    "GitHub API integration",
+    "JSON-driven config (composer.json)",
+    "plugin ecosystem (composer/installers et al.)",
+    "tarball/zip download flow"
+   ],
+   "measured": {
+    "source_files": 581,
+    "tracked_files": 1029,
+    "measured_at": "2026-08-23",
+    "method": "git clone --depth 1 --branch 2.9.8; git ls-files '*.php' | wc -l (581) and git ls-files | wc -l (1029) at the pinned sha 39ee8baff8e97a1b657bbfcd6a236ff93a5efbb2"
+   },
+   "searches": [
+    {
+     "query": "Composer",
+     "expect_nonempty": true
+    },
+    {
+     "query": "install",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "PHP dependency manager (Composer, the canonical PHP package manager). Brought to the v3 measured standard (SW-196 W5.j): the 40-character commit sha is 39ee8baff8e97a1b657bbfcd6a236ff93a5efbb2 (annotated tag, dereferenced via `git ls-remote ... ^{}` per SW-196 AC-3 — the tag-object sha 42f5b18cb4e61fcb21c228867297b51436a07939 was rejected; the commit sha carried at this row is the deref result), tier-3 designation added (nightly/manual, never the PR gate), a measured census added (581 .php of 1029 tracked, via the source_files field non-Go entries use), and the PHP-specific stratification properties list added (10 entries — CLI tool primary, PSR-4 autoloading, cross-translation-unit via require/include, no static type system, Composer package manager, large CLI command set, GitHub API integration, JSON-driven config, plugin ecosystem, tarball/zip download flow — the properties a PHP cross-file-heuristic regression fixture must cover). The license_review note is the missing v3 field for non-Go entries: MIT means redistribution is permitted but our permitted_use clause shrinks it to measurements-only, and the review records that shrink. Cross-file resolution for PHP uses the phpResolver at engine/link/resolve_ruby.go (registered for language id 'php', sibling of rubyResolver and luaResolver in the same file)."
+  },
+  {
+   "name": "serde",
+   "url": "https://github.com/serde-rs/serde",
+   "ref": "v1.0.219",
+   "release_tag": "v1.0.219",
+   "sha": "49d098debdf8b5c38bfb6868f455c6ce542c422c",
+   "tier": 3,
+   "language": "rust",
+   "license": "MIT OR Apache-2.0",
+   "license_review": "Dual-licensed MIT OR Apache-2.0 — both are explicit OSI-approved permissive licenses; redistribution of unmodified source permitted only with upstream copyright notice preserved. The corpus takes the more permissive option (MIT) and the permitted_use clause shrinks it to measurements-only; the dual licensing means no further clearance is required whichever option is exercised. No CLA, no contribution restrictions beyond the standard terms. Compatible with the corpus's read-only-CI-only permitted_use.",
+   "permitted_use": "Public repository under MIT OR Apache-2.0; read-only shallow clone in CI, measurements only, no redistribution.",
+   "properties": [
+    "derive-macro heavy (serde_derive companion crate)",
+    "trait-based abstraction (Serialize/Deserialize)",
+    "generics-heavy API",
+    "cargo workspace layout",
+    "cross-translation-unit via mod/use",
+    "strong static type system with traits",
+    "no runtime reflection (compile-time codegen)",
+    "large ecosystem (serde_json, serde_yaml, bincode, etc.)",
+    "test/spec co-located (#[cfg(test)] inline modules)",
+    "documentation in Markdown"
+   ],
+   "measured": {
+    "source_files": 188,
+    "tracked_files": 333,
+    "measured_at": "2026-08-23",
+    "method": "git clone --depth 1 --branch v1.0.219; git ls-files '*.rs' | wc -l (188) and git ls-files | wc -l (333) at the pinned sha 49d098debdf8b5c38bfb6868f455c6ce542c422c"
+   },
+   "searches": [
+    {
+     "query": "Serialize",
+     "expect_nonempty": true
+    },
+    {
+     "query": "Deserialize",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Rust serialization framework (serde-rs/serde, the de-facto standard Rust serialization pin). Brought to the v3 measured standard (SW-196 W5.j): the 40-character commit sha is 49d098debdf8b5c38bfb6868f455c6ce542c422c (annotated tag, dereferenced via `git ls-remote ... ^{}` per SW-196 AC-3 — the tag-object sha 04dfb40175ee5bd289f6b5fadccaf6d77a0a8306 was rejected; the commit sha carried at this row is the deref result), tier-3 designation added (nightly/manual, never the PR gate), a measured census added (188 .rs of 333 tracked — the 145 non-.rs tracked files are Cargo.toml, README, build scripts, test fixtures, examples and the toml/crates.io-index companion layouts that live in subpaths), and the Rust-specific stratification properties list added (10 entries — derive-macro heavy, trait-based abstraction, generics-heavy API, cargo workspace layout, cross-translation-unit via mod/use, strong static type system with traits, no runtime reflection, large ecosystem, test/spec co-located, documentation in Markdown — the properties a Rust cross-file-heuristic regression fixture must cover). The license_review note is the missing v3 field for non-Go entries: dual-licensed MIT OR Apache-2.0 means redistribution is permitted under either; the permitted_use clause shrinks it to measurements-only, and the review records that shrink. Cross-file resolution for Rust uses the rustResolver at engine/link/resolve_rust.go (registered for language id 'rust' — rustPkgExts = ['.rs'], ADR 0011)."
+  },
+  {
+   "name": "bash-abstention",
+   "language": "bash",
+   "no_pin": true,
+   "no_pin_reason": "No representative open-source bash project at the pin tier (SW-196 AC-2 honest abstention). Bash is per-project glue — system init scripts, build helpers, dotfiles — not a publishable corpus: every project's scripts are an idiosyncratic DSL extension of POSIX sh, and any single repo's bash surface covers one project's vocabulary, not the language. The resolver at engine/link/resolve_bash.go is exercised at the heuristic tier by the tier-1 fixture baseline; the G5 row stays UNKNOWN, and this entry declares the gap loudly rather than substituting a low-quality pin (a toy repo, a stale fork — the false-GA-row defect class).",
+   "searches": [
+    {
+     "query": "noop",
+     "expect_nonempty": false
+    }
+   ],
+   "notes": "Honest abstention entry — bash has NO representative pin. SW-196 AC-2 / SW-184 AC-5. The runner's no_pin short-circuit records a single abstention step that passes by name (internal/corpus/run.go: runEntry NoPin branch); the G5 row in docs/rc/evidence-index.yaml stays UNKNOWN with this reason named in `current` (and in `next_action`'s reference to SW-196). No v3 pin is silently substituted."
+  },
+  {
+   "name": "sql-abstention",
+   "language": "sql",
+   "no_pin": true,
+   "no_pin_reason": "No representative open-source SQL corpus at the pin tier (SW-196 AC-2 honest abstention + ADR-W1 over-claim documentation). SQL has no canonical open-source corpus: SQL is not an import-driven language — its cross-file construct is JOIN / VIEW, not import — and the corpus's per-language model assumes a parser with a per-file CST plus cross-file references that resolve to an anchor node (the file/function model). A SQL project would consist of CREATE TABLE / CREATE VIEW / INSERT / SELECT with the file-level units being queries; the resolver's cross-file model does not cover this shape. ADR-W1 documents the over-claim that the SW-184 scaffold's audit named SQL at the cross-file-heuristic tier; SW-196 publishes the gap, files the G5 row as UNKNOWN, and does not substitute a low-quality pin (e.g. psql's own regression tests — too narrow; MySQL's server repo — not a SQL corpus; sqlfluff — a tool, not a SQL corpus).",
+   "searches": [
+    {
+     "query": "noop",
+     "expect_nonempty": false
+    }
+   ],
+   "notes": "Honest abstention entry — SQL has NO representative pin (SW-196 AC-2 + ADR-W1). The runner's no_pin short-circuit records a single abstention step that passes by name (internal/corpus/run.go: runEntry NoPin branch); the G4 / G5 rows in docs/rc/evidence-index.yaml stay UNKNOWN with this reason named in `current`. The sqlResolver at engine/link/resolve_bash.go (language id 'sql', sibling of bashResolver in the same file) is exercised by the resolver's hermetic fixtures; the corpus-scale claim cannot be backed by an open-source SQL corpus, and SW-196 publishes the gap rather than silently substituting a fake pin."
   }
  ]
 }
