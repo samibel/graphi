@@ -1,0 +1,17 @@
+id: hrust-08-callees
+description: >
+  Callees of shop.run resolve through the intra-file calls edge in shop/core.rs
+  to shop.core (the Rust parser's rustScanBody wires the bare `core(name)`
+  call inside `run` to the intra-file definition at parser_rust.go:172).
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: callees
+  args:
+    symbol: shop.run
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: shop.core
+      match: contains

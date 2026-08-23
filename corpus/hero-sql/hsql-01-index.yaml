@@ -1,0 +1,9 @@
+id: hsql-01-index
+description: Indexing the SQL fixture returns a populated inventory of tables/views.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: index
+  area: agent_mcp
+expect:
+  outcome: found
+  contains_path: schema/tables.sql

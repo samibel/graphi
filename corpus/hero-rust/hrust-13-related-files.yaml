@@ -1,0 +1,20 @@
+id: hrust-13-related-files
+description: >
+  HONEST-EMPTY: shop.core has no DIRECT inbound edge from any caller.
+  app.entry and app.twice reach shop.run (not shop.core) through the
+  clause-keyed heuristic; the function-level dependents collection has no
+  neighbours to score. The file→file imports edges target committed file
+  nodes (`app/caller.rs` via pkgImportPaths = `crate::shop::run`, resolved
+  through `clause("shop") = shop`, kept by `.rs` extSetFilter), NOT the
+  function node shop.core. related_files(shop.core, dependents) returns
+  empty, recorded here per AC-4 (parse-determinism honest-empty
+  discipline).
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: related_files
+  args:
+    anchor: shop.core
+    direction: dependents
+  area: agent_mcp
+expect:
+  outcome: empty

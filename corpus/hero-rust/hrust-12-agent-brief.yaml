@@ -1,0 +1,11 @@
+id: hrust-12-agent-brief
+description: An agent brief on shop.core carries evidence.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: agent_brief
+  args:
+    topic: shop.core
+  area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

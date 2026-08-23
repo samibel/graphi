@@ -1,0 +1,15 @@
+id: hrust-04-definition-found
+description: The definition of shop.core resolves to the shared module file.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: definition
+  args:
+    symbol: shop.core
+  area: agent_mcp
+expect:
+  outcome: found
+  contains_path: shop/core.rs
+  absent:
+    - kind: file
+      value: app/caller.rs
+      match: contains

@@ -1,0 +1,15 @@
+id: hcs-15-explain-partial
+description: >
+  explain_symbol(Shop.run, max_items=1) marks the result partial —
+  Shop.run has multiple call sites (app.entry via app/Caller.cs::entry
+  and app/Caller.cs::twice), and the cap truncates the items list.
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: explain_symbol
+  args:
+    symbol: Shop.run
+    max_items: "1"
+  area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true

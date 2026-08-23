@@ -1,0 +1,15 @@
+id: hrust-15-explain-partial
+description: >
+  explain_symbol(shop.run, max_items=1) marks the result partial — shop.run
+  has multiple call sites (app.entry invokes run() three times, app.twice
+  invokes run() twice), so the items list is truncated by the cap.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: explain_symbol
+  args:
+    symbol: shop.run
+    max_items: "1"
+  area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true

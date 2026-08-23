@@ -1,0 +1,17 @@
+id: hsql-08-callees
+description: >
+  HONEST-EMPTY (SQL, per §5.5): SQL has NO callable construct — no
+  functions, no methods, no procedures at the parser tier. The kind set
+  collapses to {file, type} (tables/views) per parser_sql.go:90's
+  Kind mapping. EdgeCallees graph edges are never minted at this tier
+  because CREATE statements don't have callable bodies. callees(schema.run)
+  returns a well-formed empty result, recorded here per AC-4
+  (parse-determinism honest-empty discipline).
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: callees
+  args:
+    symbol: schema.run
+area: agent_mcp
+expect:
+  outcome: empty

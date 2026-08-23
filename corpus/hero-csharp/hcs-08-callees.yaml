@@ -1,0 +1,18 @@
+id: hcs-08-callees
+description: >
+  Callees of Shop.salute resolve through the intra-file calls edge in
+  Shop/Price.cs to Shop.core (the C# parser's intra-file calls collector
+  at core/parse/parser_csharp.go:246 walks `invocation_expression`
+  children inside method_declaration bodies).
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: callees
+  args:
+    symbol: Shop.salute
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: Shop.core
+      match: contains

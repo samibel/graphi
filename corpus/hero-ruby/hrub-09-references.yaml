@@ -1,0 +1,18 @@
+id: hrub-09-references
+description: >
+  HONEST-EMPTY: the Ruby parser (core/parse/parser_ruby.go) does
+  NOT emit EdgeReferences edges — it only records `method`/`class`/
+  `module` defs and bare/selector call sites via the cstWalk. The
+  references operation finds none. This is the language's honest
+  level: cross-file references come from callers/callees via the
+  requireBinder's ambient-dir lookup, not from a dedicated
+  references collector. Recorded here per AC-4 (parse-determinism
+  honest-empty discipline).
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: references
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: empty

@@ -1,0 +1,16 @@
+id: hrub-15-explain-partial
+description: >
+  explain_symbol(lib.core, max_items=1) marks the result partial —
+  lib.core has multiple call sites (lib.run via the intra-file call
+  in lib/util.rb, app.entry and app.twice via the requireBinder's
+  cross-file calls edges), and the cap truncates the items list.
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: explain_symbol
+  args:
+    symbol: lib.core
+    max_items: "1"
+  area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true

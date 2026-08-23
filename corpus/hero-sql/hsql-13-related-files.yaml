@@ -1,0 +1,19 @@
+id: hsql-13-related-files
+description: >
+  HONEST-EMPTY: app.helper has no cross-file dependents (per §5.5). The
+  only file that touches app.helper is app/join_view.sql — which sits in
+  the SAME directory as the helper table — and references app.helper via
+  intra-file FROM clauses only. SQL has no imports edge at the parser
+  tier (parser_sql.go:77 explicitly returns empty Imports by design) and
+  the references edge is intra-file only, so related_files(app.helper,
+  dependents) returns empty. Recorded here per AC-4 (parse-determinism
+  honest-empty discipline).
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: related_files
+  args:
+    anchor: app.helper
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: empty

@@ -1,0 +1,18 @@
+id: hrust-09-references
+description: >
+  HONEST-EMPTY: the Rust parser (core/parse/parser_rust.go) does NOT emit
+  EdgeReferences edges — only EdgeCalls from `call_expression` sites and
+  EdgeDefines from `function_item`/type/const declarations. EdgeReferences
+  is reserved for type-name references at this tier, and the Rust subset
+  has no dedicated type-ref collector (struct_item / enum_item / etc. use
+  addDef, not typeRef). references(shop.core) returns a well-formed empty
+  result, recorded here per AC-4 (parse-determinism honest-empty
+  discipline).
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: references
+  args:
+    symbol: shop.core
+  area: agent_mcp
+expect:
+  outcome: empty

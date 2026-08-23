@@ -1,0 +1,10 @@
+id: hcs-16-change-risk
+description: Change risk of Shop.core reflects its cross-file inbound callers.
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: change_risk
+  args:
+    target: Shop.core
+  area: agent_mcp
+expect:
+  outcome: found

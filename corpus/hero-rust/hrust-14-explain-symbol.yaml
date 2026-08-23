@@ -1,0 +1,11 @@
+id: hrust-14-explain-symbol
+description: Explaining shop.core cites its definition in shop/core.rs.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: explain_symbol
+  args:
+    symbol: shop.core
+  area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

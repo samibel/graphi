@@ -1,0 +1,21 @@
+id: hsql-06-callers-cross-file
+description: >
+  HONEST-EMPTY (SQL, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5): SQL's language specification (ISO/IEC 9075) defines NO file-inclusion
+  construct — no #include, no source statement, no preprocessor. The
+  core/parse/parser_sql.go parser returns empty Imports/References by design
+  (parser_sql.go:77) and engine/link/ has no resolve_sql.go — there is no
+  cross-file binder, and the kind set collapses to {file, type} so SQL
+  NEVER mints EdgeCalls graph edges (parser_sql.go:90's Kind mapping). Per
+  AC-4 this scenario's description documents the honesty: the cross-file
+  `callers` operation is substituted and the query returns a well-formed
+  empty result, not a fabricated list. The substitution is labelled at
+  the G6 row.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: callers
+  args:
+    symbol: schema.core
+area: agent_mcp
+expect:
+  outcome: empty

@@ -1,0 +1,8 @@
+id: hrust-01-index
+description: Indexing the Rust fixture reports a populated inventory.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: index
+  area: agent_mcp
+expect:
+  outcome: found

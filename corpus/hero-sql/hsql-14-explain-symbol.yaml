@@ -1,0 +1,11 @@
+id: hsql-14-explain-symbol
+description: Explaining app.helper cites its definition in app/join_view.sql.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: explain_symbol
+  args:
+    symbol: app.helper
+area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

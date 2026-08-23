@@ -1,0 +1,24 @@
+id: hcs-06-callers-cross-lang
+description: >
+  Callers of Shop.run span the C# callers — app.entry and app.twice both
+  bring `Shop` into scope via the top-level `using Shop;` directive and
+  call `Price.run(...)`. The csharp resolver's ambient-clause fallback
+  (engine/link/resolve_common.go:444) turns the selector calls into
+  heuristic-tier calls edges to Shop.run. app.init_c (defined in both
+  app/Caller.cs and app/Other.cs) is the negative anchor (different
+  QN, no cross-file relation to Shop.run).
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: callers
+  args:
+    symbol: Shop.run
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.entry
+      match: contains
+    - kind: symbol
+      value: app.twice
+      match: contains
