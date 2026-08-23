@@ -64,15 +64,25 @@ func stripLine(scope string) string {
 // the census of what was classified but not verified (AC-4), the count of
 // citations exempted by an AC-7 marker, and the ratchet entries that were used.
 type CitationReport struct {
-	Violations    []CitationViolation
-	Suppressed    []CitationViolation
-	Census        map[CitationKind]int
-	Verified      int
-	Exempt        int
-	UnbackedPASS  []string
-	GovernedDocs  int
-	GateRows      int
-	GrandfatherOK int
+	Violations []CitationViolation
+	Suppressed []CitationViolation
+	Census     map[CitationKind]int
+	Verified   int
+	Exempt     int
+	// ExemptByDoc attributes the AC-7 exemption to the record that claimed it.
+	// The aggregate alone is not auditable: a whole-document CORRECTION banner
+	// exempts an ENTIRE record from one heading, and a reviewer reading only
+	// "76 exempted" cannot see which record is muting what. Only documents that
+	// exempt at least one citation appear.
+	ExemptByDoc  map[string]int
+	UnbackedPASS []string
+	// UnbackedPASSKinds says WHAT those rows cite, so the note is actionable: a
+	// row citing an unexpanded `<lang>` template needs a one-word edit, a row
+	// citing a command needs a published run artifact. Two different fixes.
+	UnbackedPASSKinds map[CitationKind]int
+	GovernedDocs      int
+	GateRows          int
+	GrandfatherOK     int
 }
 
 // Pass reports whether the citation sweep found nothing that stands.
@@ -110,7 +120,7 @@ func ProvenanceBindings(text string) [][2]string {
 func CheckCitations(root string, idx Index, gf Grandfather) (CitationReport, error) {
 	g := NewGit(root)
 	syms := NewSymbolResolver(g)
-	rep := CitationReport{Census: map[CitationKind]int{}}
+	rep := CitationReport{Census: map[CitationKind]int{}, ExemptByDoc: map[string]int{}, UnbackedPASSKinds: map[CitationKind]int{}}
 
 	var found []CitationViolation
 	add := func(v CitationViolation) { found = append(found, v) }
@@ -149,6 +159,11 @@ func CheckCitations(root string, idx Index, gf Grandfather) (CitationReport, err
 		found = append(found, checkRowSHA(g, gate, cites, repoFiles)...)
 		if gate.Status == StatusPass && len(repoFiles) == 0 && !hasVerifiableCitation(cites) {
 			rep.UnbackedPASS = append(rep.UnbackedPASS, gate.ID)
+			for _, c := range cites {
+				if c.Kind != KindNote && c.Kind != KindProse {
+					rep.UnbackedPASSKinds[c.Kind]++
+				}
+			}
 		}
 
 		// provenance sha bindings (the `<path> @ blob <sha>` form)
@@ -192,6 +207,9 @@ func CheckCitations(root string, idx Index, gf Grandfather) (CitationReport, err
 		}
 		cites, exempt := ScanDocument(doc, text)
 		rep.Exempt += exempt
+		if exempt > 0 {
+			rep.ExemptByDoc[doc] += exempt
+		}
 		for _, c := range cites {
 			rep.Census[c.Kind]++
 			scope := fmt.Sprintf("%s:%d", c.Doc, c.Line)
@@ -215,7 +233,16 @@ func CheckCitations(root string, idx Index, gf Grandfather) (CitationReport, err
 	}
 
 	// ── the ratchet (AC-11) ─────────────────────────────────────────────────
-	found = append(found, gf.Validate()...)
+	//
+	// ORDER IS LOAD-BEARING. Only the violations collected above — the ones the
+	// index and the governed records produce — are eligible for suppression. The
+	// list's OWN structural violations (gf.Validate) and its unused entries are
+	// appended to `stands` AFTER the loop, so no entry can name the key of a
+	// complaint about the list itself and make it disappear. Appending Validate
+	// before the loop is exactly that hole, and it was one: at 1fc57ed an entry
+	// with `owner: ""` plus a second entry naming the resulting
+	// `grandfather-no-owner` key produced `citation check PASS`, exit 0.
+	// Pinned by TestAC11_RatchetCannotSuppressItsOwnStructuralViolations.
 	suppressed := map[string]bool{}
 	for _, e := range gf.Entries {
 		suppressed[e.Target] = false
@@ -230,6 +257,7 @@ func CheckCitations(root string, idx Index, gf Grandfather) (CitationReport, err
 		}
 		stands = append(stands, v)
 	}
+	stands = append(stands, gf.Validate()...)
 	for _, e := range gf.Entries {
 		if !suppressed[e.Target] {
 			stands = append(stands, CitationViolation{
@@ -357,6 +385,17 @@ func checkRowSHA(g *Git, gate Gate, cites []Citation, repoFiles []string) []Cita
 		Detail: "recorded sha names no git object and is not the sha256 of any cited file at HEAD"}}
 }
 
+// UnbackedPASSOwner is the defect id that owns the PASS rows whose evidence this
+// gate can classify but cannot resolve.
+//
+// AC-4's letter is satisfied by classifying and reporting them, and FAILING them
+// is forbidden — it would flip rows out of PASS, which SW-205's Out-of-scope rules
+// out. But "reported" is not "owned": on the live index 17 of 52 PASS rows (33%)
+// are green on evidence this gate cannot resolve, and a log line nobody owns is
+// how that becomes permanent. The id is printed on every run so the rows are
+// findable from the gate output, and it carries the per-row disposition.
+const UnbackedPASSOwner = "UNBACKED-PASS-001"
+
 // hasVerifiableCitation reports whether any citation in the row is of a kind the
 // gate resolves.
 func hasVerifiableCitation(cites []Citation) bool {
@@ -394,9 +433,30 @@ func (r CitationReport) FormatCitations() string {
 	fmt.Fprintf(&b, "citation check: %d gate rows, %d governed docs, %d citations verified, %d exempted by a declared STALE/SUPERSEDED/CORRECTION marker, %d grandfathered\n",
 		r.GateRows, r.GovernedDocs, r.Verified, r.Exempt, r.GrandfatherOK)
 	fmt.Fprintf(&b, "citation classification census: %s\n", strings.Join(census, " "))
+	if len(r.ExemptByDoc) > 0 {
+		docs := make([]string, 0, len(r.ExemptByDoc))
+		for d := range r.ExemptByDoc {
+			docs = append(docs, d)
+		}
+		sort.Strings(docs)
+		var parts []string
+		for _, d := range docs {
+			parts = append(parts, fmt.Sprintf("%s %d", d, r.ExemptByDoc[d]))
+		}
+		fmt.Fprintf(&b, "citation exemptions by document (a STALE/SUPERSEDED/CORRECTION marker muted these): %s\n", strings.Join(parts, ", "))
+	}
 	if len(r.UnbackedPASS) > 0 {
-		fmt.Fprintf(&b, "citation check NOTE — %d PASS row(s) cite only classified-but-unresolvable evidence (a template, a command or an external URL) and are NOT counted as verified: %s\n",
-			len(r.UnbackedPASS), strings.Join(r.UnbackedPASS, " "))
+		kinds := make([]string, 0, len(r.UnbackedPASSKinds))
+		for k := range r.UnbackedPASSKinds {
+			kinds = append(kinds, string(k))
+		}
+		sort.Strings(kinds)
+		var what []string
+		for _, k := range kinds {
+			what = append(what, fmt.Sprintf("%s=%d", k, r.UnbackedPASSKinds[CitationKind(k)]))
+		}
+		fmt.Fprintf(&b, "citation check NOTE — %d PASS row(s) cite only classified-but-unresolvable evidence (a template, a command or an external URL) and are NOT counted as verified. Between them they cite (CITATION counts, not row counts): %s. OWNER: %s — this note is not their only holder; the defect names every row and its disposition. Rows: %s\n",
+			len(r.UnbackedPASS), strings.Join(what, " "), UnbackedPASSOwner, strings.Join(r.UnbackedPASS, " "))
 	}
 	// What the ratchet is hiding is printed, not merely counted: a reviewer must be
 	// able to read the suppressed breaches off a green run.

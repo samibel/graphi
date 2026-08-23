@@ -112,9 +112,17 @@ func parseGrandfather(text string) (Grandfather, error) {
 }
 
 // Validate returns the structural violations of the list itself: a blank target,
-// a blank reason, a missing or malformed owner, or a duplicate target. These are
-// checked before the list is applied, so a malformed ratchet cannot suppress
-// anything.
+// a blank reason, a missing or malformed owner, or a duplicate target.
+//
+// These violations are NOT eligible for suppression: CheckCitations appends them
+// after the suppression pass, so no entry can name the key of a complaint about
+// the list and clear it. That ordering is the whole guarantee — Validate itself
+// has no idea what is in the suppression set, and an earlier version of
+// CheckCitations appended its output BEFORE the pass, which let a malformed entry
+// silence the finding against itself (found by review at 1fc57ed:
+// `owner: ""` plus an entry naming the resulting grandfather-no-owner key gave
+// exit 0). See the ordering comment in citationcheck.go and
+// TestAC11_RatchetCannotSuppressItsOwnStructuralViolations.
 func (g Grandfather) Validate() []CitationViolation {
 	var out []CitationViolation
 	seen := map[string]bool{}

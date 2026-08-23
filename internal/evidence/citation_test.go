@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -213,6 +214,10 @@ func TestAC4_ClassifierRuleSet(t *testing.T) {
 		{"docs/rc/parity-classes{,-jvm}.yaml", []CitationKind{KindRepoPath, KindRepoPath}},
 		{"matching test files", []CitationKind{KindProse}},
 		{"vendor/other/thing.go", []CitationKind{KindUnclassified}},
+		// The em-dash tail is a NOTE, and it is classified rather than dropped.
+		{"engine/x.go — measured at candidate abc123", []CitationKind{KindRepoPath, KindNote}},
+		// A repo-rooted path inside the tail is still a claim about this repo.
+		{"docs/language-support.md — and docs/rc/TOTALLY-FAKE.yaml", []CitationKind{KindRepoPath, KindNote, KindRepoPath}},
 	}
 	for _, c := range cases {
 		got := ClassifyURI(c.uri)
@@ -225,6 +230,43 @@ func TestAC4_ClassifierRuleSet(t *testing.T) {
 				t.Errorf("%q[%d]: got kind %q, want %q", c.uri, i, got[i].Kind, c.want[i])
 			}
 		}
+	}
+}
+
+// AC-4: the em-dash tail of an evidence_uri is classified and reported, never
+// silently swallowed. Before this test, ClassifyURI truncated at the first " — "
+// and everything after it vanished from the violations, the census and the
+// unbacked-PASS note — so `docs/x.md — and docs/rc/TOTALLY-FAKE.yaml` stayed green
+// (found by review, 2026-08-23).
+func TestAC4_EmDashTailIsClassifiedNotDropped(t *testing.T) {
+	r := newFixtureRepo(t)
+	r.write("docs/rc/real.md", "# real\n")
+	r.commit("add")
+
+	idx := Index{Gates: []Gate{gate("G", "docs/rc/real.md — and docs/rc/TOTALLY-FAKE.yaml", "")}}
+	rep := r.check(idx, Grandfather{})
+	if !hasViolation(rep, RuleMissingPath, "TOTALLY-FAKE.yaml") {
+		t.Fatalf("a repo-rooted path after the em dash must still be resolved:\n%s", rep.FormatCitations())
+	}
+	if rep.Census[KindNote] == 0 {
+		t.Fatalf("the note itself must appear in the census:\n%s", rep.FormatCitations())
+	}
+}
+
+// AC-4: a note with nothing path-shaped in it is classified as a note and does not
+// invent violations out of ordinary prose.
+func TestAC4_EmDashTailOfPlainProseIsJustANote(t *testing.T) {
+	r := newFixtureRepo(t)
+	r.write("docs/rc/real.md", "# real\n")
+	r.commit("add")
+
+	idx := Index{Gates: []Gate{gate("G", "docs/rc/real.md — MEASURED AGAINST THE SUPERSEDED CANDIDATE 5815db5 (https://example.invalid/run/1)", "")}}
+	rep := r.check(idx, Grandfather{})
+	if !rep.Pass() {
+		t.Fatalf("a plain prose note must not manufacture a violation:\n%s", rep.FormatCitations())
+	}
+	if rep.Census[KindNote] != 1 {
+		t.Fatalf("want exactly one note in the census, got %d:\n%s", rep.Census[KindNote], rep.FormatCitations())
 	}
 }
 
@@ -256,6 +298,29 @@ func TestAC4_TemplateIsReportedNotVerified(t *testing.T) {
 	}
 	if !strings.Contains(rep.FormatCitations(), "NOT counted as verified") {
 		t.Fatalf("the skip must be visible in the report:\n%s", rep.FormatCitations())
+	}
+}
+
+// AC-4: the unbacked-PASS rows are not held by a bare log line. 33% of the PASS
+// rows on the live index are green on evidence the gate cannot resolve; the report
+// must name the owning defect id and say WHAT each row cites, so the list is
+// actionable rather than merely printed (found by review, 2026-08-23).
+func TestAC4_UnbackedPASSRowsNameTheirOwnerAndTheirShape(t *testing.T) {
+	r := newFixtureRepo(t)
+	r.write("engine/x.go", "package engine\n")
+	r.commit("add")
+
+	idx := Index{Gates: []Gate{
+		gate("T1", "corpus/fixtures/hero-<lang>", "490a632f"),
+		gate("C1", "cmd/coverage -check (green output)", "490a632f"),
+	}}
+	rep := r.check(idx, Grandfather{})
+	out := rep.FormatCitations()
+	if !strings.Contains(out, UnbackedPASSOwner) {
+		t.Fatalf("the note must name the owner %q, got:\n%s", UnbackedPASSOwner, out)
+	}
+	if !strings.Contains(out, "template=1") || !strings.Contains(out, "command=1") {
+		t.Fatalf("the note must say what the rows cite, got:\n%s", out)
 	}
 }
 
@@ -461,6 +526,32 @@ func TestAC7_CorrectionBannerScope(t *testing.T) {
 	}
 }
 
+// AC-7: the exemption is auditable per document, not only as an aggregate. A
+// whole-document CORRECTION banner is a large lever — one heading can exempt an
+// entire record — and a single `76 exempted` total tells a reviewer nothing about
+// WHICH record is exempting what (found by review, 2026-08-23).
+func TestAC7_ExemptCountIsReportedPerDocument(t *testing.T) {
+	r := newFixtureRepo(t)
+	r.write("docs/rc/banner.md", "# Rec\n\n> ## CORRECTION — 2026-08-23\n\nWithdrawn.\n\n## Body\n\nCites `docs/rc/gone-a.json` and `docs/rc/gone-b.json`.\n")
+	r.write("docs/rc/clean.md", "# Clean\n\n## Body\n\nNothing cited here.\n")
+	r.commit("add")
+
+	rep := r.check(Index{}, Grandfather{})
+	if rep.ExemptByDoc["docs/rc/banner.md"] != 2 {
+		t.Fatalf("want 2 exempt citations attributed to banner.md, got %d (%v)", rep.ExemptByDoc["docs/rc/banner.md"], rep.ExemptByDoc)
+	}
+	if _, ok := rep.ExemptByDoc["docs/rc/clean.md"]; ok {
+		t.Fatalf("a document that exempts nothing must not appear: %v", rep.ExemptByDoc)
+	}
+	out := rep.FormatCitations()
+	if !strings.Contains(out, "docs/rc/banner.md 2") {
+		t.Fatalf("the per-document exempt count must be PRINTED, got:\n%s", out)
+	}
+	if strings.Contains(out, "docs/rc/clean.md") {
+		t.Fatalf("only documents that exempt something belong in the line, got:\n%s", out)
+	}
+}
+
 // ── AC-11: the grandfather list is a ratchet that can only shrink ───────────
 
 func TestAC11_EntrySuppressesExactlyItsOwnViolation(t *testing.T) {
@@ -520,6 +611,68 @@ func TestAC11_EntryWithoutOwnerIsAViolation(t *testing.T) {
 	rep := r.check(Index{}, gf)
 	if !hasViolation(rep, RuleGrandfatherNoOwner, "gone-a.json") {
 		t.Fatalf("an entry with no owner story must be a violation:\n%s", rep.FormatCitations())
+	}
+}
+
+// TestAC11_RatchetCannotSuppressItsOwnStructuralViolations pins the rule that the
+// list may not silence complaints about ITSELF. An entry with no owner is an AC-11
+// violation; a second entry naming that violation's key must not make it go away,
+// or the ratchet becomes self-authorizing and the gate passes what its own AC says
+// SHALL fail. (Found by review, 2026-08-23: at 1fc57ed this shape returned exit 0.)
+func TestAC11_RatchetCannotSuppressItsOwnStructuralViolations(t *testing.T) {
+	r := newFixtureRepo(t)
+	r.write("docs/rc/rec.md", "# R\n\n## B\n\nCites `docs/rc/gone-a.json`.\n")
+	r.commit("add")
+
+	ownerless := GrandfatherEntry{
+		Target: "docs/rc/rec.md :: missing-path :: docs/rc/gone-a.json",
+		Reason: "because",
+		Owner:  "",
+		Line:   2,
+	}
+	selfSuppress := GrandfatherEntry{
+		Target: fmt.Sprintf("%s :: %s :: %s", GrandfatherPath, RuleGrandfatherNoOwner, ownerless.Target),
+		Reason: "probe",
+		Owner:  "SW-999",
+		Line:   6,
+	}
+	rep := r.check(Index{}, Grandfather{Entries: []GrandfatherEntry{ownerless, selfSuppress}})
+	if rep.Pass() {
+		t.Fatalf("a ratchet entry must not suppress the list's own hygiene rules:\n%s", rep.FormatCitations())
+	}
+	if !hasViolation(rep, RuleGrandfatherNoOwner, "gone-a.json") {
+		t.Fatalf("the grandfather-no-owner violation must STAND, not be suppressed:\n%s", rep.FormatCitations())
+	}
+	for _, v := range rep.Suppressed {
+		if strings.HasPrefix(v.Scope, GrandfatherPath) {
+			t.Fatalf("no violation scoped to the list itself may be suppressed, got %+v", v)
+		}
+	}
+}
+
+// TestAC11_MalformedEntryCannotSuppressItself is the same shape for the other
+// structural rule: a blank reason is grandfather-malformed, and naming that key
+// must not clear it either.
+func TestAC11_MalformedEntryCannotSuppressItself(t *testing.T) {
+	r := newFixtureRepo(t)
+	r.write("engine/x.go", "package engine\n")
+	r.commit("add")
+
+	blankReason := GrandfatherEntry{
+		Target: "docs/rc/rec.md :: missing-path :: docs/rc/gone-a.json",
+		Reason: "",
+		Owner:  "SW-193",
+		Line:   2,
+	}
+	selfSuppress := GrandfatherEntry{
+		Target: fmt.Sprintf("%s :: %s :: %s", GrandfatherPath, RuleGrandfatherMalformed, blankReason.Target),
+		Reason: "probe",
+		Owner:  "SW-999",
+		Line:   6,
+	}
+	rep := r.check(Index{}, Grandfather{Entries: []GrandfatherEntry{blankReason, selfSuppress}})
+	if !hasViolation(rep, RuleGrandfatherMalformed, "gone-a.json") {
+		t.Fatalf("a blank-reason entry must stay a violation even when a second entry names its key:\n%s", rep.FormatCitations())
 	}
 }
 

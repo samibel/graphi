@@ -94,6 +94,12 @@ const (
 	KindCommand CitationKind = "command"
 	// KindProse is free text carrying no citation.
 	KindProse CitationKind = "prose"
+	// KindNote is the explanatory tail of an evidence_uri, everything after the
+	// first spaced em dash. It is not a citation, but it is CLASSIFIED and counted
+	// rather than dropped — a silently discarded tail is exactly the kind of
+	// unexamined text this gate exists to stop. Any repo-rooted path inside the
+	// tail is pulled out and classified on its own, so it is still resolved.
+	KindNote CitationKind = "note"
 	// KindUnclassified is path-shaped text that matches no declared rule. A
 	// violation, never a pass: an unreadable citation is an unbacked one.
 	KindUnclassified CitationKind = "unclassified"
@@ -245,7 +251,14 @@ func looksLikePath(s string) bool {
 // ClassifyURI splits one evidence-index `evidence_uri` value into its declared
 // citations. The declared segmentation, in order:
 //
-//  1. everything from the first " — " (spaced em dash) is a note, not a citation;
+//  1. everything from the first " — " (spaced em dash) is a NOTE, not a citation.
+//     The note is classified as KindNote and counted in the census — it is NOT
+//     dropped. Any repo-rooted, path-shaped token inside it is lifted out and
+//     classified on its own, so a path written after the dash is still resolved.
+//     (Before 2026-08-23 the tail was truncated and discarded, which left
+//     `docs/x.md — and docs/rc/TOTALLY-FAKE.yaml` green: the fake path appeared in
+//     no violation, no census entry and no report line. A silent drop is the
+//     failure class this gate exists to catch, so the tail is classified.)
 //  2. the remainder splits on " + " into segments;
 //  3. each segment loses a trailing " (...)" parenthetical;
 //  4. each segment is brace-expanded, then classified.
@@ -257,7 +270,9 @@ func ClassifyURI(uri string) []Citation {
 	if uri == "" {
 		return nil
 	}
+	var tail string
 	if i := strings.Index(uri, " — "); i >= 0 {
+		tail = strings.TrimSpace(uri[i+len(" — "):])
 		uri = uri[:i]
 	}
 	var out []Citation
@@ -267,6 +282,28 @@ func ClassifyURI(uri string) []Citation {
 			continue
 		}
 		out = append(out, classifySegment(seg)...)
+	}
+	if tail != "" {
+		out = append(out, Citation{Kind: KindNote, Raw: tail})
+		out = append(out, classifyNoteTail(tail)...)
+	}
+	return out
+}
+
+// classifyNoteTail lifts the repo-rooted path citations out of an evidence_uri's
+// explanatory tail. Only tokens rooted at a declared CitationRoot are considered:
+// a note is prose, and treating every slashed word in it as a citation would
+// manufacture violations out of sentences. A token that IS repo-rooted is a claim
+// about this repository and is classified — and therefore resolved — like any
+// other.
+func classifyNoteTail(tail string) []Citation {
+	var out []Citation
+	for _, tok := range strings.Fields(tail) {
+		tok = strings.Trim(tok, "(),.;:\"'`")
+		if tok == "" || !hasCitationRoot(tok) {
+			continue
+		}
+		out = append(out, classifySegment(tok)...)
 	}
 	return out
 }
