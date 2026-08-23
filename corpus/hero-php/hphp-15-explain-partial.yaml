@@ -1,0 +1,18 @@
+id: hphp-15-explain-partial
+description: >
+  explain_symbol(lib.run, max_items=1) marks the result partial —
+  lib.run has multiple call sites (app.entry -> run once in
+  app/main.php::entry, app.entry_twice -> run twice in
+  app/main.php::entry_twice, lib.run -> core once in lib/util.php::run),
+  and the cap truncates the items list. This mirrors the ccpp
+  hccpp-15-explain-partial.yaml shape (shop.run, multiple call sites).
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: explain_symbol
+  args:
+    symbol: lib.run
+    max_items: "1"
+  area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true
