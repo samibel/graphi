@@ -99,10 +99,12 @@ the default MCP profile advertises **11** tools.
 **Language.** The GA language set is **not restated here** — it is exactly the set
 of **active `category: ga-language` rows** in
 [`coverage-matrix.yaml`](coverage-matrix.yaml), and the authoritative reading of
-that file is what `go run ./cmd/coverage -check` prints:
+that file is what `go run ./cmd/coverage -check` prints. The line has this
+shape — the count and the language list are whatever the matrix says today, and
+are deliberately NOT reproduced here:
 
 ```
-ga-language check PASS — 1 GA language(s) bound to the live capability derivation and the evidence index: go.
+ga-language check PASS — <N> GA language(s) bound to the live capability derivation and the evidence index: <languages>.
 ```
 
 Run it rather than trusting this paragraph. **Every language without an active row

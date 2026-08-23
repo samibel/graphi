@@ -141,7 +141,7 @@ needed for branch switches; graphi keeps ONE graph per repository (under
 > **Upgrading across the semantics-version 11 → 12 stamp?** This is the index
 > migration for the WP-J11 JVM binder flip, shipped **ahead of** the flip. The
 > binders have **not** moved to default-on — they remain opt-in behind
-> `GRAPHI_JVM_TYPERESOLVE`, so this upgrade changes no graph bytes for you today.
+> `GRAPHI_JVM_TYPERESOLVE`, so the flip changes no `*.java`/`*.kt` edges today.
 > The migration lands first because content hashes cannot see a change of binary
 > semantics: once the binders do flip, a store built before the flip would carry
 > `*.java`/`*.kt` files with no confirmed `calls` / `references` / `implements`

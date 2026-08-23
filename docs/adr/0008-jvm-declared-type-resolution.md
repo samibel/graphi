@@ -16,14 +16,14 @@
 
 > ## DISCLOSURE — 2026-08-23 (SW-208): SW-179 has shipped and did NOT flip; the binders are still default-OFF
 >
-> Per D6 this block is **added**; nothing below is rewritten, re-pointed or
-> deleted, and nothing below it is retracted. "Where this ratification stops"
-> (`:139-141`) says that flipping `GRAPHI_JVM_TYPERESOLVE` "from default-off
-> to default-on is W1.f / SW-179, owner-gated on the WP-J11 flip gate being
-> green end-to-end". That is still an accurate description of the flip and of
-> who owns it. The gap it leaves is one of tense: a reader resolving "W1.f /
-> SW-179" today finds a story marked `status: done`, `shipped: 2026-08-20`, and
-> the text below gives no way to learn that it shipped **without** the flip.
+> Per D6 — the never-rewrite discipline at `docs/plan/2026-08-wave0-handoff-v1.md:416`, not
+> this ADR's own D6 — this block is **added**; nothing below is rewritten, re-pointed or
+> deleted, and nothing below it is retracted. "Where this ratification stops" (`:139-141`) says
+> that flipping `GRAPHI_JVM_TYPERESOLVE` "from default-off to default-on is W1.f / SW-179,
+> owner-gated on the WP-J11 flip gate being green end-to-end". That is still an accurate
+> description of the flip and of who owns it. The gap it leaves is one of tense: a reader
+> resolving "W1.f / SW-179" today finds a story marked `status: done`, `shipped: 2026-08-20`,
+> and the text below gives no way to learn that it shipped **without** the flip.
 >
 > **What SW-179 actually shipped.** Its frontmatter carries
 > `scope: re-scoped to C9 + C8 only (owner decision 2026-08-20)`, and its

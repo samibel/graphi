@@ -22,13 +22,13 @@
 
 > ## DISCLOSURE — 2026-08-23 (SW-208): C9 was discharged ahead of the flip; the flip has not happened
 >
-> Per ADR 0008 D6 this block is **added**; nothing below is rewritten,
-> re-pointed or deleted, and nothing below it is retracted. C9's stated reason
-> at `:284` — "the JVM registrants move from default-off to default-on"
-> — describes what the flip *will* make true and is left standing as written.
-> What is added is the state a reader measuring this gate today needs and
-> cannot obtain from the text below: **SW-179 shipped, and it shipped C9
-> without the flip.**
+> Per D6 (`docs/plan/2026-08-wave0-handoff-v1.md:416`) this block is
+> **added**; nothing below is rewritten, re-pointed or deleted, and nothing
+> below it is retracted. C9's stated reason at `:284` — "the JVM
+> registrants move from default-off to default-on" — describes what the
+> flip *will* make true and is left standing as written. What is added is
+> the state a reader measuring this gate today needs and cannot obtain from
+> the text below: **SW-179 shipped, and it shipped C9 without the flip.**
 >
 > SW-179's frontmatter reads `status: done`, `shipped: 2026-08-20`,
 > `scope: re-scoped to C9 + C8 only (owner decision 2026-08-20)`. Its
@@ -40,7 +40,7 @@
 >
 > | C9 part | State | Measured at |
 > |---|---|---|
-> | 1 — version bump | LANDED | `ingestSemanticsVersion = "12"` at `engine/ingest/warmstart.go:77`; the rule that flips the stamp is recorded in the same style as the 1-to-11 history at `:71-76` |
+> | 1 — version bump | LANDED | `ingestSemanticsVersion = "12"` at `engine/ingest/warmstart.go:77`; its rationale is recorded at `:71-76`, in the same style as the 1-to-11 history that sits above it |
 > | 2 — re-index path, documented | LANDED | `docs/HOWTO.md:141-153` — `graphi rebuild`, no manual store deletion |
 > | 3 — pre-flip store test | LANDED | `engine/ingest/warmstart_preflip_test.go` |
 > | the flip this condition's reason names | **NOT DONE** | `engine/semantic/semantic.go:45` still registers the Java and Kotlin resolvers only `if jvmEnabled()`, reading `GRAPHI_JVM_TYPERESOLVE` (`:35`, `:37`); `:46-47` are the only `jvmresolve.NewResolver` calls in the tree, and the file carries exactly one commit in its history — `157c2e2 semantic: assemble the registry, register the JVM binder default-OFF` |

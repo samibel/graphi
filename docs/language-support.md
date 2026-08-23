@@ -19,8 +19,8 @@ without touching existing code.
 > language in the table below is **Preview**: it ships, it is usable, it runs the
 > same 12 GA operations — but it is outside the GA promise and its accuracy is
 > unproven. Preview languages resolve cross-file references at the `heuristic`
-> tier only. The `Capability level` column below is the level a language would
-> carry **if** its row were active; it is not a claim that the language is GA.
+> tier only. The `Capability level` column below is the live level the trust
+> surface reports (³), active row or not; it is not a claim of GA.
 
 **Default tier (CGo-free, shipped binary).** Two stdlib parsers plus **20**
 subset-tagged pure-Go `gotreesitter` grammars. The shipped default is built with
@@ -115,8 +115,8 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > import-named file). The control test pinning this is
 > `engine/link/resolve_typescript_test.go::TestTSLink_NoDirectoryFanOut` (SW-182 AC-4).
 >
-> ⁷ **Capability-audit row attestation (F5-surface, this commit).** Every GA row in the
-> table above binds to a numbered row in
+> ⁷ **Capability-audit row attestation (F5-surface, this commit).** Every row in the
+> table above that carries this footnote — all 17 of them Preview — binds to a numbered row in
 > [`rc/capability-audit-2026-08-19.md`](rc/capability-audit-2026-08-19.md) (pinned at
 > sha `deecee9e3a51707aa2d198abf91dc0b0a01573e6`, the audit record's own commit):
 >
