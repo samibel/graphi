@@ -1,13 +1,15 @@
 id: hrub-13-related-files
 description: >
-  HONEST-EMPTY: the Ruby parser does NOT mint function-level
-  EdgeImports edges. The require_relative '../lib/util' from
-  app/main.rb is recorded as an ImportSpec (and produces a
-  file→file imports edge at the binder level — engine/link/
-  resolve_common.go:332), but no per-function inbound edge from
-  a caller file to lib.core is recorded. related_files(lib.core,
-  dependents) returns a well-formed empty, recorded here per
-  AC-4 (parse-determinism honest-empty discipline).
+  related_files(lib.core, dependents) returns the call-graph
+  neighborhood: app/main.rb scores highly because it contains
+  app.twice, which has a heuristic calls edge into lib.core. This
+  is the cross-file edge minted by the rubyResolver's
+  requireBinder (engine/link/resolve_ruby.go) — the
+  require_relative '../lib/util' spec produced a file→file imports
+  edge from app/main.rb to lib/util.rb and a function-level
+  calls edge from app.twice → lib.core through the ambient-dir
+  lookup. lib/util.rb is the imported file (it scores via the
+  imports direction, not dependents).
 fixture_ref: tier1-fixture-hero-ruby
 operation:
   name: related_files
@@ -16,4 +18,8 @@ operation:
     direction: dependents
   area: agent_mcp
 expect:
-  outcome: empty
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.twice
+      match: contains

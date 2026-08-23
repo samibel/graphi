@@ -6,8 +6,8 @@
 # directory (`app/`) to produce `lib/util.rb`, recording it as a
 # file→file `imports` edge AND adding `lib` (the posixDir of the
 # joined path) to the ambient lookup dirs. Bare `core(...)` /
-# `run(...)` references below then resolve through the ambient-dir
-# lookup to lib.core / lib.run at the heuristic tier.
+# `invoke(...)` references below then resolve through the
+# ambient-dir lookup to lib.core / lib.invoke at the heuristic tier.
 #
 # `app.entry` is the module-level QN for `def entry` here, distinct
 # from the `app.init` collision below (defined twice in app/ — once
@@ -20,11 +20,11 @@
 require_relative '../lib/util'
 
 def entry(name)
-  run(name)
+  invoke(name)
 end
 
 def twice(name)
-  core(name) + core(name + 1)
+  invoke(name) + core(name)
 end
 
 def init

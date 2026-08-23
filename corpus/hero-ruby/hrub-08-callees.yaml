@@ -1,14 +1,14 @@
 id: hrub-08-callees
 description: >
-  Callees of lib.run resolve through the intra-file calls edge in
+  Callees of lib.invoke resolve through the intra-file calls edge in
   lib/util.rb to lib.core (the Ruby parser's intra-file calls
   collector at core/parse/parser_ruby.go:174 captures the bare
-  `core(name)` call inside lib.run's body).
+  `core(name)` call inside lib.invoke's body).
 fixture_ref: tier1-fixture-hero-ruby
 operation:
   name: callees
   args:
-    symbol: lib.run
+    symbol: lib.invoke
   area: agent_mcp
 expect:
   outcome: found
