@@ -102,6 +102,226 @@ will flip — ky covering typescript, express covering javascript, and the
 tsx row by family-share if the reviewer's judgement (recorded in current)
 upholds it.
 
+# JVM real-repository matrix — WP-J7 / gate G4 (2026-08-23, W5.d+1 SW204)
+
+> **THIS SECTION PUBLISHES NO MATRIX. It publishes a GATE and a REFUSAL.** It
+> does not supersede the W5.d SW-190 section immediately below, nor the
+> 2026-08-19 W1.c section below that; per D6 both stay byte-unchanged. What it
+> adds is the runner-policy half of PARITY-COV-001 — the JVM publishability
+> gate now READS `compile_coverage` from `corpus/manifest.json` — plus the
+> disposition of the eight SKIPPED cells, which is decided rather than deferred
+> for the third time.
+
+**Status: GATE WIRED, REFUSAL DETERMINISTIC, STILL NOT PUBLISHABLE. 44 of 52
+crossed rows PASS, 8 SKIPPED, 0 FAIL, 0 harness error, on both dispatches.**
+Exactly ONE condition now denies publishability, and it is the one this story
+cannot close.
+
+| | |
+|---|---|
+| Produced by | `internal/parity` + `cmd/parity -family jvm`, two full dispatches (run-A, run-B), separate persistent workdirs, run serially, **network clones — `-allow-local` deliberately NOT used** |
+| Gate | language-GA programme G4 / work package WP-J7 — real-repository full-vs-incremental parity for Java and Kotlin |
+| Candidate | **`9f687849cec2b26311401191e90b60e40b5f6cee`** — **UNCHANGED.** SW-204 forced no candidate move; see "The candidate did not move, and that was measured" below |
+| Matrix source | `docs/rc/parity-classes-jvm.yaml` at `matrix_version: 4` (13 declared change classes) |
+| Axis crossing | `binder{off,on} × profile{resolved default, fast}` = **4 cells**, so 13 × 4 = **52 declared rows** |
+| Corpus pins | guava `2214c63670fc161da170ac6e1a2d6d07e1531a55` (java, tier 3), okio `8b870e8eaacecb1c1ceffbbb47246112604a1f92` (kotlin, tier 3), kotlinx.serialization `3efe324be422ead21ca44f2f6318e1791c166556` (kotlin, tier 3) — cloned from their URLs; `head_sha` equals `pinned_sha` on all three in both dispatches |
+| Provenance | **both** dispatches at run SHA `c51172b9017436ea584f7de05804e42b3f6a53e8`, runner class `darwin-arm64/local-sandbox`, go1.26.6 darwin/arm64, **worktree CLEAN** at run time (`worktree_clean: true`), 5m18s and 5m22s wall clock |
+| Product binary | HEAD and candidate both `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` — `product_diff_empty: true` |
+| Report artifacts | [`parity-matrix-jvm-sw204-run-A.json`](parity-matrix-jvm-sw204-run-A.json) `sha256 2bac9e68…` · [`parity-matrix-jvm-sw204-run-B.json`](parity-matrix-jvm-sw204-run-B.json) `sha256 fb8f868b…` — **91 944 bytes each, differing on exactly 94 lines: 92 `duration_ms` and 2 `generated_at`.** Every verdict, every per-row node/edge count, every snapshot digest and every `compile_coverage` block is byte-identical |
+| Schema | `schema_version: 3` (was 2 — `RepoRef` gained `compile_coverage`); `harness_version` stays `parity-matrix/2`, because no row's verdict, count or digest moved |
+
+## What SW-204 changed, in one paragraph
+
+`internal/parity/jvmrun.go` built each `RepoRef` from
+`Name/URL/Ref/PinnedSHA/HeadSHA/Tier/SourceFiles` and **silently dropped**
+`corpus.Entry.CompileCoverage`. The figure `cmd/jvmcoverage` measures therefore
+had no reader downstream of its own producer, and the gate could not tell an
+UNMEASURED pin from a perfectly compiled one. SW-204 carries the figure into
+`parityreport.RepoRef.CompileCoverage` and decides it in
+`parityreport.(*Report).Finalize`, JVM-scoped (`Report.Family == "jvm"`), with
+exactly three arms and no fourth:
+
+| pin state | decision | why |
+|---|---|---|
+| no `compile_coverage` at all | **REFUSE** | fail-closed; an unmeasured pin is refused, never assumed complete |
+| `coverage < 1.0`, no `excluded_reason` | **REFUSE** | an unexplained partial compile is an unknown, and an unknown is not evidence |
+| `coverage < 1.0` WITH an `excluded_reason` | **ACCEPT** | a documented negative costs the CLAIM, not the run's publishability |
+
+The three pins, as the gate itself reported them on stderr in both dispatches:
+
+```
+parity: compile_coverage policy over 3 materialized JVM pin(s) (source: corpus/manifest.json; a pin with no figure is REFUSED, a figure below 1.0000 is refused unless the manifest states an excluded_reason):
+  guava                    accepted — 623/623 = 1.0000
+  kotlinx.serialization    accepted — 52/52 = 1.0000
+  okio                     accepted — 0/89 = 0.0000, DOCUMENTED NEGATIVE: Not compiled in the oracle's required layout — see `tried`. MEASURED, not assumed: the staged compile fails …
+```
+
+**There is no reason allowlist and no waiver flag**, in `Finalize` or in
+`cmd/parity`. `internal/parityreport/report.go` states the rule this obeys, in
+its own words about the coverage-limit reason: *"it does not make the run
+publishable, or 'record the limit' would become the cheap way past the gate."*
+A flag that let a named reason be waived would rebuild that escape one flag
+over. What an `excluded_reason` discharges is only the question the coverage
+rule asks — *is this pin's compile figure known?* — and it discharges it with a
+measurement, not with a promise. It buys nothing else: a run with a SKIPPED row
+still refuses, and there is a test that says so.
+
+**A precision about what the two dispatches prove, stated because the obvious
+reading is wrong.** The `compile_coverage` reason is absent from
+`not_publishable_because` — but it was absent from SW-190's published reports
+too, because before SW-204 **no such condition existed anywhere in the
+product**. Its absence here is therefore not a disappearance; it is the gate
+having LOOKED at all three pins and ACCEPTED them. The three things that
+distinguish the two states, and that a reader can check: the per-pin stderr
+lines above (the gate reporting what it decided for each pin), the
+`compile_coverage` block now present on every pin in `repos[]` of both report
+JSONs, and the hermetic tests in `internal/parity/parity_test.go` that a pin
+with NO figure, and a pin at `0.5` with no `excluded_reason`, DO refuse.
+
+## The refusal, verbatim, from both dispatches
+
+```
+$ ./parity -refusal-diff sw204-run-A.json,sw204-run-B.json
+run a: c51172b9017436ea584f7de05804e42b3f6a53e8  publishable=false  refusals=1
+run b: c51172b9017436ea584f7de05804e42b3f6a53e8  publishable=false  refusals=1
+
+shared refusal set (1):
+  incomplete run: 44 of 52 declared change classes decided, 0 deferred; 0 of 0 declared crash conditions decided, 0 deferred; skipped=true, harness-error=false (FR-7 requires 15 declared classes)
+
+  compile_coverage refusals in the shared set: 0
+
+parity: the two dispatches refuse for bit-identically the same reasons — the refusal is DETERMINISTIC. This is NOT a publication: both runs are refused, and exit 0 here says only that they are refused identically.
+$ echo $?
+0
+```
+
+`-refusal-diff` is a third diff mode, added because `-verdict-diff` and
+`-counts-diff` both stop at *"at least one run is NOT publishable — publication
+refused"* and say nothing about a pair of runs that BOTH refuse. **Its exit 0
+means the refusal is deterministic. It never means the run is publishable**,
+and it does not read `Publishable` as a pass condition at all. The two existing
+gates are untouched and still exit **2** here, which is correct:
+
+```
+$ ./parity -verdict-diff sw204-run-A.json,sw204-run-B.json   # exit 2
+parity: verdict sets agree, but at least one run is NOT publishable — publication refused.
+$ ./parity -counts-diff  sw204-run-A.json,sw204-run-B.json   # exit 2
+parity: counts agree, but at least one run is NOT publishable — publication refused.
+```
+
+## The candidate did not move, and that was measured
+
+SW-204's ticket anticipated a candidate move (its AC-3, and its verification
+line *"`cmd/graphi` digest MOVES"*). **It does not.** `go list -deps
+./cmd/graphi` contains no `internal/parity`, `internal/parityreport` or
+`cmd/parity` package, and `CGO_ENABLED=0 go build -trimpath -buildvcs=false
+./cmd/graphi` digests
+`0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` both at
+`37a7be8` (before the change) and at `c51172b` (after it) — the same digest the
+candidate `9f687849…` produces, which is why both dispatches record
+`product_diff_empty: true` under the UNCHANGED candidate. A candidate move is
+forced by a product-byte change; there was none, so forcing one would have
+invalidated SW-190's published measurement for no measured reason. No ADR after
+0013 is filed by this story.
+
+## The eight SKIPPED cells — DECIDED, not deferred again
+
+Authority:
+`projects/graphi/memory/decisions/2026-08-22-jvm-parity-8-skipped-cells-disposition.md`
+(status: accepted), decisions D1–D5. **This replaces the deferral in the W5.d
+section's "Why this section is still NOT PUBLISHABLE" subsection, which handed
+the choice to SW-204's AC-6. The choice is made here; that subsection is left
+byte-unchanged below, per D6.**
+
+**What the run says.** 44 of 52 crossed rows PASS on both dispatches, with
+identical counts and snapshot digests. 40 of the 44 decided rows ran on okio
+and 4 on guava; **kotlinx.serialization hosts ZERO decided rows in both
+dispatches** — it is cloned only because the two skipping classes examine it.
+
+**What the run does not say.** Anything about
+`jvm_change_import_shadowing` or `jvm_mixed_dir_change_receiver_type` on real
+repositories. All 8 of their crossed cells report *"no JVM pin within
+-max-tier 3 exhibits the structure this class needs (examined: okio,
+kotlinx.serialization, guava)"*. The absence is MEASURED, not assumed:
+
+- `jvm_change_import_shadowing` needs a **non-static** on-demand import. The
+  only Java wildcard import of any kind across the three pins is guava's
+  `import static java.util.stream.Collectors.*;` — a static one, which imports
+  members rather than types and which JLS 6.4.1's single-type-import rule does
+  not govern. The planner refuses it deliberately; accepting it would publish a
+  verdict about a rule the row never exercised.
+- `jvm_mixed_dir_change_receiver_type` needs a directory holding `.java` beside
+  `.kt` (Java > 0 AND Kotlin > 0) plus a Java class whose superclass lives in a
+  different directory and is named from inside the mixed one. guava is pure
+  Java; okio's and kotlinx.serialization's only `.java` files are
+  `module-info.java` JPMS declarations that declare no types.
+
+**Which story owns the difference.**
+**SW-207-jvm-polyglot-corpus-target-acquisition** (backlog item
+**JVMCORPUS-001**), filed by decision D4. It is now the only story that can
+make this matrix publishable: acquire and pin a JVM repository hosting both
+shapes, compile it in the oracle's required layout, record its
+`compile_coverage` — which THIS story's gate fail-closes on if absent — and
+re-run for 52/52 decided.
+
+**And what is NOT the fix.** Re-declaring either row `harness_row: deferred`.
+`TestJVMParityMatrix_DriftGuard` requires a deferred row to carry **no harness
+row**, **`verdict: ABSENT`** and **no citation of the harness driver**. Both
+classes have live rows in `jvmChangeClassTable()`, read `verdict: PROVEN`, and
+cite `engine/conformance/jvmparity_test.go::TestJVMFullVsIncremental_ByteParity`
+— which is exactly the citation the deferred arm forbids. The relabel would
+therefore mean **deleting two hermetic proofs so that a
+real-repository run can pass a gate** — retracting proof that is not in doubt,
+on the wrong axis (`harness_row` governs the hermetic binding; the SKIP is on
+the `real_repo_*` axis). `internal/parityreport/report.go` had already written
+the answer down: *"Deferral is a DECLARED shape in the matrix YAML, not a
+runtime escape: a row cannot become deferred by failing to run."* Both classes
+keep `harness_row: required`, `deferred_to: ""`, `verdict: "PROVEN"` and their
+citations; the only change to `docs/rc/parity-classes-jvm.yaml` in this story is
+one added sentence in each of their `note:` fields.
+
+## What this section does and does not say
+
+**Says.** The JVM publishability gate reads `compile_coverage` from
+`corpus/manifest.json` on the runner's own path; a pin missing the figure fails
+closed; okio's documented negative is accepted; no `compile_coverage` entry
+appears in `not_publishable_because` on either dispatch; and two dispatches
+refuse for bit-identically the same SINGLE reason. 44 of 52 crossed rows PASS
+deterministically, with 8 SKIPPED for a measured absence of any target in the
+pinned corpus — not a harness defect, and not a waiver. Both skipped classes
+remain PROVEN hermetically; the gap is real-repository coverage only.
+
+**Does not say.** `Publishable: true` — not reachable by this story and not
+claimed. Not "8 declared classes deferred". Not 52/52 decided, and no per-class
+real-repository verdict for the two skipped classes. **No G4 PASS for java or
+kotlin**, and no status in `docs/rc/evidence-index.yaml` is moved by this
+story; only the two `next_action` cells and their `evidence_uri` change. This
+section publishes a gate and a deterministic refusal, and nothing else.
+
+## Reproducing this measurement
+
+```bash
+# Build the binary — do NOT use `go run`, which masks exit 2 as exit 1.
+CGO_ENABLED=0 go build -o /tmp/parity ./cmd/parity
+
+# Two serial dispatches, separate persistent workdirs, from a CLEAN worktree.
+/tmp/parity -family jvm -manifest corpus/manifest.json \
+  -runner-class darwin-arm64/local-sandbox -workdir /tmp/A \
+  -report sw204-run-A.json                                    # exit 2 (INCOMPLETE)
+/tmp/parity -family jvm -manifest corpus/manifest.json \
+  -runner-class darwin-arm64/local-sandbox -workdir /tmp/B \
+  -report sw204-run-B.json                                    # exit 2 (INCOMPLETE)
+
+# The three comparisons.
+/tmp/parity -refusal-diff sw204-run-A.json,sw204-run-B.json   # exit 0 — refusal is DETERMINISTIC, not publishable
+/tmp/parity -verdict-diff sw204-run-A.json,sw204-run-B.json   # exit 2 — correct, and untouched by SW-204
+/tmp/parity -counts-diff  sw204-run-A.json,sw204-run-B.json   # exit 2 — correct, and untouched by SW-204
+
+# The candidate-did-not-move check.
+go list -deps ./cmd/graphi | grep parity                      # no output
+CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/g ./cmd/graphi && shasum -a 256 /tmp/g
+```
+
 # JVM real-repository matrix — WP-J7 / gate G4 (2026-08-21, W5.d SW-190)
 
 > **THIS SECTION IS A NEW MEASUREMENT OF THE SAME FAMILY. It does not supersede
