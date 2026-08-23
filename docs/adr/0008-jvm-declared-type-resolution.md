@@ -14,6 +14,45 @@
   this ADR's declared-type regime as precedent
 
 
+> ## DISCLOSURE — 2026-08-23 (SW-208): SW-179 has shipped and did NOT flip; the binders are still default-OFF
+>
+> Per D6 — the never-rewrite discipline at `docs/plan/2026-08-wave0-handoff-v1.md:416`, not
+> this ADR's own D6 — this block is **added**; nothing below is rewritten, re-pointed or
+> deleted, and nothing below it is retracted. "Where this ratification stops" (`:139-141`) says
+> that flipping `GRAPHI_JVM_TYPERESOLVE` "from default-off to default-on is W1.f / SW-179,
+> owner-gated on the WP-J11 flip gate being green end-to-end". That is still an accurate
+> description of the flip and of who owns it. The gap it leaves is one of tense: a reader
+> resolving "W1.f / SW-179" today finds a story marked `status: done`, `shipped: 2026-08-20`,
+> and the text below gives no way to learn that it shipped **without** the flip.
+>
+> **What SW-179 actually shipped.** Its frontmatter carries
+> `scope: re-scoped to C9 + C8 only (owner decision 2026-08-20)`, and its
+> re-scope section excludes the flip in its own words: "**The actual binder flip
+> (AC-1, AC-2).** The binder stays default-OFF. `engine/semantic/semantic.go:45`
+> is unchanged." What landed is C9 — the index migration
+> (`ingestSemanticsVersion` bumped 11 → 12, `engine/ingest/warmstart.go:77`, the
+> `graphi rebuild` path at `docs/HOWTO.md:141-153`, and
+> `engine/ingest/warmstart_preflip_test.go`) — and C8's two flip-gate tests. The
+> migration therefore sits in shipped binaries *ahead of* the flip it was written
+> for: a store stamped below `"12"` fails `CanWarmStart`
+> (`engine/ingest/warmstart.go:94`, the stamp equality at `:147`), which leaves
+> `Index.WarmStartable` unset in `internal/freshness/probe/probe.go:72-95`,
+> leaves `r.Current` false (`:103`), and makes `graphi status` exit 1 asking for
+> `graphi rebuild` (`cmd/graphi/status.go:149-152`, `:206-207`). That cost is real
+> today; the binder behaviour change that justifies it is not.
+>
+> **What this means for the rulings below — measured, not assumed.** **D4** and
+> **D7** are *unaffected and still describe the live code*: `GRAPHI_JVM_TYPERESOLVE`
+> remains the opt-in that lifts the JVM registrants from default-off, and
+> `engine/semantic/semantic.go:45` still guards both registrations with
+> `if jvmEnabled()` (`:35`, `:37`; `:46-47` are the only `jvmresolve.NewResolver`
+> calls in the tree, and the file has exactly one commit in its history —
+> `157c2e2 semantic: assemble the registry, register the JVM binder default-OFF`).
+> The Status header's "REGISTERED behind the ADR 0007 seam but DEFAULT-OFF" is
+> likewise current. **D9's residual-owner rule is still outstanding**: D9 defers
+> it to the WP-J11 flip and requires it be decided *before* the flip; the flip
+> has not happened, and SW-179 landed only C9 and C8.
+>
 > ## AMENDMENT — 2026-08-23 (SW-188): JVMSOUND-003 and JVMSOUND-004 are closed; this ADR's two "open, unfixed" statements are retracted
 >
 > Per D6 this block is **added**; nothing below is rewritten, re-pointed or

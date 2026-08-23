@@ -96,12 +96,26 @@ collapse Preview into Labs and say so here.)
 `related_files`, `explain_symbol`, `change_risk`. `index` is lifecycle-only, so
 the default MCP profile advertises **11** tools.
 
-**Language.** **Go at `GA (typed-confirmed)`, Python at `GA (cross-file-heuristic)`,
-and the TypeScript family (typescript, tsx, javascript) at `GA (cross-file-heuristic)`**
-— the three current `ga-language` matrix rows. Every other language is Preview. The
-level is printed beside the word GA on every user-facing surface — the spec's naming
-rule binds even though the matrix says only `category: ga-language` and the level
-itself lives in the trust-report `--json` output.
+**Language.** The GA language set is **not restated here** — it is exactly the set
+of **active `category: ga-language` rows** in
+[`coverage-matrix.yaml`](coverage-matrix.yaml), and the authoritative reading of
+that file is what `go run ./cmd/coverage -check` prints. The line has this
+shape — the count and the language list are whatever the matrix says today, and
+are deliberately NOT reproduced here:
+
+```
+ga-language check PASS — <N> GA language(s) bound to the live capability derivation and the evidence index: <languages>.
+```
+
+Run it rather than trusting this paragraph. **Every language without an active row
+is Preview** — a row is only active while its `GA-LANG-<lang>-*` rows in
+[`evidence-index.yaml`](rc/evidence-index.yaml) are all PASS, so the set shrinks as
+well as grows (21 rows were withdrawn on 2026-08-21; see
+[`ga-language-withdrawals-2026-08-21.md`](rc/ga-language-withdrawals-2026-08-21.md)).
+The capability level is printed beside the word GA on every user-facing surface —
+`Go — GA (typed-confirmed)`, never GA alone — because the matrix row says only
+`category: ga-language` and the level itself lives in the row's `capability` field
+and in the trust-report `--json` output.
 
 **Surfaces.** **CLI** and **MCP stdio** only.
 
@@ -112,7 +126,7 @@ promise, and none of it receives feature work in the current program.
 
 | Not GA | Tier | Why |
 |---|---|---|
-| Every non-Go, non-Python, non-TypeScript-family language (Java, Rust, C/C++, …) | Preview | shipped and usable; outside the GA promise |
+| Every language without an active `ga-language` matrix row (today: all 21 non-Go shipped languages — Python, the TypeScript family, Java, Rust, C/C++, …) | Preview | shipped and usable; outside the GA promise |
 | HTTP / SSE surface | Labs | not an operation; not a GA surface |
 | Daemon | Labs | not an operation; not a GA surface |
 | Web / browser UI | Labs | not an operation; not a GA surface |

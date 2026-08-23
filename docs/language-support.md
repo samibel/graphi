@@ -8,15 +8,19 @@ the [coverage matrix](coverage-matrix.md).
 The parser registry is open/closed — languages plug in behind a stable seam
 without touching existing code.
 
-> **Languages at GA at their declared capability level.** Go is the only language
-> at `GA (typed-confirmed)` and additionally gets type-checker-`confirmed` edges
-> (`engine/typeresolve`). A language at `GA (cross-file-heuristic)` ships at that
-> level with the level printed beside the word GA — `Python — GA (cross-file-heuristic)`,
-> never GA alone — and its evidence rows are bound to the G1–G9 gate discipline
-> (see `docs/rc/evidence-index.yaml`). Every other language in the table below is
-> **Preview**: it ships, it is usable, it runs the same 12 GA operations — but it
-> is outside the GA promise and its accuracy is unproven. Preview languages resolve
-> cross-file references at the `heuristic` tier only.
+> **Languages at GA at their declared capability level.** **Go is the only GA
+> language** — it holds the only active `category: ga-language` row in
+> `docs/coverage-matrix.yaml`, at `GA (typed-confirmed)`, and it additionally gets
+> type-checker-`confirmed` edges (`engine/typeresolve`). Confirm with
+> `go run ./cmd/coverage -check`; do not read the set off this paragraph. A GA
+> language always ships with its capability level printed beside the word GA —
+> `Go — GA (typed-confirmed)`, never GA alone — and its evidence rows are bound to
+> the G1–G9 gate discipline (see `docs/rc/evidence-index.yaml`). Every other
+> language in the table below is **Preview**: it ships, it is usable, it runs the
+> same 12 GA operations — but it is outside the GA promise and its accuracy is
+> unproven. Preview languages resolve cross-file references at the `heuristic`
+> tier only. The `Capability level` column below is the live level the trust
+> surface reports (³), active row or not; it is not a claim of GA.
 
 **Default tier (CGo-free, shipped binary).** Two stdlib parsers plus **20**
 subset-tagged pure-Go `gotreesitter` grammars. The shipped default is built with
@@ -111,8 +115,8 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > import-named file). The control test pinning this is
 > `engine/link/resolve_typescript_test.go::TestTSLink_NoDirectoryFanOut` (SW-182 AC-4).
 >
-> ⁷ **Capability-audit row attestation (F5-surface, this commit).** Every GA row in the
-> table above binds to a numbered row in
+> ⁷ **Capability-audit row attestation (F5-surface, this commit).** Every row in the
+> table above that carries this footnote — all 17 of them Preview — binds to a numbered row in
 > [`rc/capability-audit-2026-08-19.md`](rc/capability-audit-2026-08-19.md) (pinned at
 > sha `deecee9e3a51707aa2d198abf91dc0b0a01573e6`, the audit record's own commit):
 >
