@@ -59,3 +59,11 @@ in their description fields per AC-4.
 * The directory-basename package convention guarantees `app.join_view`
   is ambiguous without any explicit ambiguity machinery; the SQL parser
   inherits the dirAmbiguous behavior from the shared CST walk.
+
+## Verification
+
+The 16 scenarios in `corpus/hero-sql/hsql-*.yaml` were verified against
+this fixture on 2026-08-23 by `TestHeroSqlSuite_CoversTheFrozenStableOps`,
+`TestHeroSqlSuite_FailureClassesRepresented`, and
+`TestHeroSqlSuite_AllTasksPassAtHeuristicTier`
+(`cmd/eval/hero_sql_test.go`): all three pass at the heuristic tier.
