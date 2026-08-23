@@ -258,7 +258,7 @@ supertype/return-type correction already uses.
 | what that token resolves to | **`retrofit2.HttpException`** — a different class, and specifically the **superclass** the mutation removes (`public final class HttpException extends retrofit2.HttpException`) |
 | edges between the mixed directory (18 nodes) and the edited file (2 nodes), either direction | **0**, at `binder=off` and at `binder=on` |
 | edges from the namer file to any `HttpException` node | **0** — the namer contributes exactly ONE node (a `file` node) and two `imports` edges, to `retrofit2.http` and `retrofit2.helpers` |
-| graph delta of the mutation | **none.** A full rebuild of the mutated tree and a full rebuild of the pristine tree produce identical `nodes` and `edges` tables — every column, including `line`, `col`, `meta`, `confidence`, `evidence`. 3536 nodes / 4660 edges at `binder=off`, 3536 / 5431 at `binder=on` |
+| graph delta of the mutation | **none.** A full rebuild of the mutated tree and a full rebuild of the pristine tree produce identical `nodes` and `edges` tables — every column, including `line`, `col`, `meta`, `confidence`, `evidence`. 3418 nodes / 4660 edges at `binder=off`, 3418 / 5431 at `binder=on` |
 
 **So the row is graph-vacuous in the PARITY-VAC-001 sense, and that is now
 measured rather than suspected.** The reason is the one already recorded for
