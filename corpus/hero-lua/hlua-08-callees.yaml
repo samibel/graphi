@@ -1,0 +1,20 @@
+id: hlua-08-callees
+description: >
+  Callees of lib.run resolve through the intra-file calls edge in
+  lib/util.lua to lib.core (the lua parser's luaScanBody
+  core/parse/parser_lua.go:169 records `core(name)` inside `run` as a
+  PendingRef{Name:"core",FromQN:"lib.run",Kind:"calls"}; the
+  sameDir resolution at engine/link/resolve_common.go lands on
+  lib.core because lib.run lives in the same dir as lib.core).
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: callees
+  args:
+    symbol: lib.run
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: lib.core
+      match: contains

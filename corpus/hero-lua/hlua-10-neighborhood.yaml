@@ -1,0 +1,11 @@
+id: hlua-10-neighborhood
+description: The neighborhood of lib.core carries the intra-file + cross-file context (lib.run → lib.core, app.entry → lib.core, app.twice → lib.core).
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: neighborhood
+  args:
+    symbol: lib.core
+    depth: "1"
+  area: agent_mcp
+expect:
+  outcome: found

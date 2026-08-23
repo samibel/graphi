@@ -1,0 +1,15 @@
+id: hlua-07-callers-ambiguous
+description: >
+  init is defined in BOTH app/main.lua and app/other.lua — both live in
+  app/, so the byDir index records the same QN app.init TWICE (two
+  distinct NodeIds). dirAmbiguous["app"]["init"] = true at
+  engine/link/index.go:266 makes resolve.Strict return AMBIGUOUS:
+  callers(app.init) cannot pick a single definition.
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: callers
+  args:
+    symbol: app.init
+  area: agent_mcp
+expect:
+  outcome: ambiguous

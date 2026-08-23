@@ -1,0 +1,10 @@
+id: hlua-16-change-risk
+description: Change risk of lib.core reflects its intra-file (lib.run) and cross-file (app.entry, app.twice) inbound callers.
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: change_risk
+  args:
+    target: lib.core
+  area: agent_mcp
+expect:
+  outcome: found

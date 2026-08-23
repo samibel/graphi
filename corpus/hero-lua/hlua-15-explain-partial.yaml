@@ -1,0 +1,17 @@
+id: hlua-15-explain-partial
+description: >
+  explain_symbol(lib.run, max_items=1) marks the result partial — lib.run
+  has multiple call sites (app.entry via app/main.lua::entry and
+  app.twice via app/main.lua::twice, where twice calls run() twice),
+  and the cap truncates the items list. Analysis.Truncated is set
+  (engine/analysis/analyzer.go:62), so the surface reports partial.
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: explain_symbol
+  args:
+    symbol: lib.run
+    max_items: "1"
+  area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true
