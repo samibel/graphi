@@ -137,7 +137,7 @@ end
 		{
 			id:          "ruby_require_skip",
 			kind:        kindChangeClass,
-			description: "A require directive (`require_relative 'missing'`) targets a path that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) — the G2SUB drop-and-count half on an absent file. An edge here would be the failure mode the level forbids.",
+			description: "A require directive (`require_relative 'missing'`) targets a path that does not exist on disk. The witness asserts the resolver mints NO `calls` edge to the absent target — the DROP half ONLY. The witness walks every edge and `continue`s past any whose Kind() is not `calls`, so it constrains the `calls` kind alone and says nothing about an `imports` file-edge. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. An edge here would be the failure mode the level forbids.",
 			seed: map[string]string{
 				"app/main.rb": `def checkout
   0
@@ -173,7 +173,7 @@ end
 		{
 			id:          "ruby_ambiguous_clauses",
 			kind:        kindChangeClass,
-			description: "A relative require (`require_relative '../util'`) is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.rb` and `vendor/util.rb` both exist). The witness asserts NEITHER candidate edge is minted — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
+			description: "A relative require (`require_relative '../util'`) is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.rb` and `vendor/util.rb` both exist). The witness asserts NEITHER candidate is minted as a `calls` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is not `calls`, so it constrains the `calls` kind alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
 			seed: map[string]string{
 				"lib/util.rb": `def helper
   1

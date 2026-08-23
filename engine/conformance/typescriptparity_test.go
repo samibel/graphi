@@ -167,7 +167,7 @@ export function run(): number {
 		{
 			id:          "ts_relative_import_skip",
 			kind:        kindChangeClass,
-			description: "A relative import (`import { x } from './missing'`) targets a file that is absent from the indexed tree. The witness asserts the resolver SKIPS (no edge minted) — the G2SUB drop-and-count half on an absent file. An edge here would be the failure mode the level forbids (fabricating an external node where the spec forbids one for relative imports — see engine/link/resolve_typescript.go:62).",
+			description: "A relative import (`import { x } from './missing'`) targets a file that is absent from the indexed tree. The witness asserts NO `external` node named `missing.x` or `missing.*` exists — the DROP half ONLY, expressed as node absence, not edge absence. The witness walks g.byQN and `continue`s past any node whose Kind() is not `external`, so it constrains no edge kind at all. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. An edge here would be the failure mode the level forbids (fabricating an external node where the spec forbids one for relative imports — see engine/link/resolve_typescript.go:62).",
 			seed: map[string]string{
 				"app/main.ts": `export function run(): number {
   return 0
@@ -204,7 +204,7 @@ export function run(): number {
 		{
 			id:          "ts_ambiguous_clauses",
 			kind:        kindChangeClass,
-			description: "A relative path resolves to a directory with BOTH a sibling file (`x/shared.ts`) AND a directory-module index (`x/shared/index.ts`) claiming the same `Cfg` symbol. The witness asserts NEITHER call site resolves to a single edge — the G2SUB drop-and-count half on a real ambiguity, not on an absent module. This is the family-specific ambiguity shape — TS module resolution treats `./x/shared` as BOTH candidates because tsExts includes the directory-module path.",
+			description: "A relative path resolves to a directory with BOTH a sibling file (`x/shared.ts`) AND a directory-module index (`x/shared/index.ts`) claiming the same `Cfg` symbol. The witness asserts NEITHER candidate is minted as a `calls` or `references` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is neither `calls` nor `references`, so it constrains those two kinds alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. This is the family-specific ambiguity shape — TS module resolution treats `./x/shared` as BOTH candidates because tsExts includes the directory-module path.",
 			seed: map[string]string{
 				"x/shared.ts":       `export type Cfg = { v: number }\n`,
 				"x/shared/index.ts": `export type Cfg = { v: string }\n`,

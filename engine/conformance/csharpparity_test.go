@@ -146,7 +146,7 @@ class Checkout {
 		{
 			id:          "csharp_using_skip",
 			kind:        kindChangeClass,
-			description: "A using directive (`using Missing;`) targets a namespace that is absent from the indexed tree. The witness asserts the resolver SKIPS (no edge minted) — the G2SUB drop-and-count half on an absent namespace. An edge here would be the failure mode the level forbids.",
+			description: "A using directive (`using Missing;`) targets a namespace that is absent from the indexed tree. The witness asserts the resolver mints NO `calls` edge to the absent target — the DROP half ONLY. The witness walks every edge and `continue`s past any whose Kind() is not `calls`, so it constrains the `calls` kind alone and says nothing about an `imports` file-edge. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. An edge here would be the failure mode the level forbids.",
 			seed: map[string]string{
 				"app/checkout.cs": `class Checkout {
     int checkout() {
@@ -188,7 +188,7 @@ class Checkout {
 		{
 			id:          "csharp_ambiguous_clauses",
 			kind:        kindChangeClass,
-			description: "Two namespaces both declare a method with the same name (e.g. `Shop.Of` and `Market.Of`). The witness asserts NEITHER call site resolves to a single edge — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
+			description: "Two namespaces both declare a method with the same name (e.g. `Shop.Of` and `Market.Of`). The witness asserts NEITHER candidate is minted as a `calls` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is not `calls`, so it constrains the `calls` kind alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
 			seed: map[string]string{
 				"Shop/Price.cs": `namespace Shop { class Price { static int Of() { return 1; } } }
 `,

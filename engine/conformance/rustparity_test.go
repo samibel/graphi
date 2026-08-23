@@ -129,7 +129,7 @@ pub fn checkout() -> i32 {
 		{
 			id:          "rust_use_skip",
 			kind:        kindChangeClass,
-			description: "A use declaration (`use crate::missing::symbol;`) targets a path that does not exist in the indexed tree. The witness asserts the resolver SKIPS (no edge minted) — the G2SUB drop-and-count half on an absent module. An edge here would be the failure mode the level forbids.",
+			description: "A use declaration (`use crate::missing::symbol;`) targets a path that does not exist in the indexed tree. The witness asserts the resolver mints NO `calls` edge to the absent target — the DROP half ONLY. The witness walks every edge and `continue`s past any whose Kind() is not `calls`, so it constrains the `calls` kind alone and says nothing about an `imports` file-edge. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. An edge here would be the failure mode the level forbids.",
 			seed: map[string]string{
 				"src/main.rs": `pub fn checkout() -> i32 {
     0
@@ -165,7 +165,7 @@ pub fn checkout() -> i32 {
 		{
 			id:          "rust_ambiguous_clauses",
 			kind:        kindChangeClass,
-			description: "Two modules with the same clause both declare a function with the same name (e.g. `shop::price` and `vendor::price`). The witness asserts NEITHER call site resolves to a single edge — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
+			description: "Two modules with the same clause both declare a function with the same name (e.g. `shop::price` and `vendor::price`). The witness asserts NEITHER candidate is minted as a `calls` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is not `calls`, so it constrains the `calls` kind alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used.",
 			seed: map[string]string{
 				"src/shop/price.rs": `pub fn price() -> i32 { 1 }
 `,

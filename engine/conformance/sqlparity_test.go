@@ -109,7 +109,7 @@ SELECT id FROM users;
 		{
 			id:          "sql_cross_dir_skip",
 			kind:        kindChangeClass,
-			description: "A cross-directory reference (`SELECT * FROM other.users;`) targets a sibling file in a DIFFERENT directory. SQL has no import construct to carry a reference across a directory boundary, so cross-directory resolution is structurally undefined and the resolver must drop+count. The witness asserts NO edge is minted for the cross-dir reference.",
+			description: "A cross-directory reference (`SELECT * FROM other.users;`) targets a sibling file in a DIFFERENT directory. SQL has no import construct to carry a reference across a directory boundary, so cross-directory resolution is structurally undefined and the resolver must drop+count. The witness asserts NO node whose qualified name begins `other.` exists and NO `references` edge targets one — the DROP half ONLY. The witness `continue`s past any edge whose Kind() is not `references`, so it constrains the `references` kind alone and says nothing about a `calls` edge. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row.",
 			seed: map[string]string{
 				"db/schema.sql": `CREATE TABLE users (id INT);
 `,
@@ -146,7 +146,7 @@ SELECT id FROM users;
 		{
 			id:          "sql_ambiguous_siblings",
 			kind:        kindChangeClass,
-			description: "Two sibling SQL files in the same directory both declare a TABLE with the same name. A reference from a third sibling is ambiguous. The witness asserts NEITHER candidate edge is minted and the resolver drops + counts — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but in SQL the ambiguity is a structural two-candidate case.",
+			description: "Two sibling SQL files in the same directory both declare a TABLE with the same name. A reference from a third sibling is ambiguous. The witness asserts NEITHER candidate is minted as a `references` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is not `references`, so it constrains the `references` kind alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but in SQL the ambiguity is a structural two-candidate case.",
 			seed: map[string]string{
 				"db/a.sql": `CREATE TABLE users (id INT);
 `,
@@ -225,7 +225,7 @@ SELECT id FROM users;
 		{
 			id:          "sql_move_symbol",
 			kind:        kindChangeClass,
-			description: "A SQL TABLE (or VIEW) moves file-to-file ACROSS directories (a.sql in k/ -> b.sql in OTHER/). The table's identity is keyed on its qualified name (QN); a CROSS-DIRECTORY move CHANGES QN (k.helper -> OTHER.helper), so the unchanged referencer's edge naturally drops in both passes. The witness asserts the table identity moved (QN changed) and the referencer survives without a stale cross-directory reference — the G2SUB drop+count on a now-cross-dir reference. The SAME-DIRECTORY variant is blocked on PARITY-001 (the scope-limited rebuild does not re-resolve unchanged referencers in the moved-file's directory); it is exercised by the SQL delete_file row, which has the same scope-limited rebuild signature and asserts a non-PARTIAL path. SW-194b ships this harness row.",
+			description: "A SQL TABLE (or VIEW) moves file-to-file ACROSS directories (a.sql in k/ -> b.sql in OTHER/). The table's identity is keyed on its qualified name (QN); a CROSS-DIRECTORY move CHANGES QN (k.helper -> OTHER.helper), so the unchanged referencer's edge naturally drops in both passes. The witness asserts the table identity moved (QN changed) and the referencer survives without a stale cross-directory reference — node presence and absence ONLY (`OTHER.helper`, `k.other` and `k.v` present, `k.helper` absent); the witness asserts nothing about any edge and reads no counter. The SAME-DIRECTORY variant is blocked on PARITY-001 (the scope-limited rebuild does not re-resolve unchanged referencers in the moved-file's directory); it is exercised by the SQL delete_file row, which has the same scope-limited rebuild signature and asserts a non-PARTIAL path. SW-194b ships this harness row.",
 			seed: map[string]string{
 				"k/a.sql": `CREATE TABLE helper (id INT);
 `,
