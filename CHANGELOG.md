@@ -26,6 +26,8 @@ file:
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-23
+
 ### Added
 
 - **Incremental-indexing benchmark suite** (P4, roadmap TODO 19). The SW-010
@@ -205,6 +207,142 @@ file:
   write, fail-closed backup, offline); the file carries absolute paths and is
   machine-specific, so gitignore it or run the command once per clone.
 
+- **JVM declared-type resolution for Java and Kotlin — shipped, but DEFAULT-OFF**
+  ([ADR 0008](docs/adr/0008-jvm-declared-type-resolution.md)). New
+  `engine/jvmresolve` builds a declaration table, resolves written type names
+  under a JLS-scoping approximation with a **strict ambiguity rule** (where a
+  scope step yields more than one candidate the walk stops and nothing is
+  ranked — ambiguity and externality cost recall, never soundness),
+  propagates declared-type receivers through Java and Kotlin call sites, and
+  emits `calls` / `references` at the **confirmed** tier. New `engine/semantic`
+  owns the one product-wide resolver registry `engine/ingest` dispatches its
+  third phase over, so the capability a binary *claims* and the passes it
+  *runs* cannot disagree.
+
+  **It does nothing unless you ask for it.** The Java and Kotlin registrants
+  are gated behind `GRAPHI_JVM_TYPERESOLVE` (any value other than unset or
+  `0`). With the variable unset the registry holds exactly the `go/types`
+  resolver and, in the package's own words, "every shipped byte — graph,
+  snapshot, trust report, capability matrix — is unchanged"
+  (`engine/semantic/semantic.go`). **Java and Kotlin remain Preview.** The
+  binder is reachable so the language-GA program can *measure* it, not because
+  it is ready; flipping the default is a separate, deliberate change.
+
+  Four wrong-confirmed-edge defects were found by the bytecode ground-truth
+  harness and closed **before the binder's first release** — no released
+  binary ever contained them ([ADR 0013](docs/decisions/0013-jvmsound-003-004-jvmharn-001-closure.md)).
+  Two are worth naming: `JVMSOUND-003`, where a comment node inside a Java
+  argument list was counted as an argument, so `r.apply(1 /* the scale */)`
+  reported arity 2 to the binder while `javac` compiled arity 1 and a wrong
+  most-derived overload edge was emitted at every same-arity overload pair
+  beside such a call; and `JVMSOUND-004`, where the callable signature key
+  erased array dimensionality, so `apply(Thing)` and `apply(Thing[])` produced
+  an identical signature, an overload set was misread as an override pair, and
+  the most-derived member won where `AmbiguousMember` was required.
+
+- **The GA *language* axis is machine-encoded — and only Go is on it.**
+  A `category: ga-language` row in `docs/coverage-matrix.yaml` declares a
+  language GA at a stated capability level, and
+  `internal/coverage.CheckGALanguages` binds every such row both to the live
+  capability derivation `graphi trust-report` serves and to green
+  `GA-LANG-<lang>-*` rows in the evidence index — so a language can no longer
+  be flipped GA by a prose edit. v0.9.0 carried **no** `ga-language` rows at
+  all; this release carries exactly **one**: `go`, at `typed-confirmed`.
+  Candidate rows for the other **21** shipped languages (`java`, `kotlin`,
+  `python`, `typescript`, `tsx`, `javascript`, `bash`, `c`, `c_sharp`, `cpp`,
+  `lua`, `php`, `ruby`, `rust`, `sql`, `css`, `hcl`, `json`, `markdown`,
+  `toml`, `yaml`) were **withdrawn on 2026-08-21** because their `GA-LANG-*`
+  evidence rows are not all PASS; each withdrawn row names the story that may
+  re-introduce it. **Every non-Go language therefore remains Preview**, which
+  is what the tier note at the top of this file says and what the matrix now
+  enforces.
+
+- **`graphi doctor` attributes an MCP finding to the client it came from.**
+  The aggregate `mcp` check already built a per-client line for every detected
+  client, sorted it, and then threw it away — the emitted result said only
+  *"one or more MCP clients need attention"* while the process demonstrably
+  knew which client was unhealthy and why. Those lines, plus the per-client
+  contention lines, now populate `CheckResult.Detail` (an existing optional
+  member of the schema): `RenderHuman` indents them beneath the check line,
+  and the JSON renderer emits `detail` with `omitempty`, so it is absent when
+  every client passes. Purely additive — check ids, categories, status
+  derivation, messages, action strings and `JSONSchemaVersion` 2 are all
+  unchanged, and checks without a detail keep their single-line format.
+
+- **The freshness/incremental evaluation harness is language-scoped**
+  (`EVALFRESH-001` / `EVALBUDGET-001`). This is `cmd/eval`, a repo-internal
+  harness — a release builds only `./cmd/graphi` — but what it measures is
+  graphi's own incremental indexing, so the numbers below are the point of the
+  entry. The harness was Go-only in two places at once: its package-clause
+  reader understood only Go's `package <ident>`, and its directory gate
+  dropped any directory whose files carried no Go-shaped clause. New
+  `cmd/eval/sourcefamily.go` replaces both with **15 language families** (`go`,
+  `java`, `kotlin`, `python`, `typescript`, `tsx`, `javascript`, `ruby`,
+  `rust`, `c`, `cpp`, `csharp`, `php`, `lua`, `bash`), each declaring its own
+  clause shape — *or that it has none*, which is why Python and the TypeScript
+  family are now admissible instead of silently dropped.
+  `TestSourceFamilies_ComplementIsCompleteAgainstTheShippedRegistry` walks
+  every extension the shipped parser registry registers and forces each one to
+  be either a declared mutation family or a declared data language, so the
+  filter cannot drift from the registry again. `historical_ceilings` in
+  `docs/eval/hero-budgets.json` had been **inert** — no Go code read it — and
+  is now load-bearing for `-runner-class local-sandbox` runs.
+
+  **Measured on darwin/arm64, comparison class, `-incremental-changes 100`.**
+  Every pin now exits 0; every pin except the cobra control previously aborted
+  with *"the index contains no modifiable Go source files to change"*, and
+  `sinatra` had never been measured at all:
+
+  | pin | language | completed | cross-package classes |
+  |---|---|---|---|
+  | cobra (Go control) | go | 100/100 | yes |
+  | guava | java | 99/100 | no |
+  | okio | kotlin | 73/100 | no |
+  | kotlinx.serialization | kotlin | 97/100 | no |
+  | flask | python | 100/100 | **yes** |
+  | ky | typescript | 98/100 | no |
+  | express | javascript | 100/100 | no |
+  | sinatra | ruby | 99/100 | **yes** |
+
+  **Read these as what they are:** comparison-class figures on **Preview**
+  languages, on one platform, not a reference-class measurement and not a
+  support statement. Only `flask` and `express` clear the 100-change floor.
+  The residual failures are parser-coverage gaps **in graphi itself**, each
+  reduced to a three-line repro: the Kotlin extractor stops at the first
+  top-level `suspend fun` (24 of okio's 27 failures land on the one file that
+  is also that pin's only cross-package target), the TypeScript extractor
+  yields no symbols for a file containing a type-predicate arrow function
+  (`export const isObject = (value: unknown): value is object => …`), and the
+  Java extractor yields none for guava-testlib's 583-line `Helpers.java`.
+
+  The same change closed an **undisclosed regression on `main`**: the cobra Go
+  control — whose entire job is to prove that a non-Go abort is language scope
+  and not a broken harness — had fallen to **95/100**, below the same floor,
+  because an earlier filter admitted `.md` files as mutation candidates. Five
+  markdown "changes" could never become answerable by a search, so all five
+  failed. Markdown has no top-level declaration to append, so the family
+  narrowing excludes it and restores the control to 100/100 with a candidate
+  list and 100-step sequence digest byte-identical to the pre-regression run.
+
+### Changed
+
+- **The Go toolchain floor is now go1.26.6** (`go.mod`), raised for five stdlib
+  CVEs. It binds anyone building graphi from source; the published CGo-free
+  binaries are already built at or above it.
+
+- **Upgrading from 0.9.0 costs one cold re-index.** The graph-semantics stamp
+  `ingestSemanticsVersion` moved from `11` to `12`
+  (`engine/ingest/warmstart.go`), so a 0.10.0 binary will not warm-start a
+  store an older binary wrote — it re-indexes cold once, and the stamp's own
+  note describes that as forcing "one cold re-index via `graphi rebuild`".
+  This is convenient rather than incidental: this release changes linker rules
+  three times ([ADR 0009](docs/adr/0009-go-module-import-resolution.md),
+  [ADR 0010](docs/adr/0010-relink-unit-invariant.md),
+  [ADR 0011](docs/adr/0011-imports-edge-targets-package-source-files.md)), and
+  as the LINK-001 entry below explains, `graphi sync` alone never heals a
+  linker-rule change — drift is content-hash based, so where no source file
+  changed it reports "up to date" and the old edges survive.
+
 ### Removed
 
 - **The `tui` terminal surface (Labs) is gone** — `graphi tui`, `surfaces/tui/`,
@@ -300,6 +438,73 @@ file:
   A `-meta` without `-db` is now a usage error instead of that silent no-op
   (the zero-config session auto-manages its per-repo sidecar, and a daemon
   session never reads one).
+
+- **The default `balanced` profile was dropping TRUE `imports` edges**
+  (PARITY-003, [ADR 0010](docs/adr/0010-relink-unit-invariant.md)). A
+  pass-scoped import aggregation collapsed the importers of one target onto a
+  single representative, so a file that really did import a package could end
+  up with **no `imports` edge at all**, while the surviving edge carried a
+  *different* importer's `file:line` evidence. That is a recall defect in GA
+  operations (`related_files`, `imports`), not a size optimisation, and
+  `balanced` is what every `graphi index` / `sync` / `rebuild` resolves to. It
+  survived two releases because `ingest.New` left the profile at its zero
+  value while the CLI resolved `balanced`, so the parity table never executed
+  the configuration the product ships. The aggregation is **removed, not
+  repaired**: `balanced` now behaves like `deep` for `imports` edges (`fast`
+  still drops them), and the synthetic `aggregated N imports of …` edges are
+  gone. Measured at the ADR 0010 candidate on `Linux-X64/ccr-container`,
+  go1.26.6 linux/amd64, the shipped default had been keeping roughly **40 of
+  340** `imports` edges on pinned cobra, **99 of 291** on gin and **670 of
+  23 575** on grpc-go; the real-repo parity matrix went to **19/19 PASS** over
+  two agreeing dispatches. Those totals are pre-LINK-001 and were changed
+  again by ADR 0011 below, so read them as the size of the recall loss, not as
+  today's edge counts.
+
+- **A Go `import` now resolves to the one directory its module path names**
+  (PARITY-002, [ADR 0009](docs/adr/0009-go-module-import-resolution.md)).
+  Resolution used to key on the package *clause* — `path.Base(importPath)` —
+  and union **every directory in the repository declaring that clause**, so an
+  importer of `x/json` also got `imports` edges fanning out into an unrelated
+  `y/json`. Worse than the wrong edges, the divergence was **frozen**: the
+  incremental cascade is directory-local and nothing imported `y/json`, so
+  those edges were never re-emitted and no amount of re-syncing healed the gap
+  between `sync` and `rebuild`. Imports now resolve through a per-pass map of
+  every `go.mod` in the tree — longest matching module path wins, matched on
+  segment boundaries rather than raw prefixes, nested modules excluding their
+  own subtree, fail-closed to external for stdlib and third-party — and a
+  `go.mod` change at **any** depth now triggers the full re-link where the old
+  predicate matched only the root. **Go emission only:** Python, Ruby and the
+  JS families keep their clause fan-out and Java/Kotlin keep the single
+  interned file→`package` edge; non-Go emission never consults the module map.
+
+  Two accepted costs, stated rather than left to be discovered. An import
+  naming a module path not present in the tree — the state a half-finished
+  module rename leaves behind — now resolves as **external** (interned node,
+  heuristic edge) instead of being clause-guessed back onto an intra-repo
+  directory. And because any `go.mod` change pulls every linkable file into
+  the re-link set, a pre-existing escalation makes the incremental pass
+  **hard-fail if any file in that set cannot be parsed**; that was previously
+  reachable only from the root `go.mod`.
+
+- **Deleting a file no longer diverges `sync` from `rebuild` permanently**
+  (PARITY-001). The deleted-path purge is now committed before `linkFiles`.
+  Deleting a file that declared a symbol another package called through an
+  intra-module import used to leave the two paths permanently apart — the full
+  pass minted the interned external node and its edge, one incremental apply
+  minted neither, and a converged drift set never revisited it. On pinned
+  cobra, `delete_file` read incremental 895/3784 against full 897/3789 and now
+  reads **897/3789 on both sides**. Atomicity changed and is disclosed: purge
+  and re-link are no longer one batch, so a crash between the graph purge
+  commit and the meta transaction leaves the file in `file_content_cache`,
+  healed by the next drift pass re-purging.
+
+  **Still open, and disclosed rather than closed:** `PARITY-004` — rebuild
+  while an intra-module import points at a missing package, then restore the
+  package and `sync`, and the importer is never re-linked; a stale `external`
+  node and a false heuristic `calls` edge survive beside the confirmed edge,
+  and the `imports` edge a rebuild emits is missing. Reproduced through the
+  CLI (`sync` settles at 7 nodes where `rebuild` gives 6, unrepaired by three
+  further syncs) and carried in the readme's known limits.
 
 ## [0.9.0] - 2026-08-05
 
