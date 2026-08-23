@@ -1,0 +1,15 @@
+id: hbash-10-neighborhood
+description: >
+  HONEST-EMPTY (bash, per §5.5): bash's language specification defines no
+  cross-file construct, so a cross-file neighborhood of any symbol is NOT
+  askable. The neighborhood operation returns the same-file siblings of the
+  anchor plus empty cross-file edges.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: neighborhood
+  args:
+    symbol: hello
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found

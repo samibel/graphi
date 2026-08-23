@@ -1,0 +1,14 @@
+id: hbash-16-change-risk
+description: >
+  Change risk of hello reflects the symbol's own definition footprint —
+  bash has no askable cross-file blast radius per §5.5, so the inbound-edge
+  half is just the symbol's own defs (its own file). The operation returns a
+  well-formed found result bounded by what bash can express.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: change_risk
+  args:
+    target: hello
+area: agent_mcp
+expect:
+  outcome: found

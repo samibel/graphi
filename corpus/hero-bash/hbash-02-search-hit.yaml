@@ -1,0 +1,14 @@
+id: hbash-02-search-hit
+description: Searching for "hello" finds the lib helper.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: search
+  args:
+    query: hello
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: lib.hello
+      match: contains

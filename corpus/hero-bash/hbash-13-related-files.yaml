@@ -1,0 +1,15 @@
+id: hbash-13-related-files
+description: >
+  The files dependent on hello are honestly empty under bash's parse-determinism
+  honest-empty doctrine (per §5.5, bash has no askable cross-file construct).
+  related_files(dependents) returns empty — there are no dependents in the
+  language sense, even if a shell execution-time `source` exists at runtime.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: related_files
+  args:
+    anchor: hello
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: empty
