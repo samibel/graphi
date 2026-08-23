@@ -159,6 +159,13 @@ not govern it, so the planner refuses it deliberately.
 | retrofit `cc76c22a` | 0 | 0 | **0** | no |
 | **antlr4 `7ed420ff`** | 75 | 17 | **58** | **yes** |
 
+Every figure in that table is a count of **import STATEMENTS**, not of files.
+antlr4's 58 non-static on-demand imports are spread across **45** of the **511**
+`.java` files the model sees (521 tracked, less the 10 under the source package
+`tool/src/org/antlr/v4/codegen/target/` that `jvmSkipDir` refuses). Measured
+twice and agreeing file-for-file: once through `discoverJVM` itself, once
+through an independent `grep` over the same 511-file view.
+
 **Shape (ii), `planJVMMixedDirChangeReceiverType`** is a five-way conjunction:
 (1) a mixed `.java`/`.kt` directory exists; (2) a Java file whose OWN directory
 is not mixed; (3) declaring a top-level `class` with `t.Super != ""`; (4) whose
@@ -223,7 +230,97 @@ follow-up **FU-2**.
 | `jvm_mixed_dir_change_receiver_type` (4 cells) | retrofit | re-point the declared supertype of class `HttpException` in `retrofit-adapters/guava/src/main/java/retrofit2/adapter/guava/HttpException.java` (`extends retrofit2.HttpException` → `extends GuavaCallAdapterFactory`) while `retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt`, in the MIXED-LANGUAGE directory `retrofit/kotlin-test/src/test/java/retrofit2`, names `HttpException` and is itself never edited |
 
 Both are real edits to real source in a pinned clone, and both PASS on all four
-axis cells of both dispatches.
+axis cells of both dispatches. **The `mutation` column above is the harness's
+own sentence, quoted verbatim from the artifacts. Read it together with the
+next section, which measures how much of what those sentences assert is
+actually established — the answer is "less than they say", for both rows.**
+
+## What these two rows do NOT establish — PARITY-OBS-004, measured in review round 1
+
+**The finding.** Both planners choose their target with `referencesSimpleName`
+(`internal/parity/jvmsource.go`): a whole-word **token** match over
+comment- and string-masked bytes, with **no import, package or member
+resolution**. A target that passes it may not exercise the rule the row
+asserts. This is a **pre-existing property of both predicates** — SW-207
+changed neither, and the diff of `internal/parity/jvmclasses.go` against `main`
+contains **zero predicate lines**. What SW-207 got wrong was the prose: the
+class notes claimed the resolution the predicate does not perform. Those notes
+are corrected in place, in the same "corrected, in place and stated" shape the
+supertype/return-type correction already uses.
+
+**Measured for `jvm_mixed_dir_change_receiver_type` (retrofit `cc76c22a68e0`).**
+
+| what | measured |
+|---|---|
+| classes named `HttpException` in the pin | **6**, in 6 packages: `retrofit2` and `retrofit2.adapter.{guava,java8,rxjava,rxjava2,rxjava3}` |
+| the class the mutation edits | `retrofit2.adapter.guava.HttpException` |
+| the namer | `retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt`, `package retrofit2`, **no** `HttpException` import, **one** `HttpException` token (line 98, `catch (e: HttpException)`) |
+| what that token resolves to | **`retrofit2.HttpException`** — a different class, and specifically the **superclass** the mutation removes (`public final class HttpException extends retrofit2.HttpException`) |
+| edges between the mixed directory (18 nodes) and the edited file (2 nodes), either direction | **0**, at `binder=off` and at `binder=on` |
+| edges from the namer file to any `HttpException` node | **0** — the namer contributes exactly ONE node (a `file` node) and two `imports` edges, to `retrofit2.http` and `retrofit2.helpers` |
+| graph delta of the mutation | **none.** A full rebuild of the mutated tree and a full rebuild of the pristine tree produce identical `nodes` and `edges` tables — every column, including `line`, `col`, `meta`, `confidence`, `evidence`. 3536 nodes / 4660 edges at `binder=off`, 3536 / 5431 at `binder=on` |
+
+**So the row is graph-vacuous in the PARITY-VAC-001 sense, and that is now
+measured rather than suspected.** The reason is the one already recorded for
+`jvm_change_type_hierarchy` on guava: the JVM graph carries **no edge kind for
+a class's `extends` supertype**. All six `HttpException` type nodes have **zero
+outgoing edges**, five of them declare `extends retrofit2.HttpException`, and
+all **28** `implements` edges in the retrofit graph target interfaces
+(`retrofit2.Call`, `retrofit2.CallAdapter`, `retrofit2.Converter`). Re-pointing
+an `extends` clause therefore cannot move this graph. The 23-byte replacement
+is even length-preserving (`retrofit2.HttpException` → `GuavaCallAdapterFactory`),
+so not one line or column anchor shifts either.
+
+**Measured for `jvm_change_import_shadowing` (antlr4 `7ed420ff2c78`).** The same
+defect, found while checking the first:
+
+- The four `Lexer` tokens in `runtime-testsuite/test/org/antlr/v4/test/runtime/CustomDescriptors.java`
+  are **all** `GrammarType.Lexer` — qualified enum-constant member selects, not
+  type references. The file's only non-static on-demand import is `java.util.*`,
+  which declares no `Lexer`. **Nothing was resolving through the on-demand
+  import, so nothing re-resolves.** The harness's sentence "so `Lexer`
+  re-resolves" is not established.
+- This row is **not** graph-vacuous, and that distinction is measured too: the
+  mutation adds **exactly one** edge — `file CustomDescriptors.java --imports
+  (heuristic, 0.6)--> package org.antlr.v4.codegen.model` — and shifts the line
+  anchors of the edited file by one. 11069 nodes / 31285 edges before, 11069 /
+  **31286** after. No edge to any `Lexer` node exists before or after.
+
+**What the two rows therefore DO establish, stated at the scope measured.**
+Full-vs-incremental byte-identity over a real in-place edit to a real Java file
+in a pinned clone — for retrofit an edit the graph does not see at all, for
+antlr4 an edit worth exactly one new `imports` edge. That is a real parity
+statement and both PASS honestly. What they do **not** establish is the ADR-0008
+D9 `(directory, language)` sweep across a mixed directory (nothing in the graph
+crosses that boundary) or the JLS 6.4.1 shadowing ladder (no name re-resolves).
+The 52/52 and `publishable: true` are unaffected: publishability is a property
+of every declared row being decided by two agreeing dispatches, not of any row
+being graph-non-vacuous.
+
+**Filed, not fixed.** **PARITY-OBS-004**, sibling of PARITY-OBS-003 and
+cross-referenced from it. Repairing either predicate would re-base published
+evidence and needs its own review — the same reasoning PARITY-OBS-003 was filed
+under.
+
+**What was and was not re-run, and why.** The correction is prose. The two class
+`Note:` strings are consumed only as the report's human-readable `detail` field;
+they participate in no predicate, no target selection, no mutation, no snapshot
+digest and no diff mode (`-verdict-diff`, `-counts-diff` and `-refusal-diff` key
+on row id, verdict, per-row counts, snapshot digests and refusal reasons). The
+two published dispatches were therefore **not** re-run. Instead, each of the two
+rows was re-dispatched on its own from a freshly built binary
+(`-classes <id>`, a filtered run that is deliberately never publishable) and
+**reproduced published run-A exactly**: all four
+`jvm_mixed_dir_change_receiver_type` cells PASS with byte-identical
+`snapshot_full_sha256`, `snapshot_inc_sha256`, `full_nodes` and `full_edges`
+(`c26b4792…`, `369a50bf…`, `2145afc9…`, `369a50bf…`), and all four
+`jvm_change_import_shadowing` cells PASS. **The two published artifacts remain
+byte-unchanged and still embed the pre-correction `detail` and `mutation`
+wording verbatim** — that is deliberate: they are the record of a dispatch that
+happened, and this section, not a hand-edit of the artifact, is where the
+correction lives. The planner-emitted `mutation` sentences are left unchanged in
+the code for the same reason: they are published evidence text, and rewriting
+them belongs with the PARITY-OBS-004 repair.
 
 ## The compile-coverage policy, as the run printed it
 
@@ -322,6 +419,33 @@ CGO_ENABLED=0 go build -o /tmp/jvmcoverage ./cmd/jvmcoverage
 /tmp/jvmcoverage -manifest corpus/manifest.json -pins-root /tmp/pins \
   -runner-class "darwin-arm64/local-sandbox" \
   -candidate-sha 9f687849cec2b26311401191e90b60e40b5f6cee
+```
+
+Reproducing the **PARITY-OBS-004** measurements in the section above:
+
+```sh
+# The six homonymous HttpException classes, and the namer's binding.
+git clone --depth 1 --branch 2.11.0 https://github.com/square/retrofit /tmp/retrofit
+cd /tmp/retrofit && git rev-parse HEAD          # cc76c22a68e090f3dd898cbcb0bac30414f59c31
+grep -rlnE '^[[:space:]]*(public |final |abstract )*(class|interface|enum) HttpException[[:space:]]' \
+  --include='*.java' --include='*.kt' .        # -> 6 files, 6 distinct packages
+grep -nE '^(package|import)' retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt
+grep -n  'HttpException'     retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt
+
+# The graph delta of each mutation: rebuild the pristine tree, apply the
+# harness's own edit, rebuild again, and diff the store's node and edge tables.
+# (`-classes <id>` leaves the post-mutation full.db under <workdir>/state/.)
+CGO_ENABLED=0 /tmp/parity -family jvm -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "darwin-arm64/local-sandbox" \
+  -classes jvm_mixed_dir_change_receiver_type -workdir /tmp/wdD -report /tmp/diag.json
+cd /tmp/wdD/repos/retrofit && GRAPHI_PROFILE= GRAPHI_JVM_TYPERESOLVE=1 \
+  /tmp/wdD/graphi rebuild -root . -db /tmp/pre.db -meta /tmp/premeta
+sqlite3 /tmp/pre.db 'SELECT id,kind,qualified_name,source_path,line,col,meta FROM nodes ORDER BY id;'
+sqlite3 /tmp/pre.db 'SELECT id,from_id,to_id,kind,confidence_tier,confidence,evidence FROM edges ORDER BY id;'
+# ...and the same two queries against
+#   "/tmp/wdD/state/retrofit/jvm_mixed_dir_change_receiver_type[binder=on,profile=default]/full.db"
+# diff -> EMPTY. Repeat with -classes jvm_change_import_shadowing for antlr4,
+# where the edge diff is exactly one added `imports` edge.
 ```
 
 # JVM real-repository matrix — WP-J7 / gate G4 (2026-08-23, W5.d+1 SW-204)
