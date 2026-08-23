@@ -578,6 +578,130 @@
    "notes": "Second Kotlin corpus pin (language-GA program G5, WP-J6): JetBrains' kotlinx.serialization, a reflectionless Kotlin-multiplatform serialization library (609 .kt + 6 .java at the pin; the 6 .java are module-info.java JPMS declarations, which carry no methods and produce no sites — expected). Tier 3 (nightly/manual, never the PR gate). Complements okio with a compiler-plugin-heavy, densely-generic Kotlin codebase for cross-language regression + JVM-binder breadth. Verified at pin time: graphi tables all 615 JVM files with ZERO parse or tabling crashes and the declared-type binder resolves 3517 typed Kotlin sites. SUPERSEDED 2026-08-19 (W1.b / SW-175), and the old sentence is kept above rather than overwritten because of what was wrong with it: 3517 is a NUMERATOR WITHOUT A DENOMINATOR — it says how many sites bound, never out of how many exist, which is the defect independent-review R6 named when it dropped Kotlin's recall threshold. The measured answer, same pin, same sha: the call-site binding rate is 19.16% = 2949 bound call sites / 15388 CST call sites (denominator counted by an INDEPENDENT tree-sitter walk, never from the binder), published with the full ten-reason skip histogram and every named exclusion in docs/rc/jvm-binding-rate.md. READ IT WITH ITS PARSE CAVEAT: the embedded tree-sitter Kotlin grammar leaves ERROR nodes in 80 of this pin's 609 .kt files (13.1%), so a recovered file still contributes a full denominator while the binder can no longer walk its bodies — guava's java equivalent is 0 of 621. The bias DIRECTION is measured and is anti-flattering: dirty parses DEPRESS the rate. Over the 529 cleanly-parsed files the rate is 21.15% (2908/13748); over the 80 dirty ones it is 2.50% (41/1640). An earlier version of this note said the direction was 'undetermined'; that was an incomplete measurement presented as an unavailable one and is retracted. SECOND FINDING: today's binder produces 3433 typed sites here (2949 call + 484 value), 84 FEWER than 3517, so the old numerator is not reproducible from this tree either — what it counted could not be determined, and the binder has changed since (ADR 0008 D6 corrected 2026-08-16 after JVMSOUND-001/002; SW-170 re-keyed the sweep). No attempt is made to reconcile the 84. Note the scope difference from the jvm_compile block above: the binding rate needs NO compiler and therefore covers ALL 615 files at the pin, not the 52 that compile. Compile coverage (SW-190, PARITY-COV-001 closure): 52 of 52 staged sources compile — coverage 1.0000 — measured 2026-08-21 against the post-SW-188 candidate. The 27 of 351 unbacked calls (the JVMHARN-001 value-class shape, recorded above) are a separate counterexample count, NOT bound to this figure: the figure answers 'does the source set compile', the unbacked calls answer 'does the binder's output agree with the bytecode'. A reader must read both to know the pin's evidence base."
   },
   {
+   "name": "antlr4",
+   "url": "https://github.com/antlr/antlr4",
+   "ref": "4.13.1",
+   "sha": "7ed420ff2c78d62883875c442d75f32e73bc86c8",
+   "tier": 3,
+   "language": "java",
+   "license": "BSD-3-Clause",
+   "permitted_use": "Public repository under the 3-clause BSD licence of The ANTLR Project; read-only shallow clone in CI, measurements only, no redistribution.",
+   "measured": {
+    "source_files": 521,
+    "tracked_files": 2269,
+    "measured_at": "2026-08-23",
+    "method": "git clone --depth 1 --branch 4.13.1; git ls-files '*.java' | wc -l (521) and git ls-files | wc -l (2269) at the pinned sha 7ed420ff2c78. NOTE the scope difference the JVM harness sees: internal/parity/jvmsource.go jvmSkipDir refuses any directory named `target`, and antlr4 has a SOURCE package of that name (tool/src/org/antlr/v4/codegen/target/, 10 .java files), so the JVM model discovers 511 of the 521 — measured, not assumed."
+   },
+   "searches": [
+    {
+     "query": "ParserATNSimulator",
+     "expect_nonempty": true
+    },
+    {
+     "query": "CommonTokenStream",
+     "expect_nonempty": true
+    }
+   ],
+   "jvm_compile": {
+    "strategy": "full-dependency-resolution",
+    "reason": "ACQUIRED BY SW-207 for one measured reason: it is the only pin in this corpus that hosts a NON-STATIC Java on-demand import, which is the source shape jvm_change_import_shadowing needs and which guava, okio and kotlinx.serialization between them do not contain (guava's single wildcard import is `import static java.util.stream.Collectors.*;`, a STATIC on-demand import that JLS 6.4.1's single-type rule does not govern). Its compile classpath is resolved completely and the resolution is EMPTY: runtime/Java/src is the ANTLR Java runtime and depends on nothing outside the JDK, so the classpath is complete by containing no artifact at all, and there is no resolver, no version range and no transitive discovery to drift. Scope is runtime/Java/src and stops there deliberately: the tool/ module needs StringTemplate 4, the antlr3 runtime, treelayout and javax.json, and the runtime-testsuite module needs junit5 and a per-target toolchain — each is a separate resolution question that would be answered separately rather than folded into one figure, exactly as kotlinx.serialization's formats/ modules are. Accept-errors was not needed: the staged compile reports ZERO errors.",
+    "toolchain": {
+     "javac": "21.0.6"
+    },
+    "compiler": "javac",
+    "source_roots": [
+     "runtime/Java/src"
+    ],
+    "compiler_args": [
+     "-proc:none",
+     "-nowarn",
+     "-g",
+     "-encoding",
+     "UTF-8",
+     "-Xmaxerrs",
+     "100000"
+    ],
+    "classpath": [],
+    "excluded_from_corpus_scale": true,
+    "exclusion_reason": "COMPILES AND IS REPRODUCIBLE; SCORING IS NOT ESTABLISHED, so this pin publishes a compile figure and NO counterexample count — kotlinx.serialization's disclosure shape, for a different reason. What IS established and published, measured 2026-08-23 on darwin-arm64/local-sandbox through internal/jvmcorpus's own TestPins path: the compile (174 of 174 offered sources staged, 0 errors, 214 classes, javac 21.0.6, EMPTY classpath) and its reproducibility (two independent runs from scratch, byte-identical capture digest 63f2a4537846fa467a7dee19e44e64f14d7a2b6b1ffd11ea2bfb7c11222374dc, 1886758 bytes, 1 javap shard). What is NOT: the signature-aware oracle over that capture reports SOUNDNESS FAILURES at all three precisions on the 1494 confirmed calls the binder produces over the 174 staged files — 4 unbacked confirmed calls with 37 abstained and 0 truth facts outside the recall denominator [by-name]; 4 unbacked with 53 abstained and 1 outside [by-arity]; 16 unbacked with 265 abstained and 286 outside [by-signature]. Those 24 rows are NOT classified and this story does not classify them: SW-207 acquires corpus SOURCE SHAPES for the WP-J7 parity matrix, and a parity row asserts full-vs-incremental byte-identity and needs no bytecode at all. Filed as JVMSOUND-ANTLR-001. Until it is answered, the pin backs NO counterexample count and NO corpus-scale claim, and the exclusion is recorded loudly rather than the pin being omitted silently (AC-7). Note what the exclusion does NOT retract: the compile_coverage figure below is a STAGING figure — 174 of 174 sources reach the compiler with no package-relative collision — and it is measured, reproduced by cmd/jvmcoverage on the runner's own path, and unaffected by the scoring question."
+   },
+   "compile_coverage": {
+    "source_files": 174,
+    "compiled_files": 174,
+    "coverage": 1.0000,
+    "measured_at": "2026-08-23",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "runner_class": "darwin-arm64/local-sandbox",
+    "oracle": "internal/parity/jvmclasses.go signature-aware oracle"
+   },
+   "notes": "Third Java corpus pin, acquired by SW-207 (JVMCORPUS-001) to close the jvm_change_import_shadowing gap on the WP-J7 real-repository matrix. ANTLR 4's Java tool + runtime, BSD-3-Clause, 521 .java of 2269 tracked at the pin, zero .kt. WHAT IT IS FOR, stated so it is not read as general corpus breadth: 58 of its .java files carry a NON-STATIC on-demand import (75 on-demand imports in total, 17 of them static), which is the JLS 6.4.1 shape the row needs and which no other JVM pin has — measured 2026-08-23 by internal/parity's own model over a clone at 7ed420ff2c78. Compile coverage: 174 of 174 sources under runtime/Java/src stage without a single package-relative collision (one source root, so a collision is impossible by construction) and the staged compile reports 0 errors and 214 class files under javac 21.0.6 with an EMPTY classpath — measured 2026-08-23 on runner class darwin-arm64/local-sandbox against the unchanged 9f687849 candidate. EXCLUDED FROM THE CORPUS-SCALE CLAIM, and read the jvm_compile exclusion_reason before reading any figure here: the pin compiles and reproduces, but the signature-aware oracle reports 4/4/16 unbacked confirmed calls at by-name/by-arity/by-signature over 1494 confirmed calls, unclassified, filed as JVMSOUND-ANTLR-001. The parity rows this pin exists for do not depend on that: a real-repo parity row asserts full-vs-incremental byte-identity and never a correctness statement about an edge."
+  },
+  {
+   "name": "retrofit",
+   "url": "https://github.com/square/retrofit",
+   "ref": "2.11.0",
+   "sha": "cc76c22a68e090f3dd898cbcb0bac30414f59c31",
+   "tier": 3,
+   "language": "java",
+   "license": "Apache-2.0",
+   "permitted_use": "Public repository under Apache-2.0; the corpus shallow-clones it read-only in CI and publishes measurements only — no source is redistributed.",
+   "measured": {
+    "source_files": 315,
+    "tracked_files": 724,
+    "measured_at": "2026-08-23",
+    "method": "git clone --depth 1 --branch 2.11.0; git ls-files '*.kt' '*.java' | wc -l (300 java + 15 kt = 315) and git ls-files | wc -l (724) at the pinned sha cc76c22a68e0. The annotated tag 2.11.0 is object d3207228b7b8; the COMMIT it points at, and the value pinned here, is cc76c22a68e090f3dd898cbcb0bac30414f59c31."
+   },
+   "searches": [
+    {
+     "query": "Retrofit",
+     "expect_nonempty": true
+    },
+    {
+     "query": "CallAdapter",
+     "expect_nonempty": true
+    }
+   ],
+   "jvm_compile": {
+    "strategy": "not-compiled",
+    "reason": "NEGATIVE RESULT, MEASURED (AC-7), and the pin is acquired for a structural property rather than for a compile figure. SW-207 pins retrofit because it is the only repository examined that satisfies all five conjuncts of planJVMMixedDirChangeReceiverType: it holds four MIXED .java/.kt directories, and the class HttpException in retrofit-adapters/guava/src/main/java/retrofit2/adapter/guava/ is declared OUTSIDE all four, carries a supertype, is named by simple name from retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt INSIDE one of them, and has a sibling Java class (GuavaCallAdapterFactory) in its own directory to serve as the replacement supertype. The pin is NOT compiled, and that is measured three ways rather than assumed. (1) The natural scope retrofit/src/main/java is a MIXED-LANGUAGE module: its 55 staged sources are 54 .java plus retrofit2/KotlinExtensions.kt, and internal/jvmcorpus.Compile hands the WHOLE staged set to ONE compiler, so javac 21.0.6 aborts with `error: invalid flag: ./retrofit2/KotlinExtensions.kt` — exit 2, 0 class files. (2) The same 54 .java alone, with no classpath: 474 errors, 0 class files. (3) The same 54 .java alone with a Maven-Central classpath assembled from the pin's own gradle/libs.versions.toml (okhttp 3.14.9, okio 1.17.5, kotlin-stdlib 1.9.23, kotlinx-coroutines-core-jvm 1.8.0, animal-sniffer-annotations 1.23, jsr305 3.0.2): 24 errors, 0 class files, and every one of them is `package android.annotation does not exist` / `package android.os does not exist` / the symbols that follow from them. retrofit core compiles against android.jar as a compileOnly dependency; android.jar is NOT a Maven Central artifact and is distributed under the Android SDK licence, so no digest-pinned URL+sha256 classpath of the kind this strategy requires can be assembled for it. The pin therefore backs no coverage figure, no counterexample count and no corpus-scale claim, and is excluded loudly rather than omitted silently.",
+    "toolchain": {
+     "javac": "21.0.6"
+    },
+    "compiler": "javac",
+    "source_roots": [
+     "retrofit/src/main/java"
+    ],
+    "compiler_args": [
+     "-proc:none",
+     "-nowarn",
+     "-g",
+     "-encoding",
+     "UTF-8",
+     "-Xmaxerrs",
+     "100000"
+    ],
+    "tried": [
+     "javac 21.0.6 over the FULL staged set of retrofit/src/main/java (55 sources: 54 .java + retrofit2/KotlinExtensions.kt), with the digest-pinnable Maven Central classpath: FAILED, exit 2, `error: invalid flag: ./retrofit2/KotlinExtensions.kt`, 0 class files. Compile() passes every staged source to one compiler, and javac does not accept .kt.",
+     "javac 21.0.6 over the .java half only (54 sources), NO classpath: FAILED, 474 errors, 0 class files.",
+     "javac 21.0.6 over the .java half only (54 sources) with okhttp 3.14.9, okio 1.17.5, kotlin-stdlib 1.9.23, kotlinx-coroutines-core-jvm 1.8.0, animal-sniffer-annotations 1.23 and jsr305 3.0.2 on the classpath — every version read from the pin's own gradle/libs.versions.toml: FAILED, 24 errors, 0 class files, ALL of them android.annotation / android.os / android.os.Build. This is the decisive one: retrofit core declares `compileOnly libs.android`, and android.jar is not a Maven Central artifact and is not redistributable under the digest-pinned posture this strategy requires.",
+     "NOT tried, and named so the next attempt does not restart from zero: (a) kotlinc 1.9.24 over the same mixed staged set — it would accept the .java for resolution but emit class files for the ONE .kt only, so the oracle would score 1 of 55 sources and the pin would still back no figure; (b) scoping the compile to retrofit's pure-Java modules (retrofit-adapters/*, retrofit-converters/*) against a published com.squareup.retrofit2:retrofit jar — that compiles a module against the pin's own RELEASE ARTEFACT rather than the pin, which is a different measurement and would need its own decision; (c) adding android.jar to the classpath, which the licence posture in `permitted_use` does not allow."
+    ],
+    "excluded_from_corpus_scale": true,
+    "exclusion_reason": "Not compiled: the natural source root is a mixed-language module the single-compiler staging cannot compile, and the .java half needs android.jar, which is not a Maven Central artifact and cannot be digest-pinned under this corpus's posture. MEASURED, not assumed — see `tried`: 1 error and 0 classes on the mixed set, 474 errors and 0 classes with no classpath, 24 android-only errors and 0 classes with the pinned classpath. The pin backs no coverage figure, no counterexample count and no corpus-scale claim, and is excluded loudly rather than omitted silently."
+   },
+   "compile_coverage": {
+    "source_files": 55,
+    "compiled_files": 0,
+    "coverage": 0.0000,
+    "measured_at": "2026-08-23",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "runner_class": "darwin-arm64/local-sandbox",
+    "oracle": "internal/parity/jvmclasses.go signature-aware oracle",
+    "excluded_reason": "Not compiled: the natural source root is a mixed-language module the single-compiler staging cannot compile, and the .java half needs android.jar, which is not a Maven Central artifact and cannot be digest-pinned under this corpus's posture. MEASURED, not assumed — see `tried`: 1 error and 0 classes on the mixed set, 474 errors and 0 classes with no classpath, 24 android-only errors and 0 classes with the pinned classpath. The pin backs no coverage figure, no counterexample count and no corpus-scale claim, and is excluded loudly rather than omitted silently."
+   },
+   "notes": "Polyglot Java/Kotlin corpus pin, acquired by SW-207 (JVMCORPUS-001) to close the jvm_mixed_dir_change_receiver_type gap on the WP-J7 real-repository matrix. Square's retrofit, Apache-2.0, 300 .java + 15 .kt = 315 source files of 724 tracked at the pin. WHAT IT IS FOR: it is the only repository examined whose source satisfies the five-way conjunction planJVMMixedDirChangeReceiverType tests — four mixed .java/.kt directories (retrofit/src/main/java/retrofit2 27+1, retrofit-mock/src/main/java/retrofit2/mock 7+1, retrofit-mock/src/test/java/retrofit2/mock 4+1, retrofit/kotlin-test/src/test/java/retrofit2 3+2), 259 .java files outside them, 50 of those declaring a top-level class with a supertype, 6 of THOSE named by simple name from inside a mixed directory, and all 6 with a sibling Java class available as a replacement supertype. Measured 2026-08-23 by internal/parity's own model over a clone at cc76c22a68e0. Compile: NONE — see the jvm_compile block for the three measured attempts and why the pin backs no coverage figure. That is the okio disclosure shape and it costs the CLAIM, not the pin: retrofit's job here is to host a source SHAPE for a parity row, which needs no bytecode, because a real-repo parity row asserts full-vs-incremental byte-identity and never a correctness statement about an edge."
+  },
+  {
    "name": "tier1-fixture-go",
    "path": "corpus/fixtures/go",
    "tier": 1,
