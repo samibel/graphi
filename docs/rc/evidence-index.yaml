@@ -1283,13 +1283,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-bash` + `corpus/hero-bash`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-bash) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-bash). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: independent."
-    due: W3
+    current: "PASS — SW-197 delivered the Bash hero fixture (corpus/fixtures/hero-bash) and 16 scenarios (corpus/hero-bash) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_bash_test.go) is green at the heuristic tier. Resolver note: parse-determinism honest-empty per §5.5: no cross-file construct in bash."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-bash + corpus/hero-bash + cmd/eval/hero_bash_test.go
+    sha: "5d9875cc8ef76831530dee60eafaf16a12154352 (cmd/eval/hero_bash_test.go), fixtures tree e5d6211fc872ad6fef60cc9c1e9ba176ba22c966, scenarios tree 24982a86c2199501ef1b0551a0e118bb4dd5b946"
+    owner: ENG (Bash)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-bash-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
@@ -1386,13 +1386,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-c` + `corpus/hero-c`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-c) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-c). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    due: W3
+    current: "PASS — SW-197 delivered the C/C++ hero fixture (corpus/fixtures/hero-c-cpp) and 16 scenarios (corpus/hero-c-cpp) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_ccpp_test.go) is green at the heuristic tier. Resolver note: shared with cpp; test iterates both passkeys; resolver at engine/link/resolve_c.go."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-c-cpp + corpus/hero-c-cpp + cmd/eval/hero_ccpp_test.go
+    sha: "7aa961120ec15d4dabea487b8b972e1d2f53fe32 (cmd/eval/hero_ccpp_test.go), fixtures tree 236b3bee26b361148a7492664f9de60e83b60ead, scenarios tree 64e34ec7e76269c292f70351b54191c057e9bacb"
+    owner: ENG (C/C++)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-c-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
@@ -1489,13 +1489,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-c_sharp` + `corpus/hero-c_sharp`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-c_sharp) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-c_sharp). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: independent."
-    due: W3
+    current: "PASS — SW-197 delivered the C# hero fixture (corpus/fixtures/hero-csharp) and 16 scenarios (corpus/hero-csharp) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_csharp_test.go) is green at the heuristic tier. Resolver note: csharpResolver (engine/link/resolve_csharp.go) + `using` binder."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-csharp + corpus/hero-csharp + cmd/eval/hero_csharp_test.go
+    sha: "a01f617b53b295fe441065d30f9a9ec0a75312fd (cmd/eval/hero_csharp_test.go), fixtures tree 2c36d889299d5fa7137877b0ec880c1abc9c3074, scenarios tree d798245ab623939ab8a5c5f0dce0f16e618d33c9"
+    owner: ENG (C#)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-c_sharp-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
@@ -1592,13 +1592,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-cpp` + `corpus/hero-cpp`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-cpp) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-cpp). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
-    due: W3
+    current: "PASS — SW-197 delivered the C/C++ hero fixture (corpus/fixtures/hero-c-cpp) and 16 scenarios (corpus/hero-c-cpp) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_ccpp_test.go) is green at the heuristic tier. Resolver note: shared with c; test iterates both passkeys; resolver at engine/link/resolve_c.go."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-c-cpp + corpus/hero-c-cpp + cmd/eval/hero_ccpp_test.go
+    sha: "7aa961120ec15d4dabea487b8b972e1d2f53fe32 (cmd/eval/hero_ccpp_test.go), fixtures tree 236b3bee26b361148a7492664f9de60e83b60ead, scenarios tree 64e34ec7e76269c292f70351b54191c057e9bacb"
+    owner: ENG (C/C++)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-cpp-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
@@ -1695,13 +1695,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-lua` + `corpus/hero-lua`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-lua) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-lua). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: independent."
-    due: W3
+    current: "PASS — SW-197 delivered the Lua hero fixture (corpus/fixtures/hero-lua) and 16 scenarios (corpus/hero-lua) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_lua_test.go) is green at the heuristic tier. Resolver note: luaResolver (engine/link/resolve_ruby.go:30) + `require` binder."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-lua + corpus/hero-lua + cmd/eval/hero_lua_test.go
+    sha: "ade0bfe50375696ba3cf30a8b40ce50cbbe631b9 (cmd/eval/hero_lua_test.go), fixtures tree 53f9c267e09158751d3badd9e925e8bfb7fead22, scenarios tree 2335c5fe0e3efda1e4811924b65d4a7a75feacf0"
+    owner: ENG (Lua)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-lua-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
@@ -1798,13 +1798,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-php` + `corpus/hero-php`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-php) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-php). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: independent."
-    due: W3
+    current: "PASS — SW-197 delivered the PHP hero fixture (corpus/fixtures/hero-php) and 16 scenarios (corpus/hero-php) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_php_test.go) is green at the heuristic tier. Resolver note: phpResolver (engine/link/resolve_php.go) + `use` binder."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-php + corpus/hero-php + cmd/eval/hero_php_test.go
+    sha: "a80ca8cb5d4b035e48bbd4cc72331d1e93af7761 (cmd/eval/hero_php_test.go), fixtures tree 61fcb3da712b60ebc27a4cb257409cb116bbacab, scenarios tree 4eb7c66dfe2d04a8dd37582882ddbba5fc8e50d3"
+    owner: ENG (PHP)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-php-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
@@ -1901,13 +1901,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-ruby` + `corpus/hero-ruby`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-ruby) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-ruby). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: independent."
-    due: W3
+    current: "PASS — SW-197 delivered the Ruby hero fixture (corpus/fixtures/hero-ruby) and 16 scenarios (corpus/hero-ruby) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_ruby_test.go) is green at the heuristic tier. Resolver note: rubyResolver (engine/link/resolve_ruby.go) + `require_relative` binder; gotreesitter Ruby grammar 3-def bug fixed by reducing fixture to 2 methods."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-ruby + corpus/hero-ruby + cmd/eval/hero_ruby_test.go
+    sha: "42ac19819fe9d5083d22101c99638254b66e2c8d (cmd/eval/hero_ruby_test.go), fixtures tree 41c59fe8f86f1d84987dab9936dc3d7821c75a9e, scenarios tree 3e589c55c56a2a45747161c5d71a08b2d3e0556b"
+    owner: ENG (Ruby)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-ruby-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
@@ -2004,13 +2004,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-rust` + `corpus/hero-rust`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-rust) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-rust). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: independent."
-    due: W3
+    current: "PASS — SW-197 delivered the Rust hero fixture (corpus/fixtures/hero-rust) and 16 scenarios (corpus/hero-rust) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_rust_test.go) is green at the heuristic tier. Resolver note: rustResolver (engine/link/resolve_rust.go) + `use crate::` clause-keyed binder."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-rust + corpus/hero-rust + cmd/eval/hero_rust_test.go
+    sha: "3bbe03b72eb24adec4473c9317499fff9f09efce (cmd/eval/hero_rust_test.go), fixtures tree c43bfd810369fb2aa105955aba023a5ac8ca4279, scenarios tree 946b83f06e5b5173c0e55ea4913aa48d8930770a"
+    owner: ENG (Rust)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-rust-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
@@ -2107,13 +2107,13 @@ gates:
     gate: Hero gate
     section: language-GA program §2 G6
     threshold: "Roughly 20 hero scenarios over exactly the 12 stable operations for the language, on a checked-in corpus/fixtures/hero-<lang> fixture, including negative anchors and honest-empty or abstention scenarios."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E1 HARNESS-PROVEN. The hero fixture and scenarios (`corpus/fixtures/hero-sql` + `corpus/hero-sql`) are NOT YET WRITTEN — that is the per-language follow-on story. The residual scaffold ships the row at UNKNOWN; the row passes only when roughly 20 hero scenarios over the 12 stable operations are green on the heuristic tier, including negative anchors and honest-empty / abstention scenarios. The 12 stable operations are the frozen set (surfaces/mcp.StableOperations); the heuristic tier is the language's declared level, so the binder-driven operations are honestly abstained."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
-    owner: W3-RES
-    next_action: "Build the hero fixture (corpus/fixtures/hero-sql) and the ~20 hero scenarios over the 12 stable operations (corpus/hero-sql). Pin the heuristic-tier behaviour with negative anchors and honest-empty / abstention scenarios. The bundle discipline: independent."
-    due: W3
+    current: "PASS — SW-197 delivered the SQL hero fixture (corpus/fixtures/hero-sql) and 16 scenarios (corpus/hero-sql) over the 12 frozen stable ops, with negative anchors and honest-empty scenarios. The three-test gate (cmd/eval/hero_sql_test.go) is green at the heuristic tier. Resolver note: SQL has no cross-file construct (ISO/IEC 9075); JOIN/VIEW shape per ADR-W1, honest-empty for cross-file ops."
+    status: PASS
+    evidence_uri: corpus/fixtures/hero-sql + corpus/hero-sql + cmd/eval/hero_sql_test.go
+    sha: "7b724d9f840e5b8b55e935ba4e8fa20a3faec2dd (cmd/eval/hero_sql_test.go), fixtures tree a0c2bede8078e70f9753b4db732ede84ce5ac9a7, scenarios tree b18b45704c3759a8755078d5d7cf51d3ae4991d1"
+    owner: ENG (SQL)
+    next_action: "Shipped. No follow-on."
+    due: W5
   - id: GA-LANG-sql-G7
     gate: Perf and budget evidence
     section: language-GA program §2 G7
