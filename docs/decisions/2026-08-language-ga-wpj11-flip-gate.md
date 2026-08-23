@@ -20,6 +20,51 @@
   SW-179 is. This document is the instrument SW-179 measures against, not a
   substitute for the owner's call.
 
+> ## DISCLOSURE — 2026-08-23 (SW-208): C9 was discharged ahead of the flip; the flip has not happened
+>
+> Per ADR 0008 D6 this block is **added**; nothing below is rewritten,
+> re-pointed or deleted, and nothing below it is retracted. C9's stated reason
+> at `:284` — "the JVM registrants move from default-off to default-on"
+> — describes what the flip *will* make true and is left standing as written.
+> What is added is the state a reader measuring this gate today needs and
+> cannot obtain from the text below: **SW-179 shipped, and it shipped C9
+> without the flip.**
+>
+> SW-179's frontmatter reads `status: done`, `shipped: 2026-08-20`,
+> `scope: re-scoped to C9 + C8 only (owner decision 2026-08-20)`. Its
+> re-scope section states the exclusion in its own words: "**The actual binder
+> flip (AC-1, AC-2).** The binder stays default-OFF.
+> `engine/semantic/semantic.go:45` is unchanged."
+>
+> **Measured 2026-08-23, at the artefacts this condition names:**
+>
+> | C9 part | State | Measured at |
+> |---|---|---|
+> | 1 — version bump | LANDED | `ingestSemanticsVersion = "12"` at `engine/ingest/warmstart.go:77`; the rule that flips the stamp is recorded in the same style as the 1-to-11 history at `:71-76` |
+> | 2 — re-index path, documented | LANDED | `docs/HOWTO.md:141-153` — `graphi rebuild`, no manual store deletion |
+> | 3 — pre-flip store test | LANDED | `engine/ingest/warmstart_preflip_test.go` |
+> | the flip this condition's reason names | **NOT DONE** | `engine/semantic/semantic.go:45` still registers the Java and Kotlin resolvers only `if jvmEnabled()`, reading `GRAPHI_JVM_TYPERESOLVE` (`:35`, `:37`); `:46-47` are the only `jvmresolve.NewResolver` calls in the tree, and the file carries exactly one commit in its history — `157c2e2 semantic: assemble the registry, register the JVM binder default-OFF` |
+>
+> **So the migration's user-visible cost is live today for a flip that has not
+> happened.** Re-verified through the code rather than repeated from SW-179's
+> record: a store stamped below `"12"` fails the equality
+> `return files, v == stamp, nil` at `engine/ingest/warmstart.go:147`, so
+> `CanWarmStart` (`:94`) reports `ok=false`; `internal/freshness/probe/probe.go:72-74`
+> takes the `!warmOK` branch, returning before `r.Index.WarmStartable = true`
+> (`:95`) and therefore before `r.Current = true` (`:103`), with the
+> recommendation "run 'graphi rebuild' to re-certify the graph" (`:91`);
+> `cmd/graphi/status.go:149-152` maps `!r.Current` to **exit 1**, over the human
+> line "index needs a rebuild (incomplete, or built by another graphi version)"
+> (`:206-207`). One cold rebuild, paid ahead of the binder change that motivates it.
+> That is the designed order, not a defect: the stamp exists precisely because
+> content hashes cannot see a binary-semantics change.
+>
+> **This does not move the gate.** C8's own text at `:268-269` still says it
+> "reads MET only AFTER the one-line flip and a green run of both tests under
+> it", and no flip has occurred; the other conditions are not re-measured here.
+> §4 continues to hold: this document is the measurement instrument, and the
+> flip remains the owner's call.
+
 ## 1. Why this gate is a separate document
 
 R1's "nine conditions, zero met" was a verdict, not a checklist: the review
