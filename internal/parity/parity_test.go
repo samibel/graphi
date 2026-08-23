@@ -733,6 +733,45 @@ func TestReport_FailsClosed(t *testing.T) {
 		}
 	})
 
+	t.Run("a JVM pin whose coverage contradicts its own counts refuses", func(t *testing.T) {
+		// The sanity guard. Finalize trusts the producer's `coverage` rather
+		// than re-deriving it (the fourth decimal is the producer's), so the
+		// one shape a manifest edit could exploit is a full-compile CLAIM beside
+		// counts that say it did not happen. Refused, and named.
+		r := clean()
+		r.Family = parityreport.FamilyJVM
+		r.Repos = append(r.Repos, jvmPin("liar", &parityreport.CompileCoverageRef{
+			SourceFiles: 89, CompiledFiles: 0, Coverage: 1.0}))
+		r.Finalize(15, 2)
+		if r.Publishable {
+			t.Fatal("coverage 1.0000 beside 0 of 89 compiled is not a measurement and must refuse")
+		}
+		got := coverageReasons(r)
+		if len(got) != 1 {
+			t.Fatalf("want exactly one compile_coverage reason, got %d: %v", len(got), r.NotPublishableBecause)
+		}
+		for _, want := range []string{"liar", "1.0000", "0 of 89"} {
+			if !strings.Contains(got[0], want) {
+				t.Errorf("refusal %q does not name %q", got[0], want)
+			}
+		}
+	})
+
+	t.Run("the sanity guard cannot reach the documented-negative arm", func(t *testing.T) {
+		// A documented negative ALWAYS has compiled < source — that is what a
+		// negative is. The guard must be out of its reach, or AC-2's accepting
+		// arm would be dead code and okio's published 0/89 would refuse.
+		r := clean()
+		r.Family = parityreport.FamilyJVM
+		r.Repos = append(r.Repos, jvmPin("documented", &parityreport.CompileCoverageRef{
+			SourceFiles: 100, CompiledFiles: 50, Coverage: 0.5,
+			ExcludedReason: "half the closure does not compile in the oracle's layout — measured"}))
+		r.Finalize(15, 2)
+		if got := coverageReasons(r); len(got) != 0 {
+			t.Fatalf("the sanity guard fired on a documented negative: %v", got)
+		}
+	})
+
 	t.Run("an excluded_reason buys nothing else: a skipped row still refuses", func(t *testing.T) {
 		// The laundering this closes. An excluded_reason discharges exactly one
 		// question — "is this pin's compile figure known?" — and no other. It

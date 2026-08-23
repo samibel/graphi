@@ -102,7 +102,7 @@ will flip — ky covering typescript, express covering javascript, and the
 tsx row by family-share if the reviewer's judgement (recorded in current)
 upholds it.
 
-# JVM real-repository matrix — WP-J7 / gate G4 (2026-08-23, W5.d+1 SW204)
+# JVM real-repository matrix — WP-J7 / gate G4 (2026-08-23, W5.d+1 SW-204)
 
 > **THIS SECTION PUBLISHES NO MATRIX. It publishes a GATE and a REFUSAL.** It
 > does not supersede the W5.d SW-190 section immediately below, nor the
@@ -146,6 +146,20 @@ exactly three arms and no fourth:
 | no `compile_coverage` at all | **REFUSE** | fail-closed; an unmeasured pin is refused, never assumed complete |
 | `coverage < 1.0`, no `excluded_reason` | **REFUSE** | an unexplained partial compile is an unknown, and an unknown is not evidence |
 | `coverage < 1.0` WITH an `excluded_reason` | **ACCEPT** | a documented negative costs the CLAIM, not the run's publishability |
+
+Beside the three arms sits **one sanity guard, which is not a fourth arm**: a
+pin claiming `coverage >= 1.0000` while its own `compiled_files` /
+`source_files` disagree is refused as self-contradictory. It only ever *adds* a
+refusal — there is no input it accepts that the three arms would have refused —
+and the accepting arm is out of its reach by construction, since a documented
+negative always has `compiled < source`. The rule deliberately does **not**
+re-derive `coverage` from the counts: the fourth decimal belongs to the
+producer, and a re-derivation disagreeing with it in the last place is a
+rounding artefact, not evidence. **Scope, stated because it is easy to
+over-read:** `Repos` carries only the pins the run **materialized**, so this
+rule says *every pin this run used has a known figure*, never *every JVM pin in
+the manifest has one*. A pin that never materializes fails the run closed
+upstream and backs no row.
 
 The three pins, as the gate itself reported them on stderr in both dispatches:
 
@@ -236,7 +250,16 @@ byte-unchanged below, per D6.**
 **What the run says.** 44 of 52 crossed rows PASS on both dispatches, with
 identical counts and snapshot digests. 40 of the 44 decided rows ran on okio
 and 4 on guava; **kotlinx.serialization hosts ZERO decided rows in both
-dispatches** — it is cloned only because the two skipping classes examine it.
+dispatches**. It is materialized because **three** of the thirteen declared
+classes examine it: the two skipping classes, which find no target in any pin,
+and `jvm_change_type_hierarchy`, whose four guava rows carry
+`"selected_because": "… ; not exhibited by okio, kotlinx.serialization"` —
+`selectJVMRepo` (`internal/parity/jvmrun.go:451`) materializes each candidate in
+size order and plans against it, so a pin named in a `tried` list was cloned and
+scanned. (Two older, already-published records — the `GA-LANG-kotlin-G4`
+`current:` field in `docs/rc/evidence-index.yaml` and backlog `PARITY-COV-001`,
+both pre-SW-204 — carry the narrower "cloned only because" phrasing. Per D6 this
+story does not rewrite them; this paragraph is the corrected statement.)
 
 **What the run does not say.** Anything about
 `jvm_change_import_shadowing` or `jvm_mixed_dir_change_receiver_type` on real
@@ -250,11 +273,49 @@ kotlinx.serialization, guava)"*. The absence is MEASURED, not assumed:
   members rather than types and which JLS 6.4.1's single-type-import rule does
   not govern. The planner refuses it deliberately; accepting it would publish a
   verdict about a rule the row never exercised.
-- `jvm_mixed_dir_change_receiver_type` needs a directory holding `.java` beside
-  `.kt` (Java > 0 AND Kotlin > 0) plus a Java class whose superclass lives in a
-  different directory and is named from inside the mixed one. guava is pure
-  Java; okio's and kotlinx.serialization's only `.java` files are
-  `module-info.java` JPMS declarations that declare no types.
+- `jvm_mixed_dir_change_receiver_type` needs a **five-way conjunction**
+  (`internal/parity/jvmclasses.go` `planJVMMixedDirChangeReceiverType`): a
+  directory holding `.java` beside `.kt` (`internal/parity/jvmsource.go`
+  `Mixed()`: Java > 0 AND Kotlin > 0), plus a Java class **outside** such a
+  directory, carrying a supertype, named by simple name from a file **inside**
+  one, with a swappable sibling Java class in its own directory. The planner
+  never examines where the *superclass* lives, so a cross-directory superclass
+  is **not** one of the conjuncts.
+
+  **Which conjunct fails, per pin.** Measured 2026-08-23 at the three manifest
+  pins — `git clone --depth 1 --branch <ref> --filter=blob:none --no-checkout`
+  then `git ls-tree -r --name-only HEAD`, with `jvmSkipDir`'s directory
+  exclusions applied. All three clones land on the manifest's pinned sha.
+
+  | pin | `.java` | `.kt` | source dirs | mixed dirs | first conjunct |
+  |---|---|---|---|---|---|
+  | guava `2214c636` | 3204 | **0** | 130 | **0** | UNMET |
+  | kotlinx.serialization `3efe324b` | 6 — **all** `module-info.java` | 609 | 111 | **0** | UNMET |
+  | okio `8b870e8e` | 29 — **none** a `module-info.java` | 284 | 49 | **2** | **MET** |
+
+  okio's two mixed directories are `samples/src/jvmMain/java/okio/samples`
+  (16 `.java` + 1 `.kt`) and
+  `okio/jvm/jmh/src/jmh/java/com/squareup/okio/benchmarks` (11 `.java` +
+  1 `.kt`) — and the second is the directory the sibling row
+  `jvm_mixed_dir_delete_callee` edits, PASSing on all four cells of **both**
+  dispatches, so the run artifacts beside this section already publish that
+  count. **Which of okio's four remaining conjuncts fails is NOT measured, and
+  is not asserted here.** What is measured is that the conjunction as a whole
+  finds no target on any of the three pins.
+
+  > **Correction, 2026-08-23 (SW-204 rebuild round 1), stated rather than
+  > removed silently.** The first draft of this section said *"guava is pure
+  > Java; okio's and kotlinx.serialization's only `.java` files are
+  > `module-info.java` JPMS declarations that declare no types."* The okio half
+  > is **false**, and three project records already said so: `corpus/manifest.json`
+  > (*"284 .kt + 29 .java at the pin"*), `internal/parity/jvmclasses.go` (*"okio
+  > is a Kotlin pin holding 29 .java files"*), and the run artifacts published
+  > by this very section, which name a mixed okio directory of 11 `.java` +
+  > 1 `.kt`. The module-info statement was true of kotlinx.serialization only —
+  > the decision record scoped it there — and was generalised across a pin the
+  > project had already measured otherwise. This section had never been
+  > published or approved, so it is corrected where it stands, with the error
+  > named.
 
 **Which story owns the difference.**
 **SW-207-jvm-polyglot-corpus-target-acquisition** (backlog item

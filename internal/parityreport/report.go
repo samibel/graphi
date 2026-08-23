@@ -771,7 +771,17 @@ func (r *Report) Finalize(declaredChangeClasses, declaredCrashConditions int) {
 	// downstream read it, so a pin with no figure at all and a pin that compiles
 	// perfectly were indistinguishable to the gate.
 	//
-	// The rule has exactly three arms and no fourth:
+	// WHAT THIS RULE CAN SEE, stated because the scope is easy to over-read.
+	// r.Repos carries only the pins the run actually MATERIALIZED — the JVM
+	// runner appends one RepoRef per entry of its clone map — so a manifest pin
+	// that never materialized is not examined here at all. This rule therefore
+	// says "every pin THIS RUN USED has a known compile figure", never "every
+	// JVM pin in the manifest has one". That is sound in this direction only
+	// because a pin FAILURE aborts the run upstream (isPinFailure) and because
+	// a pin nothing ran on backs no row; the manifest-pin-mismatch check below
+	// has the same scope for the same reason.
+	//
+	// The rule that decides the FIGURE has exactly three arms and no fourth:
 	//
 	//   - NO FIGURE -> refuse. An unmeasured pin is refused, never assumed
 	//     complete. This is the fail-closed direction: the alternative reads a
@@ -797,6 +807,18 @@ func (r *Report) Finalize(declaredChangeClasses, declaredCrashConditions int) {
 	// cmd/parity. A flag that let one through would rebuild the forbidden escape
 	// one flag over, and SW-204 AC-4c says so in as many words.
 	//
+	// BESIDE THE THREE ARMS SITS ONE SANITY GUARD, and it is not a fourth arm:
+	// there is no input it accepts that the three arms would have refused. It
+	// only refuses — a pin claiming coverage >= 1.0000 while its own
+	// compiled/source counts disagree is self-contradictory, and the accepting
+	// arm above (coverage < 1.0 WITH an excluded_reason) is out of its reach by
+	// construction. The rule deliberately does NOT re-derive coverage from the
+	// counts: the fourth decimal belongs to the producer, and a re-derivation
+	// disagreeing with it in the last place is a rounding artefact and not
+	// evidence of anything. What the guard closes is the one shape a manifest
+	// edit could otherwise exploit in this rule — asserting a full compile
+	// beside counts that say it did not happen.
+	//
 	// It is scoped to Family == FamilyJVM because compile coverage is a JVM-pin
 	// concept: the Go FR-7 matrix's pins carry no such figure and must not be
 	// retroactively refused for lacking a field that was never measured for
@@ -817,6 +839,12 @@ func (r *Report) Finalize(declaredChangeClasses, declaredCrashConditions int) {
 						"(coverage %.4f) and corpus/manifest.json carries no excluded_reason. An "+
 						"unexplained partial compile is an unknown, not a disclosed limit.",
 					ReasonPrefixCompileCoverage, rp.Name, cc.CompiledFiles, cc.SourceFiles, cc.Coverage))
+			case cc.Coverage >= 1.0 && cc.CompiledFiles < cc.SourceFiles:
+				reasons = append(reasons, fmt.Sprintf(
+					"%sself-contradictory for JVM pin %s: corpus/manifest.json claims coverage %.4f "+
+						"while recording only %d of %d sources compiled. A figure that disagrees with "+
+						"the counts it summarises is not a measurement.",
+					ReasonPrefixCompileCoverage, rp.Name, cc.Coverage, cc.CompiledFiles, cc.SourceFiles))
 			}
 		}
 	}
