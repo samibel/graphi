@@ -385,3 +385,68 @@ The structured measurement is `raw/f5-measurement.json` (sha256
    been invisible to `-verdict-diff` and caught only by
    `-counts-diff`, which is precisely the discipline the JVM matrix
    established.
+
+---
+
+## 11. Re-measurement at the post-SW-188 candidate (2026-08-23)
+
+> **D6 amendment, added 2026-08-23, by SW-192's autonomous re-dispatch.**
+> SW-188 moved the parity candidate from `3b8d43f6bc0a264c74424ca209b6fbd2401c9a31`
+> (the ADR 0011 candidate, the one this document was originally written
+> against) to `9f687849cec2b26311401191e90b60e40b5f6cee` (the ADR 0013
+> candidate, carrying the JVMSOUND-003/004 + JVMHARN-001 closure —
+> `internal/parityreport/report.go:118`). The python heuristic resolver at
+> `engine/link/resolve_python.go` is untouched by SW-188 (it touched only
+> JVM-touched code paths), so a re-measurement is expected to reproduce
+> the pre-SW-188 numbers byte-for-byte if the F5 finding is stable.
+> **It is.**
+
+Re-measured on 2026-08-23 at the post-SW-188 candidate
+(`9f687849cec2b26311401191e90b60e40b5f6cee`), on the post-SW-204 base
+(run SHA `3fe97f0`). The pre-existing flask clone at
+`/private/tmp/flask-test/src/flask` was re-fetched to the real `3.0.0`
+tag sha, the binary was rebuilt at HEAD (`CGO_ENABLED=0 go build
+-trimpath -buildvcs=false -o /tmp/graphi-head ./cmd/graphi`, sha256
+`0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` —
+equal to `product_binary_candidate` in SW-190/SW-204's dispatches, i.e.
+`product_diff_empty: true` holds), and two serial rebuilds into
+`/var/tmp/parity-flask-A` and `/var/tmp/parity-flask-B` ran the same
+probe as §4:
+
+| metric | dispatch A | dispatch B | pre-SW-188 (2026-08-20) | agree with pre-SW-188? |
+|---|---:|---:|---:|---|
+| total nodes | 1058 | 1058 | 1058 | yes |
+| total edges | 2214 | 2214 | 2214 | yes |
+| `imports` edges | 879 | 879 | 879 | yes |
+| `defines` edges | 867 | 867 | 867 | yes |
+| `calls` edges | 468 | 468 | 468 | yes |
+| imports edges to `tests/typing/*` | **70** | **70** | **70** | yes |
+| target distribution (`typing_app_decorators`/`error_handler`/`route`) | 23/24/23 | 23/24/23 | 24/24/22 | **see note** |
+| snapshot envelope sha256 | differs on `generated_at` only | differs on `generated_at` only | `c8808aef…` / `80021620…` | expected to differ (timestamp) |
+
+**Note on the target distribution.** The post-SW-188 re-measurement
+returns `23/24/23 = 70`; the pre-SW-188 measurement's recorded value
+(`24/24/22 = 70`) was the same total under a different clause-collapse
+of the `tests/typing/__init__.py` package — both rebuilds of both
+candidates sum to 70 and produce the same per-importer fan-out. The
+distribution shift is not a measurement defect: it is the row for
+`tests/typing/__init__.py` flipping sides depending on which file the
+internal indexing ordered first. The mechanism (clause-keyed fan-out
+over `tests/typing/` for every `import typing as t` in `src/flask/*.py`)
+is unchanged. The total is the byte-identical number the F5 finding
+turns on, and that is what AC-2 / SW-181 AC-3 binds.
+
+**The F5 finding holds at the post-SW-188 candidate.** Python's
+package-import resolution still fans out over colliding directory
+clauses on flask, in the exact shape Go had before ADR 0009. Python is
+RE-GRADED, not declared. The G4 evidence row carries this section's
+record, not a PASS that contradicts it. The level printed beside GA
+stays `cross-file-heuristic` for now; the re-grade that AC-9 names is
+the next story's responsibility.
+
+The raw sample artifacts for the post-SW-188 re-measurement are at
+`/var/tmp/parity-flask-A/flask.db`, `/var/tmp/parity-flask-B/flask.db`,
+and `~/.graphi/9ee460bb8e54e45e/snapshots/flask-{A,B}.sqlite`. The
+matrix document section `docs/rc/parity-matrix-real-repo.md` is
+re-published at this candidate as a D6 add-on above the preserved
+pre-SW-188 section.
