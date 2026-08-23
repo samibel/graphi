@@ -51,10 +51,30 @@ import (
 //     `GA-LANG-<lang>-G3` rows citing line 38 for a guard at line 39 — is no
 //     longer present at `main`: SW-194 re-recorded those rows. It is quoted here
 //     as the reported shape, not as a measurement SW-205 took.)
-//   - The volume is real and measured: 200 `path:NNN` citations across the
-//     governed record set, 56 of them inside `docs/rc/evidence-index.yaml`
-//     itself. Standing behind numbers that drift on every edit to the cited file
-//     would put the gate into permanent, uninformative failure.
+//   - The volume is measured, and every count below is stated WITH ITS SCOPE. An
+//     unscoped count is what put a wrong number in this bullet before: it read
+//     "200 `path:NNN` citations across the governed record set, 56 of them inside
+//     `docs/rc/evidence-index.yaml`". No scope yields 200, and the "of them" was
+//     impossible in either direction, because that YAML is a gate-row file and is
+//     never a governed *document* — GovernedDocGlobs is `docs/rc/*.md`,
+//     `docs/decisions/*.md`, `docs/adr/*.md` — so its rows were never inside any
+//     count taken over the records. Re-measured 2026-08-23, counting
+//     `path.ext:NNN` tokens with the regex
+//     `[A-Za-z0-9_][A-Za-z0-9_./-]*\.[A-Za-z0-9]+:[0-9]+`:
+//
+//     206 such tokens sit inside inline code spans across the 36 governed
+//     documents. That is the operative figure, because ScanDocument lifts
+//     citations only from code spans (`codeSpan`), so 206 is what an (a) decision
+//     would have had to stand behind in the records. The same 36 documents hold
+//     211 counting their whole text, code spans or not, and 141 of their code
+//     spans are exactly one such token and nothing else.
+//
+//     `docs/rc/evidence-index.yaml` holds a further 56, counted SEPARATELY and
+//     never as a subset, for the reason above.
+//
+//     262 line citations in the checked set, then, on this branch. Standing behind
+//     numbers that drift on every edit to the cited file would put the gate into
+//     permanent, uninformative failure.
 //   - Verifying that line NNN still *contains the thing meant* is semantic, and
 //     semantic verification is this story's declared out-of-scope.
 //   - The replacement is the `::Symbol` form, which IS verified (AC-5). Where a

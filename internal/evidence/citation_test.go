@@ -709,3 +709,37 @@ func TestReportKeyIsStableAcrossLineDrift(t *testing.T) {
 		t.Fatalf("key must not carry a line number: %q", a.Key())
 	}
 }
+
+// TestAC11_DuplicateTargetIsCountedOnce pins the header arithmetic: GrandfatherOK
+// counts SUPPRESSED VIOLATIONS, and `suppressed` is keyed by target, so two entries
+// naming one target contribute one, not two. (Found by review, 2026-08-23: the
+// count was per-entry and reported 3 grandfathered for 2 suppressed violations.)
+// The duplicate is separately failed by grandfather-malformed, which is asserted
+// here too so this test cannot be satisfied by silently tolerating the duplicate.
+func TestAC11_DuplicateTargetIsCountedOnce(t *testing.T) {
+	r := newFixtureRepo(t)
+	r.write("docs/rc/rec.md", "# R\n\n## B\n\nCites `docs/rc/gone-a.json` and `docs/rc/gone-b.json`.\n")
+	r.commit("add")
+
+	dup := GrandfatherEntry{
+		Target: "docs/rc/rec.md :: missing-path :: docs/rc/gone-a.json",
+		Reason: "owned by an in-flight story",
+		Owner:  "SW-193",
+		Line:   2,
+	}
+	second := dup
+	second.Line = 6
+	other := GrandfatherEntry{
+		Target: "docs/rc/rec.md :: missing-path :: docs/rc/gone-b.json",
+		Reason: "owned by an in-flight story",
+		Owner:  "SW-193",
+		Line:   10,
+	}
+	rep := r.check(Index{}, Grandfather{Entries: []GrandfatherEntry{dup, second, other}})
+	if rep.GrandfatherOK != 2 {
+		t.Fatalf("two distinct targets suppress two violations; the count must be 2, got %d:\n%s", rep.GrandfatherOK, rep.FormatCitations())
+	}
+	if !hasViolation(rep, RuleGrandfatherMalformed, "gone-a.json") {
+		t.Fatalf("the duplicated target must still FAIL as grandfather-malformed:\n%s", rep.FormatCitations())
+	}
+}

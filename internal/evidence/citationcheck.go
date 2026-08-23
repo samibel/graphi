@@ -258,12 +258,19 @@ func CheckCitations(root string, idx Index, gf Grandfather) (CitationReport, err
 		stands = append(stands, v)
 	}
 	stands = append(stands, gf.Validate()...)
+	// GrandfatherOK counts SUPPRESSED VIOLATIONS, not entries, and `suppressed`
+	// is keyed by target — so two entries naming one target must contribute one,
+	// not two. (Such a pair is separately failed by `grandfather-malformed`,
+	// detail "duplicate target"; the header line still has to be right on a tree
+	// that is already red.)
+	counted := map[string]bool{}
 	for _, e := range gf.Entries {
 		if !suppressed[e.Target] {
 			stands = append(stands, CitationViolation{
 				Scope: fmt.Sprintf("%s:%d", GrandfatherPath, e.Line), Rule: RuleGrandfatherUnused, Target: e.Target,
 				Detail: "this entry's target now passes — DELETE THIS ENTRY. The list is a ratchet; a drained entry may not be left behind"})
-		} else {
+		} else if !counted[e.Target] {
+			counted[e.Target] = true
 			rep.GrandfatherOK++
 		}
 	}
