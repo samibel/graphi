@@ -161,6 +161,30 @@ rule says *every pin this run used has a known figure*, never *every JVM pin in
 the manifest has one*. A pin that never materializes fails the run closed
 upstream and backs no row.
 
+**THE GUARD POSTDATES THE TRANSCRIPTS BELOW, AND THAT IS DISCLOSED RATHER THAN
+GLOSSED.** Both dispatches ran at `c51172b9…`; the sanity guard and the matching
+stderr arm landed afterwards, in SW-204 review rounds 1 and 2. So the transcript
+and the two report JSONs on this page were produced by a binary that did not
+carry the guard. **Neither was re-run, and the reason is a predicate, not a
+convenience.** The guard fires only on `coverage >= 1.0000` **and**
+`compiled < source`; the three published triples are `623/623 @ 1.0000`,
+`52/52 @ 1.0000` and `0/89 @ 0.0000` — the first two fail the second conjunct,
+the third fails the first (`0.0 >= 1.0` is false) — so a re-dispatch is
+incapable of moving a verdict, a count, a digest or the refusal set. Those three
+triples are carried **verbatim** by
+`internal/parity/parity_test.go:803-840`
+(`TestJVMRefusalSet_IsExactlyTheIncompleteRunReason`), which still ends at
+exactly one refusal. And the claim is not left as prose:
+`TestPrintCompileCoveragePolicy_PublishedTriplesRenderUnchanged`
+(`cmd/parity/main_test.go`) reads **both published report artifacts off disk**,
+replays them through the current `Finalize` and the current printer, and
+requires zero `compile_coverage` refusals plus the same three per-pin lines
+printed below — byte-for-byte for guava and kotlinx.serialization, and on the
+published prefix for okio, whose line is truncated here because its
+`excluded_reason` is long. The one line a rerun WOULD change is the policy
+header: it gained a clause naming the self-contradiction rule, and it is
+reproduced below as it was actually emitted, not as it would be emitted today.
+
 The three pins, as the gate itself reported them on stderr in both dispatches:
 
 ```
@@ -339,7 +363,15 @@ the answer down: *"Deferral is a DECLARED shape in the matrix YAML, not a
 runtime escape: a row cannot become deferred by failing to run."* Both classes
 keep `harness_row: required`, `deferred_to: ""`, `verdict: "PROVEN"` and their
 citations; the only change to `docs/rc/parity-classes-jvm.yaml` in this story is
-one added sentence in each of their `note:` fields.
+`note:` prose on those two classes. **Measured, not estimated**, because an
+earlier draft of this sentence claimed "one added sentence in each" and its own
+commit refutes that: `git diff --numstat 37a7be8` reads **2 insertions /
+2 deletions** on this file, and both land on a `note:` line — `:399` grew from
+**368 to 1602 bytes** and `:484` from **2199 to 5042**, the file as a whole from
+30 433 to 34 510. Several sentences each, not one. What the AC was protecting is
+what actually holds and is what this paragraph asserts: **no line other than
+those two `note:` lines is touched at all**, so `harness_row`, `deferred_to`,
+`verdict` and every citation are byte-identical to `37a7be8`.
 
 ## What this section does and does not say
 

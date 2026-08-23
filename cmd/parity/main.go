@@ -264,19 +264,32 @@ func printAndScore(rep parityreport.Report) int {
 //
 // This is a report of a decision already made in parityreport.Finalize. It
 // decides nothing itself, and there is no flag by which it could.
+//
+// Its arms mirror, one for one, the compile-coverage arms of Finalize
+// (internal/parityreport/report.go) — including the sanity guard that refuses a
+// pin claiming coverage >= 1.0000 beside compiled < source. A log that narrates
+// a pin as "accepted" while the gate appends a refusal for it is worse than no
+// log, so the correspondence is held by a test rather than by discipline:
+// TestPrintCompileCoveragePolicy_AgreesWithTheGate runs both over the same
+// inputs and requires REFUSED on stderr exactly when Finalize refuses.
 func printCompileCoveragePolicy(rep parityreport.Report) {
 	if rep.Family != parityreport.FamilyJVM {
 		return
 	}
 	fmt.Fprintf(os.Stderr, "parity: compile_coverage policy over %d materialized JVM pin(s) "+
 		"(source: corpus/manifest.json; a pin with no figure is REFUSED, a figure below 1.0000 "+
-		"is refused unless the manifest states an excluded_reason):\n", len(rep.Repos))
+		"is refused unless the manifest states an excluded_reason, and a figure of 1.0000 or "+
+		"above beside compiled < source is REFUSED as self-contradictory):\n", len(rep.Repos))
 	for _, rp := range rep.Repos {
 		switch cc := rp.CompileCoverage; {
 		case cc == nil:
 			fmt.Fprintf(os.Stderr, "  %-24s REFUSED — no compile_coverage recorded for this pin\n", rp.Name)
 		case cc.Coverage < 1.0 && cc.ExcludedReason == "":
 			fmt.Fprintf(os.Stderr, "  %-24s REFUSED — %d/%d = %.4f with no excluded_reason\n",
+				rp.Name, cc.CompiledFiles, cc.SourceFiles, cc.Coverage)
+		case cc.Coverage >= 1.0 && cc.CompiledFiles < cc.SourceFiles:
+			fmt.Fprintf(os.Stderr, "  %-24s REFUSED — %d/%d = %.4f is self-contradictory: a full "+
+				"compile claimed beside counts that say it did not happen\n",
 				rp.Name, cc.CompiledFiles, cc.SourceFiles, cc.Coverage)
 		case cc.Coverage < 1.0:
 			fmt.Fprintf(os.Stderr, "  %-24s accepted — %d/%d = %.4f, DOCUMENTED NEGATIVE: %s\n",
