@@ -138,15 +138,19 @@ full-indexes a tree you didn't mean. A full rebuild is never
 needed for branch switches; graphi keeps ONE graph per repository (under
 `~/.graphi/<fingerprint>/`) that always tracks whatever is checked out.
 
-> **Upgrading across the WP-J11 default-on flip?** The JVM binders move from
-> opt-in to default-on, so a pre-flip store's `*.java`/`*.kt` files carry no
-> confirmed `calls` / `references` / `implements` edges where the flipped
-> binary would mint them — content hashes cannot see the binary change, so
-> the only safe path is a cold re-index. Existing stores are **not** migrated
-> in place: run `graphi rebuild` once after upgrading to land the new
-> semantics-version stamp, and from then on `graphi sync` resumes the
-> usual incremental updates. `graphi status --json` exits 1 (actionable)
-> while the store is still pre-flip, which is the cue to rebuild.
+> **Upgrading across the semantics-version 11 → 12 stamp?** This is the index
+> migration for the WP-J11 JVM binder flip, shipped **ahead of** the flip. The
+> binders have **not** moved to default-on — they remain opt-in behind
+> `GRAPHI_JVM_TYPERESOLVE`, so the flip changes no `*.java`/`*.kt` edges today.
+> The migration lands first because content hashes cannot see a change of binary
+> semantics: once the binders do flip, a store built before the flip would carry
+> `*.java`/`*.kt` files with no confirmed `calls` / `references` / `implements`
+> edges where the flipped binary would mint them, and greeting it with "up to
+> date" would serve bytes that binary could never produce. Stores are **not**
+> migrated in place: run `graphi rebuild` once after upgrading to land the new
+> semantics-version stamp, and from then on `graphi sync` resumes the usual
+> incremental updates. `graphi status --json` exits 1 (actionable) while the store
+> still carries the old stamp, which is the cue to rebuild.
 
 Inside that per-repo state dir (`$XDG_STATE_HOME/graphi/<fingerprint>/` when
 set), `repo.json` records which repository the fingerprint belongs to,
