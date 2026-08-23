@@ -21,6 +21,20 @@
 // Determinism is a hard requirement: rows render in the source-file order (which
 // follows the plan: WP0…WP10, then the M0…M5 milestone exit gates), no map
 // iteration touches the output, so regenerating twice is byte-identical.
+//
+// # The citation contract (SW-205)
+//
+// Presence checking was never enough: a PASS row backed by a sha that names no
+// object, a path that does not exist, or a test that was never written was, to the
+// original rule, indistinguishable from a PASS row backed by real evidence. Four
+// independent audits hit four faces of that in one session. CheckCitations closes
+// it by RESOLVING what a row and a governed record cite.
+//
+// The contract — which citations this gate stands behind, which it classifies and
+// skips, why LINE NUMBERS ARE NOT PART OF IT, and the known limit that a citation
+// can resolve and still be the wrong-but-real thing — is declared in one place, at
+// the top of citation.go. Read it before trusting a green run: a gate whose
+// boundary is undocumented invites the next person to over-trust it.
 package evidence
 
 import (

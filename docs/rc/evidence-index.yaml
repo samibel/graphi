@@ -536,7 +536,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-186. Target class E3 DECLARED-AND-CHECKED. The naming rule binds every user-facing surface: `Go — GA (typed-confirmed)`, never GA alone. The naming rule is checked at the matrix row (capability: typed-confirmed carries the level), at docs/language-support.md (the row's level appears beside GA), at docs/stability-tiers.md (the word GA is bound to the level), and at trust-report --json (the JSON carries the level). SW-186 AC-6 binds the asset to its language: the per-language follow-on verifies the surface consistency end-to-end."
     status: PASS
     evidence_uri: docs/language-support.md
-    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
+    sha: ea759a2beee9d7d00ecce9fe46c46234e80955fa
     owner: ENG (Go)
     next_action: "Bind the naming rule across every user-facing surface for go: docs/language-support.md (typed-confirmed printed beside GA), docs/stability-tiers.md (typed-confirmed bound to GA), trust-report --json (typed-confirmed in the JSON), docs/coverage-matrix.yaml (capability: typed-confirmed). Gated by the F5-dispatch work."
     due: W3+
@@ -635,7 +635,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN, degraded by two measured holes. SW-183 audit (docs/rc/capability-audit-2026-08-19.md, row 6): java IS one of the 16 resolver-backed languages that produce a genuine cross-file edge, so the level is not an over-claim — but the edge is a calls edge and java produces NO imports edge at all, which the audit names explicitly and which a G8 row must not round up. The abstention surface is also silent, though the measurement is inherited rather than java-specific and is labelled as such: SW-180 §10.4 measured trust-report reporting files_skipped 0 and abstention.registrants empty over a NON-JVM tree whose files carry no node. The surface is registry-global, so the shape is expected to carry, but it has NOT been measured on java and this row does not claim it has. docs/language-support.md is separately and explicitly permitted to be stale by its own header. Neither is fixed by declaring the row green."
     status: PASS
     evidence_uri: docs/language-support.md
-    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
+    sha: ea759a2beee9d7d00ecce9fe46c46234e80955fa
     owner: ENG (JVM)
     next_action: "Cite capability_test.go and a trust-report capture with shas once the abstention surface reports honestly (W0.g follow-on) and the language-support row is flipped by SW-179."
     due: W1
@@ -734,7 +734,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-174. Target class E1 HARNESS-PROVEN, degraded by the same two holes as java G8, with the same caveat: the abstention silence (files_skipped 0, abstention.registrants empty) was measured on a NON-JVM tree in SW-180 §10.4 and is inherited here, not measured on kotlin; docs/language-support.md is permitted to be stale by its own header. SW-183 audit (row 8) places kotlin among the 16 resolver-backed languages that produce a genuine cross-file edge, and records the same qualification as java: the edge is a calls edge and kotlin produces NO imports edge."
     status: PASS
     evidence_uri: docs/language-support.md
-    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
+    sha: ea759a2beee9d7d00ecce9fe46c46234e80955fa
     owner: ENG (JVM)
     next_action: "Cite capability_test.go and a trust-report capture with shas once the abstention surface reports honestly and the language-support row is flipped by SW-179."
     due: W1
@@ -801,7 +801,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E2 CORPUS-MEASURED. MEASURED 2026-08-20 by SW-192 on flask at the real 3.0.0 sha (the manifest pin 735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b is STALE — verified via git ls-remote; real sha is 735a4701d6d5e848241e7d7535db898efb62d400). The F5 measurement SUCCEEDED IN RUNNING but its finding is FAILED: 70 spurious imports edges (8.0% of flask's 879 imports), all 24 importers under src/flask/* doing `import typing as t` (stdlib) acquire 3 spurious edges into tests/typing/typing_*.py. Mechanism (engine/link/resolve_common.go:521 + engine/link/resolve_python.go:86): pyClause returns 'typing' for importPath='typing'; clausePackageFileNodes walks every directory declaring the 'typing' clause and returns every file node; the resolver mints an imports edge for each. SAME SHAPE AS PARITY-002 (Go pre-ADR-0009). Per SW-181 AC-9: the measurement fails to support GA at cross-file-heuristic, so Python is RE-GRADED, not declared. The re-grade is filed as PYTHONFANOUT-001, scheduled as a separate product-byte change with its own ADR and candidate move, NOT executed in this commit. Two `graphi rebuild` dispatches agree on every per-row count (1058/2214/879/70 in both); the snapshot envelope sha256 differs because it embeds a timestamp. The cmd/parity -family python gate is unbound (cmd/parity/main.go:79 rejects anything other than go|jvm; the python driver is the same gap SW-176 AC-2 settled for the JVM). The substantive half of -counts-diff (every per-row count agrees) holds."
     status: UNKNOWN
     evidence_uri: "docs/rc/python-f5-measurement.md"
-    sha: "d8940e141ea4119d08bc026b2224d93c71e9fab61360e1c56d7f4db6ffa20ef5"
+    sha: "77890c17f01aec17864c121df5264843cdea862b2b794b4ef65d9c22240db1a4"
     owner: W2-PY
     next_action: "PYTHONFANOUT-001 fix (python resolver needs module-relative directory lookup, the same shape ADR 0009 gave Go) — re-measure after the fix lands; re-grade python to the level the fix supports; cite the post-fix measurement. Until the fix lands, the row stays UNKNOWN and SW-181 AC-9 binds: re-graded, not declared."
     due: W2
@@ -845,7 +845,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM's G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the python-specific scoping of the surface is not measured. SW-181 AC-8 binds the naming rule on docs/language-support.md and any other surface that names python GA — `Python — GA (cross-file-heuristic)`, never GA alone. The LINK-004 defect is the discoverable content the surface must carry under the disclosure contract. The audit row (capability-audit-2026-08-19.md row 13) is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-181 deliverable."
     status: PASS
     evidence_uri: docs/language-support.md
-    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
+    sha: ea759a2beee9d7d00ecce9fe46c46234e80955fa
     owner: W2-PY
     next_action: "Cite capability_test.go + a trust-report capture with shas once docs/language-support.md is updated and the abstention surface reports honestly (W0.g follow-on)."
     due: W2
@@ -972,7 +972,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM and python G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the TS-family-specific scoping of the surface is not measured. SW-182 AC-7 binds the naming rule on docs/language-support.md and any other surface that names any family member GA — `TypeScript — GA (cross-file-heuristic)` and `JavaScript — GA (cross-file-heuristic)` and `TSX — GA (cross-file-heuristic)`, never GA alone. The family's LINK-001 immunity is the discoverable content the surface must carry under the disclosure contract. The audit row is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-182 deliverable."
     status: PASS
     evidence_uri: docs/language-support.md
-    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
+    sha: ea759a2beee9d7d00ecce9fe46c46234e80955fa
     owner: W2-TS
     next_action: "Cite the per-typescript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers typescript."
     due: W2
@@ -1088,7 +1088,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM and python G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the TS-family-specific scoping of the surface is not measured. SW-182 AC-7 binds the naming rule on docs/language-support.md and any other surface that names any family member GA — `TypeScript — GA (cross-file-heuristic)` and `JavaScript — GA (cross-file-heuristic)` and `TSX — GA (cross-file-heuristic)`, never GA alone. The family's LINK-001 immunity is the discoverable content the surface must carry under the disclosure contract. The audit row is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-182 deliverable."
     status: PASS
     evidence_uri: docs/language-support.md
-    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
+    sha: ea759a2beee9d7d00ecce9fe46c46234e80955fa
     owner: W2-TS
     next_action: "Cite the per-tsx artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers tsx."
     due: W2
@@ -1204,7 +1204,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-182. Target class E1 HARNESS-PROVEN, with the same honest bound as the JVM and python G8: the abstention surface (SW-171) is silent on every language by the same inheritance, and the TS-family-specific scoping of the surface is not measured. SW-182 AC-7 binds the naming rule on docs/language-support.md and any other surface that names any family member GA — `TypeScript — GA (cross-file-heuristic)` and `JavaScript — GA (cross-file-heuristic)` and `TSX — GA (cross-file-heuristic)`, never GA alone. The family's LINK-001 immunity is the discoverable content the surface must carry under the disclosure contract. The audit row is the existing clamp; the live surface carries it only when docs/language-support.md is updated, which is in the SW-182 deliverable."
     status: PASS
     evidence_uri: docs/language-support.md
-    sha: 659d6d27205fc22a09f80b3eadbb9dfd671b5037
+    sha: ea759a2beee9d7d00ecce9fe46c46234e80955fa
     owner: W2-TS
     next_action: "Cite the per-javascript artefact (capability_test.go + trust-report capture with shas, or engine/conformance/typescriptparity_test.go + corpus/hero-typescript, per the gate) once discharged. AC-2: a gate discharged on typescript alone does not discharge it for tsx or javascript unless the artefact genuinely covers javascript."
     due: W2

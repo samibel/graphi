@@ -1,0 +1,37 @@
+# Citation grandfather list — the SW-205 migration ratchet.
+#
+# WHAT THIS IS. `go run ./cmd/evidence -check` resolves every citation the
+# evidence index and the governed records make: a cited path must exist at HEAD, a
+# recorded sha must be the sha of the bytes it names, a `file.go::Symbol` citation
+# must resolve to a declaration. Turning those rules on found breaches that this
+# story cannot fix — because the file they need is owned by an in-flight story, or
+# because the artifact they cite is work that has not happened yet. Each one is
+# listed here with the story that drains it.
+#
+# HOW IT RATCHETS. Every field is mandatory. An entry whose `owner:` is not a story
+# id is a violation. An entry whose target NO LONGER produces a violation is
+# UNUSED, and `-check` fails with "DELETE THIS ENTRY" — so the list can only ever
+# shrink. It is not a place to park a new breach: a citation added after this story
+# fails the gate, and the fix is the citation, not a new line here.
+#
+# `target:` is the violation KEY that `-check` prints under each failure, verbatim:
+#
+#     <gate id or governed document> :: <rule> :: <what was cited>
+#
+# The key deliberately carries no line number, so a record growing a new section on
+# top does not silently un-suppress or re-suppress anything.
+#
+# SIZE AT LANDING (SW-205, 2026-08-23): 2 entries. The measured backlog was larger
+# — 40 violations at `main` @ 3fe97f0 — but 8 were drained by this story's own
+# `-record-citations` run, 5 were false positives of a first-cut rule set that was
+# then corrected, and the rest were exempted by the declared AC-7 markers the
+# records already carry. Only these two need an owner.
+
+entries:
+  - target: "docs/rc/parity-matrix-real-repo.md :: missing-path :: docs/rc/parity-classes-ts-real-repo.yaml"
+    reason: "The record describes, in the future tense, the shape a TypeScript real-repo parity driver would have, and names the parity-class YAML it would ship. The file is real work that has not been done: git log --all finds no commit that ever added it. This is a citation of a planned artifact, and it resolves the moment the artifact lands."
+    owner: SW-193
+
+  - target: "docs/decisions/2026-08-language-ga-wpj11-flip-gate.md :: missing-path :: docs/bench/lang-budget.md"
+    reason: "The path is simply wrong: the binary-size budget record is bench/lang-budget.md, not docs/bench/lang-budget.md. SW-205 cannot fix it in place because docs/decisions/2026-08-language-ga-wpj11-flip-gate.md is held by SW-208's open PR #133, and two branches editing one record is how a rewrite happens by accident. SW-208 corrects the prefix on its own branch."
+    owner: SW-208

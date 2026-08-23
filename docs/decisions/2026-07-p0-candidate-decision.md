@@ -4,6 +4,30 @@
 **Spec:** P0 Diagnosis + Candidate Decision · **Risk:** high ·
 **Sign-off:** PENDING (SW-135 is a build; the human ship gate signs off)
 
+## CORRECTION — 2026-08-23 (SW-205): the Output path note cites a file that was never created
+
+Per the never-rewrite discipline this block is **added**; nothing below it is
+rewritten, re-pointed or deleted, and the decision this record makes is unchanged
+and still stands.
+
+**C-1 — `docs/decisions/2026-07-p0-candidate-correction-decision.md` does not
+exist and never did.** The Output path note below quotes it as the name Delta PRD
+§8 gave this artifact, and says in the same breath that this file carries the
+ticket's path instead. That is accurate as prose, but the quoted name is written
+as a path citation and reads, to anything mechanical, as a claim that the file is
+there. It is not: `git log --all --diff-filter=A -- 'docs/decisions/2026-07-p0-candidate-correction-decision.md'`
+returns nothing. **The artifact is this record**; the PRD's name for it was never
+used and no such file should be looked for.
+
+**Why this block, and what it costs.** SW-205's citation verifier resolves every
+path a governed record cites, and it cannot tell a quoted NAME from a claim that a
+file exists — a declared limit of its grammar, recorded in
+`internal/evidence/citation.go`. This banner is the project's sanctioned response
+to a false citation in a published record: state the truth on top, leave the body
+alone. It also marks this P0-era record — superseded five candidate moves over —
+as published-and-not-to-be-rewritten, so the verifier stops requiring its
+citations to resolve and reports them in its exempted count instead.
+
 **Decision.** The frozen P0 candidate **v0.7.0 at `5815db5`** cannot produce the evidence
 PRD §12.2 gate 9 requires, and cannot be made to. **Outcome B is selected:** one bounded
 correction candidate is authorised, per Delta PRD §6.2 and story SW-136.
