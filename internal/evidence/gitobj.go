@@ -121,16 +121,6 @@ func (g *Git) ObjectType(sha string) (string, error) {
 	return t, nil
 }
 
-// PathExistsAtCommit reports whether a path exists in the tree of a given commit.
-// This is what a commit-sha citation actually claims.
-func (g *Git) PathExistsAtCommit(commit, p string) (bool, error) {
-	_, err := g.run("rev-parse", "--verify", "--quiet", commit+":"+p)
-	if err != nil {
-		return false, nil
-	}
-	return true, nil
-}
-
 // FileAtHEAD returns the committed bytes of a path.
 func (g *Git) FileAtHEAD(p string) ([]byte, error) {
 	cmd := exec.Command("git", "show", "HEAD:"+p)

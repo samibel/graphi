@@ -398,6 +398,11 @@ func (r CitationReport) FormatCitations() string {
 		fmt.Fprintf(&b, "citation check NOTE — %d PASS row(s) cite only classified-but-unresolvable evidence (a template, a command or an external URL) and are NOT counted as verified: %s\n",
 			len(r.UnbackedPASS), strings.Join(r.UnbackedPASS, " "))
 	}
+	// What the ratchet is hiding is printed, not merely counted: a reviewer must be
+	// able to read the suppressed breaches off a green run.
+	for _, v := range r.Suppressed {
+		fmt.Fprintf(&b, "citation check GRANDFATHERED — %s (%s)\n", v.Key(), v.Detail)
+	}
 	if r.Pass() {
 		b.WriteString("citation check PASS — every verified citation resolves, every recorded sha is the sha of what it cites.\n")
 		return b.String()
