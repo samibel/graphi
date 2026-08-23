@@ -37,13 +37,44 @@ import (
 // kind: "crash_condition" rows instead of ignoring them. Every addition is
 // additive, so a schema-1 reader still parses a schema-2 document — but it would
 // silently miss a FAILING recovery row, which is exactly why the version moves.
-const SchemaVersion = 2
+//
+// 2 -> 3 (SW-204): RepoRef gained CompileCoverage, the per-pin oracle-compile
+// figure carried out of corpus/manifest.json, and Finalize gained the JVM-scoped
+// rule that reads it. The addition is additive — a schema-2 reader still parses
+// a schema-3 document — but it would read a JVM report without seeing the
+// denominator the refusal is computed from, which is why the version moves.
+const SchemaVersion = 3
 
 // HarnessVersion identifies the harness that produced a report. It is recorded
 // in every report so a verdict can never be attributed to the wrong harness.
 // "/2" is the SW-158 harness: the same change-class rows plus the three
 // lifecycle rows.
+//
+// SW-204 deliberately did NOT move it. This version names how a ROW is
+// measured, and SW-204 changes no row: the change-class and crash-condition
+// verdicts, counts and snapshot digests a run produces are byte-unchanged. What
+// moved is the publication policy over an already-measured run, which
+// SchemaVersion (a new field) and this comment record instead. Attributing a
+// verdict to the wrong harness is the hazard this constant guards; a verdict
+// produced here is attributable to exactly the harness "/2" always named.
 const HarnessVersion = "parity-matrix/2"
+
+// FamilyJVM is the Report.Family value for the WP-J7 JVM matrix. It is declared
+// as a constant because Finalize's compile-coverage rule is scoped by it: a bare
+// string literal in the one place a gate branches on family is how the Go FR-7
+// matrix would get retroactively refused by a rule about a field it never
+// carries.
+const FamilyJVM = "jvm"
+
+// ReasonPrefixCompileCoverage prefixes every NotPublishableBecause entry the
+// JVM compile-coverage rule raises. It exists so the reason set is
+// machine-partitionable: SW-204's evidence claim is that this prefix is ABSENT
+// from a run's refusal list while the incomplete-run reason is still present,
+// and a claim about a substring nobody pinned is not checkable.
+//
+// It is a prefix, not an allowlist key. Nothing in this package or in cmd/parity
+// may waive a reason by matching it — see the comment on the rule in Finalize.
+const ReasonPrefixCompileCoverage = "compile_coverage "
 
 // KindChangeClass and KindCrashCondition mirror docs/rc/parity-classes.yaml's
 // `kind` vocabulary as WIRE VALUES. They are declared here because Finalize
@@ -217,6 +248,40 @@ type RepoRef struct {
 	// SourceFiles is the manifest's primary-language file count, used by
 	// non-Go families where GoFiles is 0 by construction (WP-J7 / SW-176).
 	SourceFiles int `json:"source_files,omitempty"`
+	// CompileCoverage is the manifest's per-pin oracle-compile figure for this
+	// pin, carried into the report by the runner so the publishability gate
+	// reads a MEASURED denominator instead of assuming one (SW-204).
+	//
+	// nil means corpus/manifest.json records no figure for the pin. On the JVM
+	// family that is a REFUSAL, not a default: Finalize never reads a missing
+	// figure as 1.0. See the rule there.
+	CompileCoverage *CompileCoverageRef `json:"compile_coverage,omitempty"`
+}
+
+// CompileCoverageRef is the report's own copy of the decision-relevant fields of
+// corpus.CompileCoverage.
+//
+// IT IS FLATTENED ON PURPOSE. internal/parityreport imports core/profile and
+// nothing else in this module: it is the report SCHEMA, and a schema package
+// that reaches into the corpus loader to name one of its types acquires that
+// package's shape as part of its wire contract. The four fields below are the
+// ones the gate decides on and the ones a reader needs to check the decision;
+// the figure's own provenance (measured_at, candidate_sha, runner_class,
+// oracle) stays in corpus/manifest.json, which is where a reader verifies it.
+type CompileCoverageRef struct {
+	// SourceFiles and CompiledFiles are the denominator and numerator exactly
+	// as the oracle measured them. They travel with Coverage so a refusal names
+	// the figure rather than asserting one.
+	SourceFiles   int `json:"source_files"`
+	CompiledFiles int `json:"compiled_files"`
+	// Coverage is compiled/source as the oracle computed it, never as a reader
+	// re-derives it — re-deriving would silently disagree at the 4th decimal.
+	Coverage float64 `json:"coverage"`
+	// ExcludedReason, when non-empty, is the pin's DOCUMENTED NEGATIVE: the
+	// measured reason the figure is below 1.0. Its presence is what separates a
+	// disclosed limit from an unexplained one; it is not a waiver, and it does
+	// not make anything else about the run publishable.
+	ExcludedReason string `json:"excluded_reason,omitempty"`
 }
 
 // ClassResult is one change-class row of the matrix.
@@ -566,6 +631,47 @@ func (r Report) CountsSetDigest() string {
 	return out
 }
 
+// RefusalSet returns the sorted, de-duplicated set of reasons this run refuses
+// publication for — NotPublishableBecause as a SET rather than as a list.
+//
+// WHY A THIRD SET WHEN VerdictSet AND CountsSet ALREADY EXIST (SW-204). Both of
+// those compare runs that CAN publish. Neither says anything when both runs
+// refuse, which is the state the JVM matrix is in and will stay in until the
+// corpus hosts the two missing source shapes: -verdict-diff and -counts-diff
+// exit 2 on an unpublishable pair and stop there, so "the two dispatches refuse
+// for the same reasons" — a real determinism property — had no instrument.
+// This is that instrument.
+//
+// It is deliberately NOT a filter. Every reason is in the set; there is no
+// parameter, flag or list by which a caller may drop one. A comparison that can
+// be told to ignore a reason is a comparison that can be told to ignore the
+// reason that mattered.
+func (r Report) RefusalSet() []string {
+	seen := make(map[string]bool, len(r.NotPublishableBecause))
+	out := make([]string, 0, len(r.NotPublishableBecause))
+	for _, why := range r.NotPublishableBecause {
+		if seen[why] {
+			continue
+		}
+		seen[why] = true
+		out = append(out, why)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// RefusalSetDigest renders the refusal set as a stable, comparable string. An
+// empty set (a publishable run) renders as the empty string, so two publishable
+// runs trivially agree — agreement on refusals is a statement about refusals and
+// never a statement that either run published.
+func (r Report) RefusalSetDigest() string {
+	out := ""
+	for _, why := range r.RefusalSet() {
+		out += why + ";"
+	}
+	return out
+}
+
 // Finalize computes Complete, Publishable, Outcome and GateNote from the rows
 // and the provenance. It is the ONLY place a run's verdict is decided, so the
 // fail-closed rules live in one auditable function.
@@ -657,6 +763,62 @@ func (r *Report) Finalize(declaredChangeClasses, declaredCrashConditions int) {
 	}
 	if r.Provenance.RunnerClass == "" {
 		reasons = append(reasons, "no runner class recorded: an unattributed measurement is not evidence")
+	}
+	// COMPILE-COVERAGE ACCEPTANCE (SW-204) — JVM FAMILY ONLY.
+	//
+	// The figure is measured per pin by cmd/jvmcoverage and stored in
+	// corpus/manifest.json; the runner carries it here. Before SW-204 nothing
+	// downstream read it, so a pin with no figure at all and a pin that compiles
+	// perfectly were indistinguishable to the gate.
+	//
+	// The rule has exactly three arms and no fourth:
+	//
+	//   - NO FIGURE -> refuse. An unmeasured pin is refused, never assumed
+	//     complete. This is the fail-closed direction: the alternative reads a
+	//     missing measurement as a passing one, which is the failure mode the
+	//     whole report exists to prevent.
+	//   - coverage < 1.0 AND no excluded_reason -> refuse. A partial compile
+	//     nobody explained is an unknown, and an unknown is not evidence.
+	//   - coverage < 1.0 AND an excluded_reason -> ACCEPT. This is okio's
+	//     0.0000: measured, stated, and stated in the manifest where a reader
+	//     finds it. A documented negative costs the CLAIM (the pin backs no
+	//     coverage figure and no corpus-scale count) and not the run's
+	//     publishability.
+	//
+	// WHY THIS IS NOT THE "CHEAP WAY PAST THE GATE" THE COVERAGE-LIMIT COMMENT
+	// BELOW FORBIDS. That comment refuses to let a run buy publishability by
+	// DISCLOSING that a declared row did not run. This rule disclaims nothing
+	// about a row: every declared row still has to be decided, and the
+	// incomplete-run reason above is untouched by everything here. What an
+	// excluded_reason discharges is only the question this rule asks — "is this
+	// pin's compile figure known?" — and it discharges it with a measurement.
+	//
+	// AND THERE IS NO ALLOWLIST. No named reason may be waived, here or in
+	// cmd/parity. A flag that let one through would rebuild the forbidden escape
+	// one flag over, and SW-204 AC-4c says so in as many words.
+	//
+	// It is scoped to Family == FamilyJVM because compile coverage is a JVM-pin
+	// concept: the Go FR-7 matrix's pins carry no such figure and must not be
+	// retroactively refused for lacking a field that was never measured for
+	// them.
+	if r.Family == FamilyJVM {
+		for _, rp := range r.Repos {
+			cc := rp.CompileCoverage
+			switch {
+			case cc == nil:
+				reasons = append(reasons, ReasonPrefixCompileCoverage+
+					"missing for JVM pin "+rp.Name+
+					": corpus/manifest.json records no compile_coverage for this pin, so the "+
+					"run has no measured denominator for it. A pin whose compile figure is "+
+					"unknown is refused, never assumed complete.")
+			case cc.Coverage < 1.0 && cc.ExcludedReason == "":
+				reasons = append(reasons, fmt.Sprintf(
+					"%sbelow 1.0000 and undocumented for JVM pin %s: %d of %d sources compiled "+
+						"(coverage %.4f) and corpus/manifest.json carries no excluded_reason. An "+
+						"unexplained partial compile is an unknown, not a disclosed limit.",
+					ReasonPrefixCompileCoverage, rp.Name, cc.CompiledFiles, cc.SourceFiles, cc.Coverage))
+			}
+		}
 	}
 	for _, rp := range r.Repos {
 		if rp.PinnedSHA != "" && rp.HeadSHA != "" && !shaPrefixMatch(rp.PinnedSHA, rp.HeadSHA) {

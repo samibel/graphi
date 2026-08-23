@@ -2,6 +2,7 @@ package parity
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -629,6 +630,237 @@ func TestReport_FailsClosed(t *testing.T) {
 			t.Fatal("a manifest pin mismatch must refuse publication")
 		}
 	})
+
+	// -----------------------------------------------------------------------
+	// SW-204: the JVM compile-coverage acceptance rule.
+	//
+	// These subtests live beside the others deliberately. The rule is a new
+	// arm of the SAME fail-closed function, and the FIRST of them exists to
+	// prove the arm did not reach a family it was never about — a Go matrix
+	// pin carries no compile_coverage and must not be retroactively refused
+	// for lacking a field nobody ever measured for it.
+	// -----------------------------------------------------------------------
+
+	jvmPin := func(name string, cc *parityreport.CompileCoverageRef) parityreport.RepoRef {
+		return parityreport.RepoRef{Name: name, Tier: 3, SourceFiles: 100, CompileCoverage: cc}
+	}
+	coverageReasons := func(r parityreport.Report) []string {
+		var out []string
+		for _, why := range r.NotPublishableBecause {
+			if strings.HasPrefix(why, parityreport.ReasonPrefixCompileCoverage) {
+				out = append(out, why)
+			}
+		}
+		return out
+	}
+
+	t.Run("the Go matrix is not refused for a field it never carries", func(t *testing.T) {
+		r := clean() // Family is empty: this is the PRD FR-7 Go matrix
+		r.Repos = append(r.Repos, jvmPin("cobra", nil))
+		r.Finalize(15, 2)
+		if !r.Publishable {
+			t.Fatalf("a Go-family run must not be refused by the JVM compile-coverage rule: %v", r.NotPublishableBecause)
+		}
+		if got := coverageReasons(r); len(got) != 0 {
+			t.Fatalf("the JVM rule fired on a Go-family run: %v", got)
+		}
+	})
+
+	t.Run("a JVM pin with no compile_coverage refuses (fail-closed)", func(t *testing.T) {
+		r := clean()
+		r.Family = parityreport.FamilyJVM
+		r.Repos = append(r.Repos, jvmPin("guava", nil))
+		r.Finalize(15, 2)
+		if r.Publishable {
+			t.Fatal("a JVM pin whose compile_coverage is missing must refuse publication: an unmeasured pin is not a measured one")
+		}
+		got := coverageReasons(r)
+		if len(got) != 1 {
+			t.Fatalf("want exactly one compile_coverage reason, got %d: %v", len(got), r.NotPublishableBecause)
+		}
+		if !strings.Contains(got[0], "guava") {
+			t.Errorf("the refusal must name the pin: %q", got[0])
+		}
+	})
+
+	t.Run("a JVM pin below 1.0 with no excluded_reason refuses", func(t *testing.T) {
+		r := clean()
+		r.Family = parityreport.FamilyJVM
+		r.Repos = append(r.Repos, jvmPin("halfway", &parityreport.CompileCoverageRef{
+			SourceFiles: 100, CompiledFiles: 50, Coverage: 0.5}))
+		r.Finalize(15, 2)
+		if r.Publishable {
+			t.Fatal("an unexplained partial compile must refuse publication")
+		}
+		got := coverageReasons(r)
+		if len(got) != 1 {
+			t.Fatalf("want exactly one compile_coverage reason, got %d: %v", len(got), r.NotPublishableBecause)
+		}
+		// The refusal has to name the FIGURE, not merely the fact. A reason a
+		// reader cannot check against corpus/manifest.json is not actionable.
+		for _, want := range []string{"halfway", "50 of 100", "0.5000"} {
+			if !strings.Contains(got[0], want) {
+				t.Errorf("refusal %q does not name %q", got[0], want)
+			}
+		}
+	})
+
+	t.Run("a JVM pin below 1.0 WITH an excluded_reason is accepted", func(t *testing.T) {
+		// This is okio's published 0.0000 case, verbatim in shape: measured,
+		// stated, and stated where a reader finds it.
+		r := clean()
+		r.Family = parityreport.FamilyJVM
+		r.Repos = append(r.Repos, jvmPin("okio", &parityreport.CompileCoverageRef{
+			SourceFiles: 89, CompiledFiles: 0, Coverage: 0.0,
+			ExcludedReason: "Not compiled in the oracle's required layout — see `tried`. MEASURED, not assumed."}))
+		r.Finalize(15, 2)
+		if got := coverageReasons(r); len(got) != 0 {
+			t.Fatalf("a documented negative must not refuse the run: %v", got)
+		}
+		if !r.Publishable {
+			t.Fatalf("a documented negative costs the CLAIM, not the run's publishability: %v", r.NotPublishableBecause)
+		}
+	})
+
+	t.Run("a JVM pin at 1.0 is accepted", func(t *testing.T) {
+		r := clean()
+		r.Family = parityreport.FamilyJVM
+		r.Repos = append(r.Repos, jvmPin("guava", &parityreport.CompileCoverageRef{
+			SourceFiles: 623, CompiledFiles: 623, Coverage: 1.0}))
+		r.Finalize(15, 2)
+		if !r.Publishable {
+			t.Fatalf("a fully-compiled pin must not refuse: %v", r.NotPublishableBecause)
+		}
+	})
+
+	t.Run("an excluded_reason buys nothing else: a skipped row still refuses", func(t *testing.T) {
+		// The laundering this closes. An excluded_reason discharges exactly one
+		// question — "is this pin's compile figure known?" — and no other. It
+		// must not become a way for a run with an undecided row to publish.
+		r := clean()
+		r.Family = parityreport.FamilyJVM
+		r.Classes[3].Verdict = parityreport.VerdictSkipped
+		r.Repos = append(r.Repos, jvmPin("okio", &parityreport.CompileCoverageRef{
+			SourceFiles: 89, CompiledFiles: 0, Coverage: 0.0, ExcludedReason: "measured negative"}))
+		r.Finalize(15, 2)
+		if r.Publishable {
+			t.Fatal("a documented compile-coverage negative must not make a run with a SKIPPED row publishable")
+		}
+	})
+}
+
+// TestJVMRefusalSet_IsExactlyTheIncompleteRunReason pins SW-204 AC-4's evidence
+// claim in the shape the ticket states it, hermetically.
+//
+// THE CLAIM. At the SW-204 candidate the JVM run still refuses, because 8 of the
+// 52 crossed cells are SKIPPED for a MEASURED absence of any target shape in the
+// three pinned repositories. What SW-204's wiring changes is the SHAPE of that
+// refusal: the reason list must name the skip and NOTHING ELSE — in particular
+// no compile_coverage reason, because every pin's figure is now read and every
+// pin's figure is either 1.0000 or a documented negative.
+//
+// A run log cannot prove that; it can only exhibit it once. This test asserts it
+// on a fixture whose pins carry exactly the three published manifest figures.
+func TestJVMRefusalSet_IsExactlyTheIncompleteRunReason(t *testing.T) {
+	p := parityreport.NewProvenance("deadbeef")
+	p.WorktreeClean = true
+	p.ProductDiffEmpty = true
+	p.RunnerClass = "ubuntu-latest"
+
+	r := parityreport.Report{Provenance: p, Family: parityreport.FamilyJVM}
+	for i := 0; i < 15; i++ {
+		r.Classes = append(r.Classes, parityreport.ClassResult{
+			ID: fmt.Sprintf("jvm_c%02d", i), Kind: parityreport.KindChangeClass, Verdict: parityreport.VerdictPass})
+	}
+	// One row could not find its target shape in any pin — the SKIPPED cell.
+	r.Classes[7].Verdict = parityreport.VerdictSkipped
+	r.Repos = []parityreport.RepoRef{
+		{Name: "guava", Tier: 3, CompileCoverage: &parityreport.CompileCoverageRef{
+			SourceFiles: 623, CompiledFiles: 623, Coverage: 1.0}},
+		{Name: "okio", Tier: 3, CompileCoverage: &parityreport.CompileCoverageRef{
+			SourceFiles: 89, CompiledFiles: 0, Coverage: 0.0,
+			ExcludedReason: "Not compiled in the oracle's required layout — see `tried`. MEASURED, not assumed."}},
+		{Name: "kotlinx.serialization", Tier: 3, CompileCoverage: &parityreport.CompileCoverageRef{
+			SourceFiles: 52, CompiledFiles: 52, Coverage: 1.0}},
+	}
+	r.Finalize(15, 0)
+
+	if r.Publishable {
+		t.Fatal("a run with a SKIPPED row must not publish — SW-204 AC-4d: Publishable is NOT reachable by this story")
+	}
+	if len(r.NotPublishableBecause) != 1 {
+		t.Fatalf("want exactly one refusal reason, got %d: %#v", len(r.NotPublishableBecause), r.NotPublishableBecause)
+	}
+	only := r.NotPublishableBecause[0]
+	if !strings.HasPrefix(only, "incomplete run:") || !strings.Contains(only, "skipped=true") {
+		t.Fatalf("the single reason must be the incomplete-run reason naming the skip: %q", only)
+	}
+	if strings.Contains(only, parityreport.ReasonPrefixCompileCoverage) {
+		t.Fatalf("a compile_coverage reason survived into the refusal list: %q", only)
+	}
+}
+
+// TestRefusalSet_ComparesReasonsAndNeverCertifiesPublication pins the contract
+// of the instrument -refusal-diff is built on (SW-204 AC-4a).
+func TestRefusalSet_ComparesReasonsAndNeverCertifiesPublication(t *testing.T) {
+	mk := func(reasons ...string) parityreport.Report {
+		return parityreport.Report{NotPublishableBecause: reasons}
+	}
+	// Order is not a disagreement: the set is a SET.
+	a := mk("incomplete run: …", "dirty worktree: …")
+	b := mk("dirty worktree: …", "incomplete run: …")
+	if a.RefusalSetDigest() != b.RefusalSetDigest() {
+		t.Fatal("two dispatches refusing for the same reasons in a different order must agree")
+	}
+	// An extra reason IS a disagreement.
+	c := mk("incomplete run: …", "dirty worktree: …", "compile_coverage missing for JVM pin guava: …")
+	if a.RefusalSetDigest() == c.RefusalSetDigest() {
+		t.Fatal("an extra refusal reason must show as a disagreement — this is the whole point of the mode")
+	}
+	// A publishable run has an EMPTY refusal set, so agreement between two
+	// publishable runs says nothing about publication. The mode compares
+	// refusals; it does not mint them.
+	if got := mk().RefusalSetDigest(); got != "" {
+		t.Fatalf("a report with no refusals must digest to the empty string, got %q", got)
+	}
+	// And there is no filter: every reason is in the set.
+	if len(c.RefusalSet()) != 3 {
+		t.Fatalf("RefusalSet dropped a reason: %v", c.RefusalSet())
+	}
+}
+
+// TestManifestJVMPins_AllPassTheCompileCoveragePolicy reads the REAL
+// corpus/manifest.json and asserts that each JVM pin the runner would
+// materialize satisfies SW-204's acceptance rule — through the same
+// compileCoverageRef the runner uses, not a re-implementation of it.
+//
+// It is the standing guard for AC-1/AC-2 against the manifest: if a JVM pin is
+// added without a compile_coverage figure, or an existing figure drops below
+// 1.0000 without an excluded_reason, this fails at PR time rather than at the
+// next dispatch.
+func TestManifestJVMPins_AllPassTheCompileCoveragePolicy(t *testing.T) {
+	m, err := corpus.LoadManifest(filepath.Join("..", "..", "corpus", "manifest.json"))
+	if err != nil {
+		t.Fatalf("LoadManifest: %v", err)
+	}
+	pins := jvmRepos(m, 3, false)
+	if len(pins) == 0 {
+		t.Fatal("the JVM candidate pool is EMPTY: there is nothing to check the policy against")
+	}
+	rep := parityreport.Report{Family: parityreport.FamilyJVM}
+	for _, e := range pins {
+		ref := compileCoverageRef(e)
+		if ref == nil {
+			t.Errorf("JVM pin %q carries no compile_coverage in corpus/manifest.json", e.Name)
+		}
+		rep.Repos = append(rep.Repos, parityreport.RepoRef{Name: e.Name, CompileCoverage: ref})
+	}
+	rep.Finalize(parityreport.FR7ChangeClasses, 0)
+	for _, why := range rep.NotPublishableBecause {
+		if strings.HasPrefix(why, parityreport.ReasonPrefixCompileCoverage) {
+			t.Errorf("a published JVM pin fails the compile-coverage policy: %s", why)
+		}
+	}
 }
 
 // TestProvenance_NeverClaimsItRanAtTheCandidate pins the sentence AC-12

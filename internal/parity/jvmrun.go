@@ -204,7 +204,7 @@ func (r *Runner) RunJVM(ctx context.Context, m corpus.Manifest, rows []ClassRow,
 	axes := jvmAxes()
 	rep := parityreport.Report{
 		Provenance:   prov,
-		Family:       "jvm",
+		Family:       parityreport.FamilyJVM,
 		MaxTier:      r.MaxTier,
 		ClassFilter:  r.Classes,
 		MatrixSource: ClassesPathJVM,
@@ -264,7 +264,8 @@ func (r *Runner) RunJVM(ctx context.Context, m corpus.Manifest, rows []ClassRow,
 			rep.Repos = append(rep.Repos, parityreport.RepoRef{
 				Name: e.Name, URL: e.URL, Ref: e.Ref,
 				PinnedSHA: e.SHA, HeadSHA: head, Tier: e.Tier,
-				SourceFiles: jvmFileCountOrZero(e),
+				SourceFiles:     jvmFileCountOrZero(e),
+				CompileCoverage: compileCoverageRef(e),
 			})
 		}
 	}
@@ -294,6 +295,30 @@ func jvmFileCountOrZero(e corpus.Entry) int {
 		return 0
 	}
 	return e.Measured.SourceFiles
+}
+
+// compileCoverageRef carries a pin's measured compile-coverage figure out of the
+// manifest and into the report (SW-204).
+//
+// Before this function the RepoRef was built from Name/URL/Ref/PinnedSHA/
+// HeadSHA/Tier/SourceFiles and e.CompileCoverage was silently DROPPED, so the
+// figure cmd/jvmcoverage measures had no reader downstream of the producer and
+// the publishability gate could not tell an unmeasured pin from a perfect one.
+//
+// A nil entry stays nil rather than becoming a zero-valued struct: nil means
+// "the manifest records no figure", which parityreport.Finalize refuses on the
+// JVM family, while a zero-valued struct would claim a MEASURED 0 of 0. Those
+// are different statements and the gate decides them differently.
+func compileCoverageRef(e corpus.Entry) *parityreport.CompileCoverageRef {
+	if e.CompileCoverage == nil {
+		return nil
+	}
+	return &parityreport.CompileCoverageRef{
+		SourceFiles:    e.CompileCoverage.SourceFiles,
+		CompiledFiles:  e.CompileCoverage.CompiledFiles,
+		Coverage:       e.CompileCoverage.Coverage,
+		ExcludedReason: e.CompileCoverage.ExcludedReason,
+	}
 }
 
 // runJVMClass executes one JVM change-class row under one axis cell.

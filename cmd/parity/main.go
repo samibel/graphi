@@ -14,6 +14,12 @@
 //
 //	go run ./cmd/parity -verdict-diff a.json,b.json   # verdicts agree
 //	go run ./cmd/parity -counts-diff a.json,b.json    # per-row counts + snapshot digests agree (the determinism gate)
+//	go run ./cmd/parity -refusal-diff a.json,b.json   # the two runs REFUSE for the same reasons
+//
+// -refusal-diff is the only one of the three that says anything when both runs
+// are unpublishable, which is the state the JVM matrix is in. Its exit 0 means
+// "the refusal is deterministic" and NEVER "the run is publishable" — the two
+// gates above keep sole ownership of that word.
 //
 // Exit codes mirror cmd/corpus: 0 = every executed row passed, 1 = at least one
 // row FAILED (which is legitimate published evidence, not a harness fault),
@@ -60,6 +66,7 @@ func run() int {
 			"this can never retry a row into green")
 	verdictDiff := flag.String("verdict-diff", "", "compare the verdict sets of two reports (a.json,b.json) and exit non-zero if they differ")
 	countsDiff := flag.String("counts-diff", "", "compare per-row node/edge counts and snapshot digests of two reports (a.json,b.json) and exit non-zero if they differ — the Wave-0 determinism gate that -verdict-diff is structurally blind to")
+	refusalDiff := flag.String("refusal-diff", "", "compare the not_publishable_because REASON SETS of two reports (a.json,b.json) and print the shared list — exit 0 means the refusal is DETERMINISTIC, never that the run is publishable")
 	allowLocal := flag.Bool("allow-local", false,
 		"admit manifest entries that point at a LOCAL PATH instead of a URL clone (dispatch-only; "+
 			"the hermetic tests open this door, the production runner keeps it shut — using it on a PR-gate run would let a row silently fall back to a fixture)")
@@ -70,6 +77,9 @@ func run() int {
 	}
 	if *countsDiff != "" {
 		return compareCountsSets(*countsDiff)
+	}
+	if *refusalDiff != "" {
+		return compareRefusalSets(*refusalDiff)
 	}
 
 	// The family decides which declared class table is authoritative. Defaulting
@@ -171,7 +181,7 @@ func printAndScore(rep parityreport.Report) int {
 			where = "-"
 		}
 		width := 24
-		if rep.Family == "jvm" {
+		if rep.Family == parityreport.FamilyJVM {
 			width = 52 // the axis suffix is part of the id
 		}
 		fmt.Printf("  %-*s %-9s %-10s %s\n", width, c.ID, c.Verdict, where, firstLine(c.Detail))
@@ -224,6 +234,7 @@ func printAndScore(rep parityreport.Report) int {
 		fmt.Printf("  §12.3 counts  %-10s %-24s %-11s orphaned external nodes=%d stale linker edges=%d  %s\n",
 			sc.Repo, sc.Class, sc.Side, sc.OrphanedExternalNodes, sc.StaleLinkerEdges, status)
 	}
+	printCompileCoveragePolicy(rep)
 	fmt.Printf("\n  outcome     %s\n  complete    %v\n  publishable %v\n", rep.Outcome, rep.Complete, rep.Publishable)
 	for _, why := range rep.NotPublishableBecause {
 		fmt.Printf("    refused: %s\n", why)
@@ -239,6 +250,41 @@ func printAndScore(rep parityreport.Report) int {
 		return 1
 	default:
 		return 2
+	}
+}
+
+// printCompileCoveragePolicy names, on STDERR, what the compile-coverage gate
+// decided for every JVM pin the run materialized (SW-204 AC-1).
+//
+// It is on stderr and not stdout on purpose: stdout is the matrix a reader
+// publishes, stderr is the runner's own log, and a REFUSAL has to reach the
+// operator watching the dispatch rather than only the file they read afterwards.
+// The per-pin line is printed for accepted pins too — a gate that logs only when
+// it fires leaves "did it even look?" unanswerable.
+//
+// This is a report of a decision already made in parityreport.Finalize. It
+// decides nothing itself, and there is no flag by which it could.
+func printCompileCoveragePolicy(rep parityreport.Report) {
+	if rep.Family != parityreport.FamilyJVM {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "parity: compile_coverage policy over %d materialized JVM pin(s) "+
+		"(source: corpus/manifest.json; a pin with no figure is REFUSED, a figure below 1.0000 "+
+		"is refused unless the manifest states an excluded_reason):\n", len(rep.Repos))
+	for _, rp := range rep.Repos {
+		switch cc := rp.CompileCoverage; {
+		case cc == nil:
+			fmt.Fprintf(os.Stderr, "  %-24s REFUSED — no compile_coverage recorded for this pin\n", rp.Name)
+		case cc.Coverage < 1.0 && cc.ExcludedReason == "":
+			fmt.Fprintf(os.Stderr, "  %-24s REFUSED — %d/%d = %.4f with no excluded_reason\n",
+				rp.Name, cc.CompiledFiles, cc.SourceFiles, cc.Coverage)
+		case cc.Coverage < 1.0:
+			fmt.Fprintf(os.Stderr, "  %-24s accepted — %d/%d = %.4f, DOCUMENTED NEGATIVE: %s\n",
+				rp.Name, cc.CompiledFiles, cc.SourceFiles, cc.Coverage, firstLine(cc.ExcludedReason))
+		default:
+			fmt.Fprintf(os.Stderr, "  %-24s accepted — %d/%d = %.4f\n",
+				rp.Name, cc.CompiledFiles, cc.SourceFiles, cc.Coverage)
+		}
 	}
 }
 
@@ -349,6 +395,97 @@ func compareCountsSets(spec string) int {
 		return 2
 	}
 	fmt.Println("\nparity: two dispatches agree on every per-row count and snapshot digest, and both are publishable.")
+	return 0
+}
+
+// compareRefusalSets is the THIRD diff mode (SW-204 AC-4a): two dispatches must
+// refuse publication for bit-identically the same reasons.
+//
+// WHY IT EXISTS. -verdict-diff and -counts-diff both stop at
+// "at least one run is NOT publishable — publication refused" and exit 2. That
+// is correct and stays untouched, but it means the two gates say NOTHING about a
+// pair of runs that both refuse — and the JVM matrix both refuses and will keep
+// refusing until the corpus hosts the two source shapes the 8 SKIPPED cells
+// need. "The two dispatches refuse for the same reasons" is a real determinism
+// property of the harness, and before this mode it had no instrument.
+//
+// WHAT EXIT 0 MEANS, AND WHAT IT DOES NOT. Exit 0 means the refusal is
+// DETERMINISTIC. It never means the run is publishable, and this function
+// deliberately does not read, print or consider Publishable as a pass condition
+// — a mode that could exit 0 on "publishable" would be a fourth publication gate
+// wearing a diagnostic's name.
+//
+// THERE IS NO ALLOWLIST AND THERE MUST NEVER BE ONE. No flag, list or
+// environment variable may mark a reason acceptable and drop it from the
+// comparison or from the gate. internal/parityreport/report.go says why in the
+// coverage-limit comment: "it does not make the run publishable, or 'record the
+// limit' would become the cheap way past the gate." A waiver flag here would
+// rebuild that escape one flag over, and SW-204 AC-4c requires a reviewer to
+// reject any such mechanism on sight.
+func compareRefusalSets(spec string) int {
+	parts := strings.Split(spec, ",")
+	if len(parts) != 2 {
+		fmt.Fprintln(os.Stderr, "parity: -refusal-diff needs exactly two report paths: a.json,b.json")
+		return 2
+	}
+	a, err := parityreport.Read(strings.TrimSpace(parts[0]))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parity: %v\n", err)
+		return 2
+	}
+	b, err := parityreport.Read(strings.TrimSpace(parts[1]))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parity: %v\n", err)
+		return 2
+	}
+	da, db := a.RefusalSetDigest(), b.RefusalSetDigest()
+	fmt.Printf("run a: %s  publishable=%v  refusals=%d\nrun b: %s  publishable=%v  refusals=%d\n",
+		a.Provenance.RunSHA, a.Publishable, len(a.RefusalSet()),
+		b.Provenance.RunSHA, b.Publishable, len(b.RefusalSet()))
+	if da != db {
+		fmt.Println("\nparity: REFUSAL SETS DIFFER between the two dispatches — the harness refuses " +
+			"non-deterministically; an environment finding to be explained, not a flake to retry away.")
+		as, bs := a.RefusalSet(), b.RefusalSet()
+		inB := map[string]bool{}
+		for _, why := range bs {
+			inB[why] = true
+		}
+		inA := map[string]bool{}
+		for _, why := range as {
+			inA[why] = true
+		}
+		for _, why := range as {
+			if !inB[why] {
+				fmt.Printf("  only in run a: %s\n", why)
+			}
+		}
+		for _, why := range bs {
+			if !inA[why] {
+				fmt.Printf("  only in run b: %s\n", why)
+			}
+		}
+		return 1
+	}
+	shared := a.RefusalSet()
+	fmt.Printf("\nshared refusal set (%d):\n", len(shared))
+	for _, why := range shared {
+		fmt.Printf("  %s\n", why)
+	}
+	coverage := 0
+	for _, why := range shared {
+		if strings.HasPrefix(why, parityreport.ReasonPrefixCompileCoverage) {
+			coverage++
+		}
+	}
+	fmt.Printf("\n  compile_coverage refusals in the shared set: %d\n", coverage)
+	if len(shared) == 0 {
+		fmt.Println("\nparity: neither dispatch recorded a refusal. This mode compares refusals and " +
+			"therefore certifies NOTHING here — -verdict-diff and -counts-diff are the publication gates.")
+		return 0
+	}
+	fmt.Println("\nparity: the two dispatches refuse for bit-identically the same reasons — the refusal " +
+		"is DETERMINISTIC. This is NOT a publication: both runs are refused, and exit 0 here says only " +
+		"that they are refused identically.")
 	return 0
 }
 
