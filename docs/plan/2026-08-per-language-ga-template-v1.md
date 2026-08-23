@@ -1,5 +1,37 @@
 # graphi — the per-language GA template v1 (2026-08-19)
 
+> ## AMENDMENT — 2026-08-23 (SW-188): the S4 divergence row's open-defect list is out of date
+>
+> Per D6 this is **added**, not merged in. Nothing below is rewritten,
+> re-pointed or deleted, and no acceptance criterion or ruling in this document
+> changes.
+>
+> **§3 / S4's D-3 row (`:1378`)** reads "JVMSOUND-003/004, JVMHARN-001 and
+> blind spots #15/#17 are open". Three of those five are now closed:
+>
+> - **JVMSOUND-003** and **JVMSOUND-004** closed 2026-08-20 under ADR 0013
+>   (D1–D2, D4–D6): `countArgs` no-ops over comment nodes
+>   (`engine/jvmresolve/body_java.go:675`), and `callableSig` carries array
+>   dimensionality via `arrayDims` (`engine/jvmresolve/hierarchy.go:193`).
+> - **JVMHARN-001** closed 2026-08-23 **in the harness**, which is where it
+>   lived: `demangleValueClass` in `internal/jvmgroundtruth/groundtruth.go`
+>   demangles kotlinc's `<name>-<hash>` on both `ParseJavap` paths, guarded on
+>   the plain-name bridge being declared in the same class in the capture.
+>   Closed in code with positive regressions; **not** closed by re-measurement —
+>   the kotlinx by-name differential re-run needs `kotlinc` and is a CI dispatch
+>   that has not run.
+>
+> **Blind spots #15 and #17 stay open**, and so does the register itself: the
+> D-3 row's point — that the oracle is E0 for what it covers and silent on what
+> it does not — is unchanged.
+>
+> **One item the row did not name is now on the record and is open:**
+> **JVMHARN-003** — the oracle judges Kotlin at no precision finer than by-name.
+> `internal/jvmgroundtruth/binder.go:236` abstains for every Kotlin site before
+> a parameter is inspected; 351 of 351 kotlinx comparisons abstain, and
+> by-arity and by-signature are vacuously sound at 0 judged of 1 009 and 670
+> truth facts. Java is judged at three precisions; Kotlin at one.
+
 > ## AMENDMENT — 2026-08-19 (SW-183): LANGHONEST-001's *scope claim* is narrowed; the defect itself stands
 >
 > Per D6 this is **added**, not merged in. Nothing below is rewritten, re-pointed

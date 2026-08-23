@@ -1,5 +1,37 @@
 # graphi — Language-GA execution plan v1 (the ordered path to Java/Kotlin GA, then the rest)
 
+> ## AMENDMENT — 2026-08-23 (SW-188): "Reason 2" is discharged — JVMSOUND-003 and JVMSOUND-004 are closed
+>
+> Per ADR 0008 D6 this is **added**, not merged in. Nothing below is rewritten,
+> re-pointed or deleted, and no milestone, gate or ordering changes.
+>
+> **What is retracted:** the sentence at `:105-107` — "Reason 2 is untouched:
+> **JVMSOUND-003 and JVMSOUND-004** are open, reproduced, deliberately unfixed
+> wrong-confirmed-edge defects". Both closed 2026-08-20 under
+> [`../decisions/0013-jvmsound-003-004-jvmharn-001-closure.md`](../decisions/0013-jvmsound-003-004-jvmharn-001-closure.md)
+> D1–D2 and D4–D6: `countArgs` no-ops over CST comment nodes
+> (`engine/jvmresolve/body_java.go:675`, regression
+> `engine/jvmresolve/body_java_test.go::TestCountArgs_SkipsComments`), and
+> `callableSig` carries array dimensionality via `arrayDims`
+> (`engine/jvmresolve/hierarchy.go:193`, regression
+> `engine/jvmresolve/hierarchy_test.go::TestCallableSig_ArrayDim`).
+>
+> **What is NOT retracted — the roll-up above still does not move.** Every one
+> of the 18 gates is born UNKNOWN and UNKNOWN counts as not passed; closing two
+> defects moves no gate to PASS by itself. In particular:
+>
+> - `GA-LANG-{java,kotlin}-G2SUB`'s `current` fields are owned by the evidence
+>   index and are not edited here.
+> - The JVM parity matrix at the ADR 0013 candidate is **not publishable**: the
+>   two SW-190 dispatches agree bit-for-bit (52 classes, 44 PASS / 8 SKIPPED /
+>   0 FAIL) but both carry `publishable: false`, and `cmd/parity -verdict-diff`
+>   and `-counts-diff` exit **2**. Wiring that gate is SW-204's work.
+> - **JVMHARN-001** is closed 2026-08-23 in the harness
+>   (`internal/jvmgroundtruth/groundtruth.go::demangleValueClass`), in code with
+>   positive regressions, **not** by re-measurement — the re-run needs `kotlinc`
+>   and is a CI dispatch. The oracle still judges Kotlin at by-name only, which
+>   is a separate open item, **JVMHARN-003**.
+
 - **Status:** EXECUTION — the strategic program
   ([P2 language-GA program v1](2026-08-graphi-p2-language-ga-program-v1.md))
   is largely built; this document sequences what *remains* into ordered
