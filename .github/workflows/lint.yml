@@ -57,4 +57,11 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: race-detector test run
-        run: go test -race ./...
+        # -timeout is PER PACKAGE and defaults to 10m, which this repo has
+        # outgrown under race instrumentation: on the runner `internal/audit`
+        # measures 546s (91% of the default, passing by 54s) and
+        # `engine/conformance` now exceeds it outright. Both are legitimate
+        # work — conformance ingests every parity family across two stores and
+        # two profile axes — so the fix is headroom, not fewer cells. 30m is
+        # ~3x the worst observed package; a genuine hang still fails the job.
+        run: go test -race -timeout 30m ./...

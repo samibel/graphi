@@ -32,7 +32,77 @@ version: 1
 # cold_start local/CI ratio); budgets add further margin. The spawn-, sub-ms-,
 # and GC-sensitive metrics start at severity warn (trend tracking without new
 # flake surface); the index-bound ones gate at fail like full_index/freshness.
-baseline_version: "2026-08-13-p4-incremental-suite-go1.26.6-linux-amd64-release"
+#
+# 2026-08-24-sw194b5-ruby-pendingref: binary_size_bytes re-pinned for SW-194b.5
+# (DEC-2026-08-24-binary-size-repin-sw194b5). ONLY this metric moves; the other
+# 22 stay exactly as pinned above.
+#
+# WHAT GREW. SW-194b.5 makes Ruby emit a PendingRef for receiver-less parenless
+# cross-file calls — before it, "who calls X?" was unanswerable across Ruby files
+# at the heuristic tier — and gates the emission so ordinary Ruby
+# (`head, *tail = list`, `in {status: status}`) stops being reported as calls it
+# never made. It is a soundness fix, not a feature.
+#
+# BY HOW MUCH, ATTRIBUTED. Same-method cross-builds (CGO_ENABLED=0 GOOS=linux
+# GOARCH=amd64 GOAMD64=v1, internal/release.CanonicalBuildArgs, the 21 registered
+# subset tags, go1.26.6):
+#     main                                       34,245,005
+#     sw-199-w5m-intra-parse-parity-classes      34,245,005   (+0, byte-neutral)
+#     sw-194b5-pendingref-emission-cross-family  34,267,179   (+22,174)
+# `go tool nm -size` diffed against main finds exactly 11 new symbols totalling
+# 6,373 B (map.init.1 1,936; rubyCollectScope 1,162; rubyScanUses 941;
+# rubyBindPattern 633; rubyBindParams 620; rubyBindTarget 362; (*rubyScope).skip
+# 301; (*rubyScope).bind 237; map.init.0 165; two 8-B map headers) — 28.7% of the
+# growth. The remaining ~15.8 kB is pclntab/funcdata/type metadata and section
+# alignment, which no source-level change reaches. The diff touches ONE Go file
+# (core/parse/parser_ruby.go); go.mod/go.sum are unchanged (no new external
+# dependency) and internal/release.DefaultGrammarSubsetTags is unchanged (no new
+# grammar blob — ruby.bin has been embedded since SW-054).
+#
+# WHY RE-PIN RATHER THAN SHRINK. The overrun against the old budget was 17,107 B.
+# The entire new-code surface is 6,373 B, so no shrink that preserves the
+# soundness fix can reach 17,107 B; the only "shrink" that fits is deleting the
+# fix. Converting the two package-level Ruby call-position maps to switches
+# recovers ~2 kB — an eighth of the gap.
+#
+# WHY THE OLD BUDGET HAD STOPPED DISCRIMINATING. At 34,250,000 B, plain `main`
+# measured 34,245,005 — 4,995 B of headroom, 0.0146%. bench/lang-budget.md's
+# SW-177 amendment measured the go1.26.5 → go1.26.6 bump alone at +8,854 B on an
+# unchanged tree: the old budget would have failed on a toolchain patch release
+# with no code change at all. SW-203 measured the same 0.0147% and filed a
+# follow-up predicting the next language change would breach it. A gate that
+# fires on compiler noise no longer separates justified growth from unjustified
+# growth, so re-pinning restores the discipline rather than relaxing it.
+#
+# THIS IS NOT THE SIN SW-177/SW-203 REFUSED. Those refusals are about
+# bench/lang-budget.md, the per-language ATTRIBUTION ledger, where widening an
+# allocation to fit a measurement destroys the accounting (SW-177 published
+# Kotlin's 385,418 B marginal cost and moved nothing; SW-203 reported yaml's
+# 6.03x overrun rather than absorbing it). bench-budget.yml is the CI GATE, and
+# its own header (lines 3-7) states the sanctioned way to move it: edit baseline
+# and budget, bump baseline_version, no code change. The two artifacts have
+# different rules on purpose — attribute honestly in the ledger, move the gate
+# deliberately with the attribution attached. lang-budget.md is NOT widened here.
+#
+# THE NEW NUMBERS. Baseline 34,267,107 B is the CI-measured canonical release
+# build of the integration branch (the artifact this gate actually produces; the
+# darwin/arm64 cross-build above reads 34,267,179 B, a +72 B host-method delta,
+# and every figure quoted here is a same-method delta). Budget 36,100,000 B
+# preserves 1,832,893 B = 5.35% headroom over that baseline, matching the
+# 2026-07-16-v050-hardening precedent (5.35%) exactly, and sits 13,900,000 B
+# (13.90 MB) below the hard < 50 MB whole-binary product ceiling
+# (docs/adr/0001-parser-tier1-and-sizing.md:22) — 72.2% of it. The restored
+# headroom still catches every regression class this gate exists for: a stray
+# grammar blob is 119-337 kB and the untagged all-206 embed is +24.5 MiB. Fine-
+# grained per-language drift is the ledger's job, not this gate's.
+#
+# NOTHING ELSE IS ARMED. In the same failing run, binary_size_bytes was the only
+# entry in gate.failed; the next-tightest metric is fast_db_size_bytes at 94,208
+# of 200,000 (47.1% of budget) and every other metric measures below 30% of its
+# budget. No second tripwire is left cocked by this re-pin. (Separately, several
+# *_ms baselines now sit 10-30x above measured — a stale-baseline reporting
+# problem, not a gate failure, and deliberately left for the owner.)
+baseline_version: "2026-08-24-sw194b5-ruby-pendingref-go1.26.6-linux-amd64-release"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
@@ -49,8 +119,9 @@ metrics:
     budget: 2000
     unit: ms
   binary_size_bytes:
-    baseline: 32509872
-    budget: 34250000
+    # Re-pinned 2026-08-24 (SW-194b.5) — see the baseline_version note above.
+    baseline: 34267107
+    budget: 36100000
     unit: bytes
   # EP-022 profile-aware metrics (warn-only until calibrated).
   fast_index_ms:

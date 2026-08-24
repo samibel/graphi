@@ -100,8 +100,29 @@ var (
 	// "production Go parser" (their binder is parsed by the Go parser registry,
 	// which is the same fact as on Go) and the Python / TS rows pick the member
 	// that names their production backend.
-	legalFixtures = []string{"synthetic stub parser", "production Go parser", "production Python parser", "production TypeScript parser", "real pinned repository"}
-	legalStores   = []string{"MemStore", "SQLite", "both", storeNone}
+	//
+	// SW-199 ADDED TWO MEMBERS, AND THE ADDITION IS STRICTLY ADDITIVE — no
+	// existing check is relaxed and every existing row's value still passes.
+	// The six intra/parse residual families (css, hcl, json, markdown, toml,
+	// yaml) needed a fixture label that is TRUE of them, and neither existing
+	// member is: five of the six are parsed by the pure-Go gotreesitter
+	// runtime with an embedded grammar blob (core/parse/parser_css.go:14-16 and
+	// its four siblings), and json is parsed by encoding/json
+	// (core/parse/parser_json.go:9-13). The bash family took the other road —
+	// it publishes fixture: "production Go parser" with a row note admitting
+	// the label is a placeholder — and repeating that six more times would
+	// have published a false label thirty-six times rather than adding two
+	// true ones.
+	legalFixtures = []string{
+		"synthetic stub parser",
+		"production Go parser",
+		"production Python parser",
+		"production TypeScript parser",
+		"production tree-sitter parser",
+		"production stdlib JSON parser",
+		"real pinned repository",
+	}
+	legalStores = []string{"MemStore", "SQLite", "both", storeNone}
 	// legalProfiles is the INDEX-PROFILE axis (W0.f-4, ADR 0010): "default" is
 	// ingest.New's zero value, "balanced" is what the CLI resolves for every
 	// shipped pass, "both" is the two-value axis parityProfiles() runs.
