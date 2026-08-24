@@ -1,0 +1,308 @@
+# graphi — HCL parse-determinism / intra-file parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-language companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — top-level keys, block sequences of FLAT
+# maps, every value double-quoted — so both cmd/coverage-style parsers and
+# yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-199, W5.m, slice b). HCL is declared
+#                      `intra-file-only` by SW-183's audit, which this file does not
+#                      re-decide.
+#
+# ---------------------------------------------------------------------------
+# §5.5 LANGUAGE-SPEC CITATION — THE LOAD-BEARING PARAGRAPH OF THIS FILE
+# ---------------------------------------------------------------------------
+# Does HCL's OWN SPECIFICATION define a cross-file construct?  NO
+#
+# Specification cited: the HCL Native Syntax and Structure specifications (hashicorp/hcl).
+#
+# HCL's OWN spec defines blocks, attributes and expressions — and NO
+# cross-file construct at all. Terraform's `module { source = "./mod" }`
+# is a SCHEMA a host application layers on top of HCL: HCL hands the host
+# an unevaluated body and the host decides what a block type and its
+# labels mean. So HCL's own answer to "does the language define a
+# cross-file reference?" is NO, and this family's abstention is the
+# LANGUAGE's, not graphi's. Citing graphi's HCL parser comment instead
+# would be the LANGHONEST-001 circular-abstention defect.
+#
+# The citation above is the LANGUAGE's spec. graphi's own parser
+# (core/parse/parser_hcl.go — the pure-Go gotreesitter HCL grammar, CGo-free, with the grammar blob Go-embedded behind the grammar_subset_hcl subset tag)
+# is named below ONLY to record what graphi does, never as the answer to the
+# language question — citing graphi's parser as the spec is what makes an
+# abstention circular, and it is the LANGHONEST-001 defect class.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO, AND WHAT THE ROWS ASSERT
+# ---------------------------------------------------------------------------
+# The drift guard TestHCLParityMatrix_DriftGuard (engine/conformance/
+# hclparity_matrix_test.go) binds this file to the harness table in
+# engine/conformance/hclparity_test.go. That file ships the CLOSED SEVEN
+# directions from the outset — MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS,
+# VOCABULARY — which is the SW-189 / TEMPL-P4 D-11 lesson applied rather than
+# re-learned; parity_matrix_directions_test.go fails the build if any of the
+# seven is absent.
+#
+# THE WITNESS SHAPE IS PARSE-DETERMINISM, NOT CROSS-FILE PARITY. At this level
+# there is no cross-file contract to assert, so what the rows prove is that the
+# SAME INPUT BYTES PRODUCE THE SAME AST and that the AST's serialization is
+# byte-stable: the runner takes TWO INDEPENDENT full passes over the identical
+# bytes on the identical (store, profile) axis and requires identical snapshot
+# bytes, then additionally requires the incremental watcher-driven graph to
+# equal the full graph (intra-file parity), then runs the row's non-vacuity
+# witness. The 5x byte-stability is delivered by -count=5 over the driver.
+#
+# SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof over t.TempDir()
+# fixtures. Parity and determinism compare two passes of the SAME rule, so a
+# PASS certifies the rule is REGRESSION-CLEAN and REPRODUCIBLE — never that it
+# is CORRECT. Correctness evidence for the extractor lives in
+# core/parse/parser_hcl_test.go; real-repository evidence is G4 (SW-200) and is
+# not in this file.
+#
+# SYMBOL SHAPE. each top-level block becomes a `type` symbol qualified as `<directory>.<block type>.<labels>` and each top-level attribute a `variable`; HCL has no callables, so the node set collapses to {file, type, variable}
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id. Ids are prefixed
+# `hcl_` so they stay globally unique across every family's twin.
+#
+# ---------------------------------------------------------------------------
+# THE SECOND TOP-LEVEL KEY: go_class_applicability
+# ---------------------------------------------------------------------------
+# The G3 threshold this language publishes (docs/rc/evidence-index.yaml,
+# GA-LANG-hcl-G3) is the byte-parity table PLUS "an explicit applicability
+# disposition per Go class — every cross-file change class dispositioned as
+# `not_applicable` with a language-spec reason, so an inapplicable class is
+# data the drift guard can see, not prose in a note". The
+# `go_class_applicability:` block below is that data; TestHCLParityMatrix_Applicability
+# reads it and binds it to docs/rc/parity-classes.yaml in BOTH directions, so
+# a Go class added there with no disposition here fails the build.
+#
+# Disposition vocabulary, per
+# docs/plan/2026-08-graphi-p2-language-ga-program-v1.md:153-155:
+#   applicable      the class exists in this language and a row here witnesses it
+#   adapted         the class exists but its witnessable form differs; a row here
+#                   witnesses the adapted form and its note states the limit
+#   not_applicable  the LANGUAGE SPEC gives the class no counterpart; reason cites it
+#   deferred        SW-199 adds this fourth member deliberately: the language-agnostic
+#                   ingest classes are neither inapplicable to this language nor
+#                   witnessed by this table, and claiming either would be false.
+#                   A deferred disposition MUST name a deferred_to.
+
+parity_classes:
+  - id: "hcl_add_file"
+    kind: "change_class"
+    label: "Datei hinzufügen / add an HCL file in a new directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/hclparity_test.go"
+    test_line: "189"
+    test_name: "TestHclParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.b"
+    note: "A new HCL file arrives in a new directory: the pure add path. The witness requires the new block symbol, its file node, and a base-tree control symbol, so a row that indexed nothing cannot pass. The assertion is snapshot bytes on both stores and both profile axes, taken twice over the identical bytes (parse determinism) and once against the incremental graph (intra-file parity)."
+
+  - id: "hcl_modify_file"
+    kind: "change_class"
+    label: "Datei ändern / rewrite an HCL file in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/hclparity_test.go"
+    test_line: "189"
+    test_name: "TestHclParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.b"
+    note: "An indexed HCL file is rewritten in place: a block is appended while the existing block and resource keep identity. The witness requires the new block AND both pre-existing symbols."
+
+  - id: "hcl_delete_file"
+    kind: "change_class"
+    label: "Datei löschen / delete an HCL file"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/hclparity_test.go"
+    test_line: "189"
+    test_name: "TestHclParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.b"
+    note: "An indexed HCL file is deleted, so the per-file stale-node purge runs over it. The witness requires the deleted file's block and attribute symbols and its file node gone, and the sibling file's symbols still present. A stale node surviving a delete is the failure this row exists to catch."
+
+  - id: "hcl_rename_block_label"
+    kind: "change_class"
+    label: "Block-Label umbenennen / rename a block label in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/hclparity_test.go"
+    test_line: "189"
+    test_name: "TestHclParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.b"
+    note: "A block label is renamed in place (`variable \"region\"` -> `variable \"primary_region\"`). The symbol's qualified name is derived from the block type plus its labels, so the rename is a delete-plus-add inside one file. The witness requires the new name present AND the old name absent."
+
+  - id: "hcl_reorder_blocks"
+    kind: "change_class"
+    label: "Blöcke umordnen / permute the top-level blocks"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/hclparity_test.go"
+    test_line: "189"
+    test_name: "TestHclParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.b"
+    note: "The top-level blocks of one file are permuted with no textual change to any block body. The symbol SET is unchanged and only source order and line numbers move, which is the sharpest test of the canonical-ordering discipline: a snapshot whose row order followed parse order rather than a canonical key would diverge here between the two passes."
+
+  - id: "hcl_reparse_identical_bytes"
+    kind: "change_class"
+    label: "Identische Bytes neu parsen / rewrite with byte-identical content"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/hclparity_test.go"
+    test_line: "189"
+    test_name: "TestHclParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.b"
+    note: "An indexed HCL file is rewritten with BYTE-IDENTICAL content. This is the direct same-bytes-same-AST row: the drift scanner sees an empty drift set and Reconcile short-circuits, so the incremental graph must equal the full graph over unchanged bytes. Its witness pins the surviving symbol set rather than a new symbol, because the change is deliberately semantics-preserving — the row's force comes from the runner's two independent full passes."
+
+go_class_applicability:
+  - go_class: "add_file"
+    disposition: "applicable"
+    witnessed_by: "hcl_add_file"
+    deferred_to: ""
+    reason: "A source file of this language is a real unit the index adds, and the add path mints the file's symbols; witnessed by the named row on both stores and both profile axes."
+
+  - go_class: "modify_file"
+    disposition: "applicable"
+    witnessed_by: "hcl_modify_file"
+    deferred_to: ""
+    reason: "An in-place rewrite is a real intra-file class: new symbols appear while existing ones keep identity. Witnessed by the named row."
+
+  - go_class: "delete_file"
+    disposition: "applicable"
+    witnessed_by: "hcl_delete_file"
+    deferred_to: ""
+    reason: "A delete drives the per-file stale-node purge, which is language-independent machinery acting on this language's symbols. Witnessed by the named row."
+
+  - go_class: "rename_symbol"
+    disposition: "applicable"
+    witnessed_by: "hcl_rename_block_label"
+    deferred_to: ""
+    reason: "the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines labelled blocks and top-level attributes, whose block type plus labels IS the symbol identity, so a rename is a real intra-file class — a delete-plus-add inside one file. Witnessed by the named row."
+
+  - go_class: "move_symbol"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines no reference from one document to a construct declared in another, so a file-to-file move has no referrer to re-point. The class's content — identity preserved WHILE REFERRERS SURVIVE — is unstateable in this language, and a move reduced to a delete plus an add is already covered by those two rows."
+
+  - go_class: "rename_package"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines no package, module or namespace construct; there is no package identity to rename."
+
+  - go_class: "add_call"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "HCL's expression grammar admits function CALLS, but the function set is supplied by the HOST APPLICATION and is not defined by HCL; the spec declares no callee, so there is no HCL-defined call edge to add or remove."
+
+  - go_class: "remove_call"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "HCL's expression grammar admits function CALLS, but the function set is supplied by the HOST APPLICATION and is not defined by HCL; the spec declares no callee, so there is no HCL-defined call edge to add or remove."
+
+  - go_class: "change_interface"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines no interface, protocol or signature construct, so there is no interface whose change could ripple to an implementation."
+
+  - go_class: "add_implementation"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines no implements relation between declarations, so there is no implementation to add."
+
+  - go_class: "remove_implementation"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines no implements relation between declarations, so there is no implementation to remove."
+
+  - go_class: "branch_switch"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A whole-tree change set delivered by a VCS operation. It is LANGUAGE-AGNOSTIC — the ingest, not the grammar, decides the outcome — so it is neither inapplicable to this language nor witnessed by this table. SW-199 records it as deferred rather than claiming either."
+
+  - go_class: "change_build_tag"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "Build tags are a Go TOOLCHAIN construct (go/build constraints). the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines no conditional-compilation directive and no file-level inclusion predicate."
+
+  - go_class: "replace_generated_file"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A whole-file replacement by a generator. It is LANGUAGE-AGNOSTIC and, at this level, is a modify_file with a larger diff; whether it needs its own per-language witness is an open question SW-199 does not answer, so the class is deferred rather than folded into modify_file's row."
+
+  - go_class: "change_external_import"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "HCL defines no import of any kind, external or otherwise; a Terraform `source = \"registry/x\"` attribute is an ordinary string to HCL and its meaning belongs to Terraform's schema, not to the language."
+
+  - go_class: "interrupted_full_pass"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A crash condition of the ingest pipeline, not of the language. The pipeline is shared across every language and is proven on the Go table; whether it needs a per-language witness is an open question SW-199 does not answer, so the class is deferred rather than dispositioned not_applicable."
+
+  - go_class: "restart_and_recovery"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A crash condition of the ingest pipeline, not of the language. Same reasoning as interrupted_full_pass: deferred, because claiming a language-level inapplicability for a pipeline property would be false."
+
+  - go_class: "change_colliding_package_dir"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines no package, so two directories cannot collide on a package identity. The Go class exists because two Go directories can declare the same package clause; this language has no clause to declare."
+
+  - go_class: "add_nested_gomod"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "go.mod is Go's MODULE MANIFEST. the HCL Native Syntax and Structure specifications (hashicorp/hcl) defines no module manifest and no nested module boundary, so there is no nested-module transition for this language."
