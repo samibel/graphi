@@ -1,0 +1,2 @@
+UNREADABLE(2) docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max
+sweep totals: exit0=107 exit1(discrepancy)=0 exit2(unreadable)=1 exit3(incomplete)=0

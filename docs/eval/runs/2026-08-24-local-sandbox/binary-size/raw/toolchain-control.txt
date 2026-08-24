@@ -1,0 +1,7 @@
+tree=80d67ed (v0.7.1)  go.mod directive: go 1.26.5  tags=      21
+t1265      bytes=32741344   buildinfo-toolchain=go1.26.5
+t1266      bytes=32750198   buildinfo-toolchain=go1.26.6
+HEAD (bca6cf2) shipped default, same method:
+HEAD       bytes=34244965   buildinfo-toolchain=go1.26.6
+SW-177 published: 80d67ed@go1.26.5=32741344  80d67ed@go1.26.6=32750198  3b8d43f@go1.26.6=34162926
+worktree removed

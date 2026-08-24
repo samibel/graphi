@@ -1,5 +1,110 @@
 # Per-Language Binary-Budget Sub-Allocation (SW-052, EP-009 STEP-0)
 
+> ## AMENDMENT — 2026-08-24 (SW-203, W5.q): the intra/parse residual's six languages measured the SW-177 way, and the gate's headroom is down to 0.0147 %
+>
+> Per D6 this amendment is **added**; nothing below it — including the SW-177
+> amendment — is rewritten, re-pointed or deleted. Measured at `bca6cf2` (`main`)
+> under `internal/release.CanonicalBuildArgs`' own contract
+> (`-trimpath -buildvcs=true -tags <the 21 registered subset tags>
+> -ldflags -X …version.Version=dev`), `CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+> GOAMD64=v1`, cross-built from darwin/arm64 on an Apple M2 Max. Full record,
+> raw transcripts and captured environment:
+> [`../docs/eval/runs/2026-08-24-local-sandbox/sw203-campaign.md`](../docs/eval/runs/2026-08-24-local-sandbox/sw203-campaign.md).
+>
+> **1. The measurement method carries a stated noise budget of ±4,096 B**, and it
+> was measured before any cost below was quoted. Three dispatches of the same
+> build are byte-identical (same sha256); a semantically identical build with the
+> tag list merely reordered has the same size and a different sha256; and two
+> additivity checks — drop(toml)+drop(lua) versus drop(toml,lua), and
+> drop(css)+drop(yaml) versus drop(css,yaml) — leave residuals of **+4,192 B** and
+> **−4,064 B**, one page-alignment quantum in each direction. **A marginal cost at
+> or below ~4 KB is not resolvable by this method** and is reported as such rather
+> than as a number.
+>
+> **2. Per-language marginal cost in the shipped binary, versus the blob figure
+> the per-language table below publishes.** Shipped default rebuilt with and
+> without each `grammar_subset_<lang>` tag; baseline **34,244,965 B**. Each
+> without-`<lang>` binary was checked with `go tool nm` to confirm it dropped
+> exactly that one `subsetBlobFS_<lang>` embed and kept the other 19 — without
+> that check a tag that silently did nothing would look like a small cost.
+>
+> | language | blob (as published below) | **marginal cost in the binary** | ratio |
+> |---|---:|---:|---:|
+> | CSS | 14,325 | **28,077** | 1.96× |
+> | HCL | 20,132 | **44,358** | 2.20× |
+> | Markdown | 36,259 | **89,972** | 2.48× |
+> | TOML | 5,317 | **4,590** (≤ noise budget — not resolvable) | ~0.86× |
+> | YAML | 25,479 | **153,654** | **6.03×** |
+> | JSON | *no blob — stdlib parser, no subset tag* | **1,690** (≤ noise budget) | — |
+> | *Kotlin (SW-177 cross-check)* | *337,236* | *385,874* | *1.14×* |
+>
+> Kotlin is re-measured here purely as a method control: SW-177 published
+> 385,418 B for the same removal and this campaign gets 385,874 B — a 456 B
+> agreement, well inside the noise budget, on a different machine.
+>
+> **JSON has no `grammar_subset_json` tag** (it is a stdlib parser, per
+> `internal/release.DefaultGrammarSubsetTags`' own comment), so the tag route is
+> structurally inapplicable to it. Its figure comes from removing
+> `r.Register(NewJSONParser())` from `core/parse.RegisterDefaults` instead, with
+> `-buildvcs=false` on both halves so the dirty-tree VCS stamp cannot contaminate
+> the delta. The same route applied to CSS gives **38,822 B** against the tag
+> route's 28,077 B; the ~10.7 KB difference is graphi's own
+> `core/parse/parser_css.go`, which the tag route leaves linked.
+>
+> **3. YAML costs 6.03× its published allocation, and the allocation is NOT
+> widened.** Upstream `yaml_scanner.go` is 2,096 lines and leaves with the tag,
+> which is where the 128 KB above the blob goes. This is the same shape SW-177
+> found on Kotlin, on a different language: the gate is **stated as it stands**.
+> Closing the gap is a separate decision and is not taken here.
+>
+> **4. SW-177's correction generalises, with numbers.** The per-language table
+> below lists **blob** sizes. Measured against true marginal cost the ratios run
+> from 0.86× to 6.03×. Blob size is not a proxy for binary cost and must stop
+> being read as one. The table is left exactly as published; this note is the
+> correction.
+>
+> **5. The whole-binary gate is met — with 0.0147 % of headroom.**
+> `bench-budget.yml` still reads `binary_size_bytes: baseline 32,509,872, budget
+> 34,250,000`. **Neither is moved by SW-203.**
+>
+> ```
+> measured 34,244,965  ≤  budget 34,250,000     PASS
+> headroom      5,035 B  =  0.0147 % of budget
+> SW-177 recorded          87,074 B  (0.25 %)   → headroom is down 94 %
+> the six intra/parse languages together cost 322,341 B = 64× the remaining headroom
+> ```
+>
+> **6. The growth is still CODE, not the toolchain — re-measured, not carried
+> over.** Both of SW-177's toolchain rows reproduce **byte-for-byte**:
+>
+> | tree | toolchain (read from the binary's buildinfo) | bytes | SW-177 published |
+> |---|---|---:|---:|
+> | `80d67ed` (v0.7.1) | go1.26.5 | 32,741,344 | 32,741,344 |
+> | `80d67ed` | go1.26.6 | 32,750,198 | 32,750,198 |
+> | `bca6cf2` (`main`) | go1.26.6 | 34,244,965 | — |
+>
+> Toolchain alone: **+8,854 B (+0.03 %)**. Code alone since v0.7.1:
+> **+1,494,767 B (+4.56 %)**. The first attempt at this leg was run under the
+> ambient `GOTOOLCHAIN=auto` and Go silently switched *down* to go1.26.5 to
+> satisfy `80d67ed`'s `go` directive — `go version` said 1.26.6 while
+> `go version -m` on the binary said 1.26.5. Both legs are now pinned and both
+> are verified from buildinfo.
+>
+> **7. What was NOT verified, and it matters more now than it did at 0.25 %.**
+> These are cross-builds from darwin/arm64; the gate runs natively on
+> `ubuntu-latest`. Every **delta** above is same-method and therefore robust to a
+> cross-versus-native offset, but the **absolute** 5,035 B headroom figure assumes
+> a cross-built linux/amd64 binary is byte-identical to a natively built one, and
+> that assumption is **still untested** — SW-177 flagged it and SW-203 did not
+> close it. At 87,074 B of headroom the question was academic; at 5,035 B it is
+> not. It needs one CI dispatch. Separately,
+> `internal/bench/harness.go`'s `buildBinary` passes no `GOOS`/`GOARCH`, so the
+> gated metric measures a **host** binary — on CI the host is linux/amd64 and the
+> two coincide, on a developer machine they do not. The darwin/arm64 host leg was
+> measured too (baseline 33,104,098 B; css 18,128 · hcl 34,944 · markdown 69,536
+> · toml 16,928 · yaml 137,280 · kotlin 383,856) rather than letting one platform
+> stand for the other.
+
 > ## AMENDMENT — 2026-08-19 (SW-177, W1.d): Kotlin re-measured against the gate, and the gate has 0.25 % headroom
 >
 > Per D6 this amendment is **added**; nothing below is rewritten, re-pointed or

@@ -1,0 +1,9 @@
+=== leg B baseline (buildvcs=false, unmodified tree)
+b-baseline	34245005
+=== leg B: json registration removed (tag set UNCHANGED — json has no tag)
+  remaining NewJSONParser refs in defaults.go: 0
+b-no-json-reg	34243315
+=== leg B: css registration removed AND grammar_subset_css dropped
+b-no-css-full	34206183
+=== restore check
+  (no DIRTY line above == defaults.go restored)

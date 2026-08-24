@@ -1,0 +1,6742 @@
+{
+  "header": {
+    "timestamp": "2026-08-24T19:25:46Z",
+    "version": "0.0.0-dev",
+    "commit": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+    "os": "darwin",
+    "arch": "arm64",
+    "corpus_version": 3
+  },
+  "runner_class": "local-sandbox",
+  "runner_role": "comparison",
+  "reference_scenario": false,
+  "scenario_source": "docs/eval/reference-scenario.json",
+  "notes": "in-process session model: engine services over one open SQLite store; cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; all 12 stable operations covered with an explicit operation-to-class mapping; warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every individual measurement retained in query_latency.operations[].samples_us; the cold index is watched for silence through the shipped ingest progress hook — see `stalls`, which is present on every run and reads FAIL when the index emitted no progress",
+  "repo": {
+    "name": "grpc-go",
+    "ref": "v1.60.1",
+    "sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+    "tier": 3,
+    "clone_ms": 2561,
+    "index": {
+      "wallclock_ms": 11421,
+      "peak_rss_mb": 641,
+      "db_size_bytes": 31469568,
+      "nodes": 14920,
+      "edges": 82942,
+      "files": 919
+    },
+    "cold": {
+      "store_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-full1054467193/grpc-go.db",
+      "meta_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-full1054467193/grpc-go-meta",
+      "store_preexisting": false,
+      "meta_preexisting": false,
+      "page_cache": "not_dropped",
+      "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+      "drop_required": false,
+      "verified": true
+    },
+    "warm_p95_us": {
+      "agent_tools": 325591,
+      "search": 2953,
+      "structural": 349
+    },
+    "warm_p95_us_per_op": {
+      "agent_brief": 331691,
+      "callees": 139,
+      "callers": 86,
+      "change_risk": 1773,
+      "definition": 62,
+      "explain_symbol": 1807,
+      "impact": 14054,
+      "neighborhood": 262,
+      "references": 39,
+      "related_files": 1743,
+      "search": 2953
+    },
+    "warm_p50_us": {
+      "agent_tools": 153,
+      "search": 409,
+      "structural": 59
+    },
+    "warm_p50_us_per_op": {
+      "agent_brief": 325591,
+      "callees": 67,
+      "callers": 43,
+      "change_risk": 109,
+      "definition": 55,
+      "explain_symbol": 157,
+      "impact": 81,
+      "neighborhood": 108,
+      "references": 38,
+      "related_files": 127,
+      "search": 409
+    },
+    "warm_samples": {
+      "agent_tools": 33,
+      "search": 40,
+      "structural": 150
+    },
+    "warm_ops": {
+      "agent_tools": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ],
+      "search": [
+        "search"
+      ],
+      "structural": [
+        "callees",
+        "callers",
+        "definition",
+        "impact",
+        "neighborhood",
+        "references"
+      ]
+    },
+    "query_latency": {
+      "repo": "grpc-go",
+      "minimum_executions_per_class": 1000,
+      "requested_executions_per_class": 0,
+      "total_executions": 223,
+      "class_of": {
+        "agent_brief": "agent_tools",
+        "callees": "structural",
+        "callers": "structural",
+        "change_risk": "agent_tools",
+        "definition": "structural",
+        "explain_symbol": "agent_tools",
+        "impact": "structural",
+        "index": "lifecycle",
+        "neighborhood": "structural",
+        "references": "structural",
+        "related_files": "agent_tools",
+        "search": "search"
+      },
+      "stable_operations": [
+        "agent_brief",
+        "callees",
+        "callers",
+        "change_risk",
+        "definition",
+        "explain_symbol",
+        "impact",
+        "index",
+        "neighborhood",
+        "references",
+        "related_files",
+        "search"
+      ],
+      "operations": [
+        {
+          "operation": "agent_brief",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 3,
+            "min_us": 325578,
+            "p50_us": 325591,
+            "p95_us": 331691,
+            "max_us": 331691
+          },
+          "samples_us": [
+            331691,
+            325578,
+            325591
+          ]
+        },
+        {
+          "operation": "callees",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 41,
+            "p50_us": 67,
+            "p95_us": 139,
+            "max_us": 184
+          },
+          "samples_us": [
+            45,
+            184,
+            129,
+            139,
+            101,
+            100,
+            127,
+            73,
+            66,
+            71,
+            78,
+            66,
+            67,
+            76,
+            60,
+            55,
+            76,
+            61,
+            80,
+            42,
+            42,
+            41,
+            42,
+            41,
+            41
+          ]
+        },
+        {
+          "operation": "callers",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 39,
+            "p50_us": 43,
+            "p95_us": 86,
+            "max_us": 1883
+          },
+          "samples_us": [
+            1883,
+            56,
+            45,
+            82,
+            42,
+            78,
+            59,
+            40,
+            86,
+            40,
+            43,
+            77,
+            60,
+            59,
+            39,
+            39,
+            39,
+            41,
+            40,
+            40,
+            39,
+            55,
+            40,
+            55,
+            42
+          ]
+        },
+        {
+          "operation": "change_risk",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 83,
+            "p50_us": 109,
+            "p95_us": 1773,
+            "max_us": 1773
+          },
+          "samples_us": [
+            1773,
+            155,
+            133,
+            125,
+            104,
+            112,
+            102,
+            96,
+            109,
+            83
+          ]
+        },
+        {
+          "operation": "definition",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 52,
+            "p50_us": 55,
+            "p95_us": 62,
+            "max_us": 65
+          },
+          "samples_us": [
+            54,
+            59,
+            55,
+            53,
+            53,
+            53,
+            55,
+            53,
+            54,
+            53,
+            58,
+            62,
+            55,
+            54,
+            58,
+            54,
+            55,
+            56,
+            53,
+            57,
+            65,
+            58,
+            54,
+            52,
+            58
+          ]
+        },
+        {
+          "operation": "explain_symbol",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 124,
+            "p50_us": 157,
+            "p95_us": 1807,
+            "max_us": 1807
+          },
+          "samples_us": [
+            1807,
+            157,
+            170,
+            231,
+            140,
+            174,
+            156,
+            133,
+            158,
+            124
+          ]
+        },
+        {
+          "operation": "impact",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 76,
+            "p50_us": 81,
+            "p95_us": 14054,
+            "max_us": 27612
+          },
+          "samples_us": [
+            27612,
+            85,
+            80,
+            216,
+            79,
+            1136,
+            81,
+            78,
+            14054,
+            82,
+            78,
+            349,
+            149,
+            429,
+            77,
+            86,
+            77,
+            77,
+            76,
+            78,
+            77,
+            706,
+            81,
+            221,
+            77
+          ]
+        },
+        {
+          "operation": "index",
+          "class": "lifecycle",
+          "measured": false,
+          "warmup_executions": 0,
+          "note": "lifecycle-only: `index` is the ingest lifecycle operation, not a query. Its cost is the cold-index wallclock measured by SW-124, so it carries no query-latency samples, no 1000-execution floor and no PRD §12.2 query gate. It is listed here so all twelve stable operations are visibly accounted for."
+        },
+        {
+          "operation": "neighborhood",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 80,
+            "p50_us": 108,
+            "p95_us": 262,
+            "max_us": 1856
+          },
+          "samples_us": [
+            1856,
+            262,
+            218,
+            180,
+            172,
+            146,
+            141,
+            129,
+            122,
+            129,
+            108,
+            115,
+            102,
+            110,
+            95,
+            96,
+            94,
+            90,
+            93,
+            89,
+            89,
+            82,
+            84,
+            82,
+            80
+          ]
+        },
+        {
+          "operation": "references",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 37,
+            "p50_us": 38,
+            "p95_us": 39,
+            "max_us": 39
+          },
+          "samples_us": [
+            39,
+            39,
+            38,
+            38,
+            38,
+            38,
+            38,
+            38,
+            39,
+            37,
+            38,
+            38,
+            37,
+            38,
+            37,
+            38,
+            38,
+            37,
+            39,
+            38,
+            37,
+            38,
+            38,
+            38,
+            38
+          ]
+        },
+        {
+          "operation": "related_files",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 96,
+            "p50_us": 127,
+            "p95_us": 1743,
+            "max_us": 1743
+          },
+          "samples_us": [
+            1743,
+            240,
+            211,
+            164,
+            153,
+            127,
+            122,
+            113,
+            109,
+            96
+          ]
+        },
+        {
+          "operation": "search",
+          "class": "search",
+          "measured": true,
+          "gated_by": [
+            "warm_search_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 40,
+            "min_us": 318,
+            "p50_us": 409,
+            "p95_us": 2953,
+            "max_us": 2978
+          },
+          "samples_us": [
+            326,
+            2978,
+            331,
+            2792,
+            331,
+            2823,
+            322,
+            2763,
+            321,
+            2754,
+            337,
+            2977,
+            409,
+            2953,
+            371,
+            2861,
+            337,
+            2834,
+            331,
+            2768,
+            324,
+            2832,
+            335,
+            2834,
+            345,
+            2781,
+            329,
+            2781,
+            323,
+            2751,
+            321,
+            2760,
+            318,
+            2774,
+            333,
+            2759,
+            327,
+            2753,
+            318,
+            2764
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 33,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 33,
+          "min_us": 83,
+          "p50_us": 153,
+          "p95_us": 325591,
+          "max_us": 331691
+        },
+        {
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 318,
+          "p50_us": 409,
+          "p95_us": 2953,
+          "max_us": 2978
+        },
+        {
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "definition",
+            "impact",
+            "neighborhood",
+            "references"
+          ],
+          "executions": 150,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 150,
+          "min_us": 37,
+          "p50_us": 59,
+          "p95_us": 349,
+          "max_us": 27612
+        }
+      ],
+      "pools": [
+        {
+          "gate_id": "agent_context_p95",
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 33,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 33,
+          "min_us": 83,
+          "p50_us": 153,
+          "p95_us": 325591,
+          "max_us": 331691
+        },
+        {
+          "gate_id": "caller_callee_impact_p95",
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "impact"
+          ],
+          "executions": 75,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 75,
+          "min_us": 39,
+          "p50_us": 76,
+          "p95_us": 1136,
+          "max_us": 27612
+        },
+        {
+          "gate_id": "warm_search_p95",
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 318,
+          "p50_us": 409,
+          "p95_us": 2953,
+          "max_us": 2978
+        }
+      ],
+      "symbol_sample": {
+        "requested": 25,
+        "returned": 25,
+        "method": "core/graphstore DegreeSamplePort.DegreeStratifiedSymbols over the indexed store: candidates are the function and method nodes, ordered by incident degree DESC then node id ASC, one picked per quantile bucket. That is a total order over a fixed graph, so the same graph yields the same ordered sample; the structural operations walk this list in order and the agent-context operations take its first agent_symbols entries.",
+        "digest": "0fc95b88a753f422487801a37653c06455833308467841ee190f972b65943510",
+        "symbol_ids": [
+          "669df777c13a3dea",
+          "d28957c960ee5987",
+          "2c7ed3ea221f9117",
+          "a254b0c5046894e0",
+          "cf8049f447c87bbf",
+          "08ab3fd407d7fe25",
+          "d80646cb592fa843",
+          "2439a5cb4e70900b",
+          "4cb9f17271701618",
+          "3b1f2d101278aab6",
+          "19597d5bdde3cbe2",
+          "b86f6cc3d47ba937",
+          "3de8680619fb41d7",
+          "bcbdcba831160f33",
+          "3f7fd6aae6f560c6",
+          "cecfea69de95b3a3",
+          "267c56c8897bc97c",
+          "5d89e4078d6622fc",
+          "91abb640cc9c9e90",
+          "c48d8d80c3184dc8",
+          "f9e7678ca448446e",
+          "368adf2c6446588c",
+          "73c8833bc9f3744a",
+          "bb91287cfc5dda3a",
+          "f9c28533ac789c9a"
+        ],
+        "agent_symbols": 10
+      },
+      "sufficient": false,
+      "gates": [
+        {
+          "id": "warm_search_p95",
+          "prd_metric": "Warm Search p95 (PRD 12.2)",
+          "threshold": 100,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.warm_search_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "caller_callee_impact_p95",
+          "prd_metric": "Caller/Callee/Impact p95 (PRD 12.2)",
+          "threshold": 200,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.caller_callee_impact_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "agent_context_p95",
+          "prd_metric": "Agent Context p95 (PRD 12.2)",
+          "threshold": 500,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.agent_context_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "warnings": [
+        "class agent_tools ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class search ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool agent_context_p95 ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool warm_search_p95 ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS"
+      ],
+      "status": "UNKNOWN",
+      "timing_method": "The timed region contains the operation invocation and NOTHING else. Clone, index, store open, engine construction and the symbol sample all happen before any measurement; per-execution argument assembly (choosing the symbol or query for execution i, building the argument map) happens in an UNTIMED prepare step; and each operation runs warmup_executions untimed invocations before the first timed one. Warmup measurements are discarded, never pooled. Latency is time.Since around the invocation, recorded in microseconds.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-execution samples, ascending — the same implementation the cold series uses, so p50 and p95 cannot disagree about even sample counts. A class statistic pools its operations' samples; a pool statistic pools exactly the operations the SW-123 contract assigns to that gate. Every value here is reproducible from `operations[].samples_us` with evalreport.RecomputeQueryLatency.",
+      "notes": "SW-125 query-latency measurement: warm operations over ONE open store in the session model, driven through a deterministic degree-stratified symbol sample that is published verbatim so two runs are comparable. FR-8's floor is minimum_executions_per_class; a class below it is marked sufficient=false and every gate read over it is UNKNOWN, never PASS (PRD §8.2). No gate is read at all unless the run is the reference scenario on the reference class and from the frozen candidate."
+    },
+    "incremental": {
+      "repo": "grpc-go",
+      "changes_requested": 8,
+      "minimum_changes": 100,
+      "changes_completed": 8,
+      "changes_failed": 0,
+      "sufficient": false,
+      "classes_covered": true,
+      "sequence": {
+        "steps": 8,
+        "cycle_length": 4,
+        "method": "A fixed four-step cycle over the indexed, LANGUAGE-SCOPED modifiable source files in canonical (sorted, repo-relative POSIX) order: (1) MODIFY file[c] by appending one top-level declaration written in THAT FILE'S language; (2) ADD a new file beside it, in the same package where the language has one and in the same directory where it does not, containing one top-level declaration; (3) CROSS_PACKAGE — modify a file whose symbols have inbound edges from other directories, rotating over the qualifying targets; (4) DELETE the file step 2 added in this same cycle. c advances by one per cycle, so a long run walks the whole file list. A file is a candidate only when its extension belongs to one of the families cmd/eval/sourcefamily.go states a mutation shape for (go, java, kotlin, python, typescript, tsx, javascript, ruby, rust, c, cpp, csharp, php, lua, bash); the data/markup languages the index can parse are deliberately NOT candidates, because there is no top-level declaration to append to them. Each family supplies its own package-clause reader (Go's bare identifier, the JVM's dotted-and-optionally-terminated name, or none at all for the languages that locate a module by path), its own declaration text and its own added-file name. The sequence is a pure function of the sorted file list, the per-directory package clauses, the cross-package targets and the requested count: no randomness, no wall-clock, no map iteration.",
+        "digest": "b99163cb2ed900253ac52ba6e17e656b896531e454572da6790c8747ce384169",
+        "source_files": 558,
+        "cross_package": {
+          "satisfied": true,
+          "method": "candidates are core/graphstore DegreeSamplePort.DegreeStratifiedSymbols (degree DESC, node id ASC — a total order over a fixed graph); a candidate qualifies when engine/query callers+references return at least one neighbour whose source file is in a DIFFERENT directory, which in Go is a different package. The qualifying count and example neighbour paths are published per target.",
+          "targets": [
+            {
+              "path": "interop/grpc_testing/test_grpc.pb.go",
+              "symbol": "grpc_testing.NewTestServiceClient",
+              "inbound_from_other_dirs": 69,
+              "example_sources": [
+                "test/roundrobin_test.go",
+                "test/xds/xds_client_integration_test.go",
+                "xds/internal/balancer/outlierdetection/e2e_test/outlierdetection_test.go"
+              ]
+            },
+            {
+              "path": "internal/cache/timeoutCache.go",
+              "symbol": "cache.TimeoutCache.Clear",
+              "inbound_from_other_dirs": 2,
+              "example_sources": [
+                "internal/balancergroup/balancergroup.go",
+                "xds/internal/xdsclient/clientimpl.go"
+              ]
+            },
+            {
+              "path": "stats/stats.go",
+              "symbol": "stats.Tags",
+              "inbound_from_other_dirs": 2,
+              "example_sources": [
+                "stats/opencensus/stats.go",
+                "test/end2end_test.go"
+              ]
+            },
+            {
+              "path": "benchmark/latency/latency.go",
+              "symbol": "latency.Network.Listener",
+              "inbound_from_other_dirs": 1,
+              "example_sources": [
+                "benchmark/benchmain/main.go"
+              ]
+            },
+            {
+              "path": "internal/proto/grpc_lookup_v1/rls_config.pb.go",
+              "symbol": "grpc_lookup_v1.NameMatcher.GetRequiredMatch",
+              "inbound_from_other_dirs": 1,
+              "example_sources": [
+                "balancer/rls/internal/keys/builder.go"
+              ]
+            }
+          ],
+          "examined": 36
+        }
+      },
+      "coverage": [
+        {
+          "class": "add",
+          "steps": 2,
+          "required": true
+        },
+        {
+          "class": "modify",
+          "steps": 2,
+          "required": true
+        },
+        {
+          "class": "delete",
+          "steps": 2,
+          "required": true
+        },
+        {
+          "class": "cross_package",
+          "steps": 2,
+          "required": true
+        }
+      ],
+      "changes": [
+        {
+          "step": 1,
+          "class": "modify",
+          "path": "admin/admin.go",
+          "symbol": "GraphiEvalStep0001",
+          "expect": "the appended function GraphiEvalStep0001 is answerable by a search",
+          "status": "completed",
+          "update_us": 1830924,
+          "update_measured": true,
+          "freshness_us": 1831108,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 2,
+          "class": "add",
+          "path": "admin/graphi_eval_step0002.go",
+          "symbol": "GraphiEvalStep0002",
+          "expect": "the added file's function GraphiEvalStep0002 is answerable by a search",
+          "status": "completed",
+          "update_us": 2010728,
+          "update_measured": true,
+          "freshness_us": 2010963,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 3,
+          "class": "cross_package",
+          "path": "interop/grpc_testing/test_grpc.pb.go",
+          "symbol": "GraphiEvalStep0003",
+          "expect": "the appended function GraphiEvalStep0003 is answerable after re-linking a file with 69 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 3120207,
+          "update_measured": true,
+          "freshness_us": 3120446,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 4,
+          "class": "delete",
+          "path": "admin/graphi_eval_step0002.go",
+          "symbol": "GraphiEvalStep0002",
+          "expect": "the deleted file's function GraphiEvalStep0002 is no longer answerable",
+          "status": "completed",
+          "update_us": 2051129,
+          "update_measured": true,
+          "freshness_us": 2051295,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 5,
+          "class": "modify",
+          "path": "admin/test/utils.go",
+          "symbol": "GraphiEvalStep0005",
+          "expect": "the appended function GraphiEvalStep0005 is answerable by a search",
+          "status": "completed",
+          "update_us": 2058694,
+          "update_measured": true,
+          "freshness_us": 2058990,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 6,
+          "class": "add",
+          "path": "admin/test/graphi_eval_step0006.go",
+          "symbol": "GraphiEvalStep0006",
+          "expect": "the added file's function GraphiEvalStep0006 is answerable by a search",
+          "status": "completed",
+          "update_us": 1806545,
+          "update_measured": true,
+          "freshness_us": 1806799,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 7,
+          "class": "cross_package",
+          "path": "internal/cache/timeoutCache.go",
+          "symbol": "GraphiEvalStep0007",
+          "expect": "the appended function GraphiEvalStep0007 is answerable after re-linking a file with 2 inbound edge(s) from other directories",
+          "status": "completed",
+          "update_us": 2253319,
+          "update_measured": true,
+          "freshness_us": 2253583,
+          "freshness_measured": true,
+          "probes": 1
+        },
+        {
+          "step": 8,
+          "class": "delete",
+          "path": "admin/test/graphi_eval_step0006.go",
+          "symbol": "GraphiEvalStep0006",
+          "expect": "the deleted file's function GraphiEvalStep0006 is no longer answerable",
+          "status": "completed",
+          "update_us": 2039654,
+          "update_measured": true,
+          "freshness_us": 2039751,
+          "freshness_measured": true,
+          "probes": 1
+        }
+      ],
+      "update": {
+        "n": 8,
+        "min_us": 1806545,
+        "p50_us": 2039654,
+        "p95_us": 3120207,
+        "max_us": 3120207
+      },
+      "freshness": {
+        "n": 8,
+        "min_us": 1806799,
+        "p50_us": 2039751,
+        "p95_us": 3120446,
+        "max_us": 3120446
+      },
+      "per_class": [
+        {
+          "class": "add",
+          "changes": 2,
+          "update": {
+            "n": 2,
+            "min_us": 1806545,
+            "p50_us": 1806545,
+            "p95_us": 2010728,
+            "max_us": 2010728
+          },
+          "freshness": {
+            "n": 2,
+            "min_us": 1806799,
+            "p50_us": 1806799,
+            "p95_us": 2010963,
+            "max_us": 2010963
+          }
+        },
+        {
+          "class": "modify",
+          "changes": 2,
+          "update": {
+            "n": 2,
+            "min_us": 1830924,
+            "p50_us": 1830924,
+            "p95_us": 2058694,
+            "max_us": 2058694
+          },
+          "freshness": {
+            "n": 2,
+            "min_us": 1831108,
+            "p50_us": 1831108,
+            "p95_us": 2058990,
+            "max_us": 2058990
+          }
+        },
+        {
+          "class": "delete",
+          "changes": 2,
+          "update": {
+            "n": 2,
+            "min_us": 2039654,
+            "p50_us": 2039654,
+            "p95_us": 2051129,
+            "max_us": 2051129
+          },
+          "freshness": {
+            "n": 2,
+            "min_us": 2039751,
+            "p50_us": 2039751,
+            "p95_us": 2051295,
+            "max_us": 2051295
+          }
+        },
+        {
+          "class": "cross_package",
+          "changes": 2,
+          "update": {
+            "n": 2,
+            "min_us": 2253319,
+            "p50_us": 2253319,
+            "p95_us": 3120207,
+            "max_us": 3120207
+          },
+          "freshness": {
+            "n": 2,
+            "min_us": 2253583,
+            "p50_us": 2253583,
+            "p95_us": 3120446,
+            "max_us": 3120446
+          }
+        }
+      ],
+      "gates": [
+        {
+          "id": "freshness_p95",
+          "prd_metric": "Freshness p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "incremental.freshness.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "warnings": [
+        "only 8 change(s) completed, below FR-8's floor of 100: every gate read over this series is UNKNOWN, not PASS",
+        "this run applied 8 change(s) to the checkout before index.db_size_bytes was measured: that figure is NOT a cold-index DB-size sample for this report"
+      ],
+      "status": "UNKNOWN",
+      "freshness_definition": "FRESH is reached at the first query that answers the NEW state. The clock starts the instant the file change is durably on disk (the write or unlink has returned) and stops at the first convergence probe that observes the change: for an added, modified or cross-package change, the symbol the change introduces is answerable by a search; for a delete, the symbol the removed file defined is no longer answerable. Freshness therefore CONTAINS the incremental update — update_us is the ingest call, freshness_us is change-to-answer — and freshness_us \u003e= update_us holds for every completed change.",
+      "timing_method": "Two clocks per change, both around the operation and nothing else. update_us is time.Since around the incremental ingest call for the changed path — building the edit content, writing it and choosing the next step all happen outside it. freshness_us starts immediately after the file mutation returns and stops at the probe that observed the new state, so it contains the update plus any waiting the harness did. No warmup: an incremental update is a cold-by-nature event and repeating it to warm it up would measure something a user never experiences.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-change samples, ascending — the same implementation the cold series and the query-latency series use. A change contributes to the update distribution when update_measured is true and to the freshness distribution when freshness_measured is true; the two counts differ exactly by the changes whose update completed but which never converged. Failed changes are counted in changes_failed and retained in `changes`, never removed. Every value here is reproducible from `changes` with evalreport.RecomputeIncremental.",
+      "scope_limitation": "The harness drives the incremental update EXPLICITLY, in the `graphi sync` shape: change the file, run the incremental ingest, query. It therefore EXCLUDES filesystem-watch detection latency — the interval between a write and engine/watch noticing it — which this story does not measure and does not alter (AC-8). A daemon-driven freshness figure would be this one plus watch detection, never less.",
+      "notes": "SW-126 freshness and incremental measurement: a DEFINED, reproducible change sequence — not random mutation — executed against a pinned corpus repository, reporting incremental-update and freshness p50 and p95 with every individual measurement retained. The tier-1 fixture path in cmd/eval/perf.go is a PR-gate smoke check over a copied fixture and is NOT this measurement; it is never P0 evidence. No gate is read unless the run is the reference scenario on the reference class and from the frozen candidate, with at least minimum_changes completed changes and every required change class exercised. Otherwise it is UNKNOWN, which is not a PASS (PRD §8.2)."
+    },
+    "stalls": {
+      "repo": "grpc-go",
+      "events_observed": 1088,
+      "minimum_events": 2,
+      "observable": true,
+      "index_wallclock_us": 11421450,
+      "lead_in_us": 104,
+      "lead_in_measured": true,
+      "tail_us": 0,
+      "tail_measured": true,
+      "heartbeat_mode": "non-tty",
+      "stalls": {
+        "n": 1087,
+        "min_us": 0,
+        "p50_us": 82,
+        "p95_us": 1249,
+        "max_us": 8511605
+      },
+      "per_phase": [
+        {
+          "phase": "checkpoint",
+          "stats": {
+            "n": 1,
+            "min_us": 985374,
+            "p50_us": 985374,
+            "p95_us": 985374,
+            "max_us": 985374
+          }
+        },
+        {
+          "phase": "done",
+          "stats": {
+            "n": 1,
+            "min_us": 86305,
+            "p50_us": 86305,
+            "p95_us": 86305,
+            "max_us": 86305
+          }
+        },
+        {
+          "phase": "fts",
+          "stats": {
+            "n": 1,
+            "min_us": 20839,
+            "p50_us": 20839,
+            "p95_us": 20839,
+            "max_us": 20839
+          }
+        },
+        {
+          "phase": "link",
+          "stats": {
+            "n": 15,
+            "min_us": 23467,
+            "p50_us": 62098,
+            "p95_us": 470624,
+            "max_us": 470624
+          }
+        },
+        {
+          "phase": "parse",
+          "stats": {
+            "n": 1050,
+            "min_us": 0,
+            "p50_us": 78,
+            "p95_us": 812,
+            "max_us": 8511605
+          }
+        },
+        {
+          "phase": "resolve",
+          "stats": {
+            "n": 2,
+            "min_us": 0,
+            "p50_us": 0,
+            "p95_us": 39580,
+            "max_us": 39580
+          }
+        },
+        {
+          "phase": "walk",
+          "stats": {
+            "n": 16,
+            "min_us": 7790,
+            "p50_us": 13359,
+            "p95_us": 22990,
+            "max_us": 22990
+          }
+        },
+        {
+          "phase": "write",
+          "stats": {
+            "n": 1,
+            "min_us": 684,
+            "p50_us": 684,
+            "p95_us": 684,
+            "max_us": 684
+          }
+        }
+      ],
+      "intervals": [
+        {
+          "seq": 1,
+          "phase": "walk",
+          "us": 7790
+        },
+        {
+          "seq": 2,
+          "phase": "walk",
+          "us": 11739
+        },
+        {
+          "seq": 3,
+          "phase": "walk",
+          "us": 13389
+        },
+        {
+          "seq": 4,
+          "phase": "walk",
+          "us": 15653
+        },
+        {
+          "seq": 5,
+          "phase": "walk",
+          "us": 22990
+        },
+        {
+          "seq": 6,
+          "phase": "walk",
+          "us": 12980
+        },
+        {
+          "seq": 7,
+          "phase": "walk",
+          "us": 10818
+        },
+        {
+          "seq": 8,
+          "phase": "walk",
+          "us": 13736
+        },
+        {
+          "seq": 9,
+          "phase": "walk",
+          "us": 13359
+        },
+        {
+          "seq": 10,
+          "phase": "walk",
+          "us": 10786
+        },
+        {
+          "seq": 11,
+          "phase": "walk",
+          "us": 14754
+        },
+        {
+          "seq": 12,
+          "phase": "walk",
+          "us": 10556
+        },
+        {
+          "seq": 13,
+          "phase": "walk",
+          "us": 8465
+        },
+        {
+          "seq": 14,
+          "phase": "walk",
+          "us": 15252
+        },
+        {
+          "seq": 15,
+          "phase": "walk",
+          "us": 19038
+        },
+        {
+          "seq": 16,
+          "phase": "walk",
+          "us": 17758
+        },
+        {
+          "seq": 17,
+          "phase": "parse",
+          "us": 6977
+        },
+        {
+          "seq": 18,
+          "phase": "parse",
+          "us": 186
+        },
+        {
+          "seq": 19,
+          "phase": "parse",
+          "us": 1255
+        },
+        {
+          "seq": 20,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 21,
+          "phase": "parse",
+          "us": 1155
+        },
+        {
+          "seq": 22,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 23,
+          "phase": "parse",
+          "us": 224
+        },
+        {
+          "seq": 24,
+          "phase": "parse",
+          "us": 588
+        },
+        {
+          "seq": 25,
+          "phase": "parse",
+          "us": 178
+        },
+        {
+          "seq": 26,
+          "phase": "parse",
+          "us": 848
+        },
+        {
+          "seq": 27,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 28,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 29,
+          "phase": "parse",
+          "us": 960
+        },
+        {
+          "seq": 30,
+          "phase": "parse",
+          "us": 358
+        },
+        {
+          "seq": 31,
+          "phase": "parse",
+          "us": 5780
+        },
+        {
+          "seq": 32,
+          "phase": "parse",
+          "us": 6722
+        },
+        {
+          "seq": 33,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 34,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 35,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 36,
+          "phase": "parse",
+          "us": 779
+        },
+        {
+          "seq": 37,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 38,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 39,
+          "phase": "parse",
+          "us": 278
+        },
+        {
+          "seq": 40,
+          "phase": "parse",
+          "us": 954
+        },
+        {
+          "seq": 41,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 42,
+          "phase": "parse",
+          "us": 146
+        },
+        {
+          "seq": 43,
+          "phase": "parse",
+          "us": 196
+        },
+        {
+          "seq": 44,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 45,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 46,
+          "phase": "parse",
+          "us": 642
+        },
+        {
+          "seq": 47,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 48,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 49,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 50,
+          "phase": "parse",
+          "us": 557
+        },
+        {
+          "seq": 51,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 52,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 53,
+          "phase": "parse",
+          "us": 88
+        },
+        {
+          "seq": 54,
+          "phase": "parse",
+          "us": 195
+        },
+        {
+          "seq": 55,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 56,
+          "phase": "parse",
+          "us": 617
+        },
+        {
+          "seq": 57,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 58,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 59,
+          "phase": "parse",
+          "us": 100
+        },
+        {
+          "seq": 60,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 61,
+          "phase": "parse",
+          "us": 82
+        },
+        {
+          "seq": 62,
+          "phase": "parse",
+          "us": 249
+        },
+        {
+          "seq": 63,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 64,
+          "phase": "parse",
+          "us": 188
+        },
+        {
+          "seq": 65,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 66,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 67,
+          "phase": "parse",
+          "us": 295
+        },
+        {
+          "seq": 68,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 69,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 70,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 71,
+          "phase": "parse",
+          "us": 207
+        },
+        {
+          "seq": 72,
+          "phase": "parse",
+          "us": 64
+        },
+        {
+          "seq": 73,
+          "phase": "parse",
+          "us": 90
+        },
+        {
+          "seq": 74,
+          "phase": "parse",
+          "us": 143
+        },
+        {
+          "seq": 75,
+          "phase": "parse",
+          "us": 465
+        },
+        {
+          "seq": 76,
+          "phase": "parse",
+          "us": 252
+        },
+        {
+          "seq": 77,
+          "phase": "parse",
+          "us": 174
+        },
+        {
+          "seq": 78,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 79,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 80,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 81,
+          "phase": "parse",
+          "us": 321
+        },
+        {
+          "seq": 82,
+          "phase": "parse",
+          "us": 188
+        },
+        {
+          "seq": 83,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 84,
+          "phase": "parse",
+          "us": 329
+        },
+        {
+          "seq": 85,
+          "phase": "parse",
+          "us": 221
+        },
+        {
+          "seq": 86,
+          "phase": "parse",
+          "us": 160
+        },
+        {
+          "seq": 87,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 88,
+          "phase": "parse",
+          "us": 1707
+        },
+        {
+          "seq": 89,
+          "phase": "parse",
+          "us": 1017
+        },
+        {
+          "seq": 90,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 91,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 92,
+          "phase": "parse",
+          "us": 124
+        },
+        {
+          "seq": 93,
+          "phase": "parse",
+          "us": 162
+        },
+        {
+          "seq": 94,
+          "phase": "parse",
+          "us": 336
+        },
+        {
+          "seq": 95,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 96,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 97,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 98,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 99,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 100,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 101,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 102,
+          "phase": "parse",
+          "us": 122
+        },
+        {
+          "seq": 103,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 104,
+          "phase": "parse",
+          "us": 521
+        },
+        {
+          "seq": 105,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 106,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 107,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 108,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 109,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 110,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 111,
+          "phase": "parse",
+          "us": 188
+        },
+        {
+          "seq": 112,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 113,
+          "phase": "parse",
+          "us": 870
+        },
+        {
+          "seq": 114,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 115,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 116,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 117,
+          "phase": "parse",
+          "us": 248
+        },
+        {
+          "seq": 118,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 119,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 120,
+          "phase": "parse",
+          "us": 71
+        },
+        {
+          "seq": 121,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 122,
+          "phase": "parse",
+          "us": 709
+        },
+        {
+          "seq": 123,
+          "phase": "parse",
+          "us": 122
+        },
+        {
+          "seq": 124,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 125,
+          "phase": "parse",
+          "us": 262
+        },
+        {
+          "seq": 126,
+          "phase": "parse",
+          "us": 178
+        },
+        {
+          "seq": 127,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 128,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 129,
+          "phase": "parse",
+          "us": 1005
+        },
+        {
+          "seq": 130,
+          "phase": "parse",
+          "us": 244
+        },
+        {
+          "seq": 131,
+          "phase": "parse",
+          "us": 89
+        },
+        {
+          "seq": 132,
+          "phase": "parse",
+          "us": 133
+        },
+        {
+          "seq": 133,
+          "phase": "parse",
+          "us": 875
+        },
+        {
+          "seq": 134,
+          "phase": "parse",
+          "us": 347
+        },
+        {
+          "seq": 135,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 136,
+          "phase": "parse",
+          "us": 104
+        },
+        {
+          "seq": 137,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 138,
+          "phase": "parse",
+          "us": 266
+        },
+        {
+          "seq": 139,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 140,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 141,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 142,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 143,
+          "phase": "parse",
+          "us": 383
+        },
+        {
+          "seq": 144,
+          "phase": "parse",
+          "us": 450
+        },
+        {
+          "seq": 145,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 146,
+          "phase": "parse",
+          "us": 116
+        },
+        {
+          "seq": 147,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 148,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 149,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 150,
+          "phase": "parse",
+          "us": 77
+        },
+        {
+          "seq": 151,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 152,
+          "phase": "parse",
+          "us": 870
+        },
+        {
+          "seq": 153,
+          "phase": "parse",
+          "us": 212
+        },
+        {
+          "seq": 154,
+          "phase": "parse",
+          "us": 251
+        },
+        {
+          "seq": 155,
+          "phase": "parse",
+          "us": 198
+        },
+        {
+          "seq": 156,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 157,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 158,
+          "phase": "parse",
+          "us": 638
+        },
+        {
+          "seq": 159,
+          "phase": "parse",
+          "us": 204
+        },
+        {
+          "seq": 160,
+          "phase": "parse",
+          "us": 288
+        },
+        {
+          "seq": 161,
+          "phase": "parse",
+          "us": 1003
+        },
+        {
+          "seq": 162,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 163,
+          "phase": "parse",
+          "us": 825
+        },
+        {
+          "seq": 164,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 165,
+          "phase": "parse",
+          "us": 25
+        },
+        {
+          "seq": 166,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 167,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 168,
+          "phase": "parse",
+          "us": 2112
+        },
+        {
+          "seq": 169,
+          "phase": "parse",
+          "us": 721
+        },
+        {
+          "seq": 170,
+          "phase": "parse",
+          "us": 691
+        },
+        {
+          "seq": 171,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 172,
+          "phase": "parse",
+          "us": 25
+        },
+        {
+          "seq": 173,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 174,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 175,
+          "phase": "parse",
+          "us": 57
+        },
+        {
+          "seq": 176,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 177,
+          "phase": "parse",
+          "us": 198
+        },
+        {
+          "seq": 178,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 179,
+          "phase": "parse",
+          "us": 362
+        },
+        {
+          "seq": 180,
+          "phase": "parse",
+          "us": 40
+        },
+        {
+          "seq": 181,
+          "phase": "parse",
+          "us": 203
+        },
+        {
+          "seq": 182,
+          "phase": "parse",
+          "us": 150
+        },
+        {
+          "seq": 183,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 184,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 185,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 186,
+          "phase": "parse",
+          "us": 231
+        },
+        {
+          "seq": 187,
+          "phase": "parse",
+          "us": 308
+        },
+        {
+          "seq": 188,
+          "phase": "parse",
+          "us": 419
+        },
+        {
+          "seq": 189,
+          "phase": "parse",
+          "us": 269
+        },
+        {
+          "seq": 190,
+          "phase": "parse",
+          "us": 190
+        },
+        {
+          "seq": 191,
+          "phase": "parse",
+          "us": 280
+        },
+        {
+          "seq": 192,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 193,
+          "phase": "parse",
+          "us": 342
+        },
+        {
+          "seq": 194,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 195,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 196,
+          "phase": "parse",
+          "us": 256
+        },
+        {
+          "seq": 197,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 198,
+          "phase": "parse",
+          "us": 256
+        },
+        {
+          "seq": 199,
+          "phase": "parse",
+          "us": 143
+        },
+        {
+          "seq": 200,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 201,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 202,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 203,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 204,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 205,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 206,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 207,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 208,
+          "phase": "parse",
+          "us": 176
+        },
+        {
+          "seq": 209,
+          "phase": "parse",
+          "us": 210
+        },
+        {
+          "seq": 210,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 211,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 212,
+          "phase": "parse",
+          "us": 223
+        },
+        {
+          "seq": 213,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 214,
+          "phase": "parse",
+          "us": 230
+        },
+        {
+          "seq": 215,
+          "phase": "parse",
+          "us": 98
+        },
+        {
+          "seq": 216,
+          "phase": "parse",
+          "us": 300
+        },
+        {
+          "seq": 217,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 218,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 219,
+          "phase": "parse",
+          "us": 62
+        },
+        {
+          "seq": 220,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 221,
+          "phase": "parse",
+          "us": 455
+        },
+        {
+          "seq": 222,
+          "phase": "parse",
+          "us": 103
+        },
+        {
+          "seq": 223,
+          "phase": "parse",
+          "us": 225
+        },
+        {
+          "seq": 224,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 225,
+          "phase": "parse",
+          "us": 127
+        },
+        {
+          "seq": 226,
+          "phase": "parse",
+          "us": 179
+        },
+        {
+          "seq": 227,
+          "phase": "parse",
+          "us": 347
+        },
+        {
+          "seq": 228,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 229,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 230,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 231,
+          "phase": "parse",
+          "us": 393
+        },
+        {
+          "seq": 232,
+          "phase": "parse",
+          "us": 460
+        },
+        {
+          "seq": 233,
+          "phase": "parse",
+          "us": 181
+        },
+        {
+          "seq": 234,
+          "phase": "parse",
+          "us": 423
+        },
+        {
+          "seq": 235,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 236,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 237,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 238,
+          "phase": "parse",
+          "us": 338
+        },
+        {
+          "seq": 239,
+          "phase": "parse",
+          "us": 103
+        },
+        {
+          "seq": 240,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 241,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 242,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 243,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 244,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 245,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 246,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 247,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 248,
+          "phase": "parse",
+          "us": 160
+        },
+        {
+          "seq": 249,
+          "phase": "parse",
+          "us": 501
+        },
+        {
+          "seq": 250,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 251,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 252,
+          "phase": "parse",
+          "us": 438
+        },
+        {
+          "seq": 253,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 254,
+          "phase": "parse",
+          "us": 490
+        },
+        {
+          "seq": 255,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 256,
+          "phase": "parse",
+          "us": 566
+        },
+        {
+          "seq": 257,
+          "phase": "parse",
+          "us": 44
+        },
+        {
+          "seq": 258,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 259,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 260,
+          "phase": "parse",
+          "us": 267
+        },
+        {
+          "seq": 261,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 262,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 263,
+          "phase": "parse",
+          "us": 575
+        },
+        {
+          "seq": 264,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 265,
+          "phase": "parse",
+          "us": 57
+        },
+        {
+          "seq": 266,
+          "phase": "parse",
+          "us": 874
+        },
+        {
+          "seq": 267,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 268,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 269,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 270,
+          "phase": "parse",
+          "us": 560
+        },
+        {
+          "seq": 271,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 272,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 273,
+          "phase": "parse",
+          "us": 222
+        },
+        {
+          "seq": 274,
+          "phase": "parse",
+          "us": 250
+        },
+        {
+          "seq": 275,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 276,
+          "phase": "parse",
+          "us": 137
+        },
+        {
+          "seq": 277,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 278,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 279,
+          "phase": "parse",
+          "us": 151
+        },
+        {
+          "seq": 280,
+          "phase": "parse",
+          "us": 239
+        },
+        {
+          "seq": 281,
+          "phase": "parse",
+          "us": 352
+        },
+        {
+          "seq": 282,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 283,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 284,
+          "phase": "parse",
+          "us": 178
+        },
+        {
+          "seq": 285,
+          "phase": "parse",
+          "us": 64
+        },
+        {
+          "seq": 286,
+          "phase": "parse",
+          "us": 378
+        },
+        {
+          "seq": 287,
+          "phase": "parse",
+          "us": 86
+        },
+        {
+          "seq": 288,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 289,
+          "phase": "parse",
+          "us": 653
+        },
+        {
+          "seq": 290,
+          "phase": "parse",
+          "us": 40
+        },
+        {
+          "seq": 291,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 292,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 293,
+          "phase": "parse",
+          "us": 863
+        },
+        {
+          "seq": 294,
+          "phase": "parse",
+          "us": 953
+        },
+        {
+          "seq": 295,
+          "phase": "parse",
+          "us": 86
+        },
+        {
+          "seq": 296,
+          "phase": "parse",
+          "us": 331
+        },
+        {
+          "seq": 297,
+          "phase": "parse",
+          "us": 840
+        },
+        {
+          "seq": 298,
+          "phase": "parse",
+          "us": 1291
+        },
+        {
+          "seq": 299,
+          "phase": "parse",
+          "us": 442
+        },
+        {
+          "seq": 300,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 301,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 302,
+          "phase": "parse",
+          "us": 294
+        },
+        {
+          "seq": 303,
+          "phase": "parse",
+          "us": 1516
+        },
+        {
+          "seq": 304,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 305,
+          "phase": "parse",
+          "us": 337
+        },
+        {
+          "seq": 306,
+          "phase": "parse",
+          "us": 376
+        },
+        {
+          "seq": 307,
+          "phase": "parse",
+          "us": 932
+        },
+        {
+          "seq": 308,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 309,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 310,
+          "phase": "parse",
+          "us": 234
+        },
+        {
+          "seq": 311,
+          "phase": "parse",
+          "us": 183
+        },
+        {
+          "seq": 312,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 313,
+          "phase": "parse",
+          "us": 524
+        },
+        {
+          "seq": 314,
+          "phase": "parse",
+          "us": 249
+        },
+        {
+          "seq": 315,
+          "phase": "parse",
+          "us": 88
+        },
+        {
+          "seq": 316,
+          "phase": "parse",
+          "us": 559
+        },
+        {
+          "seq": 317,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 318,
+          "phase": "parse",
+          "us": 749
+        },
+        {
+          "seq": 319,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 320,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 321,
+          "phase": "parse",
+          "us": 166
+        },
+        {
+          "seq": 322,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 323,
+          "phase": "parse",
+          "us": 44
+        },
+        {
+          "seq": 324,
+          "phase": "parse",
+          "us": 596
+        },
+        {
+          "seq": 325,
+          "phase": "parse",
+          "us": 96
+        },
+        {
+          "seq": 326,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 327,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 328,
+          "phase": "parse",
+          "us": 653
+        },
+        {
+          "seq": 329,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 330,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 331,
+          "phase": "parse",
+          "us": 564
+        },
+        {
+          "seq": 332,
+          "phase": "parse",
+          "us": 130
+        },
+        {
+          "seq": 333,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 334,
+          "phase": "parse",
+          "us": 641
+        },
+        {
+          "seq": 335,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 336,
+          "phase": "parse",
+          "us": 642
+        },
+        {
+          "seq": 337,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 338,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 339,
+          "phase": "parse",
+          "us": 188
+        },
+        {
+          "seq": 340,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 341,
+          "phase": "parse",
+          "us": 227
+        },
+        {
+          "seq": 342,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 343,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 344,
+          "phase": "parse",
+          "us": 337
+        },
+        {
+          "seq": 345,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 346,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 347,
+          "phase": "parse",
+          "us": 463
+        },
+        {
+          "seq": 348,
+          "phase": "parse",
+          "us": 114
+        },
+        {
+          "seq": 349,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 350,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 351,
+          "phase": "parse",
+          "us": 211
+        },
+        {
+          "seq": 352,
+          "phase": "parse",
+          "us": 95
+        },
+        {
+          "seq": 353,
+          "phase": "parse",
+          "us": 59
+        },
+        {
+          "seq": 354,
+          "phase": "parse",
+          "us": 279
+        },
+        {
+          "seq": 355,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 356,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 357,
+          "phase": "parse",
+          "us": 120
+        },
+        {
+          "seq": 358,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 359,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 360,
+          "phase": "parse",
+          "us": 263
+        },
+        {
+          "seq": 361,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 362,
+          "phase": "parse",
+          "us": 109
+        },
+        {
+          "seq": 363,
+          "phase": "parse",
+          "us": 220
+        },
+        {
+          "seq": 364,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 365,
+          "phase": "parse",
+          "us": 64
+        },
+        {
+          "seq": 366,
+          "phase": "parse",
+          "us": 104
+        },
+        {
+          "seq": 367,
+          "phase": "parse",
+          "us": 234
+        },
+        {
+          "seq": 368,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 369,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 370,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 371,
+          "phase": "parse",
+          "us": 173
+        },
+        {
+          "seq": 372,
+          "phase": "parse",
+          "us": 71
+        },
+        {
+          "seq": 373,
+          "phase": "parse",
+          "us": 120
+        },
+        {
+          "seq": 374,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 375,
+          "phase": "parse",
+          "us": 415
+        },
+        {
+          "seq": 376,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 377,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 378,
+          "phase": "parse",
+          "us": 741
+        },
+        {
+          "seq": 379,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 380,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 381,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 382,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 383,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 384,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 385,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 386,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 387,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 388,
+          "phase": "parse",
+          "us": 612
+        },
+        {
+          "seq": 389,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 390,
+          "phase": "parse",
+          "us": 163
+        },
+        {
+          "seq": 391,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 392,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 393,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 394,
+          "phase": "parse",
+          "us": 332
+        },
+        {
+          "seq": 395,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 396,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 397,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 398,
+          "phase": "parse",
+          "us": 478
+        },
+        {
+          "seq": 399,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 400,
+          "phase": "parse",
+          "us": 163
+        },
+        {
+          "seq": 401,
+          "phase": "parse",
+          "us": 140
+        },
+        {
+          "seq": 402,
+          "phase": "parse",
+          "us": 210
+        },
+        {
+          "seq": 403,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 404,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 405,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 406,
+          "phase": "parse",
+          "us": 98
+        },
+        {
+          "seq": 407,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 408,
+          "phase": "parse",
+          "us": 509
+        },
+        {
+          "seq": 409,
+          "phase": "parse",
+          "us": 174
+        },
+        {
+          "seq": 410,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 411,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 412,
+          "phase": "parse",
+          "us": 368
+        },
+        {
+          "seq": 413,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 414,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 415,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 416,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 417,
+          "phase": "parse",
+          "us": 92
+        },
+        {
+          "seq": 418,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 419,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 420,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 421,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 422,
+          "phase": "parse",
+          "us": 189
+        },
+        {
+          "seq": 423,
+          "phase": "parse",
+          "us": 230
+        },
+        {
+          "seq": 424,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 425,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 426,
+          "phase": "parse",
+          "us": 409
+        },
+        {
+          "seq": 427,
+          "phase": "parse",
+          "us": 44
+        },
+        {
+          "seq": 428,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 429,
+          "phase": "parse",
+          "us": 392
+        },
+        {
+          "seq": 430,
+          "phase": "parse",
+          "us": 110
+        },
+        {
+          "seq": 431,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 432,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 433,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 434,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 435,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 436,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 437,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 438,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 439,
+          "phase": "parse",
+          "us": 234
+        },
+        {
+          "seq": 440,
+          "phase": "parse",
+          "us": 320
+        },
+        {
+          "seq": 441,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 442,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 443,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 444,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 445,
+          "phase": "parse",
+          "us": 117
+        },
+        {
+          "seq": 446,
+          "phase": "parse",
+          "us": 147
+        },
+        {
+          "seq": 447,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 448,
+          "phase": "parse",
+          "us": 202
+        },
+        {
+          "seq": 449,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 450,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 451,
+          "phase": "parse",
+          "us": 120
+        },
+        {
+          "seq": 452,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 453,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 454,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 455,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 456,
+          "phase": "parse",
+          "us": 319
+        },
+        {
+          "seq": 457,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 458,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 459,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 460,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 461,
+          "phase": "parse",
+          "us": 244
+        },
+        {
+          "seq": 462,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 463,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 464,
+          "phase": "parse",
+          "us": 442
+        },
+        {
+          "seq": 465,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 466,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 467,
+          "phase": "parse",
+          "us": 139
+        },
+        {
+          "seq": 468,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 469,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 470,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 471,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 472,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 473,
+          "phase": "parse",
+          "us": 710
+        },
+        {
+          "seq": 474,
+          "phase": "parse",
+          "us": 242
+        },
+        {
+          "seq": 475,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 476,
+          "phase": "parse",
+          "us": 137
+        },
+        {
+          "seq": 477,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 478,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 479,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 480,
+          "phase": "parse",
+          "us": 111
+        },
+        {
+          "seq": 481,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 482,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 483,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 484,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 485,
+          "phase": "parse",
+          "us": 132
+        },
+        {
+          "seq": 486,
+          "phase": "parse",
+          "us": 171
+        },
+        {
+          "seq": 487,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 488,
+          "phase": "parse",
+          "us": 46
+        },
+        {
+          "seq": 489,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 490,
+          "phase": "parse",
+          "us": 528
+        },
+        {
+          "seq": 491,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 492,
+          "phase": "parse",
+          "us": 550
+        },
+        {
+          "seq": 493,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 494,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 495,
+          "phase": "parse",
+          "us": 114
+        },
+        {
+          "seq": 496,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 497,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 498,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 499,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 500,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 501,
+          "phase": "parse",
+          "us": 139
+        },
+        {
+          "seq": 502,
+          "phase": "parse",
+          "us": 158
+        },
+        {
+          "seq": 503,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 504,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 505,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 506,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 507,
+          "phase": "parse",
+          "us": 305
+        },
+        {
+          "seq": 508,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 509,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 510,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 511,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 512,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 513,
+          "phase": "parse",
+          "us": 524
+        },
+        {
+          "seq": 514,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 515,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 516,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 517,
+          "phase": "parse",
+          "us": 225
+        },
+        {
+          "seq": 518,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 519,
+          "phase": "parse",
+          "us": 11
+        },
+        {
+          "seq": 520,
+          "phase": "parse",
+          "us": 272
+        },
+        {
+          "seq": 521,
+          "phase": "parse",
+          "us": 77
+        },
+        {
+          "seq": 522,
+          "phase": "parse",
+          "us": 334
+        },
+        {
+          "seq": 523,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 524,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 525,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 526,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 527,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 528,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 529,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 530,
+          "phase": "parse",
+          "us": 104
+        },
+        {
+          "seq": 531,
+          "phase": "parse",
+          "us": 537
+        },
+        {
+          "seq": 532,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 533,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 534,
+          "phase": "parse",
+          "us": 319
+        },
+        {
+          "seq": 535,
+          "phase": "parse",
+          "us": 225
+        },
+        {
+          "seq": 536,
+          "phase": "parse",
+          "us": 202
+        },
+        {
+          "seq": 537,
+          "phase": "parse",
+          "us": 577
+        },
+        {
+          "seq": 538,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 539,
+          "phase": "parse",
+          "us": 326
+        },
+        {
+          "seq": 540,
+          "phase": "parse",
+          "us": 1565
+        },
+        {
+          "seq": 541,
+          "phase": "parse",
+          "us": 169
+        },
+        {
+          "seq": 542,
+          "phase": "parse",
+          "us": 258
+        },
+        {
+          "seq": 543,
+          "phase": "parse",
+          "us": 286
+        },
+        {
+          "seq": 544,
+          "phase": "parse",
+          "us": 1662
+        },
+        {
+          "seq": 545,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 546,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 547,
+          "phase": "parse",
+          "us": 138
+        },
+        {
+          "seq": 548,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 549,
+          "phase": "parse",
+          "us": 1182
+        },
+        {
+          "seq": 550,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 551,
+          "phase": "parse",
+          "us": 142
+        },
+        {
+          "seq": 552,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 553,
+          "phase": "parse",
+          "us": 368
+        },
+        {
+          "seq": 554,
+          "phase": "parse",
+          "us": 1838
+        },
+        {
+          "seq": 555,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 556,
+          "phase": "parse",
+          "us": 113
+        },
+        {
+          "seq": 557,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 558,
+          "phase": "parse",
+          "us": 105
+        },
+        {
+          "seq": 559,
+          "phase": "parse",
+          "us": 301
+        },
+        {
+          "seq": 560,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 561,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 562,
+          "phase": "parse",
+          "us": 123
+        },
+        {
+          "seq": 563,
+          "phase": "parse",
+          "us": 58
+        },
+        {
+          "seq": 564,
+          "phase": "parse",
+          "us": 392
+        },
+        {
+          "seq": 565,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 566,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 567,
+          "phase": "parse",
+          "us": 383
+        },
+        {
+          "seq": 568,
+          "phase": "parse",
+          "us": 113
+        },
+        {
+          "seq": 569,
+          "phase": "parse",
+          "us": 33
+        },
+        {
+          "seq": 570,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 571,
+          "phase": "parse",
+          "us": 362
+        },
+        {
+          "seq": 572,
+          "phase": "parse",
+          "us": 187
+        },
+        {
+          "seq": 573,
+          "phase": "parse",
+          "us": 40
+        },
+        {
+          "seq": 574,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 575,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 576,
+          "phase": "parse",
+          "us": 116
+        },
+        {
+          "seq": 577,
+          "phase": "parse",
+          "us": 433
+        },
+        {
+          "seq": 578,
+          "phase": "parse",
+          "us": 420
+        },
+        {
+          "seq": 579,
+          "phase": "parse",
+          "us": 99
+        },
+        {
+          "seq": 580,
+          "phase": "parse",
+          "us": 504
+        },
+        {
+          "seq": 581,
+          "phase": "parse",
+          "us": 153
+        },
+        {
+          "seq": 582,
+          "phase": "parse",
+          "us": 64
+        },
+        {
+          "seq": 583,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 584,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 585,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 586,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 587,
+          "phase": "parse",
+          "us": 543
+        },
+        {
+          "seq": 588,
+          "phase": "parse",
+          "us": 89
+        },
+        {
+          "seq": 589,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 590,
+          "phase": "parse",
+          "us": 95
+        },
+        {
+          "seq": 591,
+          "phase": "parse",
+          "us": 53
+        },
+        {
+          "seq": 592,
+          "phase": "parse",
+          "us": 417
+        },
+        {
+          "seq": 593,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 594,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 595,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 596,
+          "phase": "parse",
+          "us": 58
+        },
+        {
+          "seq": 597,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 598,
+          "phase": "parse",
+          "us": 265
+        },
+        {
+          "seq": 599,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 600,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 601,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 602,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 603,
+          "phase": "parse",
+          "us": 86
+        },
+        {
+          "seq": 604,
+          "phase": "parse",
+          "us": 211
+        },
+        {
+          "seq": 605,
+          "phase": "parse",
+          "us": 942
+        },
+        {
+          "seq": 606,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 607,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 608,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 609,
+          "phase": "parse",
+          "us": 229
+        },
+        {
+          "seq": 610,
+          "phase": "parse",
+          "us": 233
+        },
+        {
+          "seq": 611,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 612,
+          "phase": "parse",
+          "us": 382
+        },
+        {
+          "seq": 613,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 614,
+          "phase": "parse",
+          "us": 392
+        },
+        {
+          "seq": 615,
+          "phase": "parse",
+          "us": 372
+        },
+        {
+          "seq": 616,
+          "phase": "parse",
+          "us": 58
+        },
+        {
+          "seq": 617,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 618,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 619,
+          "phase": "parse",
+          "us": 131
+        },
+        {
+          "seq": 620,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 621,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 622,
+          "phase": "parse",
+          "us": 113
+        },
+        {
+          "seq": 623,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 624,
+          "phase": "parse",
+          "us": 85
+        },
+        {
+          "seq": 625,
+          "phase": "parse",
+          "us": 294
+        },
+        {
+          "seq": 626,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 627,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 628,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 629,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 630,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 631,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 632,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 633,
+          "phase": "parse",
+          "us": 175
+        },
+        {
+          "seq": 634,
+          "phase": "parse",
+          "us": 126
+        },
+        {
+          "seq": 635,
+          "phase": "parse",
+          "us": 89
+        },
+        {
+          "seq": 636,
+          "phase": "parse",
+          "us": 249
+        },
+        {
+          "seq": 637,
+          "phase": "parse",
+          "us": 46
+        },
+        {
+          "seq": 638,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 639,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 640,
+          "phase": "parse",
+          "us": 240
+        },
+        {
+          "seq": 641,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 642,
+          "phase": "parse",
+          "us": 230
+        },
+        {
+          "seq": 643,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 644,
+          "phase": "parse",
+          "us": 90
+        },
+        {
+          "seq": 645,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 646,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 647,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 648,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 649,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 650,
+          "phase": "parse",
+          "us": 149
+        },
+        {
+          "seq": 651,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 652,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 653,
+          "phase": "parse",
+          "us": 203
+        },
+        {
+          "seq": 654,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 655,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 656,
+          "phase": "parse",
+          "us": 160
+        },
+        {
+          "seq": 657,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 658,
+          "phase": "parse",
+          "us": 196
+        },
+        {
+          "seq": 659,
+          "phase": "parse",
+          "us": 106
+        },
+        {
+          "seq": 660,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 661,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 662,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 663,
+          "phase": "parse",
+          "us": 554
+        },
+        {
+          "seq": 664,
+          "phase": "parse",
+          "us": 283
+        },
+        {
+          "seq": 665,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 666,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 667,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 668,
+          "phase": "parse",
+          "us": 231
+        },
+        {
+          "seq": 669,
+          "phase": "parse",
+          "us": 341
+        },
+        {
+          "seq": 670,
+          "phase": "parse",
+          "us": 198
+        },
+        {
+          "seq": 671,
+          "phase": "parse",
+          "us": 651
+        },
+        {
+          "seq": 672,
+          "phase": "parse",
+          "us": 260
+        },
+        {
+          "seq": 673,
+          "phase": "parse",
+          "us": 230
+        },
+        {
+          "seq": 674,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 675,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 676,
+          "phase": "parse",
+          "us": 281
+        },
+        {
+          "seq": 677,
+          "phase": "parse",
+          "us": 600
+        },
+        {
+          "seq": 678,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 679,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 680,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 681,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 682,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 683,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 684,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 685,
+          "phase": "parse",
+          "us": 1219
+        },
+        {
+          "seq": 686,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 687,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 688,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 689,
+          "phase": "parse",
+          "us": 545
+        },
+        {
+          "seq": 690,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 691,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 692,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 693,
+          "phase": "parse",
+          "us": 102
+        },
+        {
+          "seq": 694,
+          "phase": "parse",
+          "us": 422
+        },
+        {
+          "seq": 695,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 696,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 697,
+          "phase": "parse",
+          "us": 251
+        },
+        {
+          "seq": 698,
+          "phase": "parse",
+          "us": 311
+        },
+        {
+          "seq": 699,
+          "phase": "parse",
+          "us": 241
+        },
+        {
+          "seq": 700,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 701,
+          "phase": "parse",
+          "us": 1023
+        },
+        {
+          "seq": 702,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 703,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 704,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 705,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 706,
+          "phase": "parse",
+          "us": 451
+        },
+        {
+          "seq": 707,
+          "phase": "parse",
+          "us": 229
+        },
+        {
+          "seq": 708,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 709,
+          "phase": "parse",
+          "us": 562
+        },
+        {
+          "seq": 710,
+          "phase": "parse",
+          "us": 762
+        },
+        {
+          "seq": 711,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 712,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 713,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 714,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 715,
+          "phase": "parse",
+          "us": 623
+        },
+        {
+          "seq": 716,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 717,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 718,
+          "phase": "parse",
+          "us": 509
+        },
+        {
+          "seq": 719,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 720,
+          "phase": "parse",
+          "us": 688
+        },
+        {
+          "seq": 721,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 722,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 723,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 724,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 725,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 726,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 727,
+          "phase": "parse",
+          "us": 397
+        },
+        {
+          "seq": 728,
+          "phase": "parse",
+          "us": 449
+        },
+        {
+          "seq": 729,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 730,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 731,
+          "phase": "parse",
+          "us": 173
+        },
+        {
+          "seq": 732,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 733,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 734,
+          "phase": "parse",
+          "us": 356
+        },
+        {
+          "seq": 735,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 736,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 737,
+          "phase": "parse",
+          "us": 1207
+        },
+        {
+          "seq": 738,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 739,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 740,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 741,
+          "phase": "parse",
+          "us": 193
+        },
+        {
+          "seq": 742,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 743,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 744,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 745,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 746,
+          "phase": "parse",
+          "us": 269
+        },
+        {
+          "seq": 747,
+          "phase": "parse",
+          "us": 105
+        },
+        {
+          "seq": 748,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 749,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 750,
+          "phase": "parse",
+          "us": 178
+        },
+        {
+          "seq": 751,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 752,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 753,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 754,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 755,
+          "phase": "parse",
+          "us": 449
+        },
+        {
+          "seq": 756,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 757,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 758,
+          "phase": "parse",
+          "us": 71
+        },
+        {
+          "seq": 759,
+          "phase": "parse",
+          "us": 216
+        },
+        {
+          "seq": 760,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 761,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 762,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 763,
+          "phase": "parse",
+          "us": 1377
+        },
+        {
+          "seq": 764,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 765,
+          "phase": "parse",
+          "us": 238
+        },
+        {
+          "seq": 766,
+          "phase": "parse",
+          "us": 200
+        },
+        {
+          "seq": 767,
+          "phase": "parse",
+          "us": 494
+        },
+        {
+          "seq": 768,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 769,
+          "phase": "parse",
+          "us": 399
+        },
+        {
+          "seq": 770,
+          "phase": "parse",
+          "us": 658
+        },
+        {
+          "seq": 771,
+          "phase": "parse",
+          "us": 158
+        },
+        {
+          "seq": 772,
+          "phase": "parse",
+          "us": 1077
+        },
+        {
+          "seq": 773,
+          "phase": "parse",
+          "us": 612
+        },
+        {
+          "seq": 774,
+          "phase": "parse",
+          "us": 106
+        },
+        {
+          "seq": 775,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 776,
+          "phase": "parse",
+          "us": 260
+        },
+        {
+          "seq": 777,
+          "phase": "parse",
+          "us": 982
+        },
+        {
+          "seq": 778,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 779,
+          "phase": "parse",
+          "us": 383
+        },
+        {
+          "seq": 780,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 781,
+          "phase": "parse",
+          "us": 25
+        },
+        {
+          "seq": 782,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 783,
+          "phase": "parse",
+          "us": 2345
+        },
+        {
+          "seq": 784,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 785,
+          "phase": "parse",
+          "us": 138
+        },
+        {
+          "seq": 786,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 787,
+          "phase": "parse",
+          "us": 220
+        },
+        {
+          "seq": 788,
+          "phase": "parse",
+          "us": 560
+        },
+        {
+          "seq": 789,
+          "phase": "parse",
+          "us": 517
+        },
+        {
+          "seq": 790,
+          "phase": "parse",
+          "us": 144
+        },
+        {
+          "seq": 791,
+          "phase": "parse",
+          "us": 170
+        },
+        {
+          "seq": 792,
+          "phase": "parse",
+          "us": 681
+        },
+        {
+          "seq": 793,
+          "phase": "parse",
+          "us": 961
+        },
+        {
+          "seq": 794,
+          "phase": "parse",
+          "us": 214
+        },
+        {
+          "seq": 795,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 796,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 797,
+          "phase": "parse",
+          "us": 220
+        },
+        {
+          "seq": 798,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 799,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 800,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 801,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 802,
+          "phase": "parse",
+          "us": 5608
+        },
+        {
+          "seq": 803,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 804,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 805,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 806,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 807,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 808,
+          "phase": "parse",
+          "us": 422
+        },
+        {
+          "seq": 809,
+          "phase": "parse",
+          "us": 149
+        },
+        {
+          "seq": 810,
+          "phase": "parse",
+          "us": 962
+        },
+        {
+          "seq": 811,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 812,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 813,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 814,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 815,
+          "phase": "parse",
+          "us": 120
+        },
+        {
+          "seq": 816,
+          "phase": "parse",
+          "us": 315
+        },
+        {
+          "seq": 817,
+          "phase": "parse",
+          "us": 249
+        },
+        {
+          "seq": 818,
+          "phase": "parse",
+          "us": 222
+        },
+        {
+          "seq": 819,
+          "phase": "parse",
+          "us": 92
+        },
+        {
+          "seq": 820,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 821,
+          "phase": "parse",
+          "us": 811
+        },
+        {
+          "seq": 822,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 823,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 824,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 825,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 826,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 827,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 828,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 829,
+          "phase": "parse",
+          "us": 122
+        },
+        {
+          "seq": 830,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 831,
+          "phase": "parse",
+          "us": 213
+        },
+        {
+          "seq": 832,
+          "phase": "parse",
+          "us": 282
+        },
+        {
+          "seq": 833,
+          "phase": "parse",
+          "us": 123
+        },
+        {
+          "seq": 834,
+          "phase": "parse",
+          "us": 115
+        },
+        {
+          "seq": 835,
+          "phase": "parse",
+          "us": 341
+        },
+        {
+          "seq": 836,
+          "phase": "parse",
+          "us": 488
+        },
+        {
+          "seq": 837,
+          "phase": "parse",
+          "us": 253
+        },
+        {
+          "seq": 838,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 839,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 840,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 841,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 842,
+          "phase": "parse",
+          "us": 128
+        },
+        {
+          "seq": 843,
+          "phase": "parse",
+          "us": 331
+        },
+        {
+          "seq": 844,
+          "phase": "parse",
+          "us": 323
+        },
+        {
+          "seq": 845,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 846,
+          "phase": "parse",
+          "us": 455
+        },
+        {
+          "seq": 847,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 848,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 849,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 850,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 851,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 852,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 853,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 854,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 855,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 856,
+          "phase": "parse",
+          "us": 629
+        },
+        {
+          "seq": 857,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 858,
+          "phase": "parse",
+          "us": 85
+        },
+        {
+          "seq": 859,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 860,
+          "phase": "parse",
+          "us": 82
+        },
+        {
+          "seq": 861,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 862,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 863,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 864,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 865,
+          "phase": "parse",
+          "us": 124
+        },
+        {
+          "seq": 866,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 867,
+          "phase": "parse",
+          "us": 77
+        },
+        {
+          "seq": 868,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 869,
+          "phase": "parse",
+          "us": 394
+        },
+        {
+          "seq": 870,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 871,
+          "phase": "parse",
+          "us": 303
+        },
+        {
+          "seq": 872,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 873,
+          "phase": "parse",
+          "us": 166
+        },
+        {
+          "seq": 874,
+          "phase": "parse",
+          "us": 918
+        },
+        {
+          "seq": 875,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 876,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 877,
+          "phase": "parse",
+          "us": 192
+        },
+        {
+          "seq": 878,
+          "phase": "parse",
+          "us": 718
+        },
+        {
+          "seq": 879,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 880,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 881,
+          "phase": "parse",
+          "us": 1275
+        },
+        {
+          "seq": 882,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 883,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 884,
+          "phase": "parse",
+          "us": 285
+        },
+        {
+          "seq": 885,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 886,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 887,
+          "phase": "parse",
+          "us": 46
+        },
+        {
+          "seq": 888,
+          "phase": "parse",
+          "us": 222
+        },
+        {
+          "seq": 889,
+          "phase": "parse",
+          "us": 138
+        },
+        {
+          "seq": 890,
+          "phase": "parse",
+          "us": 1202
+        },
+        {
+          "seq": 891,
+          "phase": "parse",
+          "us": 699
+        },
+        {
+          "seq": 892,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 893,
+          "phase": "parse",
+          "us": 124
+        },
+        {
+          "seq": 894,
+          "phase": "parse",
+          "us": 59
+        },
+        {
+          "seq": 895,
+          "phase": "parse",
+          "us": 1269
+        },
+        {
+          "seq": 896,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 897,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 898,
+          "phase": "parse",
+          "us": 145
+        },
+        {
+          "seq": 899,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 900,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 901,
+          "phase": "parse",
+          "us": 559
+        },
+        {
+          "seq": 902,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 903,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 904,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 905,
+          "phase": "parse",
+          "us": 216
+        },
+        {
+          "seq": 906,
+          "phase": "parse",
+          "us": 191
+        },
+        {
+          "seq": 907,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 908,
+          "phase": "parse",
+          "us": 641
+        },
+        {
+          "seq": 909,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 910,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 911,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 912,
+          "phase": "parse",
+          "us": 1220
+        },
+        {
+          "seq": 913,
+          "phase": "parse",
+          "us": 1048
+        },
+        {
+          "seq": 914,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 915,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 916,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 917,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 918,
+          "phase": "parse",
+          "us": 385
+        },
+        {
+          "seq": 919,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 920,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 921,
+          "phase": "parse",
+          "us": 435
+        },
+        {
+          "seq": 922,
+          "phase": "parse",
+          "us": 602
+        },
+        {
+          "seq": 923,
+          "phase": "parse",
+          "us": 205
+        },
+        {
+          "seq": 924,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 925,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 926,
+          "phase": "parse",
+          "us": 96
+        },
+        {
+          "seq": 927,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 928,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 929,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 930,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 931,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 932,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 933,
+          "phase": "parse",
+          "us": 902
+        },
+        {
+          "seq": 934,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 935,
+          "phase": "parse",
+          "us": 362
+        },
+        {
+          "seq": 936,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 937,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 938,
+          "phase": "parse",
+          "us": 1296
+        },
+        {
+          "seq": 939,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 940,
+          "phase": "parse",
+          "us": 123
+        },
+        {
+          "seq": 941,
+          "phase": "parse",
+          "us": 138
+        },
+        {
+          "seq": 942,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 943,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 944,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 945,
+          "phase": "parse",
+          "us": 262
+        },
+        {
+          "seq": 946,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 947,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 948,
+          "phase": "parse",
+          "us": 111
+        },
+        {
+          "seq": 949,
+          "phase": "parse",
+          "us": 269
+        },
+        {
+          "seq": 950,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 951,
+          "phase": "parse",
+          "us": 57
+        },
+        {
+          "seq": 952,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 953,
+          "phase": "parse",
+          "us": 263
+        },
+        {
+          "seq": 954,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 955,
+          "phase": "parse",
+          "us": 115
+        },
+        {
+          "seq": 956,
+          "phase": "parse",
+          "us": 214
+        },
+        {
+          "seq": 957,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 958,
+          "phase": "parse",
+          "us": 427
+        },
+        {
+          "seq": 959,
+          "phase": "parse",
+          "us": 223
+        },
+        {
+          "seq": 960,
+          "phase": "parse",
+          "us": 131
+        },
+        {
+          "seq": 961,
+          "phase": "parse",
+          "us": 172
+        },
+        {
+          "seq": 962,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 963,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 964,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 965,
+          "phase": "parse",
+          "us": 171
+        },
+        {
+          "seq": 966,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 967,
+          "phase": "parse",
+          "us": 114
+        },
+        {
+          "seq": 968,
+          "phase": "parse",
+          "us": 166
+        },
+        {
+          "seq": 969,
+          "phase": "parse",
+          "us": 100
+        },
+        {
+          "seq": 970,
+          "phase": "parse",
+          "us": 257
+        },
+        {
+          "seq": 971,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 972,
+          "phase": "parse",
+          "us": 641
+        },
+        {
+          "seq": 973,
+          "phase": "parse",
+          "us": 148
+        },
+        {
+          "seq": 974,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 975,
+          "phase": "parse",
+          "us": 1249
+        },
+        {
+          "seq": 976,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 977,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 978,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 979,
+          "phase": "parse",
+          "us": 106
+        },
+        {
+          "seq": 980,
+          "phase": "parse",
+          "us": 11
+        },
+        {
+          "seq": 981,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 982,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 983,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 984,
+          "phase": "parse",
+          "us": 360
+        },
+        {
+          "seq": 985,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 986,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 987,
+          "phase": "parse",
+          "us": 635
+        },
+        {
+          "seq": 988,
+          "phase": "parse",
+          "us": 208
+        },
+        {
+          "seq": 989,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 990,
+          "phase": "parse",
+          "us": 25
+        },
+        {
+          "seq": 991,
+          "phase": "parse",
+          "us": 123
+        },
+        {
+          "seq": 992,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 993,
+          "phase": "parse",
+          "us": 245
+        },
+        {
+          "seq": 994,
+          "phase": "parse",
+          "us": 291
+        },
+        {
+          "seq": 995,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 996,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 997,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 998,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 999,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 1000,
+          "phase": "parse",
+          "us": 204
+        },
+        {
+          "seq": 1001,
+          "phase": "parse",
+          "us": 369
+        },
+        {
+          "seq": 1002,
+          "phase": "parse",
+          "us": 106
+        },
+        {
+          "seq": 1003,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 1004,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 1005,
+          "phase": "parse",
+          "us": 40
+        },
+        {
+          "seq": 1006,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 1007,
+          "phase": "parse",
+          "us": 183
+        },
+        {
+          "seq": 1008,
+          "phase": "parse",
+          "us": 99
+        },
+        {
+          "seq": 1009,
+          "phase": "parse",
+          "us": 515
+        },
+        {
+          "seq": 1010,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 1011,
+          "phase": "parse",
+          "us": 597
+        },
+        {
+          "seq": 1012,
+          "phase": "parse",
+          "us": 258
+        },
+        {
+          "seq": 1013,
+          "phase": "parse",
+          "us": 969
+        },
+        {
+          "seq": 1014,
+          "phase": "parse",
+          "us": 791
+        },
+        {
+          "seq": 1015,
+          "phase": "parse",
+          "us": 126
+        },
+        {
+          "seq": 1016,
+          "phase": "parse",
+          "us": 141
+        },
+        {
+          "seq": 1017,
+          "phase": "parse",
+          "us": 736
+        },
+        {
+          "seq": 1018,
+          "phase": "parse",
+          "us": 264
+        },
+        {
+          "seq": 1019,
+          "phase": "parse",
+          "us": 275
+        },
+        {
+          "seq": 1020,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 1021,
+          "phase": "parse",
+          "us": 364
+        },
+        {
+          "seq": 1022,
+          "phase": "parse",
+          "us": 712
+        },
+        {
+          "seq": 1023,
+          "phase": "parse",
+          "us": 286
+        },
+        {
+          "seq": 1024,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 1025,
+          "phase": "parse",
+          "us": 911
+        },
+        {
+          "seq": 1026,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 1027,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 1028,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 1029,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 1030,
+          "phase": "parse",
+          "us": 196
+        },
+        {
+          "seq": 1031,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 1032,
+          "phase": "parse",
+          "us": 458
+        },
+        {
+          "seq": 1033,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 1034,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 1035,
+          "phase": "parse",
+          "us": 420
+        },
+        {
+          "seq": 1036,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 1037,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 1038,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 1039,
+          "phase": "parse",
+          "us": 150
+        },
+        {
+          "seq": 1040,
+          "phase": "parse",
+          "us": 155
+        },
+        {
+          "seq": 1041,
+          "phase": "parse",
+          "us": 164
+        },
+        {
+          "seq": 1042,
+          "phase": "parse",
+          "us": 1632
+        },
+        {
+          "seq": 1043,
+          "phase": "parse",
+          "us": 225
+        },
+        {
+          "seq": 1044,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 1045,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 1046,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 1047,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 1048,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 1049,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 1050,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 1051,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 1052,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 1053,
+          "phase": "parse",
+          "us": 602
+        },
+        {
+          "seq": 1054,
+          "phase": "parse",
+          "us": 725
+        },
+        {
+          "seq": 1055,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 1056,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 1057,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 1058,
+          "phase": "parse",
+          "us": 273
+        },
+        {
+          "seq": 1059,
+          "phase": "parse",
+          "us": 207
+        },
+        {
+          "seq": 1060,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 1061,
+          "phase": "parse",
+          "us": 182
+        },
+        {
+          "seq": 1062,
+          "phase": "parse",
+          "us": 227
+        },
+        {
+          "seq": 1063,
+          "phase": "parse",
+          "us": 693
+        },
+        {
+          "seq": 1064,
+          "phase": "parse",
+          "us": 574
+        },
+        {
+          "seq": 1065,
+          "phase": "parse",
+          "us": 812
+        },
+        {
+          "seq": 1066,
+          "phase": "parse",
+          "us": 8511605
+        },
+        {
+          "seq": 1067,
+          "phase": "write",
+          "us": 684
+        },
+        {
+          "seq": 1068,
+          "phase": "link",
+          "us": 470624
+        },
+        {
+          "seq": 1069,
+          "phase": "fts",
+          "us": 20839
+        },
+        {
+          "seq": 1070,
+          "phase": "link",
+          "us": 108633
+        },
+        {
+          "seq": 1071,
+          "phase": "link",
+          "us": 62098
+        },
+        {
+          "seq": 1072,
+          "phase": "link",
+          "us": 58739
+        },
+        {
+          "seq": 1073,
+          "phase": "link",
+          "us": 39619
+        },
+        {
+          "seq": 1074,
+          "phase": "link",
+          "us": 45289
+        },
+        {
+          "seq": 1075,
+          "phase": "link",
+          "us": 27515
+        },
+        {
+          "seq": 1076,
+          "phase": "link",
+          "us": 23467
+        },
+        {
+          "seq": 1077,
+          "phase": "link",
+          "us": 55333
+        },
+        {
+          "seq": 1078,
+          "phase": "link",
+          "us": 41315
+        },
+        {
+          "seq": 1079,
+          "phase": "link",
+          "us": 71314
+        },
+        {
+          "seq": 1080,
+          "phase": "link",
+          "us": 141337
+        },
+        {
+          "seq": 1081,
+          "phase": "link",
+          "us": 66976
+        },
+        {
+          "seq": 1082,
+          "phase": "link",
+          "us": 64362
+        },
+        {
+          "seq": 1083,
+          "phase": "link",
+          "us": 62513
+        },
+        {
+          "seq": 1084,
+          "phase": "resolve",
+          "us": 39580
+        },
+        {
+          "seq": 1085,
+          "phase": "resolve",
+          "us": 0
+        },
+        {
+          "seq": 1086,
+          "phase": "checkpoint",
+          "us": 985374
+        },
+        {
+          "seq": 1087,
+          "phase": "done",
+          "us": 86305
+        }
+      ],
+      "gates": [
+        {
+          "id": "progress_stall_p95",
+          "prd_metric": "Longest progress stall p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "stalls.stalls.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "status": "UNKNOWN",
+      "stall_definition": "A STALL is silence: the wall-clock interval between two CONSECUTIVE ingest.ProgressEvents delivered to the harness's progress handler during the cold full index. One interval per adjacent pair of events, attributed to the phase of the event that ENDED it. It is deliberately the interval a consumer of the event stream experiences — the thing a user reads as a hang — and not the duration of any underlying work: a phase that takes a minute while emitting progress throughout is slow, not stalled, and `context/standards.md` asks for exactly that distinction.",
+      "boundary_handling": "The two BOUNDARY intervals are measured and published but are NOT stalls, and are excluded from the distribution by definition. `lead_in_us` is index start -\u003e first event: there is no preceding event, so counting it would report one enormous stall on every run and swamp the p95 with an artefact of where the clock was started. `tail_us` is last event -\u003e index end: a successful pass ends with a terminal `done` event, so it is normally near zero. Both are published rather than dropped, and a boundary longer than the longest recorded stall raises a warning — the largest silence in the run being outside the distribution is something a reader must be told, not spared.",
+      "timing_method": "One clock, read once per event inside the progress handler, and nothing else in the handler: the handler stores a timestamp difference and returns. Events are delivered SYNCHRONOUSLY from the ingesting goroutine (engine/ingest documents this), so an expensive handler would insert itself into the very silence it is measuring; the derivation — percentiles, per-phase pools, warnings — happens after the index has finished. The window is the same one index.wallclock_ms is measured over, so the parts reconcile against the whole.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained intervals, ascending — the same implementation the cold, query-latency and freshness series use. `n` is the number of gaps, which is one less than events_observed. Boundary intervals contribute to neither the pooled nor any per-phase distribution. Every value here is reproducible from `intervals` with evalreport.RecomputeStalls. Every interval is TRUNCATED to whole microseconds, so `lead_in_us` + the intervals + `tail_us` reconciles with `index_wallclock_us` to within one microsecond per interval and is never larger than it — a gap of more than that means a part of the window went unaccounted for, not that the arithmetic rounded.",
+      "scope_limitation": "This measures the COLD FULL INDEX only, through the shipped ingest.Ingester.WithProgress hook — the same hook the graphi CLI's renderer consumes. It makes no statement about the incremental path (SW-126 measures that), about filesystem-watch detection, or about a phase that is slow while still emitting progress. Clock-driven heartbeats are part of the shipped event stream and are counted as events, which is correct for this gate: the gate is about the index going SILENT, and a heartbeating phase is not silent.",
+      "notes": "SW-127 progress-stall measurement: the intervals between consecutive ingest.ProgressEvents during the cold full index, reported as p95 AND maximum with every individual interval retained. It is a REGRESSION GUARD as much as a number: a run that emits no progress reads FAIL, never `0 stalls, passed`. No PRD §12.2 gate is read unless the run is the reference scenario on the reference class and from the frozen candidate; otherwise it is UNKNOWN, which is not a PASS (PRD §8.2) — and a silent run is not rescued into a PASS by any of that."
+    },
+    "searches": [
+      {
+        "query": "ClientConn",
+        "matches": 25,
+        "pass": true
+      },
+      {
+        "query": "Server",
+        "matches": 25,
+        "pass": true
+      }
+    ],
+    "stable_peak_rss_mb": 652,
+    "stable_checks": [
+      {
+        "operation": "agent_brief",
+        "requirement": "resolved topic with a valid found/partial project brief",
+        "samples": 3,
+        "outcomes": {
+          "found": 3
+        },
+        "pass": true
+      },
+      {
+        "operation": "callees",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 12,
+          "found": 13
+        },
+        "pass": true
+      },
+      {
+        "operation": "callers",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 16,
+          "found": 9
+        },
+        "pass": true
+      },
+      {
+        "operation": "change_risk",
+        "requirement": "resolved target with a valid found or partial envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "definition",
+        "requirement": "resolved symbol with at least one definition",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "explain_symbol",
+        "requirement": "resolved target with a valid found or partial envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "impact",
+        "requirement": "resolved symbol; bounded impact outcome",
+        "samples": 25,
+        "outcomes": {
+          "empty": 16,
+          "found": 9
+        },
+        "pass": true
+      },
+      {
+        "operation": "index",
+        "requirement": "successful ingest with non-empty node and file inventory",
+        "samples": 1,
+        "outcomes": {
+          "found": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "neighborhood",
+        "requirement": "resolved symbol; bounded neighborhood outcome",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "references",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "related_files",
+        "requirement": "resolved target; found, partial, or legitimately empty related-file set",
+        "samples": 10,
+        "outcomes": {
+          "empty": 2,
+          "found": 7,
+          "partial": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "search",
+        "requirement": "manifest-promised non-empty search",
+        "samples": 40,
+        "outcomes": {
+          "found": 40
+        },
+        "pass": true
+      }
+    ],
+    "pass": true
+  },
+  "cgroup": {
+    "available": false,
+    "oom_kill": 0,
+    "oom_kill_collected": false,
+    "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+  }
+}

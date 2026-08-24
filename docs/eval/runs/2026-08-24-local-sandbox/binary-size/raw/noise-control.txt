@@ -1,0 +1,6 @@
+=== (1) reproducibility: same build, 3 dispatches
+repro-1	34244965	f3b9d9e892ea86da
+repro-2	34244965	f3b9d9e892ea86da
+repro-3	34244965	f3b9d9e892ea86da
+=== (2) layout control: identical tag SET, reversed ORDER
+reorder	34244965	54da640af0bd2c28

@@ -1,0 +1,16 @@
+TAGCOUNT=      21
+TAGS=grammar_subset grammar_subset_typescript grammar_subset_javascript grammar_subset_tsx grammar_subset_python grammar_subset_java grammar_subset_c grammar_subset_ruby grammar_subset_rust grammar_subset_php grammar_subset_c_sharp grammar_subset_kotlin grammar_subset_cpp grammar_subset_bash grammar_subset_sql grammar_subset_lua grammar_subset_css grammar_subset_yaml grammar_subset_toml grammar_subset_markdown grammar_subset_hcl
+=== leg A results (label	bytes	buildsecs)
+baseline	34244965	1s
+-- without css (tags=      20)
+no-css	34216888	1s
+-- without hcl (tags=      20)
+no-hcl	34200607	1s
+-- without markdown (tags=      20)
+no-markdown	34155025	1s
+-- without toml (tags=      20)
+no-toml	34240375	1s
+-- without yaml (tags=      20)
+no-yaml	34091311	1s
+-- without kotlin (tags=      20)
+no-kotlin	33859091	1s
