@@ -18,8 +18,15 @@
 > additivity checks — drop(toml)+drop(lua) versus drop(toml,lua), and
 > drop(css)+drop(yaml) versus drop(css,yaml) — leave residuals of **+4,192 B** and
 > **−4,064 B**, one page-alignment quantum in each direction. **A marginal cost at
-> or below ~4 KB is not resolvable by this method** and is reported as such rather
-> than as a number.
+> or below 4,096 B is not resolvable by this method** and is reported as such rather
+> than as a number. **Applied as the inequality it is:** the only figure in the
+> table below that it covers is JSON's 1,690 B. TOML's **4,590 B is ABOVE the
+> budget** (1.12×) and is therefore published as a cost — weakly determined on
+> linux/amd64, and resolved unambiguously at **16,928 B** on the darwin/arm64 host
+> leg. (The first publication of this amendment filed TOML under "≤ noise budget —
+> not resolvable"; that inequality was false and is corrected here. The budget is
+> **not** widened to rescue it — widening a budget to fit a measurement is exactly
+> what point 3 below refuses to do for YAML.)
 >
 > **2. Per-language marginal cost in the shipped binary, versus the blob figure
 > the per-language table below publishes.** Shipped default rebuilt with and
@@ -33,9 +40,9 @@
 > | CSS | 14,325 | **28,077** | 1.96× |
 > | HCL | 20,132 | **44,358** | 2.20× |
 > | Markdown | 36,259 | **89,972** | 2.48× |
-> | TOML | 5,317 | **4,590** (≤ noise budget — not resolvable) | ~0.86× |
+> | TOML | 5,317 | **4,590** (1.12× the noise budget — resolvable, weakly) | ~0.86× |
 > | YAML | 25,479 | **153,654** | **6.03×** |
-> | JSON | *no blob — stdlib parser, no subset tag* | **1,690** (≤ noise budget) | — |
+> | JSON | *no blob — stdlib parser, no subset tag* | **1,690** (below the ±4,096 B noise budget — not resolvable) | — |
 > | *Kotlin (SW-177 cross-check)* | *337,236* | *385,874* | *1.14×* |
 >
 > Kotlin is re-measured here purely as a method control: SW-177 published
@@ -104,6 +111,20 @@
 > measured too (baseline 33,104,098 B; css 18,128 · hcl 34,944 · markdown 69,536
 > · toml 16,928 · yaml 137,280 · kotlin 383,856) rather than letting one platform
 > stand for the other.
+>
+> **8. How to replay all of it, and one artifact that had to be re-captured.** The
+> whole binary-size leg is
+> [`../docs/eval/runs/2026-08-24-local-sandbox/binary-size/scripts/measure.sh`](../docs/eval/runs/2026-08-24-local-sandbox/binary-size/scripts/measure.sh)
+> — one script, one subcommand per transcript, the 21 tags derived from
+> `internal/release.DefaultGrammarSubsetTags` rather than retyped. It **refuses to
+> build a `-buildvcs=true` leg on a dirty worktree**, because that is not
+> housekeeping: `vcs.modified` is stamped into the binary, and the review of this
+> campaign found that the Markdown build — alone among the seven — measures 32 B
+> larger on a dirty tree (34,155,025 vs 34,154,993). The first capture of
+> `leg-a-tag-route.txt` recorded that dirty value while the table above carried the
+> clean one. The transcript is re-captured and the control is checked in as
+> `binary-size/raw/vcs-stamp-control.txt`. **No figure in this amendment moved**:
+> the three build contexts span 80 B on the Markdown cost, 2 % of the noise budget.
 
 > ## AMENDMENT — 2026-08-19 (SW-177, W1.d): Kotlin re-measured against the gate, and the gate has 0.25 % headroom
 >

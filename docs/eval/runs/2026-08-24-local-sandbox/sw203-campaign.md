@@ -42,7 +42,17 @@ not support) is the reason this section is first rather than last.
 
 Machine-readable copy: [`binary-size/raw/environment.txt`](binary-size/raw/environment.txt).
 
-**Two environment caveats that bound what may be read out of this document.**
+**Rebuild round 1 re-captured three binary-size legs** — leg A, the noise control
+and a new `vcs.modified` control — on the clean committed tree at `9b6956a`
+instead of `bca6cf2`, for the reason in §3.3.1. `9b6956a` differs from `bca6cf2`
+in **no Go file** (`git diff --stat bca6cf2 9b6956a -- '*.go'` is empty), and
+every re-captured size is byte-identical to the campaign's. That re-capture ran
+at a different moment on the same machine — on battery, at a 1-minute load of
+12.15 — and is recorded separately in
+[`binary-size/raw/r1-recapture-environment.txt`](binary-size/raw/r1-recapture-environment.txt)
+rather than overwriting the campaign's own environment file.
+
+**Three environment caveats that bound what may be read out of this document.**
 
 1. The load average of ~5 on 12 cores means wall-clock numbers here carry real
    contention. The harness states the same thing in its own words in every
@@ -55,6 +65,18 @@ Machine-readable copy: [`binary-size/raw/environment.txt`](binary-size/raw/envir
    not test it either. Every **delta** below is same-method and therefore robust
    to any cross-versus-native offset; the **absolute** headroom figure in §4 is
    not, and is labelled accordingly.
+3. **All 24 perf run directories were measured on a DIRTY worktree.** Every one
+   of the 24 `environment.json` files records `"worktree_dirty": true` and
+   `"measured_sha": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty"`. Round 1
+   left that in the JSON only; it is stated here in the prose so a reader does
+   not have to open a file to find it (review finding F6). The dirt is the run
+   directories themselves being written into `docs/eval/runs/` as the suites
+   ran — no tracked source file differs from `bca6cf2` — but the honest reading
+   is that the perf legs' provenance is *`bca6cf2` plus untracked output*, not
+   `bca6cf2`, and the harness says so itself in the `+dirty` suffix. **The
+   binary-size legs are the ones where tree cleanliness is a measurement
+   condition rather than a provenance note** (`-buildvcs=true` stamps it into the
+   binary), and §3.3.1 records what happened when round 1 got that wrong.
 
 ---
 
@@ -125,8 +147,8 @@ Three controls, in order of strength:
 
 | control | result | file |
 |---|---|---|
-| same build, 3 dispatches | **byte-identical** — 34,244,965 B, sha256 `dde6278a5bf4a45f…` on all three | [`noise-control.txt`](binary-size/raw/noise-control.txt) |
-| identical tag **set**, reversed tag **order** | **same size** 34,244,965 B, *different* sha256 `79cccb73fdb07767…` — layout moved, size did not | [`noise-control.txt`](binary-size/raw/noise-control.txt) |
+| same build, 3 dispatches | **byte-identical** — 34,244,965 B, sha256 `9875a98ed833f81c…` on all three | [`noise-control.txt`](binary-size/raw/noise-control.txt) |
+| identical tag **set**, reversed tag **order** | **same size** 34,244,965 B, *different* sha256 `039b10f370830dc4…` — layout moved, size did not | [`noise-control.txt`](binary-size/raw/noise-control.txt) |
 | additivity: drop(toml)+drop(lua) versus drop(toml,lua) | 4,590 + 65,418 = 70,008 measured jointly as 74,200 → residual **+4,192 B** | [`additivity-control.txt`](binary-size/raw/additivity-control.txt) |
 | additivity: drop(css)+drop(yaml) versus drop(css,yaml) | 28,077 + 153,654 = 181,731 measured jointly as 177,667 → residual **−4,064 B** | [`additivity-control.txt`](binary-size/raw/additivity-control.txt) |
 
@@ -134,9 +156,29 @@ The two additivity residuals are +4,192 B and −4,064 B: both within one
 4,096-byte page-alignment quantum, in opposite directions.
 
 > **Stated noise budget: ±4,096 B on any single-language marginal cost.**
-> A marginal cost at or below ~4 KB is **not resolvable by this method** and is
+> A marginal cost at or below 4,096 B is **not resolvable by this method** and is
 > reported as such rather than as a number. This budget is measurement-derived,
 > not chosen.
+>
+> **The budget is applied as the inequality it is** (rebuild round 1, review
+> finding F2). Round 1 wrote "at or below ~4 KB" and then filed toml's **4,590 B**
+> under it. 4,590 > 4,096: toml is *above* the budget and is not covered by this
+> clause. The budget is **not** widened to make the old sentence true — widening
+> it is exactly what AC-4's "stated, not widened" discipline forbids — so the
+> label is corrected instead, in §3.3, §3.4, `bench/lang-budget.md` and the
+> story's own table. The only figure this clause covers is json's **1,690 B**.
+
+**A note on the sha256 values, and on quoting them** (rebuild round 1, review
+finding F3). Round 1's §3.1 quoted `dde6278a5bf4a45f…` and `79cccb73fdb07767…`,
+prefixes that are **not in the cited file** — they came from an earlier capture
+session at a different commit. `-buildvcs=true` stamps `vcs.revision` and
+`vcs.time` into the binary, so the sha of a byte-identical *build* changes with
+every commit while its **size does not**. The controls above assert *equality
+within one capture*, never a literal sha value. The table now quotes the
+prefixes actually present in the re-captured
+[`noise-control.txt`](binary-size/raw/noise-control.txt) (captured at `9b6956a`),
+and that file now says the same thing in its own footer so the next reader is
+not caught by it.
 
 ### 3.2 Non-vacuity: each "without-`<lang>`" build really is without that language
 
@@ -189,17 +231,86 @@ around Kotlin's 337,236 B blob.
 
 Route A — the shipped default rebuilt with and without one
 `grammar_subset_<lang>` tag; `linux/amd64`; baseline **34,244,965 B**
-([`leg-a-tag-route.txt`](binary-size/raw/leg-a-tag-route.txt)):
+([`leg-a-tag-route.txt`](binary-size/raw/leg-a-tag-route.txt), **re-captured in
+rebuild round 1 on a clean committed tree at `9b6956a`** — see §3.3.1):
 
 | lang | without-`<lang>` build | **marginal cost** | stated blob budget | cost ÷ budget | verdict |
 |---|---:|---:|---:|---:|---|
 | css      | 34,216,888 | **28,077 B** | 14,325 | 1.96× | over the blob figure |
 | hcl      | 34,200,607 | **44,358 B** | 20,132 | 2.20× | over the blob figure |
 | markdown | 34,154,993 | **89,972 B** | 36,259 | 2.48× | over the blob figure |
-| toml     | 34,240,375 | **4,590 B** (≤ noise) | 5,317 | ~0.86× | **not resolvable** — see §3.1 |
+| toml     | 34,240,375 | **4,590 B** | 5,317 | ~0.86× | resolvable, **weakly** — only 1.12× the ±4,096 B budget; see below |
 | yaml     | 34,091,311 | **153,654 B** | 25,479 | **6.03×** | over the blob figure |
 | json     | — | see route B | *no blob* | — | stdlib parser, carries no subset tag |
 | *kotlin (SW-177 cross-check)* | *33,859,091* | *385,874 B* | *337,236* | *1.14×* | *reproduces SW-177's 385,418 B to within 456 B* |
+
+**toml, stated as measured** (rebuild round 1, review finding F2). Round 1
+labelled toml "≤ noise budget — not resolvable". That inequality is false:
+**4,590 B is above the ±4,096 B budget, by a factor of 1.12**. What the number
+supports is *weakly determined on this platform*, not *unresolvable* — and the
+campaign's **own darwin/arm64 host leg resolves the same removal at 16,928 B**,
+4.1× the budget and unambiguous. So toml's cost is real and is published as a
+number: **4,590 B on linux/amd64 (weakly determined) and 16,928 B on
+darwin/arm64.** The ±4,096 B budget itself is unchanged — it was derived from the
+additivity residuals before any cost was quoted, and widening it to rescue the
+old label is the precise move AC-4 exists to forbid. **json's 1,690 B is the one
+figure in this campaign that genuinely sits below the budget** (route B, below),
+and it is the only one reported as not resolvable.
+
+### 3.3.1 Why leg A's markdown line did not reproduce, and what it was (F1)
+
+Round 1's [`leg-a-tag-route.txt`](binary-size/raw/leg-a-tag-route.txt) recorded
+`no-markdown 34155025`, while §3.3 above published 34,154,993 and a markdown cost
+of 89,972 B. The reviewer rebuilt `no-markdown` three times and got 34,154,993
+every time — **the published number was right and the raw transcript was wrong**,
+which is the worse of the two ways round for an artifact whose whole job is to
+let a successor recompute the figure.
+
+**The cause is `vcs.modified`, and it is demonstrated rather than asserted**
+([`vcs-stamp-control.txt`](binary-size/raw/vcs-stamp-control.txt)). Every leg-A
+build carries `-buildvcs=true` (it is in `CanonicalBuildArgs`' contract), so Go
+stamps the tree's cleanliness into the binary. Each of the seven leg-A builds was
+run twice, once on the clean committed tree and once with a single **untracked**
+file present — nothing else differing:
+
+| build | clean tree | dirty tree | delta |
+|---|---:|---:|---:|
+| baseline | 34,244,965 | 34,244,965 | 0 |
+| no-css | 34,216,888 | 34,216,888 | 0 |
+| no-hcl | 34,200,607 | 34,200,607 | 0 |
+| **no-markdown** | **34,154,993** | **34,155,025** | **+32** |
+| no-toml | 34,240,375 | 34,240,375 | 0 |
+| no-yaml | 34,091,311 | 34,091,311 | 0 |
+| no-kotlin | 33,859,091 | 33,859,091 | 0 |
+
+`no-markdown` is the **only** one of the seven that moves, and the dirty value is
+exactly the 34,155,025 round 1 recorded. `go version -m` on the two binaries
+differs in one field and one field only: `vcs.modified=false` versus `=true`.
+(`true` is a byte *shorter* than `false` and the file is 32 B *larger*: the
+buildinfo blob sits ahead of section padding, so a one-byte shift can cross an
+alignment boundary — which it does for this tag set and not for the other six.
+That is also why the baseline could not have caught it.)
+
+So round 1's leg A ran while campaign output was being written into the worktree,
+six of its seven lines were insensitive to that and one was not, and the *table*
+in §3.3 was assembled from a clean-tree run. The transcript is now re-captured on
+a clean committed tree by
+[`scripts/measure.sh`](binary-size/scripts/measure.sh), which **refuses to build
+a `-buildvcs=true` leg on a dirty tree and refuses to write its own output
+anywhere inside the repo** — the two conditions that produced the defect.
+
+**Absolute sizes are build-context-dependent at the scale of tens of bytes; the
+deltas are not.** Three states of the identical source:
+
+| state | baseline | no-markdown | markdown marginal |
+|---|---:|---:|---:|
+| `-buildvcs=true`, clean tree | 34,244,965 | 34,154,993 | **89,972** |
+| `-buildvcs=true`, dirty tree | 34,244,965 | 34,155,025 | 89,940 |
+| `-buildvcs=false` | 34,245,005 | 34,154,985 | 90,020 |
+
+The three marginal costs span 80 B — **2 % of the ±4,096 B noise budget**. No
+conclusion, ratio or grade in this document moves. This was an evidence-integrity
+defect, not a measurement defect, and it is recorded as one.
 
 Route B — the shipped default rebuilt with the language's **registration**
 removed from `core/parse.RegisterDefaults`; `linux/amd64`, `-buildvcs=false` on
@@ -236,8 +347,13 @@ both rather than letting one stand for the other.
    cost**, in the same direction and for the same reason SW-177 gave for Kotlin.
    The measured ratios are 0.86× to 6.03×; blob size is not a proxy for
    marginal cost and should stop being read as one.
-3. **`toml` (4,590 B) and `json` (1,690 B) sit at or below the ±4,096 B noise
-   budget.** They are reported as unresolvable rather than as small numbers.
+3. **Only `json` (1,690 B) sits below the ±4,096 B noise budget**, and only json
+   is reported as unresolvable rather than as a number. **`toml` at 4,590 B is
+   *above* the budget** — 1.12× it — so it is resolvable, weakly, on
+   linux/amd64; the darwin/arm64 host leg resolves the same removal at
+   **16,928 B**, 4.1× the budget. (Round 1 grouped toml with json under "at or
+   below the noise budget". That was false for toml and is corrected here,
+   without touching the budget — review finding F2.)
 
 ---
 
@@ -313,7 +429,9 @@ of `{cold_index, incremental}` — a `-cold-runs` invocation prints *"incrementa
 not measured by this run"* and an `-incremental-changes` invocation prints
 *"cold_index not published by this run"*.
 
-**Every one of the 24: `-full-run` exit 0 and `-aggregate` exit 0.**
+**Every one of the 24: `-full-run` exit 0 and `-aggregate` exit 0.** All 24 were
+measured with the worktree dirty — `"worktree_dirty": true`, `"measured_sha":
+"bca6cf27…+dirty"` in every `environment.json` (§1, caveat 3).
 
 | pin | cold index p50 (9 samples) | db size | structural p95 | search p95 | agent_tools p95 | freshness | stall p95 / max |
 |---|---|---|---|---|---|---|---|
@@ -330,12 +448,25 @@ byte-identical across all nine samples per pin. The harness, the machine and the
 toolchain are steady enough that a *language-scale* delta would have been
 attributable to that language.
 
-**A finding from the control itself.** On grpc-go the progress-stall gate reads
-`p95 = 0.001 s` while `max = 8.30–8.42 s`, reproducibly across all three
-dispatches. That is a **~8,400× gap between the percentile the gate reads and
-the tail a user would feel** — the same "percentile gate hides a tail" shape
-this story's test notes name for `progress_stall_p95` on Go. It is reported, not
-fixed: acting on a profile is out of scope here. Follow-up in §7.
+**A finding from the control itself.** On grpc-go the progress-stall gate reads a
+p95 of 1.15–1.45 ms while `max` is 8.30–8.42 s, reproducibly across all three
+dispatches, over `n = 1087` intervals of which 1,050 are in the `parse` phase:
+
+| dispatch | `stalls.p95_us` | `stalls.max_us` | max ÷ p95 |
+|---|---:|---:|---:|
+| run-a | 1,186 | 8,414,939 | **7,095×** |
+| run-b | 1,445 | 8,378,991 | **5,799×** |
+| run-c | 1,152 | 8,297,558 | **7,203×** |
+
+That is a **~5,800–7,200× gap between the percentile the gate reads and the tail
+a user would feel** — the same "percentile gate hides a tail" shape this story's
+test notes name for `progress_stall_p95` on Go. (Round 1 quoted "~8,400×"; that
+came from dividing the max by a p95 rounded down to 0.001 s rather than by the
+microsecond field. The ratio is computed from `p95_us` and `max_us` here —
+review finding F4. The finding stands either way: the gate's threshold is 2 s and
+the p95 is three orders of magnitude below it, so an 8.4 s user-visible freeze can
+never trip it.) It is reported, not fixed: acting on a profile is out of scope
+here. Follow-up in §7.
 
 ### 5.3 The aggregate-all sweep (AC-2)
 
@@ -371,9 +502,9 @@ all six.
 |---|---|---|---|---|---|
 | css | **not run** | 28,077 B (A) / 38,822 B (B) | yes | **UNKNOWN** | no v3 corpus pin at `main` |
 | hcl | **not run** | 44,358 B | yes | **UNKNOWN** | no v3 corpus pin at `main` |
-| json | **not run** | ≤ 4,096 B (noise) | yes | **UNKNOWN** | no v3 corpus pin at `main`; SW-201 additionally dispositioned json as a permanent no-pin abstention |
+| json | **not run** | 1,690 B — below the ±4,096 B noise budget, not resolvable | yes | **UNKNOWN** | no v3 corpus pin at `main`; SW-201 additionally dispositioned json as a permanent no-pin abstention |
 | markdown | **not run** | 89,972 B | yes | **UNKNOWN** | no v3 corpus pin at `main` |
-| toml | **not run** | ≤ 4,096 B (noise) | yes | **UNKNOWN** | no v3 corpus pin at `main` |
+| toml | **not run** | 4,590 B (linux/amd64, 1.12× the noise budget — weakly determined) / 16,928 B (darwin/arm64) | yes | **UNKNOWN** | no v3 corpus pin at `main` |
 | yaml | **not run** | 153,654 B (**6.03× budget**) | yes | **UNKNOWN** | no v3 corpus pin at `main`; and the marginal cost breaches the stated allocation |
 
 Six UNKNOWN rows, each with a reason that names a mechanism. That is the
@@ -426,7 +557,9 @@ so the follow-on can land it unchanged the moment the citation red clears.
    (D6: amendments are added, never rewritten); the amendment beside it now says
    so with per-language numbers.
 5. **`progress_stall_p95` hides an 8.4 s tail on grpc-go**, reproducibly. The
-   percentile the gate reads is 0.001 s.
+   percentile the gate reads is 1.15–1.45 ms against a 2 s threshold, while the
+   max is 8.30–8.42 s — a **5,800–7,200× gap** (§5.2), so the tail can never trip
+   the gate. This is a gate-**design** defect, not a measurement one.
 6. **`docs/rc/evidence-index.yaml` is frozen for every story** until the seven
    pre-existing `corpus/manifest.json` sha-mismatches are resolved — see §6.1.
    This blocks SW-203's row update and will block every other row update the
@@ -435,7 +568,34 @@ so the follow-on can land it unchanged the moment the citation red clears.
 
 ---
 
+## 8. Rebuild round 1 (review findings F1–F6)
+
+The independent review of 2026-08-24 returned `changes-needed` on two truth
+defects and four notes. It upheld the refusals — six UNKNOWN G7 rows, the reverted
+`evidence-index.yaml` edit, the un-run perf half — and reproduced the binary-size
+numbers, the additivity controls, the red/green control and both AC-6 toolchain
+legs byte-for-byte. Those are unchanged here. What changed:
+
+| # | finding | what was wrong | what was done |
+|---|---|---|---|
+| **F1** | major | `leg-a-tag-route.txt` recorded `no-markdown 34155025` while §3.3 published 34,154,993 — the raw artifact disproved the number it existed to support | Cause found and demonstrated, not guessed: `-buildvcs=true` stamps `vcs.modified`, and `no-markdown` is the **only** one of the seven leg-A builds whose size moves with tree cleanliness (+32 B dirty). New control [`vcs-stamp-control.txt`](binary-size/raw/vcs-stamp-control.txt); leg A re-captured clean; §3.3.1 written. **No published figure changed.** |
+| **F2** | major | toml's 4,590 B was labelled "≤ noise budget — not resolvable" in four places, though 4,590 > 4,096 and the host leg resolves the same removal at 16,928 B | Relabelled at all five sites (§3.3, §3.4, §6, `bench/lang-budget.md`, Appendix A's toml row) plus the story's own table. toml is **resolvable, weakly** at 4,590 B on linux/amd64 and unambiguously at 16,928 B on darwin/arm64. **The ±4,096 B budget is NOT widened** — the review confirmed it is not reverse-fitted, and widening it is what AC-4 forbids. json's 1,690 B is the only figure genuinely below the budget and is the only one labelled unresolvable. |
+| **F3** | minor | §3.1 quoted sha256 prefixes absent from the cited `noise-control.txt` | Noise control re-captured; §3.1 now quotes the prefixes actually in the file, and both the record and the file state that the sha moves with the VCS stamp while the size does not. |
+| **F4** | minor | the `progress_stall_p95` gap was quoted as "~8,400×", derived from a p95 rounded down to 0.001 s | Recomputed from `p95_us`/`max_us` per dispatch: **7,095× / 5,799× / 7,203×**. §5.2 now carries the three-row table and §7 item 5 the range. |
+| **F5** | minor | the binary-size scripts were not checked in, so the leg was not third-party reproducible | [`binary-size/scripts/measure.sh`](binary-size/scripts/measure.sh) checked in — every transcript in `raw/` is one subcommand. It **refuses** to build a `-buildvcs=true` leg on a dirty tree and **refuses** to write output inside the repo: the two conditions that produced F1. |
+| **F6** | minor | the 24 perf legs ran with `worktree_dirty: true`, recorded in the JSON but not in the prose | §1 caveat 3 and §5.2 now state it. |
+
+Not changed, deliberately: `docs/rc/evidence-index.yaml` (still frozen — §6.1),
+`bench/bench-budget.yml`, the ±4,096 B noise budget, the six UNKNOWN grades, and
+every Go file (this story still touches none).
+
+---
+
 ## Appendix A — the G7 row text SW-203 measured but could not land
+
+**Corrected in rebuild round 1:** the toml row's cost statement below carried
+F2's false "BELOW the noise budget / not resolvable" label. It is restated as
+measured; nothing else in this appendix is touched.
 
 **This text is NOT in `docs/rc/evidence-index.yaml`.** The six rows there
 still carry their SW-185 birth text, for the reason in §6.1. What follows is
@@ -464,7 +624,7 @@ empty, exactly as an UNKNOWN row must.
     next_action: "Land the markdown corpus pin — SW-201`s branch is not on main, which blocks everything else here — then run the four perf suites over it, three dispatches per suite, and check the raw artefacts in under docs/eval/runs/<date>-<runner-class>/markdown/ with cmd/eval -aggregate exit 0 on every leaf. The binary-size half is already measured and needs no re-run (SW-203, docs/eval/runs/2026-08-24-local-sandbox/sw203-campaign.md). The bundle discipline: independent."
 
 ### GA-LANG-toml-G7
-    current: "UNKNOWN — SW-203 (W5.q) ran the campaign on 2026-08-24 at bca6cf2 and the PERF half could not run. The four perf suites are specified against the language`s corpus pin, and corpus/manifest.json carries NO entry for toml at this commit: `cmd/eval -manifest corpus/manifest.json -full-run <pin>` answers `not in manifest` and exits 2. cold_index, query_latency, progress_stalls and freshness/incremental are therefore NOT MEASURED, and no per-language run directory is published — an empty directory shaped like a run directory would launder silence as evidence. SW-201 is the pin-landing story and its ticket reads done, but its commits are NOT on main (branch sw-201-w5o-corpus-pins-v3-intra-parse, 22 commits behind main, no open PR); that is the single blocking dependency and SW-203 reports it rather than merging a stale branch. The BINARY-SIZE half of the campaign DID run and is measured, three-dispatch reproducible and non-vacuity-checked (each without-<lang> build was confirmed by go tool nm to drop exactly that language`s subsetBlobFS embed and keep the other 19): toml costs 4,590 B in the shipped linux/amd64 default against the 5,317 B blob allocation published in bench/lang-budget.md — that figure is BELOW the method`s noise budget and is therefore reported as not resolvable rather than as a number (the darwin/arm64 host leg gives 16,928 B for the same removal, which is why the sub-quantum figure is not published as a cost). The method`s noise budget is +/-4,096 B, itself derived from two additivity controls (residuals +4,192 B and -4,064 B). The whole-binary gate is MET at 34,244,965 B against the 34,250,000 B budget in bench/bench-budget.yml — 5,035 B (0.0147 percent) of headroom, down from SW-177`s 87,074 B — with the budget STATED and NOT widened, and with the cross-build caveat that this is a linux/amd64 binary cross-built from darwin/arm64 and the cross-versus-native question SW-177 opened is still untested. Full record with captured environment and raw transcripts: docs/eval/runs/2026-08-24-local-sandbox/sw203-campaign.md; the per-language D6 amendment is in bench/lang-budget.md. PASS requires all four suites to have run, the budgets stated, and the binary-size gate met; two of the three hold, the suites do not, so the row stays UNKNOWN."
+    current: "UNKNOWN — SW-203 (W5.q) ran the campaign on 2026-08-24 at bca6cf2 and the PERF half could not run. The four perf suites are specified against the language`s corpus pin, and corpus/manifest.json carries NO entry for toml at this commit: `cmd/eval -manifest corpus/manifest.json -full-run <pin>` answers `not in manifest` and exits 2. cold_index, query_latency, progress_stalls and freshness/incremental are therefore NOT MEASURED, and no per-language run directory is published — an empty directory shaped like a run directory would launder silence as evidence. SW-201 is the pin-landing story and its ticket reads done, but its commits are NOT on main (branch sw-201-w5o-corpus-pins-v3-intra-parse, 22 commits behind main, no open PR); that is the single blocking dependency and SW-203 reports it rather than merging a stale branch. The BINARY-SIZE half of the campaign DID run and is measured, three-dispatch reproducible and non-vacuity-checked (each without-<lang> build was confirmed by go tool nm to drop exactly that language`s subsetBlobFS embed and keep the other 19): toml costs 4,590 B in the shipped linux/amd64 default against the 5,317 B blob allocation published in bench/lang-budget.md (0.86x the blob figure). That is ABOVE the method`s +/-4,096 B noise budget, by a factor of 1.12, so it is resolvable but only weakly determined on this platform; the darwin/arm64 host leg resolves the same removal at 16,928 B, 4.1x the budget and unambiguous. The one figure in this campaign that genuinely sits BELOW the noise budget is json`s 1,690 B, and json is the only language reported as not resolvable. The method`s noise budget is +/-4,096 B, itself derived from two additivity controls (residuals +4,192 B and -4,064 B). The whole-binary gate is MET at 34,244,965 B against the 34,250,000 B budget in bench/bench-budget.yml — 5,035 B (0.0147 percent) of headroom, down from SW-177`s 87,074 B — with the budget STATED and NOT widened, and with the cross-build caveat that this is a linux/amd64 binary cross-built from darwin/arm64 and the cross-versus-native question SW-177 opened is still untested. Full record with captured environment and raw transcripts: docs/eval/runs/2026-08-24-local-sandbox/sw203-campaign.md; the per-language D6 amendment is in bench/lang-budget.md. PASS requires all four suites to have run, the budgets stated, and the binary-size gate met; two of the three hold, the suites do not, so the row stays UNKNOWN."
     next_action: "Land the toml corpus pin — SW-201`s branch is not on main, which blocks everything else here — then run the four perf suites over it, three dispatches per suite, and check the raw artefacts in under docs/eval/runs/<date>-<runner-class>/toml/ with cmd/eval -aggregate exit 0 on every leaf. The binary-size half is already measured and needs no re-run (SW-203, docs/eval/runs/2026-08-24-local-sandbox/sw203-campaign.md). The bundle discipline: independent."
 
 ### GA-LANG-yaml-G7
