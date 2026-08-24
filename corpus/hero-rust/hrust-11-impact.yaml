@@ -1,0 +1,21 @@
+id: hrust-11-impact
+description: >
+  The blast radius of shop.core reaches its cross-module callers (app.entry,
+  app.twice) through the clause-keyed heuristic calls edges. other_salute
+  (which never calls core) must NOT appear (negative anchor).
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: impact
+  args:
+    symbol: shop.core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.entry
+      match: contains
+  absent:
+    - kind: symbol
+      value: app.other_salute
+      match: contains

@@ -1,0 +1,16 @@
+id: hphp-07-callers-ambiguous
+description: >
+  init is defined in both app/main.php and app/other.php — both live
+  in the `app/` directory, so the byDir index records the same QN
+  `app.init` TWICE (two distinct NodeIds). dirAmbiguous["app"]["init"]
+  = true makes resolve.Strict return AMBIGUOUS: callers(app.init)
+  cannot pick a single definition. This mirrors the ccpp init_c /
+  init_cpp shape at corpus/fixtures/hero-c-cpp/c/.
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: callers
+  args:
+    symbol: app.init
+  area: agent_mcp
+expect:
+  outcome: ambiguous

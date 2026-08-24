@@ -1,0 +1,8 @@
+id: hccpp-01-index
+description: Indexing the C/C++ fixture returns a populated inventory.
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: index
+  area: agent_mcp
+expect:
+  outcome: found

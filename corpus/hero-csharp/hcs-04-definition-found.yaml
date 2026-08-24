@@ -1,0 +1,15 @@
+id: hcs-04-definition-found
+description: The definition of Shop.run resolves to the shared service file.
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: definition
+  args:
+    symbol: Shop.run
+  area: agent_mcp
+expect:
+  outcome: found
+  contains_path: Shop/Price.cs
+  absent:
+    - kind: file
+      value: app/Caller.cs
+      match: contains

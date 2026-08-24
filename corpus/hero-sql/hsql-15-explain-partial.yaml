@@ -1,0 +1,17 @@
+id: hsql-15-explain-partial
+description: >
+  explain_symbol(app.helper, max_items=1) marks the result partial via
+  the cap. app.helper has ONE view reference (app.join_view FROM helper),
+  populating the items list to 1 definition + 1 reference = 2 items —
+  exceeding the cap of 1 — and triggering Limits.Truncated. This is the
+  SQL parallel of the bash twin's hbash-15-explain-partial.yaml shape.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: explain_symbol
+  args:
+    symbol: app.helper
+    max_items: "1"
+area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true

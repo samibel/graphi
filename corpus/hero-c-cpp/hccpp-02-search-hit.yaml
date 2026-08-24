@@ -1,0 +1,14 @@
+id: hccpp-02-search-hit
+description: Searching for "core" finds the shared service declaration in shop/core.h.
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: search
+  args:
+    query: core
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: shop.core
+      match: contains

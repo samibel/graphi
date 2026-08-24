@@ -1,0 +1,14 @@
+id: hcs-02-search-hit
+description: Searching for "core" finds the shared service declaration in Shop/Price.cs.
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: search
+  args:
+    query: core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: Shop.core
+      match: contains

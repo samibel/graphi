@@ -1,0 +1,16 @@
+id: hccpp-15-explain-partial
+description: >
+  explain_symbol(shop.run, max_items=1) marks the result partial — shop.run
+  has multiple call sites (c.entry via c/c-caller.c::entry and c/c-caller.c::twice,
+  cpp.entry via cpp/cpp-caller.cpp::entry and cpp.cpp-caller.cpp::twice_cpp),
+  and the cap truncates the items list.
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: explain_symbol
+  args:
+    symbol: shop.run
+    max_items: "1"
+area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true

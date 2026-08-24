@@ -1,0 +1,14 @@
+id: hsql-02-search-hit
+description: Searching for "core" finds the base table declaration in schema/tables.sql.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: search
+  args:
+    query: core
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: schema.core
+      match: contains

@@ -1,0 +1,31 @@
+id: hlua-06-callers-cross-file
+description: >
+  Callers of lib.run cross files — app.entry and app.twice in app/main.lua
+  both bare-call run() (resolved via the requireBinder's ambient-dir
+  fallback at engine/link/resolve_common.go:436, where ambientDir
+  <fixture>/lib matches byDir[<fixture>/lib]). lib.run's intra-file call
+  to lib.core is NOT a caller-of-run (it's a callee), so the surface
+  here is purely the cross-file callers. init and greet in app/ never
+  call run, so they MUST NOT appear (negative anchors).
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: callers
+  args:
+    symbol: lib.run
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.entry
+      match: contains
+    - kind: symbol
+      value: app.twice
+      match: contains
+  absent:
+    - kind: symbol
+      value: app.init
+      match: contains
+    - kind: symbol
+      value: app.greet
+      match: contains

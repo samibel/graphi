@@ -1,0 +1,18 @@
+id: hsql-07-callers-ambiguous
+description: >
+  join_view is defined in both app/join_view.sql and app/other_view.sql —
+  both live in the `app/` directory, so the byDir index records the same QN
+  `app.join_view` TWICE (two distinct NodeIds, one per source location).
+  dirAmbiguous["app"]["join_view"] = true makes resolve.Strict return
+  AMBIGUOUS: callers(join_view) cannot pick a single definition. SQL's
+  parser records CREATE VIEW as KindType with the same dirAmbiguous
+  discipline the c/cpp and bash heroes exercise — there's no SQL-specific
+  magic, just the shared CST walk + resolver seam.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: callers
+  args:
+    symbol: app.join_view
+area: agent_mcp
+expect:
+  outcome: ambiguous

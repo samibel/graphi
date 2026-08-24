@@ -1,0 +1,25 @@
+id: hccpp-06-callers-cross-lang
+description: >
+  Callers of shop.run span BOTH C and C++ — c.entry, c.twice (from c/c-caller.c)
+  and cpp.entry, cpp.twice_cpp (from cpp/cpp-caller.cpp) all #include
+  "../shop/core.h" and call run(). The cross-file edges are wired through
+  the cResolver's includeDirectory binder (engine/link/resolve_c.go:41),
+  which turns the bare `run` references into heuristic-tier calls edges
+  to shop.run. init_c (defined in both c/c-caller.c and c/c-other.c) and
+  init_cpp (defined in both cpp/cpp-caller.cpp and cpp/cpp-other.cpp) are
+  the negative anchors (different name, different cross-file relation).
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: callers
+  args:
+    symbol: shop.run
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: c.entry
+      match: contains
+    - kind: symbol
+      value: cpp.entry
+      match: contains

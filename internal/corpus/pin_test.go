@@ -77,9 +77,18 @@ var v3AbstentionLangs = map[string][]string{
 func TestCheckedInManifest_V3CorpusPins(t *testing.T) {
 	m := loadCheckedInManifest(t)
 
-	// Index entries by name and language for the test.
+	// Index the language's PIN entry — the corpus pin or the honest
+	// abstention that stands in for one. A manifest entry that carries a
+	// local `path` is a hermetic tier-1 FIXTURE, not a pin (SW-197 adds one
+	// per residual language, sharing the pin's `language` value), and
+	// indexing it here would shadow the real pin and fail every v3 field
+	// check against a fixture that was never meant to satisfy them. A pin
+	// has a `url`; an abstention has `no_pin`; a fixture has neither.
 	byLang := map[string]Entry{}
 	for _, e := range m.Entries {
+		if !e.NoPin && e.URL == "" {
+			continue
+		}
 		byLang[e.Language] = e
 	}
 

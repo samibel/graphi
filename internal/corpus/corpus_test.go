@@ -545,6 +545,21 @@ func TestCheckedInManifest_PRGateUnchanged(t *testing.T) {
 		// to LINK-001 directory fan-out), so it belongs on the PR gate
 		// exactly like hero-python, hero-jvm and hero-go.
 		"tier1-fixture-hero-typescript": true,
+		// SW-197 (language-GA program G6): the 9 SW-197 hero fixtures are
+		// hermetic local fixtures (no network, no toolchain — the pure-Go
+		// gotreesitter grammars parse them and the per-language heuristic
+		// resolvers run in-process), so they belong on the PR gate exactly
+		// like hero-python, hero-jvm and hero-go. Bash declares honest-empty
+		// per §5.5 (no cross-file construct); c/cpp share one resolver
+		// impl (engine/link/resolve_c.go) and one fixture tree.
+		"tier1-fixture-hero-bash":   true,
+		"tier1-fixture-hero-c-cpp":  true,
+		"tier1-fixture-hero-csharp": true,
+		"tier1-fixture-hero-lua":    true,
+		"tier1-fixture-hero-php":    true,
+		"tier1-fixture-hero-ruby":   true,
+		"tier1-fixture-hero-rust":   true,
+		"tier1-fixture-hero-sql":    true,
 	}
 	for _, e := range m.Entries {
 		if e.Tier > 2 {

@@ -1,0 +1,18 @@
+id: hccpp-08-callees
+description: >
+  Callees of shop.run resolve through the intra-file calls edge in shop/core.h
+  to shop.core (the include-directory binder has wired run → core in the
+  header's own translation unit via the c/cpp parser's intra-file calls
+  collector at parser_c.go:198, parser_cpp.go:190).
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: callees
+  args:
+    symbol: shop.run
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: shop.core
+      match: contains

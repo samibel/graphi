@@ -1,0 +1,29 @@
+id: hrust-06-callers-cross-module
+description: >
+  Callers of shop.run span modules — app.entry (three call sites of run) and
+  app.twice both `use crate::shop::run` and call run(...). The cross-module
+  edges are wired through the rustResolver's clause-keyed core
+  (engine/link/resolve_rust.go): clause = SECOND-to-last `::` segment of the
+  import path, bare = last segment. For `use crate::shop::run` clause="shop",
+  bare="run", resolved via `crossModule("shop", "run")` to `shop.run` at the
+  heuristic tier. app.other_salute (which never calls core/run) must NOT
+  appear (negative anchor).
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: callers
+  args:
+    symbol: shop.run
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.entry
+      match: contains
+    - kind: symbol
+      value: app.twice
+      match: contains
+  absent:
+    - kind: symbol
+      value: app.other_salute
+      match: contains

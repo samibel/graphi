@@ -1,0 +1,26 @@
+id: hphp-06-callers-cross-file
+description: >
+  Callers of lib.core include the intra-file call from lib.run (in
+  lib/util.php) and the cross-file callers reached via the ambient
+  require directory — app/other_salute (which never calls core) must
+  NOT appear (negative anchor). The cross-file edges are wired through
+  the phpResolver's requireBinder (engine/link/resolve_ruby.go:19
+  via engine/link/resolve_common.go:332), which turns the bare `core`
+  reference in `app/main.php` into a heuristic-tier calls edge to
+  lib.core via the ambient dir `lib`.
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: callers
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: lib.run
+      match: contains
+  absent:
+    - kind: symbol
+      value: app.other_salute
+      match: contains

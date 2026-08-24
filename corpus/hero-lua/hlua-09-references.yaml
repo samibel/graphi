@@ -1,0 +1,15 @@
+id: hlua-09-references
+description: >
+  HONEST-EMPTY: the Lua parser (core/parse/parser_lua.go:121) does NOT
+  emit EdgeReferences edges — it only collects `function_declaration`
+  defs and `variable_declaration` targets. references(lib.core) returns
+  a well-formed empty result, recorded here per AC-4 (parse-determinism
+  honest-empty discipline).
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: references
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: empty

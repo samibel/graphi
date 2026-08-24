@@ -1,0 +1,11 @@
+id: hcs-12-agent-brief
+description: An agent brief on Shop.core carries evidence.
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: agent_brief
+  args:
+    topic: Shop.core
+  area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

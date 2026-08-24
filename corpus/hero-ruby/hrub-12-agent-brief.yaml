@@ -1,0 +1,11 @@
+id: hrub-12-agent-brief
+description: An agent brief on lib.core carries evidence.
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: agent_brief
+  args:
+    topic: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

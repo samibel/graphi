@@ -1,0 +1,14 @@
+id: hrust-02-search-hit
+description: Searching for "core" finds the shared service definition in shop/core.rs.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: search
+  args:
+    query: core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: shop.core
+      match: contains

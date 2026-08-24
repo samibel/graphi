@@ -1,0 +1,14 @@
+id: hbash-09-references
+description: >
+  HONEST-EMPTY (bash, per §5.5): bash has no askable cross-file reference
+  relation. `references` of any symbol crossing the file boundary returns a
+  well-formed empty result, recorded explicitly here at the description field
+  per AC-4.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: references
+  args:
+    symbol: hello
+area: agent_mcp
+expect:
+  outcome: empty

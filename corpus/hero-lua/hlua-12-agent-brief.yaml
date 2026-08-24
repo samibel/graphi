@@ -1,0 +1,11 @@
+id: hlua-12-agent-brief
+description: An agent brief on lib.core carries evidence (caller list, callee list, source anchor).
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: agent_brief
+  args:
+    topic: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

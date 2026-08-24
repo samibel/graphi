@@ -1,0 +1,10 @@
+id: hsql-16-change-risk
+description: Change risk of app.helper reflects its intra-file inbound references.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: change_risk
+  args:
+    target: app.helper
+area: agent_mcp
+expect:
+  outcome: found

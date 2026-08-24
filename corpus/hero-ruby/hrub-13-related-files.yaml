@@ -1,0 +1,25 @@
+id: hrub-13-related-files
+description: >
+  related_files(lib.core, dependents) returns the call-graph
+  neighborhood: app/main.rb scores highly because it contains
+  app.twice, which has a heuristic calls edge into lib.core. This
+  is the cross-file edge minted by the rubyResolver's
+  requireBinder (engine/link/resolve_ruby.go) — the
+  require_relative '../lib/util' spec produced a file→file imports
+  edge from app/main.rb to lib/util.rb and a function-level
+  calls edge from app.twice → lib.core through the ambient-dir
+  lookup. lib/util.rb is the imported file (it scores via the
+  imports direction, not dependents).
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: related_files
+  args:
+    anchor: lib.core
+    direction: dependents
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.twice
+      match: contains

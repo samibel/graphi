@@ -1,0 +1,17 @@
+id: hcs-09-references
+description: >
+  HONEST-EMPTY: the C# parser (core/parse/parser_csharp.go) does NOT
+  emit EdgeReferences edges — it only emits EdgeCalls from
+  invocation_expression sites and EdgeDefines from method_declaration
+  and type-declaration nodes. EdgeReferences is reserved for type-name
+  references at this tier, and the C# subset has no dedicated type-ref
+  collector. references(Shop.core) returns a well-formed empty result,
+  recorded here per AC-4 (parse-determinism honest-empty discipline).
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: references
+  args:
+    symbol: Shop.core
+  area: agent_mcp
+expect:
+  outcome: empty

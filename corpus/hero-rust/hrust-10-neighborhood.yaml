@@ -1,0 +1,11 @@
+id: hrust-10-neighborhood
+description: The neighborhood of shop.core carries the include/call context.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: neighborhood
+  args:
+    symbol: shop.core
+    depth: "1"
+  area: agent_mcp
+expect:
+  outcome: found

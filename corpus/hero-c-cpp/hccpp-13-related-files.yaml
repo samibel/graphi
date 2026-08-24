@@ -1,0 +1,22 @@
+id: hccpp-13-related-files
+description: >
+  HONEST-EMPTY: shop.core has no DIRECT inbound edge from any caller.
+  All four callers reach shop.core through the intermediate call to
+  shop.run (callers(shop.core) is empty in the c/cpp fixture, so the
+  related_files dependents collection has no neighbors to score). The
+  include-driven file→file imports edges target the file node
+  shop/core.h, not the function node shop.core; the c/cpp parser
+  does NOT mint EdgeImports edges at the function level
+  (core/parse/parser_c.go:98 — the parser only records #include
+  directives as ImportSpec, never as EdgeImports graph edges).
+  related_files(shop.core, dependents) returns empty, recorded here
+  per AC-4 (parse-determinism honest-empty discipline).
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: related_files
+  args:
+    anchor: shop.core
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: empty

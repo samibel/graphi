@@ -1,0 +1,10 @@
+id: hrub-05-definition-not-found
+description: An unknown symbol returns clean not_found.
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: definition
+  args:
+    symbol: NoSuchSymbolXyz
+  area: agent_mcp
+expect:
+  outcome: not_found

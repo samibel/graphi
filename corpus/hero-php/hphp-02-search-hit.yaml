@@ -1,0 +1,14 @@
+id: hphp-02-search-hit
+description: Searching for "core" finds the shared service declaration in lib/util.php.
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: search
+  args:
+    query: core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: lib.core
+      match: contains

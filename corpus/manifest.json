@@ -1128,6 +1128,118 @@
     }
    ],
    "notes": "Honest abstention entry — SQL has NO representative pin (SW-196 AC-2 + ADR-W1). The runner's no_pin short-circuit records a single abstention step that passes by name (internal/corpus/run.go: runEntry NoPin branch); the G4 / G5 rows in docs/rc/evidence-index.yaml stay UNKNOWN with this reason named in `current`. The sqlResolver at engine/link/resolve_bash.go (language id 'sql', sibling of bashResolver in the same file) is exercised by the resolver's hermetic fixtures; the corpus-scale claim cannot be backed by an open-source SQL corpus, and SW-196 publishes the gap rather than silently substituting a fake pin."
+  },
+  {
+   "name": "tier1-fixture-hero-bash",
+   "path": "corpus/fixtures/hero-bash",
+   "tier": 1,
+   "language": "bash",
+   "scenario_ref": "hero-bash",
+   "searches": [
+    {
+     "query": "greet",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file bash fixture for the SW-197 hero-bash tasks. Per docs/plan/2026-08-per-language-ga-template-v1.md §5.5's language-spec test bash has no cross-file construct at the language level (the `source` builtin is shell execution, not a script-level language construct). The hero-bash gate (cmd/eval/hero_bash_test.go) therefore asserts the 12 stable ops under the PARSE-DETERMINISM HONEST-EMPTY DOCTRINE: cross-file callers/callees/references/impact/related_files return well-formed empty outcomes, recorded in scenario descriptions per AC-4. The same-file intra-shell operations (search/definition/agent_brief/explain_symbol) remain askable and PASS at the heuristic tier. No network, no shell interpreter."
+  },
+  {
+   "name": "tier1-fixture-hero-c-cpp",
+   "path": "corpus/fixtures/hero-c-cpp",
+   "tier": 1,
+   "language": "c",
+   "scenario_ref": "hero-c-cpp",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned shared C/C++ fixture for the SW-197 hero_ccpp tasks. The fixture exercises both `.c` (c/c-caller.c, c/c-other.c) and `.cpp` (cpp/cpp-caller.cpp, cpp/cpp-other.cpp) source in one shared corpus tree, with a shared header at shop/core.h (the static-inline functions inside are required because the c/cpp parsers at core/parse/parser_c.go:147 and parser_cpp.go:132 only collect function_definition nodes, not function prototypes). Each caller uses `#include \"../shop/core.h\"` so the cResolver's includeBinder (engine/link/resolve_c.go:41, the joinRel-then-posixDir ambient dir) reaches shop/ from c/ and cpp/ via the parent-dir traversal. The ccpp gate (cmd/eval/hero_ccpp_test.go) runs the 16 scenarios against both languages under the heuristic tier. No network, no C compiler."
+  },
+  {
+   "name": "tier1-fixture-hero-csharp",
+   "path": "corpus/fixtures/hero-csharp",
+   "tier": 1,
+   "language": "c_sharp",
+   "scenario_ref": "hero-csharp",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file C# fixture for the SW-197 hero-csharp tasks. The C# parser is registered as `c_sharp`; the heuristic resolver (engine/link/resolve_csharp.go) models `using Shop;` as ambient namespace clauses and resolves qualified calls at the heuristic tier. The hero-csharp gate (cmd/eval/hero_csharp_test.go) asserts the 12 stable ops at the heuristic tier. No network, no .NET runtime."
+  },
+  {
+   "name": "tier1-fixture-hero-lua",
+   "path": "corpus/fixtures/hero-lua",
+   "tier": 1,
+   "language": "lua",
+   "scenario_ref": "hero-lua",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file Lua fixture for the SW-197 hero-lua tasks. The heuristic resolver (engine/link/resolve_ruby.go's luaResolver at :30) models `local m = require('x')` as a `require` imports edge. The hero-lua gate (cmd/eval/hero_lua_test.go) asserts the 12 stable ops at the heuristic tier. No network, no Lua interpreter."
+  },
+  {
+   "name": "tier1-fixture-hero-php",
+   "path": "corpus/fixtures/hero-php",
+   "tier": 1,
+   "language": "php",
+   "scenario_ref": "hero-php",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file PHP fixture for the SW-197 hero-php tasks. The heuristic resolver (engine/link/resolve_ruby.go's phpResolver at :23) models `require 'x.php'` / `include 'x.php'` as a `require` imports edge; `use Foo\\Bar` adds ambient namespaces. The hero-php gate (cmd/eval/hero_php_test.go) asserts the 12 stable ops at the heuristic tier. No network, no PHP runtime."
+  },
+  {
+   "name": "tier1-fixture-hero-ruby",
+   "path": "corpus/fixtures/hero-ruby",
+   "tier": 1,
+   "language": "ruby",
+   "scenario_ref": "hero-ruby",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file Ruby fixture for the SW-197 hero-ruby tasks. The heuristic resolver (engine/link/resolve_ruby.go) models `require_relative 'x'` / `require 'x'` as a `require` imports edge. The hero-ruby gate (cmd/eval/hero_ruby_test.go) asserts the 12 stable ops at the heuristic tier. No network, no Ruby runtime."
+  },
+  {
+   "name": "tier1-fixture-hero-rust",
+   "path": "corpus/fixtures/hero-rust",
+   "tier": 1,
+   "language": "rust",
+   "scenario_ref": "hero-rust",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file Rust fixture for the SW-197 hero-rust tasks. The heuristic resolver (engine/link/resolve_rust.go) models `use crate::shop::price` and `mod util;` via the shared clause-keyed core (clause = path's second-to-last `::` segment). The hero-rust gate (cmd/eval/hero_rust_test.go) asserts the 12 stable ops at the heuristic tier. No network, no rustc."
+  },
+  {
+   "name": "tier1-fixture-hero-sql",
+   "path": "corpus/fixtures/hero-sql",
+   "tier": 1,
+   "language": "sql",
+   "scenario_ref": "hero-sql",
+   "searches": [
+    {
+     "query": "core",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file SQL fixture for the SW-197 hero-sql tasks. SQL has NO import construct (per engine/link/resolve_bash.go's sqlResolver type comment and ADR-W1: ISO/IEC 9075 defines no file-inclusion). The hero-sql gate (cmd/eval/hero_sql_test.go) exercises the JOIN/VIEW cross-file edge shape — a same-directory `references` from a VIEW to its referenced table — under the heuristic tier. The SQL wrinkle (no imports) is documented per AC-6 in the scenarios' description fields. No network, no SQL engine."
   }
  ]
 }

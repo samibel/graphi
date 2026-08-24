@@ -1,0 +1,11 @@
+id: hccpp-14-explain-symbol
+description: Explaining shop.core cites its definition in shop/core.h.
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: explain_symbol
+  args:
+    symbol: shop.core
+area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

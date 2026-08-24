@@ -1,0 +1,30 @@
+id: hrub-06-callers-cross-file
+description: >
+  Callers of lib.invoke span the cross-file require_relative edge —
+  app.entry and app.twice (both in app/main.rb) call invoke(),
+  which transitively calls core(). The cross-file edges are wired
+  through the rubyResolver's requireBinder
+  (engine/link/resolve_ruby.go, resolve_common.go:332), which turns
+  the require_relative '../lib/util' spec into an ambient-dir
+  lookup: bare `invoke(who)` references resolve to lib.invoke at
+  the heuristic tier. app.other_salute (defined in app/main.rb but
+  never calls core) is the negative anchor.
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: callers
+  args:
+    symbol: lib.invoke
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.entry
+      match: contains
+    - kind: symbol
+      value: app.twice
+      match: contains
+  absent:
+    - kind: symbol
+      value: app.other_salute
+      match: contains

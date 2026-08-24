@@ -1,0 +1,17 @@
+id: hrub-07-callers-ambiguous
+description: >
+  init is defined in both app/main.rb and app/other.rb — both live in
+  the `app/` directory, so the byDir index records the same QN
+  `app.init` TWICE (two distinct NodeIds). dirAmbiguous["app"]["init"]
+  = true makes resolve.Strict return AMBIGUOUS: callers(init) cannot
+  pick a single definition. Mirrors the ccpp twin's init_c / init_cpp
+  shape (corpus/hero-c-cpp/hccpp-07-callers-ambiguous.yaml) and the
+  bash/python "two files, same def" shape.
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: callers
+  args:
+    symbol: init
+  area: agent_mcp
+expect:
+  outcome: ambiguous

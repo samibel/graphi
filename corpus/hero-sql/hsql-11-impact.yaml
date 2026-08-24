@@ -1,0 +1,28 @@
+id: hsql-11-impact
+description: >
+  HONEST-EMPTY: the blast radius of schema.core cross-file is honest-empty
+  under SQL's parse-determinism honest-empty doctrine (§5.5). SQL has no
+  cross-file reference relation — the references schema.core emits are
+  cross-file FROM clauses only (from app/join_view.sql and app/other_view.sql,
+  which live in a SIBLING directory), so they become PendingRefs (no
+  EdgeReferences edges at the parser tier). impact(schema.core) returns
+  empty because there are no cross-file dependents to traverse. (For
+  intra-file dependents, see hsql-09: app.helper has an intra-file
+  EdgeReferences edge from app.join_view's same-file FROM clause, and
+  impact(app.helper) DOES return app.join_view at depth=1.) schema.salute
+  is the negative anchor: it has the SAME shape (a CREATE TABLE with no
+  inbound EdgeReferences edges), but it is NOT in the impact result for
+  schema.core — even though schema.salute IS in the same fixture tree,
+  the blast-radius is per-target not whole-corpus.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: impact
+  args:
+    symbol: schema.core
+area: agent_mcp
+expect:
+  outcome: empty
+  absent:
+    - kind: symbol
+      value: schema.salute
+      match: contains
