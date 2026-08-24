@@ -342,7 +342,47 @@ SQL
 | Runner class | `Darwin-ARM64/apple-m2-max` |
 | Branch tip | `da47330bd7d06498fa200bba8970449d69357bfe` (main HEAD at run time) |
 | Candidate SHA | `9f687849cec2b26311401191e90b60e40b5f6cee` (post-SW-188, per SW-195 AC-7) |
-| Product binary digest | `f9918e5cf5860c8c7b94d506aec43d5961ee1c44a49164f176056e13df1d8dd6` (current main binary, doc-only branch → UNCHANGED) |
+| Product binary digest | `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` (current main binary, doc-only branch → UNCHANGED) |
 | Go version | go1.26.6 darwin/arm64 |
 | Verdict | F5 fan-out ABSENT; GA at cross-file-heuristic SUPPORTED; GA-LANG-ruby-G4 flips PASS |
 | Driver | `graphi rebuild` + `graphi snapshot` (manual, F5 escape per SW-176 AC-2 + SW-192 python F5 + SW-193 TS family precedent — `cmd/parity -family ruby` is unbound at `cmd/parity/main.go`) |
+
+> **CORRECTION 2026-08-24 (SW-192..197 integration, rebuild round 1, review
+> finding B1) — the `product_binary_digest` cell above is corrected in place.
+> Nothing else in this record is rewritten, and no verdict moves.** The cell
+> read `f9918e5cf5860c8c7b94d506aec43d5961ee1c44a49164f176056e13df1d8dd6`. That
+> value is **unreproducible** and it is withdrawn.
+>
+> **What was rebuilt, and what came out.** The canonical recipe this project
+> uses for a product-binary digest is `CGO_ENABLED=0 go build -trimpath
+> -buildvcs=false -o <bin> ./cmd/graphi` (`docs/decisions/2026-08-parity-candidate-move-adr0013.md`),
+> on go1.26.6 darwin/arm64 — the toolchain this record itself declares. Run at
+> SW-195's own declared branch tip `da47330b`, at SW-195's own commit `f4bd1d9`,
+> at the candidate `9f687849` and at the pre-integration base `3fe97f04`, it
+> produces `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf`
+> every time — the same digest at all four, because the four trees are
+> product-byte identical. Dropping `-buildvcs=false` changes nothing here (a
+> detached worktree stamps no VCS metadata: `go version -m` shows only
+> `-buildmode`, `-compiler`, `-trimpath=true`); dropping `-trimpath` makes the
+> digest path-dependent and therefore not a candidate identity at all. **No
+> recipe at any of those four commits produces the withdrawn value**, and no
+> binary with that digest exists on the machine this record was written on.
+>
+> **Why `0de6e64d…` is the right value rather than a guess.** The cell's own
+> parenthetical says *"current main binary, doc-only branch → UNCHANGED"*, and
+> `0de6e64d…` is what main builds to: SW-192 records it verbatim
+> (`docs/rc/python-f5-measurement.md` §11), SW-193's `ky` block in
+> `corpus/manifest.json` records it at the **same** `candidate_sha`,
+> `branch_tip` and `go_version` this record declares, and SW-190 / SW-204 /
+> SW-207 / SW-209 all carry it. `git log --all -S` finds the withdrawn token
+> introduced by exactly one commit in the history of any branch — `f4bd1d9`,
+> SW-195 itself. SW-195 never derived a digest at all: its verification argued
+> "digest UNCHANGED" *structurally*, from `git diff --stat` showing 0 Go-line
+> changes, and built no binary. The withdrawn token is a transcription error,
+> not the record of a different build.
+>
+> **Scope of the correction.** The ruby F5 counts, the two-dispatch agreement
+> and `GA-LANG-ruby-G4`'s PASS rest on the dispatches SW-195 ran and are not
+> re-taken here. What is corrected is the provenance anchor naming which binary
+> ran them.
+

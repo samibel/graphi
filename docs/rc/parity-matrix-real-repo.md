@@ -53,10 +53,63 @@ reasoning that predicts the post-SW-196 outcomes:
 | Pin (ruby) | sinatra v4.0.0 at sha `b626e2d82c23b4fde0b51782fd32ca27ccde1d1a` (matches manifest pin exactly, NOT STALE — unlike SW-192's flask pin) |
 | Two dispatches (ruby) | 2 × `graphi rebuild` of the same sinatra pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite F5 probe per dispatch |
 | Pin (other 8) | none at v3 measured standard; SW-196 dependency |
-| Provenance | ruby: candidate SHA `9f687849cec2b26311401191e90b60e40b5f6cee` (post-SW-188, per AC-7), runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, branch tip `da47330bd7d06498fa200bba8970449d69357bfe`, product binary digest `f9918e5cf5860c8c7b94d506aec43d5961ee1c44a49164f176056e13df1d8dd6` |
+| Provenance | ruby: candidate SHA `9f687849cec2b26311401191e90b60e40b5f6cee` (post-SW-188, per AC-7), runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, branch tip `da47330bd7d06498fa200bba8970449d69357bfe`, product binary digest `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` |
 | Ruby report artifacts | [`ruby-f5-measurement.md`](../ruby-f5-measurement.md) (the ruby measurement file); abstention doc at [`cross-file-residual-abstention.md`](../cross-file-residual-abstention.md) (covers the other 8) |
 | Ruby evidence | `evidence_uri` = `docs/rc/ruby-f5-measurement.md + docs/rc/parity-matrix-real-repo.md#cross-file-heuristic-residual--wp-xfh--gate-g4--measured-2026-08-23-w5i-sw195-at-post-sw188-candidate`; `sha` = `93e9fa19048215982751a77784593ee2b35a2c8fc4d70d5e50523a26f80c8f87` (sha256 of ruby-f5-measurement.md) |
 | Abstention evidence | `evidence_uri` = `docs/rc/cross-file-residual-abstention.md`; `sha` = `7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51` (sha256 of cross-file-residual-abstention.md) |
+
+> **CORRECTION 2026-08-24 (SW-192..197 integration, rebuild round 1, review
+> finding B1) — the `product_binary_digest` cell above is corrected in place.
+> Nothing else in this record is rewritten, and no verdict moves.** The cell
+> read `f9918e5cf5860c8c7b94d506aec43d5961ee1c44a49164f176056e13df1d8dd6`. That
+> value is **unreproducible** and it is withdrawn.
+>
+> **What was rebuilt, and what came out.** The canonical recipe this project
+> uses for a product-binary digest is `CGO_ENABLED=0 go build -trimpath
+> -buildvcs=false -o <bin> ./cmd/graphi` (`docs/decisions/2026-08-parity-candidate-move-adr0013.md`),
+> on go1.26.6 darwin/arm64 — the toolchain this record itself declares. Run at
+> SW-195's own declared branch tip `da47330b`, at SW-195's own commit `f4bd1d9`,
+> at the candidate `9f687849` and at the pre-integration base `3fe97f04`, it
+> produces `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf`
+> every time — the same digest at all four, because the four trees are
+> product-byte identical. Dropping `-buildvcs=false` changes nothing here (a
+> detached worktree stamps no VCS metadata: `go version -m` shows only
+> `-buildmode`, `-compiler`, `-trimpath=true`); dropping `-trimpath` makes the
+> digest path-dependent and therefore not a candidate identity at all. **No
+> recipe at any of those four commits produces the withdrawn value**, and no
+> binary with that digest exists on the machine this record was written on.
+>
+> **Why `0de6e64d…` is the right value rather than a guess.** The cell's own
+> parenthetical says *"current main binary, doc-only branch → UNCHANGED"*, and
+> `0de6e64d…` is what main builds to: SW-192 records it verbatim
+> (`docs/rc/python-f5-measurement.md` §11), SW-193's `ky` block in
+> `corpus/manifest.json` records it at the **same** `candidate_sha`,
+> `branch_tip` and `go_version` this record declares, and SW-190 / SW-204 /
+> SW-207 / SW-209 all carry it. `git log --all -S` finds the withdrawn token
+> introduced by exactly one commit in the history of any branch — `f4bd1d9`,
+> SW-195 itself. SW-195 never derived a digest at all: its verification argued
+> "digest UNCHANGED" *structurally*, from `git diff --stat` showing 0 Go-line
+> changes, and built no binary. The withdrawn token is a transcription error,
+> not the record of a different build.
+>
+> **Scope of the correction.** The ruby F5 counts, the two-dispatch agreement
+> and `GA-LANG-ruby-G4`'s PASS rest on the dispatches SW-195 ran and are not
+> re-taken here. What is corrected is the provenance anchor naming which binary
+> ran them.
+
+> **AMENDMENT 2026-08-24 (same integration, review finding B2) — the "Pin (other
+> 8)" row above, and the eight `corpus pin at v3? NO` cells in the table at the
+> head of this section, are HISTORY rather than the present state. Added, not
+> rewritten.** SW-196 landed in this same integration (merge `bf53c0f`) and
+> lifted **six** of the eight to a v3 pin in `corpus/manifest.json`: c (cjson),
+> cpp (nlohmann_json), c_sharp (Newtonsoft.Json), lua (lua-resty-core), php
+> (composer) and rust (serde). **bash and sql were not pinned and are not
+> pending**: SW-196 settled both by honest `no_pin` abstention, so their cells
+> stand as written. No G4 verdict moves either way — all eight rows are still
+> UNKNOWN, because none of the six landed pins has had the F5 dispatch run
+> against it. The full amendment, with refs, is in
+> `docs/rc/cross-file-residual-abstention.md`.
+
 
 ## Ruby measurement, in one paragraph
 

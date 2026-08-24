@@ -29,6 +29,37 @@
 | rust | NO | NO | UNKNOWN (abstention) | no v3 pin in corpus; SW-196 dependency |
 | sql | NO | NO | UNKNOWN (abstention) | no v3 pin in corpus; SW-196 dependency; ADR-W1 over-claim (JOIN/VIEW shape, not import shape) noted |
 
+> **AMENDMENT 2026-08-24 (SW-192..197 integration, rebuild round 1, review
+> finding B2) — six of the eight "no v3 pin in corpus; SW-196 dependency" cells
+> above are now HISTORY, not the present state. Added, not rewritten: the table
+> stands exactly as SW-195 published it, because it was true when published.**
+>
+> **SW-196 landed in this same integration** (merge `bf53c0f`) and lifted six of
+> the eight to a v3 pin in `corpus/manifest.json` — c to cjson `v1.7.19`, cpp to
+> nlohmann_json `v3.11.3`, c_sharp to Newtonsoft.Json `13.0.3`, lua to
+> lua-resty-core `v0.1.26`, php to composer `2.9.8`, rust to serde `v1.0.219`.
+> SW-196 added **eight** entries in all — those six v3 pins plus the two honest
+> `no_pin` abstentions below — and the merged manifest at `bf53c0f` carries 28
+> (20 already on main, 8 from SW-196). Each of those six languages'
+> `GA-LANG-<lang>-G5` rows now reads PASS citing exactly those pins, field by
+> field, machine-checked by `internal/corpus/pin_test.go`. For those six, read
+> every "SW-196 dependency" cell above as *"was blocked on SW-196; the pin has
+> since landed, and what remains is the measurement, not the pin"*.
+>
+> **bash and sql are NOT swept in, and their two cells stand unamended.** SW-196
+> did not pin them and was not supposed to: it filed an honest `no_pin`
+> abstention for each — the `bash-abstention` and `sql-abstention` entries in
+> `corpus/manifest.json` — each carrying a named `no_pin_reason` whose substance
+> is pinned by `internal/corpus/pin_test.go`. "No v3 pin in corpus" is still
+> literally true for bash and sql, their `GA-LANG-{bash,sql}-G5` rows stay
+> UNKNOWN, and no lift is owed for either.
+>
+> **Nothing above reads PASS wrongly, and no verdict moves here.** All eight
+> `GA-LANG-<lang>-G4` rows in the table above are still UNKNOWN, because a pin is
+> not a measurement: none of the six landed pins has had the SW-195 F5 dispatch
+> run against it. This amendment corrects the tense of a blocker, not a verdict.
+
+
 Nine languages, one corpus pin (sinatra), one measurement (ruby),
 eight abstentions. Ruby flips PASS; the other eight stay UNKNOWN
 with the abstention reason named in each row's `current` field.
@@ -87,6 +118,25 @@ named:
 | php | lift a PHP repo (e.g. composer, phpunit) to v3; the PendingRef parser gap (SW-194b.5) is tracked separately | **SW-196** |
 | rust | lift a Rust repo (e.g. serde, tokio) to v3 | **SW-196** |
 | sql | lift a SQL repo (e.g. sqlite, postgres) to v3; the SQL G4 measurement scope is the JOIN/VIEW shape (ADR-W1), not the import shape, per SW-183 | **SW-196** |
+
+> **AMENDMENT 2026-08-24 (SW-192..197 integration, rebuild round 1, review
+> finding B2) — the "owner story" column above is discharged, and the "unblock
+> work" column is done, for six of the eight rows. Added, not rewritten.**
+>
+> The lift named in the c, cpp, c_sharp, lua, php and rust rows **has happened**:
+> SW-196 landed those six pins at merge `bf53c0f` in this integration (the
+> repositories and refs are named in the amendment under the TL;DR above). For
+> those six the remaining work is no longer "lift a repo" but the second half of
+> each row — running the SW-195 measurement recipe over the landed pin — which
+> SW-196 does not own and which each `GA-LANG-<lang>-G4` row's `next_action`
+> tracks as `RESIDUALPINS-001`.
+>
+> The bash and sql rows are discharged **differently and deliberately**: SW-196
+> settled both by honest `no_pin` abstention rather than by a pin, so the "lift a
+> bash repo" / "lift a SQL repo" work named above is **not owed** and is not
+> merely outstanding. Their G5 rows stay UNKNOWN with the abstention reason
+> named, which is the same outcome this document argues for in section 1.
+
 
 SW-196 (corpus pins v3 for cross-file-heuristic residual) is the
 follow-on story that closes the eight abstentions. SW-195 names
@@ -186,7 +236,47 @@ does not declare the outcome in advance.
 | Branch | `sw-195-w5i-real-repo-parity-cross-file-residual` |
 | Branch tip | TBD (filled in at branch push) |
 | Candidate SHA | `9f687849cec2b26311401191e90b60e40b5f6cee` (post-SW-188, per SW-195 AC-7) |
-| Product binary digest | `f9918e5cf5860c8c7b94d506aec43d5961ee1c44a49164f176056e13df1d8dd6` (current main binary, doc-only branch → UNCHANGED) |
+| Product binary digest | `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` (current main binary, doc-only branch → UNCHANGED) |
 | Runner class | `Darwin-ARM64/apple-m2-max` |
 | Ruby disposition | PASS — F5 fan-out ABSENT, structural immunity confirmed |
 | Eight-language disposition | UNKNOWN (abstention) — no v3 corpus pin, SW-196 dependency |
+
+> **CORRECTION 2026-08-24 (SW-192..197 integration, rebuild round 1, review
+> finding B1) — the `product_binary_digest` cell above is corrected in place.
+> Nothing else in this record is rewritten, and no verdict moves.** The cell
+> read `f9918e5cf5860c8c7b94d506aec43d5961ee1c44a49164f176056e13df1d8dd6`. That
+> value is **unreproducible** and it is withdrawn.
+>
+> **What was rebuilt, and what came out.** The canonical recipe this project
+> uses for a product-binary digest is `CGO_ENABLED=0 go build -trimpath
+> -buildvcs=false -o <bin> ./cmd/graphi` (`docs/decisions/2026-08-parity-candidate-move-adr0013.md`),
+> on go1.26.6 darwin/arm64 — the toolchain this record itself declares. Run at
+> SW-195's own declared branch tip `da47330b`, at SW-195's own commit `f4bd1d9`,
+> at the candidate `9f687849` and at the pre-integration base `3fe97f04`, it
+> produces `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf`
+> every time — the same digest at all four, because the four trees are
+> product-byte identical. Dropping `-buildvcs=false` changes nothing here (a
+> detached worktree stamps no VCS metadata: `go version -m` shows only
+> `-buildmode`, `-compiler`, `-trimpath=true`); dropping `-trimpath` makes the
+> digest path-dependent and therefore not a candidate identity at all. **No
+> recipe at any of those four commits produces the withdrawn value**, and no
+> binary with that digest exists on the machine this record was written on.
+>
+> **Why `0de6e64d…` is the right value rather than a guess.** The cell's own
+> parenthetical says *"current main binary, doc-only branch → UNCHANGED"*, and
+> `0de6e64d…` is what main builds to: SW-192 records it verbatim
+> (`docs/rc/python-f5-measurement.md` §11), SW-193's `ky` block in
+> `corpus/manifest.json` records it at the **same** `candidate_sha`,
+> `branch_tip` and `go_version` this record declares, and SW-190 / SW-204 /
+> SW-207 / SW-209 all carry it. `git log --all -S` finds the withdrawn token
+> introduced by exactly one commit in the history of any branch — `f4bd1d9`,
+> SW-195 itself. SW-195 never derived a digest at all: its verification argued
+> "digest UNCHANGED" *structurally*, from `git diff --stat` showing 0 Go-line
+> changes, and built no binary. The withdrawn token is a transcription error,
+> not the record of a different build.
+>
+> **Scope of the correction.** The ruby F5 counts, the two-dispatch agreement
+> and `GA-LANG-ruby-G4`'s PASS rest on the dispatches SW-195 ran and are not
+> re-taken here. What is corrected is the provenance anchor naming which binary
+> ran them.
+
