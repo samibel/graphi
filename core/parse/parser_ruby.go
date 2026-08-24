@@ -171,19 +171,161 @@ func rubyResolveUses(w *cstWalk, n *gts.Node, inClass bool) {
 	}
 }
 
+// rubyScanBody walks one method body in TWO passes. Pass 1 (rubyCollectScope)
+// builds the method's binding table; pass 2 (rubyScanUses) records the call
+// sites. The split is required, not stylistic: pass 2 has to know whether a bare
+// `identifier` is a local read before it can decide whether the identifier is a
+// call site, and Ruby permits the read to appear textually before the binding it
+// resolves against (a block parameter, a rescue variable, a later assignment in
+// the same body).
 func rubyScanBody(w *cstWalk, n *gts.Node, ownerBare string) {
 	if n == nil {
 		return
 	}
+	sc := newRubyScope()
+	rubyCollectScope(w, n, sc)
+	rubyScanUses(w, n, ownerBare, sc)
+}
+
+// rubyScope is the per-method binding table pass 2 consults.
+//
+// `bound` holds NAMES that pass 1 saw bound as data inside this method —
+// parameters, assignment targets, block parameters, loop and rescue variables.
+// A read of such a name is a variable read, never a call.
+//
+// `consumed` holds the POSITIONS of identifier nodes pass 1 already accounted
+// for structurally: a `call` node's method and receiver identifiers (handled by
+// rubyHandleCall), the method's own name, and every binding occurrence. Position
+// keying rather than name keying is what lets `helper` stay a call site in one
+// place while a *different* identifier node is skipped in another.
+type rubyScope struct {
+	bound    map[string]struct{}
+	consumed map[TSPoint]struct{}
+}
+
+func newRubyScope() *rubyScope {
+	return &rubyScope{bound: map[string]struct{}{}, consumed: map[TSPoint]struct{}{}}
+}
+
+// consume marks one identifier node as structurally accounted for.
+func (s *rubyScope) consume(n *gts.Node) {
+	if n != nil {
+		s.consumed[nodePoint(n)] = struct{}{}
+	}
+}
+
+// bind records an identifier node as a data binding: the occurrence is consumed
+// and the NAME is suppressed for the rest of the method.
+func (s *rubyScope) bind(n *gts.Node, w *cstWalk) {
+	if n == nil {
+		return
+	}
+	s.consume(n)
+	if name := n.Text(w.src); name != "" {
+		s.bound[name] = struct{}{}
+	}
+}
+
+// skip reports whether pass 2 must leave this identifier alone.
+func (s *rubyScope) skip(n *gts.Node, w *cstWalk) bool {
+	if _, done := s.consumed[nodePoint(n)]; done {
+		return true
+	}
+	_, isBound := s.bound[n.Text(w.src)]
+	return isBound
+}
+
+// rubyCollectScope is pass 1: it walks the method subtree and records every
+// binding occurrence and every identifier a call node already owns.
+func rubyCollectScope(w *cstWalk, n *gts.Node, sc *rubyScope) {
+	if n == nil {
+		return
+	}
+	switch n.Type(w.lang) {
+	case "method", "singleton_method":
+		// The declaration's own name is not a use of it.
+		sc.consume(n.ChildByFieldName("name", w.lang))
+	case "method_parameters", "block_parameters", "lambda_parameters",
+		"exception_variable", "for":
+		rubyBindNames(w, n, sc)
+	case "assignment", "operator_assignment":
+		// Only the two target shapes that name LOCALS bind: `x = …` and
+		// `x, y = …`. An `obj.attr = …` target is a `call` node and is left to
+		// the "call" case below; an `a[0] = …` target reads `a` and must not
+		// suppress it.
+		if left := n.ChildByFieldName("left", w.lang); left != nil {
+			switch left.Type(w.lang) {
+			case "identifier":
+				sc.bind(left, w)
+			case "left_assignment_list":
+				rubyBindNames(w, left, sc)
+			}
+		}
+	case "call":
+		// rubyHandleCall already turns these two identifiers into a bare or
+		// selector PendingRef; pass 2 must not record them a second time under
+		// the wrong shape (a selector's method name is NOT a bare call site).
+		sc.consume(n.ChildByFieldName("method", w.lang))
+		if recv := n.ChildByFieldName("receiver", w.lang); recv != nil && recv.Type(w.lang) == "identifier" {
+			sc.consume(recv)
+		}
+	}
+	for i := 0; i < n.ChildCount(); i++ {
+		rubyCollectScope(w, n.Child(i), sc)
+	}
+}
+
+// rubyBindNames binds the NAMES declared by a parameter list, a multiple-
+// assignment target list, a `for` loop head or a rescue clause. A direct
+// identifier child is itself a name; a wrapper node (`b = 1`, `*c`, `k: 2`,
+// `&blk`) contributes its FIRST identifier child. Deeper identifiers — a
+// default-value expression such as `def f(b = helper)` — are deliberately left
+// unbound so the call inside the default is still seen.
+func rubyBindNames(w *cstWalk, list *gts.Node, sc *rubyScope) {
+	for i := 0; i < list.ChildCount(); i++ {
+		c := list.Child(i)
+		if c == nil {
+			continue
+		}
+		switch typ := c.Type(w.lang); {
+		case typ == "identifier":
+			sc.bind(c, w)
+		case typ == "destructured_parameter" || typ == "left_assignment_list":
+			rubyBindNames(w, c, sc)
+		case strings.HasSuffix(typ, "_parameter"):
+			sc.bind(childByType(c, "identifier", w.lang), w)
+		}
+	}
+}
+
+// rubyScanUses is pass 2: it records the method's call sites.
+//
+// SW-194b.5: a `call` node covers only the spellings that carry a receiver or an
+// argument list. Ruby's dominant spelling — receiver-less AND parenless, e.g.
+// `helper` inside `def checkout` — is a bare `identifier` node, grammatically
+// indistinguishable from a local-variable read. Before this pass those call
+// sites produced no PendingRef at all, so the linker had nothing to resolve
+// through the require's ambient directory and the graph could not answer "who
+// calls helper?" across files at the heuristic tier. Every identifier the scope
+// table did not claim as a binding or as a call node's own is therefore recorded
+// as a bare call site — the same inert PendingRef the parenthesised spelling
+// produces, resolved (or dropped and counted) by the linker, never fabricated
+// here.
+func rubyScanUses(w *cstWalk, n *gts.Node, ownerBare string, sc *rubyScope) {
 	for i := 0; i < n.ChildCount(); i++ {
 		c := n.Child(i)
 		if c == nil {
 			continue
 		}
-		if c.Type(w.lang) == "call" {
+		switch c.Type(w.lang) {
+		case "call":
 			rubyHandleCall(w, c, ownerBare)
+		case "identifier":
+			if !sc.skip(c, w) {
+				w.callBare(ownerBare, c.Text(w.src), nodePoint(c))
+			}
 		}
-		rubyScanBody(w, c, ownerBare)
+		rubyScanUses(w, c, ownerBare, sc)
 	}
 }
 

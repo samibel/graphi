@@ -231,3 +231,87 @@ func TestExtractRuby_Deterministic(t *testing.T) {
 		}
 	}
 }
+
+// rubyBareCallFixture exercises the SW-194b.5 emission: Ruby's dominant call
+// spelling is receiver-less AND parenless, which tree-sitter-ruby represents as
+// a bare `identifier` node — the SAME node it uses for a local-variable read and
+// for a parameter read. The fixture puts all three shapes in one file so the
+// emitter is pinned on the distinction, not just on the happy case.
+const rubyBareCallFixture = `def checkout
+  helper
+end
+
+def local_only
+  memo = 1
+  memo
+end
+
+def with_param(arg, opt = 1, *rest, &blk)
+  arg
+  opt
+  rest
+  blk
+end
+
+def blocky
+  [1].each { |it| it }
+end
+
+def rescued
+  begin
+    guarded
+  rescue => err
+    err
+  end
+end
+`
+
+// TestExtractRuby_BareParenlessCallIsAPendingRef is the SW-194b.5 AC-1 pin for
+// Ruby. `helper` in `def checkout; helper; end` is a cross-file call site with
+// no receiver and no argument list; before SW-194b.5 the Ruby extractor scanned
+// only `call` CST nodes, so this spelling produced NO PendingRef and the linker
+// had nothing to resolve through the require's ambient directory — the graph
+// could not answer "who calls helper?" across files. The emission site is
+// core/parse/parser_ruby.go's rubyScanUses.
+func TestExtractRuby_BareParenlessCallIsAPendingRef(t *testing.T) {
+	res, err := NewRubyParser().Parse(context.Background(), "app/main.rb", []byte(rubyBareCallFixture))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	got := map[string]bool{}
+	for _, p := range res.PendingRefs {
+		if p.Selector {
+			continue
+		}
+		got[p.FromQN+"."+p.Name] = true
+	}
+
+	// The bare, receiver-less, parenless call sites MUST be recorded.
+	for _, want := range []string{"app.checkout.helper", "app.rescued.guarded"} {
+		if !got[want] {
+			t.Errorf("bare parenless call %q produced no PendingRef; got %+v", want, res.PendingRefs)
+		}
+	}
+
+	// Locally-bound names are NOT call sites and must NOT be recorded: a local
+	// assignment target, every parameter spelling, a block parameter and a
+	// rescue exception variable. Emitting these is the false-positive failure
+	// mode the emitter's scope table exists to prevent.
+	for _, never := range []string{
+		"app.local_only.memo",
+		"app.with_param.arg", "app.with_param.opt", "app.with_param.rest", "app.with_param.blk",
+		"app.blocky.it",
+		"app.rescued.err",
+	} {
+		if got[never] {
+			t.Errorf("locally-bound name %q was recorded as a call PendingRef; got %+v", never, res.PendingRefs)
+		}
+	}
+
+	// The method's own name is a declaration, not a use.
+	for _, never := range []string{"app.checkout.checkout", "app.blocky.blocky"} {
+		if got[never] {
+			t.Errorf("method name %q was recorded as a call PendingRef", never)
+		}
+	}
+}

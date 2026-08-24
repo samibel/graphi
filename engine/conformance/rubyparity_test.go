@@ -100,7 +100,7 @@ end
 		{
 			id:          "ruby_add_call_heuristic",
 			kind:        kindChangeClass,
-			description: "A new cross-file require call is added: `require_relative '../lib/util'`. The resolver's exact-path require path. The witness pins the heuristic tier on the resulting `imports` edge from the importing file node to the required file node — the Ruby resolver MUST NOT mint a confirmed edge (the G2SUB never-confirmed half). (Bare-call PendingRef emission is the parser's job; this row covers the resolver's contract on the `require` itself.)",
+			description: "A new cross-file require call is added: `require_relative '../lib/util'`, together with the receiver-less, parenless call `helper` it enables. The witness pins the CALL-LEVEL edge, not the file-level one: the caller symbol `app.checkout` must carry a `calls` edge to `lib.helper` at HEURISTIC tier (model.TierHeuristic) — the Ruby resolver's only tier, and a confirmed edge here would be the G2SUB never-confirmed half violated. SW-194b.5 added the emission this depends on: tree-sitter-ruby represents `helper` as a bare `identifier`, so the extractor recorded no PendingRef for it and the resolver had nothing to bind through the require's ambient directory (core/parse/parser_ruby.go rubyScanUses -> cstWalk.callBare). Asserting only the file→file `imports` edge, as this row did before, cannot tell that graph apart from one that answers no cross-file caller question at all.",
 			seed: map[string]string{
 				"app/main.rb": `def checkout
   0
@@ -120,16 +120,18 @@ end
 `)
 			},
 			witness: func(g *graphView) error {
-				// The cross-file require must produce an `imports` edge
-				// from app/main.rb to lib/util.rb at HEURISTIC tier —
-				// the resolver's only tier. A confirmed edge here would
-				// be the G2SUB never-confirmed half violated.
-				e, ok := g.fileEdge("app/main.rb", "imports", "lib/util.rb")
+				// The cross-file require must resolve the bare CALL, not
+				// merely the file: app.checkout --calls--> lib.helper at
+				// HEURISTIC tier — the resolver's only tier. A confirmed
+				// edge here would be the G2SUB never-confirmed half
+				// violated; an absent edge is the SW-194b.5 soundness gap
+				// this row was written to close.
+				e, ok := g.edge("app.checkout", "calls", "lib.helper")
 				if !ok {
-					return fmt.Errorf("imports edge app/main.rb --imports--> lib/util.rb absent; graph has %s", g.edgeList())
+					return fmt.Errorf("calls edge app.checkout --calls--> lib.helper absent; graph has %s", g.edgeList())
 				}
 				if e.Tier() != heuristic {
-					return fmt.Errorf("imports edge app/main.rb --imports--> lib/util.rb has tier %q, want %q (wrong mechanism minted it)", e.Tier(), heuristic)
+					return fmt.Errorf("calls edge app.checkout --calls--> lib.helper has tier %q, want %q (wrong mechanism minted it)", e.Tier(), heuristic)
 				}
 				return nil
 			},
