@@ -1137,7 +1137,7 @@
    "scenario_ref": "hero-bash",
    "searches": [
     {
-     "query": "greet",
+     "query": "hello",
      "expect_nonempty": true
     }
    ],
