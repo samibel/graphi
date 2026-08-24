@@ -16,7 +16,8 @@ const GrandfatherPath = "docs/rc/citation-grandfather.yaml"
 //
 //	target — the exact violation key (Scope :: rule :: target) it suppresses
 //	reason — why it cannot pass yet, in words a reviewer can check
-//	owner  — the story that drains it. An entry with no owner is a violation.
+//	owner  — the story id OR the filed defect id that drains it. An entry with
+//	         no owner is a violation.
 //
 // The list is a RATCHET: it can only shrink. An entry whose target no longer
 // produces a violation is UNUSED and fails -check with "delete this entry", so a
@@ -33,7 +34,30 @@ type Grandfather struct {
 	Entries []GrandfatherEntry
 }
 
+// ownerRe matches a story id: SW-NNN, with the optional letter/dot suffix the
+// project uses for slices (SW-194-c, SW-194b.5).
 var ownerRe = regexp.MustCompile(`^SW-[0-9]+[A-Za-z0-9.-]*$`)
+
+// defectRe matches a FILED DEFECT id — the project's screaming-kebab shape,
+// PARITY-RUBY-DRIVER-001 / PYTHONFANOUT-001 / LINK-002.
+//
+// Why a defect id is a legal owner. The ratchet's whole force is that someone
+// is on the hook to drain the entry, and for a breach whose fix is a filed
+// DEFECT rather than a scheduled story, the only honest owner is that defect.
+// Requiring a story id in that case does not produce an owner — it produces a
+// story id that LOOKS like one, and the nearest plausible story is the one that
+// wrote the breach, which is already `done` and never lands the cited artifact.
+// That is how every live entry in docs/rc/citation-grandfather.yaml came to
+// point at a closed ticket (found by review of the SW-192..197 integration).
+// The rule stays syntactic — this checker does not read the story tracker and
+// cannot tell open from closed — but it no longer forces the lie.
+var defectRe = regexp.MustCompile(`^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-[0-9]{3}$`)
+
+// validOwner reports whether s names something that can drain an entry.
+func validOwner(s string) bool {
+	s = strings.TrimSpace(s)
+	return ownerRe.MatchString(s) || defectRe.MatchString(s)
+}
 
 // LoadGrandfather reads the checked-in ratchet list. A missing file is legal and
 // means an empty list — the end state this story is aiming at.
@@ -137,9 +161,9 @@ func (g Grandfather) Validate() []CitationViolation {
 			out = append(out, CitationViolation{Scope: scope, Rule: RuleGrandfatherMalformed,
 				Target: e.Target, Detail: "entry has a blank reason — say why it cannot pass yet"})
 		}
-		if !ownerRe.MatchString(strings.TrimSpace(e.Owner)) {
+		if !validOwner(e.Owner) {
 			out = append(out, CitationViolation{Scope: scope, Rule: RuleGrandfatherNoOwner,
-				Target: e.Target, Detail: fmt.Sprintf("owner %q is not a story id (want SW-NNN) — an entry with no owner story is a violation", e.Owner)})
+				Target: e.Target, Detail: fmt.Sprintf("owner %q is neither a story id (SW-NNN) nor a filed defect id (PARITY-RUBY-DRIVER-001) — an entry nobody is on the hook for is a violation", e.Owner)})
 		}
 		if seen[e.Target] {
 			out = append(out, CitationViolation{Scope: scope, Rule: RuleGrandfatherMalformed,

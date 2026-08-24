@@ -431,7 +431,13 @@ of the `tests/typing/__init__.py` package — both rebuilds of both
 candidates sum to 70 and produce the same per-importer fan-out. The
 distribution shift is not a measurement defect: it is the row for
 `tests/typing/__init__.py` flipping sides depending on which file the
-internal indexing ordered first. The mechanism (clause-keyed fan-out
+internal indexing ordered first.
+
+> **ADDENDUM 2026-08-24 (SW-192..197 integration, rebuild round 1) — added,
+> nothing above is rewritten.** "Not a measurement defect" is true and it is
+> only half the sentence. What it leaves standing is a **product** defect, now
+> filed as `PYTHONORDER-001` in section 12 below. Until that section existed no
+> id tracked it: `PYTHONFANOUT-001` owns the fan-out, not the ordering. The mechanism (clause-keyed fan-out
 over `tests/typing/` for every `import typing as t` in `src/flask/*.py`)
 is unchanged. The total is the byte-identical number the F5 finding
 turns on, and that is what AC-2 / SW-181 AC-3 binds.
@@ -450,3 +456,56 @@ and `~/.graphi/9ee460bb8e54e45e/snapshots/flask-{A,B}.sqlite`. The
 matrix document section `docs/rc/parity-matrix-real-repo.md` is
 re-published at this candidate as a D6 add-on above the preserved
 pre-SW-188 section.
+
+## 12. PYTHONORDER-001 — the fan-out's target distribution is order-dependent, filed
+
+**Status: OPEN, DISCLOSED, NOT fixed, and NOT re-measured here. Filed
+2026-08-24 by the SW-192..197 integration (rebuild round 1), on the review
+finding that section 11's note names a product defect and leaves it
+untracked.**
+
+**What was observed, in section 11's own numbers.** The 70 spurious `imports`
+edges distribute over the three `tests/typing/typing_*.py` targets as
+**24/24/22** at the pre-SW-188 candidate and **23/24/23** at the post-SW-188
+one. The total is 70 on both sides, the per-importer fan-out is the same, and
+**both dispatches at a given candidate agree with each other** — A and B are
+byte-identical at every candidate measured. The shift is candidate-to-candidate,
+not dispatch-to-dispatch.
+
+**Why that is a defect and not a curiosity.** Section 11 explains it as the row
+for `tests/typing/__init__.py` "flipping sides depending on which file the
+internal indexing ordered first". Read literally, that says a **product-visible
+edge target is selected by indexing order**. The project's standards make
+determinism a first-class convention — anything order-sensitive in ingest output
+must be byte-reproducible, and the convention carves out no exception for
+`heuristic`-tier edges. An edge set that is stable across two dispatches but
+moves when an unrelated commit changes traversal order is reproducible by luck,
+not by construction: the two-dispatch discipline cannot see it, because both
+dispatches share the ordering.
+
+| field | value |
+|---|---|
+| id | PYTHONORDER-001 |
+| title | The python clause fan-out picks WHICH colliding target each edge lands on by indexing order, so an unrelated change to traversal order redistributes product-visible edges |
+| shape | with `>1` directory declaring the same clause, `clausePackageFileNodes` (`engine/link/resolve_common.go`) returns the file nodes in the order the index yields them; the per-target distribution follows that order, and the `tests/typing/__init__.py` row moves between targets when it changes |
+| observed | flask, `tests/typing/typing_app_decorators` / `error_handler` / `route` = 24/24/22 at the ADR 0011 candidate, 23/24/23 at the post-SW-188 candidate; total 70 in both, both dispatches agreeing at each candidate |
+| trigger | any commit that changes index insertion or traversal order — SW-188 touched only JVM paths and still moved this distribution |
+| blast radius | the DISTRIBUTION only. The total edge count, the importer set and the fan-out verdict are stable, and nothing that currently reads PASS depends on it (see below) |
+| relationship to PYTHONFANOUT-001 | disjoint. PYTHONFANOUT-001 is that the fan-out exists at all — the resolver emits an edge to every directory declaring the clause. PYTHONORDER-001 is that WHICH edge lands WHERE is order-dependent. A fix for the first would very likely dissolve the second (one target per import path leaves nothing to order), but it is not the same claim and must not be closed by assumption |
+| ADR required | inherits PYTHONFANOUT-001's — a fix is a product-byte change that moves the candidate |
+| repro | section 11 above, plus the pre-SW-188 section it compares against; two dispatches at each candidate |
+
+**Nothing that reads PASS rests on this, stated so the filing is not read as
+larger than it is.** `GA-LANG-python-G4` is **UNKNOWN** and stays UNKNOWN. The
+four rows whose distribution moved are python's, and every language whose G4
+currently reads PASS — the TS family and ruby — resolves through the exact-path
+`requireBinder` / `importFileTargets` shape, which produces one target per
+import specifier and so has no set of tied candidates to order. This is a defect
+filed against an already-red language, not a crack under a green one.
+
+**What is NOT measured, deliberately:** whether the ordering is stable across
+runs on a DIFFERENT machine or filesystem (every observation here is one runner
+class), whether other clause-based resolvers — `pkgImportPaths` /
+`clausePackageFileNodes` is shared with c_sharp and rust — exhibit it, and
+whether any ordering is canonical rather than incidental. The fix and the
+measurement both belong to the PYTHONFANOUT-001 work.

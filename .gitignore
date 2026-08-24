@@ -47,3 +47,11 @@ Thumbs.db
 # in CI; never checked in (checked-in run evidence lives under docs/eval/runs/).
 /docs/release-scorecard.json
 /docs/release-scorecard.md
+
+# graphi's own index artifacts. `graphi rebuild`/`index` drops these beside the
+# tree it indexes, so running the tool over a checked-in fixture leaves them in
+# the working tree. Two of them (corpus/fixtures/hero-c-cpp/ingest-meta.db and
+# corpus/fixtures/hero-csharp/ingest-meta.db) were committed by accident and
+# excluded during the SW-192..197 integration; nothing stopped them the first
+# time, so ignore the shape rather than the two paths.
+ingest-meta.db

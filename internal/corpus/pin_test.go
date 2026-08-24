@@ -119,9 +119,14 @@ func TestCheckedInManifest_V3CorpusPins(t *testing.T) {
 		}
 
 		// V3 pin branch: every required field must be present.
-		if e.URL == "" {
-			t.Errorf("language %q: v3 pin entry has no url", lang)
-		}
+		//
+		// There is deliberately no `e.URL == ""` check here. The indexing loop
+		// above admits an entry only if it has a url or declares no_pin, and
+		// the no_pin branch has already continued, so every entry reaching this
+		// point has a non-empty url by construction — a check for the empty
+		// case would be unreachable and would read as coverage it does not
+		// provide. The url's VALUE is still checked below, against the
+		// audit-named pin in v3PinnedLangs.
 		if e.Ref == "" {
 			t.Errorf("language %q: v3 pin entry has no ref (release-tag)", lang)
 		}

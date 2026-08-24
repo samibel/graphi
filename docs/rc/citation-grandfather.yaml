@@ -8,8 +8,13 @@
 # because the artifact they cite is work that has not happened yet. Each one is
 # listed here with the story that drains it.
 #
-# HOW IT RATCHETS. Every field is mandatory. An entry whose `owner:` is not a story
-# id is a violation. An entry whose target NO LONGER produces a violation is
+# HOW IT RATCHETS. Every field is mandatory. An entry whose `owner:` is neither a
+# story id (SW-NNN) nor a filed defect id (PARITY-RUBY-DRIVER-001) is a violation.
+# A defect id is legal on purpose: when the fix is a filed defect rather than a
+# scheduled story, naming the nearest story names the one that WROTE the breach,
+# which is already done and never lands the artifact — an owner in form only. The
+# rule stays syntactic; `-check` does not read the tracker and cannot tell an open
+# owner from a closed one, so a stale owner is a review finding, not a gate failure. An entry whose target NO LONGER produces a violation is
 # UNUSED, and `-check` fails with "DELETE THIS ENTRY" — so the list can only ever
 # shrink. It is not a place to park a new breach: a citation added after this story
 # fails the gate, and the fix is the citation, not a new line here.
@@ -34,8 +39,8 @@
 
 entries:
   - target: "docs/rc/parity-matrix-real-repo.md :: missing-path :: docs/rc/parity-classes-ts-real-repo.yaml"
-    reason: "The record describes, in the future tense, the shape a TypeScript real-repo parity driver would have, and names the parity-class YAML it would ship. The file is real work that has not been done: git log --all finds no commit that ever added it. This is a citation of a planned artifact, and it resolves the moment the artifact lands."
-    owner: SW-193
+    reason: "The record describes, in the future tense, the shape a TypeScript real-repo parity driver would have, and names the parity-class YAML it would ship. The file is real work that has not been done: git log --all finds no commit that ever added it. This is a citation of a planned artifact, and it resolves the moment the artifact lands. RE-OWNED 2026-08-24 (SW-192..197 integration, rebuild round 1): the owner was SW-193, which is status done and never lands this artifact - SW-193's own record files the harness gap as PARITY-TS-FAMILY-DRIVER-001 at W6+ scope. The defect is what drains this entry, so the defect is what it names. An owner that is already closed gives the ratchet nothing to shrink against."
+    owner: PARITY-TS-FAMILY-DRIVER-001
 
   - target: "docs/decisions/2026-08-language-ga-wpj11-flip-gate.md :: missing-path :: docs/bench/lang-budget.md"
     reason: "The path is simply wrong: the binary-size budget record is bench/lang-budget.md, not docs/bench/lang-budget.md. SW-205 cannot fix it in place because docs/decisions/2026-08-language-ga-wpj11-flip-gate.md is held by SW-208's open PR #133, and two branches editing one record is how a rewrite happens by accident. SW-208 corrects the prefix on its own branch."
@@ -49,9 +54,9 @@ entries:
   # reason, and it resolves the moment the artifact lands. It is not a new breach
   # parked here: the citation predates the rule.
   - target: "docs/rc/parity-matrix-real-repo.md :: missing-path :: docs/rc/parity-classes-ruby-real-repo.yaml"
-    reason: "SW-195's W5.i section describes, in the future tense, the shape a Ruby real-repository parity driver would have (rubyrun.go, rubysource.go, rubyclasses.go, the -family ruby wiring) and names the parity-class YAML it would ship. The surrounding prose states in bold that none of it exists and that the work is W6+ scope, filed as PARITY-RUBY-DRIVER-001. This is a citation of a planned artifact, and it resolves the moment the artifact lands."
-    owner: SW-195
+    reason: "SW-195's W5.i section describes, in the future tense, the shape a Ruby real-repository parity driver would have (rubyrun.go, rubysource.go, rubyclasses.go, the -family ruby wiring) and names the parity-class YAML it would ship. The surrounding prose states in bold that none of it exists and that the work is W6+ scope, filed as PARITY-RUBY-DRIVER-001. This is a citation of a planned artifact, and it resolves the moment the artifact lands. RE-OWNED 2026-08-24 (SW-192..197 integration, rebuild round 1): the owner was SW-195, which is status done and never lands this artifact - the sentence above already names PARITY-RUBY-DRIVER-001 as the W6+ work that does. The defect is what drains this entry, so the defect is what it names."
+    owner: PARITY-RUBY-DRIVER-001
 
   - target: "docs/rc/ruby-f5-measurement.md :: missing-path :: docs/rc/parity-classes-ruby-real-repo.yaml"
-    reason: "The same future-tense harness-shape paragraph as the entry above, repeated in SW-195's ruby measurement record. Same planned artifact, same owner, drains with the same story."
-    owner: SW-195
+    reason: "The same future-tense harness-shape paragraph as the entry above, repeated in SW-195's ruby measurement record. Same planned artifact, same owner, drains with the same story. RE-OWNED 2026-08-24 (SW-192..197 integration, rebuild round 1), for the reason stated on the entry above: the owner was SW-195, which is status done."
+    owner: PARITY-RUBY-DRIVER-001

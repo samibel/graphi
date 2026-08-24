@@ -262,6 +262,16 @@ func LoadManifest(path string) (Manifest, error) {
 	if len(m.Entries) == 0 {
 		return Manifest{}, fmt.Errorf("corpus: manifest %q has no entries", path)
 	}
+	// NOTE (CORPUSDUP-001, filed 2026-08-24): this loop validates that a name is
+	// non-empty and never that it is UNIQUE, while the parity runner caches a
+	// materialized clone and its parsed model by exactly that name
+	// (internal/parity/run.go, Runner.materialize). Two entries sharing a name
+	// therefore make the second silently reuse the first's tree, and the run
+	// publishes a parity row for one repository measured against another. No
+	// duplicate exists at HEAD, so this is latent, not live — but the manifest
+	// grew from 20 entries to 36 in one integration, twice by append-at-the-tail
+	// merges resolved by keeping both blocks, which is precisely how a collision
+	// arrives.
 	for i, e := range m.Entries {
 		if e.Name == "" {
 			return Manifest{}, fmt.Errorf("corpus: entry %d has no name", i)
