@@ -62,6 +62,30 @@
 #
 # SYMBOL SHAPE. nothing at all: a JSON document contributes NO node to the graph, which is why this family's rows witness at the PARSE BOUNDARY and use a sibling Markdown document as the control anchor
 #
+# WHERE THE PARSE-BOUNDARY HALF READS FROM, BECAUSE IT IS THE HONESTY POINT.
+# It reads the row's document BACK OUT OF THE FIXTURE TREE after the row's
+# change has been applied — not out of a constant in the harness table — and
+# requires the bytes on disk to be the document the row asserts over BEFORE it
+# parses anything. That is what makes these rows observe their own change: a
+# row whose change did nothing leaves the seed document on disk and fails
+# there. It is also what binds the harness table's document literal to the
+# literal its change writes, so the two cannot drift apart unnoticed.
+#
+# RED WITHOUT THE CHANGE — WHERE IT HOLDS AND WHERE IT DOES NOT. The graph half
+# of every row is an ABSTENTION (no node may come from the .json path), and an
+# abstention holds on the seed tree by construction, so it can never be red
+# without the change. That is a property of a parse-only language, not a
+# defect, and it is why the parse-boundary half carries the burden. FIVE of the
+# six rows are red without their change and this was demonstrated by neutering
+# each row's change and observing the failure: json_add_file (the document is
+# not there), json_modify_file and json_nested_document (the document on disk
+# is the seed), json_reorder_members (the seed bytes are not the permuted
+# bytes) and json_delete_file (the document is still there). The SIXTH,
+# json_reparse_identical_bytes, is NOT — its change is byte-identical to the
+# seed by definition, so nothing can distinguish it from a change that did
+# nothing. That limit is stated in its row note and in GA-LANG-json-G3 rather
+# than claimed away.
+#
 # `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
 # harness row binds to it. Change the label, never the id. Ids are prefixed
 # `json_` so they stay globally unique across every family's twin.
@@ -87,7 +111,14 @@
 #   deferred        SW-199 adds this fourth member deliberately: the language-agnostic
 #                   ingest classes are neither inapplicable to this language nor
 #                   witnessed by this table, and claiming either would be false.
-#                   A deferred disposition MUST name a deferred_to.
+#                   A deferred disposition MUST name a deferred_to, and the
+#                   guard admits exactly TWO shapes: a story id (SW-nnn),
+#                   or the literal prefix `UNOWNED — `. Arbitrary prose no
+#                   longer passes, so a placeholder can never read as an
+#                   owner and `grep 'deferred_to: "UNOWNED'` enumerates
+#                   every open debt. Naming a story that does not exist to
+#                   satisfy the guard would be the false claim this rule is
+#                   written against, which is why UNOWNED stays legal.
 
 parity_classes:
   - id: "json_add_file"
@@ -105,7 +136,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W5-PARSE.c"
-    note: "A new JSON document arrives in a new directory. The parse-boundary half parses its bytes three times and requires an identical canonical re-encoding and identical parse metadata each time; its document predicate requires the document's two members, so a parse that returned an empty tree fails. The graph half requires that NO node came from the new path — the parse-only abstention — while the control heading from the sibling Markdown document is present, so the abstention cannot be satisfied by a tree that was never indexed."
+    note: "A new JSON document arrives in a new directory. The parse-boundary half reads vendor/config.json back out of the FIXTURE TREE, so a change that never created it fails on the missing document; it then parses those on-disk bytes three times and requires an identical canonical re-encoding and identical parse metadata each time. Its document predicate requires the document's two members and no others, so a parse that returned an empty tree fails. The graph half requires that NO node came from the new path — the parse-only abstention — while the control heading from the sibling Markdown document is present, so the abstention cannot be satisfied by a tree that was never indexed."
 
   - id: "json_modify_file"
     kind: "change_class"
@@ -122,7 +153,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W5-PARSE.c"
-    note: "An indexed JSON document is rewritten in place with an added member. The document predicate requires the NEW member alongside both pre-existing members and pins the exact member count, so an apply that did nothing fails at the parse boundary. The graph half requires the abstention over the rewritten path and the control heading."
+    note: "An indexed JSON document is rewritten in place with an added member. The parse-boundary half reads api/schema.json back out of the FIXTURE TREE and requires the bytes on disk to be the rewritten document; it then requires the decoded root to carry the NEW member alongside both pre-existing members and no others. A change that did nothing therefore fails at the parse boundary — first on the bytes, then again on the decoded value — and this was demonstrated by neutering the change and observing the failure. The graph half requires the abstention over the rewritten path and the control heading; being an abstention it holds on the seed too, so it is the parse-boundary half that observes this change."
 
   - id: "json_delete_file"
     kind: "change_class"
@@ -139,7 +170,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W5-PARSE.c"
-    note: "The indexed JSON document is deleted. STATED RATHER THAN OVERCLAIMED: for a parse-only language a delete has NO observable graph consequence, so this row's witness is deliberately a control-only witness — it asserts that removing a file the graph never saw leaves the sibling Markdown document's symbol intact and the whole-tree byte parity undisturbed. There is no parse-boundary half, because there is no document left to parse. The row is carried because delete_file is a real Go class that must be dispositioned for this language, and `adapted` with this reason is the honest disposition."
+    note: "The indexed JSON document is deleted. STATED RATHER THAN OVERCLAIMED: for a parse-only language a delete has NO observable graph consequence, so this row's GRAPH witness is deliberately a control-only witness — it asserts that removing a file the graph never saw leaves the sibling Markdown document's symbol intact and the whole-tree byte parity undisturbed. The parse-boundary half asserts the one thing that IS observable and asserts it against the fixture tree: api/schema.json must be GONE from disk, so a delete that did not happen fails there. This row alone carries no decoded-value predicate, because there is no document left to parse. The row is carried because delete_file is a real Go class that must be dispositioned for this language, and `adapted` with this reason is the honest disposition."
 
   - id: "json_nested_document"
     kind: "change_class"
@@ -156,7 +187,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W5-PARSE.c"
-    note: "A deeply nested document (object inside array inside object) replaces the flat one. The document predicate walks into the nesting and requires the leaf value, so a parser that flattened or truncated the structure fails; the three-pass canonical re-encoding is what pins determinism over the nested shape, where a map-iteration-order defect would surface first."
+    note: "A deeply nested document (object inside array inside object) replaces the flat one. The parse-boundary half reads the rewritten api/schema.json back out of the FIXTURE TREE, so the flat seed a dead change leaves behind fails on the bytes and again on the decoded shape. The document predicate walks into the nesting and requires the leaf value, so a parser that flattened or truncated the structure fails; the three-pass canonical re-encoding is what pins determinism over the nested shape, where a map-iteration-order defect would surface first."
 
   - id: "json_reorder_members"
     kind: "change_class"
@@ -173,7 +204,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W5-PARSE.c"
-    note: "The members of the object are permuted with no change to any value. RFC 8259 §4 states an object is an UNORDERED collection, so the permuted document must decode to a structurally identical value — and this row pins that by requiring the canonical re-encoding to equal the base document's, byte for byte. It is the one row whose claim is not merely `stable across passes` but `stable across a source permutation`, which is where a member-order-dependent parser would fail."
+    note: "The members of the object are permuted with no change to any value. RFC 8259 §4 states an object is an UNORDERED collection, so the permuted document must decode to a structurally identical value — and this row pins that by requiring the canonical re-encoding to equal the base document's, byte for byte. It is the one row whose claim is not merely `stable across passes` but `stable across a source permutation`, which is where a member-order-dependent parser would fail. Its DECODED value equals the seed's by design, so what makes it red without its change is the SOURCE side: the parse-boundary half requires the bytes on disk to be the permuted document, which the un-permuted seed is not."
 
   - id: "json_reparse_identical_bytes"
     kind: "change_class"
@@ -190,7 +221,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W5-PARSE.c"
-    note: "The indexed JSON document is rewritten with BYTE-IDENTICAL content. The drift scanner sees an empty drift set and Reconcile short-circuits, so the incremental graph must equal the full graph over unchanged bytes; the parse-boundary half re-parses the same bytes and pins the same canonical re-encoding and the same content hash. Its predicates are deliberately semantics-preserving — the row's force comes from the runner's two independent full passes and the three parse-boundary passes."
+    note: "The indexed JSON document is rewritten with BYTE-IDENTICAL content. The drift scanner sees an empty drift set and Reconcile short-circuits, so the incremental graph must equal the full graph over unchanged bytes; the parse-boundary half re-reads the document from the fixture tree and pins the same canonical re-encoding and the same content hash across three parses. STATED AS A LIMIT RATHER THAN CLAIMED AWAY: this is the ONE json row that is not red without its change, and it cannot be — the change is byte-identical to the seed, so nothing could distinguish it from a change that did nothing. The row's force comes from the runner's two independent full passes and the three parse-boundary passes."
 
 go_class_applicability:
   - go_class: "add_file"
@@ -203,13 +234,13 @@ go_class_applicability:
     disposition: "adapted"
     witnessed_by: "json_modify_file"
     deferred_to: ""
-    reason: "A rewrite of a .json document is real and observable AT THE PARSE BOUNDARY, where its decoded value changes; it is invisible in the graph, so the class is adapted rather than applicable."
+    reason: "A rewrite of a .json document is real and observable AT THE PARSE BOUNDARY, where the harness reads the rewritten document back out of the fixture tree and its decoded value differs from the seed's; it is invisible in the graph, so the class is adapted rather than applicable."
 
   - go_class: "delete_file"
     disposition: "adapted"
     witnessed_by: "json_delete_file"
     deferred_to: ""
-    reason: "A delete is a real change set, but for a parse-only language it has no observable graph consequence; the adapted form asserts the sibling document and the whole-tree byte parity survive it. The row note states this limit rather than dressing it up."
+    reason: "A delete is a real change set, but for a parse-only language it has no observable graph consequence; the adapted form asserts the sibling document and the whole-tree byte parity survive it, plus the one fact that IS observable — the document is gone from the fixture tree. The row note states this limit rather than dressing it up."
 
   - go_class: "rename_symbol"
     disposition: "not_applicable"

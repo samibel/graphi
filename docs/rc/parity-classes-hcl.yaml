@@ -87,7 +87,14 @@
 #   deferred        SW-199 adds this fourth member deliberately: the language-agnostic
 #                   ingest classes are neither inapplicable to this language nor
 #                   witnessed by this table, and claiming either would be false.
-#                   A deferred disposition MUST name a deferred_to.
+#                   A deferred disposition MUST name a deferred_to, and the
+#                   guard admits exactly TWO shapes: a story id (SW-nnn),
+#                   or the literal prefix `UNOWNED — `. Arbitrary prose no
+#                   longer passes, so a placeholder can never read as an
+#                   owner and `grep 'deferred_to: "UNOWNED'` enumerates
+#                   every open debt. Naming a story that does not exist to
+#                   satisfy the guard would be the false claim this rule is
+#                   written against, which is why UNOWNED stays legal.
 
 parity_classes:
   - id: "hcl_add_file"

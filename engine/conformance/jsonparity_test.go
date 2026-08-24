@@ -16,14 +16,36 @@ package conformance_test
 // So this family's rows witness in TWO halves, and the YAML row notes say which
 // half carries which claim:
 //
-//	PARSE-BOUNDARY HALF (where JSON's AST actually is). The production JSON
-//	parser is run over the row's document bytes THREE times, and the canonical
-//	re-encoding of the resulting structural root — together with the parse
-//	metadata (language, content hash, size) — must be byte-identical across all
-//	three. This is AC-4's "same input bytes -> same AST, asserted at byte level
-//	on the AST's serialization" for a language whose AST the store never sees.
-//	Each row also carries a `docWitness` over the parsed value, so a row whose
-//	document changed shape fails rather than passing on an empty tree.
+//	PARSE-BOUNDARY HALF (where JSON's AST actually is). It reads the row's
+//	document BACK OUT OF THE FIXTURE TREE, after `apply` has run — not out of a
+//	constant on the row — which is the property that makes this half observe the
+//	change instead of restating it. The bytes on disk must equal the row's `doc`
+//	before anything is parsed, so a row whose `apply` did nothing, wrote the
+//	wrong path, or drifted away from the document the row asserts over fails
+//	HERE. The production JSON parser is then run over those on-disk bytes THREE
+//	times, and the canonical re-encoding of the resulting structural root —
+//	together with the parse metadata (language, content hash, size) — must be
+//	byte-identical across all three. This is AC-4's "same input bytes -> same
+//	AST, asserted at byte level on the AST's serialization" for a language whose
+//	AST the store never sees. Each row also carries a `docWitness` over the
+//	parsed value, so a row whose document changed shape fails rather than
+//	passing on an empty tree.
+//
+//	RED WITHOUT THE CHANGE, AND WHERE IT IS NOT. Because the graph half is an
+//	ABSTENTION (no node may come from the .json path) it holds on the seed tree
+//	by construction and can never be red-without-the-change; that is a property
+//	of a parse-only language, not a defect, and it is why the parse-boundary
+//	half carries the burden. Five of the six rows are genuinely red without
+//	their change: json_add_file (the file does not exist yet), json_modify_file
+//	and json_nested_document (the seed decodes to a different member set),
+//	json_reorder_members (the seed bytes differ from the permuted bytes, which
+//	is what the on-disk equality check catches — its DECODED value is
+//	deliberately identical) and json_delete_file (the file is still there). The
+//	sixth, json_reparse_identical_bytes, is NOT and cannot be: its change is
+//	byte-identical to the seed by definition, so no predicate can distinguish
+//	it from a dead `apply`. That limit is stated in its row note, in
+//	docs/rc/parity-classes-json.yaml, and in GA-LANG-json-G3 — it is not
+//	claimed away.
 //
 //	GRAPH HALF (where the abstention lives). The row's change is applied to a
 //	real fixture tree on BOTH stores and BOTH profile axes through the shared
@@ -52,6 +74,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/samibel/graphi/core/parse"
@@ -87,10 +111,16 @@ type jsonParityRow struct {
 	// witness is the graph-half predicate: the parse-only abstention plus the
 	// control symbol.
 	witness func(g *graphView) error
-	// docPath / doc are the JSON document the parse-boundary half parses. doc
-	// is empty exactly for the delete row, which has no document left to parse.
+	// docPath is the path, RELATIVE TO THE FIXTURE ROOT, that the
+	// parse-boundary half reads back after `apply` has run. Every row names one.
 	docPath string
-	doc     string
+	// doc is the exact content `apply` must have left at docPath. The runner
+	// compares the on-disk bytes against it BEFORE parsing anything, which is
+	// what binds this half to the change: two independent literals that merely
+	// happened to agree would drift apart silently, and a no-op `apply` would
+	// be undetectable. EMPTY means the opposite claim — docPath must NOT exist
+	// after apply — which is the delete row's parse-boundary fact.
+	doc string
 	// docWitness predicates over the decoded structural root. Required whenever
 	// doc is non-empty.
 	docWitness func(v any) error
@@ -107,7 +137,7 @@ func jsonParityTable() []jsonParityRow {
 		{
 			id:          "json_add_file",
 			kind:        kindChangeClass,
-			description: "A new JSON document arrives in a new directory. The parse-boundary half parses its bytes three times and requires an identical canonical encoding and identical parse metadata each time; the docWitness requires the document's two members, so a parse that returned an empty tree fails. The graph half requires that NO node came from the new path (the parse-only abstention) while the control heading from the sibling Markdown document is present.",
+			description: "A new JSON document arrives in a new directory. The parse-boundary half reads vendor/config.json BACK OUT OF THE FIXTURE TREE — so a row whose apply never created it fails on the missing file — requires the bytes to be the document this row asserts over, then parses them three times and requires an identical canonical encoding and identical parse metadata each time; the docWitness requires the document's two members and no others, so a parse that returned an empty tree fails. The graph half requires that NO node came from the new path (the parse-only abstention) while the control heading from the sibling Markdown document is present.",
 			apply: func(f *fixture) {
 				f.Write("vendor/config.json", "{\n  \"driver\": \"pg\",\n  \"pool\": 4\n}\n")
 			},
@@ -128,7 +158,7 @@ func jsonParityTable() []jsonParityRow {
 		{
 			id:          "json_modify_file",
 			kind:        kindChangeClass,
-			description: "An indexed JSON document is rewritten in place with an added member. The docWitness requires the NEW member alongside both pre-existing members, so an apply that did nothing fails at the parse boundary. The graph half requires the abstention over the rewritten path and the control heading.",
+			description: "An indexed JSON document is rewritten in place with an added member. The parse-boundary half reads api/schema.json BACK OUT OF THE FIXTURE TREE and requires the bytes on disk to be the rewritten document, then requires the decoded root to carry the NEW member alongside both pre-existing members and no others — so an apply that did nothing fails at the parse boundary, on the bytes and again on the decoded value. The graph half requires the abstention over the rewritten path and the control heading; being an abstention it holds on the seed too, which is why the parse-boundary half is the one that observes this change.",
 			apply: func(f *fixture) {
 				f.Write("api/schema.json", "{\n  \"name\": \"demo\",\n  \"version\": 1,\n  \"stable\": true\n}\n")
 			},
@@ -148,7 +178,7 @@ func jsonParityTable() []jsonParityRow {
 		{
 			id:          "json_delete_file",
 			kind:        kindChangeClass,
-			description: "The indexed JSON document is deleted. STATED RATHER THAN OVERCLAIMED: for a parse-only language a delete has NO observable graph consequence, so this row's witness is deliberately a control-only witness — it asserts that removing a file the graph never saw leaves the sibling Markdown document's symbol intact and the whole-tree byte parity undisturbed. There is no parse-boundary half, because there is no document left to parse. The row is carried because delete_file is a real Go class that must be dispositioned for this language, and `adapted` with this reason is the honest disposition.",
+			description: "The indexed JSON document is deleted. STATED RATHER THAN OVERCLAIMED: for a parse-only language a delete has NO observable graph consequence, so this row's GRAPH witness is deliberately a control-only witness — it asserts that removing a file the graph never saw leaves the sibling Markdown document's symbol intact and the whole-tree byte parity undisturbed. The parse-boundary half asserts the one thing that IS observable, and asserts it against the fixture tree: api/schema.json must be GONE from disk after apply, so a delete that did not happen fails here. There is nothing left to parse, which is why this row alone carries no decoded-value predicate. The row is carried because delete_file is a real Go class that must be dispositioned for this language, and `adapted` with this reason is the honest disposition.",
 			apply: func(f *fixture) {
 				f.Remove("api/schema.json")
 			},
@@ -159,11 +189,14 @@ func jsonParityTable() []jsonParityRow {
 					requireFileNode(g, "api/notes.md"),
 				)
 			},
+			// doc is empty and docPath is not: the parse-boundary claim is
+			// ABSENCE. api/schema.json must no longer exist in the fixture tree.
+			docPath: "api/schema.json",
 		},
 		{
 			id:          "json_nested_document",
 			kind:        kindChangeClass,
-			description: "A deeply nested document (object inside array inside object) replaces the flat one. The docWitness walks into the nesting and requires the leaf value, so a parser that flattened or truncated the structure fails; the three-times canonical encoding is what pins determinism over the nested shape, where a map-iteration-order defect would surface first.",
+			description: "A deeply nested document (object inside array inside object) replaces the flat one. The parse-boundary half reads the rewritten api/schema.json back out of the fixture tree, so the flat seed left behind by a dead apply fails on the bytes and again on the decoded shape. The docWitness walks into the nesting and requires the leaf value, so a parser that flattened or truncated the structure fails; the three-times canonical encoding is what pins determinism over the nested shape, where a map-iteration-order defect would surface first.",
 			apply: func(f *fixture) {
 				f.Write("api/schema.json", "{\n  \"routes\": [\n    {\"path\": \"/a\", \"methods\": [\"GET\", \"POST\"]},\n    {\"path\": \"/b\", \"methods\": [\"GET\"]}\n  ],\n  \"name\": \"demo\"\n}\n")
 			},
@@ -199,7 +232,7 @@ func jsonParityTable() []jsonParityRow {
 		{
 			id:          "json_reorder_members",
 			kind:        kindChangeClass,
-			description: "The members of the object are permuted with no change to any value. RFC 8259 §4 states an object is an UNORDERED collection, so the permuted document must decode to a structurally identical value — and this row pins that by requiring the canonical encoding to equal the base document's, byte for byte. It is the one row whose claim is not merely `stable across passes` but `stable across a source permutation`, which is where a member-order-dependent parser would fail.",
+			description: "The members of the object are permuted with no change to any value. RFC 8259 §4 states an object is an UNORDERED collection, so the permuted document must decode to a structurally identical value — and this row pins that by requiring the canonical encoding to equal the base document's, byte for byte. It is the one row whose claim is not merely `stable across passes` but `stable across a source permutation`, which is where a member-order-dependent parser would fail. Its DECODED value is identical to the seed's by design, so what makes it red without its change is the SOURCE side: the parse-boundary half requires the bytes on disk to be the permuted document, which the un-permuted seed is not.",
 			apply: func(f *fixture) {
 				f.Write("api/schema.json", "{\n  \"version\": 1,\n  \"name\": \"demo\"\n}\n")
 			},
@@ -222,7 +255,7 @@ func jsonParityTable() []jsonParityRow {
 		{
 			id:          "json_reparse_identical_bytes",
 			kind:        kindChangeClass,
-			description: "The indexed JSON document is rewritten with BYTE-IDENTICAL content. The drift scanner sees an empty drift set and Reconcile short-circuits (engine/watch/service.go), so the incremental graph must equal the full graph over unchanged bytes; the parse-boundary half re-parses the same bytes and pins the same canonical encoding and the same content hash. Its witnesses are deliberately semantics-preserving — the row's force comes from the runner's two independent full passes and the three parse-boundary passes, which is where the determinism claim is actually asserted.",
+			description: "The indexed JSON document is rewritten with BYTE-IDENTICAL content. The drift scanner sees an empty drift set and Reconcile short-circuits (engine/watch/service.go), so the incremental graph must equal the full graph over unchanged bytes; the parse-boundary half re-reads the document from the fixture tree and pins the same canonical encoding and the same content hash across three parses. STATED AS A LIMIT, NOT CLAIMED AWAY: this is the ONE json row that is not red without its change, and it cannot be — the change is byte-identical to the seed, so no predicate could tell it from an apply that did nothing. Its force comes from the runner's two independent full passes and the three parse-boundary passes, which is where the determinism claim is actually asserted.",
 			apply: func(f *fixture) {
 				f.Write("api/schema.json", "{\n  \"name\": \"demo\",\n  \"version\": 1\n}\n")
 			},
@@ -266,9 +299,13 @@ func jsonRequireMembers(v any, members ...string) error {
 // re-encoding of the decoded structural root. encoding/json marshals map keys
 // in sorted order, so the encoding is a canonical form of the AST and not a
 // restatement of the input bytes.
-func jsonParseFingerprint(t *testing.T, path, src string) (fingerprint, canonical string, root any) {
+//
+// src is []byte and not a string on purpose: the only caller reads it off the
+// fixture tree, and a signature that took a string would invite a caller to
+// hand it a constant again.
+func jsonParseFingerprint(t *testing.T, path string, src []byte) (fingerprint, canonical string, root any) {
 	t.Helper()
-	res, err := parse.NewJSONParser().Parse(context.Background(), path, []byte(src))
+	res, err := parse.NewJSONParser().Parse(context.Background(), path, src)
 	if err != nil {
 		t.Fatalf("json parse %s: %v", path, err)
 	}
@@ -287,12 +324,19 @@ const jsonParseBoundaryPasses = 3
 
 // runJSONParityRow runs both halves of one JSON row on one (backend, profile)
 // axis.
+//
+// THE ORDER MATTERS. The graph half runs FIRST because it is what applies the
+// change to a real tree; the parse-boundary half then reads that tree back. The
+// fixture root the shared runner returns is the binding between them, and it is
+// the reason the parse-boundary half observes `apply` rather than restating a
+// constant.
 func runJSONParityRow(t *testing.T, b parityBackend, pr parityProfile, row jsonParityRow) {
 	t.Helper()
+	axis := b.name + "/" + pr.name
 
 	// Graph half — the abstention, the control, and the shared runner's two
 	// independent full passes plus the full-vs-incremental comparison.
-	runIntraFileParityRow(t, b, pr, jsonBaseTree(), changeClassRow{
+	fixtureRoot := runIntraFileParityRow(t, b, pr, jsonBaseTree(), changeClassRow{
 		id:          row.id,
 		kind:        row.kind,
 		description: row.description,
@@ -300,26 +344,61 @@ func runJSONParityRow(t *testing.T, b parityBackend, pr parityProfile, row jsonP
 		witness:     row.witness,
 	})
 
-	// Parse-boundary half — where JSON's AST actually is.
+	// Parse-boundary half — where JSON's AST actually is, read off the tree the
+	// graph half just changed.
+	if row.docPath == "" {
+		t.Fatalf("row %q names no docPath; every json row must state what the parse boundary observes", row.id)
+	}
+	onDisk := filepath.Join(fixtureRoot, filepath.FromSlash(row.docPath))
+	raw, readErr := os.ReadFile(onDisk)
+
+	// doc == "" is the ABSENCE claim (the delete row): the document must be
+	// gone from the tree. This is that row's red-without-the-change: an `apply`
+	// that did not delete leaves the file behind and fails here.
 	if row.doc == "" {
+		if readErr == nil {
+			t.Errorf("[%s/%s] VACUOUS ROW: %s is still in the fixture tree after apply (%d bytes); this row's parse-boundary claim is that the document is GONE",
+				axis, row.id, row.docPath, len(raw))
+		} else if !os.IsNotExist(readErr) {
+			t.Fatalf("[%s/%s] stat %s: %v", axis, row.id, row.docPath, readErr)
+		}
+		return
+	}
+
+	if readErr != nil {
+		t.Errorf("[%s/%s] VACUOUS ROW: %s is not in the fixture tree after apply (%v); the row asserts over a document its apply did not leave there",
+			axis, row.id, row.docPath, readErr)
+		return
+	}
+	// THE BINDING. The bytes on disk are compared with the row's `doc` BEFORE
+	// anything is parsed. Without this, `doc` and the string `apply` writes are
+	// two independent literals that merely happen to agree, and an `apply` that
+	// did nothing is invisible at this boundary.
+	if string(raw) != row.doc {
+		t.Errorf("[%s/%s] VACUOUS ROW: the document in the fixture tree is not the document this row asserts over.\n  on disk (%d bytes): %q\n  row.doc  (%d bytes): %q",
+			axis, row.id, len(raw), string(raw), len(row.doc), row.doc)
 		return
 	}
 	if row.docWitness == nil {
 		t.Fatalf("row %q declares a document but no docWitness", row.id)
 	}
-	want, canonical, root := jsonParseFingerprint(t, row.docPath, row.doc)
+	want, canonical, root := jsonParseFingerprint(t, row.docPath, raw)
 	if err := row.docWitness(root); err != nil {
-		t.Errorf("[%s/%s] VACUOUS ROW: docWitness did not hold over the parsed document: %v", b.name+"/"+pr.name, row.id, err)
+		t.Errorf("[%s/%s] VACUOUS ROW: docWitness did not hold over the parsed document: %v", axis, row.id, err)
 	}
 	if row.wantCanonical != "" && canonical != row.wantCanonical {
 		t.Errorf("[%s/%s] CANONICAL FORM: %s decoded to %s, want %s",
-			b.name+"/"+pr.name, row.id, row.docPath, canonical, row.wantCanonical)
+			axis, row.id, row.docPath, canonical, row.wantCanonical)
 	}
 	for pass := 2; pass <= jsonParseBoundaryPasses; pass++ {
-		got, _, _ := jsonParseFingerprint(t, row.docPath, row.doc)
+		reread, err := os.ReadFile(onDisk)
+		if err != nil {
+			t.Fatalf("[%s/%s] re-read %s for pass %d: %v", axis, row.id, row.docPath, pass, err)
+		}
+		got, _, _ := jsonParseFingerprint(t, row.docPath, reread)
 		if got != want {
 			t.Errorf("[%s/%s] PARSE-DETERMINISM FAIL: pass %d of %s produced\n  %s\nwant\n  %s",
-				b.name+"/"+pr.name, row.id, pass, row.docPath, got, want)
+				axis, row.id, pass, row.docPath, got, want)
 		}
 	}
 }

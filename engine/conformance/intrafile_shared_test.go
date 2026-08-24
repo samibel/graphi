@@ -40,6 +40,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -50,7 +51,15 @@ import (
 // runIntraFileParityRow is the shared row runner for the six intra/parse
 // residual languages. `base` is the language's base tree; `row` is one row of
 // the language's table.
-func runIntraFileParityRow(t *testing.T, b parityBackend, pr parityProfile, base map[string]string, row changeClassRow) {
+//
+// IT RETURNS THE FIXTURE ROOT — the directory the seed was written into and the
+// row's `apply` then changed. A family whose witness needs to observe the tree
+// itself rather than the graph built from it (json, whose AST the store never
+// sees) reads its document back from this path AFTER the runner returns, so
+// what it asserts over is what `apply` actually wrote. Callers that only need
+// the graph-level assertions ignore the value, which is why adding it broke
+// nothing.
+func runIntraFileParityRow(t *testing.T, b parityBackend, pr parityProfile, base map[string]string, row changeClassRow) (fixtureRoot string) {
 	t.Helper()
 	axis := b.name + "/" + pr.name
 	if row.apply == nil || row.witness == nil {
@@ -114,6 +123,8 @@ func runIntraFileParityRow(t *testing.T, b parityBackend, pr parityProfile, base
 			axis, row.id, row.description, f.changeSet(),
 			snapshotDiff(t, "incremental", incSnap, "full", fullSnap))
 	}
+
+	return root
 }
 
 // requireNoNodeFrom is the PARSE-ONLY abstention predicate: it fails if ANY
@@ -179,7 +190,8 @@ func requireNoFileNode(g *graphView, path string) error {
 // inapplicable to these languages nor witnessed by these tables, and claiming
 // either would be untrue. A `deferred` disposition must name a deferred_to, in
 // the same shape harness_row: "deferred" must (paritymatrix_test.go's DEFERRED
-// direction).
+// direction) — and, since SW-199's rebuild round, in one of exactly two shapes:
+// a story id, or an explicit UNOWNED marker. See deferredToStoryRE below.
 //
 // NAMING: the failure messages below are prefixed APPLICABILITY-MISSING /
 // APPLICABILITY-PHANTOM rather than MISSING / PHANTOM ON PURPOSE. The
@@ -198,6 +210,23 @@ type goClassApplicabilityRow struct {
 	DeferredTo  string `yaml:"deferred_to"`
 	Reason      string `yaml:"reason"`
 }
+
+// deferredToStoryRE and deferredUnownedPrefix are what let the guard tell an
+// OWNER from a PLACEHOLDER in a `deferred` disposition's deferred_to.
+//
+// The obvious rule — "deferred_to must match SW-\d+" — is the wrong one HERE,
+// because no story yet owns the four language-agnostic ingest classes and
+// naming one that does not exist would be a false claim to make a guard go
+// green. So the rule is a CLOSED TWO-WAY choice instead: name a story, or
+// declare yourself unowned in one fixed, greppable shape. What is no longer
+// possible is the third thing — arbitrary prose that satisfies a non-empty
+// check while naming nobody, which is what SW-199's reviewer found (FU-SW199-1).
+// `grep -rn 'deferred_to: "UNOWNED' docs/rc/` now enumerates every open debt.
+var deferredToStoryRE = regexp.MustCompile(`\bSW-\d+\b`)
+
+// deferredUnownedPrefix is the em-dash spelling deliberately, so it cannot be
+// typed by accident and cannot be confused with a story id.
+const deferredUnownedPrefix = "UNOWNED — "
 
 const (
 	dispositionApplicable    = "applicable"
@@ -302,8 +331,18 @@ func assertGoClassApplicability(t *testing.T, lang, path string, declared []pari
 				t.Errorf("APPLICABILITY-WITNESS: %s go_class %q is deferred yet names witnessed_by %q",
 					lang, d.GoClass, d.WitnessedBy)
 			}
-			if d.DeferredTo == "" {
+			switch {
+			case d.DeferredTo == "":
 				t.Errorf("APPLICABILITY-WITNESS: %s go_class %q is deferred with no deferred_to owner", lang, d.GoClass)
+			case deferredToStoryRE.MatchString(d.DeferredTo):
+				// An owner is named. This is the shape the Go matrix's own
+				// deferred rows use (docs/rc/parity-classes.yaml -> SW-158).
+			case strings.HasPrefix(d.DeferredTo, deferredUnownedPrefix):
+				// Explicitly, machine-visibly UNOWNED. Allowed, and allowed only
+				// in this exact shape — see deferredUnownedPrefix.
+			default:
+				t.Errorf("APPLICABILITY-OWNER: %s go_class %q is deferred to %q, which neither names a story (SW-nnn) nor declares itself unowned with the %q prefix. A free-text deferred_to lets a placeholder pass for an owner, which is the thing this branch exists to prevent.",
+					lang, d.GoClass, d.DeferredTo, deferredUnownedPrefix)
 			}
 		}
 	}
