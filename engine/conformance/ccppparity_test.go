@@ -143,7 +143,7 @@ int checkout(int x) {
 		{
 			id:          "ccpp_include_skip",
 			kind:        kindChangeClass,
-			description: "A relative include (`#include \"missing.h\"`) targets a path that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids.",
+			description: "A relative include (`#include \"missing.h\"`) targets a path that does not exist on disk. The witness asserts the resolver mints NO `calls` edge to the absent target — the DROP half ONLY. The witness walks every edge and `continue`s past any whose Kind() is not `calls`, so it constrains the `calls` kind alone and says nothing about an `imports` file-edge. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. An edge here would be the failure mode the level forbids.",
 			seed: map[string]string{
 				"app/main.c": `int checkout(int x) {
     return x;
@@ -179,7 +179,7 @@ int checkout(int x) {
 		{
 			id:          "ccpp_ambiguous_includes",
 			kind:        kindChangeClass,
-			description: "A relative include is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.h` and `vendor/util.h` both exist). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but C/C++'s exact-path resolution makes the ambiguity a structural two-candidate case.",
+			description: "A relative include is ambiguous because two candidate paths resolve to committed nodes (e.g. `lib/util.h` and `vendor/util.h` both exist). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate is minted as a `calls` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is not `calls`, so it constrains the `calls` kind alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but C/C++'s exact-path resolution makes the ambiguity a structural two-candidate case.",
 			seed: map[string]string{
 				"lib/util.h": `int helper(int x) {
     return x + 1;

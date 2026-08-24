@@ -134,7 +134,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W5-RES.f"
-    note: "A require_once directive (`require_once \"missing.php\";`) targets a file that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) and INCREMENTS the counter (Stats.Skipped += 1) — the G2SUB drop-and-count half, the same property a confirmed-tier row would have asserted as `drop on ambiguity`. An edge here would be the failure mode the level forbids. SW-194b ships the harness row."
+    note: "A require_once directive (`require_once \"missing.php\";`) targets a file that does not exist on disk. The witness asserts the resolver mints NO `calls` edge to the absent target — the DROP half ONLY. The witness walks every edge and `continue`s past any whose Kind() is not `calls`, so it constrains the `calls` kind alone and says nothing about an `imports` file-edge. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. An edge here would be the failure mode the level forbids. SW-194b ships the harness row."
 
   - id: "php_ambiguous_clauses"
     kind: "change_class"
@@ -151,7 +151,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W5-RES.f"
-    note: "A use directive is ambiguous because two namespaces both declare a class with the same name (e.g. `use A\\Foo; use B\\Foo; Foo::bar(...)`). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate edge is minted and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used. SW-194b ships the harness row."
+    note: "A use directive is ambiguous because two namespaces both declare a class with the same name (e.g. `use A\\Foo; use B\\Foo; Foo::bar(...)`). The resolver must drop the edge rather than guess. The witness asserts NEITHER candidate is minted as a `calls` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is not `calls`, so it constrains the `calls` kind alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used. SW-194b ships the harness row."
 
   - id: "php_delete_file"
     kind: "change_class"

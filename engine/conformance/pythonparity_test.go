@@ -156,7 +156,7 @@ def checkout():
 		{
 			id:          "py_relative_import_skip",
 			kind:        kindChangeClass,
-			description: "A relative import (`from . import util`) targets a module that is absent from the indexed tree. The witness asserts the resolver SKIPS (no edge minted) — the G2SUB drop-and-count half on an absent module. An edge here would be the failure mode the level forbids (fabricating a stdlib external where the spec forbids one for relative imports — see engine/link/resolve_python.go:73).",
+			description: "A relative import (`from . import util`) targets a module that is absent from the indexed tree. The witness asserts the resolver mints NO `calls` edge to the absent target — the DROP half ONLY. The witness walks every edge and `continue`s past any whose Kind() is not `calls`, so it constrains the `calls` kind alone and says nothing about an `imports` file-edge. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. An edge here would be the failure mode the level forbids (fabricating a stdlib external where the spec forbids one for relative imports — see engine/link/resolve_python.go:73).",
 			seed: map[string]string{
 				"app/main.py": `def checkout():
     return helper()
@@ -191,7 +191,7 @@ def checkout():
 		{
 			id:          "py_ambiguous_clauses",
 			kind:        kindChangeClass,
-			description: "Two package directories both declare a function `pkg.dup` (the clause-keyed lookup is identical to Go's PARITY-002 shape). The witness asserts NEITHER call site resolves to a single edge — the G2SUB drop-and-count half on a real ambiguity, not on an absent module. This is the row that pins the deterministic, never-guess half of the G2SUB contract against a SHAPE that has a Go precedent.",
+			description: "Two package directories both declare a function `pkg.dup` (the clause-keyed lookup is identical to Go's PARITY-002 shape). The witness asserts NEITHER candidate is minted as a `calls` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is not `calls`, so it constrains the `calls` kind alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. This is the row that pins the deterministic, never-guess half of the G2SUB contract against a SHAPE that has a Go precedent.",
 			seed: map[string]string{
 				"a/pkg/x.py":  "def dup():\n    return 1\n",
 				"b/pkg/y.py":  "def dup():\n    return 2\n",

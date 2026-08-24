@@ -202,7 +202,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W2-TS.b"
-    note: "A relative import (`import { x } from './missing'`) targets a path that does not exist on disk. The witness asserts the resolver SKIPS (no edge minted) — the G2SUB drop-and-count half on an absent file. The TS family's D1 rule keeps relative-path misses deterministic: a missing relative file is SKIPPED, not fabricated as an external node (only NON-relative misses are interned as externals — WP-14). An edge here would be the failure mode the level forbids."
+    note: "A relative import (`import { x } from './missing'`) targets a path that does not exist on disk. The witness asserts NO `external` node named `missing.x` or `missing.*` exists — the DROP half ONLY, expressed as node absence, not edge absence. The witness walks g.byQN and `continue`s past any node whose Kind() is not `external`, so it constrains no edge kind at all. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. The TS family's D1 rule keeps relative-path misses deterministic: a missing relative file is SKIPPED, not fabricated as an external node (only NON-relative misses are interned as externals — WP-14). An edge here would be the failure mode the level forbids."
 
   - id: "ts_ambiguous_clauses"
     kind: "change_class"
@@ -219,7 +219,7 @@ parity_classes:
     known_defect: ""
     deferred_to: ""
     owner: "W2-TS.b"
-    note: "A relative path resolves to a directory that has BOTH a sibling file (`x/shared.ts`) AND a directory-module index (`x/shared/index.ts`) claiming the same `Cfg` symbol. This is the family-specific ambiguity shape: TS module resolution (D1) treats `./x/shared` as either candidate, and the resolver must drop the edge rather than guess. The witness asserts NEITHER call site resolves to a single edge and Stats.Ambiguous += 1 — the G2SUB drop-and-count half on a real ambiguity. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but the TS resolver's `relModuleDir` returns BOTH candidates so the ambiguity is structural, not a directory-fan-out bug."
+    note: "A relative path resolves to a directory that has BOTH a sibling file (`x/shared.ts`) AND a directory-module index (`x/shared/index.ts`) claiming the same `Cfg` symbol. This is the family-specific ambiguity shape: TS module resolution (D1) treats `./x/shared` as either candidate, and the resolver must drop the edge rather than guess. The witness asserts NEITHER candidate is minted as a `calls` or `references` edge — the never-guess half. The witness `continue`s past any edge whose Kind() is neither `calls` nor `references`, so it constrains those two kinds alone. The witness reads no counter — graphView (engine/conformance/changeclass_test.go:111-115) holds only nodes/edges/byQN/byID — so the COUNT half is UNPROVEN by this row. The shape mirrors the Go twin-dirs case the JVM's PARITY-002 reproduction used, but the TS resolver's `relModuleDir` returns BOTH candidates so the ambiguity is structural, not a directory-fan-out bug."
 
   - id: "ts_delete_file"
     kind: "change_class"
