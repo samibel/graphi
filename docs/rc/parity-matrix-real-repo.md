@@ -102,6 +102,352 @@ will flip — ky covering typescript, express covering javascript, and the
 tsx row by family-share if the reviewer's judgement (recorded in current)
 upholds it.
 
+# JVM real-repository matrix — WP-J7 / gate G4 (2026-08-23, W5.d+2 SW-207)
+
+> **THIS SECTION PUBLISHES A MATRIX.** It does not supersede the W5.d+1 SW-204
+> section immediately below, nor the W5.d SW-190 section below that, nor the
+> 2026-08-19 W1.c section below that; per D6 all three stay byte-unchanged.
+> What it adds is the one thing SW-204 could not do and said so: the corpus now
+> holds a target for both of the two change classes that had none, so the run
+> is COMPLETE and PUBLISHABLE for the first time.
+
+**Status: 52 of 52 crossed rows PASS, 0 SKIPPED, 0 FAIL, 0 harness error, on
+both dispatches. `publishable: true`, exit 0 on `-verdict-diff` and
+`-counts-diff`, and an EMPTY shared refusal set on `-refusal-diff`.**
+
+| | |
+|---|---|
+| Produced by | `internal/parity` + `cmd/parity -family jvm`, two full dispatches (run-A, run-B), separate persistent workdirs, run serially, from a **BUILT binary** — never `go run`, which masks exit 2 as exit 1 — **network clones, `-allow-local` deliberately NOT used** |
+| Gate | language-GA programme G4 / work package WP-J7 — real-repository full-vs-incremental parity for Java and Kotlin |
+| Candidate | **`9f687849cec2b26311401191e90b60e40b5f6cee`** — **UNCHANGED.** SW-207 forced no candidate move: it touched `corpus/manifest.json`, `internal/parity/jvmclasses.go` and one test, and none of those is a `ProductPath` |
+| Matrix source | `docs/rc/parity-classes-jvm.yaml` at `matrix_version: 4` (13 declared change classes) — **byte-unchanged by this story**, see "What this story did NOT change" |
+| Axis crossing | `binder{off,on} × profile{resolved default, fast}` = **4 cells**, so 13 × 4 = **52 declared rows** |
+| Corpus pins MATERIALIZED | okio `8b870e8eaacecb1c1ceffbbb47246112604a1f92` (kotlin, tier 3, 313 source files), **retrofit `cc76c22a68e090f3dd898cbcb0bac30414f59c31` (java, tier 3, 315)**, **antlr4 `7ed420ff2c78d62883875c442d75f32e73bc86c8` (java, tier 3, 521)** — all three cloned from their URLs; `head_sha` equals `pinned_sha` on all three in both dispatches |
+| Corpus pins NOT materialized | guava and kotlinx.serialization. They are still declared JVM pins in `corpus/manifest.json` and are still examined by the strategy tests; this RUN never reached them. See "guava and kotlinx.serialization dropped out of the selection" below — it is a consequence to read, not a defect |
+| Provenance | **both** dispatches at run SHA `d9361b3cf429a71ae4ef8a140e214f8514577e74`, runner class `darwin-arm64/local-sandbox`, go1.26.6 darwin/arm64, **worktree CLEAN** at run time (`worktree_clean: true`); `generated_at` 2026-08-23T16:38:47Z (run-A) and 2026-08-23T16:44:15Z (run-B) |
+| Product binary | HEAD and candidate both `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` — `product_diff_empty: true`, and that is the same digest the SW-204 section records |
+| Report artifacts | [`parity-matrix-jvm-sw207-run-A.json`](parity-matrix-jvm-sw207-run-A.json) `sha256 d2826cc7…` · [`parity-matrix-jvm-sw207-run-B.json`](parity-matrix-jvm-sw207-run-B.json) `sha256 21579814…` — **108 337 bytes each, differing on exactly 106 lines: 104 `duration_ms` and 2 `generated_at`.** Every verdict, every per-row node/edge count, every snapshot digest and every `compile_coverage` block is byte-identical |
+| Schema | `schema_version: 3`, `harness_version: parity-matrix/2` — both unchanged from SW-204 |
+
+## What SW-207 changed, in one paragraph
+
+Nothing in the gate and nothing in the harness's decision logic. The 8 SKIPPED
+cells of the SW-204 run were `jvm_change_import_shadowing` and
+`jvm_mixed_dir_change_receiver_type` on all four axis cells, and both skipped
+because `selectJVMRepo` found no target in **any** pin — a measured absence of
+source shape, which no relabelling could launder away (decision D1). SW-207
+acquired the two pins that host the two shapes. The planners are unchanged; the
+gate is unchanged; the row set is unchanged. What moved is the corpus.
+
+## The measurement that chose the pins
+
+Both planners were run against every candidate through `internal/parity`'s own
+model — `discoverJVM` over a clone at the pin's sha, with `jvmSkipDir`'s
+directory exclusions applied — and the per-conjunct result recorded per pin
+before anything was pinned.
+
+**Shape (i), `planJVMChangeImportShadowing`** needs a Java file carrying a
+**NON-STATIC** on-demand import; a STATIC one (`import static a.b.C.*;`)
+imports members rather than types and JLS 6.4.1's single-type-import rule does
+not govern it, so the planner refuses it deliberately.
+
+| pin | Java on-demand imports | static | **non-static** | target |
+|---|---|---|---|---|
+| guava `2214c636` | 1 | 1 | **0** | no |
+| okio `8b870e8e` | 0 | 0 | **0** | no |
+| kotlinx.serialization `3efe324b` | 0 | 0 | **0** | no |
+| retrofit `cc76c22a` | 0 | 0 | **0** | no |
+| **antlr4 `7ed420ff`** | 75 | 17 | **58** | **yes** |
+
+Every figure in that table is a count of **import STATEMENTS**, not of files.
+antlr4's 58 non-static on-demand imports are spread across **45** of the **511**
+`.java` files the model sees (521 tracked, less the 10 under the source package
+`tool/src/org/antlr/v4/codegen/target/` that `jvmSkipDir` refuses). Measured
+twice and agreeing file-for-file: once through `discoverJVM` itself, once
+through an independent `grep` over the same 511-file view.
+
+**Shape (ii), `planJVMMixedDirChangeReceiverType`** is a five-way conjunction:
+(1) a mixed `.java`/`.kt` directory exists; (2) a Java file whose OWN directory
+is not mixed; (3) declaring a top-level `class` with `t.Super != ""`; (4) whose
+simple name a file INSIDE a mixed directory references; (5) with a sibling Java
+class in the edited file's own directory usable as the replacement supertype.
+`t.Super` is purely lexical — `scanSuper` reads the `extends` clause out of the
+file's own bytes and nothing resolves it to a declaration site — so **where a
+superclass lives is not a conjunct**.
+
+| pin | mixed dirs | (2) Java files outside them | (3) with a supertype | (4) named from inside | (5) sibling available | fails at |
+|---|---|---|---|---|---|---|
+| guava `2214c636` | 0 of 130 | 3204 | 1980 | 0 | 0 | **conjunct 1** |
+| kotlinx.serialization `3efe324b` | 0 of 111 | 6 | 0 | 0 | 0 | **conjunct 1** |
+| okio `8b870e8e` | **2** of 49 | **2** | **0** | 0 | 0 | **conjunct 3** |
+| okhttp `parent-4.12.0` (examined, not pinned) | 8 of 75 | 86 | 11 | **0** | 0 | conjunct 4 |
+| **retrofit `cc76c22a`** | **4** of 52 | 259 | 50 | **6** | **6** | **none — target** |
+
+**This closes the open question the SW-204 record left standing.** That record
+said okio satisfies conjunct (1) and that "which of okio's four remaining
+conjuncts fails is NOT measured". It is measured now: okio has exactly **2**
+Java files outside its two mixed directories, and **neither declares a
+top-level `class` with a supertype**, so okio fails at conjunct **(3)**. No
+guess in any earlier record is confirmed by this; the number is new.
+
+Also examined and rejected, so the next reader does not re-walk them: okhttp
+(fails (4)), junit5 and Netflix/dgs-framework (no mixed directory at all),
+square/leakcanary (3 `.java` files in the entire repository, 1 of them outside
+its 2 mixed directories), JetBrains/ideavim (fails (3): 5 Java files outside its 7
+mixed directories, none with a supertype), kotlinx.coroutines (fails (4)),
+square/moshi and google/auto. moshi and google/auto DO satisfy shape (ii);
+moshi was rejected because at 138 source files it sorts ahead of okio in
+`jvmRepos`'s smallest-pin-first order and would have re-based most of the other
+44 rows on a new repository in the same change, and google/auto was rejected as
+not genuinely polyglot (317 `.java` against a single `.kt`).
+
+**A finding this search turned up, filed rather than fixed.** ideavim,
+kotlinx.coroutines and Netflix/dgs-framework all carry NON-static Java
+on-demand imports, and on all three
+`planJVMChangeImportShadowing` proposed a mutation whose imported simple name
+was the literal token **`class`** — e.g. `import
+com.maddyhome.idea.vim.action.class;`, which is not a Java import at all.
+The cause is in the model, not the planner: `scanTypes`
+(`internal/parity/jvmsource.go`) matches `jvmTypeKeywords` in order, so a
+Kotlin `enum class Foo { … }` matches `enum` first and then reads the NEXT
+identifier as the type's name, minting a top-level type named `class`.
+`referencesSimpleName(f, "class")` is true of essentially every Java file, so
+that phantom is a universal fallback target for this planner. Measured
+2026-08-23 over the model at each pin: **okio 3, kotlinx.serialization 13,
+ideavim 26, kotlinx.coroutines 17, retrofit 0, antlr4 0.** It is latent in the
+corpus today (no existing row's planner reaches it: all 13 mutations in the
+report artifacts name real types, and the antlr4 row names `Lexer`) and it was
+a REJECTION CRITERION here rather than a thing to repair inside a corpus story
+— fixing `scanTypes` would change okio's and kotlinx.serialization's models and
+could re-base rows that pass today. Filed as **PARITY-OBS-003**, SW-207
+follow-up **FU-2**.
+
+## The two rows that had no target, and what they now measure
+
+| row | pin | mutation |
+|---|---|---|
+| `jvm_change_import_shadowing` (4 cells) | antlr4 | add the single-type import `org.antlr.v4.codegen.model.Lexer` to `runtime-testsuite/test/org/antlr/v4/test/runtime/CustomDescriptors.java`, which already carries the on-demand import `java.util.*` and names `Lexer` — JLS 6.4.1: a single-type import shadows an on-demand one, so `Lexer` re-resolves |
+| `jvm_mixed_dir_change_receiver_type` (4 cells) | retrofit | re-point the declared supertype of class `HttpException` in `retrofit-adapters/guava/src/main/java/retrofit2/adapter/guava/HttpException.java` (`extends retrofit2.HttpException` → `extends GuavaCallAdapterFactory`) while `retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt`, in the MIXED-LANGUAGE directory `retrofit/kotlin-test/src/test/java/retrofit2`, names `HttpException` and is itself never edited |
+
+Both are real edits to real source in a pinned clone, and both PASS on all four
+axis cells of both dispatches. **The `mutation` column above is the harness's
+own sentence, quoted verbatim from the artifacts. Read it together with the
+next section, which measures how much of what those sentences assert is
+actually established — the answer is "less than they say", for both rows.**
+
+## What these two rows do NOT establish — PARITY-OBS-004, measured in review round 1
+
+**The finding.** Both planners choose their target with `referencesSimpleName`
+(`internal/parity/jvmsource.go`): a whole-word **token** match over
+comment- and string-masked bytes, with **no import, package or member
+resolution**. A target that passes it may not exercise the rule the row
+asserts. This is a **pre-existing property of both predicates** — SW-207
+changed neither, and the diff of `internal/parity/jvmclasses.go` against `main`
+contains **zero predicate lines**. What SW-207 got wrong was the prose: the
+class notes claimed the resolution the predicate does not perform. Those notes
+are corrected in place, in the same "corrected, in place and stated" shape the
+supertype/return-type correction already uses.
+
+**Measured for `jvm_mixed_dir_change_receiver_type` (retrofit `cc76c22a68e0`).**
+
+| what | measured |
+|---|---|
+| classes named `HttpException` in the pin | **6**, in 6 packages: `retrofit2` and `retrofit2.adapter.{guava,java8,rxjava,rxjava2,rxjava3}` |
+| the class the mutation edits | `retrofit2.adapter.guava.HttpException` |
+| the namer | `retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt`, `package retrofit2`, **no** `HttpException` import, **one** `HttpException` token (line 98, `catch (e: HttpException)`) |
+| what that token resolves to | **`retrofit2.HttpException`** — a different class, and specifically the **superclass** the mutation removes (`public final class HttpException extends retrofit2.HttpException`) |
+| edges between the mixed directory (18 nodes) and the edited file (2 nodes), either direction | **0**, at `binder=off` and at `binder=on` |
+| edges from the namer file to any `HttpException` node | **0** — the namer contributes exactly ONE node (a `file` node) and two `imports` edges, to `retrofit2.http` and `retrofit2.helpers` |
+| graph delta of the mutation | **none.** A full rebuild of the mutated tree and a full rebuild of the pristine tree produce identical `nodes` and `edges` tables — every column, including `line`, `col`, `meta`, `confidence`, `evidence`. 3418 nodes / 4660 edges at `binder=off`, 3418 / 5431 at `binder=on` |
+
+**So the row is graph-vacuous in the PARITY-VAC-001 sense, and that is now
+measured rather than suspected.** The reason is the one already recorded for
+`jvm_change_type_hierarchy` on guava: the JVM graph carries **no edge kind for
+a class's `extends` supertype**. All six `HttpException` type nodes have **zero
+outgoing edges**, five of them declare `extends retrofit2.HttpException`, and
+all **28** `implements` edges in the retrofit graph target interfaces
+(`retrofit2.Call`, `retrofit2.CallAdapter`, `retrofit2.Converter`). Re-pointing
+an `extends` clause therefore cannot move this graph. The 23-byte replacement
+is even length-preserving (`retrofit2.HttpException` → `GuavaCallAdapterFactory`),
+so not one line or column anchor shifts either.
+
+**Measured for `jvm_change_import_shadowing` (antlr4 `7ed420ff2c78`).** The same
+defect, found while checking the first:
+
+- The four `Lexer` tokens in `runtime-testsuite/test/org/antlr/v4/test/runtime/CustomDescriptors.java`
+  are **all** `GrammarType.Lexer` — qualified enum-constant member selects, not
+  type references. The file's only non-static on-demand import is `java.util.*`,
+  which declares no `Lexer`. **Nothing was resolving through the on-demand
+  import, so nothing re-resolves.** The harness's sentence "so `Lexer`
+  re-resolves" is not established.
+- This row is **not** graph-vacuous, and that distinction is measured too: the
+  mutation adds **exactly one** edge — `file CustomDescriptors.java --imports
+  (heuristic, 0.6)--> package org.antlr.v4.codegen.model` — and shifts the line
+  anchors of the edited file by one. 11069 nodes / 31285 edges before, 11069 /
+  **31286** after. No edge to any `Lexer` node exists before or after.
+
+**What the two rows therefore DO establish, stated at the scope measured.**
+Full-vs-incremental byte-identity over a real in-place edit to a real Java file
+in a pinned clone — for retrofit an edit the graph does not see at all, for
+antlr4 an edit worth exactly one new `imports` edge. That is a real parity
+statement and both PASS honestly. What they do **not** establish is the ADR-0008
+D9 `(directory, language)` sweep across a mixed directory (nothing in the graph
+crosses that boundary) or the JLS 6.4.1 shadowing ladder (no name re-resolves).
+The 52/52 and `publishable: true` are unaffected: publishability is a property
+of every declared row being decided by two agreeing dispatches, not of any row
+being graph-non-vacuous.
+
+**Filed, not fixed.** **PARITY-OBS-004**, sibling of PARITY-OBS-003 and
+cross-referenced from it. Repairing either predicate would re-base published
+evidence and needs its own review — the same reasoning PARITY-OBS-003 was filed
+under.
+
+**What was and was not re-run, and why.** The correction is prose. The two class
+`Note:` strings are consumed only as the report's human-readable `detail` field;
+they participate in no predicate, no target selection, no mutation, no snapshot
+digest and no diff mode (`-verdict-diff`, `-counts-diff` and `-refusal-diff` key
+on row id, verdict, per-row counts, snapshot digests and refusal reasons). The
+two published dispatches were therefore **not** re-run. Instead, each of the two
+rows was re-dispatched on its own from a freshly built binary
+(`-classes <id>`, a filtered run that is deliberately never publishable) and
+**reproduced published run-A exactly**: all four
+`jvm_mixed_dir_change_receiver_type` cells PASS with byte-identical
+`snapshot_full_sha256`, `snapshot_inc_sha256`, `full_nodes` and `full_edges`
+(`c26b4792…`, `369a50bf…`, `2145afc9…`, `369a50bf…`), and all four
+`jvm_change_import_shadowing` cells PASS. **The two published artifacts remain
+byte-unchanged and still embed the pre-correction `detail` and `mutation`
+wording verbatim** — that is deliberate: they are the record of a dispatch that
+happened, and this section, not a hand-edit of the artifact, is where the
+correction lives. The planner-emitted `mutation` sentences are left unchanged in
+the code for the same reason: they are published evidence text, and rewriting
+them belongs with the PARITY-OBS-004 repair.
+
+## The compile-coverage policy, as the run printed it
+
+```
+parity: compile_coverage policy over 3 materialized JVM pin(s)
+  antlr4    accepted — 174/174 = 1.0000
+  okio      accepted — 0/89 = 0.0000, DOCUMENTED NEGATIVE: Not compiled in the oracle's required layout …
+  retrofit  accepted — 0/55 = 0.0000, DOCUMENTED NEGATIVE: Not compiled: the natural source root is a mixed-language module …
+```
+
+Both new pins carry a MEASURED figure, which is what SW-204's fail-closed rule
+requires of them.
+
+- **antlr4** compiles: 174 of 174 offered sources stage with no package-relative
+  collision, `javac 21.0.6` with an **empty** classpath reports **0 errors** and
+  emits **214** class files, and two independent runs through
+  `internal/jvmcorpus`'s own `TestPins` path produced the byte-identical capture
+  digest `63f2a4537846fa467a7dee19e44e64f14d7a2b6b1ffd11ea2bfb7c11222374dc`.
+- **retrofit** does not: measured three ways, recorded in the pin's `tried`
+  list. The natural source root `retrofit/src/main/java` is a mixed-language
+  module and `jvmcorpus.Compile` hands the whole staged set to ONE compiler, so
+  javac aborts with `invalid flag: ./retrofit2/KotlinExtensions.kt` (0 classes);
+  the `.java` half alone is 474 errors with no classpath and **24** errors with
+  a classpath assembled from the pin's own `gradle/libs.versions.toml`, every
+  one of the 24 an `android.annotation` / `android.os` failure. retrofit core
+  declares `compileOnly libs.android`, and `android.jar` is not a Maven Central
+  artifact and cannot be digest-pinned under this corpus's posture.
+
+## What this run does NOT say
+
+**guava and kotlinx.serialization dropped out of the selection.** `jvmRepos`
+orders candidates by tier and then by source-file count, and `selectJVMRepo`
+takes the first pin whose real source exhibits the class. With retrofit (315)
+and antlr4 (521) between okio (313) and kotlinx.serialization (615) / guava
+(3204), every one of the 13 classes now finds a target in the first three, so
+this run materialized **three** pins and never cloned the other two. One
+concrete consequence: `jvm_change_type_hierarchy` ran on guava in the SW-204
+run and runs on **retrofit** here, so its four rows' node/edge counts and
+snapshot digests are not comparable across the two sections — they are
+measurements of different repositories, and neither supersedes the other.
+**This section therefore publishes no statement about guava or
+kotlinx.serialization at all.** Re-admitting them to the JVM matrix would need
+either a class no smaller pin exhibits or a deliberate change to the selection
+rule, and neither is SW-207's work.
+
+**antlr4 backs no counterexample count.** The pin is
+`excluded_from_corpus_scale` in `corpus/manifest.json`, loudly and with its
+measurement: the signature-aware oracle over the antlr4 capture reports
+soundness failures at all three precisions — 4 unbacked confirmed calls with 37
+abstained [by-name], 4 with 53 abstained [by-arity], 16 with 265 abstained
+[by-signature], over the 1494 confirmed calls the binder produces on the 174
+staged files. Those 24 rows are **not classified**, and this story does not
+classify them; they are filed as **JVMSOUND-ANTLR-001**. They do not touch the
+rows antlr4 is here for: a real-repository parity row asserts that the
+incrementally-updated graph and a fresh full index of the same final tree are
+byte-identical, and needs no bytecode at all.
+
+**A PASS here is still a parity statement and never a correctness one.** No
+ground truth for a real repository's JVM edge set exists; that caveat is
+unchanged and is repeated in the report's own `gate_note`.
+
+## What this story did NOT change
+
+- `docs/rc/parity-classes-jvm.yaml` — **byte-unchanged.** `harness_row`,
+  `deferred_to` and `verdict` are untouched on every row, in both directions
+  (decision D1, SW-207 AC-5). The two rows' `note:` fields still describe the
+  real-repo target as ABSENT and still name SW-207 as the successor; updating
+  them is AC-6 and is **NOT DONE HERE**, because the file is held by the
+  unmerged `sw-206-witness-counter-claim` branch and editing it from this branch
+  would produce a conflict on exactly the field both stories rewrite. It is
+  carried forward as SW-207 follow-up **FU-1**.
+- The publishability gate, `Finalize`, and the three diff modes — SW-204 landed
+  them and this story did not touch a line of any of them.
+
+## Reproducing it
+
+```sh
+# Build the binary — do NOT use `go run`, which masks exit 2 as exit 1.
+CGO_ENABLED=0 go build -o /tmp/parity ./cmd/parity
+
+# Two serial dispatches, separate persistent workdirs, from a CLEAN worktree.
+CGO_ENABLED=0 /tmp/parity -family jvm -manifest corpus/manifest.json \
+  -max-tier 3 -runner-class "darwin-arm64/local-sandbox" \
+  -workdir /tmp/wdA -report /tmp/run-A.json
+CGO_ENABLED=0 /tmp/parity -family jvm -manifest corpus/manifest.json \
+  -max-tier 3 -runner-class "darwin-arm64/local-sandbox" \
+  -workdir /tmp/wdB -report /tmp/run-B.json
+
+# The three comparisons. All three exit 0; the third prints an EMPTY set.
+/tmp/parity -verdict-diff /tmp/run-A.json,/tmp/run-B.json
+/tmp/parity -counts-diff  /tmp/run-A.json,/tmp/run-B.json
+/tmp/parity -refusal-diff /tmp/run-A.json,/tmp/run-B.json
+
+# The per-pin compile-coverage figures, recomputed from the clones.
+CGO_ENABLED=0 go build -o /tmp/jvmcoverage ./cmd/jvmcoverage
+/tmp/jvmcoverage -manifest corpus/manifest.json -pins-root /tmp/pins \
+  -runner-class "darwin-arm64/local-sandbox" \
+  -candidate-sha 9f687849cec2b26311401191e90b60e40b5f6cee
+```
+
+Reproducing the **PARITY-OBS-004** measurements in the section above:
+
+```sh
+# The six homonymous HttpException classes, and the namer's binding.
+git clone --depth 1 --branch 2.11.0 https://github.com/square/retrofit /tmp/retrofit
+cd /tmp/retrofit && git rev-parse HEAD          # cc76c22a68e090f3dd898cbcb0bac30414f59c31
+grep -rlnE '^[[:space:]]*(public |final |abstract )*(class|interface|enum) HttpException[[:space:]]' \
+  --include='*.java' --include='*.kt' .        # -> 6 files, 6 distinct packages
+grep -nE '^(package|import)' retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt
+grep -n  'HttpException'     retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt
+
+# The graph delta of each mutation: rebuild the pristine tree, apply the
+# harness's own edit, rebuild again, and diff the store's node and edge tables.
+# (`-classes <id>` leaves the post-mutation full.db under <workdir>/state/.)
+CGO_ENABLED=0 /tmp/parity -family jvm -manifest corpus/manifest.json -max-tier 3 \
+  -runner-class "darwin-arm64/local-sandbox" \
+  -classes jvm_mixed_dir_change_receiver_type -workdir /tmp/wdD -report /tmp/diag.json
+cd /tmp/wdD/repos/retrofit && GRAPHI_PROFILE= GRAPHI_JVM_TYPERESOLVE=1 \
+  /tmp/wdD/graphi rebuild -root . -db /tmp/pre.db -meta /tmp/premeta
+sqlite3 /tmp/pre.db 'SELECT id,kind,qualified_name,source_path,line,col,meta FROM nodes ORDER BY id;'
+sqlite3 /tmp/pre.db 'SELECT id,from_id,to_id,kind,confidence_tier,confidence,evidence FROM edges ORDER BY id;'
+# ...and the same two queries against
+#   "/tmp/wdD/state/retrofit/jvm_mixed_dir_change_receiver_type[binder=on,profile=default]/full.db"
+# diff -> EMPTY. Repeat with -classes jvm_change_import_shadowing for antlr4,
+# where the edge diff is exactly one added `imports` edge.
+```
+
 # JVM real-repository matrix — WP-J7 / gate G4 (2026-08-23, W5.d+1 SW-204)
 
 > **THIS SECTION PUBLISHES NO MATRIX. It publishes a GATE and a REFUSAL.** It

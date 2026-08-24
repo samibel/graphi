@@ -79,8 +79,21 @@ func jvmSpecs() []JVMClassSpec {
 			Note: "Promotes a nested Java type to top level. Nested types mint NO node (qn.go), so the promotion makes the type and " +
 				"its members appear as nodes for the first time — the nested/top-level node boundary as a parity-holding transition."},
 		{ID: "jvm_change_import_shadowing", Plan: planJVMChangeImportShadowing,
-			Note: "Adds a single-type import for a simple name the file already resolves through an on-demand import, so the name " +
-				"re-resolves under JLS 6.4.1's precedence ladder."},
+			Note: "Adds a single-type import for a simple name the file already carries as a TOKEN, which under JLS 6.4.1's " +
+				"precedence ladder would shadow an on-demand import IF that token were a type reference. CORRECTED BY THE " +
+				"SW-207 REVIEW, ROUND 1, in place and stated: this note read \"for a simple name the file already RESOLVES " +
+				"through an on-demand import\". The planner does not establish that. Its selection test is " +
+				"referencesSimpleName (internal/parity/jvmsource.go), a whole-word TOKEN match over comment- and " +
+				"string-masked bytes with NO import, package or member resolution. Measured on the target this row actually " +
+				"runs: all FOUR `Lexer` tokens in runtime-testsuite/.../CustomDescriptors.java are `GrammarType.Lexer` " +
+				"member selects, not type references, and the file's only non-static on-demand import is `java.util.*`, " +
+				"which declares no Lexer — so nothing re-resolves and the JLS 6.4.1 rule is not exercised. Filed as " +
+				"PARITY-OBS-004, sibling of PARITY-OBS-003, and NOT repaired here: the predicate is byte-unchanged by " +
+				"SW-207 and repairing it re-bases published evidence. TARGET ACQUIRED BY SW-207: this row SKIPped on all four axis " +
+				"cells while the corpus held only guava, okio and kotlinx.serialization, because the only Java on-demand import " +
+				"among the three was guava's STATIC `import static java.util.stream.Collectors.*;`, which imports members rather " +
+				"than types and which JLS 6.4.1 does not govern. The antlr4 pin carries 58 NON-static Java on-demand imports, " +
+				"which is what the row needs and the reason that pin is in the corpus at all."},
 		{ID: "jvm_move_symbol", Lang: langKotlin, Plan: planJVMMoveSymbol,
 			Note: "A Kotlin top-level function moves file-to-file within ONE directory. The QN keys on the directory, not the filename, " +
 				"so identity is stable while source_path changes: two files claim one NodeId inside a single change set."},
@@ -93,8 +106,26 @@ func jvmSpecs() []JVMClassSpec {
 				"caller is never reprocessed and the chained callee survives. On a real repository neither can be guaranteed, so this " +
 				"row is corroboration that the D9 unit holds parity on real mixed directories — not a second proof of the D9 mechanism."},
 		{ID: "jvm_mixed_dir_change_receiver_type", Plan: planJVMMixedDirChangeReceiverType,
-			Note: "A declared return type is re-pointed in a file OUTSIDE a mixed-language directory whose contents name it. Same " +
-				"scope caveat as jvm_mixed_dir_delete_callee: parity over the change on a real mixed directory, not a re-proof of D9."},
+			Note: "A declared SUPERTYPE is re-pointed in a Java file OUTSIDE a mixed-language directory, while a file INSIDE " +
+				"that directory carries the edited type's SIMPLE NAME as a token. Same scope caveat as jvm_mixed_dir_delete_callee: " +
+				"parity over the change on a real mixed directory, " +
+				"not a re-proof of D9. CORRECTED BY THE SW-207 REVIEW, ROUND 1, in place and stated: this note read \"OUTSIDE a " +
+				"mixed-language directory whose contents NAME THE EDITED TYPE\". They do not. Conjunct (4) is " +
+				"referencesSimpleName, a whole-word TOKEN match with no import or package resolution, so the namer may resolve " +
+				"to a DIFFERENT class carrying the same simple name — and on the retrofit pin it does. Measured at " +
+				"cc76c22a68e0: retrofit declares SIX distinct classes named HttpException (retrofit2 and the five " +
+				"retrofit2.adapter.{guava,java8,rxjava,rxjava2,rxjava3} packages); the mutation edits the guava one; the namer " +
+				"retrofit/kotlin-test/src/test/java/retrofit2/KotlinSuspendTest.kt is in package retrofit2, imports no " +
+				"HttpException, and its single HttpException token therefore resolves to retrofit2.HttpException — the edited " +
+				"class's own SUPERCLASS, not the edited class. Filed as PARITY-OBS-004, sibling of PARITY-OBS-003, and NOT " +
+				"repaired here: the predicate is byte-unchanged by SW-207 and repairing it re-bases published evidence. " +
+				"CORRECTED BY SW-207, in place and stated: this note read \"a declared RETURN type is " +
+				"re-pointed\", which is the shape of the HERMETIC twin; planJVMMixedDirChangeReceiverType splices t.SuperStart.. " +
+				"t.SuperEnd, i.e. the `extends` clause, and the mutation sentence it emits has always said supertype. " +
+				"TARGET ACQUIRED BY SW-207: okio already satisfied the first conjunct with two mixed directories but has only 2 " +
+				"Java files outside them and NEITHER declares a top-level class with a supertype, so okio fails at the third " +
+				"conjunct; guava and kotlinx.serialization have no mixed directory at all and fail at the first. The retrofit pin " +
+				"satisfies all five."},
 	}
 }
 
@@ -493,11 +524,22 @@ func planJVMChangeImportShadowing(m *JVMModel) (*Mutation, error) {
 				// shadowing rule — which is what this row is about — does not
 				// govern it. Accepting one would let the row run under the
 				// wrong semantics and publish a verdict about a rule it never
-				// exercised. Measured relevance: across the three pinned JVM
-				// repositories the ONLY Java wildcard import at all is guava's
-				// `import static java.util.stream.Collectors.*;`, so without
-				// this condition that single line would be the shadowing base
-				// for the entire corpus.
+				// exercised.
+				//
+				// MEASURED RELEVANCE, re-measured 2026-08-23 (SW-207) after the
+				// corpus gained two pins; the earlier sentence said "across the
+				// three pinned JVM repositories the ONLY Java wildcard import at
+				// all is guava's `import static java.util.stream.Collectors.*;`"
+				// and was true of three pins, so it is restated over five rather
+				// than carried forward. Over the five JVM pins, scanned by this
+				// model at their manifest shas: guava has exactly one Java
+				// on-demand import and it is that static one; okio,
+				// kotlinx.serialization and retrofit have NONE of either kind;
+				// antlr4 has 75, of which 17 are static and 58 are NOT. So this
+				// condition is what keeps guava's single static line from being
+				// the shadowing base for the whole corpus, and antlr4 is the
+				// only pin that gives the row a target at all — which is why
+				// SW-207 acquired it.
 				if !im.Static && onDemand == "" {
 					onDemand = im.Path
 				}
@@ -657,7 +699,16 @@ func planJVMMixedDirDeleteCallee(m *JVMModel) (*Mutation, error) {
 }
 
 // planJVMMixedDirChangeReceiverType re-points a declared supertype in a file
-// OUTSIDE a mixed-language directory whose contents name the edited type.
+// OUTSIDE a mixed-language directory one of whose files carries the edited
+// type's SIMPLE NAME as a token.
+//
+// The distinction is load-bearing and was corrected by the SW-207 review: the
+// namer test below is referencesSimpleName, which resolves nothing. A file
+// INSIDE the mixed directory may carry the token while its own package or
+// imports bind that name to a DIFFERENT class — measured on the retrofit pin,
+// where six classes are named HttpException and the namer binds to the one the
+// edited class extends rather than to the edited class. See PARITY-OBS-004.
+// This comment is a statement about the predicate, not a change to it.
 func planJVMMixedDirChangeReceiverType(m *JVMModel) (*Mutation, error) {
 	mixed := m.mixedDirs()
 	if len(mixed) == 0 {

@@ -1,6 +1,8 @@
 package jvmcorpus_test
 
 import (
+	"slices"
+	"sort"
 	"strings"
 	"testing"
 
@@ -8,6 +10,20 @@ import (
 )
 
 const manifestPath = "../../corpus/manifest.json"
+
+// declaredJVMPins is the JVM pin set this package expects the checked-in
+// manifest to carry, BY NAME rather than by count.
+//
+// It was a bare `len(pins) != 3` until SW-207 added the two pins that host the
+// source shapes the WP-J7 real-repository matrix had no target for
+// (jvm_change_import_shadowing needs a NON-STATIC Java on-demand import — only
+// antlr4 has one; jvm_mixed_dir_change_receiver_type needs the five-way
+// conjunction planJVMMixedDirChangeReceiverType tests — only retrofit satisfies
+// it). A count says "three" and means nothing about WHICH three, so a pin
+// swapped for another would have left it green; the names are what the reader
+// of a published figure actually needs pinned, and adding or removing one is
+// now a deliberate edit in the diff.
+var declaredJVMPins = []string{"antlr4", "guava", "kotlinx.serialization", "okio", "retrofit"}
 
 // TestCheckedInManifest_EveryJVMPinStatesItsStrategy is AC-3 as a gate: the
 // checked-in manifest must parse AND satisfy every obligation the three
@@ -19,8 +35,12 @@ func TestCheckedInManifest_EveryJVMPinStatesItsStrategy(t *testing.T) {
 		t.Fatalf("the checked-in manifest must load and validate: %v", err)
 	}
 	pins := m.JVMPins()
-	if len(pins) != 3 {
-		t.Fatalf("expected the three JVM pins (guava, okio, kotlinx.serialization), got %d: %v", len(pins), names(pins))
+	got := append([]string(nil), names(pins)...)
+	sort.Strings(got)
+	if !slices.Equal(got, declaredJVMPins) {
+		t.Fatalf("JVM pin set is %v, want %v — every pin here backs published figures, so a pin "+
+			"appearing or disappearing is a deliberate edit to declaredJVMPins, never a silent one",
+			got, declaredJVMPins)
 	}
 	for _, p := range pins {
 		if p.Compile == nil {
