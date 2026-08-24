@@ -103,7 +103,7 @@ function extra_util() {
 		{
 			id:          "php_add_call_heuristic",
 			kind:        kindChangeClass,
-			description: "A new cross-file require call is added: `require_once '../lib/util.php'`. The resolver's exact-path require path. The witness pins the heuristic tier on the resulting `imports` edge from the importing file node to the required file node — the PHP resolver MUST NOT mint a confirmed edge (the G2SUB never-confirmed half). (Bare-call PendingRef emission is the parser's job; this row covers the resolver's contract on the `require_once` itself.)",
+			description: "A new cross-file require call is added: `require_once '../lib/util.php'`, together with the bare call `helper()` it enables. The witness pins the CALL-LEVEL edge, not the file-level one: the caller symbol `app.checkout` must carry a `calls` edge to `lib.helper` at HEURISTIC tier (model.TierHeuristic) — the PHP resolver's only tier, and a confirmed edge here would be the G2SUB never-confirmed half violated. The parser records the bare call site as an inert PendingRef (core/parse/parser_php.go phpScanBody -> cstWalk.callBare) and the resolver binds it through the require's ambient directory. Asserting only the file→file `imports` edge, as this row did before SW-194b.5, cannot tell that graph apart from one that answers no cross-file caller question at all.",
 			seed: map[string]string{
 				"app/main.php": `<?php
 function checkout() {
@@ -126,16 +126,17 @@ function checkout() {
 `)
 			},
 			witness: func(g *graphView) error {
-				// The cross-file require must produce an `imports` edge
-				// from app/main.php to lib/util.php at HEURISTIC tier —
-				// the resolver's only tier. A confirmed edge here would
-				// be the G2SUB never-confirmed half violated.
-				e, ok := g.fileEdge("app/main.php", "imports", "lib/util.php")
+				// The cross-file require must resolve the bare CALL, not
+				// merely the file: app.checkout --calls--> lib.helper at
+				// HEURISTIC tier — the resolver's only tier. A confirmed
+				// edge here would be the G2SUB never-confirmed half
+				// violated; an absent edge is the SW-194b.5 soundness gap.
+				e, ok := g.edge("app.checkout", "calls", "lib.helper")
 				if !ok {
-					return fmt.Errorf("imports edge app/main.php --imports--> lib/util.php absent; graph has %s", g.edgeList())
+					return fmt.Errorf("calls edge app.checkout --calls--> lib.helper absent; graph has %s", g.edgeList())
 				}
 				if e.Tier() != heuristic {
-					return fmt.Errorf("imports edge app/main.php --imports--> lib/util.php has tier %q, want %q (wrong mechanism minted it)", e.Tier(), heuristic)
+					return fmt.Errorf("calls edge app.checkout --calls--> lib.helper has tier %q, want %q (wrong mechanism minted it)", e.Tier(), heuristic)
 				}
 				return nil
 			},
