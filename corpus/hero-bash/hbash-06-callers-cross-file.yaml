@@ -1,0 +1,17 @@
+id: hbash-06-callers-cross-file
+description: >
+  HONEST-EMPTY (bash, per docs/plan/2026-08-per-language-ga-template-v1.md §5.5):
+  bash's language specification defines no cross-file construct (the `source`
+  builtin is shell execution, not a script-level language construct), so the
+  cross-file callers relation is NOT askable. Per AC-4 this scenario's
+  description documents the honesty: the operation is substituted and the
+  `callers` query returns a well-formed empty result, not a fabricated list
+  of callers. The substitution is labelled at the G6 row.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: callers
+  args:
+    symbol: hello
+area: agent_mcp
+expect:
+  outcome: empty

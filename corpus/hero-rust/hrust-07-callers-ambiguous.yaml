@@ -1,0 +1,17 @@
+id: hrust-07-callers-ambiguous
+description: >
+  init is defined in both app/caller.rs and app/other.rs — both live in the
+  `app/` directory, so the byDir index records the same QN `app.init` TWICE
+  (two distinct NodeIds). The resolver drops and counts same-clause
+  collisions instead of guessing, so callers(init) cannot pick a single
+  definition — the result reports the candidates and the outcome is
+  AMBIGUOUS. This is the Rust parallel of the ccpp twin's
+  hccpp-07-callers-ambiguous shape.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: callers
+  args:
+    symbol: init
+  area: agent_mcp
+expect:
+  outcome: ambiguous

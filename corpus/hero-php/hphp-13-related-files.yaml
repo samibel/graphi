@@ -1,0 +1,22 @@
+id: hphp-13-related-files
+description: >
+  HONEST-EMPTY: lib.core has no DIRECT inbound edge from any caller
+  at the function level. The require-driven file->file imports edges
+  target the file node lib/util.php, not the function node lib.core;
+  the PHP parser does NOT mint EdgeImports edges at the function level
+  (core/parse/parser_php.go:74 phpImports only records ImportSpec
+  entries, never EdgeImports graph edges). related_files(lib.core,
+  dependents) returns empty, recorded here per AC-4 (parse-
+  determinism honest-empty discipline). The ccpp twin at
+  hccpp-13-related-files.yaml documents the same honest-empty for the
+  same reason — file->file imports do not flow to function-level
+  related_files queries.
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: related_files
+  args:
+    anchor: lib.core
+    direction: dependents
+  area: agent_mcp
+expect:
+  outcome: empty

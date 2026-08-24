@@ -1,0 +1,19 @@
+id: hcs-13-related-files
+description: >
+  HONEST-EMPTY: Shop.core has no DIRECT inbound edge from any caller
+  (Shop.salute and Shop.run both call core, but their callers-of-core
+  reach is through Shop.core's callees, not its callers). The C#
+  parser does not mint EdgeImports edges at the file level — the
+  `using Shop;` directive is recorded as an ImportSpec, never as a
+  graph EdgeImports edge. related_files(Shop.core, dependents) returns
+  empty, recorded here per AC-4 (parse-determinism honest-empty
+  discipline).
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: related_files
+  args:
+    anchor: Shop.core
+    direction: dependents
+  area: agent_mcp
+expect:
+  outcome: empty

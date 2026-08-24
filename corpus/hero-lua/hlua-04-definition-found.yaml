@@ -1,0 +1,15 @@
+id: hlua-04-definition-found
+description: The definition of lib.core resolves to the shared util module.
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: definition
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  contains_path: lib/util.lua
+  absent:
+    - kind: file
+      value: app/main.lua
+      match: contains

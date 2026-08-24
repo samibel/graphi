@@ -1,0 +1,16 @@
+id: hsql-10-neighborhood
+description: >
+  The neighborhood of app.helper carries the intra-file references context
+  (the join_view declaration in the same file that references it). The SQL
+  neighborhood is structurally equivalent to the JVM/Python one — same
+  bounded k-hop query over the relations the parser actually emits
+  (references only — SQL has no calls edge).
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: neighborhood
+  args:
+    symbol: app.helper
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found

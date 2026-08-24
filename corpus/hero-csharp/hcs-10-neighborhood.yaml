@@ -1,0 +1,11 @@
+id: hcs-10-neighborhood
+description: The neighborhood of Shop.core carries the cross-file call context.
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: neighborhood
+  args:
+    symbol: Shop.core
+    depth: "1"
+  area: agent_mcp
+expect:
+  outcome: found

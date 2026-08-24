@@ -1,0 +1,22 @@
+id: hccpp-11-impact
+description: >
+  The blast radius of shop.core reaches its cross-language callers
+  (c.entry, c.twice, cpp.entry, cpp.twice_cpp) through the
+  include-directory binder's heuristic calls edges. Other_salute
+  (which never calls core) must NOT appear (negative anchor).
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: impact
+  args:
+    symbol: shop.core
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: c.entry
+      match: contains
+  absent:
+    - kind: symbol
+      value: c.other_salute
+      match: contains

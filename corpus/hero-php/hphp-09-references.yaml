@@ -1,0 +1,18 @@
+id: hphp-09-references
+description: >
+  HONEST-EMPTY: the PHP parser (core/parse/parser_php.go) does NOT
+  emit EdgeReferences edges — phpScanBody only emits callBare /
+  callSelector from function_call_expression / member_call_expression
+  nodes. There is no typeRef collector for PHP at this tier. The
+  references operation returns a well-formed empty result, recorded
+  here per AC-4 (parse-determinism honest-empty discipline). The
+  ccpp twin at hccpp-09-references.yaml documents the same
+  honest-empty for the same reason.
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: references
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: empty

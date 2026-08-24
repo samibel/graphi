@@ -1,0 +1,29 @@
+id: hlua-11-impact
+description: >
+  The blast radius of lib.core reaches lib.run (intra-file) and the
+  cross-file callers app.entry, app.twice (the requireBinder's
+  ambient-dir heuristic at engine/link/resolve_common.go:436). app.init
+  and app.greet never call core, so they MUST NOT appear (negative
+  anchors).
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: impact
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.entry
+      match: contains
+    - kind: symbol
+      value: app.twice
+      match: contains
+  absent:
+    - kind: symbol
+      value: app.init
+      match: contains
+    - kind: symbol
+      value: app.greet
+      match: contains

@@ -1,0 +1,14 @@
+id: hbash-11-impact
+description: >
+  HONEST-EMPTY (bash, per §5.5): bash's blast radius across files is NOT
+  askable — the language defines no cross-file construct that the impact
+  operation can chase. Impact returns a same-file result with empty cross-file
+  outbound edges; this scenario records the honesty per AC-4.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: impact
+  args:
+    symbol: hello
+area: agent_mcp
+expect:
+  outcome: empty

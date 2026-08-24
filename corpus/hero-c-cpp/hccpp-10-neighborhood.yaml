@@ -1,0 +1,11 @@
+id: hccpp-10-neighborhood
+description: The neighborhood of shop.core carries the include-relation context.
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: neighborhood
+  args:
+    symbol: shop.core
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found

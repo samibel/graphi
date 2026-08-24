@@ -1,0 +1,15 @@
+id: hsql-04-definition-found
+description: The definition of schema.core resolves to schema/tables.sql.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: definition
+  args:
+    symbol: schema.core
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: schema/tables.sql
+  absent:
+    - kind: file
+      value: app/join_view.sql
+      match: contains

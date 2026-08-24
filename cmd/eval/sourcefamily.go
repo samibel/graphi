@@ -256,13 +256,20 @@ var sourceFamilies = []sourceFamily{
 	// change where it exited 1 before it. So the pin status is stated as a
 	// fact rather than implied by where the entry sits.
 	//
-	// WITH a corpus pin (7): go (cobra, uuid, lo, gin, grpc-go, kubernetes),
-	// java (guava), kotlin (okio, kotlinx.serialization), python (flask),
-	// typescript (ky), javascript (express), ruby (sinatra).
+	// WITH a corpus pin (13, post-SW-196 W5.j): go (cobra, uuid, lo, gin,
+	// grpc-go, kubernetes), java (guava), kotlin (okio, kotlinx.serialization),
+	// python (flask), typescript (ky), javascript (express), ruby (sinatra),
+	// c (cjson), csharp (Newtonsoft.Json), cpp (nlohmann/json), lua
+	// (lua-resty-core), php (composer), rust (serde).
 	//
-	// WITHOUT one (8): tsx — listed above beside typescript for readability,
-	// but ky is a `.ts` pin, not a `.tsx` one — plus rust, c, cpp, csharp,
-	// php, lua and bash below.
+	// WITHOUT one (2): tsx — listed above beside typescript for readability,
+	// but ky is a `.ts` pin, not a `.tsx` one — and bash (no representative
+	// open-source bash project at the pin tier; SW-196 honest abstention,
+	// corpus/manifest.json bash-abstention). SQL is NOT a source family in
+	// this table because the SW-196 W5.j honest abstention names its lack of
+	// a corpus pin — the table's extension map is `[".sh", ".bash"]` for bash,
+	// and no SQL grammar wires a per-file mutation contract, so SQL is not a
+	// family here and the 15-of-15 count is unaffected.
 	//
 	// An unpinned family is exercised only by the hermetic parse tests in
 	// sourcefamily_test.go, never by a -full-run. It is entered anyway because

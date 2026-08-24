@@ -1,0 +1,17 @@
+id: hccpp-09-references
+description: >
+  HONEST-EMPTY: the c/cpp parsers (core/parse/parser_c.go, parser_cpp.go)
+  do NOT emit EdgeReferences edges — only EdgeCalls from call_expression
+  sites and EdgeDefines from declarations. EdgeReferences is reserved
+  for type-name references at this tier, and the c/cpp subset has no
+  dedicated type-ref collector (struct_specifier uses addDef, not typeRef).
+  references(shop.core) returns a well-formed empty result, recorded here
+  per AC-4 (parse-determinism honest-empty discipline).
+fixture_ref: tier1-fixture-hero-c-cpp
+operation:
+  name: references
+  args:
+    symbol: shop.core
+area: agent_mcp
+expect:
+  outcome: empty

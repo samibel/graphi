@@ -1,0 +1,14 @@
+id: hlua-02-search-hit
+description: Searching for "core" finds the shared service declaration lib.core in lib/util.lua.
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: search
+  args:
+    query: core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: lib.core
+      match: contains

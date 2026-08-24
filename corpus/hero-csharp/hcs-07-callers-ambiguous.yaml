@@ -1,0 +1,15 @@
+id: hcs-07-callers-ambiguous
+description: >
+  init_c is defined in both app/Caller.cs and app/Other.cs — both live in
+  the `app/` directory, so the byDir index records the same QN `app.init_c`
+  TWICE (two distinct NodeIds). dirAmbiguous["app"]["init_c"] = true makes
+  resolve.Strict return AMBIGUOUS: callers(init_c) cannot pick a single
+  definition. Mirrors the ccpp twin's two-files-same-def shape.
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: callers
+  args:
+    symbol: init_c
+  area: agent_mcp
+expect:
+  outcome: ambiguous

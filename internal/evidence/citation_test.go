@@ -614,6 +614,51 @@ func TestAC11_EntryWithoutOwnerIsAViolation(t *testing.T) {
 	}
 }
 
+// TestAC11_FiledDefectIdIsALegalOwner pins the widened owner rule (SW-192..197
+// integration, rebuild round 1). An entry whose breach is drained by a filed
+// DEFECT rather than by a scheduled story must be able to say so. Before this,
+// `owner:` had to look like SW-NNN, so every entry in the checked-in list named
+// the story that WROTE the breach — a story already `done` that never lands the
+// cited artifact — and the ratchet's shrinking force pointed at closed tickets.
+//
+// The rule stays syntactic in both directions: a defect id passes, and text that
+// is neither shape still fails. The checker cannot tell an open owner from a
+// closed one and does not pretend to.
+func TestAC11_FiledDefectIdIsALegalOwner(t *testing.T) {
+	for _, tc := range []struct {
+		owner string
+		ok    bool
+	}{
+		{"PARITY-RUBY-DRIVER-001", true},
+		{"PARITY-TS-FAMILY-DRIVER-001", true},
+		{"PYTHONFANOUT-001", true},
+		{"SW-193", true},
+		{"SW-194-c", true},
+		{"SW-194b.5", true},
+		{"", false},
+		{"nope", false},
+		{"the ruby driver", false},
+		{"parity-ruby-driver-001", false},
+		{"PARITY-RUBY-DRIVER", false},
+	} {
+		r := newFixtureRepo(t)
+		r.write("docs/rc/rec.md", "# R\n\n## B\n\nCites `docs/rc/gone-a.json`.\n")
+		r.commit("add")
+
+		gf := Grandfather{Entries: []GrandfatherEntry{{
+			Target: "docs/rc/rec.md :: missing-path :: docs/rc/gone-a.json",
+			Reason: "because",
+			Owner:  tc.owner,
+			Line:   2,
+		}}}
+		rep := r.check(Index{}, gf)
+		got := hasViolation(rep, RuleGrandfatherNoOwner, "gone-a.json")
+		if got == tc.ok {
+			t.Errorf("owner %q: no-owner violation = %v, want %v:\n%s", tc.owner, got, !tc.ok, rep.FormatCitations())
+		}
+	}
+}
+
 // TestAC11_RatchetCannotSuppressItsOwnStructuralViolations pins the rule that the
 // list may not silence complaints about ITSELF. An entry with no owner is an AC-11
 // violation; a second entry naming that violation's key must not make it go away,

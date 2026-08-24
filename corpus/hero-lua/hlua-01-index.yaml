@@ -1,0 +1,8 @@
+id: hlua-01-index
+description: Indexing the Lua fixture returns a populated inventory (lib.core, lib.salute, lib.run, app.entry, app.twice, app.init, app.greet).
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: index
+  area: agent_mcp
+expect:
+  outcome: found

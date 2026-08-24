@@ -1,0 +1,22 @@
+id: hphp-11-impact
+description: >
+  The blast radius of lib.core reaches its intra-file caller lib.run
+  (in lib/util.php) and the cross-file caller app.entry (via the
+  ambient require directory). app.other_salute (which never calls
+  core, directly or transitively) must NOT appear (negative anchor).
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: impact
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: lib.run
+      match: contains
+  absent:
+    - kind: symbol
+      value: app.other_salute
+      match: contains

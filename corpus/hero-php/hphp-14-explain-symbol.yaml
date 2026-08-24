@@ -1,0 +1,11 @@
+id: hphp-14-explain-symbol
+description: Explaining lib.core cites its definition in lib/util.php.
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: explain_symbol
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

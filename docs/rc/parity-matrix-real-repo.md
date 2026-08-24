@@ -1,5 +1,540 @@
 # Full/incremental parity matrix over pinned real repositories
 
+# Cross-file-heuristic residual — WP-xfh / gate G4 — MEASURED 1, ABSTAINED 8 (2026-08-23, W5.i SW-195)
+
+> **The W5.i measurement, finally run.** SW-194 landed the parity-class
+> YAML + conformance for the nine cross-file-heuristic residual
+> languages (bash, c, c_sharp, cpp, lua, php, ruby, rust, sql); SW-195
+> lands the G4 evidence. Of the nine, **one** (ruby) has a real-repo
+> pin at the v3 measured standard (sinatra v4.0.0 at sha
+> `b626e2d82c23b4fde0b51782fd32ca27ccde1d1a`); **eight** do not, and
+> per SW-195 AC-3 and the spec rule "STALE rows are re-marked, never
+> re-pointed; abstention is honest", those eight stay UNKNOWN with the
+> SW-195-specific abstention reason named in their `current` fields.
+> The dependency on **SW-196** (corpus pins v3 for the
+> cross-file-heuristic residual) is load-bearing: a real-repo parity
+> run needs a pin at the v3 standard, and at SW-195 close only sinatra
+> exists. SW-195 records the gap, does not paper over it.
+
+**Status: MEASURED for ruby (1/9 PASS), ABSTAINED for the other 8
+(8/9 UNKNOWN).** Ruby uses `requireBinder` → `importFileTargets`
+(`engine/link/resolve_ruby.go:19` + `engine/link/resolve_common.go:332`),
+the same exact-path resolution shape that gives the TS family
+structural immunity. The F5 measurement SUCCEEDED IN RUNNING AND ITS
+FINDING SUPPORTS GA at `cross-file-heuristic`: 62 cross-file `imports`
+edges on sinatra distributed over 8 distinct target files and 61
+distinct importers, with NO `(importer, kind)` tuple exhibiting
+fan-out (the 2 tuples with `>1 distinct_target_file` are BOTH
+legitimate multi-require patterns, NOT the PARITY-002 shape).
+Two `graphi rebuild` dispatches agree at per-row count level (1255
+nodes / 1618 edges / 62 cross-file imports in both).
+
+For the other eight languages, this section records the abstention
+discipline (per SW-195 AC-3 and the spec rule) and the structural
+reasoning that predicts the post-SW-196 outcomes:
+
+| language | corpus pin at v3? | F5 fan-out measured? | G4 disposition | structural reasoning (predicted post-SW-196) |
+|---|---|---|---|---|
+| ruby | **YES** (sinatra v4.0.0) | **YES** (this section) | **PASS** | `requireBinder` → `importFileTargets` (immune); F5 fan-out absent |
+| bash | NO | NO | UNKNOWN (abstention) | `requireBinder` → `importFileTargets` (immune); predicted PASS |
+| c | NO | NO | UNKNOWN (abstention) | `includeBinder` → `importFileTargets` (immune); predicted PASS |
+| cpp | NO | NO | UNKNOWN (abstention) | shared with c; predicted PASS |
+| c_sharp | NO | NO | UNKNOWN (abstention) | `pkgImportPaths` → `clausePackageFileNodes` (susceptible); predicted UNKNOWN with fan-out |
+| lua | NO | NO | UNKNOWN (abstention) | `requireBinder` → `importFileTargets` (immune); predicted PASS |
+| php | NO | NO | UNKNOWN (abstention) | `requireBinder` → `importFileTargets` (immune); predicted PASS |
+| rust | NO | NO | UNKNOWN (abstention) | `pkgImportPaths` → `clausePackageFileNodes` (susceptible); predicted UNKNOWN with fan-out |
+| sql | NO | NO | UNKNOWN (abstention) | empty binder (no imports per ISO/IEC 9075); JOIN/VIEW shape (not import shape) per ADR 0012 |
+
+| | |
+|---|---|
+| Story | SW-195 (W5.i, 2026-08-23) |
+| Gate | language-GA program G4 / work package WP-xfh — real-repository F5-equivalent measurement for the cross-file-heuristic residual (9 languages) |
+| Per-language driver | NONE in `internal/parity/` for ruby or any of the 8 abstained languages; F5 measurement performed via `./cmd/graphi` directly (the SW-176 AC-2 + SW-192 + SW-193 precedent) |
+| Pin (ruby) | sinatra v4.0.0 at sha `b626e2d82c23b4fde0b51782fd32ca27ccde1d1a` (matches manifest pin exactly, NOT STALE — unlike SW-192's flask pin) |
+| Two dispatches (ruby) | 2 × `graphi rebuild` of the same sinatra pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite F5 probe per dispatch |
+| Pin (other 8) | none at v3 measured standard; SW-196 dependency |
+| Provenance | ruby: candidate SHA `9f687849cec2b26311401191e90b60e40b5f6cee` (post-SW-188, per AC-7), runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, branch tip `da47330bd7d06498fa200bba8970449d69357bfe`, product binary digest `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` |
+| Ruby report artifacts | [`ruby-f5-measurement.md`](../ruby-f5-measurement.md) (the ruby measurement file); abstention doc at [`cross-file-residual-abstention.md`](../cross-file-residual-abstention.md) (covers the other 8) |
+| Ruby evidence | `evidence_uri` = `docs/rc/ruby-f5-measurement.md + docs/rc/parity-matrix-real-repo.md#cross-file-heuristic-residual--wp-xfh--gate-g4--measured-2026-08-23-w5i-sw195-at-post-sw188-candidate`; `sha` = `93e9fa19048215982751a77784593ee2b35a2c8fc4d70d5e50523a26f80c8f87` (sha256 of ruby-f5-measurement.md) |
+| Abstention evidence | `evidence_uri` = `docs/rc/cross-file-residual-abstention.md`; `sha` = `7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51` (sha256 of cross-file-residual-abstention.md) |
+
+> **CORRECTION 2026-08-24 (SW-192..197 integration, rebuild round 1, review
+> finding B1) — the `product_binary_digest` cell above is corrected in place.
+> Nothing else in this record is rewritten, and no verdict moves.** The cell
+> read `f9918e5cf5860c8c7b94d506aec43d5961ee1c44a49164f176056e13df1d8dd6`. That
+> value is **unreproducible** and it is withdrawn.
+>
+> **What was rebuilt, and what came out.** The canonical recipe this project
+> uses for a product-binary digest is `CGO_ENABLED=0 go build -trimpath
+> -buildvcs=false -o <bin> ./cmd/graphi` (`docs/decisions/2026-08-parity-candidate-move-adr0013.md`),
+> on go1.26.6 darwin/arm64 — the toolchain this record itself declares. Run at
+> SW-195's own declared branch tip `da47330b`, at SW-195's own commit `f4bd1d9`,
+> at the candidate `9f687849` and at the pre-integration base `3fe97f04`, it
+> produces `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf`
+> every time — the same digest at all four, because the four trees are
+> product-byte identical. Dropping `-buildvcs=false` changes nothing here (a
+> detached worktree stamps no VCS metadata: `go version -m` shows only
+> `-buildmode`, `-compiler`, `-trimpath=true`); dropping `-trimpath` makes the
+> digest path-dependent and therefore not a candidate identity at all. **No
+> recipe at any of those four commits produces the withdrawn value**, and no
+> binary with that digest exists on the machine this record was written on.
+>
+> **Why `0de6e64d…` is the right value rather than a guess.** The cell's own
+> parenthetical says *"current main binary, doc-only branch → UNCHANGED"*, and
+> `0de6e64d…` is what main builds to: SW-192 records it verbatim
+> (`docs/rc/python-f5-measurement.md` §11), SW-193's `ky` block in
+> `corpus/manifest.json` records it at the **same** `candidate_sha`,
+> `branch_tip` and `go_version` this record declares, and SW-190 / SW-204 /
+> SW-207 / SW-209 all carry it. `git log --all -S` finds the withdrawn token
+> introduced by exactly one commit in the history of any branch — `f4bd1d9`,
+> SW-195 itself. SW-195 never derived a digest at all: its verification argued
+> "digest UNCHANGED" *structurally*, from `git diff --stat` showing 0 Go-line
+> changes, and built no binary. The withdrawn token is a transcription error,
+> not the record of a different build.
+>
+> **Scope of the correction.** The ruby F5 counts, the two-dispatch agreement
+> and `GA-LANG-ruby-G4`'s PASS rest on the dispatches SW-195 ran and are not
+> re-taken here. What is corrected is the provenance anchor naming which binary
+> ran them.
+
+> **AMENDMENT 2026-08-24 (same integration, review finding B2) — the "Pin (other
+> 8)" row above, and the eight `corpus pin at v3? NO` cells in the table at the
+> head of this section, are HISTORY rather than the present state. Added, not
+> rewritten.** SW-196 landed in this same integration (merge `bf53c0f`) and
+> lifted **six** of the eight to a v3 pin in `corpus/manifest.json`: c (cjson),
+> cpp (nlohmann_json), c_sharp (Newtonsoft.Json), lua (lua-resty-core), php
+> (composer) and rust (serde). **bash and sql were not pinned and are not
+> pending**: SW-196 settled both by honest `no_pin` abstention, so their cells
+> stand as written. No G4 verdict moves either way — all eight rows are still
+> UNKNOWN, because none of the six landed pins has had the F5 dispatch run
+> against it. The full amendment, with refs, is in
+> `docs/rc/cross-file-residual-abstention.md`.
+
+
+## Ruby measurement, in one paragraph
+
+Ruby's `require`/`require_relative` resolution runs through
+`requireBinder` at `engine/link/resolve_common.go:332` (called from
+`engine/link/resolve_ruby.go:19` with the `.rb` extension set).
+`requireBinder` builds the binder's `importFileTargets` from explicit
+require paths: each require specifier contributes exactly one
+candidate target file path. The `clausePackageFileNodes` fan-out
+mechanism at `engine/link/resolve_common.go:521` is NOT in Ruby's
+binder — only the languages that use `pkgImportPaths` (Python at
+`resolve_python.go:76`, C# at `resolve_csharp.go:47`, Rust at
+`resolve_rust.go:49`) take that path. Ruby does NOT.
+
+The F5 fan-out probe on sinatra produces **2 rows** in both dispatch
+A and dispatch B:
+
+| importer | kind | distinct_target_files | edges |
+|---|---|---:|---:|
+| `sinatra-contrib/spec/respond_with_spec.rb` | imports | 2 | 2 |
+| `sinatra-contrib/spec/json_spec.rb` | imports | 2 | 2 |
+
+Both tuples have `distinct_target_files = edges = 2` — each edge
+goes to a DIFFERENT target file (no fan-out). Inspecting the actual
+edges:
+
+```
+sinatra-contrib/spec/json_spec.rb → sinatra-contrib/spec/okjson.rb       (line 1)
+sinatra-contrib/spec/json_spec.rb → sinatra-contrib/spec/spec_helper.rb  (line 1)
+sinatra-contrib/spec/respond_with_spec.rb → sinatra-contrib/spec/okjson.rb       (line 1)
+sinatra-contrib/spec/respond_with_spec.rb → sinatra-contrib/spec/spec_helper.rb  (line 1)
+```
+
+And the actual source for both files (head 5 lines):
+
+```ruby
+# sinatra-contrib/spec/json_spec.rb
+require 'multi_json'
+
+require 'spec_helper'
+require 'okjson'
+```
+
+```ruby
+# sinatra-contrib/spec/respond_with_spec.rb
+require 'multi_json'
+
+require 'spec_helper'
+require 'okjson'
+```
+
+Two `require` statements, two distinct targets, two distinct edges.
+This is the natural Ruby require semantics, NOT the PARITY-002
+fan-out shape. F5 fan-out (PARITY-002 shape) requires ONE require
+statement to produce edges to MULTIPLE files, which never happens
+here.
+
+## Two-dispatch determinism (ruby)
+
+| metric | dispatch A | dispatch B | agree? |
+|---|---:|---:|---|
+| total nodes | 1255 | 1255 | yes |
+| total edges | 1618 | 1618 | yes |
+| `imports` edges | 62 | 62 | yes |
+| `defines` edges | 1090 | 1090 | yes |
+| `calls` edges | 466 | 466 | yes |
+| cross-file `imports` edges | 62 | 62 | yes |
+| cross-file `references` edges | 0 | 0 | yes |
+| cross-file `calls` edges | 0 | 0 | yes |
+| F5 fan-out rows | 2 | 2 | yes |
+| snapshot envelope sha256 | `4249a529…` | `c9586bee…` | **no — envelope embeds `generated_at`** |
+
+The two snapshots agree on every per-row count that matters. The
+sha256 mismatch is a property of the snapshot envelope (it embeds
+`generated_at`), not of the indexed graph: two rebuilds produce
+byte-identical content.
+
+The formal `-verdict-diff` / `-counts-diff` exit-0 gates are NOT
+assertable from this measurement: `cmd/parity -family ruby` is
+rejected by `cmd/parity/main.go` (only `go` and `jvm` are accepted).
+The substantive half of `-counts-diff` (every per-row count agrees)
+holds; the formal gate is unbound — same shape as SW-176 AC-2
+(JVM), SW-192 (python), and SW-193 (TS family).
+
+## Why Ruby G4 flips PASS — the binary verdict
+
+The SW-181 AC-9 rule is explicit: *"IF the measurement supports GA
+at `cross-file-heuristic`, the row flips PASS; IF it does not, the
+row stays UNKNOWN with the F5 finding recorded."* The F5 measurement
+SUCCEEDS IN RUNNING AND ITS FINDING SUPPORTS GA at
+`cross-file-heuristic`:
+
+- F5 fan-out is ABSENT — 0 spurious edges, 0 tuples with
+  `distinct_target_files > edges` (the PARITY-002 signature).
+- The structural immunity is in the resolver shape (Ruby uses
+  `requireBinder` → `importFileTargets`, not `clausePackageFileNodes`).
+  The same shape protected the TS family (SW-193).
+- All 4 cross-file edge kinds (imports, references, calls, defines)
+  are at their natural extent — no fabricated targets, no phantom
+  imports.
+
+Per SW-181 AC-9, the G4 evidence row flips to PASS. The level
+printed beside GA stays `cross-file-heuristic` — the measurement
+supports GA at the declared level, no re-grade is performed, and
+no `RUBYFANOUT-001`-shaped defect is filed (no fan-out defect was
+found).
+
+## Why the other 8 stay UNKNOWN — abstention discipline
+
+Per the spec rule and SW-195 AC-3: *"GA-LANG-<lang>-G4 shall flip
+to PASS with URI and sha per language **only if** SW-196's pin is
+at v3 measured standard AND the two-dispatch parity agrees;
+otherwise the row stays UNKNOWN with the SW-195-specific reason
+named."* At SW-195 close, eight of nine languages have NO pin:
+
+```
+$ jq '.entries[] | select(.language == "bash" or .language == "c"
+   or .language == "cpp" or .language == "c_sharp" or .language == "lua"
+   or .language == "php" or .language == "rust" or .language == "sql")
+   | .name' corpus/manifest.json
+(empty result)
+```
+
+The structural reasoning PREDICTS the post-SW-196 outcomes but does
+NOT flip G4 rows on its own:
+
+- **bash, c, cpp, lua, php**: structural immunity — same outcome as
+  TS family (SW-193 PASS) and ruby (this section PASS). All use
+  `importFileTargets`-only resolution.
+- **c_sharp, rust**: structural susceptibility — same outcome as
+  python (SW-192 UNKNOWN with `PYTHONFANOUT-001`). Both use
+  `pkgImportPaths` → `clausePackageFileNodes`. The post-SW-196
+  measurement will likely file `<LANG>FANOUT-001` defects
+  (`CSHARPFANOUT-001`, `RUSTFANOUT-001`).
+- **sql**: empty binder — no imports per ISO/IEC 9075. The G4
+  measurement scope is the JOIN/VIEW resolution shape
+  (same-directory `derived` cross-file `references` edges), NOT the
+  import shape, per ADR 0012 / SW-183.
+
+These are PREDICTIONS, not measurements. The measurements run AFTER
+SW-196 lifts the pins; SW-195 records the structural reasoning
+honestly and abstains from declaring G4 PASS in the absence of
+evidence.
+
+## The harness gap, stated before any number
+
+**The Ruby parity driver does not exist in `internal/parity/`.**
+The harness as it stands today:
+
+| family | runner | source model | class table | cmd/parity wiring |
+|---|---|---|---|---|
+| Go | `Run` (`internal/parity/run.go:106`) | `RepoModel` (`gosource.go`) | `ClassesPath = "docs/rc/parity-classes.yaml"` | `-family go` |
+| JVM | `RunJVM` (`internal/parity/jvmrun.go:183`) | `JVMModel` (`jvmsource.go`) | `ClassesPathJVM` | `-family jvm` |
+| **Ruby** | **does not exist** | **does not exist** | **does not exist** | **no `-family ruby` option** |
+
+A direct build of a ruby parity driver would have the same shape
+as SW-176's WP-J7 JVM half — `rubyrun.go` (the run method),
+`rubysource.go` (the Ruby source model covering the `.rb`
+extension), `rubyclasses.go` (the real-repo class table),
+`docs/rc/parity-classes-ruby-real-repo.yaml` (the YAML), plus the
+`-family ruby` wiring in `cmd/parity/main.go`. **This is W6+ scope
+(NOT done by SW-195).** Filed as `PARITY-RUBY-DRIVER-001`, the
+same gap pattern as SW-192's python driver and SW-193's TS family
+driver.
+
+The formal `-verdict-diff` / `-counts-diff` exit-0 gates cannot be
+asserted from `cmd/parity -family ruby`; the substantive half of
+`-counts-diff` (every per-row count agrees at the snapshot row
+level) holds and is the load-bearing measurement.
+
+## What this section does and does not say
+
+**Says.** At the post-SW-188 candidate (9f687849…):
+
+- Ruby's G4 row flips to PASS. F5 fan-out is ABSENT on sinatra.
+  The Ruby resolver's structural immunity (requireBinder →
+  importFileTargets) holds at corpus scale.
+- The other 8 G4 rows stay UNKNOWN with the abstention reason
+  named per SW-195 AC-3. No pin at v3 means no measurement; the
+  abstention is honest per the spec rule.
+- The structural reasoning in the table above predicts the
+  post-SW-196 outcomes for the 8 abstained languages.
+
+**Does not say.** That the 8 abstained languages cannot reach GA at
+`cross-file-heuristic`. The structural reasoning suggests most can
+— but the structural reasoning is not the measurement, and SW-195
+does not declare the outcome in advance. SW-196 (corpus pins v3 for
+cross-file-heuristic residual) is the follow-on story that lifts
+the abstention.
+
+---
+
+# TS family real-repository measurement — WP-TS / gate G4 — MEASURED, G4 FLIPS PASS at the post-SW-188 candidate (2026-08-23, W5.g SW-193)
+
+> **THIS SECTION IS A MEASUREMENT.** SW-193's first attempt on
+> 2026-08-20 found the harness BLOCKED (no `cmd/parity -family
+> typescript` driver) and recorded the gap as
+> `PARITY-TS-FAMILY-DRIVER-001`. SW-193's autonomous re-dispatch on
+> 2026-08-23 ran the F5 measurement by driving `./cmd/graphi`
+> directly, per SW-176's AC-2 escalation and SW-192's python F5
+> precedent. **F5 fan-out is ABSENT on the TypeScript family at ky
+> (typescript) + express (javascript)** — every cross-file edge
+> lands on the exact resolved file path, never on a directory
+> fan-out. `GA-LANG-typescript-G4` and `GA-LANG-javascript-G4`
+> flip to PASS with URI + sha; `GA-LANG-tsx-G4` flips to PASS by
+> family-share with the family-share fact stated in `current`.
+>
+> The section immediately below — "TS family real-repository
+> matrix — WP-TS / gate G4 — BLOCKED (2026-08-20, W5.g)" — is
+> the prior measurement and is preserved verbatim per D6
+> add-only discipline, NOT re-pointed.
+
+| | |
+|---|---|
+| Story | SW-193 (W5.g, 2026-08-23, re-measurement at post-SW-188 candidate) |
+| Gate | language-GA program G4 / WP-TS — real-repository F5 measurement for TypeScript family |
+| Family / resolver | `engine/link/resolve_typescript.go` — shared by typescript, tsx, javascript (registered three times under three language ids; file-extension match selects the candidate path) |
+| Pins | ky `38ac18bc1ac3268130de766891ce9b718eb8145a` (typescript, tier 3, 34 source of 48 tracked, v3 measured 2026-08-20) + express `8368dc178af16b91b576c4c1d135f701a0007e5d` (javascript, tier 3, 153 source of 231 tracked, v3 measured 2026-08-20) — both at v3 measured standard |
+| Family-share discipline (SW-182 AC-2, SW-193 AC-3) | ky covers typescript; express covers javascript; tsx has NO representative pin and is discharged by family-share, with the family-share fact stated in `current`. The family-share condition is that the resolver does NOT branch per language id — the resolver is one `tsResolver` struct (`engine/link/resolve_typescript.go:21`) registered three times, and the file-extension match selects the candidate path, so a typescript pin that exercises the resolver IS coverage for the family's tsx edge kind by construction. |
+| Report artifacts | `docs/rc/typescript-f5-measurement.md` — the F5 measurement with per-edge byte equality and fan-out probe |
+| Verdict | **GA-LANG-typescript-G4 PASS**, **GA-LANG-javascript-G4 PASS**, **GA-LANG-tsx-G4 PASS (by family-share — conditional, see next_action)** |
+
+## What SW-193 changed, in one paragraph
+
+The TS family real-repository parity that was BLOCKED on 2026-08-20
+is now MEASURED on 2026-08-23. SW-193 ran two `graphi rebuild`
+dispatches over ky (typescript) and express (javascript) at the
+post-SW-188 candidate (`9f687849cec2b26311401191e90b60e40b5f6cee`,
+branch tip `da47330bd7d06498fa200bba8970449d69357bfe`, product
+binary digest `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf`).
+The two dispatches agree at **per-edge byte equality** at the
+(id, from_id, to_id, kind, confidence_tier) row level for both
+pins (ky: 157/157, express: 711/711). The F5 fan-out probe shows
+zero `(importer, kind)` tuples with >1 distinct target file on ky,
+and zero cross-file `references` on express — the family's
+exact-path resolution (D1) holds on real corpus, no directory
+fan-out is reintroduced by `package.json` / `tsconfig.json`
+path-mapping that SW-182 explicitly does NOT attempt. **The
+harness BLOCKER from 2026-08-20 is unchanged** (no
+`cmd/parity -family typescript` driver) — the measurement was
+performed manually by driving `./cmd/graphi` directly, per SW-176's
+AC-2 escalation and SW-192's python F5 precedent. The
+substantive half of `-counts-diff` (per-edge byte equality + every
+per-row count) holds; the formal `-verdict-diff` and
+`-counts-diff` exit codes are unbound and documented as such.
+
+## The F5 measurement, in one paragraph
+
+The F5 question for the TS family is the SW-182 AC-2 / AC-8
+question: does the family's exact-path resolution hold on real
+repository, or does the directory fan-out it does NOT do get
+reintroduced by `package.json` / `tsconfig.json` path-mapping that
+SW-182 explicitly does NOT attempt (D1)? The measurement: every
+cross-file `references` and `calls` edge on ky lands on the
+resolved file path (4 distinct target files for 11 cross-file
+edges, each corresponding to ONE import statement in
+`source/core/Ky.ts`), and express has zero cross-file `references`
+edges and zero cross-file `calls` edges. **F5 fan-out is absent on
+the TS family.** The hermetic control test
+`TestTSLink_NoDirectoryFanOut` at
+`engine/link/resolve_typescript_test.go:198` is the structural pin;
+SW-193 confirms it scales to real corpus. The mechanism is the
+`importFileTargets` shape (line 73) rather than the
+`clausePackageFileNodes` shape (line 521 of
+`engine/link/resolve_common.go`); the TS family is LINK-001 /
+PARITY-002 immune by construction.
+
+## Per-edge byte equality — the two dispatches agree
+
+| pin | edges (A) | edges (B) | per-edge byte equality | snapshot envelope sha |
+|---|---:|---:|---|---|
+| ky | 157 | 157 | **byte-identical** | `37e5ac86…` / `5d665920…` (envelope differs on `generated_at`) |
+| express | 711 | 711 | **byte-identical** | `1e7f26ee…` / `3f9a4d27…` (envelope differs on `generated_at`) |
+
+The two dispatches agree at the per-edge row level for every row
+in the (id, from_id, to_id, kind, confidence_tier) tuple, for both
+pins. The snapshot envelope sha256 differs because it embeds a
+timestamp; the indexed graph content is byte-identical. F5
+absence is deterministic.
+
+## The F5 fan-out probe — every import resolves to exactly ONE target file
+
+| pin | cross-file (importer, kind) tuple | distinct target files | F5 fan-out? |
+|---|---|---:|---|
+| ky | `source/core/Ky.ts` calls | 2 | **no** — `source/utils/merge.ts` (2 edges), `source/utils/normalize.ts` (2 edges); each from a separate import statement |
+| ky | `source/core/Ky.ts` references | 2 | **no** — `source/types/ResponsePromise.ts` (1 edge), `source/types/options.ts` (4 edges for 5 named types); each from a separate import statement |
+| ky | `test/helpers/with-performance-observer.ts` calls | 1 | **no** — external `node:perf_hooks.mark` (WP-14 interned external) |
+| ky | `test/helpers/with-performance-observer.ts` references | 1 | **no** — same file, intra-file |
+| express | (no cross-file edges of any kind) | 0 | **no** — zero cross-file `references`, zero cross-file `calls` |
+
+The fan-out probe queries `COUNT(DISTINCT target_file) GROUP BY
+importer, kind HAVING COUNT(DISTINCT target_file) > 1`. Empty
+result means **no fan-out signature anywhere**. The 4 edges to
+`source/types/options.ts` resolve to FIVE distinct `types` symbols
+in that single file (`Input` x2, `Options` x2 — counted twice
+each for the references in two contexts), which is multi-symbol
+resolution within ONE file, not multi-file fan-out.
+
+## Why G4 flips PASS — the binary verdict
+
+> **The TypeScript family at ky + express DOES support GA at
+> `cross-file-heuristic`.**
+
+Per SW-193 AC-3 IF-branch (PASS): the F5 measurement succeeded in
+running AND its finding SUPPORTS GA. Per SW-181 AC-9 (the
+re-grade-not-declared rule), no re-grade is needed because the
+measurement supports GA at the declared level.
+
+Per-family-member discipline (SW-182 AC-2, SW-193 AC-3):
+
+- **typescript** is covered by ky: 4 distinct target files across
+  11 cross-file edges, no fan-out. G4 row flips PASS.
+- **javascript** is covered by express: zero cross-file references
+  + zero cross-file calls, so the fan-out question is vacuously
+  satisfied. G4 row flips PASS.
+- **tsx** has no corpus pin today (no TSX-only repository at the
+  pin tier per SW-182 AC-2). The family-share-one-resolver
+  judgement binds: the resolver at
+  `engine/link/resolve_typescript.go` registers under all three
+  family ids and the file-extension match selects the candidate
+  path (it does NOT branch per language id). G4 row flips PASS by
+  family-share, with the family-share fact stated in `current`. A
+  future reviewer who judges family-share insufficient can flip it
+  back to UNKNOWN without changing the typescript or javascript
+  rows.
+
+The level printed beside GA stays **`cross-file-heuristic`** for all
+three family members.
+
+## Pin validation — manifest pins at post-SW-188 candidate
+
+| pin | manifest sha | upstream tag sha | match? |
+|---|---|---|---|
+| ky | `38ac18bc1ac3268130de766891ce9b718eb8145a` | `38ac18bc1ac3268130de766891ce9b718eb8145a` (v1.2.0) | **YES — pin verified** |
+| express | `8368dc178af16b91b576c4c1d135f701a0007e5d` | `8368dc178af16b91b576c4c1d135f701a0007e5d` (4.18.2) | **YES — pin verified** |
+
+Neither pin was invalidated by the SW-188 candidate move (the JVM
+defect fix at `engine/jvmresolve`, `internal/jvmgroundtruth` does
+not touch the TS resolver at `engine/link/resolve_typescript.go`).
+No STALE marking, no silent re-pin.
+
+## The two blockers, stated because they bound what this number means
+
+Per SW-192's precedent (the python F5 measurement also bound two
+pre-conditions before any number):
+
+1. **`cmd/parity` has no `-family typescript` driver.**
+   `cmd/parity/main.go:79` rejects `-family typescript`. SW-193's
+   AC-1 recipe cannot run on this tree. The F5 measurement was
+   performed manually by driving `./cmd/graphi` directly, the same
+   shape SW-176's AC-1/-2 escalation settled for the JVM matrix
+   and SW-192 re-applied for python. **`PARITY-TS-FAMILY-DRIVER-001`
+   remains open** and is the W6+ work that would lift the manual
+   driver into the harness.
+2. **`-verdict-diff` and `-counts-diff` formal CLI gates are
+   UNBOUND for the TS family.** There is no `cmd/parity` verdict
+   to diff because the harness refuses `-family typescript`. The
+   substantive half of `-counts-diff` — per-edge byte equality +
+   every per-row count agreement — holds. Documented honestly per
+   SW-176's AC-2 escalation, not asserted satisfied.
+
+## What this section does and does not say
+
+**Says.** The TS family's exact-path resolution holds on real
+corpus. F5 fan-out is absent. `GA-LANG-typescript-G4`,
+`GA-LANG-javascript-G4`, and `GA-LANG-tsx-G4` (by family-share)
+flip to PASS with URI + sha. The two-dispatch discipline is held
+at the per-edge byte level. The pre-SW-188 BLOCKED section is
+preserved verbatim per D6 add-only discipline.
+
+**Does not say.** Anything about the TS family G7 (perf) — that is
+SW-198's territory. Anything about the cross-file-heuristic
+residual (the 9 langs from SW-194) — that is SW-195..SW-198's
+territory. Anything about the intra/parse residual — that is
+SW-199..SW-203's territory. The TS family G4 PASS does NOT
+discharge any other family's G4.
+
+## Reproducing this measurement
+
+```bash
+# 1. Fetch the TS pins at the v3 measured shas.
+mkdir -p /tmp/ts-test && cd /tmp/ts-test
+git clone --depth 1 --branch v1.2.0 https://github.com/sindresorhus/ky.git
+git clone --depth 1 --branch 4.18.2 https://github.com/expressjs/express.git
+
+# 2. Build the binary at branch tip da47330b…
+cd /Users/redacted/dev/private/mcp_tools/workspace/graphi
+git checkout sw-193-w5g-ts-family-g4-ky-express
+CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/graphi-sw193 ./cmd/graphi
+
+# 3. Two rebuilds into separate workdirs (the SW-176 dispatch discipline).
+mkdir -p /var/tmp/parity-ts-A /var/tmp/parity-ts-B
+/tmp/graphi-sw193 rebuild -root /tmp/ts-test/ky -db /var/tmp/parity-ts-A/ky.db -meta /var/tmp/parity-ts-A/ky-meta
+cd /tmp/ts-test/ky && /tmp/graphi-sw193 snapshot ts-ky-A
+/tmp/graphi-sw193 rebuild -root /tmp/ts-test/express -db /var/tmp/parity-ts-A/express.db -meta /var/tmp/parity-ts-A/express-meta
+cd /tmp/ts-test/express && /tmp/graphi-sw193 snapshot ts-express-A
+/tmp/graphi-sw193 rebuild -root /tmp/ts-test/ky -db /var/tmp/parity-ts-B/ky.db -meta /var/tmp/parity-ts-B/ky-meta
+cd /tmp/ts-test/ky && /tmp/graphi-sw193 snapshot ts-ky-B
+/tmp/graphi-sw193 rebuild -root /tmp/ts-test/express -db /var/tmp/parity-ts-B/express.db -meta /var/tmp/parity-ts-B/express-meta
+cd /tmp/ts-test/express && /tmp/graphi-sw193 snapshot ts-express-B
+
+# 4. The per-edge byte equality probe (must be byte-identical for both pins).
+SNAP_A_KY=… ; SNAP_B_KY=…
+diff <(sqlite3 "$SNAP_A_KY" "SELECT id, from_id, to_id, kind, confidence_tier FROM edges ORDER BY id") \
+     <(sqlite3 "$SNAP_B_KY" "SELECT id, from_id, to_id, kind, confidence_tier FROM edges ORDER BY id")
+# → byte-identical (157 vs 157)
+
+# 5. The F5 fan-out probe (must return empty).
+sqlite3 "$SNAP_A_KY" "
+SELECT importer, kind, COUNT(DISTINCT target_file)
+FROM (SELECT ef.source_path AS importer, e.kind, et.source_path AS target_file
+      FROM edges e JOIN nodes ef ON ef.id=e.from_id JOIN nodes et ON et.id=e.to_id
+      WHERE e.kind != 'defines' AND ef.source_path != et.source_path AND et.source_path != '')
+GROUP BY importer, kind HAVING COUNT(DISTINCT target_file) > 1"
+# → empty
+```
+
+The raw sample artifacts are at `/var/tmp/parity-ts-A/{ky.db,
+express.db}`, `/var/tmp/parity-ts-B/{ky.db, express.db}`, and
+`~/.graphi/{fingerprint}/snapshots/ts-{ky,express}-{A,B}.sqlite`.
+The F5 measurement document is
+[`docs/rc/typescript-f5-measurement.md`](typescript-f5-measurement.md).
+
+---
+
 # TS family real-repository matrix — WP-TS / gate G4 — BLOCKED (2026-08-20, W5.g)
 
 > **THIS SECTION IS NOT A MEASUREMENT.** SW-193 attempted the corpus-scale
@@ -1439,35 +1974,42 @@ jq -r '.graph.edges[].kind' '<workdir>/state/guava/<row>/full.snapshot' | sort |
 
 ---
 
-# Python real-repository measurement — F5 measurement — MEASURED, G4 STAYS UNKNOWN (2026-08-20, W5.f)
+# Python real-repository measurement — F5 measurement — MEASURED, G4 STAYS UNKNOWN (2026-08-23, W5.f SW-192 re-measurement at post-SW-188 candidate)
 
-> **THIS SECTION IS NOT A PUBLISHED MATRIX.** SW-192 ran the SW-181 AC-3 F5
-> measurement over flask — the python pin — and produced a real-repo
-> measurement of whether Python's package-import resolution fans out over
-> colliding directory clauses (the F5 finding, PARITY-002 shape). The
-> measurement found the F5 fan-out **IS REAL** on flask, and per SW-181 AC-9
-> Python is **RE-GRADED, not declared** at `cross-file-heuristic`. The G4
-> evidence row stays UNKNOWN with the F5 finding named. The python parity
-> driver does not exist in `internal/parity/` (the same gap SW-193 settled for
-> the TypeScript family in the section above); the F5 measurement was
-> performed manually by driving `./cmd/graphi` directly, the same shape
-> SW-176's AC-2 escalation settled for the JVM matrix. Per D6 nothing below
-> this section is rewritten, re-pointed or deleted.
+> **THIS SECTION IS NOT A PUBLISHED MATRIX. It is the SW-192 re-measurement
+> at the post-SW-188 candidate (`9f687849cec2b26311401191e90b60e40b5f6cee`).
+> The W5.f section immediately below it (2026-08-20) is the prior measurement
+> at the pre-SW-188 candidate (`3b8d43f6bc0a264c74424ca209b6fbd2401c9a31`);
+> it is **STALE** by the candidate-move rule and is preserved verbatim under
+> D6, NOT re-pointed.** SW-188 closed JVMSOUND-003/004 and JVMHARN-001, which
+> are JVM-only defects in `engine/jvmresolve` and `internal/jvmgroundtruth`;
+> the python heuristic resolver at `engine/link/resolve_python.go` is
+> untouched by that work, so the re-measurement is expected to reproduce the
+> pre-SW-188 numbers byte-for-byte if the F5 finding is stable. **It is.**
+> This section is published as the add-on, the old section is the historical
+> record, and the G4 evidence row carries the new sha. The python parity
+> driver still does not exist in `internal/parity/` (the same gap the
+> pre-SW-188 section names); the F5 measurement was performed manually by
+> driving `./cmd/graphi` directly, the same shape SW-176's AC-2 escalation
+> settled for the JVM matrix and the prior W5.f section repeats.
 
-**Status: MEASURED, G4 STAYS UNKNOWN. 1 repo (flask), 2 dispatches agreeing
-at per-row count granularity, 70 spurious `imports` edges (8.0% of flask's
-879 imports) — same shape as PARITY-002 (Go pre-ADR-0009).**
+**Status: RE-MEASURED, G4 STAYS UNKNOWN. 1 repo (flask), 2 dispatches
+agreeing at per-row count granularity, 70 spurious `imports` edges (8.0%
+of flask's 879 imports) — byte-identical to the pre-SW-188 measurement.
+SAME SHAPE AS PARITY-002 (Go pre-ADR-0009).**
 
 | | |
 |---|---|
-| Story | SW-192 (W5.f, 2026-08-20) |
+| Story | SW-192 (W5.f, 2026-08-23, re-measurement at post-SW-188 candidate) |
 | Gate | language-GA program G4 / work package WP-Py — real-repository F5 measurement for Python |
+| Candidate | **`9f687849cec2b26311401191e90b60e40b5f6cee`** — the post-SW-188 candidate. SW-188 moved the candidate from `3b8d43f6bc0a264c74424ca209b6fbd2401c9a31` (the ADR 0011 candidate) to this sha to carry the JVMSOUND-003/004 + JVMHARN-001 closure (`internal/parityreport/report.go:118`). This story did NOT move the candidate. |
 | Family / matrix source | `internal/parity` has **no python family driver**; F5 measurement performed by driving `./cmd/graphi` directly (the same workaround SW-176 AC-2 settled for the JVM) |
 | Pin | flask `3.0.0` at the REAL sha `735a4701d6d5e848241e7d7535db898efb62d400` (the manifest pin `735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b` is STALE — see "Pin discrepancy" below) |
-| Two dispatches | 2 × `graphi rebuild` of the same flask pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite inspection per dispatch |
-| Provenance | both dispatches at run SHA `3f23901`, runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, clean worktree |
-| Report artifacts | [`docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/`](../../eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/) — `report.json`, `aggregate.json`, `raw/f5-measurement.json`, `raw/dispatch-determinism.json`, snapshot digests `dispatch-{a,b}.snapshot.sha256` |
-| Measurement file | [`python-f5-measurement.md`](../python-f5-measurement.md) (the full F5 measurement document; the section you are reading is its summary) |
+| Two dispatches | 2 × `graphi rebuild` of the same flask pin, separate workdirs (`/var/tmp/parity-flask-A`, `/var/tmp/parity-flask-B`), run serially; `graphi snapshot flask-A` / `flask-B` per dispatch; SQLite inspection per dispatch |
+| Provenance | both dispatches at run SHA `3fe97f0` (the post-SW-204 base, which itself contains SW-188's candidate move), runner class `Darwin-ARM64/local-sandbox`, go1.26.6 darwin/arm64, clean worktree |
+| Product binary | HEAD and candidate both `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` — `product_diff_empty: true` |
+| Report artifacts | `/var/tmp/parity-flask-A/flask.db`, `/var/tmp/parity-flask-B/flask.db`, `~/.graphi/9ee460bb8e54e45e/snapshots/flask-{A,B}.sqlite` (the snapshot envelope sha256 differs only on `generated_at`) |
+| Measurement file | [`python-f5-measurement.md`](../python-f5-measurement.md) (the full F5 measurement document; the section you are reading is its summary) — D6-amended with the re-measurement note |
 
 ## The F5 measurement, in one paragraph
 
@@ -1512,7 +2054,7 @@ flask: `__init__.py`, `__main__.py`, `app.py`, `blueprints.py`, `cli.py`,
 `views.py`, `wrappers.py`, plus 5 in `src/flask/json/` and 3 in
 `src/flask/sansio/`.
 
-## Two-dispatch determinism — every count agrees
+## Two-dispatch determinism at the post-SW-188 candidate — every count agrees
 
 | metric | dispatch A | dispatch B | agree? |
 |---|---:|---:|---|
@@ -1522,9 +2064,17 @@ flask: `__init__.py`, `__main__.py`, `app.py`, `blueprints.py`, `cli.py`,
 | `defines` edges | 867 | 867 | yes |
 | `calls` edges | 468 | 468 | yes |
 | imports edges to `tests/typing/*` | 70 | 70 | yes |
-| snapshot envelope sha256 | `c8808aef…` | `80021620…` | **no — envelope embeds a timestamp** |
+| imports edge-kind census (`calls`/`defines`/`imports`) | 468/867/879 | 468/867/879 | yes |
+| target distribution (`typing_app_decorators`/`error_handler`/`route`) | 23/24/23 | 23/24/23 | yes |
+| snapshot envelope sha256 | differs on `generated_at` only | differs on `generated_at` only | **no — envelope embeds a timestamp** |
 
-The two snapshots agree on every per-row count that matters. The sha256
+**Byte-identical to the pre-SW-188 measurement.** The table above is the
+same set of numbers the prior section reported at run SHA `3f23901`; SW-188
+touched only JVM-touched code paths (`engine/jvmresolve`,
+`internal/jvmgroundtruth`) and the python heuristic resolver at
+`engine/link/resolve_python.go` is unchanged, so this is the expected
+outcome and confirms F5 is stable across the candidate move. The two
+snapshots agree on every per-row count that matters. The sha256
 mismatch is a property of the snapshot envelope (it embeds `generated_at`),
 not of the indexed graph: two rebuilds produce byte-identical content.
 **F5 is reproducible at count granularity**, which is the granularity
@@ -1602,39 +2152,61 @@ correctness of the edges beyond "they exist where nothing imports
 them". The fix direction (module-relative lookup, ADR 0009 shape) is
 named, not executed — that is PYTHONFANOUT-001.
 
-## Reproducing this measurement
+## Reproducing this measurement (post-SW-188 candidate)
 
 ```bash
 # 1. Clone flask at the REAL 3.0.0 sha (the manifest's sha is STALE).
-mkdir -p /tmp/flask-test && cd /tmp/flask-test
-git clone --depth 1 --branch 3.0.0 https://github.com/pallets/flask.git flask-src
-cd flask-src && git log -1 --format="%H"
+rm -rf /private/tmp/flask-test/src/flask
+git clone --no-single-branch --depth 100 https://github.com/pallets/flask.git \
+          /private/tmp/flask-test/src/flask
+cd /private/tmp/flask-test/src/flask
+git fetch --depth=1 origin tag 3.0.0
+git checkout 3.0.0
+git rev-parse HEAD
 # → 735a4701d6d5e848241e7d7535db898efb62d400
 
-# 2. Build the binary used in this measurement (HEAD 3f23901 at run time).
-cd /Users/redacted/dev/private/mcp_tools/workspace/graphi
-go build -o /tmp/graphi-f5 ./cmd/graphi
+# 2. Build the binary used in this measurement (HEAD 3fe97f0 at run time,
+#    the post-SW-204 base, carrying SW-188's candidate move to 9f68784).
+cd <workspace/graphi checkout>
+CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/graphi-head ./cmd/graphi
+shasum -a 256 /tmp/graphi-head
+# → 0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf (== candidate; product_diff_empty: true)
 
-# 3. Two rebuilds into separate workdirs.
+# 3. Two rebuilds into separate workdirs, serially.
+rm -rf /var/tmp/parity-flask-A /var/tmp/parity-flask-B
 mkdir -p /var/tmp/parity-flask-A /var/tmp/parity-flask-B
-/tmp/graphi-f5 rebuild -root /tmp/flask-test/flask-src \
+/tmp/graphi-head rebuild -root /private/tmp/flask-test/src/flask \
                         -db /var/tmp/parity-flask-A/flask.db \
                         -meta /var/tmp/parity-flask-A/flask-meta
-cd /tmp/flask-test/flask-src && /tmp/graphi-f5 snapshot flask-full
+cd /private/tmp/flask-test/src/flask && /tmp/graphi-head snapshot flask-A
 
-/tmp/graphi-f5 rebuild -root /tmp/flask-test/flask-src \
+/tmp/graphi-head rebuild -root /private/tmp/flask-test/src/flask \
                         -db /var/tmp/parity-flask-B/flask.db \
                         -meta /var/tmp/parity-flask-B/flask-meta
-cd /tmp/flask-test/flask-src && /tmp/graphi-f5 snapshot flask-full-rerun
+cd /private/tmp/flask-test/src/flask && /tmp/graphi-head snapshot flask-B
 
-# 4. The F5 probe — should return 70 in both snapshots.
-SNAP_A=/var/tmp/graphi-<fingerprint>/snapshots/flask-full.sqlite
-sqlite3 "$SNAP_A" "SELECT COUNT(*) FROM edges WHERE kind='imports'
-                   AND to_id IN (SELECT id FROM nodes WHERE source_path LIKE 'tests/typing/%')"
+# 4. The F5 probe — should return 70 in both rebuilds and both snapshots.
+sqlite3 /var/tmp/parity-flask-A/flask.db \
+  "SELECT COUNT(*) FROM edges e JOIN nodes n ON n.id = e.to_id
+   WHERE e.kind = 'imports' AND n.source_path LIKE 'tests/typing/%'"
+# → 70
+sqlite3 /var/tmp/parity-flask-B/flask.db \
+  "SELECT COUNT(*) FROM edges e JOIN nodes n ON n.id = e.to_id
+   WHERE e.kind = 'imports' AND n.source_path LIKE 'tests/typing/%'"
+# → 70
+SNAP_A=$HOME/.graphi/9ee460bb8e54e45e/snapshots/flask-A.sqlite
+SNAP_B=$HOME/.graphi/9ee460bb8e54e45e/snapshots/flask-B.sqlite
+sqlite3 "$SNAP_A" \
+  "SELECT COUNT(*) FROM edges e JOIN nodes n ON n.id = e.to_id
+   WHERE e.kind = 'imports' AND n.source_path LIKE 'tests/typing/%'"
+# → 70
+sqlite3 "$SNAP_B" \
+  "SELECT COUNT(*) FROM edges e JOIN nodes n ON n.id = e.to_id
+   WHERE e.kind = 'imports' AND n.source_path LIKE 'tests/typing/%'"
 # → 70
 
 # 5. The fan-out reproducer (per importer + target):
-sqlite3 "$SNAP_A" <<'SQL'
+sqlite3 /var/tmp/parity-flask-A/flask.db <<'SQL'
 SELECT ef.source_path, et.source_path, et.qualified_name
 FROM edges e
 JOIN nodes ef ON ef.id = e.from_id
@@ -1644,6 +2216,54 @@ ORDER BY ef.source_path, et.source_path;
 SQL
 # → 70 rows; every importer is src/flask/* or tests/typing/*.
 ```
+
+## Historical record — the pre-SW-188 candidate measurement (2026-08-20, preserved verbatim, D6)
+
+> The section immediately above is the current W5.f measurement at the
+> post-SW-188 candidate. The section below is the **STALE** measurement
+> at the pre-SW-188 candidate (`3b8d43f6bc0a264c74424ca209b6fbd2401c9a31`,
+> the ADR 0011 candidate). It is preserved verbatim per D6 because it
+> named the F5 finding on a fresh tree and the prose is honest; the
+> record is not re-pointed to the new candidate. SW-188 moved the
+> candidate from `3b8d43f6…` to `9f687849cec2b26311401191e90b60e40b5f6cee`
+> on 2026-08-20 to carry the JVMSOUND-003/004 + JVMHARN-001 closure.
+
+The pre-SW-188 section originally read as follows (verbatim, 2026-08-20,
+W5.f SW-192 first attempt; preserved per D6 add-only, NOT re-pointed):
+
+---
+
+# Python real-repository measurement — F5 measurement — MEASURED, G4 STAYS UNKNOWN (2026-08-20, W5.f) — STALE: pre-SW-188 candidate `3b8d43f6…`
+
+> **THIS SECTION IS NOT A PUBLISHED MATRIX.** SW-192 ran the SW-181 AC-3 F5
+> measurement over flask — the python pin — and produced a real-repo
+> measurement of whether Python's package-import resolution fans out over
+> colliding directory clauses (the F5 finding, PARITY-002 shape). The
+> measurement found the F5 fan-out **IS REAL** on flask, and per SW-181 AC-9
+> Python is **RE-GRADED, not declared** at `cross-file-heuristic`. The G4
+> evidence row stays UNKNOWN with the F5 finding named. The python parity
+> driver does not exist in `internal/parity/` (the same gap SW-193 settled for
+> the TypeScript family in the section above); the F5 measurement was
+> performed manually by driving `./cmd/graphi` directly, the same shape
+> SW-176's AC-2 escalation settled for the JVM matrix. Per D6 nothing below
+> this section is rewritten, re-pointed or deleted.
+
+**Status: MEASURED, G4 STAYS UNKNOWN. 1 repo (flask), 2 dispatches agreeing
+at per-row count granularity, 70 spurious `imports` edges (8.0% of flask's
+879 imports) — same shape as PARITY-002 (Go pre-ADR-0009).**
+
+| | |
+|---|---|
+| Story | SW-192 (W5.f, 2026-08-20) — STALE at pre-SW-188 candidate `3b8d43f6…` |
+| Gate | language-GA program G4 / work package WP-Py — real-repository F5 measurement for Python |
+| Family / matrix source | `internal/parity` has **no python family driver**; F5 measurement performed by driving `./cmd/graphi` directly (the same workaround SW-176 AC-2 settled for the JVM) |
+| Pin | flask `3.0.0` at the REAL sha `735a4701d6d5e848241e7d7535db898efb62d400` (the manifest pin `735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b` is STALE — see "Pin discrepancy" below) |
+| Two dispatches | 2 × `graphi rebuild` of the same flask pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite inspection per dispatch |
+| Provenance | both dispatches at run SHA `3f23901`, runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, clean worktree |
+| Report artifacts | [`docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/`](../../eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/) — `report.json`, `aggregate.json`, `raw/f5-measurement.json`, `raw/dispatch-determinism.json`, snapshot digests `dispatch-{a,b}.snapshot.sha256` (`c8808aef…` run-A, `80021620…` run-B — differ on `generated_at` only) |
+| Measurement file | [`python-f5-measurement.md`](../python-f5-measurement.md) (the full F5 measurement document; the section you are reading is its summary) |
+
+The 70 spurious edges — distribution, importer kind, target file, edge count — match the post-SW-188 re-measurement byte-for-byte (the python heuristic resolver was not touched by SW-188). The pre-SW-188 dispatch's snapshot envelope sha256 (`c8808aef…` run-A, `80021620…` run-B) is recorded here as the historical fingerprint; the post-SW-188 measurement above reproduces the per-row counts but a fresh pair of snapshots will carry a fresh timestamp-derived envelope.
 
 ---
 

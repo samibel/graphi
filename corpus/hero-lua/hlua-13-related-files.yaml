@@ -1,0 +1,18 @@
+id: hlua-13-related-files
+description: >
+  HONEST-EMPTY: related_files(lib.core, dependents) returns a
+  well-formed empty result. Lua's heuristic resolver only mints
+  file→file imports edges through requireBinder; there is no
+  function-level inbound edge from a caller function to lib.core
+  in the dependents direction, so the file score has no
+  contributors and the result is empty. Recorded here per AC-4
+  (parse-determinism honest-empty discipline).
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: related_files
+  args:
+    anchor: lib.core
+    direction: dependents
+  area: agent_mcp
+expect:
+  outcome: empty

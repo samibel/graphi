@@ -1,0 +1,14 @@
+id: hbash-08-callees
+description: >
+  HONEST-EMPTY (bash, per §5.5): a cross-file `callees` query is NOT askable
+  of bash's language specification. The `run -> main` callee is same-file
+  and is the only askable callee; the fixture records the empty cross-file
+  callee honestly rather than fabricating one.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: callees
+  args:
+    symbol: hello
+area: agent_mcp
+expect:
+  outcome: empty

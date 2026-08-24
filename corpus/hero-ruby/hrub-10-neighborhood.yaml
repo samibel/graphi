@@ -1,0 +1,11 @@
+id: hrub-10-neighborhood
+description: The neighborhood of lib.core carries the require-relation context.
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: neighborhood
+  args:
+    symbol: lib.core
+    depth: "1"
+  area: agent_mcp
+expect:
+  outcome: found

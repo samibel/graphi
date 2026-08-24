@@ -1,0 +1,15 @@
+id: hphp-04-definition-found
+description: The definition of lib.core resolves to the shared helper.
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: definition
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  contains_path: lib/util.php
+  absent:
+    - kind: file
+      value: app/main.php
+      match: contains

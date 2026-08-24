@@ -1,0 +1,10 @@
+id: hsql-03-search-empty
+description: A search with no hit returns a well-formed empty (honest empty).
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: search
+  args:
+    query: zzz_no_such_symbol_zzz
+area: agent_mcp
+expect:
+  outcome: empty

@@ -1,0 +1,18 @@
+id: hphp-08-callees
+description: >
+  Callees of lib.run resolve through the intra-file calls edge in
+  lib/util.php to lib.core (the php parser's intra-file calls collector
+  at core/parse/parser_php.go:188 phpScanBody emits callBare for
+  every function_call_expression under a function body).
+fixture_ref: tier1-fixture-hero-php
+operation:
+  name: callees
+  args:
+    symbol: lib.run
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: lib.core
+      match: contains

@@ -1,0 +1,22 @@
+id: hcs-11-impact
+description: >
+  The blast radius of Shop.run reaches its cross-file callers
+  (app.entry, app.twice) through the csharp resolver's ambient-clause
+  heuristic calls edges. app.other_salute (which never calls
+  Price.run) must NOT appear (negative anchor).
+fixture_ref: tier1-fixture-hero-csharp
+operation:
+  name: impact
+  args:
+    symbol: Shop.run
+  area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.entry
+      match: contains
+  absent:
+    - kind: symbol
+      value: app.other_salute
+      match: contains

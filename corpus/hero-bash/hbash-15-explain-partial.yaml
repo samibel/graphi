@@ -1,0 +1,16 @@
+id: hbash-15-explain-partial
+description: >
+  explain_symbol(summarize, max_items=1) marks partial via the cap. main()
+  in serve.sh invokes summarize four times, populating the items list to
+  exceed the cap and trigger Limits.Truncated. This is the bash parallel
+  of the JVM twin's hjvm-15-explain-partial.yaml shape.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: explain_symbol
+  args:
+    symbol: summarize
+    max_items: "1"
+area: agent_mcp
+expect:
+  outcome: partial
+  has_evidence: true

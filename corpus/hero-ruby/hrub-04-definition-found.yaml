@@ -1,0 +1,15 @@
+id: hrub-04-definition-found
+description: The definition of lib.core resolves to the shared library file.
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: definition
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  contains_path: lib/util.rb
+  absent:
+    - kind: file
+      value: app/main.rb
+      match: contains

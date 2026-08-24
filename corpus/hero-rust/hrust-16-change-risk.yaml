@@ -1,0 +1,10 @@
+id: hrust-16-change-risk
+description: Change risk of shop.core reflects its cross-module inbound callers.
+fixture_ref: tier1-fixture-hero-rust
+operation:
+  name: change_risk
+  args:
+    target: shop.core
+  area: agent_mcp
+expect:
+  outcome: found

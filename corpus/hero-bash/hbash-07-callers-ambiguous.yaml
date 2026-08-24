@@ -1,0 +1,14 @@
+id: hbash-07-callers-ambiguous
+description: >
+  init is defined in both serve.sh and report.sh — bash has no askable
+  cross-file construct per §5.5, but the same-named function across two
+  distinct files creates a resolution ambiguity. callers(init) is
+  ambiguous because the symbol maps to two distinct definitions.
+fixture_ref: tier1-fixture-hero-bash
+operation:
+  name: callers
+  args:
+    symbol: init
+area: agent_mcp
+expect:
+  outcome: ambiguous

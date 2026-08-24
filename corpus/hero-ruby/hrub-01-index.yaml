@@ -1,0 +1,8 @@
+id: hrub-01-index
+description: Indexing the Ruby fixture returns a populated inventory.
+fixture_ref: tier1-fixture-hero-ruby
+operation:
+  name: index
+  area: agent_mcp
+expect:
+  outcome: found

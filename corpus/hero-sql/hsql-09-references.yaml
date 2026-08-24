@@ -1,0 +1,26 @@
+id: hsql-09-references
+description: >
+  INTRA-FILE references: app.helper is referenced from app/join_view.sql
+  via the FROM clause. sqlScanFrom (parser_sql.go:164) records the
+  FROM-clause identifier `helper` as an intra-file references edge from
+  the owning view to the in-file table — `app.join_view → app.helper`
+  — because `helper` IS in this file's types table (parser_tswalk.go:181).
+  references(app.helper) walks the inbound EdgeReferences edges and
+  surfaces app.join_view as the caller. The reverse references(app.join_view)
+  would NOT work because app.join_view's only FROM-table references are
+  cross-file (schema.core, schema.salute, schema.run) — those are
+  PendingRefs, not EdgeReferences (per §5.5 honest-empty doctrine).
+  This is the SQL analog of hsql-09's intent: prove references works
+  on intra-file FROM-clause references.
+fixture_ref: tier1-fixture-hero-sql
+operation:
+  name: references
+  args:
+    symbol: app.helper
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: app.join_view
+      match: contains

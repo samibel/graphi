@@ -104,7 +104,13 @@ const (
 	KindRepoPath CitationKind = "repo-path"
 	// KindTestSymbol is `path/to/file.go::SymbolName`. Verified.
 	KindTestSymbol CitationKind = "test-symbol"
-	// KindDocAnchor is `path.md#anchor`. The path half is verified; the anchor is not.
+	// KindDocAnchor is `path.md#anchor`. The path half is verified; the anchor is
+	// NOT — and Verified() below still counts the citation as verified evidence.
+	// That gap is filed as CITEANCHOR-001: measured over the checked-in index at
+	// the SW-192..197 integration, 7 of 11 anchor citations name a heading that
+	// exists in no commit on any branch, and SIX of the seven sit on rows that
+	// read PASS (only GA-LANG-python-G4 is UNKNOWN). Declaring the blindness in
+	// a comment is not the same as reporting it, and the count says so.
 	KindDocAnchor CitationKind = "doc-anchor"
 	// KindExternal is an absolute URL. Not verified — the gate makes no network calls.
 	KindExternal CitationKind = "external-url"
@@ -128,6 +134,11 @@ const (
 // Verified reports whether this kind is one the gate resolves. Kinds that are not
 // verified are still classified and reported (AC-4) — they are simply not counted
 // as evidence.
+//
+// KindDocAnchor is in this set on a HALF-TRUTH, and it is deliberately left in
+// rather than silently downgraded: removing it here would stop resolving the
+// path half too, which does work. What is unresolved is the anchor half — see
+// CITEANCHOR-001 on the backlog, and the comment on KindDocAnchor above.
 func (k CitationKind) Verified() bool {
 	return k == KindRepoPath || k == KindTestSymbol || k == KindDocAnchor
 }

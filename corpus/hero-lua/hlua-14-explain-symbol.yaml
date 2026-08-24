@@ -1,0 +1,11 @@
+id: hlua-14-explain-symbol
+description: Explaining lib.core cites its definition in lib/util.lua and its cross-file callers.
+fixture_ref: tier1-fixture-hero-lua
+operation:
+  name: explain_symbol
+  args:
+    symbol: lib.core
+  area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true
