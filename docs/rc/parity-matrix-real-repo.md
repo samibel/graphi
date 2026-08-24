@@ -1,5 +1,254 @@
 # Full/incremental parity matrix over pinned real repositories
 
+# Cross-file-heuristic residual — WP-xfh / gate G4 — MEASURED 1, ABSTAINED 8 (2026-08-23, W5.i SW-195)
+
+> **The W5.i measurement, finally run.** SW-194 landed the parity-class
+> YAML + conformance for the nine cross-file-heuristic residual
+> languages (bash, c, c_sharp, cpp, lua, php, ruby, rust, sql); SW-195
+> lands the G4 evidence. Of the nine, **one** (ruby) has a real-repo
+> pin at the v3 measured standard (sinatra v4.0.0 at sha
+> `b626e2d82c23b4fde0b51782fd32ca27ccde1d1a`); **eight** do not, and
+> per SW-195 AC-3 and the spec rule "STALE rows are re-marked, never
+> re-pointed; abstention is honest", those eight stay UNKNOWN with the
+> SW-195-specific abstention reason named in their `current` fields.
+> The dependency on **SW-196** (corpus pins v3 for the
+> cross-file-heuristic residual) is load-bearing: a real-repo parity
+> run needs a pin at the v3 standard, and at SW-195 close only sinatra
+> exists. SW-195 records the gap, does not paper over it.
+
+**Status: MEASURED for ruby (1/9 PASS), ABSTAINED for the other 8
+(8/9 UNKNOWN).** Ruby uses `requireBinder` → `importFileTargets`
+(`engine/link/resolve_ruby.go:19` + `engine/link/resolve_common.go:332`),
+the same exact-path resolution shape that gives the TS family
+structural immunity. The F5 measurement SUCCEEDED IN RUNNING AND ITS
+FINDING SUPPORTS GA at `cross-file-heuristic`: 62 cross-file `imports`
+edges on sinatra distributed over 8 distinct target files and 61
+distinct importers, with NO `(importer, kind)` tuple exhibiting
+fan-out (the 2 tuples with `>1 distinct_target_file` are BOTH
+legitimate multi-require patterns, NOT the PARITY-002 shape).
+Two `graphi rebuild` dispatches agree at per-row count level (1255
+nodes / 1618 edges / 62 cross-file imports in both).
+
+For the other eight languages, this section records the abstention
+discipline (per SW-195 AC-3 and the spec rule) and the structural
+reasoning that predicts the post-SW-196 outcomes:
+
+| language | corpus pin at v3? | F5 fan-out measured? | G4 disposition | structural reasoning (predicted post-SW-196) |
+|---|---|---|---|---|
+| ruby | **YES** (sinatra v4.0.0) | **YES** (this section) | **PASS** | `requireBinder` → `importFileTargets` (immune); F5 fan-out absent |
+| bash | NO | NO | UNKNOWN (abstention) | `requireBinder` → `importFileTargets` (immune); predicted PASS |
+| c | NO | NO | UNKNOWN (abstention) | `includeBinder` → `importFileTargets` (immune); predicted PASS |
+| cpp | NO | NO | UNKNOWN (abstention) | shared with c; predicted PASS |
+| c_sharp | NO | NO | UNKNOWN (abstention) | `pkgImportPaths` → `clausePackageFileNodes` (susceptible); predicted UNKNOWN with fan-out |
+| lua | NO | NO | UNKNOWN (abstention) | `requireBinder` → `importFileTargets` (immune); predicted PASS |
+| php | NO | NO | UNKNOWN (abstention) | `requireBinder` → `importFileTargets` (immune); predicted PASS |
+| rust | NO | NO | UNKNOWN (abstention) | `pkgImportPaths` → `clausePackageFileNodes` (susceptible); predicted UNKNOWN with fan-out |
+| sql | NO | NO | UNKNOWN (abstention) | empty binder (no imports per ISO/IEC 9075); JOIN/VIEW shape (not import shape) per ADR 0012 |
+
+| | |
+|---|---|
+| Story | SW-195 (W5.i, 2026-08-23) |
+| Gate | language-GA program G4 / work package WP-xfh — real-repository F5-equivalent measurement for the cross-file-heuristic residual (9 languages) |
+| Per-language driver | NONE in `internal/parity/` for ruby or any of the 8 abstained languages; F5 measurement performed via `./cmd/graphi` directly (the SW-176 AC-2 + SW-192 + SW-193 precedent) |
+| Pin (ruby) | sinatra v4.0.0 at sha `b626e2d82c23b4fde0b51782fd32ca27ccde1d1a` (matches manifest pin exactly, NOT STALE — unlike SW-192's flask pin) |
+| Two dispatches (ruby) | 2 × `graphi rebuild` of the same sinatra pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite F5 probe per dispatch |
+| Pin (other 8) | none at v3 measured standard; SW-196 dependency |
+| Provenance | ruby: candidate SHA `9f687849cec2b26311401191e90b60e40b5f6cee` (post-SW-188, per AC-7), runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, branch tip `da47330bd7d06498fa200bba8970449d69357bfe`, product binary digest `f9918e5cf5860c8c7b94d506aec43d5961ee1c44a49164f176056e13df1d8dd6` |
+| Ruby report artifacts | [`ruby-f5-measurement.md`](../ruby-f5-measurement.md) (the ruby measurement file); abstention doc at [`cross-file-residual-abstention.md`](../cross-file-residual-abstention.md) (covers the other 8) |
+| Ruby evidence | `evidence_uri` = `docs/rc/ruby-f5-measurement.md + docs/rc/parity-matrix-real-repo.md#cross-file-heuristic-residual--wp-xfh--gate-g4--measured-2026-08-23-w5i-sw195-at-post-sw188-candidate`; `sha` = `93e9fa19048215982751a77784593ee2b35a2c8fc4d70d5e50523a26f80c8f87` (sha256 of ruby-f5-measurement.md) |
+| Abstention evidence | `evidence_uri` = `docs/rc/cross-file-residual-abstention.md`; `sha` = `7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51` (sha256 of cross-file-residual-abstention.md) |
+
+## Ruby measurement, in one paragraph
+
+Ruby's `require`/`require_relative` resolution runs through
+`requireBinder` at `engine/link/resolve_common.go:332` (called from
+`engine/link/resolve_ruby.go:19` with the `.rb` extension set).
+`requireBinder` builds the binder's `importFileTargets` from explicit
+require paths: each require specifier contributes exactly one
+candidate target file path. The `clausePackageFileNodes` fan-out
+mechanism at `engine/link/resolve_common.go:521` is NOT in Ruby's
+binder — only the languages that use `pkgImportPaths` (Python at
+`resolve_python.go:76`, C# at `resolve_csharp.go:47`, Rust at
+`resolve_rust.go:49`) take that path. Ruby does NOT.
+
+The F5 fan-out probe on sinatra produces **2 rows** in both dispatch
+A and dispatch B:
+
+| importer | kind | distinct_target_files | edges |
+|---|---|---:|---:|
+| `sinatra-contrib/spec/respond_with_spec.rb` | imports | 2 | 2 |
+| `sinatra-contrib/spec/json_spec.rb` | imports | 2 | 2 |
+
+Both tuples have `distinct_target_files = edges = 2` — each edge
+goes to a DIFFERENT target file (no fan-out). Inspecting the actual
+edges:
+
+```
+sinatra-contrib/spec/json_spec.rb → sinatra-contrib/spec/okjson.rb       (line 1)
+sinatra-contrib/spec/json_spec.rb → sinatra-contrib/spec/spec_helper.rb  (line 1)
+sinatra-contrib/spec/respond_with_spec.rb → sinatra-contrib/spec/okjson.rb       (line 1)
+sinatra-contrib/spec/respond_with_spec.rb → sinatra-contrib/spec/spec_helper.rb  (line 1)
+```
+
+And the actual source for both files (head 5 lines):
+
+```ruby
+# sinatra-contrib/spec/json_spec.rb
+require 'multi_json'
+
+require 'spec_helper'
+require 'okjson'
+```
+
+```ruby
+# sinatra-contrib/spec/respond_with_spec.rb
+require 'multi_json'
+
+require 'spec_helper'
+require 'okjson'
+```
+
+Two `require` statements, two distinct targets, two distinct edges.
+This is the natural Ruby require semantics, NOT the PARITY-002
+fan-out shape. F5 fan-out (PARITY-002 shape) requires ONE require
+statement to produce edges to MULTIPLE files, which never happens
+here.
+
+## Two-dispatch determinism (ruby)
+
+| metric | dispatch A | dispatch B | agree? |
+|---|---:|---:|---|
+| total nodes | 1255 | 1255 | yes |
+| total edges | 1618 | 1618 | yes |
+| `imports` edges | 62 | 62 | yes |
+| `defines` edges | 1090 | 1090 | yes |
+| `calls` edges | 466 | 466 | yes |
+| cross-file `imports` edges | 62 | 62 | yes |
+| cross-file `references` edges | 0 | 0 | yes |
+| cross-file `calls` edges | 0 | 0 | yes |
+| F5 fan-out rows | 2 | 2 | yes |
+| snapshot envelope sha256 | `4249a529…` | `c9586bee…` | **no — envelope embeds `generated_at`** |
+
+The two snapshots agree on every per-row count that matters. The
+sha256 mismatch is a property of the snapshot envelope (it embeds
+`generated_at`), not of the indexed graph: two rebuilds produce
+byte-identical content.
+
+The formal `-verdict-diff` / `-counts-diff` exit-0 gates are NOT
+assertable from this measurement: `cmd/parity -family ruby` is
+rejected by `cmd/parity/main.go` (only `go` and `jvm` are accepted).
+The substantive half of `-counts-diff` (every per-row count agrees)
+holds; the formal gate is unbound — same shape as SW-176 AC-2
+(JVM), SW-192 (python), and SW-193 (TS family).
+
+## Why Ruby G4 flips PASS — the binary verdict
+
+The SW-181 AC-9 rule is explicit: *"IF the measurement supports GA
+at `cross-file-heuristic`, the row flips PASS; IF it does not, the
+row stays UNKNOWN with the F5 finding recorded."* The F5 measurement
+SUCCEEDS IN RUNNING AND ITS FINDING SUPPORTS GA at
+`cross-file-heuristic`:
+
+- F5 fan-out is ABSENT — 0 spurious edges, 0 tuples with
+  `distinct_target_files > edges` (the PARITY-002 signature).
+- The structural immunity is in the resolver shape (Ruby uses
+  `requireBinder` → `importFileTargets`, not `clausePackageFileNodes`).
+  The same shape protected the TS family (SW-193).
+- All 4 cross-file edge kinds (imports, references, calls, defines)
+  are at their natural extent — no fabricated targets, no phantom
+  imports.
+
+Per SW-181 AC-9, the G4 evidence row flips to PASS. The level
+printed beside GA stays `cross-file-heuristic` — the measurement
+supports GA at the declared level, no re-grade is performed, and
+no `RUBYFANOUT-001`-shaped defect is filed (no fan-out defect was
+found).
+
+## Why the other 8 stay UNKNOWN — abstention discipline
+
+Per the spec rule and SW-195 AC-3: *"GA-LANG-<lang>-G4 shall flip
+to PASS with URI and sha per language **only if** SW-196's pin is
+at v3 measured standard AND the two-dispatch parity agrees;
+otherwise the row stays UNKNOWN with the SW-195-specific reason
+named."* At SW-195 close, eight of nine languages have NO pin:
+
+```
+$ jq '.entries[] | select(.language == "bash" or .language == "c"
+   or .language == "cpp" or .language == "c_sharp" or .language == "lua"
+   or .language == "php" or .language == "rust" or .language == "sql")
+   | .name' corpus/manifest.json
+(empty result)
+```
+
+The structural reasoning PREDICTS the post-SW-196 outcomes but does
+NOT flip G4 rows on its own:
+
+- **bash, c, cpp, lua, php**: structural immunity — same outcome as
+  TS family (SW-193 PASS) and ruby (this section PASS). All use
+  `importFileTargets`-only resolution.
+- **c_sharp, rust**: structural susceptibility — same outcome as
+  python (SW-192 UNKNOWN with `PYTHONFANOUT-001`). Both use
+  `pkgImportPaths` → `clausePackageFileNodes`. The post-SW-196
+  measurement will likely file `<LANG>FANOUT-001` defects
+  (`CSHARPFANOUT-001`, `RUSTFANOUT-001`).
+- **sql**: empty binder — no imports per ISO/IEC 9075. The G4
+  measurement scope is the JOIN/VIEW resolution shape
+  (same-directory `derived` cross-file `references` edges), NOT the
+  import shape, per ADR 0012 / SW-183.
+
+These are PREDICTIONS, not measurements. The measurements run AFTER
+SW-196 lifts the pins; SW-195 records the structural reasoning
+honestly and abstains from declaring G4 PASS in the absence of
+evidence.
+
+## The harness gap, stated before any number
+
+**The Ruby parity driver does not exist in `internal/parity/`.**
+The harness as it stands today:
+
+| family | runner | source model | class table | cmd/parity wiring |
+|---|---|---|---|---|
+| Go | `Run` (`internal/parity/run.go:106`) | `RepoModel` (`gosource.go`) | `ClassesPath = "docs/rc/parity-classes.yaml"` | `-family go` |
+| JVM | `RunJVM` (`internal/parity/jvmrun.go:183`) | `JVMModel` (`jvmsource.go`) | `ClassesPathJVM` | `-family jvm` |
+| **Ruby** | **does not exist** | **does not exist** | **does not exist** | **no `-family ruby` option** |
+
+A direct build of a ruby parity driver would have the same shape
+as SW-176's WP-J7 JVM half — `rubyrun.go` (the run method),
+`rubysource.go` (the Ruby source model covering the `.rb`
+extension), `rubyclasses.go` (the real-repo class table),
+`docs/rc/parity-classes-ruby-real-repo.yaml` (the YAML), plus the
+`-family ruby` wiring in `cmd/parity/main.go`. **This is W6+ scope
+(NOT done by SW-195).** Filed as `PARITY-RUBY-DRIVER-001`, the
+same gap pattern as SW-192's python driver and SW-193's TS family
+driver.
+
+The formal `-verdict-diff` / `-counts-diff` exit-0 gates cannot be
+asserted from `cmd/parity -family ruby`; the substantive half of
+`-counts-diff` (every per-row count agrees at the snapshot row
+level) holds and is the load-bearing measurement.
+
+## What this section does and does not say
+
+**Says.** At the post-SW-188 candidate (9f687849…):
+
+- Ruby's G4 row flips to PASS. F5 fan-out is ABSENT on sinatra.
+  The Ruby resolver's structural immunity (requireBinder →
+  importFileTargets) holds at corpus scale.
+- The other 8 G4 rows stay UNKNOWN with the abstention reason
+  named per SW-195 AC-3. No pin at v3 means no measurement; the
+  abstention is honest per the spec rule.
+- The structural reasoning in the table above predicts the
+  post-SW-196 outcomes for the 8 abstained languages.
+
+**Does not say.** That the 8 abstained languages cannot reach GA at
+`cross-file-heuristic`. The structural reasoning suggests most can
+— but the structural reasoning is not the measurement, and SW-195
+does not declare the outcome in advance. SW-196 (corpus pins v3 for
+cross-file-heuristic residual) is the follow-on story that lifts
+the abstention.
+
+---
+
 # TS family real-repository measurement — WP-TS / gate G4 — MEASURED, G4 FLIPS PASS at the post-SW-188 candidate (2026-08-23, W5.g SW-193)
 
 > **THIS SECTION IS A MEASUREMENT.** SW-193's first attempt on

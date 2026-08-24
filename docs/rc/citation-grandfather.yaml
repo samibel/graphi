@@ -40,3 +40,18 @@ entries:
   - target: "docs/decisions/2026-08-language-ga-wpj11-flip-gate.md :: missing-path :: docs/bench/lang-budget.md"
     reason: "The path is simply wrong: the binary-size budget record is bench/lang-budget.md, not docs/bench/lang-budget.md. SW-205 cannot fix it in place because docs/decisions/2026-08-language-ga-wpj11-flip-gate.md is held by SW-208's open PR #133, and two branches editing one record is how a rewrite happens by accident. SW-208 corrects the prefix on its own branch."
     owner: SW-208
+
+  # Added 2026-08-24 during the SW-192..197 integration. SW-195 was BUILT AND
+  # APPROVED BEFORE SW-205 turned the citation rules on, so it never ran this
+  # gate; its two records describe, in the future tense, the shape a Ruby
+  # real-repo parity driver would have and name the parity-class YAML it would
+  # ship. This is the SAME citation shape as the SW-193 entry above, for the same
+  # reason, and it resolves the moment the artifact lands. It is not a new breach
+  # parked here: the citation predates the rule.
+  - target: "docs/rc/parity-matrix-real-repo.md :: missing-path :: docs/rc/parity-classes-ruby-real-repo.yaml"
+    reason: "SW-195's W5.i section describes, in the future tense, the shape a Ruby real-repository parity driver would have (rubyrun.go, rubysource.go, rubyclasses.go, the -family ruby wiring) and names the parity-class YAML it would ship. The surrounding prose states in bold that none of it exists and that the work is W6+ scope, filed as PARITY-RUBY-DRIVER-001. This is a citation of a planned artifact, and it resolves the moment the artifact lands."
+    owner: SW-195
+
+  - target: "docs/rc/ruby-f5-measurement.md :: missing-path :: docs/rc/parity-classes-ruby-real-repo.yaml"
+    reason: "The same future-tense harness-shape paragraph as the entry above, repeated in SW-195's ruby measurement record. Same planned artifact, same owner, drains with the same story."
+    owner: SW-195

@@ -801,7 +801,7 @@ gates:
     current: "UNKNOWN — born UNKNOWN by SW-181. Target class E2 CORPUS-MEASURED. RE-MEASURED 2026-08-23 by SW-192 on flask at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee) on the post-SW-204 base (3fe97f0). The F5 measurement SUCCEEDED IN RUNNING but its finding FAILED, again: 70 spurious imports edges (8.0% of flask's 879 imports), 24 distinct importers under src/flask/* doing `import typing as t` (stdlib) acquire 3 spurious edges into tests/typing/typing_*.py. Mechanism (engine/link/resolve_common.go:521 + engine/link/resolve_python.go:86): pyClause returns 'typing' for importPath='typing'; clausePackageFileNodes walks every directory declaring the 'typing' clause and returns every file node; the resolver mints an imports edge for each. SAME SHAPE AS PARITY-002 (Go pre-ADR-0009). The pre-SW-188 measurement (2026-08-20, run SHA 3f23901) reported the identical 70-edge finding; SW-188 moved the candidate to carry the JVM defect closure (engine/jvmresolve, internal/jvmgroundtruth) and the python heuristic resolver at engine/link/resolve_python.go is untouched by that work, so the byte-identical reproduction is the expected outcome. Per SW-181 AC-9: the measurement fails to support GA at cross-file-heuristic, so Python is RE-GRADED, not declared. The re-grade is filed as PYTHONFANOUT-001, scheduled as a separate product-byte change with its own ADR and candidate move, NOT executed in this commit. Two `graphi rebuild` dispatches agree on every per-row count (1058/2214/879/70 in both rebuilds AND both snapshots); the snapshot envelope sha256 differs because it embeds a timestamp. The cmd/parity -family python gate is unbound (cmd/parity/main.go:79 rejects anything other than go|jvm; the python driver is the same gap SW-176 AC-2 settled for the JVM). The substantive half of -counts-diff (every per-row count agrees) holds. The pre-SW-188 W5.f section is preserved verbatim as a STALE historical record per D6 (docs/rc/parity-matrix-real-repo.md, the subsection titled 'Historical record — the pre-SW-188 candidate measurement (2026-08-20, preserved verbatim, D6)'); not re-pointed."
     status: UNKNOWN
     evidence_uri: "docs/rc/parity-matrix-real-repo.md#python-real-repository-measurement--f5-measurement--measured-g4-stays-unknown-2026-08-23-w5f-sw192-re-measurement-at-post-sw188-candidate"
-    sha: "2acd48588a6ab5c4cd07d260aac4c5e9337f7fc39040abe3c4a3b9bd34cabde5"
+    sha: "bb7597459ddcc84f5091170ea607683fac3d565c9c3cd891fc4c5714a4bd5059"
     owner: W2-PY
     next_action: "PYTHONFANOUT-001 fix (python resolver needs module-relative directory lookup, the same shape ADR 0009 gave Go) — re-measure after the fix lands; re-grade python to the level the fix supports; cite the post-fix measurement. Until the fix lands, the row stays UNKNOWN and SW-181 AC-9 binds: re-graded, not declared."
     due: W2
@@ -1261,12 +1261,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
+    current: "UNKNOWN — abstained 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. NOT MEASURED — abstention, not failure. SW-195 AC-3 binds: the row flips PASS only if SW-196's pin is at v3 measured standard AND the two-dispatch parity agrees; otherwise the row stays UNKNOWN with the SW-195-specific reason named. At SW-195 close, NO BASH corpus pin exists at the v3 measured standard — corpus/manifest.json has no entry with language=bash. The abstention is honest per the spec rule 'STALE rows are re-marked, never re-pointed; abstention is honest'. Bash uses requireBinder → importFileTargets (engine/link/resolve_bash.go via requireBinder at engine/link/resolve_common.go), the exact-path resolution shape; the post-SW-196 measurement is predicted to land PASS. Per SW-181 AC-9 the row stays UNKNOWN — re-graded (via abstention), not declared."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/cross-file-residual-abstention.md"
+    sha: 7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: independent."
+    next_action: "SW-196 — lift a bash repo (e.g. a small standalone bash utility, or a shell-only sub-tree of a multi-language project like pre-commit's bash hooks) to v3 measured standard as DATA in corpus/manifest.json. Bash has no representative pin yet (no shell-only repository at the pin tier that satisfies the 8-property stratification); the lift is per the WP-5 corpus standard. The structural reasoning predicts PASS; the measurement runs AFTER SW-196 lands the pin. Filed as RESIDUALPINS-001."
     due: W3
   - id: GA-LANG-bash-G5
     gate: Corpus stratification and pins
@@ -1364,12 +1364,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
+    current: "UNKNOWN — abstained 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. NOT MEASURED — abstention, not failure. SW-195 AC-3 binds: the row flips PASS only if SW-196's pin is at v3 measured standard AND the two-dispatch parity agrees; otherwise the row stays UNKNOWN with the SW-195-specific reason named. At SW-195 close, NO C corpus pin exists at the v3 measured standard — corpus/manifest.json has no entry with language=c. The abstention is honest per the spec rule 'STALE rows are re-marked, never re-pointed; abstention is honest'. C uses includeBinder → importFileTargets (engine/link/resolve_c.go, includeBinder at engine/link/resolve_common.go), the exact-path resolution shape; the post-SW-196 measurement is predicted to land PASS. C and CPP share the G4 measurement scope (one resolver at engine/link/resolve_c.go sharing includeBinder between cResolver and cppResolver); both rows discharge together or not at all per the SW-184 one-resolver-one-family discipline. Per SW-181 AC-9 the row stays UNKNOWN — re-graded (via abstention), not declared."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/cross-file-residual-abstention.md"
+    sha: 7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
+    next_action: "SW-196 — lift a C repo (e.g. libpng, cjson, or redis-stable's deps/ C libs) to v3 measured standard as DATA in corpus/manifest.json. CPP shares the G4 measurement scope, so a single SW-196 entry covering both languages discharges both rows together. The structural reasoning predicts PASS; the measurement runs AFTER SW-196 lands the pin. Filed as RESIDUALPINS-001."
     due: W3
   - id: GA-LANG-c-G5
     gate: Corpus stratification and pins
@@ -1467,12 +1467,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
+    current: "UNKNOWN — abstained 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. NOT MEASURED — abstention, not failure. SW-195 AC-3 binds: the row flips PASS only if SW-196's pin is at v3 measured standard AND the two-dispatch parity agrees; otherwise the row stays UNKNOWN with the SW-195-specific reason named. At SW-195 close, NO C_SHARP corpus pin exists at the v3 measured standard — corpus/manifest.json has no entry with language=c_sharp. The abstention is honest per the spec rule 'STALE rows are re-marked, never re-pointed; abstention is honest'. C# uses pkgImportPaths → clausePackageFileNodes (engine/link/resolve_csharp.go:47 + resolve_common.go:521), the clause-keyed fan-out mechanism Python exhibited on flask (SW-192, PYTHONFANOUT-001); the post-SW-196 measurement is predicted to RE-DISCOVER fan-out (CSHARPFANOUT-001) and stay UNKNOWN per SW-181 AC-9. C# is structurally susceptible; the abstention does NOT predict PASS. Per SW-181 AC-9 the row stays UNKNOWN — re-graded (via abstention), not declared."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/cross-file-residual-abstention.md"
+    sha: 7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: independent."
+    next_action: "SW-196 — lift a C# repo (e.g. newtonsoft.json, humanizer) to v3 measured standard as DATA in corpus/manifest.json. The post-SW-196 measurement will likely re-discover fan-out (clause-keyed fan-out over colliding directory clauses, same shape PYTHONFANOUT-001) and stay UNKNOWN with CSHARPFANOUT-001 filed. Filed as RESIDUALPINS-001."
     due: W3
   - id: GA-LANG-c_sharp-G5
     gate: Corpus stratification and pins
@@ -1570,12 +1570,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
+    current: "UNKNOWN — abstained 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. NOT MEASURED — abstention, not failure. SW-195 AC-3 binds: the row flips PASS only if SW-196's pin is at v3 measured standard AND the two-dispatch parity agrees; otherwise the row stays UNKNOWN with the SW-195-specific reason named. At SW-195 close, NO CPP corpus pin exists at the v3 measured standard — corpus/manifest.json has no entry with language=cpp. The abstention is honest per the spec rule 'STALE rows are re-marked, never re-pointed; abstention is honest'. C++ uses includeBinder → importFileTargets (engine/link/resolve_c.go's cppResolver sharing includeBinder between cResolver and cppResolver), the exact-path resolution shape; the post-SW-196 measurement is predicted to land PASS. C and CPP share the G4 measurement scope (one resolver at engine/link/resolve_c.go); both rows discharge together or not at all per the SW-184 one-resolver-one-family discipline. Per SW-181 AC-9 the row stays UNKNOWN — re-graded (via abstention), not declared."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/cross-file-residual-abstention.md"
+    sha: 7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: C-and-C++ share the resolver impl at engine/link/resolve_c.go; a gate discharged on c does not discharge it for cpp unless the artefact genuinely covers cpp."
+    next_action: "SW-196 — lift a C++ repo (e.g. nlohmann/json, fmt, catch2) to v3 measured standard as DATA in corpus/manifest.json. C shares the G4 measurement scope, so a single SW-196 entry covering both languages discharges both rows together. The structural reasoning predicts PASS; the measurement runs AFTER SW-196 lands the pin. Filed as RESIDUALPINS-001."
     due: W3
   - id: GA-LANG-cpp-G5
     gate: Corpus stratification and pins
@@ -1673,12 +1673,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
+    current: "UNKNOWN — abstained 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. NOT MEASURED — abstention, not failure. SW-195 AC-3 binds: the row flips PASS only if SW-196's pin is at v3 measured standard AND the two-dispatch parity agrees; otherwise the row stays UNKNOWN with the SW-195-specific reason named. At SW-195 close, NO LUA corpus pin exists at the v3 measured standard — corpus/manifest.json has no entry with language=lua. The abstention is honest per the spec rule 'STALE rows are re-marked, never re-pointed; abstention is honest'. Lua uses requireBinder → importFileTargets (engine/link/resolve_ruby.go's luaResolver, requiring requireBinder at engine/link/resolve_common.go), the exact-path resolution shape; the post-SW-196 measurement is predicted to land PASS. The PendingRef parser gap (SW-194b.5) is tracked separately and does NOT block the G4 measurement — only the parser-side `pending` row is gated on it. Per SW-181 AC-9 the row stays UNKNOWN — re-graded (via abstention), not declared."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/cross-file-residual-abstention.md"
+    sha: 7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: independent."
+    next_action: "SW-196 — lift a Lua repo (e.g. luarocks, luajit, or a small standalone Lua library) to v3 measured standard as DATA in corpus/manifest.json. The PendingRef parser gap (SW-194b.5) is tracked separately and does NOT block this row. The structural reasoning predicts PASS; the measurement runs AFTER SW-196 lands the pin. Filed as RESIDUALPINS-001."
     due: W3
   - id: GA-LANG-lua-G5
     gate: Corpus stratification and pins
@@ -1776,12 +1776,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
+    current: "UNKNOWN — abstained 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. NOT MEASURED — abstention, not failure. SW-195 AC-3 binds: the row flips PASS only if SW-196's pin is at v3 measured standard AND the two-dispatch parity agrees; otherwise the row stays UNKNOWN with the SW-195-specific reason named. At SW-195 close, NO PHP corpus pin exists at the v3 measured standard — corpus/manifest.json has no entry with language=php. The abstention is honest per the spec rule 'STALE rows are re-marked, never re-pointed; abstention is honest'. PHP uses requireBinder → importFileTargets (engine/link/resolve_ruby.go's phpResolver, requiring requireBinder at engine/link/resolve_common.go), the exact-path resolution shape; the post-SW-196 measurement is predicted to land PASS. The PendingRef parser gap (SW-194b.5) is tracked separately and does NOT block the G4 measurement — only the parser-side `pending` row is gated on it. Per SW-181 AC-9 the row stays UNKNOWN — re-graded (via abstention), not declared."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/cross-file-residual-abstention.md"
+    sha: 7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: independent."
+    next_action: "SW-196 — lift a PHP repo (e.g. composer, phpunit, or a small standalone PHP framework) to v3 measured standard as DATA in corpus/manifest.json. The PendingRef parser gap (SW-194b.5) is tracked separately and does NOT block this row. The structural reasoning predicts PASS; the measurement runs AFTER SW-196 lands the pin. Filed as RESIDUALPINS-001."
     due: W3
   - id: GA-LANG-php-G5
     gate: Corpus stratification and pins
@@ -1879,12 +1879,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
-    status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    current: "PASS — flipped 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. The F5 measurement SUCCEEDED IN RUNNING AND ITS FINDING SUPPORTS GA at cross-file-heuristic: 62 cross-file imports edges on sinatra distributed over 8 distinct target files and 61 distinct importers; every (importer, kind) tuple has COUNT(DISTINCT target_file) ≤ 2, and the 2 tuples with distinct=2 are BOTH legitimate multi-require patterns (sinatra-contrib/spec/respond_with_spec.rb and json_spec.rb each do `require 'spec_helper'` AND `require 'okjson'`, producing 2 distinct targets by 2 require statements — NOT the PARITY-002 fan-out shape where ONE statement produces edges to MULTIPLE files). Ruby uses requireBinder at engine/link/resolve_common.go:332 (builds importFileTargets, NOT pkgImportPaths/clausePackageFileNodes), the same exact-path resolution shape that gives the TS family structural immunity; the F5 fan-out is ABSENT. Two `graphi rebuild` dispatches agree at per-row count level (1255 nodes / 1618 edges / 62 cross-file imports / 466 calls / 0 cross-file references / 0 cross-file calls in both); snapshot envelope sha256 differs because it embeds `generated_at`. The cmd/parity -family ruby formal gate is UNBOUND (cmd/parity/main.go rejects ruby; the ruby driver is the same gap SW-176 AC-2 settled for the JVM and SW-192 / SW-193 re-applied for python and typescript). The substantive half of -counts-diff (every per-row count agrees) holds. PARITY-RUBY-DRIVER-001 (the harness gap) is unchanged and is W6+ scope, NOT closed by this measurement. Per SW-181 AC-9 the measurement supports GA at the declared level, so no re-grade is performed. Level printed beside GA stays cross-file-heuristic."
+    status: PASS
+    evidence_uri: "docs/rc/ruby-f5-measurement.md + docs/rc/parity-matrix-real-repo.md#ruby-real-repository-measurement--wp-ruby--gate-g4--measured-2026-08-23-w5i-sw195-at-post-sw188-candidate"
+    sha: 93e9fa19048215982751a77784593ee2b35a2c8fc4d70d5e50523a26f80c8f87
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: independent."
+    next_action: "PARITY-RUBY-DRIVER-001 (harness gap) — W6+ scope: build the ruby parity driver (rubyrun.go + rubysource.go + rubyclasses.go + docs/rc/parity-classes-ruby-real-repo.yaml + cmd/parity -family ruby wiring) to lift the manual F5 driver into the harness. The substantive -counts-diff half holds; the formal gate is unbound until the driver lands."
     due: W3
   - id: GA-LANG-ruby-G5
     gate: Corpus stratification and pins
@@ -1982,12 +1982,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
+    current: "UNKNOWN — abstained 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. NOT MEASURED — abstention, not failure. SW-195 AC-3 binds: the row flips PASS only if SW-196's pin is at v3 measured standard AND the two-dispatch parity agrees; otherwise the row stays UNKNOWN with the SW-195-specific reason named. At SW-195 close, NO RUST corpus pin exists at the v3 measured standard — corpus/manifest.json has no entry with language=rust. The abstention is honest per the spec rule 'STALE rows are re-marked, never re-pointed; abstention is honest'. Rust uses pkgImportPaths → clausePackageFileNodes (engine/link/resolve_rust.go:49 + resolve_common.go:521), the clause-keyed fan-out mechanism Python exhibited on flask (SW-192, PYTHONFANOUT-001); the post-SW-196 measurement is predicted to RE-DISCOVER fan-out (RUSTFANOUT-001) and stay UNKNOWN per SW-181 AC-9. Rust is structurally susceptible; the abstention does NOT predict PASS. Per SW-181 AC-9 the row stays UNKNOWN — re-graded (via abstention), not declared."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/cross-file-residual-abstention.md"
+    sha: 7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: independent."
+    next_action: "SW-196 — lift a Rust repo (e.g. serde, tokio, or a small standalone Rust crate) to v3 measured standard as DATA in corpus/manifest.json. The post-SW-196 measurement will likely re-discover fan-out (clause-keyed fan-out over colliding directory clauses, same shape PYTHONFANOUT-001) and stay UNKNOWN with RUSTFANOUT-001 filed. Filed as RESIDUALPINS-001."
     due: W3
   - id: GA-LANG-rust-G5
     gate: Corpus stratification and pins
@@ -2085,12 +2085,12 @@ gates:
     gate: Real-repository parity
     section: language-GA program §2 G4
     threshold: "internal/parity drives the BUILT binary over the language's pinned clones; two dispatches agree at verdict AND count granularity; results published in the parity-matrix-real-repo pattern; divergences filed as PARITY-0xx and never hidden."
-    current: "UNKNOWN — born UNKNOWN by SW-184. Target class E2 CORPUS-MEASURED. Not yet measured. The residual language's pinned clones (where present in corpus/manifest.json) are the G4 artefact; the F5-equivalent measurement on each clone at verdict AND count granularity is the gate. SW-184 AC-8 makes the gate conditional: if the measurement fails to support GA at cross-file-heuristic for one residual language but not the others, they are graded separately and the split is published. The row stays UNKNOWN until the measurement lands AND either (a) the clone passes at cross-file-heuristic, or (b) the disclosed defect is filed and the level is re-graded per language."
+    current: "UNKNOWN — abstained 2026-08-23 by SW-195 (W5.i) at the post-SW-188 candidate (9f687849cec2b26311401191e90b60e40b5f6cee). Target class E2 CORPUS-MEASURED. NOT MEASURED — abstention, not failure. SW-195 AC-3 binds: the row flips PASS only if SW-196's pin is at v3 measured standard AND the two-dispatch parity agrees; otherwise the row stays UNKNOWN with the SW-195-specific reason named. At SW-195 close, NO SQL corpus pin exists at the v3 measured standard — corpus/manifest.json has no entry with language=sql. The abstention is honest per the spec rule 'STALE rows are re-marked, never re-pointed; abstention is honest'. SQL uses an EMPTY binder (engine/link/resolve_bash.go's sqlResolver, no imports per ISO/IEC 9075 — the ADR 0012 correction, SW-183), so there are no `imports` edges to fan out. The G4 measurement scope is the JOIN/VIEW resolution shape (same-directory `derived` cross-file `references` edges for tables/views), NOT the import shape, per SW-195 AC-4 / ADR 0012. The structural reasoning predicts a vacuous PASS for the import-shape question (no `imports` edges exist by construction) with the JOIN/VIEW scope to be measured post-SW-196. The ADR-W1 over-claim is documented in the abstention doc. Per SW-181 AC-9 the row stays UNKNOWN — re-graded (via abstention), not declared."
     status: UNKNOWN
-    evidence_uri: ""
-    sha: ""
+    evidence_uri: "docs/rc/cross-file-residual-abstention.md"
+    sha: 7f8908c48a8b1903cd3cbb7684b2b8362e3680297beb1f212252ecae6204bf51
     owner: W3-RES
-    next_action: "Run internal/parity over the language's pinned clones at the v3 measured standard; two dispatches agree at verdict AND count granularity; publish the parity-matrix-real-repo pattern. The bundle discipline: independent."
+    next_action: "SW-196 — lift a SQL-bearing repo (e.g. sqlite's `src/` with test SQL fixtures, or postgres sub-trees) to v3 measured standard as DATA in corpus/manifest.json. The post-SW-196 measurement will run the JOIN/VIEW shape probe per SW-195 AC-4 (same-directory `derived` cross-file `references` edges for tables/views), with the ADR-W1 over-claim documented in the run report (`sql-over-claim.md`). Filed as RESIDUALPINS-001."
     due: W3
   - id: GA-LANG-sql-G5
     gate: Corpus stratification and pins
