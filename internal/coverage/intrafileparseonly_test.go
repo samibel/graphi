@@ -347,27 +347,49 @@ func TestIntraFileParseOnly_MatrixRowsExist(t *testing.T) {
 					entry.Lang, row.Tier, TierLabs, TierLabs)
 			}
 		case stateWithdrawn:
-			// SW-178 WITHDRAWN contract: the matrix row is absent
-			// (by the state classifier), AND every GA-LANG-<lang>-
-			// {G1,G2,G3..G9} evidence row reads UNKNOWN, AND the
-			// language is recorded in the withdrawals doc with a
-			// re-introducer story id. All three halves are pinned.
+			// SW-178 WITHDRAWN contract under the SW-199 slice
+			// decomposition: the matrix row is absent (by the state
+			// classifier), AND the language is recorded in the
+			// withdrawals doc with a re-introducer story id. The
+			// matrix-row-absence invariant is load-bearing. Evidence
+			// rows can flip to PASS for gates measured by their
+			// respective shipped slices (G3 from SW-199, G4 from
+			// SW-200, G5 from SW-201, etc.); the matrix row stays
+			// absent until all nine gates are PASS — that is the
+			// ACTIVE half held by TestIntraFileParseOnly_OrderingConstraint.
+			//
+			// THIS IS THE SAME AMENDMENT SW-194 ALREADY MADE to the
+			// sibling guard for the cross-file-heuristic residual
+			// (crossfileheuristicresidual_test.go:305-322), applied
+			// here for the same reason and in the same shape: the
+			// "all rows UNKNOWN" clause was the SW-185-close SNAPSHOT,
+			// not the matrix discipline. The withdrawals doc says so
+			// itself — "The PASS rows that flipped in PR #128 are NOT
+			// removed. They live in docs/rc/evidence-index.yaml and
+			// will be re-bound when the matrix rows are
+			// re-introduced" — and re-introduction is defined there as
+			// happening "once its G1..G9 evidence rows are all PASS",
+			// which is unreachable if no row may ever leave UNKNOWN
+			// while withdrawn.
+			//
+			// We still pin the row-set (every residual language
+			// carries the closed set G1, G2, G3..G9 — not missing
+			// rows) so a DELETION of evidence rows cannot silently
+			// launder a gate to PASS; we do NOT pin "all rows UNKNOWN"
+			// because that is the per-slice disposition, not the
+			// matrix discipline.
 			gateStatus := evidenceRowsByID(t, intraFileParseOnlyEvidencePath, entry.Lang)
-			var notUnknown, missing []string
+			var missing []string
 			for _, g := range residualIntraFileParseOnlyRowGates {
-				status, ok := gateStatus[g]
-				if !ok {
+				if _, ok := gateStatus[g]; !ok {
 					missing = append(missing, g)
-					continue
-				}
-				if status != "UNKNOWN" {
-					notUnknown = append(notUnknown, fmt.Sprintf("%s=%s", g, status))
 				}
 			}
-			if len(missing) > 0 || len(notUnknown) > 0 {
+			if len(missing) > 0 {
 				withdrawnBadContract = append(withdrawnBadContract,
-					fmt.Sprintf("%s (missing gates: %v; non-UNKNOWN evidence: %v)",
-						entry.Lang, missing, notUnknown))
+					fmt.Sprintf("%s (missing evidence rows: %v — every residual "+
+						"language must carry the closed set G1, G2, G3..G9 even "+
+						"when WITHDRAWN)", entry.Lang, missing))
 			}
 			if w, ok := withdrawn[entry.Lang]; !ok || strings.TrimSpace(w.Reintroducer) == "" {
 				withdrawnBadContract = append(withdrawnBadContract,
@@ -503,46 +525,63 @@ func TestIntraFileParseOnly_GALangRowsExist(t *testing.T) {
 	}
 }
 
-// TestIntraFileParseOnly_AllRowsUnknown pins the HONEST-UNKNOWN state
-// at SW-185 close. Every GA-LANG-<lang>-* row for every residual
-// language MUST read `status: UNKNOWN`. This is the expected state — the
-// rows are the SCAFFOLD, not a discharged claim, and the spec is
-// explicit about it (AC-8: "may finish this story without a GA
-// declaration; that is an outcome, not a failure"). A row that reads
-// PASS at SW-185 close would mean somebody moved a gate without
-// evidence and silently made CI green, the exact failure mode the
-// "rows born UNKNOWN" convention exists to prevent.
+// TestIntraFileParseOnly_AllRowsUnknown pins the MATRIX-ROW-ABSENCE
+// invariant at the SW-199 slice-decomposition layer. Every residual
+// language's `category: ga-language` matrix row MUST be ABSENT in
+// docs/coverage-matrix.yaml — the WITHDRAWN discipline under SW-178
+// (docs/rc/ga-language-withdrawals-2026-08-21.md).
+//
+// The pre-SW-199 form of this guard asserted "every GA-LANG-<lang>-*
+// row reads UNKNOWN". That assertion pinned the SW-185-CLOSE SNAPSHOT,
+// and it is retired here for exactly the reason SW-194 retired the
+// identical clause in the sibling guard for the cross-file-heuristic
+// residual (crossfileheuristicresidual_test.go:474-494): a slice
+// decomposition lets evidence rows flip to PASS for the gates their
+// respective slices measured (G3 from SW-199, G4 from SW-200, G5 from
+// SW-201, ...) while the matrix row stays absent. Keeping the old
+// clause would have made this guard's own stated re-introduction path
+// — the withdrawals doc's "once its G1..G9 evidence rows are all PASS"
+// — unreachable, because no row could ever leave UNKNOWN while the
+// language is withdrawn.
+//
+// The matrix-row-absence check is the load-bearing invariant at this
+// layer: a row that uncomments without all 9 gates PASS is the
+// stale-row condition SW-178 was introduced to prevent. The ACTIVE
+// ordering constraint (all 9 gates PASS in order) is held by
+// TestIntraFileParseOnly_OrderingConstraint, the per-row evidence
+// presence by TestIntraFileParseOnly_GALangRowsExist, and the
+// no-unbacked-PASS rule by `cmd/evidence -check` (every PASS row must
+// carry an evidence URI and a resolving blob sha). Together they cover
+// what this guard used to cover before the slice decomposition.
 func TestIntraFileParseOnly_AllRowsUnknown(t *testing.T) {
-	rows, err := loadEvidenceIndexGALangRows(intraFileParseOnlyEvidencePath)
+	caps, err := LoadMatrix(intraFileParseOnlyMatrixPath)
 	if err != nil {
-		t.Fatalf("load evidence index: %v", err)
+		t.Fatalf("read coverage matrix %s: %v", intraFileParseOnlyMatrixPath, err)
 	}
 
-	residualSet := map[string]bool{}
+	matrixGALangs := map[string]Capability{}
+	for _, c := range caps {
+		if c.Category != CategoryGALanguage {
+			continue
+		}
+		matrixGALangs[c.ID] = c
+	}
+
+	var present []string
 	for _, entry := range residualIntraFileParseOnlyLanguages {
-		residualSet[entry.Lang] = true
-	}
-
-	var prematurePass []string
-	for _, r := range rows {
-		lang, _, ok := splitGALangRowID(r.ID)
-		if !ok {
-			continue
-		}
-		if !residualSet[lang] {
-			continue
-		}
-		if r.Status != "UNKNOWN" {
-			prematurePass = append(prematurePass, fmt.Sprintf("%s (status=%q)", r.ID, r.Status))
+		if _, ok := matrixGALangs[entry.Lang]; ok {
+			present = append(present, entry.Lang)
 		}
 	}
-	if len(prematurePass) > 0 {
-		t.Errorf("residual GA-LANG-* rows not all UNKNOWN at SW-185 close %v. "+
-			"Either the rows are prematurely PASS (gate moved without evidence — "+
-			"the failure mode rows-born-UNKNOWN exists to prevent) or a non-UNKNOWN "+
-			"status string was introduced. SW-185 ships the SCAFFOLD; the per-gate "+
-			"discharge is a separate, owner-gated story with its own evidence artefact.",
-			prematurePass)
+	if len(present) > 0 {
+		t.Errorf("residual languages have their ga-language matrix row PRESENT "+
+			"in docs/coverage-matrix.yaml: %v. The SW-178 WITHDRAWN discipline "+
+			"(docs/rc/ga-language-withdrawals-2026-08-21.md) requires the matrix "+
+			"row to be ABSENT until every GA-LANG-<lang>-* evidence row reads "+
+			"PASS — a matrix row uncommented under partial evidence is the "+
+			"stale-row condition SW-178 was introduced to prevent. The ACTIVE "+
+			"ordering invariant is held by TestIntraFileParseOnly_OrderingConstraint.",
+			present)
 	}
 }
 
@@ -621,12 +660,15 @@ func TestIntraFileParseOnly_OrderingConstraint(t *testing.T) {
 						entry.Lang, missing, notPass))
 			}
 		case stateWithdrawn:
-			// WITHDRAWN: exempt — by the SW-178 withdrawal contract,
-			// the matrix row is absent and the evidence rows are all
-			// UNKNOWN. The structural ordering is satisfied vacuously.
-			// (The withdrawal contract itself — matrix row absent +
-			// all evidence rows UNKNOWN + re-introducer recorded —
-			// is checked in TestIntraFileParseOnly_MatrixRowsExist.)
+			// WITHDRAWN: exempt — by the SW-178 withdrawal contract
+			// the matrix row is absent, so the structural ordering is
+			// satisfied vacuously. (The withdrawal contract itself —
+			// matrix row absent + the closed evidence row-set present
+			// + re-introducer recorded — is checked in
+			// TestIntraFileParseOnly_MatrixRowsExist. SW-199 retired
+			// the "all evidence rows UNKNOWN" clause this comment used
+			// to name; see that test and
+			// TestIntraFileParseOnly_AllRowsUnknown for why.)
 		case stateUnauthorized:
 			unauthorized = append(unauthorized, entry.Lang)
 		}

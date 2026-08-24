@@ -30,6 +30,14 @@ func newFixtureRepo(t *testing.T) *fixtureRepo {
 	r.git("init", "-q", "-b", "main")
 	r.git("config", "user.email", "gate@example.invalid")
 	r.git("config", "user.name", "gate")
+	// `git commit` may fork a detached `gc --auto` / `maintenance` run that keeps
+	// writing into .git/objects after the command returns. On a loaded CI runner
+	// that background write races t.TempDir()'s RemoveAll and fails the test with
+	// "unlinkat .../.git/objects: directory not empty" — a cleanup error, not an
+	// assertion. Disabling both keeps the fixture repo quiescent once a git
+	// command exits, which is what every caller here already assumes.
+	r.git("config", "gc.auto", "0")
+	r.git("config", "maintenance.auto", "false")
 	return r
 }
 
