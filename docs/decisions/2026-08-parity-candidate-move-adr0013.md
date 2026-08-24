@@ -12,6 +12,36 @@
   which superseded the P0 v0.7.1 freeze record for the same reason
 - ADR: [`0013-jvmsound-003-004-jvmharn-001-closure.md`](0013-jvmsound-003-004-jvmharn-001-closure.md)
 
+## CORRECTION — 2026-08-23 (SW-205): a FIFTH never-published artifact pair is cited in this record
+
+Per the never-rewrite discipline this block is **added**; nothing below it is
+rewritten, re-pointed or deleted. It was found mechanically, by the citation
+verifier this story lands (`internal/evidence/citationcheck.go`), which resolves
+every path a governed record cites against `git ls-tree -r HEAD`.
+
+**C-5 — `docs/rc/parity-matrix-adr0011-run-{a,b,c}.json` were never published.**
+The paragraph at `:173` calls the W0.f-5 measurement
+"`docs/rc/parity-matrix-adr0011-run-{a,b,c}.json`, PUBLISHED". No commit on any
+branch ever added those three paths:
+`git log --all --diff-filter=A -- 'docs/rc/parity-matrix-adr0011-run-*'` returns
+exactly one commit, `a1a8a9a` ("docs/rc: publish the ADR 0011 re-measurement —
+19/19 PASS, LINK-001 closed by measurement"), and the two files it added are
+`docs/rc/parity-matrix-adr0011-run-e.json` and
+`docs/rc/parity-matrix-adr0011-run-f.json`. The W0.f-5 measurement that DID
+publish is that pair, under the letters `e` and `f`, not `a`, `b` and `c`. The
+count is also wrong: the record promises three dispatches, two were published.
+
+This is the SAME defect class as SW-188's C-2 one paragraph away, in the same
+record, and it survived that audit — which is the argument for a mechanical gate
+rather than a careful reader. Nothing about the move itself changes: the ADR 0011
+re-measurement is real and is cited correctly everywhere else in the tree.
+
+**What the gate does and does not do with this block.** The citations inside this
+record are exempt from the citation verifier, because the correction banner
+SW-188 opened at `:15` marks the whole body below it as published-and-not-to-be-
+rewritten (`internal/evidence/citation.go`, `CorrectionMarkers`). The exemption is
+counted and printed on every run; it is not silence.
+
 ## CORRECTION — 2026-08-23 (SW-188): four statements in this record were not true when it published
 
 Per ADR 0008 D6 this section is **added**; nothing below it is rewritten,
