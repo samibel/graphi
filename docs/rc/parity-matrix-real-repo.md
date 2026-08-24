@@ -1439,35 +1439,42 @@ jq -r '.graph.edges[].kind' '<workdir>/state/guava/<row>/full.snapshot' | sort |
 
 ---
 
-# Python real-repository measurement — F5 measurement — MEASURED, G4 STAYS UNKNOWN (2026-08-20, W5.f)
+# Python real-repository measurement — F5 measurement — MEASURED, G4 STAYS UNKNOWN (2026-08-23, W5.f SW-192 re-measurement at post-SW-188 candidate)
 
-> **THIS SECTION IS NOT A PUBLISHED MATRIX.** SW-192 ran the SW-181 AC-3 F5
-> measurement over flask — the python pin — and produced a real-repo
-> measurement of whether Python's package-import resolution fans out over
-> colliding directory clauses (the F5 finding, PARITY-002 shape). The
-> measurement found the F5 fan-out **IS REAL** on flask, and per SW-181 AC-9
-> Python is **RE-GRADED, not declared** at `cross-file-heuristic`. The G4
-> evidence row stays UNKNOWN with the F5 finding named. The python parity
-> driver does not exist in `internal/parity/` (the same gap SW-193 settled for
-> the TypeScript family in the section above); the F5 measurement was
-> performed manually by driving `./cmd/graphi` directly, the same shape
-> SW-176's AC-2 escalation settled for the JVM matrix. Per D6 nothing below
-> this section is rewritten, re-pointed or deleted.
+> **THIS SECTION IS NOT A PUBLISHED MATRIX. It is the SW-192 re-measurement
+> at the post-SW-188 candidate (`9f687849cec2b26311401191e90b60e40b5f6cee`).
+> The W5.f section immediately below it (2026-08-20) is the prior measurement
+> at the pre-SW-188 candidate (`3b8d43f6bc0a264c74424ca209b6fbd2401c9a31`);
+> it is **STALE** by the candidate-move rule and is preserved verbatim under
+> D6, NOT re-pointed.** SW-188 closed JVMSOUND-003/004 and JVMHARN-001, which
+> are JVM-only defects in `engine/jvmresolve` and `internal/jvmgroundtruth`;
+> the python heuristic resolver at `engine/link/resolve_python.go` is
+> untouched by that work, so the re-measurement is expected to reproduce the
+> pre-SW-188 numbers byte-for-byte if the F5 finding is stable. **It is.**
+> This section is published as the add-on, the old section is the historical
+> record, and the G4 evidence row carries the new sha. The python parity
+> driver still does not exist in `internal/parity/` (the same gap the
+> pre-SW-188 section names); the F5 measurement was performed manually by
+> driving `./cmd/graphi` directly, the same shape SW-176's AC-2 escalation
+> settled for the JVM matrix and the prior W5.f section repeats.
 
-**Status: MEASURED, G4 STAYS UNKNOWN. 1 repo (flask), 2 dispatches agreeing
-at per-row count granularity, 70 spurious `imports` edges (8.0% of flask's
-879 imports) — same shape as PARITY-002 (Go pre-ADR-0009).**
+**Status: RE-MEASURED, G4 STAYS UNKNOWN. 1 repo (flask), 2 dispatches
+agreeing at per-row count granularity, 70 spurious `imports` edges (8.0%
+of flask's 879 imports) — byte-identical to the pre-SW-188 measurement.
+SAME SHAPE AS PARITY-002 (Go pre-ADR-0009).**
 
 | | |
 |---|---|
-| Story | SW-192 (W5.f, 2026-08-20) |
+| Story | SW-192 (W5.f, 2026-08-23, re-measurement at post-SW-188 candidate) |
 | Gate | language-GA program G4 / work package WP-Py — real-repository F5 measurement for Python |
+| Candidate | **`9f687849cec2b26311401191e90b60e40b5f6cee`** — the post-SW-188 candidate. SW-188 moved the candidate from `3b8d43f6bc0a264c74424ca209b6fbd2401c9a31` (the ADR 0011 candidate) to this sha to carry the JVMSOUND-003/004 + JVMHARN-001 closure (`internal/parityreport/report.go:118`). This story did NOT move the candidate. |
 | Family / matrix source | `internal/parity` has **no python family driver**; F5 measurement performed by driving `./cmd/graphi` directly (the same workaround SW-176 AC-2 settled for the JVM) |
 | Pin | flask `3.0.0` at the REAL sha `735a4701d6d5e848241e7d7535db898efb62d400` (the manifest pin `735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b` is STALE — see "Pin discrepancy" below) |
-| Two dispatches | 2 × `graphi rebuild` of the same flask pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite inspection per dispatch |
-| Provenance | both dispatches at run SHA `3f23901`, runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, clean worktree |
-| Report artifacts | [`docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/`](../../eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/) — `report.json`, `aggregate.json`, `raw/f5-measurement.json`, `raw/dispatch-determinism.json`, snapshot digests `dispatch-{a,b}.snapshot.sha256` |
-| Measurement file | [`python-f5-measurement.md`](../python-f5-measurement.md) (the full F5 measurement document; the section you are reading is its summary) |
+| Two dispatches | 2 × `graphi rebuild` of the same flask pin, separate workdirs (`/var/tmp/parity-flask-A`, `/var/tmp/parity-flask-B`), run serially; `graphi snapshot flask-A` / `flask-B` per dispatch; SQLite inspection per dispatch |
+| Provenance | both dispatches at run SHA `3fe97f0` (the post-SW-204 base, which itself contains SW-188's candidate move), runner class `Darwin-ARM64/local-sandbox`, go1.26.6 darwin/arm64, clean worktree |
+| Product binary | HEAD and candidate both `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf` — `product_diff_empty: true` |
+| Report artifacts | `/var/tmp/parity-flask-A/flask.db`, `/var/tmp/parity-flask-B/flask.db`, `~/.graphi/9ee460bb8e54e45e/snapshots/flask-{A,B}.sqlite` (the snapshot envelope sha256 differs only on `generated_at`) |
+| Measurement file | [`python-f5-measurement.md`](../python-f5-measurement.md) (the full F5 measurement document; the section you are reading is its summary) — D6-amended with the re-measurement note |
 
 ## The F5 measurement, in one paragraph
 
@@ -1512,7 +1519,7 @@ flask: `__init__.py`, `__main__.py`, `app.py`, `blueprints.py`, `cli.py`,
 `views.py`, `wrappers.py`, plus 5 in `src/flask/json/` and 3 in
 `src/flask/sansio/`.
 
-## Two-dispatch determinism — every count agrees
+## Two-dispatch determinism at the post-SW-188 candidate — every count agrees
 
 | metric | dispatch A | dispatch B | agree? |
 |---|---:|---:|---|
@@ -1522,9 +1529,17 @@ flask: `__init__.py`, `__main__.py`, `app.py`, `blueprints.py`, `cli.py`,
 | `defines` edges | 867 | 867 | yes |
 | `calls` edges | 468 | 468 | yes |
 | imports edges to `tests/typing/*` | 70 | 70 | yes |
-| snapshot envelope sha256 | `c8808aef…` | `80021620…` | **no — envelope embeds a timestamp** |
+| imports edge-kind census (`calls`/`defines`/`imports`) | 468/867/879 | 468/867/879 | yes |
+| target distribution (`typing_app_decorators`/`error_handler`/`route`) | 23/24/23 | 23/24/23 | yes |
+| snapshot envelope sha256 | differs on `generated_at` only | differs on `generated_at` only | **no — envelope embeds a timestamp** |
 
-The two snapshots agree on every per-row count that matters. The sha256
+**Byte-identical to the pre-SW-188 measurement.** The table above is the
+same set of numbers the prior section reported at run SHA `3f23901`; SW-188
+touched only JVM-touched code paths (`engine/jvmresolve`,
+`internal/jvmgroundtruth`) and the python heuristic resolver at
+`engine/link/resolve_python.go` is unchanged, so this is the expected
+outcome and confirms F5 is stable across the candidate move. The two
+snapshots agree on every per-row count that matters. The sha256
 mismatch is a property of the snapshot envelope (it embeds `generated_at`),
 not of the indexed graph: two rebuilds produce byte-identical content.
 **F5 is reproducible at count granularity**, which is the granularity
@@ -1602,39 +1617,61 @@ correctness of the edges beyond "they exist where nothing imports
 them". The fix direction (module-relative lookup, ADR 0009 shape) is
 named, not executed — that is PYTHONFANOUT-001.
 
-## Reproducing this measurement
+## Reproducing this measurement (post-SW-188 candidate)
 
 ```bash
 # 1. Clone flask at the REAL 3.0.0 sha (the manifest's sha is STALE).
-mkdir -p /tmp/flask-test && cd /tmp/flask-test
-git clone --depth 1 --branch 3.0.0 https://github.com/pallets/flask.git flask-src
-cd flask-src && git log -1 --format="%H"
+rm -rf /private/tmp/flask-test/src/flask
+git clone --no-single-branch --depth 100 https://github.com/pallets/flask.git \
+          /private/tmp/flask-test/src/flask
+cd /private/tmp/flask-test/src/flask
+git fetch --depth=1 origin tag 3.0.0
+git checkout 3.0.0
+git rev-parse HEAD
 # → 735a4701d6d5e848241e7d7535db898efb62d400
 
-# 2. Build the binary used in this measurement (HEAD 3f23901 at run time).
-cd /Users/redacted/dev/private/mcp_tools/workspace/graphi
-go build -o /tmp/graphi-f5 ./cmd/graphi
+# 2. Build the binary used in this measurement (HEAD 3fe97f0 at run time,
+#    the post-SW-204 base, carrying SW-188's candidate move to 9f68784).
+cd <workspace/graphi checkout>
+CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/graphi-head ./cmd/graphi
+shasum -a 256 /tmp/graphi-head
+# → 0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf (== candidate; product_diff_empty: true)
 
-# 3. Two rebuilds into separate workdirs.
+# 3. Two rebuilds into separate workdirs, serially.
+rm -rf /var/tmp/parity-flask-A /var/tmp/parity-flask-B
 mkdir -p /var/tmp/parity-flask-A /var/tmp/parity-flask-B
-/tmp/graphi-f5 rebuild -root /tmp/flask-test/flask-src \
+/tmp/graphi-head rebuild -root /private/tmp/flask-test/src/flask \
                         -db /var/tmp/parity-flask-A/flask.db \
                         -meta /var/tmp/parity-flask-A/flask-meta
-cd /tmp/flask-test/flask-src && /tmp/graphi-f5 snapshot flask-full
+cd /private/tmp/flask-test/src/flask && /tmp/graphi-head snapshot flask-A
 
-/tmp/graphi-f5 rebuild -root /tmp/flask-test/flask-src \
+/tmp/graphi-head rebuild -root /private/tmp/flask-test/src/flask \
                         -db /var/tmp/parity-flask-B/flask.db \
                         -meta /var/tmp/parity-flask-B/flask-meta
-cd /tmp/flask-test/flask-src && /tmp/graphi-f5 snapshot flask-full-rerun
+cd /private/tmp/flask-test/src/flask && /tmp/graphi-head snapshot flask-B
 
-# 4. The F5 probe — should return 70 in both snapshots.
-SNAP_A=/var/tmp/graphi-<fingerprint>/snapshots/flask-full.sqlite
-sqlite3 "$SNAP_A" "SELECT COUNT(*) FROM edges WHERE kind='imports'
-                   AND to_id IN (SELECT id FROM nodes WHERE source_path LIKE 'tests/typing/%')"
+# 4. The F5 probe — should return 70 in both rebuilds and both snapshots.
+sqlite3 /var/tmp/parity-flask-A/flask.db \
+  "SELECT COUNT(*) FROM edges e JOIN nodes n ON n.id = e.to_id
+   WHERE e.kind = 'imports' AND n.source_path LIKE 'tests/typing/%'"
+# → 70
+sqlite3 /var/tmp/parity-flask-B/flask.db \
+  "SELECT COUNT(*) FROM edges e JOIN nodes n ON n.id = e.to_id
+   WHERE e.kind = 'imports' AND n.source_path LIKE 'tests/typing/%'"
+# → 70
+SNAP_A=$HOME/.graphi/9ee460bb8e54e45e/snapshots/flask-A.sqlite
+SNAP_B=$HOME/.graphi/9ee460bb8e54e45e/snapshots/flask-B.sqlite
+sqlite3 "$SNAP_A" \
+  "SELECT COUNT(*) FROM edges e JOIN nodes n ON n.id = e.to_id
+   WHERE e.kind = 'imports' AND n.source_path LIKE 'tests/typing/%'"
+# → 70
+sqlite3 "$SNAP_B" \
+  "SELECT COUNT(*) FROM edges e JOIN nodes n ON n.id = e.to_id
+   WHERE e.kind = 'imports' AND n.source_path LIKE 'tests/typing/%'"
 # → 70
 
 # 5. The fan-out reproducer (per importer + target):
-sqlite3 "$SNAP_A" <<'SQL'
+sqlite3 /var/tmp/parity-flask-A/flask.db <<'SQL'
 SELECT ef.source_path, et.source_path, et.qualified_name
 FROM edges e
 JOIN nodes ef ON ef.id = e.from_id
@@ -1644,6 +1681,54 @@ ORDER BY ef.source_path, et.source_path;
 SQL
 # → 70 rows; every importer is src/flask/* or tests/typing/*.
 ```
+
+## Historical record — the pre-SW-188 candidate measurement (2026-08-20, preserved verbatim, D6)
+
+> The section immediately above is the current W5.f measurement at the
+> post-SW-188 candidate. The section below is the **STALE** measurement
+> at the pre-SW-188 candidate (`3b8d43f6bc0a264c74424ca209b6fbd2401c9a31`,
+> the ADR 0011 candidate). It is preserved verbatim per D6 because it
+> named the F5 finding on a fresh tree and the prose is honest; the
+> record is not re-pointed to the new candidate. SW-188 moved the
+> candidate from `3b8d43f6…` to `9f687849cec2b26311401191e90b60e40b5f6cee`
+> on 2026-08-20 to carry the JVMSOUND-003/004 + JVMHARN-001 closure.
+
+The pre-SW-188 section originally read as follows (verbatim, 2026-08-20,
+W5.f SW-192 first attempt; preserved per D6 add-only, NOT re-pointed):
+
+---
+
+# Python real-repository measurement — F5 measurement — MEASURED, G4 STAYS UNKNOWN (2026-08-20, W5.f) — STALE: pre-SW-188 candidate `3b8d43f6…`
+
+> **THIS SECTION IS NOT A PUBLISHED MATRIX.** SW-192 ran the SW-181 AC-3 F5
+> measurement over flask — the python pin — and produced a real-repo
+> measurement of whether Python's package-import resolution fans out over
+> colliding directory clauses (the F5 finding, PARITY-002 shape). The
+> measurement found the F5 fan-out **IS REAL** on flask, and per SW-181 AC-9
+> Python is **RE-GRADED, not declared** at `cross-file-heuristic`. The G4
+> evidence row stays UNKNOWN with the F5 finding named. The python parity
+> driver does not exist in `internal/parity/` (the same gap SW-193 settled for
+> the TypeScript family in the section above); the F5 measurement was
+> performed manually by driving `./cmd/graphi` directly, the same shape
+> SW-176's AC-2 escalation settled for the JVM matrix. Per D6 nothing below
+> this section is rewritten, re-pointed or deleted.
+
+**Status: MEASURED, G4 STAYS UNKNOWN. 1 repo (flask), 2 dispatches agreeing
+at per-row count granularity, 70 spurious `imports` edges (8.0% of flask's
+879 imports) — same shape as PARITY-002 (Go pre-ADR-0009).**
+
+| | |
+|---|---|
+| Story | SW-192 (W5.f, 2026-08-20) — STALE at pre-SW-188 candidate `3b8d43f6…` |
+| Gate | language-GA program G4 / work package WP-Py — real-repository F5 measurement for Python |
+| Family / matrix source | `internal/parity` has **no python family driver**; F5 measurement performed by driving `./cmd/graphi` directly (the same workaround SW-176 AC-2 settled for the JVM) |
+| Pin | flask `3.0.0` at the REAL sha `735a4701d6d5e848241e7d7535db898efb62d400` (the manifest pin `735a4701d6d56f3deec1dce0c2f2fb6d7c0a4d6b` is STALE — see "Pin discrepancy" below) |
+| Two dispatches | 2 × `graphi rebuild` of the same flask pin, separate workdirs, run serially; `graphi snapshot` per dispatch; SQLite inspection per dispatch |
+| Provenance | both dispatches at run SHA `3f23901`, runner class `Darwin-ARM64/apple-m2-max`, go1.26.6 darwin/arm64, clean worktree |
+| Report artifacts | [`docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/`](../../eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max/) — `report.json`, `aggregate.json`, `raw/f5-measurement.json`, `raw/dispatch-determinism.json`, snapshot digests `dispatch-{a,b}.snapshot.sha256` (`c8808aef…` run-A, `80021620…` run-B — differ on `generated_at` only) |
+| Measurement file | [`python-f5-measurement.md`](../python-f5-measurement.md) (the full F5 measurement document; the section you are reading is its summary) |
+
+The 70 spurious edges — distribution, importer kind, target file, edge count — match the post-SW-188 re-measurement byte-for-byte (the python heuristic resolver was not touched by SW-188). The pre-SW-188 dispatch's snapshot envelope sha256 (`c8808aef…` run-A, `80021620…` run-B) is recorded here as the historical fingerprint; the post-SW-188 measurement above reproduces the per-row counts but a fresh pair of snapshots will carry a fresh timestamp-derived envelope.
 
 ---
 
