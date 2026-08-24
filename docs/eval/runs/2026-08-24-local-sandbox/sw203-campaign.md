@@ -155,9 +155,30 @@ graphi-no-kotlin         embeds=19   …kotlin absent
 ```
 
 20 embeds in the baseline is exactly `release.ExpectedGrammarBlobs()`. Each
-removal drops **exactly one**, and it is the intended one. Without this check a
-"marginal cost" of a few kilobytes would be indistinguishable from a tag that
-silently did nothing.
+removal drops **exactly one**, and it is the intended one.
+
+That the check *counts* is shown rather than asserted
+([`red-green-non-vacuity.txt`](binary-size/raw/red-green-non-vacuity.txt)): the
+identical recipe is run with a removal that **cannot** take effect — the
+misspelled tag `grammar_subset_cssx`, which is not in the set — and then with
+the real one.
+
+```
+                          bytes        sha256(16)        langs_embedded  css_present
+rg-baseline               34,244,965   2d0a817dc9a34a3d       20              1
+rg-red   (no-op removal)  34,244,965   2d0a817dc9a34a3d       20              1   ← RED
+rg-green (real removal)   34,216,888   d9560271a79c3e49       19              0   ← GREEN
+```
+
+The RED build is **byte-identical and sha-identical** to the baseline: a removal
+that did nothing measures as nothing. The GREEN build lands on 34,216,888 B —
+the same figure route A reports for css — and css is gone. Had RED and GREEN
+looked alike, every marginal cost in this campaign would have been meaningless.
+
+(The baseline's *size* is stable at 34,244,965 B across every run in this
+campaign; its *sha256* is not, because `-buildvcs=true` stamps the commit and
+dirty flag into the binary. Size is the measured quantity; sha is only used
+within a single run to tell two builds apart.)
 
 ### 3.3 Per-language marginal cost versus the stated budget (AC-4)
 
