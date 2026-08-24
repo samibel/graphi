@@ -102,6 +102,130 @@ will flip — ky covering typescript, express covering javascript, and the
 tsx row by family-share if the reviewer's judgement (recorded in current)
 upholds it.
 
+# JVM real-repository matrix — WP-J7 / gate G4 — FOLLOW-UP **FU-1 DISCHARGED** (2026-08-24, SW-209)
+
+> **THIS SECTION PUBLISHES NO MATRIX, NO DISPATCH AND NO NEW MEASUREMENT OF THE
+> GATE.** It discharges exactly one carried follow-up: **FU-1**, the two class
+> `note:` fields SW-207 could not reach. Per D6 every section below stays
+> byte-unchanged, including SW-207's own "What this story did NOT change", whose
+> statement that FU-1 was not done *there* remains true and is not rewritten.
+
+**Status of the gate: UNCHANGED.** 52 of 52 crossed rows PASS, 0 SKIPPED, 0
+FAIL, `complete: true`, `publishable: true` — SW-207's figures, re-read out of
+the two published artifacts rather than re-measured. `./cmd/graphi` still builds
+to `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf`, the same
+digest the SW-207 and SW-204 sections record, so the candidate boundary is where
+it was.
+
+## What FU-1 was
+
+SW-207 acquired the two pins (antlr4 4.13.1, retrofit 2.11.0), the two rows
+started deciding, and the matrix reached 52/52. But the two class `note:` fields
+in `docs/rc/parity-classes-jvm.yaml` still declared **"REAL-REPO TARGET ABSENT"**
+and still named SW-207 as the successor who would acquire the shape. SW-207
+could not correct them: the file was held by the unmerged
+`sw-206-witness-counter-claim` branch, and editing it from the SW-207 branch
+would have conflicted on exactly the field both stories rewrite. That branch is
+merged. The notes had become false by the passage of time, which is the same
+defect as carelessness with a longer fuse, and this section closes it.
+
+## What changed — two YAML scalars, nothing else
+
+| | |
+|---|---|
+| Files touched | `docs/rc/parity-classes-jvm.yaml` (two lines), `docs/rc/evidence-index.yaml` + its generated `docs/rc/evidence-index.md` (the FU-1 clause in the two G4 `next_action` fields), and this section |
+| Rows touched | none. `harness_row` is `"required"` and `deferred_to` is `""` on both classes, **byte-unchanged**, and 13 of 13 rows still carry those values |
+| Verdicts touched | none. Both classes stay `verdict: PROVEN` on their hermetic rows |
+| Predicates touched | none. `internal/parity/jvmclasses.go` is byte-unchanged by this story |
+| Artifacts touched | none. `docs/rc/parity-matrix-jvm-sw207-run-A.json` and `-run-B.json` are byte-unchanged and still embed the pre-correction `detail` and `mutation` wording, exactly as SW-207 recorded |
+
+**And what is still NOT the fix, restated because the temptation returns every
+time these two rows are looked at.** Re-declaring either row
+`harness_row: deferred`. `TestJVMParityMatrix_DriftGuard`
+(`engine/conformance/jvmparity_matrix_test.go`) requires a deferred row to carry
+no harness row and a non-empty `deferred_to`; both classes have live harness
+rows and `verdict: PROVEN` hermetic proofs, so relabelling would delete two
+proofs to tidy a sentence.
+
+## What the two notes now say, and at what scope
+
+**`jvm_change_import_shadowing` — antlr4 `7ed420ff2c78d62883875c442d75f32e73bc86c8`.**
+Read out of the two published artifacts by this story: the row carries
+`verdict: PASS` on all four real-repo axis cells in **both** dispatches, with
+`full_nodes == inc_nodes`, `full_edges == inc_edges` and
+`snapshot_full_sha256 == snapshot_inc_sha256` in every one of the eight cell
+records, and the two dispatches agree cell for cell. The note carries SW-207's
+PARITY-OBS-004 disclosure rather than contradicting it: the row is **not**
+graph-vacuous (SW-207 measured exactly one added `imports` edge, 31285 → 31286
+at `binder=on` / `profile=default`; the artifacts hold only the post-mutation
+side of that pair, 11069 / 31286), but the harness's sentence *"so `Lexer`
+re-resolves"* is **unestablished**. Re-verified at the pinned sha by this story
+rather than carried from a record: all four `Lexer` tokens in
+`runtime-testsuite/test/org/antlr/v4/test/runtime/CustomDescriptors.java` are
+`GrammarType.Lexer` qualified member selects, and the file's only non-static
+on-demand import is `java.util.*`, which declares no `Lexer`.
+
+**`jvm_mixed_dir_change_receiver_type` — retrofit `cc76c22a68e090f3dd898cbcb0bac30414f59c31`.**
+The same eight-cell reading holds. The note states the row as
+**graph-vacuous**, which is SW-207's measurement (identical `nodes` and `edges`
+tables between a pristine and a mutated full rebuild, 3418 / 4660 at
+`binder=off` / `profile=default` and 3418 / 5431 at `binder=on` /
+`profile=default` — and the published artifacts carry exactly those counts on
+the corresponding default-profile cells; both `profile=fast` cells carry
+3418 / 4341, at either binder setting), and it states the mechanism
+from the **code** rather than from that record: `engine/jvmresolve/emit.go`
+emits a nominal `implements` edge only for a resolved supertype whose form is
+an interface, its own doc comment sends class-`extends` to the syntactic
+extractor's `inherits` and never confirms it, `engine/jvmresolve/emit_test.go`
+asserts that a class-`extends` emits no confirmed edge, and **no JVM
+extraction path mints an `inherits` edge at all** — neither
+`core/parse/parser_java.go` nor `core/parse/parser_kotlin.go` records the kind,
+and the only producer of `inherits` anywhere in the repository is the **Go**
+extractor (`core/parse/extract_go.go:34` declares `goEdgeInherits`, and `:504`
+mints it from a struct embed in `recordEmbeds`), which is reached only from
+`goSymbolExtractor.Extract` on a `*goAST` and therefore never sees a `.java` or
+a `.kt` file. So the row establishes full-vs-incremental byte-identity over a
+real in-place Java edit the graph does not see, and **not** the ADR-0008 D9
+sweep.
+
+**That clause is CORRECTED IN REBUILD ROUND 1, in place and stated, because its
+first draft was false at the scope it claimed.** It read *"no non-test code path
+in the repository mints an `inherits` edge at all"*, offering as proof that
+`engine/link/link.go:43`'s `edgeInherits` is declared and unused and that
+`query.EdgeKindInherits` is read-side only. Both sub-clauses are individually
+true; neither is evidence about the tree, because the kind is minted **upstream**
+in the extractor and reaches the linker as a `PendingRef` field.
+`CGO_ENABLED=0 go test ./engine/ingest/ -run TestLink_HierarchyEdgesPresent
+-count=1` **PASSES** — a real `IngestAll` that asserts
+`shop.Impl --inherits--> shop.Base` (`engine/ingest/hierarchy_e2e_test.go:127`)
+— so graphi mints an `inherits` edge every time it indexes a Go struct embed.
+The conclusion is unaffected and is now stated at the scope it was measured at:
+no **JVM** extraction path mints one, so the retrofit row stays graph-vacuous.
+
+Both notes keep the attribution discipline the old text carried: the **SKIP**
+measured by SW-204 and the **CAUSE** measured by SW-176 stay two separately
+attributed measurements, now marked retired rather than deleted, and neither is
+re-attributed to this story. The antlr4 note no longer calls the SW-176 CAUSE
+*carried verbatim*: two of its words were moved into the past tense here
+(`is guava's` → `was guava's`, `refuses deliberately` → `refused deliberately`)
+because the state they describe is retired, and the note now says exactly that
+instead. Two sentences that time falsified —
+*"No target for this class exists in ANY of the three pinned JVM repositories"*
+and *"WHICH of okio's four remaining conjuncts fails is NOT measured"* — are
+corrected in place with what they read stated, in the same shape the notes'
+existing corrections use; the second is answered by SW-207's measurement
+(conjunct 3), carried and not re-taken.
+
+## Verification
+
+`CGO_ENABLED=0 go build ./...`, `gofmt -l .` (empty), `go vet ./...`,
+`CGO_ENABLED=0 go test ./... -count=1`, `go test ./engine/conformance/ -run
+JVMParityMatrix -count=1` (the drift guard included), `cmd/testgate`,
+`cmd/evidence -check` with citation resolution, `cmd/coverage -check` and
+`cmd/layerguard` — all green, and the gate tally is identical to the one the
+SW-207 section publishes.
+
+
 # JVM real-repository matrix — WP-J7 / gate G4 (2026-08-23, W5.d+2 SW-207)
 
 > **THIS SECTION PUBLISHES A MATRIX.** It does not supersede the W5.d+1 SW-204
