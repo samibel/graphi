@@ -1,0 +1,321 @@
+# graphi — YAML parse-determinism / intra-file parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-language companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — top-level keys, block sequences of FLAT
+# maps, every value double-quoted — so both cmd/coverage-style parsers and
+# yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-199, W5.m, slice f). YAML is declared
+#                      `intra-file-only` by SW-183's audit, which this file does not
+#                      re-decide.
+#
+# ---------------------------------------------------------------------------
+# §5.5 LANGUAGE-SPEC CITATION — THE LOAD-BEARING PARAGRAPH OF THIS FILE
+# ---------------------------------------------------------------------------
+# Does YAML's OWN SPECIFICATION define a cross-file construct?  YES — and graphi declines it
+#
+# Specification cited: the YAML 1.2 specification.
+#
+# YAML's OWN spec DOES give the language a way to name another document,
+# and this is the family where the §5.5 test cuts the other way from TOML
+# and HCL. YAML 1.2 defines a TAG mechanism — node properties carrying a
+# tag, and tag-resolution rules that hand an unrecognised tag to the
+# application — and that mechanism is the language-level hook an `!include
+# ./other.yaml` node rides on. TWO LIMITS ARE STATED RATHER THAN
+# OVERCLAIMED: YAML does NOT standardise `!include` itself (the
+# application resolves it), and YAML's anchors and aliases are explicitly
+# stream-local and are NOT a cross-file reference. What follows is that
+# graphi's YAML extractor mints top-level mapping keys and resolves no
+# tag, so the abstention carried by this family is GRAPHI'S, not YAML's —
+# and saying it the other way round, by citing graphi's parser comment as
+# if it were YAML's answer, is the LANGHONEST-001 circular-abstention
+# defect this family is the most exposed to of the six.
+#
+# The citation above is the LANGUAGE's spec. graphi's own parser
+# (core/parse/parser_yaml.go — the pure-Go gotreesitter YAML grammar, CGo-free, with the grammar blob Go-embedded behind the grammar_subset_yaml subset tag)
+# is named below ONLY to record what graphi does, never as the answer to the
+# language question — citing graphi's parser as the spec is what makes an
+# abstention circular, and it is the LANGHONEST-001 defect class.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO, AND WHAT THE ROWS ASSERT
+# ---------------------------------------------------------------------------
+# The drift guard TestYAMLParityMatrix_DriftGuard (engine/conformance/
+# yamlparity_matrix_test.go) binds this file to the harness table in
+# engine/conformance/yamlparity_test.go. That file ships the CLOSED SEVEN
+# directions from the outset — MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS,
+# VOCABULARY — which is the SW-189 / TEMPL-P4 D-11 lesson applied rather than
+# re-learned; parity_matrix_directions_test.go fails the build if any of the
+# seven is absent.
+#
+# THE WITNESS SHAPE IS PARSE-DETERMINISM, NOT CROSS-FILE PARITY. At this level
+# there is no cross-file contract to assert, so what the rows prove is that the
+# SAME INPUT BYTES PRODUCE THE SAME AST and that the AST's serialization is
+# byte-stable: the runner takes TWO INDEPENDENT full passes over the identical
+# bytes on the identical (store, profile) axis and requires identical snapshot
+# bytes, then additionally requires the incremental watcher-driven graph to
+# equal the full graph (intra-file parity), then runs the row's non-vacuity
+# witness. The 5x byte-stability is delivered by -count=5 over the driver.
+#
+# SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof over t.TempDir()
+# fixtures. Parity and determinism compare two passes of the SAME rule, so a
+# PASS certifies the rule is REGRESSION-CLEAN and REPRODUCIBLE — never that it
+# is CORRECT. Correctness evidence for the extractor lives in
+# core/parse/parser_yaml_test.go; real-repository evidence is G4 (SW-200) and is
+# not in this file.
+#
+# SYMBOL SHAPE. each TOP-LEVEL mapping key becomes a `variable` symbol qualified as `<directory>.<key>`; nested keys are deliberately not minted, so the node set collapses to {file, variable}
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id. Ids are prefixed
+# `yaml_` so they stay globally unique across every family's twin.
+#
+# ---------------------------------------------------------------------------
+# THE SECOND TOP-LEVEL KEY: go_class_applicability
+# ---------------------------------------------------------------------------
+# The G3 threshold this language publishes (docs/rc/evidence-index.yaml,
+# GA-LANG-yaml-G3) is the byte-parity table PLUS "an explicit applicability
+# disposition per Go class — every cross-file change class dispositioned as
+# `not_applicable` with a language-spec reason, so an inapplicable class is
+# data the drift guard can see, not prose in a note". The
+# `go_class_applicability:` block below is that data; TestYAMLParityMatrix_Applicability
+# reads it and binds it to docs/rc/parity-classes.yaml in BOTH directions, so
+# a Go class added there with no disposition here fails the build.
+#
+# Disposition vocabulary, per
+# docs/plan/2026-08-graphi-p2-language-ga-program-v1.md:153-155:
+#   applicable      the class exists in this language and a row here witnesses it
+#   adapted         the class exists but its witnessable form differs; a row here
+#                   witnesses the adapted form and its note states the limit
+#   not_applicable  the LANGUAGE SPEC gives the class no counterpart; reason cites it
+#   deferred        SW-199 adds this fourth member deliberately: the language-agnostic
+#                   ingest classes are neither inapplicable to this language nor
+#                   witnessed by this table, and claiming either would be false.
+#                   A deferred disposition MUST name a deferred_to, and the
+#                   guard admits exactly TWO shapes: a story id (SW-nnn),
+#                   or the literal prefix `UNOWNED — `. Arbitrary prose no
+#                   longer passes, so a placeholder can never read as an
+#                   owner and `grep 'deferred_to: "UNOWNED'` enumerates
+#                   every open debt. Naming a story that does not exist to
+#                   satisfy the guard would be the false claim this rule is
+#                   written against, which is why UNOWNED stays legal.
+
+parity_classes:
+  - id: "yaml_add_file"
+    kind: "change_class"
+    label: "Datei hinzufügen / add a YAML document in a new directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/yamlparity_test.go"
+    test_line: "176"
+    test_name: "TestYamlParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.f"
+    note: "A new YAML document arrives in a new directory: the pure add path. The witness requires the new top-level keys, the file node, and a base-tree control symbol, so a row that indexed nothing cannot pass. The assertion is snapshot bytes on both stores and both profile axes, taken twice over the identical bytes (parse determinism) and once against the incremental graph (intra-file parity)."
+
+  - id: "yaml_modify_file"
+    kind: "change_class"
+    label: "Datei ändern / rewrite a YAML document in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/yamlparity_test.go"
+    test_line: "176"
+    test_name: "TestYamlParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.f"
+    note: "An indexed YAML document is rewritten in place: a top-level key is appended while the existing keys keep identity. The witness requires the new key AND all three pre-existing keys."
+
+  - id: "yaml_delete_file"
+    kind: "change_class"
+    label: "Datei löschen / delete a YAML document"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/yamlparity_test.go"
+    test_line: "176"
+    test_name: "TestYamlParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.f"
+    note: "An indexed YAML document is deleted, so the per-file stale-node purge runs over it. The witness requires the deleted document's keys and its file node gone, and the sibling document's keys still present. A stale node surviving a delete is the failure this row exists to catch."
+
+  - id: "yaml_rename_key"
+    kind: "change_class"
+    label: "Schlüssel umbenennen / rename a top-level key in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/yamlparity_test.go"
+    test_line: "176"
+    test_name: "TestYamlParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.f"
+    note: "A top-level mapping key is renamed in place (`name` -> `appName`). The symbol's qualified name is the key, so the rename is a delete-plus-add inside one document. The witness requires the new key present AND the old key absent."
+
+  - id: "yaml_reorder_keys"
+    kind: "change_class"
+    label: "Schlüssel umordnen / permute the top-level keys"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/yamlparity_test.go"
+    test_line: "176"
+    test_name: "TestYamlParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.f"
+    note: "The top-level keys of one document are permuted with no textual change to any value. The symbol SET is unchanged and only source order and line numbers move, which is the sharpest test of the canonical-ordering discipline: a snapshot whose row order followed parse order rather than a canonical key would diverge here between the two passes."
+
+  - id: "yaml_reparse_identical_bytes"
+    kind: "change_class"
+    label: "Identische Bytes neu parsen / rewrite with byte-identical content"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/yamlparity_test.go"
+    test_line: "176"
+    test_name: "TestYamlParityDeterminism_ByteStable"
+    fixture: "production tree-sitter parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-INTRA.f"
+    note: "An indexed YAML document is rewritten with BYTE-IDENTICAL content. This is the direct same-bytes-same-AST row: the drift scanner sees an empty drift set and Reconcile short-circuits, so the incremental graph must equal the full graph over unchanged bytes. Its witness pins the surviving symbol set rather than a new symbol, because the change is deliberately semantics-preserving — the row's force comes from the runner's two independent full passes."
+
+go_class_applicability:
+  - go_class: "add_file"
+    disposition: "applicable"
+    witnessed_by: "yaml_add_file"
+    deferred_to: ""
+    reason: "A source file of this language is a real unit the index adds, and the add path mints the file's symbols; witnessed by the named row on both stores and both profile axes."
+
+  - go_class: "modify_file"
+    disposition: "applicable"
+    witnessed_by: "yaml_modify_file"
+    deferred_to: ""
+    reason: "An in-place rewrite is a real intra-file class: new symbols appear while existing ones keep identity. Witnessed by the named row."
+
+  - go_class: "delete_file"
+    disposition: "applicable"
+    witnessed_by: "yaml_delete_file"
+    deferred_to: ""
+    reason: "A delete drives the per-file stale-node purge, which is language-independent machinery acting on this language's symbols. Witnessed by the named row."
+
+  - go_class: "rename_symbol"
+    disposition: "applicable"
+    witnessed_by: "yaml_rename_key"
+    deferred_to: ""
+    reason: "the YAML 1.2 specification defines top-level mapping keys, whose key IS the symbol identity, so a rename is a real intra-file class — a delete-plus-add inside one file. Witnessed by the named row."
+
+  - go_class: "move_symbol"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the YAML 1.2 specification defines no reference from one document to a construct declared in another, so a file-to-file move has no referrer to re-point. The class's content — identity preserved WHILE REFERRERS SURVIVE — is unstateable in this language, and a move reduced to a delete plus an add is already covered by those two rows."
+
+  - go_class: "rename_package"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the YAML 1.2 specification defines no package, module or namespace construct; there is no package identity to rename."
+
+  - go_class: "add_call"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "YAML 1.2 defines nodes, tags, anchors and aliases; it has no callable construct and no call."
+
+  - go_class: "remove_call"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "YAML 1.2 defines nodes, tags, anchors and aliases; it has no callable construct and no call."
+
+  - go_class: "change_interface"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the YAML 1.2 specification defines no interface, protocol or signature construct, so there is no interface whose change could ripple to an implementation."
+
+  - go_class: "add_implementation"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the YAML 1.2 specification defines no implements relation between declarations, so there is no implementation to add."
+
+  - go_class: "remove_implementation"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the YAML 1.2 specification defines no implements relation between declarations, so there is no implementation to remove."
+
+  - go_class: "branch_switch"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A whole-tree change set delivered by a VCS operation. It is LANGUAGE-AGNOSTIC — the ingest, not the grammar, decides the outcome — so it is neither inapplicable to this language nor witnessed by this table. SW-199 records it as deferred rather than claiming either."
+
+  - go_class: "change_build_tag"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "Build tags are a Go TOOLCHAIN construct (go/build constraints). the YAML 1.2 specification defines no conditional-compilation directive and no file-level inclusion predicate."
+
+  - go_class: "replace_generated_file"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A whole-file replacement by a generator. It is LANGUAGE-AGNOSTIC and, at this level, is a modify_file with a larger diff; whether it needs its own per-language witness is an open question SW-199 does not answer, so the class is deferred rather than folded into modify_file's row."
+
+  - go_class: "change_external_import"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "YAML defines no external dependency and no package identity. The tag mechanism named in the header is a reference construct, not a dependency declaration, and it is the cross-file construct graphi declines to resolve — recorded in the header above and on this file's G2 evidence row, not here."
+
+  - go_class: "interrupted_full_pass"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A crash condition of the ingest pipeline, not of the language. The pipeline is shared across every language and is proven on the Go table; whether it needs a per-language witness is an open question SW-199 does not answer, so the class is deferred rather than dispositioned not_applicable."
+
+  - go_class: "restart_and_recovery"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A crash condition of the ingest pipeline, not of the language. Same reasoning as interrupted_full_pass: deferred, because claiming a language-level inapplicability for a pipeline property would be false."
+
+  - go_class: "change_colliding_package_dir"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "the YAML 1.2 specification defines no package, so two directories cannot collide on a package identity. The Go class exists because two Go directories can declare the same package clause; this language has no clause to declare."
+
+  - go_class: "add_nested_gomod"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "go.mod is Go's MODULE MANIFEST. the YAML 1.2 specification defines no module manifest and no nested module boundary, so there is no nested-module transition for this language."

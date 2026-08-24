@@ -1,0 +1,339 @@
+# graphi — JSON parse-determinism / intra-file parity matrix (MACHINE-READABLE SOURCE OF TRUTH)
+#
+# The per-language companion to docs/rc/parity-classes.yaml (SW-180, language-GA
+# program). Same constrained YAML subset — top-level keys, block sequences of FLAT
+# maps, every value double-quoted — so both cmd/coverage-style parsers and
+# yaml.Unmarshal read it, and it diffs one row per change.
+#
+# matrix_version: 1
+#
+#                      Initial version (SW-199, W5.m, slice c). JSON is declared
+#                      `parse-only` by SW-183's audit, which this file does not
+#                      re-decide.
+#
+# ---------------------------------------------------------------------------
+# §5.5 LANGUAGE-SPEC CITATION — THE LOAD-BEARING PARAGRAPH OF THIS FILE
+# ---------------------------------------------------------------------------
+# Does JSON's OWN SPECIFICATION define a cross-file construct?  NO
+#
+# Specification cited: RFC 8259 (and ECMA-404).
+#
+# JSON's OWN spec defines objects, arrays, numbers, strings and the three
+# literals — and NOTHING ELSE. It has no include, no import and no
+# reference of any kind. `$ref` is a construct of JSON SCHEMA and JSON
+# Reference, draft specifications layered ON json: to json's grammar
+# `"$ref": "other.json#/x"` is an ordinary member whose name happens to
+# start with a dollar sign. So JSON's own answer to "does the language
+# define a cross-file reference?" is NO, and this family's abstention is
+# the LANGUAGE's, not graphi's.
+#
+# The citation above is the LANGUAGE's spec. graphi's own parser
+# (core/parse/parser_json.go — the stdlib encoding/json parser, which wires NO SymbolExtractor and therefore emits no symbol nodes, no intra-file edges and no file node)
+# is named below ONLY to record what graphi does, never as the answer to the
+# language question — citing graphi's parser as the spec is what makes an
+# abstention circular, and it is the LANGHONEST-001 defect class.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE BINDS TO, AND WHAT THE ROWS ASSERT
+# ---------------------------------------------------------------------------
+# The drift guard TestJSONParityMatrix_DriftGuard (engine/conformance/
+# jsonparity_matrix_test.go) binds this file to the harness table in
+# engine/conformance/jsonparity_test.go. That file ships the CLOSED SEVEN
+# directions from the outset — MISSING, PHANTOM, KIND, VERDICT, OWNER, AXIS,
+# VOCABULARY — which is the SW-189 / TEMPL-P4 D-11 lesson applied rather than
+# re-learned; parity_matrix_directions_test.go fails the build if any of the
+# seven is absent.
+#
+# THE WITNESS SHAPE IS PARSE-DETERMINISM, NOT CROSS-FILE PARITY. At this level
+# there is no cross-file contract to assert, so what the rows prove is that the
+# SAME INPUT BYTES PRODUCE THE SAME AST and that the AST's serialization is
+# byte-stable: the runner takes TWO INDEPENDENT full passes over the identical
+# bytes on the identical (store, profile) axis and requires identical snapshot
+# bytes, then additionally requires the incremental watcher-driven graph to
+# equal the full graph (intra-file parity), then runs the row's non-vacuity
+# witness. The 5x byte-stability is delivered by -count=5 over the driver.
+#
+# SCOPE, STATED SO IT IS NOT OVERREAD. A hermetic proof over t.TempDir()
+# fixtures. Parity and determinism compare two passes of the SAME rule, so a
+# PASS certifies the rule is REGRESSION-CLEAN and REPRODUCIBLE — never that it
+# is CORRECT. Correctness evidence for the extractor lives in
+# core/parse/parser_json_test.go; real-repository evidence is G4 (SW-200) and is
+# not in this file.
+#
+# SYMBOL SHAPE. nothing at all: a JSON document contributes NO node to the graph, which is why this family's rows witness at the PARSE BOUNDARY and use a sibling Markdown document as the control anchor
+#
+# WHERE THE PARSE-BOUNDARY HALF READS FROM, BECAUSE IT IS THE HONESTY POINT.
+# It reads the row's document BACK OUT OF THE FIXTURE TREE after the row's
+# change has been applied — not out of a constant in the harness table — and
+# requires the bytes on disk to be the document the row asserts over BEFORE it
+# parses anything. That is what makes these rows observe their own change: a
+# row whose change did nothing leaves the seed document on disk and fails
+# there. It is also what binds the harness table's document literal to the
+# literal its change writes, so the two cannot drift apart unnoticed.
+#
+# RED WITHOUT THE CHANGE — WHERE IT HOLDS AND WHERE IT DOES NOT. The graph half
+# of every row is an ABSTENTION (no node may come from the .json path), and an
+# abstention holds on the seed tree by construction, so it can never be red
+# without the change. That is a property of a parse-only language, not a
+# defect, and it is why the parse-boundary half carries the burden. FIVE of the
+# six rows are red without their change and this was demonstrated by neutering
+# each row's change and observing the failure: json_add_file (the document is
+# not there), json_modify_file and json_nested_document (the document on disk
+# is the seed), json_reorder_members (the seed bytes are not the permuted
+# bytes) and json_delete_file (the document is still there). The SIXTH,
+# json_reparse_identical_bytes, is NOT — its change is byte-identical to the
+# seed by definition, so nothing can distinguish it from a change that did
+# nothing. That limit is stated in its row note and in GA-LANG-json-G3 rather
+# than claimed away.
+#
+# `id` is a FROZEN WIRE IDENTIFIER: snake_case, stable, never renamed once a
+# harness row binds to it. Change the label, never the id. Ids are prefixed
+# `json_` so they stay globally unique across every family's twin.
+#
+# ---------------------------------------------------------------------------
+# THE SECOND TOP-LEVEL KEY: go_class_applicability
+# ---------------------------------------------------------------------------
+# The G3 threshold this language publishes (docs/rc/evidence-index.yaml,
+# GA-LANG-json-G3) is the byte-parity table PLUS "an explicit applicability
+# disposition per Go class — every cross-file change class dispositioned as
+# `not_applicable` with a language-spec reason, so an inapplicable class is
+# data the drift guard can see, not prose in a note". The
+# `go_class_applicability:` block below is that data; TestJSONParityMatrix_Applicability
+# reads it and binds it to docs/rc/parity-classes.yaml in BOTH directions, so
+# a Go class added there with no disposition here fails the build.
+#
+# Disposition vocabulary, per
+# docs/plan/2026-08-graphi-p2-language-ga-program-v1.md:153-155:
+#   applicable      the class exists in this language and a row here witnesses it
+#   adapted         the class exists but its witnessable form differs; a row here
+#                   witnesses the adapted form and its note states the limit
+#   not_applicable  the LANGUAGE SPEC gives the class no counterpart; reason cites it
+#   deferred        SW-199 adds this fourth member deliberately: the language-agnostic
+#                   ingest classes are neither inapplicable to this language nor
+#                   witnessed by this table, and claiming either would be false.
+#                   A deferred disposition MUST name a deferred_to, and the
+#                   guard admits exactly TWO shapes: a story id (SW-nnn),
+#                   or the literal prefix `UNOWNED — `. Arbitrary prose no
+#                   longer passes, so a placeholder can never read as an
+#                   owner and `grep 'deferred_to: "UNOWNED'` enumerates
+#                   every open debt. Naming a story that does not exist to
+#                   satisfy the guard would be the false claim this rule is
+#                   written against, which is why UNOWNED stays legal.
+
+parity_classes:
+  - id: "json_add_file"
+    kind: "change_class"
+    label: "Datei hinzufügen / add a JSON document in a new directory"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jsonparity_test.go"
+    test_line: "331"
+    test_name: "TestJsonParityDeterminism_ByteStable"
+    fixture: "production stdlib JSON parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-PARSE.c"
+    note: "A new JSON document arrives in a new directory. The parse-boundary half reads vendor/config.json back out of the FIXTURE TREE, so a change that never created it fails on the missing document; it then parses those on-disk bytes three times and requires an identical canonical re-encoding and identical parse metadata each time. Its document predicate requires the document's two members and no others, so a parse that returned an empty tree fails. The graph half requires that NO node came from the new path — the parse-only abstention — while the control heading from the sibling Markdown document is present, so the abstention cannot be satisfied by a tree that was never indexed."
+
+  - id: "json_modify_file"
+    kind: "change_class"
+    label: "Datei ändern / rewrite a JSON document in place"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jsonparity_test.go"
+    test_line: "331"
+    test_name: "TestJsonParityDeterminism_ByteStable"
+    fixture: "production stdlib JSON parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-PARSE.c"
+    note: "An indexed JSON document is rewritten in place with an added member. The parse-boundary half reads api/schema.json back out of the FIXTURE TREE and requires the bytes on disk to be the rewritten document; it then requires the decoded root to carry the NEW member alongside both pre-existing members and no others. A change that did nothing therefore fails at the parse boundary — first on the bytes, then again on the decoded value — and this was demonstrated by neutering the change and observing the failure. The graph half requires the abstention over the rewritten path and the control heading; being an abstention it holds on the seed too, so it is the parse-boundary half that observes this change."
+
+  - id: "json_delete_file"
+    kind: "change_class"
+    label: "Datei löschen / delete a JSON document"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jsonparity_test.go"
+    test_line: "331"
+    test_name: "TestJsonParityDeterminism_ByteStable"
+    fixture: "production stdlib JSON parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-PARSE.c"
+    note: "The indexed JSON document is deleted. STATED RATHER THAN OVERCLAIMED: for a parse-only language a delete has NO observable graph consequence, so this row's GRAPH witness is deliberately a control-only witness — it asserts that removing a file the graph never saw leaves the sibling Markdown document's symbol intact and the whole-tree byte parity undisturbed. The parse-boundary half asserts the one thing that IS observable and asserts it against the fixture tree: api/schema.json must be GONE from disk, so a delete that did not happen fails there. This row alone carries no decoded-value predicate, because there is no document left to parse. The row is carried because delete_file is a real Go class that must be dispositioned for this language, and `adapted` with this reason is the honest disposition."
+
+  - id: "json_nested_document"
+    kind: "change_class"
+    label: "Verschachteltes Dokument / replace with a deeply nested document"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jsonparity_test.go"
+    test_line: "331"
+    test_name: "TestJsonParityDeterminism_ByteStable"
+    fixture: "production stdlib JSON parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-PARSE.c"
+    note: "A deeply nested document (object inside array inside object) replaces the flat one. The parse-boundary half reads the rewritten api/schema.json back out of the FIXTURE TREE, so the flat seed a dead change leaves behind fails on the bytes and again on the decoded shape. The document predicate walks into the nesting and requires the leaf value, so a parser that flattened or truncated the structure fails; the three-pass canonical re-encoding is what pins determinism over the nested shape, where a map-iteration-order defect would surface first."
+
+  - id: "json_reorder_members"
+    kind: "change_class"
+    label: "Member umordnen / permute the object's members"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jsonparity_test.go"
+    test_line: "331"
+    test_name: "TestJsonParityDeterminism_ByteStable"
+    fixture: "production stdlib JSON parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-PARSE.c"
+    note: "The members of the object are permuted with no change to any value. RFC 8259 §4 states an object is an UNORDERED collection, so the permuted document must decode to a structurally identical value — and this row pins that by requiring the canonical re-encoding to equal the base document's, byte for byte. It is the one row whose claim is not merely `stable across passes` but `stable across a source permutation`, which is where a member-order-dependent parser would fail. Its DECODED value equals the seed's by design, so what makes it red without its change is the SOURCE side: the parse-boundary half requires the bytes on disk to be the permuted document, which the un-permuted seed is not."
+
+  - id: "json_reparse_identical_bytes"
+    kind: "change_class"
+    label: "Identische Bytes neu parsen / rewrite with byte-identical content"
+    verdict: "PROVEN"
+    test_file: "engine/conformance/jsonparity_test.go"
+    test_line: "331"
+    test_name: "TestJsonParityDeterminism_ByteStable"
+    fixture: "production stdlib JSON parser"
+    store: "both"
+    profile: "both"
+    assertion: "snapshot bytes"
+    harness_row: "required"
+    known_defect: ""
+    deferred_to: ""
+    owner: "W5-PARSE.c"
+    note: "The indexed JSON document is rewritten with BYTE-IDENTICAL content. The drift scanner sees an empty drift set and Reconcile short-circuits, so the incremental graph must equal the full graph over unchanged bytes; the parse-boundary half re-reads the document from the fixture tree and pins the same canonical re-encoding and the same content hash across three parses. STATED AS A LIMIT RATHER THAN CLAIMED AWAY: this is the ONE json row that is not red without its change, and it cannot be — the change is byte-identical to the seed, so nothing could distinguish it from a change that did nothing. The row's force comes from the runner's two independent full passes and the three parse-boundary passes."
+
+go_class_applicability:
+  - go_class: "add_file"
+    disposition: "adapted"
+    witnessed_by: "json_add_file"
+    deferred_to: ""
+    reason: "A .json file is a real unit the index parses, but RFC 8259 (and ECMA-404) gives it no declaration to extract, so the class is witnessed in its ADAPTED form: the parse-boundary determinism assertion over the added document plus the graph-level abstention with a control symbol."
+
+  - go_class: "modify_file"
+    disposition: "adapted"
+    witnessed_by: "json_modify_file"
+    deferred_to: ""
+    reason: "A rewrite of a .json document is real and observable AT THE PARSE BOUNDARY, where the harness reads the rewritten document back out of the fixture tree and its decoded value differs from the seed's; it is invisible in the graph, so the class is adapted rather than applicable."
+
+  - go_class: "delete_file"
+    disposition: "adapted"
+    witnessed_by: "json_delete_file"
+    deferred_to: ""
+    reason: "A delete is a real change set, but for a parse-only language it has no observable graph consequence; the adapted form asserts the sibling document and the whole-tree byte parity survive it, plus the one fact that IS observable — the document is gone from the fixture tree. The row note states this limit rather than dressing it up."
+
+  - go_class: "rename_symbol"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 (and ECMA-404) defines an object member name as a string DATUM inside a value, not a declaration that names a construct. JSON has no declaration form at all, so there is no symbol whose rename could be a change class."
+
+  - go_class: "move_symbol"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 (and ECMA-404) defines no reference from one document to a construct declared in another, so a file-to-file move has no referrer to re-point. The class's content — identity preserved WHILE REFERRERS SURVIVE — is unstateable in this language, and a move reduced to a delete plus an add is already covered by those two rows."
+
+  - go_class: "rename_package"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 (and ECMA-404) defines no package, module or namespace construct; there is no package identity to rename."
+
+  - go_class: "add_call"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 defines only objects, arrays, numbers, strings and three literals. There is no callable construct and no call."
+
+  - go_class: "remove_call"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 defines only objects, arrays, numbers, strings and three literals. There is no callable construct and no call."
+
+  - go_class: "change_interface"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 (and ECMA-404) defines no interface, protocol or signature construct, so there is no interface whose change could ripple to an implementation."
+
+  - go_class: "add_implementation"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 (and ECMA-404) defines no implements relation between declarations, so there is no implementation to add."
+
+  - go_class: "remove_implementation"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 (and ECMA-404) defines no implements relation between declarations, so there is no implementation to remove."
+
+  - go_class: "branch_switch"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A whole-tree change set delivered by a VCS operation. It is LANGUAGE-AGNOSTIC — the ingest, not the grammar, decides the outcome — so it is neither inapplicable to this language nor witnessed by this table. SW-199 records it as deferred rather than claiming either."
+
+  - go_class: "change_build_tag"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "Build tags are a Go TOOLCHAIN construct (go/build constraints). RFC 8259 (and ECMA-404) defines no conditional-compilation directive and no file-level inclusion predicate."
+
+  - go_class: "replace_generated_file"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A whole-file replacement by a generator. It is LANGUAGE-AGNOSTIC and, at this level, is a modify_file with a larger diff; whether it needs its own per-language witness is an open question SW-199 does not answer, so the class is deferred rather than folded into modify_file's row."
+
+  - go_class: "change_external_import"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 defines no import of any kind. A package manifest's dependency block is a convention of the TOOL that reads the file, not a construct of JSON."
+
+  - go_class: "interrupted_full_pass"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A crash condition of the ingest pipeline, not of the language. The pipeline is shared across every language and is proven on the Go table; whether it needs a per-language witness is an open question SW-199 does not answer, so the class is deferred rather than dispositioned not_applicable."
+
+  - go_class: "restart_and_recovery"
+    disposition: "deferred"
+    witnessed_by: ""
+    deferred_to: "UNOWNED — no story yet claims the language-agnostic ingest classes for the intra/parse residual; SW-199 files this as a follow-up rather than dispositioning it falsely"
+    reason: "A crash condition of the ingest pipeline, not of the language. Same reasoning as interrupted_full_pass: deferred, because claiming a language-level inapplicability for a pipeline property would be false."
+
+  - go_class: "change_colliding_package_dir"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "RFC 8259 (and ECMA-404) defines no package, so two directories cannot collide on a package identity. The Go class exists because two Go directories can declare the same package clause; this language has no clause to declare."
+
+  - go_class: "add_nested_gomod"
+    disposition: "not_applicable"
+    witnessed_by: ""
+    deferred_to: ""
+    reason: "go.mod is Go's MODULE MANIFEST. RFC 8259 (and ECMA-404) defines no module manifest and no nested module boundary, so there is no nested-module transition for this language."
