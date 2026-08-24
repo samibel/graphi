@@ -169,23 +169,47 @@ on-demand import is `java.util.*`, which declares no `Lexer`.
 The same eight-cell reading holds. The note states the row as
 **graph-vacuous**, which is SW-207's measurement (identical `nodes` and `edges`
 tables between a pristine and a mutated full rebuild, 3418 / 4660 at
-`binder=off` and 3418 / 5431 at `binder=on` — and the published artifacts carry
-exactly those counts on the corresponding cells), and it states the mechanism
+`binder=off` / `profile=default` and 3418 / 5431 at `binder=on` /
+`profile=default` — and the published artifacts carry exactly those counts on
+the corresponding default-profile cells; both `profile=fast` cells carry
+3418 / 4341, at either binder setting), and it states the mechanism
 from the **code** rather than from that record: `engine/jvmresolve/emit.go`
 emits a nominal `implements` edge only for a resolved supertype whose form is
 an interface, its own doc comment sends class-`extends` to the syntactic
 extractor's `inherits` and never confirms it, `engine/jvmresolve/emit_test.go`
-asserts that a class-`extends` emits no confirmed edge, and **no non-test code
-path in the repository mints an `inherits` edge at all** —
-`engine/link/link.go`'s `edgeInherits` constant is declared and unused, and
-`query.EdgeKindInherits` is read-side only. So the row establishes
-full-vs-incremental byte-identity over a real in-place Java edit the graph does
-not see, and **not** the ADR-0008 D9 sweep.
+asserts that a class-`extends` emits no confirmed edge, and **no JVM
+extraction path mints an `inherits` edge at all** — neither
+`core/parse/parser_java.go` nor `core/parse/parser_kotlin.go` records the kind,
+and the only producer of `inherits` anywhere in the repository is the **Go**
+extractor (`core/parse/extract_go.go:34` declares `goEdgeInherits`, and `:504`
+mints it from a struct embed in `recordEmbeds`), which is reached only from
+`goSymbolExtractor.Extract` on a `*goAST` and therefore never sees a `.java` or
+a `.kt` file. So the row establishes full-vs-incremental byte-identity over a
+real in-place Java edit the graph does not see, and **not** the ADR-0008 D9
+sweep.
+
+**That clause is CORRECTED IN REBUILD ROUND 1, in place and stated, because its
+first draft was false at the scope it claimed.** It read *"no non-test code path
+in the repository mints an `inherits` edge at all"*, offering as proof that
+`engine/link/link.go:43`'s `edgeInherits` is declared and unused and that
+`query.EdgeKindInherits` is read-side only. Both sub-clauses are individually
+true; neither is evidence about the tree, because the kind is minted **upstream**
+in the extractor and reaches the linker as a `PendingRef` field.
+`CGO_ENABLED=0 go test ./engine/ingest/ -run TestLink_HierarchyEdgesPresent
+-count=1` **PASSES** — a real `IngestAll` that asserts
+`shop.Impl --inherits--> shop.Base` (`engine/ingest/hierarchy_e2e_test.go:127`)
+— so graphi mints an `inherits` edge every time it indexes a Go struct embed.
+The conclusion is unaffected and is now stated at the scope it was measured at:
+no **JVM** extraction path mints one, so the retrofit row stays graph-vacuous.
 
 Both notes keep the attribution discipline the old text carried: the **SKIP**
 measured by SW-204 and the **CAUSE** measured by SW-176 stay two separately
 attributed measurements, now marked retired rather than deleted, and neither is
-re-attributed to this story. Two sentences that time falsified —
+re-attributed to this story. The antlr4 note no longer calls the SW-176 CAUSE
+*carried verbatim*: two of its words were moved into the past tense here
+(`is guava's` → `was guava's`, `refuses deliberately` → `refused deliberately`)
+because the state they describe is retired, and the note now says exactly that
+instead. Two sentences that time falsified —
 *"No target for this class exists in ANY of the three pinned JVM repositories"*
 and *"WHICH of okio's four remaining conjuncts fails is NOT measured"* — are
 corrected in place with what they read stated, in the same shape the notes'
