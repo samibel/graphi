@@ -257,6 +257,29 @@ old label is the precise move AC-4 exists to forbid. **json's 1,690 B is the one
 figure in this campaign that genuinely sits below the budget** (route B, below),
 and it is the only one reported as not resolvable.
 
+Route B — the shipped default rebuilt with the language's **registration**
+removed from `core/parse.RegisterDefaults`; `linux/amd64`, `-buildvcs=false` on
+both halves so the dirty-tree VCS stamp cannot contaminate the delta; baseline
+**34,245,005 B** ([`leg-b-registration-route.txt`](binary-size/raw/leg-b-registration-route.txt)):
+
+| lang | build | **marginal cost** | why this route |
+|---|---:|---:|---|
+| **json** | 34,243,315 | **1,690 B (≤ noise budget)** | json is a stdlib parser with **no** `grammar_subset_json` tag, so route A is structurally inapplicable to it — there is no tag to remove |
+| css (cross-check) | 34,206,183 | 38,822 B | route A gave 28,077 B for the same language; the extra ~10.7 KB is graphi's own `core/parse/parser_css.go`, which route A leaves linked |
+
+Route B is therefore the **larger and more complete** figure, and route A is the
+figure comparable with SW-177's Kotlin measurement. Both are published rather
+than one being presented as "the" number.
+
+Host-platform leg (`darwin/arm64`, baseline 33,104,098 B —
+[`host-platform-leg.txt`](binary-size/raw/host-platform-leg.txt)): css 18,128 ·
+hcl 34,944 · markdown 69,536 · toml 16,928 · yaml 137,280 · kotlin 383,856. It
+is measured because `internal/bench/harness.go`'s `buildBinary` passes **no**
+`GOOS`/`GOARCH` and so gates a *host* binary, while `bench/bench-budget.yml`
+pins its baseline to `go1.26.6/linux-amd64`. On CI the host *is* linux/amd64 and
+the two coincide; on a developer machine they do not, and this campaign measured
+both rather than letting one stand for the other.
+
 ### 3.3.1 Why leg A's markdown line did not reproduce, and what it was (F1)
 
 Round 1's [`leg-a-tag-route.txt`](binary-size/raw/leg-a-tag-route.txt) recorded
@@ -311,29 +334,6 @@ deltas are not.** Three states of the identical source:
 The three marginal costs span 80 B — **2 % of the ±4,096 B noise budget**. No
 conclusion, ratio or grade in this document moves. This was an evidence-integrity
 defect, not a measurement defect, and it is recorded as one.
-
-Route B — the shipped default rebuilt with the language's **registration**
-removed from `core/parse.RegisterDefaults`; `linux/amd64`, `-buildvcs=false` on
-both halves so the dirty-tree VCS stamp cannot contaminate the delta; baseline
-**34,245,005 B** ([`leg-b-registration-route.txt`](binary-size/raw/leg-b-registration-route.txt)):
-
-| lang | build | **marginal cost** | why this route |
-|---|---:|---:|---|
-| **json** | 34,243,315 | **1,690 B (≤ noise budget)** | json is a stdlib parser with **no** `grammar_subset_json` tag, so route A is structurally inapplicable to it — there is no tag to remove |
-| css (cross-check) | 34,206,183 | 38,822 B | route A gave 28,077 B for the same language; the extra ~10.7 KB is graphi's own `core/parse/parser_css.go`, which route A leaves linked |
-
-Route B is therefore the **larger and more complete** figure, and route A is the
-figure comparable with SW-177's Kotlin measurement. Both are published rather
-than one being presented as "the" number.
-
-Host-platform leg (`darwin/arm64`, baseline 33,104,098 B —
-[`host-platform-leg.txt`](binary-size/raw/host-platform-leg.txt)): css 18,128 ·
-hcl 34,944 · markdown 69,536 · toml 16,928 · yaml 137,280 · kotlin 383,856. It
-is measured because `internal/bench/harness.go`'s `buildBinary` passes **no**
-`GOOS`/`GOARCH` and so gates a *host* binary, while `bench/bench-budget.yml`
-pins its baseline to `go1.26.6/linux-amd64`. On CI the host *is* linux/amd64 and
-the two coincide; on a developer machine they do not, and this campaign measured
-both rather than letting one stand for the other.
 
 ### 3.4 Findings
 
