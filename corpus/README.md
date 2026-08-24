@@ -120,3 +120,43 @@ tier-3 run.
    read as green.
 6. If it carries a stratification property, say so in `properties` and in
    `stratification`.
+
+## Measured block table — W5.j SW-196
+
+Cross-file-heuristic residual (9 langs) v3 pins, measured block counts taken
+from a real clone at the pinned sha via `git ls-files` filtered to the
+language's tracked files. Reproducibility: every count was taken at the
+pinned sha on the recorded date; the per-pin captured output lives under
+`/tmp/sw196-measured/` (one `.count` file per pin, plus the recorded sha).
+
+| Lang | Repository | Pin (ref) | Sha | Source files | Tracked files | Date measured |
+|---|---|---|---|---|---|---|
+| bash | — | — | — | (no pin) | — | — |
+| c | cjson | v1.7.19 | `c859b25da02955fef659d658b8f324b5cde87be3` | 99 (.c + .h) | 229 | 2026-08-23 |
+| c_sharp | Newtonsoft.Json | 13.0.3 | `0a2e291c0d9c0c7675d445703e51750363a549ef` | 933 (.cs) | 1158 | 2026-08-23 |
+| cpp | nlohmann/json | v3.11.3 | `9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03` | 455 (.cpp + .hpp + .cc + .hh + .hxx + .cxx + .h) | 1090 | 2026-08-23 |
+| lua | lua-resty-core | v0.1.26 | `407000a9856d3a5aab34e8c73f6ab0f049f8b8d7` | 35 (.lua) | 176 | 2026-08-23 |
+| php | composer | 2.9.8 | `39ee8baff8e97a1b657bbfcd6a236ff93a5efbb2` | 581 (.php) | 1029 | 2026-08-23 |
+| ruby | sinatra | v4.0.0 | `b626e2d82c23b4fde0b51782fd32ca27ccde1d1a` | 143 (.rb) | 321 | 2026-08-20 |
+| rust | serde | v1.0.219 | `49d098debdf8b5c38bfb6868f455c6ce542c422c` | 188 (.rs) | 333 | 2026-08-23 |
+| sql | — | — | — | (no pin) | — | — |
+
+Honest abstentions: **bash** (no representative open-source bash project at
+the pin tier — bash is per-project glue, every project's scripts are an
+idiosyncratic DSL extension of POSIX sh) and **sql** (no canonical SQL
+corpus at the pin tier — SQL is not an import-driven language, its cross-file
+construct is JOIN/VIEW not import; ADR-W1 documents). Each abstention has a
+no_pin entry in `corpus/manifest.json` with a named `no_pin_reason`, and the
+G5 row in `docs/rc/evidence-index.yaml` stays UNKNOWN with the reason
+re-stated in `current`.
+
+### Pin sha provenance (sha vs tag-object sha)
+
+Lightweight tags (cjson v1.7.19, Newtonsoft.Json 13.0.3, nlohmann/json
+v3.11.3, lua-resty-core v0.1.26) carry the commit sha directly — the
+tag-object sha returned by `git ls-remote refs/tags/<tag>` IS the commit sha,
+because lightweight tags are pointers, not objects. Annotated tags (composer
+2.9.8, serde v1.0.219, sinatra v4.0.0) carry a tag object whose sha is the
+tag-object sha, distinct from the commit sha at `^{}`. Per SW-196 AC-3, the
+manifest pins the COMMIT sha (the deref result) in both cases; the
+`release_tag` field carries the tag name verbatim for human reading.

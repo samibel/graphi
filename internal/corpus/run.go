@@ -90,6 +90,20 @@ func (r *Runner) runEntry(ctx context.Context, e Entry) EntryReport {
 		er.Steps = append(er.Steps, StepResult{Name: step, OK: true, Detail: detail})
 	}
 
+	// NoPin entries declare an honest gap: no representative open-source
+	// repository at the pin tier. They short-circuit the runner with a
+	// single abstention step that passes by name — the G5 row stays UNKNOWN
+	// in evidence-index.yaml with the NoPinReason named in its `current`
+	// field, and the runner records the gap rather than running nothing
+	// (which would read as a vacuous PASS).
+	if e.NoPin {
+		ok("abstention", "no_pin: "+e.NoPinReason)
+		er.Pass = true
+		er.DurationMS = time.Since(start).Milliseconds()
+		r.logf("corpus: %s: ABSTENTION (no_pin)", e.Name)
+		return er
+	}
+
 	// 1. Materialize the checkout. Local fixture paths are manifest-relative
 	// (i.e. repo-root-relative); absolutize them against the runner's own cwd
 	// so the graphi subprocess — which runs with WorkDir as its base — still
