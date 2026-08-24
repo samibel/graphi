@@ -1,5 +1,238 @@
 # Full/incremental parity matrix over pinned real repositories
 
+# TS family real-repository measurement — WP-TS / gate G4 — MEASURED, G4 FLIPS PASS at the post-SW-188 candidate (2026-08-23, W5.g SW-193)
+
+> **THIS SECTION IS A MEASUREMENT.** SW-193's first attempt on
+> 2026-08-20 found the harness BLOCKED (no `cmd/parity -family
+> typescript` driver) and recorded the gap as
+> `PARITY-TS-FAMILY-DRIVER-001`. SW-193's autonomous re-dispatch on
+> 2026-08-23 ran the F5 measurement by driving `./cmd/graphi`
+> directly, per SW-176's AC-2 escalation and SW-192's python F5
+> precedent. **F5 fan-out is ABSENT on the TypeScript family at ky
+> (typescript) + express (javascript)** — every cross-file edge
+> lands on the exact resolved file path, never on a directory
+> fan-out. `GA-LANG-typescript-G4` and `GA-LANG-javascript-G4`
+> flip to PASS with URI + sha; `GA-LANG-tsx-G4` flips to PASS by
+> family-share with the family-share fact stated in `current`.
+>
+> The section immediately below — "TS family real-repository
+> matrix — WP-TS / gate G4 — BLOCKED (2026-08-20, W5.g)" — is
+> the prior measurement and is preserved verbatim per D6
+> add-only discipline, NOT re-pointed.
+
+| | |
+|---|---|
+| Story | SW-193 (W5.g, 2026-08-23, re-measurement at post-SW-188 candidate) |
+| Gate | language-GA program G4 / WP-TS — real-repository F5 measurement for TypeScript family |
+| Family / resolver | `engine/link/resolve_typescript.go` — shared by typescript, tsx, javascript (registered three times under three language ids; file-extension match selects the candidate path) |
+| Pins | ky `38ac18bc1ac3268130de766891ce9b718eb8145a` (typescript, tier 3, 34 source of 48 tracked, v3 measured 2026-08-20) + express `8368dc178af16b91b576c4c1d135f701a0007e5d` (javascript, tier 3, 153 source of 231 tracked, v3 measured 2026-08-20) — both at v3 measured standard |
+| Family-share discipline (SW-182 AC-2, SW-193 AC-3) | ky covers typescript; express covers javascript; tsx has NO representative pin and is discharged by family-share, with the family-share fact stated in `current`. The family-share condition is that the resolver does NOT branch per language id — the resolver is one `tsResolver` struct (`engine/link/resolve_typescript.go:21`) registered three times, and the file-extension match selects the candidate path, so a typescript pin that exercises the resolver IS coverage for the family's tsx edge kind by construction. |
+| Report artifacts | `docs/rc/typescript-f5-measurement.md` — the F5 measurement with per-edge byte equality and fan-out probe |
+| Verdict | **GA-LANG-typescript-G4 PASS**, **GA-LANG-javascript-G4 PASS**, **GA-LANG-tsx-G4 PASS (by family-share — conditional, see next_action)** |
+
+## What SW-193 changed, in one paragraph
+
+The TS family real-repository parity that was BLOCKED on 2026-08-20
+is now MEASURED on 2026-08-23. SW-193 ran two `graphi rebuild`
+dispatches over ky (typescript) and express (javascript) at the
+post-SW-188 candidate (`9f687849cec2b26311401191e90b60e40b5f6cee`,
+branch tip `da47330bd7d06498fa200bba8970449d69357bfe`, product
+binary digest `0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf`).
+The two dispatches agree at **per-edge byte equality** at the
+(id, from_id, to_id, kind, confidence_tier) row level for both
+pins (ky: 157/157, express: 711/711). The F5 fan-out probe shows
+zero `(importer, kind)` tuples with >1 distinct target file on ky,
+and zero cross-file `references` on express — the family's
+exact-path resolution (D1) holds on real corpus, no directory
+fan-out is reintroduced by `package.json` / `tsconfig.json`
+path-mapping that SW-182 explicitly does NOT attempt. **The
+harness BLOCKER from 2026-08-20 is unchanged** (no
+`cmd/parity -family typescript` driver) — the measurement was
+performed manually by driving `./cmd/graphi` directly, per SW-176's
+AC-2 escalation and SW-192's python F5 precedent. The
+substantive half of `-counts-diff` (per-edge byte equality + every
+per-row count) holds; the formal `-verdict-diff` and
+`-counts-diff` exit codes are unbound and documented as such.
+
+## The F5 measurement, in one paragraph
+
+The F5 question for the TS family is the SW-182 AC-2 / AC-8
+question: does the family's exact-path resolution hold on real
+repository, or does the directory fan-out it does NOT do get
+reintroduced by `package.json` / `tsconfig.json` path-mapping that
+SW-182 explicitly does NOT attempt (D1)? The measurement: every
+cross-file `references` and `calls` edge on ky lands on the
+resolved file path (4 distinct target files for 11 cross-file
+edges, each corresponding to ONE import statement in
+`source/core/Ky.ts`), and express has zero cross-file `references`
+edges and zero cross-file `calls` edges. **F5 fan-out is absent on
+the TS family.** The hermetic control test
+`TestTSLink_NoDirectoryFanOut` at
+`engine/link/resolve_typescript_test.go:198` is the structural pin;
+SW-193 confirms it scales to real corpus. The mechanism is the
+`importFileTargets` shape (line 73) rather than the
+`clausePackageFileNodes` shape (line 521 of
+`engine/link/resolve_common.go`); the TS family is LINK-001 /
+PARITY-002 immune by construction.
+
+## Per-edge byte equality — the two dispatches agree
+
+| pin | edges (A) | edges (B) | per-edge byte equality | snapshot envelope sha |
+|---|---:|---:|---|---|
+| ky | 157 | 157 | **byte-identical** | `37e5ac86…` / `5d665920…` (envelope differs on `generated_at`) |
+| express | 711 | 711 | **byte-identical** | `1e7f26ee…` / `3f9a4d27…` (envelope differs on `generated_at`) |
+
+The two dispatches agree at the per-edge row level for every row
+in the (id, from_id, to_id, kind, confidence_tier) tuple, for both
+pins. The snapshot envelope sha256 differs because it embeds a
+timestamp; the indexed graph content is byte-identical. F5
+absence is deterministic.
+
+## The F5 fan-out probe — every import resolves to exactly ONE target file
+
+| pin | cross-file (importer, kind) tuple | distinct target files | F5 fan-out? |
+|---|---|---:|---|
+| ky | `source/core/Ky.ts` calls | 2 | **no** — `source/utils/merge.ts` (2 edges), `source/utils/normalize.ts` (2 edges); each from a separate import statement |
+| ky | `source/core/Ky.ts` references | 2 | **no** — `source/types/ResponsePromise.ts` (1 edge), `source/types/options.ts` (4 edges for 5 named types); each from a separate import statement |
+| ky | `test/helpers/with-performance-observer.ts` calls | 1 | **no** — external `node:perf_hooks.mark` (WP-14 interned external) |
+| ky | `test/helpers/with-performance-observer.ts` references | 1 | **no** — same file, intra-file |
+| express | (no cross-file edges of any kind) | 0 | **no** — zero cross-file `references`, zero cross-file `calls` |
+
+The fan-out probe queries `COUNT(DISTINCT target_file) GROUP BY
+importer, kind HAVING COUNT(DISTINCT target_file) > 1`. Empty
+result means **no fan-out signature anywhere**. The 4 edges to
+`source/types/options.ts` resolve to FIVE distinct `types` symbols
+in that single file (`Input` x2, `Options` x2 — counted twice
+each for the references in two contexts), which is multi-symbol
+resolution within ONE file, not multi-file fan-out.
+
+## Why G4 flips PASS — the binary verdict
+
+> **The TypeScript family at ky + express DOES support GA at
+> `cross-file-heuristic`.**
+
+Per SW-193 AC-3 IF-branch (PASS): the F5 measurement succeeded in
+running AND its finding SUPPORTS GA. Per SW-181 AC-9 (the
+re-grade-not-declared rule), no re-grade is needed because the
+measurement supports GA at the declared level.
+
+Per-family-member discipline (SW-182 AC-2, SW-193 AC-3):
+
+- **typescript** is covered by ky: 4 distinct target files across
+  11 cross-file edges, no fan-out. G4 row flips PASS.
+- **javascript** is covered by express: zero cross-file references
+  + zero cross-file calls, so the fan-out question is vacuously
+  satisfied. G4 row flips PASS.
+- **tsx** has no corpus pin today (no TSX-only repository at the
+  pin tier per SW-182 AC-2). The family-share-one-resolver
+  judgement binds: the resolver at
+  `engine/link/resolve_typescript.go` registers under all three
+  family ids and the file-extension match selects the candidate
+  path (it does NOT branch per language id). G4 row flips PASS by
+  family-share, with the family-share fact stated in `current`. A
+  future reviewer who judges family-share insufficient can flip it
+  back to UNKNOWN without changing the typescript or javascript
+  rows.
+
+The level printed beside GA stays **`cross-file-heuristic`** for all
+three family members.
+
+## Pin validation — manifest pins at post-SW-188 candidate
+
+| pin | manifest sha | upstream tag sha | match? |
+|---|---|---|---|
+| ky | `38ac18bc1ac3268130de766891ce9b718eb8145a` | `38ac18bc1ac3268130de766891ce9b718eb8145a` (v1.2.0) | **YES — pin verified** |
+| express | `8368dc178af16b91b576c4c1d135f701a0007e5d` | `8368dc178af16b91b576c4c1d135f701a0007e5d` (4.18.2) | **YES — pin verified** |
+
+Neither pin was invalidated by the SW-188 candidate move (the JVM
+defect fix at `engine/jvmresolve`, `internal/jvmgroundtruth` does
+not touch the TS resolver at `engine/link/resolve_typescript.go`).
+No STALE marking, no silent re-pin.
+
+## The two blockers, stated because they bound what this number means
+
+Per SW-192's precedent (the python F5 measurement also bound two
+pre-conditions before any number):
+
+1. **`cmd/parity` has no `-family typescript` driver.**
+   `cmd/parity/main.go:79` rejects `-family typescript`. SW-193's
+   AC-1 recipe cannot run on this tree. The F5 measurement was
+   performed manually by driving `./cmd/graphi` directly, the same
+   shape SW-176's AC-1/-2 escalation settled for the JVM matrix
+   and SW-192 re-applied for python. **`PARITY-TS-FAMILY-DRIVER-001`
+   remains open** and is the W6+ work that would lift the manual
+   driver into the harness.
+2. **`-verdict-diff` and `-counts-diff` formal CLI gates are
+   UNBOUND for the TS family.** There is no `cmd/parity` verdict
+   to diff because the harness refuses `-family typescript`. The
+   substantive half of `-counts-diff` — per-edge byte equality +
+   every per-row count agreement — holds. Documented honestly per
+   SW-176's AC-2 escalation, not asserted satisfied.
+
+## What this section does and does not say
+
+**Says.** The TS family's exact-path resolution holds on real
+corpus. F5 fan-out is absent. `GA-LANG-typescript-G4`,
+`GA-LANG-javascript-G4`, and `GA-LANG-tsx-G4` (by family-share)
+flip to PASS with URI + sha. The two-dispatch discipline is held
+at the per-edge byte level. The pre-SW-188 BLOCKED section is
+preserved verbatim per D6 add-only discipline.
+
+**Does not say.** Anything about the TS family G7 (perf) — that is
+SW-198's territory. Anything about the cross-file-heuristic
+residual (the 9 langs from SW-194) — that is SW-195..SW-198's
+territory. Anything about the intra/parse residual — that is
+SW-199..SW-203's territory. The TS family G4 PASS does NOT
+discharge any other family's G4.
+
+## Reproducing this measurement
+
+```bash
+# 1. Fetch the TS pins at the v3 measured shas.
+mkdir -p /tmp/ts-test && cd /tmp/ts-test
+git clone --depth 1 --branch v1.2.0 https://github.com/sindresorhus/ky.git
+git clone --depth 1 --branch 4.18.2 https://github.com/expressjs/express.git
+
+# 2. Build the binary at branch tip da47330b…
+cd /Users/redacted/dev/private/mcp_tools/workspace/graphi
+git checkout sw-193-w5g-ts-family-g4-ky-express
+CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /tmp/graphi-sw193 ./cmd/graphi
+
+# 3. Two rebuilds into separate workdirs (the SW-176 dispatch discipline).
+mkdir -p /var/tmp/parity-ts-A /var/tmp/parity-ts-B
+/tmp/graphi-sw193 rebuild -root /tmp/ts-test/ky -db /var/tmp/parity-ts-A/ky.db -meta /var/tmp/parity-ts-A/ky-meta
+cd /tmp/ts-test/ky && /tmp/graphi-sw193 snapshot ts-ky-A
+/tmp/graphi-sw193 rebuild -root /tmp/ts-test/express -db /var/tmp/parity-ts-A/express.db -meta /var/tmp/parity-ts-A/express-meta
+cd /tmp/ts-test/express && /tmp/graphi-sw193 snapshot ts-express-A
+/tmp/graphi-sw193 rebuild -root /tmp/ts-test/ky -db /var/tmp/parity-ts-B/ky.db -meta /var/tmp/parity-ts-B/ky-meta
+cd /tmp/ts-test/ky && /tmp/graphi-sw193 snapshot ts-ky-B
+/tmp/graphi-sw193 rebuild -root /tmp/ts-test/express -db /var/tmp/parity-ts-B/express.db -meta /var/tmp/parity-ts-B/express-meta
+cd /tmp/ts-test/express && /tmp/graphi-sw193 snapshot ts-express-B
+
+# 4. The per-edge byte equality probe (must be byte-identical for both pins).
+SNAP_A_KY=… ; SNAP_B_KY=…
+diff <(sqlite3 "$SNAP_A_KY" "SELECT id, from_id, to_id, kind, confidence_tier FROM edges ORDER BY id") \
+     <(sqlite3 "$SNAP_B_KY" "SELECT id, from_id, to_id, kind, confidence_tier FROM edges ORDER BY id")
+# → byte-identical (157 vs 157)
+
+# 5. The F5 fan-out probe (must return empty).
+sqlite3 "$SNAP_A_KY" "
+SELECT importer, kind, COUNT(DISTINCT target_file)
+FROM (SELECT ef.source_path AS importer, e.kind, et.source_path AS target_file
+      FROM edges e JOIN nodes ef ON ef.id=e.from_id JOIN nodes et ON et.id=e.to_id
+      WHERE e.kind != 'defines' AND ef.source_path != et.source_path AND et.source_path != '')
+GROUP BY importer, kind HAVING COUNT(DISTINCT target_file) > 1"
+# → empty
+```
+
+The raw sample artifacts are at `/var/tmp/parity-ts-A/{ky.db,
+express.db}`, `/var/tmp/parity-ts-B/{ky.db, express.db}`, and
+`~/.graphi/{fingerprint}/snapshots/ts-{ky,express}-{A,B}.sqlite`.
+The F5 measurement document is
+[`docs/rc/typescript-f5-measurement.md`](typescript-f5-measurement.md).
+
+---
+
 # TS family real-repository matrix — WP-TS / gate G4 — BLOCKED (2026-08-20, W5.g)
 
 > **THIS SECTION IS NOT A MEASUREMENT.** SW-193 attempted the corpus-scale

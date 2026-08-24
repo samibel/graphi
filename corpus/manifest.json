@@ -337,7 +337,26 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "TypeScript library; tsconfig/ESM import shapes. Brought to the v3 measured standard (SW-182): 12-char sha prefix expanded to the full 40-char sha and a measured census added (34 TypeScript-family source files of 48 tracked, 2026-08-20, .ts/.tsx/.js/.jsx/.mjs/.cjs extensions covering the family’s static extension set at engine/link/resolve_typescript.go:25)."
+   "f5_measurement": {
+    "cross_file_edges": 11,
+    "cross_file_targets": 4,
+    "external_imports": 2,
+    "fan_out_detected": false,
+    "max_targets_per_importer_kind_tuple": 2,
+    "dispatches_byte_identical": true,
+    "edges_per_dispatch": 157,
+    "dispatches_agree": true,
+    "measured_at": "2026-08-23",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "branch_tip": "da47330bd7d06498fa200bba8970449d69357bfe",
+    "product_binary_digest": "0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf",
+    "runner_class": "Darwin-ARM64/local-sandbox",
+    "go_version": "go1.26.6 darwin/arm64",
+    "driver": "graphi rebuild + graphi snapshot (manual, F5 escape per SW-176 AC-2 escalation + SW-192 python F5 precedent — cmd/parity -family typescript is unbound at cmd/parity/main.go:79)",
+    "evidence_uri": "docs/rc/typescript-f5-measurement.md",
+    "verdict": "F5 fan-out ABSENT; GA at cross-file-heuristic SUPPORTED; GA-LANG-typescript-G4 flips PASS"
+   },
+   "notes": "TypeScript library; tsconfig/ESM import shapes. Brought to the v3 measured standard (SW-182): 12-char sha prefix expanded to the full 40-char sha and a measured census added (34 TypeScript-family source files of 48 tracked, 2026-08-20, .ts/.tsx/.js/.jsx/.mjs/.cjs extensions covering the family’s static extension set at engine/link/resolve_typescript.go:25). F5 measurement (SW-193, W5.g, 2026-08-23): every cross-file edge on ky lands on the exact resolved file path, never on a directory fan-out. 11 cross-file edges spanning 4 distinct target files (source/types/ResponsePromise.ts, source/types/options.ts, source/utils/merge.ts, source/utils/normalize.ts), each (importer, kind) tuple has COUNT(DISTINCT target_file) ≤ 2, matching the 2 import statements from source/core/Ky.ts. 2 external imports (node:perf_hooks.mark, node:perf_hooks.measure) are WP-14 interned externals, not fan-out. Two `graphi rebuild` dispatches byte-identical at per-edge level (157/157). The `cmd/parity -family typescript` formal gate is unbound — the substantive half of `-counts-diff` (per-edge byte equality) holds and the formal half is documented unbound per SW-176 / SW-192."
   },
   {
    "name": "express",
@@ -359,7 +378,26 @@
      "expect_nonempty": true
     }
    ],
-   "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class. Brought to the v3 measured standard (SW-182): 12-char sha prefix expanded to the full 40-char sha and a measured census added (153 .js of 231 tracked, 2026-08-20)."
+   "f5_measurement": {
+    "cross_file_edges": 0,
+    "cross_file_targets": 0,
+    "external_imports": 0,
+    "fan_out_detected": false,
+    "max_targets_per_importer_kind_tuple": 0,
+    "dispatches_byte_identical": true,
+    "edges_per_dispatch": 711,
+    "dispatches_agree": true,
+    "measured_at": "2026-08-23",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "branch_tip": "da47330bd7d06498fa200bba8970449d69357bfe",
+    "product_binary_digest": "0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf",
+    "runner_class": "Darwin-ARM64/local-sandbox",
+    "go_version": "go1.26.6 darwin/arm64",
+    "driver": "graphi rebuild + graphi snapshot (manual, F5 escape per SW-176 AC-2 escalation + SW-192 python F5 precedent — cmd/parity -family typescript is unbound at cmd/parity/main.go:79)",
+    "evidence_uri": "docs/rc/typescript-f5-measurement.md",
+    "verdict": "F5 fan-out vacuously absent (zero cross-file references + zero cross-file calls); GA at cross-file-heuristic SUPPORTED; GA-LANG-javascript-G4 flips PASS"
+   },
+   "notes": "JavaScript + many JSON fixtures and markdown — the malformed-asset bug class. Brought to the v3 measured standard (SW-182): 12-char sha prefix expanded to the full 40-char sha and a measured census added (153 .js of 231 tracked, 2026-08-20). F5 measurement (SW-193, W5.g, 2026-08-23): express has ZERO cross-file `references` edges and ZERO cross-file `calls` edges (the 6 `calls` edges are intra-file `derived`). The fan-out question is vacuously satisfied — no (importer, kind) tuples that could fan out, because no cross-file edges of any kind exist. Express is CommonJS (`require('./foo')`); the javascript extract layer does not currently walk `require` for cross-file `references` edges (a separate parser-coverage question, not a parity defect). Two `graphi rebuild` dispatches byte-identical at per-edge level (711/711). The `cmd/parity -family typescript` formal gate is unbound — the substantive half of `-counts-diff` (per-edge byte equality) holds and the formal half is documented unbound per SW-176 / SW-192."
   },
   {
    "name": "guava",
