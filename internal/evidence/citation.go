@@ -108,9 +108,9 @@ const (
 	// NOT — and Verified() below still counts the citation as verified evidence.
 	// That gap is filed as CITEANCHOR-001: measured over the checked-in index at
 	// the SW-192..197 integration, 7 of 11 anchor citations name a heading that
-	// exists in no commit on any branch, and four of the seven sit on rows that
-	// read PASS. Declaring the blindness in a comment is not the same as
-	// reporting it, and the count says so.
+	// exists in no commit on any branch, and SIX of the seven sit on rows that
+	// read PASS (only GA-LANG-python-G4 is UNKNOWN). Declaring the blindness in
+	// a comment is not the same as reporting it, and the count says so.
 	KindDocAnchor CitationKind = "doc-anchor"
 	// KindExternal is an absolute URL. Not verified — the gate makes no network calls.
 	KindExternal CitationKind = "external-url"
