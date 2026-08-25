@@ -19,8 +19,12 @@ description: >
   NON-VACUITY, STATED: unlike the structural operations above, this operation
   reports empty for an unresolved anchor too, so the empty result alone would
   not prove the anchor resolved. The paired control lives in the harness —
-  TestHeroIntraParse_AbstentionAnchorsResolve re-runs definition(base.main) against
-  the same fixture engine and fails if it does not resolve — so this scenario
+  TestHeroIntraParse_AbstentionAnchorsResolve re-asks the graph for base.main through
+  the same fixture engine and fails unless a node whose qualified name is
+  EXACTLY that anchor comes back. Exactness is the point: reference
+  resolution falls back to lexical search when no exact qualified name
+  matches, so a control that only asked whether something resolved would
+  stay green after the anchor had been renamed away. So this scenario
   cannot pass by the anchor having quietly disappeared.
 fixture_ref: tier1-fixture-hero-css
 operation:

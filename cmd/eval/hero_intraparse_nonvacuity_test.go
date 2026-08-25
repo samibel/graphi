@@ -14,13 +14,28 @@ package main
 //	TestHeroIntraParse_AbstentionAnchorsResolve
 //	    The empty answers must be the RELATION's, never the ANCHOR's. For the
 //	    five symbol-minting languages, every abstention scenario's anchor is
-//	    re-resolved through the same fixture engine and must resolve to a real
-//	    definition. Note the asymmetry that makes this necessary: callers /
-//	    callees / references / impact report not_found for an unresolved
-//	    anchor, so their `empty` already proves resolution — but related_files,
-//	    explain_symbol and change_risk report `empty` for an unresolved anchor
-//	    too, so for those the scenario alone proves nothing and this control is
-//	    the proof.
+//	    re-asked of the same fixture engine and a node whose qualified name is
+//	    EXACTLY the anchor must come back. Note the asymmetry that makes this
+//	    necessary: callers / callees / references / impact report not_found for
+//	    an unresolved anchor, so their `empty` already proves resolution — but
+//	    related_files, explain_symbol and change_risk report `empty` for an
+//	    unresolved anchor too, so for those the scenario alone proves nothing
+//	    and this control is the proof.
+//
+//	    WHY THE CONTROL DEMANDS AN EXACT QUALIFIED NAME AND NOT MERELY A
+//	    RESOLUTION, which is a real finding and not a stylistic choice.
+//	    resolve.Strict's documented order is node id, file path, exact
+//	    qualified name, THEN LEXICAL SEARCH, and a single search hit resolves
+//	    heuristically. Renaming `main` to `mainAlt` in the css fixture
+//	    therefore leaves definition("base.main") reporting FOUND — it resolves
+//	    to base.mainAlt through the search fallback — so a control that only
+//	    asked "did it resolve?" would stay green while the symbol the whole
+//	    suite is anchored on had ceased to exist. That is exactly the vacuous
+//	    shape this file exists to catch, and it was caught here first: the
+//	    weaker control was written, the rename mutation failed to turn it red,
+//	    and the control was strengthened rather than the demonstration dropped.
+//	    The neighborhood operation is used because it returns the SYMBOL node
+//	    with its qualified name, where definition returns the defining file.
 //
 //	TestHeroIntraParse_JsonIsParseOnly
 //	    json's suite asserts the opposite shape, so it needs the opposite
@@ -93,20 +108,30 @@ func TestHeroIntraParse_AbstentionAnchorsResolve(t *testing.T) {
 					t.Errorf("%s is an abstention scenario with no symbol-shaped anchor; its empty answer cannot be attributed to a relation", s.ID)
 					continue
 				}
-				lines, _, derr := eng.Invoke("definition", map[string]string{"symbol": anchor})
+				lines, _, derr := eng.Invoke("neighborhood", map[string]string{"symbol": anchor, "depth": "1"})
 				if derr != nil {
-					t.Errorf("%s: control definition(%s) errored: %v", s.ID, anchor, derr)
+					t.Errorf("%s: control neighborhood(%s) errored: %v", s.ID, anchor, derr)
 					continue
 				}
 				got := ""
+				exact := false
 				for _, l := range lines {
 					if v, ok := strings.CutPrefix(l, "outcome:"); ok {
 						got = v
+						continue
+					}
+					for _, field := range strings.Fields(l) {
+						if field == anchor {
+							exact = true
+						}
 					}
 				}
 				if got != "found" {
-					t.Errorf("%s asserts %q for anchor %s, but the paired control definition(%s) reports %q — the scenario's empty answer would be the ANCHOR's absence, not the relation's, which is exactly the vacuous shape this guard exists to catch",
+					t.Errorf("%s asserts %q for anchor %s, but the paired control neighborhood(%s) reports %q — the scenario's empty answer would be the ANCHOR's absence, not the relation's, which is exactly the vacuous shape this guard exists to catch",
 						s.ID, s.Expect.Outcome, anchor, anchor, got)
+				} else if !exact {
+					t.Errorf("%s asserts %q for anchor %s, but the paired control neighborhood(%s) came back with no node whose qualified name is exactly %s (evidence: %v) — resolve.Strict falls back to lexical search, so this is what a renamed or deleted anchor looks like while still reporting found",
+						s.ID, s.Expect.Outcome, anchor, anchor, anchor, lines)
 				}
 				checked++
 			}
