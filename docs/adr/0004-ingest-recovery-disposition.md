@@ -136,7 +136,7 @@
 > `graphi rebuild` 6, unrepaired by three further syncs — and pinned as
 > executable data by `TestParity004_DanglingIntraModuleImportBreaksTheCascade`,
 > which fails **with instructions** the moment the defect is fixed. Filed on
-> `projects/graphi/backlog.md`; disclosed in readme "Known limits".
+> `projects/graphi/backlog.md`; disclosed in `docs/known-defects.md`.
 >
 > Its user-visible cost is **measured, and smaller than the node-count
 > difference suggests**: on the same fixture `neighborhood` loses the `imports`

@@ -140,7 +140,7 @@ segment — which is the shape every existing test uses. Single-segment forms
 (`import util`, `from util import helper`, `from pkg import util`,
 `from pkg import helper`) all resolve correctly. Fixing it is a linker change
 carrying the full D7 ceremony and is not an audit's work. Disclosed per D8 on
-`readme.md`, the doctor `known-defects` check and `docs/language-support.md`;
+`docs/known-defects.md`, the doctor `known-defects` check and `docs/language-support.md`;
 pinned by `TestLink004_PythonDottedModuleImportResolvesNothing`, which fails
 **with instructions** the moment the defect closes.
 
